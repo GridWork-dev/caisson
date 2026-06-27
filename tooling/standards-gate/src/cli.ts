@@ -3,26 +3,32 @@
  * `stack-gate` — the standards-gate CLI (ADR-0021/0022). The ONLY registry ingress runs through
  * this. Exit non-zero on any "error" finding → fails CI + `bun run check` + blocks publish.
  *
- * Runs here (executable now): AGPL boundary, license/manifest declarations, down-only (scaffold).
- * Delegated (wired by the foundations track): provider-SDK boundary → ESLint
- * (tooling/eslint-config/boundaries.js); golden-file regression → the ADR-0013 harness. The
- * publish job calls `stack-gate` then `eslint` then the golden run; a green run stamps the
- * registry-index `gateAttestation` (ADR-0021).
+ * This Bun script is the SPDX/license authority: AGPL boundary (workspace + external tree),
+ * down-only direction, declarations, and manifest↔package.json agreement. Run ALONGSIDE in CI
+ * (ADR-0022, all three layers): ESLint `no-restricted-imports` (fast static source signal) +
+ * dependency-cruiser (the real module graph — dynamic import()/require + transitive provider-SDK
+ * reachability) + the golden-file regression (ADR-0013 harness). A green run of all layers stamps
+ * the registry-index provenance; the index itself is built by a CI-only writer (ADR-0021).
  */
-import { readWorkspace } from "./workspace";
+import { findRoot, readWorkspace } from "./workspace";
 import {
   checkAgplBoundary,
-  checkDeclarations,
+  checkExternalAgpl,
   checkDownOnly,
+  checkDeclarations,
+  checkManifestAgreement,
   type Finding,
 } from "./checks";
 
-function main(): number {
-  const pkgs = readWorkspace();
+async function main(): Promise<number> {
+  const root = findRoot();
+  const pkgs = readWorkspace(root);
   const findings: Finding[] = [
     ...checkAgplBoundary(pkgs),
-    ...checkDeclarations(pkgs),
+    ...checkExternalAgpl(pkgs, root),
     ...checkDownOnly(pkgs),
+    ...checkDeclarations(pkgs),
+    ...(await checkManifestAgreement(pkgs)),
   ];
 
   const errors = findings.filter((f) => f.severity === "error");
@@ -37,9 +43,9 @@ function main(): number {
     `\nstandards-gate: ${pkgs.length} packages · ${errors.length} error(s) · ${warns.length} warn(s)\n`,
   );
   process.stderr.write(
-    `  reminder: provider-SDK boundary (ESLint) + golden-file regression (ADR-0013) run alongside this in CI.\n`,
+    `  alongside in CI (ADR-0022): ESLint provider-SDK signal + dependency-cruiser graph reach + golden (ADR-0013).\n`,
   );
   return errors.length > 0 ? 1 : 0;
 }
 
-process.exit(main());
+process.exit(await main());

@@ -1,38 +1,38 @@
 # @stack/standards-gate
 
-The ONE standards gate (ADR-0021/0022) — the only registry ingress. Run it: `bun run gate`
-(or `stack-gate`). Exit non-zero on any error finding → fails CI, `bun run check`, and blocks
-publish.
+The Bun layer of the standards gate (ADR-0021/0022) — the SPDX/license authority. Run:
+`bun run gate` (or `stack-gate`). Exit non-zero on any error → fails CI, `bun run check`, blocks
+publish. Runs alongside two other layers in CI (ADR-0022): ESLint (fast static provider-SDK
+signal) + dependency-cruiser (real module graph: dynamic/transitive reach + base→edition).
 
-## What it enforces (executable now)
+## What this layer enforces
 
-- **AGPL import boundary** (Gate 1, ADR-0010) — a non-AGPL package may not depend on an
-  AGPL-licensed package. Keyed on package.json `license`.
-- **Declarations** — a package that ships code must declare an SPDX `license` + a `manifest.ts`
-  (ADR-0020). Scaffolds (src/.gitkeep only) are exempt until they ship code.
-- **Down-only dependency boundary** (Gate 3, ADR-0003) — scaffolded; activates once modules
-  carry manifests (the P5 backfill populates them).
+- **AGPL boundary** (Gate 1, ADR-0010) — non-AGPL package may not depend on an AGPL package, over
+  **workspace `@stack/*` deps AND external npm deps** (reads each resolved dep's SPDX; external
+  scan needs `node_modules` — warns + defers to CI post-install if absent).
+- **Down-only** (Gate 3, ADR-0003) — base/primitive ↛ edition, edition ↛ edition. Enforced now
+  (keyed on the 4 edition names; refines to manifest `kind` once modules carry manifests).
+- **Declarations** — a module that ships code (src/ beyond .gitkeep, or an entry/main/exports)
+  must declare an SPDX `license` + a `manifest.ts` (ADR-0020). Scaffolds are exempt.
+- **Manifest ↔ package.json agreement** (Gate 4, ADR-0020) — loads each `manifest.ts`, asserts
+  `id`/`version`/`license` match package.json (best-effort: warns if deps aren't installed).
 
-## What runs alongside (delegated, wired by foundations)
+## Run alongside in CI (`.github/workflows/ci.yml` `standards-gate` job)
 
-- **Provider-SDK import boundary** (Gate 2, ADR-0011) → ESLint `no-restricted-imports` in
-  `tooling/eslint-config/boundaries.js`. (Source-import-level; ESLint sees imports, the gate
-  sees the package graph.)
-- **Golden-file regression** → the ADR-0013 harness (this track does not redefine the runner;
-  the _module_ golden-fixture shape is `tooling/testing/golden-module.ts` + ADR-0021 §golden).
+`bunx eslint .` (provider-SDK static) · `bunx depcruise … --config .dependency-cruiser.cjs`
+(graph reach + down-only) · golden-file regression (ADR-0013 harness) · `changeset status`.
 
 ## Publish flow (ADR-0021)
 
 ```
-changeset → version bump → stack-gate + eslint + golden → publish → index update (+ attestation)
+changeset → version bump → gate (this + eslint + depcruise + golden) → publish (CI-only) → index rebuilt from registry (CI-only)
 ```
 
-A green gate stamps the registry-index `gateAttestation`; a manual index write with no real
-attestation is rejected in CI. The registry index is the generator **allowlist** — see
-`registry/schema` (`assertKnownModule`).
+The registry index is **rebuilt from the published registry by a CI-only job**, never hand-edited;
+`gateAttestation` records provenance, not access. The index is the generator **allowlist** —
+`registry/schema` (`loadRegistryIndex` → `assertKnownModule` + `assertKnownVersion`).
 
 ## Schema source
 
-The manifest + index Zod schemas are canonical in `registry/schema/` and re-exported from
-`src/index.ts`. (Build note: those files import `zod` via this package's dependency — hoisted to
-the workspace root by Bun.)
+The manifest + index Zod schemas are canonical in `registry/schema/`, re-exported from
+`src/index.ts`. (They import `zod` via this package's dependency — hoisted to the workspace root.)
