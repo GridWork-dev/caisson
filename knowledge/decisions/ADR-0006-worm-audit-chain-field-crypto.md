@@ -12,9 +12,9 @@ its own package or module:
 - **SHA-256 hash chain** — an append-only audit chain over locked versions (the 17a-4
   audit-trail alternative path); the combination is the highest-value compliance feature.
 - **Field encryption** (`field-crypto`) — a column custom-type (encrypt-on-write/decrypt-on-read)
-  + a key-version rotation registry; env-key at base tier, **KMS envelope (per-tenant DEK wrapped
-  by a KEK) at the SOC2 tier** — the column type is the abstraction boundary, so the swap touches
-  key management only.
+  - a key-version rotation registry; env-key at base tier, **KMS envelope (per-tenant DEK wrapped
+    by a KEK) at the SOC2 tier** — the column type is the abstraction boundary, so the swap touches
+    key management only.
 
 The **SOC2/HIPAA evidence-pack generator** maps controls → evidence and emits a signed ZIP (the
 recurring-value lever: framework updates as a subscription).

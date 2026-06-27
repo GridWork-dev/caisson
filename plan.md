@@ -6,6 +6,7 @@ lists tasks + an **exit gate** (the verify). `tooling/` standards seam first; th
 production-standards pipeline is a **separate dedicated session** (D9) — P0 fixes the seam only.
 
 ## P0 — Foundations
+
 - T0.1 Monorepo init: Bun workspaces + Turborepo + changesets (ADR-0001).
 - T0.2 `tooling/`: eslint-config + tsconfig + testing harness + the lint-gate (ADR-0002).
 - T0.3 `kernel`: typed config/schema + validator (← gridwork-core).
@@ -13,6 +14,7 @@ production-standards pipeline is a **separate dedicated session** (D9) — P0 fi
 - **Exit:** a package builds, lints, tests; standards gate green; `bun run check` clean.
 
 ## P1 — Base substrate
+
 - T1.1 `auth` (← gridwork) · T1.2 `tenancy-rls` fail-closed (← gwdigital, ADR-0005) ·
   T1.3 `billing` (MoR/Stripe) · T1.4 `credits` integer wallet + append-only ledger + 402 (ADR-0007) ·
   T1.5 `ai-config` provider-agnostic (ADR-0011) · T1.6 `mcp-server` auth-gated (ADR-0008) ·
@@ -22,6 +24,7 @@ production-standards pipeline is a **separate dedicated session** (D9) — P0 fi
   debit is atomic + idempotent; the buyer MCP answers an authed query.
 
 ## P2 — Compliance edition (hero)
+
 - T2.1 `audit-worm` (S3 Object-Lock + SHA-256 hash chain, ADR-0006) · T2.2 `field-crypto`
   (column custom-type + key-version registry) · T2.3 append-only versioning (supersede-never-mutate) ·
   T2.4 `compliance`: config-as-code module registry + golden-file harness + **SOC2/HIPAA
@@ -31,6 +34,7 @@ production-standards pipeline is a **separate dedicated session** (D9) — P0 fi
   hash-chained; field encryption round-trips; unresolved flags block generation.
 
 ## P3 — AI Production Kit
+
 - T3.1 token-metering (PG-atomic) · T3.2 per-tenant spend caps + circuit breaker ·
   T3.3 eval-harness + CI gate · T3.4 versioned prompt registry · T3.5 guardrails
   (input/output moderation, PII redaction) · T3.6 agent-assisted setup (the coach).
@@ -38,6 +42,7 @@ production-standards pipeline is a **separate dedicated session** (D9) — P0 fi
   the agent configures providers from a settings file end-to-end.
 
 ## P4 — Local-first AI + Agentic-Dev
+
 - T4.1 `local-ai`: compute seam + privacy gate + sqlite-vec ANN + offline Ed25519 license
   (← tessera) · T4.2 local canonical store (← health-service) · T4.3 `agent-dev`: typed
   agent/skill/rule schema + lifecycle state machine + local hybrid memory + hooks (← gridwork-core).
@@ -45,6 +50,7 @@ production-standards pipeline is a **separate dedicated session** (D9) — P0 fi
   license verifies offline; the kernel drives one lifecycle act.
 
 ## P5 — Generator + registry (Option C)
+
 - T5.1 `registry/`: versioned module sources + publish flow (the standards-gate is the only
   path in) · T5.2 `cli` `create-stack`: compose a repo from a selection · T5.3 agent-driven
   generation via the MCP server · T5.4 codegen-credit metering on each generation.
@@ -52,6 +58,7 @@ production-standards pipeline is a **separate dedicated session** (D9) — P0 fi
   credit debit is recorded; the CLI path produces the same output.
 
 ## P6 — Commerce + support + docs
+
 - T6.1 `services/license`: Ed25519 issuer + MoR webhook + credit grants (idempotent) ·
   T6.2 entitlement/registry-access on purchase · T6.3 `services/support-bot` (Discord + Python
   LLM dispatch + codebase RAG + hosted inference, cloud-runner deploy, ADR-0009) · T6.4
@@ -60,10 +67,12 @@ production-standards pipeline is a **separate dedicated session** (D9) — P0 fi
   and escalates a tagged ticket with an AI brief; docs feed both bot + buyer agents.
 
 ## P7+ — Round-out (roadmap)
+
 Compliance vertical packs (legal-doc, fin-ops, certified-payroll, EU-AI-Act Annex-IV) · AI-feature
 packs · local-first verticals · the module marketplace (per-module commerce at scale).
 
 ## Cross-phase invariants (every task)
+
 TS strict · Zod `.strict()` boundaries · integer credits · append-only versions · fail-closed RLS ·
 `fetchWithTimeout` · `crypto.timingSafeEqual` for secrets/licenses · no `any`/`console.log` ·
 conventional atomic commits · golden-file regression before compliance logic · pro-private firewall held.

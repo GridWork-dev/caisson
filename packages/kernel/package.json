@@ -3,5 +3,30 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Governance kernel: typed config/agent/skill/rule schema + validator + lint-gate."
+  "description": "Governance kernel: typed config loader, the StackError model (ADR-0019), security primitives, and the standards gate (ADR-0016).",
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "stack-gate": "./src/gate.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "bun test ./src"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@stack/eslint-config": "workspace:*",
+    "@stack/testing": "workspace:*",
+    "@stack/tsconfig": "workspace:*",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.0"
+  }
 }

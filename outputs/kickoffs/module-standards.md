@@ -16,17 +16,19 @@ through it; editions are compositions (ADR-0003); generation is credit-metered (
 is to DEFINE that gate + pipeline — not to relitigate the architecture.
 
 ## Goal
+
 Specify and scaffold the **module production pipeline**: the module manifest schema, the authoring
 conventions, the golden-file validation, the version/publish flow, and the CI lint gates that make
 "ships only through the standards gate" real. Output: ADRs + the `tooling/` + `registry/` scaffolding
 (definitions/configs, not edition code).
 
 ## Do
+
 1. **Module manifest + authoring spec** — what every registry module declares (name, semver,
    edition membership, OSS|paid license, price, dependencies, entry points, AGENTS.md), and the
    authoring conventions every module follows (per ADR-0002).
 2. **Golden-file validation** — coordinate with the foundations track's ADR-0013 (testing/golden-file
-   harness); define what a *module's* golden fixture is and how the publish flow runs it.
+   harness); define what a _module's_ golden fixture is and how the publish flow runs it.
 3. **Version + publish flow** — changesets policy per module; the publish path that is the ONLY
    registry ingress; backfill plan ("publish P2–P4 packages as the initial registry module set").
 4. **Resolve the standards/lint review gaps** (from `outputs/research/review-findings.json`,
@@ -44,6 +46,7 @@ conventions, the golden-file validation, the version/publish flow, and the CI li
    and a `registry/` manifest schema + README.
 
 ## Rules
+
 Never auto-decide a fork (board it). This is mostly spec + tooling config — no edition feature code.
 Coordinate the golden-file harness definition with the foundations track (shared artifact — don't
 double-define; reference ADR-0013). Atomic conventional commits (`feat(tooling): …`, `docs(adr): …`).
