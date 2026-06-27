@@ -20,7 +20,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "eslint schema scripts worker",
-    "test": "bun test schema scripts worker"
+    "test": "bun test ./schema ./scripts ./worker"
   },
   "dependencies": {
     "zod": "^3.23.8"

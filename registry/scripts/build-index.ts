@@ -1,8 +1,11 @@
 // The registry index builder (ADR-0021/0047) — CI-only. Regenerates `registry/index.json`
 // DETERMINISTICALLY from the git-tracked version ledger `registry/ledger.jsonl`. The index is never
 // hand-appended: a CI job runs this and fails if the committed file is not byte-identical to a fresh
-// rebuild (proving the file is CI-built; CODEOWNERS gates hand-edits). The ledger stores each gated
-// publish's HISTORICAL manifest snapshot, which a live registry enumeration could not recover.
+// rebuild — that byte-identical check DETECTS any hand-edit (it goes red). PREVENTION (blocking the
+// merge of a red rebuild) additionally needs branch protection with the `registry-index` job
+// required + CODEOWNERS on a real handle — an operator GitHub setting tracked on the forks board.
+// The ledger stores each gated publish's HISTORICAL manifest snapshot, which a live registry
+// enumeration could not recover.
 //
 // Determinism: no Date.now() (publishedAt comes from the ledger), modules sorted by id, versions
 // sorted by semver ascending, fixed key order, 2-space JSON + trailing newline.
@@ -43,12 +46,19 @@ export function parseLedger(text: string): LedgerEntry[] {
   return entries;
 }
 
-/** Compare two semver core strings (x.y.z[-pre]); release > prerelease; numeric core compare. */
+/** Compare two semver strings (x.y.z[-pre][+build]); release > prerelease; numeric core compare.
+ *  Build metadata is ignored in precedence (SemVer §10); the FULL prerelease string compares (so
+ *  `-alpha-1` vs `-alpha-2` are distinct, not truncated at the first hyphen). */
 export function compareSemver(a: string, b: string): number {
   const core = (v: string): { nums: number[]; pre: string | null } => {
-    const [main, pre] = v.split("-", 2);
-    const nums = (main as string).split(".").map((n) => Number.parseInt(n, 10));
-    return { nums, pre: pre ?? null };
+    // Strip build metadata first (everything from the first `+`), then split on the FIRST hyphen
+    // only — the prerelease may itself contain hyphens (`1.0.0-alpha-1`).
+    const noBuild = (v.split("+", 1)[0] as string).trim();
+    const dash = noBuild.indexOf("-");
+    const main = dash < 0 ? noBuild : noBuild.slice(0, dash);
+    const pre = dash < 0 ? null : noBuild.slice(dash + 1);
+    const nums = main.split(".").map((n) => Number.parseInt(n, 10));
+    return { nums, pre };
   };
   const ca = core(a);
   const cb = core(b);

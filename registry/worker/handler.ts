@@ -53,8 +53,11 @@ export function createIndexHandler(
 
     const modMatch = /^\/modules\/(.+)$/.exec(path);
     if (modMatch) {
-      const id = decodeURIComponent(modMatch[1] as string);
+      let id: string;
       try {
+        // decodeURIComponent throws URIError on malformed %-encoding (e.g. `/modules/%ZZ`) — it
+        // MUST be inside the guard, else the handler 500s instead of returning 404.
+        id = decodeURIComponent(modMatch[1] as string);
         assertKnownModule(validated, id); // throws on malformed OR unknown id
       } catch {
         return json({ error: "unknown_module" }, 404);

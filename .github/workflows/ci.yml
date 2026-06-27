@@ -54,11 +54,12 @@ jobs:
       # Slow golden-file / testcontainers matrices land here once the compliance
       # edition (P2) has code — kept CI-only, never in the pre-commit hook.
 
-  # registry/ is not a workspace member, so its tests do not run under turbo (`bun run check`).
-  # This job runs them AND proves the index is CI-built: rebuilding from the git-tracked ledger must
-  # reproduce the committed registry/index.json byte-for-byte (ADR-0021/0047). A hand-edited index
-  # (or a stale rebuild) fails `git diff --exit-code`. Runs on every PR — CODEOWNERS is the human
-  # gate, this is the machine gate. The publish step that APPENDS to the ledger is P5 (below).
+  # registry/ tests also run under turbo (`bun run check`, the `check` job); this job is the
+  # PROVENANCE proof: rebuilding from the git-tracked ledger must reproduce the committed
+  # registry/index.json byte-for-byte (ADR-0021/0047). A hand-edited index (or a stale rebuild) fails
+  # `git diff --exit-code`. This is the machine gate — it DETECTS tampering (goes red); PREVENTION
+  # (blocking the merge) needs this job marked a required check + CODEOWNERS on a real handle +
+  # branch protection (operator GitHub settings; forks board). The ledger APPEND step is P5 (below).
   registry-index:
     runs-on: ubuntu-latest
     steps:

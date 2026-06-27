@@ -44,6 +44,13 @@ describe("registry read Worker handler (ADR-0047 seam)", () => {
     expect(res.status).toBe(404);
   });
 
+  test("a malformed %-encoding is 404, not a 500 (URIError guarded)", () => {
+    // decodeURIComponent throws URIError on these; the handler must catch → 404, never crash.
+    for (const bad of ["/modules/%", "/modules/%ZZ", "/modules/abc%2"]) {
+      expect(get(bad).status).toBe(404);
+    }
+  });
+
   test("a non-GET method is 405", () => {
     expect(get("/index.json", "POST").status).toBe(405);
   });

@@ -30,7 +30,13 @@ export const Selection = z
     edition: z.enum(EDITIONS).optional(),
     modules: z.array(ModuleSelection).min(1),
   })
-  .strict();
+  .strict()
+  // One id at two versions makes package.json deps (last-wins) disagree with the README (lists
+  // both) — an order-dependent, non-deterministic output. Reject the ambiguity at the boundary.
+  .refine(
+    (s) => new Set(s.modules.map((m) => m.id)).size === s.modules.length,
+    { message: "duplicate module id in selection", path: ["modules"] },
+  );
 export type Selection = z.infer<typeof Selection>;
 
 export interface GeneratedFile {

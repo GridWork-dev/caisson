@@ -127,6 +127,24 @@ describe("generate — allowlist gate (ADR-0021/0048)", () => {
     expect(() => validateSelection(INDEX, { ...VALID, modules: [] })).toThrow();
   });
 
+  test("a duplicate module id (same id, two versions) is rejected", () => {
+    const engine = spyEngine();
+    expect(() =>
+      generate(
+        INDEX,
+        {
+          ...VALID,
+          modules: [
+            { id: "@caisson/credits", version: "0.1.0" },
+            { id: "@caisson/credits", version: "0.2.0" },
+          ],
+        },
+        engine,
+      ),
+    ).toThrow(/duplicate module id/);
+    expect(engine.called).toBe(false);
+  });
+
   test("the generated file set matches its golden", () => {
     matchGolden(
       import.meta.url,

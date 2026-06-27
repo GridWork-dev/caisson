@@ -114,6 +114,15 @@ describe("registry index builder (ADR-0021/0047)", () => {
     expect(compareSemver("1.0.0-alpha", "1.0.0")).toBe(-1);
   });
 
+  test("compareSemver keeps multi-segment prereleases distinct and ignores build metadata", () => {
+    // FIRST-hyphen split: the prerelease may contain hyphens — must not collapse to equal.
+    expect(compareSemver("1.0.0-alpha-1", "1.0.0-alpha-2")).toBe(-1);
+    expect(compareSemver("1.0.0-alpha-2", "1.0.0-alpha-1")).toBe(1);
+    // Build metadata (SemVer §10) does not affect precedence.
+    expect(compareSemver("1.0.0-rc.1+build1", "1.0.0-rc.1+build2")).toBe(0);
+    expect(compareSemver("1.0.0+a", "1.0.0+b")).toBe(0);
+  });
+
   test("the ledger rebuilds into the committed index (golden = the file itself)", () => {
     const fromLedger = buildIndex(
       parseLedger(
