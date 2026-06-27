@@ -50,6 +50,17 @@
     "packages/credits": {
       "name": "@stack/credits",
       "version": "0.0.0",
+      "dependencies": {
+        "@stack/kernel": "workspace:*",
+        "@stack/tenancy-rls": "workspace:*",
+      },
+      "devDependencies": {
+        "@stack/eslint-config": "workspace:*",
+        "@stack/testing": "workspace:*",
+        "@stack/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
     },
     "packages/email": {
       "name": "@stack/email",
@@ -91,6 +102,16 @@
     "packages/tenancy-rls": {
       "name": "@stack/tenancy-rls",
       "version": "0.0.0",
+      "dependencies": {
+        "@stack/kernel": "workspace:*",
+      },
+      "devDependencies": {
+        "@stack/eslint-config": "workspace:*",
+        "@stack/testing": "workspace:*",
+        "@stack/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
     },
     "packages/ui": {
       "name": "@stack/ui",

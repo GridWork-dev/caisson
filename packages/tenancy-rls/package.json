@@ -3,5 +3,27 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Fail-closed multi-tenant Postgres RLS (FORCE policies + schema test)."
+  "description": "Fail-closed multi-tenant Postgres RLS (FORCE policies + withTenant + a missing-filter proof). ADR-0005.",
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@stack/kernel": "workspace:*"
+  },
+  "devDependencies": {
+    "@stack/eslint-config": "workspace:*",
+    "@stack/testing": "workspace:*",
+    "@stack/tsconfig": "workspace:*",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.0"
+  }
 }
