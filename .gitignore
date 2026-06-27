@@ -8,3 +8,9 @@ dist/
 !.env.example
 coverage/
 .DS_Store
+
+# local design / test artifacts + hook session logs
+.playwright-mcp/
+studio-*.png
+outputs/streams/
+docs/session-logs/

@@ -1,0 +1,7 @@
+{
+  "name": "@stack/license",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Ed25519 license issuer + MoR webhook + credit grants (scaffold stub)."
+}

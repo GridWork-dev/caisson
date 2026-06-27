@@ -1,0 +1,13 @@
+node_modules/
+.next/
+dist/
+.turbo/
+coverage/
+bun.lock
+# generated, drift-guarded by gen-tokens-css.ts
+packages/ui/styles/tokens.css
+# local artifacts
+.playwright-mcp/
+*.png
+outputs/streams/
+docs/session-logs/

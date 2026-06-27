@@ -1,0 +1,7 @@
+{
+  "name": "@stack/docs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "AI-native docs surface (scaffold stub)."
+}
