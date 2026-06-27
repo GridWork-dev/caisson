@@ -1,7 +1,25 @@
 # SUMMARY — capability corpus → market → scoped library
 
 Clean consolidation of the whole job (2026-06-27). Full detail in the per-phase artifacts
-(see index). Gates 1–4 cleared; scaffold (Phase 6) next.
+(see index). Gates 1–4 cleared; scaffold + P0/P1 build + reconcile **done** (below).
+
+## Build state (post-reconcile, 2026-06-27)
+
+Three parallel build tracks merged onto `main` via one integration pass + the full **Caisson**
+rename:
+
+- **P0 foundations** — `tooling/` standards gate + `kernel` + golden harness + CI.
+- **P1 base substrate** — `auth · tenancy-rls · credits · billing · ai-config · mcp-server · ui ·
+jobs · email` + `apps/base` reference (real-HTTP 402→grant→200→MCP loop).
+- **D9 module pipeline** — manifest + registry schema + standards gate (AGPL/down-only/declarations)
+  - import-boundary lint, **fully-commercial licensing** locked.
+- **Brand** — name **Caisson** (`@caisson/*`, `caisson.sh`), compliance-wedge hero, design
+  foundation (palette A + Structural type), studio decision-surface app.
+
+ADR collisions across tracks reconciled (0013/0014/0023 → see decisions-log D22). `bun run check`
+= 44/44 turbo tasks + standards gate green; turbo pinned `~2.5.x` (2.10 SIGBUS locally). Hosting =
+Cloudflare Pages on `caisson.sh` (Terraform in `infra/`); docs = single Next site + MDX. Editions
+P2–P4 + generator/registry runtime (P5) + services (P6) remain.
 
 ## What we did
 
@@ -31,12 +49,16 @@ editions (one-time) + bundle + **per-module à-la-carte** + **subscription/credi
 
 **Build plan:** P0 foundations → P1 base → P2 compliance → P3 AI-kit → P4 local-first+agentic → P5 generator → P6 commerce+support+docs → P7+ round-out. Exit gate per phase, no dates.
 
-## DEFERRED / OPEN (explicitly NOT locked)
+## LOCKED since (was deferred)
 
-- **Positioning / hero / voice / name / branding** → a **dedicated future session** (research best hero across ALL differentiators, not AI-only; refine voice). "AI production codebase starter" + "Forge" = provisional only.
-- **Module production-standards + item pipeline** → **authored** in the D9 session (ADR-0020 manifest · ADR-0021 publish flow · ADR-0022 lint gates; `tooling/standards-gate` + `registry/schema`), pending operator lock.
+- **Positioning / hero / voice / name / design** → **LOCKED** (ADR-0040 hero · ADR-0041 name **Caisson** · ADR-0042 design · `specs/04` voice). The old "AI production codebase starter" / "Forge" frame is superseded.
+- **Module production-standards pipeline** → **LOCKED** (ADR-0020 manifest · ADR-0021 publish flow · ADR-0022 lint gates · ADR-0023 fully-commercial licensing; `tooling/standards-gate` + `registry/schema`).
+- **Docs tooling + hosting** → **LOCKED** — single Next site + MDX, hosted on Cloudflare Pages (`caisson.sh` zone via Terraform in `infra/`).
+
+## STILL OPEN (not locked)
+
 - **Pricing numbers** = working anchors, refine pre-launch.
-- **Docs tooling** (Mintlify vs self-host) → build-time ADR.
+- **App framework per edition** — decided when each edition's app is built.
 
 ## Guardrails held throughout
 

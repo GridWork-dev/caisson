@@ -150,3 +150,13 @@ Short, dated, append-only. Why each non-obvious call was made.
 - **D21 — ADR numbering claim.** Positioning took ADR-0040 + ADR-0041; the foundations track's
   technical ADRs (testing/db/auth/CI/MoR per the completeness review) continue at ADR-0015+ to
   avoid a merge collision.
+- **D22 — Integration reconcile (operator).** Three parallel tracks (foundations, module-standards,
+  positioning) merged onto `main` in one integration pass. Cross-track ADR-number collisions
+  resolved by context (testing/db/fully-commercial-licensing keep their numbers; the movers:
+  credit-idempotency 0023→0024, positioning-hero 0013→0040, product-name 0014→0041, design 0040→0042).
+  Full **Caisson** rename applied (`@stack/*`→`@caisson/*`, `StackError`→`CaissonError`,
+  `LicenseRef-Stack-Commercial`→`LicenseRef-Caisson-Commercial`, `create-stack`→`create-caisson`,
+  `caisson-gate`); locked ADRs 0001-0012 + this research log left as historical provenance.
+  ui/studio reconciled to the foundations standards gate; turbo pinned `~2.5.x` (2.10 SIGBUS-crashes
+  locally). Hosting LOCKED: Cloudflare Pages on `caisson.sh` (Terraform `infra/`); docs = single
+  Next site + MDX. `bun run check` green (44/44 + gate).
