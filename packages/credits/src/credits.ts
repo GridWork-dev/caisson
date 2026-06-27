@@ -1,4 +1,4 @@
-// Credit wallet operations (ADR-0007/0020). Integer-only. Debit-before-spend: the debit is
+// Credit wallet operations (ADR-0007/0023). Integer-only. Debit-before-spend: the debit is
 // recorded and the balance decremented atomically BEFORE the caller does the paid work; an empty
 // or short balance throws 402 and nothing is recorded. Idempotency uses `ON CONFLICT DO NOTHING
 // RETURNING` so a retried grant/debit is absorbed WITHOUT aborting the surrounding transaction

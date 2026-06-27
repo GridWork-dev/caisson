@@ -1,8 +1,9 @@
-# ADR-0020 — Credit idempotency index (amends ADR-0007)
+# ADR-0023 — Credit idempotency index (amends ADR-0007)
 
 Status: proposed · 2026-06-27 (foundations track; closes the implementation-blocking gap the
 docs-review flagged on ADR-0007 — ADRs are append-only, so this amends-by-superseding the
-idempotency detail of ADR-0007)
+idempotency detail of ADR-0007. Renumbered 0020→0023 to clear the parallel D9 module-standards
+track's ADR-0020..0022 reservation.)
 
 ADR-0007 fixed "DB-anchored idempotency (partial unique index + 23505→idempotent mapping)" but
 did not name the columns. This ADR specifies them, so the `credit_event` ledger is implementable

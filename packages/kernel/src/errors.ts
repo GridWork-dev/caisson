@@ -85,7 +85,7 @@ export class TenancyError extends StackError {
   }
 }
 
-/** Unique-constraint conflict — Postgres 23505 maps here (ADR-0020). */
+/** Unique-constraint conflict — Postgres 23505 maps here (ADR-0023). */
 export class ConflictError extends StackError {
   readonly code = "conflict";
   readonly httpStatus = 409;

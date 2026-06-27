@@ -1,6 +1,6 @@
 // The provider-agnostic domain event (ADR-0017). No Stripe type escapes the package: the rest of
 // the base consumes only DomainBillingEvent. `sourceEventId` is the provider event id — it flows
-// straight into the credit wallet's idempotency key (ADR-0007/0020) so a replayed webhook grants
+// straight into the credit wallet's idempotency key (ADR-0007/0023) so a replayed webhook grants
 // exactly once. `accountId` comes from checkout metadata set at session creation.
 import { z } from "zod";
 import { strictObject } from "@stack/kernel";

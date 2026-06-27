@@ -1,4 +1,4 @@
-// P1 exit-gate proof (ADR-0007/0020): a credit debit is atomic + idempotent; an empty balance is
+// P1 exit-gate proof (ADR-0007/0023): a credit debit is atomic + idempotent; an empty balance is
 // 402; the ledger is append-only; the wallet is tenant-isolated. Composes withTenant + credits.
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import { newTestPg, type TestPg } from "@stack/testing";
