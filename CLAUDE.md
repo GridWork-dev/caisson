@@ -70,7 +70,7 @@ implementation**. The harvestable license kit is taken from PUBLIC `tessera`.
 Conventional commits, atomic, one logical change each. Scopes: `scaffold` `specs` `adr` `state`
 `kickoffs` `tooling` `kernel` — plus, once code starts, per-package: `auth` `tenancy-rls`
 `billing` `credits` `ai-config` `mcp` `ui` `audit-worm` `field-crypto` `compliance` `ai-kit`
-`local-ai` `agent-dev` `cli` `support-bot` `license` `docs`.
+`local-ai` `agent-dev` `cli` `support-bot` `license` `docs` `site` (the `apps/site` marketing+docs app).
 
 ## Relationship to gridwork-core
 

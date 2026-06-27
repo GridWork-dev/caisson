@@ -1,0 +1,42 @@
+{
+  "name": "@caisson/site",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev -p 3030",
+    "build": "next build && node scripts/normalize-export.mjs",
+    "start": "next start -p 3030",
+    "lint": "eslint .",
+    "test": "bun test ./lib",
+    "preview": "wrangler pages dev out"
+  },
+  "dependencies": {
+    "@caisson/ui": "workspace:*",
+    "@orama/orama": "^3.1.18",
+    "culori": "^4.0.1",
+    "fumadocs-core": "^16.10.6",
+    "fumadocs-mdx": "^15.0.13",
+    "fumadocs-ui": "^16.10.6",
+    "next": "^16.2.9",
+    "next-plausible": "^4.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "@tailwindcss/postcss": "^4.3.1",
+    "@types/culori": "^2.1.1",
+    "@types/mdx": "^2.0.13",
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "eslint": "^9.13.0",
+    "tailwindcss": "^4.3.1",
+    "typescript": "^5.7.3",
+    "wrangler": "^3.90.0"
+  }
+}
