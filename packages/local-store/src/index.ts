@@ -4,6 +4,6 @@
 // No vendor SDK, no LLM call: the embedding that produces a query/doc vector is an injected SEAM the
 // consuming edition wires; this package only stores and fuses.
 //
-// Scaffold barrel — `src/store.ts` (the hybrid retrieval) and `src/tenant-db.ts` (the file-per-tenant
-// resolver) land in the follow-up tasks (ADR-0067 logic, ADR-0073 isolation floor) and export here.
-export {};
+// `src/tenant-db.ts` (the file-per-tenant resolver, ADR-0073) lands in the follow-up task and exports here.
+export { LocalStore, RRF_K } from "./store.ts";
+export type { StoreDoc, HybridSearchOptions, SearchHit } from "./store.ts";
