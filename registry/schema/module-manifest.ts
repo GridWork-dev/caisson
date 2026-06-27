@@ -24,17 +24,12 @@ export const EDITIONS = [
 
 /**
  * Curated SPDX allowlist (a free string lets "Apache 2.0"/"MITT"/"Proprietary" through). The model
- * is FULLY COMMERCIAL (ADR-0023, supersedes ADR-0010's open-core base): every module is the
- * proprietary `LicenseRef-Caisson-Commercial` EXCEPT the AGPL Local-first flank — the one deliberate
- * open community play. No permissive/free tier (Apache/MIT removed). Extend deliberately.
+ * is UNIFORM FULLY-COMMERCIAL (ADR-0050, supersedes the ADR-0023 AGPL Local-first flank): every
+ * module — including Local-first AI — ships the proprietary `LicenseRef-Caisson-Commercial`. No
+ * AGPL/copyleft, no permissive/free tier anywhere in the tree (the lone open flank is retired).
+ * Extend deliberately.
  */
-export const SPDX_LICENSES = [
-  "LicenseRef-Caisson-Commercial",
-  "AGPL-3.0-only",
-  "AGPL-3.0-or-later",
-] as const;
-
-const isAgplSpdx = (l: string): boolean => l.startsWith("AGPL");
+export const SPDX_LICENSES = ["LicenseRef-Caisson-Commercial"] as const;
 
 const semver = z
   .string()
@@ -95,24 +90,16 @@ export const ModuleManifest = z
     message: "an edition module must declare its edition membership",
     path: ["editions"],
   })
-  // AGPL ⟺ local-first: in this product AGPL is the local-ai flank ONLY (ADR-0010). Both
-  // directions — a local-ai module must be AGPL; an AGPL module must be local-ai.
-  .refine((m) => m.editions.includes("local-ai") === isAgplSpdx(m.license), {
+  // tier ⟺ license (ADR-0050 uniform-commercial, supersedes the ADR-0023 paid⟺Commercial / oss⟺AGPL
+  // split): the SPDX allowlist is commercial-only, so the sole valid tier is `paid`. The `oss` tier
+  // (ADR-0023) now has NO valid license and is DEAD by construction — it can never satisfy this
+  // refine, so no module may ship `oss`. The former AGPL⟺local-ai carve-out is retired (ADR-0050):
+  // Local-first AI ships LicenseRef-Caisson-Commercial like every other edition.
+  .refine((m) => m.tier === "paid", {
     message:
-      "AGPL license ⟺ local-ai edition membership (ADR-0010): local-ai modules must be AGPL, and only they may be",
-    path: ["license"],
-  })
-  // tier ⟺ license (ADR-0023 fully-commercial): paid ⟺ LicenseRef-Caisson-Commercial; oss ⟺ AGPL.
-  // Stops a paid module shipping under a permissive/redistributable license.
-  .refine(
-    (m) =>
-      (m.tier === "paid") === (m.license === "LicenseRef-Caisson-Commercial"),
-    {
-      message:
-        "tier ⟺ license (ADR-0023): paid modules MUST be LicenseRef-Caisson-Commercial; oss MUST be AGPL",
-      path: ["license"],
-    },
-  );
+      "tier must be `paid` under the uniform-commercial model (ADR-0050): every module ships LicenseRef-Caisson-Commercial; the `oss` tier is dead (no valid non-commercial license).",
+    path: ["tier"],
+  });
 
 export type ModuleManifest = z.infer<typeof ModuleManifest>;
 /** The authoring shape — fields with Zod defaults (editions/entry/agents/golden/…) are optional. */
