@@ -5,13 +5,13 @@ Clean consolidation of the whole job (2026-06-27). Full detail in the per-phase 
 
 ## What we did
 
-| Phase | Output | Result |
-|---|---|---|
-| 1 — Capability mining | mined 15 repos (14 lab + cloned media-pipeline) → `capability-corpus.md` | portfolio clusters into 5 capability areas; strongest = compliance (Wardfile) + local-first AI (tessera) |
-| 2 — Market research | DataForSEO demand (reused prospector adapters) + Exa scan (6 angles) + 5 spine deep-dives + support research → `market-research.md`, `demand-signals.md`, `support-strategy.md` | compliance CPC 10–50× everything at low KD; generic boilerplate saturated/collapsing; recurring revenue = compliance-updates + AI-credits |
-| 3 — Scope (picker) | locks → `decisions-log.md` D13 | monorepo · Option C · all-4-editions · compliance/SOC2-HIPAA lead · custom support-bot |
-| 4 — Options | 3 architectures → `options.md` | **Option C** picked (composable packages + generator/registry) |
-| 5 — Specs | `specs/` + `plan.md` + 12 ADRs | features/architecture **locked** (Gate 4) |
+| Phase                 | Output                                                                                                                                                                          | Result                                                                                                                                    |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 — Capability mining | mined 15 repos (14 lab + cloned media-pipeline) → `capability-corpus.md`                                                                                                        | portfolio clusters into 5 capability areas; strongest = compliance (Wardfile) + local-first AI (tessera)                                  |
+| 2 — Market research   | DataForSEO demand (reused prospector adapters) + Exa scan (6 angles) + 5 spine deep-dives + support research → `market-research.md`, `demand-signals.md`, `support-strategy.md` | compliance CPC 10–50× everything at low KD; generic boilerplate saturated/collapsing; recurring revenue = compliance-updates + AI-credits |
+| 3 — Scope (picker)    | locks → `decisions-log.md` D13                                                                                                                                                  | monorepo · Option C · all-4-editions · compliance/SOC2-HIPAA lead · custom support-bot                                                    |
+| 4 — Options           | 3 architectures → `options.md`                                                                                                                                                  | **Option C** picked (composable packages + generator/registry)                                                                            |
+| 5 — Specs             | `specs/` + `plan.md` + 12 ADRs                                                                                                                                                  | features/architecture **locked** (Gate 4)                                                                                                 |
 
 ## LOCKED (features + architecture)
 
@@ -20,6 +20,7 @@ editions (one-time) + bundle + **per-module à-la-carte** + **subscription/credi
 `create-stack` generator the buyer's AI agent drives + a custom AI support bot.
 
 **Editions (all v1), each rebuilt clean from a proven repo:**
+
 - **Compliance** (hero) ← Wardfile — RLS + WORM + audit-chain + field-crypto + SOC2/HIPAA evidence pack
 - **AI Production Kit** ← gridwork + prospector + gridwork-core — provider-agnostic AI config + metering(PG-atomic) + spend-caps/circuit-breaker + eval/CI gate + guardrails + agent-assisted setup
 - **Local-first AI** (AGPL open-core flank) ← tessera + health-service — compute seam + sqlite-vec + offline license
@@ -33,7 +34,7 @@ editions (one-time) + bundle + **per-module à-la-carte** + **subscription/credi
 ## DEFERRED / OPEN (explicitly NOT locked)
 
 - **Positioning / hero / voice / name / branding** → a **dedicated future session** (research best hero across ALL differentiators, not AI-only; refine voice). "AI production codebase starter" + "Forge" = provisional only.
-- **Module production-standards + item pipeline** → a **separate dedicated session** (D9); P0 leaves the `tooling/`+`registry` seam.
+- **Module production-standards + item pipeline** → **authored** in the D9 session (ADR-0020 manifest · ADR-0021 publish flow · ADR-0022 lint gates; `tooling/standards-gate` + `registry/schema`), pending operator lock.
 - **Pricing numbers** = working anchors, refine pre-launch.
 - **Docs tooling** (Mintlify vs self-host) → build-time ADR.
 
