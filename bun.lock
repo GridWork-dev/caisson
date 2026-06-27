@@ -34,6 +34,16 @@
     "packages/auth": {
       "name": "@stack/auth",
       "version": "0.0.0",
+      "dependencies": {
+        "@stack/kernel": "workspace:*",
+      },
+      "devDependencies": {
+        "@stack/eslint-config": "workspace:*",
+        "@stack/testing": "workspace:*",
+        "@stack/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
     },
     "packages/billing": {
       "name": "@stack/billing",
@@ -98,6 +108,17 @@
     "packages/mcp-server": {
       "name": "@stack/mcp-server",
       "version": "0.0.0",
+      "dependencies": {
+        "@stack/kernel": "workspace:*",
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@stack/eslint-config": "workspace:*",
+        "@stack/testing": "workspace:*",
+        "@stack/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
     },
     "packages/tenancy-rls": {
       "name": "@stack/tenancy-rls",
