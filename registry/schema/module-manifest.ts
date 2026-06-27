@@ -23,19 +23,15 @@ export const EDITIONS = [
 ] as const;
 
 /**
- * Curated SPDX allowlist (a free string lets "Apache 2.0"/"MITT"/"Proprietary" through). Base
- * OSS-core = Apache-2.0 (operator-locked); editions = LicenseRef-Stack-Commercial; local-first =
- * AGPL-3.0-only. Extend deliberately.
+ * Curated SPDX allowlist (a free string lets "Apache 2.0"/"MITT"/"Proprietary" through). The model
+ * is FULLY COMMERCIAL (ADR-0023, supersedes ADR-0010's open-core base): every module is the
+ * proprietary `LicenseRef-Stack-Commercial` EXCEPT the AGPL Local-first flank — the one deliberate
+ * open community play. No permissive/free tier (Apache/MIT removed). Extend deliberately.
  */
 export const SPDX_LICENSES = [
-  "Apache-2.0",
-  "MIT",
-  "BSD-3-Clause",
-  "BSD-2-Clause",
-  "ISC",
+  "LicenseRef-Stack-Commercial",
   "AGPL-3.0-only",
   "AGPL-3.0-or-later",
-  "LicenseRef-Stack-Commercial",
 ] as const;
 
 const isAgplSpdx = (l: string): boolean => l.startsWith("AGPL");
