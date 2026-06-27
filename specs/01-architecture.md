@@ -45,7 +45,7 @@ Inherited from gridwork's proven split (ADR-0007):
 
 ## 3. Seller-platform data model (the commerce/licensing/credits spine)
 
-What Forge-the-business runs on (distinct from what a *buyer's* app ships). Multi-tenant, RLS, credit-metered — and itself a reference of the base.
+What Forge-the-business runs on (distinct from what a _buyer's_ app ships). Multi-tenant, RLS, credit-metered — and itself a reference of the base.
 
 ```
 account (buyer/tenant)                      RLS-isolated; member × role (owner|seat)
@@ -83,6 +83,6 @@ module / module_version   the registry: package, semver, changelog, OSS|paid, pr
 
 `tooling/` holds the enforced coding standards (the ground-up strategy). The **module/item
 production-standards pipeline** — how each registry module is authored, validated (golden-file),
-versioned, and published — is a **separate dedicated session**. This spec fixes the *seam*
+versioned, and published — is a **separate dedicated session**. This spec fixes the _seam_
 (`tooling/` + `registry/` + golden-file harness from P0) and the invariant ("a module ships
 only through the standards gate"), not the internal pipeline.

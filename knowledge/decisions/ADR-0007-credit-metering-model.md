@@ -6,7 +6,8 @@ Credits are the universal meter (← gridwork's credit quad, rebuilt clean). A `
 holds an **integer** balance; every grant/debit is an **append-only `credit_event` ledger row**.
 The discipline is **debit-before-spend**: classify the cost, debit atomically, then do the work;
 an empty balance returns **402** and stops. Idempotency is **DB-anchored** (partial unique index
-+ 23505→idempotent mapping) so a retried webhook or double-click never double-grants/debits.
+
+- 23505→idempotent mapping) so a retried webhook or double-click never double-grants/debits.
 
 Credits are granted by: purchase, **subscription monthly allotment**, or top-up pack. Credits are
 debited by: a **`create-stack` generation** (codegen-credits, ADR-0004) and **AI-feature usage**
