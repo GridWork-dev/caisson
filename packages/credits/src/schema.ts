@@ -19,7 +19,7 @@ CREATE TABLE credit_event (
   source_event_id text,
   idempotency_key text,
   created_at timestamptz NOT NULL DEFAULT now(),
-  -- exactly one idempotency source per row (ADR-0023)
+  -- exactly one idempotency source per row (ADR-0024)
   CONSTRAINT credit_event_one_idem CHECK (
     (source_event_id IS NOT NULL)::int + (idempotency_key IS NOT NULL)::int = 1
   ),

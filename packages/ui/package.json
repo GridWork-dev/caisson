@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "LicenseRef-Stack-Commercial",
-  "description": "Typed token floor (ADR-0040 design foundation: palette + type) — OKLCH token objects → generated tokens.css (Wardfile gen-script pattern).",
+  "description": "Typed token floor (ADR-0042 design foundation: palette + type) — OKLCH token objects → generated tokens.css (Wardfile gen-script pattern).",
   "exports": {
     ".": "./src/index.ts",
     "./tokens": "./src/tokens/index.ts",
