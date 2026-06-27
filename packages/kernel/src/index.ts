@@ -71,3 +71,12 @@ export type {
   UsageMetering,
   EvalResult,
 } from "./observability.ts";
+
+export { assembleMigrations } from "./migration-assembly.ts";
+export type {
+  MigrationFile,
+  PackageMigrations,
+  MergedMigration,
+  SchemaVersionEntry,
+  MigrationAssembly,
+} from "./migration-assembly.ts";
