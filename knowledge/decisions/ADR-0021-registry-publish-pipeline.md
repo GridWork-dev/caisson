@@ -33,6 +33,12 @@ forgeable + replayable. Replaced:
   maintainer cannot `changesets publish` past the gate from a laptop.
 - `gateAttestation` (`"<ci-run-id>@<commit-sha>"`) now **records provenance**, it is not the access
   control. Access control is "only CI writes the file + only CI publishes."
+- **Rebuild source of truth + bootstrap:** the index is regenerated from a **git-tracked per-module
+  version ledger** — each gated publish appends `{id, version, manifest, attestation}` to the ledger
+  in the same CI job, and the rebuild reads the ledger (a live GitHub-Packages enumeration can't
+  deterministically recover each version's historical manifest). **Bootstrap:** the index starts
+  empty; the first gated publish writes the first entry — there is no prior index to validate
+  against on a module's first publish (the allowlist is simply empty until then).
 
 ## The publish flow — the ONLY registry ingress
 
@@ -87,6 +93,14 @@ module's first publish" ignored ordering — review MED.)
 
 ## Binding
 
-Nothing enters the registry except via a CI-only gated publish; `registry/index.json` is rebuilt by
-CI only (sole writer); every generation validates module **id + version** against the index allowlist
-before any path/subprocess; each module is independently versioned with `^` internal ranges.
+**Target state (full enforcement lands with the publish/generator code at P5):** nothing enters the
+registry except via a CI-only gated publish; `registry/index.json` is rebuilt by CI only (sole
+writer); every generation validates module **id + version** against the index allowlist before any
+path/subprocess; each module is independently versioned with `^` internal ranges.
+
+**Enforced now (this track):** the standards-gate runs in the CI `standards-gate` job (pre- and
+post-install, ADR-0022); `.github/CODEOWNERS` gates hand-edits to `registry/index.json` + the ADRs +
+the board (requires branch protection + a real owner handle to bite); the allowlist helpers
+(`loadRegistryIndex` / `assertKnownModule` / `assertKnownVersion`) exist for the generator to call.
+The publish step, the CI index-writer job, and the generator itself are P5 — until then the
+target-state bullets are design, not running code.
