@@ -13,15 +13,19 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      # Layer 1 — SPDX/license authority (AGPL boundary + down-only + manifest agreement). Needs
-      # no install for the fs checks; runs even before the workspace fully installs.
-      - name: standards-gate (Bun — AGPL + down-only + declarations + manifest agreement)
+      # Layer 1a — SPDX/license authority, fs-only pass. Runs BEFORE install so AGPL-workspace +
+      # down-only + declarations are checked even if the workspace install is broken.
+      - name: standards-gate (pre-install — AGPL workspace + down-only + declarations)
         run: bun run tooling/standards-gate/src/cli.ts
       - run: bun install --frozen-lockfile
-      # Layer 2 — fast static provider-SDK signal.
+      # Layer 1b — re-run POST-install: this is where checkExternalAgpl + checkManifestAgreement
+      # actually execute (they need node_modules / zod). Without this second run they silently skip.
+      - name: standards-gate (post-install — external-AGPL + manifest↔package.json agreement)
+        run: bun run tooling/standards-gate/src/cli.ts
+      # Layer 2 — fast static provider-SDK signal (needs root eslint.config.js → @stack/eslint-config).
       - name: eslint import boundaries (provider-SDK, ADR-0011/0022)
         run: bunx eslint .
-      # Layer 3 — real module graph: dynamic/transitive provider reach + base→edition direction.
+      # Layer 3 — real module graph: dynamic/transitive provider reach + base↔edition direction.
       - name: dependency-cruiser graph boundaries (ADR-0022)
         run: bunx depcruise packages apps tooling --config .dependency-cruiser.cjs
       # Changeset presence — a module source change must carry a changeset (ADR-0021).

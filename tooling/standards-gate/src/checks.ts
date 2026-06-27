@@ -148,7 +148,12 @@ export async function checkManifestAgreement(pkgs: Pkg[]): Promise<Finding[]> {
   const findings: Finding[] = [];
   for (const p of pkgs) {
     if (!p.manifestPath) continue;
-    let manifest: { id?: string; version?: string; license?: string };
+    let manifest: {
+      id?: string;
+      version?: string;
+      license?: string;
+      dependencies?: string[];
+    };
     try {
       const mod = await import(p.manifestPath);
       manifest = (mod.default ?? mod.manifest ?? mod) as typeof manifest;
@@ -172,6 +177,12 @@ export async function checkManifestAgreement(pkgs: Pkg[]): Promise<Finding[]> {
     mismatch("id", manifest.id, p.name);
     mismatch("version", manifest.version, p.version);
     mismatch("license", manifest.license, p.license);
+    // manifest.dependencies (@stack/*) must match package.json's @stack deps — else the index
+    // (built from the manifest) advertises a dep graph the package doesn't have (down-only runs
+    // on package.json deps, so a divergent manifest array escapes it otherwise).
+    const md = [...(manifest.dependencies ?? [])].sort().join(",");
+    const pd = [...p.workspaceDeps].sort().join(",");
+    mismatch("dependencies", md, pd);
   }
   return findings;
 }
