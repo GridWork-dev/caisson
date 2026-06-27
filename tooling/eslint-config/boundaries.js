@@ -1,27 +1,43 @@
 /**
- * Import-boundary rules (ADR-0022, Gate 2). The provider-SDK boundary (ADR-0011): only
- * `ai-config` + `ai-kit` may import a provider SDK directly; everything else routes inference
- * through `ai-config`. Foundations' base strict config spreads this array (see index.js).
+ * Import-boundary rules (ADR-0022, Gate 2) — the FAST STATIC layer. The provider-SDK boundary
+ * (ADR-0011): only `ai-config` + `ai-kit` may import a provider SDK directly; everything else
+ * routes inference through `ai-config`. Foundations' base strict config spreads this array (index.js).
  *
- * Flat-config order matters: the global ban comes first, the ai-config/ai-kit exemption later
- * (a later matching config wins).
+ * LIMITS (why this is a backstop, not the whole gate, per ADR-0022): `no-restricted-imports` is
+ * STATIC-ONLY — it does not catch `await import("openai")`, `require("openai")`, transitive deps,
+ * or published .js that is never linted. A denylist of provider SDKs is also unwinnable by
+ * construction (new SDKs ship constantly). dependency-cruiser (real module graph, dynamic +
+ * transitive reachability) is the authoritative provider-SDK layer; this catches the obvious case
+ * fast, in-editor.
  */
 
-/** The prohibited provider SDKs. Extend here when a new provider is added to ai-config. */
+/** Prohibited provider SDKs. Keep current — a stale denylist is a hole (ADR-0022). */
 export const PROVIDER_SDKS = [
+  // OpenAI + Azure
   "openai",
+  "@azure/openai",
+  // Anthropic (incl. cloud-vendor SDKs)
   "@anthropic-ai/sdk",
+  "@anthropic-ai/bedrock",
+  "@anthropic-ai/vertex-sdk",
+  // Google Gemini — @google/genai is the current GA SDK; generative-ai is deprecated (both banned)
+  "@google/genai",
   "@google/generative-ai",
+  // AWS Bedrock
   "@aws-sdk/client-bedrock-runtime",
+  // Others
   "@mistralai/mistralai",
   "cohere-ai",
+  "groq-sdk",
+  "replicate",
+  "together-ai",
   "ollama",
 ];
 
 const restrictedPatterns = PROVIDER_SDKS.map((name) => ({
   group: [name, `${name}/*`],
   message:
-    "Provider SDKs may only be imported by @stack/ai-config and @stack/ai-kit (ADR-0011). Route inference through @stack/ai-config.",
+    "Provider SDKs may only be imported by @stack/ai-config and @stack/ai-kit (ADR-0011). Route inference through @stack/ai-config. (dependency-cruiser backstops dynamic/transitive imports.)",
 }));
 
 /** Packages exempt from the provider-SDK ban (the AI config seam itself). */
