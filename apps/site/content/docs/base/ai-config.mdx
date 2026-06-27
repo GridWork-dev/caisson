@@ -1,0 +1,45 @@
+---
+title: AI config
+description: Provider-agnostic AI configuration with agent-assisted setup.
+---
+
+`@caisson/ai-config` is one typed configuration surface for AI providers. It is provider-agnostic:
+the base depends on the config shape, not on a single vendor's SDK, so the driver is swappable
+without touching call sites.
+
+## The contract
+
+Configuration is declared once, validated at the boundary, and read everywhere through the same
+typed accessor — no provider details leak into feature code.
+
+```ts
+import { defineAiConfig } from "@caisson/ai-config";
+
+export default defineAiConfig({
+  provider: "openai-compatible",
+  // Provider-agnostic by construction; the driver behind this is swappable.
+});
+```
+
+Setup is **agent-assisted** — the shipped [MCP server](/docs/base/mcp-server) can drive
+configuration on your behalf, so an AI agent wires the providers instead of you hand-editing every
+field.
+
+<Callout type="warn">
+  The provider driver matrix (which models, which capabilities, which limits) is
+  on the roadmap and not yet locked. Treat the example provider above as
+  illustrative.
+</Callout>
+
+## Related
+
+<Cards>
+  <Card title="MCP server" href="/docs/base/mcp-server">
+    Drives agent-assisted setup, auth-gated and entitlement-scoped.
+  </Card>
+</Cards>
+
+<Callout type="info">
+  This page is a scaffold. The full `@caisson/ai-config` API reference — the
+  config schema and the supported providers — lands at general availability.
+</Callout>

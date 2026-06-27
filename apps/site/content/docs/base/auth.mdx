@@ -1,0 +1,50 @@
+---
+title: Auth
+description: Self-hosted better-auth that owns its Drizzle tables, with an EdDSA-signed JWT and a JWKS cross-plane seam.
+---
+
+`@caisson/auth` wraps [better-auth](https://better-auth.com), self-hosted. It owns its own Drizzle
+tables — users, sessions, accounts — migrated through the same standards gate as the rest of the
+base. There is no third-party identity tenant holding your users.
+
+## The contract
+
+Auth issues **EdDSA-signed JWTs** and publishes a **JWKS** endpoint, so any other plane verifies a
+token without sharing a private secret. The token carries the tenant claim that `withTenant` reads:
+auth is the only producer of that claim, and [`tenancy-rls`](/docs/base/tenancy-rls) is the only
+consumer. That single seam is why a request can cross from the control plane to the data plane
+without a shared-secret handshake.
+
+```ts
+import { auth } from "@caisson/auth";
+
+// EdDSA-signed session token; the public JWKS lets any plane verify it.
+const session = await auth.api.getSession({ headers });
+
+// session.tenantId is the claim tenancy-rls reads — nothing else sets it.
+```
+
+The verifying plane fetches the key set, never a secret:
+
+```bash
+$ curl https://app.example.com/.well-known/jwks.json
+{ "keys": [ { "kty": "OKP", "crv": "Ed25519", "kid": "…", "x": "…" } ] }
+```
+
+## Related
+
+<Cards>
+  <Card title="Tenancy (RLS)" href="/docs/base/tenancy-rls">
+    The sole consumer of the tenant claim. `withTenant` is the only RLS entry
+    point.
+  </Card>
+  <Card title="MCP server" href="/docs/base/mcp-server">
+    Auth-gated tool calls verify the same EdDSA-JWT.
+  </Card>
+</Cards>
+
+<Callout type="info">
+  This page is a scaffold. The full `@caisson/auth` API reference — every
+  export, option, and the JWKS rotation procedure — lands at general
+  availability.
+</Callout>

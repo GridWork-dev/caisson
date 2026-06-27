@@ -1,0 +1,59 @@
+---
+title: field-crypto
+description: Per-tenant field encryption via HKDF key derivation, behind a pluggable FieldKeyProvider KMS port — one tenant's key never decrypts another tenant's data.
+---
+
+`@caisson/field-crypto` encrypts individual fields with a key derived per tenant. A single
+root key lives in your KMS; each tenant's subkey is derived from it with HKDF, using the
+tenant id as the salt. One tenant's key cannot decrypt another tenant's ciphertext — the
+isolation is in the key derivation, not in an application check that could be skipped.
+
+## What it does
+
+- **Per-tenant field encryption** — encrypt and decrypt named fields (a patient SSN, a
+  bank token) scoped to a tenant. The plaintext is never stored.
+- **HKDF key derivation** — per-tenant subkeys are derived deterministically from the KMS
+  root key with HKDF. The tenant id is the salt, so the derivation is reproducible for one
+  tenant and useless for any other.
+
+## The guarantee
+
+The encryption key for tenant A is a pure function of the root key and A's id. There is no
+shared field key, and no path where tenant B's subkey decrypts A's data:
+
+```ts
+import { encryptField, decryptField } from "@caisson/field-crypto";
+
+// tenantId is the HKDF salt — the derived subkey is scoped to this tenant alone.
+const ciphertext = await encryptField(tenantId, patient.ssn);
+const plain = await decryptField(tenantId, ciphertext);
+
+// Same ciphertext, a different tenant's id → derives a different subkey → fails closed.
+await decryptField(otherTenantId, ciphertext); // throws: authentication tag mismatch
+```
+
+## The KMS port
+
+The root key is reached through a `FieldKeyProvider` port. The AWS KMS adapter ships
+today; GCP, Azure, and Vault are a seam — the same port, an adapter to implement.
+
+```ts
+import type { FieldKeyProvider } from "@caisson/field-crypto";
+import { AwsKmsKeyProvider } from "@caisson/field-crypto/aws";
+
+const keys: FieldKeyProvider = new AwsKmsKeyProvider({
+  keyId: process.env.KMS_KEY_ID,
+});
+```
+
+<Callout type="warn" title="Adapters: AWS today, others are a seam">
+  The AWS KMS adapter is shipped. GCP, Azure, and HashiCorp Vault adapters are
+  roadmap — the `FieldKeyProvider` port is stable, so they slot in without
+  touching call sites.
+</Callout>
+
+<Callout type="info" title="Reference docs at GA">
+  This page is the scaffold. The full API reference — the HKDF parameters, the
+  cipher suite, and the `FieldKeyProvider` contract for writing your own adapter
+  — lands at general availability.
+</Callout>

@@ -1,0 +1,56 @@
+---
+title: Kernel
+description: The typed CaissonError hierarchy, the 402 credit-gate shape, the 404 tenancy denial, and the one standards gate.
+---
+
+`@caisson/kernel` is the shared spine every package imports. It defines a typed `CaissonError`
+hierarchy — each failure has a stable, documented shape instead of an ad-hoc string — and hosts the
+**one standards/conformance gate** every package ships through.
+
+## The contract
+
+Two error shapes are load-bearing across the base:
+
+- The **credit gate** raises a **402** with a documented body, not a bare 500.
+- A **tenancy denial returns 404**, not 403 — refusing to confirm a row exists _is_ the policy. There
+  is no existence leak to probe.
+
+```ts
+import { InsufficientCreditsError, NotFoundError } from "@caisson/kernel";
+
+// 402 — the credit gate. Documented body, never a bare 500.
+throw new InsufficientCreditsError({ required: 1, available: 0 });
+
+// Tenancy denial → 404. We never confirm the row exists.
+throw new NotFoundError();
+```
+
+The 402 carries a stable, machine-readable body so an agent can react to it:
+
+```jsonc
+// HTTP 402
+{ "error": "insufficient_credits", "required": 1, "available": 0 }
+```
+
+A package becomes part of the base only by passing the one gate:
+
+```bash
+$ bun run check   # build · lint · test — every package, one gate
+```
+
+## Related
+
+<Cards>
+  <Card title="Credits" href="/docs/base/credits">
+    Raises the 402 credit-gate error defined here.
+  </Card>
+  <Card title="Tenancy (RLS)" href="/docs/base/tenancy-rls">
+    Denials surface as the 404 with no existence leak.
+  </Card>
+</Cards>
+
+<Callout type="info">
+  This page is a scaffold. The full `@caisson/kernel` API reference — the
+  complete CaissonError hierarchy and the conformance-gate rules — lands at
+  general availability.
+</Callout>

@@ -1,0 +1,41 @@
+---
+title: Jobs
+description: A Trigger.dev job port with test drivers — billing and credit side-effects are enqueued, not inline.
+---
+
+`@caisson/jobs` is the background-work port. [Trigger.dev](https://trigger.dev) (self-hostable) is
+the default driver; a test driver runs jobs deterministically under the standards gate, so suites
+assert on job behavior without a queue.
+
+## The contract
+
+**Billing and credit side-effects are enqueued, never run inline** in a request handler. A webhook
+returns fast, and the money-moving work runs as a job — so a dropped connection mid-request never
+leaves a half-applied charge or a half-granted credit.
+
+```ts
+import { enqueue } from "@caisson/jobs";
+
+// The webhook handler returns immediately; the credit grant runs as a job.
+await enqueue("grant-credits", { accountId, sourceEventId });
+```
+
+The same `enqueue` call hits the test driver under `bun run check`, so the enqueue contract is
+verified without standing up Trigger.dev.
+
+## Related
+
+<Cards>
+  <Card title="Credits" href="/docs/base/credits">
+    Grants land idempotently on (source_event_id, event_type).
+  </Card>
+  <Card title="Billing" href="/docs/base/billing">
+    Webhook handlers enqueue rather than charge inline.
+  </Card>
+</Cards>
+
+<Callout type="info">
+  This page is a scaffold. The full `@caisson/jobs` API reference — the job
+  port, the Trigger.dev driver, and the test driver — lands at general
+  availability.
+</Callout>

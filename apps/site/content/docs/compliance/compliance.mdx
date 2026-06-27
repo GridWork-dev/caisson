@@ -1,0 +1,78 @@
+---
+title: compliance
+description: A SOC 2 / HIPAA evidence-pack generator and a config-as-code module registry — each control mapped to a cited clause, the pack signed so an auditor can verify it wasn't edited.
+---
+
+`@caisson/compliance` turns the guarantees the other modules enforce into something you can
+hand an auditor: a signed evidence pack that maps each control to a cited clause, generated
+from a config-as-code registry of the modules in scope. The evidence is the artifact the
+other packages already produce — fail-closed RLS, WORM storage, per-tenant encryption — not
+a questionnaire you fill in by hand.
+
+## What it does
+
+- **Evidence-pack generator** — emits a SOC 2 / HIPAA evidence pack: one entry per control,
+  each citing the clause it satisfies and the module that supplies the evidence. The pack is
+  hashed and signed, so an auditor can confirm it wasn't altered after generation.
+- **Config-as-code module registry** — declare which frameworks and modules are in scope in
+  a typed config file. The registry is version-controlled and diffable; scope changes show up
+  in a pull request, not in a spreadsheet.
+
+## Map controls to modules
+
+```ts
+import { defineComplianceConfig } from "@caisson/compliance";
+
+export default defineComplianceConfig({
+  frameworks: ["soc2", "hipaa"],
+  modules: ["tenancy-rls", "audit-worm", "field-crypto"],
+});
+```
+
+## The signed evidence pack
+
+Generate the pack and each control resolves to a cited clause and a module — for example
+**SOC 2 CC6.1 (logical access)** mapped to fail-closed RLS, and **HIPAA §164.312(a)(1)
+(access control)** mapped to tenancy plus per-tenant field encryption:
+
+```bash
+$ caisson compliance pack --framework soc2
+```
+
+```json
+{
+  "framework": "SOC 2",
+  "generatedAt": "2026-06-27T14:02:11Z",
+  "controls": [
+    {
+      "id": "CC6.1",
+      "title": "Logical access controls",
+      "module": "tenancy-rls",
+      "evidence": "Fail-closed RLS with FORCE on every tenant table",
+      "status": "satisfied"
+    }
+  ],
+  "signature": "sha256:7d8f2a1c…a14e"
+}
+```
+
+The HIPAA pack maps **§164.312(a)(1)** to the same access-control surface — `tenancy-rls`
+for isolation and `field-crypto` for at-rest protection of identifiers.
+
+## The modules behind the evidence
+
+<Cards>
+  <Card title="audit-worm" href="/docs/compliance/audit-worm">
+    WORM evidence storage and the append-only SHA-256 audit chain the pack
+    cites.
+  </Card>
+  <Card title="field-crypto" href="/docs/compliance/field-crypto">
+    Per-tenant field encryption — the evidence for HIPAA §164.312(a)(1) at rest.
+  </Card>
+</Cards>
+
+<Callout type="info" title="Reference docs at GA">
+  This page is the scaffold. The full API reference — the control-to-clause map
+  for every framework, the registry schema, and the signature verification flow
+  — lands at general availability.
+</Callout>

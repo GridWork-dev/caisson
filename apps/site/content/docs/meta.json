@@ -1,5 +1,17 @@
 {
   "title": "Documentation",
   "root": true,
-  "pages": ["index", "getting-started"]
+  "pages": [
+    "index",
+    "getting-started",
+    "---Base substrate---",
+    "base",
+    "---Editions---",
+    "compliance",
+    "ai-kit",
+    "local-first",
+    "agentic-dev",
+    "---Tooling---",
+    "cli"
+  ]
 }

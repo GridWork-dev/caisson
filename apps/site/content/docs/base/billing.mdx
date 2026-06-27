@@ -1,0 +1,43 @@
+---
+title: Billing
+description: Stripe + Stripe Tax behind a BillingProvider port, with HMAC raw-body webhook verification.
+---
+
+`@caisson/billing` wires Stripe and Stripe Tax, with the operator as the merchant of record — Stripe
+Tax computes and collects tax on the sale. Stripe sits behind a `BillingProvider` port, so the rest
+of the base depends on the port, not the vendor.
+
+## The contract
+
+Webhooks are verified against the **raw request body** with a timing-safe HMAC compare. A body that
+has been parsed and re-serialized fails verification — the signature is over the exact bytes Stripe
+sent, not the JSON your framework reconstructed.
+
+```ts
+import { verifyWebhook } from "@caisson/billing";
+
+// Raw body — never the parsed JSON. HMAC compared with timingSafeEqual.
+const event = verifyWebhook(rawBody, req.headers["stripe-signature"]);
+```
+
+Because billing rides a port, a test driver stands in for Stripe under the standards gate — suites
+assert on charge and webhook behavior without a network call.
+
+## Related
+
+<Cards>
+  <Card title="Credits" href="/docs/base/credits">
+    Metered spend rides the integer credit ledger, granted on verified billing
+    events.
+  </Card>
+  <Card title="Jobs" href="/docs/base/jobs">
+    Money-moving side-effects are enqueued, not run inline in the webhook
+    handler.
+  </Card>
+</Cards>
+
+<Callout type="info">
+  This page is a scaffold. The full `@caisson/billing` API reference — the
+  `BillingProvider` port, the Stripe driver, and the webhook event map — lands
+  at general availability.
+</Callout>
