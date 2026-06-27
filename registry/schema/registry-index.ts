@@ -6,7 +6,7 @@
 import { z } from "zod";
 import { ModuleManifest } from "./module-manifest";
 
-const MODULE_ID_RE = /^@stack\/[a-z0-9-]+$/;
+const MODULE_ID_RE = /^@caisson\/[a-z0-9-]+$/;
 const semver = z
   .string()
   .regex(

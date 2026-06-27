@@ -44,7 +44,7 @@ const semver = z
   );
 const moduleId = z
   .string()
-  .regex(/^@stack\/[a-z0-9-]+$/, "must be @caisson/<slug>");
+  .regex(/^@caisson\/[a-z0-9-]+$/, "must be @caisson/<slug>");
 // entry/agents/golden are consumed by create-caisson into paths — must be relative, no `..`
 // traversal, no absolute (ADR-0021 input-validation; closes a future path surface).
 const relPath = z
