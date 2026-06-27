@@ -1,5 +1,5 @@
 /* GENERATED — packages/ui/scripts/gen-tokens-css.ts. Do not edit by hand.
- * Locked selection: palette "a", type "1". Run: bun run gen:tokens */
+ * Locked selection: palette "a", type "2". Run: bun run gen:tokens */
 
 :root,
 [data-theme="dark"] {
@@ -23,8 +23,8 @@
   --cs-danger: oklch(0.65 0.18 25);
   --cs-info: oklch(0.70 0.12 240);
   /* type */
-  --cs-font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
-  --cs-font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", monospace;
+  --cs-font-sans: "Hubot Sans", ui-sans-serif, system-ui, sans-serif;
+  --cs-font-mono: "Martian Mono", ui-monospace, "SFMono-Regular", monospace;
   --cs-text-xs: 0.75rem;
   --cs-text-sm: 0.875rem;
   --cs-text-base: 1rem;

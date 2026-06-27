@@ -26,6 +26,7 @@ operator. Never auto-decide a fork.
 | **Compliance-update subscription** | Own SKU $149–299/mo, split from $49–199/mo dev credits                                                                     | ADR-0013 (supersedes ADR-0012 sub line) |
 | **EU AI Act Annex IV**             | Gated paid add-on module (à-la-carte + sub); empty registry slot scaffolded in P2; US frameworks lead core; sell worldwide | ADR-0013                                |
 | **Voice & brand**                  | Evidence-forward pro-tool; tagline "Compliance-grade infrastructure for regulated SaaS"; banned-word list                  | specs/04, ADR-0013                      |
+| **Design foundation**              | Palette **A** cold-steel teal + Type **2** Structural (Hubot Sans + Martian Mono); OKLCH token contract, WCAG AA           | ADR-0023, DESIGN.md, `apps/studio`      |
 | Reference-app stack                | Framework-agnostic core; app framework deferred per edition                                                                | —                                       |
 
 ## Open (waiting on operator — DO NOT auto-decide)
@@ -38,6 +39,8 @@ operator. Never auto-decide a fork.
 | **App framework per edition**                   | Next.js / TanStack Start / Hono — decided when each edition's app is built                                     | operator |
 | **Domain purchase**                             | `caisson.sh` (~$45/yr) + claim `@caisson` npm org — operator action (external side-effect)                     | operator |
 
-> **ADR numbering:** the positioning session claimed **ADR-0013 / ADR-0014**. The foundations
-> track's technical ADRs (testing, db/orm, auth, CI, billing/MoR — review-findings completeness
-> gaps) continue at **ADR-0015+** to avoid a number collision at merge.
+> **ADR numbering (parallel-track allocation):** positioning/brand (this track) = **0013–0014**;
+> foundations technical (testing, db/orm, auth, CI, billing/MoR) = **0015–0019**; module-standards
+> (manifest/publish/lint-gates) = **0020–0022** (authored, pending lock); design-system foundation
+> (palette/type) = **ADR-0023** (this track). New ADRs: claim the next free number in your track's
+> block and record it here to avoid a merge collision.

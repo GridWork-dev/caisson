@@ -5,6 +5,10 @@
 > studio renders real tokens to lock the as-built system. Floor: `specs/03-design-framework.md`
 > (dark pro-tool center, typed token contract) + `specs/04-voice-and-brand.md` (voice).
 
+> **LOCKED selection (operator, 2026-06-27 — ADR-0023):** Palette **A** "Caisson cold-steel teal" +
+> Type **2** "Structural" (Hubot Sans + Martian Mono). Live in `theme.ts` `SELECTED_*` →
+> `tokens.css`. The candidate sets below stay on record (append-only); the lock is the pointer.
+
 ## Visual theme
 
 A **dark, technical, pro-tool aesthetic** that reads as production-grade infrastructure, not a
