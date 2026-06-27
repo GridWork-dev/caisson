@@ -3,5 +3,28 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Integer credit wallet + append-only ledger + debit-before-spend (402)."
+  "description": "Integer credit wallet + append-only ledger + debit-before-spend (402, idempotent). ADR-0007/0020.",
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@stack/kernel": "workspace:*",
+    "@stack/tenancy-rls": "workspace:*"
+  },
+  "devDependencies": {
+    "@stack/eslint-config": "workspace:*",
+    "@stack/testing": "workspace:*",
+    "@stack/tsconfig": "workspace:*",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.0"
+  }
 }
