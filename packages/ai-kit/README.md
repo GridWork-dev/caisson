@@ -1,4 +1,4 @@
-# @stack/ai-kit
+# @caisson/ai-kit
 
 AI Production Kit edition: metering(PG-atomic) + spend-caps/circuit-breaker + eval/CI gate + prompt registry + guardrails + agent-assisted setup.
 

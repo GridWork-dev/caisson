@@ -8,3 +8,14 @@ dist/
 !.env.example
 coverage/
 .DS_Store
+
+# gw session-stream telemetry (hook-generated, not source)
+outputs/streams/
+
+# registry catalog is CI-written from the publish flow, never hand-edited (ADR-0021)
+registry/index.json
+
+# local design / test artifacts + hook session logs
+.playwright-mcp/
+studio-*.png
+docs/session-logs/

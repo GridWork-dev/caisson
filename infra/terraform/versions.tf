@@ -1,0 +1,16 @@
+terraform {
+  required_version = ">= 1.6.0"
+
+  required_providers {
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 5.0"
+    }
+  }
+}
+
+# Token-scoped auth (never an account-wide key). Source it from the environment as
+# CLOUDFLARE_API_TOKEN, or pass -var. Needs: Zone:DNS:Edit + Account:Cloudflare Pages:Edit.
+provider "cloudflare" {
+  api_token = var.cloudflare_api_token
+}

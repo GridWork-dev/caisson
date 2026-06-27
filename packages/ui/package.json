@@ -1,7 +1,27 @@
 {
-  "name": "@stack/ui",
+  "name": "@caisson/ui",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "vanilla-extract typed token floor + headless+styled primitives."
+  "license": "LicenseRef-Caisson-Commercial",
+  "description": "Typed token floor (ADR-0042 design foundation: palette + type) — OKLCH token objects → generated tokens.css (Wardfile gen-script pattern).",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens": "./src/tokens/index.ts",
+    "./styles/tokens.css": "./styles/tokens.css"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "bun test ./src",
+    "gen:tokens": "bun run scripts/gen-tokens-css.ts"
+  },
+  "devDependencies": {
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "@types/node": "^22.10.5",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.0"
+  }
 }

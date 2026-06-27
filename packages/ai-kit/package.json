@@ -1,7 +1,8 @@
 {
-  "name": "@stack/ai-kit",
+  "name": "@caisson/ai-kit",
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "license": "LicenseRef-Caisson-Commercial",
   "description": "AI Production Kit edition: metering(PG-atomic) + spend-caps/circuit-breaker + eval/CI gate + prompt registry + guardrails + agent-assisted setup."
 }

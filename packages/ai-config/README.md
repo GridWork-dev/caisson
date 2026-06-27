@@ -1,4 +1,4 @@
-# @stack/ai-config
+# @caisson/ai-config
 
 Provider-agnostic AI config (all providers) + buyer settings file.
 

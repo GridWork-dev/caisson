@@ -15,11 +15,13 @@ voice, name, and brand are NOT** — decide them here. Do NOT anchor on the "AI 
 starter" frame; it was provisional scaffolding only.
 
 ## Goal
+
 Choose the **hero positioning across ALL the differentiators** (compliance / local-first AI /
 AI-infra / production-rigor — not AI-only), define the **voice**, and decide the **real product
 name**. Output: a positioning ADR + a naming ADR + a voice guide, and updates to `specs/00` + `03`.
 
 ## Inputs you already have (in outputs/research/)
+
 - The ranked opportunities (`scores.json`): Compliance 8.28 (hero candidate, highest WTP — CPC 10–50×) ·
   AI-infra 7.06 · Local-first 6.70 · Agentic-Dev 6.68.
 - Demand data (`demand-signals.md`): compliance carries the budget; generic boilerplate is
@@ -27,6 +29,7 @@ name**. Output: a positioning ADR + a naming ADR + a voice guide, and updates to
 - The market scan (`market-findings.json`): competitor positioning + the value-add menu.
 
 ## Do
+
 1. **Research** the hero across the differentiators — use `refero-design` (reference research) +
    exa (positioning/naming/competitor messaging). Compare: lead-with-compliance vs
    lead-with-production-rigor vs lead-with-local-first vs an umbrella "production-grade library."
@@ -45,6 +48,7 @@ name**. Output: a positioning ADR + a naming ADR + a voice guide, and updates to
    `specs/04-voice-and-brand.md`, and amend `specs/00` §Positioning + `specs/03` §4.
 
 ## Rules
+
 Never auto-decide a fork — board options on `docs/state/decisions-and-forks.md` with confidence +
 evidence, recommend, and confirm with the operator before locking the name/hero. Doc-only session
 (no product code). Atomic conventional commits (`docs(positioning): …`).

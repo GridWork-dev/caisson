@@ -1,0 +1,34 @@
+{
+  "name": "@caisson/app-base",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Framework-agnostic reference wiring the base packages over Bun.serve (P1 reference). App framework per edition is deferred.",
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "bun test ./src"
+  },
+  "dependencies": {
+    "@caisson/auth": "workspace:*",
+    "@caisson/billing": "workspace:*",
+    "@caisson/credits": "workspace:*",
+    "@caisson/kernel": "workspace:*",
+    "@caisson/mcp-server": "workspace:*",
+    "@caisson/tenancy-rls": "workspace:*"
+  },
+  "devDependencies": {
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.0"
+  }
+}

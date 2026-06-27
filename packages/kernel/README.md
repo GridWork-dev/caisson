@@ -1,4 +1,4 @@
-# @stack/kernel
+# @caisson/kernel
 
 Governance kernel: typed config/agent/skill/rule schema + validator + lint-gate.
 

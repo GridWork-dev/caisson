@@ -1,4 +1,4 @@
-# @stack/compliance
+# @caisson/compliance
 
 Compliance edition: RLS+WORM+audit + config-as-code module registry + SOC2/HIPAA evidence-pack generator. HERO.
 
