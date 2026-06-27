@@ -7,6 +7,8 @@
 // no sibling `.html`, so they are preserved. No-op if Next emitted none.
 import { readdir, stat, unlink } from "node:fs/promises";
 import { join } from "node:path";
+import process from "node:process";
+import { URL } from "node:url";
 
 const OUT = new URL("../out/", import.meta.url).pathname;
 
