@@ -23,9 +23,9 @@ Manifest fields:
 - **`version`** — semver; mirrors package.json (independently versioned, ADR-0003).
 - **`kind`** — `base` | `edition` | `primitive` | `app-template`.
 - **`editions`** — membership array (`compliance|ai-kit|local-ai|agent-dev`); `[]` for pure base; an `edition` kind names itself.
-- **`tier`** — `oss` | `paid` (the **commerce** lever; distinct from the SPDX `license` legal lever).
+- **`tier`** — `oss` | `paid` (the **commerce** lever; distinct from the SPDX `license` legal lever). Model is **fully commercial** (ADR-0023): `paid` is the default for every module; `oss` is **only** the AGPL Local-first flank.
 - **`priceCents`** — integer minor units, never floats (ADR-0007); `null` for `oss`; a `paid` module **must** carry a positive integer (schema-enforced).
-- **`license`** — SPDX from a **curated allowlist** (free strings let "Apache 2.0"/"MITT" through): **Apache-2.0** for base OSS-core (operator-locked), `LicenseRef-Stack-Commercial` for paid editions, `AGPL-3.0-only` for local-first. Mirrors package.json (drives the AGPL gate, ADR-0022/0010). **AGPL ⟺ local-ai membership** — local-ai modules must be AGPL, and only they may be (schema-enforced both ways).
+- **`license`** — SPDX from a **curated allowlist** (free strings let "Apache 2.0"/"MITT" through): `LicenseRef-Stack-Commercial` for every module (the proprietary EULA — fully commercial, ADR-0023), `AGPL-3.0-only` for the Local-first flank only. Mirrors package.json (drives the AGPL gate, ADR-0022/0010). **AGPL ⟺ local-ai membership** — local-ai modules must be AGPL, and only they may be (schema-enforced both ways).
 - **`dependencies`** — workspace module ids; **down-only** — a base/primitive never depends "up" on an edition (ADR-0003); gate-checked.
 - **`entry`** — package entry (default `src/index.ts`).
 - **`agents`** — path to the module's **AGENTS.md** (the agent-facing authoring/usage contract the buyer's MCP/agent reads — distinct from the human README).
