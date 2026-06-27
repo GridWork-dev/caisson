@@ -1,7 +1,12 @@
 #!/usr/bin/env bun
 /**
  * `stack-gate` — the standards-gate CLI (ADR-0021/0022). The ONLY registry ingress runs through
- * this. Exit non-zero on any "error" finding → fails CI + `bun run check` + blocks publish.
+ * this. Exit non-zero on any "error" finding → fails the CI `standards-gate` job + blocks publish.
+ * (Run via the CI job or `bun run gate`; it is NOT part of `bun run check`/turbo.)
+ *
+ * CI runs it TWICE (ci.yml): once pre-install (fs-only checks survive a broken install) and once
+ * post-install — the post-install pass is where checkExternalAgpl + checkManifestAgreement (which
+ * need node_modules) actually execute. A single pre-install run leaves those two skipped.
  *
  * This Bun script is the SPDX/license authority: AGPL boundary (workspace + external tree),
  * down-only direction, declarations, and manifest↔package.json agreement. Run ALONGSIDE in CI
