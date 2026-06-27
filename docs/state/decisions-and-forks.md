@@ -27,7 +27,7 @@ operator. Never auto-decide a fork.
 | Billing / payments    | **Stripe + Stripe Tax** (PSP, operator=MoR); `BillingProvider` port; HMAC-raw-body webhook verify; P1 seam / P6 orchestration | ADR-0017               |
 | Jobs / email          | **Trigger.dev** (self-hostable) + **Resend**; ports w/ test drivers; billing/credit side-effects enqueued not inline          | ADR-0018               |
 | Error model           | Typed `StackError` hierarchy in `kernel`; 402 credit-gate shape; tenancy denial = 404 (no existence leak)                     | ADR-0019               |
-| Credit idempotency    | partial-unique `(source_event_id, event_type)` + `(account_id, idempotency_key)` + one-of-two CHECK                           | ADR-0020 (amends 0007) |
+| Credit idempotency    | partial-unique `(source_event_id, event_type)` + `(account_id, idempotency_key)` + one-of-two CHECK                           | ADR-0023 (amends 0007) |
 | Working name          | `stack` / `@stack/*` (provisional)                                                                                            | —                      |
 | Reference-app stack   | Framework-agnostic core; app framework deferred per edition                                                                   | —                      |
 

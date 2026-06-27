@@ -1,4 +1,4 @@
-// The credit wallet + append-only ledger schema (ADR-0007/0020). Integer balance, signed-amount
+// The credit wallet + append-only ledger schema (ADR-0007/0023). Integer balance, signed-amount
 // ledger (+grant / −debit), two partial-unique idempotency indexes, and a one-of-two CHECK so
 // every row is covered by exactly one. RLS via @stack/tenancy-rls — the ledger is tenant-owned.
 // In prod this is a numbered Drizzle migration (ADR-0014); the DDL is owned here.
@@ -19,7 +19,7 @@ CREATE TABLE credit_event (
   source_event_id text,
   idempotency_key text,
   created_at timestamptz NOT NULL DEFAULT now(),
-  -- exactly one idempotency source per row (ADR-0020)
+  -- exactly one idempotency source per row (ADR-0023)
   CONSTRAINT credit_event_one_idem CHECK (
     (source_event_id IS NOT NULL)::int + (idempotency_key IS NOT NULL)::int = 1
   ),

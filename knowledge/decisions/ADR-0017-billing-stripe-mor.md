@@ -20,7 +20,7 @@ scheme** against the endpoint signing secret (`whsec_…`) inside `verifyWebhook
 request body, with **timestamp-tolerance replay protection** and a **timing-safe** signature
 compare (the Stripe SDK's `constructEvent`, or an equivalent `crypto.timingSafeEqual` path). An
 unverified or stale-timestamp payload is rejected before any parse. The handler is idempotent on
-the Stripe **event id** → the credit/entitlement effect debits/grants exactly once (ADR-0020).
+the Stripe **event id** → the credit/entitlement effect debits/grants exactly once (ADR-0023).
 
 **P1 ↔ P6 event split.** **P1 (this track)** builds the _mechanism_: the port + Stripe driver,
 signature verification, raw-body handling, `parseEvent → DomainBillingEvent`, and the **typed
