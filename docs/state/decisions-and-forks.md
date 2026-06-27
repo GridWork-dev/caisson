@@ -22,7 +22,7 @@ operator. Never auto-decide a fork.
 | Commerce                            | One-time editions + bundle + per-module + subscription/credits                                                                                                                                                              | ADR-0012           |
 | Working name                        | `stack` / `@stack/*` (provisional)                                                                                                                                                                                          | —                  |
 | Reference-app stack                 | Framework-agnostic core; app framework deferred per edition                                                                                                                                                                 | —                  |
-| **Module production pipeline (D9)** | manifest · publish flow (one ingress) · lint gates · fully-commercial licensing — **authored + hardened across 2 adversarial passes; verdict lock-with-fixes (applied); pending operator lock**                             | ADR-0020–0023      |
+| **Module production pipeline (D9)** | manifest · publish flow (one ingress) · lint gates · fully-commercial licensing — **LOCKED** (operator sign-off after 2 adversarial passes)                                                                                 | ADR-0020–0023      |
 | **Licensing model**                 | **Fully commercial** — every module `LicenseRef-Stack-Commercial` (proprietary EULA: use in products, no resale); AGPL Local-first the sole open flank. Supersedes ADR-0010's open-core base; reverses the Apache base pick | ADR-0023 (D9)      |
 | **Private registry host**           | **GitHub Packages** — same auth surface as the repo + ADR-0008 token model                                                                                                                                                  | ADR-0021 (D9)      |
 | **Boundary enforcement mechanism**  | **Both**: ESLint `no-restricted-imports` + Bun standards-gate + dependency-cruiser (belt-and-suspenders)                                                                                                                    | ADR-0022 (D9)      |
@@ -33,11 +33,10 @@ operator. Never auto-decide a fork.
 
 ## Open (waiting on operator — DO NOT auto-decide)
 
-| Fork                                            | Options / notes                                                                                                                            | Owner    |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
-| **Positioning / hero / voice / brand**          | dedicated session — research best hero across ALL differentiators (not AI-only) + refine voice                                             | operator |
-| **Real product name**                           | placeholder `stack`; decided with positioning                                                                                              | operator |
-| **Module production-standards + item pipeline** | ~~dedicated session~~ → **authored + hardened (2 adversarial passes, fixes applied)** (ADR-0020–0023); awaiting operator **lock** sign-off | operator |
-| **Pricing numbers**                             | working anchors in ADR-0012; refine pre-launch                                                                                             | operator |
-| **Docs tooling**                                | Mintlify vs self-host Starlight + RAG                                                                                                      | operator |
-| **App framework per edition**                   | Next.js / TanStack Start / Hono — decided when each edition's app is built                                                                 | operator |
+| Fork                                   | Options / notes                                                                                | Owner    |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------- | -------- |
+| **Positioning / hero / voice / brand** | dedicated session — research best hero across ALL differentiators (not AI-only) + refine voice | operator |
+| **Real product name**                  | placeholder `stack`; decided with positioning                                                  | operator |
+| **Pricing numbers**                    | working anchors in ADR-0012; refine pre-launch                                                 | operator |
+| **Docs tooling**                       | Mintlify vs self-host Starlight + RAG                                                          | operator |
+| **App framework per edition**          | Next.js / TanStack Start / Hono — decided when each edition's app is built                     | operator |

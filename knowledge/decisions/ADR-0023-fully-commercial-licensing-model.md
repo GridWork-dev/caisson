@@ -1,6 +1,6 @@
 # ADR-0023 — Fully-commercial licensing model (supersedes ADR-0010's open-core base)
 
-Status: proposed · 2026-06-27 (D9 module-standards session; operator-decided) — pending sign-off with the D9 lock
+Status: **locked** · 2026-06-27 (D9 module-standards session; operator-decided, locked with the D9 set)
 
 ADR-0010 leaned **open-core**: "the Base has a free/OSS core with paid pro modules." The operator
 reversed this — the product is **fully commercial**. This ADR records that and **supersedes the

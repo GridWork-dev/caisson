@@ -1,6 +1,6 @@
 # ADR-0021 — Registry publish pipeline (the one ingress) + versioning
 
-Status: proposed · 2026-06-27 (D9 module-standards session; rev. after adversarial review) — recommended, pending operator lock
+Status: **locked** · 2026-06-27 (D9 module-standards session; locked after 2 adversarial passes)
 
 ADR-0004 fixed the invariant ("a module enters the registry only through the `tooling/` standards
 gate; generation meters a credit debit") and deferred the pipeline to D9. This ADR makes that
