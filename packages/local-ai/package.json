@@ -3,6 +3,6 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "license": "AGPL-3.0-only",
-  "description": "Local-first AI edition (AGPL): compute seam + privacy gate + sqlite-vec ANN + offline Ed25519 license + local store."
+  "license": "LicenseRef-Caisson-Commercial",
+  "description": "Local-first AI edition: compute seam + privacy gate + sqlite-vec ANN + offline Ed25519 license + local store."
 }

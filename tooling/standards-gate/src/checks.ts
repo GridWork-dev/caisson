@@ -31,7 +31,16 @@ export interface Finding {
   message: string;
 }
 
-/** Gate 1 — AGPL boundary over WORKSPACE deps. Only an AGPL package may consume an AGPL package. */
+/**
+ * DORMANT TRIPWIRE (ADR-0050). Under the uniform fully-commercial model — ADR-0050 retired the lone
+ * AGPL Local-first flank ADR-0023 carved out — NO AGPL/copyleft source exists in the tree, so Gate 1
+ * and Gate 1b NEVER fire by construction: there is no AGPL package for them to catch. They stay
+ * wired ON PURPOSE as a standing tripwire — a re-introduced AGPL dependency (workspace OR external
+ * npm) MUST still hard-fail CI. Do not delete: this is the guard that keeps copyleft out of the
+ * commercial tree even though it is dormant today.
+ *
+ * Gate 1 — AGPL boundary over WORKSPACE deps. Only an AGPL package may consume an AGPL package.
+ */
 export function checkAgplBoundary(pkgs: Pkg[]): Finding[] {
   const license = new Map(pkgs.map((p) => [p.name, p.license]));
   const findings: Finding[] = [];
