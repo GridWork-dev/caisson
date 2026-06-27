@@ -3,6 +3,6 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "license": "Apache-2.0",
+  "license": "LicenseRef-Stack-Commercial",
   "description": "create-stack generator: composes a tailored repo from the versioned registry; agent-drivable; codegen-credit metered."
 }
