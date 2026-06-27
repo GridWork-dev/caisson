@@ -1,0 +1,12 @@
+{
+  "wire": "AQEAAaurq6urq6urq6urq2hlbGxvLWNpcGhlcnRleHTNzc3Nzc3Nzc3Nzc3Nzc3N",
+  "structure": {
+    "formatVersion": 1,
+    "algId": 1,
+    "keyVersion": 1,
+    "headerBytes": 4,
+    "nonceBytes": 12,
+    "tagBytes": 16,
+    "ciphertextBytes": 16
+  }
+}
