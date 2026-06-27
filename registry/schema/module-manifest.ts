@@ -2,7 +2,8 @@
  * Module manifest schema — the typed declaration every registry module carries (ADR-0020).
  * Canonical home: registry/ (the registry defines what a module IS). Imported + enforced by
  * `@stack/standards-gate` (which provides `zod`). package.json stays the source of truth for the
- * fields npm + changesets read; this manifest carries the richer, registry-only declaration.
+ * fields npm + changesets read; this manifest carries the richer, registry-only declaration. The
+ * gate asserts manifest↔package.json agreement on id/version/license (ADR-0020/0021).
  */
 import { z } from "zod";
 
@@ -20,6 +21,24 @@ export const EDITIONS = [
   "local-ai",
   "agent-dev",
 ] as const;
+
+/**
+ * Curated SPDX allowlist (a free string lets "Apache 2.0"/"MITT"/"Proprietary" through). Base
+ * OSS-core = Apache-2.0 (operator-locked); editions = LicenseRef-Stack-Commercial; local-first =
+ * AGPL-3.0-only. Extend deliberately.
+ */
+export const SPDX_LICENSES = [
+  "Apache-2.0",
+  "MIT",
+  "BSD-3-Clause",
+  "BSD-2-Clause",
+  "ISC",
+  "AGPL-3.0-only",
+  "AGPL-3.0-or-later",
+  "LicenseRef-Stack-Commercial",
+] as const;
+
+const isAgplSpdx = (l: string): boolean => l.startsWith("AGPL");
 
 const semver = z
   .string()
@@ -40,10 +59,10 @@ export const ModuleManifest = z
     editions: z.array(z.enum(EDITIONS)).default([]),
     /** Commerce lever (distinct from the SPDX `license` legal lever). */
     tier: z.enum(COMMERCE_TIERS),
-    /** Integer minor units, never floats (ADR-0007); null for oss / non-priced. */
+    /** Integer minor units, never floats (ADR-0007); null only for oss / non-priced. */
     priceCents: z.number().int().nonnegative().nullable().default(null),
-    /** SPDX string; MUST mirror package.json `license` (drives the AGPL gate, ADR-0022). */
-    license: z.string().min(1),
+    /** SPDX from the allowlist; MUST mirror package.json `license` (drives the AGPL gate). */
+    license: z.enum(SPDX_LICENSES),
     /** Workspace module ids; down-only — never depends "up" on an edition (ADR-0003). */
     dependencies: z.array(moduleId).default([]),
     entry: z.string().default("src/index.ts"),
@@ -59,12 +78,24 @@ export const ModuleManifest = z
     message: "oss modules must not carry a priceCents (ADR-0007/0010)",
     path: ["priceCents"],
   })
+  .refine(
+    (m) =>
+      m.tier === "paid" ? m.priceCents !== null && m.priceCents > 0 : true,
+    {
+      message:
+        "paid modules must carry a positive integer priceCents (ADR-0007)",
+      path: ["priceCents"],
+    },
+  )
   .refine((m) => (m.kind === "edition" ? m.editions.length > 0 : true), {
     message: "an edition module must declare its edition membership",
     path: ["editions"],
   })
-  .refine((m) => !m.editions.includes("local-ai") || /AGPL/i.test(m.license), {
-    message: "local-ai-edition modules must be AGPL-licensed (ADR-0010)",
+  // AGPL ⟺ local-first: in this product AGPL is the local-ai flank ONLY (ADR-0010). Both
+  // directions — a local-ai module must be AGPL; an AGPL module must be local-ai.
+  .refine((m) => m.editions.includes("local-ai") === isAgplSpdx(m.license), {
+    message:
+      "AGPL license ⟺ local-ai edition membership (ADR-0010): local-ai modules must be AGPL, and only they may be",
     path: ["license"],
   });
 

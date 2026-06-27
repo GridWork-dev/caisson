@@ -12,8 +12,8 @@ Authoring + binding: ADR-0020. Publish flow + the allowlist: ADR-0021.
 | `kind`         | `base` \| `edition` \| `primitive` \| `app-template` | drives the down-only gate (ADR-0022)                               |
 | `editions`     | edition[]                                            | membership; `[]` for pure base; an edition names itself            |
 | `tier`         | `oss` \| `paid`                                      | commerce lever — distinct from `license`                           |
-| `priceCents`   | int \| null                                          | integer minor units, never floats (ADR-0007); `null` for oss       |
-| `license`      | SPDX                                                 | mirrors package.json; drives the AGPL gate (ADR-0022/0010)         |
+| `priceCents`   | int \| null                                          | integer minor units (ADR-0007); `null` for oss; `paid` ⇒ positive  |
+| `license`      | SPDX (allowlist)                                     | mirrors package.json; drives the AGPL gate (ADR-0022/0010)         |
 | `dependencies` | `@stack/<slug>`[]                                    | workspace deps; **down-only** (ADR-0003)                           |
 | `entry`        | path                                                 | default `src/index.ts`                                             |
 | `agents`       | path                                                 | the module's **AGENTS.md** (agent-facing; distinct from README)    |
@@ -21,12 +21,15 @@ Authoring + binding: ADR-0020. Publish flow + the allowlist: ADR-0021.
 | `stability`    | `alpha` \| `beta` \| `stable`                        | —                                                                  |
 | `description`  | string                                               | one line                                                           |
 
-Cross-field rules (Zod `.refine`): oss ⇒ `priceCents` null; `edition` kind ⇒ `editions` non-empty;
-`local-ai`-edition membership ⇒ `license` matches AGPL (ADR-0010).
+Cross-field rules (Zod `.refine`): oss ⇒ `priceCents` null; paid ⇒ `priceCents` > 0; `edition` kind
+⇒ `editions` non-empty; **AGPL ⟺ local-ai membership** (both ways, ADR-0010). `license` is a curated
+SPDX enum, not a free string.
 
-## Registry index (`index.json`, CI-written)
+## Registry index (`index.json`, CI-built)
 
 `{ schemaVersion: 1, modules: [{ id, latest, versions: [{ version, manifest, publishedAt,
-gateAttestation }] }] }`. `gateAttestation` = `"<ci-run-id>@<commit-sha>"` of the green
-standards-gate run that admitted the version (ADR-0021). `moduleAllowlist(index)` /
-`assertKnownModule(index, id)` are the generator's pre-path/pre-subprocess validation.
+gateAttestation }] }] }`. The index is **rebuilt from the published registry by a CI-only job**,
+never hand-appended (ADR-0021); `gateAttestation` (`"<ci-run-id>@<commit-sha>"`) records provenance,
+it is not the access gate. Generator validation: `loadRegistryIndex(raw)` (parse-or-throw) then
+`assertKnownModule(index, id)` **and** `assertKnownVersion(index, id, version)` before any
+path/subprocess.
