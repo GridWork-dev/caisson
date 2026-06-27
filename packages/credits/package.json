@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "license": "LicenseRef-Stack-Commercial",
   "description": "Integer credit wallet + append-only ledger + debit-before-spend (402, idempotent). ADR-0007/0020.",
   "exports": {
     ".": {

@@ -3,5 +3,6 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "license": "LicenseRef-Stack-Commercial",
   "description": "Compliance edition: RLS+WORM+audit + config-as-code module registry + SOC2/HIPAA evidence-pack generator. HERO."
 }

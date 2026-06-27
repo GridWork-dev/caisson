@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "license": "LicenseRef-Stack-Commercial",
   "description": "Transactional email port: provider-agnostic Emailer + capture (test) + Resend (prod) drivers. ADR-0018.",
   "exports": {
     ".": {

@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "license": "LicenseRef-Stack-Commercial",
   "description": "Typed design-token contract (light+dark) + a vanilla-extract theme binding. The shipped token floor (spec 03).",
   "exports": {
     ".": {
