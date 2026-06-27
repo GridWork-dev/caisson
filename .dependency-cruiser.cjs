@@ -60,7 +60,13 @@ module.exports = {
     },
   ],
   options: {
-    doNotFollow: { dependencyTypes: ["npm-no-pkg", "npm-unknown"] },
+    // Record the edge into node_modules (so the provider-SDK `to` rule still matches) but never
+    // recurse INTO it — following the full npm tree OOM-crashes the cruiser. Skip build output too.
+    doNotFollow: {
+      path: "node_modules",
+      dependencyTypes: ["npm-no-pkg", "npm-unknown"],
+    },
+    exclude: { path: "(^|/)(\\.next|dist|\\.turbo|coverage)(/|$)" },
     tsPreCompilationDeps: true,
     tsConfig: { fileName: "tsconfig.json" },
   },

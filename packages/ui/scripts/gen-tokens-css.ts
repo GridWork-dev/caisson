@@ -84,5 +84,4 @@ const here = dirname(fileURLToPath(import.meta.url));
 const out = resolve(here, "../styles/tokens.css");
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, css, "utf8");
-// eslint-disable-next-line no-console -- build script, stdout is the intended channel
 process.stdout.write(`wrote ${out}\n`);
