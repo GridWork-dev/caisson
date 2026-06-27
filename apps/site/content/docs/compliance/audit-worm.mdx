@@ -1,0 +1,64 @@
+---
+title: audit-worm
+description: S3 Object-Lock WORM storage plus an append-only SHA-256 audit chain — evidence that cannot be altered before retention expires, and tampering that is provable.
+---
+
+`@caisson/audit-worm` does two jobs an auditor asks about by name: it writes evidence to
+S3 Object-Lock in compliance mode, and it records every privileged action into an
+append-only SHA-256 chain. Stored evidence cannot be changed before its retention period
+ends, and the log of who-did-what cannot be rewritten without the break showing.
+
+## What it does
+
+- **WORM evidence storage** — evidence objects land in an S3 bucket with Object-Lock in
+  _compliance mode_. Once an object is written under a retention period, it cannot be
+  overwritten or deleted before that period expires — not by the application, not by an
+  admin, not by a leaked root key.
+- **Append-only audit chain** — each event hashes its payload together with the previous
+  entry's hash. The chain verifies end to end; editing any past entry breaks every hash
+  after it.
+
+## The guarantee
+
+Compliance-mode Object-Lock means immutability is enforced by the storage layer, not by
+your code. The audit chain makes tampering _detectable_, not merely discouraged — verify
+the chain and a single edited row surfaces with its sequence number:
+
+```bash
+$ caisson audit verify --tenant tenant_4f2c
+✗ chain broken at seq 1184
+  expected prev = 9f3a…c021
+  found    prev = 51bd…7e08   (entry was edited after it was written)
+```
+
+## Usage
+
+```ts
+import { appendEvent, putEvidence, verifyChain } from "@caisson/audit-worm";
+
+// Append a privileged action to the SHA-256 chain.
+await appendEvent({
+  tenantId,
+  actor: "user_4f2c",
+  action: "invoice.export",
+});
+
+// Write an evidence object under a retention lock — immutable until it expires.
+await putEvidence({
+  key: `evidence/${tenantId}/soc2-access-review.pdf`,
+  body: pdf,
+  retainUntil: "2033-06-27T00:00:00Z",
+});
+
+// Verify the chain is intact before you hand the log to an auditor.
+const result = await verifyChain(tenantId);
+if (!result.ok) {
+  throw new Error(`audit chain broken at seq ${result.brokenAt}`);
+}
+```
+
+<Callout type="info" title="Reference docs at GA">
+  This page is the scaffold. The full API reference — every event type, the
+  Object-Lock retention modes, and the chain-verification contract — lands at
+  general availability.
+</Callout>

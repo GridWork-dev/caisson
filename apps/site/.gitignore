@@ -1,0 +1,12 @@
+# Next.js
+/.next/
+/out/
+
+# fumadocs-mdx codegen
+/.source/
+
+# Cloudflare / wrangler
+/.wrangler/
+
+# misc
+*.tsbuildinfo

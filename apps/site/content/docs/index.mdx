@@ -1,0 +1,34 @@
+---
+title: Caisson documentation
+description: Compliance-grade infrastructure for regulated SaaS — the manual.
+---
+
+Caisson is a composable monorepo library: an audited base substrate plus premium editions
+(Compliance, AI Production Kit, Local-first AI, Agentic-Dev), a `create-caisson` generator, and a
+support service. Editions are compositions of the same packages — never forks.
+
+These docs are the manual: how each package works, how to compose it, and the contract it upholds.
+
+## Start here
+
+- **[Getting started](/docs/getting-started)** — install the base, wire a tenant, run the gate.
+- **Base substrate** — `auth`, `tenancy-rls`, `billing`, `credits`, `kernel`, and the rest of the
+  table-stakes core, framed under the differentiators.
+- **Compliance** — `audit-worm`, `field-crypto`, `compliance`: the fail-closed data layer and the
+  evidence-pack generator.
+
+## What "fail-closed by construction" means
+
+The guarantees are wired and tested before your first customer, not backfilled after your first
+audit:
+
+- **Tenancy** — Postgres row-level security with FORCE. A query with no tenant context returns
+  nothing.
+- **Evidence** — S3 Object-Lock WORM. Evidence cannot be altered or deleted before retention
+  expires.
+- **Audit** — an append-only SHA-256 chain. Tampering breaks the link, and the break is provable.
+
+<Callout title="Agent-readable">
+  Every page is available as raw markdown for your AI agent — see
+  [`/llms.txt`](/llms.txt) and [`/llms-full.txt`](/llms-full.txt).
+</Callout>

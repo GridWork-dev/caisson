@@ -1,0 +1,71 @@
+---
+title: Local-first AI
+description: On-device inference and vector search behind a privacy gate that keeps data on the machine. AGPL open-core.
+---
+
+<Callout type="info">
+  Caisson is pre-launch. This page describes `@caisson/local-ai`. The full API
+  reference lands at general availability.
+</Callout>
+
+`@caisson/local-ai` is the **Local-first AI** edition: a compute seam, a privacy gate, on-device
+vector search, an offline license check, and a local store. Inference and retrieval run on the
+machine that holds the data. Your data never leaves the device.
+
+## What it does
+
+- **Compute seam** — one swappable point that decides where a model runs. The default target is the
+  local device; a remote target is an explicit opt-in, never the fallback.
+- **Privacy gate** — the egress boundary. A call that would cross the network is denied unless the
+  policy allows it, so "on-device" is enforced in code, not promised in a README.
+- **On-device vector search** — approximate nearest-neighbor over a local index using
+  `sqlite-vec`. Embeddings and queries stay in the local store.
+- **Offline license** — license verification that does not call home, so the edition keeps working
+  on an air-gapped machine.
+- **Local store** — the SQLite-backed home for vectors, documents, and the license record.
+
+## The guarantee
+
+The privacy gate is the contract: data crosses the network boundary only on an explicit allow. The
+gate fails closed — with no allow rule, a remote call is denied, not silently downgraded.
+
+```ts
+import { createLocalAI } from "@caisson/local-ai";
+import type { LocalAIConfig } from "@caisson/local-ai";
+
+const config: LocalAIConfig = {
+  // The gate fails closed: no network egress without an explicit allow rule.
+  privacy: "device-only",
+  vector: { backend: "sqlite-vec" },
+};
+
+const ai = createLocalAI(config);
+
+// Embeddings and ANN search run on-device against the local store.
+const hits = await ai.search("quarterly variance", { topK: 5 });
+```
+
+## License
+
+`@caisson/local-ai` is **AGPL-3.0** open-core — the free flank. Source is open under the AGPL; a
+network-deployed derivative must publish its source under the same terms. A commercial license and a
+credits path remove the AGPL copyleft for closed deployments.
+
+<Callout type="info">
+  The commercial license and credits path are in early access — join the
+  waitlist. Pricing is not set yet; no numbers are published here.
+</Callout>
+
+<Callout type="warn">
+  Placeholder — the full `@caisson/local-ai` API reference (compute-seam
+  adapters, the privacy-gate policy schema, the `sqlite-vec` index format, and
+  the offline-license record) lands at general availability.
+</Callout>
+
+## Next steps
+
+<Cards>
+  <Card title="Getting started" href="/docs/getting-started">
+    Install the base, wire a tenant, and run the standards gate.
+  </Card>
+</Cards>

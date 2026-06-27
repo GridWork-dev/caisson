@@ -1,0 +1,50 @@
+---
+title: MCP server
+description: The buyer-facing MCP server — auth-gated and entitlement-scoped.
+---
+
+`@caisson/mcp-server` is the buyer-facing MCP server your AI agent connects to — to drive
+generation, configuration, and the metered operations the base exposes. It is a first-class surface,
+not a side door.
+
+## The contract
+
+Every tool call is **auth-gated** with the same EdDSA-JWT issued by [`@caisson/auth`](/docs/base/auth),
+and **entitlement-scoped**: an agent can only reach the tools the buyer's entitlements cover. A token
+without an entitlement does not see the tool — scoping happens before dispatch, not inside it.
+
+```jsonc
+// .mcp.json — the agent connects with the buyer's token.
+{
+  "mcpServers": {
+    "caisson": {
+      "url": "https://mcp.example.com",
+      "headers": { "Authorization": "Bearer ${CAISSON_TOKEN}" },
+    },
+  },
+}
+```
+
+A call outside the token's entitlements is refused, not silently downgraded:
+
+```text
+$ caisson-agent call generate.edition --edition compliance
+ERROR  entitlement_required: token is not scoped for "compliance"
+```
+
+## Related
+
+<Cards>
+  <Card title="Auth" href="/docs/base/auth">
+    Issues the EdDSA-JWT every tool call verifies.
+  </Card>
+  <Card title="AI config" href="/docs/base/ai-config">
+    Agent-assisted setup runs through these tools.
+  </Card>
+</Cards>
+
+<Callout type="info">
+  This page is a scaffold. The full `@caisson/mcp-server` API reference — the
+  tool catalog, the entitlement model, and the generation flow — lands at
+  general availability.
+</Callout>

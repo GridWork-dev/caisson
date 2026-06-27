@@ -12,6 +12,8 @@ export default [
       "**/.turbo/**",
       "**/node_modules/**",
       "**/.next/**",
+      "**/out/**",
+      "**/.source/**",
       "**/coverage/**",
       "**/*.d.ts",
       "outputs/**",

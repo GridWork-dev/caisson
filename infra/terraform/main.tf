@@ -4,8 +4,10 @@
 # is provisioned outside this module.
 
 # The Pages project for the marketing + docs site. Direct-upload model (deploy via Wrangler/CI),
-# so no `source` (Git-integration) block. Build + deployment config (compatibility_date, the
-# next-on-pages / OpenNext output dir) is wired here once the site app exists.
+# so no `source` (Git-integration) block. The site is a Next.js static export (`output: 'export'`,
+# ADR-0045): CI runs `next build` → `out/` and `wrangler pages deploy out/`. There is no
+# Cloudflare-side build, so no `build_config`/`source` belongs on this resource — the only deploy
+# pointer is the `out/` argument to wrangler (mirrored in apps/site/wrangler.jsonc).
 resource "cloudflare_pages_project" "site" {
   account_id        = var.cloudflare_account_id
   name              = var.pages_project_name

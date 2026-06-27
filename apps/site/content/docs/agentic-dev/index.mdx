@@ -1,0 +1,109 @@
+---
+title: Agentic-Dev
+description: "@caisson/agent-dev — the governed-agent kernel: a typed agent/skill/rule schema, a lifecycle state machine, local hybrid memory, and a hooks dispatcher."
+---
+
+<Callout type="info">
+  Agentic-Dev is a roadmap edition, sequenced **post-wedge**. Compliance leads
+  acquisition; the governed-agent kernel ships after it. This page is the spine
+  of the manual — the contract is stable, the version-pinned API reference lands
+  at general availability.
+</Callout>
+
+`@caisson/agent-dev` is the governed-agent kernel. It is the layer your AI coding agent
+runs inside, not a layer that replaces your judgment with autonomy. Every agent, skill,
+and rule is a typed artifact; every act transition is a legal move on a state machine; every
+side effect passes one dispatcher. The kernel governs the loop — it does not hand the agent
+the keys.
+
+The same kernel underpins the `create-caisson` generator and the buyer-facing MCP server, so
+the rules that govern your own workflow are the rules that govern code generation.
+
+## What the kernel governs
+
+- **Typed agent/skill/rule schema.** An agent, a skill, and a rule are each a validated
+  artifact — model, tools, and capabilities declared up front. An undeclared capability or a
+  tool the agent is not granted is a load-time error, not a runtime surprise.
+- **Lifecycle state machine.** Acts advance only along declared transitions. An illegal move —
+  `execute` before `plan`, `ship` before `verify` — is rejected at the boundary, not caught
+  after the side effect.
+- **Local hybrid memory.** Recall runs locally over a hybrid index (vector plus keyword). The
+  agent's context stays on the machine unless you wire an explicit egress.
+- **Hooks dispatcher.** Side effects route through a single deterministic dispatcher — one
+  audited place to gate, log, or deny an action before it leaves the process.
+
+## The contract it upholds
+
+The kernel makes one promise: an agent cannot take an action it was not typed to take. A
+capability the schema does not declare is unreachable; a transition the state machine does not
+permit does not fire; a side effect the dispatcher denies does not happen. Governance is
+enforced at load and at each boundary, not asserted in a README.
+
+## Usage
+
+A typed agent declares its model, the capabilities it is allowed to exercise, and the
+transitions it may drive. The kernel validates the definition before the agent runs, then
+constrains it to the declared moves.
+
+```ts
+import { defineAgent } from "@caisson/agent-dev";
+import type { LifecycleState } from "@caisson/agent-dev";
+
+// Capabilities and tools are declared up front and validated at load.
+// An undeclared capability is unreachable — not a runtime surprise.
+const reviewer = defineAgent({
+  name: "code-reviewer",
+  model: "opus",
+  capabilities: ["code_review"],
+  // The lifecycle state machine: only these transitions are legal.
+  transitions: {
+    spec: ["plan"],
+    plan: ["execute"],
+    execute: ["verify"],
+    verify: ["ship"],
+  },
+});
+
+// Legal move — advances along a declared edge.
+const next: LifecycleState = reviewer.advance("plan");
+
+// Illegal move — rejected at the boundary, before any side effect.
+reviewer.advance("ship"); // throws: no edge spec → ship
+```
+
+Side effects do not bypass the kernel. A hook registered on the dispatcher sees every action
+before it runs and can gate it.
+
+```ts
+import { onDispatch } from "@caisson/agent-dev";
+
+// One deterministic dispatcher — one place to gate, log, or deny.
+onDispatch((action, ctx) => {
+  if (
+    action.kind === "shell" &&
+    !ctx.agent.capabilities.includes("shell_exec")
+  ) {
+    return { allow: false, reason: "agent not typed for shell_exec" };
+  }
+  return { allow: true };
+});
+```
+
+<Callout type="info">
+  These snippets are illustrative — they show the shape of the contract, not the
+  shipped surface. The full, version-pinned API reference (schema fields,
+  state-machine config, the memory and dispatcher interfaces) lands at general
+  availability.
+</Callout>
+
+## Related
+
+<Cards>
+  <Card title="Getting started" href="/docs/getting-started">
+    Install the base, wire a tenant, and run the standards gate.
+  </Card>
+  <Card title="Documentation home" href="/docs">
+    The full manual: every package, how to compose it, and the contract it
+    upholds.
+  </Card>
+</Cards>

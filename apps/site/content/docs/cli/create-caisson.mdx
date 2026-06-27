@@ -1,0 +1,81 @@
+---
+title: create-caisson
+description: Scaffold a tailored codebase from the versioned module registry — by hand, or driven by your AI agent through the auth-gated MCP server.
+---
+
+<Callout type="info">
+  Caisson is pre-launch. The command names and the generation model are stable;
+  the version-pinned registry and the full CLI flag reference land at general
+  availability.
+</Callout>
+
+## What it does
+
+`@caisson/cli` is the generator. You pick an edition and the modules you want; it assembles a
+tailored codebase by pulling versioned module sources from the Caisson registry. Editions are
+compositions of the same audited base — the generator composes, it never forks.
+
+```bash
+bun create caisson@latest my-app
+cd my-app
+bun install
+```
+
+The first prompt picks your edition (Compliance, AI Production Kit, Local-first AI, Agentic-Dev) and
+the à-la-carte modules layered on top. The base substrate — `auth`, `tenancy-rls`, `billing`,
+`credits` — is always wired in.
+
+## The registry contract
+
+Every module the CLI emits is pulled from a **versioned** registry, not copied from a moving
+template. A generation resolves and pins the module versions it used, so the same inputs reproduce
+the same tree. The CLI and the buyer's AI agent read from the one registry — there is no second,
+drifting source.
+
+```bash
+$ bun create caisson@latest my-app
+resolved  11 modules from registry @ 2026.6.0
+scaffold  compliance edition + base substrate -> ./my-app
+metered   11 codegen-credits
+lockfile  caisson.lock (pinned module versions) written
+```
+
+The contract it upholds: a generation is **reproducible** (pinned versions in `caisson.lock`) and
+**metered** (codegen-credits are integer units, never floats — a run debits an exact count, or it
+fails closed before writing).
+
+## Drive it from your agent
+
+The shipped MCP server is auth-gated. Your Claude Code or Cursor agent authenticates, reads the same
+registry, and runs the same generation the CLI does — so the agent can scaffold and reconfigure the
+codebase without you leaving the editor.
+
+```ts
+import type { GenerateResult } from "@caisson/cli";
+
+// Illustrative: your agent calls the auth-gated MCP server, which resolves
+// modules from the versioned registry and meters the run.
+const result: GenerateResult = await caisson.generate({
+  edition: "compliance",
+  modules: ["audit-worm", "field-crypto"],
+  target: "./my-app",
+});
+
+// result.creditsSpent — integer codegen-credits debited for this run
+// result.lockfile     — the pinned module versions this generation resolved
+```
+
+<Cards>
+  <Card title="Getting started" href="/docs/getting-started">
+    Install the base, wire a tenant, and run the standards gate.
+  </Card>
+  <Card title="Documentation home" href="/docs">
+    The full manual — every package and the contract it upholds.
+  </Card>
+</Cards>
+
+<Callout type="info">
+  Placeholder: the full `create-caisson` flag reference, registry
+  version-pinning rules, and the MCP tool schemas the buyer's agent calls land
+  at general availability.
+</Callout>
