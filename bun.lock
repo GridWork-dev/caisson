@@ -94,6 +94,21 @@
       "name": "@caisson/agent-dev",
       "version": "0.0.0",
     },
+    "packages/agent-kernel": {
+      "name": "@caisson/agent-kernel",
+      "version": "0.0.0",
+      "dependencies": {
+        "@caisson/kernel": "workspace:*",
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
+    },
     "packages/ai-config": {
       "name": "@caisson/ai-config",
       "version": "0.0.0",
@@ -368,6 +383,8 @@
     "@babel/runtime": ["@babel/runtime@7.29.7", "", {}, "sha512-Nq8OhGWiZIZGV6hLHoyAKLLcJihP/xFeBMGJoUrxTX2psI8dCifzLhZISFb+VWS3wFMRDmCGw5R+dOySCqPLhw=="],
 
     "@caisson/agent-dev": ["@caisson/agent-dev@workspace:packages/agent-dev"],
+
+    "@caisson/agent-kernel": ["@caisson/agent-kernel@workspace:packages/agent-kernel"],
 
     "@caisson/ai-config": ["@caisson/ai-config@workspace:packages/ai-config"],
 
