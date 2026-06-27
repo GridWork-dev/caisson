@@ -1,0 +1,32 @@
+[
+  {
+    "seq": 0,
+    "prevHash": null,
+    "payload": {
+      "event": "locked",
+      "artifactId": "art-1",
+      "version": 1
+    },
+    "hash": "18fafb786980e410df115469a6e6509a52275259f6bc1236c7e75b060e88830e"
+  },
+  {
+    "seq": 1,
+    "prevHash": "18fafb786980e410df115469a6e6509a52275259f6bc1236c7e75b060e88830e",
+    "payload": {
+      "event": "superseded",
+      "artifactId": "art-1",
+      "version": 2
+    },
+    "hash": "7237153e90c82d730a025546fa6ec1653d0ae577107dacef398ffbbd8c2058ed"
+  },
+  {
+    "seq": 2,
+    "prevHash": "7237153e90c82d730a025546fa6ec1653d0ae577107dacef398ffbbd8c2058ed",
+    "payload": {
+      "event": "locked",
+      "artifactId": "art-2",
+      "version": 1
+    },
+    "hash": "2a0154b44e0ca82969fd0e430b61d9bf04135ea8027982bedd239c713c4ff418"
+  }
+]

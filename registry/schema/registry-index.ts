@@ -3,10 +3,11 @@
  * The index is BUILT from the published registry by a CI-only writer (ADR-0021) — it is not a
  * source mirror and is never hand-appended. Each version carries a gate-provenance record.
  */
+import { readFileSync } from "node:fs";
 import { z } from "zod";
 import { ModuleManifest } from "./module-manifest";
 
-const MODULE_ID_RE = /^@stack\/[a-z0-9-]+$/;
+const MODULE_ID_RE = /^@caisson\/[a-z0-9-]+$/;
 const semver = z
   .string()
   .regex(
@@ -53,6 +54,15 @@ export type RegistryIndex = z.infer<typeof RegistryIndex>;
 /** Parse-or-throw. The ONLY sanctioned way to obtain a RegistryIndex — never `JSON.parse(...) as`. */
 export function loadRegistryIndex(raw: unknown): RegistryIndex {
   return RegistryIndex.parse(raw);
+}
+
+/**
+ * Read + parse the on-disk registry index (the static CI-built file, ADR-0047). Parse-or-throw — a
+ * malformed/tampered file raises rather than yielding a half-typed object. The single sanctioned
+ * file read path for `create-caisson` + the buyer MCP.
+ */
+export function loadRegistryIndexFromFile(path: string): RegistryIndex {
+  return loadRegistryIndex(JSON.parse(readFileSync(path, "utf8")));
 }
 
 /** The generator allowlist (ADR-0021/0004/0008). */

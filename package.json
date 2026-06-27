@@ -6,6 +6,7 @@
     "tooling/*",
     "packages/*",
     "apps/*",
+    "registry",
     "services/license",
     "services/docs"
   ],

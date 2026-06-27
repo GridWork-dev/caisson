@@ -24,3 +24,25 @@ export type { FetchTimeoutOptions } from "./fetch.ts";
 export { strictObject, parseStrict } from "./schema.ts";
 export { loadConfig } from "./config.ts";
 export type { EnvSource } from "./config.ts";
+
+export {
+  canonicalize,
+  hashChainLink,
+  chainEntry,
+  buildChain,
+  verifyChain,
+  anchorChain,
+} from "./audit-chain.ts";
+export type {
+  JsonValue,
+  AuditChainEntry,
+  ChainVerification,
+  AuditChainAnchor,
+} from "./audit-chain.ts";
+export {
+  validateVersionSet,
+  isCurrent,
+  currentVersions,
+  versionChain,
+} from "./versioning.ts";
+export type { VersionRecord } from "./versioning.ts";

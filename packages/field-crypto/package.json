@@ -4,5 +4,30 @@
   "private": true,
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
-  "description": "Field encryption column custom-type + key-version registry (KMS envelope at SOC2)."
+  "description": "Per-tenant authenticated field encryption: HKDF key derivation + AES-256-GCM + versioned envelope + Drizzle column + pluggable FieldKeyProvider (KMS seam). ADR-0043/0046/0045/0006.",
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "bun test ./src"
+  },
+  "dependencies": {
+    "@caisson/kernel": "workspace:*",
+    "drizzle-orm": "^0.45.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "@caisson/tenancy-rls": "workspace:*",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.0"
+  }
 }

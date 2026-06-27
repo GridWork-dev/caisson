@@ -1,0 +1,10 @@
+# Registry read Worker — DEFERRED SEAM (ADR-0047). Config only; NOT deployed in Wave 0. Real edge
+# serving + caching + the entitlement gate (ADR-0008) land at P5/P6. The handler is unit-tested in
+# registry/worker/handler.test.ts without a Workers runtime.
+name = "caisson-registry"
+main = "handler.ts"
+compatibility_date = "2026-06-27"
+
+# The CI-built index is supplied at deploy time (bundled, or a KV/R2 binding). Placeholder:
+# [vars]
+# REGISTRY_INDEX = "<the contents of registry/index.json, injected by the deploy step>"
