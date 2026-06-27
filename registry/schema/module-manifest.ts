@@ -45,6 +45,14 @@ const semver = z
 const moduleId = z
   .string()
   .regex(/^@stack\/[a-z0-9-]+$/, "must be @stack/<slug>");
+// entry/agents/golden are consumed by create-stack into paths — must be relative, no `..`
+// traversal, no absolute (ADR-0021 input-validation; closes a future path surface).
+const relPath = z
+  .string()
+  .regex(
+    /^(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$)).+$/,
+    "must be a relative path without `..`",
+  );
 
 export const ModuleManifest = z
   .object({
@@ -61,11 +69,11 @@ export const ModuleManifest = z
     license: z.enum(SPDX_LICENSES),
     /** Workspace module ids; down-only — never depends "up" on an edition (ADR-0003). */
     dependencies: z.array(moduleId).default([]),
-    entry: z.string().default("src/index.ts"),
+    entry: relPath.default("src/index.ts"),
     /** Agent-facing authoring/usage contract the buyer MCP/agent reads (distinct from README). */
-    agents: z.string().default("AGENTS.md"),
+    agents: relPath.default("AGENTS.md"),
     /** Golden-fixture dir, or null until the module has golden-able output (harness = ADR-0013). */
-    golden: z.string().nullable().default(null),
+    golden: relPath.nullable().default(null),
     stability: z.enum(STABILITY).default("alpha"),
     description: z.string().min(1),
   })
@@ -93,7 +101,18 @@ export const ModuleManifest = z
     message:
       "AGPL license ⟺ local-ai edition membership (ADR-0010): local-ai modules must be AGPL, and only they may be",
     path: ["license"],
-  });
+  })
+  // tier ⟺ license (ADR-0023 fully-commercial): paid ⟺ LicenseRef-Stack-Commercial; oss ⟺ AGPL.
+  // Stops a paid module shipping under a permissive/redistributable license.
+  .refine(
+    (m) =>
+      (m.tier === "paid") === (m.license === "LicenseRef-Stack-Commercial"),
+    {
+      message:
+        "tier ⟺ license (ADR-0023): paid modules MUST be LicenseRef-Stack-Commercial; oss MUST be AGPL",
+      path: ["license"],
+    },
+  );
 
 export type ModuleManifest = z.infer<typeof ModuleManifest>;
 
