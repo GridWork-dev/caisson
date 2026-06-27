@@ -8,6 +8,12 @@ coverage/
 bun.lock
 # generated, drift-guarded by gen-tokens-css.ts
 packages/ui/styles/tokens.css
+# CI-built by registry/scripts/build-index.ts (owns its canonical serialization). Prettier must NOT
+# touch it or it would fight the byte-identical rebuild check (ADR-0047).
+registry/index.json
+# Golden fixtures are byte-exact regression artifacts owned by matchGolden (JSON.stringify(,2)+"\n").
+# Prettier would reformat them (e.g. collapse short arrays) and break the golden comparison (ADR-0013).
+**/__golden__/
 # local artifacts
 .playwright-mcp/
 *.png

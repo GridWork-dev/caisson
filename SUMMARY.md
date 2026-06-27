@@ -18,8 +18,15 @@ jobs · email` + `apps/base` reference (real-HTTP 402→grant→200→MCP loop).
 
 ADR collisions across tracks reconciled (0013/0014/0023 → see decisions-log D22). `bun run check`
 = 44/44 turbo tasks + standards gate green; turbo pinned `~2.5.x` (2.10 SIGBUS locally). Hosting =
-Cloudflare Pages on `caisson.sh` (Terraform in `infra/`); docs = single Next site + MDX. Editions
-P2–P4 + generator/registry runtime (P5) + services (P6) remain.
+Cloudflare Pages on `caisson.sh` (Terraform in `infra/`); docs = single Next site + MDX.
+
+**Wave 0 (shared substrate, ADR-0045–0049)** built the floor under the parallel editions:
+`@caisson/field-crypto` (per-tenant HKDF keys + AES-256-GCM + versioned envelope + Drizzle column +
+KMS seam), the **registry runtime** (`ledger.jsonl` → CI-built `index.json` + byte-identical-rebuild
+job + the static read path + an un-deployed Worker seam), the `@caisson/cli` generator skeleton
+(allowlist gate + debit-before-spend meter seam), and the shared kernel primitives (SHA-256 audit
+chain + append-only versioning). Wave-1 editions P2–P4, the full P5 generation/MCP drive, and
+services (P6) remain.
 
 ## What we did
 

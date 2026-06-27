@@ -54,12 +54,33 @@ jobs:
       # Slow golden-file / testcontainers matrices land here once the compliance
       # edition (P2) has code — kept CI-only, never in the pre-commit hook.
 
-  # The registry index (registry/index.json) is BUILT from the published registry by THIS job
-  # only — never hand-appended (ADR-0021). Branch protection + CODEOWNERS on registry/index.json
-  # make this the sole writer; the gateAttestation records provenance, it is not the access gate.
-  # Wired with the publish flow in P5 (needs the standards-gate job green first).
+  # registry/ tests also run under turbo (`bun run check`, the `check` job); this job is the
+  # PROVENANCE proof: rebuilding from the git-tracked ledger must reproduce the committed
+  # registry/index.json byte-for-byte (ADR-0021/0047). A hand-edited index (or a stale rebuild) fails
+  # `git diff --exit-code`. This is the machine gate — it DETECTS tampering (goes red); PREVENTION
+  # (blocking the merge) needs this job marked a required check + CODEOWNERS on a real handle +
+  # branch protection (operator GitHub settings; forks board). The ledger APPEND step is P5 (below).
+  registry-index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+      - run: bun install --frozen-lockfile
+      - name: registry tests (schema · index builder · worker seam)
+        run: bun test registry/schema registry/scripts registry/worker
+      - name: index.json is a byte-identical rebuild from the ledger (proves CI-built)
+        run: |
+          bun registry/scripts/build-index.ts
+          git diff --exit-code registry/index.json
+
+  # The registry index (registry/index.json) is BUILT from the ledger by the registry-index job
+  # above — never hand-appended (ADR-0021). Branch protection + CODEOWNERS on registry/index.json +
+  # /registry/ledger.jsonl make CI the sole writer; the gateAttestation records provenance, it is not
+  # the access gate. The PUBLISH step that appends a gated publish to the ledger is wired in P5.
   #
   # publish-and-index:
-  #   needs: standards-gate
+  #   needs: [standards-gate, registry-index]
   #   if: github.ref == 'refs/heads/main'
-  #   ... changesets publish (CI-only OIDC/short-lived token) → rebuild registry/index.json
+  #   ... changesets publish (CI-only OIDC/short-lived token) → append ledger → rebuild index.json
