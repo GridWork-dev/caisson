@@ -15,13 +15,16 @@ gridwork-core security floor. **Rebuild-clean** from the seed repos — never po
 `media-pipeline` = patterns only.
 
 ## Goal
+
 Resolve the open foundational ADRs, then build **P0 (foundations)** + **P1 (base substrate)** per
 `plan.md`, leaving every package green through the `tooling/` standards gate. **No edition feature
 code** — base packages only.
 
 ## Step 0 — close the open ADRs FIRST (the docs-review found these missing; they block P0/P1)
+
 Author these as `knowledge/decisions/ADR-NNNN-*.md` (append-only, Wardfile format), resolving each
 fork on the decisions board (never auto-decide — recommend + confirm where it's a real product fork):
+
 - **ADR-0013 Testing strategy + golden-file harness** — test runner (recommend Bun's built-in or Vitest), what a golden file is (format/location/update/BLESS procedure), unit↔integration boundary. (This IS the P0 exit gate and the P2 compliance guard.)
 - **ADR-0014 Database + ORM** — make Drizzle explicit (already implied), PG provider for reference/seller platform (recommend Neon), migration strategy (numbered, idempotent, schema_version ledger ← health-service/Wardfile pattern).
 - **ADR-0015 Auth** — library + session/JWT shape + how `account_id`/`workspace_id` resolves and injects into `SET LOCAL` for RLS (the auth→RLS seam) + webhook/MCP Bearer.
@@ -32,6 +35,7 @@ fork on the decisions board (never auto-decide — recommend + confirm where it'
 - **Amend ADR-0007** — specify the credit idempotency partial-unique-index columns per event_type (e.g. `UNIQUE(source_event_id, event_type)`), the implementation-blocking gap the review flagged.
 
 ## Step 1 — build P0 → P1 (per plan.md)
+
 P0: `tooling/` (eslint/tsconfig/testing + standards lint-gate) → `kernel` → CI → golden-file skeleton.
 P1: `auth` → `tenancy-rls` (FORCE + a test proving a missing filter fails closed) → `billing` →
 `credits` (integer wallet, append-only ledger, debit-before-spend, 402, idempotent) → `ai-config`
@@ -40,11 +44,13 @@ generation write surface validates module names vs the registry allowlist**, ADR
 (vanilla-extract token floor) → `jobs` + `email`. Framework-agnostic core (apps deferred).
 
 ## Flagged for the (separate) Compliance session — do NOT build here, but know:
+
 - **ADR-0006 needs amending before P2:** field-crypto base tier must use **per-tenant key derivation**
   (HKDF(master_env_key, tenant_id)) — a single shared env key is a cross-tenant breach. The review
   rated this HIGH. Note it on the decisions board for the compliance session.
 
 ## Rules
+
 Never auto-decide a fork (board it). Spec/ADR before code. Atomic conventional commits
 (`feat(credits): …`). Goal-backward verify against each phase's exit gate. Stop at the **P1 exit
 gate** (base reference wiring green) and report — do not start editions.

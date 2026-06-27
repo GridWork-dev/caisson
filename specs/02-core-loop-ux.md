@@ -5,14 +5,14 @@
 
 ## 1. Surfaces
 
-| Surface | Who | Purpose |
-|---|---|---|
-| **Marketing site** | prospect | positions "AI production codebase starter"; editions, modules, pricing, the differentiators (compliance/AI-prod/local-first); checkout |
-| **Docs** (AI-native) | buyer + buyer's agent | setup guides, edition/module reference, `llms.txt`/MCP; doubles as support-bot KB + buyer-agent context |
-| **Buyer dashboard** | buyer | entitlements, license, **credit balance + ledger**, registry access, generation history, subscription |
-| **`create-stack` CLI + MCP** | buyer / buyer's agent | the generation + agent-assisted configure surface |
-| **Discord + support-bot** | buyer | AI answers grounded in the codebase → escalates a brief to a tagged human ticket |
-| **Seller cockpit** | operator | purchases, usage/credits, registry publishing, support queue, churn/MRR |
+| Surface                      | Who                   | Purpose                                                                                                                                |
+| ---------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **Marketing site**           | prospect              | positions "AI production codebase starter"; editions, modules, pricing, the differentiators (compliance/AI-prod/local-first); checkout |
+| **Docs** (AI-native)         | buyer + buyer's agent | setup guides, edition/module reference, `llms.txt`/MCP; doubles as support-bot KB + buyer-agent context                                |
+| **Buyer dashboard**          | buyer                 | entitlements, license, **credit balance + ledger**, registry access, generation history, subscription                                  |
+| **`create-stack` CLI + MCP** | buyer / buyer's agent | the generation + agent-assisted configure surface                                                                                      |
+| **Discord + support-bot**    | buyer                 | AI answers grounded in the codebase → escalates a brief to a tagged human ticket                                                       |
+| **Seller cockpit**           | operator              | purchases, usage/credits, registry publishing, support queue, churn/MRR                                                                |
 
 ## 2. Buyer journey (the loop, screen by screen)
 

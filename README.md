@@ -9,13 +9,13 @@ a bundle, **per-module à-la-carte**, and a **subscription/credits** layer.
 
 ## The offer
 
-| Edition | What | OSS/paid |
-|---|---|---|
-| **Compliance** (hero) | RLS + WORM + audit-chain + field-crypto + SOC2/HIPAA evidence pack | paid |
-| **AI Production Kit** | provider-agnostic AI config + metering + spend-caps + eval/CI + guardrails + agent-setup | paid |
-| **Local-first AI** | compute seam + sqlite-vec + offline license | AGPL open-core |
-| **Agentic-Dev** | governed-agent kernel (also powers the generator + buyer MCP) | paid |
-| **Base** | auth + fail-closed RLS + billing + credits + design floor + buyer MCP (auth) + AGENTS.md | OSS core + paid modules |
+| Edition               | What                                                                                     | OSS/paid                |
+| --------------------- | ---------------------------------------------------------------------------------------- | ----------------------- |
+| **Compliance** (hero) | RLS + WORM + audit-chain + field-crypto + SOC2/HIPAA evidence pack                       | paid                    |
+| **AI Production Kit** | provider-agnostic AI config + metering + spend-caps + eval/CI + guardrails + agent-setup | paid                    |
+| **Local-first AI**    | compute seam + sqlite-vec + offline license                                              | AGPL open-core          |
+| **Agentic-Dev**       | governed-agent kernel (also powers the generator + buyer MCP)                            | paid                    |
+| **Base**              | auth + fail-closed RLS + billing + credits + design floor + buyer MCP (auth) + AGENTS.md | OSS core + paid modules |
 
 ## Layout
 

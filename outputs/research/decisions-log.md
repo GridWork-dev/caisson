@@ -89,7 +89,7 @@ Short, dated, append-only. Why each non-obvious call was made.
 - **D14 — Features/architecture LOCKED; positioning DE-LOCKED.** The spec set + 12 ADRs
   (features, architecture, commerce mechanics) are approved/locked. **Positioning, hero,
   voice, name, and branding are NOT locked** — a **dedicated future positioning session**
-  researches the best hero *across all differentiators* (compliance / local-first / AI-infra /
+  researches the best hero _across all differentiators_ (compliance / local-first / AI-infra /
   production rigor), **not the AI-only frame**, then refines voice. "AI production codebase
   starter" + "Forge" are provisional scaffolding only. Specs 00 + 03 amended to mark this.
 - **D15 — Scaffold proceeds via a design-fork picker.** Before Phase 6 scaffolds, run a picker

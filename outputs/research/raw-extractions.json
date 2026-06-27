@@ -4,14 +4,9 @@
     "one_liner": "A private deterministic portfolio self-index: a Bun/TS collector (git + GitHub API -> profile.json) paired with a pure-SVG chart renderer (-> PNG + dashboard.html), refreshed by a Claude Code skill.",
     "domain": "dev-tooling",
     "tech_stack": {
-      "languages": [
-        "TypeScript"
-      ],
+      "languages": ["TypeScript"],
       "frameworks": [],
-      "key_libs": [
-        "@resvg/resvg-js",
-        "Bun native (spawn/sqlite/sleep)"
-      ],
+      "key_libs": ["@resvg/resvg-js", "Bun native (spawn/sqlite/sleep)"],
       "infra": [
         "GitHub REST API (ETag-conditional, file-based JSON cache)",
         "TOML seed files"
@@ -168,17 +163,9 @@
     "one_liner": "A portfolio governor CLI for a solo founder: enforces four allocation laws (capacity, new-build gate, mode clarity, compounding protection) plus an operator-psychology signal layer over local repo telemetry, producing a single markdown screen refreshed via a weekly review ritual.",
     "domain": "dev-tooling",
     "tech_stack": {
-      "languages": [
-        "TypeScript (strict, noUncheckedIndexedAccess)"
-      ],
-      "frameworks": [
-        "Bun runtime",
-        "Bun test"
-      ],
-      "key_libs": [
-        "Zod ^3.23.8",
-        "TOML (Bun native import)"
-      ],
+      "languages": ["TypeScript (strict, noUncheckedIndexedAccess)"],
+      "frameworks": ["Bun runtime", "Bun test"],
+      "key_libs": ["Zod ^3.23.8", "TOML (Bun native import)"],
       "infra": [
         "local-only CLI (no server, no DB, no network except one loopback HTTP probe)",
         "bun run build pipeline",
@@ -327,10 +314,7 @@
         "TypeScript (strict, Bun)",
         "Python 3 (hooks, eval graders)"
       ],
-      "frameworks": [
-        "Next.js 14 (cockpit dashboard)",
-        "Bun runtime"
-      ],
+      "frameworks": ["Next.js 14 (cockpit dashboard)", "Bun runtime"],
       "key_libs": [
         "@anthropic-ai/sdk 0.105.0",
         "zod 4.4.3",
@@ -545,10 +529,7 @@
     "one_liner": "A personal health-data service: multi-source ingestion (Garmin, Apple Health, Liftoff-emu) into a SQLite canonical store, a deterministic AI analysis engine, an MCP server, an adherence/dose-tracking system, and a mobile-first Next.js 15 PWA dashboard — all running as systemd units on a Tailscale-gated host.",
     "domain": "compliance/regulated",
     "tech_stack": {
-      "languages": [
-        "Python 3.13",
-        "TypeScript"
-      ],
+      "languages": ["Python 3.13", "TypeScript"],
       "frameworks": [
         "Starlette",
         "Next.js 15",
@@ -755,13 +736,8 @@
     "one_liner": "A Claude-Code-native opportunity-discovery engine that generates product-idea candidates, researches each against live web evidence across 12+ data sources, scores them on a weighted rubric, and adversarially kills red-ocean ideas before the operator commits time to them.",
     "domain": "AI-feature-add",
     "tech_stack": {
-      "languages": [
-        "TypeScript (strict)"
-      ],
-      "frameworks": [
-        "Next.js (board)",
-        "Claude Code (orchestration, skills)"
-      ],
+      "languages": ["TypeScript (strict)"],
+      "frameworks": ["Next.js (board)", "Claude Code (orchestration, skills)"],
       "key_libs": [
         "Zod",
         "@huggingface/transformers (local WASM embeddings)",
@@ -949,10 +925,7 @@
     "one_liner": "Local-first, private AI media library (DAM) that enriches a personal photo/video collection with on-device ML (SigLIP, JoyTag, VLM captions, NudeNet) and exposes hybrid tag/semantic search via a dense React pro-tool UI — AGPL-3.0 open-core with Ed25519 offline Pro license.",
     "domain": "local-first AI",
     "tech_stack": {
-      "languages": [
-        "Python 3.14",
-        "TypeScript"
-      ],
+      "languages": ["Python 3.14", "TypeScript"],
       "frameworks": [
         "FastAPI",
         "React 19",
@@ -1164,9 +1137,7 @@
     "one_liner": "A live certified-payroll SaaS that ingests Gusto/QBO/Finch payroll exports and emits filing-grade federal WH-347 PDFs and state portal artifacts (CA eCPR XML, IL CTP CSV, WA worksheet) under a WORM provenance trail, built on a framework-free compliance engine with config-as-code state modules and multi-tenant PostgreSQL RLS.",
     "domain": "compliance/regulated",
     "tech_stack": {
-      "languages": [
-        "TypeScript (strict)"
-      ],
+      "languages": ["TypeScript (strict)"],
       "frameworks": [
         "Next.js 15 App Router",
         "better-auth",
@@ -1370,9 +1341,7 @@
     "one_liner": "A production-deployed multi-state certified payroll compliance platform that assembles signing-ready federal WH-347 and state filing artifacts (CA eCPR, IL IDOL CSV, WA worksheet) from payroll exports, with WORM provenance, KMS SSN envelope encryption, Stripe billing, and Finch live sync — a snapshot of the main Wardfile repo captured at the IL/NJ filing-fields db+UI work stage, 1-2 commits behind main.",
     "domain": "compliance/regulated",
     "tech_stack": {
-      "languages": [
-        "TypeScript (strict)"
-      ],
+      "languages": ["TypeScript (strict)"],
       "frameworks": [
         "Next.js 15 App Router",
         "oRPC (@orpc/server + @orpc/contract)",
@@ -1593,10 +1562,7 @@
     "one_liner": "A freemium market-event legibility platform (intelligence, not prediction) built as a Bun/Turbo monorepo with a shared spine, niche plugins, dual-audience views, and a calibrated eval/track-record engine — design-complete, early build phase, not launched.",
     "domain": "AI-feature-add",
     "tech_stack": {
-      "languages": [
-        "TypeScript",
-        "Python (py-eval, planned)"
-      ],
+      "languages": ["TypeScript", "Python (py-eval, planned)"],
       "frameworks": [
         "Next.js (App Router)",
         "Trigger.dev v4",
@@ -1755,10 +1721,7 @@
     "one_liner": "A paused full-stack SaaS monorepo for an AI-powered agency operations platform, consolidating 7 repos into one — Next.js 19/Bun HQ dashboard, FastAPI/LangGraph pipeline server, marketing site, ops monitoring, and a local LightRAG GraphRAG service.",
     "domain": "AI-feature-add",
     "tech_stack": {
-      "languages": [
-        "TypeScript",
-        "Python"
-      ],
+      "languages": ["TypeScript", "Python"],
       "frameworks": [
         "Next.js 16 (App Router, React 19)",
         "FastAPI",
@@ -1993,15 +1956,8 @@
     "one_liner": "Full-stack agency monorepo for GridWork Digital LLC — public marketing site, magic-link-auth buyer dashboard, Hono/Fly API, and shared design system with 3-role RLS multi-tenant database isolation on Neon Postgres.",
     "domain": "marketing/agency",
     "tech_stack": {
-      "languages": [
-        "TypeScript"
-      ],
-      "frameworks": [
-        "Next.js 16 App Router",
-        "React 19",
-        "Hono",
-        "Turborepo"
-      ],
+      "languages": ["TypeScript"],
+      "frameworks": ["Next.js 16 App Router", "React 19", "Hono", "Turborepo"],
       "key_libs": [
         "Drizzle ORM",
         "Better Auth (magic-link)",
@@ -2226,11 +2182,7 @@
     "one_liner": "A mobile-first peptide/PED compound tracking app — Turborepo monorepo with Next.js web, Expo mobile, FastAPI + LangGraph AI enrichment pipeline, and a Hermes orchestration daemon, all backed by Neon Postgres + pgvector.",
     "domain": "health/wellness niche with AI-feature-add (compound enrichment pipeline)",
     "tech_stack": {
-      "languages": [
-        "TypeScript",
-        "Python",
-        "SQL"
-      ],
+      "languages": ["TypeScript", "Python", "SQL"],
       "frameworks": [
         "Next.js 16",
         "React 19",
@@ -2463,10 +2415,7 @@
     "one_liner": "A world-events sense-making engine: ingests GDELT/UCDP news data, runs a cost-budgeted salience gate + LLM extract pipeline (frame/ideology/claim tagging), and writes to a three-store knowledge graph (Fuseki RDF/OWL + Neo4j + Qdrant vector).",
     "domain": "AI-feature-add",
     "tech_stack": {
-      "languages": [
-        "Python 3.12+",
-        "TypeScript"
-      ],
+      "languages": ["Python 3.12+", "TypeScript"],
       "frameworks": [
         "Dagster (pipeline orchestration)",
         "Elysia/Bun (edge API)",
@@ -2800,11 +2749,7 @@
     "one_liner": "A private local-first AI digital asset manager (DAM) called \"Tessera\" — a multi-tier ML pipeline (tagging, embeddings, captions, face/geo/video) over a 26k-image personal media library, being productized as AGPLv3 open-core with offline Ed25519 Pro licensing.",
     "domain": "local-first AI",
     "tech_stack": {
-      "languages": [
-        "Python",
-        "TypeScript",
-        "HCL (Terraform)"
-      ],
+      "languages": ["Python", "TypeScript", "HCL (Terraform)"],
       "frameworks": [
         "FastAPI",
         "React 19 + Vite",
