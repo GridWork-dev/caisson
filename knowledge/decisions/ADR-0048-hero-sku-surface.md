@@ -12,7 +12,7 @@ converts to the **waitlist** (ADR-0046), not a checkout.
 ## Why
 
 ADR-0040 locked a **sequenced launch + buyer firewall**, and the **pricing numbers are an open
-board fork the operator owns** (ADR-0012 holds only working anchors). Showing the SKU *structure*
+board fork the operator owns** (ADR-0012 holds only working anchors). Showing the SKU _structure_
 without numbers honors both: it communicates the lineup and the one-time/bundle/per-module/subscription
 model that frames the wedge, while committing no price the operator hasn't locked. The generic base
 appears **once, as a footnote** ("and yes, it's a better base than the $199 kits"), never as a

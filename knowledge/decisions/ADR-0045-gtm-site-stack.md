@@ -12,7 +12,7 @@ collections). One build, one token wiring, one Pages project, one brand surface.
 ## Why
 
 The board already locked **single Next site + MDX, one deploy target / one brand** and **Cloudflare
-Pages hosting**. Fumadocs is built to compose docs *into* an existing App-Router app with
+Pages hosting**. Fumadocs is built to compose docs _into_ an existing App-Router app with
 bring-your-own UI, so it themes against `--cs-*` instead of fighting an opinionated theme
 (theme-not-fork — the same principle as the design contract). Static export is the cleanest fit for a
 content-first marketing+docs site: no adapter, deploys the `out/` dir straight to the existing
