@@ -12,8 +12,9 @@ coverage/
 # gw session-stream telemetry (hook-generated, not source)
 outputs/streams/
 
-# registry catalog is CI-written from the publish flow, never hand-edited (ADR-0021)
-registry/index.json
+# registry/index.json IS tracked (ADR-0047): it must be committed so the CI registry-index job can
+# `git diff --exit-code` a fresh rebuild against it and fail on drift. "Never hand-edited" is
+# enforced by that byte-identical check + CODEOWNERS — NOT by gitignoring it (which would hide drift).
 
 # local design / test artifacts + hook session logs
 .playwright-mcp/

@@ -1,19 +1,22 @@
-# CODEOWNERS — the registry catalog + the locked decision artifacts change only via owner review.
-# This is the "sole writer" half of ADR-0021's trust model: registry/index.json is CI-built, and
-# any human edit to it (or to the ADRs/board) requires code-owner approval.
+# CODEOWNERS — the registry catalog + the locked decision artifacts have a real owner on record.
+# This is the ownership half of ADR-0021's trust model: registry/index.json is CI-built, and the
+# `registry-index` byte-identical rebuild (a REQUIRED status check on `main`) blocks a hand-edit.
 #
-# ENFORCEMENT REQUIRES: branch protection on `main` with "Require review from Code Owners" enabled,
-# AND a real handle below. TODO(operator): replace @stack-owner with your GitHub handle/team and
-# turn on branch protection — until then this file documents intent but does not block.
+# ENFORCEMENT (live): branch protection on `main` requires the `check`, `standards-gate`, and
+# `registry-index` status checks + blocks force-push/deletion. "Require review from Code Owners" is
+# intentionally NOT enabled — this is a single-owner account, so a code-owner-review gate would block
+# self-merge with no second approver. Re-enable it the moment a second collaborator joins.
 
-# The generator allowlist — CI-built; no hand-edits without owner review (ADR-0021).
-/registry/index.json            @stack-owner
+# The generator allowlist — CI-built from the ledger; no hand-edits without owner review (ADR-0021).
+/registry/index.json            @GridWork-dev
+# The version ledger — the index's sole source of truth; a gated publish appends here (CI, P5).
+/registry/ledger.jsonl          @GridWork-dev
 
 # Locked decision artifacts (CLAUDE.md source-of-truth #1 + #2).
-/knowledge/decisions/           @stack-owner
-/docs/state/decisions-and-forks.md  @stack-owner
+/knowledge/decisions/           @GridWork-dev
+/docs/state/decisions-and-forks.md  @GridWork-dev
 
 # The standards gate itself — changing the gate changes what's enforceable.
-/tooling/                       @stack-owner
-/.dependency-cruiser.cjs        @stack-owner
-/.github/                       @stack-owner
+/tooling/                       @GridWork-dev
+/.dependency-cruiser.cjs        @GridWork-dev
+/.github/                       @GridWork-dev

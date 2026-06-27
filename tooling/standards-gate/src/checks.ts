@@ -182,7 +182,7 @@ export async function checkManifestAgreement(pkgs: Pkg[]): Promise<Finding[]> {
     mismatch("id", manifest.id, p.name);
     mismatch("version", manifest.version, p.version);
     mismatch("license", manifest.license, p.license);
-    // manifest.dependencies (@caisson/*) must match package.json's @stack deps — else the index
+    // manifest.dependencies (@caisson/*) must match package.json's @caisson deps — else the index
     // (built from the manifest) advertises a dep graph the package doesn't have (down-only runs
     // on package.json deps, so a divergent manifest array escapes it otherwise).
     const md = [...(manifest.dependencies ?? [])].sort().join(",");

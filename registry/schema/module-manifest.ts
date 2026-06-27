@@ -44,7 +44,7 @@ const semver = z
   );
 const moduleId = z
   .string()
-  .regex(/^@stack\/[a-z0-9-]+$/, "must be @caisson/<slug>");
+  .regex(/^@caisson\/[a-z0-9-]+$/, "must be @caisson/<slug>");
 // entry/agents/golden are consumed by create-caisson into paths — must be relative, no `..`
 // traversal, no absolute (ADR-0021 input-validation; closes a future path surface).
 const relPath = z
@@ -115,8 +115,11 @@ export const ModuleManifest = z
   );
 
 export type ModuleManifest = z.infer<typeof ModuleManifest>;
+/** The authoring shape — fields with Zod defaults (editions/entry/agents/golden/…) are optional. */
+export type ModuleManifestInput = z.input<typeof ModuleManifest>;
 
-/** Per-module `manifest.ts` calls this; throws on an invalid manifest at build time. */
-export function defineModule(m: ModuleManifest): ModuleManifest {
+/** Per-module `manifest.ts` calls this; throws on an invalid manifest at build time. Accepts the
+ * input shape (defaulted fields optional) and returns the fully-defaulted, validated manifest. */
+export function defineModule(m: ModuleManifestInput): ModuleManifest {
   return ModuleManifest.parse(m);
 }
