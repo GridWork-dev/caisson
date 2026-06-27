@@ -31,11 +31,13 @@ export {
   chainEntry,
   buildChain,
   verifyChain,
+  anchorChain,
 } from "./audit-chain.ts";
 export type {
   JsonValue,
   AuditChainEntry,
   ChainVerification,
+  AuditChainAnchor,
 } from "./audit-chain.ts";
 export {
   validateVersionSet,

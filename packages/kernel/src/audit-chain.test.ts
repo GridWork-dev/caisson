@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { matchGolden } from "@caisson/testing";
 import {
   type AuditChainEntry,
+  anchorChain,
   buildChain,
   canonicalize,
   chainEntry,
@@ -65,11 +66,63 @@ describe("audit-chain", () => {
     expect(verifyChain(reordered).brokenAt).toBe(1);
   });
 
-  test("dropping an entry breaks verification", () => {
+  test("dropping a MIDDLE entry breaks verification", () => {
     const chain = buildChain(PAYLOADS);
     const dropped: AuditChainEntry[] = [chain[0]!, chain[2]!];
     expect(verifyChain(dropped).valid).toBe(false);
     expect(verifyChain(dropped).brokenAt).toBe(1);
+  });
+
+  // --- TM8: internal consistency alone does NOT catch tail-truncation or wholesale rewrite. ---
+
+  test("tail-truncation passes WITHOUT an anchor (documented limit)", () => {
+    const chain = buildChain(PAYLOADS);
+    // Dropping the LAST entry leaves a still-internally-consistent prefix — verifies clean.
+    expect(verifyChain(chain.slice(0, -1))).toEqual({
+      valid: true,
+      brokenAt: null,
+    });
+  });
+
+  test("an anchor catches tail-truncation", () => {
+    const chain = buildChain(PAYLOADS);
+    const anchor = anchorChain(chain);
+    expect(verifyChain(chain, anchor)).toEqual({ valid: true, brokenAt: null });
+    // Same prefix that passed unanchored is now rejected against the committed length.
+    expect(verifyChain(chain.slice(0, -1), anchor)).toEqual({
+      valid: false,
+      brokenAt: 2,
+    });
+  });
+
+  test("an anchor catches a wholesale rewrite (forged self-consistent chain)", () => {
+    const chain = buildChain(PAYLOADS);
+    const anchor = anchorChain(chain);
+    // A fresh chain over forged payloads is internally consistent but has a different tip.
+    const forged = buildChain([
+      { event: "locked", artifactId: "art-1", version: 1 },
+      { event: "locked", artifactId: "art-1", version: 1 }, // tampered history
+      { event: "locked", artifactId: "art-2", version: 1 },
+    ]);
+    expect(verifyChain(forged)).toEqual({ valid: true, brokenAt: null }); // self-consistent
+    expect(verifyChain(forged, anchor)).toEqual({ valid: false, brokenAt: 2 }); // tip mismatch
+  });
+
+  test("an anchor catches a re-rooted chain (genesis mismatch)", () => {
+    const chain = buildChain(PAYLOADS);
+    const anchor = anchorChain(chain);
+    const reRooted = buildChain([
+      { event: "forged-genesis", artifactId: "art-1", version: 1 },
+      ...PAYLOADS.slice(1),
+    ]);
+    expect(verifyChain(reRooted, anchor)).toEqual({
+      valid: false,
+      brokenAt: 0,
+    });
+  });
+
+  test("anchorChain refuses an empty chain", () => {
+    expect(() => anchorChain([])).toThrow();
   });
 
   test("an empty chain trivially verifies", () => {
