@@ -8,3 +8,6 @@ dist/
 !.env.example
 coverage/
 .DS_Store
+
+# registry catalog is CI-written from the publish flow, never hand-edited (ADR-0021)
+registry/index.json

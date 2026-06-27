@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "modules": [
+    {
+      "id": "@stack/auth",
+      "latest": "0.1.0",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "publishedAt": "2026-06-27T00:00:00.000Z",
+          "gateAttestation": "ci-1042@a1b2c3d",
+          "manifest": {
+            "id": "@stack/auth",
+            "version": "0.1.0",
+            "kind": "base",
+            "editions": [],
+            "tier": "oss",
+            "priceCents": null,
+            "license": "MIT",
+            "dependencies": ["@stack/kernel"],
+            "entry": "src/index.ts",
+            "agents": "AGENTS.md",
+            "golden": null,
+            "stability": "alpha",
+            "description": "Authentication (sessions/JWT), provider-agnostic."
+          }
+        }
+      ]
+    },
+    {
+      "id": "@stack/local-ai",
+      "latest": "0.1.0",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "publishedAt": "2026-06-27T00:00:00.000Z",
+          "gateAttestation": "ci-1043@a1b2c3d",
+          "manifest": {
+            "id": "@stack/local-ai",
+            "version": "0.1.0",
+            "kind": "edition",
+            "editions": ["local-ai"],
+            "tier": "paid",
+            "priceCents": 39900,
+            "license": "AGPL-3.0-only",
+            "dependencies": ["@stack/kernel", "@stack/ai-config"],
+            "entry": "src/index.ts",
+            "agents": "AGENTS.md",
+            "golden": "golden/",
+            "stability": "alpha",
+            "description": "Local-first AI edition (AGPL): compute seam + privacy gate + sqlite-vec ANN + offline Ed25519 license."
+          }
+        }
+      ]
+    }
+  ]
+}
