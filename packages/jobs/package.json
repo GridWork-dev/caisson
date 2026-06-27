@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "license": "LicenseRef-Stack-Commercial",
   "description": "Provider-agnostic background-job queue port + in-memory test driver. Billing/credit side-effects are enqueued, never inline; Trigger.dev prod driver (ADR-0018).",
   "exports": {
     ".": {

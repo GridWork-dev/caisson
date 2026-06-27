@@ -1,0 +1,21 @@
+{
+  "name": "@stack/standards-gate",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The ONE standards gate (ADR-0021/0022): license-boundary (AGPL) + down-only dependency + manifest validation. The only registry ingress runs through this.",
+  "bin": {
+    "stack-gate": "./src/cli.ts"
+  },
+  "scripts": {
+    "lint": "echo 'standards-gate: no self-lint yet'",
+    "test": "echo 'standards-gate: tests land with the ADR-0013 harness'",
+    "gate": "bun run ./src/cli.ts"
+  },
+  "dependencies": {
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "dependency-cruiser": "^16.0.0"
+  }
+}

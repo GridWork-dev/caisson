@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "license": "LicenseRef-Stack-Commercial",
   "description": "Provider-agnostic AI config resolver (all providers) + buyer settings file. ADR-0011.",
   "exports": {
     ".": {

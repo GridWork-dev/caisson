@@ -34,7 +34,7 @@ editions (one-time) + bundle + **per-module à-la-carte** + **subscription/credi
 ## DEFERRED / OPEN (explicitly NOT locked)
 
 - **Positioning / hero / voice / name / branding** → a **dedicated future session** (research best hero across ALL differentiators, not AI-only; refine voice). "AI production codebase starter" + "Forge" = provisional only.
-- **Module production-standards + item pipeline** → a **separate dedicated session** (D9); P0 leaves the `tooling/`+`registry` seam.
+- **Module production-standards + item pipeline** → **authored** in the D9 session (ADR-0020 manifest · ADR-0021 publish flow · ADR-0022 lint gates; `tooling/standards-gate` + `registry/schema`), pending operator lock.
 - **Pricing numbers** = working anchors, refine pre-launch.
 - **Docs tooling** (Mintlify vs self-host) → build-time ADR.
 

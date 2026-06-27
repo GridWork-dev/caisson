@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "license": "LicenseRef-Stack-Commercial",
   "description": "Auth-gated buyer MCP: timing-safe Bearer, entitlement-scoped reads, allowlist+credit-gated generate. ADR-0008/0004.",
   "exports": {
     ".": {

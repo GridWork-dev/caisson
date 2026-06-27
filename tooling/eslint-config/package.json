@@ -3,10 +3,15 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Shared flat ESLint config — the single lint standard (ADR-0002). Every package extends index.js.",
+  "description": "The single ESLint standards source (ADR-0002) + the import-boundary rules (ADR-0022). Every package extends index.js.",
   "main": "index.js",
   "exports": {
-    ".": "./index.js"
+    ".": "./index.js",
+    "./boundaries": "./boundaries.js"
+  },
+  "scripts": {
+    "lint": "echo 'eslint-config: config package, no self-lint'",
+    "test": "echo 'eslint-config: rule tests land with the ADR-0013 harness'"
   },
   "dependencies": {
     "@eslint/js": "^9.13.0",
