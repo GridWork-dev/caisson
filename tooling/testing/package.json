@@ -1,0 +1,14 @@
+{
+  "name": "@stack/testing",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared test harness. D9 owns the module golden-fixture CONTRACT (golden-module.ts); the runner + bless procedure are the foundations harness (ADR-0013).",
+  "exports": {
+    "./golden-module": "./golden-module.ts"
+  },
+  "scripts": {
+    "lint": "echo 'testing: config package'",
+    "test": "echo 'testing: harness tests land with ADR-0013'"
+  }
+}
