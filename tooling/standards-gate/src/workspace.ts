@@ -26,7 +26,8 @@ export function findRoot(start = process.cwd()): string {
       if (Array.isArray(json.workspaces)) return dir;
     }
     const parent = dirname(dir);
-    if (parent === dir) throw new Error("repo root (package.json with `workspaces`) not found");
+    if (parent === dir)
+      throw new Error("repo root (package.json with `workspaces`) not found");
     dir = parent;
   }
 }
@@ -38,7 +39,9 @@ function expandGlob(root: string, pattern: string): string[] {
     if (!existsSync(base)) return [];
     return readdirSync(base)
       .map((d) => join(base, d))
-      .filter((d) => statSync(d).isDirectory() && existsSync(join(d, "package.json")));
+      .filter(
+        (d) => statSync(d).isDirectory() && existsSync(join(d, "package.json")),
+      );
   }
   const exact = join(root, pattern);
   return existsSync(join(exact, "package.json")) ? [exact] : [];
@@ -52,7 +55,9 @@ function srcHasCode(dir: string): boolean {
 
 export function readWorkspace(root = findRoot()): Pkg[] {
   const rootPj = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
-  const dirs = (rootPj.workspaces as string[]).flatMap((p) => expandGlob(root, p));
+  const dirs = (rootPj.workspaces as string[]).flatMap((p) =>
+    expandGlob(root, p),
+  );
   const out: Pkg[] = [];
   for (const dir of dirs) {
     const pj = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
@@ -61,7 +66,9 @@ export function readWorkspace(root = findRoot()): Pkg[] {
       dir,
       name: pj.name,
       license: typeof pj.license === "string" ? pj.license : null,
-      workspaceDeps: Object.keys(deps ?? {}).filter((d) => d.startsWith("@stack/")),
+      workspaceDeps: Object.keys(deps ?? {}).filter((d) =>
+        d.startsWith("@stack/"),
+      ),
       hasManifest: existsSync(join(dir, "manifest.ts")),
       hasCode: srcHasCode(dir),
     });
@@ -69,4 +76,5 @@ export function readWorkspace(root = findRoot()): Pkg[] {
   return out;
 }
 
-export const isAgpl = (license: string | null): boolean => !!license && /AGPL/i.test(license);
+export const isAgpl = (license: string | null): boolean =>
+  !!license && /AGPL/i.test(license);

@@ -10,7 +10,12 @@
  * registry-index `gateAttestation` (ADR-0021).
  */
 import { readWorkspace } from "./workspace";
-import { checkAgplBoundary, checkDeclarations, checkDownOnly, type Finding } from "./checks";
+import {
+  checkAgplBoundary,
+  checkDeclarations,
+  checkDownOnly,
+  type Finding,
+} from "./checks";
 
 function main(): number {
   const pkgs = readWorkspace();
