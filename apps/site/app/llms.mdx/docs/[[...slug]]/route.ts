@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getLLMText, getPageMarkdownUrl, source } from "@/lib/source";
 
 // Per-page raw markdown (the "copy markdown" / content.md endpoint). Static under export.
-export const revalidate = false;
+export const dynamic = "force-static";
 
 type Params = { params: Promise<{ slug?: string[] }> };
 

@@ -42,7 +42,7 @@ export function SiteFooter() {
             Compliance-grade infrastructure for regulated SaaS.
           </p>
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-4)" }}>
-            © {2026} GridWork Digital LLC
+            © {new Date().getFullYear()} GridWork Digital LLC
           </p>
         </div>
         {COLS.map((col) => (

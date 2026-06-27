@@ -1,5 +1,4 @@
 // Route + repo constants shared across the docs machinery (ADR-0045).
-export const appName = "Caisson";
 export const docsRoute = "/docs";
 export const docsContentRoute = "/llms.mdx/docs";
 export const gitConfig = {

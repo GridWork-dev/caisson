@@ -49,7 +49,6 @@ export function WaitlistForm({ source = "site" }: { source?: string }) {
     <form
       onSubmit={onSubmit}
       style={{ display: "flex", gap: "var(--cs-space-2)", flexWrap: "wrap" }}
-      noValidate
     >
       <label
         htmlFor="waitlist-email"

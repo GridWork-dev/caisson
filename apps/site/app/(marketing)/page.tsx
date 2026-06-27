@@ -241,9 +241,6 @@ DETAIL: RLS policy "tenant_isolation" forbids SELECT
             </Link>
             .
           </p>
-          <p className="cs-footnote" style={{ marginTop: "var(--cs-space-3)" }}>
-            And yes — it&apos;s a better base than the $199 kits.
-          </p>
         </div>
       </section>
 
