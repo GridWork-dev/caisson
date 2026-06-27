@@ -3,5 +3,17 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "vanilla-extract typed token floor + headless+styled primitives."
+  "description": "Typed token floor + headless+styled primitives (Wardfile-pattern token contract).",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens": "./src/tokens/index.ts",
+    "./styles/tokens.css": "./styles/tokens.css"
+  },
+  "scripts": {
+    "gen:tokens": "bun run scripts/gen-tokens-css.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "typescript": "^5.7.3"
+  }
 }

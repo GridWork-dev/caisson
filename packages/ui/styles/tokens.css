@@ -1,0 +1,86 @@
+/* GENERATED — packages/ui/scripts/gen-tokens-css.ts. Do not edit by hand.
+ * Locked selection: palette "a", type "1". Run: bun run gen:tokens */
+
+:root,
+[data-theme="dark"] {
+  /* colour — semantic (dark) */
+  --cs-bg: oklch(0.16 0.012 220);
+  --cs-surface-1: oklch(0.20 0.013 220);
+  --cs-surface-2: oklch(0.25 0.014 220);
+  --cs-border: oklch(0.32 0.012 220);
+  --cs-border-strong: oklch(0.42 0.012 220);
+  --cs-fg: oklch(0.96 0.004 220);
+  --cs-fg-muted: oklch(0.72 0.012 220);
+  --cs-accent: oklch(0.74 0.115 205);
+  --cs-accent-hover: oklch(0.80 0.105 205);
+  --cs-on-accent: oklch(0.17 0.02 220);
+  --cs-accent-tint: oklch(0.26 0.040 205);
+  --cs-focus: oklch(0.74 0.115 205);
+  --cs-link: oklch(0.78 0.10 205);
+  /* functional / status */
+  --cs-success: oklch(0.72 0.15 150);
+  --cs-warning: oklch(0.78 0.13 75);
+  --cs-danger: oklch(0.65 0.18 25);
+  --cs-info: oklch(0.70 0.12 240);
+  /* type */
+  --cs-font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --cs-font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", monospace;
+  --cs-text-xs: 0.75rem;
+  --cs-text-sm: 0.875rem;
+  --cs-text-base: 1rem;
+  --cs-text-lg: 1.125rem;
+  --cs-text-xl: 1.25rem;
+  --cs-text-2xl: 1.5rem;
+  --cs-text-3xl: 1.875rem;
+  --cs-text-4xl: 2.5rem;
+  --cs-text-5xl: 3.25rem;
+  --cs-text-display: clamp(2.75rem, 1.5rem + 4vw, 5.5rem);
+  --cs-weight-body: 350;
+  --cs-weight-regular: 400;
+  --cs-weight-medium: 500;
+  --cs-weight-semibold: 600;
+  --cs-weight-bold: 700;
+  --cs-leading-tight: 1.2;
+  --cs-leading-snug: 1.35;
+  --cs-leading-normal: 1.6;
+  --cs-leading-relaxed: 1.75;
+  --cs-tracking-tighter: -0.04em;
+  --cs-tracking-tight: -0.02em;
+  --cs-tracking-normal: 0em;
+  --cs-tracking-wide: 0.02em;
+  --cs-space-0: 0;
+  --cs-space-1: 0.25rem;
+  --cs-space-2: 0.5rem;
+  --cs-space-3: 0.75rem;
+  --cs-space-4: 1rem;
+  --cs-space-5: 1.25rem;
+  --cs-space-6: 1.5rem;
+  --cs-space-8: 2rem;
+  --cs-space-10: 2.5rem;
+  --cs-space-12: 3rem;
+  --cs-space-16: 4rem;
+  --cs-space-20: 5rem;
+  --cs-space-24: 6rem;
+  --cs-radius-sm: 4px;
+  --cs-radius-md: 8px;
+  --cs-radius-lg: 12px;
+  --cs-radius-xl: 16px;
+  --cs-radius-pill: 999px;
+}
+
+[data-theme="light"] {
+  /* colour — semantic (light); shared type/scale/functional inherited from :root */
+  --cs-bg: oklch(0.99 0.003 220);
+  --cs-surface-1: oklch(0.975 0.005 220);
+  --cs-surface-2: oklch(0.95 0.006 220);
+  --cs-border: oklch(0.88 0.008 220);
+  --cs-border-strong: oklch(0.80 0.010 220);
+  --cs-fg: oklch(0.22 0.015 220);
+  --cs-fg-muted: oklch(0.45 0.018 220);
+  --cs-accent: oklch(0.55 0.13 215);
+  --cs-accent-hover: oklch(0.48 0.13 215);
+  --cs-on-accent: oklch(0.99 0.01 220);
+  --cs-accent-tint: oklch(0.93 0.03 205);
+  --cs-focus: oklch(0.55 0.13 215);
+  --cs-link: oklch(0.50 0.13 215);
+}
