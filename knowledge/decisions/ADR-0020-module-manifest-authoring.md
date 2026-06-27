@@ -1,6 +1,6 @@
 # ADR-0020 — Module manifest + authoring conventions
 
-Status: proposed · 2026-06-27 (D9 module-standards session) — recommended, pending operator lock
+Status: **locked** · 2026-06-27 (D9 module-standards session; locked after 2 adversarial passes)
 
 The D9 pipeline rests on one declaration every registry module carries. This ADR fixes that
 manifest + the authoring conventions; ADR-0021 fixes the publish flow; ADR-0022 fixes the lint

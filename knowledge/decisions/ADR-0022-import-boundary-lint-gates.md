@@ -1,6 +1,6 @@
 # ADR-0022 — Import-boundary + license lint gates
 
-Status: proposed · 2026-06-27 (D9 module-standards session; rev. after adversarial review) — recommended, pending operator lock
+Status: **locked** · 2026-06-27 (D9 module-standards session; locked after 2 adversarial passes)
 
 Three invariants from earlier ADRs were **review-gated only**. The docs review rated the AGPL one
 HIGH (legal liability). This ADR converts them to **CI gates that fail the build**. Per the locked
