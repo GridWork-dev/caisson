@@ -3,5 +3,28 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Auth-gated buyer-facing MCP server (entitlement-scoped)."
+  "description": "Auth-gated buyer MCP: timing-safe Bearer, entitlement-scoped reads, allowlist+credit-gated generate. ADR-0008/0004.",
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@stack/kernel": "workspace:*",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@stack/eslint-config": "workspace:*",
+    "@stack/testing": "workspace:*",
+    "@stack/tsconfig": "workspace:*",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.0"
+  }
 }
