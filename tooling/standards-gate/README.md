@@ -19,7 +19,7 @@ publish.
   `tooling/eslint-config/boundaries.js`. (Source-import-level; ESLint sees imports, the gate
   sees the package graph.)
 - **Golden-file regression** → the ADR-0013 harness (this track does not redefine the runner;
-  the *module* golden-fixture shape is `tooling/testing/golden-module.ts` + ADR-0021 §golden).
+  the _module_ golden-fixture shape is `tooling/testing/golden-module.ts` + ADR-0021 §golden).
 
 ## Publish flow (ADR-0021)
 
