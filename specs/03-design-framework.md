@@ -8,7 +8,7 @@ surfaces (marketing, docs, dashboard, cockpit); (b) the **design-token floor shi
 ## 1. Design center
 
 A **dark, technical, pro-tool aesthetic** — the buyer is a developer/founder evaluating
-production-grade infrastructure; the design must *read as* production-grade, not a marketing
+production-grade infrastructure; the design must _read as_ production-grade, not a marketing
 template. Reference lineage: tessera's "Pigment" vanilla-extract pro-tool floor (the harvestable
 design seed), Linear/Vercel/Resend-class developer-product polish. Anti-AI-slop: no generic
 gradient-hero SaaS template look; dense, fast, keyboard-friendly, evidence-forward.
@@ -37,7 +37,7 @@ gradient-hero SaaS template look; dense, fast, keyboard-friendly, evidence-forwa
 ## 4. Brand + voice — DEFERRED (not locked)
 
 - **Positioning, hero, name, voice, and brand are a dedicated future session**, not settled here.
-  The session researches the best hero *across all differentiators* (compliance / local-first /
+  The session researches the best hero _across all differentiators_ (compliance / local-first /
   AI-infra / production rigor) — NOT the AI-only frame — then refines voice. Working name "Forge"
   is a placeholder.
 - What IS fixed now: the **dark pro-tool design center** + the **typed token-contract** approach
