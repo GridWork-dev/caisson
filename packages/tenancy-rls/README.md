@@ -1,4 +1,4 @@
-# @stack/tenancy-rls
+# @caisson/tenancy-rls
 
 Fail-closed multi-tenant Postgres RLS (FORCE policies + schema test).
 

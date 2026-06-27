@@ -1,7 +1,8 @@
 {
-  "name": "@stack/cli",
+  "name": "@caisson/cli",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "create-stack generator: composes a tailored repo from the versioned registry; agent-drivable; codegen-credit metered."
+  "license": "LicenseRef-Caisson-Commercial",
+  "description": "create-caisson generator: composes a tailored repo from the versioned registry; agent-drivable; codegen-credit metered."
 }

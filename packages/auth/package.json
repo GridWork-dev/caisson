@@ -1,7 +1,30 @@
 {
-  "name": "@stack/auth",
+  "name": "@caisson/auth",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Authentication (sessions/JWT), provider-agnostic."
+  "license": "LicenseRef-Caisson-Commercial",
+  "description": "Auth seam: EdDSA-JWT account tokens (the RLS seam) + session contract. Provider = better-auth (ADR-0015).",
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "bun test ./src"
+  },
+  "dependencies": {
+    "@caisson/kernel": "workspace:*"
+  },
+  "devDependencies": {
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.0"
+  }
 }

@@ -1,7 +1,31 @@
 {
-  "name": "@stack/credits",
+  "name": "@caisson/credits",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Integer credit wallet + append-only ledger + debit-before-spend (402)."
+  "license": "LicenseRef-Caisson-Commercial",
+  "description": "Integer credit wallet + append-only ledger + debit-before-spend (402, idempotent). ADR-0007/0020.",
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "bun test ./src"
+  },
+  "dependencies": {
+    "@caisson/kernel": "workspace:*",
+    "@caisson/tenancy-rls": "workspace:*"
+  },
+  "devDependencies": {
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.0"
+  }
 }

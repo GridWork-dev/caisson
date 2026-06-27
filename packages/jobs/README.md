@@ -1,4 +1,4 @@
-# @stack/jobs
+# @caisson/jobs
 
 Background jobs / scheduler spine.
 

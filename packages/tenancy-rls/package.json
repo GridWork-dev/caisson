@@ -1,7 +1,30 @@
 {
-  "name": "@stack/tenancy-rls",
+  "name": "@caisson/tenancy-rls",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Fail-closed multi-tenant Postgres RLS (FORCE policies + schema test)."
+  "license": "LicenseRef-Caisson-Commercial",
+  "description": "Fail-closed multi-tenant Postgres RLS (FORCE policies + withTenant + a missing-filter proof). ADR-0005.",
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "bun test ./src"
+  },
+  "dependencies": {
+    "@caisson/kernel": "workspace:*"
+  },
+  "devDependencies": {
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.0"
+  }
 }

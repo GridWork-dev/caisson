@@ -1,0 +1,19 @@
+# CODEOWNERS — the registry catalog + the locked decision artifacts change only via owner review.
+# This is the "sole writer" half of ADR-0021's trust model: registry/index.json is CI-built, and
+# any human edit to it (or to the ADRs/board) requires code-owner approval.
+#
+# ENFORCEMENT REQUIRES: branch protection on `main` with "Require review from Code Owners" enabled,
+# AND a real handle below. TODO(operator): replace @stack-owner with your GitHub handle/team and
+# turn on branch protection — until then this file documents intent but does not block.
+
+# The generator allowlist — CI-built; no hand-edits without owner review (ADR-0021).
+/registry/index.json            @stack-owner
+
+# Locked decision artifacts (CLAUDE.md source-of-truth #1 + #2).
+/knowledge/decisions/           @stack-owner
+/docs/state/decisions-and-forks.md  @stack-owner
+
+# The standards gate itself — changing the gate changes what's enforceable.
+/tooling/                       @stack-owner
+/.dependency-cruiser.cjs        @stack-owner
+/.github/                       @stack-owner
