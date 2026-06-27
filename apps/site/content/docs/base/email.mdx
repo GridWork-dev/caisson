@@ -1,0 +1,50 @@
+---
+title: Email
+description: A Resend email port with a test driver.
+---
+
+`@caisson/email` is the transactional-email port. [Resend](https://resend.com) is the default
+driver, and it sits behind the port like every other vendor in the base — call sites depend on the
+port, not the SDK.
+
+## The contract
+
+A **test driver** captures sends in memory, so a suite asserts on what would have been emailed —
+recipient, template, payload — without a network call or a live key.
+
+```ts
+import { sendEmail } from "@caisson/email";
+
+await sendEmail({
+  to: user.email,
+  template: "verify-email",
+  data: { url },
+});
+```
+
+Under the standards gate the same call resolves to the test driver, so email behavior is verified
+deterministically:
+
+```ts
+import { testEmail } from "@caisson/email/testing";
+
+// The send is captured, not transmitted.
+expect(testEmail.outbox).toHaveLength(1);
+```
+
+## Related
+
+<Cards>
+  <Card title="Jobs" href="/docs/base/jobs">
+    Send email from a job to keep request handlers fast.
+  </Card>
+  <Card title="Auth" href="/docs/base/auth">
+    Verification and reset mail ride this port.
+  </Card>
+</Cards>
+
+<Callout type="info">
+  This page is a scaffold. The full `@caisson/email` API reference — the email
+  port, the Resend driver, and the template contract — lands at general
+  availability.
+</Callout>

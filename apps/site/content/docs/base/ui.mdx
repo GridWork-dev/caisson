@@ -1,0 +1,42 @@
+---
+title: UI
+description: A typed token floor — --cs-* OKLCH tokens, one light and one dark theme.
+---
+
+`@caisson/ui` is the typed token floor. It ships a set of `--cs-*` custom properties in **OKLCH**,
+delivered as exactly two themes — one light, one dark. This docs site renders on those same tokens.
+
+## The contract
+
+You re-skin by **swapping token values**, never by forking a component. A component reads a token; it
+never hard-codes a hex value, so a brand change is a set of new variables, not a patch across the
+component tree.
+
+```css
+:root {
+  --cs-bg: oklch(99% 0 0);
+  --cs-fg: oklch(20% 0 0);
+  --cs-accent: oklch(62% 0.19 256);
+}
+
+/* Re-skin = new values here. Components read the tokens; they never fork. */
+```
+
+<Callout type="warn">
+  Styled primitives — buttons, inputs, cards as shipped components — are on the
+  roadmap. Today the package is the token contract only. Treat any primitive
+  shown elsewhere as a placeholder.
+</Callout>
+
+## Related
+
+<Cards>
+  <Card title="Getting started" href="/docs/getting-started">
+    Install the base and run the standards gate.
+  </Card>
+</Cards>
+
+<Callout type="info">
+  This page is a scaffold. The full `@caisson/ui` API reference — the complete
+  token map and the theming contract — lands at general availability.
+</Callout>

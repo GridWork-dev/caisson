@@ -1,0 +1,377 @@
+/* Caisson site — all colour/type/space from @caisson/ui tokens (--cs-*, ADR-0042).
+ * Tailwind v4 + fumadocs-ui power the /docs surface only; marketing is plain CSS keyed off --cs-*.
+ * No hard-coded hex, no ad-hoc rgba — depth = tonal surface + hairline borders, never shadows. */
+
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+
+/* Caisson owns the theme via [data-theme] (not a .dark class). Re-point Tailwind's `dark:`
+ * variant — and therefore every fumadocs `dark:` utility — at our attribute so the docs surface
+ * tracks the same toggle as marketing. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ===== fd-bridge: map every Fumadocs theme var onto the --cs-* contract (ADR-0045).
+ * --cs-* already switch value by [data-theme], so mapping once on :root inherits the right
+ * tone in both themes — no second light/dark block needed. Theme, never fork. ===== */
+:root {
+  --color-fd-background: var(--cs-bg);
+  --color-fd-foreground: var(--cs-fg);
+  --color-fd-muted: var(--cs-surface-2);
+  --color-fd-muted-foreground: var(--cs-fg-muted);
+  --color-fd-popover: var(--cs-surface-1);
+  --color-fd-popover-foreground: var(--cs-fg);
+  --color-fd-card: var(--cs-surface-1);
+  --color-fd-card-foreground: var(--cs-fg);
+  --color-fd-border: var(--cs-border);
+  --color-fd-primary: var(--cs-accent);
+  --color-fd-primary-foreground: var(--cs-on-accent);
+  --color-fd-secondary: var(--cs-surface-2);
+  --color-fd-secondary-foreground: var(--cs-fg);
+  --color-fd-accent: var(--cs-accent-tint);
+  --color-fd-accent-foreground: var(--cs-fg);
+  --color-fd-ring: var(--cs-focus);
+}
+
+/* ===== Caisson base ===== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  background: var(--cs-bg);
+  color: var(--cs-fg);
+  font-family: var(--cs-font-sans);
+  font-weight: var(--cs-weight-body);
+  line-height: var(--cs-leading-normal);
+  font-size: var(--cs-text-base);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  min-height: 100dvh;
+}
+
+::selection {
+  background: var(--cs-accent);
+  color: var(--cs-on-accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--cs-focus);
+  outline-offset: 2px;
+  border-radius: var(--cs-radius-sm);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+code,
+kbd,
+.mono {
+  font-family: var(--cs-font-mono);
+  font-feature-settings: "ss01", "zero";
+}
+
+/* ===== Marketing layout primitives (plain CSS, --cs-* only) ===== */
+.cs-container {
+  width: 100%;
+  max-width: 1140px;
+  margin-inline: auto;
+  padding-inline: var(--cs-space-6);
+}
+
+.cs-section {
+  padding-block: var(--cs-space-24);
+  border-top: 1px solid var(--cs-border);
+}
+
+.cs-section--flush {
+  border-top: 0;
+}
+
+.cs-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cs-space-2);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  font-weight: var(--cs-weight-medium);
+  letter-spacing: var(--cs-tracking-wide);
+  text-transform: uppercase;
+  color: var(--cs-accent);
+}
+
+.cs-section-title {
+  font-size: var(--cs-text-3xl);
+  font-weight: var(--cs-weight-semibold);
+  letter-spacing: var(--cs-tracking-tight);
+  line-height: var(--cs-leading-tight);
+  margin-block: var(--cs-space-4) var(--cs-space-3);
+  max-width: 28ch;
+}
+
+.cs-lede {
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-lg);
+  line-height: var(--cs-leading-relaxed);
+  max-width: 62ch;
+}
+
+.cs-muted {
+  color: var(--cs-fg-muted);
+}
+
+.cs-footnote {
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-sm);
+}
+
+/* ===== Navigation ===== */
+.cs-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cs-space-6);
+  padding: var(--cs-space-4) var(--cs-space-6);
+  border-bottom: 1px solid var(--cs-border);
+  background: color-mix(in oklab, var(--cs-bg) 82%, transparent);
+  backdrop-filter: saturate(140%) blur(12px);
+}
+
+.cs-nav-links {
+  display: flex;
+  align-items: center;
+  gap: var(--cs-space-6);
+  font-size: var(--cs-text-sm);
+}
+
+.cs-nav-links a {
+  color: var(--cs-fg-muted);
+  transition: color 120ms ease;
+}
+
+.cs-nav-links a:hover,
+.cs-nav-links a[aria-current="page"] {
+  color: var(--cs-fg);
+}
+
+.cs-brand {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--cs-space-2);
+}
+
+.cs-brand .mark {
+  font-family: var(--cs-font-mono);
+  font-weight: var(--cs-weight-medium);
+  letter-spacing: var(--cs-tracking-tight);
+  color: var(--cs-fg);
+}
+
+.cs-brand .sub {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+/* ===== Buttons ===== */
+.cs-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cs-space-2);
+  padding: var(--cs-space-3) var(--cs-space-5);
+  border-radius: var(--cs-radius-md);
+  border: 1px solid transparent;
+  font-size: var(--cs-text-sm);
+  font-weight: var(--cs-weight-medium);
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.cs-btn--primary {
+  background: var(--cs-accent);
+  color: var(--cs-on-accent);
+}
+
+.cs-btn--primary:hover {
+  background: var(--cs-accent-hover);
+}
+
+.cs-btn--ghost {
+  background: transparent;
+  color: var(--cs-fg);
+  border-color: var(--cs-border-strong);
+}
+
+.cs-btn--ghost:hover {
+  border-color: var(--cs-accent);
+  color: var(--cs-accent);
+}
+
+/* ===== Cards / panels ===== */
+.cs-card {
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-lg);
+  background: var(--cs-surface-1);
+  padding: var(--cs-space-6);
+}
+
+.cs-card--accent {
+  border-color: var(--cs-accent);
+  background: var(--cs-accent-tint);
+}
+
+.cs-card-title {
+  font-size: var(--cs-text-lg);
+  font-weight: var(--cs-weight-semibold);
+  letter-spacing: var(--cs-tracking-tight);
+}
+
+/* ===== Grid helpers ===== */
+.cs-grid {
+  display: grid;
+  gap: var(--cs-space-5);
+}
+
+.cs-grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.cs-grid--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.cs-grid--4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 860px) {
+  .cs-grid--2,
+  .cs-grid--3,
+  .cs-grid--4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Status pill — never colour-alone: glyph + label (ADR-0042 WCAG AA). ===== */
+.cs-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cs-space-2);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  letter-spacing: var(--cs-tracking-wide);
+  color: var(--cs-fg-muted);
+}
+
+.cs-status .glyph {
+  font-size: var(--cs-text-sm);
+  color: var(--cs-accent);
+}
+
+/* ===== Tags / chips ===== */
+.cs-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--cs-space-1) var(--cs-space-3);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-pill);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+/* ===== Code block (evidence) ===== */
+.cs-code {
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-surface-1);
+  padding: var(--cs-space-5);
+  overflow-x: auto;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-sm);
+  line-height: var(--cs-leading-snug);
+  color: var(--cs-fg);
+}
+
+/* ===== Footer ===== */
+.cs-footer {
+  border-top: 1px solid var(--cs-border);
+  padding-block: var(--cs-space-16);
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-sm);
+}
+
+.cs-footer-cols {
+  display: grid;
+  grid-template-columns: 2fr repeat(3, 1fr);
+  gap: var(--cs-space-8);
+}
+
+.cs-footer a {
+  color: var(--cs-fg-muted);
+}
+
+.cs-footer a:hover {
+  color: var(--cs-fg);
+}
+
+@media (max-width: 860px) {
+  .cs-footer-cols {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ===== Theme toggle (segmented) ===== */
+.cs-seg {
+  display: inline-flex;
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-pill);
+  overflow: hidden;
+}
+
+.cs-seg button {
+  padding: var(--cs-space-1) var(--cs-space-3);
+  background: transparent;
+  color: var(--cs-fg-muted);
+  border: 0;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  cursor: pointer;
+}
+
+.cs-seg button[aria-pressed="true"] {
+  background: var(--cs-accent-tint);
+  color: var(--cs-fg);
+}
+
+/* ===== Reduced motion ===== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

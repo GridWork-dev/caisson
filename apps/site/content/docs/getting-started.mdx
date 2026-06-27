@@ -1,0 +1,55 @@
+---
+title: Getting started
+description: Install the base, wire a tenant, and run the standards gate.
+---
+
+<Callout type="info">
+  Caisson is pre-launch. This page is the spine of the setup guide; commands and
+  package names are stable, version-pinned install instructions land at general
+  availability.
+</Callout>
+
+## Requirements
+
+- **Bun** (the runtime and package manager — never npm or yarn).
+- **Postgres** (Neon over HTTP is the reference host; the data layer is swappable).
+- A Postgres database you can run migrations against.
+
+## Install
+
+```bash
+bun create caisson@latest my-app
+cd my-app
+bun install
+```
+
+The generator scaffolds the base substrate and the editions you select. Generation is metered as
+codegen-credits; your AI agent can drive it through the MCP server.
+
+## Wire a tenant
+
+Every data path goes through `withTenant` — the sole entry point that sets the RLS tenant context.
+There is no way to query tenant data without it; that is the point.
+
+```ts
+import { withTenant } from "@caisson/tenancy-rls";
+
+await withTenant(tenantId, async (db) => {
+  // Inside this scope, RLS is enforced. Outside it, queries fail closed.
+  return db.query.invoices.findMany();
+});
+```
+
+## Run the gate
+
+One standards gate builds, lints, and tests every package. A package ships only through it.
+
+```bash
+bun run check
+```
+
+## Next steps
+
+- Read the **base substrate** docs for `auth`, `tenancy-rls`, `billing`, and `credits`.
+- Read the **Compliance** docs to turn on WORM evidence and the audit chain.
+- Bring your own framework — the `@caisson/*` packages never import one.

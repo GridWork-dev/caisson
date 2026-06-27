@@ -61,16 +61,19 @@ implementation**. The harvestable license kit is taken from PUBLIC `tessera`.
 
 ## Still open (do NOT pre-bind)
 
-- **Pricing numbers** (anchors in ADR-0012) · **per-edition app framework** (decided per edition).
-- **Hosting/site**: Cloudflare Pages + `caisson.sh` zone (Terraform in `infra/`); docs = single
-  Next site + MDX.
+- **Pricing numbers** (anchors in ADR-0012) — the only open GTM fork; the site prints **no hard
+  prices** until it is locked (ADR-0048 shows SKU structure + waitlist instead).
+
+_Closed since: **app framework** → Next.js App Router (ADR-0044); **hosting/site** → Cloudflare
+Pages + `caisson.sh` + a single static-export Next 16 app with Fumadocs MDX (ADR-0045), built in
+`apps/site` (marketing + docs)._
 
 ## Commits
 
 Conventional commits, atomic, one logical change each. Scopes: `scaffold` `specs` `adr` `state`
 `kickoffs` `tooling` `kernel` — plus, once code starts, per-package: `auth` `tenancy-rls`
 `billing` `credits` `ai-config` `mcp` `ui` `audit-worm` `field-crypto` `compliance` `ai-kit`
-`local-ai` `agent-dev` `cli` `support-bot` `license` `docs`.
+`local-ai` `agent-dev` `cli` `support-bot` `license` `docs` `site` (the `apps/site` marketing+docs app).
 
 ## Relationship to gridwork-core
 

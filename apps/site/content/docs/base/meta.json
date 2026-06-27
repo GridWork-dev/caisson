@@ -1,0 +1,15 @@
+{
+  "title": "Base substrate",
+  "pages": [
+    "auth",
+    "tenancy-rls",
+    "billing",
+    "credits",
+    "ai-config",
+    "mcp-server",
+    "ui",
+    "jobs",
+    "email",
+    "kernel"
+  ]
+}

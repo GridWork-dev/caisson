@@ -1,0 +1,76 @@
+---
+title: AI Production Kit
+description: Token metering, spend caps, a circuit breaker, an eval gate in CI, and a versioned prompt registry — the production-rigor layer cheap AI boilerplate skips.
+---
+
+A single model call costs a fraction of a cent — invisible until a retry loop fires it ten
+thousand times and the bill lands at the end of the month. The same week, a reworded prompt drifts
+the summarizer's accuracy down and nobody notices until a customer does. Both failures are cheap to
+prevent at the call site and expensive to find in production. `@caisson/ai-kit` is the layer that
+caps the spike, gates the regression, and versions the prompt.
+
+```bash
+$ POST /v1/ai/complete
+HTTP/1.1 402 Payment Required
+
+{
+  "error": "spend_cap_exceeded",
+  "tenant": "acme",
+  "window": "month",
+  "capCredits": 250000,
+  "spentCredits": 250000
+}
+```
+
+The cap is enforced before the provider is called, in integer credit units, fail-closed — over
+budget returns 402, never an unbounded charge.
+
+## What it does
+
+- **Provider-agnostic config** — one settings file; switch model or provider without touching call sites.
+- **Token metering** — every call is recorded with Postgres-atomic accounting, so usage is exact under concurrency.
+- **Spend caps + circuit breaker** — per-tenant budgets that deny over-limit calls and trip the breaker on a failing provider.
+- **Eval harness in CI** — prompts are scored against a fixture set; a regression fails the build, not production.
+- **Prompt registry** — prompts are versioned and append-only, so a change is a diff you can roll back.
+- **Guardrails + agent setup** — input/output guards plus an agent that walks env, providers, and DB through first-run configuration.
+
+## The contract it upholds
+
+Metering is Postgres-atomic: no double-count, no lost write when calls land concurrently — the
+ledger reconciles to the cent. Spend enforcement is fail-closed at the call site, so an unmetered
+path is a build error, not a leak. And the eval gate runs in CI on every change:
+
+```bash
+$ bun run eval
+FAIL  prompts/summarize@v3
+  faithfulness  0.71   gate >= 0.80
+1 regression — exit 1. Build blocked.
+```
+
+A prompt regression stops at the pull request. It does not reach a customer.
+
+## Usage
+
+Illustrative — the shipped API names land at general availability.
+
+```ts
+import type { TenantId } from "@caisson/tenancy-rls";
+import { aiConfig, withSpendCap } from "@caisson/ai-kit";
+
+// Provider-agnostic: model and provider live in config, not at the call site.
+const ai = aiConfig({ provider: "anthropic", model: "claude" });
+
+// Every call is metered (Postgres-atomic) and capped. Over budget -> 402, fail-closed.
+export async function summarize(tenant: TenantId, input: string) {
+  return withSpendCap(tenant, () =>
+    ai.complete({ prompt: "summarize@v3", input }),
+  );
+}
+```
+
+<Callout type="info" title="Pre-launch">
+  This page is the spine, not the manual. The full `@caisson/ai-kit` API
+  reference — config schema, the metering ledger, spend-cap policy, the
+  eval-harness CI contract, and the prompt registry — lands at general
+  availability. Package names and the fail-closed guarantees above are stable.
+</Callout>

@@ -1,0 +1,60 @@
+---
+title: Tenancy (RLS)
+description: Fail-closed multi-tenant Postgres RLS. A query with no tenant context returns nothing.
+---
+
+`@caisson/tenancy-rls` is the fail-closed multi-tenant layer. Every tenant table runs Postgres
+row-level security with `FORCE`, and `withTenant` is the **sole** entry point that sets the tenant
+context. A query that reaches the database with no context set returns nothing — never another
+tenant's rows.
+
+## The contract
+
+The policy is `FORCE`d, so it applies even to the table owner. The isolation guarantee is a test in
+the suite, not a hope:
+
+```sql
+ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE invoices FORCE  ROW LEVEL SECURITY;
+
+CREATE POLICY tenant_isolation ON invoices
+  USING (tenant_id = current_setting('app.tenant', true)::uuid);
+```
+
+With no `app.tenant` set, the same query that works inside a tenant scope is denied:
+
+```text
+$ psql -c "select * from invoices"
+ERROR:  permission denied for table invoices
+DETAIL: RLS policy "tenant_isolation" forbids SELECT
+        with no app.tenant set — fail-closed by default.
+```
+
+`withTenant` sets the context, runs your callback inside it, and tears it down — there is no API
+that reads tenant data without it:
+
+```ts
+import { withTenant } from "@caisson/tenancy-rls";
+
+await withTenant(tenantId, async (db) => {
+  // Inside this scope RLS is enforced. Outside it, queries fail closed.
+  return db.query.invoices.findMany();
+});
+```
+
+## Related
+
+<Cards>
+  <Card title="Auth" href="/docs/base/auth">
+    The only producer of the tenant claim `withTenant` reads.
+  </Card>
+  <Card title="Kernel" href="/docs/base/kernel">
+    A tenancy denial returns 404 — no existence leak.
+  </Card>
+</Cards>
+
+<Callout type="info">
+  This page is a scaffold. The full `@caisson/tenancy-rls` API reference — the
+  cross-tenant isolation test, migration helpers, and policy templates — lands
+  at general availability.
+</Callout>
