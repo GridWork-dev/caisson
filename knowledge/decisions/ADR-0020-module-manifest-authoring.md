@@ -13,7 +13,9 @@ Every module declares a **typed manifest** (`manifest.ts` exporting `defineModul
 validated by the registry Zod schema at build — `registry/schema/`) **plus an npm-native
 `package.json`** (`name`, `version` semver, `license` SPDX, `dependencies`). package.json stays
 the source of truth for the fields npm + changesets read; the manifest carries the richer,
-registry-only declaration. They agree on `id`/`version`/`license` (the gate asserts it).
+registry-only declaration. They agree on `id`/`version`/`license` — **ADR-0022 Gate 4 loads the
+manifest and asserts the agreement** (so the catalog can't advertise a different license than the
+package ships).
 
 Manifest fields:
 
@@ -22,8 +24,8 @@ Manifest fields:
 - **`kind`** — `base` | `edition` | `primitive` | `app-template`.
 - **`editions`** — membership array (`compliance|ai-kit|local-ai|agent-dev`); `[]` for pure base; an `edition` kind names itself.
 - **`tier`** — `oss` | `paid` (the **commerce** lever; distinct from the SPDX `license` legal lever).
-- **`priceCents`** — integer minor units, never floats (ADR-0007); `null` for `oss`/non-priced.
-- **`license`** — SPDX string; mirrors package.json (drives the AGPL gate, ADR-0022/0010).
+- **`priceCents`** — integer minor units, never floats (ADR-0007); `null` for `oss`; a `paid` module **must** carry a positive integer (schema-enforced).
+- **`license`** — SPDX from a **curated allowlist** (free strings let "Apache 2.0"/"MITT" through): **Apache-2.0** for base OSS-core (operator-locked), `LicenseRef-Stack-Commercial` for paid editions, `AGPL-3.0-only` for local-first. Mirrors package.json (drives the AGPL gate, ADR-0022/0010). **AGPL ⟺ local-ai membership** — local-ai modules must be AGPL, and only they may be (schema-enforced both ways).
 - **`dependencies`** — workspace module ids; **down-only** — a base/primitive never depends "up" on an edition (ADR-0003); gate-checked.
 - **`entry`** — package entry (default `src/index.ts`).
 - **`agents`** — path to the module's **AGENTS.md** (the agent-facing authoring/usage contract the buyer's MCP/agent reads — distinct from the human README).

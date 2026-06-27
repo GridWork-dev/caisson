@@ -9,9 +9,11 @@ production-standards pipeline is a **separate dedicated session** (D9) — P0 fi
 
 - T0.1 Monorepo init: Bun workspaces + Turborepo + changesets (ADR-0001).
 - T0.2 `tooling/`: eslint-config + tsconfig + testing harness + the lint-gate (ADR-0002). Wire
-  the D9 standards layer: `@stack/standards-gate` (AGPL + down-only, ADR-0022), the provider-SDK
-  boundary in `eslint-config/boundaries.js` (ADR-0022), and the module golden-fixture contract
-  `testing/golden-module.ts` against the ADR-0013 runner.
+  the D9 standards layer (all 3, ADR-0022): `@stack/standards-gate` (AGPL ext+ws · down-only ·
+  manifest agreement), the provider-SDK boundary in `eslint-config/boundaries.js`, and
+  `.dependency-cruiser.cjs` (graph reach + base→edition); plus the module golden-fixture contract
+  `testing/golden-module.ts` against the ADR-0013 runner. Fix the workspace install first (empty
+  `services/*`/`apps/*` members + missing lockfile block `bun install` today).
 - T0.3 `kernel`: typed config/schema + validator (← gridwork-core).
 - T0.4 CI: build + lint + test + the standards gate; the golden-file harness skeleton. The gate
   job runs `stack-gate` + eslint + the golden run; the registry-index update job runs only after a
