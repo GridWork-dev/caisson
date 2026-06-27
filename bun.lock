@@ -118,6 +118,23 @@
     "packages/cli": {
       "name": "@caisson/cli",
       "version": "0.0.0",
+      "bin": {
+        "create-caisson": "./src/cli.ts",
+      },
+      "dependencies": {
+        "@caisson/credits": "workspace:*",
+        "@caisson/kernel": "workspace:*",
+        "@caisson/registry": "workspace:*",
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/tenancy-rls": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
     },
     "packages/compliance": {
       "name": "@caisson/compliance",
@@ -246,6 +263,20 @@
         "typescript": "^5.6.0",
       },
     },
+    "registry": {
+      "name": "@caisson/registry",
+      "version": "0.0.0",
+      "dependencies": {
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
+    },
     "services/docs": {
       "name": "@caisson/service-docs",
       "version": "0.0.0",
@@ -336,6 +367,8 @@
     "@caisson/local-ai": ["@caisson/local-ai@workspace:packages/local-ai"],
 
     "@caisson/mcp-server": ["@caisson/mcp-server@workspace:packages/mcp-server"],
+
+    "@caisson/registry": ["@caisson/registry@workspace:registry"],
 
     "@caisson/service-docs": ["@caisson/service-docs@workspace:services/docs"],
 

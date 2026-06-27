@@ -1,0 +1,35 @@
+{
+  "name": "@caisson/registry",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "LicenseRef-Caisson-Commercial",
+  "description": "Registry catalog: module manifest + index schema + allowlist helpers + the CI index builder (ADR-0020/0021/0047).",
+  "exports": {
+    ".": {
+      "bun": "./schema/index.ts",
+      "types": "./dist/schema/index.d.ts",
+      "default": "./dist/schema/index.js"
+    },
+    "./build-index": {
+      "bun": "./scripts/build-index.ts",
+      "types": "./dist/scripts/build-index.d.ts",
+      "default": "./dist/scripts/build-index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint schema scripts worker",
+    "test": "bun test schema scripts worker"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.0"
+  }
+}

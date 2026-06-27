@@ -68,7 +68,7 @@ jobs:
           bun-version: "1.3.14"
       - run: bun install --frozen-lockfile
       - name: registry tests (schema · index builder · worker seam)
-        run: bun test registry
+        run: bun test registry/schema registry/scripts registry/worker
       - name: index.json is a byte-identical rebuild from the ledger (proves CI-built)
         run: |
           bun registry/scripts/build-index.ts

@@ -3,10 +3,10 @@
 // manifest landed. These assert the corrected regex in BOTH schema sites.
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { defineModule } from "./module-manifest";
+import { type ModuleManifestInput, defineModule } from "./module-manifest";
 import { assertKnownModule, loadRegistryIndex } from "./registry-index";
 
-const validManifest = {
+const validManifest: ModuleManifestInput = {
   id: "@caisson/field-crypto",
   version: "0.1.0",
   kind: "primitive",
@@ -16,7 +16,7 @@ const validManifest = {
   dependencies: ["@caisson/kernel"],
   description:
     "Field encryption column custom-type + per-tenant key derivation.",
-} as const;
+};
 
 describe("module-id regex (@caisson)", () => {
   test("a real @caisson/* id parses through defineModule", () => {
