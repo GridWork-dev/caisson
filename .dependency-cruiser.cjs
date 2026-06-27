@@ -16,7 +16,7 @@ const PROVIDER_SDK_RE =
   "node_modules/(openai|@azure/openai|@anthropic-ai/(sdk|bedrock|vertex-sdk)|@google/(genai|generative-ai)|@aws-sdk/client-bedrock-runtime|@mistralai/mistralai|cohere-ai|groq-sdk|replicate|together-ai|ollama)";
 
 const BASE_PKGS =
-  "packages/(auth|tenancy-rls|billing|credits|ai-config|mcp-server|ui|jobs|email|kernel|audit-worm|field-crypto|cli)";
+  "packages/(auth|tenancy-rls|billing|credits|ai-config|mcp-server|ui|jobs|email|kernel|audit-worm|field-crypto|cli|agent-kernel)";
 const EDITIONS = ["compliance", "ai-kit", "local-ai", "agent-dev"];
 const EDITION_PKGS = `packages/(${EDITIONS.join("|")})`;
 
