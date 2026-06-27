@@ -1,4 +1,4 @@
-# ADR-0023 — Design-system foundation: palette + type lock
+# ADR-0040 — Design-system foundation: palette + type lock
 
 **Status:** accepted · 2026-06-27
 **Relates:** specs/03 (design framework), specs/04 (voice & brand), ADR-0013 (positioning),
