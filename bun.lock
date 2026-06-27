@@ -15,6 +15,25 @@
         "typescript-eslint": "^8.10.0",
       },
     },
+    "apps/base": {
+      "name": "@stack/app-base",
+      "version": "0.0.0",
+      "dependencies": {
+        "@stack/auth": "workspace:*",
+        "@stack/billing": "workspace:*",
+        "@stack/credits": "workspace:*",
+        "@stack/kernel": "workspace:*",
+        "@stack/mcp-server": "workspace:*",
+        "@stack/tenancy-rls": "workspace:*",
+      },
+      "devDependencies": {
+        "@stack/eslint-config": "workspace:*",
+        "@stack/testing": "workspace:*",
+        "@stack/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
+    },
     "packages/agent-dev": {
       "name": "@stack/agent-dev",
       "version": "0.0.0",
@@ -314,6 +333,8 @@
     "@stack/ai-config": ["@stack/ai-config@workspace:packages/ai-config"],
 
     "@stack/ai-kit": ["@stack/ai-kit@workspace:packages/ai-kit"],
+
+    "@stack/app-base": ["@stack/app-base@workspace:apps/base"],
 
     "@stack/audit-worm": ["@stack/audit-worm@workspace:packages/audit-worm"],
 
