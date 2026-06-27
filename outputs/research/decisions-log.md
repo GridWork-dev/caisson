@@ -119,3 +119,34 @@ Short, dated, append-only. Why each non-obvious call was made.
   - **3 tracks chosen** → worktrees off `main` + kickoffs: **Foundations + Base (P0/P1)** ·
     **Positioning / hero / voice / branding** · **Module production-standards + pipeline (D9)**.
     (Compliance hero deferred to a later session — its review gaps noted in the foundations kickoff.)
+
+## 2026-06-27 (positioning session — closes D14)
+
+- **D18 — Hero positioning LOCKED (operator).** Two-layer frame (ADR-0013): **umbrella** = a
+  production-grade codebase library, _the load-bearing infrastructure cheap boilerplates skip_;
+  **hero wedge** acquisition leads with = **Compliance** (CPC 10–50×, cleanest unserved gap,
+  WTP, strongest baseline, best recurring lever). Build scope (all 4 editions, D13) unchanged —
+  positioning fixes only GTM weight. Resolved the 4 market-strategy review gaps in-ADR:
+  (1) **compliance-update subscription = own SKU** $149–299/mo, split from $49–199/mo dev credits
+  (supersedes ADR-0012's single sub line); (2) **ICP buyer-firewall** — generic buyer refused at
+  the paid hero tier, enters only via the free AGPL flank (D10 generic stays table-stakes, never a
+  comparison table); (3) **EU AI Act Annex IV = gated paid add-on module** (à-la-carte + sub),
+  empty registry slot scaffolded in P2, US frameworks (SOC2/HIPAA) lead core, **sell worldwide**
+  (EU AI Act binds the buyer's regulator, not us; MoR absorbs our EU VAT/data) — operator confirmed
+  the "gate at payment, not geo-restrict" read; (4) **sequenced launch** (free local-first AGPL →
+  compliance paid hero → AI-Kit/agentic) with a **P2-exit hard gate** before Wave-2 push.
+- **D19 — Name LOCKED = Caisson (operator).** `@caisson/*`, primary domain `caisson.sh` (ADR-0014).
+  LOW collision (only unrelated offshore-foundation eng tools); on-thesis (watertight foundation
+  sunk under pressure → holds under load). Rejected Footing (weak trademark/common word), Plumb
+  (MED collision), and the HIGH-collision in-lane field (Bedrock/Keel/Bastion/Verity/Substrate/…).
+  Sub-brand reserve: **Attest** / **Provenance** for the evidence-pack / audit-chain module.
+  `Forge`/`stack` references in the append-only ADR-0001..0012 are superseded by ADR-0014 (not
+  edited); `specs/*` renamed in-session. Operator action pending: claim `@caisson` npm org + buy
+  `caisson.sh`.
+- **D20 — Voice & brand LOCKED.** `specs/04-voice-and-brand.md`: evidence-forward pro-tool register
+  (Linear/Resend/Vercel cadence), 6 voice principles, a banned-word list, locked tagline
+  ("Compliance-grade infrastructure for regulated SaaS") + hero H1 ("Fail-closed by construction").
+  Floor = gridwork-core `identity/voice.md`. Wordmark/logo/motion deferred to the design kickoff.
+- **D21 — ADR numbering claim.** Positioning took ADR-0013 + ADR-0014; the foundations track's
+  technical ADRs (testing/db/auth/CI/MoR per the completeness review) continue at ADR-0015+ to
+  avoid a merge collision.
