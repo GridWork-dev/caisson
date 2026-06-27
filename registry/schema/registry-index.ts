@@ -9,7 +9,10 @@ import { ModuleManifest } from "./module-manifest";
 
 const semver = z
   .string()
-  .regex(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/, "must be semver");
+  .regex(
+    /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/,
+    "must be semver",
+  );
 
 export const RegistryVersion = z
   .object({
@@ -48,8 +51,13 @@ export function moduleAllowlist(index: RegistryIndex): Set<string> {
   return new Set(index.modules.map((m) => m.id));
 }
 
-export function assertKnownModule(index: RegistryIndex, id: string): asserts id is string {
+export function assertKnownModule(
+  index: RegistryIndex,
+  id: string,
+): asserts id is string {
   if (!moduleAllowlist(index).has(id)) {
-    throw new Error(`unknown module id (not in registry allowlist): ${JSON.stringify(id)}`);
+    throw new Error(
+      `unknown module id (not in registry allowlist): ${JSON.stringify(id)}`,
+    );
   }
 }

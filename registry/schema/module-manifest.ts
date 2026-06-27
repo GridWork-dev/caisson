@@ -6,15 +6,30 @@
  */
 import { z } from "zod";
 
-export const MODULE_KINDS = ["base", "edition", "primitive", "app-template"] as const;
+export const MODULE_KINDS = [
+  "base",
+  "edition",
+  "primitive",
+  "app-template",
+] as const;
 export const COMMERCE_TIERS = ["oss", "paid"] as const;
 export const STABILITY = ["alpha", "beta", "stable"] as const;
-export const EDITIONS = ["compliance", "ai-kit", "local-ai", "agent-dev"] as const;
+export const EDITIONS = [
+  "compliance",
+  "ai-kit",
+  "local-ai",
+  "agent-dev",
+] as const;
 
 const semver = z
   .string()
-  .regex(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/, "must be semver");
-const moduleId = z.string().regex(/^@stack\/[a-z0-9-]+$/, "must be @stack/<slug>");
+  .regex(
+    /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/,
+    "must be semver",
+  );
+const moduleId = z
+  .string()
+  .regex(/^@stack\/[a-z0-9-]+$/, "must be @stack/<slug>");
 
 export const ModuleManifest = z
   .object({
