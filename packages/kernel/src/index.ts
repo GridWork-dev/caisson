@@ -46,3 +46,17 @@ export {
   versionChain,
 } from "./versioning.ts";
 export type { VersionRecord } from "./versioning.ts";
+
+export {
+  InMemoryEventSink,
+  NoopEventSink,
+  OtelPostgresEventSink,
+  opsEventSchema,
+  redactEvent,
+} from "./event-sink.ts";
+export type {
+  EventSink,
+  OpsEvent,
+  OtelPostgresSinkOptions,
+  OtlpSend,
+} from "./event-sink.ts";
