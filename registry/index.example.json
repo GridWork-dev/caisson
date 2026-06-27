@@ -16,7 +16,7 @@
             "editions": [],
             "tier": "oss",
             "priceCents": null,
-            "license": "MIT",
+            "license": "Apache-2.0",
             "dependencies": ["@stack/kernel"],
             "entry": "src/index.ts",
             "agents": "AGENTS.md",
