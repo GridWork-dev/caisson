@@ -1,0 +1,7 @@
+{
+  "name": "@stack/service-docs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "AI-native docs that feed the support-bot + buyer agents (P6 — scaffold)."
+}

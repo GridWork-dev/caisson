@@ -1,12 +1,7 @@
 {
+  "extends": "./tooling/tsconfig/base.json",
   "compilerOptions": {
-    "strict": true,
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true
-  }
+    "noEmit": true
+  },
+  "files": []
 }

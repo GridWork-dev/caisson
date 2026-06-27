@@ -8,3 +8,6 @@ dist/
 !.env.example
 coverage/
 .DS_Store
+
+# gw session-stream telemetry (hook-generated, not source)
+outputs/streams/
