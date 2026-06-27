@@ -1,3 +1,3 @@
-import config from "@stack/eslint-config";
+import config from "@caisson/eslint-config";
 
 export default config;

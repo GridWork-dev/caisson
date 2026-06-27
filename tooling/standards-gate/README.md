@@ -1,14 +1,14 @@
-# @stack/standards-gate
+# @caisson/standards-gate
 
 The Bun layer of the standards gate (ADR-0021/0022) — the SPDX/license authority. Run:
-`bun run gate` (or `stack-gate`). Exit non-zero on any error → fails CI, `bun run check`, blocks
+`bun run gate` (or `caisson-gate`). Exit non-zero on any error → fails CI, `bun run check`, blocks
 publish. Runs alongside two other layers in CI (ADR-0022): ESLint (fast static provider-SDK
 signal) + dependency-cruiser (real module graph: dynamic/transitive reach + base→edition).
 
 ## What this layer enforces
 
 - **AGPL boundary** (Gate 1, ADR-0010) — non-AGPL package may not depend on an AGPL package, over
-  **workspace `@stack/*` deps AND external npm deps** (reads each resolved dep's SPDX; external
+  **workspace `@caisson/*` deps AND external npm deps** (reads each resolved dep's SPDX; external
   scan needs `node_modules` — warns + defers to CI post-install if absent).
 - **Down-only** (Gate 3, ADR-0003) — base/primitive ↛ edition, edition ↛ edition. Enforced now
   (keyed on the 4 edition names; refines to manifest `kind` once modules carry manifests).

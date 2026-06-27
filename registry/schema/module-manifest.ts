@@ -1,7 +1,7 @@
 /**
  * Module manifest schema — the typed declaration every registry module carries (ADR-0020).
  * Canonical home: registry/ (the registry defines what a module IS). Imported + enforced by
- * `@stack/standards-gate` (which provides `zod`). package.json stays the source of truth for the
+ * `@caisson/standards-gate` (which provides `zod`). package.json stays the source of truth for the
  * fields npm + changesets read; this manifest carries the richer, registry-only declaration. The
  * gate asserts manifest↔package.json agreement on id/version/license (ADR-0020/0021).
  */
@@ -25,11 +25,11 @@ export const EDITIONS = [
 /**
  * Curated SPDX allowlist (a free string lets "Apache 2.0"/"MITT"/"Proprietary" through). The model
  * is FULLY COMMERCIAL (ADR-0023, supersedes ADR-0010's open-core base): every module is the
- * proprietary `LicenseRef-Stack-Commercial` EXCEPT the AGPL Local-first flank — the one deliberate
+ * proprietary `LicenseRef-Caisson-Commercial` EXCEPT the AGPL Local-first flank — the one deliberate
  * open community play. No permissive/free tier (Apache/MIT removed). Extend deliberately.
  */
 export const SPDX_LICENSES = [
-  "LicenseRef-Stack-Commercial",
+  "LicenseRef-Caisson-Commercial",
   "AGPL-3.0-only",
   "AGPL-3.0-or-later",
 ] as const;
@@ -44,8 +44,8 @@ const semver = z
   );
 const moduleId = z
   .string()
-  .regex(/^@stack\/[a-z0-9-]+$/, "must be @stack/<slug>");
-// entry/agents/golden are consumed by create-stack into paths — must be relative, no `..`
+  .regex(/^@stack\/[a-z0-9-]+$/, "must be @caisson/<slug>");
+// entry/agents/golden are consumed by create-caisson into paths — must be relative, no `..`
 // traversal, no absolute (ADR-0021 input-validation; closes a future path surface).
 const relPath = z
   .string()
@@ -102,14 +102,14 @@ export const ModuleManifest = z
       "AGPL license ⟺ local-ai edition membership (ADR-0010): local-ai modules must be AGPL, and only they may be",
     path: ["license"],
   })
-  // tier ⟺ license (ADR-0023 fully-commercial): paid ⟺ LicenseRef-Stack-Commercial; oss ⟺ AGPL.
+  // tier ⟺ license (ADR-0023 fully-commercial): paid ⟺ LicenseRef-Caisson-Commercial; oss ⟺ AGPL.
   // Stops a paid module shipping under a permissive/redistributable license.
   .refine(
     (m) =>
-      (m.tier === "paid") === (m.license === "LicenseRef-Stack-Commercial"),
+      (m.tier === "paid") === (m.license === "LicenseRef-Caisson-Commercial"),
     {
       message:
-        "tier ⟺ license (ADR-0023): paid modules MUST be LicenseRef-Stack-Commercial; oss MUST be AGPL",
+        "tier ⟺ license (ADR-0023): paid modules MUST be LicenseRef-Caisson-Commercial; oss MUST be AGPL",
       path: ["license"],
     },
   );

@@ -1,4 +1,4 @@
-# @stack/agent-dev
+# @caisson/agent-dev
 
 Agentic-Dev edition: typed agent/skill/rule schema + lifecycle state machine + local hybrid memory + hooks dispatcher.
 

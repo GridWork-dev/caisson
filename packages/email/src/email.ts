@@ -3,7 +3,7 @@
 // that POSTs via `fetchWithTimeout` (ADR-0002) and reads its API key from injected config — no
 // provider key in code. Real template rendering (React-Email per ADR-0018) lands with the template
 // registry; here the payload maps template + data honestly into Resend's request shape.
-import { fetchWithTimeout, InternalError } from "@stack/kernel";
+import { fetchWithTimeout, InternalError } from "@caisson/kernel";
 
 export interface EmailMessage {
   to: string;

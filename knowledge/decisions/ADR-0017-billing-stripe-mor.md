@@ -3,13 +3,13 @@
 Status: proposed · 2026-06-27 (foundations track; resolves the open billing/MoR fork)
 
 The payment provider is **Stripe**, with **Stripe Tax** for tax calculation (operator lock).
-**Honest framing:** Stripe is a PSP, **not** a merchant-of-record — _Forge (the operator) is the
+**Honest framing:** Stripe is a PSP, **not** a merchant-of-record — _Caisson (the operator) is the
 merchant of record_; Stripe Tax computes VAT/sales tax at checkout but the operator remits.
 Chosen for best-in-class DX/docs, the cleanest webhook model, and Checkout/Tax/Billing covering
 one-time editions + à-la-carte modules + subscriptions/credits (ADR-0012) in one provider. The
 MoR tax-remittance burden is the accepted tradeoff vs Paddle/Lemon-Squeezy.
 
-**Containment — `BillingProvider` port.** No Stripe type leaks past `@stack/billing`. The package
+**Containment — `BillingProvider` port.** No Stripe type leaks past `@caisson/billing`. The package
 exposes a provider-agnostic port (`createCheckout`, `verifyWebhook`, `parseEvent → DomainBillingEvent`)
 with a Stripe driver behind it; a future MoR swap (Paddle/LS) is a new driver, not a rewrite. The
 rest of the base consumes only `DomainBillingEvent` (a typed, Zod-`.strict()` union:
@@ -37,5 +37,5 @@ ADR-0007). Skipping signature verification / using parsed JSON (forgeable; HMAC 
 mandatory).
 
 Binding: every webhook verifies the Stripe HMAC over the raw body with replay protection before
-parse; no Stripe type escapes `@stack/billing`; the credit effect is idempotent on the event id;
+parse; no Stripe type escapes `@caisson/billing`; the credit effect is idempotent on the event id;
 P1 ships the verified-event→grant seam, P6 the commerce orchestration.

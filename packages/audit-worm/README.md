@@ -1,4 +1,4 @@
-# @stack/audit-worm
+# @caisson/audit-worm
 
 WORM ArtifactStore (S3 Object-Lock) + SHA-256 append-only audit chain.
 

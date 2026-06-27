@@ -1,7 +1,7 @@
 # ADR-0041 — Product name: Caisson
 
 Status: accepted · 2026-06-27 (positioning session — operator-locked). Closes the "real product
-name" fork. Supersedes the working name **`stack` / `@stack/*`** and the placeholder **`Forge`**.
+name" fork. Supersedes the working name **`stack` / `@caisson/*`** and the placeholder **`Forge`**.
 
 The product is named **Caisson**. Package scope is **`@caisson/*`**.
 
@@ -17,7 +17,7 @@ Availability (research 2026-06-27, `outputs/research/` name-availability pass):
   an unrelated industry; the dev-tools / security / compliance lane is wide open. Strong trademark
   distinctiveness (vs. the rejected common-word candidates).
 - **npm:** the bare `caisson` package is taken (dead legacy pkg); the **`@caisson/*` org scope** is
-  the play (same pattern as `@stack/*`). Confirm + claim `@caisson` at npm signup.
+  the play (same pattern as `@caisson/*`). Confirm + claim `@caisson` at npm signup.
 - **Domains:** `.com` and `.dev` are registered (true for every dictionary-word candidate). Primary
   is **`caisson.sh`** (available ~$45/yr; the dev-tool TLD convention); fallbacks
   `getcaisson.com` / `caisson.build`.
@@ -27,7 +27,7 @@ _feature_ sub-brand (both are dead as company marks — askattest.com, Provenanc
 ideal as a module name and reinforce the audit/evidence hero).
 
 Rejected: **Footing** (LOW-MED collision but a common dictionary word → weak trademark, and a niche
-Python `footing` tool sits next to our `create-stack` generator); **Plumb** (MED — small AI-workflow
+Python `footing` tool sits next to our `create-caisson` generator); **Plumb** (MED — small AI-workflow
 tools useplumb/plumbed.io/dbreunig·plumb); **Bedrock / Keel / Bastion / Substrate / Verity /
 Provenance / Bulwark / Attest / Cornerstone** (all HIGH collision _in our exact lane_ — Amazon
 Bedrock, keel.sh, verityaml.com "continuous compliance," Parity Substrate, bulwark-security, etc.);

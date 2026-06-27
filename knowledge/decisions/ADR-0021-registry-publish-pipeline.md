@@ -13,7 +13,7 @@ generator's allowlist. **Host: GitHub Packages** (operator-locked).
 (`registry/index.json`: each module → its published versions → that version's manifest + publish
 metadata) that the CLI, the buyer's agent, AND the docs all read (ADR-0004 one-source for
 _metadata_). Module **source** ships as **independently published, versioned packages** to GitHub
-Packages (changesets-driven, ADR-0001). `create-stack` composes a repo by pulling **published
+Packages (changesets-driven, ADR-0001). `create-caisson` composes a repo by pulling **published
 versions named in the index** — it never reads working-tree source. Schema:
 `registry/schema/registry-index.ts`.
 
@@ -71,7 +71,7 @@ under the module's `golden` dir. A golden diff **blocks publish** until re-bless
 
 ## Generator input-validation (ADR-0004/0008 enforcement)
 
-The **registry index IS the allowlist**. `create-stack` + the buyer MCP server load it via
+The **registry index IS the allowlist**. `create-caisson` + the buyer MCP server load it via
 `loadRegistryIndex()` (parse-or-throw — never a cast) and validate **both** the module id
 (`assertKnownModule`) **and the version** (`assertKnownVersion`) against the index **before any path
 construction or subprocess**. Version matters: a raw version string (`"0.1.0/../.."`) reaching a path

@@ -1,4 +1,4 @@
-# @stack/billing
+# @caisson/billing
 
 Merchant-of-Record / Stripe billing + webhooks.
 

@@ -20,7 +20,7 @@ forge/
     ai-kit/                # AI Production Kit EDITION
     local-ai/              # Local-first AI EDITION (AGPL)
     agent-dev/             # Agentic-Dev EDITION (← gridwork-core kernel)
-    cli/                   # `create-stack` generator (Option C)
+    cli/                   # `create-caisson` generator (Option C)
   registry/                # versioned module sources the CLI + buyer's agent pull from
   apps/                    # ONE runnable reference template per edition (the sellable starters)
     base/  compliance/  ai-kit/  local-ai/  agent-dev/
@@ -56,7 +56,7 @@ account (buyer/tenant)                      RLS-isolated; member × role (owner|
 │   └── credit_event   grant (purchase|sub-allotment|topup) | debit (codegen|ai-feature)
 │                      idempotent (DB-anchored, ADR-0007); debit-before-spend; 402 on empty
 ├── registry_access    scoped token → which registry modules/versions they may pull
-├── generation         a `create-stack` run: edition+modules selected, repo emitted,
+├── generation         a `create-caisson` run: edition+modules selected, repo emitted,
 │                      credits debited (the codegen meter)
 └── usage_event        metered events (per-generation, per-ai-feature) → billing/analytics
 support_ticket         AI-triaged; ai_brief (jsonb); escalated_to (human); links account
@@ -70,12 +70,12 @@ module / module_version   the registry: package, semver, changelog, OSS|paid, pr
 3. **Secrets timing-safe, env-only.** `crypto.timingSafeEqual` for **opaque Bearer/registry tokens**; **Ed25519 licenses verify via `crypto.verify()`** (asymmetric — NOT timingSafeEqual); no hardcoded keys; `fetchWithTimeout` on every outbound call; Zod `.strict()` at boundaries; no `any`, no `console.log` (gridwork-core security floor).
 4. **License verifies offline (ADR-0010).** Ed25519; fail-safe-to-free for OSS tiers; revocation via the issuer.
 5. **Compliance edition adds: append-only versions + WORM + audit chain (ADR-0006).** Locked artifacts immutable; supersede never mutate; S3 Object-Lock + SHA-256 hash chain; field encryption via a column custom-type (key-version registry; KMS envelope at SOC2 tier).
-6. **Buyer MCP server is auth-gated (ADR-0008).** Bearer/license-scoped; **read-mostly** over codebase conventions; the one write surface (drive `create-stack` generation) is **credit-gated (ADR-0007) + validates module/edition names against the registry allowlist** before any file/subprocess use, and is per-account rate-limited.
+6. **Buyer MCP server is auth-gated (ADR-0008).** Bearer/license-scoped; **read-mostly** over codebase conventions; the one write surface (drive `create-caisson` generation) is **credit-gated (ADR-0007) + validates module/edition names against the registry allowlist** before any file/subprocess use, and is per-account rate-limited.
 7. **Provider-agnostic AI config (ADR-0011).** One config resolves any provider (OpenAI/Anthropic/Gemini/OpenRouter/local) + a buyer settings file; no provider hardcoded; agent-assisted setup writes it.
 
 ## 4. The generator / registry (Option C)
 
-- `create-stack` (CLI) reads `registry/` (versioned module sources) → composes a tailored repo from the buyer's edition+module selection. Driven either by the CLI directly or **by the buyer's AI agent via the MCP server** (the agent picks modules + configures).
+- `create-caisson` (CLI) reads `registry/` (versioned module sources) → composes a tailored repo from the buyer's edition+module selection. Driven either by the CLI directly or **by the buyer's AI agent via the MCP server** (the agent picks modules + configures).
 - Generation is a `generation` row + a **credit debit** (codegen-credits) — the metered monetization of Option C.
 - The registry is the single source the CLI, the buyer's agent, AND the docs pull from — one artifact, many consumers (mirrors the support-strategy "one content source" insight).
 

@@ -1,8 +1,8 @@
 // The P1 exit-gate proof (ADR-0005): RLS fails closed under a missing filter. Runs the real
 // `withTenant` against PGlite — the same SET ROLE + SET LOCAL path production uses.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { newTestPg, type TestPg } from "@stack/testing";
-import { TenancyError } from "@stack/kernel";
+import { newTestPg, type TestPg } from "@caisson/testing";
+import { TenancyError } from "@caisson/kernel";
 import { buildTenantPolicySql, withTenant } from "./index.ts";
 
 let tp: TestPg;

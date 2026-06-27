@@ -1,13 +1,14 @@
-# CLAUDE.md — stack (working name) working rules
+# CLAUDE.md — Caisson working rules
 
 Additive to the global gridwork-core surface (security floor, retrieval doctrine, coding
 discipline auto-load from there). This file holds only what is specific to this repo.
 
 **What this repo is:** a productized monorepo library — a composable base + four premium
-editions (Compliance · AI Production Kit · Local-first AI · Agentic-Dev) + a `create-stack`
+editions (Compliance · AI Production Kit · Local-first AI · Agentic-Dev) + a `create-caisson`
 generator + a custom support service. Sold one-time + bundle + per-module + subscription/credits.
 Full founding spec: `specs/00-product-spec.md`. Built **rebuild-clean** from proven GridWork
-repos — never a port. **Working name only — real name + positioning are a deferred session.**
+repos — never a port. **Name + positioning LOCKED: Caisson · `@caisson/*` · `caisson.sh`**
+(ADR-0041 name · ADR-0040 hero · ADR-0042 design).
 
 ## The one operator rule
 
@@ -19,7 +20,7 @@ edited — supersede with a later ADR).
 ## Source-of-truth hierarchy
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
-2. `knowledge/decisions/` — the ADRs themselves (ADR-0001..0012 locked at Gate 4)
+2. `knowledge/decisions/` — the ADRs themselves (0001-0012 founding · 0013-0024 substrate+pipeline · 0040-0042 brand; all locked)
 3. `specs/` — locked concept docs; `specs/00-product-spec.md` is the founding spec
 4. `plan.md` / `SUMMARY.md` — build plan + consolidated summary
 5. `outputs/` — session artifacts (kickoffs, research, syntheses)
@@ -50,12 +51,19 @@ session). Build proceeds per `plan.md` (P0 → P7) only after the relevant kicko
 Nothing from `media-pipeline` (pro-private) may seed any package — **patterns/ideas only, never
 implementation**. The harvestable license kit is taken from PUBLIC `tessera`.
 
-## Deferred sessions (do NOT pre-bind)
+## Locked since founding (no longer deferred)
 
-- **Positioning / hero / voice / name / branding** — a dedicated session (research best hero
-  across all differentiators, not AI-only). "AI production codebase starter" is provisional.
-- **Module production-standards + item pipeline** — a dedicated session; `tooling/`+`registry/`
-  is the seam.
+- **Name + positioning + design** — LOCKED: name **Caisson** (ADR-0041); hero = **compliance
+  wedge under a production-rigor umbrella** (ADR-0040); design foundation palette+type (ADR-0042).
+  The old "AI production codebase starter" frame is superseded.
+- **Module production-standards + pipeline** — LOCKED: manifest · publish flow · lint gates ·
+  fully-commercial licensing (ADR-0020-0023); `tooling/`+`registry/` is the seam.
+
+## Still open (do NOT pre-bind)
+
+- **Pricing numbers** (anchors in ADR-0012) · **per-edition app framework** (decided per edition).
+- **Hosting/site**: Cloudflare Pages + `caisson.sh` zone (Terraform in `infra/`); docs = single
+  Next site + MDX.
 
 ## Commits
 

@@ -1,4 +1,4 @@
-# @stack/local-ai
+# @caisson/local-ai
 
 Local-first AI edition (AGPL): compute seam + privacy gate + sqlite-vec ANN + offline Ed25519 license + local store.
 

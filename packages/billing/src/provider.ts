@@ -1,7 +1,7 @@
 // The BillingProvider port (ADR-0017). Stripe lives behind it; a future MoR swap (Paddle/LS) is a
 // new driver, not a rewrite. P1 ships verify+parse (the seam that feeds the credit grant); the
 // full purchase→entitlement→license→grant orchestration is P6 (services/license).
-import { fetchWithTimeout, InternalError } from "@stack/kernel";
+import { fetchWithTimeout, InternalError } from "@caisson/kernel";
 import { verifyStripeWebhook, type VerifyOptions } from "./webhook.ts";
 import {
   parseStripeEvent,

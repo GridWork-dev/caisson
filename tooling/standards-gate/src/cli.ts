@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * `stack-gate` — the standards-gate CLI (ADR-0021/0022). The ONLY registry ingress runs through
+ * `caisson-gate` — the standards-gate CLI (ADR-0021/0022). The ONLY registry ingress runs through
  * this. Exit non-zero on any "error" finding → fails the CI `standards-gate` job + blocks publish.
  * (Run via the CI job or `bun run gate`; it is NOT part of `bun run check`/turbo.)
  *

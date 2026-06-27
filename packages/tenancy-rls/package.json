@@ -1,9 +1,9 @@
 {
-  "name": "@stack/tenancy-rls",
+  "name": "@caisson/tenancy-rls",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "license": "LicenseRef-Stack-Commercial",
+  "license": "LicenseRef-Caisson-Commercial",
   "description": "Fail-closed multi-tenant Postgres RLS (FORCE policies + withTenant + a missing-filter proof). ADR-0005.",
   "exports": {
     ".": {
@@ -18,12 +18,12 @@
     "test": "bun test ./src"
   },
   "dependencies": {
-    "@stack/kernel": "workspace:*"
+    "@caisson/kernel": "workspace:*"
   },
   "devDependencies": {
-    "@stack/eslint-config": "workspace:*",
-    "@stack/testing": "workspace:*",
-    "@stack/tsconfig": "workspace:*",
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
     "eslint": "^9.13.0",
     "typescript": "^5.6.0"
   }

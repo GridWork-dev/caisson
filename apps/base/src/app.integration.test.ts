@@ -4,10 +4,10 @@
 // the buyer MCP answers an authed query."
 import { createHmac } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { newTestPg, type TestPg } from "@stack/testing";
-import { generateAccountKeyPair, signAccountJwt } from "@stack/auth";
-import { CREDIT_SCHEMA_SQL } from "@stack/credits";
-import { createStripeBilling } from "@stack/billing";
+import { newTestPg, type TestPg } from "@caisson/testing";
+import { generateAccountKeyPair, signAccountJwt } from "@caisson/auth";
+import { CREDIT_SCHEMA_SQL } from "@caisson/credits";
+import { createStripeBilling } from "@caisson/billing";
 import { createBaseApp, createFetchHandler } from "./index.ts";
 
 const WEBHOOK_SECRET = "whsec_base_test";

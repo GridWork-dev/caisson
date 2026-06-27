@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "modules": [
     {
-      "id": "@stack/auth",
+      "id": "@caisson/auth",
       "latest": "0.1.0",
       "versions": [
         {
@@ -10,14 +10,14 @@
           "publishedAt": "2026-06-27T00:00:00.000Z",
           "gateAttestation": "ci-1042@a1b2c3d",
           "manifest": {
-            "id": "@stack/auth",
+            "id": "@caisson/auth",
             "version": "0.1.0",
             "kind": "base",
             "editions": [],
             "tier": "paid",
             "priceCents": 4900,
-            "license": "LicenseRef-Stack-Commercial",
-            "dependencies": ["@stack/kernel"],
+            "license": "LicenseRef-Caisson-Commercial",
+            "dependencies": ["@caisson/kernel"],
             "entry": "src/index.ts",
             "agents": "AGENTS.md",
             "golden": null,
@@ -28,7 +28,7 @@
       ]
     },
     {
-      "id": "@stack/local-ai",
+      "id": "@caisson/local-ai",
       "latest": "0.1.0",
       "versions": [
         {
@@ -36,14 +36,14 @@
           "publishedAt": "2026-06-27T00:00:00.000Z",
           "gateAttestation": "ci-1043@a1b2c3d",
           "manifest": {
-            "id": "@stack/local-ai",
+            "id": "@caisson/local-ai",
             "version": "0.1.0",
             "kind": "edition",
             "editions": ["local-ai"],
             "tier": "oss",
             "priceCents": null,
             "license": "AGPL-3.0-only",
-            "dependencies": ["@stack/kernel", "@stack/ai-config"],
+            "dependencies": ["@caisson/kernel", "@caisson/ai-config"],
             "entry": "src/index.ts",
             "agents": "AGENTS.md",
             "golden": "golden/",

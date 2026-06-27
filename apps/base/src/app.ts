@@ -2,11 +2,11 @@
 // object IS the wiring: a credit-gated operation (auth → tenancy → credits), a Stripe webhook that
 // grants credits (billing → credits), and a buyer MCP query. The app framework per edition
 // (Next/TanStack/Hono) is a deferred fork — the HTTP binding here is plain Bun.serve (server.ts).
-import { withTenant, type Transactor } from "@stack/tenancy-rls";
-import { balance, debit, grant, type CreditResult } from "@stack/credits";
-import type { SessionContext } from "@stack/auth";
-import { createMcpServer, type McpServerOptions } from "@stack/mcp-server";
-import type { BillingProvider } from "@stack/billing";
+import { withTenant, type Transactor } from "@caisson/tenancy-rls";
+import { balance, debit, grant, type CreditResult } from "@caisson/credits";
+import type { SessionContext } from "@caisson/auth";
+import { createMcpServer, type McpServerOptions } from "@caisson/mcp-server";
+import type { BillingProvider } from "@caisson/billing";
 
 export interface BaseAppDeps {
   db: Transactor;

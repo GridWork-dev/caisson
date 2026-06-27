@@ -71,7 +71,7 @@ export function assertKnownModule(
 ): asserts id is ModuleId {
   if (!MODULE_ID_RE.test(id)) {
     throw new Error(
-      `malformed module id (failed @stack/<slug>): ${JSON.stringify(id)}`,
+      `malformed module id (failed @caisson/<slug>): ${JSON.stringify(id)}`,
     );
   }
   if (!moduleAllowlist(index).has(id)) {

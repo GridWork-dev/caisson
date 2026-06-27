@@ -1,4 +1,4 @@
-# @stack/credits
+# @caisson/credits
 
 Integer credit wallet + append-only ledger + debit-before-spend (402).
 

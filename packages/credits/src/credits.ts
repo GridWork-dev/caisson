@@ -4,8 +4,8 @@
 // RETURNING` so a retried grant/debit is absorbed WITHOUT aborting the surrounding transaction
 // (a caught 23505 would poison it). Run inside `withTenant` so RLS scopes the ledger.
 import { randomUUID } from "node:crypto";
-import { InsufficientCreditsError, ValidationError } from "@stack/kernel";
-import type { TenantExecutor } from "@stack/tenancy-rls";
+import { InsufficientCreditsError, ValidationError } from "@caisson/kernel";
+import type { TenantExecutor } from "@caisson/tenancy-rls";
 
 export const GRANT_EVENT_TYPES = [
   "purchase",

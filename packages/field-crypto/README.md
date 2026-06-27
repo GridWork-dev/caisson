@@ -1,4 +1,4 @@
-# @stack/field-crypto
+# @caisson/field-crypto
 
 Field encryption column custom-type + key-version registry (KMS envelope at SOC2).
 

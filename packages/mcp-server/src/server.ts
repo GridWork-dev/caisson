@@ -13,7 +13,7 @@ import {
   parseStrict,
   safeEqualFixed,
   strictObject,
-} from "@stack/kernel";
+} from "@caisson/kernel";
 
 export interface BuyerToken {
   token: string;

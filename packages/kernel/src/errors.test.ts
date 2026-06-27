@@ -1,17 +1,17 @@
 import { describe, expect, test } from "bun:test";
-import { matchGolden } from "@stack/testing";
+import { matchGolden } from "@caisson/testing";
 import {
   AuthzError,
   ConflictError,
   InsufficientCreditsError,
   InternalError,
   TenancyError,
-  isStackError,
+  isCaissonError,
   isUniqueViolation,
   toErrorResponse,
 } from "./index.ts";
 
-describe("StackError model", () => {
+describe("CaissonError model", () => {
   test("each subclass carries a stable code + http status", () => {
     expect(new AuthzError().httpStatus).toBe(403);
     expect(new ConflictError().code).toBe("conflict");
@@ -24,7 +24,7 @@ describe("StackError model", () => {
     const err = new InsufficientCreditsError(50, 10);
     expect(err.httpStatus).toBe(402);
     expect(err.details).toEqual({ required: 50, balance: 10 });
-    expect(isStackError(err)).toBe(true);
+    expect(isCaissonError(err)).toBe(true);
   });
 
   test("toErrorResponse renders the 402 credit-gate envelope (golden)", () => {
@@ -43,7 +43,7 @@ describe("StackError model", () => {
     });
   });
 
-  test("a StackError 500 still does not echo details unless set", () => {
+  test("a CaissonError 500 still does not echo details unless set", () => {
     expect(toErrorResponse(new InternalError())).toEqual({
       status: 500,
       body: {

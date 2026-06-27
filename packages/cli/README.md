@@ -1,6 +1,6 @@
-# @stack/cli
+# @caisson/cli
 
-create-stack generator: composes a tailored repo from the versioned registry; agent-drivable; codegen-credit metered.
+create-caisson generator: composes a tailored repo from the versioned registry; agent-drivable; codegen-credit metered.
 
 - **Layer:** generator
 - **Seeds (rebuild-clean):** (net-new)

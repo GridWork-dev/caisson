@@ -3,7 +3,7 @@
 // straight into the credit wallet's idempotency key (ADR-0007/0023) so a replayed webhook grants
 // exactly once. `accountId` comes from checkout metadata set at session creation.
 import { z } from "zod";
-import { strictObject } from "@stack/kernel";
+import { strictObject } from "@caisson/kernel";
 
 export const DomainBillingEventSchema = z.discriminatedUnion("type", [
   strictObject({

@@ -27,7 +27,7 @@ jobs:
       # actually execute (they need node_modules / zod). Without this second run they silently skip.
       - name: standards-gate (post-install — external-AGPL + manifest↔package.json agreement)
         run: bun run tooling/standards-gate/src/cli.ts
-      # Layer 2 — fast static provider-SDK signal (needs root eslint.config.js → @stack/eslint-config).
+      # Layer 2 — fast static provider-SDK signal (needs root eslint.config.js → @caisson/eslint-config).
       - name: eslint import boundaries (provider-SDK, ADR-0011/0022)
         run: bunx eslint .
       # Layer 3 — real module graph: dynamic/transitive provider reach + base↔edition direction.
