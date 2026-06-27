@@ -40,6 +40,19 @@ Act 5. What else the Wave-0 diff touches: unblocked work, stale docs, queued fol
 5. **Compliance edition** should wire `withFieldCryptoContext` alongside `withTenant` (the column's
    ambient tenant context) — documented in `field-crypto/AGENTS.md`.
 
+## Post-audit (Act 7 SHIP)
+
+The conditional SECURITY audit (13-agent adversarial workflow) ran before the PR — see `SECURITY.md`.
+3 medium threats refuted (TM2 AAD cross-row over-claim · TM6 detect-not-prevent index gate · TM8
+audit-chain tail-truncation) + 1 medium review bug (`handler.ts` `decodeURIComponent` 500) + 2 low + 2
+nits. All confirmed code findings fixed in-phase (anchored `verifyChain`, AAD comment scoped, semver
+comparator, field-crypto kernel typed errors, handler guard, duplicate-id refine); the two
+operator-owned items (row-level AAD binding · registry prevention-gate) are on the Open board, not
+auto-decided. Also fixed a `bun run check` flake: registry's `test` script now anchors `./schema
+./scripts ./worker` so a turbo build's `dist/scripts/*.test.js` is no longer re-discovered with a
+broken cwd.
+
 ## No regressions
 
-`bun run check` green · all four ADR-0022 gates green · index byte-identical · no service touched.
+`bun run check` green · all four ADR-0022 gates green · index byte-identical · 104 tests pass · no
+service touched.
