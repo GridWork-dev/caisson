@@ -4,6 +4,8 @@
 // No vendor SDK, no LLM call: the embedding that produces a query/doc vector is an injected SEAM the
 // consuming edition wires; this package only stores and fuses.
 //
-// `src/tenant-db.ts` (the file-per-tenant resolver, ADR-0073) lands in the follow-up task and exports here.
 export { LocalStore, RRF_K } from "./store.ts";
 export type { StoreDoc, HybridSearchOptions, SearchHit } from "./store.ts";
+
+// The file-per-tenant isolation floor (ADR-0073): the resolved path IS the tenant boundary.
+export { tenantDbPath, openTenantDb } from "./tenant-db.ts";
