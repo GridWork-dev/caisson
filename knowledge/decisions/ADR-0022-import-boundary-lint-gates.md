@@ -61,5 +61,15 @@ mechanism and dep-cruiser is the only layer that closes the dynamic/transitive h
 ## Binding
 
 The AGPL gate (workspace + external), provider-SDK gate (static + graph), down-only gate, and
-manifest-agreement gate **run in CI and block merge** (`ci.yml` `standards-gate` job). The bindings
-in **ADR-0010** (AGPL) and **ADR-0011** (provider-SDK) now reference these CI gates, not review.
+manifest-agreement gate **run in the CI `standards-gate` job and block merge**. The Bun gate runs
+**twice** — pre-install (AGPL-workspace + down-only + declarations survive a broken install) and
+post-install (where external-AGPL + manifest↔package.json agreement actually execute, since they
+need `node_modules`). The bindings in **ADR-0010** (AGPL) and **ADR-0011** (provider-SDK) now
+reference these CI gates, not review.
+
+**Honest current state:** the gate logic + CI wiring exist and are verified locally (AGPL +
+down-only fire on injected violations). What does NOT bite yet: (a) the whole `standards-gate` job
+dies at `bun install` until **foundations** commits a lockfile + a package.json for every workspace
+member (empty `services/*`) — so the post-install pass + eslint + dep-cruiser can't run in CI today;
+(b) the checks are no-ops on the current tree because no package ships code or a `manifest.ts` yet —
+they bite as P1+ packages land. This is a wiring/sequencing dependency, not a design gap.
