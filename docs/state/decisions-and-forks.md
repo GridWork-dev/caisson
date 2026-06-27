@@ -37,19 +37,21 @@ operator. Never auto-decide a fork.
 | **Design-system foundation**    | Palette **A** (cold-steel teal) + type **2** (Structural: Hubot Sans + Martian Mono); OKLCH token objects → generated `tokens.css`                                                             | ADR-0042               |
 | **Site hosting**                | **Cloudflare Pages** (DNS+host one vendor); `caisson.sh` zone + records via Terraform (`infra/`); Neon over HTTP for data                                                                      | this session (board)   |
 | **Docs tooling**                | **Single Next site + MDX** (marketing + docs, one deploy target/brand)                                                                                                                         | this session (board)   |
-| Reference-app stack             | Framework-agnostic core; app framework deferred per edition                                                                                                                                    | —                      |
+| Reference-app stack             | Framework-agnostic core (packages never import a framework); **edition reference apps standardize on Next.js (App Router)**                                                                    | ADR-0044               |
+| **Field-crypto keys**           | **Per-tenant HKDF derivation** at base tier (closes shared-key cross-tenant breach) + pluggable `FieldKeyProvider` KMS port (AWS adapter, GCP/Azure/Vault seam)                                | ADR-0043 (amends 0006) |
+| **Build sequencing**            | **Shared-first → parallel editions**: Wave 0 shared substrate (field-crypto · registry runtime · cli skeleton) → Wave 1 P2/P3/P4 editions in isolated worktrees → Wave 2 GTM                   | this session (board)   |
+| **GTM buildout (now)**          | **Marketing site + docs site** queued as parallel session buckets; support-bot + commerce/license deferred to a later wave                                                                     | this session (board)   |
 
-**ADR numbering (post-reconcile):** 0001–0012 founding · 0013–0019 substrate (testing/db/auth/CI/billing/jobs/error) · 0020–0023 module pipeline + fully-commercial licensing · 0024 credit-idempotency · 0040–0042 brand block (hero/name/design). Cross-track collisions on 0013/0014/0023 were renumbered at integration (see `outputs/research/decisions-log.md` D22).
+**ADR numbering (post-reconcile):** 0001–0012 founding · 0013–0019 substrate (testing/db/auth/CI/billing/jobs/error) · 0020–0023 module pipeline + fully-commercial licensing · 0024 credit-idempotency · 0040–0042 brand block (hero/name/design) · 0043 field-crypto per-tenant keys (amends 0006) · 0044 app-framework (Next.js). Cross-track collisions on 0013/0014/0023 were renumbered at integration (see `outputs/research/decisions-log.md` D22).
 
 ## Open (waiting on operator — DO NOT auto-decide)
 
-| Fork                          | Options / notes                                                            | Owner    |
-| ----------------------------- | -------------------------------------------------------------------------- | -------- |
-| **Pricing numbers**           | working anchors in ADR-0012; refine pre-launch                             | operator |
-| **App framework per edition** | Next.js / TanStack Start / Hono — decided when each edition's app is built | operator |
+| Fork                | Options / notes                                                                           | Owner    |
+| ------------------- | ----------------------------------------------------------------------------------------- | -------- |
+| **Pricing numbers** | working anchors in ADR-0012; refine pre-launch (recommend lock after P2 proves the wedge) | operator |
 
 ## Flagged for the Compliance session (P2 pre-work — do NOT build in the foundations track)
 
-| Item                                        | Why                                                                                                                                                                                                                                                                | Owner              |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------ |
-| **Amend ADR-0006 — field-crypto base tier** | base tier must use **per-tenant key derivation** `HKDF(master_env_key, tenant_id)`, NOT a single shared env key (a shared key = cross-tenant breach). Docs-review rated **HIGH**. Author an ADR-0006 amendment (append-only) before any `field-crypto` code in P2. | compliance session |
+| Item                                                          | Why                                                                                                                                                                                                                                                                    | Owner              |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| **Amend ADR-0006 — field-crypto base tier → LOCKED ADR-0043** | Decision locked: per-tenant **HKDF** derivation at base tier + pluggable `FieldKeyProvider` KMS port (AWS adapter, GCP/Azure/Vault seam). Implementation lands in P2 `field-crypto` — golden-file + cross-tenant-isolation integration test before any evidence logic. | compliance session |
