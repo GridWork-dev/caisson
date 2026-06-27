@@ -5,31 +5,45 @@ operator. Never auto-decide a fork.
 
 ## Locked (→ ADRs / specs)
 
-| # | Decision | Where |
-|---|---|---|
-| Architecture | Monorepo, **Option C** (composable packages + generator/registry) | ADR-0003, ADR-0004 |
-| v1 scope | Base + **all 4 editions** (Compliance · AI Kit · Local-first · Agentic-Dev) | specs/00 |
-| Lead edition | **Compliance** — broad base + SOC2/HIPAA evidence kit | specs/00, ADR-0006 |
-| Generic boilerplate | Included as table-stakes base, framed under differentiators | specs/00 |
-| Tooling | Bun + Turborepo + changesets; one `tooling/` standards gate | ADR-0001, ADR-0002 |
-| Tenancy | Fail-closed multi-tenant RLS (FORCE + test) | ADR-0005 |
-| Compliance data layer | WORM + append-only audit chain + field-crypto | ADR-0006 |
-| Credits | Integer wallet + append-only ledger + debit-before-spend (402) | ADR-0007 |
-| Buyer MCP | Auth-gated, entitlement-scoped | ADR-0008 |
-| Support | Custom: Discord + Python RAG + hosted inference + cloud runners | ADR-0009 |
-| Licensing | Ed25519 offline + AGPL local-first flank + pro-private firewall | ADR-0010 |
-| AI config | Provider-agnostic + agent-assisted setup | ADR-0011 |
-| Commerce | One-time editions + bundle + per-module + subscription/credits | ADR-0012 |
-| Working name | `stack` / `@stack/*` (provisional) | — |
-| Reference-app stack | Framework-agnostic core; app framework deferred per edition | — |
+| #                     | Decision                                                                                                                      | Where                  |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| Architecture          | Monorepo, **Option C** (composable packages + generator/registry)                                                             | ADR-0003, ADR-0004     |
+| v1 scope              | Base + **all 4 editions** (Compliance · AI Kit · Local-first · Agentic-Dev)                                                   | specs/00               |
+| Lead edition          | **Compliance** — broad base + SOC2/HIPAA evidence kit                                                                         | specs/00, ADR-0006     |
+| Generic boilerplate   | Included as table-stakes base, framed under differentiators                                                                   | specs/00               |
+| Tooling               | Bun + Turborepo + changesets; one `tooling/` standards gate                                                                   | ADR-0001, ADR-0002     |
+| Tenancy               | Fail-closed multi-tenant RLS (FORCE + test)                                                                                   | ADR-0005               |
+| Compliance data layer | WORM + append-only audit chain + field-crypto                                                                                 | ADR-0006               |
+| Credits               | Integer wallet + append-only ledger + debit-before-spend (402)                                                                | ADR-0007               |
+| Buyer MCP             | Auth-gated, entitlement-scoped                                                                                                | ADR-0008               |
+| Support               | Custom: Discord + Python RAG + hosted inference + cloud runners                                                               | ADR-0009               |
+| Licensing             | Ed25519 offline + AGPL local-first flank + pro-private firewall                                                               | ADR-0010               |
+| AI config             | Provider-agnostic + agent-assisted setup                                                                                      | ADR-0011               |
+| Commerce              | One-time editions + bundle + per-module + subscription/credits                                                                | ADR-0012               |
+| Testing               | `bun test` + PGlite integration + golden-file harness (`BLESS=1`)                                                             | ADR-0013               |
+| Database / ORM        | **Drizzle**; host **Neon** (swappable); numbered+idempotent migrations + `schema_version` checksum ledger                     | ADR-0014               |
+| Auth                  | **better-auth** (self-hosted, owns Drizzle tables); EdDSA-JWT+JWKS cross-plane seam; `withTenant` = sole RLS entry            | ADR-0015               |
+| CI/CD                 | GitHub Actions; 6 required jobs (build·lint·unit·integration·standards-gate·golden-file); gate = sole registry ingress        | ADR-0016               |
+| Billing / payments    | **Stripe + Stripe Tax** (PSP, operator=MoR); `BillingProvider` port; HMAC-raw-body webhook verify; P1 seam / P6 orchestration | ADR-0017               |
+| Jobs / email          | **Trigger.dev** (self-hostable) + **Resend**; ports w/ test drivers; billing/credit side-effects enqueued not inline          | ADR-0018               |
+| Error model           | Typed `StackError` hierarchy in `kernel`; 402 credit-gate shape; tenancy denial = 404 (no existence leak)                     | ADR-0019               |
+| Credit idempotency    | partial-unique `(source_event_id, event_type)` + `(account_id, idempotency_key)` + one-of-two CHECK                           | ADR-0020 (amends 0007) |
+| Working name          | `stack` / `@stack/*` (provisional)                                                                                            | —                      |
+| Reference-app stack   | Framework-agnostic core; app framework deferred per edition                                                                   | —                      |
 
 ## Open (waiting on operator — DO NOT auto-decide)
 
-| Fork | Options / notes | Owner |
-|---|---|---|
-| **Positioning / hero / voice / brand** | dedicated session — research best hero across ALL differentiators (not AI-only) + refine voice | operator |
-| **Real product name** | placeholder `stack`; decided with positioning | operator |
-| **Module production-standards + item pipeline** | dedicated session; `tooling/`+`registry/` is the seam (ADR-0004) | operator |
-| **Pricing numbers** | working anchors in ADR-0012; refine pre-launch | operator |
-| **Docs tooling** | Mintlify vs self-host Starlight + RAG | operator |
-| **App framework per edition** | Next.js / TanStack Start / Hono — decided when each edition's app is built | operator |
+| Fork                                            | Options / notes                                                                                | Owner    |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------- | -------- |
+| **Positioning / hero / voice / brand**          | dedicated session — research best hero across ALL differentiators (not AI-only) + refine voice | operator |
+| **Real product name**                           | placeholder `stack`; decided with positioning                                                  | operator |
+| **Module production-standards + item pipeline** | dedicated session; `tooling/`+`registry/` is the seam (ADR-0004)                               | operator |
+| **Pricing numbers**                             | working anchors in ADR-0012; refine pre-launch                                                 | operator |
+| **Docs tooling**                                | Mintlify vs self-host Starlight + RAG                                                          | operator |
+| **App framework per edition**                   | Next.js / TanStack Start / Hono — decided when each edition's app is built                     | operator |
+
+## Flagged for the Compliance session (P2 pre-work — do NOT build in the foundations track)
+
+| Item                                        | Why                                                                                                                                                                                                                                                                | Owner              |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------ |
+| **Amend ADR-0006 — field-crypto base tier** | base tier must use **per-tenant key derivation** `HKDF(master_env_key, tenant_id)`, NOT a single shared env key (a shared key = cross-tenant breach). Docs-review rated **HIGH**. Author an ADR-0006 amendment (append-only) before any `field-crypto` code in P2. | compliance session |
