@@ -17,7 +17,19 @@ const PROVIDER_SDK_RE =
 
 const BASE_PKGS =
   "packages/(auth|tenancy-rls|billing|credits|ai-config|mcp-server|ui|jobs|email|kernel|audit-worm|field-crypto|cli)";
-const EDITION_PKGS = "packages/(compliance|ai-kit|local-ai|agent-dev)";
+const EDITIONS = ["compliance", "ai-kit", "local-ai", "agent-dev"];
+const EDITION_PKGS = `packages/(${EDITIONS.join("|")})`;
+
+// One rule per edition forbidding the OTHER editions from importing it (catches dynamic/transitive
+// edition→edition the Bun gate's static-dep check misses). Per-edition phrasing avoids a self-match
+// false positive (a file in an edition importing its own sibling files).
+const editionIsolation = EDITIONS.map((e) => ({
+  name: `no-edition-cross-${e}`,
+  comment: `Edition ${e} must not be imported by another edition — editions compose base, not peers (ADR-0003).`,
+  severity: "error",
+  from: { path: `packages/(${EDITIONS.filter((o) => o !== e).join("|")})/` },
+  to: { path: `packages/${e}/` },
+}));
 
 /** @type {import("dependency-cruiser").IConfiguration} */
 module.exports = {
@@ -38,6 +50,7 @@ module.exports = {
       from: { path: BASE_PKGS },
       to: { path: EDITION_PKGS },
     },
+    ...editionIsolation,
     {
       name: "no-circular",
       comment: "Circular dependency — breaks composition + build ordering.",
