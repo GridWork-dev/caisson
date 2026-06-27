@@ -1,0 +1,19 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - name: build / lint / test (turbo)
+        run: bun run check
+      # Slow golden-file / testcontainers matrices land here once the compliance
+      # edition (P2) has code — kept CI-only, never in the pre-commit hook.

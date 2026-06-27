@@ -1,0 +1,7 @@
+{
+  "name": "@stack/billing",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Merchant-of-Record / Stripe billing + webhooks."
+}

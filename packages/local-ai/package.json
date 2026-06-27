@@ -1,0 +1,7 @@
+{
+  "name": "@stack/local-ai",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local-first AI edition (AGPL): compute seam + privacy gate + sqlite-vec ANN + offline Ed25519 license + local store."
+}

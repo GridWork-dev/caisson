@@ -1,0 +1,7 @@
+{
+  "name": "@stack/tenancy-rls",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Fail-closed multi-tenant Postgres RLS (FORCE policies + schema test)."
+}

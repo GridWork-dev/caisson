@@ -1,0 +1,7 @@
+{
+  "name": "@stack/field-crypto",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Field encryption column custom-type + key-version registry (KMS envelope at SOC2)."
+}

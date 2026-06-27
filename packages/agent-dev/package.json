@@ -1,0 +1,7 @@
+{
+  "name": "@stack/agent-dev",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Agentic-Dev edition: typed agent/skill/rule schema + lifecycle state machine + local hybrid memory + hooks dispatcher."
+}

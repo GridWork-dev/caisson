@@ -1,0 +1,7 @@
+{
+  "name": "@stack/credits",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Integer credit wallet + append-only ledger + debit-before-spend (402)."
+}

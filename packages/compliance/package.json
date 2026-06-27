@@ -1,0 +1,7 @@
+{
+  "name": "@stack/compliance",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Compliance edition: RLS+WORM+audit + config-as-code module registry + SOC2/HIPAA evidence-pack generator. HERO."
+}
