@@ -5,6 +5,29 @@ on:
   pull_request:
 
 jobs:
+  # The standards gate (ADR-0021/0022) — the only registry ingress. Three layers, all block merge.
+  standards-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      # Layer 1 — SPDX/license authority (AGPL boundary + down-only + manifest agreement). Needs
+      # no install for the fs checks; runs even before the workspace fully installs.
+      - name: standards-gate (Bun — AGPL + down-only + declarations + manifest agreement)
+        run: bun run tooling/standards-gate/src/cli.ts
+      - run: bun install --frozen-lockfile
+      # Layer 2 — fast static provider-SDK signal.
+      - name: eslint import boundaries (provider-SDK, ADR-0011/0022)
+        run: bunx eslint .
+      # Layer 3 — real module graph: dynamic/transitive provider reach + base→edition direction.
+      - name: dependency-cruiser graph boundaries (ADR-0022)
+        run: bunx depcruise packages apps tooling --config .dependency-cruiser.cjs
+      # Changeset presence — a module source change must carry a changeset (ADR-0021).
+      - name: changeset check
+        run: bunx changeset status --since=origin/main
+
   check:
     runs-on: ubuntu-latest
     steps:
@@ -17,3 +40,13 @@ jobs:
         run: bun run check
       # Slow golden-file / testcontainers matrices land here once the compliance
       # edition (P2) has code — kept CI-only, never in the pre-commit hook.
+
+  # The registry index (registry/index.json) is BUILT from the published registry by THIS job
+  # only — never hand-appended (ADR-0021). Branch protection + CODEOWNERS on registry/index.json
+  # make this the sole writer; the gateAttestation records provenance, it is not the access gate.
+  # Wired with the publish flow in P5 (needs the standards-gate job green first).
+  #
+  # publish-and-index:
+  #   needs: standards-gate
+  #   if: github.ref == 'refs/heads/main'
+  #   ... changesets publish (CI-only OIDC/short-lived token) → rebuild registry/index.json
