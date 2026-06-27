@@ -60,3 +60,14 @@ export type {
   OtelPostgresSinkOptions,
   OtlpSend,
 } from "./event-sink.ts";
+
+export {
+  evidencePackSchema,
+  usageMeteringSchema,
+  evalResultSchema,
+} from "./observability.ts";
+export type {
+  EvidencePack,
+  UsageMetering,
+  EvalResult,
+} from "./observability.ts";
