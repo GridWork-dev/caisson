@@ -3,5 +3,6 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "license": "LicenseRef-Stack-Commercial",
   "description": "Agentic-Dev edition: typed agent/skill/rule schema + lifecycle state machine + local hybrid memory + hooks dispatcher."
 }
