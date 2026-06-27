@@ -1,7 +1,7 @@
 # Voice & Brand — Concept Spec (Caisson)
 
 **Status:** locked (positioning session 2026-06-27). Closes the `specs/03` §4 deferral.
-**Decides:** ADR-0013 (positioning) · ADR-0014 (name). **Floor:** gridwork-core
+**Decides:** ADR-0040 (positioning) · ADR-0041 (name). **Floor:** gridwork-core
 `identity/voice.md` (evidence-forward, terse, no AI-slop) adapted from instruction-file voice to
 product/marketing copy. **Design center:** `specs/03` §1 (dark, technical, pro-tool).
 
@@ -77,7 +77,7 @@ months. Start with them."
 
 **Generic-base footnote (the ICP firewall, in copy):** the better-than-a-$199-kit claim appears
 **once, as a footnote** — "and yes, it's a better base than the $199 kits" — never as a comparison
-table (ADR-0013 buyer firewall).
+table (ADR-0040 buyer firewall).
 
 ## 7. Brand adjectives
 
@@ -93,7 +93,7 @@ table (ADR-0013 buyer firewall).
 - **Do** (retrofit math, our lane): "SOC 2 from scratch: $80k, 6–9 months. RLS+WORM+audit-chain
   retrofit into a live DB: months more. Both, wired on day one." → cite the figures, name the pain.
 - **Don't:** lead a non-compliance edition as a co-hero — AI-Kit/local-first/agentic copy reads as
-  _"the same rigor, applied to <their problem>,"_ under the compliance-led umbrella (ADR-0013).
+  _"the same rigor, applied to <their problem>,"_ under the compliance-led umbrella (ADR-0040).
 
 ## 9. Per-edition voice (all under the umbrella register)
 

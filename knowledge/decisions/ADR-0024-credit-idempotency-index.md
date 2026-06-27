@@ -1,4 +1,4 @@
-# ADR-0023 — Credit idempotency index (amends ADR-0007)
+# ADR-0024 — Credit idempotency index (amends ADR-0007)
 
 Status: proposed · 2026-06-27 (foundations track; closes the implementation-blocking gap the
 docs-review flagged on ADR-0007 — ADRs are append-only, so this amends-by-superseding the

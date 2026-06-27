@@ -37,12 +37,12 @@ gradient-hero SaaS template look; dense, fast, keyboard-friendly, evidence-forwa
 ## 4. Brand + voice — LOCKED (positioning session 2026-06-27)
 
 - **Name, positioning, hero, voice, and tagline are locked** → `specs/04-voice-and-brand.md` (full
-  guide) · ADR-0013 (positioning) · ADR-0014 (name **Caisson**). Hero = the **Compliance wedge
+  guide) · ADR-0040 (positioning) · ADR-0041 (name **Caisson**). Hero = the **Compliance wedge
   under a production-rigor umbrella**; tagline **"Compliance-grade infrastructure for regulated
   SaaS."**; hero H1 **"Fail-closed by construction."**
 - The marketing site is **differentiator-forward, compliance-led**: compliance hero first, then the
   AI-production / local-first / agentic editions framed as "the same rigor, adjacent problem"; the
-  generic base is a one-line footnote, **never** a comparison table (ADR-0013 buyer firewall).
+  generic base is a one-line footnote, **never** a comparison table (ADR-0040 buyer firewall).
   Evidence-forward — real code, CI badges, real compliance artifacts (the market gap: nobody
   publishes test/OWASP results; Caisson does).
 - Floor unchanged: gridwork-core `identity/voice.md` + the `refero-design` → `impeccable` flow; no

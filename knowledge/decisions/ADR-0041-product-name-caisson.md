@@ -1,4 +1,4 @@
-# ADR-0014 — Product name: Caisson
+# ADR-0041 — Product name: Caisson
 
 Status: accepted · 2026-06-27 (positioning session — operator-locked). Closes the "real product
 name" fork. Supersedes the working name **`stack` / `@stack/*`** and the placeholder **`Forge`**.

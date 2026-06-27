@@ -1,8 +1,8 @@
-# ADR-0040 — Design-system foundation: palette + type lock
+# ADR-0042 — Design-system foundation: palette + type lock
 
 **Status:** accepted · 2026-06-27
-**Relates:** specs/03 (design framework), specs/04 (voice & brand), ADR-0013 (positioning),
-ADR-0014 (name), PRODUCT.md, DESIGN.md. **Supersedes:** none (refines the specs/03 §2 token
+**Relates:** specs/03 (design framework), specs/04 (voice & brand), ADR-0040 (positioning),
+ADR-0041 (name), PRODUCT.md, DESIGN.md. **Supersedes:** none (refines the specs/03 §2 token
 emit-mechanism; see below).
 
 The first locked selection of the Caisson design token contract, picked by the operator in the

@@ -1,4 +1,4 @@
-# ADR-0013 — Hero positioning: compliance wedge under a production-rigor umbrella
+# ADR-0040 — Hero positioning: compliance wedge under a production-rigor umbrella
 
 Status: accepted · 2026-06-27 (positioning session — operator-locked at the positioning gate;
 de-locked by D14, now closed). Supersedes the provisional "AI production codebase starter" frame.
@@ -75,4 +75,4 @@ Binding: marketing leads compliance + production-rigor; the generic base is a on
 **never** a comparison table. The Compliance Updates subscription is a distinct SKU from developer
 credits. EU AI Act and every framework pack ship as **entitlement-scoped registry modules**, not
 core. Launches sequence — no simultaneous four-edition splash; a P2-exit go/no-go gates Wave 2.
-Voice + name: ADR-0014, `specs/04-voice-and-brand.md`.
+Voice + name: ADR-0041, `specs/04-voice-and-brand.md`.

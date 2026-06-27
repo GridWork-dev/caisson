@@ -1,7 +1,7 @@
 # Product
 
 > impeccable strategic doc. Derived from the locked concept specs — `specs/03-design-framework.md`
-> (design center), `specs/04-voice-and-brand.md` (voice), ADR-0013 (positioning), ADR-0014 (name
+> (design center), `specs/04-voice-and-brand.md` (voice), ADR-0040 (positioning), ADR-0041 (name
 > Caisson). On conflict, those locked specs/ADRs win; this file operationalizes them for design work.
 
 ## Register
@@ -47,7 +47,7 @@ through understatement and precision, not volume. No exclamation marks in a hero
 ## Anti-references
 
 - **Happy-path boilerplate SaaS** (auth + Stripe + gradient hero, nothing load-bearing under audit) —
-  the named enemy (ADR-0013). The site must not look like the thing it replaces.
+  the named enemy (ADR-0040). The site must not look like the thing it replaces.
 - **Cream / sand / editorial-magazine AI default** — the warm-neutral body + display-serif-italic +
   ruled-column look. Wrong register entirely.
 - **Generic neon-green "terminal-dark devtool" sameness** — dark-mode is locked identity (specs/03),

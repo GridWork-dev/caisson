@@ -1,9 +1,9 @@
 # Caisson — Product Spec & Phased Roadmap
 
-**Name:** Caisson · `@caisson/*` · `caisson.sh` (locked, ADR-0014 — was working name `stack`/`Forge`)
+**Name:** Caisson · `@caisson/*` · `caisson.sh` (locked, ADR-0041 — was working name `stack`/`Forge`)
 **Sources:** `capability-corpus.md` + `market-research.md` + `support-strategy.md` + scoping decisions (`decisions-log.md` D5–D14)
-**Status:** Features + architecture **locked** (Gate 4). **Positioning / hero / voice / name now LOCKED** (positioning session, ADR-0013 + ADR-0014 + `specs/04-voice-and-brand.md`).
-**Positioning (LOCKED, ADR-0013):** a **two-layer** frame — the **umbrella** is a production-grade codebase library, _the load-bearing infrastructure cheap boilerplates skip_; the **hero wedge** acquisition leads with is **Compliance** (highest WTP, cleanest unserved gap). AI Production Kit = #2, Local-first AI = the free AGPL flank, Agentic-Dev = post-wedge. Build scope (all four editions) is unchanged — positioning fixes only the GTM weight. The earlier "AI production codebase starter" frame was provisional scaffolding, now superseded.
+**Status:** Features + architecture **locked** (Gate 4). **Positioning / hero / voice / name now LOCKED** (positioning session, ADR-0040 + ADR-0041 + `specs/04-voice-and-brand.md`).
+**Positioning (LOCKED, ADR-0040):** a **two-layer** frame — the **umbrella** is a production-grade codebase library, _the load-bearing infrastructure cheap boilerplates skip_; the **hero wedge** acquisition leads with is **Compliance** (highest WTP, cleanest unserved gap). AI Production Kit = #2, Local-first AI = the free AGPL flank, Agentic-Dev = post-wedge. Build scope (all four editions) is unchanged — positioning fixes only the GTM weight. The earlier "AI production codebase starter" frame was provisional scaffolding, now superseded.
 
 ---
 
@@ -19,13 +19,13 @@
 | Support                                          | **Custom self-built** `support-bot` (Discord + Python LLM dispatch + codebase RAG + hosted inference on cloud runners)                                                                                                                                                                                              |
 | Build philosophy                                 | **Rebuild clean** from proven strategies; **pro-private `media-pipeline` = patterns only, zero code**                                                                                                                                                                                                               |
 | Module production standards                      | A **separate dedicated session** deep-dives module/item production standards + pipeline — specs leave the seam, don't pre-bind it                                                                                                                                                                                   |
-| **Positioning / hero / voice / name / branding** | **LOCKED** (ADR-0013 + ADR-0014 + `specs/04`) — name **Caisson**; hero = **Compliance wedge under a production-rigor umbrella**; compliance-update subscription split into its own SKU; ICP buyer-firewall; EU AI Act = gated add-on module; sequenced launch (free local-first → compliance hero → AI-Kit/agentic) |
+| **Positioning / hero / voice / name / branding** | **LOCKED** (ADR-0040 + ADR-0041 + `specs/04`) — name **Caisson**; hero = **Compliance wedge under a production-rigor umbrella**; compliance-update subscription split into its own SKU; ICP buyer-firewall; EU AI Act = gated add-on module; sequenced launch (free local-first → compliance hero → AI-Kit/agentic) |
 
 ---
 
 ## 1. Product definition
 
-**One-liner (positioning-led, ADR-0013):** Caisson is the **compliance-grade** base for regulated SaaS — fail-closed RLS, WORM, an append-only audit chain, and SOC2/HIPAA evidence packs, wired and tested from day one — and, under the same production-rigor roof, the editions for AI-production infra, local-first AI, and agentic dev. Your AI coding agent generates and configures the exact stack from a versioned registry, and a codebase-aware AI bot supports it. _The load-bearing infrastructure cheap boilerplates skip._
+**One-liner (positioning-led, ADR-0040):** Caisson is the **compliance-grade** base for regulated SaaS — fail-closed RLS, WORM, an append-only audit chain, and SOC2/HIPAA evidence packs, wired and tested from day one — and, under the same production-rigor roof, the editions for AI-production infra, local-first AI, and agentic dev. Your AI coding agent generates and configures the exact stack from a versioned registry, and a codebase-aware AI bot supports it. _The load-bearing infrastructure cheap boilerplates skip._
 
 Caisson is a **monorepo of composable packages** sold three ways at once — whole editions (one-time), a discounted bundle, or **individual modules à la carte** — with an optional **subscription** that adds a monthly credit allotment, framework/compliance updates, and private-registry access. A `create-stack` generator (driven by the buyer's own AI agent) assembles a tailored codebase from a versioned module registry; a shipped **MCP server (with auth)** lets the buyer's Claude Code / Cursor understand the codebase; a custom **AI support bot** answers in Discord grounded in the code and escalates to a tagged human ticket.
 
