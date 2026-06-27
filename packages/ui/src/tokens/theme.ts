@@ -1,14 +1,14 @@
 /**
- * The LOCKED default selection. Until the operator picks in the studio, the default is the
- * recommended candidate (palette A "Caisson cold-steel teal" + type 1 "Instrument"). Changing
- * the pick = change `SELECTED_*` here, then `bun run gen:tokens`. Append-only spirit: the
- * candidate sets in `candidates.ts` stay; only the pointer moves.
+ * The LOCKED selection (operator pick, 2026-06-27): palette A "Caisson cold-steel teal" +
+ * type 2 "Structural" (Hubot Sans + Martian Mono). Recorded in ADR-0015. Changing the pick =
+ * change `SELECTED_*` here, then `bun run gen:tokens`. Append-only spirit: the candidate sets
+ * in `candidates.ts` stay; only the pointer moves.
  */
 import { accentCandidates, functional, typeCandidates } from "./candidates";
 import type { AccentCandidate, SemanticTheme, TypeCandidate } from "./types";
 
 const SELECTED_PALETTE = "a";
-const SELECTED_TYPE = "1";
+const SELECTED_TYPE = "2";
 
 function requireCandidate<T extends { id: string }>(
   list: readonly T[],
