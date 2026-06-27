@@ -4,6 +4,7 @@
 // surface), per-tenant isolated (tenant_id bound into `info`), rotation-aware (key_version in `info`).
 // Native `crypto.hkdfSync` — no added dependency. The master key is read once and NEVER logged.
 import { hkdfSync } from "node:crypto";
+import { ValidationError } from "@caisson/kernel";
 
 /** AES-256 needs a 32-byte key; HKDF-SHA256 expands the master key to exactly this length. */
 export const TENANT_KEY_BYTES = 32;
@@ -11,12 +12,12 @@ export const TENANT_KEY_BYTES = 32;
 /** The HKDF `info` domain-separation string — EXACTLY per ADR-0043. Tenant + key-version live here. */
 export function deriveInfo(keyVersion: number, tenantId: string): string {
   if (!Number.isInteger(keyVersion) || keyVersion < 1 || keyVersion > 0xffff) {
-    throw new Error(
+    throw new ValidationError(
       `field-crypto: keyVersion must be an integer in [1, 65535], got ${String(keyVersion)}`,
     );
   }
   if (tenantId.length === 0) {
-    throw new Error(
+    throw new ValidationError(
       "field-crypto: refusing to derive a key for an empty tenantId",
     );
   }
@@ -36,12 +37,12 @@ export function deriveTenantKey(
   tenantId: string,
 ): Buffer {
   if (masterKey.length !== TENANT_KEY_BYTES) {
-    throw new Error(
+    throw new ValidationError(
       `field-crypto: MASTER_FIELD_KEY must be ${TENANT_KEY_BYTES} bytes, got ${masterKey.length}`,
     );
   }
   if (salt.length !== TENANT_KEY_BYTES) {
-    throw new Error(
+    throw new ValidationError(
       `field-crypto: FIELD_CRYPTO_SALT must be ${TENANT_KEY_BYTES} bytes, got ${salt.length}`,
     );
   }

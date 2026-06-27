@@ -8,6 +8,7 @@
 // NO live cloud call runs in CI — the network is behind the port. Production supplies a real
 // `KmsClient` (AWS wiring sketched in `awsKmsClient` below). The DEK plaintext is held only
 // transiently to (un)wrap and to encrypt; it is never logged or persisted.
+import { ConfigError, NotFoundError, ValidationError } from "@caisson/kernel";
 import { type FieldKeyProvider } from "./provider.ts";
 import { aesGcm } from "./cipher.ts";
 import { buildAad } from "./aad.ts";
@@ -70,7 +71,7 @@ export class KmsKeyProvider implements FieldKeyProvider {
     const cur = (await this.store.currentVersion(tenantId)) ?? 0;
     const next = cur + 1;
     if (next > 0xffff) {
-      throw new Error(
+      throw new ValidationError(
         `field-crypto: key version overflow for tenant ${JSON.stringify(tenantId)}`,
       );
     }
@@ -83,7 +84,7 @@ export class KmsKeyProvider implements FieldKeyProvider {
   async keyFor(tenantId: string, keyVersion: number): Promise<Buffer> {
     const wrapped = await this.store.getWrapped(tenantId, keyVersion);
     if (wrapped === undefined) {
-      throw new Error(
+      throw new NotFoundError(
         `field-crypto: no wrapped DEK for tenant ${JSON.stringify(tenantId)} v${keyVersion} — provision first`,
       );
     }
@@ -93,7 +94,7 @@ export class KmsKeyProvider implements FieldKeyProvider {
   async currentVersion(tenantId: string): Promise<number> {
     const v = await this.store.currentVersion(tenantId);
     if (v === undefined) {
-      throw new Error(
+      throw new NotFoundError(
         `field-crypto: tenant ${JSON.stringify(tenantId)} has no provisioned KMS key — call provision()`,
       );
     }
@@ -110,7 +111,9 @@ export class LocalKmsClient implements KmsClient {
   private static readonly WRAP_AAD = buildAad("kms", 0, "dek-wrap");
   constructor(private readonly kek: Buffer) {
     if (kek.length !== 32)
-      throw new Error("field-crypto: LocalKmsClient KEK must be 32 bytes");
+      throw new ValidationError(
+        "field-crypto: LocalKmsClient KEK must be 32 bytes",
+      );
   }
   async generateDataKey(): Promise<{
     plaintextKey: Buffer;
@@ -155,7 +158,7 @@ export function awsKmsClient(_config: {
   keyId: string;
   region?: string;
 }): KmsClient {
-  throw new Error(
+  throw new ConfigError(
     "field-crypto: awsKmsClient is a documented seam — supply @aws-sdk/client-kms wiring in your deployment (see kms.ts)",
   );
 }

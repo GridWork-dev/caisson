@@ -8,6 +8,8 @@
 // format-version or alg-id THROWS ("flag, never guess", ADR-0006). Mirrors the AWS Encryption SDK
 // message format + Tink wire format (version byte first → algorithm id → IV → body → tag).
 
+import { ValidationError } from "@caisson/kernel";
+
 export const FORMAT_VERSION = 0x01;
 
 /** Algorithm ids. Add a new id (never reuse) when a new cipher ships behind the AeadCipher seam. */
@@ -39,12 +41,12 @@ export interface EnvelopeParts {
 /** Serialize parts into the base64 on-disk string. */
 export function serializeEnvelope(parts: EnvelopeParts): string {
   if (parts.nonce.length !== NONCE_BYTES) {
-    throw new Error(
+    throw new ValidationError(
       `field-crypto: nonce must be ${NONCE_BYTES} bytes, got ${parts.nonce.length}`,
     );
   }
   if (parts.tag.length !== TAG_BYTES) {
-    throw new Error(
+    throw new ValidationError(
       `field-crypto: tag must be ${TAG_BYTES} bytes, got ${parts.tag.length}`,
     );
   }
@@ -53,7 +55,7 @@ export function serializeEnvelope(parts: EnvelopeParts): string {
     parts.keyVersion < 1 ||
     parts.keyVersion > 0xffff
   ) {
-    throw new Error(
+    throw new ValidationError(
       `field-crypto: keyVersion must be an integer in [1, 65535], got ${String(parts.keyVersion)}`,
     );
   }
@@ -73,19 +75,19 @@ export function serializeEnvelope(parts: EnvelopeParts): string {
 export function parseEnvelope(stored: string): ParsedEnvelope {
   const buf = Buffer.from(stored, "base64");
   if (buf.length < MIN_ENVELOPE_BYTES) {
-    throw new Error(
+    throw new ValidationError(
       `field-crypto: malformed envelope — ${buf.length} bytes < minimum ${MIN_ENVELOPE_BYTES}`,
     );
   }
   const formatVersion = buf.readUInt8(0);
   if (formatVersion !== FORMAT_VERSION) {
-    throw new Error(
+    throw new ValidationError(
       `field-crypto: unknown envelope format-version 0x${formatVersion.toString(16)}`,
     );
   }
   const algId = buf.readUInt8(1);
   if (algId !== ALG_AES_256_GCM) {
-    throw new Error(
+    throw new ValidationError(
       `field-crypto: unknown envelope alg-id 0x${algId.toString(16)}`,
     );
   }

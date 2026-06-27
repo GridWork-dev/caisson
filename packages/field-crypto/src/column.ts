@@ -6,6 +6,7 @@
 // never be read or written outside a tenant scope. The sync derived-key path backs this; a KMS
 // (async) provider pre-resolves + caches keys into the context (P2 wiring, not the sync hot-path).
 import { AsyncLocalStorage } from "node:async_hooks";
+import { InternalError } from "@caisson/kernel";
 import { customType } from "drizzle-orm/pg-core";
 import { type AeadCipher, aesGcm, cipherForAlg } from "./cipher.ts";
 import { parseEnvelope, serializeEnvelope } from "./envelope.ts";
@@ -35,7 +36,9 @@ export function withFieldCryptoContext<T>(
 export function currentFieldCryptoContext(): FieldCryptoContext {
   const ctx = store.getStore();
   if (ctx === undefined) {
-    throw new Error(
+    // A query reached an encrypted column outside `withFieldCryptoContext` — a wiring bug, not user
+    // input. Fail closed as a 500 (never a partial/unscoped read); never coerce a tenant.
+    throw new InternalError(
       "field-crypto: no tenant context bound — refusing to encrypt/decrypt unscoped (fail-closed)",
     );
   }

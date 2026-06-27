@@ -4,6 +4,7 @@
 // bulk re-encrypt. Lazy re-encrypt: the next WRITE to a field re-encrypts it under the new current
 // version (a read leaves the old version in place). For a stored-key (KMS) provider the same
 // registry tracks which wrapped DEK is current.
+import { ValidationError } from "@caisson/kernel";
 
 /** Persistence seam for the per-tenant current version. In-memory default; DB-backed later (P2). */
 export interface KeyVersionStore {
@@ -41,7 +42,7 @@ export class KeyVersionRegistry {
   rotate(tenantId: string): number {
     const next = this.currentVersion(tenantId) + 1;
     if (next > 0xffff) {
-      throw new Error(
+      throw new ValidationError(
         `field-crypto: key version overflow for tenant ${JSON.stringify(tenantId)}`,
       );
     }

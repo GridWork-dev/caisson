@@ -4,6 +4,7 @@
 //     `deriveKey` for the Drizzle column hot-path (toDriver/fromDriver are sync; HKDF is sync).
 //   - KmsKeyProvider (kms.ts) — async envelope encryption behind the same port (network behind it).
 import { z } from "zod";
+import { ConfigError } from "@caisson/kernel";
 import { deriveTenantKey } from "./derive.ts";
 import { KeyVersionRegistry } from "./registry.ts";
 
@@ -46,10 +47,10 @@ export class DerivedKeyProvider implements SyncFieldKeyProvider {
     registry = new KeyVersionRegistry(),
   ) {
     if (masterKey.length !== 32) {
-      throw new Error("field-crypto: MASTER_FIELD_KEY must be 32 bytes");
+      throw new ConfigError("field-crypto: MASTER_FIELD_KEY must be 32 bytes");
     }
     if (salt.length !== 32) {
-      throw new Error("field-crypto: FIELD_CRYPTO_SALT must be 32 bytes");
+      throw new ConfigError("field-crypto: FIELD_CRYPTO_SALT must be 32 bytes");
     }
     this.#masterKey = masterKey;
     this.#salt = salt;
@@ -61,10 +62,19 @@ export class DerivedKeyProvider implements SyncFieldKeyProvider {
     env: Record<string, string | undefined> = process.env,
     registry = new KeyVersionRegistry(),
   ): DerivedKeyProvider {
-    const parsed = FieldCryptoEnv.parse({
-      MASTER_FIELD_KEY: env.MASTER_FIELD_KEY,
-      FIELD_CRYPTO_SALT: env.FIELD_CRYPTO_SALT,
-    });
+    // Map a Zod parse failure to a typed ConfigError — a fixed message that NEVER echoes the env
+    // value (the key material must not reach a log/HTTP envelope).
+    let parsed: z.infer<typeof FieldCryptoEnv>;
+    try {
+      parsed = FieldCryptoEnv.parse({
+        MASTER_FIELD_KEY: env.MASTER_FIELD_KEY,
+        FIELD_CRYPTO_SALT: env.FIELD_CRYPTO_SALT,
+      });
+    } catch {
+      throw new ConfigError(
+        "field-crypto: MASTER_FIELD_KEY and FIELD_CRYPTO_SALT must each be 64 hex chars (32 bytes)",
+      );
+    }
     return new DerivedKeyProvider(
       Buffer.from(parsed.MASTER_FIELD_KEY, "hex"),
       Buffer.from(parsed.FIELD_CRYPTO_SALT, "hex"),

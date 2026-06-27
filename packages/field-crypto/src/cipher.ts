@@ -5,6 +5,7 @@
 // `tenant_id || key_version || column-context` as AAD; decrypt authenticates (tamper + AAD-mismatch
 // throw); a (key, nonce) pair is never reused.
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { ValidationError } from "@caisson/kernel";
 import { ALG_AES_256_GCM, NONCE_BYTES, TAG_BYTES } from "./envelope.ts";
 import { TENANT_KEY_BYTES } from "./derive.ts";
 
@@ -25,7 +26,7 @@ export interface AeadCipher {
 
 function assertKey(key: Buffer): void {
   if (key.length !== TENANT_KEY_BYTES) {
-    throw new Error(
+    throw new ValidationError(
       `field-crypto: AES-256-GCM key must be ${TENANT_KEY_BYTES} bytes, got ${key.length}`,
     );
   }
@@ -53,10 +54,14 @@ export class AesGcmCipher implements AeadCipher {
   decrypt(key: Buffer, parts: AeadParts, aad: Buffer): Buffer {
     assertKey(key);
     if (parts.nonce.length !== NONCE_BYTES) {
-      throw new Error(`field-crypto: nonce must be ${NONCE_BYTES} bytes`);
+      throw new ValidationError(
+        `field-crypto: nonce must be ${NONCE_BYTES} bytes`,
+      );
     }
     if (parts.tag.length !== TAG_BYTES) {
-      throw new Error(`field-crypto: auth tag must be ${TAG_BYTES} bytes`);
+      throw new ValidationError(
+        `field-crypto: auth tag must be ${TAG_BYTES} bytes`,
+      );
     }
     const decipher = createDecipheriv("aes-256-gcm", key, parts.nonce);
     decipher.setAAD(aad);
@@ -72,7 +77,7 @@ export const aesGcm = new AesGcmCipher();
 /** Resolve the cipher for an envelope alg-id (defense-in-depth; the envelope already validated it). */
 export function cipherForAlg(algId: number): AeadCipher {
   if (algId === ALG_AES_256_GCM) return aesGcm;
-  throw new Error(
+  throw new ValidationError(
     `field-crypto: no cipher registered for alg-id 0x${algId.toString(16)}`,
   );
 }
