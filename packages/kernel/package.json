@@ -1,0 +1,7 @@
+{
+  "name": "@stack/kernel",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Governance kernel: typed config/agent/skill/rule schema + validator + lint-gate."
+}

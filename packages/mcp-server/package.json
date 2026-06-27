@@ -1,0 +1,7 @@
+{
+  "name": "@stack/mcp-server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Auth-gated buyer-facing MCP server (entitlement-scoped)."
+}

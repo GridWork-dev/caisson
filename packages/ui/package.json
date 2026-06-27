@@ -1,0 +1,7 @@
+{
+  "name": "@stack/ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "vanilla-extract typed token floor + headless+styled primitives."
+}

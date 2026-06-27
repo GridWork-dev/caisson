@@ -1,0 +1,836 @@
+[
+  {
+    "repo": "gridwork-core",
+    "core_strategy": "Treat the LLM coding agent itself as a governed, self-measuring system — not just \"an agent with tools.\" Every capability the harness ships (an instruction file, a memory layer, a model lane, a lifecycle act, an external side-effect) is a first-class typed artifact that MUST come with (a) a single audited gate if it's dangerous, (b) a hard budget if it consumes the context window, and (c) a telemetry sensor that proves whether it's actually used. A closed, operator-ratified loop then mines that telemetry to propose falsifiable improvements to the harness itself. The load-bearing idea a rebuild must preserve is the inversion: capability is cheap and is NOT the goal — the governing spine is \"one audited home per dangerous class + one budget per always-loaded byte + one sensor per surface + a measured improvement loop that closes on the operator.\" Everything else (the gw CLI, the 7-act SDLC, the agent roster) is replaceable scaffolding hung on that spine.",
+    "reusable_principles": [
+      {
+        "principle": "One engine, one audited gate per dangerous capability-class",
+        "what": "Each risky verb — shell exec, external side-effects (deploy/billing/OAuth), cross-vendor LLM spend, secret access — is consolidated behind exactly one home (an exec endpoint, the main orchestrator, a single LLM-gateway credential, 1Password). Reviewers/linters flag any call to that class outside its home; a single carve-out (tmux relay) is annotated at each site (DOCTRINE-EXEMPT).",
+        "why_it_matters": "Dangerous capability spread across N surfaces is N audit liabilities; collapsing each class to one gate makes the whole system auditable by a single rule per class and lets a solo operator stay both fast and safe.",
+        "rebuild_note": "Define a capability registry: map each dangerous verb to one gateway module + one credential. Write a lint/grep gate that fails CI on any import/call of the raw verb outside its sanctioned home. Keep the exemption list small, inline-annotated, and test-asserted."
+      },
+      {
+        "principle": "Typed instruction surface with an enforced token budget + a measure-only rent report",
+        "what": "Agents, skills, rules are markdown files validated by Zod schemas (kebab name==basename, required sections, strict frontmatter). The always-loaded prefix has a hard line ceiling enforced by a unit test; a 'rent report' tool computes per-file/per-section token cost and flags boilerplate as reclaimable — and it sources the loaded-file list from the actual linker script, never a hardcoded list, so the report cannot drift.",
+        "why_it_matters": "Every session in every repo re-pays the always-loaded prefix against a ~99% cache-read rate, so per-token rent there compounds more than anywhere else; without a budget the prefix silently grows to the ceiling and competes for attention instead of adding signal.",
+        "rebuild_note": "Build a schema validator (Zod/JSON-schema) for each artifact kind + a CI test asserting total auto-loaded lines < ceiling. Add a rent reporter that derives the file list from the loader itself and estimates tokens (chars/4 is sufficient). Treat instruction files as code: linted, sectioned, budgeted."
+      },
+      {
+        "principle": "Local-first hybrid memory: sqlite-vec KNN ∪ FTS5, fused by Reciprocal Rank Fusion, no daemon",
+        "what": "One SQLite file holds memory_items + an FTS5 virtual table + a vec0 (sqlite-vec) table loaded as an extension inside the process. Retrieval fuses vector and lexical legs via RRF. Rows carry scope (user/project/vault) and source (origin path for idempotent backfill); writes dedup-and-reinforce, a GC decays unreinforced facts, and use_count/last_recalled instrument hit-rate. Embeddings come from one external credential and the system degrades to FTS-only offline.",
+        "why_it_matters": "It replaced a 3-daemon stack AND a paid hosted egress sink with zero services and one credential, while keeping semantic recall — the lean-posture proof that an agent memory layer does not need infrastructure, and the hit-rate instrumentation answers the question most memory systems can't: is anything ever actually recalled?",
+        "rebuild_note": "Single embedded DB: FTS5 + a vector virtual table, RRF (k=60) to fuse. Add scope + source columns from day one (scope filtering is the caller's; the store just filters scope IN (...)). Make embedding a pure injected dependency so the store has no network dep and is unit-testable. Track use_count/last_recalled_at so you can prove hit-rate, not just write-rate."
+      },
+      {
+        "principle": "Lifecycle as a tag-driven state machine with goal-backward, separate-context verification",
+        "what": "Every change moves SPEC→PLAN→EXECUTE→VERIFY→SWEEP→(EVAL)→SHIP. Tags declared in the SPEC frontmatter fire conditional audit fan-out (security/ui/eval/infra/migration) in parallel at SHIP. VERIFY re-asks the original intent against the diff (goal-backward, not a task checklist) and the design explicitly moves it to a FRESH-CONTEXT evaluator with no write tools, because self-grading by the thread that wrote the code is the most-cited failure mode.",
+        "why_it_matters": "It encodes the discipline (spec before plan before execute, atomic commits, one phase per workstream) AND makes quality conditional on declared risk so cheap changes stay cheap while risky ones get audited — and the separate-evaluator move is a research-grounded fix for positive-skew self-eval.",
+        "rebuild_note": "Model acts as a typed state machine; each act emits one artifact + one telemetry event. Tags are an enum on the spec that selects an audit set. Implement VERIFY as a dispatch to a fresh agent given only {goal, diff, test output} and no edit tools; have PLAN declare per-task done-conditions so the verifier grades a contract."
+      },
+      {
+        "principle": "A single lifecycle-hooks dispatcher is the real control plane (guards + injection + telemetry)",
+        "what": "One hook process handles every harness event: PreToolUse bash-safety blocklist + conventional-commit lint (exit-2 blocks), worktree-isolation + off-cluster + secret-redaction edit guards, SessionStart context injection (recall/handoff/brief), per-turn narrative ticks, and telemetry emission to JSONL + a postgres sink. The telemetry analysis showed the ONLY adopted lifecycle ritual (bootstrap) was the one wired to a hook — hooks fire, documentation doesn't.",
+        "why_it_matters": "Doctrine-on-paper gets <2% adoption; behavior wired to a hook gets 84-94%. The hook layer is where governance actually becomes enforcement, and it's also the single place sensors can be guaranteed to fire.",
+        "rebuild_note": "One entrypoint dispatching by event type; each handler is small and communicates by exit code (2 = block) + stdout (inject) + a fire-and-forget event POST. Put safety blocks, context injection, and telemetry emission ALL here. If you want a ritual adopted, wire it to a hook, don't write it in a doc."
+      },
+      {
+        "principle": "Named autonomy dial: operator owns SPEC+PLAN, then an unattended cycle runs to a green PR with exactly three re-entry gates",
+        "what": "Work buckets as Initiative→Kickoff(typed design/spec/execution)→Tier(TRIVIAL/STANDARD/FULL = the autonomy dial)→Task. On PLAN approval an unattended EXECUTE→VERIFY→SWEEP→(EVAL)→SHIP cycle runs to a green opened PR, re-entering the human on ONLY three named gates: VERIFY-fail, EVAL-regress, or a risk-tag firing. SHIP stops at the merged PR; DEPLOY (restarts/redeploys) is a separate, explicit, operator-gated act never inside the autonomous cycle.",
+        "why_it_matters": "It draws a crisp, defensible human→autonomous→done line with a small, enumerable set of interrupts — the difference between 'an agent that does stuff' and a trustable autonomous worker, and the SHIP≠DEPLOY split keeps prod side-effects human-gated.",
+        "rebuild_note": "Build a tier classifier (cheap) that picks which acts run + whether the cycle is unattended; a cycle runner that orchestrates the acts, emits act transitions to telemetry, and halts on exactly the three gates surfacing the halt to a notification channel. Keep DEPLOY a separate command the runner never calls."
+      },
+      {
+        "principle": "Falsifiable, operator-ratified self-improvement loop (telemetry → findings → ratifiable spec stubs → prediction ledger)",
+        "what": "A $0 deterministic miner scans the telemetry the system already captures (cost by model, eval pass-rate, MCP flapping, context bloat, watchdog churn), produces ranked findings with cited evidence rows, and emits SPEC stubs marked status:proposed — NEVER auto-applied. On ratify+ship it records the cited metric + predicted delta in a ledger that the next run confirms/refutes. Distillation stores the STRATEGY ('when X do Y'), not the raw log (ReasoningBank pattern), and gathering is deadline-guarded so one dead source degrades to empty instead of aborting.",
+        "why_it_matters": "It's the compounding asset: the system mines its own friction and proposes its own fixes, but ungated self-mutation is an anti-pattern, so the operator-ratify gate + the falsifiable prediction ledger keep it honest — a harness edit that didn't move its cited metric gets reverted.",
+        "rebuild_note": "Split a pure mineFindings(scan) from the bounded I/O scan; name every threshold in one constants block for tuning. Emit proposals as artifacts a human approves, never auto-apply. Add an outcomes table {finding, cited_metric, predicted_delta, confirmed?} and re-check it on the next run."
+      },
+      {
+        "principle": "Capability→lane model routing with dispatch attribution normalized at one ingest point",
+        "what": "Normalized verbs (code_write, code_review, recon) map to a default model lane (opus main-thread / sonnet bounded / haiku recon / cross-vendor via one gateway). Route each task to its cheapest correct lane; escalate only on uncertainty. Dispatch-agent names (which arrive in many non-roster spellings) are coalesced via an alias map at the SINGLE telemetry write-point, with the raw spelling preserved for reversibility, so every downstream reader trusts the canonical name without re-mapping.",
+        "why_it_matters": "Routing recon to a cheap lane is the biggest cost lever, and attribution fragmentation ('general-purpose' vs 'gw-general-purpose') silently splits cost/lane metrics — normalizing once at ingest is what makes the cost telemetry trustworthy enough to act on.",
+        "rebuild_note": "A capability→default-lane table + an uncertainty escalation rule. Normalize dispatch identity once, at the event write-point, with an alias map + a phantom/external allowlist, keeping the raw value in a *_raw column. Derive any 'known external agents' doc from the same allowlist so they can't drift."
+      },
+      {
+        "principle": "Single-source-of-truth config via a linker that derives, never duplicates",
+        "what": "One ~/.claude/ directory is symlinked back to canonical files in the repo, so editing a canonical file changes the live surface immediately; MCP server config is generated from per-tool TOML manifests; new user-triggered skills auto-become slash commands by globbing one directory. Tools and tests that need 'the list of auto-loaded files' parse it out of the linker script rather than hardcoding it.",
+        "why_it_matters": "It kills the drift class entirely — there is exactly one place each fact lives, and the reports/tests that police the surface read from the same source the runtime does, so a budget report or a roster test can never silently diverge from reality.",
+        "rebuild_note": "Make the loader the source of truth; have every auditor/report parse its file list out of the loader. Generate runtime config from declarative manifests with a one-row-per-manifest invariant enforced by a test. Prefer symlink-resolves-to-repo over copy so edits are live."
+      },
+      {
+        "principle": "Egress boundary + redaction at every off-box and telemetry sink",
+        "what": "Before any content is embedded/egressed (memory backfill → embedding API), a cheap credential-regex guard skips files that look like they carry a live key/token/credentialed DSN; bare env-var names and SHA pins are intentionally NOT matched. Telemetry payloads redact secrets at emission. A surfaces ledger requires any new loopback bind, published port, or external egress sink to land a row in the same commit or the audit reflags it.",
+        "why_it_matters": "Memory/telemetry pipelines are the sneaky exfiltration path — they ingest whatever the agent touched. A guard at the egress point plus a same-commit ledger invariant is what lets the system add convenience features without quietly widening the attack surface.",
+        "rebuild_note": "Put one looksLikeSecret(content) heuristic at every egress call site and skip-on-match. Redact at the telemetry sink, not the reader. Maintain a single surfaces ledger and a test that fails if a new bind/port/sink appears without a ledger row."
+      }
+    ],
+    "standout_subsystems": [
+      {
+        "name": "Local hybrid memory stack (sqlite-vec + FTS5 + RRF, daemonless)",
+        "what": "A single embedded SQLite DB providing vector KNN + lexical FTS5 fused by Reciprocal Rank Fusion, scope/source-tagged, dedup-on-write with decay GC, hit-rate instrumented, embeddings via one credential with graceful FTS-only offline degradation. Replaced a 3-daemon stack and a paid hosted sink with zero services.",
+        "novelty": "strong",
+        "productize_as": "A drop-in 'agent memory' npm/PyPI library or thin SaaS: bring-your-own-embedder, hybrid recall, scoped multi-tenant facts, and the hit-rate dashboard that proves recall actually happens — the metric most memory products can't show."
+      },
+      {
+        "name": "Dreaming self-improvement loop + falsifiable-prediction ledger",
+        "what": "Deterministic $0 telemetry miner → ranked findings with cited evidence → ratifiable spec stubs (proposed, never auto-applied) → optional LLM transcript mining → an outcomes ledger that confirms/refutes each shipped change's predicted metric delta. ReasoningBank-style strategy distillation, deadline-guarded scans.",
+        "novelty": "novel",
+        "productize_as": "An 'agent observability + auto-improvement' product: ingest an agent fleet's telemetry, surface ranked friction findings, propose human-ratified config/prompt changes, and close the loop by measuring whether each shipped change moved its cited metric."
+      },
+      {
+        "name": "Lifecycle-hooks dispatcher (guards + context injection + telemetry in one process)",
+        "what": "A single hook entrypoint enforcing bash-safety + conventional-commit lint (exit-2 blocks), worktree-isolation / off-cluster / secret-redaction edit guards, SessionStart recall/handoff/brief injection, per-turn narrative ticks, and dual-sink telemetry — the layer the evidence shows is the only thing rituals actually adopt.",
+        "novelty": "strong",
+        "productize_as": "A 'Claude Code / agent governance & guardrails' plugin: policy-as-hooks (commit conventions, dangerous-command blocks, secret guards, worktree isolation) plus turnkey telemetry — sold as the enforcement+observability layer for teams running coding agents."
+      },
+      {
+        "name": "Typed instruction-governance schema + auto-load rent budget",
+        "what": "Zod-validated agent/skill/rule/doc schemas (name==basename, required sections, strict frontmatter, semver), a hard auto-loaded-line ceiling enforced in CI, and a measure-only rent reporter that sources its file list from the linker and ranks reclaimable boilerplate by token cost.",
+        "novelty": "strong",
+        "productize_as": "A 'prompt/instruction linter + context-budget governance' tool: lint agent/skill/rule files, enforce a token budget on the always-loaded prefix, and report per-section rent — CI for your context window."
+      },
+      {
+        "name": "Eval-as-CI harness (suite registry + multi-runner + native variance graders)",
+        "what": "A TOML suite registry (category/runner/triggers/cost_class/graders) driving promptfoo + deepeval, with native 3-sample variance graders (voice, schema, security-redteam, capabilities-routing, namespace-scopes) measured against per-grader-class disagreement thresholds, gated by SPEC 'ai' tag and pass-rate semantics that count errors in the denominator.",
+        "novelty": "strong",
+        "productize_as": "An 'agent/prompt eval-as-CI' service: register suites, run on PR-label/nightly, get variance-aware pass-rate gates that fail-stop a ship on regression — with the cost_class meter built in."
+      },
+      {
+        "name": "Capability→lane router + dispatch-attribution normalizer",
+        "what": "A capability→default-model-lane routing table (opus/sonnet/haiku/cross-vendor-gateway) with cheapest-correct-lane decisioning, plus a single-ingest-point alias normalizer that coalesces fragmented dispatch-agent spellings (preserving raw) so cost/lane telemetry is trustworthy.",
+        "novelty": "common",
+        "productize_as": "An 'LLM cost/routing optimizer + attribution' middleware: route by task class to the cheapest adequate model, normalize multi-agent dispatch identity, and produce clean per-lane cost attribution."
+      },
+      {
+        "name": "Multi-repo adoption contract (gw adopt + live project.toml manifest)",
+        "what": "A per-repo manifest that (in the v4 design) becomes a live adoption contract declaring which loops/audits/hooks a repo opts into, with a propagation command that installs the telemetry hook and registers the repo dimension on emitted events — turning all-or-nothing host-global symlinks into per-repo opt-in.",
+        "novelty": "strong",
+        "productize_as": "A 'fleet governance / standards propagation' product: push a versioned set of agents, hooks, audits, and loops out to many repos via a declarative opt-in manifest, with central telemetry rollup per repo."
+      }
+    ],
+    "value_add_features": [
+      {
+        "feature": "Semantic memory indexing + recall (embedding generation for add/backfill)",
+        "meterable_as": "embedding API calls and documents indexed",
+        "credit_unit": "per-document-indexed (or per-1k-tokens-embedded)"
+      },
+      {
+        "feature": "Dreaming self-improvement run (deterministic mine + optional LLM transcript mining → ratifiable proposals)",
+        "meterable_as": "a scheduled or on-demand analysis pass over a telemetry window",
+        "credit_unit": "per-dream-run (LLM-mining runs cost more credits than the $0 deterministic pass)"
+      },
+      {
+        "feature": "Fresh-context separate-evaluator VERIFY (gw-verifier dispatch)",
+        "meterable_as": "one isolated Opus-lane verification dispatch per phase/PR",
+        "credit_unit": "per-verification"
+      },
+      {
+        "feature": "Eval suite execution gate (promptfoo/deepeval, cost_class small/medium/large)",
+        "meterable_as": "an eval suite run with cost-class-weighted pricing",
+        "credit_unit": "per-suite-run (weighted by cost_class)"
+      },
+      {
+        "feature": "Cross-vendor consensus / code-review / second-opinion (PAL gateway)",
+        "meterable_as": "an external-model review or N-model consensus call",
+        "credit_unit": "per-review (or per-model in a consensus panel)"
+      },
+      {
+        "feature": "Deep-research harness (fan-out web search + adversarial verify + cited synthesis)",
+        "meterable_as": "a multi-source fact-checked research report",
+        "credit_unit": "per-research-report"
+      },
+      {
+        "feature": "Whole-surface audits (security 9-dimension, UI/UX 40-pt Nielsen, lifecycle browser-driven)",
+        "meterable_as": "one adversarially-verified audit scan over a diff/surface",
+        "credit_unit": "per-audit-scan"
+      },
+      {
+        "feature": "Autonomous cycle-to-green-PR runner (unattended EXECUTE→…→SHIP)",
+        "meterable_as": "one unattended lifecycle cycle driven to a merged PR",
+        "credit_unit": "per-autonomous-cycle"
+      },
+      {
+        "feature": "Multi-repo adoption / propagation + per-repo telemetry rollup",
+        "meterable_as": "repos under governance and seats consuming the central surface",
+        "credit_unit": "per-repo-adopted / per-seat"
+      },
+      {
+        "feature": "Design-reference research (real product screens/flows/styles lookup)",
+        "meterable_as": "a curated reference research call backing a UI build",
+        "credit_unit": "per-reference-query"
+      }
+    ],
+    "base_framework_contribution": "A vendor-neutral 'AI agent governance kernel' that any vertical template can derive from, contributing six reusable pillars: (1) a typed instruction/agent/skill/rule schema + validator + a linker that makes config the single source of truth and a context-budget rent reporter; (2) a single lifecycle-hooks dispatcher that unifies safety guards, context injection, and telemetry emission, wired as the actual control plane (hooks, not docs, get adopted); (3) the daemonless local hybrid memory stack (sqlite-vec + FTS5 + RRF, scope/source-tagged, hit-rate instrumented, one-credential embeddings with offline degradation); (4) a tag-driven lifecycle state machine with goal-backward, fresh-context verification and conditional audit fan-out; (5) a capability→lane model router with single-ingest dispatch attribution; and (6) the falsifiable, operator-ratified self-improvement loop (telemetry miner → proposed specs → prediction ledger) plus the security floor (one audited gate per dangerous class, egress guard, surfaces ledger). The kernel's cardinal invariant — 'no capability without a sensor; net auto-load budget only goes down' — is itself part of the contribution.",
+    "vertical_variation": "This repo is the SOFTWARE-ENGINEERING / dev-ops vertical seeded on that kernel: a self-hosted, single-operator coding-agent harness whose lifecycle is a 7-act SDLC (SPEC→PLAN→EXECUTE→VERIFY→SWEEP→EVAL→SHIP), whose agents are code-domain specialists (typescript-pro, python-pro, code-reviewer, security-auditor, frontend-designer, codebase-mapper), whose audits are code-grade (security floor, UI/UX Nielsen, lifecycle browser drive), and whose tooling layer is git/worktree governance + conventional commits + cost/telemetry cockpit + GitHub PR flow. The same kernel obviously seeds other verticals — the sibling repos prove it: a personal-health 'knowledge vault' template (vault-curator/interviewer/interrogator/deep-dive agents, a clinical lifecycle, vault-reviewer audits) reuses the schema/hooks/memory/audit kernel while swapping the lifecycle, agent roster, and audit rubric. The vertical is the {lifecycle acts + agent roster + audit rubrics + domain vocabulary}; the kernel is everything underneath.",
+    "defensibility": "The code is portable and largely re-implementable in a weekend (SQLite+RRF, a hook dispatcher, a Zod schema) — so the moat is NOT the code. Three durable assets: (1) Telemetry-grounded doctrine: the whole design is tuned from 30-day real-usage telemetry that proved which rituals are adopted vs theater (lifecycle <2%, hooks 84-94%, only 2 of 4 model lanes ever fired). A competitor without that usage data will re-build the unused capability the operator already learned to cut — the evidence-grounded right-sizing is the asset, and it compounds via the dreaming/prediction-ledger loop. (2) Audit-grade security architecture: one-gate-per-dangerous-class + timing-safe comparisons + egress guard + a same-commit surfaces-ledger invariant is a coherent, enforced floor that takes real discipline (and incidents) to converge on, not a feature you copy. (3) The closed measurement loop itself: a system that mines its own friction, proposes its own falsifiable fixes, and reverts edits whose cited metric didn't move gets better with operating time — late entrants start from zero accumulated findings/scars. Weaknesses to be honest about: the v4 self-improvement loop is largely SPEC'd-not-shipped (dream_findings ~4 rows, stream empty), it's single-operator/self-hosted (no multi-tenant/SaaS hardening), and several headline subsystems (sqlite-vec memory, capability router, eval-as-CI) are individually commodity — defensibility lives in the integration + doctrine + data, not any one part. Soft lock-in arrives only once a fleet adopts the propagation contract and the central memory/telemetry."
+  },
+  {
+    "repo": "health-service",
+    "core_strategy": "A canonical local SQLite store is the single source of truth, fed by a strict one-way pipeline — multi-source ingest adapters → whitelisted-upsert canonical store (idempotent numbered migrations, provenance block, dedupe_key) → a DETERMINISTIC zero-egress analysis engine (numpy/scipy stats, no LLM) → a read-only bounded reader that surfaces to a tailnet-only dashboard + PII-free push. The load-bearing idea is that intelligence is deterministic-first and the LLM is an OPTIONAL, single-module, opt-in narration step bolted on top of an already-computed feature summary — never on the critical path. Privacy is enforced by architecture, not policy: local-first by default, network-is-the-gate (loopback/tailnet binds, Tailscale ACL as the sole auth), exactly one auditable egress boundary, and raw values are never logged. A clean rebuild must preserve: (1) the canonical store as the only source of truth with a generic provenance-aware upsert; (2) deterministic findings that ship full product value with zero network; (3) the LLM behind one swappable backend boundary that degrades gracefully to a local template; (4) the PII-never-logged / push-carries-only-headline contract.",
+    "reusable_principles": [
+      {
+        "principle": "Canonical store with generic provenance-aware whitelisted upsert",
+        "what": "writers.py derives a per-table column whitelist statically from the migration DDL; every stream row carries a managed provenance block (source, dedupe_key, needs_review, review_notes, created_at, updated_at); writes go through one INSERT ON CONFLICT(dedupe_key) DO UPDATE. No caller-supplied SQL fragment or column ever reaches the DB.",
+        "why_it_matters": "One write path gives idempotency, dedup, review-flag lifecycle, and an injection-proof boundary for free across 20+ heterogeneous tables. Adding a source is declaring a column set, not writing SQL.",
+        "rebuild_note": "Build a single typed `upsert(table, row)` whose allowed-columns map is generated from your schema definition (or introspected from the DB), with provenance columns the writer owns and callers can't set. Make dedupe_key mandatory and ON CONFLICT the only write verb. Keep a parallel read-only-tables set so legacy/mirror tables are queryable but not writable."
+      },
+      {
+        "principle": "Idempotent numbered migrations with a schema_version ledger",
+        "what": "store/sqlite.py applies *.sql in filename order, each guarded by a schema_version row, bootstrapping that table first; safe to call on every daemon startup. 32 migrations evolved the schema including ALTER-to-add-provenance backfills.",
+        "why_it_matters": "Zero-ceremony schema evolution that converges on any box, including adding provenance to tables that predate the convention, without a migration framework dependency.",
+        "rebuild_note": "Keep it dependency-free: a versions table, filename-prefix = version, run-once guard, executescript in a transaction. Don't reach for a heavy migration framework for a single-writer embedded DB — the value is that init() is safe to call unconditionally at boot."
+      },
+      {
+        "principle": "Deterministic-first analysis engine; LLM is optional polish",
+        "what": "analysis/ computes deltas (rolling 30d baseline vs smoothed current), z-score/EWMA anomalies (incl. collected baseline bands), and sustained-breach threshold alerts in pure numpy with zero DB-or-network coupling in features.py. Findings are dict-shaped rows; the LLM only narrates a compact summary of them.",
+        "why_it_matters": "The product ships full value (what-changed, anomalies, alerts) at ~zero marginal cost and stable quality; the LLM never gates correctness and inference spend is bounded to the narration step.",
+        "rebuild_note": "Split math (pure, series-in/stat-out, trivially unit-testable, returns NaN never raises) from rules (DB I/O + thresholds + a metric registry that pins each metric's source table/column and its concerning direction) from the engine (orchestration + upsert). Make every threshold a named tunable constant. The LLM consumes the findings, not raw rows."
+      },
+      {
+        "principle": "Single egress boundary with opt-in precedence and graceful local fallback",
+        "what": "narrate.py is the ONE module that may leave the box. Backend selection has explicit precedence: per-run egress-disabled forces local; default is local; cloud requires an explicit env flag AND a present key, else degrades to a deterministic offline template. The HTTP call is bounded (httpx explicit timeout) and non-fatal — a failure is swallowed so the deterministic findings still ship.",
+        "why_it_matters": "Privacy posture becomes a one-line flip, auditable and reversible (ADR-0006 reversibility). A misconfigured key or a sensitive period never crashes the job and never silently egresses.",
+        "rebuild_note": "Define a narrate(summary)->Result interface with cloud and local implementations behind a select_backend() that reads env with documented precedence. Default to no-egress. Bound every outbound call with an explicit timeout; raise a typed error the caller swallows. Never auto-enable egress merely because a key exists."
+      },
+      {
+        "principle": "PII discipline encoded as a contract, not a guideline",
+        "what": "Raw measurement values are never logged anywhere; only table name + dedupe_key + counts appear in logs. The narration adapter logs only model/tokens/latency, never the prompt or output. Push notifications carry count + max-severity + a deep-link ONLY — no metric names or values — keeping detail behind the tailnet gate.",
+        "why_it_matters": "Sensitive-data products live or die on log hygiene and notification leakage; here it's a reviewed, tested invariant rather than a hope.",
+        "rebuild_note": "Make the no-raw-values-in-logs rule a code-review/lint gate. For any notification path, define a 'headline only' payload type that structurally cannot hold a value. Enumerate the exact loggable fields in a frozen result dataclass so 'what's safe to log' is the type, not a comment."
+      },
+      {
+        "principle": "Freshness watchdog asserts content-date, not job status",
+        "what": "freshness.py reads MAX(date_col) per canonical table and flags any source whose newest record exceeds its per-source cadence threshold. It is cause-agnostic — catches auth-silently-returns-empty, genuine no-data, and write-skips alike — because 'status=ok' from a sync is explicitly NOT a freshness signal.",
+        "why_it_matters": "The most insidious failure in data pipelines is a green job over stale data. Asserting the content date is the only honest liveness probe.",
+        "rebuild_note": "Build a small (source, table, date_col, max_age) table-driven check that queries the newest content date and compares to a per-source SLA. Treat empty/missing as stale. Wire it to alerting with per-source/day dedup. Keep it independent of the ingest layer's self-reported status."
+      },
+      {
+        "principle": "Honest job telemetry: swallowed failures still record real status",
+        "what": "The scheduler records a job_runs row per invocation and explicitly maps supervision-swallowed sync failures (auth_expired/network/failed) to status='error', so a failed sync can't masquerade as 'ok'. Trigger classification (cron vs misfire) is deterministic from next_run_time slack, with telemetry writes themselves best-effort so they never break the job.",
+        "why_it_matters": "Observability you can trust requires that the telemetry layer be more honest than the layer it observes, and that telemetry never become a new failure mode.",
+        "rebuild_note": "Wrap each scheduled job so it always emits a start/finish telemetry row; derive status from the job's real result, not from 'it returned without raising'. Make telemetry writes catch-and-log. Classify late fires as misfires deterministically rather than via event-listener races."
+      },
+      {
+        "principle": "Embedded bearer-gated read-only MCP surface with a registration guard",
+        "what": "The MCP server runs inside the daemon process (no separate unit), exposes read-only query tools over the canonical store, enforces a loopback-only bind, requires a bearer token via middleware, and an _add_tool guard raises at startup if any tool lacks an inputSchema — schema-less tools can't reach production.",
+        "why_it_matters": "Exposing personal data to an LLM agent safely needs a small, auditable, read-mostly surface with auth and schema enforcement baked in, co-located with the data so there's no extra network hop.",
+        "rebuild_note": "Mount the agent/tool server inside your existing daemon's event loop rather than as a separate service. Enforce loopback at bind time, bearer auth in middleware (exempt only /health), and a registration-time assertion that every tool declares a schema. Route all tool data access through the same bounded reader the dashboard uses."
+      },
+      {
+        "principle": "Findings as upsert-in-place rows keyed by a stable finding_key (BL-01)",
+        "what": "Both vault_findings and analysis_findings are 'one row per stable key, never accumulate dated snapshots' tables (UNIQUE(finding_key)); a re-run for the same period upserts in place. The weekly digest is one row per ISO-week.",
+        "why_it_matters": "Derived/computed outputs that accumulate dated snapshots bloat unboundedly and make 'the current state' ambiguous; a stable key keeps the table bounded by distinct findings and makes re-runs free.",
+        "rebuild_note": "For any computed/derived table, pick a stable natural key (type:metric:period) and UNIQUE it; upsert. Reserve append-only tables for true event streams (job_runs, run_summaries), not for analysis outputs."
+      },
+      {
+        "principle": "Spec-Plan-ADR governance with a 'do not rebuild — extend' prior-art inventory",
+        "what": "outputs/{specs,plans,decisions} carry the change history; ADR-0006 opens with a prior-art inventory mapping every structural piece a new feature needs to the existing module that already implements it, so the design reuses the scheduler/notifier/findings-table patterns instead of inventing parallel ones.",
+        "why_it_matters": "It's why the codebase stays coherent across 6 ADRs and dozens of phases — new work snaps onto established seams, and the reasoning (incl. rejected options and reversibility) survives.",
+        "rebuild_note": "Before designing a feature, inventory which existing seams it can reuse and cite them in the decision doc. Record rejected options and a reversibility note. Keep specs/plans/decisions as numbered durable artifacts separate from read-only history."
+      }
+    ],
+    "standout_subsystems": [
+      {
+        "name": "Deterministic findings engine (delta / anomaly / sustained-alert + weekly digest)",
+        "what": "Pure-stats engine over a metric registry: rolling-baseline pct deltas, z-score + EWMA + collected-baseline-band anomalies, and sustained-breach threshold alerts — each emitting upsert-keyed findings, with a compact feature-summary feeding optional LLM narration.",
+        "novelty": "strong",
+        "productize_as": "An embeddable 'metrics insights + anomaly' library/microservice: point it at any time-series store and a metric registry, get back human-readable findings with zero LLM dependency and an optional narration upgrade."
+      },
+      {
+        "name": "Single-boundary LLM narration gateway (cloud/local backends, opt-in egress, graceful degradation)",
+        "what": "One module with documented backend precedence, a deterministic offline template fallback, bounded timeouts, typed non-fatal errors, and a strict 'log only model/tokens/latency' rule.",
+        "novelty": "strong",
+        "productize_as": "A drop-in 'privacy-toggle LLM gateway' component — flip cloud/local per-tenant or per-run, never block on egress, always degrade to a deterministic answer."
+      },
+      {
+        "name": "Canonical store kit (idempotent migrations + provenance upsert + bounded whitelisted reader)",
+        "what": "The store/ trio: schema_version-guarded SQL migrations, whitelist-derived provenance upsert, and a single keyset-paginated reader with per-table date-column filtering and a hard max-limit, never logging values.",
+        "novelty": "common",
+        "productize_as": "A local-first 'personal data warehouse' starter — the ingestion-to-store substrate any quantified-self / personal-CRM / finance-tracker vertical builds on."
+      },
+      {
+        "name": "Freshness watchdog (content-date truth signal)",
+        "what": "Table-driven per-source data-age assertion that flags stale data regardless of pipeline self-report, cause-agnostic, with dedup'd alerting.",
+        "novelty": "strong",
+        "productize_as": "A 'data SLA / staleness monitor' that asserts freshness from actual content dates rather than job exit codes — sellable as a pipeline-observability add-on."
+      },
+      {
+        "name": "Karpathy LLM-wiki vault + the vault-* agent suite",
+        "what": "A strict-schema personal knowledge graph (7-field frontmatter, kebab basename wikilinks, 3+ outbound links, tiered word caps, max-15 central nodes) operated by 7 specialized skills (curator/interviewer/interrogator/reviewer/synthesizer/deep-dive/psychologist) implementing Karpathy's ingest/query/lint loop.",
+        "novelty": "novel",
+        "productize_as": "A 'personal knowledge-graph / LLM-wiki' product with an agent suite — synthesis-not-summarization notes, lint/audit agents, and clinical-style interviewers that compound context over time."
+      },
+      {
+        "name": "PII-free push pipeline + atomic dedup state machine",
+        "what": "A single ntfy publisher reused everywhere, with per-(source,date) atomic INSERT-OR-IGNORE claim slots, transition-only pushes, and payloads that structurally exclude PII (count + severity + deep-link).",
+        "novelty": "common",
+        "productize_as": "A 'privacy-safe alerting' module for any sensitive-data app — guarantees one alert per event and no leakage into notification surfaces."
+      }
+    ],
+    "value_add_features": [
+      {
+        "feature": "Weekly AI-narrated health digest (frontier-model narration over the week's findings)",
+        "meterable_as": "digest generations per user per period",
+        "credit_unit": "per-digest"
+      },
+      {
+        "feature": "On-demand deep analyses — cross-metric correlations (stress/sleep/HRV, load/recovery) and compound/protocol-timing vs biomarkers",
+        "meterable_as": "analysis runs",
+        "credit_unit": "per-analysis-run"
+      },
+      {
+        "feature": "Conversational agent over your own health data (read-only MCP-tool chat)",
+        "meterable_as": "chat turns / model tokens",
+        "credit_unit": "per-message (or per-1k-tokens)"
+      },
+      {
+        "feature": "Bloodwork PDF extraction (pdfplumber to structured long-format markers)",
+        "meterable_as": "lab documents parsed",
+        "credit_unit": "per-document"
+      },
+      {
+        "feature": "Physique photo vision analysis (timeline + body-comp inference from photo sessions)",
+        "meterable_as": "photo sessions analyzed",
+        "credit_unit": "per-scan"
+      },
+      {
+        "feature": "Vault deep-dive / clinical-interview sessions (the vault-* agent suite)",
+        "meterable_as": "agent sessions run",
+        "credit_unit": "per-session"
+      },
+      {
+        "feature": "Additional data-source connectors beyond a base tier (Garmin, Apple Health, scale, BP, training)",
+        "meterable_as": "active connectors",
+        "credit_unit": "per-connector (or per-seat tier)"
+      },
+      {
+        "feature": "Extended history retention + expanded tracked-metric set (36-metric lookup vs base subset)",
+        "meterable_as": "retention window + metric count",
+        "credit_unit": "per-seat tier"
+      }
+    ],
+    "base_framework_contribution": "A local-first 'personal data platform' base that many verticals can derive from: (1) the canonical-store kit — dependency-free idempotent numbered migrations with a schema_version ledger, a generic provenance-aware whitelisted upsert, and a single bounded/keyset-paginated whitelisted reader; (2) the daemon spine — an embedded APScheduler with picklable top-level jobs, honest job_runs telemetry (swallowed-failure to real error status), deterministic cron-vs-misfire classification, and a corruption-quarantine for the jobstore; (3) the freshness watchdog as a reusable data-SLA primitive; (4) the embedded, bearer-gated, loopback-only read-only MCP surface with a schema-enforcing registration guard; (5) the single opt-in egress boundary pattern with cloud/local backends and graceful degradation; (6) the PII-never-logged + headline-only-notification discipline as coded contracts plus a security-surfaces ledger with a same-commit invariant; (7) the deterministic-findings-engine + optional-LLM-narration architecture; and (8) the spec-plan-ADR governance with prior-art-inventory and reversibility notes. This is the substrate; a vertical supplies its schema, metric registry, and surface.",
+    "vertical_variation": "A quantified-self / personal-health template seeded on the base: pluggable biometric sync adapters (Garmin API, Apple Health export, smart-scale/BP, training/Liftoff), a health-domain schema (bloodwork long-format keyed by collection date, body-comp, sleep stages, HRV/RHR with baseline bands, training readiness/volume/PRs, compounds+cycles protocol modeling, mood/symptoms), a metric registry that encodes each metric's concerning direction, adherence/protocol-compliance tracking with a deterministic 'why did I miss' resolver, a medical-PII privacy floor (raw values never logged, subject-is-a-minor handling, tailnet-only access), a mobile-first PWA dashboard with domain-based IA (/today command center + trends drill-downs + /insights findings) and PII-free push, and the health knowledge-vault that turns accumulated data into a synthesized personal model. Swapping the adapters + schema + registry reskins the same base into other verticals (personal finance, habit/CRM, home-ops).",
+    "defensibility": "The code is re-implementable; the moat is the architecture-as-product-position and the compounding data assets. (1) Privacy posture as a credible claim: local-first canonical store + deterministic-first intelligence + exactly one auditable, opt-in egress boundary backs a real 'your health data never leaves unless you flip one switch' guarantee that cloud-LLM-first competitors cannot make. (2) Cost/quality structure: deterministic findings deliver the core product at near-zero marginal inference cost with stable quality, so premium LLM narration is upside, not a cost floor — hard to undercut. (3) Encoded domain knowledge: the metric registry (concerning directions, baseline-band semantics), the long-format bloodwork schema, compound/cycle/biomarker modeling, and adherence logic are accumulated health-domain truth, not a weekend clone. (4) The knowledge-graph vault is a switching-cost flywheel — the longer a user runs it, the richer their synthesized personal model, and that context is non-portable to a competitor. (5) Engineering governance (ADRs with reversibility, idempotent migrations, prior-art inventories) makes the base maintainable as a template family rather than a one-off. Weakness to close for multi-tenant: today auth is network-gated (Tailscale ACL, no app auth) and data is single-operator-private — but the trust boundary is cleanly localized, so adding per-tenant auth/RBAC is an additive layer, not a rewrite."
+  },
+  {
+    "repo": "gridwork",
+    "core_strategy": "A two-plane, one-seam architecture. A TypeScript control plane (Next.js \"HQ\": Better Auth, Drizzle/Postgres, Stripe) owns identity, multi-tenancy, the credit wallet/billing ledger, and the white-label config. A Python execution plane (FastAPI + LangGraph + LiteLLM on Fly) runs metered AI pipelines. They join through ONE asymmetric trust seam: HQ mints short-lived EdDSA-Ed25519 JWTs (Better Auth jwt plugin) carrying organizationId, verified by the pipeline via cached JWKS in a pure-ASGI middleware; the pipeline calls back over a shared internal Bearer to DEBIT CREDITS BEFORE doing expensive work. Three invariants make it load-bearing and must survive any rebuild: (1) tenancy enforced at the lowest layer — Postgres RLS via set_config('app.tenant_id') inside SET LOCAL transactions (pooler-safe), never app-layer WHERE filters; (2) every unit of value (a pipeline run) is priced from the workflow graph's topology and gated against an atomic SELECT-FOR-UPDATE credit wallet before the first LLM token; (3) cross-service auth is asymmetric — user-context JWT inbound, machine Bearer outbound, both constant-time. Everything else (UI, integrations, vertical content) is replaceable skin over this spine.",
+    "reusable_principles": [
+      {
+        "principle": "Database-enforced multi-tenancy (RLS, not app filtering)",
+        "what": "Every tenant table has organization_id, ENABLE + FORCE ROW LEVEL SECURITY, and a tenant_isolation policy keyed to current_setting('app.tenant_id'); writes go through a withTenant(orgId, tx=>...) wrapper that runs SELECT set_config('app.tenant_id', orgId, true) (SET LOCAL) inside a transaction; a separate dbAdmin pool bypasses RLS ONLY for webhooks/cron/system writes; cross-tenant reads return 404 not 403.",
+        "why_it_matters": "Isolation that survives a forgotten WHERE clause or an injection; the DB is the last line, not the app. SET LOCAL is pooler/PgBouncer-safe because it reverts at txn end.",
+        "rebuild_note": "In the same migration that adds organization_id, ENABLE+FORCE RLS and create the policy. Make withTenant() the ONLY sanctioned write path and lint for raw db.insert/update outside it. Provision two connection roles: an app role under RLS and an admin role that bypasses it, used exclusively by webhook/cron handlers. Return tenantNotFound() (404) on cross-tenant access."
+      },
+      {
+        "principle": "Dual-bucket credit wallet with atomic, ordered drain + append-only ledger",
+        "what": "organization holds creditsIncluded/creditsUsed (monthly allowance, resets, no rollover) and creditsPurchased (top-ups, never expire). consumeCredits() locks the row (SELECT FOR UPDATE), drains purchased-first then included, writes a signed credit_transactions ledger row, returns INSUFFICIENT_CREDITS instead of going negative.",
+        "why_it_matters": "Concurrent jobs can't over-deduct; the ledger is an auditable source of truth; the two buckets model the exact subscription+top-up revenue shape.",
+        "rebuild_note": "Two integer columns, never a single balance. All mutations inside one FOR UPDATE transaction that also inserts the ledger row (same txn = no drift). Encode deduction order explicitly. Make every Stripe-driven grant idempotent via a UNIQUE stripe_event_id, and for multi-effect events suffix composite keys (event.id+'_grant', '_expire', '_prorate') so each effect dedups independently."
+      },
+      {
+        "principle": "Graph-topology-as-price (a pure metering primitive)",
+        "what": "classify_complexity() maps a workflow DEFINITION (node count + presence of memory/RAG/consolidation nodes) to a fixed credit tier (simple=1, standard=3, langgraph_agent=8, full_agent=15) BEFORE execution.",
+        "why_it_matters": "Price is knowable before spend, so it can gate; cost scales with capability used, not wall-clock; new node types re-price automatically.",
+        "rebuild_note": "Write one pure function from the static graph to a tier (no runtime data). Keep tiers data-driven (a table keyed by node-type predicates). Price first, gate second, run third — never price after the LLM call."
+      },
+      {
+        "principle": "Gate-before-spend across the service boundary",
+        "what": "The execution plane is a CLIENT of the billing service: it POSTs /api/internal/credits/consume, treats HTTP 402 as a hard stop (raises InsufficientCredits) and refuses to call the LLM; the billing endpoint does the atomic deduction and timing-safe Bearer check.",
+        "why_it_matters": "The expensive worker never holds wallet logic; one audited debit path; you cannot accrue cost you can't bill.",
+        "rebuild_note": "Keep the wallet in the control plane only. The worker debits over an internal API with a constant-time Bearer compare, Zod-validated body, and 402-means-stop semantics. Debit before the model call; record actual cost after."
+      },
+      {
+        "principle": "Asymmetric dual cross-service auth (user JWT in, machine Bearer out)",
+        "what": "HQ→pipeline uses an EdDSA-Ed25519 JWT (sub/email/role/organizationId, aud=pipeline, 1h) verified via PyJWKClient(JWKS, cache 5m) in a PURE-ASGI middleware that sets a tenant ContextVar; pipeline→HQ uses a symmetric internal token compared with hmac.compare_digest; the middleware also cross-checks the JWT org against an x-organization-id header.",
+        "why_it_matters": "Public-key verification means the worker never holds HQ's signing secret; pure-ASGI (not BaseHTTPMiddleware) is required so SSE/streaming isn't buffered; ContextVar gives request-scoped tenancy with no globals.",
+        "rebuild_note": "Use the auth library's jwt+jwks plugins to issue short-lived asymmetric tokens; verify with a cached JWKS client; carry org in a ContextVar set/reset around the request. Do machine callbacks with a separate symmetric secret and constant-time compare. Keep tenant middleware pure-ASGI so streaming works."
+      },
+      {
+        "principle": "Two-tier cost ceiling: business credits over a technical USD budget",
+        "what": "Beneath the credit currency sits a per-tenant LiteLLM BudgetManager with a monthly USD cap per plan (trial $5 / solo $20 / team $55); check() before, record() actual completion cost, raise_if_exceeded().",
+        "why_it_matters": "A mispriced or runaway pipeline can't exceed real spend even if the credit model is wrong — a fail-safe under the revenue model.",
+        "rebuild_note": "Layer a hard per-tenant USD budget as a second gate independent of credits. Treat it as a circuit breaker, not a billing source; alert when it trips (it means your credit pricing is off)."
+      },
+      {
+        "principle": "Workflow-as-data compiled to an executable graph, cached by hash",
+        "what": "custom_graph.build_custom_graph() turns a React-Flow JSON (nodes/edges) into a LangGraph StateGraph: a NODE_FACTORY map (prompt/model/conditional/output/human_gate/code), a shared node_outputs state bus, {{node_id}} interpolation from upstream outputs, conditional routing via a _route key, human_gate via interrupt()+MemorySaver checkpointer; compiled graphs cached by sha256(canonical-JSON) and the code node deliberately DISABLED pending a real sandbox.",
+        "why_it_matters": "Users build agents visually; the same JSON both renders in the UI and executes server-side, and topology drives pricing. This is the no-code product surface.",
+        "rebuild_note": "Keep node builders pure and registered in one factory map. Derive the entry node from edges with no inbound. Cache compiled graphs by canonical-JSON hash. REQUIRE a checkpointer for any interrupt()/HITL node. Never ship arbitrary code execution without gVisor/nsjail — keep it disabled like they did."
+      },
+      {
+        "principle": "Reconnect-safe streaming via a job registry with replay buffer",
+        "what": "JobRegistry holds an in-memory per-job ring buffer (MAX_BUFFER=100) plus subscriber queues; broadcast() appends to buffer AND fans out; subscribe() replays the buffer to late/reconnecting clients; SSE generator sends keep-alive every 30s, detects client disconnect, closes on terminal state; concurrency capped (3 parallel/50 total) with queue-position tracking; backed by a durable job_store.",
+        "why_it_matters": "Long AI jobs outlive flaky connections; a reconnecting browser catches up instead of losing the stream; caps protect the box.",
+        "rebuild_note": "Separate 'broadcast to buffer+subscribers' from 'subscribe replays buffer then live'. Cap both the ring buffer and per-subscriber queue. Use raw StreamingResponse (not sse-starlette) for byte-exact frames and set X-Accel-Buffering:no. Persist job state to survive restarts; emit 'done' to live subscribers BEFORE marking complete."
+      },
+      {
+        "principle": "Per-tenant config + BYOK secrets + per-tenant model router",
+        "what": "TenantConfigResolver fetches plan + managed flag + Fernet-encrypted provider secrets (app_secrets.ciphertext, MASTER_ENCRYPTION_KEY) behind a 60s TTL cache with double-checked locking and invalidate(); LiteLLMRouterFactory builds a per-tenant Router either from platform master keys (managed, billed as overage) or the tenant's decrypted BYOK keys; per-tenant Langfuse keys forwarded via headers feed a ByokTraceManager.",
+        "why_it_matters": "One process safely serves many tenants with different keys/plans/observability; the managed-vs-BYOK fork IS the monetization lever.",
+        "rebuild_note": "Store provider secrets encrypted-at-rest keyed by (org, provider); resolve a TenantConfig behind a TTL cache with an invalidate hook fired on billing/secret webhooks. Build the LLM router from that config. Let tenants forward their own tracing credentials rather than hard-coding one observability backend."
+      },
+      {
+        "principle": "Self-improving per-client memory with confidence-scored human promotion",
+        "what": "3 layers: facts (static {{KEY}} values), rules (scope-filtered directives), learned (AI-proposed, Wilson-Score confidence + decay). Pipeline outputs and user edit-diffs/re-runs are written as preference_signals; a scheduled batch LLM (Ollama qwen3 locally / Haiku in-pipeline) extracts facts/rules/observations; learnings surface for human accept/dismiss/promote-to-rule; prompt-assembly injects facts(always)+rules(scoped)+top-N learned(by confidence, under a token budget).",
+        "why_it_matters": "The product gets better per tenant with use without manual prompt editing — a data/quality flywheel and a stickiness moat; Wilson-Score keeps low-evidence noise out until proven.",
+        "rebuild_note": "Split cheap fire-and-forget signal writes from scheduled batch analysis. Store learnings with a statistically grounded confidence (Wilson interval) plus time decay, NOT a raw count. Gate low-confidence behind human review. Assemble prompts deterministically (facts→scoped rules→top learnings within budget)."
+      },
+      {
+        "principle": "Content-as-code registries + single white-label config",
+        "what": "Pipelines and document templates are markdown+YAML-frontmatter files in the knowledge vault (id/category/model/inputs/difficulty/permissions); registries parse frontmatter and auto-extract {{VAR}} via regex; one agency.yaml + getAgencyVariables() re-skins the entire product (name, pricing, legal terms, locale, socials); the default config returns {{UNSET}} sentinels so 'not configured' is visible.",
+        "why_it_matters": "Prompts/templates are versioned, diff-able, reviewable artifacts; verticalizing = swapping the file library + one config, not editing code.",
+        "rebuild_note": "Keep prompts/templates as typed-frontmatter markdown; auto-extract variables; resolve from a single tenant/agency config whose defaults are visible sentinels. Cache the parsed registry with an invalidate() hook. Treat the file library as the product's editable surface."
+      }
+    ],
+    "standout_subsystems": [
+      {
+        "name": "Credit-metered LangGraph execution runtime",
+        "what": "runner.py (single-pass StateGraph: prepare→execute→finalize, streaming token accumulation, cost compute) + credit_gate (classify→consume→402-stop) + cost_tracker + budget_manager, all behind the gate-before-spend boundary.",
+        "novelty": "strong",
+        "productize_as": "A drop-in 'metered AI workflow runtime' / usage-based-billing-for-agents SDK: bring a graph, get per-run pricing, atomic debiting, a USD circuit breaker, and cost telemetry for free."
+      },
+      {
+        "name": "Visual workflow compiler (JSON graph → LangGraph)",
+        "what": "custom_graph.py compiles React-Flow nodes/edges into an executable LangGraph with a shared output bus, {{var}} interpolation, conditional routing, human-in-the-loop interrupt() gates, and hash-cached compilation; the same JSON renders in @xyflow/react in the UI.",
+        "novelty": "novel",
+        "productize_as": "An embeddable no-code agent-builder backend ('n8n/Zapier-for-LLMs' engine) that any SaaS can mount to let end-users author and run agents safely."
+      },
+      {
+        "name": "Multi-tenant SaaS billing quad (auth/tenant/tier/credits + Stripe handlers)",
+        "what": "Better Auth org plugin + RLS tenant wrapper + plan config + dual-bucket wallet, with Stripe webhook handlers doing idempotent grants, mid-cycle proration adjustments, cycle expiry (no rollover), dunning, and a finalizer that records processed events last so retries are safe.",
+        "novelty": "strong",
+        "productize_as": "A 'multi-tenant credit-billing starter' (org + RLS + wallet + Stripe webhooks + dunning) — the part every AI SaaS rebuilds badly."
+      },
+      {
+        "name": "Control-plane↔worker trust seam (JWT/JWKS + internal Bearer + pure-ASGI tenant middleware)",
+        "what": "EdDSA JWT issuance from HQ, JWKS verification + ContextVar tenancy + org-header cross-check in a pure-ASGI middleware (SSE-safe), symmetric internal-token callbacks with constant-time compare.",
+        "novelty": "strong",
+        "productize_as": "A 'split-stack auth' library for teams running Next.js + a Python worker: secure, streaming-safe, tenant-scoped service-to-service auth."
+      },
+      {
+        "name": "Self-improving memory / learning engine",
+        "what": "preference_signals (edit-diffs, re-runs) → scheduled batch extraction → Wilson-Score-ranked learned observations → human promote-to-rule → confidence-gated prompt injection.",
+        "novelty": "novel",
+        "productize_as": "A 'prompt memory + preference-learning' service: agents that learn each customer's style from implicit feedback, with a human approval queue."
+      },
+      {
+        "name": "Reconnect-safe SSE job registry",
+        "what": "Ring-buffer replay + pub/sub queues + keep-alive + disconnect detection + concurrency caps + durable job_store, using raw StreamingResponse for wire-exact frames.",
+        "novelty": "strong",
+        "productize_as": "An SSE streaming module for long-running AI jobs — resilient live output for any background-job product."
+      },
+      {
+        "name": "Per-tenant LiteLLM gateway with BYOK + managed overage",
+        "what": "router_factory + tenant_config + Fernet-encrypted secrets: one process builds a per-tenant model router from encrypted BYOK keys OR platform master keys, with managed usage billed at a 2x overage multiplier and per-tenant Langfuse BYOK tracing.",
+        "novelty": "strong",
+        "productize_as": "A multi-tenant LLM gateway: BYOK by default, monetizable 'managed keys' upgrade, per-tenant cost + tracing isolation."
+      }
+    ],
+    "value_add_features": [
+      {
+        "feature": "Pipeline run priced by graph complexity",
+        "meterable_as": "classify_complexity tier debited atomically before run; 402 stops insufficient orgs",
+        "credit_unit": "credits per run by complexity class (1/3/8/15)"
+      },
+      {
+        "feature": "Managed LLM (platform keys, no BYOK needed)",
+        "meterable_as": "overage above included credits billed at 2x rate_multiplier on actual LLM USD cost",
+        "credit_unit": "per-USD of LLM cost (overage), via managed_llm add-on subscription"
+      },
+      {
+        "feature": "Scheduled / cron pipeline automation",
+        "meterable_as": "premium-tier gate + credits per scheduled fire; per-org cron registered org_id:cron_id with quiet-hours",
+        "credit_unit": "per scheduled run"
+      },
+      {
+        "feature": "Custom visual pipeline builder (vs prebuilt library)",
+        "meterable_as": "tier/seat gate to author + credits on each run; free users get prebuilt library only",
+        "credit_unit": "per custom pipeline saved or per run"
+      },
+      {
+        "feature": "Human-in-the-loop approval gates (interrupt())",
+        "meterable_as": "premium node type unlocked on higher tiers; checkpointer-backed pause/resume",
+        "credit_unit": "per HITL-enabled pipeline run"
+      },
+      {
+        "feature": "Smart-memory learning engine",
+        "meterable_as": "per batch analysis of preference_signals producing learned observations",
+        "credit_unit": "per learning-analysis run"
+      },
+      {
+        "feature": "RAG / vector knowledge search + ingestion (LanceDB)",
+        "meterable_as": "ingestion and retrieval as distinct metered operations",
+        "credit_unit": "per ingestion job / per vector search"
+      },
+      {
+        "feature": "BYOK per-tenant observability (Langfuse)",
+        "meterable_as": "premium add-on enabling tenant-scoped tracing forwarding",
+        "credit_unit": "per-seat add-on"
+      },
+      {
+        "feature": "Branded PDF export (react-pdf)",
+        "meterable_as": "document generation event",
+        "credit_unit": "per PDF generated"
+      },
+      {
+        "feature": "Team seats (RBAC owner/admin/member, invites)",
+        "meterable_as": "seat-limit enforced via checkSeatLimit; team plan seat_limit=15",
+        "credit_unit": "per seat"
+      },
+      {
+        "feature": "Credit top-up packs",
+        "meterable_as": "Stripe checkout grants permanent purchased credits (idempotent)",
+        "credit_unit": "per purchased credit pack"
+      }
+    ],
+    "base_framework_contribution": "A 'metered multi-tenant AI SaaS' base framework that vertical templates derive from, contributing six reusable layers: (1) the org/RLS/credit-wallet/Stripe billing quad with idempotent multi-effect webhooks, proration, cycle-expiry and dunning; (2) the control-plane(TS)↔execution-plane(Py) trust seam — EdDSA JWT + cached JWKS + pure-ASGI tenant middleware inbound, constant-time internal Bearer outbound, ContextVar tenancy; (3) the metering spine — graph-topology pricing + credit-gate-before-spend + a per-tenant USD budget circuit breaker; (4) the reconnect-safe SSE job registry (replay buffer, caps, durable store) for long-running jobs; (5) per-tenant config/BYOK-secrets/model-router resolution with TTL cache + invalidate; (6) content-as-code template/pipeline registries fed by one white-label config file. A new vertical inherits all six and only swaps the pipeline+template library and the tenant-config schema. (Note: this monorepo also ships a Claude-Code 'gridwork-ai-kit' plugin/marketplace skin — a parallel base for agent tooling — but the durable framework is the metered-SaaS spine above, not the Claude plumbing.)",
+    "vertical_variation": "The 'AI web-agency operations' vertical. On top of the base it seeds: a CRM domain (clients/leads/revenue_entries/expense_entries with RLS), agency-flavored pipeline categories (web-agency / marketing / design / operations), a document-template library (client emails, proposals, contracts, retainer agreements) keyed to agency.yaml variables (retainer/blog/revision rates, payment-terms days, cancellation notice, city/state/county, socials), business integrations (Notion sync, Google, Vercel/PageSpeed, GitHub, Intercom), branded PDF deliverables, and an ops/observability stack (ops-service with APScheduler + Telegram alerts, ops-dashboard with Recharts). A clean rebuild keeps the base spine and replaces only the pipeline+template library and the agency.yaml schema to spin a different vertical (law firm, accounting practice, healthcare-marketing, real-estate ops) — the billing, tenancy, auth seam, and execution runtime are unchanged.",
+    "defensibility": "Moderate but compounding. The ingredients are commodity (Better Auth, Stripe, Drizzle, Postgres RLS, LangGraph, LiteLLM, LanceDB) and the multi-repo→monorepo consolidation + Claude-Code 'kit' plumbing is fully replaceable, so a straight port buys little. The defensible compound is three-fold: (1) the metering spine — pricing a workflow from graph topology, gating credits before spend across the service boundary, and a two-tier USD ceiling underneath — is a non-obvious billing architecture that is painful to retrofit and rare to get right (note the operational scar tissue: idempotency-suffix keys for multi-effect Stripe events, SET LOCAL for pooler-safe RLS, pure-ASGI middleware so SSE isn't buffered, and a hard litellm version pin avoiding a known supply-chain-compromised release); (2) the self-improving per-client memory with Wilson-Score confidence + human promotion is a data/quality flywheel that improves with usage and is sticky per tenant — the one component competitors can't clone by reading code; (3) the verticalized template/pipeline library + white-label config is the actual product surface and accrues domain content over time. Conclusion: re-implement clean — the durable value is the billing spine + memory flywheel + vertical content library, not the wiring; the wiring should be rebuilt as the shared base framework and the vertical content treated as the moat that compounds."
+  },
+  {
+    "repo": "tessera",
+    "core_strategy": "A local-first AI media library where the privacy boundary is an ARCHITECTURAL invariant, not a policy bolted on. Everything hangs off three load-bearing seams: (1) a provider-agnostic, capability-level compute dispatcher (EMBED/TAG/CAPTION/DETECT over list[ImageRef]) where each backend declares its trust level (local | private-infra | hosted-moderated) and a privacy gate refuses to route an \"uncensored\" job to a moderated third party BEFORE any pixel leaves the box; (2) \"enrich everything, gate nothing\" — content classifiers (NSFW/NudeNet) are demoted to metadata columns, never skip conditions, so the catalog is uniformly searchable; (3) the app sells SOFTWARE convenience (offline-verified license), never content or core capability. A clean rebuild must preserve: the capability seam + privacy-as-a-backend-attribute, the config-driven self-registering backend registry with host-adaptive defaults, full provenance on every derived row (tag_source/model_runs/run_id), and the two compose-able trust gates (cross-runtime parity + embedding-space self-retrieval) that authorize trusting compute you didn't run locally.",
+    "reusable_principles": [
+      {
+        "principle": "Capability-level compute seam with privacy as a first-class backend attribute",
+        "what": "ComputeBackend is a Protocol declaring {capabilities, mode, privacy} and one method per capability over list[ImageRef]; the dispatcher resolves a backend per capability from config and enforces a privacy gate (uncensored job -> only local/private-infra). Backends (local_mps/cuda/onnx/cpu, rented_metal) are interchangeable behind it.",
+        "why_it_matters": "Decouples 'what work' from 'where/whose hardware' and makes the privacy boundary a compile-checkable seam rather than scattered if-statements. The H100 run 'just worked' because it was the same seam, a different URL.",
+        "rebuild_note": "Define a tiny pure protocol module (no heavy ML imports) with a privacy enum and a CAPABILITY->method map. Dispatcher.run(cap, refs, uncensored=) checks privacy BEFORE dispatch and raises a typed PrivacyGateError. Keep backends lazy-instantiated and cached so constructing the dispatcher loads no model."
+      },
+      {
+        "principle": "Config-driven, self-registering backend registry + host-adaptive default",
+        "what": "@register('name') decorator populates a registry; make(name, **cfg) instantiates; routes/backends come from a config.yaml block. A platform+ONNX-EP host detector picks the best local backend at first run and writes it into resolved config, so config.yaml becomes machine-derived not hand-edited. Missing config fails OPEN to a detected backend, never closed.",
+        "why_it_matters": "Swapping a backend is a config value edit, not code. A clean install dispatches out-of-the-box on Mac/NVIDIA/Windows/CPU without the user knowing what an execution provider is.",
+        "rebuild_note": "Registry holds name->class with duplicate-name guard. Detector imports nothing heavy at module load (probe onnxruntime.get_available_providers lazily), maps EP presence -> backend name. default_config routes every capability to the detected backend so first boot never errors."
+      },
+      {
+        "principle": "Enrich-everything, gate-nothing (invert the classifier-as-filter pattern)",
+        "what": "Original design gated expensive VLM tagging behind a NudeNet pre-filter (only ~4% of catalog tagged). ADR-0001 inverted it: ALL tiers run on ALL items; NudeNet output becomes a metadata JSON column used to FILTER after the fact, never to skip work.",
+        "why_it_matters": "Uniform enrichment makes the whole corpus searchable and the product honest about its wedge (handles sensitive libraries other tools refuse). Content classification as data, not as a moral gate, is the differentiator.",
+        "rebuild_note": "Make every enrichment tier unconditional over the item set; store classifier outputs (regions, scores) as metadata columns. Anywhere a classifier result could become a skip/branch, force it to be a queryable facet instead. Document the invariant in code comments at the call site."
+      },
+      {
+        "principle": "Provenance on every derived row",
+        "what": "Every tag carries tag_source (joytag|wd_eva02|vlm|openrouter|user|probe); a model_runs table records model_id/revision/precision/host/git_sha/manifest, and tags/captions/embeddings carry a nullable run_id FK. The tags UNIQUE key was rebuilt to include tag_source so two models can both assert the same tag (a cross-model agreement signal).",
+        "why_it_matters": "Enables per-source filtering, audit, reproducibility, and trusting/distrusting a specific batch run. Without it, classifier tags and human edits and VLM captions become an indistinguishable soup.",
+        "rebuild_note": "Bake source/run columns in from migration 1, not later. Make (entity, category, value, source) the natural key so multiple producers coexist. Persist the run manifest the batch box emits as a first-class row, not a discarded artifact."
+      },
+      {
+        "principle": "Idempotent, backup-first, additive-only SQLite migrations",
+        "what": "A runner splits SQL via sqlite3.complete_statement, PRAGMA-guards every ADD/DROP COLUMN (SQLite lacks IF EXISTS), commits once per file (atomic rollback), and even skips historical backfills that reference since-dropped columns. UNIQUE-constraint changes do the create-new/copy/drop/rename rebuild in one txn with FK check before commit and AUTOINCREMENT high-water restore. Migrations are additive (nullable owner_id + backfill to a reserved system row).",
+        "why_it_matters": "Lets a long-lived local DB evolve safely across 16+ migrations on an end-user's machine with no DBA, no down-migrations, and a 'cp catalog.db.bak before any schema change' discipline.",
+        "rebuild_note": "Write a ~250-line runner: statement splitter that respects trigger bodies/quoting, regex-guarded ALTERs against PRAGMA table_info, one commit per file. For UNIQUE changes, script the table-rebuild dance explicitly. Boot hook auto-migrates with a backup first; multi-user via nullable owner_id backfilled to a reserved id=1 'system' user so existing queries are untouched."
+      },
+      {
+        "principle": "Privacy-preserving remote compute offload",
+        "what": "To use a rented GPU, a LOCAL-ONLY preparer copies images into a flat staging dir renamed to <int>.webp (the catalog PK is the ONLY identifier the box sees), strips all filenames/dirs/person/rating taxonomy, encrypts the tarball at rest (age/gpg), emits sha256 checksums, and keeps the id->meta manifest (the key that makes results useful) OUTSIDE the upload, never transmitted. The script connects nowhere.",
+        "why_it_matters": "Squares 'absolute privacy' with 'I want H100 throughput': you rent compute without leaking what the library is OF. The opaque-id + manifest-stays-home pattern is the reusable core.",
+        "rebuild_note": "Selection uses the taxonomy locally to choose items, but the upload payload is opaque-id blobs only. Encrypt-at-rest by default; write the reverse-map manifest to a sibling dir that the tar glob can't reach. Decrypt into tmpfs on-box. Treat the manifest as the secret."
+      },
+      {
+        "principle": "Compose-able trust gates for compute you didn't run",
+        "what": "Two distinct gates authorize trusting remote/opaque output. GATE-parity: recompute a pilot subset locally with the SAME tier modules and diff (cosine>0.9999 same-runtime). GATE-0 self-retrieval: re-embed ~20 known items locally on a DIFFERENT runtime (MPS vs CUDA) and assert each item's nearest neighbor in the stored index is ITSELF, cos>0.99. The ADR explicitly notes self-retrieval is necessary-but-not-sufficient (a vision-only checkpoint passes it), so cross-modal validity is a SEPARATE GATE-1; the gates compose and neither alone flips the feature flag.",
+        "why_it_matters": "Catches the silent failure where a wrong-but-deterministic model (e.g. a timm vision-only SigLIP checkpoint) produces plausible vectors that are semantically meaningless for text queries — parity passes because both sides are equally poisoned. The honest 'this gate proves X but NOT Y' reasoning is the rare, valuable part.",
+        "rebuild_note": "Build a tiny read-only verifier that re-embeds a fixed probe-id set on the local runtime and queries the populated index. Pick a threshold that tolerates cross-runtime fp drift but catches a collapsed checkpoint. Gate the user-facing feature on an env flag flipped ONLY after all composed gates pass; degrade gracefully (return mode:degraded_from) until then."
+      },
+      {
+        "principle": "Two-stage hybrid retrieval with graceful degradation",
+        "what": "Search is: cheap tag pre-filter -> candidate id set; ANN shortlist (quantized first-pass) over the allowlist; exact sqlite-vec cosine rescore on the shortlist; optional caption-FTS + vector fusion via Reciprocal Rank Fusion (k=60). If no vectors exist yet, semantic/similar degrade to a 200 payload with vectors_unavailable:true and hybrid falls back to tag relevance — never a 500.",
+        "why_it_matters": "Coarse-to-fine keeps ANN fast while exact rescore keeps it correct; degradation means the product is usable from day one while the expensive embedding backfill is still running.",
+        "rebuild_note": "Dual-store the vectors: a quantized ANN index for the fast allowlist pass + full-precision rows for exact rescore. Fuse lexical and vector lanes with RRF, not score addition (scales are incomparable). Every vector mode must branch on vector_count>0 and emit a typed degraded response, with tests pinning the degrade contract."
+      },
+      {
+        "principle": "On-device personalization ladder (numpy-only, reuse existing signal)",
+        "what": "Three rungs over the stored SigLIP vectors with zero new infra: rung 0 nearest-centroid one-class tagger; rung 1 a two-class L2-regularized logistic 'linear probe' (plain numpy full-batch GD, sub-second on 1152-dim); rung 2 active learning that reuses the human's existing keep/reject flag_action as labels and ranks the unlabeled pool by uncertainty (smallest |margin|) to propose the next items to label. Dry-run is the default; writes go through an idempotent UPSERT with tag_source='probe'.",
+        "why_it_matters": "Personalized ranking and 'more like this' with no GPU, no torch, no model server — just linear algebra over vectors you already computed. Reusing keep/reject as labels means personalization costs the user zero extra clicks.",
+        "rebuild_note": "Once you have per-item embeddings, a logistic probe is ~30 lines of numpy. Make ranking pure/read-only; gate writes behind an explicit dry_run=False. Cold-start fallback to centroid-cosine ordering so the surface is never blank before two classes exist."
+      },
+      {
+        "principle": "Offline, fail-safe-to-free cryptographic licensing (sell software, not content)",
+        "what": "Ed25519-signed tokens carry signed claims {tier, max_version, issued_at, expires?}; the app verifies against a baked-in PUBLIC key with NO phone-home. Verification is pure and never raises — any forged/tampered/expired/over-version token fails safe to the free community tier. Pricing is perpetual-per-major (max_version >= APP_MAJOR_VERSION); a v1 license never bricks on v1.x, drops to community on v2. The signed tier is authoritative; the human-readable prefix is cosmetic.",
+        "why_it_matters": "Open-core monetization that respects an offline/private user, can't be broken by going offline, and degrades to fully-functional-free rather than locking the user out. Pro unlocks only convenience flags (bulk_export, remote_compute_routing, priority_support) — never a content or capability gate.",
+        "rebuild_note": "Public key in the binary, private key only in the issuer (a Polar order.paid webhook that self-gates: returns 503 with no secret configured, verifies the Standard-Webhooks HMAC over the raw body, mints idempotently via an append-only JSONL ledger keyed on order_id). verify() returns Optional[claims] and swallows every error to None. Make 'fail safe to free' the tested invariant."
+      },
+      {
+        "principle": "Vendor-trap knowledge capture as load-bearing doctrine",
+        "what": "knowledge/vendors/siglip-quirks.md records that SigLIP SO400M image embeddings are 1152-dim NOT 768 (a stale ref that 'bit this project'), and that a timm vision-only checkpoint yields correct-looking-but-text-broken vectors — with the exact verification recipe. ADRs cite this file by line number as the rationale for an entire verification gate.",
+        "why_it_matters": "The most expensive bugs here are silent semantic ones (wrong checkpoint, wrong preprocessing padding='max_length'). Capturing the trap + the verification once, and making code/ADRs cite it, prevents a future refactor from re-introducing it.",
+        "rebuild_note": "Keep a terse vendors/ and patterns/ knowledge dir next to the code. Each note is the trap + the one-paragraph verification. Cite notes by path:line in ADRs and code docstrings so the rationale is traceable, not folklore."
+      },
+      {
+        "principle": "Zero-runtime typed design-token contract (shape/values split)",
+        "what": "vanilla-extract createThemeContract declares the SHAPE of every token (compile-time 'token does not exist' errors, autocomplete); createTheme files hold VALUES. Re-theming = swap values in one file; the contract is stable. Multiple dark themes + a light theme are separate value files selectable at runtime; tokens applied at <html> so portaled content resolves too. DESIGN.md documents the OKLCH-reasoned ramp + WCAG AA verification.",
+        "why_it_matters": "A pro-tool aesthetic (one restrained accent, dense, chrome-recedes) enforced as compile-checked tokens — no runtime CSS-in-JS cost, no token drift, re-skinnable per vertical.",
+        "rebuild_note": "Split contract (null-valued shape) from theme (values). Reference vars.* everywhere; never hardcode a hex. Make the token set a brand-floor doc with AA contrast verified. Themes are pure value swaps; ship 2-3 and a switcher."
+      },
+      {
+        "principle": "vec_owner indirection seam for a multi-entity vector space",
+        "what": "Migration 006 adds a vec_owner(vec_id, owner_type in (image|scene), owner_id) map so one ANN index can serve images AND future video-scene keyframes without scene ids colliding with image ids on the hot read path. Today the map is empty and the image path is behavior-identical (no JOIN added); an _assert_image_scope guard raises for any unwired scope, documenting exactly where the future JOIN lands.",
+        "why_it_matters": "Lets you reuse one expensive embedding/ANN stack across multiple entity types later WITHOUT a risky retrofit, while keeping the current hot path zero-overhead. The explicit 'one place this grows' seam is disciplined forward-design.",
+        "rebuild_note": "When a vector space will eventually hold >1 entity type, add the owner-map table early but leave it empty and the single-entity path untouched. Guard the unwired scope with a raising assert that names the future work, so the seam is discoverable but inert."
+      }
+    ],
+    "standout_subsystems": [
+      {
+        "name": "Compute dispatcher + privacy gate (the seam)",
+        "what": "Provider-agnostic capability backend protocol + config registry + host detector + privacy-gated dispatcher. Same interface spans local MPS/CUDA/DirectML/ONNX/CPU and a rented HTTP GPU endpoint; uncensored jobs are refused on moderated backends before any byte leaves.",
+        "novelty": "strong",
+        "productize_as": "A standalone 'AI compute router' library: pluggable inference backends with declared trust levels + a policy gate, host-adaptive defaults, and a one-line swap from local to rented/hosted. Sellable as the routing layer any privacy-sensitive local-AI app needs."
+      },
+      {
+        "name": "Privacy-preserving remote-offload toolkit",
+        "what": "prepare_remote_upload (opaque-id rename, taxonomy strip, age/gpg encrypt-at-rest, manifest stays home) + validate_h100_parity (recompute-and-diff per tier) + verify_self_retrieval (embedding-space sanity gate). End-to-end 'rent a GPU without leaking what your data is of, then prove the box did it right.'",
+        "novelty": "novel",
+        "productize_as": "A 'confidential burst compute' SDK: ship opaque encrypted batches to any rented GPU, reconcile by local id-map, and gate-verify the results with parity + self-retrieval before trusting them. Differentiated for sensitive-data shops (legal/medical/personal)."
+      },
+      {
+        "name": "On-device personalization ladder",
+        "what": "centroid -> numpy logistic linear-probe -> uncertainty-sampling active learning, all over already-stored embeddings, reusing the user's keep/reject signal as labels, dry-run-by-default, idempotent writes.",
+        "novelty": "strong",
+        "productize_as": "A 'personalized ranking from your own embeddings' module — drop-in 'more like this / train on my taste' for any vector-backed catalog, no GPU or model server. Premium 'taste profiles' feature."
+      },
+      {
+        "name": "Offline crypto licensing + self-gating issuer webhook",
+        "what": "Ed25519 baked-in-public-key verification, fail-safe-to-community, perpetual-per-major, plus a Polar order.paid webhook that self-gates (503 without secret), HMAC-verifies, and mints idempotently via an append-only ledger.",
+        "novelty": "strong",
+        "productize_as": "An open-core licensing kit: offline-verifiable perpetual/subscription tokens + a merchant-of-record webhook issuer that any AGPL/open-core desktop app can adopt to monetize convenience without phone-home DRM."
+      },
+      {
+        "name": "Idempotent SQLite migration engine",
+        "what": "PRAGMA-guarded ALTERs, statement-aware splitting, per-file atomic commit, UNIQUE-constraint table-rebuild with AUTOINCREMENT high-water restore, historical-backfill skip, auto-migrate-with-backup boot hook, additive multi-user via nullable owner_id.",
+        "novelty": "common",
+        "productize_as": "A reusable 'safe SQLite evolution' helper for any local-first / embedded-DB app (Tauri/Electron) that must migrate end-user databases with no DBA and no down-migrations."
+      },
+      {
+        "name": "Pigment design system (vanilla-extract token contract)",
+        "what": "Compile-checked token shape/value split, OKLCH-reasoned dark-first ramp with one committed jade accent, semantic rating colors as data, AA-verified, multi-theme, documented as a brand floor with explicit anti-references (anti-AI-slop).",
+        "novelty": "strong",
+        "productize_as": "A 'pro-tool dark dense' UI starter + token contract — the design floor for any data-dense local app (DAM, observability, IDE-like tools). Re-skinnable per vertical by swapping value files."
+      }
+    ],
+    "value_add_features": [
+      {
+        "feature": "Bring-your-own / managed remote GPU compute routing (already a ProFeature: remote_compute_routing)",
+        "meterable_as": "GPU-seconds or items processed on rented/managed metal, surfaced via the existing CostEstimate(usd, n, capability) on each backend",
+        "credit_unit": "per-image enriched on remote (or per GPU-minute)"
+      },
+      {
+        "feature": "Hosted VLM captioning (Tier 2 — the expensive bottleneck tier, ~seconds/img) via OpenRouter or managed endpoint",
+        "meterable_as": "one caption generation = N credits; batch caption sweeps debit a credit pool",
+        "credit_unit": "per-caption (per-image)"
+      },
+      {
+        "feature": "Deep-video understanding (scene detection + scene captions + transcripts)",
+        "meterable_as": "video minutes processed through scene-detect + caption + transcribe",
+        "credit_unit": "per-video-minute"
+      },
+      {
+        "feature": "Text-to-image semantic search (the gated flagship mode behind the text tower)",
+        "meterable_as": "premium tier unlock + optional metered hosted text-tower queries for low-RAM machines",
+        "credit_unit": "per-query (or flat Pro unlock)"
+      },
+      {
+        "feature": "Personalization training runs (linear-probe / active-learning 'train on my taste' profiles)",
+        "meterable_as": "each probe fit + full-catalog rescore as one training job",
+        "credit_unit": "per-training-run (per-profile)"
+      },
+      {
+        "feature": "Face clustering re-scan over the full corpus",
+        "meterable_as": "a full agglomerative re-cluster pass = one scan; incremental assignment is free",
+        "credit_unit": "per-full-rescan"
+      },
+      {
+        "feature": "Bulk export (already a ProFeature: bulk_export)",
+        "meterable_as": "export jobs over a size/count threshold debit credits",
+        "credit_unit": "per-export-batch (per-N-assets)"
+      },
+      {
+        "feature": "First-run model-weight delivery / managed model CDN",
+        "meterable_as": "managed resumable pull of gated/optimized weights vs self-serve HF",
+        "credit_unit": "per-model-pull (or flat convenience unlock)"
+      }
+    ],
+    "base_framework_contribution": "A 'local-first AI application' base framework spanning: (1) the provider-agnostic capability-compute seam + trust-tiered privacy gate + self-registering backend registry + host-adaptive detector; (2) the safe embedded-DB evolution kit (idempotent backup-first additive migrations, provenance columns, multi-user-via-nullable-owner); (3) the offline-crypto open-core licensing kit (Ed25519 verify + self-gating MoR webhook issuer, fail-safe-to-free); (4) the two-stage hybrid retrieval + dual-store ANN + graceful-degradation pattern; (5) the compose-able trust-gate pattern (parity + self-retrieval) for untrusted/remote compute; (6) the numpy-only personalization ladder over stored embeddings; (7) the vanilla-extract typed token-contract design floor. These are vertical-agnostic and seed any privacy-sensitive, embeddings-backed desktop/self-hosted app.",
+    "vertical_variation": "On top of that base, tessera is the MEDIA / digital-asset-manager vertical template: a multi-tier on-device enrichment pipeline (structured tags JoyTag+WD-EVA02 / SigLIP embeddings / VLM captions / NudeNet regions), image+video catalog schema (scenes, sprites, VTT scrub, contact sheets), faces (detect+cluster), places+events (geo clustering), caption FTS, the vec_owner image+scene vector unification, and a dense keyboard-first 'Pigment' DAM UI (justified virtualized grid, facet rail with disjunctive counts, inspector, command palette, docked lightbox, Tauri desktop + Docker self-host). Swappable analogues: replace the media taggers/embedders with domain models to seed parallel verticals — a document/legal DAM, a medical-image library, a research-corpus browser — reusing the same seam, gates, licensing, migrations, and design floor.",
+    "defensibility": "Low on any single component (every model is third-party/open, AGPL exposes the code, the algorithms are textbook) — but meaningfully high on the INTEGRATED DISCIPLINE that is genuinely hard to reproduce: a privacy boundary enforced as an architectural seam rather than a policy, the compose-able trust gates with honest 'this proves X not Y' reasoning that catch silent semantic failures, full provenance + safe end-user DB evolution, fail-safe-to-free offline licensing that can't be broken by going offline, and a pro-tool design floor with explicit anti-AI-slop references. The moat is the assembled correctness/privacy/taste system and the captured vendor-trap knowledge, plus open-core trust (AGPL + 'no media or core capability ever gated' + no telemetry) as a brand wedge against cloud photo apps. A competitor can re-implement any one piece in a weekend; reproducing the whole verified, privacy-first, monetizable assembly is the real cost — and that is exactly the reusable base a clean rebuild should preserve."
+  },
+  {
+    "repo": "Wardfile",
+    "core_strategy": "A compliance-grade \"artifact of record\" engine: every regulated document (a certified-payroll report) is produced by a deterministic, framework-free pure-function core that turns one normalized input contract into byte-stable output, gated by a flag-never-guess validation pass, then frozen by a single atomic LOCK transition that simultaneously (a) writes an append-only immutable version row whose immutability is a MISSING database GRANT (not a trigger), (b) snapshots a Zod-validated provenance JSONB the signer can defend under penalty of perjury, (c) writes the bytes to WORM Object-Lock storage with a per-jurisdiction retention, and (d) emits the billing meter — so immutability, provenance, retention, and billing all key off one unambiguous event. The whole thing sits on a uniform fail-closed multi-tenant RLS floor and an integer-only branded-units domain (no floats anywhere). A clean rebuild MUST preserve: lock = the one event that couples immutability+provenance+WORM+meter; output determinism enforced by a golden-file harness; and \"flag, never guess\" — the engine refuses to produce a record rather than fabricate a value.",
+    "reusable_principles": [
+      {
+        "principle": "Append-only immutability by missing privilege, not by trigger",
+        "what": "The versions table holds only locked rows; the app DB role has no UPDATE/DELETE grant. Current version is DERIVED (the row no other row supersedes via a supersedes_id chain), never stored as a mutable flag. Amendments are INSERT version_no+1, never UPDATE. Nothing is ever destroyed.",
+        "why_it_matters": "A trigger can be dropped or disabled; an absent privilege cannot. For perjury-grade / audit records, immutability must be structurally impossible to violate, not policy-enforced. It also makes the billing meter and the immutability event the same INSERT.",
+        "rebuild_note": "Two roles: a constrained app role with only SELECT/INSERT on the record table, and a separate migration/admin role. Put the GRANT (and the deliberate absence of UPDATE/DELETE) in a hand-authored, reviewed migration block. Model 'current' as a NOT-IN-superseded derivation with a partial index on supersedes_id; never add updated_at to the record table (its presence implies a mutation path)."
+      },
+      {
+        "principle": "Uniform, fail-closed, single-template row-level tenant isolation",
+        "what": "One RLS policy template applied identically to every tenant table: workspace_id = NULLIF(current_setting('app.workspace_id', true), '')::uuid, with FORCE ROW LEVEL SECURITY and withCheck mirroring using. A denormalized workspace_id column on every table is what the policy keys on (not an FK join). A second RESTRICTIVE SELECT-only policy narrows agency-staff visibility to a JSONB company_scope.",
+        "why_it_matters": "One template means the security auditor verifies ONE policy shape, not N hand-written predicates. The NULLIF guard defeats the silent pooled-connection footgun where a committed SET LOCAL reverts the GUC to empty-string (''::uuid raises rather than denies). Missing tenant scope yields zero rows, never all rows.",
+        "rebuild_note": "Express the policy as a single reusable factory the schema layer stamps on each table. Require a denormalized tenant-id column everywhere (a shared column helper). FORCE RLS on every table and add a CI/schema test that fails if any RLS-enabled table is not also FORCEd. Always set a validated tenant GUC at the connection seam (withWorkspace) and never trust middleware as the only gate."
+      },
+      {
+        "principle": "Integer-only branded units domain with a single recorded rounding point",
+        "what": "Money=cents, hours=milli-hours, rates=cents-per-hour, all as compile-time branded integer types that are non-interchangeable without an explicit constructor. The only non-integer appears inside one documented intermediate, collapsed to integer at a single rounding point that emits a RoundingRecord (inputs, unrounded value, mode, result).",
+        "why_it_matters": "Floats silently corrupt regulated arithmetic; branding stops a milli-hours value being passed where cents are expected. The recorded rounding trail lets a portal cent-dispute be reconstructed exactly — the arithmetic IS the defense.",
+        "rebuild_note": "Define Brand<T,'X'> types and constructors that assert Number.isSafeInteger. Choose the minor unit to ingest the source's max precision losslessly (here milli-hours for a third-decimal payroll API). Centralize the one rounding function; have it RETURN a provenance record, not just a number, and snapshot those records into the locked artifact."
+      },
+      {
+        "principle": "Provenance snapshot as Zod-strict-validated JSONB, parsed before INSERT",
+        "what": "Hybrid table: the query-hot spine (version_no, checksum, locked_at, billing_status, retain_until) is typed columns; the audit-read provenance (source+hash, mapping template, pinned determination version, full edit log, rounding records, resolved flag reasons, config version) is ONE z.strictObject JSONB. provenanceSchema.parse() runs before the INSERT.",
+        "why_it_matters": "A JSONB column cannot self-enforce a shape; parsing at write is the required-at-write guarantee, and .strict() makes a drifted writer fail loudly instead of silently storing a malformed defense file. Typed spine keeps the meter/version queries cheap.",
+        "rebuild_note": "Split each record into 'structural columns you query' vs 'one validated evidence blob you only read in an audit.' Validate the blob with a strict schema at the write boundary, never .passthrough(). Version the blob's schema and store the schema/config version inside it so any artifact is reconstructable."
+      },
+      {
+        "principle": "Field-level envelope encryption with a key-version column as the abstraction boundary",
+        "what": "PII (SSN) is encrypted in the APP layer (not pgcrypto, so the key never transits SQL) via a Drizzle customType doing AES-256-GCM, storing one self-describing bytea (iv‖tag‖ciphertext). A key_version column distinguishes env-key (v0) from KMS-wrapped DEK (v1); the KMS DEK is unwrapped once at boot and cached so the sync codecs stay sync. Only last-4 persists as plaintext; no blind index on the secret (keyspace too small); errors never carry plaintext.",
+        "why_it_matters": "The key-version column makes the env-key→KMS swap a re-wrap with ZERO schema change, and makes rotation target exactly the rows that need it. Self-describing ciphertext needs no sibling columns to decrypt. This is the difference between 'SOC2 = paperwork' and 'SOC2 = re-architecture.'",
+        "rebuild_note": "Wrap encryption in the ORM's custom column type so call sites just read/write plaintext. Pack iv+tag+ciphertext into one column. Add a key_version column from migration one even if you only ship the env key. Unwrap the DEK once at boot via KMS Decrypt and cache it; never call KMS per row. Provide a write-helper that co-stamps key_version so a bare write can't ride a default and mis-target rotation."
+      },
+      {
+        "principle": "WORM artifact storage as a seam, enforced belt-and-braces",
+        "what": "An ArtifactStore interface with a local dev impl and an S3 Object-Lock prod impl. Write-once via conditional PUT (IfNoneMatch:'*' → ArtifactExistsError), PLUS Object-Lock retention = now + per-state retentionYears, with the EXACT retain-until also persisted on the DB row so the legal window is queryable without hitting S3. Bytes are byte-stable (sha256 is the checksum invariant); the highest-sensitivity class adds SSE-KMS under a per-tenant key.",
+        "why_it_matters": "Two independent immutability mechanisms (conditional write + object lock) mean a single misconfig doesn't lose the WORM guarantee. The seam lets the same lock path run hermetically against minio in tests/audits, proving real Object-Lock behavior without prod writes.",
+        "rebuild_note": "Define the store as an interface first; implement local before cloud. Enforce write-once at the protocol level (conditional create), not app logic. Derive retention from the per-jurisdiction config, persist it on the row AND the object, and validate retentionYears>=floor at construction so you never silently under-retain. Keep retention metadata OUT of the artifact bytes so the checksum stays stable."
+      },
+      {
+        "principle": "Config-as-code module registry gated by a golden-file determinism harness",
+        "what": "Each jurisdiction is a versioned, Zod-validated TypeScript config object in-repo (formats, schema versions with coexisting emitters/validators, retention, cadence, portal mechanics, rate source). The DB stores only WHICH config version each record used. A golden-file harness (fixture = input paired with byte-stable expected output) is built BEFORE any module and reruns the full matrix on every schema/form/refactor change.",
+        "why_it_matters": "In-repo config makes 'a config change must rerun the regression matrix' structural: config change = commit = CI gate = reviewed diff. DB-resident hot-editable config is exactly the untested bypass. Determinism turns a regulatory form revision into a config swap, not a fire drill — the maintenance moat enabler for a solo operator.",
+        "rebuild_note": "Make modules pure data validated by one strict schema with a refine() for invariants (e.g. exactly one current version). Build the golden harness FIRST: discover fixtures by manifest, fail-closed per fixture (one bad fixture names itself, never aborts the matrix), support a guarded BLESS env-flag to regenerate, and a 'goldenPending' skip for forms not yet authority-verified. CI asserts every result passes."
+      },
+      {
+        "principle": "Flag-never-guess: a pure two-tier validation engine that refuses rather than fabricates",
+        "what": "One deterministic engine is the ONLY place issues are minted; generation is disabled while ANY issue is open. Tier-1 (structural) = hard block, only fixing data clears it. Tier-2 (substantive) = blocks but clearable by an explicit recorded per-cell reason that lands in the provenance ledger. Nothing is auto-filled or auto-cleared; statements are plain-English (and double as the help/SEO corpus).",
+        "why_it_matters": "For a record signed under penalty of perjury, a silent auto-fill is a liability, not a convenience. Centralizing minting gives one source of truth for severity classification; recording the clearing reason into provenance makes every override defensible.",
+        "rebuild_note": "Keep the engine pure: inputs + a resolutions map in, flags + canGenerate out — clearing is applied by passing resolutions, never by mutation. Maintain one code→tier map other consumers derive from. Make Tier-1 structurally unable to carry a resolution. Persist resolutions {reason, by, at, cell} into the immutable record at lock."
+      },
+      {
+        "principle": "One canonical normalized input contract with multiple idempotent producers; corrections are new versions",
+        "what": "A frozen DraftPayload contract is emitted by BOTH the CSV importer and the live-API (Finch) mapper, so everything downstream is producer-agnostic. Re-imports are byte-identical overwrites of the free, regenerable draft. A live-source change becomes a NEW amended version through a pure drift comparison (gross + line-count vs the locked provenance) with a tuned benign threshold → a one-click amendment prefill the user must lock — never an auto-mutation.",
+        "why_it_matters": "Decoupling ingestion from assembly lets you add sources without touching the engine. Drift-as-signal (threshold suppresses rounding jitter) is the 'we tell you when your filing went stale' differentiator, and routing corrections through append-only versions preserves the audit chain.",
+        "rebuild_note": "Define the normalized contract as the integration point and write every ingestion adapter to emit exactly it; share the same flag engine for both. Make ingestion pure/deterministic so a re-pull is a no-op on unchanged data. For drift, compare against what the locked record actually stored (not a re-derivation), make the threshold a parameter, and require explicit user intent to create the amendment."
+      },
+      {
+        "principle": "DB-anchored idempotency via partial unique indexes for billing/webhook/quota races",
+        "what": "Concurrency-sensitive once-only rules are anchored at the DB with partial unique indexes: meter-once-per-report (WHERE kind='meter_emitted'), webhook-event-once per (event_id, workspace), free-allocation-once-per-workspace (WHERE status='free_clean'). The app does a read-then-INSERT and catches 23505 (in a SAVEPOINT) to convert the race-loser into a structured outcome.",
+        "why_it_matters": "Read-check-then-write always races under retries/pooling; the DB unique index is the only real anchor. This is how you bill exactly once even when Stripe retries a webhook concurrently or two requests both pass the 'first lock' read.",
+        "rebuild_note": "For every 'at most once' business rule, add a partial unique index expressing it, then treat the app-level check as a fast-path and the unique-violation as the authoritative branch (map 23505 → the intended block/skip). Keep each catch in its own SAVEPOINT so it doesn't poison the surrounding transaction."
+      },
+      {
+        "principle": "Acceptance provability without a live portal: offline schema validation + golden bytes",
+        "what": "The #1 priority is that the output uploads portal-clean first try. Confidence is made agent-runnable OFFLINE: a vendored portal XSD is validated against the emitted XML via WASM libxml2 (order-sensitive xs:sequence), bracketing the byte-stable emitter. No bytes lock until both the offline validator and the golden matrix pass. The business gate is two-sided: an entry spike (a real upload validates clean) plus an exit gate (a real reviewer accepts a generated record).",
+        "why_it_matters": "You cannot ship a compliance tool whose output gets rejected — the whole trust promise collapses on first contact. Proving acceptance offline (and in CI) de-risks every refactor and every new jurisdiction without a human round-trip to the portal.",
+        "rebuild_note": "Vendor the authority's schema verbatim into the repo (canonical URLs rot), validate with a no-native-toolchain WASM validator so it runs in CI and agents, and resolve the asset path for both test and bundled-server contexts. Gate locking on validator AND golden both green. Track the real-world acceptance proof as an explicit launch gate, separate from the code gate."
+      },
+      {
+        "principle": "Fork→ADR governance: never auto-decide, record decisions append-only",
+        "what": "Every open decision is a 'fork' on a live board until the operator locks it; locks become append-only ADRs (never edited, superseded by later ADRs). A strict source-of-truth hierarchy (forks board > ADRs > specs > working distillations > session artifacts) resolves conflicts. No product code before the spec it implements is locked.",
+        "why_it_matters": "In a regulated domain, an undocumented decision is an un-auditable one. Append-only ADRs give the same immutability discipline to the project's reasoning that the product gives to its records, and the hierarchy stops doc drift.",
+        "rebuild_note": "Keep a single decisions-and-forks file as the live board plus an append-only numbered ADR directory. Make 'recommendation + confidence + evidence, then wait for the human lock' the default. Reconcile every other doc to the locked decision; treat a dead pointer or a second inline definition of a term as a bug."
+      }
+    ],
+    "standout_subsystems": [
+      {
+        "name": "The atomic LOCK & CERTIFY transition",
+        "what": "One transition that capability-gates the signer, runs the flag engine on the confirmed draft and refuses while any flag is open, generates the byte-stable artifact, checksums it, parses+snapshots the provenance JSONB, INSERTs one append-only version with its resolved billing_status and per-state retain-until, writes the bytes to WORM, asserts the stored sha256 equals the checksum, and emits the meter once-per-report.",
+        "novelty": "novel",
+        "productize_as": "A reusable 'certify-and-freeze' library/transaction primitive for any system that produces records of legal record — couples immutability + provenance + WORM + metering into one event with a pluggable emitter/store/flag-engine."
+      },
+      {
+        "name": "Golden-file determinism harness + BLESS workflow",
+        "what": "Manifest-driven fixture discovery, byte-diff with first-differing-offset reporting, fail-closed per fixture, a guarded WF_BLESS_GOLDEN regenerate path, and a 'goldenPending' skip for authority-unverified forms — built before any module and rerun on every change.",
+        "novelty": "strong",
+        "productize_as": "A drop-in 'output regression vault' for any deterministic document/file emitter (PDF, XML, CSV) — sold as the safety net that turns format/spec churn into a reviewed diff."
+      },
+      {
+        "name": "Field-encryption customType with key-version rotation boundary",
+        "what": "AES-256-GCM Drizzle customType storing self-describing iv‖tag‖ciphertext, KMS-DEK unwrapped once at boot, a key_version column making env→KMS a zero-schema-change re-wrap, last-4-only plaintext, no blind index, plaintext-free errors, timing-safe equality.",
+        "novelty": "strong",
+        "productize_as": "A 'PII column kit' for ORMs (Drizzle/Prisma): envelope-encrypted custom types + a rotation-aware key registry + masking helpers, marketed as SOC2/HIPAA-ready field encryption you add per-column."
+      },
+      {
+        "name": "Config-as-code jurisdiction registry",
+        "what": "Per-jurisdiction versioned, strict-Zod-validated TS config (formats, coexisting schema versions, retention, cadence, portal mechanics, rate source) where the DB stores only the config version a record used, and every config change is forced through the golden matrix.",
+        "novelty": "strong",
+        "productize_as": "A 'compliance rules-pack' framework: jurisdictions/regimes as versioned, CI-gated config modules with a registry and emitter/validator IDs — the substrate for any multi-jurisdiction reg-tech vertical (tax, wage, environmental, licensing)."
+      },
+      {
+        "name": "Flag-never-guess two-tier validation engine",
+        "what": "A pure engine that is the single minting point for structural (hard-block) vs substantive (clearable-with-recorded-reason) issues, disables generation while any flag is open, and emits plain-English statements that double as the help/SEO corpus.",
+        "novelty": "novel",
+        "productize_as": "A 'compliance gate' library: deterministic two-tier validation with per-cell override-with-reason recording that flows into an audit ledger — reusable wherever a human must certify machine output."
+      },
+      {
+        "name": "Ledger-tracked, hermetic audit harness",
+        "what": "Stable-ID findings ledger (sha256 of workflow∷surface∷title) that reports new/regressed/closed/unchanged deltas; a hybrid surfaces.toml auto-derived from app/** + hand-annotated; sandboxed workflow scripts that only orchestrate agents and return JSON; a hermetic substrate (Postgres testcontainer + migrations + mock KMS + minio real-WORM) that drives a true browser lock-certify.",
+        "novelty": "strong",
+        "productize_as": "A continuous security/UX/lifecycle audit product: agent-driven, ledger-reconciled findings over an auto-derived surface map, with a hermetic full-stack substrate for end-to-end legs."
+      },
+      {
+        "name": "Live-source drift → one-click amend (Finch)",
+        "what": "A pure comparison of a fresh payroll pull against the locked version's stored provenance (gross + line count) with a tuned benign-cents threshold, producing an amendment-draft prefill that the user must lock — never an auto-mutation.",
+        "novelty": "strong",
+        "productize_as": "A 'filing freshness monitor' add-on: detect when a submitted record has gone stale versus its live source of truth and prep a correction — meterable per connection."
+      }
+    ],
+    "value_add_features": [
+      {
+        "feature": "Lock & Certify a report version (the core billable event)",
+        "meterable_as": "per locked report version; first metered version per report bills once, amendments free",
+        "credit_unit": "per-locked-report"
+      },
+      {
+        "feature": "Live Sync — live payroll connection (Finch) with daily auto-pull + drift detection",
+        "meterable_as": "active live connection per month (already an add-on at $69/$59)",
+        "credit_unit": "per-connection-month"
+      },
+      {
+        "feature": "CA eCPR XML emit (hardest/highest-value artifact, full-SSN decrypt-at-emit)",
+        "meterable_as": "premium per-eCPR artifact above the base report meter",
+        "credit_unit": "per-eCPR-document"
+      },
+      {
+        "feature": "Offline portal-validation / XSD pre-flight pass",
+        "meterable_as": "per validation run (or bundled as a quota of pre-flights/mo)",
+        "credit_unit": "per-validation"
+      },
+      {
+        "feature": "Audit/defense bundle export (ZIP + provenance manifest)",
+        "meterable_as": "per generated defense bundle",
+        "credit_unit": "per-export"
+      },
+      {
+        "feature": "LCPtracker-compatible export",
+        "meterable_as": "per export file generated",
+        "credit_unit": "per-export"
+      },
+      {
+        "feature": "Extra company/EIN beyond plan inclusion",
+        "meterable_as": "per additional EIN per month",
+        "credit_unit": "per-EIN-month"
+      },
+      {
+        "feature": "Agency white-label + extra staff seats",
+        "meterable_as": "per seat / per branded sub-account",
+        "credit_unit": "per-seat-month"
+      },
+      {
+        "feature": "Premium / newly-added state modules",
+        "meterable_as": "per-state entitlement unlocked",
+        "credit_unit": "per-state-month"
+      },
+      {
+        "feature": "WORM long-retention tier (COMPLIANCE mode / extended retentionYears)",
+        "meterable_as": "per record-year of guaranteed retention beyond the statutory floor",
+        "credit_unit": "per-record-retention-year"
+      }
+    ],
+    "base_framework_contribution": "A 'compliance-grade records platform' base that many reg-tech verticals can derive from. Concretely the reusable spine: (1) a uniform fail-closed multi-tenant RLS column-helper + policy factory with a connection-seam GUC and a FORCE-RLS schema test; (2) an append-only-by-grant versioning module (record table + supersedes chain + derived-current predicate + two-role grant migration); (3) a branded integer-units domain with a single-rounding-point provenance record; (4) a write-time Zod-strict provenance-JSONB pattern (typed spine + validated evidence blob); (5) a field-encryption ORM customType + key-version rotation registry + KMS envelope helper + masking; (6) a WORM ArtifactStore seam (local + S3 Object-Lock) with retention-on-row-and-object and byte-stable checksums; (7) a config-as-code module registry validated by a golden-file determinism harness with a BLESS path; (8) a pure two-tier flag/validation engine with override-with-reason recording; (9) DB-anchored idempotency via partial unique indexes + 23505 mapping; (10) a ledger-tracked hermetic audit harness; (11) fork→append-only-ADR governance with a source-of-truth hierarchy. Everything above is domain-agnostic and could ship as the shared base under multiple vertical templates.",
+    "vertical_variation": "Wardfile is the certified-payroll / Davis-Bacon prevailing-wage vertical template seeded on that base: WH-347 PDF + multi-state portal emitters (CA DIR eCPR XML V1.3, IL IDOL CTP CSV, WA L&I worksheet+roster CSV, NJ MW-562), wage-determination harvest+pinning, worker→classification→WD-line mapping, the day-split step (no source emits per-day hours), fringe/annualization and OT math, apprentice ratio/registration rules, Finch payroll ingestion + universal CSV templates, an agency multi-EIN white-label workspace, and the preparer/signer 'core loop' UX. Swapping the jurisdiction config packs, emitters/validators, golden fixtures, the domain flag codes, and the ingestion adapters — while keeping the base spine intact — would reseed the same platform as a different reg-tech vertical (e.g. sales-tax filing, environmental/EPA reporting, clinical/HIPAA records, ESG disclosures).",
+    "defensibility": "The moat is the bundle and the maintenance discipline, not any single feature (the team explicitly re-classified live ingestion as the WEDGE, not the moat). Durable layers: (1) Accepted+defensible output — golden-file determinism + offline vendored-XSD validation prove portal-acceptance first-try and per-state, which is expensive to replicate and must be re-earned on every regulatory form/schema revision; the byte-stability + provenance ledger only matter because append-only versioning + live ingestion exist together, so they can't be cheaply bolted on. (2) Per-state depth — CA eCPR (full-SSN decrypt-at-emit, order-sensitive XSD) is the hardest artifact in the category; each new state is multi-week regulatory research locked behind golden fixtures, a compounding per-state cost that punishes shallow entrants. (3) The flag-never-guess trust posture under penalty of perjury — a competitor that auto-fills is taking on liability, so the discipline is a positioning lock, not just a feature. (4) A compliance-grade substrate (uniform fail-closed RLS + WORM Object-Lock + KMS field encryption + append-only) where SOC2 is paperwork, not re-architecture — a late entrant must rebuild the data layer. (5) The empty agency multi-EIN lane plus distribution through bookkeepers. The vulnerability the team itself names: a platform incumbent (QBO) adding state-portal XML, or per-state regulatory churn outpacing the golden-maintenance cadence — which is precisely why the determinism harness and config-as-code gate are the load-bearing defenses."
+  }
+]

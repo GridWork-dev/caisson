@@ -1,0 +1,13 @@
+{
+  "name": "stack",
+  "private": true,
+  "type": "module",
+  "workspaces": ["tooling/*", "packages/*", "apps/*", "services/license", "services/docs"],
+  "scripts": {
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "check": "turbo run build lint test"
+  },
+  "packageManager": "bun@1.1.0"
+}

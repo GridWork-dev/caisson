@@ -1,0 +1,1381 @@
+[
+  {
+    "angle": "generic-boilerplate",
+    "products": [
+      {
+        "name": "ShipFast",
+        "url": "https://shipfa.st/",
+        "what": "Next.js SaaS boilerplate (App Router, TypeScript, Tailwind, Supabase/MongoDB, Stripe, Mailgun/Resend, Google OAuth, magic links, landing page, blog). Created by Marc Lou (Product Hunt Maker of Year 2023). Battle-tested across 27+ of creator's own products.",
+        "pricing": "$199 Starter / $249 All-in / $299 Bundle with CodeFast course (all one-time; list prices $299/$349/$648 with discount applied). Lifetime updates, unlimited projects.",
+        "model": "one-time",
+        "traction": "8,100+ users, 5,000+ Discord members. $1M+ lifetime revenue by end of 2024. Peak ~$141K MRR in April 2024; now ~$20K/mo as market saturated. $528K ARR reported for 2023. 4.9/5 on-site rating (124 reviews), 5.0/5 AppSumo. Arrfounder lists $20K/mo."
+      },
+      {
+        "name": "MakerKit",
+        "url": "https://makerkit.dev/",
+        "what": "Next.js 16 or React Router 7 B2B SaaS boilerplate with choice of Supabase, Drizzle, or Prisma. Multi-tenancy, RBAC, MFA, per-seat and metered billing (Stripe/Paddle/Lemon Squeezy), super admin, i18n, blog, 400+ pages docs, MCP server for AI agents, Playwright E2E, Figma kit. By Giancarlo Buomprisco.",
+        "pricing": "$299 Pro (1 user) / $599 Teams (up to 5 users) for Supabase stack; $349/$649 for Drizzle/Prisma stacks. One-time lifetime. All stacks included in one license.",
+        "model": "one-time",
+        "traction": "Established product (founded 2022). 4.2/4.6 ratings on review aggregators. Most cited B2B Next.js boilerplate in community comparisons. Active changelog with Next.js 16 support in 2026. MCP server and AI agent rules added 2026."
+      },
+      {
+        "name": "Supastarter",
+        "url": "https://supastarter.dev/",
+        "what": "Next.js and Nuxt monorepo SaaS boilerplate. Multi-tenancy with organizations, RBAC, i18n, 5+ payment providers (Stripe, Lemon Squeezy, Polar, Creem, Dodo), background jobs, file storage, admin UI, blog, MDX, AGENTS.md AI support. Nuxt v2 rewritten from scratch March 2026.",
+        "pricing": "$349 Solo (1 developer) / $799 Startup (up to 5) / $1,499 Agency (up to 10). One-time, lifetime updates. EUR-priced (approx USD equivalent). Architecture consult included in $799+ tiers.",
+        "model": "one-time",
+        "traction": "1,284+ developers (tinylaunchpad review, April 2026). Real customers: Postel, Affonso, Peekalink, Screenshot Scout. Most recommended for complex multi-tenant apps in r/nextjs and r/SaaS per community analysis. Only boilerplate with 5+ payment provider integrations."
+      },
+      {
+        "name": "SaaS Pegasus",
+        "url": "https://www.saaspegasus.com/",
+        "what": "Django/Python SaaS boilerplate with configurable frontend (React or HTMX), Tailwind/Bootstrap/Bulma, Stripe, OpenAI integration, Celery background tasks, WebSockets, Wagtail CMS, multi-tenancy, RBAC, Docker, CI/CD. Generates a custom codebase per buyer. By Cory Zue since 2019.",
+        "pricing": "$249 Starter (1 project, 1yr updates) / $449 Professional (1 project + AI features, 1yr updates) / $699 Unlimited (unlimited projects). One-time, 7-day refund.",
+        "model": "one-time",
+        "traction": "1,874+ paying developers and businesses (per homepage March 2026). YC-backed customers including PhotoRoom. 5.0/5 Trustpilot with 40+ reviews. Creator earns $100K+/year (disclosed in High Signal interview 2023). Dominant position in Django SaaS space - no serious competitors."
+      },
+      {
+        "name": "Bullet Train",
+        "url": "https://bullettrain.co/",
+        "what": "MIT-licensed Ruby on Rails SaaS framework. Open-source core includes teams, invitations, RBAC (attribute-level permissions), Tailwind, Hotwire, Super Scaffolding CRUD generator, API, i18n. Pro tier adds Stripe billing, webhooks, advanced forms. Framework (not just template) approach with ongoing conventions.",
+        "pricing": "Free (MIT core) / Pro tier ~$149 one-time for billing + advanced features.",
+        "model": "open-core",
+        "traction": "Active since 2017 by Andrew Culver. Default free Rails SaaS choice per StarterPick 2026 guide. Praised for enterprise-grade RBAC depth. Smaller community than Jumpstart Pro. Continuous gem-based updates."
+      },
+      {
+        "name": "Laravel Spark",
+        "url": "https://spark.laravel.com/",
+        "what": "Official Laravel billing scaffold (not a full boilerplate). Stripe or Paddle subscription portal, per-seat pricing, free trials, promo codes, PDF invoices, team management. Isolated billing UI compatible with any frontend stack. Made by Taylor Otwell, Laravel's creator.",
+        "pricing": "$99/year per project or $199/year unlimited. Annual subscription - not one-time.",
+        "model": "subscription",
+        "traction": "'Thousands of developers worldwide' (vendor claim). Tracks Laravel's release cycle - Laravel 12 shipped early 2026, Spark 12 followed within weeks. Standard recommendation for PHP SaaS billing. Paired with free Jetstream for auth/teams. Active since 2015."
+      },
+      {
+        "name": "Divjoy",
+        "url": "https://divjoy.com/",
+        "what": "React codebase generator with visual editor. Select framework (Next.js, CRA), UI kit (Tailwind, Material UI, Bootstrap), auth (Firebase, Supabase, Auth0), database, and hosting. Downloads a configured codebase. Includes auth, Stripe billing, landing pages, dashboard, user settings.",
+        "pricing": "$199 one-time, unlimited projects, lifetime updates. AppSumo lifetime deal previously available.",
+        "model": "one-time",
+        "traction": "'Helping thousands of React devs build and ship faster' (site claim). Founded 2019. Mentioned in buildthisnow.com 2026 roundup at $149. Less visible in 2026 community discussions compared to ShipFast/Makerkit - appears to have lost mindshare. Last cited update: January 2025."
+      },
+      {
+        "name": "Gravity",
+        "url": "https://usegravity.app/",
+        "what": "Node.js + React SaaS boilerplate by Kyle Gawley. 15,000+ lines of code, 25+ UI views, 50+ components. Stripe billing (free plans, trials, seat billing, usage billing), multi-tenancy, React Native mobile app templates, REST API (Express.js + MySQL), admin dashboard ('Mission Control'), email, 40+ integration tests. AI integrations (OpenAI) and Cursor/Windsurf support.",
+        "pricing": "Starter $556 / Pro $716 / Elite $1,276 one-time (1 yr updates included). Renewal: $195/yr before expiry, $250/yr after. Also listed as $495-$2995 on some aggregators reflecting variable promotions.",
+        "model": "one-time",
+        "traction": "1,100+ successful implementations per boilerplates4saas.com. Est. 2018. One of the few boilerplates with React Native mobile templates. Noted as 'original' Node.js SaaS boilerplate - established position. Highest price point of mainstream JS boilerplates."
+      },
+      {
+        "name": "Nextacular",
+        "url": "https://nextacular.co",
+        "what": "Free open-source Next.js multi-tenancy boilerplate. Workspace-based multi-tenancy with subdomain routing, NextAuth, Prisma + PostgreSQL, Stripe subscriptions, teams. MIT licensed.",
+        "pricing": "Free / MIT",
+        "model": "open-core",
+        "traction": "~1,373 GitHub stars (main repo). 20 contributors. Built on Next.js Pages Router (not App Router) - maintenance lag. Last release v1.3.0-Beta in 2022. Low momentum in 2026 but still the only free option with subdomain-based multi-tenancy. StarterPick review gives stars as '4k+' which may include forks/related repos."
+      },
+      {
+        "name": "Open SaaS (Wasp)",
+        "url": "https://opensaas.sh/",
+        "what": "100% free open-source SaaS boilerplate on Wasp framework (React + Node.js + Prisma). Auth (5 providers: email + Google/GitHub/Slack/MS), Stripe + Polar.sh + LemonSqueezy payments, admin dashboard, Astro blog, background jobs (pg-boss), S3 uploads, PostHog analytics, Playwright E2E tests, AGENTS.md + Claude Code skills for AI-native dev. MIT license. YC-backed Wasp team.",
+        "pricing": "Free / MIT",
+        "model": "freemium",
+        "traction": "14,000+ GitHub stars as of April 2026. Grew steadily through entire vibe-coding boom. 40+ user interviews conducted by Wasp team. Most feature-complete free boilerplate - background jobs and admin panel absent in paid competitors like ShipFast at same level. Featured on Product Hunt."
+      },
+      {
+        "name": "Next.js SaaS Starter (Vercel / leerob)",
+        "url": "https://github.com/nextjs/saas-starter",
+        "what": "Minimal official Next.js App Router SaaS starter by Lee Robinson (Vercel). Postgres, Drizzle ORM, Stripe subscriptions, shadcn/ui. Bare-bones but clean and Vercel-endorsed. MIT licensed.",
+        "pricing": "Free / MIT",
+        "model": "freemium",
+        "traction": "~15,900 GitHub stars (buildthisnow.com 2026 roundup). Clean, minimal, vetted by Vercel. Popular as starting point for experienced devs who build up. No admin panel, no blog, no multi-tenancy - intentionally minimal."
+      },
+      {
+        "name": "LaunchSaaS",
+        "url": "https://launchsaas.dev/",
+        "what": "Next.js + Supabase + Stripe boilerplate with 2,335 automated tests and 9,383 lines of documentation. Multi-tenancy, RBAC, 2FA, security infrastructure. Extracted from real production apps serving 13,000+ users.",
+        "pricing": "$99 one-time, lifetime updates, unlimited projects.",
+        "model": "one-time",
+        "traction": "13,000+ production users behind the extracted codebase. 2,335 tests cited as differentiator. Positioned as 'best value' in 2026 comparisons on launchsaas.dev. Newer entrant but growing in 2026 developer discussions."
+      }
+    ],
+    "pricing_models": [
+      {
+        "model": "One-time lifetime (no updates cap)",
+        "example": "ShipFast $199, MakerKit $299, Supastarter $349, Divjoy $199, LaunchSaaS $99",
+        "notes": "Dominant model in 2026. Pay once, own code, get updates forever. Community/Discord membership often bundled. Creates alignment problem: seller has no incentive to ship updates after initial sale. Buyers like it; some products go stale."
+      },
+      {
+        "model": "One-time + annual update subscription",
+        "example": "Gravity: $556+ purchase + $195/yr renewal; SaaS Pegasus: $249-699 purchase includes 1yr updates, renewal unstated but implied",
+        "notes": "Hybrid model. Buyer pays for the code once, pays again for continued update access. Gravity's $195/yr renewal creates recurring revenue. More honest about the cost of ongoing maintenance. Less popular with buyers than pure lifetime."
+      },
+      {
+        "model": "Annual subscription",
+        "example": "Laravel Spark $99/yr (per project) or $199/yr (unlimited); Jumpstart Pro $249/yr",
+        "notes": "Used by products tied to fast-moving ecosystems (Laravel, Rails) where ongoing updates are critical. Aligns incentives - seller must keep shipping. Buyers in the PHP/Ruby ecosystem accept this; JS ecosystem buyers strongly prefer one-time."
+      },
+      {
+        "model": "Free / MIT open-source",
+        "example": "Open SaaS (14K stars), T3 Stack (26K stars), Next.js SaaS Starter (15.9K stars), Nextacular (~1.4K stars), Bullet Train core",
+        "notes": "Growing rapidly in 2026. AI tools make free starters more viable because devs can extend them faster. Open SaaS grew through the entire vibe-coding boom. Free tier often used as marketing for paid products (Indie Kit) or framework adoption (Wasp/YC)."
+      },
+      {
+        "model": "Tiered one-time (developer seat limits)",
+        "example": "Supastarter Solo $349 / Startup $799 / Agency $1,499; MakerKit Pro $299 / Teams $599; SaaS Pegasus $249/$449/$699",
+        "notes": "Seat-based tiers let agencies or small teams pay more for multi-developer access. Agency tier at $1,499 captures freelancers/agencies building client projects. Effective for LTV expansion without subscription friction."
+      },
+      {
+        "model": "Open-core",
+        "example": "Bullet Train (free OSS core + $149 Pro billing features), Indie Kit (free starter + paid Pro)",
+        "notes": "Core framework free, billing and advanced features paid. Works well when the free tier is genuinely useful (Bullet Train's teams/RBAC is production-ready without paying). Creates community flywheel. Less common in JS boilerplate space."
+      }
+    ],
+    "value_adds": [
+      "Lifetime updates (most paid products) - the primary stickiness mechanism; buyers fear stale dependencies",
+      "Private Discord communities with thousands of members (ShipFast 5,000+, Makerkit) - peer support network that documentation cannot replace",
+      "MCP server integration for AI coding agents (Makerkit Pro tier, Supastarter) - new 2026 differentiator; lets Claude Code / Cursor understand the codebase conventions",
+      "AGENTS.md and AI skill files (Open SaaS, Supastarter, AnotherWrapper, Eden Stack) - AI-native context rules that dramatically improve vibe-coding quality on the codebase",
+      "Figma UI kit bundled with license (Makerkit) - design system as add-on value",
+      "Architecture consult / onboarding call (Supastarter $799+ plans: 30-min call included)",
+      "Plugin/extension ecosystem (Makerkit) - buyers can buy feature plugins without forking",
+      "Annual update subscription after initial purchase (Gravity: $195/yr renewal) - converts one-time buyers to recurring",
+      "Community leaderboards / 'build in public' integrations (ShipFast Stripe-verified revenue leaderboard) - social proof engine that drives new sales",
+      "Partner discount bundles ($1,210 in tool discounts with ShipFast All-in) - sweetens one-time deal",
+      "React Native mobile companion (Gravity Elite $1,276) - expands addressable use case",
+      "Priority support Discord channels / private threads (Supastarter Agency, Makerkit Teams)",
+      "Video course bundles (ShipFast + CodeFast $299 bundle - Marc Lou's 12-hr coding course)"
+    ],
+    "gaps": [
+      "No mainstream paid boilerplate publishes verified test results - a DEV.to review of 11 boilerplates found zero with published test coverage; buyers are trusting a screenshot. A boilerplate with a public CI badge, test report, and OWASP scan would be a genuine differentiator.",
+      "Stripe webhook failure paths are the #1 production bug - multiple Indie Hackers / DEV.to posts document that most AI-generated and boilerplate billing code handles checkout.session.completed but silently ignores invoice.payment_failed; a boilerplate audited specifically for all critical Stripe events is unseen.",
+      "GDPR/CCPA plumbing (data export / DSAR flows, account deletion, Reject-All cookie consent, GPC signal) largely absent from all mainstream boilerplates - creates real compliance risk for EU/California customers.",
+      "AI-native architecture (AGENTS.md, MCP server, structured codebase for AI tools) only recently standard - most boilerplates built pre-2024 are not optimized for Cursor/Claude Code workflows; the gap is closing but not closed.",
+      "Background jobs are a rare feature - Open SaaS includes pg-boss, Wasp/Gravity have task systems, but ShipFast and most Next.js starters have none. Vibe-coded products hit this wall fast.",
+      "Go / Rust backend boilerplates nearly absent (only goilerplate and LastSaaS are visible) despite strong developer interest in lower-memory, compiled-binary deployment.",
+      "Vertical-specific starter kits are underdeveloped - there is no 'SaaS Pegasus for AI tools' or 'ShipFast for marketplace products'; market is horizontal but buyer needs are often vertical.",
+      "SAML SSO / enterprise auth is missing from entry-price-point products - Makerkit mentions SSO hooks but actual SAML implementation requires work; blocks enterprise sales for boilerplate-built products.",
+      "Subscription-model boilerplates are almost nonexistent - the market is overwhelmingly one-time, but Laravel Spark's success at $99/yr and Gravity's renewal model show recurring revenue is viable; a Next.js equivalent subscription product with guaranteed update cadence is uncaptured.",
+      "Multi-provider payment abstraction (swap Stripe for Paddle without code changes) exists only in Makerkit and Supastarter; buyers who need EU MoR (Merchant of Record) compliance discover Stripe lock-in after purchase."
+    ],
+    "demand_signals": [
+      {
+        "signal": "Open SaaS hit 14,000 GitHub stars by April 2026 with growth accelerating through every AI coding milestone (Cursor launch, vibe-coding coinage, Claude Code launch) - Wasp blog post with 40+ user interview data confirms AI tools increase boilerplate demand, not reduce it",
+        "source": "https://wasp.sh/blog/2026/04/23/14k-stars-open-saas-ai-era",
+        "strength": "strong"
+      },
+      {
+        "signal": "ShipFast peak ~$141K MRR in April 2024 and $1M+ lifetime revenue - concrete revenue data from a solo-founder indie product; market clearly supports $199 one-time price point at scale",
+        "source": "https://startupfounderstories.com/stories/marc-lou-shipfast-250k-5-months and https://dupple.com/tools/shipfast",
+        "strength": "strong"
+      },
+      {
+        "signal": "SaaS Pegasus 1,874+ paying customers at $249-699 price points; creator Cory Zue earns $100K+/year from a solo-maintained Django boilerplate; YC companies (PhotoRoom) cite it",
+        "source": "https://starterpick.com/guides/saas-pegasus-review-2026-django-boilerplate and https://www.saaspegasus.com/",
+        "strength": "strong"
+      },
+      {
+        "signal": "New entrants (LaunchSaaS $99, LaunchFast $79-99, Eden Stack $199 early bird, goilerplate) launched in 2025-2026 with early traction signals - market remains attractive enough to attract new competition even as ShipFast MRR declines",
+        "source": "https://launchsaas.dev/blog/best-saas-boilerplate-2026 and https://eden-stack.com/blog/best-saas-boilerplate-2026",
+        "strength": "moderate"
+      },
+      {
+        "signal": "Supastarter reached 1,284+ paying customers without the marketing machine of ShipFast (no Marc Lou personal brand), validating that B2B multi-tenancy segment is willing to pay $349-1,499",
+        "source": "https://tinylaunchpad.com/blog/supastarter-review-2026-best-next-js-saas-boilerplate",
+        "strength": "moderate"
+      },
+      {
+        "signal": "DEV.to post 'I Reviewed 11 SaaS Boilerplates' (April 2026) documents price range from $59-$999 across 11 active paid products - demonstrates persistent commercial supply and demand at all price points",
+        "source": "https://dev.to/alexmayhewdev/i-reviewed-11-saas-boilerplates-heres-what-nobody-tells-you-44e1",
+        "strength": "moderate"
+      },
+      {
+        "signal": "T3 Stack at 26,000+ GitHub stars is the most-starred free TypeScript foundation; its minimal nature (no billing, no auth by default) suggests strong demand for the fuller-featured paid products that add on top of it",
+        "source": "https://starterpick.com/guides/best-free-open-source-saas-boilerplates-2026",
+        "strength": "moderate"
+      },
+      {
+        "signal": "Reddit r/nextjs and r/SaaS thread analysis (Kostra.io blog, June 2026) confirms consistent recommendation patterns: Supastarter for complex multi-tenant, ShipFast for B2C solo. Community consensus exists, reducing discovery friction for buyers.",
+        "source": "https://kostra.io/blog/developer-reviews-nextjs-saas-starters",
+        "strength": "moderate"
+      },
+      {
+        "signal": "Multiple Indie Hackers posts in 2026 document builders discovering billing bugs in AI-generated code and boilerplate code (particularly Stripe webhook gaps) - creates ongoing demand for better-audited boilerplates",
+        "source": "https://www.indiehackers.com/post/i-checked-3-saas-products-built-with-cursor-this-week-all-3-had-the-same-silent-billing-bug-ae30e3cc67",
+        "strength": "weak"
+      }
+    ],
+    "takeaways": [
+      "The market is mature and crowded in Next.js/JS but remains niche-dominated elsewhere: Django has SaaS Pegasus with no serious rival; Ruby has Bullet Train and Jumpstart Pro; PHP/Laravel has Spark. Competing head-on against ShipFast in Next.js is a marketing problem, not a product problem.",
+      "AI tools are expanding the buyer pool, not shrinking it. Wasp's 40+ user interviews found ~50% of Open SaaS users had never built a full-stack app before - vibe coders need architecture guardrails that boilerplates provide. Counter-intuitively, Cursor, Claude Code, and Lovable are driving boilerplate sales, not replacing them.",
+      "The one-time lifetime model dominates but creates a maintenance prisoner's dilemma. Most successful products (ShipFast, MakerKit, Supastarter) offer one-time pricing to win sales but must ship updates to retain reputation. Laravel Spark's $99/yr and Gravity's $195/yr renewal models are the honest alternatives that create recurring revenue without subscription friction resistance.",
+      "ShipFast's MRR decline from $141K peak (April 2024) to ~$20K (December 2025) signals market saturation at the solo-B2C tier - the basic auth+Stripe+email template is now commodity. The defensible segments are B2B multi-tenancy (Makerkit, Supastarter), language-specific ecosystems (Django/Rails/Laravel), and AI-native architecture.",
+      "Quality signal is broken. None of the 11 paid boilerplates reviewed in the April 2026 DEV.to article published test results. Buyers make $199-$1,499 purchase decisions from screenshots and testimonials. A boilerplate with public CI, OWASP scan, and Lighthouse matrix - and the marketing to explain why that matters - occupies an unclaimed position.",
+      "The Stripe webhook gap is the most consistently reported production bug across all ecosystems. Multiple independent sources (Indie Hackers, DEV.to) in 2026 document that boilerplate billing code handles happy paths only. A boilerplate marketed specifically on 'complete Stripe coverage' (all critical event types, idempotency, proration) addresses the highest-pain production failure mode.",
+      "AI-native differentiation is becoming table stakes. Makerkit added an MCP server in 2026. Supastarter and Open SaaS ship AGENTS.md. Products that do not have structured AI-coding context files will increasingly feel outdated to buyers using Claude Code or Cursor as their primary dev tool. This is a feature all new entrants must ship from day one.",
+      "Agency/team tier pricing ($799-$1,499) is underexplored in the JS space. Supastarter proves demand exists at $1,499. Most competitors cap at $299-$599. Agencies building multiple client products are high-LTV buyers who want white-label rights, consulting calls, and private support channels - a bundle no current product fully owns.",
+      "The free tier is credible competition now, not a stepping stone. Open SaaS at 14K stars has background jobs, admin dashboard, Playwright tests, and 5 auth providers - features absent from $199 paid options. Paid products must compete on community, update cadence, documentation quality, and AI tooling, not feature count alone.",
+      "Non-Next.js niches remain wide open. Go, Rust, Elixir, and FastAPI boilerplates are nearly invisible despite strong developer communities. SaaS Pegasus proved a solo developer can build a $100K+/yr business serving a single non-JS ecosystem. Each underserved language/framework is a greenfield opportunity with no ShipFast-scale incumbent."
+    ]
+  },
+  {
+    "angle": "compliance-regtech",
+    "products": [
+      {
+        "name": "Vanta",
+        "url": "https://vanta.com",
+        "what": "Continuous compliance automation platform for SOC 2, ISO 27001, HIPAA, GDPR, FedRAMP and 35+ frameworks. 400+ native integrations, hourly control monitoring, AI questionnaire assistant, auditor network.",
+        "pricing": "~$10K/year entry (SOC 2, <50 employees); $25K–$55K mid-market; $80K+ enterprise. Quote-only. Renewal uplifts 30–50% common.",
+        "model": "subscription",
+        "traction": "$150M Series D at ~$4B valuation (July 2025); ~1,500 employees (+29% in 6 months); 138 observed mid-market customers vs Drata's 77 (Feb 2026); 2,328 G2 reviews; FedRAMP Moderate authorization April 2026."
+      },
+      {
+        "name": "Drata",
+        "url": "https://drata.com",
+        "what": "Engineering-led compliance automation for SOC 2, ISO 27001, HIPAA, PCI. 200+ integrations, deep evidence customization, shared-control mapping, Audit Hub for auditor collaboration.",
+        "pricing": "~$7,500–$15K/year Foundation; $15K–$50K Advanced; $25K–$100K+ Enterprise. Per-framework add-ons $1,500–$7,500. Quote-only.",
+        "model": "subscription",
+        "traction": "~$100M ARR; 8,000+ customers; 4.8/5 G2 (1,141 reviews); 45 observed enterprise customers vs Vanta 31 (Feb 2026); enterprise spend +387% since Jan 2024. Drata startup program for pre-Series-B companies."
+      },
+      {
+        "name": "Secureframe",
+        "url": "https://secureframe.com",
+        "what": "Guided SOC 2, ISO 27001, HIPAA, PCI compliance with hands-on implementation support, 300+ integrations, 35+ frameworks, and Comply AI for questionnaire automation.",
+        "pricing": "$7,500–$20K/year Fundamentals; $20K–$45K Complete; $55K–$80K+ Defense. Quote-only. Aggressively quoting $5K–$7K for startups in 2026 market-share push.",
+        "model": "subscription",
+        "traction": "6,000+ customers; 106 employees (headcount declining 4% past 6 months since 2024). $56M Series B (Feb 2022). Market-share pressure from Vanta/Drata visible."
+      },
+      {
+        "name": "compliance.tf",
+        "url": "https://compliance.tf",
+        "what": "Terraform registry that serves drop-in compliance-enforced replacements for terraform-aws-modules (34 AWS modules). Controls enforced at terraform plan time — SOC 2, HIPAA, PCI DSS, NIST, FedRAMP, ISO 27001, GDPR, NIS2, CIS and 26 more. SOC 2 Type II certified.",
+        "pricing": "Free tier (CIS v6.0 forever, 5 members, 100 downloads/mo) + 30-day all-frameworks trial. Full Access: $1,000/year (25 members, unlimited downloads). Enterprise: custom. Also on AWS Marketplace at $1,000/12-month.",
+        "model": "subscription",
+        "traction": "Registry went public June 9 2026. Built by Anton Babenko (maintainer of terraform-aws-modules, 2B+ worldwide provisions). GitHub starter-kit repos (SOC2, HIPAA+SOC2, PCI+SOC2) pushed April 2026. No disclosed revenue but brand authority from upstream maintainer is strong."
+      },
+      {
+        "name": "Clynova (ByteWorthy)",
+        "url": "https://byteworthy.io/blueprints/clynova",
+        "what": "Commercial Next.js 15 + Supabase HIPAA boilerplate. AES-256-GCM PHI encryption with per-tenant KMS envelope, append-only cryptographic audit chain, BAA workflow automation, FHIR R4 / HL7 v2 / X12 EDI scaffolding, six pre-built clinical agents. Self-hosted; buyer keeps source forever.",
+        "pricing": "$999 one-time (Practice tier); $1,999 one-time (Enterprise tier, adds X12 EDI, Epic/Cerner patterns, 60-min compliance review call). Pioneer bundle: $49/mo for all ByteWorthy products for first 100 customers.",
+        "model": "one-time",
+        "traction": "Solo founder studio (Kevin Richards). Public GitHub repo. Pioneer pricing actively selling. Positioned as 'skip 4–6 months of compliance plumbing'. No disclosed sales figures but active marketing on X/LinkedIn."
+      },
+      {
+        "name": "Archiet",
+        "url": "https://archiet.com",
+        "what": "Spec-driven development platform that compiles a PRD / Architectural Genome into production code across 12 stacks (Flask, Next.js, Laravel, NestJS, Django, React Native etc.) with compliance controls baked in: RLS, audit log, hash chain, RBAC middleware. Generates compliance artifact packs for SOC 2 / HIPAA / PCI-DSS / GDPR / DORA / NIS2 / EU AI Act.",
+        "pricing": "Builder $104/mo; Professional $419/mo (includes audit infrastructure, compliance artifact packs); Team $1,049/mo; Architect $1,399/mo. Annual saves 30%. Early pricing ends July 14 2026.",
+        "model": "subscription",
+        "traction": "MCP Registry integration (pip install mcp-archiet). SOC2-use-case landing pages with detailed control mapping. Mentions replacing '$15K architecture engagement'. No disclosed customer count."
+      },
+      {
+        "name": "Goderash",
+        "url": "https://ai.goderash.com",
+        "what": "Open-source (Apache 2.0) audit ledger and runtime safety SDK for regulated AI agents. SHA-256 hash-chained multi-tenant Postgres ledger, upcasting registry for schema evolution, What-If projector for policy replay, runtime guards (velocity limits, fraud guards, biometric hooks), evidence pack generators for SOC 2, HIPAA, FFIEC, FINRA, SEC 17a-4. Wraps LangGraph, OpenAI Assistants, Anthropic, AutoGen.",
+        "pricing": "Open source free. Enterprise tier: private VPC deployment, WORM-compatible storage (S3 Object Lock / QLDB), custom compliance packs, dedicated support engineer, annual SOC 2 audit assistance. Enterprise pricing not disclosed.",
+        "model": "open-core",
+        "traction": "v0.1.0; Apache 2.0 on GitHub; npm package @goderash/sdk and PyPI goderash-sdk published; 80% test coverage gate enforced in CI. Very early but the only dedicated regulated-AI-agent audit fabric found."
+      },
+      {
+        "name": "Darwan",
+        "url": "https://darwan.net",
+        "what": "Authorization and compliance API for multi-tenant SaaS. RBAC + ABAC, time-bound role assignments, Separation of Duties constraints, periodic access review campaigns, SHA-256 hash-chained immutable audit trail per tenant, 7-framework compliance mapping (SOX, SOC 2, ISO 27001, HIPAA, PCI, GDPR, NIST). Under 5ms p95 evaluation latency. .NET 10 + PostgreSQL 18 stack.",
+        "pricing": "Not publicly disclosed. Production API (v1). Console + REST API access.",
+        "model": "subscription",
+        "traction": "In production. Last chain verified 2026-04-13 per homepage. By KaritKarma Limited. Single-deployable Docker-first model suggests targeting self-hosted enterprise. No disclosed customers."
+      },
+      {
+        "name": "SchemaPilot",
+        "url": "https://schemapilot.vercel.app",
+        "what": "SaaS tool that generates production-ready PostgreSQL schemas with RLS policies and compliance-aware zone partitioning using Max-Cut graph optimization. Tags tables GDPR, SOC2, HIPAA, PCI_DSS and auto-generates complete RLS INSERT/UPDATE/DELETE policies, migration diffs, and compliance audit PDFs.",
+        "pricing": "Starter $49/mo (3 projects, 10 gen/mo, GDPR+SOC2). Pro $149/mo (unlimited, all 5 frameworks, Supabase direct-apply, compliance audit PDF). Enterprise $499/mo (audit trail export, multi-region variants, custom frameworks).",
+        "model": "subscription",
+        "traction": "Live product with pricing page. No disclosed customer count or revenue. Very niche positioning fills a gap no mainstream boilerplate addresses."
+      },
+      {
+        "name": "SealTrail",
+        "url": "https://sealtrail.dev",
+        "what": "Managed REST API for cryptographically verifiable audit logging (SHA-256 hash chain, tamper-instant detection). Simple 5-endpoint API, npm SDK, no infrastructure. Usage-based pricing via Stripe. Built by Zero Loop Labs.",
+        "pricing": "Free (2,500 events/mo, 1 workspace, 30-day retention). Starter $29/mo (100K events, unlimited workspaces, 1-year retention). Pro $99/mo (1M events, unlimited retention, compliance reports, 99.9% SLA). Overage $0.50/1K events.",
+        "model": "freemium",
+        "traction": "SDK on npm (sealtrail). EU data residency mentioned. No disclosed metrics. Competed by Goderash (self-hosted) and chronicle (Go library)."
+      },
+      {
+        "name": "IronFort SOC2 Automation",
+        "url": "https://aws.amazon.com/marketplace/pp/prodview-d4klau4kg3b2k",
+        "what": "SOC 2 compliance automation for solo founders and pre-seed startups. Controls library, pre-written audit-accepted policy templates, evidence vault, async expert access (response within 2 business days). 1 framework, 1 user. 30-day free trial.",
+        "pricing": "$359/mo on 1-month contract; ~$299/mo on 12-month contract (save 17%). AWS Marketplace listing.",
+        "model": "subscription",
+        "traction": "AWS Marketplace listing with active EULA. Targets the sub-$5K/year gap below Vanta/Drata entry pricing. No disclosed customer count."
+      },
+      {
+        "name": "TrustOS (Backboard.io)",
+        "url": "https://github.com/Backboard-io/TrustOS",
+        "what": "Open-source SOC 2 and HIPAA compliance automation platform. Cloud scanner integration (Prowler, Steampipe, Checkov, Trivy, CloudQuery), policy management, evidence tracking, access review campaigns, HIPAA PHI registry, BAA tracking, auditor portal with scoped PBC request inbox. Self-hosted with Docker Compose.",
+        "pricing": "Open source (MIT/Apache). Requires Backboard.io API key (backboard.io commercial backend). No published pricing for Backboard.",
+        "model": "open-core",
+        "traction": "GitHub published March 2026. Targets Vanta/Drata alternatives (cites '$80K/year sticker shock'). Active HIPAA and SOC2 modules. RBAC with four roles including scoped auditor portal."
+      },
+      {
+        "name": "Gixo Lex",
+        "url": "https://gixo.ai/products/legal",
+        "what": "Legal drafting and compliance artifact workspace with zero-fabrication modes, evidence-backed fill workflows, AI policy generator, risk register generator, compliance checklist generator, multi-party support, reviewer handoff. Available on Azure Marketplace.",
+        "pricing": "$99/seat/mo (base); $149/seat/mo; $179/seat/mo; $229/seat/mo (Enterprise, 10+ seats, Azure Marketplace or private offer). All tiers include guided intake, drafting tools, export.",
+        "model": "subscription",
+        "traction": "Azure Marketplace listing. Positioned for legal/compliance teams (not dev-tooling). Spellbook alternative comparison pages indexed."
+      }
+    ],
+    "pricing_models": [
+      {
+        "model": "High-ticket SaaS subscription (compliance platform)",
+        "example": "Vanta $10K–$80K/yr, Drata $7.5K–$100K+/yr, Secureframe $7.5K–$80K/yr",
+        "notes": "Dominant model for GRC/compliance automation incumbents. Quote-only pricing with 30–50% renewal uplift historically. Headcount, framework count, and integrations drive expansion. Enterprise ACV ($242K for Drata, $159K for Vanta) is the real prize. Hard to replicate without auditor-network moats."
+      },
+      {
+        "model": "Developer tooling annual subscription ($1K–$6K/yr)",
+        "example": "compliance.tf $1,000/yr, Archiet $1,248–$16,788/yr, SchemaPilot $588–$5,988/yr",
+        "notes": "Mid-tier for infrastructure and code-generation tooling targeting CTOs and platform engineers rather than compliance officers. Price-to-value math works because it replaces 100–400 hours of architect/engineer time. compliance.tf at $1K/yr is aggressively underpriced relative to 2B-provision brand authority."
+      },
+      {
+        "model": "One-time purchase (boilerplate / starter kit)",
+        "example": "Clynova $999–$1,999, TenantX $399–$749, Tenanto $49–$79, SaaS boilerplate $25–$249",
+        "notes": "Natural fit for code assets — aligns with buyer psychology (asset ownership vs. SaaS lock-in). HIPAA-specific boilerplates command 5–40x premiums over generic SaaS starters ($49–$79). Compliance labeling justifies the price jump. Ongoing updates and GitHub repo access are the retention hook."
+      },
+      {
+        "model": "Usage-based / event-metered (managed audit API)",
+        "example": "SealTrail Free → $29 → $99/mo; overage $0.50/1K events",
+        "notes": "Works for audit log SaaS where value scales with production traffic. Low friction (free tier) drives adoption; compliance reporting and retention tiers drive upgrade. Competing with open-source self-hosted alternatives (chronicle, nexuscone, trailproof) is the main risk."
+      },
+      {
+        "model": "Open-core / Apache 2.0 + commercial enterprise",
+        "example": "Goderash (open source + private VPC enterprise), TrustOS (OSS + Backboard.io), SMTA (free PostgreSQL scripts)",
+        "notes": "Increasingly common for developer-tooling compliance plays. Open source builds trust and adoption; enterprise tier sells private deployment, WORM storage, dedicated support, and SLA. Regulated industries (banking, healthcare) strongly prefer self-hosted or private VPC — a genuine moat for the enterprise tier."
+      },
+      {
+        "model": "AWS / Azure Marketplace listing",
+        "example": "IronFort $299–$359/mo, compliance.tf $1K/yr, Moterra (custom), Gixo Lex ($99–$229/seat/mo)",
+        "notes": "Marketplace channel unlocks enterprise procurement (buyers can use existing AWS/Azure commit spend) and adds discovery. IronFort targets the sub-Vanta price point for founders. Cloud marketplace = shorter sales cycle for regulated buyers who already have vendor approvals for the cloud provider."
+      },
+      {
+        "model": "Per-seat/per-user (legal document platforms)",
+        "example": "Gixo Lex $99–$229/seat/mo, DocuLex $99–$150/seat/mo, Clio Draft $49/user/mo, Gavel $83–99/mo",
+        "notes": "Legal document automation has settled into per-seat subscription, with compliance tiers (HIPAA inclusion, BAA) commanding a 2–3x premium over non-compliant alternatives. Per-case pricing ($275–$500/document for EvenUp) is being displaced by subscription-included models."
+      }
+    ],
+    "value_adds": [
+      "Ongoing compliance framework updates — NIS2, EU AI Act (Annex IV deadline August 2, 2026), FedRAMP 2.0, DORA updates, and state-level laws (new US state privacy laws) arrive faster than any one team can track; a subscription framework library that auto-updates control mappings is the primary retention lever",
+      "Auditor network and CPA partner relationships — Vanta's largest moat is that auditors already know how to read Vanta evidence packs; compliance.tf's SOC 2 Type II report means auditors accept its infrastructure evidence format; network effects compound annually",
+      "Evidence pack generation — signed ZIPs with per-control evidence already mapped to the regulation's specific clause vocabulary (SEC 17a-4, HIPAA §164.312, SOC 2 TSC) save 40–60 auditor hours per engagement; auto-generated packs (Goderash, compliance.tf, Archiet) command recurring spend because frameworks evolve",
+      "WORM / S3 Object Lock + cryptographic hash-chain anchoring — regulated financial and healthcare buyers need court-admissible proof of non-tampering; the combination of S3 Object Lock (SEC 17a-4 WORM path) plus Merkle/SHA-256 audit chain (17a-4 audit-trail alternative path) is the highest-value recurring service for fintech/broker-dealer customers",
+      "Architecture drift detection and re-generation — Archiet's roadmap includes continuous drift detection (Team plan); compliance erodes as code changes; any tool that can alert 'your RLS policy was bypassed in this PR' or 're-generate your compliance artifacts after this schema change' becomes sticky",
+      "BAA lifecycle management and clinical data standards updates (FHIR version bumps, X12 EDI claim format changes, ICD-10 annual code updates) — Clynova captures recurring value because healthcare standards update annually",
+      "Questionnaire AI / security questionnaire automation — Secureframe's Comply AI for questionnaire response is their top G2 differentiator; enterprise sales cycles are slowed by 5+ security questionnaires per deal; a tool that handles these automatically retains customers regardless of framework completeness",
+      "Policy template libraries with legal review backstop — compliance boilerplates that ship pre-written, audit-accepted policy templates (IronFort, Vanta) reduce the need for outside counsel; annual policy review prompts are a natural upgrade touchpoint",
+      "Supabase / cloud direct-apply and CI/CD enforcement — SchemaPilot's Supabase direct-apply and Archiet's GitHub push (one-click) reduce implementation friction; compliance.tf's terraform plan enforcement hooks into existing CI pipelines without workflow changes",
+      "Multi-region and data residency variants — GDPR Article 46, Swiss DPA, and UK GDPR create contractual data-residency requirements; multi-region schema variants (SchemaPilot Enterprise) and cross-region S3 replication (compliance.tf HIPAA kit) address a blocker for EU enterprise expansion"
+    ],
+    "gaps": [
+      "Full-stack compliance starter kit combining Postgres RLS + append-only SHA-256 audit chain + S3 Object Lock WORM document storage + compliance artifact packs in a single Next.js / FastAPI boilerplate — the market has Terraform infra kits (compliance.tf), RLS schema generators (SchemaPilot), and code-gen platforms (Archiet) but no turnkey repository that wires all three layers together at the application tier",
+      "HIPAA/SOC2 boilerplate for non-healthcare verticals that handle similarly sensitive data — mental health platforms, addiction recovery apps, employee assistance programs, insurance claim processors, and legal hold management tools all face equivalent PHI/PII handling requirements but Clynova is the only boilerplate targeting this; insurance/legal editions do not exist",
+      "Regulated-document WORM data layer for developer consumption — Adamant (Rust) and Ledgix (SEC 17a-4 docs) exist but neither ships as a zero-friction npm/PyPI package with a simple append API, retention policy enforcement, and Merkle proof export; the fintech-developer gap between 'S3 Object Lock + audit trail' and production-ready is large",
+      "GDPR data-lifecycle automation embedded in a boilerplate — DSAR (data subject access request) workflows, cryptographic erasure (chronicle has an erasure module; no boilerplate wires it into a product), consent ledger, and automated retention/purge pipelines are consistently missing from every multi-tenant starter kit reviewed",
+      "EU AI Act Annex IV technical documentation generator + AI system risk tier registry as a standalone product — the EU AI Act high-risk system registration deadline drives real purchasing urgency (August 2, 2026 passed); Archiet and Shasta cover this as a feature but no dedicated boilerplate or SaaS targets AI teams needing Annex IV only",
+      "Runtime RLS bypass detection for production databases — all boilerplates enforce RLS at schema creation time but no tool continuously monitors production query logs for RLS bypasses, service-role credential misuse, or cross-tenant data leaks at runtime; this is the 'compliance erodes in production' problem",
+      "Multi-tenant compliance starter kit for regulated fintech — a full-stack Next.js/Python kit with PCI scope minimization (iFrame-only card capture, no cardholder data in app DB), WORM transaction ledger, SOC 2 controls, and SEC 17a-4-compatible audit trail for broker-dealer-adjacent products; the compliance.tf PCI fintech kit exists at infra layer only",
+      "Per-tenant compliance posture scoring exposed as an API — regulated B2B SaaS where each customer tenant needs its own SOC 2 or HIPAA sub-report; the compliance.tf / Vanta model scores the vendor's posture, not each customer's; a per-tenant GRC API for multi-sided platforms is unaddressed",
+      "Legal-document data layer with immutable version history + e-signature + WORM retention — DocStudio/Volody/Gavel handle template automation but none provide cryptographically verifiable document provenance (Merkle proof of 'this contract existed in this exact state on this date'); the gap between legal document SaaS and WORM-compliant records management is wide",
+      "Sub-$1K HIPAA compliance infrastructure kit for solo founders / micro healthcare startups — IronFort targets SOC 2 at $299–$359/mo; no equivalent product targets the HIPAA technical-safeguards checklist at under $500 total for a solo practitioner or very early-stage telehealth startup; Clynova's $999 one-time comes closest but requires Next.js expertise"
+    ],
+    "demand_signals": [
+      {
+        "signal": "RegTech market valued at $17–24B in 2025 across analyst estimates, projected at $20–29B in 2026, CAGR of 15–21% through 2030+",
+        "source": "Grand View Research, Research and Markets, Future Market Insights, Polaris Market Research — all published 2026",
+        "strength": "strong"
+      },
+      {
+        "signal": "62.7% of financial institutions plan to increase RegTech spending in 2026; 95% have scaled enterprise use of RegTech across at least one compliance domain",
+        "source": "RegTech Analyst / Parker & Lawrence Research — Global State of RegTech 2026 report (300 senior compliance decision-makers surveyed), May 2026",
+        "strength": "strong"
+      },
+      {
+        "signal": "Vanta raised $150M Series D at ~$4B valuation (July 2025); Drata at ~$100M ARR with 8,000+ customers — proves VC and revenue conviction in compliance automation at scale",
+        "source": "YipitData B2B Signals data, May 2026; StackScout procurement intelligence, June 2026",
+        "strength": "strong"
+      },
+      {
+        "signal": "GDPR Terraform compliance toolkit sold $600 in first 2 weeks on Gumroad at $59–$99 (11 purchases, mostly freelancers) — validates demand at the individual developer tier",
+        "source": "DEV Community post by toolkit author, December 2025",
+        "strength": "moderate"
+      },
+      {
+        "signal": "73 developers on Gumroad reported $1,200–$4,800 in first 90 days selling Stripe-related boilerplates in early 2026; top sellers averaging $1,500–$3,500/mo — compliance-labeled boilerplates command 5–40x price premium over generic starters",
+        "source": "jakeinsight.com developer income report, April 2026",
+        "strength": "moderate"
+      },
+      {
+        "signal": "EU AI Act high-risk system registration deadline passed August 2, 2026; DORA (Digital Operational Resilience Act) went live January 2025 — hard regulatory deadlines create non-discretionary purchasing events",
+        "source": "compliance-from-architecture GitHub, Archiet documentation, June 2026",
+        "strength": "strong"
+      },
+      {
+        "signal": "Archiet SOC-2-Flask-SaaS use case page explicitly states 'bolting [compliance controls] on later costs 4–6 weeks per audit' and 'most Flask boilerplates skip the controls SOC 2 auditors actually check' — gap articulated by the product itself, confirming underserved developer demand",
+        "source": "archiet.com/use-cases/soc2-flask-saas-architecture, 2026",
+        "strength": "moderate"
+      },
+      {
+        "signal": "compliance.tf registry went public June 9 2026 with a free tier and 30-day all-frameworks trial — indicating the team believes there is enough pull from the terraform-aws-modules community (2B+ global provisions) to convert users without a sales call",
+        "source": "compliance.tf blog, June 2026",
+        "strength": "moderate"
+      },
+      {
+        "signal": "Starterpick.com 2026 multi-tenancy buyers guide notes retrofitting multi-tenancy/RLS into a medium Next.js app costs $8K–$40K in engineer time; no boilerplate scores 10/10 on audit-logs, SSO, and compliance columns",
+        "source": "starterpick.com, March 2026",
+        "strength": "moderate"
+      },
+      {
+        "signal": "IronFort SOC 2 Automation on AWS Marketplace at $359/mo specifically calls out 'without the enterprise price tag' and targets 'solo founders and pre-seed startups' — signals a validated sub-market below Vanta/Drata's $10K+ entry",
+        "source": "AWS Marketplace listing, 2026",
+        "strength": "weak"
+      }
+    ],
+    "takeaways": [
+      "The compliance tooling market is clearly three-tiered and each tier is only partially addressed: (1) GRC platform layer (Vanta/Drata/Secureframe — well-served, $4B+ combined value, no obvious entry point for a new entrant); (2) infrastructure-as-code compliance layer (compliance.tf — strong but AWS-only and limited to Terraform); (3) application-code / boilerplate layer — extremely fragmented and underserved, with no single product combining RLS + WORM + audit chain + compliance artifacts at the full-stack level.",
+      "The most commercially validated gap is a HIPAA-grade full-stack boilerplate for non-healthcare regulated industries (mental health, legal holds, insurance, fintech). Clynova ($999–$1,999 one-time) proves the price point and willingness to pay in healthcare; no equivalent exists for legal tech or insurance claim processing, which have identical technical requirements (PHI-equivalent sensitivity, BAA-equivalent data processing agreements, 7-year retention).",
+      "WORM-compliant document storage as a developer library is genuinely missing. SEC Rule 17a-4(f) applies to tens of thousands of broker-dealers; the 2022/2023 amendments added an audit-trail alternative to WORM, creating two compliant paths, but no npm/PyPI package wraps S3 Object Lock + Merkle chain verification into a 5-minute-to-install dependency. Adamant (Rust, niche) and Ledgix (documentation only) are the closest but neither ships a mainstream-language SDK.",
+      "Regulated AI agent compliance is the fastest-emerging gap with the clearest urgency. Goderash is the only targeted product; it is v0.1.0 and open source. The EU AI Act Annex IV requirements for high-risk AI systems plus FFIEC/FINRA AI governance expectations create hard regulatory deadlines that will force financial institutions to purchase or build audit fabric for AI agents in 2026–2027.",
+      "The dominant boilerplate pricing failure is skipping compliance primitives entirely. Starterpick.com's 2026 buyers guide found no boilerplate scores 10/10 on audit logs, SSO, and compliance; the market consensus is 'add Vanta later.' A boilerplate that ships SOC 2-defensible RLS + audit chain from day one and can be sold at $299–$999 one-time occupies a gap that all three GRC platform vendors (Vanta/Drata/Secureframe) explicitly do not address (they monitor controls, they do not implement them).",
+      "One-time purchase is the right default model for boilerplates; subscription is right for tooling that tracks evolving regulatory frameworks. The market splits cleanly: static code assets (RLS policies, audit chain library, WORM middleware) sell best as one-time purchases with optional update subscriptions; compliance control monitoring and evidence automation are inherently subscription-based because regulations change.",
+      "The 'retrofit cost' narrative is the strongest sales argument in the category: every product in this space (Archiet, Boilerlykit, compliance.tf, TrustOS) leads with the cost of retrofitting compliance controls later (4–6 weeks, $8K–$40K in engineering time, $80K+ in Vanta + auditor fees). A starter kit that preempts this cost and includes proof-of-controls artifacts is priced against the alternative, not against other starter kits — dramatically expanding acceptable price points.",
+      "EU regulatory deadlines (EU AI Act August 2026, DORA January 2025, NIS2 enforcement ramping) are creating immediate, non-discretionary purchasing events for European companies and any company selling into European markets. Products that include DORA / NIS2 / EU AI Act Annex IV artifacts (Archiet, Shasta, compliance.tf) have a strong near-term demand tailwind that US-centric SOC2/HIPAA tools lack."
+    ]
+  },
+  {
+    "angle": "local-first-ai",
+    "products": [
+      {
+        "name": "Microsoft Foundry Local",
+        "url": "https://github.com/microsoft/Foundry-Local",
+        "what": "End-to-end local AI runtime and SDK (C#, JS, Python, Rust) that ships inside your app — ~20MB, no Azure subscription, ONNX Runtime under the hood, auto hardware detection (CPU/GPU/NPU). Chat completions + Whisper audio in one SDK. GA'd April 9 2026, v1.2.1 as of June 2026.",
+        "pricing": "Free. SDK is free; no per-token cost; no Azure required.",
+        "model": "open-core",
+        "traction": "GA release April 2026 with npm/PyPI/NuGet/Cargo packages. Backed by Microsoft; 40,000+ Ollama community integrations share the OpenAI-compatible API surface. Supported on Windows, macOS, Linux, Android."
+      },
+      {
+        "name": "Ollama",
+        "url": "https://ollama.com",
+        "what": "The dominant local model runner. MIT open-source CLI and desktop app (Mac/Win; Linux CLI-only) for running open-weight models locally via llama.cpp. Optional Ollama Cloud for larger/cloud-hosted models. 40,000+ community integrations including Jan, OpenWebUI, IDE plugins.",
+        "pricing": "Free local runtime (unlimited). Cloud: Free tier | Pro $20/mo ($200/yr) | Max $100/mo. GPU-time billing not token-capped. Team plan coming soon.",
+        "model": "freemium",
+        "traction": "Dominant category leader. 40,000+ integrations. Team plan in development signals enterprise interest. Cross-region cloud (US/EU/SG) launched 2026."
+      },
+      {
+        "name": "LocalMode",
+        "url": "https://localmode.dev",
+        "what": "15-package browser-native local AI toolkit. Covers embeddings, vector search (HNSW + WebGPU), LLM chat via WebLLM/wllama/Transformers.js/LiteRT, vision, audio (STT/TTS), agents, structured output, RAG, OCR, NER — all 100% in-browser via WebGPU and WASM. Vercel AI SDK adapter, LangChain.js adapters, import from Pinecone/ChromaDB. 34 demo apps.",
+        "pricing": "Free / MIT open-source. No paid tier disclosed.",
+        "model": "open-core",
+        "traction": "Launched December 2025. 15 packages, 34 demo apps, comprehensive docs at localmode.dev. Sole contributor visible; early-stage. Benchmarks show 7/18 model categories at 90%+ of cloud API quality at $0."
+      },
+      {
+        "name": "RunAnywhere",
+        "url": "https://docs.runanywhere.ai",
+        "what": "Cross-platform on-device AI SDK: Swift (iOS), Kotlin (Android), React Native, Flutter, and Web (WASM via llama.cpp + sherpa-onnx). LLM, STT, TTS, VAD, VLM, VoicePipeline. Same C++ core compiled to each target. Web SDK v0.1.0 beta.",
+        "pricing": "Free for individuals and orgs under $1M revenue AND $1M funding (Apache 2.0). Commercial license required above those thresholds — contact san@runanywhere.ai.",
+        "model": "open-core",
+        "traction": "10,000 GitHub stars on runanywhere-sdks. Custom license structure implies commercial path exists. Web SDK is beta (v0.1.0); iOS/Android more mature."
+      },
+      {
+        "name": "Jan.ai",
+        "url": "https://jan.ai",
+        "what": "Open-source ChatGPT replacement that runs fully local. Desktop app for Mac/Win/Linux. llama.cpp backend, OpenAI-compatible API on localhost:1337, MCP support, extension system, HuggingFace model browser (~150 models), optional cloud-API bridges. Apache 2.0.",
+        "pricing": "Free and open-source (Apache 2.0). No paid tier.",
+        "model": "open-core",
+        "traction": "5.7M+ downloads, 42.8K GitHub stars, 99 releases in under 2 years, v0.8.x as of mid-2026. $110K ARR from adjacent products (Menlo Research). Top free desktop local AI app."
+      },
+      {
+        "name": "Msty (Msty Studio)",
+        "url": "https://msty.app",
+        "what": "Polished closed-source desktop app for local LLMs. Split-chat, side-by-side model comparison, knowledge stacks (RAG), web search, branching conversations, built-in document chat. Mac/Win/Linux. Uses llama.cpp locally; can also route to cloud APIs.",
+        "pricing": "Free personal tier. Aurum (advanced features): $149/user/yr or $349/user lifetime.",
+        "model": "freemium",
+        "traction": "Most polished UI in local AI desktop category per multiple 2026 comparisons. Lifetime option at $349 signals strong willingness-to-pay."
+      },
+      {
+        "name": "AppStudio by KeySec",
+        "url": "https://keysecnexus.com",
+        "what": "Local AI business engine for solo developers. 14 specialist AI agents for ideation, code review, market analysis, launch planning — all running 100% on-device via Ollama/LM Studio/Jan. Desktop app (native compiled installers). No cloud API calls, no subscriptions.",
+        "pricing": "Indie $97 one-time (going to $197). Pro $247 one-time (going to $397). Team $997 one-time. One-time online license activation via LemonSqueezy; runs offline after that.",
+        "model": "one-time",
+        "traction": "Live product with tiered pricing and installer downloads. Targets solo devs/indie hackers with 'zero cloud tax' messaging. 12-month update inclusion on Indie tier."
+      },
+      {
+        "name": "AI Mobile Launcher (AI Pro tier)",
+        "url": "https://aimobilelauncher.com",
+        "what": "React Native / Expo production boilerplate with on-device LLM via llama.rn (Phi-3 Mini), cloud LLM routing (Gemini, OpenAI), generative UI via Wire RN, dynamic onboarding, RevenueCat paywall, Supabase auth. .claude/ Claude Code pipeline included.",
+        "pricing": "Lite free (MIT, GitHub). Standard $99 one-time. AI Pro $199 one-time (adds on-device LLM, cloud routing, generative UI).",
+        "model": "one-time",
+        "traction": "Blog posts from May 2026 comparing it to Ignite and create-expo-app. Positioned as the only React Native boilerplate shipping on-device LLM as a wired feature. One-time checkout on website."
+      },
+      {
+        "name": "sqlite-vec",
+        "url": "https://github.com/asg017/sqlite-vec",
+        "what": "Dependency-free SQLite extension (pure C) that adds vec0 virtual tables for float/int8/binary vector storage and cosine/L2/Hamming similarity search. Runs anywhere SQLite runs — desktop, mobile, browser (WASM), edge. Python/Node/Go/Rust bindings. The canonical local-first vector search primitive.",
+        "pricing": "Free / Apache-2.0. Sponsored by Mozilla via Builders project.",
+        "model": "open-core",
+        "traction": "7,780 GitHub stars, 88 releases, 20 contributors. Pre-v1 but widely adopted. Featured on Hacker News multiple times. Sponsored by SQLite Cloud and Mozilla. v0.1.10-alpha.4 as of May 2026."
+      },
+      {
+        "name": "SQLite Cloud (sqlite-vector + sqlite-memory + sqlite-sync)",
+        "url": "https://github.com/sqliteai/sqlite-vector",
+        "what": "Suite of SQLite extensions: sqlite-vector (production-grade vector search, SIMD/TurboQuant, 30MB footprint, no preindexing), sqlite-memory (agent persistent memory with llama.cpp local embeddings), sqlite-sync (offline-first CRDT sync across devices), sqlite-ai (on-device LLM inference). Free managed cloud tier at sqlitecloud.io.",
+        "pricing": "Extensions: open-source. Managed instance: free tier (512MB, 20 connections). Paid tiers not prominently published.",
+        "model": "open-core",
+        "traction": "Actively maintained org (sqliteai) with 6+ interoperating repos. Blog sponsor of sqlite-vec. Free managed tier lowers entry friction for local+sync pattern."
+      },
+      {
+        "name": "Pocket Node",
+        "url": "https://zerocloudtax.com/pocket-node/",
+        "what": "Android app for local LLM inference. Lite: Phi-3 Mini bundled, offline, zero telemetry. Pro: Vulkan GPU, full model store (Llama-3, Mistral), local RAG (PDF/ePub), API/Edge Worker mode over Tailscale, LLaVA vision + Whisper voice (zero uploads), custom GGUF loader.",
+        "pricing": "Lite free. Pro $19.99 one-time.",
+        "model": "one-time",
+        "traction": "Targets homelab/privacy crowd with 'cloud tax' framing ($19.99 once vs $240/yr cloud). ZeroCloudTax.com domain signals ideological positioning. Android-first, emerging-markets potential."
+      },
+      {
+        "name": "Local AI Master (Ollama Docker Templates)",
+        "url": "https://localaimaster.com/store/ollama-docker-templates",
+        "what": "13 production-hardened Docker Compose stacks for local AI: ChatGPT-style UI, RAG API with citations (FastAPI, 312 lines), OpenAI-compatible gateway, workflow automation, observability. Security-hardened (pinned tags, localhost bind, required secrets). Includes MONETIZE.md playbook with 2026 pricing table ($1,500–$20,000 project fees + $200-2,000/mo retainer), SOW template, 6 client channels.",
+        "pricing": "$5 one-time (was $19). Instant download.",
+        "model": "one-time",
+        "traction": "Verified June 2026 model recommendations. MONETIZE.md is the differentiator — positions the kit as a freelancer/agency product, not just infrastructure. MIT licensed."
+      },
+      {
+        "name": "Apple Foundation Models / Core AI",
+        "url": "https://developer.apple.com/documentation/foundationmodels",
+        "what": "Native Swift API (Foundation Models framework, WWDC26) for on-device Apple Intelligence model (rebuilt for iOS 26/macOS 26 — smarter, multimodal), Private Cloud Compute (32K context, reasoning), and custom models via Core AI (full LLMs on Apple Silicon Neural Engine) or MLX. Open-sourced CoreAILanguageModel and MLXLanguageModel adapters. Claude, Gemini, and third-party models connectable via LanguageModel protocol.",
+        "pricing": "Free for developers. Small Business Program (<2M downloads): free Private Cloud Compute access at no cloud API cost.",
+        "model": "freemium",
+        "traction": "2.3 billion active Apple devices. Foundation Models introduced Sept 2025; rebuilt model + Core AI + PCC + open protocol all at WWDC26 (June 2026). Largest distribution channel for on-device AI in history. FM CLI for macOS 27 scripting. Python SDK announced."
+      },
+      {
+        "name": "Locanara",
+        "url": "https://github.com/hyodotdev/locanara",
+        "what": "LangChain-inspired on-device AI framework for iOS and Android. Composable chains, pipeline DSL (compile-time type safety), BufferMemory/SummaryMemory, guardrails, tool integration, InferenceRouter (auto-selects Apple Intelligence / llama.cpp / CoreML / MLX on iOS; Gemini Nano / ExecuTorch on Android). expo-ondevice-ai module included.",
+        "pricing": "Free / open-source.",
+        "model": "open-core",
+        "traction": "Published February 2026. Clean LangChain-parity API for mobile. Single-contributor early-stage."
+      },
+      {
+        "name": "Palaia",
+        "url": "https://github.com/byte5ai/palaia",
+        "what": "Local crash-safe memory layer for AI agents. Hybrid BM25 + vector search (sqlite-vec or pgvector), 6 embedding providers (fastembed/Ollama/OpenAI etc.), MCP server for Claude Desktop/Cursor, multi-agent scopes, HOT/WARM/COLD tiering, WebUI memory explorer. Zero-config local SQLite setup.",
+        "pricing": "Free / MIT open-source. palaia[fastembed] install, sqlite-vec bundled.",
+        "model": "open-core",
+        "traction": "Active 2026 project. Compares itself to claude-mem, Mem0, OpenClaw. MCP integration lowers barrier to adoption in Claude/Cursor workflows."
+      }
+    ],
+    "pricing_models": [
+      {
+        "model": "Free SDK / open-core (commercial license for enterprise)",
+        "example": "RunAnywhere — Apache 2.0 free for orgs <$1M revenue; commercial license required above threshold",
+        "notes": "Dominant model in frameworks. Captures developer adoption at zero cost; commercial conversion gates on revenue/funding thresholds or enterprise features (SSO, support, audit). Risk: threshold is hard to enforce; most creators skip straight to MIT or dual-license."
+      },
+      {
+        "model": "One-time purchase (lifetime access, no subscription)",
+        "example": "AppStudio $97-247, AI Mobile Launcher $99-199, Msty Aurum $349 lifetime, Pocket Node Pro $19.99, Ollama Docker Templates $5",
+        "notes": "Strong resonance with the privacy/local-first crowd because it mirrors the 'no cloud subscription' ethos of the product. Buyers equate 'no recurring SaaS fees' on the tool with 'no recurring API fees' in the app. $19.99-$349 range seems to be the sweet spot for developer tools; $97-197 for business/workflow tools."
+      },
+      {
+        "model": "Freemium + subscription cloud fallback",
+        "example": "Ollama Free (unlimited local) + Pro $20/mo + Max $100/mo cloud",
+        "notes": "Ollama's hybrid model is the clearest example: local is always free and unlimited; cloud usage (for bigger models or cloud fallback) is subscription-gated. GPU-time billing rather than token-capped. This creates a natural upgrade path: run small models locally, pay for frontier models."
+      },
+      {
+        "model": "Per-app / annual developer license",
+        "example": "Msty $149/user/yr",
+        "notes": "Annual per-seat for closed-source desktop tools. Less common in this space vs. lifetime. Harder sell to privacy-focused audience who are already skeptical of subscriptions."
+      },
+      {
+        "model": "Services / consulting bundled with template",
+        "example": "Local AI Master Docker Templates ($5 kit) + MONETIZE.md (freelance pricing $1,500-$20,000 projects + $200-2,000/mo retainer)",
+        "notes": "Kit-as-lead-gen for consulting. The $5 template is margin-free; the real product is the playbook for selling local AI infrastructure as a managed service to SMBs. Signals a professional-services opportunity in the market."
+      },
+      {
+        "model": "Platform free + managed cloud tier (SQLite Cloud pattern)",
+        "example": "SQLite Cloud: free extension (open-source) + free managed tier (512MB/20 connections) + paid managed tiers",
+        "notes": "Local-first storage that optionally syncs to managed cloud. CRDT sync (sqlite-sync) is the upsell. Strong for apps that need multi-device or team sync while keeping inference local."
+      }
+    ],
+    "value_adds": [
+      "Model catalog curation with hardware-matched quantization — shipping the right quantized model for the user's NPU/GPU/CPU automatically (Foundry Local, Ollama curated catalog)",
+      "Hardware detection and acceleration routing — auto-selecting CUDA/QNN/Metal/WebGPU/CPU without any code from the developer (Foundry Local execution providers, RunAnywhere InferenceRouter, Locanara InferenceRouter)",
+      "Vercel AI SDK / LangChain.js compatibility layer — letting devs swap local vs. cloud with one line change, preserving existing patterns (LocalMode @localmode/ai-sdk, Palaia, wllama)",
+      "Offline-first model caching in OPFS/IndexedDB — models download once and work permanently offline with automatic fallback chains (LocalMode, RunAnywhere Web SDK, wllama)",
+      "CRDT sync for local data across devices — sqlite-sync enabling offline-first data that replicates without cloud lock-in (SQLite Cloud suite)",
+      "Compliance/audit tooling — SOC 2, HIPAA, GDPR-ready deployment templates, logging, access control for regulated enterprise (high-margin gap, currently DIY only)",
+      "Service/consulting playbook bundled — MONETIZE.md pattern: template + SOW + client acquisition guide + 2026 pricing table for freelancers reselling local AI infra (Local AI Master)",
+      "Private Cloud Compute fallback at no cost — Apple's free PCC tier for small iOS devs (<2M downloads) removes the cost barrier to cloud-quality on edge failure cases",
+      "Agent memory layer with MCP interface — crash-safe sqlite-vec RAG memory with Claude Desktop / Cursor plug-in support (Palaia, sqlite-memory)",
+      "Cross-platform mobile + web parity — same C++ inference engine compiled to iOS/Android/WASM so model behavior is deterministic across all targets (RunAnywhere)",
+      "Claude Code / AI coding agent integration — .claude/ directory and AGENTS.md specs pre-wired for AI-assisted development of the kit itself (AI Mobile Launcher, RED starter kit)"
+    ],
+    "gaps": [
+      "No 'ShipFast for local-first AI' — every major AI SaaS boilerplate (StartKit.AI, BuilderKit, TurboStarter, supastarter) defaults to cloud APIs (OpenAI/Anthropic). No commercial starter kit ships local inference + sqlite-vec RAG + auth + billing as a coherent local-first product. This is the clearest white space.",
+      "No turnkey agentic stack for 12-16GB consumer GPU tier — r/LocalLLaMA explicitly flags this as the #1 gap: 'Lack of agent-in-a-box solutions for mid-range 12-16GB consumer GPUs.' Mid-range devs have the hardware but no polished agentic harness.",
+      "No compliance-ready local AI deployment kit for regulated industries — HIPAA, GDPR, DORA, EU AI Act (August 2 2026 enforcement) are forcing hospitals, banks, and defense contractors to go on-prem. No commercial kit bundles the audit trail, BAA-ready architecture, and SOC 2 evidence templates into one purchasable product.",
+      "Browser-based local AI has no monetization layer — LocalMode, WebLLM, and wllama are powerful but ship as free open-source with no example of how to monetize an app built on them. No 'PrivacyStack for local AI web apps' exists that includes Gumroad/LemonSqueezy licensing + offline-first billing in one boilerplate.",
+      "No cross-platform (desktop + mobile + web) local AI starter — AI Mobile Launcher covers mobile; LocalMode covers browser; Foundry Local covers desktop. No kit unifies all three surfaces with a shared sqlite-vec memory layer and consistent UX patterns.",
+      "Local AI for vertical SaaS (legal, medical notes, financial) is entirely DIY — there is no 'private medical transcription app starter' or 'private contract review SaaS kit' with on-device inference + HIPAA-template architecture.",
+      "Agent orchestration above Ollama is still stitched together — tools like Sovereign, ainative, and kliewerdaniel/sovereign exist but are GitHub-hobby projects. No polished, sellable agentic orchestration layer sits above Ollama/Foundry Local for indie devs wanting to ship multi-agent local apps.",
+      "Local model evaluation / testing harness for app developers is absent — Apple introduced an Evaluations framework (WWDC26) for iOS, but no cross-platform equivalent exists for desktop/web local AI app developers to verify model behavior across hardware variants before shipping."
+    ],
+    "demand_signals": [
+      {
+        "signal": "HN post 'Local AI needs to be the norm' hit front page in early 2025 with 1,763 upvotes and 800+ comments — cited in multiple 2026 articles as the inflection moment where developer consensus shifted",
+        "source": "https://dev.to/mininglamp/the-hn-post-that-got-1700-upvotes-local-ai-needs-to-be-the-normwhy-local-ai-just-became-the-32i9",
+        "strength": "strong"
+      },
+      {
+        "signal": "r/LocalLLaMA analysis identifies 'Claude Code to local open-source LLMs' as the dominant migration pattern (3x events tracked), driven by privacy/data sovereignty — and flags 'agent-in-a-box for 12-16GB GPUs' as the #1 unmet product gap",
+        "source": "https://discury.io/report/best-llm-for-local-use-reddit-comparison",
+        "strength": "strong"
+      },
+      {
+        "signal": "Jan.ai: 5.7M+ downloads and 42.8K GitHub stars for a free open-source local chat app — comparable download scale to mainstream developer tools, demonstrating large existing consumer base",
+        "source": "https://jan.ai",
+        "strength": "strong"
+      },
+      {
+        "signal": "EU AI Act enforcement deadline August 2, 2026 for high-risk AI systems (credit scoring, healthcare, insurance) is forcing European banks and hospitals to evaluate on-premise AI — multiple consulting guides published June 2026 confirm boardroom-level urgency",
+        "source": "https://digiwit.ai/blog/dora-onpremise-ai",
+        "strength": "strong"
+      },
+      {
+        "signal": "On-device AI market valued at $17.8-33.2B in 2025-2026 across multiple independent analyst reports (Grand View, PS Market, Coherent Market, SNS Insider), CAGR 24-28% through 2032-2035",
+        "source": "https://www.grandviewresearch.com/industry-analysis/on-device-ai-market-report",
+        "strength": "strong"
+      },
+      {
+        "signal": "Apple Foundation Models: rebuilt on-device model, Core AI framework, Python SDK, FM CLI all announced WWDC26 (June 2026) — addressing 2.3B active devices. Free Private Cloud Compute for small devs. Biggest platform endorsement of local-first AI in history.",
+        "source": "https://developer.apple.com/wwdc26/guides/apple-intelligence/",
+        "strength": "strong"
+      },
+      {
+        "signal": "Microsoft Foundry Local GA'd April 9 2026 (v1.2.1 by June) — Microsoft committing a full cross-platform local AI SDK (C#/JS/Python/Rust) with no Azure required is a major platform signal of enterprise demand for on-device AI",
+        "source": "https://devblogs.microsoft.com/foundry/foundry-local-ga/",
+        "strength": "strong"
+      },
+      {
+        "signal": "RunAnywhere: 10,000 GitHub stars on early-release repo — unsolicited demand signal for a production cross-platform on-device AI SDK before reaching v1.0",
+        "source": "https://github.com/RunanywhereAI/runanywhere-sdks",
+        "strength": "moderate"
+      },
+      {
+        "signal": "sqlite-vec: 7,780 GitHub stars, Mozilla-sponsored, 88 releases — strong organic adoption for the primitive that enables local vector search without a server, used in local RAG and agent memory projects",
+        "source": "https://github.com/asg017/sqlite-vec",
+        "strength": "moderate"
+      },
+      {
+        "signal": "Local AI career path article (June 2026) cites 84% of developers use AI tools but only 18% build AI integrations — framing a supply gap for local AI engineers as large as the early mobile developer shortage",
+        "source": "https://zenvanriel.com/ai-engineer-blog/is-local-ai-viable-career-path-2026/",
+        "strength": "moderate"
+      },
+      {
+        "signal": "HN thread 'Ask HN: Who's running local AI workstations in 2026?' surfaces regulated-sector enterprise deployments (defence, manufacturing) as the clearest paying customer segment — users report 4xH100 private cloud and custom RTX PRO 6000 Blackwell workstations for on-prem inference",
+        "source": "https://news.ycombinator.com/item?id=46560663",
+        "strength": "moderate"
+      },
+      {
+        "signal": "Multiple freelance/agency plays emerging around local AI Docker templates (e.g., Local AI Master selling $5 kit + $1,500-20,000 service playbook) — signals service-layer demand from SMBs that can't DIY the infra",
+        "source": "https://localaimaster.com/store/ollama-docker-templates",
+        "strength": "moderate"
+      },
+      {
+        "signal": "Llamas on the Web paper (May 2026) ships WebGPU backend for llama.cpp itself — browser-native GPU-accelerated LLM inference is now in the llama.cpp mainline, signaling maturation of the underlying primitive",
+        "source": "https://reeselevine.github.io/llamas-on-the-web/",
+        "strength": "moderate"
+      },
+      {
+        "signal": "The Lurk Report analysis of r/LocalLLaMA (May 2026): 'The local LLM market is shifting from hobbyist experimentation to professional production workflows, driven by massive hardware investments in Blackwell GPUs and high-memory Mac Studios'",
+        "source": "https://thelurkreport.beehiiv.com/p/local-llms-are-ready-for-real-work",
+        "strength": "moderate"
+      },
+      {
+        "signal": "Msty $349 lifetime license exists and is bought — implies some customers pay $350 for a local AI UI, demonstrating willingness-to-pay beyond the hobbyist segment",
+        "source": "https://nesyona.com/articles/best-local-self-hosted-ai-2026",
+        "strength": "weak"
+      }
+    ],
+    "takeaways": [
+      "The local-first AI framework layer is dominated by free/open-source primitives (Foundry Local, Ollama, sqlite-vec, WebLLM, LocalMode, Jan) — the commercial opportunity is NOT in the runtime or inference engine but in the integration layer above them: starter kits, compliance wrappers, and vertical SaaS templates.",
+      "Every AI SaaS boilerplate (StartKit.AI $149, BuilderKit $99-199, TurboStarter $149-499, supastarter $249+) defaults to cloud APIs. A 'local-first AI boilerplate' with sqlite-vec RAG + Foundry Local / Ollama + auth + billing + one-time pricing is the clearest white space in this market.",
+      "The EU AI Act August 2 2026 enforcement deadline for high-risk AI systems is a sharp near-term demand catalyst for regulated-industry on-prem AI. Banks and hospitals cannot use cloud LLM APIs for credit scoring, PHI, or CUI — they need compliant local deployments. This is the highest-paying buyer segment and the most underserved by current products.",
+      "One-time pricing is ideologically aligned with the local-first buyer — 'no cloud subscription' for the app maps to 'no subscription to buy the kit.' Products priced $19.99-$349 one-time are outperforming subscription-priced equivalents in this niche. The Local AI Master $5 Docker kit with MONETIZE.md is a proof of concept that even very low price points can generate volume.",
+      "Apple's Foundation Models framework (WWDC26) + Core AI + free PCC for small devs creates the most powerful distribution channel in the market: 2.3 billion devices, free inference, native Swift API. An iOS/macOS starter kit built around Foundation Models + sqlite-vec has a structural advantage no cloud-dependent competitor can match on distribution cost.",
+      "The browser local AI stack (WebGPU via wllama/WebLLM/LocalMode) is technically mature but commercially orphaned — no one has built a sellable product on top of it. A browser app that runs the model locally with OPFS caching and charges users a one-time fee (via Gumroad/LemonSqueezy) has essentially zero marginal cost and infinite margin.",
+      "Demand is real but buyer segmentation matters: (a) individual developers/hobbyists — large volume, tiny WTP, served by free tools; (b) indie hackers / solopreneurs — medium volume, $97-$349 WTP, want one-time boilerplates; (c) regulated enterprises (healthcare/finserv) — small volume, very high WTP ($5K-$100K+ projects), want compliance-ready solutions. Products conflating these segments are leaving money on the table.",
+      "Competition from Microsoft and Apple on the SDK layer is real but creates opportunity: both ship free SDKs that bootstrap the ecosystem, and neither is selling the application-layer template, the vertical SaaS wrapper, or the compliance tooling. The analogy is Stripe: Stripe made payments free to integrate, but enabled a $250M-per-year ShipFast/boilerplate industry above it."
+    ]
+  },
+  {
+    "angle": "ai-feature-add",
+    "products": [
+      {
+        "name": "ShipFast",
+        "url": "https://shipfa.st/",
+        "what": "Next.js SaaS boilerplate with auth, Stripe, email, SEO, and an AI variant with OpenAI integration. Marc Lou's flagship product. Solo/B2C optimized; no multi-tenancy.",
+        "pricing": "$199 Starter / $249 All-in / $299 Bundle (with CodeFast course) — all one-time lifetime",
+        "model": "one-time",
+        "traction": "$1,260,737 all-time verified Stripe revenue (TrustMRR); 7,200+ developers; ~$9.2K/month in March 2026; Marc Lou publicly noted 'AI has killed my boilerplate' same month, signaling vibe-coding tool pressure"
+      },
+      {
+        "name": "AgentBoiler",
+        "url": "https://agentboiler.com/",
+        "what": "FastAPI + Next.js 15 boilerplate for multi-tenant AI agent SaaS. LangChain + LangGraph agent, Milvus hybrid RAG, Stripe credits, Celery workers, multi-tenant RBAC, Docker+Nginx. ~70k LOC.",
+        "pricing": "$199 one-time (ZIP + commercial license + lifetime patches) / $299 with updates tier. 14-day money-back.",
+        "model": "one-time",
+        "traction": "171 sold (publicly displayed on homepage); Python/FastAPI-first differentiator vs Next.js-only field"
+      },
+      {
+        "name": "ChatRAG",
+        "url": "https://www.chatrag.ai/",
+        "what": "Next.js + AI SDK RAG boilerplate for document-grounded chatbots. HNSW vector search in Supabase pgvector, multi-LLM (OpenAI/Claude/Gemini/Llama via OpenRouter), Stripe subscriptions, WhatsApp/voice/MCP connectors, 18-language support, white-label mode.",
+        "pricing": "$99 one-time — full source + lifetime updates + GitHub repo access",
+        "model": "one-time",
+        "traction": "Indexed and ranking for 'ChatRAG' queries; creator active on Twitter (@carlosmarcialt); lowest price point in feature-complete RAG kits"
+      },
+      {
+        "name": "Boilerlykit / SaaSForge AI",
+        "url": "https://boilerlykit.com/saasforge-ai",
+        "what": "Next.js 16 AI SaaS boilerplate with streaming chat (Claude + OpenAI via Vercel AI SDK), pgvector RAG pipeline (upload/chunk/embed/retrieve), token-metered credits tied to Stripe, Supabase auth + RLS. Content marketing site with SEO comparison articles driving organic traffic.",
+        "pricing": "$59 Starter / $199 Core / $229 Agency / $259 AI (SaaSForge AI) — launch prices; one-time",
+        "model": "one-time",
+        "traction": "Operates a boilerplate comparison blog (boilerlykit.com/blog) ranking for 'best nextjs saas boilerplate 2026'; strong SEO funnel; publishes April 2026 pricing roundup"
+      },
+      {
+        "name": "VibeReady",
+        "url": "https://vibeready.sh/",
+        "what": "Next.js AI SaaS starter with a 3-layer AI Framework (AGENTS.md core rules, 14 scoped rules, 20 structured skills with quality gates). Full Kit adds user-facing AI agent: Vercel AI SDK + OpenRouter (100+ models), tool calling with RBAC, token usage tracking per org, MCP extensibility, Terraform GCP + GitHub Actions CI/CD.",
+        "pricing": "$149 AI Framework (dev tooling only) / $399 Full Kit (agent features + SaaS foundation) — one-time",
+        "model": "one-time",
+        "traction": "Published April 2026; explicitly positioned against 'AI-ready' boilerplates; AGENTS.md adoption angle cites '20,000+ repositories' using the standard"
+      },
+      {
+        "name": "Supastarter",
+        "url": "https://supastarter.dev/",
+        "what": "Most feature-complete general SaaS boilerplate for Next.js and Nuxt with AI chatbot add-on via Vercel AI SDK. Multi-provider LLM, multi-tenancy, RBAC, i18n, billing abstraction (Stripe/Lemon Squeezy/Polar/Creem), AGENTS.md config, Docker self-host.",
+        "pricing": "$349 Solo / $799 Startup (5 seats) / $1,499 Enterprise (10 seats) — one-time lifetime",
+        "model": "one-time",
+        "traction": "Described as 'trusted by thousands of developers and founders worldwide'; strong testimonials; recommended for B2B SaaS with teams in every 2026 comparison guide"
+      },
+      {
+        "name": "Makerkit",
+        "url": "https://makerkit.dev/",
+        "what": "B2B SaaS boilerplate with the deepest billing abstraction (Stripe/Lemon Squeezy/Paddle via config), multi-tenancy, RBAC, per-seat and metered usage, AI Kit on higher tiers, Turbo monorepo, strict TypeScript. Next.js 15 + Supabase or Firebase variants.",
+        "pricing": "$299 Pro (individual) / $599 Teams (up to 5). Some sources show $249/year subscription variant.",
+        "model": "one-time",
+        "traction": "Named in every 2026 comparison as the enterprise billing leader; large Discord community; consistently updated (fastest update velocity in category per reviewer consensus)"
+      },
+      {
+        "name": "SaaSCity.io",
+        "url": "https://saascity.io/ai-saas-boilerplate-2026",
+        "what": "Next.js 16 AI media-generation SaaS boilerplate. 20+ integrated models (Replicate, Kie.AI, Fal, Wavespeed). Updated April 2026 with Seedance 2.0 video model, Kling 3.0, Seedream 5. Credit/subscription system, admin panel, PM2+Nginx self-host docs. Five complete AI products in one repo.",
+        "pricing": "$129.99 Batch 2 (sale pricing, limited) — one-time lifetime",
+        "model": "one-time",
+        "traction": "Active in April 2026 with new model integrations; 'LLM-friendly documentation' for AI-assisted setup; targets Midjourney/AI headshot generator cloners"
+      },
+      {
+        "name": "Templify",
+        "url": "https://templify.dev/",
+        "what": "Next.js 15 AI SaaS boilerplate with OpenAI + RAG, Stripe, Supabase, CloudFront signed downloads, JWT license system, Sentry monitoring. 30-day money-back.",
+        "pricing": "$499 one-time (discounted from $749). Includes 6 months email support.",
+        "model": "one-time",
+        "traction": "Claims '500+ founders who have already launched their AI businesses'; highest standard price point in the Next.js-only tier"
+      },
+      {
+        "name": "ChimerAI",
+        "url": "https://chimerai.dev/",
+        "what": "Full-stack Next.js 16 + Python FastAPI AI kit with LangChain ReAct agent, multi-provider LLM, RAG pipeline, content moderation, GDPR tools, audit logging, plugin system, 60+ DB models. Tiered: free starter chat layer, paid auth/billing/admin.",
+        "pricing": "Free (chat + RAG + multi-provider) / $349 Enterprise (auth, billing, admin, GDPR, MFA) / $699 Enterprise Pro (webhooks, guardrails, AI tools) — one-time",
+        "model": "freemium",
+        "traction": "Comparison table shows it outfeatures ShipFast and Makerkit on AI-specific features; dual-stack (Next.js + FastAPI) is a differentiator vs pure Next.js competitors"
+      },
+      {
+        "name": "AgentZero",
+        "url": "https://agentzero-five.vercel.app/",
+        "what": "Next.js 16 + AI SDK 6 agent boilerplate with ReAct streaming loop, pgvector RAG, Auth.js v5 multi-tenant, Lemon Squeezy billing + credit guard system, Zod type-safe end-to-end, one-command Vercel deploy.",
+        "pricing": "$129 founding price / $249 standard after founding window — one-time lifetime",
+        "model": "one-time",
+        "traction": "v1.0 recently launched; founding member window positioning; Lemon Squeezy (not Stripe) differentiator"
+      },
+      {
+        "name": "RED",
+        "url": "https://red.dev3o.com/",
+        "what": "React 19 + React Router 7 + Convex-based AI agent kit (not Next.js). Reactive database with agent abstractions, queue primitives, streaming, async task runtime, boundary model. Multi-provider (OpenAI/Anthropic/Groq/local). 4-hour demo database wipe.",
+        "pricing": "$399 Founder / $1,499 Scale (+ 2-hour architecture call + priority support) — one-time",
+        "model": "one-time",
+        "traction": "Positioned as 'not a boilerplate but a singularity'; Convex-native differentiator vs Supabase-heavy field; premium pricing signals architecture-first buyers"
+      },
+      {
+        "name": "Vibestrap",
+        "url": "https://vibestrap.dev/",
+        "what": "AI-native Next.js SaaS scaffold optimized for Claude Code / Cursor / Windsurf. Provider abstraction over OpenRouter, OpenAI, Anthropic, Replicate, fal.ai + offline mock. Token-level cost observability built in. Auth + Stripe + i18n + email on day one.",
+        "pricing": "$49 launch / $99 standard — one-time, all updates free forever. No upgrade fees ever.",
+        "model": "one-time",
+        "traction": "Lowest price point with cost observability; explicitly targets 'vibe coders' entering AI SaaS; token-level observability as a differentiator vs competitors"
+      },
+      {
+        "name": "Vercel AI Chatbot (open source)",
+        "url": "https://github.com/vercel/chatbot",
+        "what": "Free open-source Next.js chatbot template from Vercel. Multi-provider via Vercel AI Gateway (Mistral, DeepSeek, OpenAI, xAI), Neon Postgres, Vercel Blob, NextAuth. One-click Vercel deploy. Free to use, no commercial features.",
+        "pricing": "Free (MIT license); hosted services cost extra (Neon, Vercel, AI Gateway)",
+        "model": "open-core",
+        "traction": "20,541 GitHub stars (highest in category by far); last pushed May 2026; the free reference implementation that all paid products compete against"
+      },
+      {
+        "name": "vstorm full-stack-ai-agent-template (open source)",
+        "url": "https://github.com/vstorm-co/full-stack-ai-agent-template",
+        "what": "FastAPI + Next.js 15 open source generator with 6 agent frameworks (PydanticAI, LangChain, LangGraph, CrewAI, etc.), 4 vector DB choices (Milvus/Qdrant/pgvector/ChromaDB), WebSocket streaming. 20+ enterprise integrations via CLI configurator.",
+        "pricing": "Free (MIT license)",
+        "model": "open-core",
+        "traction": "1,421 GitHub stars; created December 2025; growing quickly; only open-source template with multi-framework agent choice"
+      }
+    ],
+    "pricing_models": [
+      {
+        "model": "One-time lifetime purchase (dominant)",
+        "example": "AgentBoiler $199, ShipFast $199-299, ChatRAG $99, Vibestrap $49",
+        "notes": "Overwhelmingly the standard in 2026. Buyers pay once, get lifetime updates and source code. Creates immediate revenue but limits recurring upside. Sellers compete on update velocity and community to retain perceived value. Marc Lou's verified ShipFast data shows $9K/month from perpetual re-sale to new buyers, not retention."
+      },
+      {
+        "model": "Tiered one-time by seat/use-case",
+        "example": "Supastarter $349/$799/$1,499; Makerkit $299/$599; VibeReady $149/$399; RED $399/$1,499",
+        "notes": "Teams/agency tiers unlock multi-developer access, priority support, architecture calls. The premium tier usually adds 1-on-1 calls (RED: 2-hour architecture call at $1,499), which is the real value anchor at the top. This is the closest the category gets to a services upsell embedded in product pricing."
+      },
+      {
+        "model": "Freemium (free core + paid AI/enterprise layer)",
+        "example": "ChimerAI: free chat+RAG tier, $349/$699 for auth+billing+guardrails; aifa-agi: free MIT starter",
+        "notes": "Uncommon in this market. ChimerAI uses it to lower acquisition friction and upsell enterprise features. Risk: free tier competes with paid tier; buyers may combine free AI layer with a different SaaS starter."
+      },
+      {
+        "model": "Credits economy (AI usage billing built into the template for end-users)",
+        "example": "AgentBoiler Stripe credits, SaaSForge AI token-metered credits, AgentZero credit guard, SaaSCity credit/subscription system",
+        "notes": "This is a feature of what the buyer ships to their own customers, not the boilerplate's own pricing. All serious AI boilerplates include a credit/token metering system as a core feature — it is now table stakes. The differentiator is how deeply it is wired: per-call attribution, plan limits, rollover, dunning."
+      },
+      {
+        "model": "Annual subscription (minority)",
+        "example": "Makerkit $249/year (one variant reported); some historical products",
+        "notes": "Rare in 2026. Buyers resist; comparison sites call it out negatively vs one-time alternatives. Delfy.dev cited Makerkit's yearly model as a negative vs $199 one-time alternatives. Annual model only viable when update cadence is genuinely high and the creator has community loyalty."
+      },
+      {
+        "model": "Open-core (free base + paid hosted or support)",
+        "example": "Vercel chatbot (20K+ stars, free), vstorm template (1.4K stars, free), mashdotdev/saas-starter-kit (free)",
+        "notes": "Free open-source templates set the floor and define 'table stakes.' Vercel's chatbot in particular (20K+ stars) is the canonical free comparison point. Paid products must justify their price against it. Open-core in this space does not typically monetize via hosted service — creators monetize via paid premium products adjacent to their open repo."
+      }
+    ],
+    "value_adds": [
+      "Lifetime source code updates — the primary retention/value hook; buyers fear buying abandoned code",
+      "Private GitHub repository access — perceived as higher quality than ZIP download; enables automated PRs",
+      "Discord community with creator access — ShipFast's 5,000+ member Discord is cited as a standalone value driver",
+      "Architecture consulting calls bundled at premium tier — RED ($1,499 tier), VibeReady ($399 tier), AgentBoiler debug call offer",
+      "New model/provider integrations delivered as updates — SaaSCity explicitly updated in April 2026 with Seedance 2.0, Kling 3.0 to justify continued relevance",
+      "AGENTS.md / .claude/ workspace configs for AI coding tools — VibeReady, Boilerplate-Stack, Indie Kit, Vibestrap ship these as a primary differentiator; buyers use Claude Code/Cursor and want pre-configured agent rules",
+      "Pre-built AI usage metering + credit economy for end-user billing — token-level cost attribution wired to Stripe is now a required feature, not a differentiator",
+      "AppSumo marketplace listings (Indie Kit) — distribution channel with guaranteed deal hunters, different buyer profile from direct",
+      "Content marketing moat (Boilerlykit blog, SaaSbyMonday, starterpick.com) — comparison content generating organic SEO captures buyers at decision stage"
+    ],
+    "gaps": [
+      "Eval harness / prompt CI gate: No paid boilerplate ships a working offline eval loop (golden dataset, CI gate, regression report). Every authoritative 2026 guide (saasbymonday.io, starterpick.com, growthengineer.ai, dev.to) names this as the first thing missing. Buyers must wire DeepEval, Braintrust, or Promptfoo themselves. A boilerplate that ships even 20-case golden set evaluation + a CI task blocking on regression would be genuinely differentiated.",
+      "Production observability pre-wired: Structured tracing (OpenTelemetry), per-tenant token cost attribution, p95 latency dashboards, and spend-anomaly alerts are called 'Day 1, don't skip' by practitioners — but no boilerplate ships them pre-wired. Nolikzero/AI-SaaS-Boilerplate (GitHub) and Vibestrap mention observability; none ships a complete Langfuse/OpenTelemetry integration out of the box.",
+      "Cost guardrails and circuit breakers: Per-tenant daily spend caps, per-request token budgets, model fallback on overages, and kill-switch for runaway agent loops are production requirements called out repeatedly. Most boilerplates wire a credit balance check but not a true circuit breaker or cost-per-successful-task metric.",
+      "Versioned prompt registry: Prompts hardcoded in source or scattered across files with no versioning, diffing, or rollback story. Every guide lists this as a failure mode. A prompt store tied to DB with semantic versioning and PR-diff display is unbuilt.",
+      "Model routing by difficulty / cost-aware dispatch: Routing cheap tasks to Haiku/Flash and escalating to Sonnet/GPT-4o only on complexity signals would halve AI COGS for buyers, but no boilerplate includes this logic. LiteLLM gateway integration is mentioned in guides but not shipped.",
+      "MCP-native agent architecture: MCP (Model Context Protocol) is named in multiple 2026 guides as the standardized tool-wiring approach, but no paid boilerplate ships an MCP server scaffold with tool catalog, credential proxy, and per-tenant scoping. VibeReady mentions MCP extensibility but does not ship server scaffolding.",
+      "Guardrails layer: Input/output moderation, prompt injection detection, PII redaction, and policy-as-code for agent actions are production requirements when handling untrusted user input. No boilerplate ships this pre-integrated (Lakera, Protect AI, NeMo Guardrails, or even a simple regex allowlist).",
+      "Python-first full-stack for AI engineers: AgentBoiler and ShipAIFast serve this but the category is thin vs Next.js saturation. Django-based AI SaaS (only SaaS Pegasus adjacent) is essentially unserved.",
+      "Margin/profitability dashboard for the buyer: A built-in admin view showing gross margin per plan tier, model cost breakdown, and cost-per-successful-task would help founders price their AI product correctly. No boilerplate ships this for the SaaS owner's view (distinct from end-user usage dashboard)."
+    ],
+    "demand_signals": [
+      {
+        "signal": "ShipFast $1.26M all-time verified Stripe revenue, ~$9.2K/month in March 2026 from 7,200+ developer buyers",
+        "source": "https://trustmrr.com/startup/shipfast (Stripe-verified) and Marc Lou's public LinkedIn/newsletter",
+        "strength": "strong"
+      },
+      {
+        "signal": "Marc Lou stated 'AI has killed my coding course and my boilerplate' in March 2026 income report — but ShipFast still generating ~$9K/month, indicating the market is contracting at the low end while specialization (AI-specific kits) grows",
+        "source": "https://www.linkedin.com/posts/marclouvion_i-made-78120-in-march-2026 and https://newsletter.marclou.com/p/i-made-1-032-000-in-2025",
+        "strength": "moderate"
+      },
+      {
+        "signal": "Vercel's open-source chatbot template has 20,541 GitHub stars (last pushed May 2026), signaling massive developer demand for AI chatbot starter code — but also the ceiling for free alternatives any paid product must beat",
+        "source": "https://github.com/vercel/chatbot",
+        "strength": "strong"
+      },
+      {
+        "signal": "AgentBoiler showing 171 publicly displayed sales at $199 (~$34K revenue) from a solo product with no affiliate program",
+        "source": "https://agentboiler.com/",
+        "strength": "moderate"
+      },
+      {
+        "signal": "Boilerplate-Stack claims '10K+ users' and multiple independent comparison sites (starterpick.com, boilerlykit.com, buildthisnow.com, saasbymonday.io) have emerged publishing 2026 buyer guides — a content mill ecosystem signals sustained commercial search volume",
+        "source": "https://boilerplate-stack.com/en-US and https://starterpick.com/guides/shipfast-vs-makerkit-2026 (published March 2026)",
+        "strength": "strong"
+      },
+      {
+        "signal": "Templify reports '500+ founders' using their boilerplate; Dirstarter boilerplate (directory niche) reached $5K/month with ~200 customers from $159-199 pricing — confirming willingness to pay $100-500 one-time in adjacent kit categories",
+        "source": "https://templify.dev/ and https://www.indiehackers.com/post/how-i-turned-my-copycats-into-customers (Feb 2026)",
+        "strength": "moderate"
+      },
+      {
+        "signal": "Gartner (June 2025) cited: 40%+ of agentic AI projects will be canceled by 2027 due to escalating costs, unclear business value, and inadequate risk controls — creates demand for boilerplates that ship observability and cost controls pre-wired",
+        "source": "https://growthengineer.ai/blog/production-ai-agent-stack (May 2026, citing Gartner)",
+        "strength": "moderate"
+      },
+      {
+        "signal": "AGENTS.md standard adopted by 20,000+ repositories; VibeReady and Boilerplate-Stack both explicitly market 'AI-coding-native' codebases optimized for Claude Code/Cursor — new demand vector as AI coding tools go mainstream",
+        "source": "https://vibeready.sh/ and https://boilerplate-stack.com/en-US",
+        "strength": "moderate"
+      }
+    ],
+    "takeaways": [
+      "The market is real and paying: ShipFast's $1.26M verified Stripe revenue and a cluster of $99-499 products with measurable sales confirm developers buy boilerplates. The AI-specific sub-market ($99-499) is newer and growing while the generic SaaS boilerplate category (Marc Lou's words: 'AI has killed my boilerplate') is pressured by vibe-coding tools.",
+      "The stack is commoditized. Next.js + Supabase + pgvector + Stripe + Vercel AI SDK is the canonical 2026 stack. Every product in $99-299 offers essentially the same combination. The free Vercel chatbot template (20K+ stars) sets the floor — a paid product needs a credible answer to why it beats the free version.",
+      "Price clustering reveals the gaps: Low-end ($49-$129) = minimal differentiation, margin squeeze. Mid ($149-$299) = table stakes. High-end ($399-$1,499) = architecture calls + premium support. There is no product in the $300-500 range that ships eval + observability + guardrails as a coherent bundle — that combination is the unoccupied premium position.",
+      "Eval harness is the single highest-signal gap. Every 2026 guide from saasbymonday.io, starterpick.com, dev.to, and growthengineer.ai names it as the first missing piece. No paid product ships it. A kit that includes 20-case golden eval set, CI gate, and cost-per-successful-task dashboard would be the only product making this claim.",
+      "AI-coding-native codebases (AGENTS.md, .claude/ workspace, scoped rules) are becoming a differentiation axis. VibeReady ($149/$399), Boilerplate-Stack (10K+ users), Indie Kit (AppSumo), and Vibestrap ($49) all position on this. It is a real buyer preference as Claude Code and Cursor become the default dev environment — but it is not yet a price premium signal.",
+      "Python/FastAPI-first is a thin but viable niche. AgentBoiler (171 sales, $199), ShipAIFast, ChimerAI, and vstorm-template serve AI engineers who want a Python backend. The Next.js monoculture leaves this segment underserved — especially for teams building data pipelines or ML-adjacent products.",
+      "One-time pricing is universal and structurally limiting. Sellers compensate with lifetime update promises, Discord communities, and premium consulting tiers. The sustainable model is probably: low one-time price for code + recurring revenue from community/support/update subscription. No product has fully cracked this yet.",
+      "Competition is intensifying faster than demand. At least 15 paid products launched or updated in 2025-2026 targeting the same Next.js AI SaaS buyer. Commoditization at the chat+RAG+Stripe layer is complete. Winners will differentiate on production-readiness (observability, evals, cost controls) or niche stack (Python, Convex, media generation) rather than feature lists."
+    ]
+  },
+  {
+    "angle": "business-models",
+    "products": [
+      {
+        "name": "ShipFast",
+        "url": "https://shipfa.st/",
+        "what": "Next.js SaaS boilerplate with auth, Stripe, email, SEO, MongoDB/Supabase — the market-defining product that created this category",
+        "pricing": "$199 Starter / $249 All-in / $299 bundle with CodeFast course — all one-time",
+        "model": "one-time",
+        "traction": "$1,260,737 all-time Stripe-verified revenue (TrustMRR, June 2026); 8,338 users; peaked $141K MRR April 2024, now ~$20K/mo as market saturated; Product Hunt Maker of the Year 2023"
+      },
+      {
+        "name": "Supastarter",
+        "url": "https://supastarter.dev/",
+        "what": "Full-featured Next.js/Nuxt/TanStack Start SaaS boilerplate — multi-tenancy, RBAC, 5 payment providers, i18n, admin UI, background jobs, AI agent config files",
+        "pricing": "$349 Solo / $799 Startup (5 seats + arch consult) / $1,499 Agency (10 seats + white-label) — all one-time; 25% discount codes active",
+        "model": "one-time",
+        "traction": "Trusted by 'thousands of founders worldwide' per homepage; cited as best-in-class across multiple 2026 comparison guides; active discount codes signal ongoing sales volume"
+      },
+      {
+        "name": "MakerKit",
+        "url": "https://makerkit.dev/",
+        "what": "B2B Next.js/React Router SaaS boilerplate with multi-tenancy, per-seat billing, metered usage, MCP server, Figma UI kit; v1.1.0 (Feb 2026) added multi-line checkout, tiered pricing, optional add-ons",
+        "pricing": "$299 Pro (1 seat) / $599 Teams (5 seats) — one-time lifetime; bundles Figma kit and MCP server",
+        "model": "one-time",
+        "traction": "Claims 'best support in the SaaS starter kits market'; active changelog (v1.1.0 Feb 2026); referenced by starterpick.com guides as top-tier B2B pick"
+      },
+      {
+        "name": "Boilerplate-Stack",
+        "url": "https://boilerplate-stack.com/",
+        "what": "Next.js SaaS boilerplate, notable for capped update windows (12 months/2 years vs. lifetime) and tiered project-count licensing",
+        "pricing": "$174-$290 Solo (1 project, 12mo updates) / $750 Team (3 projects, 12mo) / $1,740 Agency (unlimited, 2yr); PayPal 4-installment option",
+        "model": "one-time",
+        "traction": "Claims 10,000+ users on homepage; PayPal installment option signals price-sensitivity awareness"
+      },
+      {
+        "name": "LaunchKit",
+        "url": "https://getlaunchkit.app/",
+        "what": "Next.js SaaS boilerplate explicitly built for Claude Code workflows — ships with CLAUDE.md, AGENTS.md, .cursorrules, and a bundled MCP server with 20+ AI tools",
+        "pricing": "$149 Solo / $299 Teams (5 seats + 1hr onboarding call) — one-time, lifetime updates",
+        "model": "one-time",
+        "traction": "454 TypeScript files, 16 modules; MCP server angle distinguishes it in the 2026 AI-first positioning wave; onboarding call at Teams tier adds perceived support value"
+      },
+      {
+        "name": "Bedrock",
+        "url": "https://bedrock.mxstbr.com/",
+        "what": "Opinionated Next.js + GraphQL boilerplate by Max Stoiber (styled-components, Spectrum/GitHub); per-project license model, unlimited license also available",
+        "pricing": "$396 per project (or $450 standard, currently discounted); unlimited license available on request; 14-day money-back guarantee",
+        "model": "one-time",
+        "traction": "Creator credibility (styled-components >$2B ecosystem, Spectrum acquired by GitHub) is primary moat; cited as best GraphQL-first option; no public revenue numbers"
+      },
+      {
+        "name": "Tailwind Plus (fka Tailwind UI)",
+        "url": "https://tailwindcss.com/plus",
+        "what": "500+ official UI components + templates from Tailwind CSS creators; React, Vue, HTML; Catalyst React kit included",
+        "pricing": "$299 individual / $979 team (up to 25) — one-time lifetime",
+        "model": "one-time",
+        "traction": "Peaked ~$30K/day revenue Jan-Mar 2023; as of Nov 2025 ~$6K/day (-80% from peak); docs traffic down ~40% since 2023; Tailwind Labs laid off 75%+ of team Jan 2026 — canonical cautionary tale for lifetime-only model"
+      },
+      {
+        "name": "StackAlchemist",
+        "url": "https://stackalchemist.app/",
+        "what": "AI SaaS code generator (not a boilerplate to clone — generates a custom codebase per prompt); buyer owns the output code forever with no lock-in",
+        "pricing": "$299 Simple / $599 Blueprint / $999 Boilerplate — per generation, one-time; ~97-98% gross margin per generation",
+        "model": "credits",
+        "traction": "Published detailed unit economics (LLM+infra cost $8-22/generation); founder Steve Ackley publicly advocates one-time-per-use over subscriptions; early but notable as usage-based code-gen alternative"
+      },
+      {
+        "name": "v0 by Vercel",
+        "url": "https://v0.app/",
+        "what": "AI UI + full-stack app builder natively integrated with Vercel/Next.js; subscription with monthly dollar credits; extra credits purchasable on demand",
+        "pricing": "$0 Free ($5 credits/mo, 7 msg/day) / $20 Premium ($20 credits/mo) / $30/user/mo Team / $100/user/mo Business + Enterprise custom",
+        "model": "subscription",
+        "traction": "Backed by Vercel's $250M+ funding; competitive with Lovable ($25/mo) and Bolt ($25/mo); Business plan training opt-out justifies 3x premium over Team; growing rapidly inside Vercel ecosystem"
+      },
+      {
+        "name": "Lovable",
+        "url": "https://lovable.dev/",
+        "what": "Full-stack AI app builder; credit-based with flat per-team pricing — charges per message/edit rather than per token seat",
+        "pricing": "$25/mo Pro (unlimited users, ~100 credits) / $50/mo Business (SSO, security center); credits top-up purchasable",
+        "model": "subscription",
+        "traction": "Beats v0 and Bolt on team pricing (5-person team: $25/mo vs $150/mo on v0 Team); one of fastest-growing AI builders in 2025-26 per multiple comparison guides"
+      },
+      {
+        "name": "GitHub Copilot (AI Credits model)",
+        "url": "https://github.blog/news-insights/company-news/github-copilot-is-moving-to-usage-based-billing/",
+        "what": "AI coding assistant; moved all plans to token-based GitHub AI Credits June 1 2026; code completions remain free/unlimited; chat/agents draw from credit pool",
+        "pricing": "Pro $10/mo ($10 credits incl.) / Pro+ $39/mo ($39 credits) / Business $19/user/mo ($19 credits) / Enterprise $39/user/mo ($39 credits); overage purchasable",
+        "model": "subscription",
+        "traction": "Largest AI coding tool by install base; transition to credits caused bill-shock reports (users going from $29/mo to $750/mo); Uber burned full year AI budget in 4 months, capped engineers at $1,500/mo"
+      },
+      {
+        "name": "Saas UI Pro",
+        "url": "https://saas-ui.dev/",
+        "what": "React component library (open-core): 40+ free OSS components (Chakra UI) + Pro tier with private npm packages, starter apps, billing hooks, kanban, onboarding flows",
+        "pricing": "Free (MIT core) + Pro tier via Lemon Squeezy (exact price not prominently listed; private npm registry distribution)",
+        "model": "open-core",
+        "traction": "3,800+ GitHub stars on public repo; private npm registry for Pro signals healthy volume; referenced as the component-library-as-product model for developer tools"
+      }
+    ],
+    "pricing_models": [
+      {
+        "model": "One-time purchase with lifetime updates",
+        "example": "ShipFast ($199-$249), Supastarter ($349-$1,499), MakerKit ($299-$599), LaunchKit ($149-$299)",
+        "notes": "The dominant model for boilerplates in 2026. Standard range is $99-$499 Solo, $500-$1,500 Agency. Almost universally bundled with private GitHub repo access + Discord community. 'Lifetime updates' is the stickiness mechanism replacing subscriptions. Risk: entire business resets to zero each month — zero recurring revenue floor (see Tailwind Plus collapse)."
+      },
+      {
+        "model": "Tiered seat licensing (Solo / Startup / Agency)",
+        "example": "Supastarter ($349 / $799 / $1,499), MakerKit ($299 / $599), Boilerplate-Stack ($174 / $750 / $1,740)",
+        "notes": "Every major boilerplate uses 3-tier structure. Solo = 1 dev, unlimited personal projects. Team/Startup = 3-5 devs. Agency = 5-10 devs + white-label rights. Agency tier is the highest-margin SKU — same codebase, 4-5x price. Architecture consulting calls (30-60 min) bundled into mid/top tiers justify the premium."
+      },
+      {
+        "model": "Per-project license",
+        "example": "Bedrock ($396 per project, unlimited license available; Boilerplate-Stack time-capped updates create implicit per-project pressure)",
+        "notes": "Minority approach. Allows repeat purchases from same customer as they build multiple products. Bedrock uses this explicitly. Tension with 'build unlimited projects' positioning of competitors. Better LTV but harder sell vs. unlimited-projects framing."
+      },
+      {
+        "model": "Credit / usage-based (AI generation)",
+        "example": "StackAlchemist ($299-$999/generation), v0 ($5-$30/mo in credits + top-up), GitHub Copilot AI Credits (1 credit = $0.01, allotted per plan), Lovable (~$0.25/credit)",
+        "notes": "The fastest-growing model in the adjacent AI-codegen space. June 2026 was the inflection point: GitHub Copilot, Cursor, Codex, and Windsurf all moved to usage/credit billing simultaneously. Core mechanic: flat subscription covers base access, credit pool covers compute-intensive agentic work. Risk: surprise bills destroyed user trust (Copilot users saw 25x bill spikes). Mitigation: hard spend caps and usage dashboards."
+      },
+      {
+        "model": "Open-core (free OSS core + paid enterprise features)",
+        "example": "Saas UI (MIT core + Pro npm packages), Velobase Harness (MIT self-hosted + paid Cloud), GitLab/Supabase/Sentry at scale",
+        "notes": "Dominant for developer infrastructure/library products, less common in pure template space. Free-to-paid conversion 2-10%. Key gating principle: individual devs get free core; enterprise features (SSO, RBAC, audit logs, compliance, managed hosting) are paid. Recurring revenue comes from cloud hosting or enterprise seats, not the code itself."
+      },
+      {
+        "model": "Marketplace / platform distribution",
+        "example": "CodeCanyon/Envato (50% cut from July 2026), Gumroad (10%), LemonSqueezy (~6%), AppSumo (lifetime deals, 30-70% cut)",
+        "notes": "CodeCanyon moving to flat 50% from July 2026 (was 62.5% for exclusive authors) triggered mass exodus warnings. Gumroad/LemonSqueezy are now preferred for direct-to-developer sales (seller keeps 90-94%). AppSumo lifetime deals drive awareness but compress margin — useful for launch momentum, not sustainable as primary channel. CodeCanyon still provides discovery for no-audience sellers but economics deteriorate."
+      },
+      {
+        "model": "Subscription on top of template (hybrid)",
+        "example": "Tailwind Plus considered but rejected this; proposed model: base one-time fee + optional $X/mo for updates/support/Discord",
+        "notes": "Theoretically appealing but rarely executed successfully in pure template space. Adam Wathan (Tailwind) explicitly rejected subscription: 'most would subscribe for a month, download everything, and churn.' Subscription works when the ongoing value is procedurally generated (AI credits, managed hosting) not static (code). Makerkit and Supastarter bundle consulting calls + Discord instead of monthly fees."
+      }
+    ],
+    "value_adds": [
+      "Lifetime updates via private GitHub repo — the #1 justification for premium pricing over free alternatives; buyers get PRs as the author keeps the stack current (Next.js, React, Tailwind versions); abandonment risk is the buyer's fear, maintenance track record is the seller's moat",
+      "Discord community access — bundled across all tiers; 5,000+ member Discord (ShipFast) is cited as a product in itself; private Discord channels at Agency tier create tiered community access",
+      "Architecture consulting calls — 30-min to 1-hour onboarding calls bundled into mid/top tiers (Supastarter $799 and $1,499; LaunchKit $299; ShipKit $199 All-in); turns a code product into a service touchpoint without ongoing support cost",
+      "AI agent config files (CLAUDE.md, .cursorrules, AGENTS.md) — a 2026 trend differentiator; LaunchKit, MakerKit, and Supastarter all bundle these; positions the boilerplate as 'AI coding assistant ready' — reduces onboarding friction for Claude Code / Cursor users",
+      "Bundled MCP server — LaunchKit ships with a 20+ tool MCP server; MakerKit includes its own MCP server; allows the boilerplate to be queried by AI tools natively; sticky because it becomes embedded in the buyer's workflow",
+      "Private npm registry / package distribution — Saas UI Pro model; buyers install premium components via a credentialed npm registry token; creates continuous pull (npm install stays tied to the license); harder to pirate than a zip download",
+      "Component libraries and UI kits — MakerKit bundles a Figma UI kit; distinguishes from pure-code competitors; appeals to non-designer founders who need design assets alongside code",
+      "Upgrade credits and cross-tier migration — Boilerlykit offers 'upgrade credits on request' for buyers who want to move between template tiers; creates a second-purchase trigger from existing customers",
+      "Revenue leaderboard / community credibility signals — ShipFast's Stripe-verified startup leaderboard (TrustMRR) is a product feature; buyers build in public, their success validates the boilerplate; circular flywheel",
+      "Enterprise add-on SKUs — Already ($199/$399 base + $299 Enterprise SCIM add-on) separates the enterprise compliance layer as an optional upsell; targets indie → startup → enterprise upgrade path",
+      "Managed hosting / cloud tier — Velobase offers MIT self-hosted free + paid Cloud (provisioned Postgres, Redis, storage, git-push deploy); open-core boilerplate with hosted services layer is the cleanest recurring revenue model found"
+    ],
+    "gaps": [
+      "No dominant subscription model in the boilerplate space — the Tailwind Plus collapse (revenue -80%) has paradoxically validated one-time pricing while simultaneously proving its structural weakness; the market has no strong example of a template business with durable MRR, creating an opening for the first product to crack a subscription model that survives churn (perhaps via continuous AI-generated updates or hosted services)",
+      "Credit-metered developer tools with hard spend caps are an underserved niche — GitHub Copilot's June 2026 billing shock (users paying 25x more than expected) signals massive demand for usage-capped, predictable-bill alternatives; no boilerplate creator has launched a 'generate your SaaS, pay per component' metered model at the template level",
+      "No aggregator marketplace for boilerplates — BoilerplateVault, StarterPick, and StarterIndex are directories (free listings) not transactional platforms; CodeCanyon's July 2026 fee hike to 50% is pushing sellers off-platform; an indie-owned marketplace with 15-20% cut and curated quality bar would fill the distribution gap",
+      "AI-first boilerplates are surface-level — most products add CLAUDE.md and call themselves 'AI agent ready'; none yet ship a boilerplate that self-updates via agentic workflows (e.g., automatically opening PRs when a dependency goes EOL or a security CVE drops), which would be a defensible subscription trigger",
+      "Enterprise compliance layer (SOC 2, HIPAA) remains unaddressed at indie price points — Bedrock (~$1,500) is the closest, but no product ships a SOC 2 evidence-generation starter alongside the code; this feature set justifies $500-$1,500/year subscriptions in enterprise sales cycles",
+      "Non-JavaScript ecosystems are thin — Python/Django (SaaS Pegasus at $249 is the only notable player), Go, and Rust SaaS boilerplates are almost absent despite growing AI infra use cases; the Next.js space is saturating while adjacent stacks are empty",
+      "Open-core template for AI SaaS apps — free tier ships the skeleton; paid tier ships AI credits, vector DB setup, RAG pipelines, and managed embedding infrastructure; Velobase Harness (519 GitHub stars, MIT) is the closest but has no hosted-tier traction yet",
+      "Per-module or 'add-on' commerce for boilerplates — all current products are monolithic bundles; a marketplace where developers buy auth module ($49), billing module ($79), multi-tenancy ($99) separately would lower the entry barrier and increase LTV through incremental purchases"
+    ],
+    "demand_signals": [
+      {
+        "signal": "ShipFast generated $1.26M+ in Stripe-verified one-time purchases and reached $141K MRR at peak (April 2024) — one solo founder, no employees, 90%+ margin",
+        "source": "https://trustmrr.com/startup/shipfast and https://www.ideaindex.so/case-studies/shipfast",
+        "strength": "strong"
+      },
+      {
+        "signal": "GitHub Copilot moved every plan to usage-based AI Credits June 1, 2026; Uber exhausted a full year's AI coding budget in 4 months and capped engineers at $1,500/mo; signals that developer tool spend is real and large but pricing models are still unsettled",
+        "source": "https://usagebox.com/articles/tokenpocalypse-ai-coding-usage-billing-2026 and https://github.blog/news-insights/company-news/github-copilot-is-moving-to-usage-based-billing/",
+        "strength": "strong"
+      },
+      {
+        "signal": "Boilerplate-Stack claims 10,000+ users; PicoSaaS claims 1,200+ developers and '$2.3M+ revenue generated' (from products built with the kit); multiple products launched in 2025-26 targeting the same audience signal demand is validated but space is crowding",
+        "source": "https://boilerplate-stack.com/en-US/pricing and https://picosaas.io/",
+        "strength": "moderate"
+      },
+      {
+        "signal": "Lovable, Bolt, and v0 all sustain $20-30/month subscriptions with free tiers capped by credits; AI app-builder market has multiple players at meaningful scale — signals developer willingness to pay monthly for code-generation tooling (adjacent demand for templates)",
+        "source": "https://www.openthorn.app/blog/lovable-vs-bolt-vs-v0-pricing",
+        "strength": "strong"
+      },
+      {
+        "signal": "Tailwind Plus revenue -80% from $30K/day peak (Jan 2023) to ~$6K/day (Nov 2025) — acquisition engine (docs traffic) broken by AI; validates that component/template products whose discovery funnel routes through documentation are structurally at risk; demand exists but channel matters enormously",
+        "source": "https://danjcleary.substack.com/p/ai-is-both-propelling-and-undermining",
+        "strength": "moderate"
+      },
+      {
+        "signal": "Envato/CodeCanyon lifetime marketplace earnings >$1.3B; Avada WordPress theme sold 1M+ copies; but marketplace traffic declining and July 2026 flat 50% fee change is pushing experienced sellers to direct sales — signals large latent demand for direct-to-developer templates but platform-dependent discovery is weakening",
+        "source": "https://www.therepository.email/envato-ends-exclusive-author-model-moves-all-marketplace-sellers-to-flat-50-revenue-share",
+        "strength": "moderate"
+      },
+      {
+        "signal": "ShipFast now ~$20K/mo (down from $141K peak) as Next.js boilerplate market saturated — direct evidence of commoditization pressure; new entrants face a crowded field where differentiation on features alone is insufficient",
+        "source": "https://startupfounderstories.com/stories/marc-lou-shipfast-250k-5-months",
+        "strength": "strong"
+      },
+      {
+        "signal": "Top CodeCanyon sellers in code category earn $2,000-$8,000/month; median active sellers $300-$900/month — confirms meaningful but not life-changing passive income is achievable from code products on platforms",
+        "source": "https://jakeinsight.com/side-income/2026-03-08-sell-code-snippets-and-templates-on-codecanyon/",
+        "strength": "moderate"
+      }
+    ],
+    "takeaways": [
+      "One-time purchase with lifetime updates is the dominant and buyer-preferred model for boilerplates in 2026 — the market has collectively rejected subscriptions for static code products because buyers correctly predict they would subscribe-and-churn; every major product (ShipFast, Supastarter, MakerKit, LaunchKit, Bedrock, Tailwind Plus) uses this model",
+      "The Tailwind Plus collapse (-80% revenue, 75% layoffs Jan 2026) is the canonical warning: lifetime pricing has no recurring revenue floor, so when the acquisition channel (docs traffic, social, SEO) slows, revenue immediately approaches zero; any boilerplate business needs either a recurring component or a high-volume acquisition machine",
+      "ShipFast proves the model works at scale ($1.26M+, solo founder) but also shows saturation risk: revenue peaked at $141K MRR in April 2024, now ~$20K/mo as 50+ Next.js boilerplates launched in 2024-25; differentiation on features alone is insufficient in a crowded market",
+      "Tiered seat licensing (Solo/Team/Agency at ~1x/2-3x/4-5x price) is the standard packaging structure; the Agency tier with white-label rights and consulting calls is the highest-margin SKU and should be priced aggressively — same codebase, 4-5x revenue",
+      "The most defensible recurring revenue mechanism found is managed hosting / cloud tier on an open-core boilerplate (Velobase model: MIT self-hosted free, paid Cloud with Postgres/Redis/deploy provisioned) — this is underexecuted in the market and represents the clearest path to MRR from a code product without subscription friction",
+      "Credit/usage-based pricing is exploding in the adjacent AI coding tool market (Copilot, Cursor, v0, Lovable, Bolt all moved to credits in 2025-26) but has not yet crossed into traditional boilerplates; the first boilerplate to add an AI-credits layer for ongoing code generation against its own templates (e.g., generate a new module, pay per generation) would pioneer a genuinely new model",
+      "The value-add arms race has moved to AI integration: CLAUDE.md, .cursorrules, AGENTS.md, and bundled MCP servers are now table-stakes differentiators (LaunchKit, MakerKit, Supastarter all ship these); the next differentiation layer will be boilerplates that are agentic — self-updating via automated PRs when dependencies go EOL or CVEs drop, which justifies a subscription",
+      "Marketplace distribution is weakening: CodeCanyon's July 2026 flat 50% fee change is economically terminal for established sellers (top authors going from 30% fee to 50%, a 29% earnings cut); Gumroad (10%) and LemonSqueezy (~6%) with self-owned traffic is the better economics; AppSumo lifetime deals drive launch awareness but compress margins and attract deal-seekers not loyalists",
+      "The boilerplate buyer is time-poor, not cost-sensitive — starterpick.com analysis shows a $299 boilerplate with 15+ hours of time savings 'pays for itself at $20/hr'; premium pricing ($349-$1,499) is viable when paired with credibility signals: creator reputation (Bedrock/Max Stoiber), live demo URLs, active changelogs, and positive Discord reviews convert at 2-3x vs. screenshots-only products",
+      "Open-core (free MIT/AGPL core + paid enterprise features) is the proven model for developer libraries and infrastructure (GitLab, Supabase, Sentry) with 2-10% free-to-paid conversion; it is underutilized in the template space but Saas UI Pro's private npm registry approach is a promising template-specific adaptation — license gates ongoing npm installs rather than a static zip download, creating natural renewal pressure"
+    ]
+  },
+  {
+    "angle": "demand-pain",
+    "products": [
+      {
+        "name": "ShipFast",
+        "url": "https://shipfa.st",
+        "what": "Next.js SaaS boilerplate by Marc Lou with auth, Stripe, email, landing page. Market leader by brand recognition and community size.",
+        "pricing": "$199 Starter / $249 All-in / $299 Bundle (one-time, lifetime updates)",
+        "model": "one-time",
+        "traction": "~20K+ customers as of 2026, 8,100+ active users, 5,000+ Discord members, over $1M lifetime revenue by end of 2024. Most cited boilerplate on Reddit r/SaaS and r/nextjs."
+      },
+      {
+        "name": "Makerkit",
+        "url": "https://makerkit.dev",
+        "what": "Next.js + SvelteKit + Remix B2B SaaS starter with plugin architecture, multi-tenancy, RBAC, i18n, and the most advanced billing abstraction (per-seat, metered, multi-line-item). Actively maintained by a small team.",
+        "pricing": "$149–$599 annual subscription depending on tier",
+        "model": "subscription",
+        "traction": "Community-sized Discord with same-day support; MakerKit 1.1.0 (Feb 2026) launched multi-line-item + per-seat Stripe billing described as 'most advanced billing in any SaaS boilerplate'. Listed across every major comparison site as the quality benchmark."
+      },
+      {
+        "name": "SaaSRock",
+        "url": "https://saasrock.com",
+        "what": "Remix-based B2B SaaS boilerplate with 40+ modules: CRM, knowledge base, email campaigns, workflow automation, custom entity builder. Most feature-dense product in the category.",
+        "pricing": "$99–$699 one-time by license tier",
+        "model": "one-time",
+        "traction": "$10K/mo sustained for 3.5 years per IndieHackers interview (Sept 2025). 1,500+ users. All new freelance client work by founder Alexandro Martinez built on SaaSRock."
+      },
+      {
+        "name": "Supastarter",
+        "url": "https://supastarter.dev",
+        "what": "Supabase-native multi-framework (Next.js + Nuxt + SvelteKit) starter with multi-tenancy, i18n including RTL, 5 payment providers (Stripe, Lemon Squeezy, Polar, Creem, Dodo), per-seat billing.",
+        "pricing": "$149–$349 one-time",
+        "model": "one-time",
+        "traction": "600+ customers. Ranked as best option for B2B multi-tenant SaaS across StarterPick, starterpick.com, launchsaas.dev, and multiple comparison articles. 'Best value if multi-tenancy is a day-1 requirement' across community discussions."
+      },
+      {
+        "name": "Bedrock",
+        "url": "https://bedrock.mxstbr.com",
+        "what": "Enterprise-grade Next.js SaaS boilerplate with WorkOS SSO/SCIM, audit logs, SOC 2 patterns, Docker + Kubernetes manifests, granular action-level RBAC. Only product targeting regulated-industry compliance.",
+        "pricing": "$395 Lite / $995 Enterprise (one-time)",
+        "model": "one-time",
+        "traction": "Serves the 10% enterprise segment of the boilerplate market. No public revenue figures but cited as the only option when K8s support, SAML/SCIM, or SOC 2 patterns are required."
+      },
+      {
+        "name": "T3 Stack / create-t3-app",
+        "url": "https://create.t3.gg",
+        "what": "Free, opinionated TypeScript-first Next.js stack with tRPC, Prisma, NextAuth, and Tailwind. No billing, no multi-tenancy, no batteries — brings architectural discipline only.",
+        "pricing": "Free (open source)",
+        "model": "open-core",
+        "traction": "26K GitHub stars, dominant in Reddit communities as the 'build it yourself' baseline. Community ecosystem of starter variants and guides."
+      },
+      {
+        "name": "Epic Stack",
+        "url": "https://www.epicweb.dev/epic-stack",
+        "what": "Kent C. Dodds' Remix-based production-practices stack with SQLite + Drizzle, edge-ready, strong test suite culture. Free, opinionated, focused on developer craft.",
+        "pricing": "Free (open source)",
+        "model": "open-core",
+        "traction": "13K GitHub stars. Frequently cited in HN discussions as the quality reference for free options. Growing Drizzle adoption pattern influenced the broader market (+20% Drizzle share in new boilerplates by 2026)."
+      },
+      {
+        "name": "ZeroDrag",
+        "url": "https://zerodrag.cloud",
+        "what": "Next.js indie hacker boilerplate with PostgreSQL + Prisma, Razorpay (India/MENA), AI infrastructure (OpenAI/Claude/Gemini with rate limiting and token tracking), and Sentry — specifically plugging ShipFast gaps.",
+        "pricing": "$119 Starter / $169 Pro (one-time)",
+        "model": "one-time",
+        "traction": "Published March 2026 targeting ShipFast defectors. Listed on dupple.com and comparison sites as the Razorpay-enabled alternative. No public customer count."
+      },
+      {
+        "name": "PropelKit",
+        "url": "https://propelkit.dev",
+        "what": "Next.js 15 boilerplate with multi-tenancy, credits system for usage-based AI billing, auto-invoicing, built-in AI project manager, Razorpay + DodoPayments, at half ShipFast's price.",
+        "pricing": "$69–$109 one-time",
+        "model": "one-time",
+        "traction": "Published Feb 2026. Targeting B2B founders building AI SaaS. 'Credits system' and 'auto invoicing' positioned as the gaps ShipFast forces you to build yourself."
+      },
+      {
+        "name": "SaaSCity AI Boilerplate",
+        "url": "https://saascity.io",
+        "what": "AI-first Next.js SaaS starter with credit system using PostgreSQL atomic deductions (no race conditions), multi-provider AI (OpenAI, Anthropic, Fal.ai, Replicate), content moderation pipeline, streaming responses, and rate limiting per user and endpoint.",
+        "pricing": "$79.99 one-time",
+        "model": "one-time",
+        "traction": "April 2026 update added Seedance 2.0 video generation. Self-reported as the only boilerplate solving atomic credit deduction race conditions. Listed on starterpick.com as the AI-first benchmark."
+      },
+      {
+        "name": "Launch (launchtoday.dev)",
+        "url": "https://launchtoday.dev",
+        "what": "Expo React Native + backend SaaS boilerplate covering iOS, Android, and web parity. Auth, RevenueCat (in-app purchases), Stripe web billing, push notifications, deep linking. Purpose-built for mobile SaaS founders.",
+        "pricing": "$149–$199 one-time",
+        "model": "one-time",
+        "traction": "Top-ranked across StarterPick mobile comparison (Mar 2026). Filling a gap where most web boilerplate makers ignore mobile. No public customer count but consistently cited as best-in-class in React Native SaaS space."
+      },
+      {
+        "name": "Nuxt UI Pro SaaS template",
+        "url": "https://ui.nuxt.com/pro/templates/saas",
+        "what": "Official Nuxt-backed SaaS template with premium components, multi-tenant patterns, auth, and Stripe. The only officially-backed template in the Vue/Nuxt ecosystem.",
+        "pricing": "$249/year (subscription)",
+        "model": "subscription",
+        "traction": "Official Nuxt affiliation provides strong trust signal. Only serious option for Vue/Nuxt developers. Growing Nuxt ecosystem (15% of boilerplate market non-Next.js share)."
+      },
+      {
+        "name": "LaunchSaaS",
+        "url": "https://launchsaas.dev",
+        "what": "Next.js SaaS boilerplate extracted from real production apps serving 13,000+ users. Positioning: 2,335 tests included, making it AI-coding-assistant friendly (AI tools write better with constraints).",
+        "pricing": "$99 one-time",
+        "model": "one-time",
+        "traction": "Self-reported 13,000+ users served by upstream production code the boilerplate was extracted from. Test count (2,335) used as differentiator vs zero-test competitors."
+      }
+    ],
+    "pricing_models": [
+      {
+        "model": "One-time lifetime purchase",
+        "example": "ShipFast ($199–$299), Supastarter ($149–$349), SaaSRock ($99–$699), ZeroDrag ($119–$169), LaunchSaaS ($99)",
+        "notes": "Dominant model at 55%+ of paid market. Developer psychology: under $300 is impulse-buy territory requiring no budget approval. One-time purchase removes recurring-cost objection. Lifetime updates + Discord community access are standard add-ons. The '$299 ceiling' appears stable through 2026 per StarterPick market map analysis."
+      },
+      {
+        "model": "Annual subscription",
+        "example": "Makerkit ($149–$599/yr), Nuxt UI Pro ($249/yr), some Bedrock tiers",
+        "notes": "Used by highest-maintenance, most-frequently-updated products. Justified by plugin ecosystem, regular feature additions, and compliance updates. Converts buyers who want guaranteed maintenance. Makerkit's argument: 'one-time pricing is difficult to sustain active development on.' Community split — solo founders resist recurring cost; teams building long-term products accept it."
+      },
+      {
+        "model": "Freemium / open-core",
+        "example": "Makerkit Lite (free OSS) → paid tiers; T3 Stack (free) → community add-ons; Epic Stack (free) → EpicWeb paid courses",
+        "notes": "Free tier builds trust, drives discovery, and converts to paid at the enterprise/team tier. Makerkit Lite explicitly drives Makerkit Pro sales. T3 Stack community creates organic demand for paid T3-compatible starters. Stars and GitHub presence are the primary demand signal in this segment."
+      },
+      {
+        "model": "Tiered one-time (Starter / Pro / Business)",
+        "example": "ZeroDrag ($119/$169), PropelKit ($69/$109), ShipFast ($199/$249/$299), Bedrock ($395/$995)",
+        "notes": "Tier gates are typically: AI features, multi-tenancy, enterprise compliance, or license count (personal vs team vs unlimited projects). The first tier covers the impulse-buy threshold; upper tiers capture agencies and studios building for clients."
+      }
+    ],
+    "value_adds": [
+      "Lifetime updates (most common stickiness mechanism — buyers expect the boilerplate to track breaking changes in Next.js, Stripe webhook API, Supabase SDK across years)",
+      "Discord community access (ShipFast's primary moat: 5,000+ members means 'someone has already solved your bug'; sold as part of All-in tier)",
+      "Plugin/extension marketplace (Makerkit's architectural differentiator — buyers add official plugins without forking core; creates ecosystem lock-in and repeat upgrade revenue)",
+      "Video course bundles (ShipFast Bundle includes 12-hr CodeFast course; converts boilerplate buyers into course students)",
+      "Priority / direct founder support (premium tiers across most paid boilerplates; agencies pay for this)",
+      "AI coding assistant optimization (2026 differentiator: LaunchSaaS sells 2,335 tests as 'AI writes better code against test constraints'; Eden Stack ships 40+ Claude skills; kostra.io community confirms 'good tests make AI-assisted dev measurably faster')",
+      "Guided AI setup coaching (emerging: IndiHackers post with 97 comments describes replacing 'wizard' with Claude/Cursor prompt coach that walks provider setup step-by-step — pain so real someone built a product around it)",
+      "White-label rights (agencies buying once, reselling to many clients — common in SaaSRock, Bedrock, and Quartz Laravel boilerplate positioning)",
+      "Multi-project license (ShipFast explicitly licenses unlimited reuse — agency-friendly; major purchase argument for studios)",
+      "Regular compliance updates (GDPR deletion, audit log patterns, Stripe webhook API changes — the hidden recurring value that justifies subscription pricing for Makerkit and Nuxt UI Pro)"
+    ],
+    "gaps": [
+      "AI-native infrastructure done right: every non-AI boilerplate leaves token metering, credit deduction (with PostgreSQL atomics to prevent race conditions), per-tenant spend caps, multi-provider fallback, and content moderation as DIY work. SaaSCity and AIStarterKit exist but are small; the gap between 'basic OpenAI streaming' and 'production-grade AI billing + guardrails' is still wide and widely complained about.",
+      "Mobile + web unified SaaS (Expo React Native + RevenueCat + Stripe web path + admin dashboard): web-focused boilerplates ignore this entirely. Most web devs launch mobile and discover setup takes a month. The market has Launch and Ship React Native but comparison sites confirm thin competition and buyers routinely searching.",
+      "Regional payment gateways for non-US/EU markets: Razorpay (India/UPI), MENA (tabby, tamara, PayTabs), GCC, SE-Asia. ShipFast and most mid-market starters are Stripe-only. ZeroDrag and Quartz (13 gateways, Laravel) exist but are niche. IndieHackers post about MENA builder ('Arab Enterprise Kit') building their own because nothing supports RTL+MENA payments.",
+      "Guided AI-driven setup: the 'coach not wizard' problem. Every boilerplate claims 10-minute launch; actual setup is 2-4 hours per IndieHackers post with 97 comments. No product has solved the step-by-step provider-dashboard navigation problem at scale. The IH builder was blocked from monetizing by payment processor rejections.",
+      "GDPR/privacy-first architecture: no boilerplate ships with a cookie consent manager; most lack full cascade-delete for third-party integrations (analytics, CRM, email). Supastarter comes closest with EU Supabase regions and RLS isolation. Demand from European founders is consistent across discussions.",
+      "Test-first / AI-coding-friendly baseline: LaunchSaaS's positioning around 2,335 tests reveals the gap — most competitors ship zero tests. As Cursor/Claude Code usage grows, 'AI writes better with tests' becomes a real purchasing criterion that very few boilerplates address.",
+      "Metered / usage-based billing infrastructure: only Makerkit (v1.1.0, Feb 2026) and SaaSRock handle per-seat and metered Stripe billing properly. The majority of the market leaves founders building this from scratch when they hit 'charge per API call' requirements.",
+      "Enterprise compliance tier under $500: Bedrock ($395–$995) is the only product with audit logs, SOC 2 patterns, and K8s manifests. Demand signal from the startup-post-prototype-pre-Series-A segment (Sovra open-source product explicitly targets this) suggests an unserved tier between $299 and $995."
+    ],
+    "demand_signals": [
+      {
+        "signal": "IndieHackers post 'every 10-minute launch claim I've seen was a lie' received 97 comments (April 2026) — actual setup time documented as 2.5+ hours per project across auth, billing, DB, webhooks. Builder responded by creating an AI-coach prompt product.",
+        "source": "https://www.indiehackers.com/post/i-built-a-saas-boilerplate-where-the-ai-does-the-setup-every-10-minute-launch-claim-i-ve-seen-was-a-lie-so-i-tried-a-different-approach-ffa66f4f8f (April 21, 2026)",
+        "strength": "strong"
+      },
+      {
+        "signal": "ShipFast ~20K+ customers at $199–$299 one-time = estimated $4M–$6M lifetime gross revenue from a single indie dev product, proving the price point converts at scale.",
+        "source": "https://dupple.com/tools/shipfast (reviewed May 2026) and https://starterpick.com/guides/state-of-saas-boilerplates-2026-market-map (March 8, 2026)",
+        "strength": "strong"
+      },
+      {
+        "signal": "SaaSRock sustaining $10K/mo for 3.5 years on a React Router B2B boilerplate with 1,500 users — proves multi-tenant B2B boilerplate demand at the $99–$299 price band is real and durable.",
+        "source": "https://www.indiehackers.com/post/tech/building-a-10k-mo-b2b-saas-boilerplate-for-multi-tenant-apps-8QiT7aO4qYfwwbL5fvQJ (IndieHackers, Sept 2025)",
+        "strength": "strong"
+      },
+      {
+        "signal": "StarterPick tracking 80+ active boilerplates with 500K+ combined developer reach in 2026. 'AI-enabled starters' named fastest-growing segment. Average mid-market price holding at $199.",
+        "source": "https://starterpick.com/guides/state-of-saas-boilerplates-2026-market-map (March 8, 2026)",
+        "strength": "strong"
+      },
+      {
+        "signal": "Multiple new entrants in Q1–Q2 2026 (ZeroDrag, PropelKit, LaunchSaaS, SaaSCity, Eden Stack, AIStarterKit) all explicitly positioning against ShipFast gaps — signals that perceived unmet demand is attracting competition, but also that no single product has captured the gap cleanly.",
+        "source": "https://zerodrag.cloud/blog/shipfast-alternative-2026 (Mar 7, 2026), https://www.propelkit.dev/blog/best-shipfast-alternative-2026 (Feb 12, 2026), https://saascity.io/blog/open-source-ai-saas-boilerplates-compared-2026 (Feb 14, 2026)",
+        "strength": "moderate"
+      },
+      {
+        "signal": "Kostra.io (June 2026) documents Reddit r/nextjs and r/SaaS community consensus: 'stars lie, commits don't' and 'production-ready means almost nothing — none tick all 5 boxes.' Signals latent demand for a boilerplate that is honest about maintenance signal and genuinely production-ready.",
+        "source": "https://kostra.io/blog/developer-reviews-nextjs-saas-starters (June 19, 2026)",
+        "strength": "moderate"
+      },
+      {
+        "signal": "IndieHackers post 'I got tired of rewriting auth & multi-tenancy' (April 2026) building B2B boilerplate for MENA market with RTL/LTR + Spring Boot + Stripe. Arab Enterprise Kit targeting a gap ShipFast and all Next.js boilerplates ignore completely.",
+        "source": "https://www.indiehackers.com/post/i-got-tired-of-rewriting-auth-multi-tenancy-so-i-spent-months-building-the-ultimate-b2b-saas-boilerplate-d0129213ac (April 3, 2026)",
+        "strength": "moderate"
+      },
+      {
+        "signal": "Dev.to reviewer spent $300 testing ShipFast, Supastarter, and LaunchKit in 2026; rated ShipFast 'expensive for what you get in 2026' and specifically criticized Pages Router age, zero AI features, and no native credit system. Signals active developer churn from ShipFast.",
+        "source": "https://dev.to/huangyongshan46a11y/i-spent-300-testing-saas-boilerplates-so-you-dont-have-to-2026-verdict-m9k (March 24, 2026)",
+        "strength": "moderate"
+      },
+      {
+        "signal": "Mobile SaaS boilerplate comparison (Shipnative, StarterPick, Silpho) documents that most open-source React Native starters leave paywall, RevenueCat, analytics, and web parity as DIY. Multiple paid products ($149–$299) entering this gap in 2025–2026 with limited competition.",
+        "source": "https://www.shipnative.app/resources/research/best-react-native-saas-boilerplate-2026 (May 4, 2026), https://starterpick.com/guides/best-expo-react-native-saas-boilerplates-2026 (Mar 15, 2026)",
+        "strength": "moderate"
+      },
+      {
+        "signal": "HN thread on Next.js frustration (Sept 2025, 100+ comments) includes complaints about Pocketbase as better alternative, infinite abstraction layers, and breaking changes — signals developer fatigue with the Next.js monoculture that dominates all boilerplates, creating a latent demand for non-Next.js starters.",
+        "source": "https://news.ycombinator.com/item?id=45099922 (September 2025)",
+        "strength": "weak"
+      }
+    ],
+    "takeaways": [
+      "The market is real and durable: ShipFast's $4M–$6M estimated lifetime gross revenue and SaaSRock's $10K/mo for 3.5 years confirm that developers buy boilerplates at $99–$299 at scale, repeatedly, across years — this is not a fad.",
+      "ShipFast's dominance is brand and community, not features. Every technical reviewer in 2025–2026 notes that newer alternatives (ZeroDrag, PropelKit, SaaSCity) provide more features at lower prices. The gap between ShipFast's community moat and everyone else's technical lead is the core market tension.",
+      "The $100–$299 tier is the densest competitive zone with 40% of active products. Differentiation is increasingly difficult at this price. Products winning here do so on a specific axis: AI-native (SaaSCity, AIStarterKit), regional payments (ZeroDrag/Razorpay), mobile (Launch), or B2B multi-tenancy (Supastarter, SaaSRock).",
+      "AI features are table stakes in 2026, but 'bolted-on' AI (a streaming chat component) is not the same as 'AI-native' (atomic credit deduction, per-tenant spend caps, multi-provider fallback, content moderation). The quality gap between these two is the largest specific unmet need.",
+      "The setup UX problem has not been solved. '10-minute launch' is universally called out as false advertising. The real number is 2–4 hours. The product that solves setup-as-coaching rather than setup-as-wizard has genuine demand signal (97-comment IH thread) but no clear winner yet.",
+      "Mobile SaaS (Expo + RevenueCat + web parity) is a structurally underserved niche. Web boilerplate makers ignore it; mobile boilerplate makers rarely handle the web side. Founders who want both platforms pay a large time tax or buy two separate products.",
+      "Subscription pricing is the emerging correct model for actively-maintained boilerplates. Makerkit's argument that one-time pricing doesn't sustain active development is being validated by frequent major releases (v1.1.0 per-seat billing, plugin ecosystem). Expect more boilerplates to move to $150–$300/yr annual subscriptions.",
+      "Skeptical note on demand depth: the market is crowded. 80+ active boilerplates means that many potential products are either redundant or serving micro-niches. The path to traction requires either a strong community moat (ShipFast model) or a specific technical differentiation that is genuinely difficult to replicate (Makerkit billing, SaaSRock entity system, Bedrock compliance). 'Another ShipFast but with PostgreSQL' is insufficient differentiation in 2026."
+    ]
+  }
+]

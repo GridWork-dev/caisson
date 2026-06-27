@@ -1,0 +1,385 @@
+[
+  {
+    "dimension": "consistency",
+    "findings": [
+      {
+        "severity": "high",
+        "location": "options.md §Recommendation vs 00-product-spec.md §0 and 01-architecture.md header",
+        "issue": "options.md explicitly recommends 'Option B now, architected so Option C's CLI/registry drops on top in v1.x' — but the locked spec set (00-product-spec.md §0 table row 'Architecture', 01-architecture.md header) locks Option C as the chosen architecture. No decision log entry (D1–D15) records the Gate 3 choice of C over B. D13 records the scope as 'monorepo (shared base + editions as packages)' — consistent with B — but the spec authoring session jumped to C without a recorded decision. Readers of options.md see a B recommendation; readers of the specs see C locked.",
+        "fix": "Add a decisions-log entry (D16 or amend D13) explicitly recording 'Gate 3 picked Option C' and the rationale (e.g. generator is a v1 priority, not v1.x). Alternatively annotate the options.md recommendation to note it was superseded."
+      },
+      {
+        "severity": "high",
+        "location": "options.md §Recommendation vs plan.md P5 and 00-product-spec.md §5",
+        "issue": "options.md says 'C is recommended as the v1.x distribution layer once B is solid,' explicitly deferring the generator+registry to v1.x. But plan.md P5 ('Generator + registry (Option C)') is a named v1 phase in the build sequence, and 00-product-spec.md §5 lists 'P5 — Generator + registry (Option C)' in the v1 roadmap with no 'v1.x' label. The v1 vs v1.x boundary disagrees across these three documents.",
+        "fix": "The plan should either label P5 as 'v1.x' (if the intent is to defer) or options.md's recommendation footnote should be struck through with a note that the operator chose to include it in v1. One of the two sources is wrong about the timeline."
+      },
+      {
+        "severity": "high",
+        "location": "01-architecture.md §3 invariant 6 vs ADR-0008",
+        "issue": "01-architecture.md invariant 6 says the buyer MCP server is 'read-only over the buyer's codebase conventions/tools.' ADR-0008 says 'Read-mostly over codebase conventions; the one write-capable surface (drive a generation) re-checks credits (ADR-0007).' These directly contradict: the architecture invariant calls it read-only; the ADR describes a write surface (driving create-stack generation). 02-core-loop-ux.md §4 and ADR-0004 confirm the MCP server can trigger generation (a write action), so ADR-0008 is correct and the architecture invariant is wrong.",
+        "fix": "Change 01-architecture.md invariant 6 from 'read-only' to 'read-mostly; one write surface (drive create-stack generation), credit-gated per ADR-0007' to match ADR-0008."
+      },
+      {
+        "severity": "med",
+        "location": "market-research.md §4 business-model table vs 00-product-spec.md §4 and ADR-0012",
+        "issue": "The compliance edition one-time price low end is $799 in market-research.md ('compliance $799–1,499') but $899 in both 00-product-spec.md ('Compliance $899–1,499') and ADR-0012 ('Compliance $899–1,499'). A $100 discrepancy at the low end across three documents with no recorded reason for the change.",
+        "fix": "Align market-research.md §4 to $899–1,499 (matching the two locked documents), or add a decisions-log note explaining why the range floor moved from $799 to $899."
+      },
+      {
+        "severity": "med",
+        "location": "market-research.md §2 opportunity #4 vs 00-product-spec.md §0 and decisions-log.md D13",
+        "issue": "market-research.md §2 under opportunity #4 (Agentic-Dev) concludes: 'Defer to a later edition — it's the governance kernel under the base framework, more than a standalone SKU.' However, D13 and 00-product-spec.md §0 explicitly include Agentic-Dev as one of the four v1 editions. market-research.md is not annotated to reflect that this recommendation was overridden. A reader treating market-research.md as current guidance will conclude Agentic-Dev should be deferred.",
+        "fix": "Add a note at the top of market-research.md §2 opportunity #4 (or in its objection paragraph) stating 'Note: subsequent operator decision D13 overrides this recommendation — Agentic-Dev is included in v1 as a full edition.'"
+      },
+      {
+        "severity": "med",
+        "location": "options.md §The four editions (Agentic-Dev row) vs 00-product-spec.md §4, 01-architecture.md §1, plan.md T4.3",
+        "issue": "options.md lists 'self-improvement loop' as a component of the Agentic-Dev edition ('typed agent/skill/rule schema + lifecycle state machine + local hybrid memory + hooks dispatcher + self-improvement loop'). The same component list in 00-product-spec.md §4, plan.md T4.3, and 01-architecture.md §1 all omit 'self-improvement loop' without explanation. Either the feature was dropped post-options.md or it was forgotten in transcription.",
+        "fix": "Decide whether 'self-improvement loop' is in scope for the agent-dev package. If yes, add it to 00-product-spec.md §4's package list, 01-architecture.md §1, and plan.md T4.3. If no, annotate options.md to reflect the drop."
+      },
+      {
+        "severity": "med",
+        "location": "support-strategy.md §AI-support + human-ticketing vs decisions-log.md D13 and ADR-0009",
+        "issue": "support-strategy.md presents the 'Best fits' table with Inkeep as the primary pick ('purpose-built for dev communities... AI-in-Discord, docs-grounded') and Plain for ticketing. D13 explicitly states 'Support stack = CUSTOM, self-built (NOT Inkeep/Plain)' and ADR-0009's Rejected section lists 'a vendor (Inkeep/Plain/Pylon).' support-strategy.md is not annotated to reflect that D13 overrode its recommendation. A reader following the research document will believe Inkeep is the chosen approach.",
+        "fix": "Add a banner/note at the top of support-strategy.md §AI-support section: 'Superseded by D13 — custom self-built support-bot chosen; Inkeep/Plain rejected. See ADR-0009.'"
+      },
+      {
+        "severity": "low",
+        "location": "market-research.md §1 (first finding, subscription bullet)",
+        "issue": "market-research.md §1 states 'EU AI Act Annex IV — deadline passed Aug 2 2026' as evidence of compliance urgency. The document date is 2026-06-27; Aug 2, 2026 is 36 days in the future at document creation time. Writing 'deadline passed' for a future date is internally inconsistent — as of the document's own date, the deadline has not yet passed.",
+        "fix": "Change to 'EU AI Act Annex IV — deadline Aug 2 2026 (imminent)' or a similar forward-looking phrase that is accurate as of the document date."
+      },
+      {
+        "severity": "low",
+        "location": "00-product-spec.md §4 Compliance edition vs 01-architecture.md §4 The generator/registry (Option C)",
+        "issue": "The Compliance edition package list includes 'config-as-code module registry' (the Wardfile-seeded jurisdictional compliance module registry — for compliance control configurations). Option C also introduces a 'registry/' (the versioned module registry for create-stack package distribution). Both are called 'registry' in spec text and no document disambiguates them. plan.md T2.4 refers to 'config-as-code module registry' (compliance) and T5.1 refers to 'registry/' (distribution) without defining that these are architecturally separate artifacts.",
+        "fix": "In 00-product-spec.md §4 and plan.md, rename the compliance artifact to 'compliance-module-registry' (or 'jurisdictional-control-registry') and reserve plain 'registry/' for the Option C distribution registry. Add a one-line disambiguation note in 01-architecture.md §1 and §4."
+      },
+      {
+        "severity": "low",
+        "location": "options.md §cross-cutting platform services vs plan.md T1.3, 00-product-spec.md §3, ADR-0012",
+        "issue": "options.md names 'Polar/Stripe(MoR)' as the payment options for the license service. All locked documents (plan.md T1.3 'billing (MoR/Stripe)', 00-product-spec.md §3 'Card checkout via Merchant-of-Record', ADR-0012 'otherwise self-serve via Merchant-of-Record') omit Polar and use generic 'MoR' or 'Stripe/MoR.' Polar appears in one pre-decision document but is not mentioned in the locked spec set, leaving the MoR vendor un-named in the spec but named in research.",
+        "fix": "Either record the MoR vendor pick in a decisions-log entry (if decided), or explicitly mark the MoR vendor selection as deferred in ADR-0012 (matching the actual state of the decision)."
+      }
+    ],
+    "top_gaps": [
+      "No Gate 3 decision record picking Option C: the decisions-log records the monorepo scope (D13) but never explicitly records 'Option C chosen over the options.md recommendation of Option B.' This is the most consequential undocumented decision in the set — it determines whether the generator/registry is v1 or v1.x.",
+      "options.md recommendation vs locked spec set diverges on two axes (B vs C, v1 vs v1.x) without annotation: the options.md document was never updated to note that its recommendation was superseded. It remains the first thing a reader sees when evaluating the architecture choice.",
+      "01-architecture.md invariant 6 contradicts its own cited ADR: the architecture doc says 'read-only' but ADR-0008 (which invariant 6 cites) says 'read-mostly + one write surface.' The invariant cites the ADR but states the opposite.",
+      "Agentic-Dev self-improvement loop: mentioned in options.md feature list but absent from spec, plan, and architecture — no record of whether it was descoped or accidentally omitted in transcription.",
+      "support-strategy.md is the only research document whose primary recommendation (Inkeep) was fully overridden by a later decision, yet it carries no annotation. It is the most likely document to mislead a reader who skips the decisions-log."
+    ],
+    "summary": "The four specs and twelve ADRs are largely internally consistent on the core architecture (composable packages, fail-closed RLS, append-only audit chain, integer credits, Ed25519 licensing, provider-agnostic AI config). The main consistency failures cluster in three areas: (1) the Gate 3 architecture pick is not recorded in the decisions-log, leaving options.md's 'Option B now, Option C in v1.x' recommendation visibly contradicting the locked 'Option C, v1' spec set across two dimensions; (2) 01-architecture.md's invariant 6 says the buyer MCP server is 'read-only' while ADR-0008 (which that invariant cites) explicitly describes a write surface for driving generation; and (3) three research documents (options.md, market-research.md §4, support-strategy.md) were never annotated after their recommendations were overridden by subsequent operator decisions, leaving them as live misdirection for future readers. Numerical disagreement is limited to the compliance edition price floor ($799 vs $899). Feature-level gaps include the 'self-improvement loop' listed in options.md's Agentic-Dev description but absent from spec, plan, and architecture."
+  },
+  {
+    "dimension": "technical-soundness",
+    "findings": [
+      {
+        "severity": "high",
+        "location": "ADR-0006 / specs/01-architecture.md §3 invariant 5",
+        "issue": "Field encryption 'env-key at base tier' is under-specified and likely wrong for multi-tenant use. If a single env key encrypts columns across all tenants, one key breach decrypts every tenant's protected fields. A compliance product with cross-tenant key sharing fails its own SOC2 evidence. The ADR transitions from env-key (base) to KMS per-tenant DEK (SOC2) but doesn't specify that even the base tier must use per-tenant key derivation (e.g., HKDF(master_env_key, tenant_id)). The current spec allows a shared-key implementation that would be architecturally correct but a compliance disaster.",
+        "fix": "ADR-0006 must specify that even the env-key base tier uses per-tenant key derivation: derive each tenant's data-encryption key as HKDF(master_env_key, tenant_id, 'field-crypto'). The KMS tier wraps per-tenant DEKs under a KMS-managed KEK. Update the column custom-type spec to accept a key-resolver function (tenant_id → DEK), never a single static key."
+      },
+      {
+        "severity": "high",
+        "location": "ADR-0010 / plan.md cross-phase invariants",
+        "issue": "The AGPL open-core boundary ('AGPL code never imports into a commercial-licensed package; the firewall is asserted in review') is review-gated only. If any commercial package (auth, billing, credits, compliance, ai-kit, agent-dev) accidentally imports from packages/local-ai (AGPL), buyers' products become AGPL-contaminated — they must open-source their product. A dependency audit at review time is insufficient for a monorepo with many packages and contributors.",
+        "fix": "Add a CI lint rule in tooling/ that statically detects any import from packages/local-ai (or any AGPL-licensed package) within commercial-licensed packages. Options: a custom ESLint import-boundary rule keyed on package.json license fields, or a dependency-cruiser boundary constraint. The rule must fail CI, not just warn. The binding in ADR-0010 should reference this CI gate, not code review."
+      },
+      {
+        "severity": "high",
+        "location": "ADR-0004 + ADR-0008 / specs/01-architecture.md §4",
+        "issue": "The MCP server drives create-stack with buyer-agent-supplied module and edition selections ('the agent picks modules + configures'). The specs say nothing about validating these values against the known registry before any subprocess execution. If create-stack is invoked with buyer-controlled module names passed to file-system paths, package resolution, or shell arguments, this is a path/command injection surface on the server side.",
+        "fix": "Add to ADR-0004 and ADR-0008 bindings: (1) all module/edition values from MCP callers are validated against a strict allowlist enumerated from the versioned registry before any file path construction or subprocess invocation; (2) create-stack accepts only validated, registry-known identifiers — no user-supplied strings flow into file paths or exec args; (3) the MCP server enforces this with Zod enum validation against the live registry manifest. Document this in the MCP server auth binding."
+      },
+      {
+        "severity": "med",
+        "location": "ADR-0007 / plan.md T1.4 and T6.1",
+        "issue": "'DB-anchored idempotency (partial unique index + 23505 mapping)' is stated as a binding but the columns composing the partial unique index are never specified. For purchase-driven credit grants (T6.1 webhook), the idempotency key must include the MoR webhook event ID. For codegen debits (T5.4), it likely needs account_id + idempotency_key from the caller. Without the schema, two implementations might pick incompatible keys — one that allows double-grants and one that over-rejects retries.",
+        "fix": "Add to ADR-0007: explicit column sets for the partial unique index per event_type. At minimum: (grant from webhook) UNIQUE (source_event_id, event_type) WHERE event_type = 'grant'; (debit) UNIQUE (account_id, idempotency_key) WHERE event_type = 'debit'. Define what idempotency_key is for each debit type (codegen, ai-feature, evidence-pack). This must land in the spec before P1 T1.4 / P6 T6.1."
+      },
+      {
+        "severity": "med",
+        "location": "specs/01-architecture.md §3 invariant 3 + ADR-0008",
+        "issue": "The spec states 'crypto.timingSafeEqual for tokens/licenses' as a blanket invariant. This is correct for opaque Bearer tokens (registry_access tokens), but Ed25519 license verification is an asymmetric signature verification done via crypto.verify() — not a byte-equality comparison. A future implementer reading this spec might use timingSafeEqual over the raw license bytes instead of running proper signature verification, producing a critically broken license check (a forged license would pass if its bytes happen to match the real one in length). The conflation is in both ADR-0008 and the arch spec.",
+        "fix": "Split the invariant: (1) opaque Bearer tokens (registry_access.token, internal service tokens) → crypto.timingSafeEqual; (2) Ed25519 license tokens → crypto.verify(publicKey, data, signature) using Node.js built-in, which is already constant-time by implementation. Document this distinction explicitly in ADR-0002 and ADR-0008 bindings."
+      },
+      {
+        "severity": "med",
+        "location": "specs/01-architecture.md §2 (control/execution plane seam)",
+        "issue": "'EdDSA JWT + cached JWKS at the trust seam' — JWKS caching TTL and key-rotation invalidation are unspecified. A stale JWKS cache could accept JWTs signed with a rotated/revoked EdDSA key (if cache TTL outlives the rotation window) or cause a service outage (if the cache misses immediately post-rotation). This becomes load-bearing when the license service rotates its signing key.",
+        "fix": "Add to the architecture spec: specify the JWKS cache TTL (recommend 5 min with background refresh), a forced cache invalidation mechanism on key rotation (e.g., a rotation event that bumps a version header the TS plane checks), and a fallback behavior when JWKS fetch fails (fail-closed: reject JWTs, do not fall back to a cached key indefinitely)."
+      },
+      {
+        "severity": "med",
+        "location": "ADR-0006 / plan.md T2.4 (evidence-pack generator)",
+        "issue": "The evidence-pack generator 'emits a signed ZIP' but the signing key provenance, signing mechanism (what key, which algorithm, what is signed — the ZIP bytes? the manifest?), and the buyer verification path are not defined. If the ZIP is signed with the same Ed25519 key used for licenses (services/license), key compromise breaks both commerce and compliance evidence. This is a P2 implementation blocker for the compliance hero edition.",
+        "fix": "Add to ADR-0006: specify a dedicated evidence-signing key pair (separate from the license-issuer key), stored in KMS; the ZIP signature covers the SHA-256 of the ZIP contents using detached Ed25519; the signed artifact includes the public key fingerprint and a verification script the buyer can run offline. Define key rotation procedure and how prior-signed ZIPs remain verifiable after a rotation."
+      },
+      {
+        "severity": "low",
+        "location": "ADR-0011 / specs/01-architecture.md §3 invariant 7",
+        "issue": "'No package references a provider SDK directly — all inference routes through ai-config' is stated as a binding but no enforcement mechanism is specified. Without a lint/CI rule, this is a review-gate invariant on a monorepo with multiple packages — the same structural weakness as the AGPL boundary (ADR-0010). A stray import of @anthropic-ai/sdk or openai in packages/credits or packages/auth breaks the abstraction for all buyers.",
+        "fix": "Add to tooling/ a dependency-cruiser or ESLint import-boundary rule: packages outside ai-config and ai-kit may not import provider SDK packages (openai, @anthropic-ai/sdk, @google/generative-ai, etc.). Enumerate the prohibited provider packages in the rule. Fail CI on violation. Reference this rule in ADR-0011 binding."
+      },
+      {
+        "severity": "low",
+        "location": "ADR-0009 (support-bot binding)",
+        "issue": "'Never answers from anything but the codebase/docs RAG (no hallucinated support)' is stated as a binding technical invariant. This is not enforceable in code — RAG reduces but does not eliminate LLM hallucination. Framing it as a binding invariant misrepresents the system's behavior to buyers and could create a product liability issue if a buyer acts on a hallucinated answer.",
+        "fix": "Restate the binding as: 'All responses are RAG-grounded — every answer cites the source chunk from the codebase/docs KB. The bot includes a confidence signal and disclaims when the retrieved context is insufficient.' Remove 'no hallucinated support' as a technical invariant; make it a product aspiration backed by the grounding+citation mechanism."
+      },
+      {
+        "severity": "low",
+        "location": "ADR-0008 (MCP server write path)",
+        "issue": "The MCP server write path (driving create-stack generation) has no mention of rate limiting per entitlement. While each generation is credit-debited (preventing unbounded buyer spend), the server-side compute from rapid concurrent generation attempts — registry reads, composition, credit checks, 402 responses — is not bounded. For a solo-operator platform this is a resource exhaustion risk.",
+        "fix": "Add to ADR-0008 binding: the MCP server enforces a per-account rate limit on the generation tool (e.g., N concurrent generations, M generations per minute) using a sliding-window counter in Redis or Postgres. Rate limit violations return 429 (not 402). Specify the limits in ADR-0012 or a new ops-constraints note."
+      }
+    ],
+    "top_gaps": [
+      "ADR-0006: Field encryption base-tier key isolation — 'env-key at base tier' as a single key across all tenants is architecturally wrong for a multi-tenant compliance product; must specify per-tenant key derivation (HKDF or equivalent) before P2 design",
+      "ADR-0010: AGPL open-core boundary is review-gated only — needs a CI lint rule (dependency-cruiser or ESLint import-boundary) that fails build on cross-license imports, not just code review assertion",
+      "ADR-0007: Idempotency key schema undefined — partial unique index columns never specified, which is an implementation blocker for the credit integrity guarantee central to the product's financial correctness",
+      "ADR-0004/ADR-0008: Generator input validation on MCP write path — no spec for validating buyer-agent-supplied module/edition names against the registry allowlist before file path construction or subprocess invocation",
+      "specs/01-architecture.md §3 + ADR-0008: Ed25519 vs timingSafeEqual conflation — the spec's blanket 'timingSafeEqual for tokens/licenses' will produce a broken license check if implemented literally; must distinguish opaque Bearer tokens from asymmetric Ed25519 signature verification"
+    ],
+    "summary": "The ADR set is structurally sound and the foundational choices are correct: fail-closed RLS via SET LOCAL + FORCE policy, integer debit-before-spend credits, append-only audit chain, S3 Object-Lock WORM, fetchWithTimeout, and Zod .strict() boundaries are all well-chosen and align with the security floor. Three high-severity gaps need fixing before implementation: (1) ADR-0006's field encryption is under-specified at the base tier — a single env-key shared across all tenants is a cross-tenant data breach risk for a product marketed on compliance; (2) ADR-0010's AGPL open-core firewall is review-only, which is insufficient for a monorepo — AGPL contamination of commercial packages is a legal liability that needs a CI lint gate; (3) ADR-0004/ADR-0008 do not address input validation for buyer-agent-supplied module names fed into the generator, which is a server-side injection surface. Medium gaps: the idempotency key schema for credit events is implementation-blocking but undefined; the spec conflates timingSafeEqual (for opaque tokens) with Ed25519 signature verification (needs crypto.verify()), risking a broken license check if implemented literally; JWKS caching TTL and rotation invalidation are unspecified at the EdDSA trust seam; and the evidence-pack signing key provenance is missing, which is a P2 blocker for the compliance hero."
+  },
+  {
+    "dimension": "completeness-gaps",
+    "findings": [
+      {
+        "severity": "high",
+        "location": "plan.md T0.2/T0.4 + ADR-0002",
+        "issue": "No testing strategy ADR. 'Testing harness' (T0.2) and 'golden-file harness skeleton' (T0.4) are named but never defined. What test runner (Bun built-in, Vitest, another)? What does a golden file contain — a serialized output snapshot, a fixture file, a hash? What proves the harness 'skeleton' at P0 exit? 'Standards gate green' is the P0 exit criterion but the gate is not specified. The golden-file invariant is the primary correctness guard for P2's compliance logic and it has no implementation spec.",
+        "fix": "Author ADR-0013 (Testing strategy): name the test runner, define what a golden file is (format, location, update procedure), state the unit/integration boundary, specify minimum coverage expectation or fail condition, and describe how the CI standards gate reads the harness output. Reference ADR-0002 and the P2 exit gate."
+      },
+      {
+        "severity": "high",
+        "location": "specs/01-architecture.md §3 + ADR-0005/0006/0007",
+        "issue": "No database or ORM ADR. The entire data model is Postgres-shaped and ADR-0005 implies Drizzle ('no clean Drizzle multi-schema migration story'), ADR-0006 implies a Drizzle column custom type for field-crypto, but no ADR names the ORM, the Postgres hosting provider, or the migration strategy. Every P1 task (tenancy-rls, credits ledger, billing) creates tables. A missing-ORM decision leaves DDL implementation undefined before a single P1 commit.",
+        "fix": "Author ADR-0014 (Database + ORM): name Drizzle ORM (already implied — make it explicit), choose a PG hosting provider for the reference/seller platform, define the migration strategy (drizzle-kit push vs migrations), and address how RLS policies (ADR-0005) are included in migration files such that CI enforces the 'table without RLS policy fails CI' invariant."
+      },
+      {
+        "severity": "high",
+        "location": "plan.md T1.1 + specs/01-architecture.md §2",
+        "issue": "No `auth` package ADR. T1.1 is the first P1 task and auth is load-bearing for everything that follows (RLS `SET LOCAL` keying, MoR webhook security, MCP server Bearer). The seed is 'gridwork' but the auth strategy is unspecified: auth provider (NextAuth, Better Auth, custom JWT?), session vs JWT, token format, and how the user identity is propagated into the Postgres session for RLS. The seam between auth and tenancy-rls (T1.2) is undefined.",
+        "fix": "Author ADR-0015 (Auth strategy): name the auth library, session/JWT decision, token/cookie shape, how `account_id` is resolved and injected into `SET LOCAL` for RLS, and how the MoR webhook endpoint authenticates (separate service-token vs HMAC signature)."
+      },
+      {
+        "severity": "high",
+        "location": "plan.md T0.4",
+        "issue": "CI/CD provider and pipeline structure are unspecified. T0.4 asserts 'CI: build + lint + test + the standards gate' as a P0 deliverable and 'bun run check clean' as the exit criterion, but no ADR names the CI provider (GitHub Actions implied but not stated), defines the job graph, or addresses how changesets publishing integrates with CI. ADR-0004 says 'no registry write bypasses the standards gate' — but the gate's CI enforcement mechanism is not described.",
+        "fix": "Author ADR-0016 (CI/CD): name GitHub Actions as the provider, define required jobs (build, lint, test, standards-gate, golden-file regression), specify when publishing is triggered (changeset PR merge), and describe the gate that blocks registry writes without a green standards run."
+      },
+      {
+        "severity": "high",
+        "location": "plan.md T2.4 + specs/00-product-spec.md §5 P2",
+        "issue": "Evidence-pack schema is undefined. The P2 hero feature and exit gate ('evidence pack validates against a golden fixture') depends on knowing: what the evidence pack contains (which SOC2/HIPAA controls are mapped, what each evidence item looks like), what format the signed ZIP uses, how the 'golden fixture' is initially created and updated, and what 'unresolved flags block generation' means operationally (what is a flag, how does a buyer resolve it). ADR-0006 only establishes the WORM storage + hash chain mechanics.",
+        "fix": "Add a compliance edition sub-spec or extend ADR-0006 to define: the control catalog format (SOC2 CC6/CC7 + HIPAA §164 at minimum), the evidence item schema (control_id, evidence_type, artifact_ref, hash), the signed ZIP structure, the golden fixture creation procedure, and the flag lifecycle (what triggers a flag, what resolves it, how unresolved flags block generation)."
+      },
+      {
+        "severity": "med",
+        "location": "plan.md T1.3",
+        "issue": "No `billing` / Merchant-of-Record ADR. 'MoR/Stripe' is named in T1.3 but the MoR identity (Lemon Squeezy, Paddle, Stripe Billing) is unresolved, and the boundary between P1 billing scaffolding and P6 live-purchase integration is undefined. Webhook idempotency (how a double-fired purchase webhook doesn't double-grant credits — critical per ADR-0007) has no specified mechanism at the billing layer.",
+        "fix": "Author ADR-0017 (Billing/MoR): name the MoR, define the webhook event types handled in P1 vs deferred to P6, specify HMAC signature verification for webhooks (per ADR-0002 timing-safe requirement), and define how the billing package emits a domain event that the credits package consumes to issue a `credit_event` grant."
+      },
+      {
+        "severity": "med",
+        "location": "plan.md T1.8",
+        "issue": "`jobs` and `email` packages are entirely unspecified. T1.8 is a P1 task but no ADR or spec defines the job queue (BullMQ, Inngest, Trigger.dev, Postgres-backed queue?), the email provider (Resend, SES, Postmark?), or how these packages integrate with the rest of the base. The `apps/base` P1 exit gate ('base app runs') depends on these being wired.",
+        "fix": "Author ADR-0018 (Jobs + email providers): name the job queue and email provider, define the job dispatch interface (how billing/credit events trigger jobs), and specify error/retry behavior. A Postgres-backed queue aligns with the existing PG dependency and avoids a new infrastructure dependency at P1."
+      },
+      {
+        "severity": "med",
+        "location": "plan.md T2.1 + ADR-0006",
+        "issue": "No local development strategy for WORM/S3 Object-Lock. ADR-0006 specifies S3 Object-Lock for production but the P2 exit gate must run in CI. There is no decision for the local/CI S3 substitute (MinIO, LocalStack, a mock ArtifactStore backend). Without a local backend, the golden-file exit test cannot run offline or in CI without real AWS credentials.",
+        "fix": "Extend ADR-0006 or add a sub-decision: define the local dev backend (MinIO via Docker Compose or a filesystem-backed mock), specify how the ArtifactStore abstraction selects the backend (env var), and include a CI job that runs the P2 exit gate against the local backend."
+      },
+      {
+        "severity": "med",
+        "location": "plan.md T2.2 + ADR-0006",
+        "issue": "`field-crypto` ORM integration and KMS provider are unspecified. ADR-0006 describes a 'column custom-type (encrypt-on-write/decrypt-on-read)' and a 'KMS envelope at the SOC2 tier' but the ORM integration (Drizzle custom column type implementation) depends on the unresolved ORM ADR, and the KMS provider (AWS KMS, HashiCorp Vault, something else) is named only as a tier concept. Key rotation procedure — how old DEKs are retired — is not described.",
+        "fix": "Once ADR-0014 names Drizzle, extend ADR-0006 with: the Drizzle column helper signature for field-crypto, the key-version registry schema (table or config file holding key_id → key material), the KMS provider at SOC2 tier (AWS KMS is the obvious choice given S3 Object-Lock), and the rotation procedure (new DEK wrapped by current KEK, old version retained for decryption)."
+      },
+      {
+        "severity": "med",
+        "location": "specs/00-product-spec.md §6 + all ADRs",
+        "issue": "No error handling model. The 402 credit-gate failure is a cross-cutting invariant (ADR-0007, ADR-0002) but the error shape, HTTP response structure, and how errors propagate through the package graph are undefined. There is no guidance on package-level error types vs HTTP-layer error serialization, nor on how compliance flag errors surface in the evidence-pack generator.",
+        "fix": "Add a cross-cutting error model section to ADR-0002 or author a new sub-ADR: define a typed error hierarchy (ForgeError base, CreditError extends for 402, ComplianceError for flagged artifacts), the HTTP serialization format (RFC 7807 Problem Details or equivalent), and the convention for how package-internal errors bubble to the app layer."
+      },
+      {
+        "severity": "med",
+        "location": "decisions-log.md D15",
+        "issue": "The reference-app framework picker (D15) is explicitly deferred but must resolve before P1 scaffolding begins. P1's `apps/base` and T1.7's `ui` token floor both depend on knowing the framework (Next.js App Router assumed in the UX spec but never decided). The `ui` package's component API differs significantly between RSC, client-only, and framework-agnostic shapes.",
+        "fix": "Schedule the D15 scaffold-time picker as the gate-zero step before any P0 commit. The picker output should name the reference-app framework (Next.js App Router is the obvious call given the tech lineage), the new repo's working name, and the CLAUDE.md governance style, then lock those as ADR-0019 before monorepo init."
+      },
+      {
+        "severity": "low",
+        "location": "plan.md T0.3 + specs/01-architecture.md §1",
+        "issue": "`kernel` package contents are underspecified. T0.3 says 'typed config/schema + validator (← gridwork-core)' and the architecture lists 'governance: typed config/schema + validator + lint-gate' but the seam between `kernel` (governance) and `tooling/` (standards) is unclear. What specific schemas does kernel hold? What is the 'lint-gate' — a custom ESLint rule, a CI-runnable script, a type predicate? No ADR.",
+        "fix": "Add a kernel package definition to ADR-0002 or a new ADR: enumerate what kernel exports (ForgeConfig schema, validator function, lint-gate entry point), distinguish it from tooling/ (tooling = dev-time standards; kernel = runtime governance), and specify the lint-gate interface that T0.4's CI calls."
+      },
+      {
+        "severity": "low",
+        "location": "ADR-0010 + specs/00-product-spec.md §6",
+        "issue": "AGPL contamination prevention relies entirely on human review. ADR-0010 states 'AGPL code never imports into a commercial-licensed package; the firewall is asserted in review' but provides no automated enforcement. A Turborepo + Bun workspace dependency graph makes cross-package imports trivially easy and a missed review means AGPL contamination ships silently.",
+        "fix": "Add an automated CI check to the standards gate: a license-scan step (e.g., using `license-checker` or a custom Turborepo task that asserts the dependency graph of paid packages contains no AGPL transitive dependencies). This converts a review-time assertion into a merge-blocking gate."
+      },
+      {
+        "severity": "low",
+        "location": "specs/00-product-spec.md §1 + specs/01-architecture.md §3",
+        "issue": "No observability or structured logging strategy. A compliance product where the audit trail is the primary differentiator has no spec for how the seller platform and shipped packages emit structured logs, how errors and audit events are distinguished, or what telemetry buyers see. The evidence-pack generator needs to distinguish its own operational logs from the compliance audit chain it produces.",
+        "fix": "Add a cross-cutting observability decision (can be lightweight): name the structured logging library, define the log levels and fields, specify that compliance audit events route to the append-only audit chain (ADR-0006) and NOT to operational logs, and define the telemetry contract for `usage_event` rows (what is captured at generation/AI-feature time for billing analytics)."
+      }
+    ],
+    "top_gaps": [
+      "Testing strategy + golden-file harness definition is missing — it is the P0 exit gate and the P2 correctness guard, yet no ADR defines what the harness is, what test runner, or what a golden file contains.",
+      "Database and ORM choice is unresolved — the entire data model and every P1 table depend on this, yet it is only implied (Drizzle) never decided, with no migration strategy specified.",
+      "Auth package has no ADR — T1.1 is P1's first task, and the auth-to-RLS seam (`SET LOCAL` keying), session strategy, and webhook auth are all undefined before the first P1 commit.",
+      "Evidence-pack schema is undefined — the P2 hero feature and exit gate ('validates against a golden fixture') cannot be built without a control catalog format, evidence item schema, signed ZIP structure, flag lifecycle, and golden fixture creation procedure.",
+      "CI/CD pipeline is unspecified — the P0 exit gate ('CI green') has no ADR naming the provider, job graph, or how the standards gate enforces ADR-0004's registry write invariant."
+    ],
+    "summary": "The locked spec set covers architecture shape, commerce mechanics, and the compliance data primitives well, but P0-P2 execution is blocked by five missing ADRs (testing strategy, database/ORM, auth, CI/CD, evidence-pack schema) and several underspecified seams (billing/MoR identity, jobs+email providers, WORM local-dev backend, field-crypto ORM integration, error model, reference-app framework). The pattern: the specs define WHAT each package does and WHY, but leave HOW implementation decisions (the choices a plan author needs to write a task list) unresolved. The most dangerous gap is the testing strategy — the P0 exit gate and the P2 golden-file regression guard are the same thing, and neither is defined."
+  },
+  {
+    "dimension": "market-strategy",
+    "findings": [
+      {
+        "severity": "high",
+        "location": "specs/00-product-spec.md §4 pricing, ADR-0012, market-research.md §3",
+        "issue": "Compliance-update subscription is underpriced and bundled with unrelated credits, diluting the #1 validated retention lever. Market research cites compliance.tf $1K/yr ($83/mo), SchemaPilot $49-499/mo, Archiet $100-1,400/mo as the proven compliance-update subscription range. ADR-0012 prices the entire subscription — compliance-framework updates AND codegen credits AND private registry — at $49-199/mo. A solo compliance buyer whose entire ROI is regulatory certainty is bundled with a power-user codegen buyer into one $49/mo tier. The market research calls compliance-update subscriptions 'the #1 retention lever in the entire market' but the spec doesn't price or structure them as such.",
+        "fix": "Separate the compliance-update subscription from the credits/codegen subscription as distinct SKUs or at minimum tiers. A compliance-update-only tier at $149-299/mo ($1.8-3.6K/yr) is within the market-validated range and targets the B1 buyer specifically. Reserve the $49-199/mo tier for the codegen/registry power-user. This also gives the compliance hero edition a coherent post-purchase upsell path distinct from the developer credit economy."
+      },
+      {
+        "severity": "high",
+        "location": "plan.md P7+, specs/00-product-spec.md §5 roadmap, market-research.md §1 finding 3",
+        "issue": "EU AI Act Annex IV is deferred to P7+ despite the market research flagging it as an imminent regulatory urgency driver (deadline Aug 2 2026, five weeks from research date). The market research names it explicitly alongside NIS2, DORA, and new US state privacy laws as the compliance-subscription churn driver, yet the v1 compliance edition ships only SOC2/HIPAA evidence packs. Buyers building toward EU AI Act compliance need control mappings NOW — deferring to P7+ means missing the highest-urgency compliance wave that the market research specifically identified.",
+        "fix": "Include EU AI Act Annex IV as at minimum a scaffolded control-mapping module within P2 (the compliance edition), not a full evidence-pack generator but enough to let a buyer claim EU AI Act coverage. The SOC2/HIPAA evidence engine is the right lead for depth, but the EU AI Act deadline creates a named window for the compliance subscription's first renewal hook. Add it to the compliance edition's module registry as a named slot even if the mapping content is initially sparse."
+      },
+      {
+        "severity": "high",
+        "location": "specs/00-product-spec.md §0 decisions table, decisions-log.md D9/D13, market-research.md §6 open question 4",
+        "issue": "V1 ships all four editions simultaneously, overriding the market research recommendation of 'base + 1 compliance edition, scaffolded for 2 more.' The market research scored the four editions 8.28 / 7.06 / 6.70 / 6.68 — the compliance hero is 1.2+ points above the next entry. Launching as four parallel narratives (compliance, AI-infra, local-first, agentic-dev) for a solo operator with no audience is a distribution problem: each edition has a completely different buyer persona (B1 regulated-industry builder vs B3 local-first/privacy builder vs B4 agentic developer), requires different acquisition copy, and competes with the positioning clarity the compliance-hero framing needs. The spec acknowledges this in §6 ('P1/P2 must prove the package-composition model before P3/P4 fan out; if composition friction is high, narrow to Base+Compliance') but this is a fallback note, not a gate.",
+        "fix": "Elevate the fallback into a hard decision gate: P2 exit criteria should explicitly include a go/no-gate for whether P3/P4 proceed in parallel or serialise. The compliance edition is the revenue hero and the distribution wedge; shipping all four simultaneously before having an audience risks none of the editions getting the marketing depth they need. Consider making Local-first AI the open-core community play (it's already AGPL) that builds audience, compliance the paid launch, and AI Kit / Agentic-Dev as post-v1 releases once the compliance flywheel is turning."
+      },
+      {
+        "severity": "med",
+        "location": "specs/00-product-spec.md §1 product definition, decisions-log.md D10, market-research.md §1 finding 1",
+        "issue": "D10 un-kills generic boilerplate and includes it as the 'table-stakes base layer.' The market research killed it explicitly (score 4.60, 'Saturated, branded, collapsing pricing. Confirmed do-not-build') because competing with ShipFast/MakerKit on base capability attracts price-sensitive generic buyers at $199-599. If Forge's marketing includes any 'better than ShipFast' messaging, it will pull in the exact buyer segment that won't pay $899-1,499 for a compliance edition. The spec says generic should be 'framed under the differentiators, never led' but doesn't define which buyers Forge explicitly refuses to serve or how the funnel filters for compliance-budget buyers.",
+        "fix": "The product can include a generic-competitive base (that's the right engineering call) but the go-to-market framing needs an explicit buyer filter: the pricing page should lead compliance/AI-infra/production-rigor with generic as a footnote, not a comparison table. Define the ICP (regulated-industry builder, B1) at the top of the marketing spec and note that buyers whose problem is 'I want a starter kit' are out of scope — they will arrive via the open-core AGPL flank, not via the compliance hero pricing."
+      },
+      {
+        "severity": "med",
+        "location": "specs/00-product-spec.md §4 subscription description, ADR-0007, plan.md P5-P6",
+        "issue": "The codegen-credit economy — positioned as the core Option C monetization differentiator in ADR-0004 — cannot be exercised end-to-end until after P6 (commerce + license grants). The credit wallet ships in P1, generation debits ship in P5, but the buyer can't actually purchase credits until P6. This means the codegen-credit thesis is unvalidated for the entire P0-P5 build span. If P5 reveals that buyers don't generate stacks via `create-stack` in the predicted pattern (e.g., most just clone the edition repo directly), the revenue model for credits breaks without an early signal.",
+        "fix": "Add a P2 or P3 milestone that exercises a minimal credit-debit cycle with a real human buyer (even an alpha buyer or the operator dogfooding). This doesn't require full MoR checkout — a manual credit grant + a metered generation run is enough to validate the flow. Include 'at least one real credit debit cycle tested with a live buyer' in the P3 or P5 exit criteria."
+      },
+      {
+        "severity": "med",
+        "location": "specs/00-product-spec.md §4 subscription, market-research.md §1 finding 3",
+        "issue": "The compliance-update subscription is described as a deliverable but has no operational model. Market research says compliance frameworks 'churn constantly (NIS2, EU AI Act, DORA, new US state privacy laws)' and identifies auto-updating control mappings + evidence-pack generation as 'the #1 retention lever.' Neither the product spec nor any ADR defines who authors the control mapping updates, at what cadence, by what mechanism they are delivered (new module version in the registry? push notification? automated update PR?), or what the content production cost is for a solo operator. This is a promise without a fulfillment model.",
+        "fix": "Add an ADR or spec section covering the compliance-update content pipeline: how control mapping updates are authored (AI-assisted from regulatory source documents, human-reviewed), what the publishing cadence is (quarterly? on regulatory event?), how the update reaches subscribers (registry patch version + release notes), and what the per-update labor cost is for the operator. This is load-bearing for the MRR thesis and needs to be scoped before P7+ compliance vertical packs."
+      },
+      {
+        "severity": "low",
+        "location": "ADR-0012, market-research.md §4 business-model synthesis",
+        "issue": "ADR-0012 mentions AppSumo as a valid zero-audience launch channel ('AppSumo only for a zero-audience launch (30-50% rev share + low price anchor)'). The market research explicitly rejected AppSumo as a primary channel because it anchors price low and attracts deal-hunter churn. A compliance edition priced at $899-1,499 launched on AppSumo at a discounted price (AppSumo conventions would put it at $49-199 lifetime) creates a reference price anchor that undercuts the market-validated positioning permanently. Compliance buyers who paid $999 on AppSumo have no reason to subscribe at $199/mo.",
+        "fix": "Remove the AppSumo carve-out from ADR-0012 or add an explicit constraint: if AppSumo is used at all, it must be for a lower-tier module (e.g., a single base module, not the compliance edition), and at a price that doesn't undercut the edition pricing. The zero-audience launch path should rely on content (SEO, dev Twitter, compliance forums) rather than a deal site that structurally destroys price integrity."
+      },
+      {
+        "severity": "low",
+        "location": "ADR-0009, market-research.md §1-§4",
+        "issue": "The support-bot is positioned as 'a shippable value-add template' (ADR-0009), effectively treating it as an undocumented fifth product line. The market research never studied or validated a Discord-bot-as-template market opportunity. The engineering rationale (build the support system, then ship it as an example of AI Production Kit patterns) is sound, but calling it a 'shippable value-add template' without a buyer thesis, pricing model, or market validation adds implicit scope to the product definition that isn't anchored to any research finding.",
+        "fix": "Reframe the support-bot as a reference implementation of the AI Production Kit (which it is) rather than a standalone sellable product. If it does get sold or shipped separately, that should be a future ADR with its own market rationale, not an implicit claim in ADR-0009."
+      }
+    ],
+    "top_gaps": [
+      "Compliance-update subscription lacks a fulfillment model (content pipeline, cadence, delivery mechanism) — the #1 retention lever per market research is a promise without an operational plan",
+      "EU AI Act Annex IV (Aug 2026 deadline) is deferred to P7+ despite being the most time-sensitive compliance demand signal in the research; v1 compliance edition should at minimum scaffold it",
+      "No buyer filter or ICP gate to prevent generic-boilerplate pricing pressure from undercutting the compliance hero pricing; D10 re-including generic creates a narrative muddying risk with no defined segment firewall",
+      "Four-edition simultaneous launch overrides the market research recommendation without a hard decision gate — no explicit trigger defined for narrowing to Base+Compliance if scope proves too broad"
+    ],
+    "summary": "The spec set delivers the core market-research thesis faithfully: compliance hero leads, production-rigor differentiators are specified in depth, per-module commerce is architecturally native (Option C), and the subscription+credits MRR model is included. The four most serious strategy drifts are: (1) the compliance-update subscription — the market's #1 validated retention lever — is priced at the bottom of the market-proven range and bundled with codegen credits rather than sold as its own tier with its own WTP ceiling; (2) EU AI Act Annex IV (deadline Aug 2, 2026) is deferred to P7+ despite being the most urgent named compliance signal in the research; (3) v1 simultaneously launches four editions targeting four distinct buyer personas with no hard gate to narrow if distribution proves too thin for a solo operator; (4) the compliance-update subscription has no defined content pipeline or delivery model, making the MRR thesis structurally under-specified. None of these break the architecture or core positioning, but left unaddressed they risk undermonetizing the compliance hero and diluting the launch signal."
+  },
+  {
+    "dimension": "build-readiness",
+    "findings": [
+      {
+        "severity": "high",
+        "location": "plan.md P2 T2.4 + specs/00-product-spec.md §4 (Compliance edition)",
+        "issue": "The SOC2/HIPAA evidence-pack generator is the legal and commercial heart of the compliance hero, but zero spec exists for: which SOC2 Trust Service Criteria are covered (CC6.x? all criteria?), which HIPAA controls, what the evidence pack output contains (what files are in the ZIP?), and what 'validates against a golden fixture' means at the control level. The exit gate ('evidence pack validates against a golden fixture') cannot be written — the fixture can't exist without a control manifest. ADR-0006 says 'golden-file regression before any evidence logic' but never defines what a golden file looks like here.",
+        "fix": "Before T2.4 can start, author a compliance-controls mini-spec: a named list of the initial SOC2 CC controls covered in v1, the corresponding HIPAA safeguards, and a golden-fixture schema (JSON or YAML mapping control-id → evidence artifact type + source path). This is a pre-task for P2, not P2 itself. Without it, T2.4 is unactionable — two developers would produce incompatible evidence packs."
+      },
+      {
+        "severity": "high",
+        "location": "plan.md P1 T1.6 (mcp-server) vs. P6 T6.1 (services/license); ADR-0008 + ADR-0010",
+        "issue": "The P1 MCP server is 'license/Bearer-scoped' per ADR-0008, validating the buyer's license token on every request. The Ed25519 license issuer (services/license) is P6 — five phases later. The P1 exit gate ('the buyer MCP answers an authed query') requires a validatable credential, but no credential can be issued until P6. The plan is silent on how the P1 MCP validates anything: no test keypair strategy, no stub issuer, no mock credential. This is a concrete dependency inversion.",
+        "fix": "Add an explicit note to P1 T1.6: the MCP uses a hardcoded dev Ed25519 keypair (public key embedded in config, private key in .env.test) for the P1 exit gate. The Ed25519 signature-verification library is a P1 task; the issuer service is P6. Rewrite the P1 exit gate to say 'the buyer MCP answers an authed query using a test-issued license token.' The P6 T6.1 task then wires the real issuer to the same verification library."
+      },
+      {
+        "severity": "high",
+        "location": "plan.md P6 T6.3; ADR-0009",
+        "issue": "ADR-0009 specifies 'deployed on cloud runners for reliability' and names cloud runner as the deployment target for the Python support-bot, but names no provider. Fly.io, Modal, Railway, and Render each have different Dockerfile conventions, secret injection models, scaling triggers, and cold-start characteristics. This is the only service with a Python runtime and external deployment — it can't be scaffolded or CI'd without a provider decision. The RAG pipeline's inference provider is also unnamed ('OpenRouter/Anthropic' as alternates with no choice locked).",
+        "fix": "Add ADR-0013 (or extend ADR-0009) selecting: the cloud runner provider and the inference provider for the support-bot. Both decisions must be made before P6 starts. The provider choice gates the Dockerfile, the secrets strategy, the deploy pipeline, and the RAG call path."
+      },
+      {
+        "severity": "med",
+        "location": "plan.md P1 T1.3 (billing); ADR-0012",
+        "issue": "The plan says 'billing (MoR/Stripe)' and ADR-0012 says 'Merchant-of-Record' with no provider named. Paddle, Lemon Squeezy, and Stripe Billing have incompatible webhook event schemas (event names differ, payload shapes differ, tax-handling approaches differ). T1.3 and P6 T6.1 both touch billing webhooks. Two engineers starting these phases independently with 'MoR/Stripe' would write incompatible webhook handlers.",
+        "fix": "Lock the MoR provider in ADR-0012 before P1 starts — this is a one-line decision (Paddle vs. Lemon Squeezy vs. Stripe). The choice gates the webhook event taxonomy in T1.3, the idempotency key structure in ADR-0007, and the license-grant flow in P6 T6.1."
+      },
+      {
+        "severity": "med",
+        "location": "plan.md P4 (entire phase)",
+        "issue": "P4 bundles two structurally independent editions — Local-first AI (sqlite-vec, compute seam, privacy gate, AGPL offline license) and Agentic-Dev (typed agent/skill schema, lifecycle state machine, local hybrid memory, hooks) — into a single phase with one conflated exit gate. These target different buyers (B3 vs. B4) and share no code. If either slips, the entire P4 gate blocks. The exit gate mixes them: 'local-first reference app runs offline; the kernel drives one lifecycle act' — but it's unclear which kernel (the governance kernel from P0, or the agent-dev kernel?) drives the lifecycle act.",
+        "fix": "Split into P4a (Local-first AI: T4.1 + T4.2 + local-first reference app) and P4b (Agentic-Dev: T4.3 + agentic-dev reference app), each with its own exit gate. This also aligns with the 'if composition friction is high, narrow scope' fallback — P4b becomes an explicit candidate for deferral to P7+ without blocking P4a."
+      },
+      {
+        "severity": "med",
+        "location": "plan.md P5 T5.1 (registry/)",
+        "issue": "P2–P4 build packages into packages/. P5 T5.1 creates the registry/ and the publish flow. No task explicitly says 'publish P2–P4 packages as the initial registry module set.' The exit gate ('the buyer's agent generates a tailored repo from the registry') requires modules to exist in the registry, but without an explicit publish step the registry starts empty. ADR-0004 says 'a module enters the registry only through the standards gate' — but no task performs that first pass over the already-built packages.",
+        "fix": "Add a sub-task under T5.1: 'backfill P2–P4 packages as initial versioned registry modules through the standards gate.' This makes the registry population an explicit, testable step rather than an assumed side effect of building the packages."
+      },
+      {
+        "severity": "med",
+        "location": "plan.md P6 T6.5 (buyer dashboard + seller cockpit)",
+        "issue": "T6.5 is a single task covering two full application surfaces: buyer dashboard (entitlements, license, credit ledger, generation history, subscription management) and seller cockpit (purchases, usage, registry publishing, support queue, churn/MRR). These are bundled into P6's single exit gate alongside the commerce flow and support-bot, which is already the plan's heaviest exit gate. There is no sub-decomposition, no MVP scope defined, and no 'done' signal for either surface independently.",
+        "fix": "Decompose into T6.5a (buyer dashboard MVP: entitlements display + credit ledger + generation history — the surfaces needed for the P6 exit gate) and T6.5b (seller cockpit MVP: purchase list + escalated support queue). Defer churn/MRR analytics and registry publishing UI to P7+. The MVP split makes the exit gate testable without building both surfaces to full depth."
+      },
+      {
+        "severity": "med",
+        "location": "plan.md P3 T3.3 (eval-harness + CI gate)",
+        "issue": "The eval-harness task has no protocol definition: what is being eval'd (which AI feature, which prompt?), in what format (JSONL? markdown fixtures?), with what evaluator (exact match? embedding similarity? judge-LLM?), and what threshold constitutes a CI regression. A 'CI gate' implies a binary pass/fail, but with no rubric, two developers would implement incompatible harnesses. The exit gate ('passes an eval gate in CI') is circular without this.",
+        "fix": "Add a one-paragraph eval-harness protocol before T3.3: name one eval dataset format (e.g., JSONL with input/expected/eval_type fields), one default evaluator type (exact-match for deterministic outputs, similarity threshold for generative), and a concrete regression threshold (e.g., 'score must not drop > 5% vs. baseline'). The harness is a framework — the protocol spec is the missing pre-work."
+      },
+      {
+        "severity": "low",
+        "location": "plan.md P4 T4.2 ('← health-service')",
+        "issue": "'local canonical store (← health-service)' references an internal project not defined anywhere in the spec set, the ADRs, or the context files. A developer starting T4.2 has no way to know what 'health-service' provides or what to rebuild from it.",
+        "fix": "Add a one-sentence clarifier to T4.2 defining what the local canonical store is (e.g., 'a SQLite-backed local structured record store for offline-capable data access, modeled on health-service's entity pattern'). The ← pointer is fine as internal provenance but can't substitute for a task-level description."
+      },
+      {
+        "severity": "low",
+        "location": "plan.md P6 T6.4 (services/docs); specs/03-design-framework.md §3",
+        "issue": "The docs platform decision is explicitly 'deferred to build (ADR placeholder)' per spec/03-design-framework.md §3 — Mintlify vs. self-hosted Starlight is not decided. This choice gates the llms.txt format, the RAG pipeline architecture in T6.3 (the support-bot consumes docs as its knowledge base), and the buyer agent's context format. T6.3 and T6.4 are both in P6 with no ordering stated, but T6.4 logically must complete first to feed T6.3's RAG pipeline.",
+        "fix": "Resolve the docs platform choice as an ADR before P6 starts. Add an explicit ordering note in plan.md: T6.4 precedes T6.3. The decision itself (Mintlify vs. Starlight) belongs in a pre-P6 planning step, not inside the build phase."
+      },
+      {
+        "severity": "low",
+        "location": "plan.md P0 T0.3 (kernel)",
+        "issue": "'kernel: typed config/schema + validator (← gridwork-core)' is a single-line task for the package every edition depends on. What types? Which config schema fields? What does the validator check? The 'D9 dedicated session' defers the production standards pipeline but the kernel itself is a P0 deliverable with no further definition.",
+        "fix": "Add a scoping note to T0.3: the kernel at P0 delivers (1) a ForgeConfig Zod schema covering package metadata, edition membership, and standards-gate compliance flags, and (2) a validateConfig() function + a lint-gate hook that other packages call. Defer runtime kernel acts (used by agent-dev) to P4. This makes T0.3 a 2–3 hour task with a clear boundary, not an open-ended port."
+      }
+    ],
+    "top_gaps": [
+      "SOC2/HIPAA evidence-pack format and control-mapping spec is missing — T2.4 is unactionable without a compliance-controls manifest and golden-fixture schema defined as a pre-task.",
+      "MoR provider is unnamed (plan.md P1 T1.3, ADR-0012) — Paddle vs. Lemon Squeezy vs. Stripe gates webhook code in both P1 and P6; must be decided before P1 starts.",
+      "P1 MCP license validation has no test-credential strategy — the issuer lives in P6, the verifier is needed in P1, and the plan is silent on how the P1 exit gate passes without an issued credential.",
+      "Cloud runner provider for the Python support-bot (P6 T6.3) is undecided — blocks Dockerfile, CI, secrets, and deploy pipeline design.",
+      "P4 bundles two independent editions into one phase with a conflated exit gate — split into P4a/P4b to enable independent slip without blocking the other edition.",
+      "Post-P2 'composition gate' decision point is not operationalized — the spec acknowledges scope risk ('if composition friction is high, narrow to Base+Compliance') but names no signal or checkpoint that triggers it."
+    ],
+    "summary": "The plan has a correct dependency order (base before compliance before AI kit before local/agentic before generator before commerce) and clear cross-cutting invariants. The exit gates for P0, P1 core, P2 (partially), P3, and P5 are in the right shape. The four critical gaps are: (1) the compliance evidence-pack generator in P2 T2.4 has no control-mapping or output-format spec — the legal heart of the product hero is unactionable; (2) the MoR provider is unnamed in P1 T1.3 and ADR-0012, which blocks webhook code in two phases; (3) the P1 MCP needs license validation with no issuer until P6 and no test-key strategy stated; (4) the cloud runner for the Python support-bot is undecided. P4 conflates two unrelated editions into one gate, creating unnecessary coupling. P6 T6.5 (dashboard + cockpit as a single task) is the largest under-decomposed task. 'All 4 editions in v1' is aggressive but architecturally sound given the composable-package model — the real risk is execution duration, not architecture; however, the spec's own fallback trigger ('if composition friction is high') needs an operationalized decision gate at the P2 exit, not a standing monitor."
+  }
+]

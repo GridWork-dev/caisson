@@ -1,0 +1,8 @@
+[project]
+slug = "stack"
+display_name = "stack (working name)"
+description = "Productized monorepo library — composable base + 4 premium editions + create-stack generator. Rebuild-clean from the GridWork portfolio."
+status = "scaffold"
+
+# Working name only — real name + positioning are a deferred session.
+# Provenance: ../library-research/ (capability corpus, market research, specs, decisions).

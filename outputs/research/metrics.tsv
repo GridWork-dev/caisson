@@ -1,0 +1,16 @@
+repo	code_loc	files	test_files	has_adr	has_specs	commits	last_commit
+dev-profile	7625	223	0	no	yes	15	2026-06-26
+FOUNDER-OS	1648	47	4	no	no	10	2026-06-21
+gridwork-core	88565	1635	256	yes	yes	946	2026-06-24
+health-service	43176	1311	133	yes	yes	416	2026-06-22
+prospector	79152	3583	25	no	yes	197	2026-06-13
+tessera	53418	449	78	yes	no	2	2026-06-26
+Wardfile	793302	13235	1151	yes	yes	839	2026-06-26
+Wardfile-il-dbui	109539	1622	155	yes	yes	0	-
+paused/glossread	2537	436	3	yes	yes	24	2026-06-06
+paused/gridwork	112997	1676	216	yes	yes	316	2026-05-07
+paused/gridworkdigital	94494	1655	125	yes	yes	446	2026-06-05
+paused/telesis	67333	1173	368	yes	yes	492	2026-05-08
+paused/throughframe	14651	606	41	yes	yes	189	2026-06-08
+paused/tm-watch	0	47	0	yes	yes	3	2026-06-09
+media-pipeline	20256	269	1	yes	yes	231	2026-06-26

@@ -1,0 +1,7 @@
+{
+  "name": "@stack/ai-config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Provider-agnostic AI config (all providers) + buyer settings file."
+}

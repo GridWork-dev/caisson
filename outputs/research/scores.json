@@ -1,0 +1,97 @@
+{
+  "weights": {
+    "market_demand": 0.2,
+    "baseline_strength": 0.18,
+    "defensibility": 0.18,
+    "willingness_to_pay": 0.16,
+    "recurring_revenue_fit": 0.12,
+    "build_effort_inverse": 0.1,
+    "distribution": 0.06
+  },
+  "ranked": [
+    {
+      "slug": "compliance-framework",
+      "name": "Compliance-grade regulated-app framework (Wardfile rebuilt)",
+      "total": 8.28,
+      "s": {
+        "market_demand": 8,
+        "baseline_strength": 9,
+        "defensibility": 9,
+        "willingness_to_pay": 9,
+        "recurring_revenue_fit": 9,
+        "build_effort_inverse": 5,
+        "distribution": 7
+      }
+    },
+    {
+      "slug": "ai-prod-infra",
+      "name": "AI-feature-add production-infra layer (gridwork+prospector+core)",
+      "total": 7.06,
+      "s": {
+        "market_demand": 8,
+        "baseline_strength": 8,
+        "defensibility": 6,
+        "willingness_to_pay": 6,
+        "recurring_revenue_fit": 8,
+        "build_effort_inverse": 6,
+        "distribution": 7
+      }
+    },
+    {
+      "slug": "local-first-ai",
+      "name": "Local-first / on-device AI app kit (tessera rebuilt)",
+      "total": 6.7,
+      "s": {
+        "market_demand": 7,
+        "baseline_strength": 8,
+        "defensibility": 7,
+        "willingness_to_pay": 5,
+        "recurring_revenue_fit": 6,
+        "build_effort_inverse": 6,
+        "distribution": 8
+      }
+    },
+    {
+      "slug": "agent-os",
+      "name": "Claude-Code-native agentic dev framework (gridwork-core)",
+      "total": 6.68,
+      "s": {
+        "market_demand": 7,
+        "baseline_strength": 9,
+        "defensibility": 7,
+        "willingness_to_pay": 5,
+        "recurring_revenue_fit": 7,
+        "build_effort_inverse": 4,
+        "distribution": 6
+      }
+    },
+    {
+      "slug": "saas-base",
+      "name": "Multi-tenant SaaS base substrate (gridwork+gwdigital)",
+      "total": 5.76,
+      "s": {
+        "market_demand": 6,
+        "baseline_strength": 8,
+        "defensibility": 4,
+        "willingness_to_pay": 5,
+        "recurring_revenue_fit": 5,
+        "build_effort_inverse": 7,
+        "distribution": 5
+      }
+    },
+    {
+      "slug": "generic-boilerplate",
+      "name": "Generic SaaS boilerplate (baseline reference)",
+      "total": 4.6,
+      "s": {
+        "market_demand": 5,
+        "baseline_strength": 7,
+        "defensibility": 2,
+        "willingness_to_pay": 4,
+        "recurring_revenue_fit": 3,
+        "build_effort_inverse": 8,
+        "distribution": 3
+      }
+    }
+  ]
+}

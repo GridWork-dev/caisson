@@ -1,0 +1,5799 @@
+{
+  "generated": "2026-06-27",
+  "keyword_buckets": {
+    "generic_template_market": [
+      "saas boilerplate",
+      "saas starter kit",
+      "nextjs boilerplate",
+      "nextjs starter kit",
+      "react boilerplate",
+      "saas template",
+      "full stack boilerplate",
+      "saas starter",
+      "micro saas boilerplate",
+      "supabase starter kit",
+      "stripe saas boilerplate",
+      "t3 stack boilerplate",
+      "indie hacker boilerplate",
+      "web app boilerplate",
+      "shipfast",
+      "makerkit",
+      "saas kit"
+    ],
+    "compliance_moat": [
+      "compliance software",
+      "compliance saas",
+      "audit trail software",
+      "regulatory compliance software",
+      "gdpr compliance tool",
+      "hipaa compliant software",
+      "soc 2 compliance software",
+      "compliance automation software",
+      "multi tenant saas",
+      "audit log software",
+      "legal document automation",
+      "regtech",
+      "document management compliance",
+      "policy management software",
+      "compliance management system"
+    ],
+    "local_first_ai_moat": [
+      "local first software",
+      "on device ai",
+      "local ai app",
+      "offline ai",
+      "private ai",
+      "local llm app",
+      "edge ai",
+      "on device machine learning",
+      "local first ai",
+      "privacy first ai",
+      "self hosted ai"
+    ],
+    "ai_feature_add_moat": [
+      "ai feature integration",
+      "add ai to app",
+      "llm integration",
+      "rag pipeline",
+      "ai agent framework",
+      "ai saas template",
+      "ai wrapper",
+      "ai pipeline",
+      "ai chatbot saas boilerplate",
+      "openai api boilerplate",
+      "vector search"
+    ],
+    "business_model": [
+      "saas lifetime deal",
+      "code template marketplace",
+      "developer tools subscription",
+      "usage based pricing saas",
+      "ai credits pricing"
+    ],
+    "agent_os_devtools": [
+      "claude code",
+      "ai coding agent",
+      "developer productivity tools",
+      "code generation tool",
+      "ai agent boilerplate"
+    ]
+  },
+  "volume_cpc": [
+    {
+      "keyword": "saas boilerplate",
+      "volume": 140,
+      "cpcUsd": 20.34,
+      "competition": "MEDIUM",
+      "competitionIndex": 35
+    },
+    {
+      "keyword": "saas starter kit",
+      "volume": 70,
+      "cpcUsd": 7.67,
+      "competition": "LOW",
+      "competitionIndex": 31
+    },
+    {
+      "keyword": "nextjs boilerplate",
+      "volume": 260,
+      "cpcUsd": 11.05,
+      "competition": "LOW",
+      "competitionIndex": 8
+    },
+    {
+      "keyword": "nextjs starter kit",
+      "volume": 70,
+      "cpcUsd": 4.43,
+      "competition": "LOW",
+      "competitionIndex": 4
+    },
+    {
+      "keyword": "react boilerplate",
+      "volume": 110,
+      "cpcUsd": 14.32,
+      "competition": "LOW",
+      "competitionIndex": 3
+    },
+    {
+      "keyword": "saas template",
+      "volume": 210,
+      "cpcUsd": 8.45,
+      "competition": "LOW",
+      "competitionIndex": 30
+    },
+    {
+      "keyword": "full stack boilerplate",
+      "volume": 10,
+      "cpcUsd": null,
+      "competition": null,
+      "competitionIndex": null
+    },
+    {
+      "keyword": "saas starter",
+      "volume": 50,
+      "cpcUsd": 6.24,
+      "competition": "MEDIUM",
+      "competitionIndex": 35
+    },
+    {
+      "keyword": "micro saas boilerplate",
+      "volume": 10,
+      "cpcUsd": null,
+      "competition": null,
+      "competitionIndex": null
+    },
+    {
+      "keyword": "supabase starter kit",
+      "volume": 20,
+      "cpcUsd": null,
+      "competition": "LOW",
+      "competitionIndex": 1
+    },
+    {
+      "keyword": "stripe saas boilerplate",
+      "volume": null,
+      "cpcUsd": null,
+      "competition": null,
+      "competitionIndex": null
+    },
+    {
+      "keyword": "t3 stack boilerplate",
+      "volume": null,
+      "cpcUsd": null,
+      "competition": null,
+      "competitionIndex": null
+    },
+    {
+      "keyword": "indie hacker boilerplate",
+      "volume": null,
+      "cpcUsd": null,
+      "competition": null,
+      "competitionIndex": null
+    },
+    {
+      "keyword": "web app boilerplate",
+      "volume": 10,
+      "cpcUsd": null,
+      "competition": null,
+      "competitionIndex": null
+    },
+    {
+      "keyword": "shipfast",
+      "volume": 720,
+      "cpcUsd": 25.83,
+      "competition": "LOW",
+      "competitionIndex": 6
+    },
+    {
+      "keyword": "makerkit",
+      "volume": 590,
+      "cpcUsd": 2.77,
+      "competition": "MEDIUM",
+      "competitionIndex": 56
+    },
+    {
+      "keyword": "saas kit",
+      "volume": 10,
+      "cpcUsd": 5.18,
+      "competition": "MEDIUM",
+      "competitionIndex": 34
+    },
+    {
+      "keyword": "compliance software",
+      "volume": 880,
+      "cpcUsd": 55.08,
+      "competition": "LOW",
+      "competitionIndex": 29
+    },
+    {
+      "keyword": "compliance saas",
+      "volume": 110,
+      "cpcUsd": 42.94,
+      "competition": "LOW",
+      "competitionIndex": 30
+    },
+    {
+      "keyword": "audit trail software",
+      "volume": 110,
+      "cpcUsd": null,
+      "competition": "LOW",
+      "competitionIndex": 4
+    },
+    {
+      "keyword": "regulatory compliance software",
+      "volume": 480,
+      "cpcUsd": 76.47,
+      "competition": "LOW",
+      "competitionIndex": 8
+    },
+    {
+      "keyword": "gdpr compliance tool",
+      "volume": 90,
+      "cpcUsd": null,
+      "competition": "LOW",
+      "competitionIndex": 4
+    },
+    {
+      "keyword": "hipaa compliant software",
+      "volume": 4400,
+      "cpcUsd": 69.86,
+      "competition": "LOW",
+      "competitionIndex": 5
+    },
+    {
+      "keyword": "soc 2 compliance software",
+      "volume": 320,
+      "cpcUsd": 171.32,
+      "competition": "LOW",
+      "competitionIndex": 30
+    },
+    {
+      "keyword": "compliance automation software",
+      "volume": 480,
+      "cpcUsd": 212.64,
+      "competition": "LOW",
+      "competitionIndex": 12
+    },
+    {
+      "keyword": "multi tenant saas",
+      "volume": 140,
+      "cpcUsd": 43.9,
+      "competition": "LOW",
+      "competitionIndex": 11
+    },
+    {
+      "keyword": "audit log software",
+      "volume": 70,
+      "cpcUsd": null,
+      "competition": "LOW",
+      "competitionIndex": 6
+    },
+    {
+      "keyword": "legal document automation",
+      "volume": 140,
+      "cpcUsd": 152.81,
+      "competition": "LOW",
+      "competitionIndex": 22
+    },
+    {
+      "keyword": "regtech",
+      "volume": 880,
+      "cpcUsd": 18.23,
+      "competition": "LOW",
+      "competitionIndex": 28
+    },
+    {
+      "keyword": "document management compliance",
+      "volume": 20,
+      "cpcUsd": null,
+      "competition": "LOW",
+      "competitionIndex": 5
+    },
+    {
+      "keyword": "policy management software",
+      "volume": 880,
+      "cpcUsd": 106.57,
+      "competition": "LOW",
+      "competitionIndex": 24
+    },
+    {
+      "keyword": "compliance management system",
+      "volume": 880,
+      "cpcUsd": 112.49,
+      "competition": "LOW",
+      "competitionIndex": 21
+    },
+    {
+      "keyword": "local first software",
+      "volume": 110,
+      "cpcUsd": null,
+      "competition": "LOW",
+      "competitionIndex": 2
+    },
+    {
+      "keyword": "on device ai",
+      "volume": 480,
+      "cpcUsd": 4.26,
+      "competition": "LOW",
+      "competitionIndex": 1
+    },
+    {
+      "keyword": "local ai app",
+      "volume": 170,
+      "cpcUsd": 4.97,
+      "competition": "LOW",
+      "competitionIndex": 7
+    },
+    {
+      "keyword": "offline ai",
+      "volume": 1000,
+      "cpcUsd": 5.31,
+      "competition": "LOW",
+      "competitionIndex": 16
+    },
+    {
+      "keyword": "private ai",
+      "volume": 1900,
+      "cpcUsd": 4.33,
+      "competition": "LOW",
+      "competitionIndex": 31
+    },
+    {
+      "keyword": "local llm app",
+      "volume": 40,
+      "cpcUsd": null,
+      "competition": "LOW",
+      "competitionIndex": 6
+    },
+    {
+      "keyword": "edge ai",
+      "volume": 5400,
+      "cpcUsd": 24.06,
+      "competition": "LOW",
+      "competitionIndex": 30
+    },
+    {
+      "keyword": "on device machine learning",
+      "volume": 40,
+      "cpcUsd": null,
+      "competition": "LOW",
+      "competitionIndex": 4
+    },
+    {
+      "keyword": "local first ai",
+      "volume": 10,
+      "cpcUsd": null,
+      "competition": "LOW",
+      "competitionIndex": 11
+    },
+    {
+      "keyword": "privacy first ai",
+      "volume": 30,
+      "cpcUsd": 10.34,
+      "competition": "LOW",
+      "competitionIndex": 28
+    },
+    {
+      "keyword": "self hosted ai",
+      "volume": 720,
+      "cpcUsd": 9.75,
+      "competition": "LOW",
+      "competitionIndex": 25
+    },
+    {
+      "keyword": "ai feature integration",
+      "volume": null,
+      "cpcUsd": null,
+      "competition": null,
+      "competitionIndex": null
+    },
+    {
+      "keyword": "add ai to app",
+      "volume": null,
+      "cpcUsd": null,
+      "competition": null,
+      "competitionIndex": null
+    },
+    {
+      "keyword": "llm integration",
+      "volume": 110,
+      "cpcUsd": 4.08,
+      "competition": "LOW",
+      "competitionIndex": 20
+    },
+    {
+      "keyword": "rag pipeline",
+      "volume": 2400,
+      "cpcUsd": 9.3,
+      "competition": "MEDIUM",
+      "competitionIndex": 41
+    },
+    {
+      "keyword": "ai agent framework",
+      "volume": 1300,
+      "cpcUsd": 15.11,
+      "competition": "LOW",
+      "competitionIndex": 27
+    },
+    {
+      "keyword": "ai saas template",
+      "volume": 20,
+      "cpcUsd": 7.76,
+      "competition": "MEDIUM",
+      "competitionIndex": 63
+    },
+    {
+      "keyword": "ai wrapper",
+      "volume": 880,
+      "cpcUsd": 25.24,
+      "competition": "LOW",
+      "competitionIndex": 16
+    },
+    {
+      "keyword": "ai pipeline",
+      "volume": 320,
+      "cpcUsd": 21.81,
+      "competition": "MEDIUM",
+      "competitionIndex": 36
+    },
+    {
+      "keyword": "ai chatbot saas boilerplate",
+      "volume": null,
+      "cpcUsd": null,
+      "competition": null,
+      "competitionIndex": null
+    },
+    {
+      "keyword": "openai api boilerplate",
+      "volume": null,
+      "cpcUsd": null,
+      "competition": null,
+      "competitionIndex": null
+    },
+    {
+      "keyword": "vector search",
+      "volume": 1600,
+      "cpcUsd": 19.43,
+      "competition": "LOW",
+      "competitionIndex": 19
+    },
+    {
+      "keyword": "saas lifetime deal",
+      "volume": 70,
+      "cpcUsd": 0.89,
+      "competition": "LOW",
+      "competitionIndex": 3
+    },
+    {
+      "keyword": "code template marketplace",
+      "volume": null,
+      "cpcUsd": null,
+      "competition": null,
+      "competitionIndex": null
+    },
+    {
+      "keyword": "developer tools subscription",
+      "volume": null,
+      "cpcUsd": null,
+      "competition": null,
+      "competitionIndex": null
+    },
+    {
+      "keyword": "usage based pricing saas",
+      "volume": 70,
+      "cpcUsd": 73.35,
+      "competition": "LOW",
+      "competitionIndex": 16
+    },
+    {
+      "keyword": "ai credits pricing",
+      "volume": 10,
+      "cpcUsd": null,
+      "competition": "LOW",
+      "competitionIndex": 10
+    },
+    {
+      "keyword": "claude code",
+      "volume": 450000,
+      "cpcUsd": 10.07,
+      "competition": "MEDIUM",
+      "competitionIndex": 42
+    },
+    {
+      "keyword": "ai coding agent",
+      "volume": 4400,
+      "cpcUsd": 23.55,
+      "competition": "LOW",
+      "competitionIndex": 7
+    },
+    {
+      "keyword": "developer productivity tools",
+      "volume": 210,
+      "cpcUsd": 55.85,
+      "competition": "LOW",
+      "competitionIndex": 21
+    },
+    {
+      "keyword": "code generation tool",
+      "volume": 170,
+      "cpcUsd": 22.81,
+      "competition": "LOW",
+      "competitionIndex": 25
+    },
+    {
+      "keyword": "ai agent boilerplate",
+      "volume": 10,
+      "cpcUsd": null,
+      "competition": "HIGH",
+      "competitionIndex": 86
+    }
+  ],
+  "keyword_difficulty": [
+    {
+      "keyword": "ai agent framework",
+      "difficulty": 32
+    },
+    {
+      "keyword": "ai coding agent",
+      "difficulty": 23
+    },
+    {
+      "keyword": "ai pipeline",
+      "difficulty": 0
+    },
+    {
+      "keyword": "ai saas template",
+      "difficulty": null
+    },
+    {
+      "keyword": "ai wrapper",
+      "difficulty": 0
+    },
+    {
+      "keyword": "audit log software",
+      "difficulty": 12
+    },
+    {
+      "keyword": "audit trail software",
+      "difficulty": 11
+    },
+    {
+      "keyword": "claude code",
+      "difficulty": 75
+    },
+    {
+      "keyword": "code generation tool",
+      "difficulty": 30
+    },
+    {
+      "keyword": "compliance automation software",
+      "difficulty": 10
+    },
+    {
+      "keyword": "compliance management system",
+      "difficulty": 18
+    },
+    {
+      "keyword": "compliance saas",
+      "difficulty": 0
+    },
+    {
+      "keyword": "compliance software",
+      "difficulty": 24
+    },
+    {
+      "keyword": "developer productivity tools",
+      "difficulty": 12
+    },
+    {
+      "keyword": "document management compliance",
+      "difficulty": 0
+    },
+    {
+      "keyword": "edge ai",
+      "difficulty": 29
+    },
+    {
+      "keyword": "full stack boilerplate",
+      "difficulty": null
+    },
+    {
+      "keyword": "gdpr compliance tool",
+      "difficulty": 21
+    },
+    {
+      "keyword": "hipaa compliant software",
+      "difficulty": 16
+    },
+    {
+      "keyword": "legal document automation",
+      "difficulty": 5
+    },
+    {
+      "keyword": "llm integration",
+      "difficulty": 0
+    },
+    {
+      "keyword": "local ai app",
+      "difficulty": 33
+    },
+    {
+      "keyword": "local first software",
+      "difficulty": 22
+    },
+    {
+      "keyword": "local llm app",
+      "difficulty": 31
+    },
+    {
+      "keyword": "makerkit",
+      "difficulty": 7
+    },
+    {
+      "keyword": "micro saas boilerplate",
+      "difficulty": null
+    },
+    {
+      "keyword": "multi tenant saas",
+      "difficulty": 12
+    },
+    {
+      "keyword": "nextjs boilerplate",
+      "difficulty": 22
+    },
+    {
+      "keyword": "nextjs starter kit",
+      "difficulty": 13
+    },
+    {
+      "keyword": "offline ai",
+      "difficulty": 24
+    },
+    {
+      "keyword": "on device ai",
+      "difficulty": 9
+    },
+    {
+      "keyword": "on device machine learning",
+      "difficulty": 17
+    },
+    {
+      "keyword": "policy management software",
+      "difficulty": 12
+    },
+    {
+      "keyword": "privacy first ai",
+      "difficulty": 7
+    },
+    {
+      "keyword": "private ai",
+      "difficulty": 23
+    },
+    {
+      "keyword": "rag pipeline",
+      "difficulty": 7
+    },
+    {
+      "keyword": "react boilerplate",
+      "difficulty": 6
+    },
+    {
+      "keyword": "regtech",
+      "difficulty": 25
+    },
+    {
+      "keyword": "regulatory compliance software",
+      "difficulty": 15
+    },
+    {
+      "keyword": "saas boilerplate",
+      "difficulty": 17
+    },
+    {
+      "keyword": "saas kit",
+      "difficulty": 15
+    },
+    {
+      "keyword": "saas lifetime deal",
+      "difficulty": 18
+    },
+    {
+      "keyword": "saas starter",
+      "difficulty": 19
+    },
+    {
+      "keyword": "saas starter kit",
+      "difficulty": 21
+    },
+    {
+      "keyword": "saas template",
+      "difficulty": 16
+    },
+    {
+      "keyword": "self hosted ai",
+      "difficulty": 3
+    },
+    {
+      "keyword": "shipfast",
+      "difficulty": 10
+    },
+    {
+      "keyword": "soc 2 compliance software",
+      "difficulty": 28
+    },
+    {
+      "keyword": "supabase starter kit",
+      "difficulty": null
+    },
+    {
+      "keyword": "usage based pricing saas",
+      "difficulty": 24
+    },
+    {
+      "keyword": "vector search",
+      "difficulty": 49
+    },
+    {
+      "keyword": "web app boilerplate",
+      "difficulty": 49
+    },
+    {
+      "keyword": "stripe saas boilerplate",
+      "difficulty": null
+    },
+    {
+      "keyword": "t3 stack boilerplate",
+      "difficulty": null
+    },
+    {
+      "keyword": "indie hacker boilerplate",
+      "difficulty": null
+    },
+    {
+      "keyword": "local first ai",
+      "difficulty": null
+    },
+    {
+      "keyword": "ai feature integration",
+      "difficulty": null
+    },
+    {
+      "keyword": "add ai to app",
+      "difficulty": null
+    },
+    {
+      "keyword": "ai chatbot saas boilerplate",
+      "difficulty": null
+    },
+    {
+      "keyword": "openai api boilerplate",
+      "difficulty": null
+    },
+    {
+      "keyword": "code template marketplace",
+      "difficulty": null
+    },
+    {
+      "keyword": "developer tools subscription",
+      "difficulty": null
+    },
+    {
+      "keyword": "ai credits pricing",
+      "difficulty": null
+    },
+    {
+      "keyword": "ai agent boilerplate",
+      "difficulty": null
+    }
+  ],
+  "serp_composition": [
+    {
+      "keyword": "saas boilerplate",
+      "totalResults": 58,
+      "top": [
+        {
+          "rank": 1,
+          "title": "Free and Open Source SaaS Boilerplate with Tailwind CSS ...",
+          "domain": "github.com",
+          "url": "https://github.com/ixartz/SaaS-Boilerplate",
+          "description": "SaaS Boilerplate is a powerful and fully customizable template to kickstart your SaaS applications. Built with Next.js and Tailwind CSS, and the modular UI ... Read more"
+        },
+        {
+          "rank": 2,
+          "title": "Stop paying for SaaS boilerplates - Here's a curated list of ...",
+          "domain": "www.reddit.com",
+          "url": "https://www.reddit.com/r/SaaS/comments/1gu2m1i/stop_paying_for_saas_boilerplates_heres_a_curated/",
+          "description": "Don't want to drop $200+ on a paid boilerplate? I've compiled a list of battle-tested, open-source SaaS boilerplates across multiple tech ... Read more"
+        },
+        {
+          "rank": 3,
+          "title": "Build SaaS products faster in React, Django and AWS",
+          "domain": "apptension.com",
+          "url": "https://apptension.com/builders-toolkit/saas-boilerplate",
+          "description": "Our comprehensive starter kit is designed to accelerate your project and save you valuable time and resources. Our battle-tested boilerplate eliminates the need ... Read more"
+        },
+        {
+          "rank": 4,
+          "title": "SaaSBold: Best SaaS Boilerplate and Starter Kit",
+          "domain": "saasbold.com",
+          "url": "https://saasbold.com/",
+          "description": "SaaSBold is a full-stack, production ready Next.js SaaS boilerplate and starter kit. Tailored for optimal developer experience, front and back-end ... Read more"
+        },
+        {
+          "rank": 5,
+          "title": "SaaS Starters: A vetted list of SaaS Boilerplates",
+          "domain": "saasstarters.com",
+          "url": "https://saasstarters.com/",
+          "description": "A SaaS boilerplate and starter kit designed to accelerate development and deployment for Node.js and React projects. Read more"
+        },
+        {
+          "rank": 6,
+          "title": "SaaS Boilerplates and Starter Kits",
+          "domain": "www.saaspegasus.com",
+          "url": "https://www.saaspegasus.com/guides/saas-boilerplates-and-starter-kits/",
+          "description": "A SaaS boilerplate, also known as a starter kit, is a pre-built foundation for a SaaS application. It helps developers save time by eliminating the need to ... Read more"
+        },
+        {
+          "rank": 7,
+          "title": "BoilerplateList: The Ultimate List of Boilerplates",
+          "domain": "boilerplatelist.com",
+          "url": "https://boilerplatelist.com/",
+          "description": "Our curated directory brings together the best SaaS, mobile, and open-source boilerplates in one place. Whether you're a founder or a developer, we help you ... Read more"
+        },
+        {
+          "rank": 9,
+          "title": "apptension/saas-boilerplate: SaaS ...",
+          "domain": "github.com",
+          "url": "https://github.com/apptension/saas-boilerplate",
+          "description": "SaaS Boilerplate includes essential features that every SaaS application requires, such as frontend, backend API, admin panel, and workers. With a scalable AWS- ... Read more"
+        },
+        {
+          "rank": 10,
+          "title": "SaaS Boilerplates - Find SaaS Starter Kits and Boilerplates",
+          "domain": "saasboilerplates.com",
+          "url": "https://saasboilerplates.com/",
+          "description": "SaaS Boilerplates is a curated directory of the best SaaS boilerplates and starter kits to help you build and launch your next SaaS. New boilerplates are added ... Read more"
+        },
+        {
+          "rank": 11,
+          "title": "Best SaaS Boilerplates to Get a Product Quickly",
+          "domain": "medium.com",
+          "url": "https://medium.com/@andreaschristoucy/best-saas-boilerplates-to-get-a-product-quickly-a5798a4ff1b3",
+          "description": "Apptension's SaaS Boilerplate comes packed with modern tools-React, Django, TypeScript, AWS, Stripe, OAuth, email, and even a CI/CD pipeline. Read more"
+        }
+      ],
+      "features": [
+        "organic"
+      ]
+    },
+    {
+      "keyword": "nextjs boilerplate",
+      "totalResults": 106,
+      "top": [
+        {
+          "rank": 1,
+          "title": "Boilerplate and Starter for Next.js 16+, Tailwind CSS 4, and ...",
+          "domain": "github.com",
+          "url": "https://github.com/ixartz/Next-js-Boilerplate",
+          "description": "Next.js Boilerplate relies on Codecov for code coverage reporting solution. To enable Codecov, create a Codecov account and connect it to your GitHub account. Read more"
+        },
+        {
+          "rank": 2,
+          "title": "Recommendations for Next.js templates / boilerplate with ...",
+          "domain": "www.reddit.com",
+          "url": "https://www.reddit.com/r/nextjs/comments/1i6bv5d/recommendations_for_nextjs_templates_boilerplate/",
+          "description": "I'm looking to save time here so I can get my product out in a few days. I don't mind having to pay honestly because the amount of time I will save will ..."
+        },
+        {
+          "rank": 3,
+          "title": "Next.js Boilerplate",
+          "domain": "vercel.com",
+          "url": "https://vercel.com/templates/next.js/nextjs-boilerplate",
+          "description": "This project uses next/font to automatically optimize and load Geist, a new font family for Vercel. Learn More. To learn more about Next.js, ... Read more"
+        },
+        {
+          "rank": 4,
+          "title": "Next.js Boilerplates",
+          "domain": "boilerplatelist.com",
+          "url": "https://boilerplatelist.com/next-js-boilerplates/",
+          "description": "Elevate your web development with our curated directory of Next.js boilerplates. We've assembled a collection of high-quality, SEO-optimized starter kits ... Read more"
+        },
+        {
+          "rank": 5,
+          "title": "Next.js Boilerplate with Tailwind CSS, next-intl, TypeScript",
+          "domain": "github.com",
+          "url": "https://github.com/ghbishal/nextjs-boilerplate",
+          "description": "Welcome to the Next.js Production Ready Boilerplate and Starter, a powerful open-source template designed for scalable projects! Read more"
+        },
+        {
+          "rank": 6,
+          "title": "I built a production ready NEXT.JS Boilerplate so you dont ...",
+          "domain": "dev.to",
+          "url": "https://dev.to/salmanshahriar/i-built-a-production-ready-nextjs-boilerplate-so-you-dont-have-to-17d3",
+          "description": "Nov 19, 2025 — It is a frontend-first Next.js 16 + React 19 boilerplate designed to consume APIs (REST/GraphQL/BFF) instead of owning a database, allowing you ... Read more"
+        },
+        {
+          "rank": 7,
+          "title": "Next JS Boilerplate: Free & Open-Source Starter Kit",
+          "domain": "nextjs-boilerplate.com",
+          "url": "https://nextjs-boilerplate.com/",
+          "description": "Free, open-source Next.js boilerplate with authentication included. The open-source Next.js Starter Kit trusted by 12000+ developers on GitHub."
+        },
+        {
+          "rank": 8,
+          "title": "NextJs best boiler plate",
+          "domain": "medium.com",
+          "url": "https://medium.com/@mahernaija/nextjs-best-boiler-plate-8a198a1aa90b",
+          "description": "Best Boilerplate and Starter for Next.js with App Router support, Tailwind CSS, and TypeScript. Prioritizing developer experience first. Read more"
+        },
+        {
+          "rank": 9,
+          "title": "Next.js Boilerplate with Auth, Stripe and more",
+          "domain": "nextjstemplates.com",
+          "url": "https://nextjstemplates.com/boilerplate",
+          "description": "Explore Next.js boilerplates with authentication, Stripe payments, dashboards, and scalable project structure. Pre-built starter kits to ..."
+        },
+        {
+          "rank": 10,
+          "title": "NextJS Boilerplate",
+          "domain": "www.geeksforgeeks.org",
+          "url": "https://www.geeksforgeeks.org/reactjs/nextjs-boilerplate/",
+          "description": "Jul 23, 2025 — Next.js provides a command to create a project, which generates all the required files known as a boilerplate. In this article, we will learn about the Next.js ..."
+        }
+      ],
+      "features": [
+        "organic"
+      ]
+    },
+    {
+      "keyword": "saas starter kit",
+      "totalResults": 189,
+      "top": [
+        {
+          "rank": 1,
+          "title": "boxyhq/saas-starter-kit: 🔥 Enterprise ...",
+          "domain": "github.com",
+          "url": "https://github.com/boxyhq/saas-starter-kit",
+          "description": "Next.js-based SaaS starter kit saves you months of development by starting you off with all the features that are the same in every product. Read more"
+        },
+        {
+          "rank": 2,
+          "title": "What do ya'll recommend for a SaaS Boilerplate Starter Kit?",
+          "domain": "www.reddit.com",
+          "url": "https://www.reddit.com/r/SaaS/comments/18t9fx6/what_do_yall_recommend_for_a_saas_boilerplate/",
+          "description": "I've been looking at some of the options on https://saasitron.com/# and https://boilerplatelist.com/ . Do any of you have experience with any of these? ..."
+        },
+        {
+          "rank": 3,
+          "title": "SaaS Starter Kit - Essential Web Development Tools",
+          "domain": "startsaas.com",
+          "url": "https://startsaas.com/",
+          "description": "Our SaaS Starter Kit offers essential components and modules for modern web development. From pre-built templates to customizable features and workflow ... Read more"
+        },
+        {
+          "rank": 4,
+          "title": "SaaS Starters: A vetted list of SaaS Boilerplates",
+          "domain": "saasstarters.com",
+          "url": "https://saasstarters.com/",
+          "description": "A SaaS boilerplate and starter kit designed to accelerate development and deployment for Node.js and React projects. Read more"
+        },
+        {
+          "rank": 5,
+          "title": "MakerKit: Next.js SaaS Starter Kit & Boilerplate",
+          "domain": "makerkit.dev",
+          "url": "https://makerkit.dev/",
+          "description": "The production-grade Next.js SaaS starter kit your AI agent builds on. Secure multi-tenancy, real billing, and an MCP server + agent rules for Claude Code, ..."
+        },
+        {
+          "rank": 6,
+          "title": "Best SaaS starter kits for Next.js | by Andreas Christou",
+          "domain": "medium.com",
+          "url": "https://medium.com/@andreaschristoucy/best-saas-starter-kits-for-next-js-a498218269c7",
+          "description": "Neorepo bundles everything required for a modern Next.js SaaS : authentication, billing, teams, blog, email, SEO, and more. It gives you the ... Read more"
+        },
+        {
+          "rank": 7,
+          "title": "Buildkits: SaaS Boilerplates, starter kits, and design systems",
+          "domain": "www.buildkits.dev",
+          "url": "https://www.buildkits.dev/",
+          "description": "StartKit.AI is the ultimate AI boilerplate, letting you build and launch your SaaS product in under 7 minutes. No AI experience required! Powered by OpenAI, ... Read more"
+        },
+        {
+          "rank": 8,
+          "title": "Best Next.js SaaS Starter Kits in 2026 | thefrontkit",
+          "domain": "thefrontkit.com",
+          "url": "https://thefrontkit.com/blogs/best-saas-starter-kits-2026",
+          "description": "Feb 18, 2026 — Compare the top Next.js SaaS boilerplates and starter kits in 2026: thefrontkit, ixartz/SaaS-Boilerplate, ShipFast, MakerKit, and more."
+        },
+        {
+          "rank": 10,
+          "title": "My Nextjs SAAS Starter Kit | Launch your SAAS",
+          "domain": "www.youtube.com",
+          "url": "https://www.youtube.com/watch?v=BwGP3s2W7gg",
+          "description": "In this video, I share you with you how to setup my Nextjs Starter Kit. If you're looking to build a SAAS using Nextjs... this is what you ..."
+        },
+        {
+          "rank": 11,
+          "title": "SaaS Boilerplates and Starter Kits",
+          "domain": "www.saaspegasus.com",
+          "url": "https://www.saaspegasus.com/guides/saas-boilerplates-and-starter-kits/",
+          "description": "A SaaS boilerplate, also known as a starter kit, is a pre-built foundation for a SaaS application. It helps developers save time by eliminating the need to ... Read more"
+        }
+      ],
+      "features": [
+        "organic"
+      ]
+    },
+    {
+      "keyword": "compliance software",
+      "totalResults": 125,
+      "top": [
+        {
+          "rank": 2,
+          "title": "What is compliance software?",
+          "domain": "www.vanta.com",
+          "url": "https://www.vanta.com/glossary/compliance-software",
+          "description": "Compliance software allows for an organization to monitor its internal systems and controls. Learn how compliance software can support your business."
+        },
+        {
+          "rank": 3,
+          "title": "The 8 Best Regulatory Compliance Platforms For 2026",
+          "domain": "usercentrics.com",
+          "url": "https://usercentrics.com/knowledge-hub/regulatory-compliance-platform/",
+          "description": "Dec 30, 2025 — A regulatory compliance platform is software that helps organizations track, manage, and report on legal and regulatory requirements."
+        },
+        {
+          "rank": 4,
+          "title": "Top Compliance Management Software Solutions for 2026",
+          "domain": "cynomi.com",
+          "url": "https://cynomi.com/learn/compliance-management-software-solutions/",
+          "description": "Jan 26, 2026 — Discover the best compliance management software solutions of 2026. Compare features, pricing, and use cases for Cynomi, Drata, Vanta, ..."
+        },
+        {
+          "rank": 7,
+          "title": "Compliance Management Software",
+          "domain": "www.metricstream.com",
+          "url": "https://www.metricstream.com/products/compliance-management.htm",
+          "description": "Compliance Management products equip you with automated workflow, collaboration, and real-time reporting capabilities, enabling you to save time, cost, and ..."
+        },
+        {
+          "rank": 8,
+          "title": "Comply: Compliance Management Platform for Financial ...",
+          "domain": "www.comply.com",
+          "url": "https://www.comply.com/",
+          "description": "COMPLY brings together data, solutions, services, education, and support to help financial services compliance teams manage and scale their compliance programs. Read more"
+        },
+        {
+          "rank": 9,
+          "title": "What is compliance management software and how can it ...",
+          "domain": "www.reddit.com",
+          "url": "https://www.reddit.com/r/SaaS/comments/1n84qha/what_is_compliance_management_software_and_how/",
+          "description": "I’ve been reading more about how organizations are adapting to stricter governance and regulatory requirements. One tool that keeps coming up is compliance ..."
+        },
+        {
+          "rank": 10,
+          "title": "Best Compliance Software 2026",
+          "domain": "www.capterra.com",
+          "url": "https://www.capterra.com/compliance-software/",
+          "description": "Compliance software, also known as compliance management software, helps businesses adhere to the legal and regulatory requirements of their industry."
+        },
+        {
+          "rank": 11,
+          "title": "10 Best Compliance Management Software Solutions for ...",
+          "domain": "titanapps.io",
+          "url": "https://titanapps.io/blog/compliance-management-tools",
+          "description": "Nov 18, 2025 — Vanta is one of the most popular compliance management software platforms for automating SOC 2, ISO 27001, HIPAA, and GDPR readiness."
+        },
+        {
+          "rank": 12,
+          "title": "Risk and compliance management tools",
+          "domain": "legal.thomsonreuters.com",
+          "url": "https://legal.thomsonreuters.com/en/risk-fraud-investigations/risk-compliance-management",
+          "description": "Optimize regulatory oversight with robust compliance management tools, ensuring streamlined and effective management of complex compliance strategies."
+        },
+        {
+          "rank": 14,
+          "title": "Best Compliance Tracking & Monitoring Software (+ 10 ...",
+          "domain": "www.atlassystems.com",
+          "url": "https://www.atlassystems.com/blog/best-compliance-tracking-software",
+          "description": "May 1, 2026 — Top 10 Best Compliance Tracking Tools · 1. ComplyScore® by Atlas Systems · 2. AuditBoard · 3. Vanta · 4. Drata · 5. Hyperproof · 6. OneTrust · 7 ... Read more"
+        }
+      ],
+      "features": [
+        "organic"
+      ]
+    },
+    {
+      "keyword": "local first software",
+      "totalResults": 127,
+      "top": [
+        {
+          "rank": 1,
+          "title": "Local-first software: You own your data, in spite of the cloud",
+          "domain": "www.inkandswitch.com",
+          "url": "https://www.inkandswitch.com/essay/local-first/",
+          "description": "Apr 1, 2019 — In this article we propose “local-first software”: a set of principles for software that enables both collaboration and ownership for users. Read more"
+        },
+        {
+          "rank": 2,
+          "title": "Local-First Software",
+          "domain": "lofi.so",
+          "url": "https://lofi.so/",
+          "description": "Experience apps that work offline, keep your data private, and sync seamlessly across your devices. Your data stays with you, not locked in the cloud. Read more"
+        },
+        {
+          "rank": 3,
+          "title": "Local-First Software:You Own Your Data, in spite of the Cloud",
+          "domain": "martin.kleppmann.com",
+          "url": "https://martin.kleppmann.com/papers/local-first.pdf",
+          "description": "by M Kleppmann · 2019 · Cited by 241 — The data synchronization need not necessarily go via the Internet: local-first apps could also use Bluetooth or local WiFi to sync data to nearby devices. Read more"
+        },
+        {
+          "rank": 5,
+          "title": "Local-First Software",
+          "domain": "docs.powersync.com",
+          "url": "https://docs.powersync.com/resources/local-first-software",
+          "description": "Local-first as software that prioritizes the use of local storage (the disk built into your computer) and local networks (such as your home WiFi) over servers ... Read more"
+        },
+        {
+          "rank": 6,
+          "title": "How Local-First Development Is Changing How We Make ...",
+          "domain": "www.heavybit.com",
+          "url": "https://www.heavybit.com/library/article/local-first-development",
+          "description": "Jan 28, 2025 — Local-first development is a development ethos that keeps data and code on your device first. It is inherently different from cloud-first development. Read more"
+        },
+        {
+          "rank": 7,
+          "title": "Why Local-First Software Is the Future and its Limitations",
+          "domain": "rxdb.info",
+          "url": "https://rxdb.info/articles/local-first-future.html",
+          "description": "Mar 26, 2026 — In local-first software, the primary copy of your data lives on the client rather than a remote server. Rather than sending each read or write ... Read more"
+        },
+        {
+          "rank": 8,
+          "title": "Local-First Software: Taking Back Control of Our Data | a mini ...",
+          "domain": "www.youtube.com",
+          "url": "https://www.youtube.com/watch?v=10d8HxS4y_g",
+          "description": "Most modern software assumes your data lives in the cloud. As long as you're online, everything works. When you're not, it often doesn't."
+        },
+        {
+          "rank": 9,
+          "title": "Local First Software Is Easier to Scale : r/programming",
+          "domain": "www.reddit.com",
+          "url": "https://www.reddit.com/r/programming/comments/1lsd8p8/local_first_software_is_easier_to_scale/",
+          "description": ""
+        },
+        {
+          "rank": 12,
+          "title": "alexanderop/awesome-local-first",
+          "domain": "github.com",
+          "url": "https://github.com/alexanderop/awesome-local-first",
+          "description": "Local-first software prioritizes data ownership, offline functionality, and synchronization — keeping user data primarily on their devices. Core Resources ... Read more"
+        },
+        {
+          "rank": 13,
+          "title": "Local-First Conf 2026",
+          "domain": "www.localfirstconf.com",
+          "url": "https://www.localfirstconf.com/",
+          "description": "“Local first” is a term for software that prioritizes data ownership, user agency, and empowering of end users to do more with their digital tools. Read more"
+        }
+      ],
+      "features": [
+        "organic"
+      ]
+    },
+    {
+      "keyword": "on device ai",
+      "totalResults": 96,
+      "top": [
+        {
+          "rank": 2,
+          "title": "On-device AI | Technologies",
+          "domain": "semiconductor.samsung.com",
+          "url": "https://semiconductor.samsung.com/technologies/processor/on-device-ai/",
+          "description": "On-device AI is what it sounds like: the capability to run AI features directly on mobile devices, without having to rely on the cloud. Until now, cloud-based ... Read more"
+        },
+        {
+          "rank": 3,
+          "title": "On-device artificial intelligence | European Data Protection ...",
+          "domain": "www.edps.europa.eu",
+          "url": "https://www.edps.europa.eu/data-protection/technology-monitoring/techsonar/device-artificial-intelligence",
+          "description": "On-device AI refers to a model architecture in which AI is implemented and executed directly on end devices, such as smartphones, wearables (e.g. smartwatches), ... Read more"
+        },
+        {
+          "rank": 4,
+          "title": "On-Device AI - Apps on Google Play",
+          "domain": "play.google.com",
+          "url": "https://play.google.com/store/apps/details?id=com.stayinfront.odnn&hl=en_US",
+          "description": "Apr 29, 2026 — On-Device AI is designed to process images of retail displays on your mobile device, reducing the cost and time associated with sending images ... Read more"
+        },
+        {
+          "rank": 6,
+          "title": "True On-Device Mobile AI is finally a reality, not a gimmick. ...",
+          "domain": "www.reddit.com",
+          "url": "https://www.reddit.com/r/LocalLLM/comments/1s6755l/true_ondevice_mobile_ai_is_finally_a_reality_not/",
+          "description": "It's a real-time speech-to-text app that gives you AI summaries completely on-device. No cloud, full privacy. It is currently available on the ... Read more"
+        },
+        {
+          "rank": 8,
+          "title": "On Device AI: What It Is and How It Works?",
+          "domain": "medium.com",
+          "url": "https://medium.com/@sahin.samia/on-device-ai-what-it-is-and-how-it-works-89721ee68792",
+          "description": "On-device AI is an exciting and rapidly evolving field that allows us to run artificial intelligence algorithms directly on a local device. Read more"
+        },
+        {
+          "rank": 9,
+          "title": "On Device AI: Get Help From AI Without Sending Your Work ...",
+          "domain": "ondevice-ai.app",
+          "url": "https://ondevice-ai.app/",
+          "description": "On Device AI runs models directly on your hardware. No data collection, no accounts, no analytics, no telemetry. Your conversations never leave your device ... Read more"
+        },
+        {
+          "rank": 11,
+          "title": "Why On-Device AI Is the Future of Inference",
+          "domain": "www.silextechnology.com",
+          "url": "https://www.silextechnology.com/platform-and-som-knowledge-pool/why-on-device-ai-is-the-future-of-inference",
+          "description": "Nov 24, 2025 — On-device AI inferencing is becoming increasingly popular, thanks to advancements in hardware capabilities and the availability of smaller ... Read more"
+        },
+        {
+          "rank": 14,
+          "title": "On-Device AI: The Strategic Shift from Cloud to Edge ...",
+          "domain": "picovoice.ai",
+          "url": "https://picovoice.ai/blog/on-device-ai/",
+          "description": "Nov 12, 2025 — Learn about on-device AI and how it is replacing cloud-based solutions with cost, latency, and privacy benefits."
+        },
+        {
+          "rank": 15,
+          "title": "On-Device AI: Benefits, Use Cases, and Challenges",
+          "domain": "www.couchbase.com",
+          "url": "https://www.couchbase.com/blog/on-device-ai/",
+          "description": "Jun 12, 2026 — On-device AI refers to artificial intelligence algorithms that run directly on local hardware rather than relying on a remote cloud server. The ... Read more"
+        },
+        {
+          "rank": 16,
+          "title": "On-Device AI",
+          "domain": "www.technologyreview.com",
+          "url": "https://www.technologyreview.com/hub/ubiquitous-on-device-ai/",
+          "description": "We are making on-device AI ubiquitous. Intelligence is moving towards edge devices. Increased computing power and sensor data along with improved AI algorithms ... Read more"
+        }
+      ],
+      "features": [
+        "organic"
+      ]
+    },
+    {
+      "keyword": "ai saas template",
+      "totalResults": 134,
+      "top": [
+        {
+          "rank": 1,
+          "title": "AI SaaS Template - Aceternity UI",
+          "domain": "ui.aceternity.com",
+          "url": "https://ui.aceternity.com/templates/ai-saas-template",
+          "description": "Every AI SaaS template is a multi-page template focused on AI applications offering SaaS solutions. A well structured template that is super easy to customize ..."
+        },
+        {
+          "rank": 2,
+          "title": "AI SaaS Website Templates & Page Designs",
+          "domain": "webflow.com",
+          "url": "https://webflow.com/templates/search/ai-saas",
+          "description": "Get our HTML5 responsive AI SaaS website templates and easily customize it with our web design tools, site builder, and CMS today."
+        },
+        {
+          "rank": 3,
+          "title": "SaaS Templates",
+          "domain": "vercel.com",
+          "url": "https://vercel.com/templates/saas",
+          "description": "Discover SaaS templates, starters, and themes to jumpstart your application or website build. perfect for SaaS and startups."
+        },
+        {
+          "rank": 4,
+          "title": "Ai Saas",
+          "domain": "dribbble.com",
+          "url": "https://dribbble.com/tags/ai-saas",
+          "description": "Ai Saas 984 inspirational designs, illustrations, and graphic elements from the world's best designers. bring AI to your canvas to help design, write, and ..."
+        },
+        {
+          "rank": 5,
+          "title": "221 AI SaaS Landing Pages for design inspiration",
+          "domain": "saaspo.com",
+          "url": "https://saaspo.com/industry/ai-saas-websites-inspiration",
+          "description": "Explore our web design inspiration library of the best AI SaaS landing pages. Curated by hand. Want to add your AI landing page? Submit your site here. Read more"
+        },
+        {
+          "rank": 7,
+          "title": "Free SaaS Website Templates You Can Edit & Download",
+          "domain": "www.figma.com",
+          "url": "https://www.figma.com/community/website-templates/saas",
+          "description": "Access free, customizable SaaS website templates. Edit pricing tables, feature sections, and demo pages to showcase your software. Start designing!"
+        },
+        {
+          "rank": 9,
+          "title": "Free No Code Saas Web Templates & Responsive ...",
+          "domain": "www.framer.com",
+          "url": "https://www.framer.com/community/marketplace/templates/categories/saas/",
+          "description": "Create a conversion-focused online presence for your software company with templates designed for SaaS businesses. These designs clearly communicate your value"
+        },
+        {
+          "rank": 10,
+          "title": "AI SaaS Promo Video - After Effects Template",
+          "domain": "www.youtube.com",
+          "url": "https://www.youtube.com/watch?v=UQED4NDdYMM",
+          "description": "Introducing the ultimate After Effects template designed specifically for SaaS platforms, web apps, digital tools and website showcases. HD ..."
+        },
+        {
+          "rank": 12,
+          "title": "Saas Ai Website Templates",
+          "domain": "themeforest.net",
+          "url": "https://themeforest.net/search/saas%20ai?srsltid=AfmBOop0pa7IXinEPrZXjFCqeXurtZXuEPJE2As84BK46eFh3fJJ5AUp",
+          "description": "Get 692 saas ai website templates on ThemeForest such as Sassly | SaaS, AI & Tech Startup Theme, Saaslyn - Saas, AI & Tech Startup WordPress Theme, ..."
+        },
+        {
+          "rank": 13,
+          "title": "Best 14 AI SaaS Website Templates - Alpha Design Global",
+          "domain": "alphadesignpro.substack.com",
+          "url": "https://alphadesignpro.substack.com/p/best-14-ai-saas-website-templates",
+          "description": "Best 14 AI SaaS Website Templates · 1. Inno · 2. Productify · 3. Clay AI · 4. Predict · 5. Axionet · 6. Bima · 7. Sadewa · 8. GeniAI. GeniAI App ... Read more"
+        }
+      ],
+      "features": [
+        "organic"
+      ]
+    },
+    {
+      "keyword": "ai agent framework",
+      "totalResults": 158,
+      "top": [
+        {
+          "rank": 2,
+          "title": "Microsoft Agent Framework Overview",
+          "domain": "learn.microsoft.com",
+          "url": "https://learn.microsoft.com/en-us/agent-framework/overview/",
+          "description": "Apr 6, 2026 — Build AI agents and multi-agent workflows in .NET and Python with Microsoft Agent Framework."
+        },
+        {
+          "rank": 3,
+          "title": "The best AI agent frameworks in 2026",
+          "domain": "www.langchain.com",
+          "url": "https://www.langchain.com/resources/ai-agent-frameworks",
+          "description": "LangChain is the most widely adopted open-source framework for building AI agents and LLM applications, with ~134k GitHub stars and more than 1,000 pre-built ... Read more"
+        },
+        {
+          "rank": 4,
+          "title": "AI Agent Frameworks: Choosing the Right Foundation for ...",
+          "domain": "www.ibm.com",
+          "url": "https://www.ibm.com/think/insights/top-ai-agent-frameworks",
+          "description": "Agentic frameworks are the building blocks for developing, deploying and managing AI agents. These software platforms have built-in features and functions that ... Read more"
+        },
+        {
+          "rank": 5,
+          "title": "What's the best framework for production‑grade AI agents ...",
+          "domain": "www.reddit.com",
+          "url": "https://www.reddit.com/r/AI_Agents/comments/1kjowzp/whats_the_best_framework_for_productiongrade_ai/",
+          "description": "I’ve been digging through past threads and keep seeing love for LangGraph + Pydantic‑AI. Before I commit, I’d love to hear what you are actually ..."
+        },
+        {
+          "rank": 6,
+          "title": "AI Agent Framework",
+          "domain": "arize.com",
+          "url": "https://arize.com/ai-agents/agent-frameworks/",
+          "description": "An AI agent framework acts as the control layer around the model. It establishes the order of operations, determines when to invoke a tool, manages state ... Read more"
+        },
+        {
+          "rank": 7,
+          "title": "12 Best AI Agent Frameworks in 2026",
+          "domain": "medium.com",
+          "url": "https://medium.com/data-science-collective/the-best-ai-agent-frameworks-for-2026-tier-list-b3a4362fac0d",
+          "description": "The Best AI Agent Frameworks for 2026 · 1 — LangGraph · 2 — CrewAI · 5 — Semantic Kernel · 6 — Pydantic AI · 7 — Claude MCP (Model Context ... Read more"
+        },
+        {
+          "rank": 8,
+          "title": "Welcome to Microsoft Agent Framework!",
+          "domain": "github.com",
+          "url": "https://github.com/microsoft/agent-framework",
+          "description": "Microsoft Agent Framework (MAF ) is an open, multi-language framework for building production-grade AI agents and multi-agent workflows in .NET and Python. Read more"
+        },
+        {
+          "rank": 10,
+          "title": "AI Agent Frameworks",
+          "domain": "www.geeksforgeeks.org",
+          "url": "https://www.geeksforgeeks.org/artificial-intelligence/ai-agent-frameworks/",
+          "description": "Apr 15, 2026 — AI agent frameworks are tools and platforms that help developers build intelligent agents capable of performing tasks autonomously, ... Read more"
+        },
+        {
+          "rank": 11,
+          "title": "Agent Zero AI: Open Source Agentic Framework & Computer ...",
+          "domain": "www.agent-zero.ai",
+          "url": "https://www.agent-zero.ai/",
+          "description": "Agent Zero enables you to easily use, build, train, and own specialized agentic assistants that can solve your real-world problems. Writing & Content Creation ... Read more"
+        },
+        {
+          "rank": 14,
+          "title": "Agent Framework: Building Blocks for the Next Generation of ...",
+          "domain": "www.youtube.com",
+          "url": "https://www.youtube.com/watch?v=AAgdMhftj8w",
+          "description": ""
+        }
+      ],
+      "features": [
+        "organic"
+      ]
+    },
+    {
+      "keyword": "audit trail software",
+      "totalResults": 130,
+      "top": [
+        {
+          "rank": 2,
+          "title": "Audit Trail Software: What It Is, Why It Matters, and How ...",
+          "domain": "www.suralink.com",
+          "url": "https://www.suralink.com/blog/audit-trail-software",
+          "description": "Jan 22, 2026 — Audit trail software creates a chronological, verifiable record of activity across digital systems. It captures who took action, ... Read more"
+        },
+        {
+          "rank": 3,
+          "title": "Audit Trail",
+          "domain": "www.datadoghq.com",
+          "url": "https://www.datadoghq.com/product/audit-trail/",
+          "description": "Datadog Audit Trail helps businesses safely adopt the Datadog platform while maintaining compliance, enforcing governance, and building greater transparency. Read more"
+        },
+        {
+          "rank": 4,
+          "title": "What is an audit trail? Everything you need to know",
+          "domain": "optro.ai",
+          "url": "https://optro.ai/blog/what-is-an-audit-trail",
+          "description": "Mar 31, 2026 — Key Takeaway: An audit trail is a tamper-evident, time-stamped record of who did what, when, where, and why across a system or process. Read more"
+        },
+        {
+          "rank": 5,
+          "title": "Audit trail",
+          "domain": "en.wikipedia.org",
+          "url": "https://en.wikipedia.org/wiki/Audit_trail",
+          "description": "An audit trail (also called audit log) is a security-relevant chronological record, set of records, and/or destination and source of recordsRead more"
+        },
+        {
+          "rank": 6,
+          "title": "Audit Trail Requirements: Guidelines for Compliance and Best ...",
+          "domain": "www.inscopehq.com",
+          "url": "https://www.inscopehq.com/post/audit-trail-requirements-guidelines-for-compliance-and-best-practices",
+          "description": "Jan 2, 2025 — An audit trail—sometimes called an audit log—is a chronological record of user actions and system events. It tracks who accessed what ... Read more"
+        },
+        {
+          "rank": 8,
+          "title": "What is an audit trail? | Workforce & Finance Glossary",
+          "domain": "www.paylocity.com",
+          "url": "https://www.paylocity.com/resources/glossary/audit-trail/",
+          "description": "Feb 10, 2026 — Audit trails are detailed records that document every action within a system, from user logins to changes in data or configuration. In other ... Read more"
+        },
+        {
+          "rank": 9,
+          "title": "What Is Audit Trail Software? A Complete Guide",
+          "domain": "www.hubifi.com",
+          "url": "https://www.hubifi.com/blog/audit-trail-saas-platform",
+          "description": "Oct 1, 2025 — Audit trail software: Learn how to track user actions, boost compliance, and secure your SaaS app with expert tips, best practices, ..."
+        },
+        {
+          "rank": 10,
+          "title": "Software Helps Auditors Make Big Strides on the Audit Trail",
+          "domain": "www.caseware.com",
+          "url": "https://www.caseware.com/resources/blog/software-helps-auditors-make-big-strides-audit-trail",
+          "description": "Software Helps Auditors Make Big Strides on the Audit Trail. Let's examine what audit trails are, how they are used and how to enjoy the benefits of this ... Read more"
+        },
+        {
+          "rank": 11,
+          "title": "Understanding Audit Trails: Types and Benefits",
+          "domain": "www.hyland.com",
+          "url": "https://www.hyland.com/en/resources/articles/audit-trails",
+          "description": "An audit trail is a chronological record of activities, transactions or changes in a system, providing a transparent history of all actions performed. Read more"
+        },
+        {
+          "rank": 13,
+          "title": "Understanding Audit Trails: Types and Benefits",
+          "domain": "www.hyland.com",
+          "url": "https://www.hyland.com/en/resources/articles/audit-trails",
+          "description": "An audit trail is a chronological record of activities, transactions or changes in a system, providing a transparent history of all actions performed. Read more"
+        }
+      ],
+      "features": [
+        "organic"
+      ]
+    },
+    {
+      "keyword": "multi tenant saas",
+      "totalResults": 135,
+      "top": [
+        {
+          "rank": 2,
+          "title": "SaaS: Single Tenant vs Multi-Tenant - What's the Difference?",
+          "domain": "www.fortra.com",
+          "url": "https://www.fortra.com/blog/saas-single-tenant-vs-multi-tenant-whats-difference",
+          "description": "Jul 26, 2018 — Multi-tenancy means that a single instance of the software and its supporting infrastructure serves multiple customers. Read more"
+        },
+        {
+          "rank": 4,
+          "title": "Re-defining multi-tenancy - SaaS Architecture Fundamentals",
+          "domain": "docs.aws.amazon.com",
+          "url": "https://docs.aws.amazon.com/whitepapers/latest/saas-architecture-fundamentals/re-defining-multi-tenancy.html",
+          "description": "Multi-tenancy is used to describe how resources are shared by tenants to promote agility and cost efficiency. Read more"
+        },
+        {
+          "rank": 5,
+          "title": "Good multi-tenant architecture for saas : r/dotnet",
+          "domain": "www.reddit.com",
+          "url": "https://www.reddit.com/r/dotnet/comments/1acrx5r/good_multitenant_architecture_for_saas/",
+          "description": "Azure Frontdoor can help with multi tenant deployments. You can have a single URL like service.com/tenant-id-or-name and it routes to US or ... Read more"
+        },
+        {
+          "rank": 6,
+          "title": "The Benefits of SaaS Multi-Tenant Architecture",
+          "domain": "www.signiant.com",
+          "url": "https://www.signiant.com/resources/articles/the-benefits-of-saas-multi-tenant-architecture/",
+          "description": "In its most basic definition, multi-tenancy is an architecture in which a single instance of a software application services multiple customers, or tenants. Read more"
+        },
+        {
+          "rank": 7,
+          "title": "What is multi-tenant (or multitenancy)?",
+          "domain": "www.ibm.com",
+          "url": "https://www.ibm.com/think/topics/multi-tenant",
+          "description": "Multi-tenant is when a single instance of a software application (and its underlying database and hardware) serves multiple tenants (or user accounts)."
+        },
+        {
+          "rank": 8,
+          "title": "SaaS and Multitenant Solution Architecture - Azure",
+          "domain": "learn.microsoft.com",
+          "url": "https://learn.microsoft.com/en-us/azure/architecture/guide/saas-multitenant-solution-architecture/",
+          "description": "Dec 16, 2025 — Multitenancy is a way of architecting a solution to share components between multiple tenants, which usually correspond to customers. Read more"
+        },
+        {
+          "rank": 11,
+          "title": "What is multi-tenancy and why it matters for B2B SaaS",
+          "domain": "clerk.com",
+          "url": "https://clerk.com/blog/what-is-multi-tenancy-and-why-it-matters-for-B2B-SaaS",
+          "description": "Jun 17, 2025 — At its core, multi-tenancy⁠ is an architectural design pattern that allows a single instance of an application to serve multiple customers (or \" ... Read more"
+        },
+        {
+          "rank": 13,
+          "title": "How To Build a Multi Tenant SaaS Application Successfully",
+          "domain": "www.rishabhsoft.com",
+          "url": "https://www.rishabhsoft.com/blog/how-to-build-a-multi-tenant-saas-application",
+          "description": "Mar 26, 2026 — How to Build a Multi-Tenant SaaS Application? · 1. Design Your Infrastructure · 2. Define Policies for Tenant Management · 3. Choose Your Cloud ... Read more"
+        },
+        {
+          "rank": 14,
+          "title": "Designing Distributed Multi-Tenant SaaS Architectures",
+          "domain": "aws.amazon.com",
+          "url": "https://aws.amazon.com/video/watch/58c639f3074/",
+          "description": "Explore SaaS anywhere strategies for distributed multi - tenant architectures using AWS services and best practices."
+        },
+        {
+          "rank": 15,
+          "title": "Let's Architect! Building multi-tenant SaaS systems",
+          "domain": "aws.amazon.com",
+          "url": "https://aws.amazon.com/blogs/architecture/lets-architect-building-multi-tenant-saas-systems/",
+          "description": "Sep 26, 2024 — In this blog post, we will explore some of the key elements and best practices for designing and deploying secure and efficient SaaS systems on AWS. Read more"
+        }
+      ],
+      "features": [
+        "organic"
+      ]
+    },
+    {
+      "keyword": "react boilerplate",
+      "totalResults": 119,
+      "top": [
+        {
+          "rank": 1,
+          "title": "react-boilerplate/react-boilerplate: 🔥 A highly scalable, ...",
+          "domain": "github.com",
+          "url": "https://github.com/react-boilerplate/react-boilerplate",
+          "description": "Quick scaffolding: Create components, containers, routes, selectors and sagas - and their tests - right from the CLI! Instant feedback: Enjoy the best DX ... Read more"
+        },
+        {
+          "rank": 2,
+          "title": "React boilerplate common/standard project structure",
+          "domain": "www.reddit.com",
+          "url": "https://www.reddit.com/r/reactjs/comments/172no4v/react_boilerplate_commonstandard_project_structure/",
+          "description": "Bulletproof react is a good template for general directory organization. Has a good wiki with explanations of overall structure and contents of each major ... Read more"
+        },
+        {
+          "rank": 3,
+          "title": "Electron React Boilerplate",
+          "domain": "electron-react-boilerplate.js.org",
+          "url": "https://electron-react-boilerplate.js.org/",
+          "description": "A foundation for scalable cross-platform apps. Get started faster. Iteration: Hot Reloading. Make changes to your app and preview the changes without having to ... Read more"
+        },
+        {
+          "rank": 5,
+          "title": "How to write a minimal React boilerplate from scratch",
+          "domain": "mrseanbaines.medium.com",
+          "url": "https://mrseanbaines.medium.com/how-to-write-a-minimal-react-boilerplate-from-scratch-85ba17757040",
+          "description": "How to write a minimal React boilerplate from scratch · Basic setup · Install dependencies · Build project structure and config files · Adding ... Read more"
+        },
+        {
+          "rank": 6,
+          "title": "Top 12+ Battle-Tested React Boilerplates for 2024",
+          "domain": "dev.to",
+          "url": "https://dev.to/rodik/top-12-battle-tested-react-boilerplates-for-2024-f6i",
+          "description": "Apr 29, 2024 — Minimalistic Boilerplates: provide basic configurations for a React project, including basic setups (such as Webpack, Babel, and ESLint). Read more"
+        },
+        {
+          "rank": 7,
+          "title": "Building a react boilerplate from scratch without using ...",
+          "domain": "www.geeksforgeeks.org",
+          "url": "https://www.geeksforgeeks.org/reactjs/building-a-react-boilerplate-from-scratch-without-using-create-react-app/",
+          "description": "Jul 25, 2024 — In this article, we are going to build a basic boilerplate for a React project from scratch without using the create-react-app or any other ..."
+        },
+        {
+          "rank": 9,
+          "title": "Extensive React Boilerplate to kickstart a new frontend project",
+          "domain": "whiskey.hashnode.dev",
+          "url": "https://whiskey.hashnode.dev/react-boilerplate",
+          "description": "May 13, 2024 — We refer to the Extensive React Boilerplate as a structured starting point for frontend development. It pairs beautifully with our NestJS boilerplate for the ... Read more"
+        },
+        {
+          "rank": 10,
+          "title": "React Boilerplates",
+          "domain": "boilerplatelist.com",
+          "url": "https://boilerplatelist.com/react-boilerplates/",
+          "description": "The go-to directory for modern React boilerplates. We hand-pick regularly updated templates that follow industry best practices, helping you launch sleek, ... Read more"
+        },
+        {
+          "rank": 11,
+          "title": "Top Boilerplate React JS Templates for 2025",
+          "domain": "anotherwrapper.com",
+          "url": "https://anotherwrapper.com/blog/boilerplate-react-js",
+          "description": "May 1, 2025 — Discover the best boilerplate react js options for 2025. Kickstart your project with top frameworks like CRA, Next.js, Vite, and more!"
+        },
+        {
+          "rank": 13,
+          "title": "Build a React BoilerPlate project: V 1.0.0 | TypeScript ...",
+          "domain": "www.youtube.com",
+          "url": "https://www.youtube.com/watch?v=jtBmH2EcMZc",
+          "description": ""
+        }
+      ],
+      "features": [
+        "organic"
+      ]
+    },
+    {
+      "keyword": "compliance saas",
+      "totalResults": 132,
+      "top": [
+        {
+          "rank": 2,
+          "title": "SaaS compliance: All you need to know",
+          "domain": "www.vanta.com",
+          "url": "https://www.vanta.com/resources/saas-compliance",
+          "description": "Oct 17, 2024 — SaaS compliance is an ongoing process of adhering to a spectrum of industry regulations and standards, including mandatory and recommended governance ... Read more"
+        },
+        {
+          "rank": 3,
+          "title": "Compliance automation tools / SaaS companies",
+          "domain": "www.reddit.com",
+          "url": "https://www.reddit.com/r/cybersecurity/comments/1gplhfy/compliance_automation_tools_saas_companies/",
+          "description": "Scytale's platform automates all the (usually painful) compliance tasks like gathering all the necessary info required for your audit (policies ..."
+        },
+        {
+          "rank": 5,
+          "title": "SaaS Compliance: A Practical Guide for Growing Companies",
+          "domain": "drata.com",
+          "url": "https://drata.com/learn/compliance/saas-compliance",
+          "description": "SaaS compliance means meeting security frameworks and regulatory standards that protect customer data and prove your security posture to enterprise buyers, ... Read more"
+        },
+        {
+          "rank": 7,
+          "title": "What is SaaS Compliance? Definition & FAQs",
+          "domain": "appomni.com",
+          "url": "https://appomni.com/saas-glossary/saas-compliance/",
+          "description": "SaaS compliance involves implementing several key organization controls to ensure adherence to legal and regulatory standards. Read more"
+        },
+        {
+          "rank": 8,
+          "title": "A Complete Overview of SaaS Compliance",
+          "domain": "sprinto.com",
+          "url": "https://sprinto.com/blog/saas-compliance-guide/",
+          "description": "Jun 16, 2026 — SaaS compliance helps businesses meet regulatory, security, and customer requirements while building trust and reducing legal, financial, and ..."
+        },
+        {
+          "rank": 11,
+          "title": "Your Guide to SaaS Compliance: Key Areas and Best ...",
+          "domain": "cloudsecurityalliance.org",
+          "url": "https://cloudsecurityalliance.org/blog/2025/01/21/your-guide-to-saas-compliance-key-areas-and-best-practices",
+          "description": "Jan 21, 2025 — SaaS compliance is an ongoing process of adhering to a spectrum of industry regulations and standards, including mandatory and recommended ..."
+        },
+        {
+          "rank": 12,
+          "title": "The Complete Guide to SaaS Compliance in 2025",
+          "domain": "www.valencesecurity.com",
+          "url": "https://www.valencesecurity.com/saas-security-terms/the-complete-guide-to-saas-compliance-in-2025-valence",
+          "description": "SaaS compliance ensures your cloud apps meet legal, regulatory, and security standards—protecting sensitive data, avoiding fines, and building customer trust."
+        },
+        {
+          "rank": 14,
+          "title": "SaaS Compliance Management: A Complete Guide for 2026",
+          "domain": "zylo.com",
+          "url": "https://zylo.com/blog/saas-compliance-management",
+          "description": "Jan 23, 2026 — SaaS compliance covers security, privacy, SOC 2, ISO 27001, HIPAA, PCI DSS. Find out how to manage risk and strengthen your SaaS governance."
+        },
+        {
+          "rank": 15,
+          "title": "How to ensure SaaS security compliance",
+          "domain": "www.axonius.com",
+          "url": "https://www.axonius.com/blog/how-to-ensure-saas-security-compliance",
+          "description": "Jul 25, 2024 — Adhering to SaaS compliance standards ensures data security and maintaining trust. Explore SaaS compliance challenges and how Axonius can ..."
+        },
+        {
+          "rank": 16,
+          "title": "SaaS Security - How to Ensure Compliance and Safety",
+          "domain": "www.fortinet.com",
+          "url": "https://www.fortinet.com/resources/cyberglossary/saas-security",
+          "description": "Effective SaaS security requires ongoing vendor assessment, strong identity controls, and adaptable governance frameworks. Organizations must develop security ... Read more"
+        }
+      ],
+      "features": [
+        "organic"
+      ]
+    }
+  ],
+  "keyword_ideas": [
+    {
+      "seed": "saas boilerplate",
+      "count": 63,
+      "items": [
+        {
+          "keyword": "call-template",
+          "volume": 320,
+          "cpcUsd": 24.14,
+          "difficulty": 0
+        },
+        {
+          "keyword": "open feature",
+          "volume": 170,
+          "cpcUsd": 14.08,
+          "difficulty": 24
+        },
+        {
+          "keyword": "template code",
+          "volume": 390,
+          "cpcUsd": 9.81,
+          "difficulty": 51
+        },
+        {
+          "keyword": "template library",
+          "volume": 140,
+          "cpcUsd": 10.49,
+          "difficulty": 73
+        },
+        {
+          "keyword": "open array",
+          "volume": 480,
+          "cpcUsd": 6.76,
+          "difficulty": 0
+        },
+        {
+          "keyword": "scope and sequence template",
+          "volume": 480,
+          "cpcUsd": 3.6,
+          "difficulty": 0
+        },
+        {
+          "keyword": "free lambda",
+          "volume": 140,
+          "cpcUsd": 1.67,
+          "difficulty": 0
+        },
+        {
+          "keyword": "bug template",
+          "volume": 390,
+          "cpcUsd": 1.25,
+          "difficulty": 0
+        },
+        {
+          "keyword": "template switching oligo",
+          "volume": 110,
+          "cpcUsd": 1.38,
+          "difficulty": 0
+        },
+        {
+          "keyword": "node source",
+          "volume": 390,
+          "cpcUsd": 0,
+          "difficulty": 92
+        },
+        {
+          "keyword": "vi source",
+          "volume": 1300,
+          "cpcUsd": 0,
+          "difficulty": 32
+        },
+        {
+          "keyword": "shifting script template",
+          "volume": 590,
+          "cpcUsd": 0,
+          "difficulty": 0
+        },
+        {
+          "keyword": "template literals",
+          "volume": 390,
+          "cpcUsd": 0,
+          "difficulty": 14
+        },
+        {
+          "keyword": "dispatch oc template",
+          "volume": 590,
+          "cpcUsd": 0,
+          "difficulty": 0
+        },
+        {
+          "keyword": "infinite source tab",
+          "volume": 320,
+          "cpcUsd": 0,
+          "difficulty": 0
+        },
+        {
+          "keyword": "open graph debugger",
+          "volume": 260,
+          "cpcUsd": 0,
+          "difficulty": 26
+        },
+        {
+          "keyword": "coding strand and template strand",
+          "volume": 4400,
+          "cpcUsd": 0,
+          "difficulty": 0
+        },
+        {
+          "keyword": "template strand and coding strand",
+          "volume": 4400,
+          "cpcUsd": 0,
+          "difficulty": 0
+        },
+        {
+          "keyword": "source object",
+          "volume": 260,
+          "cpcUsd": 0,
+          "difficulty": 0
+        },
+        {
+          "keyword": "class source",
+          "volume": 170,
+          "cpcUsd": 0,
+          "difficulty": 0
+        },
+        {
+          "keyword": "lambda event source mapping",
+          "volume": 110,
+          "cpcUsd": 0,
+          "difficulty": 6
+        },
+        {
+          "keyword": "open subset",
+          "volume": 880,
+          "cpcUsd": 0,
+          "difficulty": 0
+        },
+        {
+          "keyword": "template string",
+          "volume": 260,
+          "cpcUsd": 0,
+          "difficulty": 66
+        },
+        {
+          "keyword": "open script",
+          "volume": 140,
+          "cpcUsd": 0,
+          "difficulty": 3
+        },
+        {
+          "keyword": "many-to-many django",
+          "volume": 1900,
+          "cpcUsd": 0,
+          "difficulty": 4
+        },
+        {
+          "keyword": "string template",
+          "volume": 260,
+          "cpcUsd": 0,
+          "difficulty": 32
+        },
+        {
+          "keyword": "sandboxels open processing",
+          "volume": 210,
+          "cpcUsd": 0,
+          "difficulty": 0
+        },
+        {
+          "keyword": "c template function",
+          "volume": 140,
+          "cpcUsd": 0,
+          "difficulty": 11
+        },
+        {
+          "keyword": "template specialization",
+          "volume": 140,
+          "cpcUsd": 0,
+          "difficulty": 3
+        },
+        {
+          "keyword": "open string",
+          "volume": 170,
+          "cpcUsd": 0,
+          "difficulty": 0
+        },
+        {
+          "keyword": "open function",
+          "volume": 110,
+          "cpcUsd": 0,
+          "difficulty": 26
+        },
+        {
+          "keyword": "function template",
+          "volume": 140,
+          "cpcUsd": 0,
+          "difficulty": 16
+        },
+        {
+          "keyword": "liquid template language",
+          "volume": 170,
+          "cpcUsd": 0,
+          "difficulty": 46
+        },
+        {
+          "keyword": "open c function",
+          "volume": 170,
+          "cpcUsd": 0,
+          "difficulty": 12
+        },
+        {
+          "keyword": "c open function",
+          "volume": 170,
+          "cpcUsd": 0,
+          "difficulty": 16
+        },
+        {
+          "keyword": "velocity template language",
+          "volume": 110,
+          "cpcUsd": 0,
+          "difficulty": 31
+        },
+        {
+          "keyword": "django runtime",
+          "volume": 390,
+          "cpcUsd": 0,
+          "difficulty": 33
+        },
+        {
+          "keyword": "template matching",
+          "volume": 590,
+          "cpcUsd": 0,
+          "difficulty": 0
+        },
+        {
+          "keyword": "template function",
+          "volume": 140,
+          "cpcUsd": 0,
+          "difficulty": 20
+        },
+        {
+          "keyword": "shifting script template notion",
+          "volume": 140,
+          "cpcUsd": 0,
+          "difficulty": 0
+        }
+      ]
+    },
+    {
+      "seed": "compliance software",
+      "count": 28,
+      "items": [
+        {
+          "keyword": "hvac invoice software",
+          "volume": 140,
+          "cpcUsd": 409.82,
+          "difficulty": 5
+        },
+        {
+          "keyword": "legal billing software",
+          "volume": 1300,
+          "cpcUsd": 261.71,
+          "difficulty": 41
+        },
+        {
+          "keyword": "hvac billing software",
+          "volume": 170,
+          "cpcUsd": 308.83,
+          "difficulty": 7
+        },
+        {
+          "keyword": "plumbing invoice software",
+          "volume": 170,
+          "cpcUsd": 282.3,
+          "difficulty": 8
+        },
+        {
+          "keyword": "blackline reconciliation software",
+          "volume": 210,
+          "cpcUsd": 148.12,
+          "difficulty": 0
+        },
+        {
+          "keyword": "automated billing software",
+          "volume": 390,
+          "cpcUsd": 121.36,
+          "difficulty": 7
+        },
+        {
+          "keyword": "usage based billing software",
+          "volume": 170,
+          "cpcUsd": 121.18,
+          "difficulty": 0
+        },
+        {
+          "keyword": "usage-based billing software",
+          "volume": 170,
+          "cpcUsd": 121.18,
+          "difficulty": 0
+        },
+        {
+          "keyword": "time and billing software",
+          "volume": 170,
+          "cpcUsd": 118.69,
+          "difficulty": 28
+        },
+        {
+          "keyword": "pest control invoice software",
+          "volume": 110,
+          "cpcUsd": 117.05,
+          "difficulty": 10
+        },
+        {
+          "keyword": "pest control billing software",
+          "volume": 110,
+          "cpcUsd": 117.05,
+          "difficulty": 19
+        },
+        {
+          "keyword": "contractor invoice software",
+          "volume": 480,
+          "cpcUsd": 80.75,
+          "difficulty": 7
+        },
+        {
+          "keyword": "regulatory compliance software",
+          "volume": 480,
+          "cpcUsd": 76.47,
+          "difficulty": 15
+        },
+        {
+          "keyword": "billing software",
+          "volume": 1000,
+          "cpcUsd": 57.86,
+          "difficulty": 44
+        },
+        {
+          "keyword": "retail billing software",
+          "volume": 110,
+          "cpcUsd": 72.73,
+          "difficulty": 1
+        },
+        {
+          "keyword": "billing management software",
+          "volume": 170,
+          "cpcUsd": 64.88,
+          "difficulty": 48
+        },
+        {
+          "keyword": "billing and invoicing software",
+          "volume": 170,
+          "cpcUsd": 57.26,
+          "difficulty": 56
+        },
+        {
+          "keyword": "claims processing software",
+          "volume": 170,
+          "cpcUsd": 44.83,
+          "difficulty": 13
+        },
+        {
+          "keyword": "cch tax software",
+          "volume": 720,
+          "cpcUsd": 20.14,
+          "difficulty": 15
+        },
+        {
+          "keyword": "audit software programs",
+          "volume": 110,
+          "cpcUsd": 20.51,
+          "difficulty": 32
+        },
+        {
+          "keyword": "lab billing software",
+          "volume": 110,
+          "cpcUsd": 19.53,
+          "difficulty": 0
+        },
+        {
+          "keyword": "laboratory billing software",
+          "volume": 110,
+          "cpcUsd": 19.53,
+          "difficulty": 4
+        },
+        {
+          "keyword": "icd software",
+          "volume": 140,
+          "cpcUsd": 14.23,
+          "difficulty": 2
+        },
+        {
+          "keyword": "contract compliance software",
+          "volume": 140,
+          "cpcUsd": 10.34,
+          "difficulty": 47
+        },
+        {
+          "keyword": "cch practice management software",
+          "volume": 110,
+          "cpcUsd": 5.92,
+          "difficulty": 0
+        },
+        {
+          "keyword": "upsolve bankruptcy software",
+          "volume": 110,
+          "cpcUsd": 0,
+          "difficulty": 0
+        },
+        {
+          "keyword": "bail agent software",
+          "volume": 110,
+          "cpcUsd": 0,
+          "difficulty": 5
+        },
+        {
+          "keyword": "field service billing software",
+          "volume": 110,
+          "cpcUsd": 0,
+          "difficulty": 11
+        }
+      ]
+    },
+    {
+      "seed": "local first ai",
+      "count": 194,
+      "items": [
+        {
+          "keyword": "anytime ai",
+          "volume": 880,
+          "cpcUsd": 61.41,
+          "difficulty": 9
+        },
+        {
+          "keyword": "paradox ai",
+          "volume": 4400,
+          "cpcUsd": 35.96,
+          "difficulty": 26
+        },
+        {
+          "keyword": "thread ai",
+          "volume": 1300,
+          "cpcUsd": 30.27,
+          "difficulty": 12
+        },
+        {
+          "keyword": "ai store builder",
+          "volume": 2400,
+          "cpcUsd": 27.36,
+          "difficulty": 39
+        },
+        {
+          "keyword": "einstein ai",
+          "volume": 2900,
+          "cpcUsd": 24.2,
+          "difficulty": 16
+        },
+        {
+          "keyword": "observe ai",
+          "volume": 2400,
+          "cpcUsd": 22.33,
+          "difficulty": 25
+        },
+        {
+          "keyword": "growthx ai",
+          "volume": 390,
+          "cpcUsd": 24.37,
+          "difficulty": 12
+        },
+        {
+          "keyword": "navigator ai",
+          "volume": 1900,
+          "cpcUsd": 19.02,
+          "difficulty": 14
+        },
+        {
+          "keyword": "close ai",
+          "volume": 720,
+          "cpcUsd": 20.72,
+          "difficulty": 7
+        },
+        {
+          "keyword": "purple ai",
+          "volume": 880,
+          "cpcUsd": 19.03,
+          "difficulty": 23
+        },
+        {
+          "keyword": "truehorizon ai",
+          "volume": 260,
+          "cpcUsd": 22.71,
+          "difficulty": 0
+        },
+        {
+          "keyword": "framer ai",
+          "volume": 8100,
+          "cpcUsd": 12.07,
+          "difficulty": 31
+        },
+        {
+          "keyword": "morningside ai",
+          "volume": 720,
+          "cpcUsd": 15.92,
+          "difficulty": 6
+        },
+        {
+          "keyword": "manifest ai",
+          "volume": 1900,
+          "cpcUsd": 13.66,
+          "difficulty": 27
+        },
+        {
+          "keyword": "what is ai agent",
+          "volume": 2400,
+          "cpcUsd": 13.25,
+          "difficulty": 55
+        },
+        {
+          "keyword": "orange ai",
+          "volume": 1600,
+          "cpcUsd": 13.87,
+          "difficulty": 18
+        },
+        {
+          "keyword": "glance ai",
+          "volume": 2900,
+          "cpcUsd": 12.83,
+          "difficulty": 18
+        },
+        {
+          "keyword": "hippocratic ai",
+          "volume": 9900,
+          "cpcUsd": 10.87,
+          "difficulty": 28
+        },
+        {
+          "keyword": "what is an ai agent",
+          "volume": 14800,
+          "cpcUsd": 10.2,
+          "difficulty": 55
+        },
+        {
+          "keyword": "guide ai",
+          "volume": 390,
+          "cpcUsd": 15.56,
+          "difficulty": 38
+        },
+        {
+          "keyword": "roadmap ai",
+          "volume": 170,
+          "cpcUsd": 17.82,
+          "difficulty": 28
+        },
+        {
+          "keyword": "daydream ai",
+          "volume": 1000,
+          "cpcUsd": 13.11,
+          "difficulty": 25
+        },
+        {
+          "keyword": "inspect ai",
+          "volume": 720,
+          "cpcUsd": 13.58,
+          "difficulty": 22
+        },
+        {
+          "keyword": "ai actress",
+          "volume": 22200,
+          "cpcUsd": 8.79,
+          "difficulty": 21
+        },
+        {
+          "keyword": "cursed ai",
+          "volume": 1300,
+          "cpcUsd": 12.23,
+          "difficulty": 0
+        },
+        {
+          "keyword": "scratch ai",
+          "volume": 1600,
+          "cpcUsd": 11.44,
+          "difficulty": 10
+        },
+        {
+          "keyword": "when was ai made",
+          "volume": 3600,
+          "cpcUsd": 10.17,
+          "difficulty": 43
+        },
+        {
+          "keyword": "bubble ai",
+          "volume": 2900,
+          "cpcUsd": 10.43,
+          "difficulty": 23
+        },
+        {
+          "keyword": "coach ai",
+          "volume": 480,
+          "cpcUsd": 13.34,
+          "difficulty": 25
+        },
+        {
+          "keyword": "pearl ai",
+          "volume": 2900,
+          "cpcUsd": 10.1,
+          "difficulty": 19
+        },
+        {
+          "keyword": "drip ai",
+          "volume": 880,
+          "cpcUsd": 11.59,
+          "difficulty": 0
+        },
+        {
+          "keyword": "agentic ai vs ai agents",
+          "volume": 1000,
+          "cpcUsd": 11.33,
+          "difficulty": 4
+        },
+        {
+          "keyword": "handoff ai",
+          "volume": 1900,
+          "cpcUsd": 10.12,
+          "difficulty": 53
+        },
+        {
+          "keyword": "emerald ai",
+          "volume": 2900,
+          "cpcUsd": 9.28,
+          "difficulty": 22
+        },
+        {
+          "keyword": "ai resume",
+          "volume": 6600,
+          "cpcUsd": 8.39,
+          "difficulty": 56
+        },
+        {
+          "keyword": "resume ai",
+          "volume": 9900,
+          "cpcUsd": 7.86,
+          "difficulty": 73
+        },
+        {
+          "keyword": "local ai agent",
+          "volume": 390,
+          "cpcUsd": 11.85,
+          "difficulty": 5
+        },
+        {
+          "keyword": "onspace ai",
+          "volume": 590,
+          "cpcUsd": 10.94,
+          "difficulty": 10
+        },
+        {
+          "keyword": "step ai",
+          "volume": 210,
+          "cpcUsd": 12.9,
+          "difficulty": 13
+        },
+        {
+          "keyword": "28 day ai challenge",
+          "volume": 1000,
+          "cpcUsd": 9.93,
+          "difficulty": 0
+        }
+      ]
+    },
+    {
+      "seed": "ai starter kit",
+      "count": 154,
+      "items": [
+        {
+          "keyword": "ai powered homework helper",
+          "volume": 22200,
+          "cpcUsd": 68.25,
+          "difficulty": 48
+        },
+        {
+          "keyword": "crunch ai",
+          "volume": 140,
+          "cpcUsd": 51.68,
+          "difficulty": 1
+        },
+        {
+          "keyword": "best ai coding assistant",
+          "volume": 1000,
+          "cpcUsd": 26.54,
+          "difficulty": 18
+        },
+        {
+          "keyword": "best ai assistant",
+          "volume": 2400,
+          "cpcUsd": 19.84,
+          "difficulty": 6
+        },
+        {
+          "keyword": "juicebox ai",
+          "volume": 3600,
+          "cpcUsd": 18.5,
+          "difficulty": 15
+        },
+        {
+          "keyword": "best ai agent builder",
+          "volume": 320,
+          "cpcUsd": 23.85,
+          "difficulty": 18
+        },
+        {
+          "keyword": "best ai agent for coding",
+          "volume": 260,
+          "cpcUsd": 20.87,
+          "difficulty": 10
+        },
+        {
+          "keyword": "artisan ai",
+          "volume": 3600,
+          "cpcUsd": 13.97,
+          "difficulty": 23
+        },
+        {
+          "keyword": "what is an ai assistant",
+          "volume": 720,
+          "cpcUsd": 16.41,
+          "difficulty": 19
+        },
+        {
+          "keyword": "best ai personal assistant",
+          "volume": 880,
+          "cpcUsd": 12.77,
+          "difficulty": 2
+        },
+        {
+          "keyword": "smallest ai",
+          "volume": 720,
+          "cpcUsd": 11.84,
+          "difficulty": 15
+        },
+        {
+          "keyword": "one ai",
+          "volume": 480,
+          "cpcUsd": 12.21,
+          "difficulty": 18
+        },
+        {
+          "keyword": "which is the best ai",
+          "volume": 590,
+          "cpcUsd": 11.24,
+          "difficulty": 10
+        },
+        {
+          "keyword": "all in one ai tools",
+          "volume": 170,
+          "cpcUsd": 13.55,
+          "difficulty": 68
+        },
+        {
+          "keyword": "friendly ai",
+          "volume": 320,
+          "cpcUsd": 11.67,
+          "difficulty": 35
+        },
+        {
+          "keyword": "ai helper",
+          "volume": 27100,
+          "cpcUsd": 6.62,
+          "difficulty": 65
+        },
+        {
+          "keyword": "the best ai",
+          "volume": 880,
+          "cpcUsd": 9.92,
+          "difficulty": 20
+        },
+        {
+          "keyword": "best ai",
+          "volume": 33100,
+          "cpcUsd": 6.46,
+          "difficulty": 7
+        },
+        {
+          "keyword": "perfect ai",
+          "volume": 260,
+          "cpcUsd": 10.18,
+          "difficulty": 54
+        },
+        {
+          "keyword": "best ai now",
+          "volume": 210,
+          "cpcUsd": 10.43,
+          "difficulty": 13
+        },
+        {
+          "keyword": "spicy ai",
+          "volume": 165000,
+          "cpcUsd": 4.56,
+          "difficulty": 25
+        },
+        {
+          "keyword": "lovable ai review",
+          "volume": 170,
+          "cpcUsd": 10.19,
+          "difficulty": 7
+        },
+        {
+          "keyword": "the good ai",
+          "volume": 1000,
+          "cpcUsd": 7.55,
+          "difficulty": 0
+        },
+        {
+          "keyword": "best ai humanizer",
+          "volume": 12100,
+          "cpcUsd": 5.34,
+          "difficulty": 12
+        },
+        {
+          "keyword": "best ai humanizer tool",
+          "volume": 260,
+          "cpcUsd": 8.44,
+          "difficulty": 18
+        },
+        {
+          "keyword": "what is an ai bot",
+          "volume": 880,
+          "cpcUsd": 6.94,
+          "difficulty": 49
+        },
+        {
+          "keyword": "ai humanizer tool",
+          "volume": 60500,
+          "cpcUsd": 4.21,
+          "difficulty": 49
+        },
+        {
+          "keyword": "ai clothing remover",
+          "volume": 110000,
+          "cpcUsd": 3.77,
+          "difficulty": 0
+        },
+        {
+          "keyword": "is quillbot ai",
+          "volume": 210,
+          "cpcUsd": 8,
+          "difficulty": 37
+        },
+        {
+          "keyword": "ai companion",
+          "volume": 18100,
+          "cpcUsd": 4.14,
+          "difficulty": 19
+        },
+        {
+          "keyword": "best humanize ai",
+          "volume": 1300,
+          "cpcUsd": 5.62,
+          "difficulty": 12
+        },
+        {
+          "keyword": "does humanize ai work",
+          "volume": 390,
+          "cpcUsd": 6.5,
+          "difficulty": 11
+        },
+        {
+          "keyword": "fellow ai",
+          "volume": 1600,
+          "cpcUsd": 5.03,
+          "difficulty": 9
+        },
+        {
+          "keyword": "the rundown ai",
+          "volume": 4400,
+          "cpcUsd": 4.42,
+          "difficulty": 23
+        },
+        {
+          "keyword": "best ai for homework",
+          "volume": 880,
+          "cpcUsd": 5.4,
+          "difficulty": 18
+        },
+        {
+          "keyword": "food ai",
+          "volume": 590,
+          "cpcUsd": 5.72,
+          "difficulty": 28
+        },
+        {
+          "keyword": "what is transformer in ai",
+          "volume": 210,
+          "cpcUsd": 6.55,
+          "difficulty": 44
+        },
+        {
+          "keyword": "friend ai",
+          "volume": 12100,
+          "cpcUsd": 3.72,
+          "difficulty": 39
+        },
+        {
+          "keyword": "what is super ai",
+          "volume": 260,
+          "cpcUsd": 6.09,
+          "difficulty": 57
+        },
+        {
+          "keyword": "ai guy",
+          "volume": 1300,
+          "cpcUsd": 4.64,
+          "difficulty": 0
+        }
+      ]
+    }
+  ],
+  "trends": [
+    {
+      "type": "google_trends_graph",
+      "keywords": [
+        "saas boilerplate",
+        "local first software",
+        "on device ai",
+        "ai agent"
+      ],
+      "data": [
+        {
+          "date_from": "2021-06-27",
+          "date_to": "2021-07-03",
+          "timestamp": 1624752000,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "date_from": "2021-07-04",
+          "date_to": "2021-07-10",
+          "timestamp": 1625356800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "date_from": "2021-07-11",
+          "date_to": "2021-07-17",
+          "timestamp": 1625961600,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "date_from": "2021-07-18",
+          "date_to": "2021-07-24",
+          "timestamp": 1626566400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "date_from": "2021-07-25",
+          "date_to": "2021-07-31",
+          "timestamp": 1627171200,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "date_from": "2021-08-01",
+          "date_to": "2021-08-07",
+          "timestamp": 1627776000,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "date_from": "2021-08-08",
+          "date_to": "2021-08-14",
+          "timestamp": 1628380800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            null
+          ]
+        },
+        {
+          "date_from": "2021-08-15",
+          "date_to": "2021-08-21",
+          "timestamp": 1628985600,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2021-08-22",
+          "date_to": "2021-08-28",
+          "timestamp": 1629590400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "date_from": "2021-08-29",
+          "date_to": "2021-09-04",
+          "timestamp": 1630195200,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2021-09-05",
+          "date_to": "2021-09-11",
+          "timestamp": 1630800000,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2021-09-12",
+          "date_to": "2021-09-18",
+          "timestamp": 1631404800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "date_from": "2021-09-19",
+          "date_to": "2021-09-25",
+          "timestamp": 1632009600,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2021-09-26",
+          "date_to": "2021-10-02",
+          "timestamp": 1632614400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2021-10-03",
+          "date_to": "2021-10-09",
+          "timestamp": 1633219200,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2021-10-10",
+          "date_to": "2021-10-16",
+          "timestamp": 1633824000,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2021-10-17",
+          "date_to": "2021-10-23",
+          "timestamp": 1634428800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2021-10-24",
+          "date_to": "2021-10-30",
+          "timestamp": 1635033600,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "date_from": "2021-10-31",
+          "date_to": "2021-11-06",
+          "timestamp": 1635638400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "date_from": "2021-11-07",
+          "date_to": "2021-11-13",
+          "timestamp": 1636243200,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "date_from": "2021-11-14",
+          "date_to": "2021-11-20",
+          "timestamp": 1636848000,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "date_from": "2021-11-21",
+          "date_to": "2021-11-27",
+          "timestamp": 1637452800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "date_from": "2021-11-28",
+          "date_to": "2021-12-04",
+          "timestamp": 1638057600,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2021-12-05",
+          "date_to": "2021-12-11",
+          "timestamp": 1638662400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "date_from": "2021-12-12",
+          "date_to": "2021-12-18",
+          "timestamp": 1639267200,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "date_from": "2021-12-19",
+          "date_to": "2021-12-25",
+          "timestamp": 1639872000,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "date_from": "2021-12-26",
+          "date_to": "2022-01-01",
+          "timestamp": 1640476800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "date_from": "2022-01-02",
+          "date_to": "2022-01-08",
+          "timestamp": 1641081600,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "date_from": "2022-01-09",
+          "date_to": "2022-01-15",
+          "timestamp": 1641686400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-01-16",
+          "date_to": "2022-01-22",
+          "timestamp": 1642291200,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "date_from": "2022-01-23",
+          "date_to": "2022-01-29",
+          "timestamp": 1642896000,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-01-30",
+          "date_to": "2022-02-05",
+          "timestamp": 1643500800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-02-06",
+          "date_to": "2022-02-12",
+          "timestamp": 1644105600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-02-13",
+          "date_to": "2022-02-19",
+          "timestamp": 1644710400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-02-20",
+          "date_to": "2022-02-26",
+          "timestamp": 1645315200,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-02-27",
+          "date_to": "2022-03-05",
+          "timestamp": 1645920000,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-03-06",
+          "date_to": "2022-03-12",
+          "timestamp": 1646524800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-03-13",
+          "date_to": "2022-03-19",
+          "timestamp": 1647129600,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-03-20",
+          "date_to": "2022-03-26",
+          "timestamp": 1647734400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "date_from": "2022-03-27",
+          "date_to": "2022-04-02",
+          "timestamp": 1648339200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-04-03",
+          "date_to": "2022-04-09",
+          "timestamp": 1648944000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-04-10",
+          "date_to": "2022-04-16",
+          "timestamp": 1649548800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-04-17",
+          "date_to": "2022-04-23",
+          "timestamp": 1650153600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-04-24",
+          "date_to": "2022-04-30",
+          "timestamp": 1650758400,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-05-01",
+          "date_to": "2022-05-07",
+          "timestamp": 1651363200,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-05-08",
+          "date_to": "2022-05-14",
+          "timestamp": 1651968000,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-05-15",
+          "date_to": "2022-05-21",
+          "timestamp": 1652572800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-05-22",
+          "date_to": "2022-05-28",
+          "timestamp": 1653177600,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-05-29",
+          "date_to": "2022-06-04",
+          "timestamp": 1653782400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "date_from": "2022-06-05",
+          "date_to": "2022-06-11",
+          "timestamp": 1654387200,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "date_from": "2022-06-12",
+          "date_to": "2022-06-18",
+          "timestamp": 1654992000,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-06-19",
+          "date_to": "2022-06-25",
+          "timestamp": 1655596800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-06-26",
+          "date_to": "2022-07-02",
+          "timestamp": 1656201600,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-07-03",
+          "date_to": "2022-07-09",
+          "timestamp": 1656806400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "date_from": "2022-07-10",
+          "date_to": "2022-07-16",
+          "timestamp": 1657411200,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-07-17",
+          "date_to": "2022-07-23",
+          "timestamp": 1658016000,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-07-24",
+          "date_to": "2022-07-30",
+          "timestamp": 1658620800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-07-31",
+          "date_to": "2022-08-06",
+          "timestamp": 1659225600,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-08-07",
+          "date_to": "2022-08-13",
+          "timestamp": 1659830400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-08-14",
+          "date_to": "2022-08-20",
+          "timestamp": 1660435200,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-08-21",
+          "date_to": "2022-08-27",
+          "timestamp": 1661040000,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-08-28",
+          "date_to": "2022-09-03",
+          "timestamp": 1661644800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-09-04",
+          "date_to": "2022-09-10",
+          "timestamp": 1662249600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-09-11",
+          "date_to": "2022-09-17",
+          "timestamp": 1662854400,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-09-18",
+          "date_to": "2022-09-24",
+          "timestamp": 1663459200,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-09-25",
+          "date_to": "2022-10-01",
+          "timestamp": 1664064000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-10-02",
+          "date_to": "2022-10-08",
+          "timestamp": 1664668800,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-10-09",
+          "date_to": "2022-10-15",
+          "timestamp": 1665273600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-10-16",
+          "date_to": "2022-10-22",
+          "timestamp": 1665878400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-10-23",
+          "date_to": "2022-10-29",
+          "timestamp": 1666483200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-10-30",
+          "date_to": "2022-11-05",
+          "timestamp": 1667088000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-11-06",
+          "date_to": "2022-11-12",
+          "timestamp": 1667692800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-11-13",
+          "date_to": "2022-11-19",
+          "timestamp": 1668297600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-11-20",
+          "date_to": "2022-11-26",
+          "timestamp": 1668902400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "date_from": "2022-11-27",
+          "date_to": "2022-12-03",
+          "timestamp": 1669507200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-12-04",
+          "date_to": "2022-12-10",
+          "timestamp": 1670112000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-12-11",
+          "date_to": "2022-12-17",
+          "timestamp": 1670716800,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-12-18",
+          "date_to": "2022-12-24",
+          "timestamp": 1671321600,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2022-12-25",
+          "date_to": "2022-12-31",
+          "timestamp": 1671926400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2023-01-01",
+          "date_to": "2023-01-07",
+          "timestamp": 1672531200,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            0
+          ]
+        },
+        {
+          "date_from": "2023-01-08",
+          "date_to": "2023-01-14",
+          "timestamp": 1673136000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2023-01-15",
+          "date_to": "2023-01-21",
+          "timestamp": 1673740800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2023-01-22",
+          "date_to": "2023-01-28",
+          "timestamp": 1674345600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "date_from": "2023-01-29",
+          "date_to": "2023-02-04",
+          "timestamp": 1674950400,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2023-02-05",
+          "date_to": "2023-02-11",
+          "timestamp": 1675555200,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2023-02-12",
+          "date_to": "2023-02-18",
+          "timestamp": 1676160000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2023-02-19",
+          "date_to": "2023-02-25",
+          "timestamp": 1676764800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2023-02-26",
+          "date_to": "2023-03-04",
+          "timestamp": 1677369600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2023-03-05",
+          "date_to": "2023-03-11",
+          "timestamp": 1677974400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2023-03-12",
+          "date_to": "2023-03-18",
+          "timestamp": 1678579200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2023-03-19",
+          "date_to": "2023-03-25",
+          "timestamp": 1679184000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2023-03-26",
+          "date_to": "2023-04-01",
+          "timestamp": 1679788800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            0
+          ]
+        },
+        {
+          "date_from": "2023-04-02",
+          "date_to": "2023-04-08",
+          "timestamp": 1680393600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2023-04-09",
+          "date_to": "2023-04-15",
+          "timestamp": 1680998400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-04-16",
+          "date_to": "2023-04-22",
+          "timestamp": 1681603200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-04-23",
+          "date_to": "2023-04-29",
+          "timestamp": 1682208000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-04-30",
+          "date_to": "2023-05-06",
+          "timestamp": 1682812800,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-05-07",
+          "date_to": "2023-05-13",
+          "timestamp": 1683417600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-05-14",
+          "date_to": "2023-05-20",
+          "timestamp": 1684022400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-05-21",
+          "date_to": "2023-05-27",
+          "timestamp": 1684627200,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-05-28",
+          "date_to": "2023-06-03",
+          "timestamp": 1685232000,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-06-04",
+          "date_to": "2023-06-10",
+          "timestamp": 1685836800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-06-11",
+          "date_to": "2023-06-17",
+          "timestamp": 1686441600,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            0
+          ]
+        },
+        {
+          "date_from": "2023-06-18",
+          "date_to": "2023-06-24",
+          "timestamp": 1687046400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-06-25",
+          "date_to": "2023-07-01",
+          "timestamp": 1687651200,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-07-02",
+          "date_to": "2023-07-08",
+          "timestamp": 1688256000,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-07-09",
+          "date_to": "2023-07-15",
+          "timestamp": 1688860800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-07-16",
+          "date_to": "2023-07-22",
+          "timestamp": 1689465600,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-07-23",
+          "date_to": "2023-07-29",
+          "timestamp": 1690070400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-07-30",
+          "date_to": "2023-08-05",
+          "timestamp": 1690675200,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-08-06",
+          "date_to": "2023-08-12",
+          "timestamp": 1691280000,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-08-13",
+          "date_to": "2023-08-19",
+          "timestamp": 1691884800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-08-20",
+          "date_to": "2023-08-26",
+          "timestamp": 1692489600,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            0
+          ]
+        },
+        {
+          "date_from": "2023-08-27",
+          "date_to": "2023-09-02",
+          "timestamp": 1693094400,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-09-03",
+          "date_to": "2023-09-09",
+          "timestamp": 1693699200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-09-10",
+          "date_to": "2023-09-16",
+          "timestamp": 1694304000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-09-17",
+          "date_to": "2023-09-23",
+          "timestamp": 1694908800,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-09-24",
+          "date_to": "2023-09-30",
+          "timestamp": 1695513600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-10-01",
+          "date_to": "2023-10-07",
+          "timestamp": 1696118400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-10-08",
+          "date_to": "2023-10-14",
+          "timestamp": 1696723200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-10-15",
+          "date_to": "2023-10-21",
+          "timestamp": 1697328000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-10-22",
+          "date_to": "2023-10-28",
+          "timestamp": 1697932800,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-10-29",
+          "date_to": "2023-11-04",
+          "timestamp": 1698537600,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-11-05",
+          "date_to": "2023-11-11",
+          "timestamp": 1699142400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-11-12",
+          "date_to": "2023-11-18",
+          "timestamp": 1699747200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-11-19",
+          "date_to": "2023-11-25",
+          "timestamp": 1700352000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-11-26",
+          "date_to": "2023-12-02",
+          "timestamp": 1700956800,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-12-03",
+          "date_to": "2023-12-09",
+          "timestamp": 1701561600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-12-10",
+          "date_to": "2023-12-16",
+          "timestamp": 1702166400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-12-17",
+          "date_to": "2023-12-23",
+          "timestamp": 1702771200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            null,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-12-24",
+          "date_to": "2023-12-30",
+          "timestamp": 1703376000,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            1
+          ]
+        },
+        {
+          "date_from": "2023-12-31",
+          "date_to": "2024-01-06",
+          "timestamp": 1703980800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2024-01-07",
+          "date_to": "2024-01-13",
+          "timestamp": 1704585600,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2024-01-14",
+          "date_to": "2024-01-20",
+          "timestamp": 1705190400,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2024-01-21",
+          "date_to": "2024-01-27",
+          "timestamp": 1705795200,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2024-01-28",
+          "date_to": "2024-02-03",
+          "timestamp": 1706400000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2024-02-04",
+          "date_to": "2024-02-10",
+          "timestamp": 1707004800,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2024-02-11",
+          "date_to": "2024-02-17",
+          "timestamp": 1707609600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2024-02-18",
+          "date_to": "2024-02-24",
+          "timestamp": 1708214400,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2024-02-25",
+          "date_to": "2024-03-02",
+          "timestamp": 1708819200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2024-03-03",
+          "date_to": "2024-03-09",
+          "timestamp": 1709424000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2024-03-10",
+          "date_to": "2024-03-16",
+          "timestamp": 1710028800,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2024-03-17",
+          "date_to": "2024-03-23",
+          "timestamp": 1710633600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2024-03-24",
+          "date_to": "2024-03-30",
+          "timestamp": 1711238400,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2024-03-31",
+          "date_to": "2024-04-06",
+          "timestamp": 1711843200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2024-04-07",
+          "date_to": "2024-04-13",
+          "timestamp": 1712448000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2024-04-14",
+          "date_to": "2024-04-20",
+          "timestamp": 1713052800,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            2
+          ]
+        },
+        {
+          "date_from": "2024-04-21",
+          "date_to": "2024-04-27",
+          "timestamp": 1713657600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2024-04-28",
+          "date_to": "2024-05-04",
+          "timestamp": 1714262400,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            2
+          ]
+        },
+        {
+          "date_from": "2024-05-05",
+          "date_to": "2024-05-11",
+          "timestamp": 1714867200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2024-05-12",
+          "date_to": "2024-05-18",
+          "timestamp": 1715472000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            2
+          ]
+        },
+        {
+          "date_from": "2024-05-19",
+          "date_to": "2024-05-25",
+          "timestamp": 1716076800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            2
+          ]
+        },
+        {
+          "date_from": "2024-05-26",
+          "date_to": "2024-06-01",
+          "timestamp": 1716681600,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2024-06-02",
+          "date_to": "2024-06-08",
+          "timestamp": 1717286400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            2
+          ]
+        },
+        {
+          "date_from": "2024-06-09",
+          "date_to": "2024-06-15",
+          "timestamp": 1717891200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            2
+          ]
+        },
+        {
+          "date_from": "2024-06-16",
+          "date_to": "2024-06-22",
+          "timestamp": 1718496000,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            2
+          ]
+        },
+        {
+          "date_from": "2024-06-23",
+          "date_to": "2024-06-29",
+          "timestamp": 1719100800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            2
+          ]
+        },
+        {
+          "date_from": "2024-06-30",
+          "date_to": "2024-07-06",
+          "timestamp": 1719705600,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2024-07-07",
+          "date_to": "2024-07-13",
+          "timestamp": 1720310400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2024-07-14",
+          "date_to": "2024-07-20",
+          "timestamp": 1720915200,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            2
+          ]
+        },
+        {
+          "date_from": "2024-07-21",
+          "date_to": "2024-07-27",
+          "timestamp": 1721520000,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            2
+          ]
+        },
+        {
+          "date_from": "2024-07-28",
+          "date_to": "2024-08-03",
+          "timestamp": 1722124800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            2
+          ]
+        },
+        {
+          "date_from": "2024-08-04",
+          "date_to": "2024-08-10",
+          "timestamp": 1722729600,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            2
+          ]
+        },
+        {
+          "date_from": "2024-08-11",
+          "date_to": "2024-08-17",
+          "timestamp": 1723334400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            1
+          ]
+        },
+        {
+          "date_from": "2024-08-18",
+          "date_to": "2024-08-24",
+          "timestamp": 1723939200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            2
+          ]
+        },
+        {
+          "date_from": "2024-08-25",
+          "date_to": "2024-08-31",
+          "timestamp": 1724544000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            2
+          ]
+        },
+        {
+          "date_from": "2024-09-01",
+          "date_to": "2024-09-07",
+          "timestamp": 1725148800,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            2
+          ]
+        },
+        {
+          "date_from": "2024-09-08",
+          "date_to": "2024-09-14",
+          "timestamp": 1725753600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            2
+          ]
+        },
+        {
+          "date_from": "2024-09-15",
+          "date_to": "2024-09-21",
+          "timestamp": 1726358400,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            2
+          ]
+        },
+        {
+          "date_from": "2024-09-22",
+          "date_to": "2024-09-28",
+          "timestamp": 1726963200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            2
+          ]
+        },
+        {
+          "date_from": "2024-09-29",
+          "date_to": "2024-10-05",
+          "timestamp": 1727568000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            2
+          ]
+        },
+        {
+          "date_from": "2024-10-06",
+          "date_to": "2024-10-12",
+          "timestamp": 1728172800,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            3
+          ]
+        },
+        {
+          "date_from": "2024-10-13",
+          "date_to": "2024-10-19",
+          "timestamp": 1728777600,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            3
+          ]
+        },
+        {
+          "date_from": "2024-10-20",
+          "date_to": "2024-10-26",
+          "timestamp": 1729382400,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            3
+          ]
+        },
+        {
+          "date_from": "2024-10-27",
+          "date_to": "2024-11-02",
+          "timestamp": 1729987200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            3
+          ]
+        },
+        {
+          "date_from": "2024-11-03",
+          "date_to": "2024-11-09",
+          "timestamp": 1730592000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            2
+          ]
+        },
+        {
+          "date_from": "2024-11-10",
+          "date_to": "2024-11-16",
+          "timestamp": 1731196800,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            3
+          ]
+        },
+        {
+          "date_from": "2024-11-17",
+          "date_to": "2024-11-23",
+          "timestamp": 1731801600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            3
+          ]
+        },
+        {
+          "date_from": "2024-11-24",
+          "date_to": "2024-11-30",
+          "timestamp": 1732406400,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            3
+          ]
+        },
+        {
+          "date_from": "2024-12-01",
+          "date_to": "2024-12-07",
+          "timestamp": 1733011200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            4
+          ]
+        },
+        {
+          "date_from": "2024-12-08",
+          "date_to": "2024-12-14",
+          "timestamp": 1733616000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            4
+          ]
+        },
+        {
+          "date_from": "2024-12-15",
+          "date_to": "2024-12-21",
+          "timestamp": 1734220800,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            4
+          ]
+        },
+        {
+          "date_from": "2024-12-22",
+          "date_to": "2024-12-28",
+          "timestamp": 1734825600,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            4
+          ]
+        },
+        {
+          "date_from": "2024-12-29",
+          "date_to": "2025-01-04",
+          "timestamp": 1735430400,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            null,
+            5
+          ]
+        },
+        {
+          "date_from": "2025-01-05",
+          "date_to": "2025-01-11",
+          "timestamp": 1736035200,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            0,
+            7
+          ]
+        },
+        {
+          "date_from": "2025-01-12",
+          "date_to": "2025-01-18",
+          "timestamp": 1736640000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            7
+          ]
+        },
+        {
+          "date_from": "2025-01-19",
+          "date_to": "2025-01-25",
+          "timestamp": 1737244800,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            7
+          ]
+        },
+        {
+          "date_from": "2025-01-26",
+          "date_to": "2025-02-01",
+          "timestamp": 1737849600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            8
+          ]
+        },
+        {
+          "date_from": "2025-02-02",
+          "date_to": "2025-02-08",
+          "timestamp": 1738454400,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            1,
+            7
+          ]
+        },
+        {
+          "date_from": "2025-02-09",
+          "date_to": "2025-02-15",
+          "timestamp": 1739059200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            1,
+            8
+          ]
+        },
+        {
+          "date_from": "2025-02-16",
+          "date_to": "2025-02-22",
+          "timestamp": 1739664000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            1,
+            8
+          ]
+        },
+        {
+          "date_from": "2025-02-23",
+          "date_to": "2025-03-01",
+          "timestamp": 1740268800,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            1,
+            8
+          ]
+        },
+        {
+          "date_from": "2025-03-02",
+          "date_to": "2025-03-08",
+          "timestamp": 1740873600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            10
+          ]
+        },
+        {
+          "date_from": "2025-03-09",
+          "date_to": "2025-03-15",
+          "timestamp": 1741478400,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            1,
+            11
+          ]
+        },
+        {
+          "date_from": "2025-03-16",
+          "date_to": "2025-03-22",
+          "timestamp": 1742083200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            1,
+            9
+          ]
+        },
+        {
+          "date_from": "2025-03-23",
+          "date_to": "2025-03-29",
+          "timestamp": 1742688000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            1,
+            8
+          ]
+        },
+        {
+          "date_from": "2025-03-30",
+          "date_to": "2025-04-05",
+          "timestamp": 1743292800,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            1,
+            8
+          ]
+        },
+        {
+          "date_from": "2025-04-06",
+          "date_to": "2025-04-12",
+          "timestamp": 1743897600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            1,
+            8
+          ]
+        },
+        {
+          "date_from": "2025-04-13",
+          "date_to": "2025-04-19",
+          "timestamp": 1744502400,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            8
+          ]
+        },
+        {
+          "date_from": "2025-04-20",
+          "date_to": "2025-04-26",
+          "timestamp": 1745107200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            1,
+            8
+          ]
+        },
+        {
+          "date_from": "2025-04-27",
+          "date_to": "2025-05-03",
+          "timestamp": 1745712000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            1,
+            9
+          ]
+        },
+        {
+          "date_from": "2025-05-04",
+          "date_to": "2025-05-10",
+          "timestamp": 1746316800,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            1,
+            10
+          ]
+        },
+        {
+          "date_from": "2025-05-11",
+          "date_to": "2025-05-17",
+          "timestamp": 1746921600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            0,
+            10
+          ]
+        },
+        {
+          "date_from": "2025-05-18",
+          "date_to": "2025-05-24",
+          "timestamp": 1747526400,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            1,
+            12
+          ]
+        },
+        {
+          "date_from": "2025-05-25",
+          "date_to": "2025-05-31",
+          "timestamp": 1748131200,
+          "missing_data": false,
+          "values": [
+            null,
+            null,
+            1,
+            12
+          ]
+        },
+        {
+          "date_from": "2025-06-01",
+          "date_to": "2025-06-07",
+          "timestamp": 1748736000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            2,
+            17
+          ]
+        },
+        {
+          "date_from": "2025-06-08",
+          "date_to": "2025-06-14",
+          "timestamp": 1749340800,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            3,
+            20
+          ]
+        },
+        {
+          "date_from": "2025-06-15",
+          "date_to": "2025-06-21",
+          "timestamp": 1749945600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            4,
+            20
+          ]
+        },
+        {
+          "date_from": "2025-06-22",
+          "date_to": "2025-06-28",
+          "timestamp": 1750550400,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            4,
+            24
+          ]
+        },
+        {
+          "date_from": "2025-06-29",
+          "date_to": "2025-07-05",
+          "timestamp": 1751155200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            4,
+            21
+          ]
+        },
+        {
+          "date_from": "2025-07-06",
+          "date_to": "2025-07-12",
+          "timestamp": 1751760000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            3,
+            19
+          ]
+        },
+        {
+          "date_from": "2025-07-13",
+          "date_to": "2025-07-19",
+          "timestamp": 1752364800,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            3,
+            24
+          ]
+        },
+        {
+          "date_from": "2025-07-20",
+          "date_to": "2025-07-26",
+          "timestamp": 1752969600,
+          "missing_data": false,
+          "values": [
+            0,
+            0,
+            4,
+            28
+          ]
+        },
+        {
+          "date_from": "2025-07-27",
+          "date_to": "2025-08-02",
+          "timestamp": 1753574400,
+          "missing_data": false,
+          "values": [
+            0,
+            0,
+            4,
+            30
+          ]
+        },
+        {
+          "date_from": "2025-08-03",
+          "date_to": "2025-08-09",
+          "timestamp": 1754179200,
+          "missing_data": false,
+          "values": [
+            0,
+            0,
+            4,
+            25
+          ]
+        },
+        {
+          "date_from": "2025-08-10",
+          "date_to": "2025-08-16",
+          "timestamp": 1754784000,
+          "missing_data": false,
+          "values": [
+            0,
+            0,
+            5,
+            22
+          ]
+        },
+        {
+          "date_from": "2025-08-17",
+          "date_to": "2025-08-23",
+          "timestamp": 1755388800,
+          "missing_data": false,
+          "values": [
+            0,
+            0,
+            4,
+            20
+          ]
+        },
+        {
+          "date_from": "2025-08-24",
+          "date_to": "2025-08-30",
+          "timestamp": 1755993600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            3,
+            20
+          ]
+        },
+        {
+          "date_from": "2025-08-31",
+          "date_to": "2025-09-06",
+          "timestamp": 1756598400,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            3,
+            18
+          ]
+        },
+        {
+          "date_from": "2025-09-07",
+          "date_to": "2025-09-13",
+          "timestamp": 1757203200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            2,
+            15
+          ]
+        },
+        {
+          "date_from": "2025-09-14",
+          "date_to": "2025-09-20",
+          "timestamp": 1757808000,
+          "missing_data": false,
+          "values": [
+            null,
+            1,
+            5,
+            26
+          ]
+        },
+        {
+          "date_from": "2025-09-21",
+          "date_to": "2025-09-27",
+          "timestamp": 1758412800,
+          "missing_data": false,
+          "values": [
+            0,
+            1,
+            7,
+            29
+          ]
+        },
+        {
+          "date_from": "2025-09-28",
+          "date_to": "2025-10-04",
+          "timestamp": 1759017600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            5,
+            24
+          ]
+        },
+        {
+          "date_from": "2025-10-05",
+          "date_to": "2025-10-11",
+          "timestamp": 1759622400,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            4,
+            22
+          ]
+        },
+        {
+          "date_from": "2025-10-12",
+          "date_to": "2025-10-18",
+          "timestamp": 1760227200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            3,
+            21
+          ]
+        },
+        {
+          "date_from": "2025-10-19",
+          "date_to": "2025-10-25",
+          "timestamp": 1760832000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            3,
+            21
+          ]
+        },
+        {
+          "date_from": "2025-10-26",
+          "date_to": "2025-11-01",
+          "timestamp": 1761436800,
+          "missing_data": false,
+          "values": [
+            0,
+            0,
+            4,
+            22
+          ]
+        },
+        {
+          "date_from": "2025-11-02",
+          "date_to": "2025-11-08",
+          "timestamp": 1762041600,
+          "missing_data": false,
+          "values": [
+            0,
+            0,
+            4,
+            26
+          ]
+        },
+        {
+          "date_from": "2025-11-09",
+          "date_to": "2025-11-15",
+          "timestamp": 1762646400,
+          "missing_data": false,
+          "values": [
+            0,
+            0,
+            4,
+            26
+          ]
+        },
+        {
+          "date_from": "2025-11-16",
+          "date_to": "2025-11-22",
+          "timestamp": 1763251200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            4,
+            26
+          ]
+        },
+        {
+          "date_from": "2025-11-23",
+          "date_to": "2025-11-29",
+          "timestamp": 1763856000,
+          "missing_data": false,
+          "values": [
+            0,
+            0,
+            3,
+            20
+          ]
+        },
+        {
+          "date_from": "2025-11-30",
+          "date_to": "2025-12-06",
+          "timestamp": 1764460800,
+          "missing_data": false,
+          "values": [
+            0,
+            0,
+            4,
+            25
+          ]
+        },
+        {
+          "date_from": "2025-12-07",
+          "date_to": "2025-12-13",
+          "timestamp": 1765065600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            4,
+            24
+          ]
+        },
+        {
+          "date_from": "2025-12-14",
+          "date_to": "2025-12-20",
+          "timestamp": 1765670400,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            4,
+            26
+          ]
+        },
+        {
+          "date_from": "2025-12-21",
+          "date_to": "2025-12-27",
+          "timestamp": 1766275200,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            4,
+            23
+          ]
+        },
+        {
+          "date_from": "2025-12-28",
+          "date_to": "2026-01-03",
+          "timestamp": 1766880000,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            4,
+            23
+          ]
+        },
+        {
+          "date_from": "2026-01-04",
+          "date_to": "2026-01-10",
+          "timestamp": 1767484800,
+          "missing_data": false,
+          "values": [
+            0,
+            0,
+            4,
+            33
+          ]
+        },
+        {
+          "date_from": "2026-01-11",
+          "date_to": "2026-01-17",
+          "timestamp": 1768089600,
+          "missing_data": false,
+          "values": [
+            null,
+            0,
+            4,
+            37
+          ]
+        },
+        {
+          "date_from": "2026-01-18",
+          "date_to": "2026-01-24",
+          "timestamp": 1768694400,
+          "missing_data": false,
+          "values": [
+            0,
+            1,
+            4,
+            35
+          ]
+        },
+        {
+          "date_from": "2026-01-25",
+          "date_to": "2026-01-31",
+          "timestamp": 1769299200,
+          "missing_data": false,
+          "values": [
+            0,
+            1,
+            4,
+            44
+          ]
+        },
+        {
+          "date_from": "2026-02-01",
+          "date_to": "2026-02-07",
+          "timestamp": 1769904000,
+          "missing_data": false,
+          "values": [
+            0,
+            1,
+            5,
+            48
+          ]
+        },
+        {
+          "date_from": "2026-02-08",
+          "date_to": "2026-02-14",
+          "timestamp": 1770508800,
+          "missing_data": false,
+          "values": [
+            null,
+            1,
+            4,
+            47
+          ]
+        },
+        {
+          "date_from": "2026-02-15",
+          "date_to": "2026-02-21",
+          "timestamp": 1771113600,
+          "missing_data": false,
+          "values": [
+            0,
+            1,
+            4,
+            67
+          ]
+        },
+        {
+          "date_from": "2026-02-22",
+          "date_to": "2026-02-28",
+          "timestamp": 1771718400,
+          "missing_data": false,
+          "values": [
+            0,
+            1,
+            5,
+            66
+          ]
+        },
+        {
+          "date_from": "2026-03-01",
+          "date_to": "2026-03-07",
+          "timestamp": 1772323200,
+          "missing_data": false,
+          "values": [
+            0,
+            1,
+            6,
+            86
+          ]
+        },
+        {
+          "date_from": "2026-03-08",
+          "date_to": "2026-03-14",
+          "timestamp": 1772928000,
+          "missing_data": false,
+          "values": [
+            0,
+            1,
+            5,
+            79
+          ]
+        },
+        {
+          "date_from": "2026-03-15",
+          "date_to": "2026-03-21",
+          "timestamp": 1773532800,
+          "missing_data": false,
+          "values": [
+            0,
+            1,
+            5,
+            81
+          ]
+        },
+        {
+          "date_from": "2026-03-22",
+          "date_to": "2026-03-28",
+          "timestamp": 1774137600,
+          "missing_data": false,
+          "values": [
+            null,
+            1,
+            5,
+            72
+          ]
+        },
+        {
+          "date_from": "2026-03-29",
+          "date_to": "2026-04-04",
+          "timestamp": 1774742400,
+          "missing_data": false,
+          "values": [
+            0,
+            1,
+            4,
+            68
+          ]
+        },
+        {
+          "date_from": "2026-04-05",
+          "date_to": "2026-04-11",
+          "timestamp": 1775347200,
+          "missing_data": false,
+          "values": [
+            null,
+            1,
+            4,
+            67
+          ]
+        },
+        {
+          "date_from": "2026-04-12",
+          "date_to": "2026-04-18",
+          "timestamp": 1775952000,
+          "missing_data": false,
+          "values": [
+            null,
+            1,
+            4,
+            74
+          ]
+        },
+        {
+          "date_from": "2026-04-19",
+          "date_to": "2026-04-25",
+          "timestamp": 1776556800,
+          "missing_data": false,
+          "values": [
+            null,
+            1,
+            4,
+            63
+          ]
+        },
+        {
+          "date_from": "2026-04-26",
+          "date_to": "2026-05-02",
+          "timestamp": 1777161600,
+          "missing_data": false,
+          "values": [
+            0,
+            1,
+            3,
+            64
+          ]
+        },
+        {
+          "date_from": "2026-05-03",
+          "date_to": "2026-05-09",
+          "timestamp": 1777766400,
+          "missing_data": false,
+          "values": [
+            0,
+            1,
+            4,
+            67
+          ]
+        },
+        {
+          "date_from": "2026-05-10",
+          "date_to": "2026-05-16",
+          "timestamp": 1778371200,
+          "missing_data": false,
+          "values": [
+            null,
+            1,
+            4,
+            73
+          ]
+        },
+        {
+          "date_from": "2026-05-17",
+          "date_to": "2026-05-23",
+          "timestamp": 1778976000,
+          "missing_data": false,
+          "values": [
+            null,
+            1,
+            4,
+            86
+          ]
+        },
+        {
+          "date_from": "2026-05-24",
+          "date_to": "2026-05-30",
+          "timestamp": 1779580800,
+          "missing_data": false,
+          "values": [
+            0,
+            1,
+            5,
+            92
+          ]
+        },
+        {
+          "date_from": "2026-05-31",
+          "date_to": "2026-06-06",
+          "timestamp": 1780185600,
+          "missing_data": false,
+          "values": [
+            0,
+            1,
+            5,
+            100
+          ]
+        },
+        {
+          "date_from": "2026-06-07",
+          "date_to": "2026-06-13",
+          "timestamp": 1780790400,
+          "missing_data": false,
+          "values": [
+            0,
+            1,
+            5,
+            99
+          ]
+        },
+        {
+          "date_from": "2026-06-14",
+          "date_to": "2026-06-20",
+          "timestamp": 1781395200,
+          "missing_data": false,
+          "values": [
+            0,
+            0,
+            1,
+            32
+          ]
+        },
+        {
+          "date_from": "2026-06-21",
+          "date_to": "2026-06-27",
+          "timestamp": 1782000000,
+          "missing_data": true,
+          "values": [
+            0,
+            0,
+            1,
+            39
+          ]
+        }
+      ]
+    }
+  ],
+  "total_cost_usd": 0.2624
+}

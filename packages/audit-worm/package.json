@@ -1,0 +1,7 @@
+{
+  "name": "@stack/audit-worm",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "WORM ArtifactStore (S3 Object-Lock) + SHA-256 append-only audit chain."
+}
