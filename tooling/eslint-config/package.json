@@ -1,0 +1,22 @@
+{
+  "name": "@stack/eslint-config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The single ESLint standards source (ADR-0002) + the import-boundary rules (ADR-0022). Every package extends it.",
+  "exports": {
+    ".": "./index.js",
+    "./boundaries": "./boundaries.js"
+  },
+  "scripts": {
+    "lint": "echo 'eslint-config: config package, no self-lint'",
+    "test": "echo 'eslint-config: rule tests land with the ADR-0013 harness'"
+  },
+  "peerDependencies": {
+    "eslint": ">=9"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "typescript-eslint": "^8.0.0"
+  }
+}
