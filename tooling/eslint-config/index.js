@@ -41,8 +41,9 @@ export default tseslint.config(
     },
   },
   {
-    // CLI entrypoints legitimately print to stdout (the "no-console" rule targets library code).
-    files: ["**/gate.ts", "**/bin/**", "**/*.cli.ts"],
+    // CLI entrypoints + build/gen scripts legitimately print to stdout (the "no-console" rule
+    // targets library code).
+    files: ["**/gate.ts", "**/bin/**", "**/*.cli.ts", "**/scripts/**"],
     rules: {
       "no-console": "off",
     },

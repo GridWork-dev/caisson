@@ -18,11 +18,11 @@ const EDITION_NAMES = new Set([
   "@caisson/agent-dev",
 ]);
 
+// A registry-module candidate is a `packages/` member. `apps/` are reference applications (the
+// base/edition reference apps + the design studio) — never published to the registry, so they are
+// not held to the module declaration rules (they still face the AGPL + down-only checks below).
 const isModuleCandidate = (p: Pkg): boolean =>
-  p.dir.includes("/packages/") ||
-  p.dir.includes("/apps/") ||
-  p.dir.includes("\\packages\\") ||
-  p.dir.includes("\\apps\\");
+  p.dir.includes("/packages/") || p.dir.includes("\\packages\\");
 
 export interface Finding {
   severity: "error" | "warn";
@@ -115,7 +115,12 @@ export function checkDownOnly(pkgs: Pkg[]): Finding[] {
   return findings;
 }
 
-/** A package that ships code must declare a license + a manifest (ADR-0020). */
+/**
+ * A `packages/` member that ships code must declare an SPDX license now (ADR-0023 — every module
+ * is licensed). The `manifest.ts` is the registry-publish declaration that lands at P5 (ADR-0021
+ * T5.1b backfill), so its absence is a WARN pre-publish, not a build-blocking error — the manifest
+ * becomes mandatory at the registry-ingress (publish) step, which this same gate guards.
+ */
 export function checkDeclarations(pkgs: Pkg[]): Finding[] {
   const findings: Finding[] = [];
   for (const p of pkgs) {
@@ -125,14 +130,14 @@ export function checkDeclarations(pkgs: Pkg[]): Finding[] {
         severity: "error",
         rule: "license-required",
         pkg: p.name,
-        message: `shipped module has no SPDX \`license\` in package.json (ADR-0020/0022).`,
+        message: `shipped module has no SPDX \`license\` in package.json (ADR-0020/0023).`,
       });
     if (!p.manifestPath)
       findings.push({
-        severity: "error",
-        rule: "manifest-required",
+        severity: "warn",
+        rule: "manifest-pending",
         pkg: p.name,
-        message: `shipped module has no manifest.ts (ADR-0020).`,
+        message: `no manifest.ts yet — registry manifests land at P5 (ADR-0021 T5.1b backfill); mandatory at publish.`,
       });
   }
   return findings;

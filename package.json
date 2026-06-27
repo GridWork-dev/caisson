@@ -19,9 +19,11 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,mjs,json,md,css}\""
   },
   "devDependencies": {
+    "@caisson/eslint-config": "workspace:*",
     "@changesets/cli": "^2.27.9",
     "@eslint/js": "^9.13.0",
     "@types/bun": "^1.1.14",
+    "dependency-cruiser": "^16.0.0",
     "eslint": "^9.13.0",
     "prettier": "^3.3.3",
     "turbo": "~2.5.6",
