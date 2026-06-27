@@ -6,8 +6,10 @@
 # AND a real handle below. TODO(operator): replace @stack-owner with your GitHub handle/team and
 # turn on branch protection — until then this file documents intent but does not block.
 
-# The generator allowlist — CI-built; no hand-edits without owner review (ADR-0021).
+# The generator allowlist — CI-built from the ledger; no hand-edits without owner review (ADR-0021).
 /registry/index.json            @stack-owner
+# The version ledger — the index's sole source of truth; a gated publish appends here (CI, P5).
+/registry/ledger.jsonl          @stack-owner
 
 # Locked decision artifacts (CLAUDE.md source-of-truth #1 + #2).
 /knowledge/decisions/           @stack-owner

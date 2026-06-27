@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "modules": [
+    {
+      "id": "@caisson/field-crypto",
+      "latest": "0.1.0",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "manifest": {
+            "id": "@caisson/field-crypto",
+            "version": "0.1.0",
+            "kind": "primitive",
+            "editions": [],
+            "tier": "paid",
+            "priceCents": 4900,
+            "license": "LicenseRef-Caisson-Commercial",
+            "dependencies": [
+              "@caisson/kernel"
+            ],
+            "entry": "src/index.ts",
+            "agents": "AGENTS.md",
+            "golden": "src/__golden__",
+            "stability": "alpha",
+            "description": "Per-tenant authenticated field encryption (HKDF + AES-256-GCM + versioned envelope + Drizzle column + pluggable KMS provider)."
+          },
+          "publishedAt": "2026-06-27T00:00:00.000Z",
+          "gateAttestation": "ci-0001@549dc8f"
+        }
+      ]
+    }
+  ]
+}
