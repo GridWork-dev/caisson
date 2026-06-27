@@ -8,12 +8,12 @@ locked to a hosted vendor). **Email → Resend** — modern API, great DX, React
 Both are wrapped behind **provider-agnostic ports** so they are swappable and, critically,
 **testable without network or secrets**.
 
-**`@stack/jobs` — `JobQueue` port.** `defineTask(name, payloadSchema, handler)` +
+**`@caisson/jobs` — `JobQueue` port.** `defineTask(name, payloadSchema, handler)` +
 `enqueue(name, payload, opts)` with a **Zod-`.strict()` typed payload**. Drivers: a **Trigger.dev
 driver** (prod) and an **in-memory/synchronous driver** (tests + the framework-agnostic reference)
 so a unit test asserts "this event enqueued that task with that payload" with no daemon.
 
-**`@stack/email` — `Emailer` port.** `send({ to, template, data })` with typed templates. Drivers:
+**`@caisson/email` — `Emailer` port.** `send({ to, template, data })` with typed templates. Drivers:
 a **Resend driver** (prod) and a **capture driver** (tests — records sent mail in memory, asserts
 recipient/template/data; never hits the network). `fetchWithTimeout` on the Resend call; no
 provider key in code.

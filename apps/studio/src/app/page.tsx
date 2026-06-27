@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { accentCandidates, selected, typeCandidates } from "@stack/ui/tokens";
+import { accentCandidates, selected, typeCandidates } from "@caisson/ui/tokens";
 
 type SurfaceState = "ready" | "later" | "locked";
 

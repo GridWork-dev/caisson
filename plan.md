@@ -1,4 +1,4 @@
-# Build Plan — Forge (phase-based, exit criteria, no dates)
+# Build Plan — Caisson (phase-based, exit criteria, no dates)
 
 Implements `specs/00-product-spec.md §5`. Per gridwork-core: spec-first, atomic commits,
 golden-file regression before any compliance logic, no product code before Gate 4. Each phase
@@ -9,14 +9,14 @@ production-standards pipeline is a **separate dedicated session** (D9) — P0 fi
 
 - T0.1 Monorepo init: Bun workspaces + Turborepo + changesets (ADR-0001).
 - T0.2 `tooling/`: eslint-config + tsconfig + testing harness + the lint-gate (ADR-0002). Wire
-  the D9 standards layer (all 3, ADR-0022): `@stack/standards-gate` (AGPL ext+ws · down-only ·
+  the D9 standards layer (all 3, ADR-0022): `@caisson/standards-gate` (AGPL ext+ws · down-only ·
   manifest agreement), the provider-SDK boundary in `eslint-config/boundaries.js`, and
   `.dependency-cruiser.cjs` (graph reach + base→edition); plus the module golden-fixture contract
   `testing/golden-module.ts` against the ADR-0013 runner. Fix the workspace install first (empty
   `services/*`/`apps/*` members + missing lockfile block `bun install` today).
 - T0.3 `kernel`: typed config/schema + validator (← gridwork-core).
 - T0.4 CI: build + lint + test + the standards gate; the golden-file harness skeleton. The gate
-  job runs `stack-gate` + eslint + the golden run; the registry-index update job runs only after a
+  job runs `caisson-gate` + eslint + the golden run; the registry-index update job runs only after a
   green gate and stamps a `gateAttestation` (ADR-0021).
 - **Exit:** a package builds, lints, tests; standards gate green; `bun run check` clean.
 
@@ -63,7 +63,7 @@ production-standards pipeline is a **separate dedicated session** (D9) — P0 fi
   carries a `manifest.ts` + SPDX `license` + `AGENTS.md` + golden fixture.
 - **T5.1b backfill:** publish P2–P4 packages as the initial registry module set — each through the
   same gated publish flow (no special path; the "backfill" is each module's first gated publish).
-- T5.2 `cli` `create-stack`: compose a repo from a selection — **validate every caller-supplied
+- T5.2 `cli` `create-caisson`: compose a repo from a selection — **validate every caller-supplied
   module/edition id against the registry allowlist (`assertKnownModule`) before any path/subprocess
   (ADR-0021/0004)** · T5.3 agent-driven generation via the MCP server (same allowlist gate,
   ADR-0008) · T5.4 codegen-credit metering on each generation.

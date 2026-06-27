@@ -21,7 +21,7 @@ where an **organization = an `account`** (the buyer/tenant).
    service boundary). Asymmetric verify (`crypto.verify`), never `timingSafeEqual`.
 
 **auth → RLS injection (the load-bearing seam).** The data layer's **only** entry is
-`withTenant(db, accountId, fn)` (ADR-0005, `@stack/tenancy-rls`): it opens a transaction,
+`withTenant(db, accountId, fn)` (ADR-0005, `@caisson/tenancy-rls`): it opens a transaction,
 `SET ROLE app`, `SET LOCAL app.current_account = $accountId`, runs `fn`, commits. RLS policies
 read `current_setting('app.current_account')`. `accountId` is sourced **only** from the verified
 session/JWT above — never from request params/body — so a forged `account_id` cannot cross

@@ -1,5 +1,5 @@
 {
-  "name": "@stack/app-base",
+  "name": "@caisson/app-base",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -17,17 +17,17 @@
     "test": "bun test ./src"
   },
   "dependencies": {
-    "@stack/auth": "workspace:*",
-    "@stack/billing": "workspace:*",
-    "@stack/credits": "workspace:*",
-    "@stack/kernel": "workspace:*",
-    "@stack/mcp-server": "workspace:*",
-    "@stack/tenancy-rls": "workspace:*"
+    "@caisson/auth": "workspace:*",
+    "@caisson/billing": "workspace:*",
+    "@caisson/credits": "workspace:*",
+    "@caisson/kernel": "workspace:*",
+    "@caisson/mcp-server": "workspace:*",
+    "@caisson/tenancy-rls": "workspace:*"
   },
   "devDependencies": {
-    "@stack/eslint-config": "workspace:*",
-    "@stack/testing": "workspace:*",
-    "@stack/tsconfig": "workspace:*",
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
     "eslint": "^9.13.0",
     "typescript": "^5.6.0"
   }

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { AuthnError } from "@stack/kernel";
+import { AuthnError } from "@caisson/kernel";
 import {
   generateAccountKeyPair,
   requireSession,

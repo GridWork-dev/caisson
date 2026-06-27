@@ -3,7 +3,7 @@
 // for the life of the transaction. RLS policies read that GUC, so a query that forgets its
 // `WHERE account_id = …` still returns only the caller's rows — and a code path that forgets
 // `withTenant` entirely has no GUC bound and sees nothing. Fail-closed, by construction.
-import { TenancyError } from "@stack/kernel";
+import { TenancyError } from "@caisson/kernel";
 
 /** The Postgres GUC that carries the active account id into RLS policies. */
 export const TENANT_GUC = "app.current_account";

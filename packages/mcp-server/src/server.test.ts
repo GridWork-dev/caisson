@@ -6,7 +6,7 @@ import {
   EntitlementError,
   NotFoundError,
   ValidationError,
-} from "@stack/kernel";
+} from "@caisson/kernel";
 import { createMcpServer, type GenerateContext } from "./index.ts";
 
 const calls: GenerateContext[] = [];

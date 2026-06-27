@@ -3,11 +3,11 @@
 Status: proposed · 2026-06-27 (foundations track; the cross-package error contract — extends
 ADR-0002, which is immutable/append-only, so this is its own ADR)
 
-Every package throws from **one typed error hierarchy** in `@stack/kernel`, so errors propagate
+Every package throws from **one typed error hierarchy** in `@caisson/kernel`, so errors propagate
 across the package graph with a stable `code`, a mapped HTTP status, and a redaction-safe
 envelope — never a raw `Error` or a leaked stack/SQL string.
 
-**Hierarchy (base `StackError`).** `{ code: string, httpStatus: number, message: string,
+**Hierarchy (base `CaissonError`).** `{ code: string, httpStatus: number, message: string,
 details?: Record<string, unknown> }`, each subclass a stable `code`:
 
 | Class                      | code                   | HTTP    | Use                                                                                                                      |
@@ -23,7 +23,7 @@ details?: Record<string, unknown> }`, each subclass a stable `code`:
 | `RateLimitError`           | `rate_limited`         | 429     | per-account rate cap (ADR-0008)                                                                                          |
 | `InternalError`            | `internal_error`       | 500     | the only class an unknown throw becomes                                                                                  |
 
-**Envelope.** `toErrorResponse(err)` → `{ error: { code, message, details? } }`. A non-`StackError`
+**Envelope.** `toErrorResponse(err)` → `{ error: { code, message, details? } }`. A non-`CaissonError`
 throw is coerced to `InternalError` with a generic message (the original is logged server-side,
 **never** serialized to the client). `details` is allowlisted per class — no SQL, no stack, no
 secret ever reaches `details`.
@@ -38,5 +38,5 @@ Rejected: per-package ad-hoc error shapes (un-composable across the graph; clien
 reliably). Returning 403 for tenancy denials (leaks cross-tenant existence — must be 404). Putting
 raw error/SQL text in the client envelope (info leak — the security floor).
 
-Binding: packages throw `StackError` subclasses only; the HTTP edge renders `toErrorResponse`;
+Binding: packages throw `CaissonError` subclasses only; the HTTP edge renders `toErrorResponse`;
 tenancy denials are 404; the credit gate is the exact 402 shape above; unknown throws → 500 generic.

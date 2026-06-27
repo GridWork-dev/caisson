@@ -3,8 +3,8 @@
 // seam, ADR-0015); all errors render through the kernel's redaction-safe envelope with the
 // security headers from the floor.
 import type { KeyObject } from "node:crypto";
-import { AuthnError, toErrorResponse } from "@stack/kernel";
-import { verifyAccountJwt } from "@stack/auth";
+import { AuthnError, toErrorResponse } from "@caisson/kernel";
+import { verifyAccountJwt } from "@caisson/auth";
 import type { BaseApp } from "./app.ts";
 
 export interface ServerDeps {

@@ -7,14 +7,14 @@ Authoring + binding: ADR-0020. Publish flow + the allowlist: ADR-0021.
 
 | Field          | Type                                                 | Notes                                                              |
 | -------------- | ---------------------------------------------------- | ------------------------------------------------------------------ |
-| `id`           | `@stack/<slug>`                                      | matches package.json `name`                                        |
+| `id`           | `@caisson/<slug>`                                    | matches package.json `name`                                        |
 | `version`      | semver                                               | mirrors package.json; independently versioned (ADR-0003)           |
 | `kind`         | `base` \| `edition` \| `primitive` \| `app-template` | drives the down-only gate (ADR-0022)                               |
 | `editions`     | edition[]                                            | membership; `[]` for pure base; an edition names itself            |
 | `tier`         | `oss` \| `paid`                                      | commerce lever — distinct from `license`                           |
 | `priceCents`   | int \| null                                          | integer minor units (ADR-0007); `null` for oss; `paid` ⇒ positive  |
 | `license`      | SPDX (allowlist)                                     | mirrors package.json; drives the AGPL gate (ADR-0022/0010)         |
-| `dependencies` | `@stack/<slug>`[]                                    | workspace deps; **down-only** (ADR-0003)                           |
+| `dependencies` | `@caisson/<slug>`[]                                  | workspace deps; **down-only** (ADR-0003)                           |
 | `entry`        | path                                                 | default `src/index.ts`                                             |
 | `agents`       | path                                                 | the module's **AGENTS.md** (agent-facing; distinct from README)    |
 | `golden`       | path \| null                                         | golden-fixture dir; `null` until the module has golden-able output |

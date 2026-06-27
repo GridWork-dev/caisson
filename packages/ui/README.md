@@ -1,4 +1,4 @@
-# @stack/ui
+# @caisson/ui
 
 vanilla-extract typed token floor + headless+styled primitives.
 

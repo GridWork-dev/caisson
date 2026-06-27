@@ -1,7 +1,6 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "@caisson/tsconfig/base.json",
   "compilerOptions": {
-    "allowImportingTsExtensions": true,
     "noEmit": true
   },
   "include": ["src", "scripts"]

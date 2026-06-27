@@ -1,5 +1,5 @@
 {
-  "name": "@stack/service-license",
+  "name": "@caisson/service-license",
   "version": "0.0.0",
   "private": true,
   "type": "module",

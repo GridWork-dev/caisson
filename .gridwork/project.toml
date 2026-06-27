@@ -1,8 +1,8 @@
 [project]
-slug = "stack"
-display_name = "stack (working name)"
-description = "Productized monorepo library — composable base + 4 premium editions + create-stack generator. Rebuild-clean from the GridWork portfolio."
+slug = "caisson"
+display_name = "Caisson"
+description = "Caisson — productized monorepo library: composable base + 4 premium editions + create-caisson generator. Rebuild-clean from the GridWork portfolio."
 status = "scaffold"
 
-# Working name only — real name + positioning are a deferred session.
-# Provenance: ../library-research/ (capability corpus, market research, specs, decisions).
+# Name + positioning LOCKED (ADR-0041 Caisson · ADR-0040 hero · ADR-0042 design). `@caisson/*`, caisson.sh.
+# Provenance: outputs/research/ (capability corpus, market research, specs, decisions).

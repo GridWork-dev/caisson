@@ -112,7 +112,7 @@ guarantee, identical values; **flagged as a reversible build-decision to ratify*
   (`--cs-*` CSS vars, `:root`/`[data-theme]`). Deterministic, drift-guarded.
 - **Two layers:** primitive (`palette.ts` ramps) → semantic (`theme.ts` roles). Dark mode redefines
   only the semantic layer.
-- **Consume:** apps import `@stack/ui/styles/tokens.css` + read TS objects for candidate rendering.
+- **Consume:** apps import `@caisson/ui/styles/tokens.css` + read TS objects for candidate rendering.
 
 ## Layout
 

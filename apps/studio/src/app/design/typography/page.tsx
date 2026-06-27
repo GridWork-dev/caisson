@@ -1,5 +1,5 @@
-import { foundation, typeCandidates } from "@stack/ui/tokens";
-import type { TypeCandidate } from "@stack/ui/tokens";
+import { foundation, typeCandidates } from "@caisson/ui/tokens";
+import type { TypeCandidate } from "@caisson/ui/tokens";
 
 const WEIGHTS: ReadonlyArray<readonly [number, string]> = [
   [300, "Light"],

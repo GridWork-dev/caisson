@@ -1,4 +1,6 @@
-# stack (working name — real name + positioning are a deferred session)
+# Caisson
+
+**Compliance-grade infrastructure for regulated SaaS.** `@caisson/*` · [caisson.sh](https://caisson.sh)
 
 A productized **monorepo library**: a composable base + four premium editions + a generator
 the buyer's AI agent drives + a custom AI support service. Sold as whole editions (one-time),
@@ -27,7 +29,7 @@ apps/         # one reference app per edition (framework deferred)
 services/     # support-bot (Python) · license · docs
 specs/        # the locked spec set (00 founding · 01 architecture · 02 core-loop · 03 design)
 plan.md       # P0–P7 build plan
-knowledge/decisions/   # ADR-0001..0012 (locked at Gate 4)
+knowledge/decisions/   # ADRs: 0001-0012 founding · 0013-0024 substrate+pipeline · 0040-0042 brand
 docs/state/   # decisions-and-forks live board
 outputs/kickoffs/      # kickoff docs for future sessions
 SUMMARY.md    # consolidated summary of how we got here
@@ -38,7 +40,9 @@ SUMMARY.md    # consolidated summary of how we got here
 Bun + Turborepo + changesets. `bun run check` (build + lint + test). Build proceeds per
 `plan.md` only after the relevant kickoff (see `outputs/kickoffs/`).
 
-## What's deferred (not locked)
+## Locked vs open
 
-Positioning / hero / voice / name · module production-standards pipeline · pricing numbers ·
-docs tooling. See `docs/state/decisions-and-forks.md`.
+**Locked:** name **Caisson** + hero (compliance wedge) + design foundation · module
+production-standards pipeline + fully-commercial licensing · Cloudflare Pages hosting on
+`caisson.sh` · docs = single Next site + MDX. **Open:** pricing numbers · per-edition app
+framework. See `docs/state/decisions-and-forks.md`.

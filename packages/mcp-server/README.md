@@ -1,4 +1,4 @@
-# @stack/mcp-server
+# @caisson/mcp-server
 
 Auth-gated buyer-facing MCP server (entitlement-scoped).
 

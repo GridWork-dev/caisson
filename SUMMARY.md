@@ -17,7 +17,7 @@ Clean consolidation of the whole job (2026-06-27). Full detail in the per-phase 
 
 **Product:** a monorepo library — a **composable base** + **4 premium editions**, sold as whole
 editions (one-time) + bundle + **per-module à-la-carte** + **subscription/credits**, with a
-`create-stack` generator the buyer's AI agent drives + a custom AI support bot.
+`create-caisson` generator the buyer's AI agent drives + a custom AI support bot.
 
 **Editions (all v1), each rebuilt clean from a proven repo:**
 

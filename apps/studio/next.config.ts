@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const config: NextConfig = {
-  // @stack/ui ships raw TS (exports point at src/*.ts); Next transpiles it.
-  transpilePackages: ["@stack/ui"],
+  // @caisson/ui ships raw TS (exports point at src/*.ts); Next transpiles it.
+  transpilePackages: ["@caisson/ui"],
   reactStrictMode: true,
 };
 

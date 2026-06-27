@@ -27,7 +27,7 @@ without a second decision.
    re-inserting the same `(source_event_id, event_type)` raises **23505**, caught and mapped to an
    idempotent success returning the existing row.
 
-2. **Internal/client-driven** debits with no external event (an in-app `create-stack` generation,
+2. **Internal/client-driven** debits with no external event (an in-app `create-caisson` generation,
    an AI-feature spend) carry a caller-supplied `idempotency_key` (UUID), scoped per account:
    ```sql
    CREATE UNIQUE INDEX credit_event_idem_uniq

@@ -1,4 +1,4 @@
-# @stack/auth
+# @caisson/auth
 
 Authentication (sessions/JWT), provider-agnostic.
 

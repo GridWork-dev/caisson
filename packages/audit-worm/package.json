@@ -1,8 +1,8 @@
 {
-  "name": "@stack/audit-worm",
+  "name": "@caisson/audit-worm",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "license": "LicenseRef-Stack-Commercial",
+  "license": "LicenseRef-Caisson-Commercial",
   "description": "WORM ArtifactStore (S3 Object-Lock) + SHA-256 append-only audit chain."
 }

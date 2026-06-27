@@ -9,7 +9,7 @@ licensing, entitlements, the pro-private firewall — stands unchanged).
 
 ## The model
 
-- **Every module ships under the proprietary `LicenseRef-Stack-Commercial` EULA.** A buyer purchases,
+- **Every module ships under the proprietary `LicenseRef-Caisson-Commercial` EULA.** A buyer purchases,
   then builds **unlimited products** with the code — but may **not** resell, redistribute, or
   open-source the kit itself. (The ShipFast/MakerKit paid-boilerplate model.) **No permissive free
   tier** — Apache-2.0 / MIT are removed from the SPDX allowlist (ADR-0020).
@@ -19,7 +19,7 @@ licensing, entitlements, the pro-private firewall — stands unchanged).
   This is the _only_ non-commercial-EULA code in the product.
 - **Per-module à-la-carte (ADR-0003/0012) is all commercial.** The manifest `tier` (ADR-0020) is
   `paid` for every module; `oss` marks **only** the AGPL flank. `license` is
-  `LicenseRef-Stack-Commercial` everywhere except the AGPL flank.
+  `LicenseRef-Caisson-Commercial` everywhere except the AGPL flank.
 
 ## Buyer rights (answering "they purchase and use it in their own stuff")
 
@@ -35,12 +35,12 @@ to redistribute or resell the kit. Enforced **legally** by the EULA the `License
   non-buyers) redistribute the paid kit for free; wrong for a fully-paid product. Reversed.
 - **A mixed free/paid base split** — no free tier at all (except the deliberate AGPL flank);
   simpler positioning, no à-la-carte base given away.
-- **`UNLICENSED`** over a named `LicenseRef` — less descriptive; `LicenseRef-Stack-Commercial`
+- **`UNLICENSED`** over a named `LicenseRef` — less descriptive; `LicenseRef-Caisson-Commercial`
   points at the actual EULA doc.
 
 ## Binding
 
-Every module is `LicenseRef-Stack-Commercial` except the AGPL Local-first flank; no permissive/free
+Every module is `LicenseRef-Caisson-Commercial` except the AGPL Local-first flank; no permissive/free
 license enters the SPDX allowlist (ADR-0020); the EULA text is a separate legal artifact the
 `LicenseRef` resolves to (to be drafted before first sale). The AGPL gate (ADR-0022) keeps the AGPL
 flank from contaminating any commercial module.

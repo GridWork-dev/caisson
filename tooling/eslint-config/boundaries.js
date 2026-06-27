@@ -37,7 +37,7 @@ export const PROVIDER_SDKS = [
 const restrictedPatterns = PROVIDER_SDKS.map((name) => ({
   group: [name, `${name}/*`],
   message:
-    "Provider SDKs may only be imported by @stack/ai-config and @stack/ai-kit (ADR-0011). Route inference through @stack/ai-config. (dependency-cruiser backstops dynamic/transitive imports.)",
+    "Provider SDKs may only be imported by @caisson/ai-config and @caisson/ai-kit (ADR-0011). Route inference through @caisson/ai-config. (dependency-cruiser backstops dynamic/transitive imports.)",
 }));
 
 /** Packages exempt from the provider-SDK ban (the AI config seam itself). */

@@ -14,7 +14,7 @@ has a hole the others close. All run in CI (ADR-0016) + block merge.
 | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | **ESLint `no-restricted-imports`** (`tooling/eslint-config/boundaries.js`) | provider-SDK static `import`, fast + in-editor                                                                                     | dynamic `import()` / `require()`, transitive deps, unlinted published `.js` |
 | **dependency-cruiser** (`.dependency-cruiser.cjs`)                         | the REAL module graph: dynamic + `require` + **transitive** provider-SDK reach; base→edition direction; cycles                     | a package's SPDX `license` (graph tools read it poorly)                     |
-| **`@stack/standards-gate`** (Bun)                                          | the **SPDX/license authority**: AGPL boundary over workspace **+ external** deps; edition↔edition; manifest↔package.json agreement | dynamic/transitive _imports_ (defers to dep-cruiser)                        |
+| **`@caisson/standards-gate`** (Bun)                                        | the **SPDX/license authority**: AGPL boundary over workspace **+ external** deps; edition↔edition; manifest↔package.json agreement | dynamic/transitive _imports_ (defers to dep-cruiser)                        |
 
 A denylist of provider SDKs is unwinnable alone (new SDKs ship constantly — the review caught the
 denylist already missing `@google/genai`); the graph-reachability layer is the real backstop.
@@ -22,7 +22,7 @@ denylist already missing `@google/genai`); the graph-reachability layer is the r
 ## Gate 1 — AGPL import boundary (ADR-0010 enforcement)
 
 The Bun gate FAILS if any **non-AGPL** package depends on an **AGPL-licensed** package — over
-**both** workspace `@stack/*` deps **and external npm deps** (it reads each resolved dep's SPDX
+**both** workspace `@caisson/*` deps **and external npm deps** (it reads each resolved dep's SPDX
 `license`; the workspace-only check missed an external AGPL lib — review HIGH). dependency-cruiser
 backstops AGPL pulled via dynamic/transitive import. Rule: **only an AGPL package may consume an
 AGPL package.** AGPL detection parses SPDX (handles `AGPL-3.0-*` + `Affero`); the manifest SPDX

@@ -1,4 +1,4 @@
-import "@stack/ui/styles/tokens.css";
+import "@caisson/ui/styles/tokens.css";
 import "./globals.css";
 
 import type { Metadata } from "next";

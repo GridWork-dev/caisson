@@ -1,4 +1,4 @@
-// @stack/eslint-config — the single ESLint standards source (ADR-0002) + the import-boundary
+// @caisson/eslint-config — the single ESLint standards source (ADR-0002) + the import-boundary
 // rules (ADR-0022). Two-track ownership composed here:
 //   - Foundations owns the strict base (typescript-eslint strict + the no-any/no-console floor).
 //   - D9 module-standards owns `boundaries.js` (the provider-SDK import boundary, ADR-0011/0022).

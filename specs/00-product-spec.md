@@ -11,7 +11,7 @@
 
 | Dimension                                        | Decision                                                                                                                                                                                                                                                                                                            |
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Architecture                                     | **Monorepo**, Option **C** — composable capability packages **+** a `create-stack` generator/registry (codegen-credits)                                                                                                                                                                                             |
+| Architecture                                     | **Monorepo**, Option **C** — composable capability packages **+** a `create-caisson` generator/registry (codegen-credits)                                                                                                                                                                                           |
 | v1 depth                                         | **FULL** — base + **all four editions** (Compliance · AI Production Kit · Local-first AI · Agentic-Dev)                                                                                                                                                                                                             |
 | Lead edition                                     | **Compliance** — broad records base + **SOC2/HIPAA evidence-pack** kit first                                                                                                                                                                                                                                        |
 | Generic boilerplate                              | Included as the **table-stakes base** (competes with ShipFast/MakerKit) but **framed under the differentiators**                                                                                                                                                                                                    |
@@ -27,13 +27,13 @@
 
 **One-liner (positioning-led, ADR-0040):** Caisson is the **compliance-grade** base for regulated SaaS — fail-closed RLS, WORM, an append-only audit chain, and SOC2/HIPAA evidence packs, wired and tested from day one — and, under the same production-rigor roof, the editions for AI-production infra, local-first AI, and agentic dev. Your AI coding agent generates and configures the exact stack from a versioned registry, and a codebase-aware AI bot supports it. _The load-bearing infrastructure cheap boilerplates skip._
 
-Caisson is a **monorepo of composable packages** sold three ways at once — whole editions (one-time), a discounted bundle, or **individual modules à la carte** — with an optional **subscription** that adds a monthly credit allotment, framework/compliance updates, and private-registry access. A `create-stack` generator (driven by the buyer's own AI agent) assembles a tailored codebase from a versioned module registry; a shipped **MCP server (with auth)** lets the buyer's Claude Code / Cursor understand the codebase; a custom **AI support bot** answers in Discord grounded in the code and escalates to a tagged human ticket.
+Caisson is a **monorepo of composable packages** sold three ways at once — whole editions (one-time), a discounted bundle, or **individual modules à la carte** — with an optional **subscription** that adds a monthly credit allotment, framework/compliance updates, and private-registry access. A `create-caisson` generator (driven by the buyer's own AI agent) assembles a tailored codebase from a versioned module registry; a shipped **MCP server (with auth)** lets the buyer's Claude Code / Cursor understand the codebase; a custom **AI support bot** answers in Discord grounded in the code and escalates to a tagged human ticket.
 
 **The four substantive differentiators** (everything generic boilerplate ships is table stakes):
 
 1. **Compliance-grade by default** — fail-closed RLS + S3 WORM Object-Lock + append-only SHA-256 audit chain + per-tenant field encryption + a SOC2/HIPAA evidence-pack generator. The market's #1 named gap: _"no turnkey full-stack compliance starter."_ Demand: compliance CPC 10–50× every other category.
 2. **AI-production-grade, not AI-theater** — token metering with Postgres atomics, per-tenant spend caps + circuit breakers, an eval harness + CI gate, a versioned prompt registry, guardrails, and provider-agnostic AI config — the production-rigor layer every cheap AI boilerplate skips.
-3. **Agent-native delivery** — a `create-stack` generator + module registry the buyer's agent drives (codegen-credits), a shipped buyer-facing **MCP server with auth**, and AGENTS.md config bundles. Setup is agent-assisted (the "coach, not wizard" the market lacks).
+3. **Agent-native delivery** — a `create-caisson` generator + module registry the buyer's agent drives (codegen-credits), a shipped buyer-facing **MCP server with auth**, and AGENTS.md config bundles. Setup is agent-assisted (the "coach, not wizard" the market lacks).
 4. **A support + value-add surface that compounds** — Discord moat + a custom codebase-RAG AI bot that briefs and tags humans into tickets, AI-searchable docs that double as the buyer's agent context, lifetime updates, and a credits/subscription layer that fixes the one-time "revenue dry spell."
 
 **Explicit non-differentiators** (build to parity, never market as the edge): generic auth/Stripe/landing scaffolding (everyone ships it), raw template count, price undercutting, "AI-ready" badge with nothing behind it.
@@ -62,7 +62,7 @@ The buyer's loop — the unit of quality:
 
 1. **Choose** — browse editions/modules; buy a whole edition, the bundle, or individual modules. Card checkout via Merchant-of-Record.
 2. **Access** — private GitHub repo / registry access granted on purchase (webhook → collaborator/registry token); license issued (Ed25519, offline-verifiable).
-3. **Generate** — run `create-stack` (or let the buyer's AI agent drive it via the MCP server): pick edition + modules → a tailored codebase is scaffolded from the versioned registry. Generation is **credit-metered**.
+3. **Generate** — run `create-caisson` (or let the buyer's AI agent drive it via the MCP server): pick edition + modules → a tailored codebase is scaffolded from the versioned registry. Generation is **credit-metered**.
 4. **Configure** — the AI Production Kit's provider-agnostic config + a settings file; the **agent walks setup** (env, providers, DB, deploy) — the coach-not-wizard onboarding.
 5. **Ship** — the buyer builds their product on a base that's already production-grade (RLS, billing, credits, metering, guardrails, evidence) — passing CI gates that ship with it.
 6. **Support + sustain** — AI support bot (Discord, codebase-RAG) answers + briefs/tags humans; AI-searchable docs; lifetime updates; optional subscription adds monthly credits + compliance-framework updates + private-registry pulls.
@@ -81,7 +81,7 @@ The buyer's loop — the unit of quality:
 | **Local-first AI** (open-core flank) | `local-ai` (compute seam + privacy gate + sqlite-vec ANN + offline license + local store)                                                                   | tessera + health-service                                               | **AGPL open-core** + paid license/credits |
 | **Agentic-Dev**                      | `agent-dev` (typed agent/skill/rule schema + lifecycle state machine + local hybrid memory + hooks dispatcher)                                              | gridwork-core                                                          | paid                                      |
 
-**Generator (Option C):** `cli` (`create-stack`) + `registry/` (versioned module sources the CLI + buyer's agent pull from). Generation metered as codegen-credits.
+**Generator (Option C):** `cli` (`create-caisson`) + `registry/` (versioned module sources the CLI + buyer's agent pull from). Generation metered as codegen-credits.
 
 **Services:** `support-bot` (custom — see ADR-0009) · `license` (Ed25519 + MoR webhook + credit grants) · `docs` (AI-native, feeds bot + buyer agents).
 
@@ -102,7 +102,7 @@ The buyer's loop — the unit of quality:
 - **P2 — Compliance edition (hero).** audit-worm → field-crypto → compliance (RLS+WORM+audit-chain + SOC2/HIPAA evidence-pack + module registry + golden-file harness). Exit: a compliance reference app emits a valid evidence pack against a golden fixture.
 - **P3 — AI Production Kit.** provider-agnostic config + token-metering(PG-atomic) + spend-caps/circuit-breaker + eval-harness/CI + prompt-registry + guardrails + agent-setup. Exit: a metered AI feature with a passing eval gate + enforced spend cap.
 - **P4 — Local-first AI + Agentic-Dev.** compute seam + sqlite-vec + offline license; the governed-agent kernel. Exit: a local-first reference app runs offline; the kernel drives a lifecycle act.
-- **P5 — Generator + registry (Option C).** `create-stack` CLI + versioned registry + agent-driven generation + codegen-credit metering. Exit: the buyer's agent generates a tailored repo from the registry, metered.
+- **P5 — Generator + registry (Option C).** `create-caisson` CLI + versioned registry + agent-driven generation + codegen-credit metering. Exit: the buyer's agent generates a tailored repo from the registry, metered.
 - **P6 — Commerce + support + docs.** MoR checkout + license/credit grants + the custom support-bot + AI-native docs. Exit: a real purchase grants access + license + credits; the bot answers from the codebase and escalates a tagged ticket.
 - **P7+ — Round-out (roadmap).** compliance vertical packs (legal-doc, fin-ops, certified-payroll, EU-AI-Act), AI-feature packs, local-first verticals, the module marketplace.
 

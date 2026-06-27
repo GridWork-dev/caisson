@@ -2,7 +2,7 @@
 // The verified event carries everything the credit grant needs (sourceEventId → idempotency).
 import { createHmac } from "node:crypto";
 import { describe, expect, test } from "bun:test";
-import { AuthnError } from "@stack/kernel";
+import { AuthnError } from "@caisson/kernel";
 import {
   createStripeBilling,
   parseStripeEvent,

@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 
-import { accentCandidates, functional } from "@stack/ui/tokens";
-import type { AccentCandidate, SemanticTheme } from "@stack/ui/tokens";
+import { accentCandidates, functional } from "@caisson/ui/tokens";
+import type { AccentCandidate, SemanticTheme } from "@caisson/ui/tokens";
 
 import { contrast, fmt } from "@/lib/contrast";
 

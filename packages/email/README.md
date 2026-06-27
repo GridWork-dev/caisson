@@ -1,4 +1,4 @@
-# @stack/email
+# @caisson/email
 
 Transactional email.
 

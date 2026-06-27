@@ -1,6 +1,6 @@
 # registry/
 
-The **catalog** the `create-stack` CLI + the buyer's AI agent + the docs all read (ADR-0004,
+The **catalog** the `create-caisson` CLI + the buyer's AI agent + the docs all read (ADR-0004,
 one source / many consumers). **A module enters ONLY through the `tooling/` standards gate +
 golden-file harness** (ADR-0004/0021) — the publish flow is the one ingress. D9 (this track)
 defines that gate + pipeline; see ADR-0020 (manifest), ADR-0021 (publish flow), ADR-0022 (lint
@@ -10,7 +10,7 @@ gates).
 
 This directory is **not** a source mirror. Module _source_ ships as independently published,
 versioned packages (changesets, ADR-0001). This directory holds the **index** — each module →
-its published versions → that version's manifest + publish metadata. `create-stack` composes by
+its published versions → that version's manifest + publish metadata. `create-caisson` composes by
 pulling **published versions named in the index**; it never reads working-tree source.
 
 ## Contents
@@ -24,7 +24,7 @@ pulling **published versions named in the index**; it never reads working-tree s
 | `index.example.json`        | A valid sample index (validates against `schema/registry-index.ts`).   |
 | `index.json`                | The built catalog — **CI-written only**, never hand-edited (ADR-0021). |
 
-The schema is consumed + enforced by `@stack/standards-gate` (which supplies `zod`); per-module
+The schema is consumed + enforced by `@caisson/standards-gate` (which supplies `zod`); per-module
 `manifest.ts` files import `defineModule` from here.
 
 ## The one ingress (ADR-0021)

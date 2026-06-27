@@ -1,8 +1,8 @@
 // The credit wallet + append-only ledger schema (ADR-0007/0023). Integer balance, signed-amount
 // ledger (+grant / −debit), two partial-unique idempotency indexes, and a one-of-two CHECK so
-// every row is covered by exactly one. RLS via @stack/tenancy-rls — the ledger is tenant-owned.
+// every row is covered by exactly one. RLS via @caisson/tenancy-rls — the ledger is tenant-owned.
 // In prod this is a numbered Drizzle migration (ADR-0014); the DDL is owned here.
-import { buildTenantPolicySql } from "@stack/tenancy-rls";
+import { buildTenantPolicySql } from "@caisson/tenancy-rls";
 
 export const CREDIT_SCHEMA_SQL = `
 CREATE TABLE credit_wallet (

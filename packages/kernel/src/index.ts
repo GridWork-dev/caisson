@@ -1,6 +1,6 @@
-// @stack/kernel — the foundational shared library every base + edition package depends on.
+// @caisson/kernel — the foundational shared library every base + edition package depends on.
 export {
-  StackError,
+  CaissonError,
   ValidationError,
   AuthnError,
   AuthzError,
@@ -12,7 +12,7 @@ export {
   RateLimitError,
   ConfigError,
   InternalError,
-  isStackError,
+  isCaissonError,
   isUniqueViolation,
   toErrorResponse,
 } from "./errors.ts";
