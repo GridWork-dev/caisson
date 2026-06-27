@@ -8,21 +8,21 @@ gates).
 
 ## index ≠ source
 
-This directory is **not** a source mirror. Module *source* ships as independently published,
+This directory is **not** a source mirror. Module _source_ ships as independently published,
 versioned packages (changesets, ADR-0001). This directory holds the **index** — each module →
 its published versions → that version's manifest + publish metadata. `create-stack` composes by
 pulling **published versions named in the index**; it never reads working-tree source.
 
 ## Contents
 
-| Path | What |
-|---|---|
-| `schema/module-manifest.ts` | The typed manifest every module declares (ADR-0020). Canonical Zod. |
-| `schema/registry-index.ts` | The index schema + the generator **allowlist** helpers (ADR-0021). |
-| `schema/index.ts` | Re-export barrel. |
-| `SCHEMA.md` | Human field reference for the manifest + index. |
-| `index.example.json` | A valid sample index (validates against `schema/registry-index.ts`). |
-| `index.json` | The built catalog — **CI-written only**, never hand-edited (ADR-0021). |
+| Path                        | What                                                                   |
+| --------------------------- | ---------------------------------------------------------------------- |
+| `schema/module-manifest.ts` | The typed manifest every module declares (ADR-0020). Canonical Zod.    |
+| `schema/registry-index.ts`  | The index schema + the generator **allowlist** helpers (ADR-0021).     |
+| `schema/index.ts`           | Re-export barrel.                                                      |
+| `SCHEMA.md`                 | Human field reference for the manifest + index.                        |
+| `index.example.json`        | A valid sample index (validates against `schema/registry-index.ts`).   |
+| `index.json`                | The built catalog — **CI-written only**, never hand-edited (ADR-0021). |
 
 The schema is consumed + enforced by `@stack/standards-gate` (which supplies `zod`); per-module
 `manifest.ts` files import `defineModule` from here.
