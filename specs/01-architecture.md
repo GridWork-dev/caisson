@@ -45,7 +45,7 @@ Inherited from gridwork's proven split (ADR-0007):
 
 ## 3. Seller-platform data model (the commerce/licensing/credits spine)
 
-What Forge-the-business runs on (distinct from what a _buyer's_ app ships). Multi-tenant, RLS, credit-metered — and itself a reference of the base.
+What Caisson-the-business runs on (distinct from what a _buyer's_ app ships). Multi-tenant, RLS, credit-metered — and itself a reference of the base.
 
 ```
 account (buyer/tenant)                      RLS-isolated; member × role (owner|seat)

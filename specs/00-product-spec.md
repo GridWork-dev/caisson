@@ -1,33 +1,33 @@
-# Forge — Product Spec & Phased Roadmap
+# Caisson — Product Spec & Phased Roadmap
 
-**Working title:** Forge (placeholder — real name is a Phase-6 ADR)
-**Sources:** `capability-corpus.md` + `market-research.md` + `support-strategy.md` + scoping decisions (`decisions-log.md` D5–D13)
-**Status:** Features + architecture **locked** (Gate 4). **Positioning / hero / voice / branding NOT locked** — deferred to a dedicated positioning session.
-**Positioning (PROVISIONAL working frame, not the locked hero):** "your AI production codebase starter" is one _candidate_ framing used to carry these specs — the real hero is chosen later by researching across the differentiators (compliance / local-first / AI-infra / production rigor). Do not over-anchor on the AI-only frame.
+**Name:** Caisson · `@caisson/*` · `caisson.sh` (locked, ADR-0014 — was working name `stack`/`Forge`)
+**Sources:** `capability-corpus.md` + `market-research.md` + `support-strategy.md` + scoping decisions (`decisions-log.md` D5–D14)
+**Status:** Features + architecture **locked** (Gate 4). **Positioning / hero / voice / name now LOCKED** (positioning session, ADR-0013 + ADR-0014 + `specs/04-voice-and-brand.md`).
+**Positioning (LOCKED, ADR-0013):** a **two-layer** frame — the **umbrella** is a production-grade codebase library, _the load-bearing infrastructure cheap boilerplates skip_; the **hero wedge** acquisition leads with is **Compliance** (highest WTP, cleanest unserved gap). AI Production Kit = #2, Local-first AI = the free AGPL flank, Agentic-Dev = post-wedge. Build scope (all four editions) is unchanged — positioning fixes only the GTM weight. The earlier "AI production codebase starter" frame was provisional scaffolding, now superseded.
 
 ---
 
 ## 0. Decisions locked in scoping (Phase 3 picker + operator direction)
 
-| Dimension                                 | Decision                                                                                                                                                                                                                            |
-| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Architecture                              | **Monorepo**, Option **C** — composable capability packages **+** a `create-stack` generator/registry (codegen-credits)                                                                                                             |
-| v1 depth                                  | **FULL** — base + **all four editions** (Compliance · AI Production Kit · Local-first AI · Agentic-Dev)                                                                                                                             |
-| Lead edition                              | **Compliance** — broad records base + **SOC2/HIPAA evidence-pack** kit first                                                                                                                                                        |
-| Generic boilerplate                       | Included as the **table-stakes base** (competes with ShipFast/MakerKit) but **framed under the differentiators**                                                                                                                    |
-| Commerce                                  | One-time editions + discounted bundle + **per-module à-la-carte** + **subscription/credits**                                                                                                                                        |
-| Support                                   | **Custom self-built** `support-bot` (Discord + Python LLM dispatch + codebase RAG + hosted inference on cloud runners)                                                                                                              |
-| Build philosophy                          | **Rebuild clean** from proven strategies; **pro-private `media-pipeline` = patterns only, zero code**                                                                                                                               |
-| Module production standards               | A **separate dedicated session** deep-dives module/item production standards + pipeline — specs leave the seam, don't pre-bind it                                                                                                   |
-| **Positioning / hero / voice / branding** | **NOT locked** — a dedicated future positioning session researches the best hero across all differentiators (not AI-only) + refines voice. The frame in these specs is provisional scaffolding for the _features_, which ARE locked |
+| Dimension                                        | Decision                                                                                                                                                                                                                                                                                                            |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Architecture                                     | **Monorepo**, Option **C** — composable capability packages **+** a `create-stack` generator/registry (codegen-credits)                                                                                                                                                                                             |
+| v1 depth                                         | **FULL** — base + **all four editions** (Compliance · AI Production Kit · Local-first AI · Agentic-Dev)                                                                                                                                                                                                             |
+| Lead edition                                     | **Compliance** — broad records base + **SOC2/HIPAA evidence-pack** kit first                                                                                                                                                                                                                                        |
+| Generic boilerplate                              | Included as the **table-stakes base** (competes with ShipFast/MakerKit) but **framed under the differentiators**                                                                                                                                                                                                    |
+| Commerce                                         | One-time editions + discounted bundle + **per-module à-la-carte** + **subscription/credits**                                                                                                                                                                                                                        |
+| Support                                          | **Custom self-built** `support-bot` (Discord + Python LLM dispatch + codebase RAG + hosted inference on cloud runners)                                                                                                                                                                                              |
+| Build philosophy                                 | **Rebuild clean** from proven strategies; **pro-private `media-pipeline` = patterns only, zero code**                                                                                                                                                                                                               |
+| Module production standards                      | A **separate dedicated session** deep-dives module/item production standards + pipeline — specs leave the seam, don't pre-bind it                                                                                                                                                                                   |
+| **Positioning / hero / voice / name / branding** | **LOCKED** (ADR-0013 + ADR-0014 + `specs/04`) — name **Caisson**; hero = **Compliance wedge under a production-rigor umbrella**; compliance-update subscription split into its own SKU; ICP buyer-firewall; EU AI Act = gated add-on module; sequenced launch (free local-first → compliance hero → AI-Kit/agentic) |
 
 ---
 
 ## 1. Product definition
 
-**One-liner:** A production-grade codebase library where you buy a battle-tested base + the vertical edition you need (compliance, local-first AI, AI-infra), then your AI coding agent generates and configures the exact stack you want — and keeps getting support from an AI that knows your codebase.
+**One-liner (positioning-led, ADR-0013):** Caisson is the **compliance-grade** base for regulated SaaS — fail-closed RLS, WORM, an append-only audit chain, and SOC2/HIPAA evidence packs, wired and tested from day one — and, under the same production-rigor roof, the editions for AI-production infra, local-first AI, and agentic dev. Your AI coding agent generates and configures the exact stack from a versioned registry, and a codebase-aware AI bot supports it. _The load-bearing infrastructure cheap boilerplates skip._
 
-Forge is a **monorepo of composable packages** sold three ways at once — whole editions (one-time), a discounted bundle, or **individual modules à la carte** — with an optional **subscription** that adds a monthly credit allotment, framework/compliance updates, and private-registry access. A `create-stack` generator (driven by the buyer's own AI agent) assembles a tailored codebase from a versioned module registry; a shipped **MCP server (with auth)** lets the buyer's Claude Code / Cursor understand the codebase; a custom **AI support bot** answers in Discord grounded in the code and escalates to a tagged human ticket.
+Caisson is a **monorepo of composable packages** sold three ways at once — whole editions (one-time), a discounted bundle, or **individual modules à la carte** — with an optional **subscription** that adds a monthly credit allotment, framework/compliance updates, and private-registry access. A `create-stack` generator (driven by the buyer's own AI agent) assembles a tailored codebase from a versioned module registry; a shipped **MCP server (with auth)** lets the buyer's Claude Code / Cursor understand the codebase; a custom **AI support bot** answers in Discord grounded in the code and escalates to a tagged human ticket.
 
 **The four substantive differentiators** (everything generic boilerplate ships is table stakes):
 
@@ -52,7 +52,7 @@ Forge is a **monorepo of composable packages** sold three ways at once — whole
 
 **B4 — The Agentic Developer.** Wants the **Agentic-Dev** governed-agent kernel for their own Claude-Code-driven workflow. Narrower buyer; the kernel also underpins the generator + buyer MCP.
 
-**B5 — The Agency / Reseller (multiplier).** Buys the bundle + white-label rights, builds client products on Forge repeatedly. The seat/agency tier + per-module commerce serve them.
+**B5 — The Agency / Reseller (multiplier).** Buys the bundle + white-label rights, builds client products on Caisson repeatedly. The seat/agency tier + per-module commerce serve them.
 
 ---
 

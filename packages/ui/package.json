@@ -4,30 +4,20 @@
   "private": true,
   "type": "module",
   "license": "LicenseRef-Stack-Commercial",
-  "description": "Typed design-token contract (light+dark) + a vanilla-extract theme binding. The shipped token floor (spec 03).",
+  "description": "Typed token floor (ADR-0040 design foundation: palette + type) — OKLCH token objects → generated tokens.css (Wardfile gen-script pattern).",
   "exports": {
-    ".": {
-      "bun": "./src/index.ts",
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    },
-    "./theme.css": {
-      "bun": "./src/theme.css.ts",
-      "default": "./dist/theme.css.js"
-    }
+    ".": "./src/index.ts",
+    "./tokens": "./src/tokens/index.ts",
+    "./styles/tokens.css": "./styles/tokens.css"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src",
-    "test": "bun test ./src"
-  },
-  "dependencies": {
-    "@vanilla-extract/css": "^1.16.0"
+    "gen:tokens": "bun run scripts/gen-tokens-css.ts"
   },
   "devDependencies": {
     "@stack/eslint-config": "workspace:*",
-    "@stack/testing": "workspace:*",
-    "@stack/tsconfig": "workspace:*",
+    "@types/node": "^22.10.5",
     "eslint": "^9.13.0",
     "typescript": "^5.6.0"
   }
