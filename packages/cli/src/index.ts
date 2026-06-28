@@ -24,6 +24,12 @@ export {
 export { parseArgs, runCli } from "./cli.ts";
 
 export {
+  type WriterOptions,
+  WriterOptionsSchema,
+  createFileSetWriter,
+} from "./writer.ts";
+
+export {
   type SelectedPackage,
   type AppliedMigration,
   type MigrationApplier,
