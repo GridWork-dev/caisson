@@ -133,6 +133,12 @@
       "version": "0.0.0",
       "dependencies": {
         "@aws-sdk/client-s3": "^3.1075.0",
+        "@caisson/kernel": "workspace:*",
+        "@caisson/tenancy-rls": "workspace:*",
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@caisson/testing": "workspace:*",
       },
     },
     "packages/auth": {
