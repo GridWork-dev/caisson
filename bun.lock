@@ -283,6 +283,19 @@
     "packages/local-ai": {
       "name": "@caisson/local-ai",
       "version": "0.0.0",
+      "dependencies": {
+        "@caisson/field-crypto": "workspace:*",
+        "@caisson/kernel": "workspace:*",
+        "@caisson/license-verify": "workspace:*",
+        "@caisson/local-store": "workspace:*",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
     },
     "packages/local-store": {
       "name": "@caisson/local-store",
