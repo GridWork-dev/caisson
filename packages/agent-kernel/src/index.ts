@@ -27,8 +27,17 @@ export {
 } from "./lifecycle.ts";
 export type { Act, LifecycleStep } from "./lifecycle.ts";
 
-export { HookDispatcher } from "./hooks.ts";
-export type { HookName, HookPhase, HookContext, HookHandler } from "./hooks.ts";
+export { HookDispatcher, commandHandler } from "./hooks.ts";
+export type {
+  HookName,
+  HookPhase,
+  HookContext,
+  HookHandler,
+  HookDispatchResult,
+  HookDispatcherOptions,
+  CommandHookSpec,
+  CommandRunner,
+} from "./hooks.ts";
 
 export {
   allow,
