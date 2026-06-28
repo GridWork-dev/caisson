@@ -54,15 +54,18 @@ implementation**. The harvestable license kit is taken from PUBLIC `tessera`.
 ## Locked since founding (no longer deferred)
 
 - **Name + positioning + design** — LOCKED: name **Caisson** (ADR-0041); hero = **compliance
-  wedge under a production-rigor umbrella** (ADR-0040); design foundation palette+type (ADR-0042).
+  wedge under a production-rigor umbrella** (ADR-0040); design foundation palette+type (ADR-0042),
+  **expanded** into a full brand system (mark · icons · illustration · expressive motion · elevation+glow)
+  by **ADR-0078** (supersedes 0042). Site SEO → **ADR-0079**; copy laws → **ADR-0080** (extends specs/04).
   The old "AI production codebase starter" frame is superseded.
 - **Module production-standards + pipeline** — LOCKED: manifest · publish flow · lint gates ·
   fully-commercial licensing (ADR-0020-0023); `tooling/`+`registry/` is the seam.
 
 ## Still open (do NOT pre-bind)
 
-- **Pricing numbers** (anchors in ADR-0012) — the only open GTM fork; the site prints **no hard
-  prices** until it is locked (ADR-0048 shows SKU structure + waitlist instead).
+- **Pricing numbers** (FINAL) (anchors in ADR-0012) — the only open GTM fork; the pre-launch site now
+  prints **indicative placeholder prices** with a "subject to change before launch" frame (**ADR-0081**,
+  supersedes ADR-0048's no-price stance). The FINAL numbers + grandfathering policy stay operator-owned.
 
 _Closed since: **app framework** → Next.js App Router (ADR-0044); **hosting/site** → Cloudflare
 Pages + `caisson.sh` + a single static-export Next 16 app with Fumadocs MDX (ADR-0045), built in
