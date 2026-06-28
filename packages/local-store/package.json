@@ -19,7 +19,8 @@
   },
   "dependencies": {
     "@caisson/kernel": "workspace:*",
-    "sqlite-vec": "^0.1.9"
+    "sqlite-vec": "^0.1.9",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",

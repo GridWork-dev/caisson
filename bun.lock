@@ -18,6 +18,23 @@
         "zod": "^3.23.8",
       },
     },
+    "apps/agent-dev": {
+      "name": "@caisson/app-agent-dev",
+      "version": "0.0.0",
+      "bin": {
+        "caisson-agent-dev": "./src/index.ts",
+      },
+      "dependencies": {
+        "@caisson/agent-dev": "workspace:*",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
+    },
     "apps/ai-kit": {
       "name": "@caisson/ai-kit-app",
       "version": "0.0.0",
@@ -169,6 +186,19 @@
     "packages/agent-dev": {
       "name": "@caisson/agent-dev",
       "version": "0.0.0",
+      "dependencies": {
+        "@caisson/agent-kernel": "workspace:*",
+        "@caisson/ai-config": "workspace:*",
+        "@caisson/kernel": "workspace:*",
+        "@caisson/local-store": "workspace:*",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
     },
     "packages/agent-kernel": {
       "name": "@caisson/agent-kernel",
@@ -479,6 +509,7 @@
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "sqlite-vec": "^0.1.9",
+        "zod": "^3.23.8",
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
@@ -698,6 +729,8 @@
     "@caisson/ai-kit-app": ["@caisson/ai-kit-app@workspace:apps/ai-kit"],
 
     "@caisson/ai-meter": ["@caisson/ai-meter@workspace:packages/ai-meter"],
+
+    "@caisson/app-agent-dev": ["@caisson/app-agent-dev@workspace:apps/agent-dev"],
 
     "@caisson/app-base": ["@caisson/app-base@workspace:apps/base"],
 
