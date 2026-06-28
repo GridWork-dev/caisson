@@ -360,6 +360,7 @@
       "name": "@caisson/mcp-server",
       "version": "0.0.0",
       "dependencies": {
+        "@caisson/ai-config": "workspace:*",
         "@caisson/kernel": "workspace:*",
         "zod": "^3.23.8",
       },

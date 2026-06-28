@@ -18,6 +18,7 @@
     "test": "bun test ./src"
   },
   "dependencies": {
+    "@caisson/ai-config": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "zod": "^3.23.8"
   },
