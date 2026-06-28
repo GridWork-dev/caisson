@@ -1,0 +1,31 @@
+{
+  "name": "@caisson/license-verify",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "LicenseRef-Caisson-Commercial",
+  "description": "Offline license-token verification base: tessera-format wire codec (PREFIX-TIER-base64url(payload+sig)) + offline Ed25519 verify (crypto.verify over kernel canonicalize) with baked-in public key, richer entitlements[]+tier+expiry claims, fail-safe-to-community, perpetual-per-major. Issuer is P6 — only offline verify lives here. ADR-0010/0024.",
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "bun test ./src"
+  },
+  "dependencies": {
+    "@caisson/kernel": "workspace:*",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.0"
+  }
+}

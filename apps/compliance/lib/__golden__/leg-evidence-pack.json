@@ -1,0 +1,141 @@
+{
+  "formatVersion": "1",
+  "tenantId": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
+  "framework": {
+    "id": "soc2-tsc",
+    "title": "SOC 2 — Trust Services Criteria",
+    "version": "2024.1"
+  },
+  "chainAnchor": {
+    "length": 1,
+    "tipHash": "cd61b3f1612b3c972f75b5ff2ff1d9fbaf02be08d18bcbaaa552adb054e9a19a",
+    "genesisHash": "cd61b3f1612b3c972f75b5ff2ff1d9fbaf02be08d18bcbaaa552adb054e9a19a"
+  },
+  "controls": [
+    {
+      "controlId": "ACCESS-CONTROL.LOGICAL",
+      "title": "Logical access provisioning and least privilege",
+      "family": "Access Control",
+      "statement": "Logical access to systems and tenant data is granted through an authorized request, provisioned on the principle of least privilege, and recertified periodically; access rights are matched to a documented role rather than granted ad hoc.",
+      "crosswalk": [
+        {
+          "framework": "SOC2-TSC",
+          "reference": "CC6.1"
+        },
+        {
+          "framework": "SOC2-TSC",
+          "reference": "CC6.2"
+        },
+        {
+          "framework": "SOC2-TSC",
+          "reference": "CC6.3"
+        }
+      ],
+      "evidence": [
+        {
+          "collectorId": "substrate.tenant-isolation-force-rls",
+          "title": "Tenant isolation enforced by FORCE row-level security",
+          "summary": "all 5 tenant tables enforce FORCE row-level security",
+          "status": "pass",
+          "facts": {
+            "tableCount": 5,
+            "forcedCount": 5,
+            "deficientTables": []
+          },
+          "manualSlots": [
+            {
+              "id": "tenant-isolation-test-report",
+              "label": "Tenant-isolation / penetration test report",
+              "required": false,
+              "filled": false
+            }
+          ]
+        }
+      ],
+      "readiness": "ready"
+    },
+    {
+      "controlId": "AUDIT.IMMUTABLE-LOG",
+      "title": "Immutable, hash-chained audit log",
+      "family": "Audit & Accountability",
+      "statement": "Security-relevant events are written to an append-only, hash-chained log that cannot be altered or deleted after the fact; integrity is verifiable against a trusted anchor so tampering, truncation, or rewriting is detectable.",
+      "crosswalk": [
+        {
+          "framework": "SOC2-TSC",
+          "reference": "CC4.1"
+        },
+        {
+          "framework": "SOC2-TSC",
+          "reference": "CC7.2"
+        },
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.312(b)",
+          "note": "Satisfies the audit-controls technical safeguard."
+        }
+      ],
+      "evidence": [
+        {
+          "collectorId": "substrate.audit-chain-integrity",
+          "title": "Append-only audit chain integrity (WORM-anchored)",
+          "summary": "audit chain verified against its anchor (1 entries)",
+          "status": "pass",
+          "facts": {
+            "entryCount": 1,
+            "anchorPresent": true,
+            "anchorLength": 1,
+            "valid": true,
+            "brokenAt": null
+          },
+          "manualSlots": []
+        }
+      ],
+      "readiness": "ready"
+    },
+    {
+      "controlId": "DATA-PROTECTION.DISPOSAL",
+      "title": "Secure retention and disposal of confidential data",
+      "family": "Data Protection",
+      "statement": "Confidential data is retained only as long as required and then disposed of so that it is rendered unrecoverable; for encrypted data, destruction of the governing key (crypto-shred) is an accepted disposal mechanism.",
+      "crosswalk": [
+        {
+          "framework": "SOC2-TSC",
+          "reference": "CC6.5"
+        },
+        {
+          "framework": "SOC2-TSC",
+          "reference": "C1.2"
+        }
+      ],
+      "evidence": [
+        {
+          "collectorId": "substrate.worm-retention-floor",
+          "title": "WORM retention meets the legal floor",
+          "summary": "WORM retention until 2033-06-27T12:00:00.000Z meets the floor (2032-06-27T12:00:00.000Z)",
+          "status": "pass",
+          "facts": {
+            "key": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d/artifacts/compliance-policy-v1.json",
+            "retainUntil": "2033-06-27T12:00:00.000Z",
+            "requiredUntil": "2032-06-27T12:00:00.000Z"
+          },
+          "manualSlots": [
+            {
+              "id": "object-lock-configuration",
+              "label": "S3 Object-Lock / WORM configuration evidence",
+              "required": false,
+              "filled": false
+            }
+          ]
+        }
+      ],
+      "readiness": "ready"
+    }
+  ],
+  "summary": {
+    "totalControls": 3,
+    "controlsReady": 3,
+    "controlsWithGaps": 0,
+    "totalEvidenceItems": 3,
+    "posture": "3 of 3 controls evidence-ready; no gaps recorded."
+  }
+}

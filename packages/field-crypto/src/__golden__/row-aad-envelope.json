@@ -1,0 +1,20 @@
+{
+  "rowBoundAad": {
+    "json": "[\"tenant-fixed\",1,\"patient.ssn\",\"00000000-0000-4000-8000-000000000001\"]",
+    "base64": "WyJ0ZW5hbnQtZml4ZWQiLDEsInBhdGllbnQuc3NuIiwiMDAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIl0="
+  },
+  "legacyColumnAad": {
+    "json": "[\"tenant-fixed\",1,\"patient.ssn\"]",
+    "base64": "WyJ0ZW5hbnQtZml4ZWQiLDEsInBhdGllbnQuc3NuIl0="
+  },
+  "envelope": {
+    "wire": "AQEAAaurq6urq6urq6urq47mSMGuP43D2PNuEFsNiz997jPQBkRSIbmvEA==",
+    "structure": {
+      "formatVersion": 1,
+      "algId": 1,
+      "keyVersion": 1,
+      "nonceHex": "abababababababababababab",
+      "keyBytes": 32
+    }
+  }
+}

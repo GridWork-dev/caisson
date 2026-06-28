@@ -5,14 +5,23 @@
 // (a caught 23505 would poison it). Run inside `withTenant` so RLS scopes the ledger.
 import { randomUUID } from "node:crypto";
 import { InsufficientCreditsError, ValidationError } from "@caisson/kernel";
+import { type FeatureTag, FeatureTagSchema } from "@caisson/registry";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 
+// `feature_grant` / `feature_debit` are the generic feature-meter envelopes (ADR-0074): an edition
+// meters a NEW action through these carrying a registered `feature` tag, never by extending this
+// base-owned, base-closed event-type set. The legacy specifics stay immutable + are not retrofitted.
 export const GRANT_EVENT_TYPES = [
   "purchase",
   "sub_allotment",
   "topup",
+  "feature_grant",
 ] as const;
-export const DEBIT_EVENT_TYPES = ["codegen_debit", "ai_feature_debit"] as const;
+export const DEBIT_EVENT_TYPES = [
+  "codegen_debit",
+  "ai_feature_debit",
+  "feature_debit",
+] as const;
 export type GrantEventType = (typeof GRANT_EVENT_TYPES)[number];
 export type DebitEventType = (typeof DEBIT_EVENT_TYPES)[number];
 
@@ -23,17 +32,27 @@ interface IdempotencySource {
   idempotencyKey?: string;
 }
 
-export interface GrantInput extends IdempotencySource {
+interface CreditInputBase extends IdempotencySource {
   accountId: string;
   amount: number;
-  eventType: GrantEventType;
 }
 
-export interface DebitInput extends IdempotencySource {
-  accountId: string;
-  amount: number;
-  eventType: DebitEventType;
-}
+// Discriminated on `eventType` so a `feature` tag is REQUIRED with feature_grant/feature_debit and
+// FORBIDDEN (`feature?: never`) on a legacy specific type — mirroring the DB `credit_event_feature_iff`
+// CHECK at compile time (a typo is a type error too). `feature` stays payload: idempotency is unchanged.
+export type GrantInput =
+  | (CreditInputBase & {
+      eventType: "purchase" | "sub_allotment" | "topup";
+      feature?: never;
+    })
+  | (CreditInputBase & { eventType: "feature_grant"; feature: FeatureTag });
+
+export type DebitInput =
+  | (CreditInputBase & {
+      eventType: "codegen_debit" | "ai_feature_debit";
+      feature?: never;
+    })
+  | (CreditInputBase & { eventType: "feature_debit"; feature: FeatureTag });
 
 export interface CreditResult {
   balance: number;
@@ -69,6 +88,46 @@ function idemColumns({ sourceEventId, idempotencyKey }: IdempotencySource): {
   };
 }
 
+/**
+ * Resolve the `feature` payload column, fail-closed (ADR-0074, threat TM-D). A feature_debit/
+ * feature_grant MUST carry a tag validated against the registered set; a legacy specific type MUST
+ * NOT carry one (mirrors the DB `credit_event_feature_iff` CHECK). This runs BEFORE the ledger insert
+ * — an unregistered/typo tag throws with no ledger write — and is the runtime backstop to the
+ * compile-time discriminated union (a non-literal caller can still reach here with a bad value).
+ */
+function featureColumn(
+  eventType: GrantEventType | DebitEventType,
+  feature: FeatureTag | undefined,
+): string | null {
+  const isFeatureEvent =
+    eventType === "feature_debit" || eventType === "feature_grant";
+  if (!isFeatureEvent) {
+    if (feature !== undefined) {
+      throw new ValidationError(
+        "feature tag is only valid on feature_debit / feature_grant",
+        { field: "feature" },
+      );
+    }
+    return null;
+  }
+  if (feature === undefined) {
+    throw new ValidationError(
+      "feature_debit / feature_grant require a feature tag",
+      { field: "feature" },
+    );
+  }
+  // Validate against the registered set (registry seam). z.enum rejects any non-member, so a typo
+  // or unregistered action fails closed here — it can never mint a silent meter.
+  const parsed = FeatureTagSchema.safeParse(feature);
+  if (!parsed.success) {
+    throw new ValidationError(
+      `unregistered feature tag: ${JSON.stringify(feature)}`,
+      { field: "feature" },
+    );
+  }
+  return parsed.data;
+}
+
 export async function balance(
   tx: TenantExecutor,
   accountId: string,
@@ -86,15 +145,16 @@ async function insertEvent(
     accountId: string;
     eventType: string;
     amount: number;
+    feature: string | null;
     sourceEventId: string | null;
     idempotencyKey: string | null;
   },
 ): Promise<boolean> {
   // ON CONFLICT DO NOTHING: a duplicate idempotency key returns zero rows instead of raising —
-  // the transaction stays usable.
+  // the transaction stays usable. `feature` is payload — NOT part of either idempotency index.
   const inserted = await tx.query<{ id: string }>(
-    `INSERT INTO credit_event (id, account_id, event_type, amount, source_event_id, idempotency_key)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO credit_event (id, account_id, event_type, amount, feature, source_event_id, idempotency_key)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      ON CONFLICT DO NOTHING
      RETURNING id`,
     [
@@ -102,6 +162,7 @@ async function insertEvent(
       row.accountId,
       row.eventType,
       row.amount,
+      row.feature,
       row.sourceEventId,
       row.idempotencyKey,
     ],
@@ -116,10 +177,12 @@ export async function grant(
 ): Promise<CreditResult> {
   assertPositiveInt(input.amount);
   const idem = idemColumns(input);
+  const feature = featureColumn(input.eventType, input.feature);
   const fresh = await insertEvent(tx, {
     accountId: input.accountId,
     eventType: input.eventType,
     amount: input.amount,
+    feature,
     ...idem,
   });
   if (!fresh)
@@ -145,10 +208,12 @@ export async function debit(
 ): Promise<CreditResult> {
   assertPositiveInt(input.amount);
   const idem = idemColumns(input);
+  const feature = featureColumn(input.eventType, input.feature);
   const fresh = await insertEvent(tx, {
     accountId: input.accountId,
     eventType: input.eventType,
     amount: -input.amount,
+    feature,
     ...idem,
   });
   if (!fresh)
@@ -175,6 +240,8 @@ export interface LedgerEntry {
   id: string;
   event_type: string;
   amount: number;
+  /** The registered feature tag (ADR-0074) for a feature_debit/feature_grant; null otherwise. */
+  feature: string | null;
   source_event_id: string | null;
   idempotency_key: string | null;
 }
@@ -185,7 +252,7 @@ export async function getLedger(
   accountId: string,
 ): Promise<LedgerEntry[]> {
   const r = await tx.query<LedgerEntry>(
-    `SELECT id, event_type, amount, source_event_id, idempotency_key
+    `SELECT id, event_type, amount, feature, source_event_id, idempotency_key
      FROM credit_event WHERE account_id = $1 ORDER BY created_at, id`,
     [accountId],
   );

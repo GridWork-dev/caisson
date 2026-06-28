@@ -9,6 +9,7 @@ export const contentType = "image/png";
 // Build-time raster (satori) — it cannot read CSS custom properties or OKLCH, so the locked
 // palette is mirrored as concrete hex HERE ONLY. This is the one sanctioned exception to the
 // "no hard-coded hex" rule (ADR-0042 governs the rendered DOM, not a build-time image).
+// Waterline bar (accent, 4 px) echoes the ADR-0078 §6 waterline-over-chamber logomark motif.
 const C = {
   bg: "#0d1216", // --cs-bg
   surface: "#141b20", // --cs-surface-1
@@ -33,14 +34,28 @@ export default function OpengraphImage() {
         fontFamily: "monospace",
       }}
     >
+      {/* Top bar — wordmark + descriptor */}
       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-        <span style={{ fontSize: 34, color: C.fg }}>caisson</span>
+        <span style={{ fontSize: 34, color: C.fg, fontWeight: 600 }}>
+          caisson
+        </span>
         <span style={{ fontSize: 20, color: C.muted }}>
           compliance-grade infrastructure
         </span>
       </div>
+
+      {/* Body — waterline bar + hero claim */}
       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-        <div style={{ width: 64, height: 4, background: C.accent }} />
+        {/* Waterline motif — horizontal accent bar (ADR-0078 §6) */}
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <div style={{ width: 64, height: 4, background: C.accent }} />
+          <div
+            style={{ width: 24, height: 4, background: C.accent, opacity: 0.4 }}
+          />
+          <div
+            style={{ width: 12, height: 4, background: C.accent, opacity: 0.2 }}
+          />
+        </div>
         <div
           style={{
             display: "flex",
@@ -55,6 +70,8 @@ export default function OpengraphImage() {
           <span>construction.</span>
         </div>
       </div>
+
+      {/* Footer — proof artifacts + domain */}
       <div
         style={{
           display: "flex",

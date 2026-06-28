@@ -10,6 +10,8 @@
  * transitive reachability) is the authoritative provider-SDK layer; this catches the obvious case
  * fast, in-editor.
  */
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 /** Prohibited provider SDKs. Keep current — a stale denylist is a hole (ADR-0022). */
 export const PROVIDER_SDKS = [
@@ -32,6 +34,16 @@ export const PROVIDER_SDKS = [
   "replicate",
   "together-ai",
   "ollama",
+  // Vercel AI SDK family (Apache-2.0 — license-clean, so it passes Gate 1/1b; confined here
+  // PURELY by composition, ADR-0011/0022 Gate 2): the `ai` core + the first-party provider
+  // adapters are the gateway's inference path and live behind @caisson/ai-kit's `infer()`. Only
+  // @caisson/ai-config + @caisson/ai-kit may import them; every other package routes through the
+  // gateway so the backing SDK stays swappable.
+  "ai",
+  "@ai-sdk/openai",
+  "@ai-sdk/anthropic",
+  "@ai-sdk/google",
+  "@ai-sdk/openrouter",
 ];
 
 const restrictedPatterns = PROVIDER_SDKS.map((name) => ({
@@ -47,6 +59,14 @@ const PROVIDER_EXEMPT = [
   "apps/ai-kit/**",
 ];
 
+// Repo root, computed from THIS file's location (tooling/eslint-config/boundaries.js → ../../).
+// PROVIDER_EXEMPT globs are repo-root-relative, but `eslint src` runs per-package with cwd inside
+// the package (turbo / `bun run check` / CI) — there basePath is the package dir, so a repo-root
+// glob never matches and the exemption silently dies (root `eslint .` masks it). Pinning the
+// exempt block's basePath to the real repo root makes the same three globs match identically from
+// both the repo-root cwd and any per-package cwd. SCOPE stays exactly ai-config|ai-kit|apps/ai-kit.
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+
 /** @type {import("eslint").Linter.Config[]} */
 export const boundaries = [
   {
@@ -58,6 +78,7 @@ export const boundaries = [
   },
   {
     name: "stack/provider-sdk-boundary-exempt",
+    basePath: REPO_ROOT,
     files: PROVIDER_EXEMPT,
     rules: {
       "no-restricted-imports": "off",

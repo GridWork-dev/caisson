@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@caisson/kernel": "workspace:*",
+    "@caisson/registry": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*"
   },
   "devDependencies": {

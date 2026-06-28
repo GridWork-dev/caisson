@@ -1,0 +1,48 @@
+{
+  "evidencePack": {
+    "packId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    "tenantId": "tenant-acme",
+    "controlId": "SOC2-CC6.1",
+    "createdAt": "2026-06-27T12:00:00.000Z",
+    "artifacts": [
+      {
+        "artifactId": "policy-access-control",
+        "kind": "document",
+        "sha256": "9a64d86d4ac164f39653dfa652894f553f0f0b351a48f2256c70a1ffba0d7124"
+      },
+      {
+        "artifactId": "console-mfa-enabled",
+        "kind": "screenshot",
+        "sha256": "5c297642c2eb12f0d1f38684f8aa56582898edb9c2c40e6e081883eefce24d6d"
+      }
+    ],
+    "chainTipHash": "2a0154b44e0ca82969fd0e430b61d9bf04135ea8027982bedd239c713c4ff418"
+  },
+  "usageMetering": {
+    "tenantId": "tenant-acme",
+    "feature": "inference_call",
+    "unit": "credit",
+    "quantity": 3,
+    "occurredAt": "2026-06-27T12:00:05.000Z",
+    "idempotencyKey": "req-01J9Z0K3QH8N2V-inference"
+  },
+  "evalResult": {
+    "evalId": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "suite": "guardrail-regression",
+    "model": "claude-opus-4",
+    "passed": true,
+    "score": 0.97,
+    "caseCount": 120,
+    "failedCases": 3,
+    "ranAt": "2026-06-27T12:00:10.000Z"
+  },
+  "guardrailBlock": {
+    "blockId": "3f1d2c4b-5a6e-4f8a-9b0c-1d2e3f4a5b6c",
+    "tenantId": "tenant-acme",
+    "stage": "input",
+    "category": "moderation",
+    "policy": "default-content-safety",
+    "failClosed": true,
+    "occurredAt": "2026-06-27T12:00:07.000Z"
+  }
+}

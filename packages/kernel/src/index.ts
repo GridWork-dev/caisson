@@ -9,6 +9,7 @@ export {
   NotFoundError,
   TenancyError,
   ConflictError,
+  GuardrailError,
   RateLimitError,
   ConfigError,
   InternalError,
@@ -46,3 +47,39 @@ export {
   versionChain,
 } from "./versioning.ts";
 export type { VersionRecord } from "./versioning.ts";
+
+export {
+  InMemoryEventSink,
+  NoopEventSink,
+  OtelPostgresEventSink,
+  opsEventSchema,
+  redactEvent,
+} from "./event-sink.ts";
+export type {
+  EventSink,
+  OpsEvent,
+  OtelPostgresSinkOptions,
+  OtlpSend,
+} from "./event-sink.ts";
+
+export {
+  evidencePackSchema,
+  usageMeteringSchema,
+  evalResultSchema,
+  guardrailBlockSchema,
+} from "./observability.ts";
+export type {
+  EvidencePack,
+  UsageMetering,
+  EvalResult,
+  GuardrailBlock,
+} from "./observability.ts";
+
+export { assembleMigrations } from "./migration-assembly.ts";
+export type {
+  MigrationFile,
+  PackageMigrations,
+  MergedMigration,
+  SchemaVersionEntry,
+  MigrationAssembly,
+} from "./migration-assembly.ts";

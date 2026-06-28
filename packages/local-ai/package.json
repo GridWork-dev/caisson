@@ -3,6 +3,32 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "license": "AGPL-3.0-only",
-  "description": "Local-first AI edition (AGPL): compute seam + privacy gate + sqlite-vec ANN + offline Ed25519 license + local store."
+  "license": "LicenseRef-Caisson-Commercial",
+  "description": "Local-first AI edition (composition, ADR-0050 fully-commercial): composes @caisson/local-store (sqlite-vec + FTS5 RRF hybrid retrieval), @caisson/license-verify (offline Ed25519), @caisson/field-crypto (at-rest), and @caisson/kernel; adds a built two-way sync engine, an InferenceBackend port, a zero-egress privacy gate, and file-per-tenant isolation. Offline, no-lock-in — your data never leaves the device.",
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "bun test ./src"
+  },
+  "dependencies": {
+    "@caisson/field-crypto": "workspace:*",
+    "@caisson/kernel": "workspace:*",
+    "@caisson/license-verify": "workspace:*",
+    "@caisson/local-store": "workspace:*"
+  },
+  "devDependencies": {
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "eslint": "^9.13.0",
+    "sqlite-vec": "^0.1.9",
+    "typescript": "^5.6.0"
+  }
 }

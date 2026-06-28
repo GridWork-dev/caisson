@@ -48,11 +48,62 @@ jobs:
       - name: format (prettier)
         run: bun run format:check
       - name: build · lint · test (unit + PGlite integration + golden-file)
-        run: bun run check
-        # `bun run check` = turbo build/lint/test + the standards gate. Golden fixtures are
-        # compared with BLESS unset, so any drift fails here.
+        # `turbo build/lint/test` + the standards gate (== `bun run check`, run inline so CI can cap
+        # concurrency). Golden fixtures are compared with BLESS unset, so any drift fails here.
+        # --concurrency=50%: the integrated tree is 38 packages incl. 5 Next.js builds + many in-process
+        # PGlite instances; at turbo's default fan-out they contend on the runner and a PGlite `beforeAll`
+        # can exceed its hook timeout. Halving peak concurrency removes the starvation (local `bun run
+        # check` stays full-speed). Tunable if the job runs long.
+        run: bunx turbo run build lint test --no-daemon --concurrency=50% && bun run gate
       # Slow golden-file / testcontainers matrices land here once the compliance
       # edition (P2) has code — kept CI-only, never in the pre-commit hook.
+
+  # The eval gate (ADR-0062). A DISTINCT turbo `eval` task — separate from `test` — that runs the
+  # committed eval suite against the committed JSON baseline (regression-vs-baseline, BLESS-style).
+  # It is offline + deterministic: model-graded scorers replay committed cassettes, so there is no
+  # live provider/model/network call and no secret in CI (SPEC TM6).
+  #
+  # ADR-0072: this is a MONOREPO-ONLY job. It is NEVER injected into a generated buyer repo as a
+  # required CI check — `create-caisson` must not emit this job. A buyer owns their own eval cadence
+  # and baseline; gating their merges on OUR regression baseline is wrong. The eval task ships in the
+  # library for the buyer to opt into, but it is not one of the required buyer-repo CI checks.
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+      - run: bun install --frozen-lockfile
+      - name: eval gate (regression vs committed baseline, BLESS unset — offline, cassette-replayed)
+        run: bun run eval
+
+  # Exit-gate clause 6 (P4a local-ai): @caisson/local-store loads a PLATFORM-SPECIFIC native
+  # extension — `db.loadExtension(sqliteVec.getLoadablePath())` in packages/local-store/src/store.ts
+  # resolves a `.so` on Linux and a `.dylib` on macOS. The `check`/`standards-gate` jobs run on
+  # ubuntu only, so the macOS native binary path would otherwise ship unexercised. This matrix runs
+  # the local-store suite (vec0 + FTS5 + RRF hybrid retrieval) on BOTH runners; a missing/broken
+  # platform extension fails CI here. `fail-fast: false` so a break on one OS never masks the other.
+  native-ext:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+      - run: bun install --frozen-lockfile
+      # macOS ships a system SQLite with extension loading DISABLED (Apple build). store.ts points
+      # bun:sqlite at Homebrew's extension-capable SQLite via Database.setCustomSQLite; ensure it is
+      # installed so that path exists on the runner. No-op effect on Linux (step is macOS-gated).
+      - name: ensure extension-capable SQLite (macOS)
+        if: runner.os == 'macOS'
+        run: brew install sqlite
+      - name: local-store native sqlite-vec ext (vec0 + FTS5 + RRF) on ${{ matrix.os }}
+        run: bun test packages/local-store/src
 
   # registry/ tests also run under turbo (`bun run check`, the `check` job); this job is the
   # PROVENANCE proof: rebuilding from the git-tracked ledger must reproduce the committed

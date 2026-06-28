@@ -31,6 +31,7 @@ const SEMANTIC_VARS: ReadonlyArray<readonly [keyof SemanticTheme, string]> = [
   ["accentTint", "accent-tint"],
   ["focus", "focus"],
   ["link", "link"],
+  ["glowAccent", "glow-accent"],
 ];
 
 function semanticBlock(theme: SemanticTheme): string {
@@ -49,6 +50,7 @@ function sharedBlock(): string {
   lines.push("  /* type */");
   lines.push(`  --cs-font-sans: ${fonts.sans};`);
   lines.push(`  --cs-font-mono: ${fonts.mono};`);
+  lines.push(`  --cs-font-mono-code: ${fonts.monoCode};`);
   for (const [k, v] of Object.entries(foundation.fontSize))
     lines.push(`  --cs-text-${k}: ${v};`);
   for (const [k, v] of Object.entries(foundation.fontWeight))
@@ -61,6 +63,14 @@ function sharedBlock(): string {
     lines.push(`  --cs-space-${k}: ${v};`);
   for (const [k, v] of Object.entries(foundation.radius))
     lines.push(`  --cs-radius-${k}: ${v};`);
+  lines.push("  /* motion (ADR-0078 §6) */");
+  for (const [k, v] of Object.entries(foundation.motion.duration))
+    lines.push(`  --cs-duration-${k}: ${v};`);
+  for (const [k, v] of Object.entries(foundation.motion.ease))
+    lines.push(`  --cs-ease-${k}: ${v};`);
+  lines.push("  /* elevation (ADR-0078 §7) */");
+  for (const [k, v] of Object.entries(foundation.elevation))
+    lines.push(`  --cs-shadow-${k}: ${v};`);
   return lines.join("\n");
 }
 

@@ -35,6 +35,8 @@ export const accentCandidates: readonly AccentCandidate[] = [
       accentTint: "oklch(0.26 0.040 205)",
       focus: "oklch(0.74 0.115 205)",
       link: "oklch(0.78 0.10 205)",
+      glowAccent:
+        "0 0 0 1px oklch(0.74 0.115 205 / 0.40), 0 0 28px oklch(0.74 0.115 205 / 0.22)",
     },
     light: {
       bg: "oklch(0.99 0.003 220)",
@@ -50,6 +52,8 @@ export const accentCandidates: readonly AccentCandidate[] = [
       accentTint: "oklch(0.93 0.03 205)",
       focus: "oklch(0.55 0.13 215)",
       link: "oklch(0.50 0.13 215)",
+      glowAccent:
+        "0 0 0 1px oklch(0.55 0.13 215 / 0.28), 0 0 22px oklch(0.55 0.13 215 / 0.16)",
     },
   },
   {
@@ -72,6 +76,8 @@ export const accentCandidates: readonly AccentCandidate[] = [
       accentTint: "oklch(0.26 0.045 150)",
       focus: "oklch(0.70 0.13 150)",
       link: "oklch(0.74 0.11 150)",
+      glowAccent:
+        "0 0 0 1px oklch(0.70 0.13 150 / 0.40), 0 0 28px oklch(0.70 0.13 150 / 0.22)",
     },
     light: {
       bg: "oklch(0.99 0.003 160)",
@@ -87,6 +93,8 @@ export const accentCandidates: readonly AccentCandidate[] = [
       accentTint: "oklch(0.93 0.035 150)",
       focus: "oklch(0.52 0.14 150)",
       link: "oklch(0.48 0.13 150)",
+      glowAccent:
+        "0 0 0 1px oklch(0.52 0.14 150 / 0.28), 0 0 22px oklch(0.52 0.14 150 / 0.16)",
     },
   },
   {
@@ -109,6 +117,8 @@ export const accentCandidates: readonly AccentCandidate[] = [
       accentTint: "oklch(0.25 0.018 235)",
       focus: "oklch(0.80 0.040 230)",
       link: "oklch(0.82 0.03 235)",
+      glowAccent:
+        "0 0 0 1px oklch(0.80 0.030 235 / 0.40), 0 0 28px oklch(0.80 0.030 235 / 0.20)",
     },
     light: {
       bg: "oklch(0.99 0.002 235)",
@@ -124,6 +134,8 @@ export const accentCandidates: readonly AccentCandidate[] = [
       accentTint: "oklch(0.93 0.015 235)",
       focus: "oklch(0.45 0.05 235)",
       link: "oklch(0.42 0.04 235)",
+      glowAccent:
+        "0 0 0 1px oklch(0.45 0.040 235 / 0.26), 0 0 22px oklch(0.45 0.040 235 / 0.14)",
     },
   },
 ];
