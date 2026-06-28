@@ -12,16 +12,32 @@ export {
   generate,
 } from "./generate.ts";
 
+export { templatesEngine } from "./engine-templates.ts";
+
 export {
   type MeterInput,
-  type FileSetWriter,
   type GenerationDeps,
   type GenerationOutcome,
   meterGeneration,
   runGeneration,
 } from "./meter.ts";
 
+export {
+  type RecordGenerationInput,
+  type GenerationRecordResult,
+  GENERATION_SCHEMA_SQL,
+  hashFileSet,
+  recordGeneration,
+} from "./generation-record.ts";
+
 export { parseArgs, runCli } from "./cli.ts";
+
+export {
+  type WriterOptions,
+  type FileSetWriter,
+  WriterOptionsSchema,
+  createFileSetWriter,
+} from "./writer.ts";
 
 export {
   type SelectedPackage,

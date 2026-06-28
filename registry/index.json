@@ -16,6 +16,7 @@
             "priceCents": 4900,
             "license": "LicenseRef-Caisson-Commercial",
             "dependencies": [],
+            "members": {},
             "entry": "src/index.ts",
             "agents": "AGENTS.md",
             "golden": "__evals__",
@@ -52,6 +53,16 @@
               "@caisson/prompt-registry",
               "@caisson/tenancy-rls"
             ],
+            "members": {
+              "@caisson/ai-kit": "0.1.0",
+              "@caisson/ai-config": "0.1.0",
+              "@caisson/ai-meter": "0.1.0",
+              "@caisson/credits": "0.1.0",
+              "@caisson/guardrails": "0.1.0",
+              "@caisson/kernel": "0.1.0",
+              "@caisson/prompt-registry": "0.1.0",
+              "@caisson/tenancy-rls": "0.1.0"
+            },
             "entry": "src/index.ts",
             "agents": "AGENTS.md",
             "golden": null,
@@ -82,6 +93,7 @@
               "@caisson/credits",
               "@caisson/tenancy-rls"
             ],
+            "members": {},
             "entry": "src/index.ts",
             "agents": "AGENTS.md",
             "golden": "src/__golden__",
@@ -112,6 +124,7 @@
               "@caisson/kernel",
               "@caisson/registry"
             ],
+            "members": {},
             "entry": "src/index.ts",
             "agents": "AGENTS.md",
             "golden": "src/__golden__",
@@ -140,6 +153,7 @@
             "dependencies": [
               "@caisson/kernel"
             ],
+            "members": {},
             "entry": "src/index.ts",
             "agents": "AGENTS.md",
             "golden": "src/__golden__",
@@ -169,6 +183,7 @@
               "@caisson/field-crypto",
               "@caisson/kernel"
             ],
+            "members": {},
             "entry": "src/index.ts",
             "agents": "AGENTS.md",
             "golden": "src/__golden__",
@@ -198,6 +213,7 @@
               "@caisson/kernel",
               "@caisson/tenancy-rls"
             ],
+            "members": {},
             "entry": "src/index.ts",
             "agents": "AGENTS.md",
             "golden": "src/__golden__",

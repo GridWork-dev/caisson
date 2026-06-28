@@ -5,6 +5,7 @@ export type {
   McpServer,
   McpServerOptions,
   GenerateContext,
+  GenerateSelection,
   ToolHandlerContext,
   ToolRegistration,
 } from "./server.ts";

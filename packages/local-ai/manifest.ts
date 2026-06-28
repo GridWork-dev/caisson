@@ -24,6 +24,14 @@ export default defineModule({
     "@caisson/license-verify",
     "@caisson/field-crypto",
   ],
+  // Frozen member pin map (ADR-0077): edition self + every bundled dependency, exact-version.
+  members: {
+    "@caisson/local-ai": "0.0.0",
+    "@caisson/kernel": "0.0.0",
+    "@caisson/local-store": "0.0.0",
+    "@caisson/license-verify": "0.0.0",
+    "@caisson/field-crypto": "0.0.0",
+  },
   golden: "src/sync/__golden__",
   description:
     "Local-first AI edition (composition): @caisson/local-store hybrid retrieval (sqlite-vec + FTS5 RRF) + @caisson/license-verify offline Ed25519 + @caisson/field-crypto at-rest + @caisson/kernel, plus a built two-way sync engine, an InferenceBackend port, a zero-egress privacy gate, and file-per-tenant isolation. Offline, no-lock-in.",

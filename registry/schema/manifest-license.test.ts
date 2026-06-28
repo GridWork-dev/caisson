@@ -14,7 +14,7 @@ import {
 } from "./module-manifest";
 
 // A Local-first AI edition manifest — the package that USED to be the AGPL flank. Under ADR-0050 it
-// is commercial like every other edition.
+// is commercial like every other edition. Carries `members` (required for kind=edition, ADR-0077).
 const localAiManifest: ModuleManifestInput = {
   id: "@caisson/local-ai",
   version: "0.1.0",
@@ -24,6 +24,7 @@ const localAiManifest: ModuleManifestInput = {
   priceCents: 4900,
   license: "LicenseRef-Caisson-Commercial",
   dependencies: ["@caisson/kernel"],
+  members: { "@caisson/local-ai": "0.1.0", "@caisson/kernel": "0.1.0" },
   description: "Local-first AI edition — uniform-commercial (ADR-0050).",
 };
 
