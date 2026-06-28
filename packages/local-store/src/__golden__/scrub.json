@@ -1,0 +1,37 @@
+[
+  {
+    "name": "env-assignment-api-key",
+    "raw": "OPENAI_API_KEY=sk-proj-AAAABBBBCCCCDDDDEEEEFFFF",
+    "scrubbed": "OPENAI_API_KEY=[REDACTED]"
+  },
+  {
+    "name": "assignment-auth-token",
+    "raw": "auth_token: ghp_0123456789ABCDEFabcdef0123456789ABCD",
+    "scrubbed": "auth_token: [REDACTED]"
+  },
+  {
+    "name": "inline-aws-access-key",
+    "raw": "Rotate AKIAIOSFODNN7EXAMPLE before the audit.",
+    "scrubbed": "Rotate [REDACTED] before the audit."
+  },
+  {
+    "name": "url-userinfo-password",
+    "raw": "DATABASE_URL=postgres://app:s3cr3t-p4ss@db.example.com:5432/main",
+    "scrubbed": "DATABASE_URL=postgres://app:[REDACTED]@db.example.com:5432/main"
+  },
+  {
+    "name": "pem-private-key-block",
+    "raw": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAFAKEKEYMATERIAL\nnotarealkeyjustafixture\n-----END RSA PRIVATE KEY-----",
+    "scrubbed": "[REDACTED]"
+  },
+  {
+    "name": "inline-jwt",
+    "raw": "The session cookie was eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMifQ.abcDEF123-_ which expired.",
+    "scrubbed": "The session cookie was [REDACTED] which expired."
+  },
+  {
+    "name": "clean-passthrough",
+    "raw": "Refactor the RRF ranker so the FTS leg rescues a vec-weak doc.",
+    "scrubbed": "Refactor the RRF ranker so the FTS leg rescues a vec-weak doc."
+  }
+]
