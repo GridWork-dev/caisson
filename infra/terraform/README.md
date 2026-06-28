@@ -11,7 +11,8 @@ zone by id and owns everything downstream. Neon (data) is provisioned outside th
 
 - `caisson.sh` added to Cloudflare (zone active) → grab the **Zone ID** + **Account ID** from the
   dashboard overview.
-- A scoped **API token**: `Zone → DNS → Edit` + `Account → Cloudflare Pages → Edit`.
+- A scoped **API token**: `Zone → DNS → Edit` + `Account → Cloudflare Pages → Edit` +
+  `Account → Access: Apps and Policies → Edit` (the last one for the pre-launch gate below).
 
 ## Apply
 
@@ -34,6 +35,24 @@ than one operator touches it.
 - `cloudflare_pages_domain.{apex,www}` — `caisson.sh` + `www.caisson.sh` on the project.
 - `cloudflare_dns_record.{apex,www}` — proxied CNAMEs → `<project>.pages.dev` (apex via CNAME
   flattening).
+- `cloudflare_zero_trust_access_application.site_gate` + `cloudflare_zero_trust_access_policy.site_gate`
+  — the **pre-launch Access gate** (see below).
+
+## Pre-launch gate (Cloudflare Access)
+
+The site is **provisioned + deployed but private** until launch. `access.tf` puts `caisson.sh` +
+`www` behind Cloudflare Access: a visitor must authenticate as a `@gridwork.dev` operator via email
+one-time PIN (the built-in `onetimepin` IdP — no OAuth setup). Override the allowed domain with
+`-var site_access_email_domain=...`.
+
+**At go-live:** delete `access.tf` (and `terraform apply`), or flip the policy `decision`/`include`
+to `everyone`/`bypass`.
+
+**Limitation:** a self-hosted Access app can only cover hostnames in this account's zone, so the
+Pages origin `caisson-site.pages.dev` is **not** gated (Cloudflare error 12130 — "domain does not
+belong to zone"). The canonical surface is the gated, proxied `caisson.sh`; the pages.dev origin
+stays reachable + unlisted. To also seal pages.dev, enable the Pages project's native Access
+integration in the Zero Trust dashboard.
 
 ## Deploy (the site app — `apps/site`)
 

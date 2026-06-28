@@ -1,7 +1,7 @@
 variable "cloudflare_api_token" {
   type        = string
   sensitive   = true
-  description = "Cloudflare API token: Zone:DNS:Edit + Account:Cloudflare Pages:Edit on the caisson.sh zone/account."
+  description = "Cloudflare API token: Zone:DNS:Edit + Account:Cloudflare Pages:Edit + Account:Access(Apps and Policies):Edit on the caisson.sh zone/account."
 }
 
 variable "cloudflare_account_id" {
