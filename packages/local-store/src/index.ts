@@ -9,3 +9,13 @@ export type { StoreDoc, HybridSearchOptions, SearchHit } from "./store.ts";
 
 // The file-per-tenant isolation floor (ADR-0073): the resolved path IS the tenant boundary.
 export { tenantDbPath, openTenantDb } from "./tenant-db.ts";
+
+// The pluggable Embedder PORT (ADR-0067): an engine-neutral seam the edition wires; `undefined` ⇒
+// the FTS5-only offline floor. The base never calls a model (no live cloud call in CI).
+export { assertEmbeddingDim, embedOrSkip } from "./embedder.ts";
+export type { Embedder, OptionalEmbedder } from "./embedder.ts";
+
+// The memory-item boundary schema (ADR-0067 / ADR-0002): the validated record handed to the store;
+// `scope` is the single-developer-local tenancy seam (no `tenancy-rls` dep).
+export { DEFAULT_SCOPE, MemoryItemSchema, parseMemoryItem } from "./schema.ts";
+export type { MemoryItem } from "./schema.ts";
