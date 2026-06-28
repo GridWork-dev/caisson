@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.7",
