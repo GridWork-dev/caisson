@@ -5,8 +5,9 @@
 // flank is retired — the package license is now LicenseRef-Caisson-Commercial like every edition).
 // `priceCents` is a pre-launch PLACEHOLDER anchored to the ADR-0012 Local-first AI one-time low
 // ($349 = 34900) — final pricing is the still-open "Pricing numbers" board fork, out of scope here.
-// `golden` is null until the edition grows golden-able output (the sync conflict goldens land later
-// under src/sync/__golden__). The relative import keeps `@caisson/registry` out of the runtime deps.
+// `golden` points at the sync-reconcile conflict fixtures (src/sync/__golden__ — the LWW + tombstone
+// resolves asserted via `matchGolden`); create-caisson (P5) consumes this relative path. The relative
+// import keeps `@caisson/registry` out of the runtime deps.
 import { defineModule } from "../../registry/schema/module-manifest";
 
 export default defineModule({
@@ -23,6 +24,7 @@ export default defineModule({
     "@caisson/license-verify",
     "@caisson/field-crypto",
   ],
+  golden: "src/sync/__golden__",
   description:
     "Local-first AI edition (composition): @caisson/local-store hybrid retrieval (sqlite-vec + FTS5 RRF) + @caisson/license-verify offline Ed25519 + @caisson/field-crypto at-rest + @caisson/kernel, plus a built two-way sync engine, an InferenceBackend port, a zero-egress privacy gate, and file-per-tenant isolation. Offline, no-lock-in.",
 });
