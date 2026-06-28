@@ -5,6 +5,7 @@
 // store API (`LocalStore` / `hybridSearch`) from `./store.ts` — golden-first: the fixture + the red
 // test land before the logic (T7) that turns them green.
 import { defineModuleGolden } from "@caisson/testing/golden-module";
+import { scrubForEgress } from "./egress-guard.ts";
 import { LocalStore } from "./store.ts";
 import type { HybridSearchOptions, StoreDoc } from "./store.ts";
 
@@ -153,9 +154,9 @@ export const localStoreGolden = defineModuleGolden({
       },
     },
     {
-      // T7 golden-first fixture for the T8 egress secret-scrub guard. `produce` echoes the authored
-      // input→output contract (the guard does not exist yet); T8 swaps the body to
-      // `scrubForEgress(c.raw)` and this committed `scrub.json` enforces the guard reproduces it.
+      // T7 fixture, now ENFORCED by the real T8 guard (golden-first, ADR-0013): `produce` runs each
+      // `raw` through `scrubForEgress`, and the committed `scrub.json` asserts — BLESS unset — that the
+      // guard reproduces the authored input→output contract byte-for-byte.
       name: "scrub",
       input: SCRUB_FIXTURE,
       produce: (input) => {
@@ -163,7 +164,7 @@ export const localStoreGolden = defineModuleGolden({
         return fixture.cases.map((c) => ({
           name: c.name,
           raw: c.raw,
-          scrubbed: c.scrubbed,
+          scrubbed: scrubForEgress(c.raw),
         }));
       },
     },
