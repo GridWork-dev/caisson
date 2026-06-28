@@ -4,5 +4,12 @@
   "private": true,
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
-  "description": "Compliance edition: RLS+WORM+audit + config-as-code module registry + SOC2/HIPAA evidence-pack generator. HERO."
+  "description": "Compliance edition: RLS+WORM+audit + config-as-code module registry + SOC2/HIPAA evidence-pack generator. HERO.",
+  "dependencies": {
+    "@caisson/kernel": "workspace:*",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@caisson/testing": "workspace:*"
+  }
 }
