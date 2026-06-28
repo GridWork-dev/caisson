@@ -4,5 +4,19 @@
   "private": true,
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
-  "description": "Agentic-Dev edition: typed agent/skill/rule schema + lifecycle state machine + local hybrid memory + hooks dispatcher."
+  "description": "Agentic-Dev edition: typed agent/skill/rule schema + lifecycle state machine + local hybrid memory + hooks dispatcher.",
+  "scripts": {
+    "lint": "eslint src",
+    "test": "bun test ./src"
+  },
+  "dependencies": {
+    "@caisson/agent-kernel": "workspace:*"
+  },
+  "devDependencies": {
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.0"
+  }
 }

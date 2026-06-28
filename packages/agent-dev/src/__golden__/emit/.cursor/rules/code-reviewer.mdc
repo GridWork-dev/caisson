@@ -1,0 +1,12 @@
+---
+description: Reviews a diff for correctness and the security floor.
+alwaysApply: false
+---
+
+# code-reviewer (agent)
+
+Reviews a diff for correctness and the security floor.
+
+- Capabilities: code_review, security_audit
+- Tools: read, grep, bash
+- When to invoke: A bounded diff needs an idiom + security pass before SHIP.
