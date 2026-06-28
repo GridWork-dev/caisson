@@ -38,7 +38,7 @@ than one operator touches it.
 ## Deploy (the site app — `apps/site`)
 
 The Pages project is **direct-upload** and the site is a Next.js **static export**
-(`output: 'export'`, ADR-0045). CI runs `next build` → `out/` then
+(`output: 'export'`, ADR-0084). CI runs `next build` → `out/` then
 `wrangler pages deploy out/ --project-name=caisson-site`. There is **no Cloudflare-side build**, so
 `cloudflare_pages_project.site` carries **no `build_config` and no `source`** — that is correct, not
 missing. The only deploy pointer is the `out/` argument to wrangler (also set as

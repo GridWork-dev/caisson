@@ -90,7 +90,7 @@ downstream notes for the implementation session (what `apps/site` + `packages/ui
 `SUMMARY.md`; `specs/00-product-spec.md` (§positioning) · `02-core-loop-ux.md` ·
 `03-design-framework.md` · `04-voice-and-brand.md`; `knowledge/decisions/ADR-0040-positioning-hero.md`
 · `ADR-0041-product-name-caisson.md` · `ADR-0042-design-system-foundation.md` ·
-`ADR-0047-web-analytics-plausible.md` · `ADR-0048-hero-sku-surface.md`;
+`ADR-0086-web-analytics-plausible.md` · `ADR-0087-hero-sku-surface.md`;
 `packages/ui/src/tokens/*`; `apps/site/app/(marketing)/*`; `outputs/research/{market-research.md,
 scores.json,decisions-log.md,review-findings.json,options.md,demand-signals.md}`;
 `outputs/kickoffs/positioning.md` + `gtm-marketing-docs.md` (prior design/GTM sessions);

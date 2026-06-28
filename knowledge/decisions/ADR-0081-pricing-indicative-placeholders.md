@@ -1,7 +1,7 @@
 # ADR-0081 — Pricing display: indicative placeholder prices on the pre-launch site
 
 **Status:** accepted · 2026-06-27 (Design·Brand·SEO·Copy session — operator: "indicative placeholders,
-subject to change"). **Supersedes:** ADR-0048 (which deferred **all** hard prices to the waitlist and printed
+subject to change"). **Supersedes:** ADR-0087 (which deferred **all** hard prices to the waitlist and printed
 "early access" instead of numbers). **Relates:** ADR-0012 (pricing anchors — `proposed`, numbers working),
 ADR-0040 (sequenced launch / firewall), ADR-0079 (JSON-LD price), ADR-0080 (pricing copy). The open **"Pricing
 numbers"** board fork stays **operator-owned for the FINAL lock**; this ADR authorizes **indicative**
@@ -9,7 +9,7 @@ placeholders on the not-yet-live site.
 
 The marketing site is pre-launch / not live. The operator opted to show **indicative early-access prices**
 rather than the empty "early access — join the waitlist" slots that read unfinished next to competitor
-number-grids. ADR-0048's structure-without-numbers stance is superseded for the pre-launch site.
+number-grids. ADR-0087's structure-without-numbers stance is superseded for the pre-launch site.
 
 ## The indicative prices (from the ADR-0012 anchors)
 
@@ -45,7 +45,7 @@ The "$199 kits" footnote and the better-than-a-kit framing are unchanged.
 
 ## Rejected
 
-- **Keep ADR-0048 (no prices)** — the operator chose to show indicative numbers.
+- **Keep ADR-0087 (no prices)** — the operator chose to show indicative numbers.
 - **Lock the numbers as final** — the operator chose "subject to change"; the **"Pricing numbers" fork stays
   open** for the final lock + grandfathering policy (ADR-0012).
 - **Show ranges instead of single figures** — the operator chose single indicative anchors (cleaner read).
@@ -53,6 +53,6 @@ The "$199 kits" footnote and the better-than-a-kit framing are unchanged.
 ## Binding
 
 The pre-launch site shows **single indicative anchor prices** with a persistent "subject to change before
-launch" frame; this **supersedes ADR-0048**. The **final** pricing lock + grandfathering remain the
+launch" frame; this **supersedes ADR-0087**. The **final** pricing lock + grandfathering remain the
 operator's open board fork (ADR-0012). Moving from the waitlist to a real checkout requires the commerce
 build (P6) + a superseding decision. Implementation lands in the **build session**.

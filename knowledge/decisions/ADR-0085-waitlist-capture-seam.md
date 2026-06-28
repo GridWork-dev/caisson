@@ -1,7 +1,11 @@
-# ADR-0046 — Waitlist capture seam: Cloudflare Pages Function → Resend Segments
+# ADR-0085 — Waitlist capture seam: Cloudflare Pages Function → Resend Segments
 
 Status: accepted · 2026-06-27 (closes the **"Waitlist / primary-CTA mechanism"** open fork for the
 GTM session. Pre-launch the hero CTA is capture, not checkout — commerce is a deferred wave.)
+
+> **Renumbered 2026-06-28:** originally ADR-0046 — collided with the Wave-0 substrate
+> ADR-0046 (ciphertext envelope format), allocated in a parallel track. Renumbered to 0085 to
+> clear the collision; content unchanged. Mapping recorded in ADR-0088 + `docs/adr-index.md`.
 
 The site's primary CTA is a waitlist signup handled by a single Cloudflare Pages Function
 (`apps/site/functions/api/waitlist.ts` → `/api/waitlist`) that adds the contact to **Resend**
@@ -27,7 +31,7 @@ timeout is forbidden on Bun), sets the **mandatory `User-Agent` header** Resend 
 are set **inside** the function response — Cloudflare does **not** apply `public/_headers` rules to
 Pages Function responses; a `functions/_middleware.ts` centralizes the header policy. If the function
 is ever gated by a shared token, the compare uses `crypto.timingSafeEqual`. On success it fires the
-Plausible `Signup` goal client-side (ADR-0047). The function is a **seam**: inert until a real Resend
+Plausible `Signup` goal client-side (ADR-0086). The function is a **seam**: inert until a real Resend
 account + `RESEND_API_KEY` / `RESEND_SEGMENT_ID` env are wired (not this session — no live launch).
 
 ## Rejected
@@ -37,7 +41,7 @@ account + `RESEND_API_KEY` / `RESEND_SEGMENT_ID` env are wired (not this session
 - **Third-party embed** (Buttondown / ConvertKit / hosted form) — a new vendor + an external script on
   a privacy-forward brand page.
 - **OpenNext route handler / server action** — would pull in the Workers deploy mode rejected in
-  ADR-0045.
+  ADR-0084.
 
 ## Binding
 

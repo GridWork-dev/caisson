@@ -2,7 +2,7 @@
 
 **Status:** accepted · 2026-06-27 (Design·Brand·SEO·Copy session — operator "lock all copy as
 recommended"). **Extends:** specs/04 (voice & brand — the floor, unchanged). **Relates:** ADR-0040
-(positioning/firewall), ADR-0041 (name/metaphor), ADR-0048→0081 (pricing display). Evidence: `FORK-BOARD.md`
+(positioning/firewall), ADR-0041 (name/metaphor), ADR-0087→0081 (pricing display). Evidence: `FORK-BOARD.md`
 (copy forks C1–C26 + critic), research `current-state-copy.md` · `exa-competitor-compliance.md`.
 
 specs/04 fixed the voice floor (evidence over adjectives, pro-tool register, banned list, the locked
@@ -45,7 +45,7 @@ CC6.1 · HIPAA §164.312(a)(1)) to the home evidence cards. (C7, C10, C11, C19, 
 
 ## 5. Conversion copy
 
-- **CTA standardized by edition tier**, all routing to the waitlist (no checkout — ADR-0048/0081): paid
+- **CTA standardized by edition tier**, all routing to the waitlist (no checkout — ADR-0087/0081): paid
   editions → "Request early access" + ghost "Read the docs"; free AGPL flank → "Star on GitHub" + "Read the
   docs"; roadmap → "Join the list"; programmatic pages → intent-matched ("See how Caisson maps to
   {framework}"). (C14)
