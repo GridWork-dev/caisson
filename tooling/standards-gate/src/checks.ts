@@ -4,6 +4,13 @@
  * the resolved tree + manifest↔package.json agreement); dependency-cruiser owns the real module
  * graph (dynamic import()/require + transitive provider-SDK reachability + down-only direction);
  * ESLint is the fast static source signal.
+ *
+ * Provider-SDK reachability is NOT re-implemented here (no allow-set): the confinement of the
+ * Vercel AI SDK family — `ai` core + `@ai-sdk/{openai,anthropic,google,openrouter}` — to
+ * @caisson/ai-config + @caisson/ai-kit is owned by the eslint denylist (boundaries.js, Gate 2)
+ * and the dependency-cruiser graph (.dependency-cruiser.cjs, authoritative). License-wise the AI
+ * SDK family is Apache-2.0, so it passes the Gate 1/1b AGPL tripwire below by construction; its
+ * only constraint is composition (ADR-0011/0022), not copyleft.
  */
 import { join } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
@@ -111,7 +118,7 @@ export function checkDownOnly(pkgs: Pkg[]): Finding[] {
   for (const p of pkgs) {
     // Down-only governs the PACKAGE dependency tower (base/primitive/edition) only (ADR-0003).
     // apps/ are reference applications ABOVE the tower — top-level consumers, not packages — so they
-    // may legitimately depend on an edition (the P2 reference app wires @caisson/compliance). The
+    // may legitimately depend on an edition (each edition's reference app wires its edition). The
     // authoritative .dependency-cruiser.cjs likewise anchors its down-only `from` to packages/, so
     // gating on isModuleCandidate keeps the two enforcement layers aligned. Base/primitive (in
     // packages/) stay fully checked — this exempts the consumer layer, not the tower.

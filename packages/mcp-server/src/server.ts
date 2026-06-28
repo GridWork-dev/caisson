@@ -21,6 +21,7 @@ import {
   safeEqualVariable,
   strictObject,
 } from "@caisson/kernel";
+import { registerCoachTools, type CoachOptions } from "./coach.ts";
 
 export interface BuyerToken {
   token: string;
@@ -64,6 +65,12 @@ export interface McpServerOptions {
   registryAllowlist: readonly string[];
   /** Host hook that performs the credit debit + drives generation (ADR-0007). */
   onGenerate: (ctx: GenerateContext) => Promise<{ generationId: string }>;
+  /**
+   * Opt-in ai-kit setup-coach tools (ADR-0076 seam + ADR-0011). When present, the four
+   * entitlement-gated, secrets-safe coach tools are registered through `registerTool`; when
+   * omitted no coach tool exists (fail-closed). See `coach.ts`.
+   */
+  coach?: CoachOptions;
 }
 
 export interface McpServer {
@@ -215,5 +222,13 @@ export function createMcpServer(options: McpServerOptions): McpServer {
     },
   });
 
-  return { authenticate, registerTool, listTools, handleToolCall };
+  const server: McpServer = {
+    authenticate,
+    registerTool,
+    listTools,
+    handleToolCall,
+  };
+  // ADR-0076 wire: the coach is just an edition registering its tools through the seam.
+  if (options.coach) registerCoachTools(server, options.coach);
+  return server;
 }

@@ -1,0 +1,27 @@
+{
+  "input": "Contact jane.doe@example.com or 404-555-0100. SSN 123-45-6789. Card 4111 1111 1111 1111 expires soon.",
+  "masked": "Contact [EMAIL] or [PHONE]. SSN [SSN]. Card [CREDIT_CARD] expires soon.",
+  "hashed": "Contact [EMAIL:86e0b9e56c17] or [PHONE:5bbe8be0bcad]. SSN [SSN:01a54629efb9]. Card [CREDIT_CARD:6a7e0e79b018] expires soon.",
+  "detected": [
+    {
+      "kind": "email",
+      "start": 8,
+      "end": 28
+    },
+    {
+      "kind": "phone",
+      "start": 32,
+      "end": 44
+    },
+    {
+      "kind": "ssn",
+      "start": 50,
+      "end": 61
+    },
+    {
+      "kind": "credit_card",
+      "start": 68,
+      "end": 87
+    }
+  ]
+}

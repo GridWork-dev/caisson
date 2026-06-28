@@ -1,0 +1,83 @@
+// @caisson/ai-evals — the eval gate CLI (ADR-0062 / ADR-0072). The runnable behind the DISTINCT
+// turbo `eval` task: it runs the committed eval suite against the committed JSON baseline and exits
+// non-zero on a regression, BLESS-style. This is a MONOREPO-only gate — it is NEVER injected into a
+// generated buyer repo as a required CI job (ADR-0072): a buyer owns their own eval cadence.
+//
+// Offline + deterministic by construction (SPEC TM6): model-graded scorers replay a committed
+// cassette, never a live provider call, never a secret. `BLESS=1 bun run eval` is the one sanctioned
+// re-baseline path (see `baseline.ts`).
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { gateAgainstBaseline, type BaselineGateResult } from "./baseline.ts";
+import { defineEval, parseDataset } from "./define-eval.ts";
+import type { EvalRun, Grader } from "./index.ts";
+import { injectionGrader, judgeGrader, regexGrader } from "./graders.ts";
+import { cassetteJudge, parseCassette } from "./judge.ts";
+
+// Fixtures live at the package root (one level up from `src/`), the layout the harness tests assert.
+const PKG_ROOT = join(import.meta.dir, "..");
+const readJson = (rel: string): unknown =>
+  JSON.parse(readFileSync(join(PKG_ROOT, rel), "utf8"));
+
+const BASELINE_FILE = join(PKG_ROOT, "__evals__/baseline.json");
+
+async function runSuite(): Promise<readonly EvalRun[]> {
+  const complianceDataset = parseDataset(
+    readJson("__evals__/compliance-answer.case.json"),
+  );
+  const injectionDataset = parseDataset(
+    readJson("__evals__/injection-defense.case.json"),
+  );
+  const faithfulnessCassette = parseCassette(
+    readJson("__cassettes__/compliance-answer.json"),
+  );
+
+  const complianceScorers: Readonly<Record<string, Grader>> = {
+    "cites-control": regexGrader(),
+    faithfulness: judgeGrader(cassetteJudge(faithfulnessCassette)),
+  };
+  const compliance = await defineEval({
+    name: complianceDataset.eval,
+    promptVersionId: complianceDataset.promptVersionId,
+    threshold: complianceDataset.threshold,
+    cases: complianceDataset.cases,
+    scorers: complianceScorers,
+  });
+
+  const injection = await defineEval({
+    name: injectionDataset.eval,
+    promptVersionId: injectionDataset.promptVersionId,
+    threshold: injectionDataset.threshold,
+    cases: injectionDataset.cases,
+    scorers: { "injection-resist": injectionGrader() },
+  });
+
+  return [compliance, injection];
+}
+
+function report(gate: BaselineGateResult): void {
+  if (gate.blessed) {
+    process.stdout.write(
+      `eval: BLESSED — rewrote ${BASELINE_FILE} from ${gate.comparisons.length} run(s)\n`,
+    );
+    return;
+  }
+  for (const c of gate.comparisons) {
+    if (c.passed) {
+      process.stdout.write(`eval: PASS  ${c.eval}\n`);
+      continue;
+    }
+    process.stdout.write(`eval: FAIL  ${c.eval}\n`);
+    for (const f of c.findings)
+      process.stdout.write(`  - ${f.kind}: ${f.detail}\n`);
+  }
+}
+
+if (import.meta.main) {
+  // Fail-closed: any throw (a cassette miss, a malformed fixture) exits non-zero — the gate never
+  // passes by accident.
+  const runs = await runSuite();
+  const gate = gateAgainstBaseline(BASELINE_FILE, runs);
+  report(gate);
+  process.exit(gate.passed ? 0 : 1);
+}
