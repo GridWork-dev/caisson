@@ -1,239 +1,462 @@
 import Link from "next/link";
-import type { Metadata } from "next";
-
+import { buildMetadata } from "@/lib/metadata";
+import {
+  breadcrumb,
+  faqPage,
+  serializeJsonLd,
+  softwareApplication,
+} from "@/lib/jsonld";
+import {
+  formatPrice,
+  priceById,
+  PRICING_DISCLAIMER_SHORT,
+} from "@/lib/pricing";
+import {
+  Button,
+  Card,
+  Hero,
+  Icon,
+  Reveal,
+  Section,
+  StatusChip,
+  Terminal,
+} from "@/components";
 import { WaitlistForm } from "@/components/waitlist-form";
 
-export const metadata: Metadata = {
-  title: "AI Production Kit — metering, spend caps, and an eval gate in CI",
+export const metadata = buildMetadata({
+  title: "AI Production Kit",
   description:
-    "Token metering wired Postgres-atomic, a per-tenant spend cap with a circuit breaker, and an eval harness that fails the PR on regression. The production-rigor layer cheap AI boilerplate skips.",
-};
+    "Token metering wired Postgres-atomic, a per-tenant spend cap with a circuit breaker, and an eval harness that blocks the deploy on regression. The production-rigor layer cheap AI boilerplate skips.",
+  path: "/ai-kit",
+});
 
-const MODULES = [
-  {
-    glyph: "▦",
-    label: "Token metering",
-    body: "Usage writes in the same transaction as the result — one atomic increment, so concurrent calls never double-count a charge or drop one under load.",
-  },
-  {
-    glyph: "⊘",
-    label: "Spend caps + circuit breaker",
-    body: "Each tenant gets a hard cap. Cross it and the breaker opens — the next model call returns HTTP 402 and resets on the window, not a surprise invoice.",
-  },
-  {
-    glyph: "▣",
-    label: "Eval harness in CI",
-    body: "Prompts run against a golden set on every pull request. A score drop past tolerance fails the check — the regression never reaches a customer.",
-  },
-  {
-    glyph: "▤",
-    label: "Prompt registry",
-    body: "Every prompt is versioned and addressable by id. A call references prompt@v7, not an inline string — diff it, roll it back, audit what the model was asked.",
-  },
-  {
-    glyph: "▥",
-    label: "Guardrails",
-    body: "Input and output cross a Zod-typed schema and a policy check on both sides of the model. Out-of-policy responses are rejected at the boundary, not forwarded.",
-  },
-  {
-    glyph: "▧",
-    label: "Agent setup",
-    body: "Typed agent and tool definitions with a per-tool allowlist. An agent calls only the tools its manifest declares — no implicit access, no surprise side-effect.",
-  },
-];
+// Indicative price from the canonical pricing table (ADR-0081).
+const aiKitPrice = priceById("ai-kit");
 
-const SKUS = [
-  ["One-time", "Buy the AI Production Kit outright and own the source."],
-  ["Per-module", "Take metering, caps, or the eval harness on its own."],
-  ["Bundle", "The kit with the base and every edition, one purchase."],
-  [
-    "Developer plan",
-    "Subscription — credits, framework updates, private-registry pulls.",
-  ],
-];
+// FAQ items — answer-first (ADR-0080 §6); also rendered as faqPage JSON-LD.
+const FAQ_ITEMS = [
+  {
+    question: "What does token metering actually prevent?",
+    answer:
+      "A runaway loop, a misconfigured agent, or a single burst of traffic can multiply your API invoice by 10× before you see it. Caisson writes usage in the same Postgres transaction as the result — an atomic increment — so concurrent calls can never double-count or drop a charge. Crossing the cap opens the circuit breaker and returns HTTP 402 before the next model call fires.",
+  },
+  {
+    question: "What happens when a tenant hits their spend cap?",
+    answer:
+      "The breaker opens. The next model call returns HTTP 402 with a structured error body — the same as any other payment-required response in your API. The window resets on the configured interval (UTC midnight by default). No partial responses, no silent overages, no surprise invoice.",
+  },
+  {
+    question: "How does the eval gate work in CI?",
+    answer:
+      "You commit a golden set of prompt → expected-output pairs alongside your prompt definitions. On every pull request, the eval runner scores the current prompts against the golden set. A score drop past the configured tolerance fails the check — the regression never merges. The gate is a GitHub Actions step; it reads from the prompt registry and writes results to a structured report.",
+  },
+  {
+    question: "Is Caisson an AI platform or a library?",
+    answer:
+      "A library — a codebase you own. It ships as typed TypeScript packages you install and configure in your own repository. There is no hosted control plane, no SDK that phones home, no vendor lock-in beyond the Postgres database you already run.",
+  },
+] as const;
+
+// The framed CI terminal artifact — a failing eval gate blocking a deploy.
+const CI_ARTIFACT = (
+  <Terminal
+    label="ci / eval-gate"
+    status={<StatusChip label="BLOCKED" tone="accent" dot />}
+  >
+    {"$ caisson eval run --suite prompts/golden.yaml --ci\n"}
+    {"Running 24 cases against golden set...\n\n"}
+    {"  "}
+    <span className="cs-tok-muted">case</span>
+    {"  helpfulness     score "}
+    <span className="cs-tok-success">0.91</span>
+    {"  prev "}
+    <span className="cs-tok-success">0.93</span>
+    {"  Δ -0.02  ok\n"}
+    {"  "}
+    <span className="cs-tok-muted">case</span>
+    {"  accuracy        score "}
+    <span className="cs-tok-danger">0.72</span>
+    {"  prev "}
+    <span className="cs-tok-success">0.91</span>
+    {"  Δ -0.19  "}
+    <span className="cs-tok-danger">FAIL</span>
+    {"\n"}
+    {"  "}
+    <span className="cs-tok-muted">case</span>
+    {"  refusal_rate    score "}
+    <span className="cs-tok-success">0.98</span>
+    {"  prev "}
+    <span className="cs-tok-success">0.97</span>
+    {"  Δ +0.01  ok\n\n"}
+    <span className="cs-tok-danger">✗ eval gate failed</span>
+    {" — accuracy regressed "}
+    <span className="cs-tok-danger">0.19</span>
+    {" > tolerance "}
+    <span className="cs-tok-accent">0.02\n</span>
+    {"  deploy blocked. fix the prompt or update the golden set.\n"}
+    {"  report: .caisson/eval/2026-06-27T14-09-11Z.json\n"}
+  </Terminal>
+);
 
 export default function AiKitPage() {
+  const price = aiKitPrice;
+
+  // JSON-LD nodes
+  const appNode = softwareApplication({
+    name: "Caisson AI Production Kit",
+    description:
+      "Token metering wired Postgres-atomic, a per-tenant spend cap with a circuit breaker, and an eval harness that blocks the deploy on regression.",
+    url: "https://caisson.sh/ai-kit",
+    priceId: "ai-kit",
+  });
+
+  const crumbNode = breadcrumb([
+    { name: "Home", path: "/" },
+    { name: "AI Production Kit", path: "/ai-kit" },
+  ]);
+
+  const faqNode = faqPage(
+    FAQ_ITEMS.map((f) => ({ question: f.question, answer: f.answer })),
+  );
+
   return (
     <>
-      {/* ===== Hero: lead with the spike that gets capped ===== */}
-      <section className="cs-section cs-section--flush">
-        <div className="cs-container">
-          <span className="cs-eyebrow">AI Production Kit · Edition #2</span>
-          <h1
-            style={{
-              fontSize: "var(--cs-text-display)",
-              lineHeight: "var(--cs-leading-tight)",
-              letterSpacing: "var(--cs-tracking-tighter)",
-              fontWeight: "var(--cs-weight-semibold)",
-              margin: "var(--cs-space-5) 0 var(--cs-space-4)",
-              maxWidth: "18ch",
-            }}
-          >
-            The spike hits a cap, not your invoice.
-          </h1>
-          <p className="cs-lede" style={{ maxWidth: "64ch" }}>
-            An unmetered loop, an eval regression shipped on a Friday, a prompt
-            nobody can audit — the three ways an AI feature turns into an
-            incident. This kit puts a control in front of each one: atomic
-            metering, a per-tenant breaker, and an eval gate in CI.
-          </p>
-          <div
-            style={{
-              display: "flex",
-              gap: "var(--cs-space-3)",
-              marginTop: "var(--cs-space-8)",
-              flexWrap: "wrap",
-            }}
-          >
-            <Link href="#waitlist" className="cs-btn cs-btn--primary">
+      {/* JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(appNode) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(crumbNode) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqNode) }}
+      />
+
+      {/* ===== Hero: the controls cheap AI boilerplate skips ===== */}
+      <Hero
+        eyebrow="AI Production Kit · Edition #2"
+        title="The controls cheap AI skips."
+        lede={
+          <>
+            A starter that calls the model is a demo. Metered token accounting,
+            a per-tenant circuit breaker, an eval gate in CI, and typed
+            guardrails are the gap between a demo and a feature you can charge
+            for. This kit is that gap, wired and tested.
+          </>
+        }
+        ctas={
+          <>
+            <Button href="#waitlist" variant="primary">
               Request early access
-            </Link>
-            <Link href="/docs" className="cs-btn cs-btn--ghost">
+            </Button>
+            <Button href="/docs/ai-kit" variant="ghost">
               Read the docs
-            </Link>
-          </div>
+            </Button>
+          </>
+        }
+        artifact={CI_ARTIFACT}
+      />
 
-          {/* Evidence over adjectives: the runaway spike, then the breaker that catches it. */}
-          <pre
-            className="cs-code"
-            style={{ marginTop: "var(--cs-space-12)", maxWidth: "62ch" }}
-            aria-label="Example: a runaway token spike trips the per-tenant circuit breaker"
-          >
-            {`$ caisson ai spend --watch
-14:02  acme     412k tok   within cap
-14:09  acme   4,812k tok   9.6x median   runaway loop
-14:09  BREAKER OPEN — acme over hard cap
-       next model call -> HTTP 402, resets 00:00 UTC`}
-          </pre>
-        </div>
-      </section>
+      {/* ===== The named failure mode ===== */}
+      <Section
+        eyebrow="The failure mode"
+        title="Cheap AI boilerplate ships the demo, not the controls."
+        lede="Three ways an AI feature turns into an incident: an unmetered loop triples the invoice, an eval regression ships on Friday, a prompt nobody can audit breaks in production. This kit puts a named control in front of each one."
+        band="tint"
+      />
 
-      {/* ===== The named failure ===== */}
-      <section className="cs-section">
-        <div className="cs-container">
-          <span className="cs-eyebrow">The failure mode</span>
-          <h2 className="cs-section-title">
-            Cheap AI boilerplate ships the demo, not the controls.
-          </h2>
-          <p className="cs-lede">
-            A starter that calls the model is a demo. The gap between that and a
-            feature you can run for paying tenants is metering, caps, evals, and
-            a registry — the parts that only matter once real traffic and a real
-            invoice arrive. This kit is that gap, wired and tested.
-          </p>
-        </div>
-      </section>
-
-      {/* ===== Modules ===== */}
-      <section className="cs-section">
-        <div className="cs-container">
-          <span className="cs-eyebrow">What ships in the box</span>
-          <h2 className="cs-section-title">
-            Six controls between your model and an incident.
-          </h2>
+      {/* ===== Six controls ===== */}
+      <Section eyebrow="What ships in the box" title="Six controls. One kit.">
+        <Reveal>
           <div
             className="cs-grid cs-grid--3"
             style={{ marginTop: "var(--cs-space-8)" }}
           >
-            {MODULES.map((m) => (
-              <article key={m.label} className="cs-card">
-                <div className="cs-status">
-                  <span className="glyph" aria-hidden="true">
-                    {m.glyph}
-                  </span>
-                  {m.label}
-                </div>
-                <p
-                  className="cs-muted"
-                  style={{ marginTop: "var(--cs-space-3)" }}
-                >
-                  {m.body}
-                </p>
-              </article>
-            ))}
+            <Card>
+              <Icon name="gauge" size="lg" aria-label="Token metering" />
+              <div
+                className="cs-card-title"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                Token metering
+              </div>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-2)" }}
+              >
+                Usage writes in the same Postgres transaction as the result —
+                one atomic increment. Concurrent calls never double-count a
+                charge or drop one under load.
+              </p>
+            </Card>
+
+            <Card>
+              <Icon name="wallet" size="lg" aria-label="Spend caps" />
+              <div
+                className="cs-card-title"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                Spend caps + circuit breaker
+              </div>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-2)" }}
+              >
+                Each tenant gets a hard cap. Cross it and the breaker opens —
+                the next model call returns HTTP 402 and resets on the window,
+                not a surprise invoice.
+              </p>
+            </Card>
+
+            <Card>
+              <Icon name="cpu" size="lg" aria-label="Eval harness" />
+              <div
+                className="cs-card-title"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                Eval harness in CI
+              </div>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-2)" }}
+              >
+                Prompts run against a golden set on every pull request. A score
+                drop past tolerance fails the check — the regression never
+                reaches a customer.
+              </p>
+            </Card>
+
+            <Card>
+              <Icon name="shield" size="lg" aria-label="Guardrails" />
+              <div
+                className="cs-card-title"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                Guardrails
+              </div>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-2)" }}
+              >
+                Input and output cross a Zod-typed schema and a policy check on
+                both sides of the model. Out-of-policy responses are rejected at
+                the boundary, not forwarded.
+              </p>
+            </Card>
+
+            <Card>
+              <Icon name="git-branch" size="lg" aria-label="Prompt registry" />
+              <div
+                className="cs-card-title"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                Prompt registry
+              </div>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-2)" }}
+              >
+                Every prompt is versioned and addressable by id. A call
+                references <code className="mono">prompt@v7</code>, not an
+                inline string — diff it, roll it back, audit what the model was
+                asked.
+              </p>
+            </Card>
+
+            <Card>
+              <Icon name="server" size="lg" aria-label="Agent setup" />
+              <div
+                className="cs-card-title"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                Typed agent setup
+              </div>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-2)" }}
+              >
+                Typed agent and tool definitions with a per-tool allowlist. An
+                agent calls only the tools its manifest declares — no implicit
+                access, no surprise side-effect.
+              </p>
+            </Card>
           </div>
-        </div>
-      </section>
+        </Reveal>
+      </Section>
 
-      {/* ===== Rigor, not theater ===== */}
-      <section className="cs-section">
-        <div className="cs-container">
-          <span className="cs-eyebrow">Rigor, not theater</span>
-          <h2 className="cs-section-title">
-            Every claim here is a control you can point at.
-          </h2>
-          <p className="cs-lede">
-            The caps, the breaker, and the eval gate are configuration checked
-            into your repo and enforced at call time — not a dashboard you hope
-            someone is watching. Here is the policy that backs the hero above.
-          </p>
-          <pre
-            className="cs-code"
-            style={{ marginTop: "var(--cs-space-8)", maxWidth: "62ch" }}
-            aria-label="Example caisson.ai.toml: spend caps and the CI eval gate as code"
+      {/* ===== Rigor as code ===== */}
+      <Section
+        eyebrow="Rigor, not theater"
+        title="Every claim here is a control you can point at."
+        lede="The caps, the breaker, and the eval gate are configuration checked into your repo and enforced at call time — not a dashboard you hope someone is watching."
+        band="surface"
+      >
+        <Reveal delay={100}>
+          <Terminal
+            label="caisson.ai.toml"
+            status={<StatusChip label="enforced at call time" tone="muted" />}
           >
-            {`# caisson.ai.toml — checked into your repo, enforced at call time
-[caps.default]
-daily_tokens = 1_000_000
-on_exceed    = "break"   # open the circuit, return 402
+            {
+              "# caisson.ai.toml — checked into your repo, enforced at call time\n\n"
+            }
+            <span className="cs-tok-muted">{"[caps.default]\n"}</span>
+            {"daily_tokens = "}
+            <span className="cs-tok-accent">{"1_000_000\n"}</span>
+            {"on_exceed    = "}
+            <span className="cs-tok-danger">{'"break"'}</span>
+            <span className="cs-tok-muted">
+              {"   # open the circuit, return 402\n"}
+            </span>
+            {"\n"}
+            <span className="cs-tok-muted">{"[evals]\n"}</span>
+            {"gate      = "}
+            <span className="cs-tok-accent">{'"ci"'}</span>
+            <span className="cs-tok-muted">
+              {"        # block the PR on regression\n"}
+            </span>
+            {"tolerance = "}
+            <span className="cs-tok-accent">{"0.02"}</span>
+            <span className="cs-tok-muted">
+              {"      # max score drop before the check fails\n"}
+            </span>
+            {"\n"}
+            <span className="cs-tok-muted">{"[guardrails]\n"}</span>
+            {"input_schema  = "}
+            <span className="cs-tok-accent">
+              {'"schemas/chat-input.json"\n'}
+            </span>
+            {"output_policy = "}
+            <span className="cs-tok-accent">
+              {'"policies/content-policy.ts"\n'}
+            </span>
+          </Terminal>
+        </Reveal>
+      </Section>
 
-[evals]
-gate         = "ci"      # block the PR on regression
-tolerance    = 0.02      # max score drop before the check fails`}
-          </pre>
-        </div>
-      </section>
-
-      {/* ===== SKU structure (no prices — pricing fork open, ADR-0048) ===== */}
-      <section className="cs-section">
-        <div className="cs-container">
-          <span className="cs-eyebrow">How it&apos;s sold</span>
-          <h2 className="cs-section-title">Own the code, or subscribe.</h2>
+      {/* ===== Pricing ===== */}
+      <Section eyebrow={"How it's sold"} title="Own the code, or subscribe.">
+        <Reveal>
           <div
-            className="cs-grid cs-grid--4"
+            className="cs-grid cs-grid--3"
             style={{ marginTop: "var(--cs-space-8)" }}
           >
-            {SKUS.map(([title, body]) => (
-              <article key={title} className="cs-card">
-                <div className="cs-card-title">{title}</div>
+            <Card accent>
+              <div className="cs-card-title">One-time license</div>
+              {price && price.amount !== null && (
                 <p
-                  className="cs-muted"
-                  style={{ marginTop: "var(--cs-space-2)" }}
+                  className="cs-num"
+                  style={{
+                    fontSize: "var(--cs-text-2xl)",
+                    marginTop: "var(--cs-space-2)",
+                  }}
                 >
-                  {body}
+                  {formatPrice(price)}
                 </p>
-                <p
-                  className="cs-footnote"
-                  style={{ marginTop: "var(--cs-space-4)" }}
-                >
-                  Early access — join the waitlist
-                </p>
-              </article>
-            ))}
+              )}
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                Own the AI Production Kit source outright — the six controls,
+                wired and tested, plus all future patch releases.
+              </p>
+              <p
+                className="cs-footnote"
+                style={{ marginTop: "var(--cs-space-4)" }}
+              >
+                {PRICING_DISCLAIMER_SHORT}
+              </p>
+            </Card>
+
+            <Card>
+              <div className="cs-card-title">Per-module</div>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                Take metering, caps, or the eval harness on its own — from{" "}
+                <span className="cs-num">$49</span> per module.
+              </p>
+              <p
+                className="cs-footnote"
+                style={{ marginTop: "var(--cs-space-4)" }}
+              >
+                {PRICING_DISCLAIMER_SHORT}
+              </p>
+            </Card>
+
+            <Card>
+              <div className="cs-card-title">Developer plan</div>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                Subscription — credits, framework updates, and private-registry
+                pulls. Keeps the kit current as model APIs shift.
+              </p>
+              <p
+                className="cs-footnote"
+                style={{ marginTop: "var(--cs-space-4)" }}
+              >
+                {PRICING_DISCLAIMER_SHORT}
+              </p>
+            </Card>
           </div>
+
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
-            Pricing is set at early access —{" "}
+            Final pricing is set at early access.{" "}
             <Link href="/pricing" style={{ color: "var(--cs-link)" }}>
-              see the full lineup
+              See the full lineup
             </Link>
             .
           </p>
-        </div>
-      </section>
+        </Reveal>
+      </Section>
+
+      {/* ===== FAQ ===== */}
+      <Section eyebrow="Common questions" band="tint">
+        <Reveal>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--cs-space-6)",
+              marginTop: "var(--cs-space-6)",
+              maxWidth: "72ch",
+            }}
+          >
+            {FAQ_ITEMS.map((item) => (
+              <div key={item.question}>
+                <h3
+                  className="cs-card-title"
+                  style={{ marginBottom: "var(--cs-space-2)" }}
+                >
+                  {item.question}
+                </h3>
+                <p className="cs-muted">{item.answer}</p>
+              </div>
+            ))}
+          </div>
+        </Reveal>
+      </Section>
 
       {/* ===== Waitlist ===== */}
-      <section className="cs-section" id="waitlist">
-        <div className="cs-container">
-          <span className="cs-eyebrow">Early access</span>
-          <h2 className="cs-section-title">
-            Ship the feature with the brakes on.
-          </h2>
-          <p className="cs-lede" style={{ marginBottom: "var(--cs-space-6)" }}>
-            Join the early-access list. We&apos;ll reach out as the kit opens.
-          </p>
-          <WaitlistForm source="ai-kit" />
-        </div>
-      </section>
+      <Section eyebrow="Early access" id="waitlist">
+        <h2
+          className="cs-section-title"
+          style={{ marginTop: "var(--cs-space-3)" }}
+        >
+          Ship the feature with the brakes on.
+        </h2>
+        <p className="cs-lede" style={{ marginBottom: "var(--cs-space-6)" }}>
+          Join the early-access list. We&apos;ll reach out as the AI Production
+          Kit opens.
+        </p>
+        <WaitlistForm source="ai-kit" />
+      </Section>
     </>
   );
 }

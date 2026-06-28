@@ -1,0 +1,34 @@
+name: lighthouse-ci
+# CWV + a11y baseline audit on PRs (ADR-0079 §6).
+# Non-blocking: all assertions use "warn" level — this job is informational until scores
+# are stable enough to harden to "error". Set continue-on-error: true so a CWV regression
+# surfaces as a visible annotation without blocking the merge.
+on:
+  pull_request:
+    paths:
+      - "apps/site/**"
+      - "packages/ui/**"
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: build site (static export)
+        working-directory: apps/site
+        run: bun run build
+
+      - name: run Lighthouse CI
+        run: bunx @lhci/cli@latest autorun
+        working-directory: apps/site
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
