@@ -299,6 +299,22 @@
         "typescript": "^5.6.0",
       },
     },
+    "packages/prompt-registry": {
+      "name": "@caisson/prompt-registry",
+      "version": "0.0.0",
+      "dependencies": {
+        "@caisson/kernel": "workspace:*",
+        "@caisson/tenancy-rls": "workspace:*",
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
+    },
     "packages/tenancy-rls": {
       "name": "@caisson/tenancy-rls",
       "version": "0.0.0",
@@ -435,6 +451,8 @@
     "@caisson/local-store": ["@caisson/local-store@workspace:packages/local-store"],
 
     "@caisson/mcp-server": ["@caisson/mcp-server@workspace:packages/mcp-server"],
+
+    "@caisson/prompt-registry": ["@caisson/prompt-registry@workspace:packages/prompt-registry"],
 
     "@caisson/registry": ["@caisson/registry@workspace:registry"],
 
