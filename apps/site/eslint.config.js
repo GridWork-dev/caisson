@@ -13,4 +13,8 @@ export default [
       globals: { process: "readonly", URL: "readonly", console: "readonly" },
     },
   },
+  // Static browser scripts in /public (no-flash theme set, Plausible queue stub) declare their
+  // own browser globals via per-file `/* global … */` directives — those work under BOTH this
+  // config and the standards-gate's root `bunx eslint .` (flat config doesn't cascade), so no
+  // config-level globals block here (it would `no-redeclare` against the directives).
 ];

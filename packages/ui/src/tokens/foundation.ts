@@ -20,8 +20,8 @@ export const foundation = {
     display: "clamp(2.75rem, 1.5rem + 4vw, 5.5rem)",
   },
   fontWeight: {
-    /** Body weight on dark surfaces — light type reads heavier, so step below 400. */
-    body: 350,
+    /** Body weight — bumped to 400 (ADR-0078 §8): 350 risked thin low-contrast body on dark. */
+    body: 400,
     regular: 400,
     medium: 500,
     semibold: 600,
@@ -62,6 +62,29 @@ export const foundation = {
     lg: "12px",
     xl: "16px",
     pill: "999px",
+  },
+  /**
+   * Expressive tokenized motion (ADR-0078 §6). transform/opacity-first; exit ~20% faster than
+   * enter; authored curves, never the default `ease`. Honor `prefers-reduced-motion` at use sites.
+   */
+  motion: {
+    duration: { fast: "120ms", base: "180ms", slow: "240ms" },
+    ease: {
+      /** Standard enter/UI transitions. */
+      out: "cubic-bezier(0, 0, 0.2, 1)",
+      /** Scroll-reveal / hero — a softer settle. */
+      reveal: "cubic-bezier(0.23, 1, 0.32, 1)",
+    },
+  },
+  /**
+   * Elevation scale (ADR-0078 §7, supersedes ADR-0042's never-shadows rule). Dark-tuned: pure
+   * black at low alpha so cards/overlays/the hero focal point read as raised, not glowing.
+   * Tonal surface + hairline stays the DEFAULT; shadow is the deliberate elevation step.
+   */
+  elevation: {
+    sm: "0 1px 2px oklch(0 0 0 / 0.30), 0 1px 1px oklch(0 0 0 / 0.18)",
+    md: "0 4px 14px oklch(0 0 0 / 0.38), 0 2px 5px oklch(0 0 0 / 0.24)",
+    lg: "0 18px 48px oklch(0 0 0 / 0.50), 0 6px 14px oklch(0 0 0 / 0.32)",
   },
 } as const;
 
