@@ -17,14 +17,16 @@
   --cs-accent-tint: oklch(0.26 0.040 205);
   --cs-focus: oklch(0.74 0.115 205);
   --cs-link: oklch(0.78 0.10 205);
+  --cs-glow-accent: 0 0 0 1px oklch(0.74 0.115 205 / 0.40), 0 0 28px oklch(0.74 0.115 205 / 0.22);
   /* functional / status */
   --cs-success: oklch(0.72 0.15 150);
   --cs-warning: oklch(0.78 0.13 75);
   --cs-danger: oklch(0.65 0.18 25);
   --cs-info: oklch(0.70 0.12 240);
   /* type */
-  --cs-font-sans: "Hubot Sans", ui-sans-serif, system-ui, sans-serif;
-  --cs-font-mono: "Martian Mono", ui-monospace, "SFMono-Regular", monospace;
+  --cs-font-sans: var(--font-sans, "Hubot Sans", ui-sans-serif, system-ui, sans-serif);
+  --cs-font-mono: var(--font-mono, "Martian Mono", ui-monospace, "SFMono-Regular", monospace);
+  --cs-font-mono-code: var(--font-mono-code, "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace);
   --cs-text-xs: 0.75rem;
   --cs-text-sm: 0.875rem;
   --cs-text-base: 1rem;
@@ -35,7 +37,7 @@
   --cs-text-4xl: 2.5rem;
   --cs-text-5xl: 3.25rem;
   --cs-text-display: clamp(2.75rem, 1.5rem + 4vw, 5.5rem);
-  --cs-weight-body: 350;
+  --cs-weight-body: 400;
   --cs-weight-regular: 400;
   --cs-weight-medium: 500;
   --cs-weight-semibold: 600;
@@ -66,6 +68,16 @@
   --cs-radius-lg: 12px;
   --cs-radius-xl: 16px;
   --cs-radius-pill: 999px;
+  /* motion (ADR-0078 §6) */
+  --cs-duration-fast: 120ms;
+  --cs-duration-base: 180ms;
+  --cs-duration-slow: 240ms;
+  --cs-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --cs-ease-reveal: cubic-bezier(0.23, 1, 0.32, 1);
+  /* elevation (ADR-0078 §7) */
+  --cs-shadow-sm: 0 1px 2px oklch(0 0 0 / 0.30), 0 1px 1px oklch(0 0 0 / 0.18);
+  --cs-shadow-md: 0 4px 14px oklch(0 0 0 / 0.38), 0 2px 5px oklch(0 0 0 / 0.24);
+  --cs-shadow-lg: 0 18px 48px oklch(0 0 0 / 0.50), 0 6px 14px oklch(0 0 0 / 0.32);
 }
 
 [data-theme="light"] {
@@ -83,4 +95,5 @@
   --cs-accent-tint: oklch(0.93 0.03 205);
   --cs-focus: oklch(0.55 0.13 215);
   --cs-link: oklch(0.50 0.13 215);
+  --cs-glow-accent: 0 0 0 1px oklch(0.55 0.13 215 / 0.28), 0 0 22px oklch(0.55 0.13 215 / 0.16);
 }

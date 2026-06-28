@@ -1,0 +1,15 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Caisson">
+  <!-- Waterline-over-chamber mark (ADR-0078 §2): a hairline waterline above a chambered box —
+       a watertight foundation holding under load. Geometry, not a mascot. Build-time asset, so
+       the locked palette is mirrored as hex here (sanctioned exception, like the OG image). -->
+  <rect width="32" height="32" rx="7" fill="#0d1216" />
+  <rect x="0.5" y="0.5" width="31" height="31" rx="6.5" stroke="#2a343a" />
+  <!-- waterline (the instrument light) -->
+  <path d="M6 11h7" stroke="#43bcd0" stroke-width="2" stroke-linecap="round" />
+  <path d="M19 11h7" stroke="#43bcd0" stroke-width="2" stroke-linecap="round" />
+  <path d="M13 11q3 -2.5 6 0" stroke="#43bcd0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  <!-- chamber: an open-top caisson holding the line -->
+  <path d="M9 15v9h14v-9" stroke="#eef2f3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  <!-- depth: the held water, darkening toward the floor -->
+  <rect x="11" y="18" width="10" height="4.5" rx="1" fill="#43bcd0" fill-opacity="0.16" />
+</svg>

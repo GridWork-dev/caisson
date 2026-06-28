@@ -1,224 +1,274 @@
-import Link from "next/link";
-import type { Metadata } from "next";
+import {
+  Button,
+  Card,
+  Hero,
+  Icon,
+  Reveal,
+  Section,
+  StatusChip,
+  Terminal,
+} from "@/components";
+import { buildMetadata, SITE_URL } from "@/lib/metadata";
+import { breadcrumb, serializeJsonLd, softwareApplication } from "@/lib/jsonld";
+import { formatPrice, priceById } from "@/lib/pricing";
 
-import { WaitlistForm } from "@/components/waitlist-form";
-
-export const metadata: Metadata = {
-  title: "Local-first AI — your data never leaves the device",
+export const metadata = buildMetadata({
+  title: "Local-first AI",
   description:
-    "The free AGPL flank: a compute seam, a default-deny privacy gate, on-device vector search with sqlite-vec, an offline license, and a local card store. Run it air-gapped.",
-};
+    "Own the source. On-device inference behind a compute seam, a default-deny privacy gate, and on-device vector search with sqlite-vec — your data never leaves the device.",
+  path: "/local-first",
+});
 
-const GITHUB_URL = "https://github.com/GridWork-dev/caisson";
+const PAGE_URL = `${SITE_URL}/local-first`;
+const localFirstPrice = priceById("local-first");
 
+const ldApp = softwareApplication({
+  name: "Caisson Local-first AI",
+  description:
+    "Own the source: a composable compute seam over on-device and hosted inference, a default-deny privacy gate, and on-device vector search (sqlite-vec). Your data never leaves the device.",
+  url: PAGE_URL,
+  priceId: "local-first",
+});
+
+const ldBreadcrumb = breadcrumb([
+  { name: "Caisson", path: "/" },
+  { name: "Local-first AI", path: "/local-first" },
+]);
+
+// Four pieces, each tied to a canonical icon from the design system
 const PIECES = [
   {
-    glyph: "▣",
+    icon: "server" as const,
     label: "Compute seam",
-    body: "One interface over local and hosted inference. Local is the default you ship with; hosting is an opt-in you make on purpose, not a default you discover in a network log.",
+    body: "One interface over on-device and hosted inference. Local is the default you ship; hosted is an opt-in you make on purpose — not a default you discover in a network trace.",
   },
   {
-    glyph: "▤",
+    icon: "lock" as const,
     label: "Privacy gate",
-    body: "A policy boundary every payload crosses before it can leave the process. Default-deny by host — nothing egresses unless you allowed that destination, in writing.",
+    body: "A policy boundary every payload crosses before it can leave the process. Default-deny by host: nothing egresses unless you allowed that destination in writing.",
   },
   {
-    glyph: "▥",
+    icon: "database" as const,
     label: "On-device vector search",
-    body: "Embeddings indexed with sqlite-vec ANN and queried on disk. Semantic recall with zero round-trips to a vector cloud, and nothing to leak from one.",
+    body: "Embeddings indexed with sqlite-vec ANN, queried on disk. Semantic recall with zero round-trips to a vector cloud and nothing to leak from one.",
   },
   {
-    glyph: "▦",
+    icon: "cpu" as const,
     label: "Offline license",
-    body: "License verification that works air-gapped — signature-checked on the device, no phone-home, no remote kill switch. The software keeps running when the network does not.",
+    body: "License verification that works air-gapped — signature-checked on the device, no phone-home, no remote kill switch. The library keeps running when the network does not.",
   },
-  {
-    glyph: "▧",
-    label: "Local store (cs-cards)",
-    body: "A local-first card store. State lives on the device and syncs on your terms, not a vendor's. Own the data at rest, not a copy of it on someone else's disk.",
-  },
-];
+] as const;
 
 export default function LocalFirstPage() {
   return (
     <>
+      {/* JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(ldApp) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(ldBreadcrumb) }}
+      />
+
       {/* ===== Hero ===== */}
-      <section className="cs-section cs-section--flush">
-        <div className="cs-container">
-          <span className="cs-eyebrow">Local-first AI · Free · AGPL</span>
-          <h1
-            style={{
-              fontSize: "var(--cs-text-display)",
-              lineHeight: "var(--cs-leading-tight)",
-              letterSpacing: "var(--cs-tracking-tighter)",
-              fontWeight: "var(--cs-weight-semibold)",
-              margin: "var(--cs-space-5) 0 var(--cs-space-4)",
-              maxWidth: "16ch",
-            }}
-          >
-            Your data never leaves the device.
-          </h1>
-          <p className="cs-lede" style={{ maxWidth: "64ch" }}>
-            Inference, embeddings, search, and licensing that run on the machine
-            in front of you. Sovereignty is the default, not a setting you
-            harden into later. The egress is zero because there is no outbound
-            call to make.
-          </p>
-          <div
-            style={{
-              display: "flex",
-              gap: "var(--cs-space-3)",
-              marginTop: "var(--cs-space-8)",
-              flexWrap: "wrap",
-            }}
-          >
-            <Link href="/docs/local-first" className="cs-btn cs-btn--primary">
+      <Hero
+        eyebrow="Local-first AI · Own the source"
+        title="Your data never leaves the device."
+        lede="Inference, embeddings, and search that run on the machine in front of you. Sovereignty is the default — not a setting you harden in later. The egress is zero because there is no outbound call to make."
+        ctas={
+          <>
+            <Button href="/pricing" variant="primary">
+              Get Local-first AI
+            </Button>
+            <Button href="/docs/local-first" variant="ghost">
               Read the docs
-            </Link>
-            <a
-              href={GITHUB_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="cs-btn cs-btn--ghost"
-            >
-              <span aria-hidden="true">★</span> Star on GitHub
-            </a>
-          </div>
-
-          {/* Evidence over adjectives: where the compute actually runs, not a promise about it. */}
-          <pre
-            className="cs-code"
-            style={{ marginTop: "var(--cs-space-12)", maxWidth: "60ch" }}
-            aria-label="Example: the compute seam reports local-only operation with no egress"
+            </Button>
+          </>
+        }
+        credentials={
+          <StatusChip
+            tone="accent"
+            label={
+              localFirstPrice
+                ? `Own the source · ${formatPrice(localFirstPrice)}`
+                : "Own the source"
+            }
+            dot
+          />
+        }
+        artifact={
+          <Terminal
+            label="@caisson/field-crypto"
+            status={<StatusChip tone="success" label="sealed per-tenant" dot />}
           >
-            {`$ caisson where-compute
-seam      local          # swappable; hosted is opt-in
-embed     sqlite-vec     # ANN index on disk
-license   offline        # verifies air-gapped, no phone-home
-egress    none           # 0 outbound connections`}
-          </pre>
-        </div>
-      </section>
+            <span className="cs-tok-muted">
+              {'import { TenantFieldCrypto } from "@caisson/field-crypto"\n\n'}
+            </span>
+            <span className="cs-tok-accent">{"const"}</span>
+            {" env = "}
+            <span className="cs-tok-accent">{"await"}</span>
+            {' fc.encryptField(tenant, "record", "notes")\n'}
+            <span className="cs-tok-muted">
+              {"// v1 · aes-256-gcm · per-tenant key · AAD-bound  "}
+            </span>
+            <span className="cs-tok-success">{"← sealed at rest\n\n"}</span>
+            <span className="cs-tok-accent">{"await"}</span>
+            {" fc.decryptField(otherTenant, env, "}
+            <span className="cs-tok-accent">{'"notes"'}</span>
+            {")\n"}
+            <span className="cs-tok-muted">
+              {"// cross-tenant key — open "}
+            </span>
+            <span className="cs-tok-danger">{"refused"}</span>
+            <span className="cs-tok-muted">{"  ← isolation proof"}</span>
+          </Terminal>
+        }
+      />
 
-      {/* ===== The pieces ===== */}
-      <section className="cs-section">
-        <div className="cs-container">
-          <span className="cs-eyebrow">What&apos;s in the flank</span>
-          <h2 className="cs-section-title">Five pieces, all on the device.</h2>
-          <p className="cs-lede">
-            Each one is built to do its job without a network. Compose them, or
-            take a single module — the data path never widens past the disk.
-          </p>
+      {/* ===== Four pieces ===== */}
+      <Reveal>
+        <Section
+          eyebrow="What's in the edition"
+          title="Four pieces. All on the device."
+          lede="Each piece does its job without a network. Compose them, or take a single module — the data path never widens past the disk."
+        >
           <div
-            className="cs-grid cs-grid--3"
+            className="cs-grid cs-grid--2"
             style={{ marginTop: "var(--cs-space-8)" }}
           >
             {PIECES.map((p) => (
-              <article key={p.label} className="cs-card">
-                <div className="cs-status">
-                  <span className="glyph" aria-hidden="true">
-                    {p.glyph}
-                  </span>
-                  {p.label}
-                </div>
-                <p
-                  className="cs-muted"
-                  style={{ marginTop: "var(--cs-space-3)" }}
+              <Card key={p.label}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "var(--cs-space-3)",
+                    marginBottom: "var(--cs-space-3)",
+                  }}
                 >
-                  {p.body}
-                </p>
-              </article>
+                  <Icon name={p.icon} size="md" aria-label={p.label} />
+                  <span
+                    style={{
+                      fontWeight: "var(--cs-weight-semibold)",
+                      fontSize: "var(--cs-text-base)",
+                    }}
+                  >
+                    {p.label}
+                  </span>
+                </div>
+                <p className="cs-muted">{p.body}</p>
+              </Card>
             ))}
           </div>
-        </div>
-      </section>
+        </Section>
+      </Reveal>
 
-      {/* ===== On-device vector search evidence ===== */}
-      <section className="cs-section">
-        <div className="cs-container">
-          <span className="cs-eyebrow">On-device vector search</span>
-          <h2 className="cs-section-title">
-            Semantic recall that never round-trips.
-          </h2>
-          <p className="cs-lede">
-            sqlite-vec holds the ANN index next to your rows. A query is a
-            statement against a local file — no API key, no vector vendor, no
-            embeddings shipped off the box to be indexed by someone else.
-          </p>
-          <pre
-            className="cs-code"
-            style={{ marginTop: "var(--cs-space-8)", maxWidth: "62ch" }}
-            aria-label="Example: an approximate-nearest-neighbour query running against a local sqlite-vec index"
+      {/* ===== On-device vector search (illustrative shape) ===== */}
+      <Reveal>
+        <Section
+          eyebrow="On-device vector search"
+          title="Semantic recall that never round-trips."
+          lede="sqlite-vec holds the ANN index next to your rows. A query is a statement against a local file — no API key, no vector vendor, no embeddings shipped off the box to be indexed by someone else. The shape below is illustrative."
+          band="surface"
+        >
+          <Terminal
+            label="sqlite-vec ANN — illustrative shape"
+            status={<StatusChip tone="muted" label="on-disk index" />}
           >
-            {`-- ANN over the local store; nothing leaves the process
-SELECT id, distance
-FROM   cs_cards
-WHERE  embedding MATCH :query_vec
-ORDER  BY distance
-LIMIT  8;
--- index on disk · 0 outbound connections`}
-          </pre>
-        </div>
-      </section>
+            <span className="cs-tok-muted">
+              {
+                "-- ANN over the local store; the index lives next to your rows\n"
+              }
+            </span>
+            <span className="cs-tok-accent">{"SELECT"}</span>
+            {" id, distance\n"}
+            <span className="cs-tok-accent">{"FROM"}</span>
+            {"   cs_cards\n"}
+            <span className="cs-tok-accent">{"WHERE"}</span>
+            {"  embedding "}
+            <span className="cs-tok-accent">{"MATCH"}</span>
+            {" :query_vec\n"}
+            <span className="cs-tok-accent">{"ORDER"}</span>
+            {"  "}
+            <span className="cs-tok-accent">{"BY"}</span>
+            {" distance\n"}
+            <span className="cs-tok-accent">{"LIMIT"}</span>
+            {"  8;\n"}
+            <span className="cs-tok-muted">
+              {"-- index on disk · nothing shipped to a vector cloud"}
+            </span>
+          </Terminal>
+        </Section>
+      </Reveal>
 
-      {/* ===== AGPL open-core note ===== */}
-      <section className="cs-section">
-        <div className="cs-container">
-          <span className="cs-eyebrow">Open core · AGPL-3.0</span>
-          <h2 className="cs-section-title">
-            The free edge of Caisson. Source-open, yours to run.
-          </h2>
-          <p className="cs-lede">
-            Local-first is the open flank. The compute seam, privacy gate,
-            on-device search, offline license, and local store ship under
-            AGPL-3.0 — read it, fork it, run it air-gapped. The premium editions
-            carry commercial terms; this flank stays free, on purpose.
-          </p>
-          <pre
-            className="cs-code"
-            style={{ marginTop: "var(--cs-space-8)", maxWidth: "60ch" }}
-            aria-label="The local-first package license metadata"
+      {/* ===== Fail-closed by construction — real built substrate ===== */}
+      <Reveal>
+        <Section
+          eyebrow="Default-deny, by construction"
+          title="Fail-closed is how the base already behaves."
+          lede="Default-deny is not a promise — it is how the base substrate behaves today. A cross-tenant read is refused at the database, fail-closed by construction. The privacy gate extends that same posture to network egress: hosts are deny-listed by default, allowed only in a typed config."
+        >
+          <Terminal
+            label="cross-tenant read"
+            status={<StatusChip tone="muted" label="denied" dot />}
           >
-            {`package   @caisson/local-first
-license   AGPL-3.0-only
-source    github.com/GridWork-dev/caisson
-terms     free · forever · network use carries source obligations`}
-          </pre>
+            <span className="cs-tok-muted">
+              {"-- session scoped to tenant A; reach for tenant B's rows\n"}
+            </span>
+            <span className="cs-tok-accent">{"SELECT"}</span>
+            {" * "}
+            <span className="cs-tok-accent">{"FROM"}</span>
+            {" records "}
+            <span className="cs-tok-accent">{"WHERE"}</span>
+            {" tenant_id = "}
+            <span className="cs-tok-success">{"'tenant_b'"}</span>
+            {";\n"}
+            <span className="cs-tok-danger">
+              {"ERROR:  permission denied for table records\n"}
+            </span>
+            <span className="cs-tok-muted">
+              {'DETAIL: RLS policy "tenant_isolation" forbids the read'}
+            </span>
+          </Terminal>
+        </Section>
+      </Reveal>
+
+      {/* ===== Get started ===== */}
+      <Reveal>
+        <Section
+          eyebrow="Get started"
+          title="Own the source. Run it on your machine."
+          lede="Local-first AI is a commercial edition — own the source, ship on-device inference behind the privacy gate, and keep your data on the box. Scaffold the base, then add the edition."
+          band="tint"
+        >
+          <Terminal
+            label="install"
+            status={<StatusChip tone="muted" label="scaffold" />}
+          >
+            <span className="cs-tok-muted">{"$ "}</span>
+            {"npx "}
+            <span className="cs-tok-accent">{"create-caisson"}</span>
+            {"@latest"}
+          </Terminal>
           <div
             style={{
               display: "flex",
               gap: "var(--cs-space-3)",
-              marginTop: "var(--cs-space-8)",
+              marginTop: "var(--cs-space-6)",
               flexWrap: "wrap",
             }}
           >
-            <a
-              href={GITHUB_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="cs-btn cs-btn--ghost"
-            >
-              <span aria-hidden="true">★</span> Star on GitHub
-            </a>
-            <Link href="/docs/local-first" className="cs-btn cs-btn--ghost">
+            <Button href="/pricing" variant="primary">
+              Get Local-first AI
+            </Button>
+            <Button href="/docs/local-first" variant="ghost">
               Read the docs
-            </Link>
+            </Button>
           </div>
-        </div>
-      </section>
-
-      {/* ===== Waitlist ===== */}
-      <section className="cs-section" id="waitlist">
-        <div className="cs-container">
-          <span className="cs-eyebrow">Early access</span>
-          <h2 className="cs-section-title">Run it before anyone else.</h2>
-          <p className="cs-lede" style={{ marginBottom: "var(--cs-space-6)" }}>
-            Join the early-access list. We&apos;ll reach out as the local-first
-            flank opens.
-          </p>
-          <WaitlistForm source="local-first" />
-        </div>
-      </section>
+        </Section>
+      </Reveal>
     </>
   );
 }

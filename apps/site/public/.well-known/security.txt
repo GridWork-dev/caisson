@@ -1,0 +1,7 @@
+# Caisson responsible-disclosure policy (RFC 9116). Plain-text vulnerability-reporting
+# contact for the caisson.sh site and the @caisson/* packages.
+Contact: mailto:security@caisson.sh
+Policy: https://caisson.sh/security
+Expires: 2027-06-27T00:00:00Z
+Preferred-Languages: en
+Canonical: https://caisson.sh/.well-known/security.txt
