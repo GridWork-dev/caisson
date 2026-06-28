@@ -18,6 +18,23 @@
         "zod": "^3.23.8",
       },
     },
+    "apps/agent-dev": {
+      "name": "@caisson/app-agent-dev",
+      "version": "0.0.0",
+      "bin": {
+        "caisson-agent-dev": "./src/index.ts",
+      },
+      "dependencies": {
+        "@caisson/agent-dev": "workspace:*",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
+    },
     "apps/base": {
       "name": "@caisson/app-base",
       "version": "0.0.0",
@@ -419,6 +436,8 @@
     "@caisson/ai-config": ["@caisson/ai-config@workspace:packages/ai-config"],
 
     "@caisson/ai-kit": ["@caisson/ai-kit@workspace:packages/ai-kit"],
+
+    "@caisson/app-agent-dev": ["@caisson/app-agent-dev@workspace:apps/agent-dev"],
 
     "@caisson/app-base": ["@caisson/app-base@workspace:apps/base"],
 
