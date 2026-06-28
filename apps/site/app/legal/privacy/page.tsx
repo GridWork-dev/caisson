@@ -6,7 +6,7 @@ import { Card, Section } from "@/components";
 export const metadata = buildMetadata({
   title: "Privacy Policy",
   description:
-    "How Caisson collects and handles personal data on caisson.sh — waitlist email, cookieless analytics, and your rights under GDPR.",
+    "How Caisson collects and handles personal data on caisson.sh — product-update email, purchase account communications, cookieless analytics, and your rights under GDPR.",
   path: "/legal/privacy",
 });
 
@@ -42,7 +42,7 @@ export default function PrivacyPage() {
       <Section eyebrow="Legal" title="Privacy Policy" flush as="h1">
         <p className="cs-lede" style={{ marginTop: "var(--cs-space-3)" }}>
           Last updated: 27 June 2026. Applies to caisson.sh and the Caisson
-          early-access program.
+          software.
         </p>
       </Section>
 
@@ -59,26 +59,26 @@ export default function PrivacyPage() {
               color: "var(--cs-accent)",
             }}
           >
-            Working draft — operator legal review required before launch
+            Pending final legal review
           </p>
           <p style={{ marginTop: "var(--cs-space-3)", ...prose.paragraph }}>
-            This document is a working draft prepared for review purposes. It is
-            not legal advice and has not been reviewed by Caisson&apos;s legal
-            counsel. Do not rely on it as a final statement of Caisson&apos;s
-            data practices. It will be replaced by a legally reviewed document
-            before the early-access program opens.
+            This policy describes how Caisson handles your data. It is being
+            finalized with legal counsel and may be updated as our data
+            practices are formalized.
           </p>
         </Card>
       </Section>
 
       {/* What we collect */}
       <Section eyebrow="Data" title="What we collect">
-        <h3 style={prose.h3}>Waitlist email address</h3>
+        <h3 style={prose.h3}>Email address</h3>
         <p style={prose.paragraph}>
-          When you submit the early-access form on this site, we collect your
-          email address. That is the only piece of personally identifying
-          information we ask for. We do not collect your name, company, or any
-          payment details at this stage.
+          When you subscribe to product updates or complete a purchase on this
+          site, we collect your email address. That is the only piece of
+          personally identifying information we ask for at the point of sign-up.
+          Purchase checkout collects the additional information necessary to
+          process payment and deliver your license entitlement (handled by our
+          payment processor — we do not store raw payment card data).
         </p>
 
         <h3 style={prose.h3}>Cloudflare infrastructure metadata</h3>
@@ -121,13 +121,17 @@ export default function PrivacyPage() {
 
       {/* Why we collect it */}
       <Section eyebrow="Purpose" title="Why we collect it" band="tint">
-        <h3 style={prose.h3}>Email — early-access notifications</h3>
+        <h3 style={prose.h3}>
+          Email — product updates and account communications
+        </h3>
         <p style={prose.paragraph}>
-          We collect your email address solely to notify you when Caisson opens
-          its early-access program and to send essential updates about that
-          program. We will not send marketing email unrelated to Caisson, sell
-          your address, or share it with third parties except as required to
-          operate the waitlist (Resend — see Data location, below).
+          We collect your email address to send you product-update notifications
+          (new releases, changelog highlights, product news) and to deliver
+          essential account communications such as purchase confirmations,
+          license entitlements, and support correspondence. We will not send
+          marketing email unrelated to Caisson, sell your address, or share it
+          with third parties except as required to operate these communications
+          (Resend — see Data location, below).
         </p>
 
         <h3 style={prose.h3}>Analytics — aggregate site improvement</h3>
@@ -146,11 +150,16 @@ export default function PrivacyPage() {
         </p>
         <ul style={prose.list}>
           <li style={prose.li}>
-            <strong>Email address — consent.</strong> You provided your address
-            by submitting the early-access form, having been told at the point
-            of submission that joining means occasional product email. You may
-            withdraw consent at any time by requesting deletion of your address
-            (see Your rights, below).
+            <strong>Email address (product updates) — consent.</strong> You
+            provided your address by submitting the product-updates form, having
+            been told at the point of submission that signing up means
+            occasional product email. You may withdraw consent at any time by
+            requesting deletion of your address (see Your rights, below).
+          </li>
+          <li style={prose.li}>
+            <strong>Email address (purchase / account) — contract.</strong>{" "}
+            Processing is necessary to perform the contract of sale, deliver
+            your license entitlement, and respond to support requests.
           </li>
           <li style={prose.li}>
             <strong>
@@ -171,20 +180,26 @@ export default function PrivacyPage() {
       {/* Retention */}
       <Section eyebrow="Retention" title="How long we keep it" band="tint">
         <p style={prose.paragraph}>
-          We retain your email address on the waitlist until one of the
+          We retain product-update subscriber email addresses until one of the
           following occurs:
         </p>
         <ul style={prose.list}>
-          <li style={prose.li}>You request deletion.</li>
+          <li style={prose.li}>You unsubscribe or request deletion.</li>
           <li style={prose.li}>
-            The early-access program closes and we have no further basis to
-            retain it.
+            We discontinue the product-update mailing list and have no further
+            basis to retain it.
           </li>
           <li style={prose.li}>
-            Three years pass without the program launching (we will delete the
-            list and notify you).
+            Three years pass without any active communication (we will delete
+            the record and notify you).
           </li>
         </ul>
+        <p style={prose.paragraph}>
+          Purchase and account email addresses are retained for as long as
+          required to fulfill the contract and comply with applicable tax and
+          legal obligations, which may exceed the subscription retention period
+          above.
+        </p>
         <p style={prose.paragraph}>
           Plausible retains aggregate analytics data per their own retention
           policy. Because no PII is collected by Plausible, no individual
@@ -196,7 +211,7 @@ export default function PrivacyPage() {
       <Section eyebrow="Infrastructure" title="Where your data lives">
         <h3 style={prose.h3}>Email — Resend</h3>
         <p style={prose.paragraph}>
-          Waitlist email addresses are stored and managed by{" "}
+          Email addresses are stored and managed by{" "}
           <a
             href="https://resend.com"
             rel="noreferrer"
@@ -245,7 +260,8 @@ export default function PrivacyPage() {
           </li>
           <li style={prose.li}>
             <strong>Erasure.</strong> Request that we delete your email address
-            from the waitlist. We will action this within 30 days.
+            from our records. We will action this within 30 days, subject to any
+            legal retention obligations.
           </li>
           <li style={prose.li}>
             <strong>Portability.</strong> Request your data in a
@@ -259,8 +275,8 @@ export default function PrivacyPage() {
           </li>
           <li style={prose.li}>
             <strong>Withdrawal of consent.</strong> Withdraw the consent on
-            which email processing is based at any time. This does not affect
-            lawfulness of processing before withdrawal.
+            which product-update email processing is based at any time. This
+            does not affect lawfulness of processing before withdrawal.
           </li>
         </ul>
         <p style={{ marginTop: "var(--cs-space-5)", ...prose.paragraph }}>
@@ -284,8 +300,8 @@ export default function PrivacyPage() {
           We will post material changes to this page and update the &ldquo;Last
           updated&rdquo; date. If the change materially affects how we use your
           email address, we will notify you by email before the change takes
-          effect. Continued participation in the early-access program after
-          notice constitutes acceptance of the updated policy.
+          effect. Continued use of the site after notice constitutes acceptance
+          of the updated policy.
         </p>
       </Section>
 
@@ -304,7 +320,7 @@ export default function PrivacyPage() {
           </a>
         </p>
         <p style={{ marginTop: "var(--cs-space-5)", ...prose.paragraph }}>
-          For general questions about the product or early-access program, use{" "}
+          For general questions about the product, use{" "}
           <a href="/docs" style={{ color: "var(--cs-accent)" }}>
             the docs
           </a>{" "}

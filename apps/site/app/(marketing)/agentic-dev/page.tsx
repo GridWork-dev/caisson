@@ -8,10 +8,9 @@ import {
   StatusChip,
   Terminal,
 } from "@/components";
-import { WaitlistForm } from "@/components/waitlist-form";
+import { UpdatesForm } from "@/components/waitlist-form";
 import { breadcrumb, serializeJsonLd, softwareApplication } from "@/lib/jsonld";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
-import { PRICING_DISCLAIMER_SHORT } from "@/lib/pricing";
 
 export const metadata = buildMetadata({
   title: "Agentic-Dev",
@@ -88,9 +87,8 @@ export default function AgenticDevPage() {
   const appLd = softwareApplication({
     name: "Caisson Agentic-Dev",
     description:
-      "A governed-agent kernel: typed agent/skill/rule schema, guarded lifecycle state machine, local hybrid memory, and a hooks dispatcher.",
+      "A governed-agent kernel: typed agent/skill/rule schema, guarded lifecycle state machine, local hybrid memory, and a hooks dispatcher. Roadmap — not yet available.",
     url: `${SITE_URL}/agentic-dev`,
-    priceId: "agentic-dev",
   });
 
   const bcLd = breadcrumb([
@@ -122,15 +120,15 @@ export default function AgenticDevPage() {
         }
         ctas={
           <>
-            <Button href="#waitlist" variant="primary">
-              Get notified
-            </Button>
             <Button
               href="https://github.com/GridWork-dev/caisson"
-              variant="ghost"
+              variant="primary"
               external
             >
               Follow on GitHub
+            </Button>
+            <Button href="#updates" variant="ghost">
+              Get product updates
             </Button>
           </>
         }
@@ -296,22 +294,13 @@ export default function AgenticDevPage() {
                 >
                   {body}
                 </p>
-                <p
-                  className="cs-footnote"
-                  style={{ marginTop: "var(--cs-space-3)" }}
-                >
-                  Early access — join the waitlist
-                </p>
               </Card>
             ))}
           </div>
-          <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
-            {PRICING_DISCLAIMER_SHORT}
-          </p>
         </Section>
       </Reveal>
 
-      {/* ===== FAQ (visible; also emitted as JSON-LD above for AI retrieval) ===== */}
+      {/* ===== FAQ ===== */}
       <Reveal>
         <Section eyebrow="Questions" title="Common questions." band="tint">
           <div
@@ -338,14 +327,31 @@ export default function AgenticDevPage() {
         </Section>
       </Reveal>
 
-      {/* ===== Waitlist ===== */}
-      <Section eyebrow="Early access" id="waitlist">
-        <h2 className="cs-section-title">Get the kernel when it opens.</h2>
+      {/* ===== Follow / product updates ===== */}
+      <Section eyebrow="Roadmap" id="updates">
+        <h2 className="cs-section-title">Follow the build.</h2>
         <p className="cs-lede" style={{ marginBottom: "var(--cs-space-6)" }}>
-          Agentic-Dev is on the roadmap, post-wedge. Join the list — we reach
-          out when it ships.
+          Agentic-Dev is on the roadmap, shipping after the Compliance wedge is
+          proven in production. Watch the repo for milestones, or subscribe for
+          low-frequency product updates.
         </p>
-        <WaitlistForm source="agentic-dev" />
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--cs-space-4)",
+            alignItems: "flex-start",
+          }}
+        >
+          <Button
+            href="https://github.com/GridWork-dev/caisson"
+            variant="primary"
+            external
+          >
+            Follow development on GitHub
+          </Button>
+          <UpdatesForm source="agentic-dev" />
+        </div>
       </Section>
     </>
   );

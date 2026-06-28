@@ -9,14 +9,12 @@ import {
   StatusChip,
   Terminal,
 } from "@/components";
-import { WaitlistForm } from "@/components/waitlist-form";
+import { UpdatesForm } from "@/components/waitlist-form";
 import { breadcrumb, serializeJsonLd, softwareApplication } from "@/lib/jsonld";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import {
   EDITION_PRICES,
   PLAN_PRICES,
-  PRICING_DISCLAIMER,
-  PRICING_DISCLAIMER_SHORT,
   formatPrice,
   priceById,
 } from "@/lib/pricing";
@@ -24,7 +22,7 @@ import {
 export const metadata = buildMetadata({
   title: "Pricing",
   description:
-    "Caisson edition licenses one-time perpetual, an everything bundle, per-module à la carte, and two subscription plans. Indicative pricing — final numbers set before launch.",
+    "Caisson edition licenses: one-time perpetual, an everything bundle, per-module à la carte, and two subscription plans. Own the source — no renewal gate.",
   path: "/pricing",
 });
 
@@ -49,8 +47,8 @@ const EDITION_META: readonly EditionMeta[] = [
     id: "compliance",
     tag: "Hero edition",
     accent: true,
-    cta: "Request early access",
-    ctaHref: "#waitlist",
+    cta: "Get Compliance",
+    ctaHref: "#compliance",
     includes: [
       "Fail-closed Postgres RLS (FORCE) + cross-tenant isolation tests",
       "S3 Object-Lock WORM evidence store, COMPLIANCE mode",
@@ -63,8 +61,8 @@ const EDITION_META: readonly EditionMeta[] = [
     id: "ai-kit",
     tag: "Edition #2",
     accent: false,
-    cta: "Request early access",
-    ctaHref: "#waitlist",
+    cta: "Get AI Kit",
+    ctaHref: "#ai-kit",
     includes: [
       "Provider-agnostic AI config + PG-atomic token metering",
       "Spend caps and per-tenant circuit breaker",
@@ -75,24 +73,24 @@ const EDITION_META: readonly EditionMeta[] = [
   },
   {
     id: "local-first",
-    tag: "Free · AGPL",
+    tag: "Edition #3",
     accent: false,
-    cta: "Read the docs",
-    ctaHref: "/docs",
+    cta: "Get Local-first AI",
+    ctaHref: "#local-first",
     includes: [
       "Compute seam — same code, on-device or hosted",
       "Privacy gate enforcing the no-egress boundary",
       "sqlite-vec ANN for on-device vector search",
       "Offline license + local store",
-      "AGPL core — fork it, run it, ship it",
+      "Commercial license — own the source, ship your product closed",
     ],
   },
   {
     id: "agentic-dev",
     tag: "Roadmap",
     accent: false,
-    cta: "Join the list",
-    ctaHref: "#waitlist",
+    cta: "Follow development on GitHub",
+    ctaHref: "https://github.com/GridWork-dev/caisson",
     includes: [
       "Typed agent / skill / rule schema",
       "Lifecycle state machine for governed runs",
@@ -135,7 +133,7 @@ const SUB_META: readonly SubMeta[] = [
 ] as const;
 
 // ---- SKU matrix ----
-// Rows ordered: shared base first, then per-edition modules, then indicative price.
+// Rows ordered: shared base first, then per-edition modules, then starting price.
 const SKU_COLUMNS = [
   "Compliance",
   "AI Kit",
@@ -180,18 +178,18 @@ const SKU_ROWS: readonly {
     cells: [false, false, false, true],
   },
   {
-    label: "Indicative price",
+    label: "Starting price",
     cells: [
       editionPrice("compliance"),
       editionPrice("ai-kit"),
-      "Free",
+      editionPrice("local-first"),
       editionPrice("agentic-dev"),
     ],
   },
 ];
 
 export default function PricingPage() {
-  // JSON-LD — breadcrumb + one SoftwareApplication per paid edition
+  // JSON-LD — breadcrumb + one SoftwareApplication per edition
   const breadcrumbNode = breadcrumb([
     { name: "Home", path: "/" },
     { name: "Pricing", path: "/pricing" },
@@ -226,21 +224,6 @@ export default function PricingPage() {
         />
       ))}
 
-      {/* ===== Pricing disclaimer banner — prominent per ADR-0081 ===== */}
-      <Section band="tint" flush>
-        <p
-          role="note"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "var(--cs-space-3)",
-            margin: 0,
-          }}
-        >
-          <StatusChip label={PRICING_DISCLAIMER} tone="muted" dot />
-        </p>
-      </Section>
-
       {/* ===== Hero ===== */}
       <Hero
         eyebrow="Pricing"
@@ -248,8 +231,8 @@ export default function PricingPage() {
         lede="Buy an edition outright — perpetual source, no renewal gate. Or layer a subscription for the framework updates and developer credits that keep it current."
         ctas={
           <>
-            <Button href="#waitlist" variant="primary">
-              Request early access
+            <Button href="#editions" variant="primary">
+              Get started
             </Button>
             <Button href="/docs" variant="ghost">
               Read the docs
@@ -258,24 +241,22 @@ export default function PricingPage() {
         }
         artifact={
           <Terminal
-            label="caisson entitlements"
-            status={<StatusChip label="active" tone="success" dot />}
+            label="editions"
+            status={<StatusChip label="available" tone="success" dot />}
           >
-            {"$ caisson entitlements\nedition."}
+            {"edition."}
             <span className="cs-tok-accent">compliance</span>
-            {"        owned     "}
-            <span className="cs-tok-muted">one-time</span>
-            {"\nsub."}
-            <span className="cs-tok-accent">compliance-updates</span>
-            {"    "}
-            <span className="cs-tok-success">active</span>
-            {"    framework-maps @ 2026.6\nsub."}
-            <span className="cs-tok-accent">developer</span>
-            {"             "}
-            <span className="cs-tok-success">active</span>
-            {"    private-registry + credits\naddon.eu-ai-act           "}
-            <span className="cs-tok-muted">available</span>
-            {" registry-gated"}
+            {"        from $1,299   perpetual\nedition."}
+            <span className="cs-tok-accent">ai-kit</span>
+            {"             from $599     perpetual\nedition."}
+            <span className="cs-tok-accent">local-first</span>
+            {"        from $499     perpetual\nedition."}
+            <span className="cs-tok-accent">agentic-dev</span>
+            {"        "}
+            <span className="cs-tok-muted">roadmap</span>
+            {
+              "\nsub.compliance-updates    $199/mo    framework maps\nsub.developer             $99/mo     credits + registry"
+            }
           </Terminal>
         }
       />
@@ -321,7 +302,7 @@ export default function PricingPage() {
                       </span>
                     </div>
 
-                    {/* Indicative price */}
+                    {/* Price */}
                     <p
                       className="cs-num"
                       style={{
@@ -332,16 +313,6 @@ export default function PricingPage() {
                       }}
                     >
                       {price ? formatPrice(price) : "—"}
-                    </p>
-                    <p
-                      style={{
-                        marginTop: "var(--cs-space-1)",
-                        fontSize: "var(--cs-text-xs)",
-                        fontFamily: "var(--cs-font-mono)",
-                        color: "var(--cs-fg-muted)",
-                      }}
-                    >
-                      {PRICING_DISCLAIMER_SHORT}
                     </p>
 
                     {/* Includes list */}
@@ -393,17 +364,11 @@ export default function PricingPage() {
         <Section
           eyebrow="What&rsquo;s in each edition"
           title="Compose, don&rsquo;t fork."
-          lede="The base substrate ships with every edition. Module rows show which controls land in which edition. The price row uses indicative anchors."
+          lede="The base substrate ships with every edition. Module rows show which controls land in which edition."
           band="surface"
         >
           <div style={{ marginTop: "var(--cs-space-8)" }}>
             <SkuMatrix columns={[...SKU_COLUMNS]} rows={SKU_ROWS} />
-            <p
-              className="cs-footnote"
-              style={{ marginTop: "var(--cs-space-5)" }}
-            >
-              {PRICING_DISCLAIMER}
-            </p>
           </div>
         </Section>
       </Reveal>
@@ -496,16 +461,9 @@ export default function PricingPage() {
                 ))}
               </ul>
 
-              <p
-                className="cs-footnote"
-                style={{ marginTop: "var(--cs-space-4)" }}
-              >
-                {PRICING_DISCLAIMER_SHORT}
-              </p>
-
               <div style={{ marginTop: "var(--cs-space-6)" }}>
-                <Button href="#waitlist" variant="primary">
-                  Request early access
+                <Button href="#editions" variant="primary">
+                  Get started
                 </Button>
               </div>
             </Card>
@@ -563,16 +521,9 @@ export default function PricingPage() {
                 ))}
               </ul>
 
-              <p
-                className="cs-footnote"
-                style={{ marginTop: "var(--cs-space-4)" }}
-              >
-                {PRICING_DISCLAIMER_SHORT}
-              </p>
-
               <div style={{ marginTop: "var(--cs-space-6)" }}>
-                <Button href="#waitlist" variant="ghost">
-                  Join the list
+                <Button href="#subscriptions" variant="ghost">
+                  Subscribe
                 </Button>
               </div>
             </Card>
@@ -582,6 +533,7 @@ export default function PricingPage() {
 
       {/* ===== Subscription plans — detail cards ===== */}
       <Section
+        id="subscriptions"
         eyebrow="Subscriptions"
         title="Two recurring SKUs, two jobs."
         lede="Compliance Updates keeps the control mappings current. The Developer plan keeps your build fed. Buy either, both, or neither."
@@ -595,82 +547,77 @@ export default function PricingPage() {
             const plan = PLAN_PRICES.find((p) => p.id === sub.id);
             return (
               <Reveal key={sub.id} delay={i * 80}>
-                <Card>
-                  {/* Name + price on one row */}
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "baseline",
-                      gap: "var(--cs-space-3)",
-                    }}
-                  >
-                    <span className="cs-card-title">
-                      {plan?.label ?? sub.id}
-                    </span>
-                    {plan && (
-                      <span
-                        className="cs-num"
-                        style={{
-                          fontFamily: "var(--cs-font-mono)",
-                          fontSize: "var(--cs-text-xl)",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {formatPrice(plan)}
+                <div id={sub.id}>
+                  <Card>
+                    {/* Name + price on one row */}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "baseline",
+                        gap: "var(--cs-space-3)",
+                      }}
+                    >
+                      <span className="cs-card-title">
+                        {plan?.label ?? sub.id}
                       </span>
-                    )}
-                  </div>
+                      {plan && (
+                        <span
+                          className="cs-num"
+                          style={{
+                            fontFamily: "var(--cs-font-mono)",
+                            fontSize: "var(--cs-text-xl)",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {formatPrice(plan)}
+                        </span>
+                      )}
+                    </div>
 
-                  <p
-                    className="cs-muted"
-                    style={{
-                      marginTop: "var(--cs-space-3)",
-                      fontSize: "var(--cs-text-sm)",
-                    }}
-                  >
-                    {sub.audience}
-                  </p>
+                    <p
+                      className="cs-muted"
+                      style={{
+                        marginTop: "var(--cs-space-3)",
+                        fontSize: "var(--cs-text-sm)",
+                      }}
+                    >
+                      {sub.audience}
+                    </p>
 
-                  <ul
-                    style={{
-                      margin: "var(--cs-space-4) 0 0",
-                      padding: 0,
-                      listStyle: "none",
-                      display: "grid",
-                      gap: "var(--cs-space-2)",
-                    }}
-                  >
-                    {sub.includes.map((item) => (
-                      <li
-                        key={item}
-                        className="cs-muted"
-                        style={{
-                          display: "flex",
-                          gap: "var(--cs-space-2)",
-                          fontSize: "var(--cs-text-sm)",
-                          lineHeight: "var(--cs-leading-snug)",
-                        }}
-                      >
-                        <Icon name="check" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
+                    <ul
+                      style={{
+                        margin: "var(--cs-space-4) 0 0",
+                        padding: 0,
+                        listStyle: "none",
+                        display: "grid",
+                        gap: "var(--cs-space-2)",
+                      }}
+                    >
+                      {sub.includes.map((item) => (
+                        <li
+                          key={item}
+                          className="cs-muted"
+                          style={{
+                            display: "flex",
+                            gap: "var(--cs-space-2)",
+                            fontSize: "var(--cs-text-sm)",
+                            lineHeight: "var(--cs-leading-snug)",
+                          }}
+                        >
+                          <Icon name="check" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
 
-                  <p
-                    className="cs-footnote"
-                    style={{ marginTop: "var(--cs-space-4)" }}
-                  >
-                    {PRICING_DISCLAIMER_SHORT}
-                  </p>
-
-                  <div style={{ marginTop: "var(--cs-space-6)" }}>
-                    <Button href="#waitlist" variant="ghost">
-                      Join the list
-                    </Button>
-                  </div>
-                </Card>
+                    <div style={{ marginTop: "var(--cs-space-6)" }}>
+                      <Button href={`#${sub.id}`} variant="ghost">
+                        Subscribe
+                      </Button>
+                    </div>
+                  </Card>
+                </div>
               </Reveal>
             );
           })}
@@ -684,20 +631,45 @@ export default function PricingPage() {
         </p>
       </Section>
 
-      {/* ===== Waitlist ===== */}
+      {/* ===== Get started ===== */}
       <Reveal>
         <Section
-          id="waitlist"
-          eyebrow="Early access"
-          title="Numbers land with the invite."
-          lede="Join the early-access list. We&rsquo;ll send pricing and an editions walkthrough as each one opens."
+          id="get-started"
+          eyebrow="Get started"
+          title="Start building on the audited substrate."
+          lede="The base is built and tested. Pick an edition, scaffold a project, and own the source from day one."
         >
           <div style={{ marginTop: "var(--cs-space-6)" }}>
-            <WaitlistForm source="pricing" />
+            <Terminal
+              label="npx create-caisson@latest"
+              status={<StatusChip label="ready" tone="success" dot />}
+            >
+              {
+                "$ npx create-caisson@latest\n✓ Caisson base substrate initialized\n✓ Fail-closed RLS (FORCE) + cross-tenant isolation tests\n✓ Append-only audit chain — SHA-256 verified\n✓ Field encryption — per-tenant DEK (HKDF-SHA256)\n✓ Standards gate — lint · test · golden-file"
+              }
+            </Terminal>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              gap: "var(--cs-space-3)",
+              flexWrap: "wrap",
+              marginTop: "var(--cs-space-6)",
+            }}
+          >
+            <Button href="#compliance" variant="primary">
+              Get Compliance
+            </Button>
+            <Button href="/docs" variant="ghost">
+              Read the docs
+            </Button>
           </div>
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-8)" }}>
             And yes — it&rsquo;s a better base than the $199 kits.
           </p>
+          <div style={{ marginTop: "var(--cs-space-8)" }}>
+            <UpdatesForm source="pricing" />
+          </div>
         </Section>
       </Reveal>
     </>

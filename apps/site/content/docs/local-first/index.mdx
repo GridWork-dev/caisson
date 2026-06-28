@@ -1,12 +1,7 @@
 ---
 title: Local-first AI
-description: On-device inference and vector search behind a privacy gate that keeps data on the machine. AGPL open-core.
+description: On-device inference and vector search behind a privacy gate that keeps data on the machine. Own the source.
 ---
-
-<Callout type="info">
-  Caisson is pre-launch. This page describes `@caisson/local-ai`. The full API
-  reference lands at general availability.
-</Callout>
 
 `@caisson/local-ai` is the **Local-first AI** edition: a compute seam, a privacy gate, on-device
 vector search, an offline license check, and a local store. Inference and retrieval run on the
@@ -47,19 +42,19 @@ const hits = await ai.search("quarterly variance", { topK: 5 });
 
 ## License
 
-`@caisson/local-ai` is **AGPL-3.0** open-core — the free flank. Source is open under the AGPL; a
-network-deployed derivative must publish its source under the same terms. A commercial license and a
-credits path remove the AGPL copyleft for closed deployments.
+`@caisson/local-ai` ships under the **Caisson Commercial License**
+(`LicenseRef-Caisson-Commercial`) — own the source, build unlimited products, no redistribution of
+the kit. The same one-time perpetual model as every other edition; your data never leaves the device.
 
 <Callout type="info">
-  The commercial license and credits path are in early access — join the
-  waitlist. Pricing is not set yet; no numbers are published here.
+  Local-first AI is **from $499**, one-time. See [pricing](/pricing) for the
+  editions, the everything bundle, and per-module options.
 </Callout>
 
 <Callout type="warn">
-  Placeholder — the full `@caisson/local-ai` API reference (compute-seam
-  adapters, the privacy-gate policy schema, the `sqlite-vec` index format, and
-  the offline-license record) lands at general availability.
+  This page previews the `@caisson/local-ai` surface. The full API reference —
+  compute-seam adapters, the privacy-gate policy schema, the `sqlite-vec` index
+  format, and the offline-license record — is still expanding.
 </Callout>
 
 ## Next steps

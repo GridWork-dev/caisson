@@ -10,23 +10,24 @@ import {
 } from "@/components";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import { breadcrumb, serializeJsonLd, softwareApplication } from "@/lib/jsonld";
+import { formatPrice, priceById } from "@/lib/pricing";
 
 export const metadata = buildMetadata({
   title: "Local-first AI",
   description:
-    "Compute seam, default-deny privacy gate, on-device vector search with sqlite-vec, and offline license verification — free under AGPL, available on GitHub now.",
+    "Own the source. On-device inference behind a compute seam, a default-deny privacy gate, and on-device vector search with sqlite-vec — your data never leaves the device.",
   path: "/local-first",
 });
 
-const GITHUB_URL = "https://github.com/GridWork-dev/caisson";
 const PAGE_URL = `${SITE_URL}/local-first`;
+const localFirstPrice = priceById("local-first");
 
 const ldApp = softwareApplication({
   name: "Caisson Local-first AI",
   description:
-    "A composable compute seam, default-deny privacy gate, on-device vector search (sqlite-vec), and offline license verification. Free under AGPL-3.0.",
+    "Own the source: a composable compute seam over on-device and hosted inference, a default-deny privacy gate, and on-device vector search (sqlite-vec). Your data never leaves the device.",
   url: PAGE_URL,
-  // No priceId — free tier carries no offer price
+  priceId: "local-first",
 });
 
 const ldBreadcrumb = breadcrumb([
@@ -39,7 +40,7 @@ const PIECES = [
   {
     icon: "server" as const,
     label: "Compute seam",
-    body: "One interface over local and hosted inference. Local is the default you ship; hosted is an opt-in you make on purpose — not a default you discover in a network trace.",
+    body: "One interface over on-device and hosted inference. Local is the default you ship; hosted is an opt-in you make on purpose — not a default you discover in a network trace.",
   },
   {
     icon: "lock" as const,
@@ -73,102 +74,65 @@ export default function LocalFirstPage() {
 
       {/* ===== Hero ===== */}
       <Hero
-        eyebrow="Local-first AI · Open core"
+        eyebrow="Local-first AI · Own the source"
         title="Your data never leaves the device."
         lede="Inference, embeddings, and search that run on the machine in front of you. Sovereignty is the default — not a setting you harden in later. The egress is zero because there is no outbound call to make."
         ctas={
           <>
-            <Button href={GITHUB_URL} variant="primary" external>
-              View on GitHub
+            <Button href="/pricing" variant="primary">
+              Get Local-first AI
             </Button>
             <Button href="/docs/local-first" variant="ghost">
               Read the docs
             </Button>
           </>
         }
-        credentials={<StatusChip tone="success" label="Free · AGPL-3.0" dot />}
+        credentials={
+          <StatusChip
+            tone="accent"
+            label={
+              localFirstPrice
+                ? `Own the source · ${formatPrice(localFirstPrice)}`
+                : "Own the source"
+            }
+            dot
+          />
+        }
         artifact={
           <Terminal
-            label="caisson where-compute"
-            status={<StatusChip tone="success" label="local-only" dot />}
+            label="@caisson/field-crypto"
+            status={<StatusChip tone="success" label="sealed per-tenant" dot />}
           >
-            {"$ caisson where-compute\n"}
-            <span className="cs-tok-accent">{"seam      "}</span>
-            {"local          "}
             <span className="cs-tok-muted">
-              {"# swappable; hosted is opt-in\n"}
+              {'import { TenantFieldCrypto } from "@caisson/field-crypto"\n\n'}
             </span>
-            <span className="cs-tok-accent">{"embed     "}</span>
-            {"sqlite-vec     "}
-            <span className="cs-tok-muted">{"# ANN index on disk\n"}</span>
-            <span className="cs-tok-accent">{"license   "}</span>
-            {"offline        "}
+            <span className="cs-tok-accent">{"const"}</span>
+            {" env = "}
+            <span className="cs-tok-accent">{"await"}</span>
+            {' fc.encryptField(tenant, "record", "notes")\n'}
             <span className="cs-tok-muted">
-              {"# verifies air-gapped, no phone-home\n"}
+              {"// v1 · aes-256-gcm · per-tenant key · AAD-bound  "}
             </span>
-            <span className="cs-tok-accent">{"egress    "}</span>
-            <span className="cs-tok-success">{"none"}</span>
-            {"           "}
-            <span className="cs-tok-muted">{"# 0 outbound connections"}</span>
+            <span className="cs-tok-success">{"← sealed at rest\n\n"}</span>
+            <span className="cs-tok-accent">{"await"}</span>
+            {" fc.decryptField(otherTenant, env, "}
+            <span className="cs-tok-accent">{'"notes"'}</span>
+            {")\n"}
+            <span className="cs-tok-muted">
+              {"// cross-tenant key — open "}
+            </span>
+            <span className="cs-tok-danger">{"refused"}</span>
+            <span className="cs-tok-muted">{"  ← isolation proof"}</span>
           </Terminal>
         }
       />
 
-      {/* ===== Open on GitHub NOW — resolve the AGPL contradiction ===== */}
-      <Section
-        eyebrow="Open core · AGPL-3.0"
-        title="On GitHub. Free. Now."
-        lede={
-          <>
-            <code className="mono">@caisson/local-first</code> is available
-            today on GitHub under AGPL-3.0 — read it, fork it, run it
-            air-gapped. The paid editions (Compliance, AI Production Kit,
-            Agentic-Dev) are early-access and carry commercial terms. The
-            local-first flank is free on purpose.
-          </>
-        }
-        band="tint"
-      >
-        <div
-          style={{
-            display: "flex",
-            gap: "var(--cs-space-3)",
-            marginTop: "var(--cs-space-6)",
-            flexWrap: "wrap",
-          }}
-        >
-          <Button href={GITHUB_URL} variant="primary" external>
-            GridWork-dev/caisson on GitHub
-          </Button>
-          <Button href="/pricing" variant="ghost">
-            Compare editions
-          </Button>
-        </div>
-        <Terminal
-          label="package @caisson/local-first"
-          status={<StatusChip tone="success" label="available now" dot />}
-        >
-          <span className="cs-tok-muted">{"package   "}</span>
-          {"@caisson/local-first\n"}
-          <span className="cs-tok-muted">{"license   "}</span>
-          <span className="cs-tok-accent">{"AGPL-3.0-only"}</span>
-          {"\n"}
-          <span className="cs-tok-muted">{"source    "}</span>
-          {"github.com/GridWork-dev/caisson\n"}
-          <span className="cs-tok-muted">{"status    "}</span>
-          <span className="cs-tok-success">{"available now"}</span>
-          {"\n"}
-          <span className="cs-tok-muted">{"terms     "}</span>
-          {"free · forever · network use carries source obligations"}
-        </Terminal>
-      </Section>
-
       {/* ===== Four pieces ===== */}
       <Reveal>
         <Section
-          eyebrow="What's in the flank"
+          eyebrow="What's in the edition"
           title="Four pieces. All on the device."
-          lede="Each module is built to do its job without a network. Compose them, or take a single package — the data path never widens past the disk."
+          lede="Each piece does its job without a network. Compose them, or take a single module — the data path never widens past the disk."
         >
           <div
             className="cs-grid cs-grid--2"
@@ -201,20 +165,22 @@ export default function LocalFirstPage() {
         </Section>
       </Reveal>
 
-      {/* ===== On-device vector search evidence ===== */}
+      {/* ===== On-device vector search (illustrative shape) ===== */}
       <Reveal>
         <Section
           eyebrow="On-device vector search"
           title="Semantic recall that never round-trips."
-          lede="sqlite-vec holds the ANN index next to your rows. A query is a statement against a local file — no API key, no vector vendor, no embeddings shipped off the box to be indexed by someone else."
+          lede="sqlite-vec holds the ANN index next to your rows. A query is a statement against a local file — no API key, no vector vendor, no embeddings shipped off the box to be indexed by someone else. The shape below is illustrative."
           band="surface"
         >
           <Terminal
-            label="sqlite-vec ANN query"
-            status={<StatusChip tone="muted" label="0 outbound connections" />}
+            label="sqlite-vec ANN — illustrative shape"
+            status={<StatusChip tone="muted" label="on-disk index" />}
           >
             <span className="cs-tok-muted">
-              {"-- ANN over the local store; nothing leaves the process\n"}
+              {
+                "-- ANN over the local store; the index lives next to your rows\n"
+              }
             </span>
             <span className="cs-tok-accent">{"SELECT"}</span>
             {" id, distance\n"}
@@ -231,60 +197,61 @@ export default function LocalFirstPage() {
             <span className="cs-tok-accent">{"LIMIT"}</span>
             {"  8;\n"}
             <span className="cs-tok-muted">
-              {"-- index on disk · 0 outbound connections"}
+              {"-- index on disk · nothing shipped to a vector cloud"}
             </span>
           </Terminal>
         </Section>
       </Reveal>
 
-      {/* ===== Privacy gate deep-dive ===== */}
+      {/* ===== Fail-closed by construction — real built substrate ===== */}
       <Reveal>
         <Section
-          eyebrow="Default-deny privacy gate"
-          title="Nothing egresses unless you said so."
-          lede="The privacy gate is a policy boundary every payload must cross before it can reach a network socket. Hosts are deny-listed by default; you allow them in a typed config, not at call-time in an if-block someone forgets to update."
+          eyebrow="Default-deny, by construction"
+          title="Fail-closed is how the base already behaves."
+          lede="Default-deny is not a promise — it is how the base substrate behaves today. A cross-tenant read is refused at the database, fail-closed by construction. The privacy gate extends that same posture to network egress: hosts are deny-listed by default, allowed only in a typed config."
         >
           <Terminal
-            label="privacy-gate config"
-            status={<StatusChip tone="accent" label="deny-all default" dot />}
+            label="cross-tenant read"
+            status={<StatusChip tone="muted" label="denied" dot />}
           >
-            <span className="cs-tok-muted">{"// caisson.config.ts\n"}</span>
-            <span className="cs-tok-accent">{"privacyGate"}</span>
-            {": {\n"}
-            {"  "}
             <span className="cs-tok-muted">
-              {"// default: deny all hosts\n"}
+              {"-- session scoped to tenant A; reach for tenant B's rows\n"}
             </span>
-            {"  "}
-            <span className="cs-tok-accent">{"allowHosts"}</span>
-            {": [\n"}
-            {"    "}
-            <span className="cs-tok-success">
-              {'"api.internal.example.com"'}
+            <span className="cs-tok-accent">{"SELECT"}</span>
+            {" * "}
+            <span className="cs-tok-accent">{"FROM"}</span>
+            {" records "}
+            <span className="cs-tok-accent">{"WHERE"}</span>
+            {" tenant_id = "}
+            <span className="cs-tok-success">{"'tenant_b'"}</span>
+            {";\n"}
+            <span className="cs-tok-danger">
+              {"ERROR:  permission denied for table records\n"}
             </span>
-            {",\n"}
-            {"  ],\n"}
-            {"  "}
-            <span className="cs-tok-accent">{"onViolation"}</span>
-            {": "}
-            <span className="cs-tok-danger">{'"throw"'}</span>
-            {",  "}
             <span className="cs-tok-muted">
-              {"// fail-closed by construction\n"}
+              {'DETAIL: RLS policy "tenant_isolation" forbids the read'}
             </span>
-            {"}"}
           </Terminal>
         </Section>
       </Reveal>
 
-      {/* ===== Paid editions CTA (scoped — not confused with the free tier) ===== */}
+      {/* ===== Get started ===== */}
       <Reveal>
         <Section
-          eyebrow="Paid editions — early access"
-          title="Need compliance controls or a hosted inference layer?"
-          lede="The paid editions — Compliance, AI Production Kit, and Agentic-Dev — extend the open core with commercial modules: fail-closed RLS, WORM audit chain, hosted inference routing, and agentic scaffolding. Early-access slots are open."
+          eyebrow="Get started"
+          title="Own the source. Run it on your machine."
+          lede="Local-first AI is a commercial edition — own the source, ship on-device inference behind the privacy gate, and keep your data on the box. Scaffold the base, then add the edition."
           band="tint"
         >
+          <Terminal
+            label="install"
+            status={<StatusChip tone="muted" label="scaffold" />}
+          >
+            <span className="cs-tok-muted">{"$ "}</span>
+            {"npx "}
+            <span className="cs-tok-accent">{"create-caisson"}</span>
+            {"@latest"}
+          </Terminal>
           <div
             style={{
               display: "flex",
@@ -294,7 +261,7 @@ export default function LocalFirstPage() {
             }}
           >
             <Button href="/pricing" variant="primary">
-              Compare editions
+              Get Local-first AI
             </Button>
             <Button href="/docs/local-first" variant="ghost">
               Read the docs

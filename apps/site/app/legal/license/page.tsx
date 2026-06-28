@@ -1,12 +1,12 @@
 import type { CSSProperties } from "react";
 
 import { buildMetadata } from "@/lib/metadata";
-import { Button, Card, Section, StatusChip } from "@/components";
+import { Card, Section, StatusChip } from "@/components";
 
 export const metadata = buildMetadata({
   title: "License",
   description:
-    "Caisson commercial license summary — what you may build, what you may not redistribute, and the AGPL open-core for the Local-first AI edition.",
+    "Caisson commercial license summary — what you may build with the kit and what you may not redistribute. One perpetual license across the whole library.",
   path: "/legal/license",
 });
 
@@ -40,8 +40,8 @@ export default function LicensePage() {
       {/* Page header */}
       <Section eyebrow="Legal" title="License" flush as="h1">
         <p className="cs-lede" style={{ marginTop: "var(--cs-space-3)" }}>
-          A plain-language summary of the Caisson Commercial License and the
-          AGPL open-core for the Local-first AI edition.
+          A plain-language summary of the Caisson Commercial License — one
+          perpetual license across every edition and module.
         </p>
       </Section>
 
@@ -58,14 +58,14 @@ export default function LicensePage() {
               color: "var(--cs-accent)",
             }}
           >
-            Working draft — operator legal review required before launch
+            Summary only — the EULA is the binding document
           </p>
           <p style={{ marginTop: "var(--cs-space-3)", ...prose.paragraph }}>
-            This page summarises the licensing model adopted in ADR-0023. It is
-            a working draft for review purposes and is not a substitute for the
-            full Commercial License Agreement (&ldquo;EULA&rdquo;), which will
-            be published before any sale. The EULA text is the binding document;
-            this summary is informational only.
+            This page is a plain-language summary of the Caisson Commercial
+            License. It is informational and is not a substitute for the full
+            Commercial License Agreement (&ldquo;EULA&rdquo;), which is the
+            binding document and is provided at purchase. Where this summary and
+            the EULA differ, the EULA governs.
           </p>
         </Card>
       </Section>
@@ -73,20 +73,19 @@ export default function LicensePage() {
       {/* Overview */}
       <Section eyebrow="Overview" title="The licensing model">
         <p style={prose.paragraph}>
-          Caisson is a fully commercial developer library. Every module ships
-          under a proprietary Commercial License (
-          <code className="mono">LicenseRef-Caisson-Commercial</code>), except
-          for one deliberate open-core flank: the{" "}
+          Caisson is a fully commercial developer library. Every module —
+          including the{" "}
           <a href="/local-first" style={{ color: "var(--cs-accent)" }}>
             Local-first AI edition
-          </a>
-          , which is dual-licensed under AGPL-3.0-only.
+          </a>{" "}
+          — ships under a single proprietary Commercial License (
+          <code className="mono">LicenseRef-Caisson-Commercial</code>). There is
+          no AGPL, free, or permissive tier.
         </p>
         <p style={prose.paragraph}>
-          There is no free permissive tier (no Apache-2.0 or MIT core). The
-          model is the commercial kit pattern: you purchase, you build, you ship
-          your own products without per-seat or per-project fees — but you do
-          not redistribute or resell the kit itself.
+          The model is the commercial kit pattern: you purchase, you build, you
+          ship your own products without per-seat or per-project fees — but you
+          do not redistribute or resell the kit itself.
         </p>
       </Section>
 
@@ -187,72 +186,13 @@ export default function LicensePage() {
         </ul>
       </Section>
 
-      {/* AGPL edition */}
-      <Section
-        eyebrow="Open core"
-        title="Local-first AI — AGPL-3.0"
-        band="tint"
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "var(--cs-space-3)",
-            marginTop: "var(--cs-space-4)",
-          }}
-        >
-          <StatusChip label="AGPL-3.0-only" tone="accent" dot />
-          <StatusChip label="Open source" tone="success" />
-        </div>
-        <p style={{ marginTop: "var(--cs-space-5)", ...prose.paragraph }}>
-          The Local-first AI edition is the single exception to the
-          fully-commercial model. It is dual-licensed:
-        </p>
-        <ul style={prose.list}>
-          <li style={prose.li}>
-            <strong>
-              AGPL-3.0-only (open source, free to use under copyleft).
-            </strong>{" "}
-            If you use the Local-first AI edition in a product you distribute or
-            deploy as a network service, you must release your modifications and
-            the source of any work that incorporates it under AGPL-3.0. This is
-            standard AGPL copyleft — not a Caisson restriction.
-          </li>
-          <li style={prose.li}>
-            <strong>Commercial license (optional, paid).</strong> If AGPL
-            copyleft is incompatible with your product model — e.g., you are
-            building a closed-source SaaS — you may purchase a commercial
-            license for the Local-first AI edition that removes the copyleft
-            obligation.
-          </li>
-        </ul>
-        <p style={prose.paragraph}>
-          The AGPL edition is publicly hosted on GitHub. You may fork it, audit
-          it, and use it under AGPL terms today, without waiting for early
-          access.
-        </p>
-        <div
-          style={{
-            display: "flex",
-            gap: "var(--cs-space-3)",
-            marginTop: "var(--cs-space-6)",
-          }}
-        >
-          <Button
-            href="https://github.com/GridWork-dev/caisson"
-            variant="ghost"
-            external
-          >
-            View on GitHub
-          </Button>
-          <Button href="/local-first" variant="ghost">
-            Local-first AI edition
-          </Button>
-        </div>
-      </Section>
-
       {/* Per-module clarity */}
       <Section eyebrow="Per module" title="Which license applies where">
+        <p style={prose.paragraph}>
+          One license, the whole library. Every package under the{" "}
+          <code className="mono">@caisson</code> scope — the base, every module,
+          and all four editions — ships under the same commercial license.
+        </p>
         <div
           style={{
             marginTop: "var(--cs-space-5)",
@@ -266,6 +206,7 @@ export default function LicensePage() {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
+                gap: "var(--cs-space-3)",
               }}
             >
               <span
@@ -277,7 +218,7 @@ export default function LicensePage() {
               >
                 @caisson/base · @caisson/auth · @caisson/tenancy-rls ·
                 @caisson/audit-worm · @caisson/field-crypto · @caisson/billing ·
-                @caisson/ai-config
+                @caisson/ai-config · @caisson/local-ai · and the four editions
               </span>
               <StatusChip label="Commercial" tone="muted" />
             </div>
@@ -287,34 +228,6 @@ export default function LicensePage() {
             >
               <code className="mono">LicenseRef-Caisson-Commercial</code> —
               perpetual paid license, no redistribution of the kit.
-            </p>
-          </Card>
-
-          <Card>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <span
-                style={{
-                  fontWeight: "var(--cs-weight-medium)",
-                  fontFamily: "var(--cs-font-mono)",
-                  fontSize: "var(--cs-text-sm)",
-                }}
-              >
-                @caisson/local-ai (Local-first AI edition)
-              </span>
-              <StatusChip label="AGPL-3.0 / Commercial" tone="accent" dot />
-            </div>
-            <p
-              className="cs-footnote"
-              style={{ marginTop: "var(--cs-space-2)" }}
-            >
-              Dual-licensed. Free under AGPL copyleft; commercial license
-              available to remove the copyleft obligation.
             </p>
           </Card>
         </div>
@@ -338,9 +251,9 @@ export default function LicensePage() {
         <p style={prose.paragraph}>
           No. Open-sourcing the Caisson kit source (or a project that is
           substantially the kit) would make it freely redistributable, which the
-          Commercial License prohibits. If you are building open-source
-          compliance tooling, the Local-first AI AGPL edition may be appropriate
-          depending on its scope.
+          Commercial License prohibits. You can still build and ship your own
+          product on Caisson — your customers use your product, not the kit
+          source.
         </p>
 
         <h3 style={prose.h3}>What happens when I modify the source?</h3>

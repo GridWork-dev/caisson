@@ -47,7 +47,7 @@ export const rootGraph = {
 };
 
 /**
- * A page-scoped SoftwareApplication node. Carries the indicative Offer price (ADR-0081) by
+ * A page-scoped SoftwareApplication node. Carries the committed Offer price (ADR-0082) by
  * pricing id — pass `priceId` to attach a real price, omit for the umbrella home node.
  */
 export function softwareApplication(opts: {
@@ -72,8 +72,8 @@ export function softwareApplication(opts: {
             "@type": "Offer",
             price: price.amount,
             priceCurrency: "USD",
-            // Indicative price (ADR-0081) — availability is PreOrder pre-launch.
-            availability: "https://schema.org/PreOrder",
+            // Committed price (ADR-0082) — live self-serve, so availability is InStock.
+            availability: "https://schema.org/InStock",
             description: formatPrice(price),
           },
         }

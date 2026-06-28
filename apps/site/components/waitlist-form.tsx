@@ -5,9 +5,10 @@ import { useEffect, useRef, useState } from "react";
 
 type State = "idle" | "loading" | "ok" | "error";
 
-// Pre-launch CTA is capture, not checkout (ADR-0046/0048). POSTs to the Pages Function,
-// which adds the contact to Resend Segments server-side. Fires the Plausible Signup goal.
-export function WaitlistForm({ source = "site" }: { source?: string }) {
+// Low-key product-updates capture (ADR-0082 — the site is live self-serve; this is NOT the
+// conversion CTA, just a "get product updates" subscribe used in the footer / changelog / the
+// roadmap edition). POSTs to the Pages Function (Resend Segments, server-side). Fires Plausible.
+export function UpdatesForm({ source = "site" }: { source?: string }) {
   const [email, setEmail] = useState("");
   // Honeypot: humans leave this blank; bots fill it. Silently no-ops on submit if non-empty.
   const [honeyPot, setHoneyPot] = useState("");
@@ -42,7 +43,7 @@ export function WaitlistForm({ source = "site" }: { source?: string }) {
       });
       if (!res.ok) throw new Error(`status ${res.status}`);
       setState("ok");
-      window.plausible?.("Signup", { props: { plan: "waitlist", source } });
+      window.plausible?.("Signup", { props: { plan: "updates", source } });
     } catch {
       setState("error");
     } finally {
@@ -62,9 +63,8 @@ export function WaitlistForm({ source = "site" }: { source?: string }) {
         <span className="glyph" aria-hidden="true">
           ✓
         </span>{" "}
-        You&apos;re on the early-access list. You&apos;ll get one email when the
-        first access window opens — check your spam folder if it doesn&apos;t
-        arrive.
+        Subscribed. We&apos;ll send occasional product updates — check your spam
+        folder if the confirmation doesn&apos;t arrive.
       </p>
     );
   }
@@ -123,10 +123,10 @@ export function WaitlistForm({ source = "site" }: { source?: string }) {
       />
       <button
         type="submit"
-        className="cs-btn cs-btn--primary"
+        className="cs-btn cs-btn--ghost"
         disabled={state === "loading"}
       >
-        {state === "loading" ? "Joining…" : "Request early access"}
+        {state === "loading" ? "Subscribing…" : "Get product updates"}
       </button>
       <p
         className="cs-muted"
@@ -136,7 +136,7 @@ export function WaitlistForm({ source = "site" }: { source?: string }) {
           marginTop: "var(--cs-space-1)",
         }}
       >
-        By joining you agree to occasional product email. Unsubscribe anytime.{" "}
+        Occasional product updates. Unsubscribe anytime.{" "}
         <Link href="/legal/privacy">Privacy policy</Link>
       </p>
       {state === "error" && (

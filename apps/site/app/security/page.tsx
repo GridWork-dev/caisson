@@ -65,7 +65,7 @@ const SITE_POSTURE: ReadonlyArray<{
   {
     icon: "server",
     title: "Static export, no runtime",
-    body: "The marketing site is a static export — no application server, no database, no runtime data fetch. The waitlist endpoint is the only dynamic surface, and it holds no secrets in the client bundle.",
+    body: "The site is a static export — no application server, no database, no runtime data fetch. The contact-forms endpoint is the only dynamic surface, and it holds no secrets in the client bundle.",
   },
   {
     icon: "shield",
@@ -84,8 +84,8 @@ const SITE_POSTURE: ReadonlyArray<{
   },
   {
     icon: "key",
-    title: "Validated waitlist endpoint",
-    body: "The waitlist function validates input with Zod .strict() (unknown fields rejected), drops bots via a honeypot, and carries an env-gated Turnstile verification seam plus a documented per-IP rate-limit binding as the next step.",
+    title: "Validated forms endpoint",
+    body: "The forms function validates input with Zod .strict() (unknown fields rejected), drops bots via a honeypot, and carries an env-gated Turnstile verification seam plus a documented per-IP rate-limit binding as the next step.",
   },
   {
     icon: "file-check",
@@ -221,7 +221,7 @@ content-security-policy: default-src 'self'; …`}
         <Section
           eyebrow="This site"
           title="How caisson.sh itself is secured."
-          lede="A pre-launch marketing site has a small attack surface — we keep it small on purpose and document exactly what ships."
+          lede="A static marketing site has a small attack surface — we keep it small on purpose and document exactly what ships."
         >
           <div
             className="cs-grid cs-grid--3"
