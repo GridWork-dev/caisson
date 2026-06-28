@@ -12,6 +12,14 @@ const slug = z
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "must be a kebab-case slug");
 const nonEmpty = z.string().min(1);
 
+/**
+ * By-name cross-refs to OTHER artifacts in the authored set — an agent depending on a skill, a skill
+ * on a rule. Optional (omitted ⇒ no refs; no `.default()` so an artifact without refs round-trips
+ * byte-identically). Reference integrity is enforced at SET-validate time, not here: `validate.ts`
+ * resolves every entry against the authored-name allowlist and rejects a ghost ref (`validateArtifactSet`).
+ */
+const dependencies = z.array(slug).optional();
+
 /** An agent: a capability-scoped worker with an allowed tool set + an invocation trigger. */
 export const AgentArtifact = strictObject({
   kind: z.literal("agent"),
@@ -22,6 +30,7 @@ export const AgentArtifact = strictObject({
   /** Allowed tool names — the agent's authority surface. */
   tools: z.array(nonEmpty),
   whenToInvoke: nonEmpty,
+  dependencies,
 });
 
 /** A skill: an ordered workflow with a trigger class (the playbook surface). */
@@ -31,6 +40,7 @@ export const SkillArtifact = strictObject({
   description: nonEmpty,
   trigger: z.enum(["user", "manual", "runtime"]),
   steps: z.array(nonEmpty).min(1),
+  dependencies,
 });
 
 /** A rule: a binding constraint with a blocking severity (never advisory). */
@@ -39,6 +49,7 @@ export const RuleArtifact = strictObject({
   name: slug,
   description: nonEmpty,
   severity: z.enum(["error", "warning", "info"]),
+  dependencies,
 });
 
 /** The artifact union — routed by the `kind` discriminant. */

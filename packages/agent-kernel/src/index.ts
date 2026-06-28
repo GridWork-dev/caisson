@@ -11,6 +11,13 @@ export {
 export type { ArtifactKind } from "./schema.ts";
 
 export {
+  validateArtifactSet,
+  defineAgent,
+  defineSkill,
+  defineRule,
+} from "./validate.ts";
+
+export {
   ACTS,
   CANONICAL_LIFECYCLE,
   canTransition,

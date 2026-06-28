@@ -4,9 +4,11 @@
 // re-blessed via `BLESS=1` when the output legitimately changes. This descriptor REFERENCES the
 // to-be-built FSM/schema API (`runLifecycle` / `parseArtifact`) — golden-first: the fixtures + the red
 // test land before the logic (T4) that turns them green.
+import { toErrorResponse } from "@caisson/kernel";
 import { defineModuleGolden } from "@caisson/testing/golden-module";
 import { CANONICAL_LIFECYCLE, runLifecycle, type Act } from "./lifecycle.ts";
 import { parseArtifact } from "./schema.ts";
+import { validateArtifactSet } from "./validate.ts";
 
 /**
  * One of each artifact kind. Authored in the schema SHAPE order (kind → name → description → …) so the
@@ -50,14 +52,14 @@ const ARTIFACT_SAMPLE: readonly unknown[] = [
 // typed `ValidationError` (it never guesses, never silently drops a ref: fail-closed, one ghost rejects
 // the whole set).
 //
-// This fixture PINS that contract — a table of authored sets → outcome — and lands BEFORE the logic
-// (ADR-0013 golden-first). Why this case `produce` ECHOES the authored contract instead of calling the
-// validator: `src/validate.ts` does not exist yet, so importing it here would make the suite fail to
-// RESOLVE (a broken tree), not assert a contract. Per the PLAN the fixture commits green
-// ("passes-on-fixture"); T12 then (a) extends the schema with the optional `dependencies` cross-ref
-// field, (b) rewrites this `produce` body to run each set through `validateArtifactSet`, and this
-// committed `validate.json` enforces — BLESS unset — that the real validator reproduces the table
-// byte-for-byte. So the EXPECTED outcomes below ARE the validator's spec, authored deterministically.
+// This fixture PINS that contract — a table of authored sets → outcome — and landed BEFORE the logic
+// (ADR-0013 golden-first): T11 committed it green with `produce` ECHOING the authored outcomes (the
+// T12 validator did not exist yet, so importing it would have failed the suite to RESOLVE — a broken
+// tree — rather than assert a contract). T12 then (a) extended the schema with the optional
+// `dependencies` cross-ref field and (b) rewired this `produce` body to run each set through the real
+// `validateArtifactSet`. The committed `validate.json` now enforces — BLESS unset — that the live
+// validator reproduces the input→outcome table byte-for-byte. The EXPECTED outcomes below ARE the
+// validator's spec, authored deterministically.
 //
 // The contract the outcomes encode (the algorithm T12 implements), per scenario:
 //   • clean set → `{ ok: true, resolved }` — `resolved` is every `"<name>-><dep>"` ref edge, SORTED.
@@ -234,18 +236,28 @@ export const agentKernelGolden = defineModuleGolden({
       produce: (input) => (input as readonly unknown[]).map(parseArtifact),
     },
     {
-      // T11 fixture (golden-first, ADR-0013): `produce` ECHOES the authored contract because the T12
-      // validator does not exist yet (see the block comment above `VALIDATE_FIXTURE`). T12 rewrites
-      // this body to `(input as ValidateFixture).cases.map((c) => …validateArtifactSet(c.artifacts)…)`
-      // and this committed `validate.json` then enforces — BLESS unset — that the real validator
-      // reproduces the input→outcome table byte-for-byte.
+      // T12: the live reference-integrity validator (see the block comment above `VALIDATE_FIXTURE`).
+      // Each authored set runs through `validateArtifactSet`; a clean set yields its sorted ref edges,
+      // a ghost ref throws a `ValidationError` rendered to the client-safe `toErrorResponse` envelope.
+      // The committed `validate.json` (T11) enforces this byte-for-byte with BLESS unset.
       name: "validate",
       input: VALIDATE_FIXTURE,
       produce: (input) =>
-        (input as ValidateFixture).cases.map((c) => ({
-          name: c.name,
-          ...c.expected,
-        })),
+        (input as ValidateFixture).cases.map((c) => {
+          try {
+            return {
+              name: c.name,
+              ok: true,
+              resolved: validateArtifactSet(c.artifacts),
+            };
+          } catch (err) {
+            return {
+              name: c.name,
+              ok: false,
+              error: toErrorResponse(err).body.error,
+            };
+          }
+        }),
     },
   ],
 });
