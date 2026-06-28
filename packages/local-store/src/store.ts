@@ -6,11 +6,37 @@
 // embedding that produces a vector is an INJECTED SEAM — this module never calls a model, opens no
 // socket, and is deterministic for a fixed input (golden-pinned at `src/__golden__/rrf-ranking.json`).
 import { Database } from "bun:sqlite";
+import { existsSync } from "node:fs";
 import * as sqliteVec from "sqlite-vec";
 import { ValidationError } from "@caisson/kernel";
 
 /** RRF constant — standard 60; dampens the weight of any single ranking (gridwork-core parity). */
 export const RRF_K = 60;
+
+/**
+ * macOS ships a system SQLite with extension loading DISABLED (the Apple build), so a bare
+ * `bun:sqlite` `loadExtension(sqlite-vec)` throws "does not support dynamic extension loading".
+ * `Database.setCustomSQLite` points bun:sqlite at a build that allows it; it is process-global and
+ * MUST run before any `new Database()`, so we apply it once, lazily, on the first open. Homebrew's
+ * sqlite (a buyer/CI prerequisite on macOS) supports extensions. No-op on Linux — Bun's bundled
+ * SQLite already allows extension loading (ADR-0067). If no extension-capable SQLite is found, the
+ * original clear `loadExtension` error still surfaces (fail-closed, never silent).
+ */
+let customSqliteApplied = false;
+function ensureExtensionCapableSqlite(): void {
+  if (customSqliteApplied || process.platform !== "darwin") return;
+  customSqliteApplied = true;
+  const candidates = [
+    "/opt/homebrew/opt/sqlite/lib/libsqlite3.dylib", // Apple Silicon Homebrew
+    "/usr/local/opt/sqlite/lib/libsqlite3.dylib", // Intel Homebrew
+  ];
+  for (const p of candidates) {
+    if (existsSync(p)) {
+      Database.setCustomSQLite(p);
+      return;
+    }
+  }
+}
 
 /** A document to index: a stable string id, its FTS text, and an OPTIONAL embedding (the seam). */
 export interface StoreDoc {
@@ -53,6 +79,7 @@ export class LocalStore {
         received: opts.dim,
       });
     }
+    ensureExtensionCapableSqlite();
     const db = new Database(opts.path ?? ":memory:");
     db.loadExtension(sqliteVec.getLoadablePath());
     db.exec(

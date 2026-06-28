@@ -44,11 +44,13 @@ beforeAll(async () => {
   tmpDir = await mkdtemp(join(tmpdir(), "audit-worm-chain-"));
   const store = new LocalArtifactStore(tmpDir);
   chain = new AuditChainStore({ db: tp.pg, store, now: FIXED_NOW });
-});
+}, 120_000); // PGlite WASM init can be slow under parallel CI load — generous hook timeout.
 
 afterAll(async () => {
-  await tp.close();
-  await rm(tmpDir, { recursive: true, force: true });
+  // Guard: if beforeAll threw before these were assigned, don't mask the real error with a
+  // "path must be a string" from rm(undefined) / a close() on undefined.
+  if (tp) await tp.close();
+  if (tmpDir) await rm(tmpDir, { recursive: true, force: true });
 });
 
 describe("AuditChainStore — append + anchor + verify", () => {
