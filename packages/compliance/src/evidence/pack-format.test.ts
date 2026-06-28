@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { z } from "zod";
+import type { z } from "zod";
 import { ValidationError, canonicalize } from "@caisson/kernel";
 import type { JsonValue } from "@caisson/kernel";
 import { matchGolden } from "@caisson/testing";
 import {
   EVIDENCE_PACK_FORMAT_VERSION,
-  evidencePackBlockedSchema,
-  evidencePackManifestSchema,
+  type evidencePackBlockedSchema,
+  type evidencePackManifestSchema,
   parseEvidencePackBlocked,
   parseEvidencePackManifest,
 } from "./pack-format.ts";
