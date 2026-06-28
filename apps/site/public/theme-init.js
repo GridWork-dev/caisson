@@ -1,3 +1,4 @@
+/* global document, localStorage */
 // Externalized no-flash theme set (was an inline <script> in the root layout). Served from /public
 // as a same-origin file so the CSP can drop 'unsafe-inline' from script-src for THIS script — runs
 // before paint to honor a previously-chosen light theme without a flash. Loaded blocking in <head>.
