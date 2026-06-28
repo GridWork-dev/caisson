@@ -12,6 +12,8 @@ export {
   generate,
 } from "./generate.ts";
 
+export { templatesEngine } from "./engine-templates.ts";
+
 export {
   type MeterInput,
   type FileSetWriter,
