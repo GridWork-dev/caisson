@@ -19,3 +19,14 @@ export type { Embedder, OptionalEmbedder } from "./embedder.ts";
 // `scope` is the single-developer-local tenancy seam (no `tenancy-rls` dep).
 export { DEFAULT_SCOPE, MemoryItemSchema, parseMemoryItem } from "./schema.ts";
 export type { MemoryItem } from "./schema.ts";
+
+// The cloud-egress secret-scrub guard (ADR-0067 · T8 SECURITY): credential-bearing content is
+// scrubbed BEFORE any cloud-embed, and the embed transport is a test-doubled seam (no live cloud call
+// in CI). `scrubForEgress` is golden-pinned; `guardEmbedder`/`createCloudEmbedder` apply it.
+export {
+  scrubForEgress,
+  looksLikeSecret,
+  guardEmbedder,
+  createCloudEmbedder,
+} from "./egress-guard.ts";
+export type { CloudEmbedConfig, EmbedFetch } from "./egress-guard.ts";
