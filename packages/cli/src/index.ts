@@ -23,6 +23,14 @@ export {
   runGeneration,
 } from "./meter.ts";
 
+export {
+  type RecordGenerationInput,
+  type GenerationRecordResult,
+  GENERATION_SCHEMA_SQL,
+  hashFileSet,
+  recordGeneration,
+} from "./generation-record.ts";
+
 export { parseArgs, runCli } from "./cli.ts";
 
 export {
