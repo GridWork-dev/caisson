@@ -1,0 +1,22 @@
+[
+  {
+    "rank": 1,
+    "id": "fox",
+    "score": 0.032522
+  },
+  {
+    "rank": 2,
+    "id": "fox-quick",
+    "score": 0.032018
+  },
+  {
+    "rank": 3,
+    "id": "lazy-fox",
+    "score": 0.031746
+  },
+  {
+    "rank": 4,
+    "id": "canine",
+    "score": 0.016129
+  }
+]

@@ -1,0 +1,74 @@
+[
+  {
+    "purchased": [
+      "compliance"
+    ],
+    "members": [
+      "@caisson/compliance",
+      "@caisson/evidence-pack"
+    ]
+  },
+  {
+    "purchased": [
+      "ai-kit"
+    ],
+    "members": [
+      "@caisson/ai-kit",
+      "@caisson/inference"
+    ]
+  },
+  {
+    "purchased": [
+      "local-ai"
+    ],
+    "members": [
+      "@caisson/inference",
+      "@caisson/local-ai"
+    ]
+  },
+  {
+    "purchased": [
+      "bundle"
+    ],
+    "members": [
+      "@caisson/agent-dev",
+      "@caisson/ai-kit",
+      "@caisson/compliance",
+      "@caisson/credits",
+      "@caisson/evidence-pack",
+      "@caisson/inference",
+      "@caisson/kernel",
+      "@caisson/local-ai"
+    ]
+  },
+  {
+    "purchased": [
+      "@caisson/credits"
+    ],
+    "members": [
+      "@caisson/credits"
+    ]
+  },
+  {
+    "purchased": [
+      "ai-kit",
+      "local-ai"
+    ],
+    "members": [
+      "@caisson/ai-kit",
+      "@caisson/inference",
+      "@caisson/local-ai"
+    ]
+  },
+  {
+    "purchased": [
+      "compliance",
+      "@caisson/kernel"
+    ],
+    "members": [
+      "@caisson/compliance",
+      "@caisson/evidence-pack",
+      "@caisson/kernel"
+    ]
+  }
+]

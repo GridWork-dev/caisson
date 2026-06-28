@@ -40,15 +40,15 @@
             "version": "0.1.0",
             "kind": "edition",
             "editions": ["local-ai"],
-            "tier": "oss",
-            "priceCents": null,
-            "license": "AGPL-3.0-only",
+            "tier": "paid",
+            "priceCents": 4900,
+            "license": "LicenseRef-Caisson-Commercial",
             "dependencies": ["@caisson/kernel", "@caisson/ai-config"],
             "entry": "src/index.ts",
             "agents": "AGENTS.md",
             "golden": "golden/",
             "stability": "alpha",
-            "description": "Local-first AI edition (AGPL): compute seam + privacy gate + sqlite-vec ANN + offline Ed25519 license."
+            "description": "Local-first AI edition: compute seam + privacy gate + sqlite-vec ANN + offline Ed25519 license."
           }
         }
       ]
