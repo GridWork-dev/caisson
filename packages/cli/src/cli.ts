@@ -4,6 +4,7 @@
 // block to stdout. The registry index is resolved via `import.meta.url` (cwd-independent) with
 // an env override for CI / local overrides.
 import { execFile as execFileCb } from "node:child_process";
+import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   type RegistryIndex,
@@ -117,7 +118,10 @@ function execFileAsync(cmd: string, args: readonly string[]): Promise<void> {
  * shell-string (ADR-0068).
  */
 async function tryGitInit(dir: string): Promise<void> {
-  await execFileAsync("git", ["init", dir]).catch((e: unknown) => {
+  // Resolve to an absolute path first: a `--out` value beginning with `-` would otherwise be read
+  // by `git init` as a flag, not a directory (SECURITY.md INFO-2). Resolution also matches the dir
+  // the writer materialized into (it resolves identically), so git initializes the right tree.
+  await execFileAsync("git", ["init", resolve(dir)]).catch((e: unknown) => {
     process.stdout.write(
       `create-caisson: git init skipped — ${(e as Error).message}\n`,
     );
