@@ -48,9 +48,13 @@ jobs:
       - name: format (prettier)
         run: bun run format:check
       - name: build · lint · test (unit + PGlite integration + golden-file)
-        run: bun run check
-        # `bun run check` = turbo build/lint/test + the standards gate. Golden fixtures are
-        # compared with BLESS unset, so any drift fails here.
+        # `turbo build/lint/test` + the standards gate (== `bun run check`, run inline so CI can cap
+        # concurrency). Golden fixtures are compared with BLESS unset, so any drift fails here.
+        # --concurrency=50%: the integrated tree is 38 packages incl. 5 Next.js builds + many in-process
+        # PGlite instances; at turbo's default fan-out they contend on the runner and a PGlite `beforeAll`
+        # can exceed its hook timeout. Halving peak concurrency removes the starvation (local `bun run
+        # check` stays full-speed). Tunable if the job runs long.
+        run: turbo run build lint test --no-daemon --concurrency=50% && bun run gate
       # Slow golden-file / testcontainers matrices land here once the compliance
       # edition (P2) has code — kept CI-only, never in the pre-commit hook.
 
@@ -92,6 +96,12 @@ jobs:
         with:
           bun-version: "1.3.14"
       - run: bun install --frozen-lockfile
+      # macOS ships a system SQLite with extension loading DISABLED (Apple build). store.ts points
+      # bun:sqlite at Homebrew's extension-capable SQLite via Database.setCustomSQLite; ensure it is
+      # installed so that path exists on the runner. No-op effect on Linux (step is macOS-gated).
+      - name: ensure extension-capable SQLite (macOS)
+        if: runner.os == 'macOS'
+        run: brew install sqlite
       - name: local-store native sqlite-vec ext (vec0 + FTS5 + RRF) on ${{ matrix.os }}
         run: bun test packages/local-store/src
 

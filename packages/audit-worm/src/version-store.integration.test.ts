@@ -26,10 +26,10 @@ beforeAll(async () => {
   tp = await newTestPg();
   await tp.exec(migrationSql);
   store = new LockedVersionStore({ db: tp.pg });
-});
+}, 120_000); // PGlite WASM init can be slow under parallel CI load — generous hook timeout.
 
 afterAll(async () => {
-  await tp.close();
+  if (tp) await tp.close();
 });
 
 describe("LockedVersionStore — insert + supersede + derived current", () => {
