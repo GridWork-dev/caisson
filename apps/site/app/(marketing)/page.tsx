@@ -14,13 +14,12 @@ import {
 import Link from "next/link";
 
 import { HomeHeroMotion } from "@/components/home-hero-motion";
-import { WaitlistForm } from "@/components/waitlist-form";
 import { serializeJsonLd, softwareApplication } from "@/lib/jsonld";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
-import { formatPrice, PRICING_DISCLAIMER, priceById } from "@/lib/pricing";
+import { formatPrice, priceById } from "@/lib/pricing";
 
-// Indicative price for the SKU grid (ADR-0081) — read from the single pricing source so the
-// number never drifts. Guarded for the strict noUncheckedIndexedAccess lookup.
+// Edition entry price for the SKU grid (ADR-0082, committed) — read from the single pricing
+// source so the number never drifts. Guarded for the strict noUncheckedIndexedAccess lookup.
 function editionPrice(id: string): string {
   const p = priceById(id);
   return p ? formatPrice(p) : "—";
@@ -61,18 +60,17 @@ const EVIDENCE = [
     icon: "audit-chain",
     label: "Append-only audit chain",
     body: "Every privileged action commits SHA-256 over the previous hash plus its own payload. Tampering with any historical row breaks every link after it — and the break is detectable, provable, and exportable.",
-    proof: "sha256(prev ‖ payload) — 41,984 rows · 0 breaks",
+    proof: "sha256(prev ‖ payload) — verifyChain() over every row",
     maps: "SOC 2 CC7.2 · HIPAA §164.312(b)",
   },
 ] as const;
 
-// CI proof strip (ADR-0080 §2) — generic-but-true claims, never fabricated specifics.
+// CI proof strip (ADR-0080 §2) — only checks that actually run in CI, never fabricated
+// specifics. Each line maps to a real job: the turbo build/lint/test pipeline, the standards
+// gate, golden-file regression, and the RLS cross-tenant isolation test.
 const CI_CHECKS = [
   "build · lint · unit · integration · standards-gate · golden-file — green",
   "RLS cross-tenant read: denied",
-  "WORM delete in window: refused",
-  "audit chain: 0 breaks",
-  "0 high-severity CVEs",
 ] as const;
 
 export default function HomePage() {
@@ -90,8 +88,8 @@ export default function HomePage() {
         lede="Fail-closed Postgres RLS, S3 Object-Lock WORM, and an append-only audit chain — wired and tested before your first customer, not backfilled after your first audit."
         ctas={
           <>
-            <Button href="#waitlist" variant="primary">
-              Request early access
+            <Button href="/pricing" variant="primary">
+              Get started
             </Button>
             <Button href="/docs" variant="ghost">
               Read the docs
@@ -204,7 +202,7 @@ export default function HomePage() {
               icon="fail-closed"
               status={<StatusChip tone="accent" dot label="Hero" />}
               line="Fail-closed RLS, S3 WORM, append-only audit chain, per-tenant field encryption, and a SOC 2 / HIPAA evidence-pack generator."
-              proof="caisson compliance evidence-pack --framework soc2"
+              proof="ALTER TABLE evidence FORCE ROW LEVEL SECURITY;"
             />
             <EditionCard
               href="/ai-kit"
@@ -218,8 +216,8 @@ export default function HomePage() {
               href="/local-first"
               name="Local-first AI"
               icon="cpu"
-              status={<StatusChip tone="success" dot label="Free · AGPL" />}
-              line="Compute seam, privacy gate, and on-device vector search. Your data never leaves the device. Open-core under AGPL."
+              status={<StatusChip tone="muted" dot label="Self-host" />}
+              line="Compute seam, privacy gate, and on-device vector search. Your data never leaves the device. Own the source."
               proof="egress: blocked at the privacy gate"
             />
             <EditionCard
@@ -234,7 +232,7 @@ export default function HomePage() {
         </Section>
       </Reveal>
 
-      {/* ===== SKU matrix — editions × modules + indicative price row ===== */}
+      {/* ===== SKU matrix — editions × modules + committed price row ===== */}
       <Reveal>
         <Section
           eyebrow="What&rsquo;s in each edition"
@@ -279,11 +277,11 @@ export default function HomePage() {
                   cells: [false, false, false, true],
                 },
                 {
-                  label: "Indicative price",
+                  label: "Price",
                   cells: [
                     editionPrice("compliance"),
                     editionPrice("ai-kit"),
-                    "Free",
+                    editionPrice("local-first"),
                     editionPrice("agentic-dev"),
                   ],
                 },
@@ -293,7 +291,7 @@ export default function HomePage() {
               className="cs-footnote"
               style={{ marginTop: "var(--cs-space-5)" }}
             >
-              {PRICING_DISCLAIMER}{" "}
+              One-time perpetual unless marked /mo.{" "}
               <Link href="/pricing" style={{ color: "var(--cs-link)" }}>
                 See the full lineup
               </Link>
@@ -307,7 +305,7 @@ export default function HomePage() {
         <Section
           eyebrow="Proof, not promises"
           title="Every claim is a check in CI."
-          lede="No customers to quote yet. So the proof is the pipeline: the controls are verified on every commit, and the run is green."
+          lede="The proof is the pipeline: the controls are verified on every commit, and the run is green."
           band="surface"
         >
           <div className="cs-proof" style={{ marginTop: "var(--cs-space-8)" }}>
@@ -334,8 +332,8 @@ export default function HomePage() {
               }}
             >
               Caisson is built and supported by the maintainer at GridWork Digital — a
-              named engineer, not a ticket queue. Early-access partners get a
-              direct line while the editions open.
+              named engineer, not a ticket queue. Every customer gets a direct
+              line to the engineer who builds it.
             </p>
             <p
               className="cs-muted"
@@ -350,16 +348,47 @@ export default function HomePage() {
         </Section>
       </Reveal>
 
-      {/* ===== Waitlist ===== */}
+      {/* ===== Get started ===== */}
       <Reveal>
         <Section
-          id="waitlist"
-          eyebrow="Early access"
+          id="get-started"
+          eyebrow="Get started"
           title="Start audit-ready."
-          lede="Join the early-access list. We&rsquo;ll reach out as editions open."
+          lede="Scaffold the audited base in one command, then add the edition you need."
+          band="surface"
         >
-          <div style={{ marginTop: "var(--cs-space-6)" }}>
-            <WaitlistForm source="home-hero" />
+          <div
+            style={{
+              marginTop: "var(--cs-space-6)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--cs-space-5)",
+              maxWidth: "40rem",
+            }}
+          >
+            <CodeBlock
+              label="install"
+              code={
+                <>
+                  <span className="cs-tok-muted">$</span> npx{" "}
+                  <span className="cs-tok-accent">create-caisson</span>@latest
+                </>
+              }
+            />
+            <div
+              style={{
+                display: "flex",
+                gap: "var(--cs-space-3)",
+                flexWrap: "wrap",
+              }}
+            >
+              <Button href="/pricing" variant="primary">
+                Get Compliance
+              </Button>
+              <Button href="/docs" variant="ghost">
+                Read the docs
+              </Button>
+            </div>
           </div>
         </Section>
       </Reveal>

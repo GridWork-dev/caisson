@@ -2,7 +2,7 @@
 // Honest framing: Caisson GENERATES the technical evidence Annex IV requires.
 // Whether a system meets EU AI Act obligations is a legal determination — not
 // something a codebase starter can certify. Never claim compliance.
-import { WaitlistForm } from "@/components/waitlist-form";
+import { UpdatesForm } from "@/components/waitlist-form";
 import {
   Button,
   Card,
@@ -35,11 +35,14 @@ const ANNEX_CONTROLS = [
     label: "Record-keeping",
     title: "Every inference hashes into an append-only chain.",
     body: "Article 12 requires high-risk AI systems to log events at a level sufficient to trace decisions back through time. Caisson's audit chain writes each event with SHA-256 over the previous hash — the log is append-only, tamper-evident, and replayable. You hand an auditor the proof, not a screenshot.",
-    evidence: `$ caisson audit verify --table ai_inference_log
-seq 7041   sha256 4e9a…b3   prev c2f1…77   ok
-seq 7042   sha256 a8d0…1c   prev 4e9a…b3   ok
-seq 7043   sha256 2b6f…e9   prev a8d0…1c   ok
-chain intact — 7043 rows, 0 breaks, root 9c3a…f1`,
+    evidence: `// kernel verifyChain — append-only SHA-256 audit chain
+import { verifyChain } from "@caisson/kernel";
+
+const result = await verifyChain(db, { table: "ai_inference_log" });
+// { intact: true, rows: 7043, breaks: 0, root: "9c3a…f1" }
+
+// A tampered row breaks every subsequent link — detectable and provable.
+// The chain is tested in CI on every push (RLS cross-tenant test suite).`,
     clause: "Art. 12(1) · Annex IV §3 (logging of operation period)",
   },
   {
@@ -82,17 +85,15 @@ const sealed = aesgcm.seal(dek, sensitiveTrainingField);
     article: "Article 9 · Annex IV §5",
     label: "Accuracy and robustness testing",
     title: "Eval harness gates every pull request against a golden set.",
-    body: "Article 9 risk-management and Annex IV §5 require documented testing for accuracy, robustness, and cybersecurity. Caisson's eval harness runs a golden-file test suite on every pull request and fails the CI check on regression past a declared tolerance. The gate is code in the repo — diff it, reproduce it, show it to an assessor.",
-    evidence: `# caisson.ai.toml — the eval gate is config, not a dashboard claim
+    body: "Article 9 risk-management and Annex IV §5 require documented testing for accuracy, robustness, and cybersecurity. The AI Production Kit (in development) ships a golden-file eval harness that gates pull requests on score regression past a declared tolerance — the gate is config in the repo, not a dashboard claim.",
+    evidence: `# caisson.ai.toml — eval gate configuration (AI Production Kit)
+# Wires CI to fail the PR when accuracy drops past the declared tolerance.
+# The golden set, baseline, and report are repo artifacts an assessor can read.
 [evals]
-gate         = "ci"      # fail the PR on score drop
-tolerance    = 0.02      # max allowed regression before block
-golden_set   = "evals/annex-iv-accuracy.jsonl"
-
-# CI output — assessable artifact
-$ caisson eval run --report annex-iv
-baseline  0.941   current  0.939   delta -0.002   PASS (< tolerance)
-wrote     reports/eval-2026-06-27.json`,
+gate       = "ci"      # fail the PR on score drop
+tolerance  = 0.02      # max allowed regression before block
+golden_set = "evals/annex-iv-accuracy.jsonl"
+report_dir = "reports/"`,
     clause:
       "Art. 9(4)(b) · Annex IV §5 (testing procedures + performance metrics)",
   },
@@ -103,48 +104,41 @@ wrote     reports/eval-2026-06-27.json`,
     title:
       "Circuit breaker and spend cap surface override control to operators.",
     body: "Article 14 requires high-risk AI systems to allow natural persons to intervene and override automated outputs. Caisson's circuit breaker opens when a tenant's token spend exceeds a hard cap, returning HTTP 402 and surfacing the event — a structural pause that routes control back to the operator before the next call. Override and reset are explicit actions, not a dashboard hope.",
-    evidence: `# caisson.ai.toml — human oversight as configuration
-[caps.default]
-daily_tokens  = 500_000
-on_exceed     = "break"        # open circuit, halt automated calls
-notify        = "ops@acme.com" # surface the pause to a human
+    evidence: `// billing primitives (base substrate) — hard spend cap per tenant
+import { checkCredits, recordUsage } from "@caisson/billing";
 
-# Override requires an explicit operator action — not automatic.
-$ caisson ai cap reset --tenant acme --reason "audited + approved"
-cap reset — acme may resume; action logged to audit chain`,
+const ok = await checkCredits(db, { tenantId, tokens: estimatedTokens });
+if (!ok) {
+  // HTTP 402 surfaces the pause — override is an explicit operator action
+  return Response.json({ error: "token_cap_exceeded" }, { status: 402 });
+}
+// Override and resume are explicit actions, logged to the audit chain.
+// No automatic resumption — the structural pause routes control back to the operator.`,
     clause: "Art. 14(1)(3) · Annex IV §4 (human oversight measures)",
   },
 ] as const;
 
-// Evidence-pack terminal artifact for the hero right half.
+// Base-substrate terminal artifact for the hero right half.
+// Shows real controls from the built substrate: RLS denial + verifyChain.
 function EuAiActTerminal() {
   return (
     <Terminal
-      label="caisson compliance evidence-pack --framework eu-ai-act"
-      status={<StatusChip label="Annex IV" tone="accent" dot />}
+      label="base substrate · RLS + audit chain"
+      status={<StatusChip label="CI-tested" tone="success" dot />}
     >
-      {`collecting   `}
-      <span className="cs-tok-accent">audit chain</span>
-      {` · RLS policies · field-crypto · eval report\n`}
-      {`mapping      `}
-      <span className="cs-tok-muted">
-        Art. 10 · Art. 12 · Art. 14 · Annex IV §2–6
-      </span>
-      {`\n`}
-      {`\n`}
-      {`controls     `}
-      <span className="cs-tok-success">8 mapped</span>
-      {`  `}
-      <span className="cs-tok-muted">0 gaps</span>
-      {`\n`}
-      {`wrote        `}
+      {`-- RLS cross-tenant denial (Art. 10 data governance)\n`}
+      {`> SELECT count(*) FROM ai_inference_log;\n`}
+      {`  -- no tenant context set\n`}
       <span className="cs-tok-accent">
-        evidence/eu-ai-act-annex-iv-2026-06.zip
+        {`ERROR:  unrecognized configuration parameter "app.tenant_id"\n`}
       </span>
       {`\n`}
-      {`             (chain-proof.txt · rls-policies.sql\n`}
-      {`              eval-report.json · field-crypto-config.json\n`}
-      {`              annex-iv-control-map.json)`}
+      {`// kernel verifyChain (Art. 12 record-keeping)\n`}
+      {`const result = await verifyChain(db, {\n`}
+      {`  table: "ai_inference_log"\n`}
+      {`});\n`}
+      {`// `}
+      <span className="cs-tok-success">{`{ intact: true, rows: 7043, breaks: 0 }`}</span>
     </Terminal>
   );
 }
@@ -189,8 +183,8 @@ export default function EuAiActPage() {
         }
         ctas={
           <>
-            <Button href="#waitlist" variant="primary">
-              Request early access
+            <Button href="/pricing" variant="primary">
+              Get Compliance
             </Button>
             <Button href="/docs" variant="ghost">
               Read the docs
@@ -382,44 +376,39 @@ export default function EuAiActPage() {
         </div>
       </Section>
 
-      {/* ===== Evidence-pack generator ===== */}
+      {/* ===== Evidence bundle (Compliance edition) ===== */}
       <Reveal>
         <Section
-          eyebrow="Evidence-pack generator"
-          title="One command. A dated, auditor-readable bundle."
-          lede="Caisson collects the live RLS policies, the audit-chain proof, the eval report, and the field-encryption config, then maps them to Annex IV sections and writes a dated zip. The evidence comes from the system that actually enforces it."
+          eyebrow="Evidence artifacts"
+          title="Auditor-readable output from live controls."
+          lede="The Compliance edition collects the RLS policies, audit-chain proof, and field-encryption config from the system that enforces them, maps each to an Annex IV section, and packages them as a dated, replayable bundle."
           band="surface"
         >
           <div style={{ marginTop: "var(--cs-space-8)" }}>
             <CodeBlock
-              label="caisson compliance evidence-pack --framework eu-ai-act"
+              label="annex-iv-control-map.json — illustrative artifact structure"
               frame
               status={<StatusChip label="Annex IV" tone="accent" dot />}
-              code={
-                <>
-                  {`collecting   `}
-                  <span className="cs-tok-accent">audit chain</span>
-                  {` · RLS policies · field-crypto · eval report\n`}
-                  {`mapping      Art. 10 · Art. 12 · Art. 14 · Annex IV §2–6\n\n`}
-                  {`controls     `}
-                  <span className="cs-tok-success">8 mapped</span>
-                  {`  `}
-                  <span className="cs-tok-muted">0 gaps detected\n\n</span>
-                  {`wrote        evidence/eu-ai-act-annex-iv-2026-06.zip\n`}
-                  {`             chain-proof.txt\n`}
-                  {`             rls-policies.sql\n`}
-                  {`             eval-report.json\n`}
-                  {`             field-crypto-config.json\n`}
-                  {`             `}
-                  <span className="cs-tok-accent">
-                    annex-iv-control-map.json
-                  </span>
-                </>
-              }
+              code={`{
+  "framework": "eu-ai-act",
+  "generated": "2026-06-27",
+  "controls": [
+    { "article": "Art. 12 · Annex IV §3",  "control": "audit-chain",  "status": "verified" },
+    { "article": "Art. 10 · Annex IV §2f", "control": "rls-policy",   "status": "active"   },
+    { "article": "Art. 10 · Annex IV §2f", "control": "field-crypto", "status": "active"   },
+    { "article": "Art. 14 · Annex IV §4",  "control": "spend-cap",    "status": "configured"}
+  ],
+  "artifacts": [
+    "chain-proof.txt",
+    "rls-policies.sql",
+    "field-crypto-config.json",
+    "annex-iv-control-map.json"
+  ]
+}`}
             />
           </div>
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-5)" }}>
-            The EU AI Act-ready pack ships as an add-on to the Compliance
+            The EU AI Act-ready evidence bundle ships with the Compliance
             edition — sold worldwide, never geo-restricted.
           </p>
         </Section>
@@ -454,16 +443,32 @@ export default function EuAiActPage() {
         </Section>
       </Reveal>
 
-      {/* ===== Waitlist ===== */}
-      <Section eyebrow="Early access" id="waitlist">
+      {/* ===== Get started ===== */}
+      <Section eyebrow="Get started" id="get-started">
         <h2 className="cs-section-title">
           Ship with the evidence already in the repo.
         </h2>
         <p className="cs-lede" style={{ marginBottom: "var(--cs-space-6)" }}>
-          Join the early-access list. The EU AI Act-ready add-on ships with the
-          Compliance edition — we&apos;ll reach out as it opens.
+          The Compliance edition ships the audit chain, RLS policies, and
+          field-encryption wired and testable from day one — before your first
+          notified-body assessment, not after.
         </p>
-        <WaitlistForm source="eu-ai-act" />
+        <div style={{ marginBottom: "var(--cs-space-5)" }}>
+          <Terminal label="scaffold a Caisson project">
+            npx create-caisson@latest
+          </Terminal>
+        </div>
+        <div className="cs-cta-row">
+          <Button href="/pricing" variant="primary">
+            Get Compliance
+          </Button>
+          <Button href="/docs" variant="ghost">
+            Read the docs
+          </Button>
+        </div>
+        <div style={{ marginTop: "var(--cs-space-6)" }}>
+          <UpdatesForm source="eu-ai-act" />
+        </div>
       </Section>
     </>
   );

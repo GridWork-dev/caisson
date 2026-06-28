@@ -6,11 +6,7 @@ import {
   serializeJsonLd,
   softwareApplication,
 } from "@/lib/jsonld";
-import {
-  formatPrice,
-  priceById,
-  PRICING_DISCLAIMER_SHORT,
-} from "@/lib/pricing";
+import { formatPrice, priceById } from "@/lib/pricing";
 import {
   Button,
   Card,
@@ -21,7 +17,6 @@ import {
   StatusChip,
   Terminal,
 } from "@/components";
-import { WaitlistForm } from "@/components/waitlist-form";
 
 export const metadata = buildMetadata({
   title: "AI Production Kit",
@@ -30,8 +25,9 @@ export const metadata = buildMetadata({
   path: "/ai-kit",
 });
 
-// Indicative price from the canonical pricing table (ADR-0081).
+// Price from the canonical pricing table.
 const aiKitPrice = priceById("ai-kit");
+const modulePrice = priceById("module");
 
 // FAQ items — answer-first (ADR-0080 §6); also rendered as faqPage JSON-LD.
 const FAQ_ITEMS = [
@@ -57,10 +53,11 @@ const FAQ_ITEMS = [
   },
 ] as const;
 
-// The framed CI terminal artifact — a failing eval gate blocking a deploy.
+// Illustrative CI terminal — shows the eval-gate design: a score regression
+// blocks the deploy. This is a design artifact, not a runnable CLI command.
 const CI_ARTIFACT = (
   <Terminal
-    label="ci / eval-gate"
+    label="illustrative · ci / eval-gate"
     status={<StatusChip label="BLOCKED" tone="accent" dot />}
   >
     {"$ caisson eval run --suite prompts/golden.yaml --ci\n"}
@@ -149,8 +146,8 @@ export default function AiKitPage() {
         }
         ctas={
           <>
-            <Button href="#waitlist" variant="primary">
-              Request early access
+            <Button href="/pricing" variant="primary">
+              Get the AI Production Kit
             </Button>
             <Button href="/docs/ai-kit" variant="ghost">
               Read the docs
@@ -363,12 +360,6 @@ export default function AiKitPage() {
                 Own the AI Production Kit source outright — the six controls,
                 wired and tested, plus all future patch releases.
               </p>
-              <p
-                className="cs-footnote"
-                style={{ marginTop: "var(--cs-space-4)" }}
-              >
-                {PRICING_DISCLAIMER_SHORT}
-              </p>
             </Card>
 
             <Card>
@@ -378,13 +369,10 @@ export default function AiKitPage() {
                 style={{ marginTop: "var(--cs-space-3)" }}
               >
                 Take metering, caps, or the eval harness on its own — from{" "}
-                <span className="cs-num">$49</span> per module.
-              </p>
-              <p
-                className="cs-footnote"
-                style={{ marginTop: "var(--cs-space-4)" }}
-              >
-                {PRICING_DISCLAIMER_SHORT}
+                {modulePrice ? (
+                  <span className="cs-num">{formatPrice(modulePrice)}</span>
+                ) : null}{" "}
+                per module.
               </p>
             </Card>
 
@@ -397,17 +385,10 @@ export default function AiKitPage() {
                 Subscription — credits, framework updates, and private-registry
                 pulls. Keeps the kit current as model APIs shift.
               </p>
-              <p
-                className="cs-footnote"
-                style={{ marginTop: "var(--cs-space-4)" }}
-              >
-                {PRICING_DISCLAIMER_SHORT}
-              </p>
             </Card>
           </div>
 
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
-            Final pricing is set at early access.{" "}
             <Link href="/pricing" style={{ color: "var(--cs-link)" }}>
               See the full lineup
             </Link>
@@ -443,8 +424,8 @@ export default function AiKitPage() {
         </Reveal>
       </Section>
 
-      {/* ===== Waitlist ===== */}
-      <Section eyebrow="Early access" id="waitlist">
+      {/* ===== Get started ===== */}
+      <Section eyebrow="Get started">
         <h2
           className="cs-section-title"
           style={{ marginTop: "var(--cs-space-3)" }}
@@ -452,10 +433,30 @@ export default function AiKitPage() {
           Ship the feature with the brakes on.
         </h2>
         <p className="cs-lede" style={{ marginBottom: "var(--cs-space-6)" }}>
-          Join the early-access list. We&apos;ll reach out as the AI Production
-          Kit opens.
+          Scaffold a new project with the AI Production Kit included, or go
+          straight to pricing to add it to an existing Caisson base.
         </p>
-        <WaitlistForm source="ai-kit" />
+        <Terminal
+          label="terminal"
+          status={<StatusChip label="ready" tone="success" dot />}
+        >
+          {"$ npx create-caisson@latest\n"}
+        </Terminal>
+        <div
+          style={{
+            display: "flex",
+            gap: "var(--cs-space-3)",
+            marginTop: "var(--cs-space-6)",
+            flexWrap: "wrap",
+          }}
+        >
+          <Button href="/pricing" variant="primary">
+            Get the AI Production Kit
+          </Button>
+          <Button href="/docs/ai-kit" variant="ghost">
+            Read the docs
+          </Button>
+        </div>
       </Section>
     </>
   );

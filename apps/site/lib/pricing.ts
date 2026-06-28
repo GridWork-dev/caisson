@@ -1,22 +1,18 @@
-// Indicative pre-launch pricing anchors (ADR-0081, supersedes ADR-0048). Shown WITH the
-// "subject to change" frame everywhere they render — the FINAL numbers + grandfathering policy
-// stay the operator's open fork. Amounts are integer USD (money is never a float, ADR-0007);
-// `null` amount = free. This is the single source — pages, the SKU grid, and JSON-LD Offers all
-// read from here so a number never drifts between surfaces.
-
-export const PRICING_DISCLAIMER =
-  "Indicative pricing — subject to change before launch.";
-
-export const PRICING_DISCLAIMER_SHORT = "Subject to change before launch.";
+// Committed pricing (ADR-0082, supersedes ADR-0081's indicative frame; point-values from the
+// ADR-0012 ranges). Shown as the prices — NO "subject to change" hedge. The operator may still
+// adjust a final number before checkout goes live, but the site no longer says so. Amounts are
+// integer USD (money is never a float, ADR-0007). All four editions are commercial (ADR-0083 made
+// Local-first commercial — no free/AGPL tier). Single source — pages, SKU grid, and JSON-LD Offers
+// all read from here so a number never drifts between surfaces.
 
 export interface PriceAnchor {
   /** Stable id (also the JSON-LD Offer key). */
   id: string;
   /** Display name. */
   label: string;
-  /** Integer USD; null = free (AGPL). */
+  /** Integer USD. `null` is unused — all editions are commercial (ADR-0083), kept for the formatPrice fallback. */
   amount: number | null;
-  /** Billing unit. `once` = one-time perpetual; `month` = subscription; null = free. */
+  /** Billing unit. `once` = one-time perpetual; `month` = subscription. */
   unit: "once" | "month" | null;
   /** Render as "from $X" (entry price of a range). */
   from: boolean;
@@ -24,7 +20,7 @@ export interface PriceAnchor {
   note: string;
 }
 
-/** The four editions. Compliance is the hero anchor; Local-first is free (AGPL). */
+/** The four editions. Compliance is the hero anchor; all four are commercial (ADR-0083). */
 export const EDITION_PRICES: readonly PriceAnchor[] = [
   {
     id: "compliance",
@@ -53,10 +49,10 @@ export const EDITION_PRICES: readonly PriceAnchor[] = [
   {
     id: "local-first",
     label: "Local-first AI",
-    amount: null,
-    unit: null,
-    from: false,
-    note: "Open-core under AGPL. Your data never leaves the device.",
+    amount: 499,
+    unit: "once",
+    from: true,
+    note: "Own the source. On-device inference, a privacy gate, and vector search — your data never leaves the device.",
   },
 ] as const;
 

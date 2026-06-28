@@ -95,7 +95,7 @@ export default function LocalFirstOpengraphImage() {
         }}
       >
         <span>
-          Free AGPL · default-deny privacy · five pieces, all on-device
+          Own the source · default-deny privacy · four pieces, all on-device
         </span>
         <span style={{ background: C.surface, padding: "8px 16px" }}>
           caisson.sh/local-first

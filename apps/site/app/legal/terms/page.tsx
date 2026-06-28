@@ -6,7 +6,7 @@ import { Card, Section } from "@/components";
 export const metadata = buildMetadata({
   title: "Terms of Use",
   description:
-    "Terms governing use of caisson.sh and the Caisson early-access program. GridWork Digital LLC, governed by the laws of Georgia, USA.",
+    "Terms governing use of caisson.sh and purchase of Caisson software licenses. GridWork Digital LLC, governed by the laws of Georgia, USA.",
   path: "/legal/terms",
 });
 
@@ -40,8 +40,8 @@ export default function TermsPage() {
       {/* Page header */}
       <Section eyebrow="Legal" title="Terms of Use" flush as="h1">
         <p className="cs-lede" style={{ marginTop: "var(--cs-space-3)" }}>
-          Last updated: 27 June 2026. Governs use of caisson.sh and
-          participation in the Caisson early-access program.
+          Last updated: 27 June 2026. Governs use of caisson.sh and purchase of
+          Caisson software.
         </p>
       </Section>
 
@@ -58,13 +58,13 @@ export default function TermsPage() {
               color: "var(--cs-accent)",
             }}
           >
-            Working draft — operator legal review required before launch
+            Pending final legal review
           </p>
           <p style={{ marginTop: "var(--cs-space-3)", ...prose.paragraph }}>
-            This document is a working draft prepared for internal review. It is
-            not legal advice and has not been reviewed by Caisson&apos;s legal
-            counsel. It will be replaced by a reviewed document before the
-            early-access program opens to the public.
+            These terms govern your use of the Caisson site and products. They
+            are being finalized with legal counsel and may be updated. The
+            controlling document for any purchase is the Commercial License
+            Agreement (&ldquo;EULA&rdquo;) provided at checkout.
           </p>
         </Card>
       </Section>
@@ -72,60 +72,66 @@ export default function TermsPage() {
       {/* Acceptance */}
       <Section eyebrow="Agreement" title="Acceptance of terms">
         <p style={prose.paragraph}>
-          By accessing caisson.sh or joining the Caisson early-access program,
-          you agree to be bound by these Terms of Use. If you do not agree, do
-          not use the site or the program.
+          By accessing caisson.sh, purchasing a Caisson software license, or
+          subscribing to product updates, you agree to be bound by these Terms
+          of Use. If you do not agree, do not use the site or purchase a
+          license.
         </p>
         <p style={prose.paragraph}>
           These Terms apply to the marketing and documentation site at
-          caisson.sh and to participation in the pre-launch waitlist and
-          early-access program. They do not govern purchase or use of Caisson
-          software — those rights are defined by the separate Commercial License
-          Agreement (
+          caisson.sh and to product-update communications we send you. Your
+          rights to use Caisson software are defined exclusively by the
+          Commercial License Agreement (
           <a href="/legal/license" style={{ color: "var(--cs-accent)" }}>
             see License
           </a>
-          ) and the purchase order or entitlement record you receive at
-          checkout.
+          ) and the purchase record or entitlement you receive at checkout.
+          Where these Terms and the Commercial License Agreement conflict, the
+          Commercial License Agreement controls.
         </p>
       </Section>
 
-      {/* The site and early-access program */}
+      {/* The site and software */}
       <Section
         eyebrow="Scope"
-        title="The site and early-access program"
+        title="The site and software licenses"
         band="tint"
       >
-        <h3 style={prose.h3}>Informational nature of the site</h3>
+        <h3 style={prose.h3}>Commercial product</h3>
         <p style={prose.paragraph}>
-          Caisson.sh is an informational and pre-launch marketing site. Product
-          descriptions, pricing, and feature sets described on the site are
-          indicative and subject to change before launch. Nothing on the site
-          constitutes a binding offer of sale.
+          Caisson is a commercially available software library. Prices shown on
+          the site are the current listed prices for each edition and module. A
+          purchase grants you a{" "}
+          <a href="/legal/license" style={{ color: "var(--cs-accent)" }}>
+            LicenseRef-Caisson-Commercial
+          </a>{" "}
+          license: buy once, build unlimited products — you may not resell or
+          redistribute the Caisson source or compiled output as a standalone
+          library.
         </p>
 
-        <h3 style={prose.h3}>Early-access waitlist</h3>
+        <h3 style={prose.h3}>Documentation and site content</h3>
         <p style={prose.paragraph}>
-          Joining the early-access waitlist places you in a queue to be notified
-          when Caisson opens for purchase. Waitlist participation does not
-          create a purchase commitment on either side, does not reserve
-          capacity, and does not guarantee access at any specific price or date.
-          We may close or modify the waitlist at any time.
+          Product descriptions, code examples, and documentation on caisson.sh
+          are provided for informational purposes. While we keep them accurate,
+          feature availability and pricing may change between versions. The
+          installed package is the authoritative source of truth for a given
+          release.
         </p>
 
-        <h3 style={prose.h3}>Pre-launch pricing</h3>
+        <h3 style={prose.h3}>Product-update communications</h3>
         <p style={prose.paragraph}>
-          Any prices shown on this site are indicative placeholder prices. Final
-          pricing will be confirmed before the program launches. A persistent
-          notice on the pricing page makes this explicit. Grandfathering policy
-          for early-access participants will be communicated at launch.
+          If you subscribe to product updates on the site, we will send you
+          occasional emails about new releases, changelog highlights, and
+          product news. You may unsubscribe at any time using the link in any
+          email we send.
         </p>
       </Section>
 
       {/* Acceptable use */}
       <Section eyebrow="Conduct" title="Acceptable use">
         <p style={prose.paragraph}>
-          You agree not to use caisson.sh or the early-access program to:
+          You agree not to use caisson.sh or any Caisson software to:
         </p>
         <ul style={prose.list}>
           <li style={prose.li}>
@@ -133,8 +139,8 @@ export default function TermsPage() {
             services without our written permission.
           </li>
           <li style={prose.li}>
-            Submit false, misleading, or third-party email addresses to the
-            waitlist.
+            Submit false or misleading contact information to any form on the
+            site.
           </li>
           <li style={prose.li}>
             Circumvent or interfere with any security, authentication, or access
@@ -150,8 +156,8 @@ export default function TermsPage() {
           </li>
         </ul>
         <p style={prose.paragraph}>
-          We reserve the right to remove you from the waitlist and block access
-          to the site for conduct that violates these terms.
+          We reserve the right to cancel licenses and block access to the site
+          for conduct that violates these terms.
         </p>
       </Section>
 
@@ -201,7 +207,7 @@ export default function TermsPage() {
       {/* Disclaimer */}
       <Section eyebrow="Warranty" title="Disclaimer of warranties" band="tint">
         <p style={prose.paragraph}>
-          THE SITE AND EARLY-ACCESS PROGRAM ARE PROVIDED &ldquo;AS IS&rdquo; AND
+          THE SITE AND ITS CONTENTS ARE PROVIDED &ldquo;AS IS&rdquo; AND
           &ldquo;AS AVAILABLE&rdquo; WITHOUT WARRANTY OF ANY KIND. TO THE
           MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, GRIDWORK DIGITAL LLC
           DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT
@@ -210,9 +216,8 @@ export default function TermsPage() {
         </p>
         <p style={prose.paragraph}>
           We do not warrant that the site will be uninterrupted, error-free, or
-          free of harmful components. Information on the site, including product
-          descriptions and indicative pricing, is subject to change without
-          notice.
+          free of harmful components. Product details on the site may be updated
+          between releases.
         </p>
         <p style={prose.paragraph}>
           Nothing on this site constitutes compliance, legal, or security
@@ -229,13 +234,13 @@ export default function TermsPage() {
           GRIDWORK DIGITAL LLC OR ITS OFFICERS, DIRECTORS, EMPLOYEES, OR
           CONTRACTORS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL,
           CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING OUT OF OR RELATED TO YOUR
-          USE OF THIS SITE OR THE EARLY-ACCESS PROGRAM, EVEN IF ADVISED OF THE
-          POSSIBILITY OF SUCH DAMAGES.
+          USE OF THIS SITE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
         </p>
         <p style={prose.paragraph}>
           GRIDWORK DIGITAL LLC&apos;S TOTAL LIABILITY TO YOU FOR CLAIMS ARISING
           FROM YOUR USE OF THIS SITE SHALL NOT EXCEED ONE HUNDRED US DOLLARS
-          (USD $100).
+          (USD $100). LIABILITY ARISING FROM THE USE OF CAISSON SOFTWARE IS
+          GOVERNED BY THE COMMERCIAL LICENSE AGREEMENT.
         </p>
       </Section>
 
@@ -252,9 +257,8 @@ export default function TermsPage() {
         </p>
         <p style={prose.paragraph}>
           Any dispute arising under or relating to these Terms shall be resolved
-          exclusively in the state or federal courts located in [County
-          placeholder], Georgia, and you consent to the personal jurisdiction of
-          those courts. [Operator: confirm county / venue before launch.]
+          exclusively in the state or federal courts located in Fulton County,
+          Georgia, and you consent to the personal jurisdiction of those courts.
         </p>
         <p style={prose.paragraph}>
           GridWork Digital LLC is a limited liability company registered in the
@@ -267,10 +271,10 @@ export default function TermsPage() {
         <p style={prose.paragraph}>
           We may update these Terms at any time. Material changes will be posted
           on this page with an updated &ldquo;Last updated&rdquo; date. If you
-          are on the early-access waitlist, we will notify you by email before a
-          material change takes effect. Continued participation in the
-          early-access program after notice constitutes acceptance of the
-          updated Terms.
+          are a Caisson license holder or product-updates subscriber, we will
+          notify you by email before a material change takes effect. Continued
+          use of the site after notice constitutes acceptance of the updated
+          Terms.
         </p>
       </Section>
 

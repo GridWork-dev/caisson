@@ -2,11 +2,12 @@ import { Section, Card, StatusChip, Reveal } from "@/components";
 import { buildMetadata } from "@/lib/metadata";
 import { serializeJsonLd, techArticle, breadcrumb } from "@/lib/jsonld";
 import { CHANGELOG_ENTRIES, FEED_RSS_URL } from "@/lib/changelog";
+import { UpdatesForm } from "@/components/waitlist-form";
 
 export const metadata = buildMetadata({
   title: "Changelog",
   description:
-    "Caisson changelog: new modules, control mappings, evidence-pack releases, and SOC 2 / HIPAA framework coverage.",
+    "Caisson changelog: new modules, control mappings, and SOC 2 / HIPAA framework coverage.",
   path: "/changelog",
   type: "article",
 });
@@ -14,8 +15,7 @@ export const metadata = buildMetadata({
 export default function ChangelogPage() {
   const ldArticle = techArticle({
     headline: "Caisson changelog",
-    description:
-      "New modules, control mappings, evidence-pack releases, and framework coverage.",
+    description: "New modules, control mappings, and framework coverage.",
     url: "https://caisson.sh/changelog",
   });
   const ldBreadcrumb = breadcrumb([
@@ -143,15 +143,15 @@ export default function ChangelogPage() {
       </Section>
 
       {/* ===== Subscribe nudge ===== */}
-      <Section band="tint">
-        <p className="cs-muted">
+      <Section band="tint" eyebrow="Stay current">
+        <p className="cs-muted" style={{ marginBottom: "var(--cs-space-5)" }}>
           Subscribe via{" "}
           <a href={FEED_RSS_URL} style={{ color: "var(--cs-link)" }}>
             RSS
           </a>{" "}
-          to receive framework updates, evidence-pack releases, and control
-          mapping changes as they ship.
+          to receive framework updates and control mapping changes as they ship.
         </p>
+        <UpdatesForm source="changelog" />
       </Section>
     </>
   );

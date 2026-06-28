@@ -36,12 +36,6 @@ const WHAT_CAISSON_SHIPS = [
     body: "AES-256-GCM authenticated encryption at the column level. Each tenant's key material is scoped to their row context. No plaintext key material in the application layer.",
     control: "HIPAA §164.312(a)(2)(iv)",
   },
-  {
-    icon: "evidence-pack" as const,
-    label: "Evidence-pack generator",
-    body: "Pass a control-objective list; receive a structured export of policies, Object-Lock configuration, and audit-chain output — formatted for an auditor. The evidence is yours to own, store, and hand over.",
-    control: "SOC 2 · HIPAA · EU AI Act Annex IV",
-  },
 ] as const;
 
 const FAQ_ITEMS = [
@@ -128,7 +122,7 @@ export default function ProcurementPage() {
       {/* ===== Technical controls ===== */}
       <Section
         eyebrow="Technical controls"
-        title="What ships in the Compliance edition."
+        title="Compliance edition: what it ships."
       >
         <div
           style={{
@@ -289,8 +283,8 @@ export default function ProcurementPage() {
       </Section>
 
       {/* ===== Contact nudge ===== */}
-      <Section band="surface" eyebrow="Contact">
-        <p className="cs-lede">
+      <Section band="surface" eyebrow="Get started">
+        <p className="cs-lede" style={{ marginBottom: "var(--cs-space-5)" }}>
           For security documentation, procurement questionnaires, or to discuss
           the technical controls in detail, email{" "}
           <a
@@ -299,12 +293,22 @@ export default function ProcurementPage() {
           >
             security@caisson.sh
           </a>
-          . For general early access, use the{" "}
-          <Link href="/#waitlist" style={{ color: "var(--cs-link)" }}>
-            waitlist on the home page
-          </Link>
-          .
+          . Ready to purchase or evaluate? See pricing.
         </p>
+        <div
+          style={{
+            display: "flex",
+            gap: "var(--cs-space-3)",
+            flexWrap: "wrap",
+          }}
+        >
+          <Link href="/pricing" className="cs-btn cs-btn--primary">
+            Get Compliance
+          </Link>
+          <Link href="/docs" className="cs-btn cs-btn--ghost">
+            Read the docs
+          </Link>
+        </div>
       </Section>
     </>
   );

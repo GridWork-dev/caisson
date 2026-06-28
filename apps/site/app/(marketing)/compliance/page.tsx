@@ -12,7 +12,6 @@ import {
   Terminal,
   type IconName,
 } from "@/components";
-import { WaitlistForm } from "@/components/waitlist-form";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import {
   breadcrumb,
@@ -20,7 +19,7 @@ import {
   serializeJsonLd,
   softwareApplication,
 } from "@/lib/jsonld";
-import { formatPrice, priceById, PRICING_DISCLAIMER } from "@/lib/pricing";
+import { formatPrice, priceById } from "@/lib/pricing";
 
 export const metadata = buildMetadata({
   title: "Compliance",
@@ -69,9 +68,10 @@ const CONTROLS: readonly {
   {
     icon: "evidence-pack",
     title: "Evidence-pack generator",
-    body: "One command collects the live RLS policies, the WORM retention config, and an audit-chain proof, maps them to named controls, and writes a dated bundle. The evidence comes from the system that enforces it — not a spreadsheet.",
+    body: "Collects the live RLS policies, the WORM retention config, and an audit-chain proof, maps them to named controls, and writes a dated bundle. The evidence comes from the system that enforces it — not a spreadsheet.",
     tags: ["SOC 2 · HIPAA mapping"],
-    proof: "evidence-pack --framework soc2  →  14 controls mapped → .zip",
+    proof:
+      "soc2-evidence-2026-06-28/: rls-policies.json · worm-retention.json · audit-chain-proof.json",
   },
 ];
 
@@ -163,8 +163,8 @@ export default function CompliancePage() {
         lede="The Compliance edition wires the technical controls an auditor asks for — tenant isolation, immutable evidence, and a tamper-evident log — in before your first customer, tested in CI. You start fail-closed, then prove it on demand."
         ctas={
           <>
-            <Button href="#waitlist" variant="primary">
-              Request early access
+            <Button href="/pricing" variant="primary">
+              Get Compliance
             </Button>
             <Button href="/docs" variant="ghost">
               Read the docs
@@ -374,7 +374,7 @@ export default function CompliancePage() {
         </Section>
       </Reveal>
 
-      {/* ===== Pricing (indicative — ADR-0081) ===== */}
+      {/* ===== Pricing ===== */}
       <Reveal>
         <Section
           eyebrow="How Compliance is sold"
@@ -398,9 +398,7 @@ export default function CompliancePage() {
                   letterSpacing: "var(--cs-tracking-tight)",
                 }}
               >
-                {compliancePrice
-                  ? formatPrice(compliancePrice)
-                  : "Early access"}
+                {compliancePrice ? formatPrice(compliancePrice) : "from $1,299"}
               </span>
               <span className="cs-tag">One-time license · own the source</span>
             </div>
@@ -413,15 +411,9 @@ export default function CompliancePage() {
               still, so an optional Compliance Updates subscription keeps the
               control mappings current as SOC 2 / HIPAA guidance moves.
             </p>
-            <p
-              className="cs-footnote"
-              style={{ marginTop: "var(--cs-space-4)" }}
-            >
-              {PRICING_DISCLAIMER}
-            </p>
             <div className="cs-cta-row">
-              <Button href="#waitlist" variant="primary">
-                Request early access
+              <Button href="/pricing" variant="primary">
+                Get Compliance
               </Button>
               <Button href="/pricing" variant="ghost">
                 See the full lineup
@@ -431,13 +423,27 @@ export default function CompliancePage() {
         </Section>
       </Reveal>
 
-      {/* ===== Waitlist ===== */}
-      <Section eyebrow="Early access" title="Start fail-closed." id="waitlist">
-        <p className="cs-lede" style={{ marginBottom: "var(--cs-space-6)" }}>
-          Join the early-access list. We&apos;ll reach out as the Compliance
-          edition opens — roughly once, not a drip.
-        </p>
-        <WaitlistForm source="compliance" />
+      {/* ===== Get started ===== */}
+      <Section eyebrow="Get started" title="Start fail-closed.">
+        <div style={{ maxWidth: "36rem", marginTop: "var(--cs-space-6)" }}>
+          <Terminal
+            label="shell"
+            status={<StatusChip label="ready" tone="success" dot />}
+          >
+            {`$ npx create-caisson@latest\n`}
+            <span className="cs-tok-accent">{`✓ scaffold complete\n`}</span>
+            <span className="cs-tok-accent">{`✓ tenancy-rls: fail-closed\n`}</span>
+            <span className="cs-tok-accent">{`✓ standards gate: passing\n`}</span>
+          </Terminal>
+        </div>
+        <div className="cs-cta-row" style={{ marginTop: "var(--cs-space-6)" }}>
+          <Button href="/pricing" variant="primary">
+            Get Compliance
+          </Button>
+          <Button href="/docs" variant="ghost">
+            Read the docs
+          </Button>
+        </div>
       </Section>
     </>
   );

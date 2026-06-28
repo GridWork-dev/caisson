@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Wordmark } from "./brand";
+import { UpdatesForm } from "./waitlist-form";
 
 const COLS: { heading: string; links: { href: string; label: string }[] }[] = [
   {
@@ -55,6 +56,15 @@ export function SiteFooter() {
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-4)" }}>
             © {new Date().getFullYear()} GridWork Digital LLC
           </p>
+          <div style={{ marginTop: "var(--cs-space-6)" }}>
+            <div
+              className="cs-status"
+              style={{ marginBottom: "var(--cs-space-3)" }}
+            >
+              Product updates
+            </div>
+            <UpdatesForm source="footer" />
+          </div>
         </div>
         {COLS.map((col) => (
           <nav key={col.heading} aria-label={col.heading}>
