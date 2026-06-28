@@ -35,5 +35,14 @@
     "caseCount": 120,
     "failedCases": 3,
     "ranAt": "2026-06-27T12:00:10.000Z"
+  },
+  "guardrailBlock": {
+    "blockId": "3f1d2c4b-5a6e-4f8a-9b0c-1d2e3f4a5b6c",
+    "tenantId": "tenant-acme",
+    "stage": "input",
+    "category": "moderation",
+    "policy": "default-content-safety",
+    "failClosed": true,
+    "occurredAt": "2026-06-27T12:00:07.000Z"
   }
 }

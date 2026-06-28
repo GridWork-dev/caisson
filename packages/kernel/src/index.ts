@@ -65,11 +65,13 @@ export {
   evidencePackSchema,
   usageMeteringSchema,
   evalResultSchema,
+  guardrailBlockSchema,
 } from "./observability.ts";
 export type {
   EvidencePack,
   UsageMetering,
   EvalResult,
+  GuardrailBlock,
 } from "./observability.ts";
 
 export { assembleMigrations } from "./migration-assembly.ts";
