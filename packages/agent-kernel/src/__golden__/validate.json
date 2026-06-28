@@ -1,0 +1,39 @@
+[
+  {
+    "name": "resolved-cross-refs",
+    "ok": true,
+    "resolved": [
+      "guided-execution->no-any-in-prod",
+      "planner->guided-execution"
+    ]
+  },
+  {
+    "name": "resolved-no-cross-refs",
+    "ok": true,
+    "resolved": []
+  },
+  {
+    "name": "ghost-dependency",
+    "ok": false,
+    "error": {
+      "code": "validation_error",
+      "message": "unresolved reference 'missing-skill' from 'orchestrator'",
+      "details": {
+        "missingRef": "missing-skill",
+        "referencedBy": "orchestrator"
+      }
+    }
+  },
+  {
+    "name": "ghost-skill-ref",
+    "ok": false,
+    "error": {
+      "code": "validation_error",
+      "message": "unresolved reference 'ghost-rule' from 'deploy-flow'",
+      "details": {
+        "missingRef": "ghost-rule",
+        "referencedBy": "deploy-flow"
+      }
+    }
+  }
+]
