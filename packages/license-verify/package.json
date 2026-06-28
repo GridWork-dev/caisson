@@ -1,10 +1,10 @@
 {
-  "name": "@caisson/local-ai",
+  "name": "@caisson/license-verify",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
-  "description": "Local-first AI edition (composition, ADR-0050 fully-commercial): composes @caisson/local-store (sqlite-vec + FTS5 RRF hybrid retrieval), @caisson/license-verify (offline Ed25519), @caisson/field-crypto (at-rest), and @caisson/kernel; adds a built two-way sync engine, an InferenceBackend port, a zero-egress privacy gate, and file-per-tenant isolation. Offline, no-lock-in — your data never leaves the device.",
+  "description": "Offline license-token verification base: tessera-format wire codec (PREFIX-TIER-base64url(payload+sig)) + offline Ed25519 verify (crypto.verify over kernel canonicalize) with baked-in public key, richer entitlements[]+tier+expiry claims, fail-safe-to-community, perpetual-per-major. Issuer is P6 — only offline verify lives here. ADR-0010/0024.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -18,17 +18,14 @@
     "test": "bun test ./src"
   },
   "dependencies": {
-    "@caisson/field-crypto": "workspace:*",
     "@caisson/kernel": "workspace:*",
-    "@caisson/license-verify": "workspace:*",
-    "@caisson/local-store": "workspace:*"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
     "eslint": "^9.13.0",
-    "sqlite-vec": "^0.1.9",
     "typescript": "^5.6.0"
   }
 }
