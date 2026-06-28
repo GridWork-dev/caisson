@@ -3,6 +3,7 @@
 // appear in any tool output — is asserted directly, not assumed.
 import { describe, expect, test } from "bun:test";
 import { NotFoundError, ValidationError } from "@caisson/kernel";
+import { loadRegistryIndex } from "@caisson/registry";
 import {
   createMcpServer,
   presenceEnvPort,
@@ -13,6 +14,10 @@ import {
 } from "./index.ts";
 
 const SECRET = "sk-super-secret-value-do-not-leak-0000";
+
+// The coach suite never calls `generate`, so a minimal valid (empty) registry index satisfies the
+// `index` option without standing up a module fixture.
+const INDEX = loadRegistryIndex({ schemaVersion: 1, modules: [] });
 
 /** Presence-only env stub: holds a set of NAMES that are "set" — never exposes a value. */
 function envWith(present: readonly string[]): CoachEnvPort {
@@ -53,7 +58,7 @@ function makeServer(opts?: {
   const writer = opts?.writer ?? recordingWriter().port;
   return createMcpServer({
     tokens: [...TOKENS],
-    registryAllowlist: ["compliance", "auth", "ai-kit"],
+    index: INDEX,
     onGenerate: async () => ({ generationId: "gen_x" }),
     coach: {
       env: opts?.env ?? envWith([]),
@@ -101,7 +106,7 @@ describe("setup coach — wiring + entitlement gating (ADR-0076)", () => {
   test("no coach is registered when the option is omitted (fail-closed)", async () => {
     const bare = createMcpServer({
       tokens: [...TOKENS],
-      registryAllowlist: ["ai-kit"],
+      index: INDEX,
       onGenerate: async () => ({ generationId: "g" }),
     });
     const s = bare.authenticate("tok_acct_b_111111111111");
@@ -121,7 +126,7 @@ describe("setup coach — wiring + entitlement gating (ADR-0076)", () => {
           entitlements: ["agent-dev"],
         },
       ],
-      registryAllowlist: ["agent-dev"],
+      index: INDEX,
       onGenerate: async () => ({ generationId: "g" }),
       coach: {
         env: envWith([]),
