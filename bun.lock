@@ -265,6 +265,21 @@
         "typescript": "^5.6.0",
       },
     },
+    "packages/license-verify": {
+      "name": "@caisson/license-verify",
+      "version": "0.0.0",
+      "dependencies": {
+        "@caisson/kernel": "workspace:*",
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
+    },
     "packages/local-ai": {
       "name": "@caisson/local-ai",
       "version": "0.0.0",
@@ -429,6 +444,8 @@
     "@caisson/jobs": ["@caisson/jobs@workspace:packages/jobs"],
 
     "@caisson/kernel": ["@caisson/kernel@workspace:packages/kernel"],
+
+    "@caisson/license-verify": ["@caisson/license-verify@workspace:packages/license-verify"],
 
     "@caisson/local-ai": ["@caisson/local-ai@workspace:packages/local-ai"],
 
