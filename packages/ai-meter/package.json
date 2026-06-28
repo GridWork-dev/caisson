@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
-  "description": "Token metering store: append-only usage_event + atomic spend window counter + spend policy + circuit-breaker state, all FORCE-RLS. ADR-0060/0014/0070.",
+  "description": "Metered-inference money path: estimate->reserve->reconcile over the credit ledger + versioned price book + atomic spend window + soft/hard caps + circuit breaker, all FORCE-RLS. ADR-0060/0014/0070.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -18,7 +18,10 @@
     "test": "bun test ./src"
   },
   "dependencies": {
-    "@caisson/tenancy-rls": "workspace:*"
+    "@caisson/credits": "workspace:*",
+    "@caisson/kernel": "workspace:*",
+    "@caisson/tenancy-rls": "workspace:*",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
