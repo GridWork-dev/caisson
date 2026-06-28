@@ -95,6 +95,9 @@
       "version": "0.0.0",
       "dependencies": {
         "@caisson/agent-kernel": "workspace:*",
+        "@caisson/ai-config": "workspace:*",
+        "@caisson/kernel": "workspace:*",
+        "@caisson/local-store": "workspace:*",
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
