@@ -62,3 +62,10 @@ export {
   LocalKmsClient,
   awsKmsClient,
 } from "./kms.ts";
+
+export {
+  type CryptoShredRequest,
+  type CryptoShredReceipt,
+  cryptoShred,
+  ERASURE_CRYPTO_SHRED,
+} from "./crypto-shred.ts";
