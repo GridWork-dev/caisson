@@ -4,8 +4,21 @@
   "private": true,
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
-  "description": "Compliance edition: RLS+WORM+audit + config-as-code module registry + SOC2/HIPAA evidence-pack generator. HERO.",
+  "description": "Compliance edition (the hero): tenant-scoped field crypto + WORM audit chain + own-authored SOC2-TSC/HIPAA control packs + the deterministic, signed control→evidence-pack generator. ADR-0005/0006/0051-0058.",
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "bun test ./src"
+  },
   "dependencies": {
+    "@caisson/audit-worm": "workspace:*",
     "@caisson/field-crypto": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",
@@ -13,6 +26,10 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@caisson/testing": "workspace:*"
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.0"
   }
 }

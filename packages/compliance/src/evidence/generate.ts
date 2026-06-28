@@ -39,7 +39,7 @@ import type { CrosswalkReference } from "../registry/control.ts";
 import type { CollectorResult } from "./collector.ts";
 import {
   EVIDENCE_PACK_FORMAT_VERSION,
-  evidencePackManifestSchema,
+  type evidencePackManifestSchema,
   parseEvidencePackBlocked,
   parseEvidencePackManifest,
   type EvidencePackBlocked,
