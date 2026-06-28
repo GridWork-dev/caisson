@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { Wordmark } from "./brand";
+
 const COLS: { heading: string; links: { href: string; label: string }[] }[] = [
   {
     heading: "Editions",
@@ -21,11 +23,22 @@ const COLS: { heading: string; links: { href: string; label: string }[] }[] = [
   {
     heading: "Resources",
     links: [
+      { href: "/changelog", label: "Changelog" },
+      { href: "/procurement", label: "Security & procurement" },
       { href: "/llms.txt", label: "llms.txt" },
       {
         href: "https://github.com/GridWork-dev/caisson",
         label: "GitHub",
       },
+    ],
+  },
+  {
+    heading: "Legal",
+    links: [
+      { href: "/legal/privacy", label: "Privacy policy" },
+      { href: "/legal/terms", label: "Terms of service" },
+      { href: "/legal/license", label: "License" },
+      { href: "/.well-known/security.txt", label: "Security" },
     ],
   },
 ];
@@ -35,9 +48,7 @@ export function SiteFooter() {
     <footer className="cs-footer">
       <div className="cs-container cs-footer-cols">
         <div>
-          <div className="cs-brand">
-            <span className="mark">caisson</span>
-          </div>
+          <Wordmark descriptor />
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-3)" }}>
             Compliance-grade infrastructure for regulated SaaS.
           </p>

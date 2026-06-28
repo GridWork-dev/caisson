@@ -1,49 +1,84 @@
-import type { Metadata } from "next";
-
+import {
+  Button,
+  Card,
+  Hero,
+  Icon,
+  Reveal,
+  Section,
+  SkuMatrix,
+  StatusChip,
+  Terminal,
+} from "@/components";
 import { WaitlistForm } from "@/components/waitlist-form";
+import { breadcrumb, serializeJsonLd, softwareApplication } from "@/lib/jsonld";
+import { buildMetadata, SITE_URL } from "@/lib/metadata";
+import {
+  EDITION_PRICES,
+  PLAN_PRICES,
+  PRICING_DISCLAIMER,
+  PRICING_DISCLAIMER_SHORT,
+  formatPrice,
+  priceById,
+} from "@/lib/pricing";
 
-export const metadata: Metadata = {
-  title: "Pricing — own the code, or subscribe",
+export const metadata = buildMetadata({
+  title: "Pricing",
   description:
-    "The Caisson SKU structure: editions one-time, a bundle, per-module à la carte, and two subscriptions. Pricing is set at early access — join the waitlist.",
+    "Caisson edition licenses one-time perpetual, an everything bundle, per-module à la carte, and two subscription plans. Indicative pricing — final numbers set before launch.",
+  path: "/pricing",
+});
+
+// ---- Local helper — safe null-guard for noUncheckedIndexedAccess ----
+function editionPrice(id: string): string {
+  const p = priceById(id);
+  return p ? formatPrice(p) : "—";
+}
+
+// ---- Edition metadata (visual + copywriting; price comes from the pricing lib) ----
+type EditionMeta = {
+  readonly id: string;
+  readonly tag: string;
+  readonly accent: boolean;
+  readonly cta: string;
+  readonly ctaHref: string;
+  readonly includes: readonly string[];
 };
 
-// Pricing-numbers fork is open (ADR-0048): show SKU STRUCTURE only, never a number.
-const EDITIONS = [
+const EDITION_META: readonly EditionMeta[] = [
   {
-    name: "Compliance",
+    id: "compliance",
+    tag: "Hero edition",
     accent: true,
-    tag: "Hero",
-    summary:
-      "The audit-ready substrate: prevention wired at the application layer before your first customer.",
+    cta: "Request early access",
+    ctaHref: "#waitlist",
     includes: [
-      "Fail-closed Postgres RLS (FORCE) with cross-tenant isolation tests",
-      "S3 Object-Lock WORM evidence store, compliance mode",
+      "Fail-closed Postgres RLS (FORCE) + cross-tenant isolation tests",
+      "S3 Object-Lock WORM evidence store, COMPLIANCE mode",
       "Append-only SHA-256 audit chain — tamper breaks the link",
-      "Per-tenant field encryption with per-tenant keys",
-      "SOC2 / HIPAA evidence-pack generator",
+      "Per-tenant field encryption (HKDF-SHA256, per-tenant DEK)",
+      "SOC 2 / HIPAA evidence-pack generator",
     ],
   },
   {
-    name: "AI Production Kit",
+    id: "ai-kit",
+    tag: "Edition #2",
     accent: false,
-    tag: "#2",
-    summary:
-      "The production-rigor layer cheap AI boilerplate skips — metered, capped, and tested in CI.",
+    cta: "Request early access",
+    ctaHref: "#waitlist",
     includes: [
-      "Provider-agnostic config + PG-atomic token metering",
-      "Spend caps and a per-tenant circuit breaker",
+      "Provider-agnostic AI config + PG-atomic token metering",
+      "Spend caps and per-tenant circuit breaker",
       "Eval harness that runs in CI, not in prod",
-      "Prompt registry + input/output guardrails",
+      "Prompt registry + input / output guardrails",
       "Agent-setup config bundles",
     ],
   },
   {
-    name: "Local-first AI",
-    accent: false,
+    id: "local-first",
     tag: "Free · AGPL",
-    summary:
-      "The open-core flank. Your data never leaves the device. Free under AGPL; pay only for the license kit + credits.",
+    accent: false,
+    cta: "Read the docs",
+    ctaHref: "/docs",
     includes: [
       "Compute seam — same code, on-device or hosted",
       "Privacy gate enforcing the no-egress boundary",
@@ -53,11 +88,11 @@ const EDITIONS = [
     ],
   },
   {
-    name: "Agentic-Dev",
-    accent: false,
+    id: "agentic-dev",
     tag: "Roadmap",
-    summary:
-      "The governed-agent kernel. Building in the open; the schema and state machine are locked.",
+    accent: false,
+    cta: "Join the list",
+    ctaHref: "#waitlist",
     includes: [
       "Typed agent / skill / rule schema",
       "Lifecycle state machine for governed runs",
@@ -65,30 +100,21 @@ const EDITIONS = [
       "Capability → agent routing",
     ],
   },
-];
+] as const;
 
-const COMMERCE = [
-  [
-    "One-time",
-    "Buy an edition outright. You own the source — fork it, ship it, keep it.",
-  ],
-  ["Bundle", "Every edition plus the base, one purchase, one discount."],
-  [
-    "Per-module",
-    "Take a single module à la carte — auth, billing, credits, audit-WORM, guardrails.",
-  ],
-  [
-    "Subscription",
-    "Recurring updates + credits layered on any one-time purchase. Two SKUs below.",
-  ],
-];
+// ---- Subscription metadata (rich detail; price comes from PLAN_PRICES) ----
+type SubMeta = {
+  readonly id: string;
+  readonly audience: string;
+  readonly includes: readonly string[];
+};
 
-const SUBSCRIPTIONS = [
+const SUB_META: readonly SubMeta[] = [
   {
-    name: "Compliance Updates",
+    id: "compliance-updates",
     audience: "For the team that has to pass the audit again next year.",
     includes: [
-      "Auto-updating control mappings — SOC2, HIPAA, EU AI Act, DORA, NIS2, state-privacy",
+      "Auto-updating control mappings — SOC 2, HIPAA, EU AI Act, DORA, NIS2",
       "Evidence-pack regeneration on every framework revision",
       "New-framework slots as regulations land",
       "Control-drift alerts when a mapping goes stale",
@@ -96,7 +122,7 @@ const SUBSCRIPTIONS = [
     ],
   },
   {
-    name: "Developer",
+    id: "developer",
     audience: "For the team building on the base every week.",
     includes: [
       "Monthly codegen + AI-feature credit allotment",
@@ -106,258 +132,574 @@ const SUBSCRIPTIONS = [
       "Priority developer support",
     ],
   },
+] as const;
+
+// ---- SKU matrix ----
+// Rows ordered: shared base first, then per-edition modules, then indicative price.
+const SKU_COLUMNS = [
+  "Compliance",
+  "AI Kit",
+  "Local-first",
+  "Agentic-Dev",
+] as const;
+
+const SKU_ROWS: readonly {
+  label: string;
+  cells: readonly (boolean | string)[];
+}[] = [
+  { label: "Postgres base substrate", cells: [true, true, true, true] },
+  {
+    label: "Fail-closed RLS (FORCE)",
+    cells: [true, false, false, false],
+  },
+  { label: "WORM evidence store", cells: [true, false, false, false] },
+  { label: "Append-only audit chain", cells: [true, false, false, false] },
+  {
+    label: "Per-tenant field encryption",
+    cells: [true, false, false, false],
+  },
+  {
+    label: "Evidence-pack generator",
+    cells: [true, false, false, false],
+  },
+  {
+    label: "Token metering · spend caps",
+    cells: [false, true, false, false],
+  },
+  { label: "Eval harness in CI", cells: [false, true, false, false] },
+  {
+    label: "On-device vector search",
+    cells: [false, false, true, false],
+  },
+  {
+    label: "Privacy gate (no-egress)",
+    cells: [false, false, true, false],
+  },
+  {
+    label: "Governed-agent kernel",
+    cells: [false, false, false, true],
+  },
+  {
+    label: "Indicative price",
+    cells: [
+      editionPrice("compliance"),
+      editionPrice("ai-kit"),
+      "Free",
+      editionPrice("agentic-dev"),
+    ],
+  },
 ];
 
-// Every price slot reads the same — no number anywhere (ADR-0048).
-function EarlyAccess() {
-  return (
-    <div className="cs-status" style={{ marginTop: "var(--cs-space-4)" }}>
-      <span className="glyph" aria-hidden="true">
-        ○
-      </span>
-      Early access — join the waitlist
-    </div>
-  );
-}
-
-function Includes({ items }: { items: readonly string[] }) {
-  return (
-    <ul
-      style={{
-        margin: "var(--cs-space-4) 0 0",
-        padding: 0,
-        listStyle: "none",
-        display: "grid",
-        gap: "var(--cs-space-2)",
-      }}
-    >
-      {items.map((item) => (
-        <li
-          key={item}
-          className="cs-muted"
-          style={{
-            display: "flex",
-            gap: "var(--cs-space-2)",
-            fontSize: "var(--cs-text-sm)",
-            lineHeight: "var(--cs-leading-snug)",
-          }}
-        >
-          <span
-            aria-hidden="true"
-            style={{
-              color: "var(--cs-accent)",
-              fontFamily: "var(--cs-font-mono)",
-            }}
-          >
-            +
-          </span>
-          <span>{item}</span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 export default function PricingPage() {
+  // JSON-LD — breadcrumb + one SoftwareApplication per paid edition
+  const breadcrumbNode = breadcrumb([
+    { name: "Home", path: "/" },
+    { name: "Pricing", path: "/pricing" },
+  ]);
+
+  const editionNodes = EDITION_PRICES.filter((p) => p.amount !== null).map(
+    (p) =>
+      softwareApplication({
+        name: `Caisson ${p.label}`,
+        description: p.note,
+        url: `${SITE_URL}/pricing#${p.id}`,
+        priceId: p.id,
+      }),
+  );
+
+  // Split plan types for the "own it or subscribe" framing section
+  const oneTimePlans = PLAN_PRICES.filter((p) => p.unit === "once");
+  const subscriptionPlans = PLAN_PRICES.filter((p) => p.unit === "month");
+
   return (
     <>
+      {/* JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbNode) }}
+      />
+      {editionNodes.map((node, i) => (
+        <script
+          key={i}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(node) }}
+        />
+      ))}
+
+      {/* ===== Pricing disclaimer banner — prominent per ADR-0081 ===== */}
+      <Section band="tint" flush>
+        <p
+          role="note"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "var(--cs-space-3)",
+            margin: 0,
+          }}
+        >
+          <StatusChip label={PRICING_DISCLAIMER} tone="muted" dot />
+        </p>
+      </Section>
+
       {/* ===== Hero ===== */}
-      <section className="cs-section cs-section--flush">
-        <div className="cs-container">
-          <span className="cs-eyebrow">Pricing</span>
-          <h1
-            style={{
-              fontSize: "var(--cs-text-display)",
-              lineHeight: "var(--cs-leading-tight)",
-              letterSpacing: "var(--cs-tracking-tighter)",
-              fontWeight: "var(--cs-weight-semibold)",
-              margin: "var(--cs-space-5) 0 var(--cs-space-4)",
-              maxWidth: "16ch",
-            }}
+      <Hero
+        eyebrow="Pricing"
+        title="Own the code, or subscribe."
+        lede="Buy an edition outright — perpetual source, no renewal gate. Or layer a subscription for the framework updates and developer credits that keep it current."
+        ctas={
+          <>
+            <Button href="#waitlist" variant="primary">
+              Request early access
+            </Button>
+            <Button href="/docs" variant="ghost">
+              Read the docs
+            </Button>
+          </>
+        }
+        artifact={
+          <Terminal
+            label="caisson entitlements"
+            status={<StatusChip label="active" tone="success" dot />}
           >
-            Own the code, or subscribe.
-          </h1>
-          <p className="cs-lede" style={{ maxWidth: "64ch" }}>
-            Buy an edition outright and own the source. Or subscribe for the
-            updates that keep it audit-ready. The structure is locked; numbers
-            are set at early access.
-          </p>
+            {"$ caisson entitlements\nedition."}
+            <span className="cs-tok-accent">compliance</span>
+            {"        owned     "}
+            <span className="cs-tok-muted">one-time</span>
+            {"\nsub."}
+            <span className="cs-tok-accent">compliance-updates</span>
+            {"    "}
+            <span className="cs-tok-success">active</span>
+            {"    framework-maps @ 2026.6\nsub."}
+            <span className="cs-tok-accent">developer</span>
+            {"             "}
+            <span className="cs-tok-success">active</span>
+            {"    private-registry + credits\naddon.eu-ai-act           "}
+            <span className="cs-tok-muted">available</span>
+            {" registry-gated"}
+          </Terminal>
+        }
+      />
 
-          {/* Evidence over adjectives: the SKU structure is a real entitlement set, not a price grid. */}
-          <pre
-            className="cs-code"
-            style={{ marginTop: "var(--cs-space-10)", maxWidth: "60ch" }}
-            aria-label="Example: the entitlement set behind a Caisson account"
-          >
-            {`$ caisson entitlements
-edition.compliance        owned     one-time
-sub.compliance-updates    active    control-mappings @ 2026.6
-sub.developer             active    private-registry + credits
-addon.eu-ai-act           available registry-gated`}
-          </pre>
-        </div>
-      </section>
+      {/* ===== Edition cards ===== */}
+      <Section
+        id="editions"
+        eyebrow="Editions"
+        title="Four editions, one audited base."
+        lede="Each edition is a composition of the same substrate — never a fork. Compliance is the front door."
+      >
+        <div
+          className="cs-grid cs-grid--2"
+          style={{ marginTop: "var(--cs-space-8)" }}
+        >
+          {EDITION_META.map((ed, i) => {
+            const price = priceById(ed.id);
+            return (
+              <Reveal key={ed.id} delay={i * 60}>
+                <div id={ed.id}>
+                  <Card accent={ed.accent}>
+                    {/* Header row: name + tag */}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "baseline",
+                        gap: "var(--cs-space-3)",
+                      }}
+                    >
+                      <span className="cs-card-title">
+                        {price?.label ?? ed.id}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "var(--cs-font-mono)",
+                          fontSize: "var(--cs-text-xs)",
+                          color: "var(--cs-fg-muted)",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {ed.tag}
+                      </span>
+                    </div>
 
-      {/* ===== Edition lineup ===== */}
-      <section className="cs-section">
-        <div className="cs-container">
-          <span className="cs-eyebrow">Editions</span>
-          <h2 className="cs-section-title">Four editions, one audited base.</h2>
-          <p className="cs-lede">
-            Each edition is a composition of the same substrate — never a fork.
-            Compliance is the front door.
-          </p>
-          <div
-            className="cs-grid cs-grid--2"
-            style={{ marginTop: "var(--cs-space-8)" }}
-          >
-            {EDITIONS.map((ed) => (
-              <article
-                key={ed.name}
-                className={ed.accent ? "cs-card cs-card--accent" : "cs-card"}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "baseline",
-                    gap: "var(--cs-space-3)",
-                  }}
-                >
-                  <span className="cs-card-title">{ed.name}</span>
-                  <span className="cs-tag">{ed.tag}</span>
+                    {/* Indicative price */}
+                    <p
+                      className="cs-num"
+                      style={{
+                        marginTop: "var(--cs-space-4)",
+                        fontSize: "var(--cs-text-2xl)",
+                        fontFamily: "var(--cs-font-mono)",
+                        letterSpacing: "var(--cs-tracking-tight)",
+                      }}
+                    >
+                      {price ? formatPrice(price) : "—"}
+                    </p>
+                    <p
+                      style={{
+                        marginTop: "var(--cs-space-1)",
+                        fontSize: "var(--cs-text-xs)",
+                        fontFamily: "var(--cs-font-mono)",
+                        color: "var(--cs-fg-muted)",
+                      }}
+                    >
+                      {PRICING_DISCLAIMER_SHORT}
+                    </p>
+
+                    {/* Includes list */}
+                    <ul
+                      style={{
+                        margin: "var(--cs-space-5) 0 0",
+                        padding: 0,
+                        listStyle: "none",
+                        display: "grid",
+                        gap: "var(--cs-space-2)",
+                      }}
+                    >
+                      {ed.includes.map((item) => (
+                        <li
+                          key={item}
+                          className="cs-muted"
+                          style={{
+                            display: "flex",
+                            gap: "var(--cs-space-2)",
+                            fontSize: "var(--cs-text-sm)",
+                            lineHeight: "var(--cs-leading-snug)",
+                          }}
+                        >
+                          <Icon name="check" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    {/* CTA */}
+                    <div style={{ marginTop: "var(--cs-space-6)" }}>
+                      <Button
+                        href={ed.ctaHref}
+                        variant={ed.accent ? "primary" : "ghost"}
+                      >
+                        {ed.cta}
+                      </Button>
+                    </div>
+                  </Card>
                 </div>
-                <p
-                  className="cs-muted"
-                  style={{ marginTop: "var(--cs-space-3)" }}
-                >
-                  {ed.summary}
-                </p>
-                <Includes items={ed.includes} />
-                <EarlyAccess />
-              </article>
-            ))}
-          </div>
+              </Reveal>
+            );
+          })}
         </div>
-      </section>
+      </Section>
 
-      {/* ===== Commerce model ===== */}
-      <section className="cs-section">
-        <div className="cs-container">
-          <span className="cs-eyebrow">How it&apos;s sold</span>
-          <h2 className="cs-section-title">Four ways to buy. No lock-in.</h2>
-          <p className="cs-lede">
-            One-time for ownership, a bundle for the whole library, modules for
-            the one piece you need, a subscription for what keeps shipping.
-          </p>
-          <div
-            className="cs-grid cs-grid--4"
-            style={{ marginTop: "var(--cs-space-8)" }}
-          >
-            {COMMERCE.map(([title, body]) => (
-              <article key={title} className="cs-card">
-                <div className="cs-card-title">{title}</div>
-                <p
-                  className="cs-muted"
-                  style={{
-                    marginTop: "var(--cs-space-2)",
-                    fontSize: "var(--cs-text-sm)",
-                  }}
-                >
-                  {body}
-                </p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===== Subscriptions ===== */}
-      <section className="cs-section">
-        <div className="cs-container">
-          <span className="cs-eyebrow">Subscriptions</span>
-          <h2 className="cs-section-title">Two recurring SKUs, two jobs.</h2>
-          <p className="cs-lede">
-            Compliance Updates keeps the control mappings current. The Developer
-            plan keeps your build fed. Buy either, both, or neither.
-          </p>
-          <div
-            className="cs-grid cs-grid--2"
-            style={{ marginTop: "var(--cs-space-8)" }}
-          >
-            {SUBSCRIPTIONS.map((sub) => (
-              <article key={sub.name} className="cs-card">
-                <span className="cs-card-title">{sub.name}</span>
-                <p
-                  className="cs-muted"
-                  style={{
-                    marginTop: "var(--cs-space-3)",
-                    fontSize: "var(--cs-text-sm)",
-                  }}
-                >
-                  {sub.audience}
-                </p>
-                <Includes items={sub.includes} />
-                <EarlyAccess />
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===== EU AI Act gated add-on ===== */}
-      <section className="cs-section">
-        <div className="cs-container">
-          <span className="cs-eyebrow">Add-on</span>
-          <h2 className="cs-section-title">EU AI Act-ready, sold worldwide.</h2>
-          <p className="cs-lede">
-            Annex IV technical documentation ships as an entitlement-gated
-            module — à la carte, or inside Compliance Updates. The Act binds the
-            buyer&apos;s regulator, not the buyer&apos;s geography, so it sells
-            everywhere. v1 leads US frameworks; the EU slot is wired and
-            waiting.
-          </p>
-          <article
-            className="cs-card"
-            style={{ marginTop: "var(--cs-space-6)", maxWidth: "60ch" }}
-          >
-            <div className="cs-status">
-              <span className="glyph" aria-hidden="true">
-                ▤
-              </span>
-              addon.eu-ai-act — registry-gated, entitlement-scoped
-            </div>
+      {/* ===== SKU matrix — editions × modules so buyers see what lands where ===== */}
+      <Reveal>
+        <Section
+          eyebrow="What&rsquo;s in each edition"
+          title="Compose, don&rsquo;t fork."
+          lede="The base substrate ships with every edition. Module rows show which controls land in which edition. The price row uses indicative anchors."
+          band="surface"
+        >
+          <div style={{ marginTop: "var(--cs-space-8)" }}>
+            <SkuMatrix columns={[...SKU_COLUMNS]} rows={SKU_ROWS} />
             <p
-              className="cs-muted"
-              style={{
-                marginTop: "var(--cs-space-3)",
-                fontSize: "var(--cs-text-sm)",
-              }}
+              className="cs-footnote"
+              style={{ marginTop: "var(--cs-space-5)" }}
             >
-              The code ships behind the registry token, not a checkout flag —
-              stronger than a feature switch. Authored when demand shows; the
-              named slot exists today.
+              {PRICING_DISCLAIMER}
             </p>
-            <EarlyAccess />
-          </article>
+          </div>
+        </Section>
+      </Reveal>
+
+      {/* ===== Commerce model — "own it or subscribe" framing ===== */}
+      <Section
+        eyebrow="How it&rsquo;s sold"
+        title="Own it once, or subscribe to keep it current."
+        lede="Regulations don&rsquo;t hold still. The codebase is yours either way — subscriptions deliver the parts that move: framework maps, evidence-pack refreshes, and developer credits."
+      >
+        <div
+          className="cs-grid cs-grid--2"
+          style={{ marginTop: "var(--cs-space-8)" }}
+        >
+          {/* One-time column */}
+          <Reveal>
+            <Card accent>
+              <div className="cs-card-title">One-time perpetual</div>
+              <p
+                className="cs-muted"
+                style={{
+                  marginTop: "var(--cs-space-3)",
+                  fontSize: "var(--cs-text-sm)",
+                }}
+              >
+                Buy an edition outright. You own the source — fork it, ship it,
+                keep it. No renewal gate. Updates are a choice, not a lock.
+              </p>
+
+              {/* Edition one-time anchors */}
+              <ul
+                style={{
+                  margin: "var(--cs-space-5) 0 0",
+                  padding: 0,
+                  listStyle: "none",
+                  display: "grid",
+                  gap: "var(--cs-space-2)",
+                }}
+              >
+                {EDITION_PRICES.map((p) => (
+                  <li
+                    key={p.id}
+                    className="cs-muted"
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "baseline",
+                      gap: "var(--cs-space-4)",
+                      fontSize: "var(--cs-text-sm)",
+                    }}
+                  >
+                    <span>{p.label}</span>
+                    <span
+                      className="cs-num"
+                      style={{
+                        fontFamily: "var(--cs-font-mono)",
+                        whiteSpace: "nowrap",
+                        color: "var(--cs-fg)",
+                      }}
+                    >
+                      {formatPrice(p)}
+                    </span>
+                  </li>
+                ))}
+                {/* Bundle + per-module */}
+                {oneTimePlans.map((p) => (
+                  <li
+                    key={p.id}
+                    className="cs-muted"
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "baseline",
+                      gap: "var(--cs-space-4)",
+                      fontSize: "var(--cs-text-sm)",
+                    }}
+                  >
+                    <span>{p.label}</span>
+                    <span
+                      className="cs-num"
+                      style={{
+                        fontFamily: "var(--cs-font-mono)",
+                        whiteSpace: "nowrap",
+                        color: "var(--cs-fg)",
+                      }}
+                    >
+                      {formatPrice(p)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              <p
+                className="cs-footnote"
+                style={{ marginTop: "var(--cs-space-4)" }}
+              >
+                {PRICING_DISCLAIMER_SHORT}
+              </p>
+
+              <div style={{ marginTop: "var(--cs-space-6)" }}>
+                <Button href="#waitlist" variant="primary">
+                  Request early access
+                </Button>
+              </div>
+            </Card>
+          </Reveal>
+
+          {/* Subscription column */}
+          <Reveal delay={120}>
+            <Card>
+              <div className="cs-card-title">Subscription</div>
+              <p
+                className="cs-muted"
+                style={{
+                  marginTop: "var(--cs-space-3)",
+                  fontSize: "var(--cs-text-sm)",
+                }}
+              >
+                Layer a subscription on any one-time purchase. The kit is yours
+                either way — subscriptions deliver the parts that drift as
+                regulations move.
+              </p>
+
+              <ul
+                style={{
+                  margin: "var(--cs-space-5) 0 0",
+                  padding: 0,
+                  listStyle: "none",
+                  display: "grid",
+                  gap: "var(--cs-space-2)",
+                }}
+              >
+                {subscriptionPlans.map((p) => (
+                  <li
+                    key={p.id}
+                    className="cs-muted"
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "baseline",
+                      gap: "var(--cs-space-4)",
+                      fontSize: "var(--cs-text-sm)",
+                    }}
+                  >
+                    <span>{p.label}</span>
+                    <span
+                      className="cs-num"
+                      style={{
+                        fontFamily: "var(--cs-font-mono)",
+                        whiteSpace: "nowrap",
+                        color: "var(--cs-fg)",
+                      }}
+                    >
+                      {formatPrice(p)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              <p
+                className="cs-footnote"
+                style={{ marginTop: "var(--cs-space-4)" }}
+              >
+                {PRICING_DISCLAIMER_SHORT}
+              </p>
+
+              <div style={{ marginTop: "var(--cs-space-6)" }}>
+                <Button href="#waitlist" variant="ghost">
+                  Join the list
+                </Button>
+              </div>
+            </Card>
+          </Reveal>
         </div>
-      </section>
+      </Section>
+
+      {/* ===== Subscription plans — detail cards ===== */}
+      <Section
+        eyebrow="Subscriptions"
+        title="Two recurring SKUs, two jobs."
+        lede="Compliance Updates keeps the control mappings current. The Developer plan keeps your build fed. Buy either, both, or neither."
+        band="tint"
+      >
+        <div
+          className="cs-grid cs-grid--2"
+          style={{ marginTop: "var(--cs-space-8)" }}
+        >
+          {SUB_META.map((sub, i) => {
+            const plan = PLAN_PRICES.find((p) => p.id === sub.id);
+            return (
+              <Reveal key={sub.id} delay={i * 80}>
+                <Card>
+                  {/* Name + price on one row */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "baseline",
+                      gap: "var(--cs-space-3)",
+                    }}
+                  >
+                    <span className="cs-card-title">
+                      {plan?.label ?? sub.id}
+                    </span>
+                    {plan && (
+                      <span
+                        className="cs-num"
+                        style={{
+                          fontFamily: "var(--cs-font-mono)",
+                          fontSize: "var(--cs-text-xl)",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {formatPrice(plan)}
+                      </span>
+                    )}
+                  </div>
+
+                  <p
+                    className="cs-muted"
+                    style={{
+                      marginTop: "var(--cs-space-3)",
+                      fontSize: "var(--cs-text-sm)",
+                    }}
+                  >
+                    {sub.audience}
+                  </p>
+
+                  <ul
+                    style={{
+                      margin: "var(--cs-space-4) 0 0",
+                      padding: 0,
+                      listStyle: "none",
+                      display: "grid",
+                      gap: "var(--cs-space-2)",
+                    }}
+                  >
+                    {sub.includes.map((item) => (
+                      <li
+                        key={item}
+                        className="cs-muted"
+                        style={{
+                          display: "flex",
+                          gap: "var(--cs-space-2)",
+                          fontSize: "var(--cs-text-sm)",
+                          lineHeight: "var(--cs-leading-snug)",
+                        }}
+                      >
+                        <Icon name="check" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <p
+                    className="cs-footnote"
+                    style={{ marginTop: "var(--cs-space-4)" }}
+                  >
+                    {PRICING_DISCLAIMER_SHORT}
+                  </p>
+
+                  <div style={{ marginTop: "var(--cs-space-6)" }}>
+                    <Button href="#waitlist" variant="ghost">
+                      Join the list
+                    </Button>
+                  </div>
+                </Card>
+              </Reveal>
+            );
+          })}
+        </div>
+
+        {/* EU AI Act add-on note */}
+        <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
+          EU AI Act Annex IV ships as an entitlement-gated add-on — sold
+          worldwide, registry-scoped, available inside Compliance Updates. The
+          named slot exists today; the module ships when demand confirms it.
+        </p>
+      </Section>
 
       {/* ===== Waitlist ===== */}
-      <section className="cs-section" id="waitlist">
-        <div className="cs-container">
-          <span className="cs-eyebrow">Early access</span>
-          <h2 className="cs-section-title">Numbers land with the invite.</h2>
-          <p className="cs-lede" style={{ marginBottom: "var(--cs-space-6)" }}>
-            Join the early-access list. We&apos;ll send pricing and an editions
-            walkthrough as each one opens.
-          </p>
-          <WaitlistForm source="pricing" />
+      <Reveal>
+        <Section
+          id="waitlist"
+          eyebrow="Early access"
+          title="Numbers land with the invite."
+          lede="Join the early-access list. We&rsquo;ll send pricing and an editions walkthrough as each one opens."
+        >
+          <div style={{ marginTop: "var(--cs-space-6)" }}>
+            <WaitlistForm source="pricing" />
+          </div>
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-8)" }}>
-            And yes — it&apos;s a better base than the $199 kits.
+            And yes — it&rsquo;s a better base than the $199 kits.
           </p>
-        </div>
-      </section>
+        </Section>
+      </Reveal>
     </>
   );
 }

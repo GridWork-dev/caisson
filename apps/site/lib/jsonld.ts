@@ -82,7 +82,7 @@ export function softwareApplication(opts: {
 }
 
 /** BreadcrumbList for hub/spoke crawl paths (ADR-0079 §2). */
-export function breadcrumb(items: { name: string; path: string }[]) {
+export function breadcrumb(items: readonly { name: string; path: string }[]) {
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -115,7 +115,9 @@ export function techArticle(opts: {
  * FAQPage — kept for AI retrieval where a REAL FAQ exists (Google sunset the rich result May
  * 2026, ADR-0079 §4). Only emit when the questions render visibly on the page.
  */
-export function faqPage(items: { question: string; answer: string }[]) {
+export function faqPage(
+  items: readonly { question: string; answer: string }[],
+) {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
