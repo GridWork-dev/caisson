@@ -109,6 +109,13 @@ export function checkExternalAgpl(pkgs: Pkg[], root: string): Finding[] {
 export function checkDownOnly(pkgs: Pkg[]): Finding[] {
   const findings: Finding[] = [];
   for (const p of pkgs) {
+    // Down-only governs the PACKAGE dependency tower (base/primitive/edition) only (ADR-0003).
+    // apps/ are reference applications ABOVE the tower — top-level consumers, not packages — so they
+    // may legitimately depend on an edition (the P4a reference app wires @caisson/local-ai). The
+    // authoritative .dependency-cruiser.cjs likewise anchors its down-only `from` to packages/, so
+    // gating on isModuleCandidate keeps the two enforcement layers aligned. Base/primitive (in
+    // packages/) stay fully checked — this exempts the consumer layer, not the tower.
+    if (!isModuleCandidate(p)) continue;
     const pIsEdition = EDITION_NAMES.has(p.name);
     for (const dep of p.workspaceDeps) {
       if (EDITION_NAMES.has(dep) && dep !== p.name) {
