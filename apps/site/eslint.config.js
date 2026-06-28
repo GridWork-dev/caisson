@@ -13,4 +13,16 @@ export default [
       globals: { process: "readonly", URL: "readonly", console: "readonly" },
     },
   },
+  // Static browser scripts served from /public (no-flash theme set, Plausible queue stub) —
+  // hand-authored, shipped as-is, run in the browser. Give them the browser globals.
+  {
+    files: ["public/**/*.js"],
+    languageOptions: {
+      globals: {
+        window: "readonly",
+        document: "readonly",
+        localStorage: "readonly",
+      },
+    },
+  },
 ];
