@@ -55,3 +55,16 @@ export type {
   TransitionContext,
   TransitionGuard,
 } from "./governance.ts";
+
+export {
+  AuditedLifecycle,
+  InMemoryAuditLifecycleStore,
+} from "./audit-lifecycle.ts";
+export type {
+  RecordedDecision,
+  LifecycleAuditPayload,
+  AuditLifecycleSnapshot,
+  AuditLifecycleStore,
+  AuditedLifecycleOptions,
+  RecordOutcome,
+} from "./audit-lifecycle.ts";
