@@ -63,3 +63,90 @@ export {
   assembleMigrations,
   type JsonValue,
 } from "@caisson/kernel";
+
+// The `InferenceBackend` port + its backends (ADR-0064). The local store leaves the embedding an
+// injected seam; the edition wires it here. CI exercises ONLY the deterministic, zero-network
+// `StubInferenceBackend`; the real on-device ONNX backend (first-run model fetch) and the
+// rented/hosted backend share the same port and stay the un-exercised live paths.
+export { EMBEDDING_DIM } from "./inference/backend.ts";
+export type {
+  InferenceBackend,
+  CompletionRequest,
+  CompletionResult,
+} from "./inference/backend.ts";
+export { StubInferenceBackend } from "./inference/stub.ts";
+export {
+  OnnxEmbeddingBackend,
+  DEFAULT_ONNX_MODEL,
+  type OnnxBackendConfig,
+} from "./inference/onnx-backend.ts";
+export {
+  RentedInferenceBackend,
+  createLiveRentedTransport,
+  type RentedBackendConfig,
+  type RentedTransport,
+  type RentedEmbedResponse,
+  type RentedCompleteResponse,
+  type MeterSink,
+  type LiveRentedTransportConfig,
+} from "./inference/rented-backend.ts";
+
+// The runtime privacy / egress gate (ADR-0064, TM-EGRESS). Zero-egress-by-default, fail-closed-to-
+// offline: the guard wraps the kernel `fetchWithTimeout` chokepoint and blocks every non-allowlisted
+// host; an empty allowlist (`ZERO_EGRESS_POLICY`) blocks ALL egress. "Your data never leaves the device."
+export {
+  EgressGuard,
+  createEgressGuard,
+  type GuardedFetch,
+} from "./privacy/egress-guard.ts";
+export {
+  parsePrivacyPolicy,
+  localOnlyPolicy,
+  ZERO_EGRESS_POLICY,
+  privacyPolicySchema,
+  egressSinkSchema,
+  sinkKindSchema,
+  privacyModeSchema,
+  SANCTIONED_SINK_KINDS,
+  PRIVACY_MODES,
+  type PrivacyPolicy,
+  type EgressSink,
+  type SanctionedSinkKind,
+  type PrivacyMode,
+} from "./privacy/policy.ts";
+
+// The built two-way sync engine (ADR-0064, TM-SYNC): per-tenant changeset capture + the fail-closed
+// peer-boundary parse + the persistent LWW/CRDT-with-tombstones reconcile. The local canonical store
+// is the convergence target — peers move toward it; a tenant-A changeset can never apply to a tenant-B
+// file (file-per-tenant partition, ADR-0073).
+export { ChangesetLog, parseChangeset } from "./sync/changeset.ts";
+export { reconcileReplicas, type ReconciledRow } from "./sync/reconcile.ts";
+export {
+  reconcileWithTombstones,
+  gcTombstones,
+  type Tombstone,
+  type TombstoneReconcileResult,
+} from "./sync/tombstone.ts";
+export { compareStamps, stampFromEntry, type HlcStamp } from "./sync/clock.ts";
+export type {
+  Changeset,
+  ChangesetEntry,
+  ChangesetCapture,
+  ChangeOp,
+  RowChange,
+  RowValues,
+  ApplyResult,
+  ReconcileResult,
+  SyncEngine,
+} from "./sync/port.ts";
+
+// The edition migration assembly + the ordered, idempotent `schema_version` ledger (ADR-0070/0075,
+// data-migration). Composes local-store's retrieval tables + the edition's `items`/sync-metadata
+// tables into one down-only sequence; the `vec0` embedding dim + sync-metadata columns are IRREVERSIBLE.
+export {
+  migrate,
+  assembleEditionMigrations,
+  editionMigrations,
+  type MigrateOptions,
+  type MigrateResult,
+} from "./store/migrate.ts";
