@@ -30,3 +30,25 @@ export {
   createCloudEmbedder,
 } from "./egress-guard.ts";
 export type { CloudEmbedConfig, EmbedFetch } from "./egress-guard.ts";
+
+// The retention policy (ADR-0067 · T9): dedup-on-write (a near-duplicate fact is REINFORCED, not
+// copied) + a default sliding TTL + a GC pass (expired / decayed / over-cap) — pure, deterministic,
+// buyer-config (`GcConfig`, `.strict()`). Operates over the `MemoryItem` record the edition owns and
+// composes ON TOP of the store's `upsert`-by-id; the base never deletes or enumerates store rows.
+export {
+  parseGcConfig,
+  contentDigest,
+  dedupKey,
+  applyTtlDefault,
+  decideWrite,
+  isExpired,
+  retentionScore,
+  planGc,
+} from "./gc.ts";
+export type {
+  GcConfig,
+  WriteDecision,
+  GcReason,
+  GcDrop,
+  GcPlan,
+} from "./gc.ts";
