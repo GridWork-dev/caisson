@@ -48,6 +48,13 @@ is the metaphor — let copy lean on _foundation / load / pressure / holds_, nev
 vague `production-ready` with no proof beside it · emoji-as-bullets · exclamation marks in the hero ·
 revenue-screenshot energy. When tempted, show the artifact instead.
 
+**Competitor-coded terms (ADR-0080) — banned except in explicit, attributed contrast:** `platform` (the
+lane's owned word — use library / substrate / kit), `automate compliance` (Secureframe's), `scanner` /
+`detective control` (compliance.tf's frame), `lifetime updates` (boilerplate's ownership-conflation),
+`make $$$` / scarcity timers / strike-through prices (boilerplate tells). **Owned vocabulary to use
+consistently:** fail-closed · load-bearing · audit-ready · evidence pack · holds under load · watertight
+under audit.
+
 ## 5. Cadence (from the pro-tool messaging scan)
 
 - **Headline:** a category claim in ≤7 words; a definite article is allowed ("The …"). Zero hype
@@ -55,8 +62,10 @@ revenue-screenshot energy. When tempted, show the artifact instead.
 - **Subhead:** one plain, concrete sentence doing measurable work — not a feature list.
 - **Proof shown, not asserted:** a code snippet, a CI badge, or a real audit artifact _is_ the
   hero element (Resend's hero is its API call; Vercel pairs every claim with a named-customer stat).
-- **Section headers:** verbs or terse noun-phrases (Intake / Plan / Build), never marketing
-  sentences.
+- **Section headers (2-tier, ratified ADR-0080):** a **mono eyebrow** carries the terse label (Intake /
+  Plan / Build — and the SEO head term, ADR-0079 S20); a **sentence H2** does the narrative work. The
+  eyebrow is the terse-label home; the sentence-H2 is the site's de-facto sanctioned system, not a
+  marketing line.
 - **Social proof:** named senior engineers / founders with craft-focused quotes — not star ratings.
 - **Closer:** the two-beat "[bold future claim]. Available today." signature.
 
@@ -105,8 +114,21 @@ table (ADR-0040 buyer firewall).
 
 ---
 
-## 10. Deferred to the design kickoff
+## 10. Design kickoff — RESOLVED (Design·Brand·SEO·Copy session, 2026-06-27)
 
-Wordmark/logo art, color/type tokens beyond the `specs/03` dark pro-tool floor, the marketing-site
-art direction, and motion are the `refero-design` → `impeccable` design kickoff. This spec fixes
-voice, name, tagline, hero copy, and the banned list — not the pixels.
+No longer deferred. Wordmark/logo art (waterline-over-chamber glyph), the icon + illustration system,
+motion, and elevation are decided in **ADR-0078** (brand foundation expansion, supersedes ADR-0042);
+the per-surface **copy & messaging laws** that extend this voice floor are **ADR-0080**. SEO →
+ADR-0079; pricing display → **ADR-0081** (indicative placeholder prices, supersedes ADR-0048 — see §6).
+The visual system + implementation backlog: `outputs/specs/design-brand-site-seo/SPEC.md`. This spec
+remains the **voice floor**; ADR-0080 adds the surface-specific laws on top of it.
+
+### Copy-law additions (ADR-0080, additive to §3–§9)
+
+- **Register:** dev-kit-noun + code-promise; **never "platform" or "automate compliance"** (lane-owned,
+  category collision). Use library / substrate / kit.
+- **Honesty boundary:** state the technical-vs-administrative split plainly — Caisson ships the technical
+  controls; the org program + the audit remain the buyer's; **never imply Caisson is certified**.
+- **Persona:** developers primary + a **CISO/procurement** section and a contact route distinct from the
+  dev waitlist.
+- **Consistency:** an owned-vocabulary glossary + a competitor-term ban; answer-first/FAQ openings for GEO.

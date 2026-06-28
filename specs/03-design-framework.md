@@ -49,8 +49,15 @@ gradient-hero SaaS template look; dense, fast, keyboard-friendly, evidence-forwa
   AI-slop. The **dark pro-tool design center + typed token-contract** (§1–2) are engineering
   decisions, separable and already fixed.
 
-## 5. Deferred
+## 5. Design system — EXPANDED (Design·Brand·SEO·Copy session, 2026-06-27)
 
-The full design system (component inventory, motion, the marketing-site art direction) is a
-**design-kickoff** under the `refero-design` → `impeccable` flow, post-Gate-4. This spec fixes
-the token-contract approach + the dark pro-tool design center, not the pixels.
+No longer deferred. The ADR-0042 token **center** (palette A + Structural type) is **kept and widened** by
+**ADR-0078** — logomark/wordmark (waterline-over-chamber glyph + favicon kit), an iconography system
+(Lucide/Phosphor + bespoke domain glyphs replacing the ad-hoc Unicode glyphs), a blueprint + animated-waterline
+illustration motif, an **expressive tokenized motion language** (new pillar), and an **elevation + glow scale**
+that **supersedes the prior "depth = tone + hairline, never shadows" rule** (§1–2). The full visual system
+(hero, component inventory, responsive, code-block + docs treatment) + the implementation backlog live in
+`outputs/specs/design-brand-site-seo/SPEC.md`; the brand book is `DESIGN.md` (authored in the build session).
+SEO strategy → ADR-0079, copy/messaging → ADR-0080, pricing display → ADR-0081 (supersedes ADR-0048). The
+148-fork research board: `outputs/specs/design-brand-site-seo/FORK-BOARD.md`. This spec fixes the design
+_center_; ADR-0078 + the SPEC fix the _system_ — the pixels are no longer deferred.
