@@ -38,7 +38,7 @@ export default function LicensePage() {
   return (
     <>
       {/* Page header */}
-      <Section eyebrow="Legal" title="License" flush>
+      <Section eyebrow="Legal" title="License" flush as="h1">
         <p className="cs-lede" style={{ marginTop: "var(--cs-space-3)" }}>
           A plain-language summary of the Caisson Commercial License and the
           AGPL open-core for the Local-first AI edition.

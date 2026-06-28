@@ -93,6 +93,7 @@ export default function ProcurementPage() {
       {/* ===== Header ===== */}
       <Section
         flush
+        as="h1"
         eyebrow="Security & procurement"
         title="What to expect from Caisson."
         lede="For security teams, procurement reviewers, and budget-holders: the scope of the technical controls, the boundary between what Caisson ships and what remains yours, and how to request documentation."

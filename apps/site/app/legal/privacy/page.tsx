@@ -39,7 +39,7 @@ export default function PrivacyPage() {
   return (
     <>
       {/* Page header */}
-      <Section eyebrow="Legal" title="Privacy Policy" flush>
+      <Section eyebrow="Legal" title="Privacy Policy" flush as="h1">
         <p className="cs-lede" style={{ marginTop: "var(--cs-space-3)" }}>
           Last updated: 27 June 2026. Applies to caisson.sh and the Caisson
           early-access program.
@@ -146,10 +146,11 @@ export default function PrivacyPage() {
         </p>
         <ul style={prose.list}>
           <li style={prose.li}>
-            <strong>Email address — consent.</strong> You submitted the
-            early-access form and checked the consent box. You may withdraw
-            consent at any time by requesting deletion of your address (see Your
-            rights, below).
+            <strong>Email address — consent.</strong> You provided your address
+            by submitting the early-access form, having been told at the point
+            of submission that joining means occasional product email. You may
+            withdraw consent at any time by requesting deletion of your address
+            (see Your rights, below).
           </li>
           <li style={prose.li}>
             <strong>

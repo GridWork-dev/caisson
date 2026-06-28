@@ -6,6 +6,10 @@ import type { Metadata } from "next";
 
 export const SITE_URL = "https://caisson.sh";
 export const SITE_NAME = "Caisson";
+// Mirrors the root layout's title.default — used for OG/twitter on the home page, which omits a
+// per-page title so the root <title> default inherits (setting title:undefined would suppress it).
+export const DEFAULT_TITLE =
+  "Caisson — Compliance-grade infrastructure for regulated SaaS";
 const DEFAULT_OG = "/opengraph-image";
 
 export interface PageMeta {
@@ -30,9 +34,8 @@ export function buildMetadata({
   type = "website",
 }: PageMeta): Metadata {
   const canonical = path === "/" ? SITE_URL : `${SITE_URL}${path}`;
-  const ogTitle = title ? `${title} · ${SITE_NAME}` : SITE_NAME;
-  return {
-    title,
+  const ogTitle = title ? `${title} · ${SITE_NAME}` : DEFAULT_TITLE;
+  const meta: Metadata = {
     description,
     alternates: { canonical },
     openGraph: {
@@ -50,4 +53,8 @@ export function buildMetadata({
       images: [ogImage],
     },
   };
+  // Only set title when provided — omitting the key lets the root layout's title.default inherit
+  // (the home page relies on this); setting title:undefined would blank the <title> instead.
+  if (title) meta.title = title;
+  return meta;
 }

@@ -140,7 +140,7 @@ export default function LocalFirstPage() {
           <Button href={GITHUB_URL} variant="primary" external>
             GridWork-dev/caisson on GitHub
           </Button>
-          <Button href="/editions" variant="ghost">
+          <Button href="/pricing" variant="ghost">
             Compare editions
           </Button>
         </div>
@@ -293,11 +293,11 @@ export default function LocalFirstPage() {
               flexWrap: "wrap",
             }}
           >
-            <Button href="/editions" variant="primary">
+            <Button href="/pricing" variant="primary">
               Compare editions
             </Button>
-            <Button href="/pricing" variant="ghost">
-              See pricing
+            <Button href="/docs/local-first" variant="ghost">
+              Read the docs
             </Button>
           </div>
         </Section>

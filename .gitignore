@@ -20,3 +20,8 @@ outputs/streams/
 .playwright-mcp/
 studio-*.png
 docs/session-logs/
+
+# Local verification artifacts (screenshots, playwright output)
+/*.png
+/*.jpeg
+.playwright-mcp/

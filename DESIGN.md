@@ -32,8 +32,12 @@ contract — `packages/ui/src/tokens` → `--cs-*` (run `bun run gen:tokens` aft
 
 Palette A "cold-steel teal" (hue ~205), one light + one dark theme, **dark is the default**. OKLCH
 throughout; neutrals tinted toward the accent hue (chroma 0.008–0.014), pure gray banned. **No
-hard-coded hex in the rendered DOM** — the only sanctioned exceptions are build-time satori images
-(`opengraph-image.tsx`, `apple-icon.tsx`, `app/icon.svg`).
+hard-coded hex in the rendered DOM.** Sanctioned hex exceptions (each a context that cannot resolve
+`--cs-*`): (1) build-time satori images (`opengraph-image.tsx`, `apple-icon.tsx`, `app/icon.svg`);
+(2) browser-chrome metadata that takes no CSS var (viewport `themeColor`, `manifest.ts`
+`theme_color`/`background_color`); (3) the last-resort `global-error.tsx` boundary (replaces the
+root layout, renders without the token stylesheet); (4) the `@media print` block. All four mirror
+the locked palette hex — never an off-brand value.
 
 - **Accent discipline ≤10%.** Accent (`--cs-accent`) appears only on: the primary CTA, the eyebrow,
   the focus ring, the status glyph, and load-bearing code tokens. If accent is on a fourth surface in

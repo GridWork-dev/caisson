@@ -15,6 +15,7 @@ export function Section({
   band,
   flush,
   id,
+  as = "h2",
   children,
 }: {
   eyebrow?: string;
@@ -25,6 +26,8 @@ export function Section({
   /** Drop the top hairline (first section under the nav). */
   flush?: boolean;
   id?: string;
+  /** Heading level for `title`. Use "h1" for a Section-led page's top header (one h1/page). */
+  as?: "h1" | "h2";
   children?: ReactNode;
 }) {
   const cls = [
@@ -34,11 +37,12 @@ export function Section({
   ]
     .filter(Boolean)
     .join(" ");
+  const Heading = as;
   return (
     <section className={cls} id={id}>
       <div className="cs-container">
         {eyebrow && <span className="cs-eyebrow">{eyebrow}</span>}
-        {title && <h2 className="cs-section-title">{title}</h2>}
+        {title && <Heading className="cs-section-title">{title}</Heading>}
         {lede && <p className="cs-lede">{lede}</p>}
         {children}
       </div>

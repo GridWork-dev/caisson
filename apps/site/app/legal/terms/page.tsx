@@ -38,7 +38,7 @@ export default function TermsPage() {
   return (
     <>
       {/* Page header */}
-      <Section eyebrow="Legal" title="Terms of Use" flush>
+      <Section eyebrow="Legal" title="Terms of Use" flush as="h1">
         <p className="cs-lede" style={{ marginTop: "var(--cs-space-3)" }}>
           Last updated: 27 June 2026. Governs use of caisson.sh and
           participation in the Caisson early-access program.

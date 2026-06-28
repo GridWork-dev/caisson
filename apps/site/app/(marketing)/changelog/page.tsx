@@ -37,6 +37,7 @@ export default function ChangelogPage() {
       {/* ===== Header ===== */}
       <Section
         flush
+        as="h1"
         eyebrow="Compliance Updates"
         title="Changelog"
         lede="New modules, control mappings, and framework coverage. The single-source feed for what ships and what changes."
