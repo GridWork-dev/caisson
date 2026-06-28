@@ -54,6 +54,27 @@ jobs:
       # Slow golden-file / testcontainers matrices land here once the compliance
       # edition (P2) has code — kept CI-only, never in the pre-commit hook.
 
+  # Exit-gate clause 6 (P4a local-ai): @caisson/local-store loads a PLATFORM-SPECIFIC native
+  # extension — `db.loadExtension(sqliteVec.getLoadablePath())` in packages/local-store/src/store.ts
+  # resolves a `.so` on Linux and a `.dylib` on macOS. The `check`/`standards-gate` jobs run on
+  # ubuntu only, so the macOS native binary path would otherwise ship unexercised. This matrix runs
+  # the local-store suite (vec0 + FTS5 + RRF hybrid retrieval) on BOTH runners; a missing/broken
+  # platform extension fails CI here. `fail-fast: false` so a break on one OS never masks the other.
+  native-ext:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+      - run: bun install --frozen-lockfile
+      - name: local-store native sqlite-vec ext (vec0 + FTS5 + RRF) on ${{ matrix.os }}
+        run: bun test packages/local-store/src
+
   # registry/ tests also run under turbo (`bun run check`, the `check` job); this job is the
   # PROVENANCE proof: rebuilding from the git-tracked ledger must reproduce the committed
   # registry/index.json byte-for-byte (ADR-0021/0047). A hand-edited index (or a stale rebuild) fails
