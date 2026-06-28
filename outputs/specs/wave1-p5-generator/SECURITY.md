@@ -225,8 +225,10 @@ Evidence (`packages/mcp-server/src/server.ts`):
 > privilege boundary — the bin runs on the buyer's own machine against their own chosen path, and
 > `execFile` arg-array semantics prevent shell injection. A `--out` value beginning with `-` could
 > be interpreted by `git init` as a flag rather than a path (e.g. `--bare`); harmless on the
-> buyer's own machine. Optional hardening: reject leading-`-` `--out` values or pass `git init --`
-> `dir`.
+> buyer's own machine. **ADDRESSED** (`cli.ts:tryGitInit`): the dir is `resolve()`d to an absolute
+> path before `git init`, so a leading-`-` value can never be read as a flag (and it matches the dir
+> the writer materialized into). INFO-1 (writer symlink-escape) remains structurally closed only —
+> no behavior change required.
 
 ---
 
