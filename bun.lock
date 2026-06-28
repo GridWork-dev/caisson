@@ -294,6 +294,7 @@
         "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "eslint": "^9.13.0",
+        "sqlite-vec": "^0.1.9",
         "typescript": "^5.6.0",
       },
     },
