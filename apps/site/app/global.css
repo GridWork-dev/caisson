@@ -1,6 +1,7 @@
-/* Caisson site — all colour/type/space from @caisson/ui tokens (--cs-*, ADR-0042).
+/* Caisson site — all colour/type/space from @caisson/ui tokens (--cs-*, ADR-0042/0078).
  * Tailwind v4 + fumadocs-ui power the /docs surface only; marketing is plain CSS keyed off --cs-*.
- * No hard-coded hex, no ad-hoc rgba — depth = tonal surface + hairline borders, never shadows. */
+ * No hard-coded hex, no ad-hoc rgba. Depth: tonal surface + hairline is the DEFAULT; the elevation
+ * + glow scale (--cs-shadow-*, --cs-glow-accent, ADR-0078 §7) is the deliberate raised step. */
 
 @import "tailwindcss";
 @import "fumadocs-ui/css/neutral.css";
@@ -727,7 +728,7 @@ kbd,
   font-size: var(--cs-text-base);
 }
 
-@media (max-width: 680px) {
+@media (max-width: 900px) {
   .cs-nav-links {
     display: none;
   }
@@ -780,14 +781,16 @@ kbd,
     display: none !important;
   }
   body {
-    background: #fff;
-    color: #000;
+    /* Brand near-white / near-black mirror (print can't resolve --cs-* reliably; DESIGN.md bans
+       pure #000/#fff, so mirror the light-theme fg/bg hex). */
+    background: #fcfdfd;
+    color: #14191c;
   }
   .cs-terminal,
   .cs-card,
   .cs-code {
     box-shadow: none;
-    border: 1px solid #ccc;
+    border: 1px solid #d3d9db;
   }
 }
 

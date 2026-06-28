@@ -45,14 +45,16 @@ export function SiteNav() {
       {/* Desktop CTA group — primary early-access + theme toggle. Docs lives in the link row
           above (and the mobile drawer), so no duplicate ghost Docs button here. */}
       <div className={styles.navCtas}>
-        <Button href="#waitlist">Request early access</Button>
+        <Button href="/#waitlist">Request early access</Button>
         <ThemeToggle />
       </div>
 
-      {/* Mobile hamburger + drawer (display:none above 680 px via global.css) */}
+      {/* Mobile hamburger + drawer (display:none above 680 px via global.css).
+          CTA targets /#waitlist (not #waitlist) so it resolves from pages without a local
+          waitlist section (local-first, changelog, procurement). */}
       <MobileNav
         links={NAV_LINKS}
-        cta={{ href: "#waitlist", label: "Request early access" }}
+        cta={{ href: "/#waitlist", label: "Request early access" }}
       />
     </header>
   );

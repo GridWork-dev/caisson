@@ -202,7 +202,7 @@ export default function HomePage() {
               href="/compliance"
               name="Compliance"
               icon="fail-closed"
-              status={<StatusChip tone="accent" label="Hero" />}
+              status={<StatusChip tone="accent" dot label="Hero" />}
               line="Fail-closed RLS, S3 WORM, append-only audit chain, per-tenant field encryption, and a SOC 2 / HIPAA evidence-pack generator."
               proof="caisson compliance evidence-pack --framework soc2"
             />
@@ -210,7 +210,7 @@ export default function HomePage() {
               href="/ai-kit"
               name="AI Production Kit"
               icon="gauge"
-              status={<StatusChip tone="muted" label="#2" />}
+              status={<StatusChip tone="muted" dot label="#2" />}
               line="The production-rigor layer cheap AI boilerplate skips: token metering, spend caps, a circuit breaker, an eval harness in CI, and guardrails."
               proof="eval gate: regression detected → CI fails"
             />
@@ -218,7 +218,7 @@ export default function HomePage() {
               href="/local-first"
               name="Local-first AI"
               icon="cpu"
-              status={<StatusChip tone="success" label="Free · AGPL" />}
+              status={<StatusChip tone="success" dot label="Free · AGPL" />}
               line="Compute seam, privacy gate, and on-device vector search. Your data never leaves the device. Open-core under AGPL."
               proof="egress: blocked at the privacy gate"
             />
@@ -226,7 +226,7 @@ export default function HomePage() {
               href="/agentic-dev"
               name="Agentic-Dev"
               icon="git-branch"
-              status={<StatusChip tone="muted" label="Roadmap" />}
+              status={<StatusChip tone="muted" dot label="Roadmap" />}
               line="The governed-agent kernel: typed agent/skill/rule schema, a lifecycle state machine, and a hooks dispatcher."
               proof="agent · skill · rule — typed, validated, hooked"
             />
