@@ -1,0 +1,80 @@
+{
+  "creditConversion": {
+    "microUsdPerCredit": 1000
+  },
+  "priceBook": {
+    "openai/gpt-4o-mini": {
+      "inputPerMTok": 150000,
+      "cachedInputPerMTok": 75000,
+      "outputPerMTok": 600000
+    },
+    "anthropic/claude-3-5-haiku": {
+      "inputPerMTok": 800000,
+      "cachedInputPerMTok": 80000,
+      "outputPerMTok": 4000000
+    },
+    "google/gemini-1.5-flash": {
+      "inputPerMTok": 75000,
+      "cachedInputPerMTok": 18750,
+      "outputPerMTok": 300000
+    }
+  },
+  "cases": [
+    {
+      "name": "openai-partial-cache",
+      "provider": "openai",
+      "model": "gpt-4o-mini",
+      "usage": {
+        "inputTokens": 12000,
+        "cachedInputTokens": 8000,
+        "outputTokens": 800
+      },
+      "expected": {
+        "costMicroUsd": 1680,
+        "credits": 2
+      }
+    },
+    {
+      "name": "anthropic-no-cache",
+      "provider": "anthropic",
+      "model": "claude-3-5-haiku",
+      "usage": {
+        "inputTokens": 3500,
+        "cachedInputTokens": 0,
+        "outputTokens": 1200
+      },
+      "expected": {
+        "costMicroUsd": 7600,
+        "credits": 8
+      }
+    },
+    {
+      "name": "google-per-leg-rounding",
+      "provider": "google",
+      "model": "gemini-1.5-flash",
+      "usage": {
+        "inputTokens": 1000,
+        "cachedInputTokens": 250,
+        "outputTokens": 333
+      },
+      "expected": {
+        "costMicroUsd": 162,
+        "credits": 1
+      }
+    },
+    {
+      "name": "openai-fully-cached",
+      "provider": "openai",
+      "model": "gpt-4o-mini",
+      "usage": {
+        "inputTokens": 5000,
+        "cachedInputTokens": 5000,
+        "outputTokens": 200
+      },
+      "expected": {
+        "costMicroUsd": 495,
+        "credits": 1
+      }
+    }
+  ]
+}

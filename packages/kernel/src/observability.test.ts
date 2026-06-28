@@ -4,6 +4,7 @@ import { join } from "node:path";
 import {
   evalResultSchema,
   evidencePackSchema,
+  guardrailBlockSchema,
   usageMeteringSchema,
 } from "./observability.ts";
 
@@ -16,6 +17,7 @@ const samples = JSON.parse(
   evidencePack: unknown;
   usageMetering: unknown;
   evalResult: unknown;
+  guardrailBlock: unknown;
 };
 
 describe("observability schemas (ADR-0075)", () => {
@@ -37,6 +39,13 @@ describe("observability schemas (ADR-0075)", () => {
     expect(samples.evalResult).toEqual(parsed);
   });
 
+  test("the guardrail-block sample parses and round-trips", () => {
+    const parsed = guardrailBlockSchema.parse(samples.guardrailBlock);
+    expect(parsed.stage).toBe("input");
+    expect(parsed.failClosed).toBe(true);
+    expect(samples.guardrailBlock).toEqual(parsed);
+  });
+
   test("every schema rejects an unknown field (.strict())", () => {
     expect(
       evidencePackSchema.safeParse({
@@ -54,6 +63,27 @@ describe("observability schemas (ADR-0075)", () => {
       evalResultSchema.safeParse({
         ...(samples.evalResult as object),
         rogue: 1,
+      }).success,
+    ).toBe(false);
+    expect(
+      guardrailBlockSchema.safeParse({
+        ...(samples.guardrailBlock as object),
+        rogue: 1,
+      }).success,
+    ).toBe(false);
+  });
+
+  test("a guardrail-block rejects an out-of-set stage and category", () => {
+    expect(
+      guardrailBlockSchema.safeParse({
+        ...(samples.guardrailBlock as object),
+        stage: "midstream",
+      }).success,
+    ).toBe(false);
+    expect(
+      guardrailBlockSchema.safeParse({
+        ...(samples.guardrailBlock as object),
+        category: "rumor",
       }).success,
     ).toBe(false);
   });
