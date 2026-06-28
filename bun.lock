@@ -132,7 +132,10 @@
       "name": "@caisson/ai-meter",
       "version": "0.0.0",
       "dependencies": {
+        "@caisson/credits": "workspace:*",
+        "@caisson/kernel": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
+        "zod": "^3.23.8",
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
