@@ -199,7 +199,9 @@
       "name": "@caisson/compliance",
       "version": "0.0.0",
       "dependencies": {
+        "@caisson/field-crypto": "workspace:*",
         "@caisson/kernel": "workspace:*",
+        "@caisson/tenancy-rls": "workspace:*",
         "@noble/ed25519": "^3.1.0",
         "zod": "^3.23.8",
       },
