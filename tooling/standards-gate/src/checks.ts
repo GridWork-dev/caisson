@@ -4,6 +4,13 @@
  * the resolved tree + manifest↔package.json agreement); dependency-cruiser owns the real module
  * graph (dynamic import()/require + transitive provider-SDK reachability + down-only direction);
  * ESLint is the fast static source signal.
+ *
+ * Provider-SDK reachability is NOT re-implemented here (no allow-set): the confinement of the
+ * Vercel AI SDK family — `ai` core + `@ai-sdk/{openai,anthropic,google,openrouter}` — to
+ * @caisson/ai-config + @caisson/ai-kit is owned by the eslint denylist (boundaries.js, Gate 2)
+ * and the dependency-cruiser graph (.dependency-cruiser.cjs, authoritative). License-wise the AI
+ * SDK family is Apache-2.0, so it passes the Gate 1/1b AGPL tripwire below by construction; its
+ * only constraint is composition (ADR-0011/0022), not copyleft.
  */
 import { join } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
