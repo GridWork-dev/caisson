@@ -64,6 +64,13 @@ export const ModuleManifest = z
     license: z.enum(SPDX_LICENSES),
     /** Workspace module ids; down-only — never depends "up" on an edition (ADR-0003). */
     dependencies: z.array(moduleId).default([]),
+    /**
+     * Frozen member-version pin map (ADR-0077). For `edition` manifests: maps every bundled module
+     * id to its EXACT pinned semver — the generator resolves `edition@x.y.z` to this FROZEN set
+     * (never `latest`, never a range; the `semver` regex already rejects both). Non-edition modules
+     * may omit it (defaults to {}). The refine below enforces non-empty for `kind === "edition"`.
+     */
+    members: z.record(moduleId, semver).default({}),
     entry: relPath.default("src/index.ts"),
     /** Agent-facing authoring/usage contract the buyer MCP/agent reads (distinct from README). */
     agents: relPath.default("AGENTS.md"),
@@ -90,6 +97,14 @@ export const ModuleManifest = z
     message: "an edition module must declare its edition membership",
     path: ["editions"],
   })
+  .refine(
+    (m) => (m.kind === "edition" ? Object.keys(m.members).length > 0 : true),
+    {
+      message:
+        "an edition module must declare a non-empty members pin map (ADR-0077)",
+      path: ["members"],
+    },
+  )
   // tier ⟺ license (ADR-0050 uniform-commercial, supersedes the ADR-0023 paid⟺Commercial / oss⟺AGPL
   // split): the SPDX allowlist is commercial-only, so the sole valid tier is `paid`. The `oss` tier
   // (ADR-0023) now has NO valid license and is DEAD by construction — it can never satisfy this
