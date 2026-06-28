@@ -1,0 +1,22 @@
+{
+  "eval": "compliance-answer",
+  "scorer": "faithfulness",
+  "model": "test-double:llm-judge-v1",
+  "responses": {
+    "cc6.1-logical-access": {
+      "verdict": "pass",
+      "score": 1,
+      "rationale": "The answer restates CC6.1's logical access requirement using only the provided context; no fabrication."
+    },
+    "cc7.2-monitoring": {
+      "verdict": "pass",
+      "score": 1,
+      "rationale": "The answer faithfully captures CC7.2's monitoring-for-anomalies intent drawn from the context."
+    },
+    "cc6.3-least-privilege": {
+      "verdict": "pass",
+      "score": 1,
+      "rationale": "The answer is grounded in the CC6.3 context: role-based least-privilege access with periodic review."
+    }
+  }
+}
