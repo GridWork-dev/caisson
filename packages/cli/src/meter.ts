@@ -22,7 +22,7 @@ import {
 import { hashFileSet, recordGeneration } from "./generation-record.ts";
 import { assembleSelected, emitMigrationFileSet } from "./migrate/assemble.ts";
 import type { SelectedPackage } from "./migrate/assemble.ts";
-import { createFileSetWriter } from "./writer.ts";
+import { type FileSetWriter, createFileSetWriter } from "./writer.ts";
 
 /** A generation's billing identity. `idempotencyKey` is a caller-minted UUID, one per generation. */
 export interface MeterInput {
@@ -44,12 +44,6 @@ export function meterGeneration(
     idempotencyKey: input.idempotencyKey,
   });
 }
-
-/** The disk-write seam (P5). Default: none ships in Wave 0 (generation returns the file set only). */
-export type FileSetWriter = (
-  targetDir: string,
-  files: GeneratedFileSet,
-) => Promise<void>;
 
 export interface GenerationDeps {
   index: RegistryIndex;

@@ -16,7 +16,6 @@ export { templatesEngine } from "./engine-templates.ts";
 
 export {
   type MeterInput,
-  type FileSetWriter,
   type GenerationDeps,
   type GenerationOutcome,
   meterGeneration,
@@ -35,6 +34,7 @@ export { parseArgs, runCli } from "./cli.ts";
 
 export {
   type WriterOptions,
+  type FileSetWriter,
   WriterOptionsSchema,
   createFileSetWriter,
 } from "./writer.ts";

@@ -13,7 +13,15 @@ import {
 import { dirname, join, resolve, sep } from "node:path";
 import { z } from "zod";
 import type { GeneratedFileSet } from "./generate.ts";
-import type { FileSetWriter } from "./meter.ts";
+
+/** The disk-write seam (P5): materialize a generated file set to `targetDir`. The default writer
+ *  (`createFileSetWriter`) lives in this module, so the type is owned here too — keeping the
+ *  meter→writer dependency one-directional (no import cycle). Default in Wave 0: none injected, so
+ *  generation returns the file set only. */
+export type FileSetWriter = (
+  targetDir: string,
+  files: GeneratedFileSet,
+) => Promise<void>;
 
 /** Options accepted by `createFileSetWriter`. Validated with Zod `.strict()` (ADR-0002). */
 export const WriterOptionsSchema = z
