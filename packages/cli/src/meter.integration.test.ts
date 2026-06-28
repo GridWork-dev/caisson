@@ -1,13 +1,26 @@
 // Codegen metering — the ADR-0049/0007/0024 binding: a generation debits BEFORE any file is written;
 // a 402 aborts with nothing written; a same-key retry debits once. Runs on PGlite inside withTenant
 // (SET ROLE app) over the real credits ledger.
-import { afterAll, beforeEach, describe, expect, test } from "bun:test";
+import { existsSync } from "node:fs";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  test,
+} from "bun:test";
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { InsufficientCreditsError } from "@caisson/kernel";
 import { withTenant } from "@caisson/tenancy-rls";
 import { CREDIT_SCHEMA_SQL, balance, getLedger, grant } from "@caisson/credits";
 import { loadRegistryIndex } from "@caisson/registry";
+import { GENERATION_SCHEMA_SQL } from "./generation-record.ts";
 import { type FileSetWriter, runGeneration } from "./meter.ts";
+import { createFileSetWriter } from "./writer.ts";
 
 const ACCOUNT = "acct_a";
 
@@ -49,18 +62,34 @@ const SELECTION = {
 };
 
 let tp: TestPg;
+let tmpBase: string;
 
 beforeEach(async () => {
   if (!tp) tp = await newTestPg();
   await tp.exec(
-    `DROP TABLE IF EXISTS credit_event; DROP TABLE IF EXISTS credit_wallet;`,
+    `DROP TABLE IF EXISTS credit_event; DROP TABLE IF EXISTS credit_wallet; DROP TABLE IF EXISTS generation;`,
   );
   await tp.exec(CREDIT_SCHEMA_SQL);
+  await tp.exec(GENERATION_SCHEMA_SQL);
+  tmpBase = await mkdtemp(join(tmpdir(), "caisson-gen-"));
+});
+
+afterEach(async () => {
+  await rm(tmpBase, { recursive: true, force: true });
 });
 
 afterAll(async () => {
   await tp.close();
 });
+
+/** Generation audit rows for an account (superuser read — RLS bypassed, ground truth). */
+const genCount = (accountId: string): Promise<number> =>
+  tp
+    .query<{ n: number }>(
+      `SELECT count(*)::int AS n FROM generation WHERE account_id = $1`,
+      [accountId],
+    )
+    .then((rows) => rows[0]?.n ?? 0);
 
 const grantSome = (amount: number) =>
   withTenant(tp.pg, ACCOUNT, (tx) =>
@@ -166,5 +195,174 @@ describe("runGeneration — debit-before-spend (ADR-0049)", () => {
     expect(await withTenant(tp.pg, ACCOUNT, (tx) => balance(tx, ACCOUNT))).toBe(
       5,
     ); // untouched
+  });
+});
+
+describe("runGeneration — disk materialization + audit row (T16/T17)", () => {
+  test("the default disk writer materializes to disk and records a generation row", async () => {
+    await grantSome(5);
+    const target = join(tmpBase, "out"); // omit writeFileSet → default disk writer kicks in
+    const outcome = await withTenant(tp.pg, ACCOUNT, (tx) =>
+      runGeneration(tx, { index: INDEX, targetDir: target }, SELECTION, {
+        accountId: ACCOUNT,
+        idempotencyKey: "disk-1",
+      }),
+    );
+    expect(outcome.balance).toBe(4); // 5 − 1
+    expect(outcome.files.length).toBeGreaterThan(0);
+    expect(existsSync(join(target, "package.json"))).toBe(true); // real bytes on disk
+    expect(await genCount(ACCOUNT)).toBe(1); // one audit row, post-debit
+  });
+
+  test("a 402 leaves NOTHING on disk AND records no generation row", async () => {
+    const target = join(tmpBase, "nope"); // no grant → balance 0 → 402 before any write/record
+    await expect(
+      withTenant(tp.pg, ACCOUNT, (tx) =>
+        runGeneration(tx, { index: INDEX, targetDir: target }, SELECTION, {
+          accountId: ACCOUNT,
+          idempotencyKey: "disk-402",
+        }),
+      ),
+    ).rejects.toBeInstanceOf(InsufficientCreditsError);
+    expect(existsSync(target)).toBe(false); // the write was never reached
+    expect(await genCount(ACCOUNT)).toBe(0); // and neither was the record
+  });
+
+  test("a same-key retry debits once, re-materializes, and the generation row stays at one", async () => {
+    await grantSome(5);
+    const target = join(tmpBase, "retry");
+    // overwrite so the second pass re-materializes over the same target dir
+    const deps = {
+      index: INDEX,
+      writeFileSet: createFileSetWriter({ overwrite: true }),
+      targetDir: target,
+    };
+    const first = await withTenant(tp.pg, ACCOUNT, (tx) =>
+      runGeneration(tx, deps, SELECTION, {
+        accountId: ACCOUNT,
+        idempotencyKey: "disk-dup",
+      }),
+    );
+    const retry = await withTenant(tp.pg, ACCOUNT, (tx) =>
+      runGeneration(tx, deps, SELECTION, {
+        accountId: ACCOUNT,
+        idempotencyKey: "disk-dup",
+      }),
+    );
+    expect(first.idempotent).toBe(false);
+    expect(retry.idempotent).toBe(true);
+    expect(existsSync(join(target, "package.json"))).toBe(true); // re-materialized
+    expect(await withTenant(tp.pg, ACCOUNT, (tx) => balance(tx, ACCOUNT))).toBe(
+      4,
+    ); // exactly one debit
+    expect(await genCount(ACCOUNT)).toBe(1); // dedup on idempotency key
+  });
+});
+
+// --- Edition pin resolution (ADR-0077): the generator folds an edition's FROZEN member pins into
+// the buyer's deps; a pin that does not resolve in the index fails closed BEFORE the debit. ---
+const mkManifest = (
+  id: string,
+  version: string,
+  kind: "primitive" | "edition",
+  extra: { editions?: string[]; members?: Record<string, string> } = {},
+) => ({
+  version,
+  manifest: {
+    id,
+    version,
+    kind,
+    editions: extra.editions ?? [],
+    tier: "paid" as const,
+    priceCents: 100,
+    license: "LicenseRef-Caisson-Commercial" as const,
+    dependencies: [] as string[],
+    members: extra.members ?? {},
+    entry: "src/index.ts",
+    agents: "AGENTS.md",
+    golden: null,
+    stability: "alpha" as const,
+    description: "x",
+  },
+  publishedAt: "2026-06-27T00:00:00.000Z",
+  gateAttestation: "ci@x",
+});
+
+/** field-crypto + credits + a `compliance` EDITION whose member pin map names credits@0.2.0. */
+const editionIndex = (memberPin: string) =>
+  loadRegistryIndex({
+    schemaVersion: 1,
+    modules: [
+      {
+        id: "@caisson/field-crypto",
+        latest: "0.1.0",
+        versions: [mkManifest("@caisson/field-crypto", "0.1.0", "primitive")],
+      },
+      {
+        id: "@caisson/credits",
+        latest: "0.2.0",
+        versions: [mkManifest("@caisson/credits", "0.2.0", "primitive")],
+      },
+      {
+        id: "@caisson/compliance",
+        latest: "0.1.0",
+        versions: [
+          mkManifest("@caisson/compliance", "0.1.0", "edition", {
+            editions: ["compliance"],
+            members: { "@caisson/credits": memberPin },
+          }),
+        ],
+      },
+    ],
+  });
+
+const EDITION_SELECTION = {
+  projectName: "acme-edition",
+  edition: "compliance" as const,
+  modules: [{ id: "@caisson/field-crypto", version: "0.1.0" }],
+};
+
+describe("runGeneration — edition pin resolution (ADR-0077)", () => {
+  test("an edition folds its frozen member pins into the generated package.json deps", async () => {
+    await grantSome(5);
+    const spy = writerSpy();
+    const outcome = await withTenant(tp.pg, ACCOUNT, (tx) =>
+      runGeneration(
+        tx,
+        { index: editionIndex("0.2.0"), writeFileSet: spy.writer },
+        EDITION_SELECTION,
+        { accountId: ACCOUNT, idempotencyKey: "ed-1" },
+      ),
+    );
+    const pkg = outcome.files.find((f) => f.path === "package.json");
+    expect(pkg).toBeDefined();
+    const deps = (
+      JSON.parse(pkg?.content ?? "{}") as {
+        dependencies?: Record<string, string>;
+      }
+    ).dependencies;
+    // the explicitly-selected module + the edition's pinned member both land, at exact versions
+    expect(deps?.["@caisson/field-crypto"]).toBe("0.1.0");
+    expect(deps?.["@caisson/credits"]).toBe("0.2.0");
+  });
+
+  test("an edition member pin absent from the index throws BEFORE any debit", async () => {
+    await grantSome(5);
+    const spy = writerSpy();
+    await expect(
+      withTenant(tp.pg, ACCOUNT, (tx) =>
+        runGeneration(
+          tx,
+          { index: editionIndex("9.9.9"), writeFileSet: spy.writer }, // credits@9.9.9 is not in the index
+          EDITION_SELECTION,
+          { accountId: ACCOUNT, idempotencyKey: "ed-bad" },
+        ),
+      ),
+    ).rejects.toThrow(/unknown version/);
+    expect(spy.calls).toBe(0); // resolution fails closed before the write
+    expect(await withTenant(tp.pg, ACCOUNT, (tx) => balance(tx, ACCOUNT))).toBe(
+      5,
+    ); // never charged
+    expect(await genCount(ACCOUNT)).toBe(0);
   });
 });
