@@ -250,6 +250,22 @@
         "typescript": "^5.6.0",
       },
     },
+    "packages/guardrails": {
+      "name": "@caisson/guardrails",
+      "version": "0.0.0",
+      "dependencies": {
+        "@caisson/field-crypto": "workspace:*",
+        "@caisson/kernel": "workspace:*",
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
+    },
     "packages/jobs": {
       "name": "@caisson/jobs",
       "version": "0.0.0",
@@ -460,6 +476,8 @@
     "@caisson/eslint-config": ["@caisson/eslint-config@workspace:tooling/eslint-config"],
 
     "@caisson/field-crypto": ["@caisson/field-crypto@workspace:packages/field-crypto"],
+
+    "@caisson/guardrails": ["@caisson/guardrails@workspace:packages/guardrails"],
 
     "@caisson/jobs": ["@caisson/jobs@workspace:packages/jobs"],
 
