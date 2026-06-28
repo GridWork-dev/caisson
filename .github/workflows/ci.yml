@@ -54,7 +54,7 @@ jobs:
         # PGlite instances; at turbo's default fan-out they contend on the runner and a PGlite `beforeAll`
         # can exceed its hook timeout. Halving peak concurrency removes the starvation (local `bun run
         # check` stays full-speed). Tunable if the job runs long.
-        run: turbo run build lint test --no-daemon --concurrency=50% && bun run gate
+        run: bunx turbo run build lint test --no-daemon --concurrency=50% && bun run gate
       # Slow golden-file / testcontainers matrices land here once the compliance
       # edition (P2) has code — kept CI-only, never in the pre-commit hook.
 
