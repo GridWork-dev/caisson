@@ -6,6 +6,12 @@
   "license": "LicenseRef-Caisson-Commercial",
   "description": "WORM ArtifactStore (S3 Object-Lock) + SHA-256 append-only audit chain.",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1075.0"
+    "@aws-sdk/client-s3": "^3.1075.0",
+    "@caisson/kernel": "workspace:*",
+    "@caisson/tenancy-rls": "workspace:*",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@caisson/testing": "workspace:*"
   }
 }
