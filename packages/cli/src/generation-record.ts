@@ -65,6 +65,12 @@ export interface RecordGenerationInput {
 export interface GenerationRecordResult {
   /** True on the first record for this key; false when an existing row absorbed the retry (no-op). */
   recorded: boolean;
+  /**
+   * The canonical generation row id: the new row's id on first insert, or the existing row's id on a
+   * same-key retry (ADR-0024). Stable across retries so the caller gets a consistent reference without
+   * a second round-trip.
+   */
+  id: string;
 }
 
 /**
@@ -73,6 +79,10 @@ export interface GenerationRecordResult {
  * with the same key records once — the conflict is absorbed without poisoning the surrounding
  * transaction (a raised 23505 would). RLS `WITH CHECK` ties the row to the bound tenant: an
  * `accountId` that does not match the active GUC is refused outright (fail-closed).
+ *
+ * Returns the canonical row id in BOTH cases: the new row's id on a fresh insert, or the existing
+ * row's id when the conflict fires. The SELECT on a retry is RLS-scoped to the same `accountId` that
+ * the surrounding `withTenant` bound as the GUC — the policy USING clause is satisfied.
  */
 export async function recordGeneration(
   tx: TenantExecutor,
@@ -91,5 +101,25 @@ export async function recordGeneration(
       input.fileSetHash,
     ],
   );
-  return { recorded: inserted.rows.length > 0 };
+  if (inserted.rows.length > 0) {
+    // Fresh insert: the RETURNING clause gives the new row's id.
+    return { recorded: true, id: inserted.rows[0]!.id };
+  }
+  // ON CONFLICT DO NOTHING: the row already exists. SELECT it within the same tenant-scoped
+  // transaction — the RLS USING clause (account_id = current_setting('app.current_account')) is
+  // satisfied because withTenant bound the GUC to input.accountId before the INSERT, and we're
+  // still inside that same transaction.
+  const existing = await tx.query<{ id: string }>(
+    `SELECT id FROM generation WHERE account_id = $1 AND idempotency_key = $2`,
+    [input.accountId, input.idempotencyKey],
+  );
+  const id = existing.rows[0]?.id;
+  if (id === undefined) {
+    // Should be unreachable: ON CONFLICT fired so the row must exist; SELECT with matching RLS
+    // must return it. A missing row here indicates a schema or RLS misconfiguration — surface loudly.
+    throw new Error(
+      `generation row unexpectedly absent after ON CONFLICT for account ${input.accountId} / key ${input.idempotencyKey}`,
+    );
+  }
+  return { recorded: false, id };
 }

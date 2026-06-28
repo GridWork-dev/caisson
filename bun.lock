@@ -77,6 +77,7 @@
         "@caisson/tenancy-rls": "workspace:*",
       },
       "devDependencies": {
+        "@caisson/cli": "workspace:*",
         "@caisson/eslint-config": "workspace:*",
         "@caisson/registry": "workspace:*",
         "@caisson/testing": "workspace:*",

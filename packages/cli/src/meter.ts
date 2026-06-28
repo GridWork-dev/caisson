@@ -65,6 +65,8 @@ export interface GenerationOutcome {
   files: GeneratedFileSet;
   balance: number;
   idempotent: boolean;
+  /** The canonical generation audit row id (ADR-0049/T16). Stable across same-key retries. */
+  generationId: string;
 }
 
 /** The BUNDLED migrations dir for a `@caisson/<name>` module, resolved relative to THIS file (via
@@ -228,7 +230,7 @@ export async function runGeneration(
   if (writer) {
     await writer(deps.targetDir ?? selection.projectName, composed);
   }
-  await recordGeneration(tx, {
+  const recordResult = await recordGeneration(tx, {
     accountId: meter.accountId,
     idempotencyKey: meter.idempotencyKey,
     selection,
@@ -239,5 +241,6 @@ export async function runGeneration(
     files: composed,
     balance: result.balance,
     idempotent: result.idempotent,
+    generationId: recordResult.id,
   };
 }
