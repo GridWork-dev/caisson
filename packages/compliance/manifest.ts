@@ -25,6 +25,14 @@ export default defineModule({
     "@caisson/tenancy-rls",
     "@caisson/kernel",
   ],
+  // Frozen member pin map (ADR-0077): edition self + every bundled dependency, exact-version.
+  members: {
+    "@caisson/compliance": "0.0.0",
+    "@caisson/audit-worm": "0.0.0",
+    "@caisson/field-crypto": "0.0.0",
+    "@caisson/tenancy-rls": "0.0.0",
+    "@caisson/kernel": "0.0.0",
+  },
   golden: "src/__golden__",
   description:
     "Compliance edition (the hero): seeds a tenant, writes encrypted SEC/HIPAA fields under a tenant-scoped crypto boundary, locks an append-only artifact into WORM with a SHA-256 audit-chain anchor, and emits a deterministic, signed control→evidence pack — own-authored SOC2-TSC + HIPAA control packs, flag-never-guess generation.",
