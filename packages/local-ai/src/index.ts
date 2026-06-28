@@ -48,6 +48,11 @@ export {
   type AeadCipher,
 } from "@caisson/field-crypto";
 
+// At-rest field encryption composed over the file-per-tenant local store (ADR-0055/0064 — TM-REST):
+// the edition seam that seals/opens a sensitive column under a per-tenant derived key before it
+// touches the SQLite file, so a tenant-B file cannot open a tenant-A ciphertext (AEAD auth-fail).
+export { AtRestStore } from "./crypto/at-rest.ts";
+
 // Kernel primitives the edition composes: canonical bytes (license payload signing + audit chain),
 // the single guarded outbound chokepoint the privacy/egress gate wraps, and the pure
 // migration-assembly the edition's ordered, idempotent schema_version ledger builds on
