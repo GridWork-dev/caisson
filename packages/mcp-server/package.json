@@ -20,6 +20,7 @@
   "dependencies": {
     "@caisson/ai-config": "workspace:*",
     "@caisson/kernel": "workspace:*",
+    "@caisson/registry": "workspace:*",
     "zod": "^3.23.8"
   },
   "devDependencies": {

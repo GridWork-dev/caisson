@@ -25,6 +25,17 @@ export default defineModule({
     "@caisson/prompt-registry",
     "@caisson/tenancy-rls",
   ],
+  // Frozen member pin map (ADR-0077): edition self + every bundled dependency, exact-version.
+  members: {
+    "@caisson/ai-kit": "0.0.0",
+    "@caisson/ai-config": "0.0.0",
+    "@caisson/ai-meter": "0.0.0",
+    "@caisson/credits": "0.0.0",
+    "@caisson/guardrails": "0.0.0",
+    "@caisson/kernel": "0.0.0",
+    "@caisson/prompt-registry": "0.0.0",
+    "@caisson/tenancy-rls": "0.0.0",
+  },
   description:
     "AI Production Kit edition: the metered infer() gateway composing prompt-registry + ai-meter + guardrails + ai-config behind Vercel AI SDK v5 — the enforced chokepoint for every AI feature (ADR-0059).",
 });

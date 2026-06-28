@@ -8,7 +8,12 @@ import { newTestPg, type TestPg } from "@caisson/testing";
 import { generateAccountKeyPair, signAccountJwt } from "@caisson/auth";
 import { CREDIT_SCHEMA_SQL } from "@caisson/credits";
 import { createStripeBilling } from "@caisson/billing";
+import { loadRegistryIndex } from "@caisson/registry";
 import { createBaseApp, createFetchHandler } from "./index.ts";
+
+// This capstone exercises only the authed MCP read (`list_modules`), which never touches the
+// registry index — a minimal valid (empty) index satisfies the new `index` option.
+const EMPTY_INDEX = loadRegistryIndex({ schemaVersion: 1, modules: [] });
 
 const WEBHOOK_SECRET = "whsec_base_test";
 const keys = generateAccountKeyPair();
@@ -49,7 +54,7 @@ beforeAll(async () => {
           entitlements: ["compliance", "auth"],
         },
       ],
-      registryAllowlist: ["compliance", "auth", "billing"],
+      index: EMPTY_INDEX,
       onGenerate: async () => ({ generationId: "gen_1" }),
     },
   });

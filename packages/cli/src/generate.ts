@@ -1,55 +1,31 @@
 // The generator core (ADR-0048/0021/0004). Validates a buyer's selection against the registry
 // ALLOWLIST — every module id AND version — BEFORE any path construction or subprocess, then
 // materializes a workspace via a deterministic engine seam (in-repo template copy + typed transform,
-// ADR-0048). Wave 0 ships the validation gate + the seam + a deterministic skeleton (golden-fixtured);
-// the full P5 generation drive (disk write + MCP) plugs in behind the same seam.
-import { z } from "zod";
+// ADR-0048). The default engine is now `templatesEngine` (the real templated drive, ADR-0068/0072):
+// it reads the in-repo `templates/` tree and emits the buyer repo. The disk write (FileSetWriter)
+// + buyer MCP plug in behind the same seam (a separate task).
 import {
   type RegistryIndex,
   assertKnownModule,
   assertKnownVersion,
 } from "@caisson/registry";
+import { templatesEngine } from "./engine-templates.ts";
+import {
+  type GeneratedFile,
+  type GeneratedFileSet,
+  type GeneratorEngine,
+  Selection,
+} from "./seam.ts";
 
-const EDITIONS = ["compliance", "ai-kit", "local-ai", "agent-dev"] as const;
-
-const ModuleSelection = z
-  .object({
-    id: z.string(),
-    version: z.string(),
-  })
-  .strict();
-
-/** A buyer's selection. Project name is a strict slug (it becomes a directory at P5 — no traversal). */
-export const Selection = z
-  .object({
-    projectName: z
-      .string()
-      .min(1)
-      .max(64)
-      .regex(/^[a-z0-9][a-z0-9-]*$/, "must be a lowercase slug"),
-    edition: z.enum(EDITIONS).optional(),
-    modules: z.array(ModuleSelection).min(1),
-  })
-  .strict()
-  // One id at two versions makes package.json deps (last-wins) disagree with the README (lists
-  // both) — an order-dependent, non-deterministic output. Reject the ambiguity at the boundary.
-  .refine(
-    (s) => new Set(s.modules.map((m) => m.id)).size === s.modules.length,
-    { message: "duplicate module id in selection", path: ["modules"] },
-  );
-export type Selection = z.infer<typeof Selection>;
-
-export interface GeneratedFile {
-  /** Relative path within the generated repo. Always a fixed literal here — never built from input. */
-  readonly path: string;
-  readonly content: string;
-}
-export type GeneratedFileSet = readonly GeneratedFile[];
-
-/** The generator engine seam (ADR-0048). Swap the deterministic copy/transform for ts-morph later. */
-export interface GeneratorEngine {
-  materialize(selection: Selection): GeneratedFileSet;
-}
+// Re-export the generator contract from its leaf module so external importers keep importing the
+// `Selection` schema/type + the engine seam types from `@caisson/cli` (via `./generate.ts`)
+// unchanged. The declarations live in `seam.ts` to keep engine implementations off a build cycle.
+export {
+  type GeneratedFile,
+  type GeneratedFileSet,
+  type GeneratorEngine,
+  Selection,
+} from "./seam.ts";
 
 /**
  * Parse + ALLOWLIST-GATE a raw selection. Zod `.strict()` first, then every module id + version is
@@ -70,9 +46,10 @@ export function validateSelection(
 }
 
 /**
- * The default deterministic engine: assembles a workspace that INSTALLS the selected modules from
- * the registry (it never copies module source). Output is a fixed file set for a fixed selection
- * (golden-fixtured, ADR-0021 §golden). No network, no fs — pure construction.
+ * The legacy minimal skeleton engine (Wave 0): a 3-file workspace that INSTALLS the selected
+ * modules from the registry (it never copies module source). Superseded as the default by
+ * `templatesEngine` (the real templated drive, ADR-0068), but kept exported because the test suite
+ * and the spy-engine harness reference it. No network, no fs — pure construction.
  */
 export const defaultEngine: GeneratorEngine = {
   materialize(selection: Selection): GeneratedFileSet {
@@ -130,7 +107,7 @@ function readme(selection: Selection): string {
 export function generate(
   index: RegistryIndex,
   raw: unknown,
-  engine: GeneratorEngine = defaultEngine,
+  engine: GeneratorEngine = templatesEngine,
 ): { selection: Selection; files: GeneratedFileSet } {
   const selection = validateSelection(index, raw);
   return { selection, files: engine.materialize(selection) };

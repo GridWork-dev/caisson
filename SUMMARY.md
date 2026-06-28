@@ -67,8 +67,8 @@ config, pricing.
 
 **Build plan (`plan.md`):** P0 foundations → P1 base → P2 compliance → P3 AI-kit → P4 local-first +
 agentic → P5 generator → P6 commerce + support + docs → P7+ round-out. **Done so far:** P0, P1, the
-D9 pipeline, Wave 0 substrate, Wave 1 editions (merged-but-partial), GTM site. Exit gate per phase, no
-dates.
+D9 pipeline, Wave 0 substrate, Wave 1 editions (merged-but-partial), GTM site, **P5 generator + registry
+full drive** (built, PR open — SHIP review; publishability flip deferred). Exit gate per phase, no dates.
 
 ## Specs (canonical concept docs — `specs/`)
 

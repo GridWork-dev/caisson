@@ -24,6 +24,14 @@ export default defineModule({
     "@caisson/kernel",
     "@caisson/local-store",
   ],
+  // Frozen member pin map (ADR-0077): edition self + every bundled dependency, exact-version.
+  members: {
+    "@caisson/agent-dev": "0.0.0",
+    "@caisson/agent-kernel": "0.0.0",
+    "@caisson/ai-config": "0.0.0",
+    "@caisson/kernel": "0.0.0",
+    "@caisson/local-store": "0.0.0",
+  },
   golden: "src/__golden__",
   description:
     "Agentic-Dev edition: composes the governed engine-neutral agent kernel + local hybrid memory + a thin multi-harness emitter (.claude/ · Codex AGENTS.md · Cursor) from one typed Caisson schema; Claude Code is one emit target among several, never the substrate.",

@@ -57,6 +57,10 @@
             "tier": "paid",
             "priceCents": 4900,
             "license": "LicenseRef-Caisson-Commercial",
+            "members": {
+              "@caisson/compliance": "0.1.0",
+              "@caisson/evidence-pack": "0.1.0"
+            },
             "description": "Compliance edition meta-package (fixture; names its own edition)."
           },
           "publishedAt": "2026-06-27T00:00:00.000Z",
@@ -99,6 +103,10 @@
             "tier": "paid",
             "priceCents": 4900,
             "license": "LicenseRef-Caisson-Commercial",
+            "members": {
+              "@caisson/ai-kit": "0.1.0",
+              "@caisson/inference": "0.1.0"
+            },
             "description": "AI Production Kit edition meta-package (fixture; names its own edition)."
           },
           "publishedAt": "2026-06-27T00:00:00.000Z",
@@ -141,6 +149,10 @@
             "tier": "paid",
             "priceCents": 4900,
             "license": "LicenseRef-Caisson-Commercial",
+            "members": {
+              "@caisson/local-ai": "0.1.0",
+              "@caisson/inference": "0.1.0"
+            },
             "description": "Local-first AI edition meta-package (fixture; names its own edition)."
           },
           "publishedAt": "2026-06-27T00:00:00.000Z",
@@ -162,6 +174,9 @@
             "tier": "paid",
             "priceCents": 4900,
             "license": "LicenseRef-Caisson-Commercial",
+            "members": {
+              "@caisson/agent-dev": "0.1.0"
+            },
             "description": "Agentic-Dev edition meta-package (fixture; names its own edition)."
           },
           "publishedAt": "2026-06-27T00:00:00.000Z",
