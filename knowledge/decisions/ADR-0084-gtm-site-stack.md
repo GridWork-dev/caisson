@@ -1,7 +1,11 @@
-# ADR-0045 — GTM site stack: Fumadocs + in-repo MDX, single static-export Next app → Cloudflare Pages
+# ADR-0084 — GTM site stack: Fumadocs + in-repo MDX, single static-export Next app → Cloudflare Pages
 
 Status: accepted · 2026-06-27 (closes the **"Docs framework"**, **"Cloudflare deploy mode"**,
 **"App topology"**, and **"Content source"** open forks for the GTM marketing+docs session.)
+
+> **Renumbered 2026-06-28:** originally ADR-0045 — collided with the Wave-0 substrate
+> ADR-0045 (field-crypto AEAD cipher), allocated in a parallel track. Renumbered to 0084 to
+> clear the collision; content unchanged. Mapping recorded in ADR-0088 + `docs/adr-index.md`.
 
 The public site (`apps/site`) — marketing **and** product docs — is **one Next.js App Router app**,
 statically exported (`output: 'export'`) and direct-uploaded to the existing `caisson-site`
@@ -31,7 +35,7 @@ parenthetical — Next 16 is still App Router, so this does not relitigate the f
 ## Scope
 
 Applies to the `apps/site` public site only. Static export means **no Next server routes** in the app
-— runtime backend (the waitlist) is a Cloudflare Pages Function (ADR-0046). `images: { unoptimized: true }`,
+— runtime backend (the waitlist) is a Cloudflare Pages Function (ADR-0085). `images: { unoptimized: true }`,
 `generateStaticParams` on the docs `[[...slug]]` route, and static Orama search (`staticGET`,
 `revalidate = false`) are required by the export mode. Fumadocs UI's Tailwind v4 footprint is confined
 to the docs CSS + an `fd-bridge` layer mapping `--color-fd-*` → `--cs-*`; marketing surfaces stay plain

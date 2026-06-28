@@ -1,11 +1,15 @@
-# ADR-0047 — Web analytics: Plausible (cookieless, no consent banner)
+# ADR-0086 — Web analytics: Plausible (cookieless, no consent banner)
 
 Status: accepted · 2026-06-27 (closes the **"Analytics"** open fork for the GTM session.)
+
+> **Renumbered 2026-06-28:** originally ADR-0047 — collided with the Wave-0 substrate
+> ADR-0047 (registry read-path / Worker seam), allocated in a parallel track. Renumbered to 0086
+> to clear the collision; content unchanged. Mapping recorded in ADR-0088 + `docs/adr-index.md`.
 
 The site uses **Plausible** for web analytics — cookieless, no personal-data storage, **no consent
 banner legally required**. Launch wiring is the **direct cloud script** (`data-domain="caisson.sh"`,
 `https://plausible.io/js/script.js`), loaded via `next/script` in the root layout. A custom-event goal
-`Signup` fires on a successful waitlist submission (ADR-0046).
+`Signup` fires on a successful waitlist submission (ADR-0085).
 
 ## Why
 
@@ -17,7 +21,7 @@ App-Router client-side navigations via the History API, so no manual pageview fi
 
 ## Scope
 
-Direct cloud integration at launch: the CSP (`public/_headers`, ADR-0045) allows exactly
+Direct cloud integration at launch: the CSP (`public/_headers`, ADR-0084) allows exactly
 `script-src 'self' https://plausible.io` + `connect-src 'self' https://plausible.io`. The script is
 inert until a Plausible site for `caisson.sh` is registered — acceptable for a non-live scaffold. A
 **first-party proxy** (serving the script + `/api/event` from a same-origin path so the CSP collapses

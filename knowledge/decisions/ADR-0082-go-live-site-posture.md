@@ -1,8 +1,8 @@
 # ADR-0082 — Go-live site posture: live self-serve, committed pricing, true-to-built claims
 
 **Status:** accepted · 2026-06-28 (go-live copy session — operator-decided across a 4-fork picker).
-**Supersedes:** the **pre-launch waitlist-capture stance** of ADR-0046/ADR-0048 (CTA = capture, not
-checkout) and the **indicative-placeholder pricing** stance of ADR-0081 (which superseded ADR-0048's
+**Supersedes:** the **pre-launch waitlist-capture stance** of ADR-0085/ADR-0087 (CTA = capture, not
+checkout) and the **indicative-placeholder pricing** stance of ADR-0081 (which superseded ADR-0087's
 no-price stance). **Relates:** ADR-0012 (price anchors), ADR-0083 (Local-first commercial), ADR-0040
 (hero — unchanged), ADR-0080 (copy laws — unchanged), specs/04 (voice). Evidence: the as-if-live copy
 audit (`outputs/specs/design-brand-site-seo/` session; 4-dimension fanout — hedge-language /

@@ -2,7 +2,7 @@
 
 **Status:** accepted · 2026-06-27 (Design·Brand·SEO·Copy session — operator picked "full programmatic
 engine" + "lock all technical as recommended"). **Relates:** ADR-0040 (positioning — picks-and-shovels
-gap), ADR-0045 (static Next 16 + Fumadocs MDX on Cloudflare Pages), ADR-0047 (Plausible CSP), ADR-0048→0081
+gap), ADR-0084 (static Next 16 + Fumadocs MDX on Cloudflare Pages), ADR-0086 (Plausible CSP), ADR-0087→0081
 (pricing display), specs/04 (voice). Evidence: `FORK-BOARD.md` (SEO forks S1–S26 + critic), research
 `exa-seo-keywords-content.md` · `exa-seo-technical.md` · `current-state-seo.md`.
 
@@ -35,7 +35,7 @@ competition, and ADR-0040 already authorizes the named empty slot. (S2, S3, S4, 
 For a dev-kit the **docs ARE the SEO surface**: structure them as rankable guides (per-framework starter
 guides, per-control how-tos) and run a title/intro pass on the existing `tenancy-rls`, `audit-worm`,
 `field-crypto` docs for their head terms (multi-tenant RLS, WORM audit log, field-level encryption). Near
-zero cost on Fumadocs MDX (ADR-0045). (S10)
+zero cost on Fumadocs MDX (ADR-0084). (S10)
 
 ## 4. Technical SEO floor
 
@@ -53,7 +53,7 @@ zero cost on Fumadocs MDX (ADR-0045). (S10)
   (S12, S15, V30)
 - **Self-host fonts via `next/font`** (Hubot Sans + Martian Mono + the code mono) — drops the
   render-blocking Google Fonts `<link>` (~180ms LCP win), guarantees the 400 body weight, satisfies the
-  brand-floor `next/font` mandate, and respects ADR-0047's plausible-only CSP. (S16)
+  brand-floor `next/font` mandate, and respects ADR-0086's plausible-only CSP. (S16)
 - **Favicon / app-icon / manifest kit** derived from the ADR-0078 waterline glyph (`app/icon.svg` +
   `apple-icon.png` + manifest + `theme-color:#0d1216` + `color-scheme:dark`) — the tab and mobile SERP
   currently show a bare default. (S23)
@@ -79,7 +79,7 @@ with civil engineering; own "caisson compliance" / "@caisson" + repo topics + RE
 Establish a **Lighthouse CWV + a11y CI baseline + budget before launch** — CWV is both a ranking signal and
 a compliance-credibility signal, and the baseline catches the render-blocking font link the font-hosting fork
 removes. Tag Plausible custom events (per-edition CTA, outbound GitHub/docs, source-attributed conversions)
-within ADR-0047's cookieless limits. (S25, C20, S26)
+within ADR-0086's cookieless limits. (S25, C20, S26)
 
 ## Rejected
 
@@ -92,6 +92,6 @@ product); keyword-stuffed mega-titles; per-page OG deferred to later (per-editio
 
 Own the long-tail + a pilot-gated programmatic engine; every programmatic page carries a real code artifact;
 root `@graph` JSON-LD; self-hosted fonts; allow-all AI crawlers + content-signals; CWV/a11y CI gate before
-launch. The site stays **static** (ADR-0045) — moving to runtime SSR or a CMS for SEO would need a
+launch. The site stays **static** (ADR-0084) — moving to runtime SSR or a CMS for SEO would need a
 superseding ADR. Implementation lands in the **build session** (this is doc-only); priorities in
 `outputs/specs/design-brand-site-seo/SPEC.md`.

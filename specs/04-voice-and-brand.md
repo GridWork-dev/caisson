@@ -119,7 +119,7 @@ table (ADR-0040 buyer firewall).
 No longer deferred. Wordmark/logo art (waterline-over-chamber glyph), the icon + illustration system,
 motion, and elevation are decided in **ADR-0078** (brand foundation expansion, supersedes ADR-0042);
 the per-surface **copy & messaging laws** that extend this voice floor are **ADR-0080**. SEO →
-ADR-0079; pricing display → **ADR-0081** (indicative placeholder prices, supersedes ADR-0048 — see §6).
+ADR-0079; pricing display → **ADR-0081** (indicative placeholder prices, supersedes ADR-0087 — see §6).
 The visual system + implementation backlog: `outputs/specs/design-brand-site-seo/SPEC.md`. This spec
 remains the **voice floor**; ADR-0080 adds the surface-specific laws on top of it.
 

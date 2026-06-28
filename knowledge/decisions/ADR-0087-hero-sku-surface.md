@@ -1,13 +1,18 @@
-# ADR-0048 — Hero SKU surface: structure shown, prices deferred to the waitlist
+# ADR-0087 — Hero SKU surface: structure shown, prices deferred to the waitlist
 
 Status: accepted · 2026-06-27 (closes the **"Hero SKU surface + pricing display"** open fork for the
 GTM session. The **"Pricing numbers"** board fork stays OPEN — operator-owned, no hard prices printed.)
+
+> **Renumbered 2026-06-28:** originally ADR-0048 — collided with the Wave-0 substrate
+> ADR-0048 (generator engine), allocated in a parallel track. Renumbered to 0087 to clear the
+> collision; content unchanged. **Note:** this stance was later superseded by ADR-0081 (indicative
+> placeholder prices) then ADR-0082 (committed pricing, live self-serve). Mapping in ADR-0088 + `docs/adr-index.md`.
 
 The marketing site shows the **SKU structure** — the compliance-led lineup and the commerce model —
 but prints **no hard prices**. Compliance is the hero / front door; the free Local-first AGPL flank is
 the top-of-funnel CTA; AI Production Kit is named #2; Agentic-Dev is roadmap; the two subscriptions
 (Compliance Updates, Developer) and the "EU AI Act-ready" gated slot are listed as structure. The page
-converts to the **waitlist** (ADR-0046), not a checkout.
+converts to the **waitlist** (ADR-0085), not a checkout.
 
 ## Why
 
