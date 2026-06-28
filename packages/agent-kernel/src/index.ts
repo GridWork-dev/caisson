@@ -29,3 +29,20 @@ export type { Act, LifecycleStep } from "./lifecycle.ts";
 
 export { HookDispatcher } from "./hooks.ts";
 export type { HookName, HookPhase, HookContext, HookHandler } from "./hooks.ts";
+
+export {
+  allow,
+  deny,
+  mutate,
+  isAllow,
+  isDeny,
+  isMutate,
+  predicateGuard,
+  evaluateGuards,
+} from "./governance.ts";
+export type {
+  HookDecision,
+  HookResult,
+  TransitionContext,
+  TransitionGuard,
+} from "./governance.ts";
