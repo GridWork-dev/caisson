@@ -1,0 +1,45 @@
+{
+  "eval": "compliance-answer",
+  "promptVersionId": "00000000-0000-4000-8000-000000000001",
+  "promptRef": "compliance-answer@1",
+  "threshold": 0.8,
+  "scorers": ["cites-control", "faithfulness"],
+  "cases": [
+    {
+      "id": "cc6.1-logical-access",
+      "input": {
+        "vars": {
+          "persona": "a concise SOC 2 compliance assistant",
+          "context": "CC6.1: The entity implements logical access security software, infrastructure, and architectures over protected information assets to protect them from security events.",
+          "question": "What does SOC 2 control CC6.1 require?"
+        }
+      },
+      "output": "SOC 2 CC6.1 requires the entity to implement logical access security controls — software, infrastructure, and architecture — over protected information assets so that only authorized users can reach them.",
+      "expected": { "matches": "CC6\\.1" }
+    },
+    {
+      "id": "cc7.2-monitoring",
+      "input": {
+        "vars": {
+          "persona": "a concise SOC 2 compliance assistant",
+          "context": "CC7.2: The entity monitors system components and the operation of controls to detect anomalies indicative of malicious acts, natural disasters, and errors.",
+          "question": "What is the intent of SOC 2 control CC7.2?"
+        }
+      },
+      "output": "SOC 2 CC7.2 calls for continuous monitoring of system components and control operation so that anomalies signalling malicious activity, disasters, or errors are detected promptly.",
+      "expected": { "matches": "CC7\\.2" }
+    },
+    {
+      "id": "cc6.3-least-privilege",
+      "input": {
+        "vars": {
+          "persona": "a concise SOC 2 compliance assistant",
+          "context": "CC6.3: The entity authorizes, modifies, or removes access to data and software based on roles and least privilege, and reviews access periodically.",
+          "question": "Summarize SOC 2 control CC6.3."
+        }
+      },
+      "output": "SOC 2 CC6.3 requires that access to data and software be granted, changed, or revoked by role under least privilege, with periodic access reviews.",
+      "expected": { "matches": "CC6\\.3" }
+    }
+  ]
+}

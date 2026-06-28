@@ -1,0 +1,18 @@
+{
+  "id": "ACCESS-CONTROL.MFA",
+  "title": "Multi-factor authentication for privileged access",
+  "family": "Access Control",
+  "statement": "Privileged access to production systems and the tenant data plane requires a second authentication factor beyond a password; single-factor privileged sessions are denied.",
+  "guidance": "Enforce at the identity provider for every role granted production or admin scope; record the enrollment and the per-session factor in the audit chain.",
+  "crosswalk": [
+    {
+      "framework": "SOC2-TSC",
+      "reference": "CC6.1",
+      "note": "Logical access security — authentication"
+    },
+    {
+      "framework": "HIPAA-Security",
+      "reference": "164.312(a)(2)(i)"
+    }
+  ]
+}

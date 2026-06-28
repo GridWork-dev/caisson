@@ -54,15 +54,23 @@ implementation**. The harvestable license kit is taken from PUBLIC `tessera`.
 ## Locked since founding (no longer deferred)
 
 - **Name + positioning + design** — LOCKED: name **Caisson** (ADR-0041); hero = **compliance
-  wedge under a production-rigor umbrella** (ADR-0040); design foundation palette+type (ADR-0042).
+  wedge under a production-rigor umbrella** (ADR-0040); design foundation palette+type (ADR-0042),
+  **expanded** into a full brand system (mark · icons · illustration · expressive motion · elevation+glow)
+  by **ADR-0078** (supersedes 0042). Site SEO → **ADR-0079**; copy laws → **ADR-0080** (extends specs/04).
   The old "AI production codebase starter" frame is superseded.
 - **Module production-standards + pipeline** — LOCKED: manifest · publish flow · lint gates ·
-  fully-commercial licensing (ADR-0020-0023); `tooling/`+`registry/` is the seam.
+  fully-commercial licensing (ADR-0020-0023, **all four editions commercial** — Local-first's AGPL
+  flank removed by **ADR-0083**); `tooling/`+`registry/` is the seam.
+- **Site go-live posture** — LOCKED (**ADR-0082**): the site reads **live self-serve** (purchase CTAs,
+  no waitlist), **committed prices** (no "indicative/subject-to-change" frame — supersedes ADR-0081),
+  **artifacts true-to-built** (no fabricated CLI/CI for the unbuilt editions); Agentic-Dev the one
+  labeled-roadmap exception. Real checkout + EULA drafting are tracked fast-follows.
 
 ## Still open (do NOT pre-bind)
 
-- **Pricing numbers** (anchors in ADR-0012) — the only open GTM fork; the site prints **no hard
-  prices** until it is locked (ADR-0048 shows SKU structure + waitlist instead).
+- **Pricing FINAL adjustments** (anchors in ADR-0012, displayed point-values committed by ADR-0082) —
+  the operator may still adjust a number before checkout goes live, but the site no longer **says** so;
+  grandfathering policy stays operator-owned. The display fork is closed.
 
 _Closed since: **app framework** → Next.js App Router (ADR-0044); **hosting/site** → Cloudflare
 Pages + `caisson.sh` + a single static-export Next 16 app with Fumadocs MDX (ADR-0045), built in

@@ -1,0 +1,22 @@
+// Registry manifest (ADR-0020). Loaded by @caisson/standards-gate; must agree with package.json on
+// id/version/license/dependencies. `kind: "base"` (ADR-0067) — the shared sqlite-vec + FTS5 + RRF
+// hybrid-retrieval primitive both P4 editions (local-ai, agent-dev) compose DOWN-ONLY (never imports
+// an edition, ADR-0022 Gate-3 / ADR-0003). Paid + LicenseRef-Caisson-Commercial (ADR-0050; the AGPL
+// flank that once blocked a shared commercial store is retired). `priceCents` is the established
+// pre-launch placeholder anchor (4900) — final pricing is the open "Pricing numbers" board fork, out
+// of scope here. The relative import keeps `@caisson/registry` out of the runtime dep set: the sole
+// declared workspace dependency is `@caisson/kernel` (sqlite-vec is the external native ext).
+import { defineModule } from "../../registry/schema/module-manifest";
+
+export default defineModule({
+  id: "@caisson/local-store",
+  version: "0.0.0",
+  kind: "base",
+  tier: "paid",
+  priceCents: 4900,
+  license: "LicenseRef-Caisson-Commercial",
+  dependencies: ["@caisson/kernel"],
+  golden: "src/__golden__",
+  description:
+    "Local hybrid retrieval: sqlite-vec (vec0) + FTS5 + RRF (RRF_K=60) with an always-available FTS path and FTS-only degrade, plus the file-per-tenant isolation floor; embedding is an injected seam, consumed edition→base (local-ai, agent-dev).",
+});

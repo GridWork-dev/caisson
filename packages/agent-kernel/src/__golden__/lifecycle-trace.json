@@ -1,0 +1,32 @@
+[
+  {
+    "seq": 0,
+    "from": "spec",
+    "to": "plan"
+  },
+  {
+    "seq": 1,
+    "from": "plan",
+    "to": "execute"
+  },
+  {
+    "seq": 2,
+    "from": "execute",
+    "to": "verify"
+  },
+  {
+    "seq": 3,
+    "from": "verify",
+    "to": "sweep"
+  },
+  {
+    "seq": 4,
+    "from": "sweep",
+    "to": "eval"
+  },
+  {
+    "seq": 5,
+    "from": "eval",
+    "to": "ship"
+  }
+]

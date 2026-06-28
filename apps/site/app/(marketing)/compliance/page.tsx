@@ -1,337 +1,450 @@
-import Link from "next/link";
-import type { Metadata } from "next";
+import type { ReactNode } from "react";
 
-import { WaitlistForm } from "@/components/waitlist-form";
+import {
+  Button,
+  Card,
+  CredentialStrip,
+  Hero,
+  Icon,
+  Reveal,
+  Section,
+  StatusChip,
+  Terminal,
+  type IconName,
+} from "@/components";
+import { buildMetadata, SITE_URL } from "@/lib/metadata";
+import {
+  breadcrumb,
+  faqPage,
+  serializeJsonLd,
+  softwareApplication,
+} from "@/lib/jsonld";
+import { formatPrice, priceById } from "@/lib/pricing";
 
-export const metadata: Metadata = {
-  title: "Compliance — fail-closed infrastructure for regulated SaaS",
+export const metadata = buildMetadata({
+  title: "Compliance",
   description:
-    "Fail-closed Postgres RLS with FORCE, S3 Object-Lock WORM, an append-only SHA-256 audit chain, per-tenant field encryption, and a SOC 2 / HIPAA evidence-pack generator — wired and tested before your first audit, not backfilled after it.",
-};
+    "Compliance-grade infrastructure for regulated SaaS: fail-closed Postgres RLS, S3 Object-Lock WORM, an append-only audit chain, per-tenant field encryption, and a SOC 2 / HIPAA evidence-pack generator — wired and tested before your first audit, not backfilled after it.",
+  path: "/compliance",
+});
 
-// Each guarantee carries its own evidence artifact — a real policy / terminal
-// transcript, not a claim. Voice contract (specs/04): show, don't assert.
-const GUARANTEES = [
+// Each control ships with a live, one-line artifact (the proof IS the claim — DESIGN.md §9) and the
+// framework clause it satisfies. Caisson generates this evidence; it never asserts certification.
+const CONTROLS: readonly {
+  icon: IconName;
+  title: string;
+  body: string;
+  tags: readonly string[];
+  proof: string;
+}[] = [
   {
-    glyph: "▣",
-    label: "Fail-closed RLS",
-    title: "Postgres row-level security with FORCE.",
-    body: "Every tenant table enables and FORCEs RLS, so the policy binds the table owner too — there is no privileged path around it. A query that never set the tenant context returns nothing, not everything. Cross-tenant isolation is a test in CI, not a convention you hope each developer remembers.",
-    evidence: `-- Tenant tables enable AND force RLS — the owner is bound by policy too.
-ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
-ALTER TABLE invoices FORCE  ROW LEVEL SECURITY;
-
-CREATE POLICY tenant_isolation ON invoices
-  USING (tenant_id = current_setting('app.tenant_id')::uuid);
-
--- A query with no tenant context fails closed — it cannot read across tenants.
-> SELECT count(*) FROM invoices;     -- app.tenant_id was never set
-ERROR:  unrecognized configuration parameter "app.tenant_id"`,
-    proves:
-      "Maps to SOC 2 CC6.1 (logical access) and HIPAA §164.312(a)(1) (access control).",
+    icon: "rls",
+    title: "Fail-closed RLS",
+    body: "Every tenant table enables AND forces row-level security, so the policy binds the owner too — no privileged path around it. A query that never set the tenant context returns nothing, not everything.",
+    tags: ["SOC 2 CC6.1", "HIPAA §164.312(a)(1)"],
+    proof: "SELECT count(*) FROM invoices;  →  ERROR: app.tenant_id not set",
   },
   {
-    glyph: "▤",
-    label: "WORM storage",
-    title: "S3 Object-Lock in compliance mode.",
-    body: "Evidence buckets ship with Object Lock enabled and a default retention in COMPLIANCE mode. Inside the window an object cannot be overwritten or deleted — not by an application bug, not by an operator, not by a leaked root key. Retention is a property of the storage, not of your good intentions.",
-    evidence: `# Evidence buckets enforce Object Lock in COMPLIANCE mode with default retention.
-$ aws s3api get-object-lock-configuration --bucket caisson-evidence
-{ "ObjectLockConfiguration": { "ObjectLockEnabled": "Enabled",
-    "Rule": { "DefaultRetention": { "Mode": "COMPLIANCE", "Years": 7 } } } }
-
-# A delete inside the retention window is refused — for every caller.
-$ aws s3api delete-object --bucket caisson-evidence --key audit/2026-q2.jsonl
-AccessDenied: object is WORM-protected and cannot be deleted until
-2033-06-27T00:00:00Z (COMPLIANCE mode — no override exists).`,
-    proves:
-      "Maps to HIPAA §164.312(c)(1) (integrity) and SOC 2 CC7.2 (monitoring of stored evidence).",
+    icon: "worm",
+    title: "WORM evidence storage",
+    body: "Evidence buckets ship with S3 Object Lock in COMPLIANCE mode and a default retention. Inside the window an object cannot be overwritten or deleted — not by a bug, not by an operator, not by a leaked root key.",
+    tags: ["HIPAA §164.312(c)(1)", "SOC 2 CC7.2"],
+    proof: "delete-object  →  AccessDenied: WORM-protected until 2033-06-27Z",
   },
   {
-    glyph: "▥",
-    label: "Append-only audit chain",
-    title: "Every privileged action hashes into a SHA-256 chain.",
-    body: "Each audit row commits SHA-256 over the previous hash plus its own payload. The log is append-only and replayable: tampering with any historical row breaks every link after it, and the break is detectable, provable, and exportable. You can hand an auditor the proof, not a screenshot.",
-    evidence: `# Each row = sha256(prev_hash || payload). The chain replays and verifies.
-$ caisson audit verify --table audit_log
-seq 41982   sha256 9f2c…a1   prev 7be4…0c   ok
-seq 41983   sha256 3d80…ee   prev 9f2c…a1   ok
-seq 41984   sha256 c5a7…42   prev 3d80…ee   ok
-chain intact — 41984 rows, 0 breaks, root 2c9f…b7`,
-    proves:
-      "Maps to HIPAA §164.312(b) (audit controls) and SOC 2 CC7.2 (detection of unauthorized change).",
+    icon: "audit-chain",
+    title: "Append-only audit chain",
+    body: "Each audit row commits SHA-256 over the previous hash plus its own payload. Tampering with any historical row breaks every link after it — and the break is detectable, provable, and exportable for an auditor.",
+    tags: ["HIPAA §164.312(b)", "SOC 2 CC7.2"],
+    proof: "caisson audit verify  →  41984 rows · 0 breaks · root 2c9f…b7",
+  },
+  {
+    icon: "field-crypto",
+    title: "Per-tenant field encryption",
+    body: "Sensitive columns are sealed with a data key derived per tenant from a root KMS key via HKDF-SHA256. A leaked tenant key exposes one tenant, never the table; rotating the root re-derives every key with no re-encrypt scan.",
+    tags: ["HIPAA §164.312(a)(2)(iv)"],
+    proof: "hkdf(rootKey, tenantId)  →  DEK·A cannot open DEK·B ciphertext",
+  },
+  {
+    icon: "evidence-pack",
+    title: "Evidence-pack generator",
+    body: "Collects the live RLS policies, the WORM retention config, and an audit-chain proof, maps them to named controls, and writes a dated bundle. The evidence comes from the system that enforces it — not a spreadsheet.",
+    tags: ["SOC 2 · HIPAA mapping"],
+    proof:
+      "soc2-evidence-2026-06-28/: rls-policies.json · worm-retention.json · audit-chain-proof.json",
   },
 ];
 
-// Compliance-edition SKU structure only — no numbers (pricing fork open, ADR-0048).
-const SKUS = [
+// Visible FAQ (rendered below) — the same items feed the FAQPage JSON-LD. Procurement-shaped
+// questions, answered honestly against the technical-vs-administrative boundary (ADR-0080 §3).
+const FAQ: readonly { question: string; answer: string }[] = [
   {
-    name: "One-time license",
-    body: "Own the Compliance edition source outright — the base, the four guarantees, and the evidence-pack generator.",
+    question: "Does Caisson make us SOC 2 or HIPAA certified?",
+    answer:
+      "No. Caisson ships the technical controls those frameworks require and generates the evidence to prove them. Certification comes from an auditor assessing your whole program — the organizational controls (HR, vendor, incident response) and the audit itself remain yours.",
   },
   {
-    name: "Compliance Updates",
-    body: "A subscription that tracks framework drift — policy templates and control maps move as SOC 2 / HIPAA guidance does.",
+    question: "Which controls does Caisson actually cover?",
+    answer:
+      "The technical access and integrity controls: fail-closed RLS (SOC 2 CC6.1, HIPAA §164.312(a)(1)), WORM-retained evidence, an append-only audit chain, and per-tenant field encryption. It does not cover administrative, physical, or policy controls — those stay with you.",
   },
   {
-    name: "EU AI Act-ready add-on",
-    body: "An Annex IV technical-documentation pack, gated as an add-on and sold worldwide. Not geo-restricted.",
+    question: "Can I retrofit this into an existing database?",
+    answer:
+      "You can, but it is the expensive path. Backfilling RLS, WORM, and an audit chain into a live multi-tenant database runs $80k and 6–9 months of migration with customer data on the line. Caisson wires them in on day one, before tenants ever share rows.",
+  },
+  {
+    question: "How does the evidence pack work?",
+    answer:
+      "One command collects the live RLS policies, the WORM retention config, and an audit-chain proof, maps them to named controls, and writes a dated bundle. The evidence is read out of the running system, not transcribed into a screenshot or a spreadsheet.",
+  },
+  {
+    question: "Do I own the source?",
+    answer:
+      "Yes. The one-time Compliance license is perpetual — you own the source for the base, the four controls, and the evidence-pack generator. Compliance Updates is an optional subscription that tracks framework drift so the control mappings stay current.",
   },
 ];
+
+const compliancePrice = priceById("compliance");
 
 export default function CompliancePage() {
+  const heroArtifact: ReactNode = (
+    <Terminal
+      label="psql — tenant isolation"
+      status={<StatusChip label="denied" tone="muted" dot />}
+    >
+      {`$ psql -c "select * from invoices"\n`}
+      <span className="cs-tok-danger">ERROR:</span>
+      {`  permission denied for table invoices\n`}
+      {`DETAIL: RLS policy "tenant_isolation" forbids SELECT\n`}
+      {`        with no app.tenant_id set — `}
+      <span className="cs-tok-accent">fail-closed by default.</span>
+    </Terminal>
+  );
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: serializeJsonLd(
+            softwareApplication({
+              name: "Caisson Compliance",
+              description:
+                "Fail-closed RLS, WORM evidence storage, an append-only audit chain, per-tenant field encryption, and a SOC 2 / HIPAA evidence-pack generator for regulated SaaS.",
+              url: `${SITE_URL}/compliance`,
+              priceId: "compliance",
+            }),
+          ),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: serializeJsonLd(
+            breadcrumb([
+              { name: "Home", path: "/" },
+              { name: "Compliance", path: "/compliance" },
+            ]),
+          ),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: serializeJsonLd(faqPage([...FAQ])),
+        }}
+      />
+
       {/* ===== Hero ===== */}
-      <section className="cs-section cs-section--flush">
-        <div className="cs-container">
-          <span className="cs-eyebrow">
-            Compliance-grade infrastructure for regulated SaaS
-          </span>
-          <h1
-            style={{
-              fontSize: "var(--cs-text-display)",
-              lineHeight: "var(--cs-leading-tight)",
-              letterSpacing: "var(--cs-tracking-tighter)",
-              fontWeight: "var(--cs-weight-semibold)",
-              margin: "var(--cs-space-5) 0 var(--cs-space-4)",
-              maxWidth: "18ch",
-            }}
-          >
-            Audit-ready from the first commit.
-          </h1>
-          <p className="cs-lede" style={{ maxWidth: "66ch" }}>
-            Three controls auditors ask for — tenant isolation, immutable
-            evidence, and a tamper-evident log — wired in and tested before your
-            first customer. You start fail-closed, then prove it on demand.
-          </p>
-          <div
-            style={{
-              display: "flex",
-              gap: "var(--cs-space-3)",
-              marginTop: "var(--cs-space-8)",
-              flexWrap: "wrap",
-            }}
-          >
-            <Link href="#waitlist" className="cs-btn cs-btn--primary">
-              Request early access
-            </Link>
-            <Link href="/docs" className="cs-btn cs-btn--ghost">
+      <Hero
+        eyebrow="Compliance-grade infrastructure for regulated SaaS"
+        title="Audit-ready from the first commit."
+        lede="The Compliance edition wires the technical controls an auditor asks for — tenant isolation, immutable evidence, and a tamper-evident log — in before your first customer, tested in CI. You start fail-closed, then prove it on demand."
+        ctas={
+          <>
+            <Button href="/pricing" variant="primary">
+              Get Compliance
+            </Button>
+            <Button href="/docs" variant="ghost">
               Read the docs
-            </Link>
-          </div>
+            </Button>
+          </>
+        }
+        credentials={
+          <CredentialStrip
+            items={[
+              "SOC 2 CC6.1",
+              "HIPAA §164.312",
+              "WORM evidence",
+              "Append-only audit",
+            ]}
+            note="Caisson generates the evidence — the certification is your auditor's call, not ours."
+          />
+        }
+        artifact={heroArtifact}
+      />
 
-          {/* The whole pitch in one transcript: deny first, ask questions later. */}
-          <pre
-            className="cs-code"
-            style={{ marginTop: "var(--cs-space-12)", maxWidth: "62ch" }}
-            aria-label="Example: a query with no tenant context is denied by row-level security"
-          >
-            {`$ psql -c "select * from invoices"
-ERROR:  permission denied for table invoices
-DETAIL: RLS policy "tenant_isolation" forbids SELECT
-        with no app.tenant_id set — fail-closed by default.`}
-          </pre>
-        </div>
-      </section>
-
-      {/* ===== The three guarantees (deep, each with evidence) ===== */}
-      <section className="cs-section">
-        <div className="cs-container">
-          <span className="cs-eyebrow">The three guarantees</span>
-          <h2 className="cs-section-title">
-            Prevention at the application layer — with the receipts.
-          </h2>
-          <p className="cs-lede">
-            Each guarantee ships with a live artifact you can read, run, and
-            hand to an auditor. No diagrams standing in for behaviour.
-          </p>
-
-          <div className="cs-grid" style={{ marginTop: "var(--cs-space-8)" }}>
-            {GUARANTEES.map((g) => (
-              <article key={g.label} className="cs-card">
-                <div className="cs-status">
-                  <span className="glyph" aria-hidden="true">
-                    {g.glyph}
-                  </span>
-                  {g.label}
-                </div>
-                <h3
-                  className="cs-card-title"
-                  style={{ marginTop: "var(--cs-space-3)" }}
-                >
-                  {g.title}
-                </h3>
-                <p
-                  className="cs-muted"
-                  style={{ marginTop: "var(--cs-space-3)", maxWidth: "70ch" }}
-                >
-                  {g.body}
-                </p>
-                <pre
-                  className="cs-code"
-                  style={{ marginTop: "var(--cs-space-5)" }}
-                  aria-label={`Evidence artifact for ${g.label}`}
-                >
-                  {g.evidence}
-                </pre>
-                <p
-                  className="cs-footnote"
-                  style={{ marginTop: "var(--cs-space-3)" }}
-                >
-                  {g.proves}
-                </p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===== Per-tenant field crypto (HKDF) ===== */}
-      <section className="cs-section">
-        <div className="cs-container">
-          <span className="cs-eyebrow">Per-tenant field encryption</span>
-          <h2 className="cs-section-title">
-            One tenant&apos;s key never decrypts another&apos;s column.
-          </h2>
-          <p className="cs-lede">
-            Sensitive columns are encrypted with a data key derived per tenant
-            from a root KMS key via HKDF-SHA256. A leaked tenant key exposes one
-            tenant, never the table. Rotating the root re-derives every tenant
-            key while ciphertext stays addressable.
-          </p>
-          <pre
-            className="cs-code"
-            style={{ marginTop: "var(--cs-space-8)", maxWidth: "78ch" }}
-            aria-label="Per-tenant data-encryption-key derivation via HKDF-SHA256"
-          >
-            {`// Per-tenant DEK derived from the root KMS key — scoped by tenant id.
-const dek = hkdf("sha256", rootKey, /* salt */ tenantId,
-                 /* info */ "caisson/field-v1", 32);
-
-const sealed = aesgcm.seal(dek, plaintext);   // AES-256-GCM, per-field nonce
-
-// A DEK derived for tenant A cannot open tenant B's ciphertext — different
-// salt, different key. Root rotation re-derives all DEKs; no re-encrypt scan.`}
-          </pre>
-        </div>
-      </section>
-
-      {/* ===== Evidence-pack generator ===== */}
-      <section className="cs-section">
-        <div className="cs-container">
-          <span className="cs-eyebrow">Evidence-pack generator</span>
-          <h2 className="cs-section-title">
-            Map a framework to the running system — not a spreadsheet.
-          </h2>
-          <p className="cs-lede">
-            One command collects the live RLS policies, the WORM retention
-            config, and an audit-chain proof, then maps them to named controls
-            and writes a dated bundle. The evidence comes from the system that
-            actually enforces it.
-          </p>
-          <pre
-            className="cs-code"
-            style={{ marginTop: "var(--cs-space-8)", maxWidth: "80ch" }}
-            aria-label="Generating a SOC 2 evidence pack from the live system"
-          >
-            {`$ caisson compliance evidence-pack --framework soc2 --period 2026-Q2
-collecting   RLS policies (live) · WORM retention · audit-chain proof
-mapped 14 controls → CC6.1 access · CC7.2 monitoring · CC8.1 change mgmt
-wrote  evidence/soc2-2026-q2.zip
-       (controls.json, policies.sql, retention.json, chain-proof.txt)`}
-          </pre>
-
-          <p className="cs-footnote" style={{ marginTop: "var(--cs-space-8)" }}>
-            EU AI Act Annex IV ships as an EU AI Act-ready add-on — a
-            technical-documentation pack sold worldwide, never geo-restricted.
-          </p>
-        </div>
-      </section>
-
-      {/* ===== Retrofit-cost callout (locked line) ===== */}
-      <section className="cs-section">
-        <div className="cs-container">
-          <span className="cs-eyebrow">Why now, not later</span>
-          <article
-            className="cs-card cs-card--accent"
-            style={{ marginTop: "var(--cs-space-4)" }}
-          >
+      {/* ===== The wedge: scanner vs construction ===== */}
+      <Reveal>
+        <Section
+          eyebrow="The compliance wedge"
+          title="Compliance prevention at the application layer."
+          lede="A scanner is a smoke detector. Caisson is the fail-closed construction — prevention wired in before the fire, not after. Each control below ships with a live artifact you can read, run, and hand to an auditor."
+          band="tint"
+        >
+          <Card accent className="cs-elevate-md">
             <p
               style={{
-                fontSize: "var(--cs-text-xl)",
+                fontSize: "var(--cs-text-lg)",
                 lineHeight: "var(--cs-leading-relaxed)",
                 letterSpacing: "var(--cs-tracking-tight)",
-                maxWidth: "52ch",
+                maxWidth: "60ch",
               }}
             >
-              Retrofitting RLS, WORM storage, and an audit chain into a live
-              multi-tenant database costs months. Start with them.
+              SOC 2 from scratch runs <span className="cs-num">$80k</span> and{" "}
+              <span className="cs-num">6–9 months</span>. Retrofitting RLS,
+              WORM, and an audit chain into a <em>live</em> multi-tenant
+              database is months more — a migration with customer data on the
+              line.
             </p>
             <p
               className="cs-muted"
               style={{ marginTop: "var(--cs-space-4)", maxWidth: "60ch" }}
             >
-              Once tenants share rows in production, isolation becomes a
-              migration with customer data on the line. Day one, it is a
-              default.
+              Both, wired on day one. Once tenants share rows in production,
+              isolation becomes a backfill you cannot fully trust. As a default,
+              it is just how the schema is built.
             </p>
-          </article>
-        </div>
-      </section>
+          </Card>
+        </Section>
+      </Reveal>
 
-      {/* ===== SKU structure (Compliance edition only — no prices, ADR-0048) ===== */}
-      <section className="cs-section">
-        <div className="cs-container">
-          <span className="cs-eyebrow">How Compliance is sold</span>
-          <h2 className="cs-section-title">Own it, track it, or extend it.</h2>
-          <div
-            className="cs-grid cs-grid--3"
-            style={{ marginTop: "var(--cs-space-8)" }}
-          >
-            {SKUS.map((s) => (
-              <article key={s.name} className="cs-card">
-                <div className="cs-card-title">{s.name}</div>
-                <p
-                  className="cs-muted"
-                  style={{ marginTop: "var(--cs-space-2)" }}
-                >
-                  {s.body}
-                </p>
-                <p
-                  className="cs-status"
-                  style={{ marginTop: "var(--cs-space-5)" }}
-                >
-                  <span className="glyph" aria-hidden="true">
-                    ◷
-                  </span>
-                  Early access — join the waitlist
-                </p>
-              </article>
+      {/* ===== The five controls (evidence cards) ===== */}
+      <Reveal>
+        <Section
+          eyebrow="What ships in the box"
+          title="Five technical controls, each with its proof."
+          lede="No diagrams standing in for behaviour. The artifact carries the claim, and each control names the framework clause it satisfies."
+        >
+          <div className="cs-grid" style={{ marginTop: "var(--cs-space-8)" }}>
+            {CONTROLS.map((c, i) => (
+              <Reveal key={c.title} delay={i * 60}>
+                <Card>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "var(--cs-space-3)",
+                    }}
+                  >
+                    <Icon name={c.icon} size="lg" />
+                    <span className="cs-card-title">{c.title}</span>
+                  </div>
+                  <p
+                    className="cs-muted"
+                    style={{ marginTop: "var(--cs-space-3)" }}
+                  >
+                    {c.body}
+                  </p>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "var(--cs-space-2)",
+                      marginTop: "var(--cs-space-4)",
+                    }}
+                  >
+                    {c.tags.map((t) => (
+                      <span key={t} className="cs-tag">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                  <code
+                    className="mono"
+                    style={{
+                      display: "block",
+                      marginTop: "var(--cs-space-4)",
+                      paddingTop: "var(--cs-space-4)",
+                      borderTop: "1px solid var(--cs-border)",
+                      fontSize: "var(--cs-text-xs)",
+                      color: "var(--cs-fg-muted)",
+                    }}
+                  >
+                    {c.proof}
+                  </code>
+                </Card>
+              </Reveal>
             ))}
           </div>
-          <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
-            Pricing is set at early access.{" "}
-            <Link href="/pricing" style={{ color: "var(--cs-link)" }}>
-              See the full lineup
-            </Link>
-            .
-          </p>
-        </div>
-      </section>
+        </Section>
+      </Reveal>
 
-      {/* ===== Waitlist ===== */}
-      <section className="cs-section" id="waitlist">
-        <div className="cs-container">
-          <span className="cs-eyebrow">Early access</span>
-          <h2 className="cs-section-title">Start fail-closed.</h2>
-          <p className="cs-lede" style={{ marginBottom: "var(--cs-space-6)" }}>
-            Join the early-access list. We&apos;ll reach out as the Compliance
-            edition opens.
-          </p>
-          <WaitlistForm source="compliance" />
+      {/* ===== Honesty boundary: technical vs administrative ===== */}
+      <Reveal>
+        <Section
+          eyebrow="The honesty boundary"
+          title="Caisson ships the controls. Your auditor signs the certificate."
+          lede="Compliance is trust, so the line is drawn plainly: Caisson covers the technical half and generates the evidence. It does not — and cannot — make you certified."
+          band="surface"
+        >
+          <div
+            className="cs-grid cs-grid--2"
+            style={{ marginTop: "var(--cs-space-8)" }}
+          >
+            <Card>
+              <div className="cs-status">
+                <StatusChip
+                  label="Caisson ships this"
+                  tone="success"
+                  icon="check"
+                  dot
+                />
+              </div>
+              <ul
+                className="cs-muted"
+                style={{
+                  marginTop: "var(--cs-space-4)",
+                  paddingLeft: "var(--cs-space-5)",
+                  lineHeight: "var(--cs-leading-relaxed)",
+                }}
+              >
+                <li>The technical access and integrity controls, in code.</li>
+                <li>
+                  A dated evidence pack mapped to named SOC 2 / HIPAA controls.
+                </li>
+                <li>A tamper-evident audit chain you can replay and export.</li>
+              </ul>
+            </Card>
+            <Card>
+              <div className="cs-status">
+                <StatusChip
+                  label="You own this"
+                  tone="muted"
+                  icon="scale"
+                  dot
+                />
+              </div>
+              <ul
+                className="cs-muted"
+                style={{
+                  marginTop: "var(--cs-space-4)",
+                  paddingLeft: "var(--cs-space-5)",
+                  lineHeight: "var(--cs-leading-relaxed)",
+                }}
+              >
+                <li>
+                  Administrative controls — HR, vendor management, incident
+                  response.
+                </li>
+                <li>The audit engagement and the certification itself.</li>
+                <li>
+                  The scope decision: Caisson ships the controls CC6.x / CC7.2
+                  require, not a compliance verdict.
+                </li>
+              </ul>
+            </Card>
+          </div>
+        </Section>
+      </Reveal>
+
+      {/* ===== FAQ (visible + JSON-LD) ===== */}
+      <Reveal>
+        <Section
+          eyebrow="Procurement questions"
+          title="What a security review asks first."
+        >
+          <div
+            className="cs-grid cs-grid--2"
+            style={{ marginTop: "var(--cs-space-8)" }}
+          >
+            {FAQ.map((f) => (
+              <Card key={f.question}>
+                <h3 className="cs-card-title">{f.question}</h3>
+                <p
+                  className="cs-muted"
+                  style={{ marginTop: "var(--cs-space-3)" }}
+                >
+                  {f.answer}
+                </p>
+              </Card>
+            ))}
+          </div>
+        </Section>
+      </Reveal>
+
+      {/* ===== Pricing ===== */}
+      <Reveal>
+        <Section
+          eyebrow="How Compliance is sold"
+          title="Own the source, or track the frameworks."
+          band="tint"
+        >
+          <Card accent className="cs-elevate-md">
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "baseline",
+                gap: "var(--cs-space-3)",
+              }}
+            >
+              <span
+                className="cs-num"
+                style={{
+                  fontSize: "var(--cs-text-3xl)",
+                  fontWeight: "var(--cs-weight-semibold)",
+                  letterSpacing: "var(--cs-tracking-tight)",
+                }}
+              >
+                {compliancePrice ? formatPrice(compliancePrice) : "from $1,299"}
+              </span>
+              <span className="cs-tag">One-time license · own the source</span>
+            </div>
+            <p
+              className="cs-muted"
+              style={{ marginTop: "var(--cs-space-4)", maxWidth: "58ch" }}
+            >
+              Own the Compliance edition outright — the base, the five controls,
+              and the evidence-pack generator. Regulations don&apos;t hold
+              still, so an optional Compliance Updates subscription keeps the
+              control mappings current as SOC 2 / HIPAA guidance moves.
+            </p>
+            <div className="cs-cta-row">
+              <Button href="/pricing" variant="primary">
+                Get Compliance
+              </Button>
+              <Button href="/pricing" variant="ghost">
+                See the full lineup
+              </Button>
+            </div>
+          </Card>
+        </Section>
+      </Reveal>
+
+      {/* ===== Get started ===== */}
+      <Section eyebrow="Get started" title="Start fail-closed.">
+        <div style={{ maxWidth: "36rem", marginTop: "var(--cs-space-6)" }}>
+          <Terminal
+            label="shell"
+            status={<StatusChip label="ready" tone="success" dot />}
+          >
+            {`$ npx create-caisson@latest\n`}
+            <span className="cs-tok-accent">{`✓ scaffold complete\n`}</span>
+            <span className="cs-tok-accent">{`✓ tenancy-rls: fail-closed\n`}</span>
+            <span className="cs-tok-accent">{`✓ standards gate: passing\n`}</span>
+          </Terminal>
         </div>
-      </section>
+        <div className="cs-cta-row" style={{ marginTop: "var(--cs-space-6)" }}>
+          <Button href="/pricing" variant="primary">
+            Get Compliance
+          </Button>
+          <Button href="/docs" variant="ghost">
+            Read the docs
+          </Button>
+        </div>
+      </Section>
     </>
   );
 }

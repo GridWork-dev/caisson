@@ -4,6 +4,13 @@
  * the resolved tree + manifest↔package.json agreement); dependency-cruiser owns the real module
  * graph (dynamic import()/require + transitive provider-SDK reachability + down-only direction);
  * ESLint is the fast static source signal.
+ *
+ * Provider-SDK reachability is NOT re-implemented here (no allow-set): the confinement of the
+ * Vercel AI SDK family — `ai` core + `@ai-sdk/{openai,anthropic,google,openrouter}` — to
+ * @caisson/ai-config + @caisson/ai-kit is owned by the eslint denylist (boundaries.js, Gate 2)
+ * and the dependency-cruiser graph (.dependency-cruiser.cjs, authoritative). License-wise the AI
+ * SDK family is Apache-2.0, so it passes the Gate 1/1b AGPL tripwire below by construction; its
+ * only constraint is composition (ADR-0011/0022), not copyleft.
  */
 import { join } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
@@ -31,7 +38,16 @@ export interface Finding {
   message: string;
 }
 
-/** Gate 1 — AGPL boundary over WORKSPACE deps. Only an AGPL package may consume an AGPL package. */
+/**
+ * DORMANT TRIPWIRE (ADR-0050). Under the uniform fully-commercial model — ADR-0050 retired the lone
+ * AGPL Local-first flank ADR-0023 carved out — NO AGPL/copyleft source exists in the tree, so Gate 1
+ * and Gate 1b NEVER fire by construction: there is no AGPL package for them to catch. They stay
+ * wired ON PURPOSE as a standing tripwire — a re-introduced AGPL dependency (workspace OR external
+ * npm) MUST still hard-fail CI. Do not delete: this is the guard that keeps copyleft out of the
+ * commercial tree even though it is dormant today.
+ *
+ * Gate 1 — AGPL boundary over WORKSPACE deps. Only an AGPL package may consume an AGPL package.
+ */
 export function checkAgplBoundary(pkgs: Pkg[]): Finding[] {
   const license = new Map(pkgs.map((p) => [p.name, p.license]));
   const findings: Finding[] = [];
@@ -100,6 +116,13 @@ export function checkExternalAgpl(pkgs: Pkg[], root: string): Finding[] {
 export function checkDownOnly(pkgs: Pkg[]): Finding[] {
   const findings: Finding[] = [];
   for (const p of pkgs) {
+    // Down-only governs the PACKAGE dependency tower (base/primitive/edition) only (ADR-0003).
+    // apps/ are reference applications ABOVE the tower — top-level consumers, not packages — so they
+    // may legitimately depend on an edition (each edition's reference app wires its edition). The
+    // authoritative .dependency-cruiser.cjs likewise anchors its down-only `from` to packages/, so
+    // gating on isModuleCandidate keeps the two enforcement layers aligned. Base/primitive (in
+    // packages/) stay fully checked — this exempts the consumer layer, not the tower.
+    if (!isModuleCandidate(p)) continue;
     const pIsEdition = EDITION_NAMES.has(p.name);
     for (const dep of p.workspaceDeps) {
       if (EDITION_NAMES.has(dep) && dep !== p.name) {

@@ -1,0 +1,18 @@
+[
+  {
+    "path": "migrations/0001_init.sql",
+    "content": "CREATE TABLE app_meta (\n  key text PRIMARY KEY,\n  value text NOT NULL\n);\n"
+  },
+  {
+    "path": "migrations/0002_widgets.sql",
+    "content": "CREATE TABLE widget (\n  id uuid PRIMARY KEY,\n  created_at timestamptz NOT NULL DEFAULT now()\n);\n"
+  },
+  {
+    "path": "migrations/0003_feature_flags.sql",
+    "content": "CREATE TABLE feature_flag (\n  id uuid PRIMARY KEY,\n  widget_id uuid NOT NULL REFERENCES widget(id),\n  enabled boolean NOT NULL DEFAULT false\n);\n"
+  },
+  {
+    "path": "migrations/schema_version.json",
+    "content": "{\n  \"schemaVersion\": \"73d1e55e687b08b5e38d1c8185d8d381b66f23ec3a880cc35c34d2408c8a1df9\",\n  \"ledger\": [\n    {\n      \"version\": 1,\n      \"filename\": \"0001_init.sql\",\n      \"checksum\": \"5cc7aebd670c8f949b3365f8919a90f30af9b775b21526a24f420c278a84b9b0\"\n    },\n    {\n      \"version\": 2,\n      \"filename\": \"0002_widgets.sql\",\n      \"checksum\": \"416086392fa484f3088e87d3f67d9ac07fc5679481cba2ad9eb86a88034d045c\"\n    },\n    {\n      \"version\": 3,\n      \"filename\": \"0003_feature_flags.sql\",\n      \"checksum\": \"b41559b76c87b28c3c3a7ed54feea57888830a02d1dbcc6f8199cc92129f0c6f\"\n    }\n  ]\n}\n"
+  }
+]

@@ -7,7 +7,11 @@ import {
   NotFoundError,
   ValidationError,
 } from "@caisson/kernel";
-import { createMcpServer, type GenerateContext } from "./index.ts";
+import {
+  createMcpServer,
+  type GenerateContext,
+  type McpSession,
+} from "./index.ts";
 
 const calls: GenerateContext[] = [];
 const server = createMcpServer({
@@ -85,5 +89,79 @@ describe("buyer MCP server", () => {
     await expect(
       server.handleToolCall(session, "rm_rf", {}),
     ).rejects.toBeInstanceOf(NotFoundError);
+  });
+});
+
+describe("ADR-0076 tool-registration seam (per-tool entitlement gating)", () => {
+  // Fresh server so registrations don't bleed across the suite. acct_a owns the base modules
+  // but NOT the "ai-kit" edition; acct_b owns "ai-kit".
+  const ed = createMcpServer({
+    tokens: [
+      {
+        token: "tok_acct_a_000000000000",
+        accountId: "acct_a",
+        entitlements: ["compliance", "auth", "billing"],
+      },
+      {
+        token: "tok_acct_b_111111111111",
+        accountId: "acct_b",
+        entitlements: ["ai-kit"],
+      },
+    ],
+    registryAllowlist: ["compliance", "auth", "billing", "ai-kit"],
+    onGenerate: async () => ({ generationId: "gen_x" }),
+  });
+
+  const evalCalls: McpSession[] = [];
+  ed.registerTool({
+    name: "run_eval",
+    requiredEntitlement: "ai-kit",
+    handler: async ({ session: s }) => {
+      evalCalls.push(s);
+      return { ran: true };
+    },
+  });
+
+  const nonEntitled = ed.authenticate("tok_acct_a_000000000000");
+  const entitled = ed.authenticate("tok_acct_b_111111111111");
+
+  test("registering a duplicate tool name is rejected (fail-closed)", () => {
+    expect(() =>
+      ed.registerTool({
+        name: "list_modules",
+        requiredEntitlement: null,
+        handler: async () => ({}),
+      }),
+    ).toThrow(ValidationError);
+  });
+
+  test("edition tool is hidden from a non-entitled caller's tool list", () => {
+    const tools = ed.listTools(nonEntitled);
+    expect(tools).toEqual(["describe_module", "generate", "list_modules"]);
+    expect(tools).not.toContain("run_eval");
+  });
+
+  test("edition tool is invisible (404, not 403) to a non-entitled caller", async () => {
+    await expect(
+      ed.handleToolCall(nonEntitled, "run_eval", {}),
+    ).rejects.toBeInstanceOf(NotFoundError);
+    expect(evalCalls).toHaveLength(0);
+  });
+
+  test("edition tool is visible + callable for an entitled caller", async () => {
+    expect(ed.listTools(entitled)).toContain("run_eval");
+    expect(await ed.handleToolCall(entitled, "run_eval", {})).toEqual({
+      ran: true,
+    });
+    expect(evalCalls.at(-1)?.accountId).toBe("acct_b");
+  });
+
+  test("base tools still work through the seam for every authed caller", async () => {
+    expect(await ed.handleToolCall(nonEntitled, "list_modules", {})).toEqual({
+      modules: ["auth", "billing", "compliance"],
+    });
+    expect(await ed.handleToolCall(entitled, "list_modules", {})).toEqual({
+      modules: ["ai-kit"],
+    });
   });
 });

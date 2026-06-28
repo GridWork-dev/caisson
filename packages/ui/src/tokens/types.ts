@@ -19,6 +19,8 @@ export interface SemanticTheme {
   accentTint: string;
   focus: string;
   link: string;
+  /** Accent instrument-glow box-shadow (ADR-0078 §7) — per-theme so it tracks the accent. */
+  glowAccent: string;
 }
 
 /** Functional status colours — shared across candidates. Never used color-alone (pair glyph + label). */

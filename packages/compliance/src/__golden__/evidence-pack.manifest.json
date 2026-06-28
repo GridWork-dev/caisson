@@ -1,0 +1,108 @@
+{
+  "formatVersion": "1",
+  "tenantId": "tenant-acme-prod",
+  "framework": {
+    "id": "soc2-tsc",
+    "title": "SOC 2 — Trust Services Criteria",
+    "version": "2024.1"
+  },
+  "chainAnchor": {
+    "length": 128,
+    "tipHash": "0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d",
+    "genesisHash": "9f8e7d6c9f8e7d6c9f8e7d6c9f8e7d6c9f8e7d6c9f8e7d6c9f8e7d6c9f8e7d6c"
+  },
+  "controls": [
+    {
+      "controlId": "AUDIT.IMMUTABLE-LOG",
+      "title": "Immutable audit log",
+      "family": "Audit & Accountability",
+      "statement": "Security-relevant events are written to an append-only, hash-chained log that cannot be altered or deleted after the fact, and the chain is anchored in WORM storage.",
+      "crosswalk": [
+        {
+          "framework": "SOC2-TSC",
+          "reference": "CC7.2",
+          "note": "System monitoring"
+        },
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.312(b)"
+        }
+      ],
+      "evidence": [
+        {
+          "collectorId": "substrate.audit-chain-integrity",
+          "title": "Append-only audit chain integrity (WORM-anchored)",
+          "summary": "audit chain verified against its anchor (128 entries)",
+          "status": "pass",
+          "facts": {
+            "entryCount": 128,
+            "anchorPresent": true,
+            "anchorLength": 128,
+            "valid": true,
+            "brokenAt": null
+          },
+          "manualSlots": []
+        },
+        {
+          "collectorId": "substrate.worm-retention",
+          "title": "WORM retention floor met for the locked artifact",
+          "summary": "locked artifact retained beyond the legal floor",
+          "status": "pass",
+          "facts": {
+            "mode": "GOVERNANCE",
+            "retainUntil": "2032-06-27T00:00:00.000Z",
+            "requiredUntil": "2031-06-27T00:00:00.000Z",
+            "meetsFloor": true
+          },
+          "manualSlots": [
+            {
+              "id": "retention-policy-pdf",
+              "label": "Signed records-retention policy (PDF)",
+              "required": false,
+              "filled": false
+            }
+          ]
+        }
+      ],
+      "readiness": "ready"
+    },
+    {
+      "controlId": "DATA-PROTECTION.TENANT-ISOLATION",
+      "title": "Row-level tenant isolation",
+      "family": "Access Control",
+      "statement": "Every tenant-scoped table enforces FORCE row-level security so that no role — including the table owner — can read or write another tenant's rows.",
+      "crosswalk": [
+        {
+          "framework": "SOC2-TSC",
+          "reference": "CC6.1"
+        }
+      ],
+      "evidence": [
+        {
+          "collectorId": "substrate.rls-force",
+          "title": "FORCE row-level security posture",
+          "summary": "one tenant table is missing a FORCE RLS policy",
+          "status": "flagged",
+          "reason": "table \"legacy_export\" has RLS enabled but not FORCEd; a table owner could bypass the policy",
+          "facts": {
+            "tablesChecked": 6,
+            "tablesForced": 5,
+            "tablesMissingForce": 1,
+            "missing": [
+              "legacy_export"
+            ]
+          },
+          "manualSlots": []
+        }
+      ],
+      "readiness": "gap"
+    }
+  ],
+  "summary": {
+    "totalControls": 2,
+    "controlsReady": 1,
+    "controlsWithGaps": 1,
+    "totalEvidenceItems": 3,
+    "posture": "1 of 2 controls evidence-ready; 1 gap recorded as a remediation item."
+  }
+}

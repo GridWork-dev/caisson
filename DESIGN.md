@@ -1,144 +1,137 @@
-# Design
+# DESIGN.md — Caisson brand book
 
-> impeccable visual doc (seed — pre-implementation). Captures the token foundation: mood, color
-> strategy, palette + type candidates, the architecture. Re-run `/impeccable document` once the
-> studio renders real tokens to lock the as-built system. Floor: `specs/03-design-framework.md`
-> (dark pro-tool center, typed token contract) + `specs/04-voice-and-brand.md` (voice).
+The operating manual for Caisson's visual system (the as-built lock — supersedes the
+pre-implementation seed, recoverable in git history). Locked by **ADR-0042** (palette + type center)
+and **ADR-0078** (mark · iconography · illustration · motion · elevation). The `impeccable` craft
+flow reads this file as design context; every marketing/docs surface conforms to it. Tokens are the
+contract — `packages/ui/src/tokens` → `--cs-*` (run `bun run gen:tokens` after a token edit).
 
-> **LOCKED selection (operator, 2026-06-27 — ADR-0042):** Palette **A** "Caisson cold-steel teal" +
-> Type **2** "Structural" (Hubot Sans + Martian Mono). Live in `theme.ts` `SELECTED_*` →
-> `tokens.css`. The candidate sets below stay on record (append-only); the lock is the pointer.
+> **One line:** a dark, technical, pro-tool instrument. Wet steel, one cold instrument light,
+> evidence over adjectives. It reads as production-grade because it _is_.
+>
+> **Mood anchor:** a pressurized steel caisson sunk in cold harbor water — wet dark steel, a single
+> instrument light, holds under load. The bg is wet steel; the accent is the instrument light;
+> nothing else glows.
 
-## Visual theme
+---
 
-A **dark, technical, pro-tool aesthetic** that reads as production-grade infrastructure, not a
-marketing template. Depth comes from **tonal surface shifts + hairline borders, never shadows**
-(dark-mode rule: elevation = lighter surface). One decisive accent, spent sparingly (Restrained
-strategy). Dense, fast, keyboard-friendly, evidence-forward. Reference lineage: Linear / Vercel /
-Resend / Warp restraint — but differentiated off that crowd by the caisson concept, never generic
-obsidian-plus-neon.
+## 1. Logo — wordmark + glyph
 
-**Mood sentence (the anchor):** _a pressurized steel caisson sunk in cold harbor water — wet dark
-steel, a single instrument light, holds under load._ The bg is wet dark steel; the accent is the
-instrument light; nothing else glows.
+- **Wordmark:** lowercase `caisson` in Martian Mono, fixed optical tracking (`-0.02em`).
+  **Monochrome always** — the accent never enters the wordmark (protects the ≤10% accent budget).
+  `Caisson` capitalized is allowed in prose and `<title>` tags.
+- **Glyph:** the **waterline-over-chamber** mark (a hairline waterline above a chambered box = a
+  watertight foundation holding under load). Abstract geometry, **not** an icon-mascot. The favicon
+  (`app/icon.svg`) carries the accent waterline; in-product (`<Wordmark/>`, `<Glyph/>`) it is
+  monochrome.
+- **Clearspace:** keep clear space ≥ the glyph's cap-height on all sides. Never recolor, rotate,
+  outline, gradient, or stretch the wordmark. Nav = glyph + wordmark; footer/OG = glyph + wordmark +
+  "compliance-grade infrastructure" descriptor.
 
-## Color
+## 2. Color
 
-- **Space:** OKLCH throughout (`oklch(L C H)`). Perceptually-linear L → light/dark is a ramp mirror,
-  contrast passes first try. Reduce chroma toward black/white to avoid garish extremes.
-- **Strategy:** **Restrained** (the co-equal/product floor) — tinted near-black neutrals + one accent
-  carrying ≤10% of surface, reserved for primary action, focus, links, selection. The marketing site
-  may dial toward **Committed** per-task (brand override) without changing the identity.
-- **Neutrals are tinted toward the accent hue** (chroma 0.008–0.014), not toward a generic warm/cool
-  default — subconscious cohesion with the brand. Pure gray is banned.
-- **Alpha is a smell:** explicit token colors for tints/overlays, not rgba washes (except focus ring
-  / interactive see-through).
-- **Dark is default; light is the mirror.** Both authored from day one; dark tuned first.
+Palette A "cold-steel teal" (hue ~205), one light + one dark theme, **dark is the default**. OKLCH
+throughout; neutrals tinted toward the accent hue (chroma 0.008–0.014), pure gray banned. **No
+hard-coded hex in the rendered DOM.** Sanctioned hex exceptions (each a context that cannot resolve
+`--cs-*`): (1) build-time satori images (`opengraph-image.tsx`, `apple-icon.tsx`, `app/icon.svg`);
+(2) browser-chrome metadata that takes no CSS var (viewport `themeColor`, `manifest.ts`
+`theme_color`/`background_color`); (3) the last-resort `global-error.tsx` boundary (replaces the
+root layout, renders without the token stylesheet); (4) the `@media print` block. All four mirror
+the locked palette hex — never an off-brand value.
 
-### Palette candidates (decided live in the studio — `/design/foundations`)
+- **Accent discipline ≤10%.** Accent (`--cs-accent`) appears only on: the primary CTA, the eyebrow,
+  the focus ring, the status glyph, and load-bearing code tokens. If accent is on a fourth surface in
+  one viewport, cut one.
+- **Status is never color-alone** — always glyph + label (`<StatusChip/>` pairs a glyph with
+  `--cs-success/warning/danger/info`). WCAG AA at every semantic pair.
+- **Surfaces:** `--cs-bg` → `--cs-surface-1` → `--cs-surface-2` is the depth ladder; `--cs-border`
+  hairlines separate, `--cs-border-strong` for emphasis. Alpha washes are a smell — use explicit
+  tint tokens (`--cs-accent-tint`).
 
-Three directions render as live swatch sets; the operator picks one, it locks into `theme.ts`.
-**Recommended: A.** All share the architecture (bg / surface-1 / surface-2 / border / text /
-text-muted / accent / accent-tint / focus + functional status set); only hue + chroma differ.
+## 3. Type
 
-**A — "Caisson" cold-steel teal (RECOMMENDED).** Accent hue ~205 (cold harbor water = the instrument
-light). Tightest fit to the name, the mood, AND the market gap (off the saturated-green devtool
-crowd). Dark anchors:
+- **Hubot Sans** — display + body. Body weight **400** (`--cs-weight-body`), never below (350 risked
+  thin low-contrast body on dark — ADR-0078 §8).
+- **Martian Mono** (`--cs-font-mono`) — the brand surface: wordmark, eyebrows, labels, control-IDs,
+  stat tiles, and **all numerals** (tabular figures: `.cs-num` / `font-variant-numeric: tabular-nums`).
+- **JetBrains Mono** (`--cs-font-mono-code`) — **multi-line code blocks only** (Martian is too wide
+  for read-critical code; the hero RLS denial is long).
+- Self-hosted via `next/font` (no render-blocking Google `<link>`). Display type is fluid `clamp()`
+  (`--cs-text-display` / `.cs-display`); tracking floor `-0.04em`; `text-wrap: balance` on headlines;
+  body line length 52–75ch.
 
-```
---cs-bg          oklch(0.16 0.012 220)   wet dark steel
---cs-surface-1   oklch(0.20 0.013 220)
---cs-surface-2   oklch(0.25 0.014 220)
---cs-border      oklch(0.32 0.012 220)   hairline (solid, not alpha)
---cs-text        oklch(0.96 0.004 220)
---cs-text-muted  oklch(0.72 0.012 220)   ~7:1 on bg, AA body
---cs-accent      oklch(0.74 0.115 205)   the instrument light
---cs-on-accent   oklch(0.17 0.02 220)
---cs-accent-tint oklch(0.26 0.040 205)   8% wash surface (explicit)
---cs-focus       = accent
-```
+## 4. Iconography
 
-**B — "Pressure" deep moss (impeccable seed-182).** Accent hue ~150, a deep cultivated green
-(`oklch(0.40 0.106 150)` = "wet stone under shadow" as the deep tint; lifted to `oklch(0.70 0.13
-150)` for the accent). Distinctive because it is _deep + desaturated_, not neon — sidesteps the
-bright-green reflex while keeping the "all checks pass" semantic adjacency. Neutrals tint hue ~160.
+A **Lucide line workhorse** at **2px stroke on a 24px grid**, monochrome, accent only on
+active/status — plus **bespoke domain glyphs** for concepts stock libraries lack (`rls`, `worm`,
+`audit-chain`, `fail-closed`, `field-crypto`, `evidence-pack`, `caisson`). One surface: `<Icon
+name=… />`. Never reach for raw Unicode box glyphs (`▣▤▥`). Reserve the 1px hairline for dividers,
+not icons.
 
-**C — "Bulkhead" near-monochrome.** No chromatic brand accent; cool-steel neutrals (tint hue ~235),
-primary CTA is a white fill, the single signal reserved for focus is a restrained cool steel
-`oklch(0.78 0.04 230)`. Maximum gravitas (Linear/Vercel). Risk: lower brand recall.
+## 5. Illustration & the caisson motif
 
-### Functional / status (all candidates, never color-alone — pair glyph + label)
+Three-part visual language — **no photography, no 3D glass blobs, no stock diving-bell clip-art:**
 
-```
-success oklch(0.72 0.15 150)   warning oklch(0.78 0.13 75)
-danger  oklch(0.65 0.18 25)    info    oklch(0.70 0.12 240)
-```
+1. **Blueprint / cross-section schematics** for the "how it holds" architecture story.
+2. **Real code / CI / audit artifacts as proof** — the artifact IS the headline (a framed terminal
+   showing the _real_ fail-closed RLS denial, not a marketing illustration).
+3. One signature **waterline-device motif** — a recurring horizontal hairline + gradient darkening
+   toward the bottom (the OG accent-bar is a proto-version), animatable per §7.
 
-## Typography
+## 6. Elevation & depth
 
-**impeccable font procedure.** Brand-voice words (physical object): **engineered · exact ·
-load-bearing** — a machinist's certified gauge, a structural blueprint, a pressure-rated bulkhead.
-Reflex-rejected (training defaults, banned): Inter, Space Grotesk, IBM Plex, DM Sans. Mono is used as
-**evidence/data** (token names, audit artifacts, code), never as costume "technical" decoration.
+Tonal surface + hairline is the **default**. The **elevation scale** (`--cs-shadow-sm/md/lg`) and the
+accent **instrument-glow** (`--cs-glow-accent`) are the deliberate elevation step — cards on hover,
+overlays/modals, the framed hero artifact, the primary-CTA hover glow. Shadow is a step, not the
+baseline. Utilities: `.cs-elevate-{sm,md,lg}`, `.cs-glow`, `.cs-card--interactive`. (This supersedes
+the seed's "never shadows" rule — ADR-0078 §7.)
 
-### Type candidates (decided live — `/design/typography`)
+## 7. Motion — expressive, tokenized
 
-**1 — "Instrument" (RECOMMENDED).** Sans **Geist** + mono **Geist Mono** — one family, two cuts,
-free (OFL), built for developer products; dense, neutral, unmistakably production-infra. Mono carries
-audit artifacts + token names. (Defended vs reflex: Geist is not on the reject list; chosen for the
-infra identity, not category reflex.) Wardfile-aligned alternate: Hanken Grotesk + JetBrains Mono.
+Motion is the one place Caisson allows technical ambition. Fully **tokenized**: `--cs-duration-{fast,
+base,slow}` (120/180/240ms), authored curves `--cs-ease-{out,reveal}` (**never the default `ease`**).
 
-**2 — "Structural" (distinctive).** Sans **Hubot Sans** (GitHub's variable engineered grotesk, more
-mechanical character) + mono **Martian Mono** (wide, technical) for labels/eyebrows. More ownable.
+- **Transform/opacity-first.** A signature hero animation may demonstrate a real fail-closed event
+  (an RLS denial, an audit-chain link appending, a WORM lock engaging) and/or the waterline motif.
+- **`prefers-reduced-motion` is honored** and content is **never stuck at `opacity:0`** (the
+  `.cs-reveal` hidden state is gated on `.cs-js`; reduced-motion forces it visible).
+- **No** animation on keyboard-initiated or high-frequency (≥100/day) actions; **no** looping
+  typewriter or gimmick. Scroll reveal is **fade-up-once** (`<Reveal/>`).
 
-**3 — "Quiet minimal."** Single family (Geist) across everything, hierarchy by weight + size only —
-maximum restraint (Linear). Reads calmest; least typographic personality.
+## 8. Accent slots (the checkable list)
 
-### Scale
+In any one viewport, accent (`--cs-accent`) is permitted on **only**: 1. the primary CTA
+(`.cs-btn--primary`) · 2. the section eyebrow (`.cs-eyebrow`) · 3. the focus ring (`:focus-visible`)
+· 4. the active status glyph / chip · 5. load-bearing code tokens (`.cs-tok-accent`). Anything else
+uses `--cs-fg`, `--cs-fg-muted`, or a surface tone.
 
-Modular, ratio ≥1.25, fluid `clamp()` on headings. Display ceiling ≤6rem; letter-spacing floor
-≥-0.04em on display. Light-on-dark: +0.05 line-height and body weight 350 (light type reads heavier).
-`text-wrap: balance` on h1–h3, `pretty` on prose. Body line length 65–75ch.
+## 9. The anti-boilerplate law — is / is not
 
-## Token architecture
+Caisson **is**: evidence-forward · dense and fast · keyboard-friendly · spec-sheet honest · dark
+pro-tool · monospace-for-proof. The artifact carries the claim.
 
-Wardfile-proven pattern (refines specs/03 §2's vanilla-extract _mechanism_ — same typed-contract
-guarantee, identical values; **flagged as a reversible build-decision to ratify**, not a brand fork):
+Caisson **is not** — these boilerplate tells are **banned**:
 
-- **Source of truth:** flat typed TS objects in `packages/ui/src/tokens/` — `foundation.ts` (type
-  scale / spacing / radius / weights / font stacks), `palette.ts` (primitive OKLCH ramps),
-  `theme.ts` (semantic light/dark roles), `candidates.ts` (the A/B/C option sets), `index.ts` barrel.
-- **Emit:** `packages/ui/scripts/gen-tokens-css.ts` → committed `packages/ui/styles/tokens.css`
-  (`--cs-*` CSS vars, `:root`/`[data-theme]`). Deterministic, drift-guarded.
-- **Two layers:** primitive (`palette.ts` ramps) → semantic (`theme.ts` roles). Dark mode redefines
-  only the semantic layer.
-- **Consume:** apps import `@caisson/ui/styles/tokens.css` + read TS objects for candidate rendering.
+- ❌ strike-through "was $X now $Y" prices or any scarcity/countdown timer
+- ❌ emoji bullet points or emoji in headings
+- ❌ "make $$$", revenue screenshots, fake dashboards, testimonial-with-stock-headshot walls
+- ❌ gradient-hero SaaS-template look, floating 3D blobs, mesh gradients
+- ❌ exclamation-mark hero copy, "🚀 Launch faster", growth-hack voice
+- ❌ "we are SOC 2 certified" (Caisson generates evidence; it is **not** an auditor — never imply
+  certification; the honesty boundary is technical-vs-administrative)
+- ❌ a competitor-vs-competitor feature table for the paid hero (ADR-0040 buyer firewall)
+- ❌ rainbow per-edition colors (one accent; editions differ by icon + label, ADR-0078 §5)
 
-## Layout
+## 10. Voice (pointer)
 
-Generous, varied spacing (`clamp()` that breathes). Flex for 1D, Grid for 2D; breakpoint-free grids
-via `repeat(auto-fit, minmax(280px, 1fr))`. Semantic z-index scale. Cards only when the best
-affordance; never nested. Swatch/specimen surfaces in the studio are data-dense by design.
+Prose voice, banned phrasing, and the dev-kit-noun register live in `specs/04-voice-and-brand.md` +
+ADR-0080 (never "platform" / "automate compliance"; owned vocabulary; answer-first). The canonical
+cross-surface signature is **"Fail-closed by construction."**
 
-## Motion
+---
 
-Minimal and intentional. Ease-out exponential (quart/quint), no bounce/elastic. Theme toggle +
-swatch hover are the only motions in this pass. Every animation has a `prefers-reduced-motion`
-crossfade/instant fallback. No reveal-on-scroll reflex.
-
-## Components
-
-Deferred (scope this pass = palette + type only). Next: button / surface / text primitives rendered
-in a live `/design/components` gallery with `[data-theme]` toggle (Wardfile pattern).
-
-## Studio surfaces (this pass)
-
-`apps/studio` (Next 15, port 3020), dark by default, `[data-theme]` light toggle:
-
-- `/` — design hub: readiness board + links.
-- `/design/foundations` — the three palette candidates as live swatch sets + contrast read-out;
-  recommended marked. The decision surface for the accent fork.
-- `/design/typography` — the three type candidates as live specimens (scale, weights, mono sample);
-  recommended marked.
-
-Later passes add: `/design/motion`, `/design/components`, `/design/wordmark`, `/design/voice`.
+_Tokens: `packages/ui/src/tokens` (candidate A/B/C record lives in `candidates.ts`, append-only — the
+lock is the `SELECTED_*` pointer in `theme.ts`). Primitives: `apps/site/components` (`Hero`,
+`Section`, `Card`, `CodeBlock`/`Terminal`, `StatusChip`, `CredentialStrip`, `EditionCard`,
+`SkuMatrix`, `Icon`, `Wordmark`, `Reveal`, `MobileNav`). SEO → ADR-0079, copy → ADR-0080, pricing →
+ADR-0081._

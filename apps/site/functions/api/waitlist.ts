@@ -7,6 +7,15 @@ import { z } from "zod";
 interface Env {
   RESEND_API_KEY?: string;
   RESEND_SEGMENT_ID?: string;
+  // Cloudflare Turnstile secret. Inert seam (like Resend): when UNSET we skip verification
+  // entirely — we never claim bot-protection we aren't running. When SET, every request must
+  // carry a valid token or it is rejected.
+  TURNSTILE_SECRET?: string;
+  // Next step (NOT yet wired — documented, not faked): bind a Workers KV namespace as
+  // `WAITLIST_RL` in the Pages project, then gate on a per-IP counter keyed by the
+  // CF-Connecting-IP header (e.g. 5 / 10 min, TTL-expiring keys). Env-gated like the seams
+  // above so the function stays correct with no binding present. Not asserting a rate limit
+  // we don't enforce.
 }
 
 interface PagesContext {
@@ -25,6 +34,11 @@ const Body = z
       .max(254)
       .refine((v) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v), "invalid email"),
     source: z.string().trim().max(64).optional(),
+    // Honeypot: a hidden field no human fills. A non-empty value means a bot — we drop it
+    // silently with a benign 202 (never reaching Resend) so the bot can't distinguish success.
+    company_url: z.string().max(200).optional(),
+    // Optional Cloudflare Turnstile token, verified only when TURNSTILE_SECRET is configured.
+    turnstileToken: z.string().max(2048).optional(),
   })
   .strict();
 
@@ -74,6 +88,44 @@ export const onRequestPost = async (
 
   const parsed = Body.safeParse(raw);
   if (!parsed.success) return json({ error: "invalid" }, 422);
+
+  // Honeypot: a non-empty hidden field is a bot. Return a benign 202 WITHOUT touching Resend —
+  // silently dropped, indistinguishable from success so the bot gets no signal to adapt.
+  if (parsed.data.company_url && parsed.data.company_url.trim() !== "") {
+    return json({ ok: true, queued: false }, 202);
+  }
+
+  // Turnstile verify seam (inert until TURNSTILE_SECRET is set — no fake "protected" claim).
+  // When configured, every submission must carry a token that Cloudflare confirms; otherwise
+  // reject. remoteip is bound to CF-Connecting-IP when present (defense against token replay).
+  if (env.TURNSTILE_SECRET) {
+    const token = parsed.data.turnstileToken;
+    if (!token) return json({ error: "challenge_required" }, 403);
+    try {
+      const form = new URLSearchParams({
+        secret: env.TURNSTILE_SECRET,
+        response: token,
+      });
+      const ip = context.request.headers.get("CF-Connecting-IP");
+      if (ip) form.set("remoteip", ip);
+      const verify = await fetchWithTimeout(
+        "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: form.toString(),
+        },
+        5000,
+      );
+      const outcome = (await verify.json()) as { success?: boolean };
+      if (!verify.ok || outcome.success !== true) {
+        return json({ error: "challenge_failed" }, 403);
+      }
+    } catch {
+      // Fail closed: if the challenge can't be verified, don't admit the request.
+      return json({ error: "challenge_failed" }, 403);
+    }
+  }
 
   // Seam: inert until a real Resend account + env are wired (ADR-0046; not this session). Return
   // a benign 202 so the form's success path works against a preview with no secrets.
