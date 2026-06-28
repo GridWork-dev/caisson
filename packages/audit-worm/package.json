@@ -4,7 +4,19 @@
   "private": true,
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
-  "description": "WORM ArtifactStore (S3 Object-Lock) + SHA-256 append-only audit chain.",
+  "description": "Write-once (WORM) artifact store (S3 Object-Lock seam) + SHA-256 append-only audit chain with a trusted WORM anchor + append-only locked-version DB with derived-current. ADR-0006/0052/0053/0054.",
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "bun test ./src"
+  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1075.0",
     "@caisson/kernel": "workspace:*",
@@ -12,6 +24,10 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@caisson/testing": "workspace:*"
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.0"
   }
 }
