@@ -7,6 +7,7 @@
   "description": "Compliance edition: RLS+WORM+audit + config-as-code module registry + SOC2/HIPAA evidence-pack generator. HERO.",
   "dependencies": {
     "@caisson/kernel": "workspace:*",
+    "@noble/ed25519": "^3.1.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
