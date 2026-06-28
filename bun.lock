@@ -157,6 +157,7 @@
         "zod": "^3.23.8",
       },
       "devDependencies": {
+        "@caisson/ai-evals": "workspace:*",
         "@caisson/eslint-config": "workspace:*",
         "@caisson/field-crypto": "workspace:*",
         "@caisson/testing": "workspace:*",
