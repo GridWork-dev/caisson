@@ -46,3 +46,37 @@ export {
   versionChain,
 } from "./versioning.ts";
 export type { VersionRecord } from "./versioning.ts";
+
+export {
+  InMemoryEventSink,
+  NoopEventSink,
+  OtelPostgresEventSink,
+  opsEventSchema,
+  redactEvent,
+} from "./event-sink.ts";
+export type {
+  EventSink,
+  OpsEvent,
+  OtelPostgresSinkOptions,
+  OtlpSend,
+} from "./event-sink.ts";
+
+export {
+  evidencePackSchema,
+  usageMeteringSchema,
+  evalResultSchema,
+} from "./observability.ts";
+export type {
+  EvidencePack,
+  UsageMetering,
+  EvalResult,
+} from "./observability.ts";
+
+export { assembleMigrations } from "./migration-assembly.ts";
+export type {
+  MigrationFile,
+  PackageMigrations,
+  MergedMigration,
+  SchemaVersionEntry,
+  MigrationAssembly,
+} from "./migration-assembly.ts";

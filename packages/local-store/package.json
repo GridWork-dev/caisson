@@ -1,0 +1,31 @@
+{
+  "name": "@caisson/local-store",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "LicenseRef-Caisson-Commercial",
+  "description": "Local hybrid retrieval base: sqlite-vec (vec0 FLOAT[N]) + FTS5 + Reciprocal-Rank-Fusion (RRF_K=60) merge with an always-available FTS5 path, degrading to FTS-only on a missing/failed vec leg; file-per-tenant isolation floor (ADR-0067/0073). Embedding is an injected seam — no vendor SDK, no LLM call.",
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "bun test ./src"
+  },
+  "dependencies": {
+    "@caisson/kernel": "workspace:*",
+    "sqlite-vec": "^0.1.9"
+  },
+  "devDependencies": {
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.0"
+  }
+}
