@@ -14,7 +14,7 @@ export default defineModule({
   tier: "paid",
   priceCents: 4900,
   license: "LicenseRef-Caisson-Commercial",
-  dependencies: ["@caisson/ai-config", "@caisson/kernel"],
+  dependencies: ["@caisson/ai-config", "@caisson/kernel", "@caisson/registry"],
   description:
     "Auth-gated buyer MCP: timing-safe Bearer verify, entitlement-scoped reads, allowlist + credit-gated generate tools (ADR-0008/0004).",
 });

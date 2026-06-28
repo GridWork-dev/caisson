@@ -78,6 +78,7 @@
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
+        "@caisson/registry": "workspace:*",
         "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "eslint": "^9.13.0",
@@ -527,6 +528,7 @@
       "dependencies": {
         "@caisson/ai-config": "workspace:*",
         "@caisson/kernel": "workspace:*",
+        "@caisson/registry": "workspace:*",
         "zod": "^3.23.8",
       },
       "devDependencies": {
