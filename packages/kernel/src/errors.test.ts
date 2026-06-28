@@ -3,6 +3,7 @@ import { matchGolden } from "@caisson/testing";
 import {
   AuthzError,
   ConflictError,
+  GuardrailError,
   InsufficientCreditsError,
   InternalError,
   TenancyError,
@@ -33,6 +34,27 @@ describe("CaissonError model", () => {
       "insufficient-credits-402",
       toErrorResponse(new InsufficientCreditsError(50, 10)),
     );
+  });
+
+  test("GuardrailError is 422 with metadata-only stage/category details", () => {
+    const err = new GuardrailError("input", "pii");
+    expect(err.httpStatus).toBe(422);
+    expect(err.code).toBe("guardrail_blocked");
+    expect(err.details).toEqual({ stage: "input", category: "pii" });
+    expect(isCaissonError(err)).toBe(true);
+  });
+
+  test("toErrorResponse renders the 422 guardrail envelope — no flagged content", () => {
+    expect(toErrorResponse(new GuardrailError("output", "injection"))).toEqual({
+      status: 422,
+      body: {
+        error: {
+          code: "guardrail_blocked",
+          message: "Request blocked by a guardrail",
+          details: { stage: "output", category: "injection" },
+        },
+      },
+    });
   });
 
   test("an unknown throw collapses to a generic 500 — no leak", () => {

@@ -9,6 +9,7 @@ export {
   NotFoundError,
   TenancyError,
   ConflictError,
+  GuardrailError,
   RateLimitError,
   ConfigError,
   InternalError,
