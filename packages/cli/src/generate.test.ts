@@ -49,13 +49,19 @@ const INDEX = loadRegistryIndex({
   ],
 });
 
-const VALID = {
+/** A fixed BASE selection (no edition) — golden-fixtured as `generated-fileset`. */
+const BASE = {
   projectName: "acme-app",
-  edition: "compliance",
   modules: [
     { id: "@caisson/field-crypto", version: "0.1.0" },
     { id: "@caisson/credits", version: "0.2.0" },
   ],
+};
+
+/** A fixed EDITION selection (compliance) — golden-fixtured as `generated-fileset-compliance`. */
+const VALID = {
+  ...BASE,
+  edition: "compliance",
 };
 
 /** An engine that records whether it ran — proves validation precedes materialization. */
@@ -70,14 +76,52 @@ function spyEngine(): GeneratorEngine & { called: boolean } {
 }
 
 describe("generate — allowlist gate (ADR-0021/0048)", () => {
-  test("a valid selection produces the workspace skeleton", () => {
-    const { selection, files } = generate(INDEX, VALID);
+  test("a BASE selection materializes the real templated repo", () => {
+    const { selection, files } = generate(INDEX, BASE);
     expect(selection.projectName).toBe("acme-app");
-    expect(files.map((f) => f.path)).toEqual([
+    const paths = files.map((f) => f.path);
+    // The trimmed buyer-repo harness ships its config, CI, AGENTS, and a golden baseline.
+    expect(paths).toEqual([
+      ".github/workflows/ci.yml",
+      ".gitignore",
       ".npmrc",
+      "AGENTS.md",
       "README.md",
+      "eslint.config.js",
       "package.json",
+      "src/__golden__/smoke.json",
+      "src/golden.test.ts",
+      "tsconfig.json",
     ]);
+    // Deterministic + sorted (a re-run is byte-identical).
+    expect(generate(INDEX, BASE).files).toEqual(files);
+  });
+
+  test("an EDITION selection layers the edition's golden fixtures + records caissonEdition", () => {
+    const { files } = generate(INDEX, VALID);
+    const paths = files.map((f) => f.path);
+    // base is always present; the compliance edition adds its own golden baseline.
+    expect(paths).toContain("src/__golden__/smoke.json");
+    expect(paths).toContain("src/__golden__/evidence.json");
+    const pkg = files.find((f) => f.path === "package.json");
+    expect(pkg).toBeDefined();
+    const parsed = JSON.parse(pkg?.content ?? "{}") as {
+      caissonEdition?: string;
+      dependencies?: Record<string, string>;
+    };
+    expect(parsed.caissonEdition).toBe("compliance");
+    // The installed modules become sorted dependencies (the selection overlay).
+    expect(parsed.dependencies).toEqual({
+      "@caisson/credits": "0.2.0",
+      "@caisson/field-crypto": "0.1.0",
+    });
+  });
+
+  test("a BASE selection records NO caissonEdition", () => {
+    const { files } = generate(INDEX, BASE);
+    const pkg = files.find((f) => f.path === "package.json");
+    const parsed = JSON.parse(pkg?.content ?? "{}") as Record<string, unknown>;
+    expect(parsed["caissonEdition"]).toBeUndefined();
   });
 
   test("an unknown module id throws BEFORE the engine runs", () => {
@@ -145,11 +189,71 @@ describe("generate — allowlist gate (ADR-0021/0048)", () => {
     expect(engine.called).toBe(false);
   });
 
-  test("the generated file set matches its golden", () => {
+  test("the BASE file set matches its golden", () => {
     matchGolden(
       import.meta.url,
       "generated-fileset",
+      generate(INDEX, BASE).files,
+    );
+  });
+
+  test("the EDITION (compliance) file set matches its golden", () => {
+    matchGolden(
+      import.meta.url,
+      "generated-fileset-compliance",
       generate(INDEX, VALID).files,
     );
   });
+});
+
+describe("generate — ADR-0072 buyer-repo boundary", () => {
+  // Paths that would only appear if a monorepo-internal surface leaked into a buyer repo.
+  const FORBIDDEN_PATH = [
+    /build-index/i,
+    /append-ledger/i,
+    /ledger/i,
+    /standards-gate/i,
+    /\beval\b/i,
+    /publish/i,
+  ];
+  // Enforcement signatures of the three forbidden surfaces (registry/publish flow, the
+  // standards-gate authoring scanner, the eval CI gate). The buyer `.npmrc`'s `registry=` URL is
+  // expected and intentionally NOT in this list — the ban is on the publish PIPELINE, not the URL.
+  const FORBIDDEN_CONTENT = [
+    "bun run gate", // standards-gate authoring scanner invocation
+    "tooling/standards-gate",
+    "bun run eval", // eval CI gate
+    "build-index.ts", // registry publish/index pipeline
+    "append-ledger",
+    "registry/index.json", // the registry index artifact
+    "changeset", // publish-time release gate
+  ];
+
+  for (const [name, sel] of [
+    ["base", BASE],
+    ["compliance", VALID],
+  ] as const) {
+    test(`emits NONE of the monorepo-internal surfaces (${name})`, () => {
+      const { files } = generate(INDEX, sel);
+      for (const f of files) {
+        for (const rx of FORBIDDEN_PATH) {
+          expect(f.path).not.toMatch(rx);
+        }
+        for (const needle of FORBIDDEN_CONTENT) {
+          expect(f.content).not.toContain(needle);
+        }
+      }
+
+      // The CI that DOES ship is exactly the trimmed set: build · lint · unit · golden.
+      const ci = files.find((f) => f.path === ".github/workflows/ci.yml");
+      expect(ci).toBeDefined();
+      const content = ci?.content ?? "";
+      for (const job of ["build:", "lint:", "unit:", "golden:"]) {
+        expect(content).toContain(job);
+      }
+      expect(content).not.toContain("eval:");
+      expect(content).not.toContain("standards-gate:");
+      expect(content).not.toContain("integration:");
+    });
+  }
 });
