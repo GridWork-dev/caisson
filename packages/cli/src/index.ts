@@ -22,3 +22,14 @@ export {
 } from "./meter.ts";
 
 export { parseArgs, runCli } from "./cli.ts";
+
+export {
+  type SelectedPackage,
+  type AppliedMigration,
+  type MigrationApplier,
+  type MigrationRunResult,
+  readPackageMigrations,
+  assembleSelected,
+  emitMigrationFileSet,
+  runMigrations,
+} from "./migrate/assemble.ts";
