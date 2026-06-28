@@ -1,10 +1,21 @@
-# Registry read Worker — DEFERRED SEAM (ADR-0047). Config only; NOT deployed in Wave 0. Real edge
-# serving + caching + the entitlement gate (ADR-0008) land at P5/P6. The handler is unit-tested in
-# registry/worker/handler.test.ts without a Workers runtime.
+# Registry read Worker — LIVE deploy config (ADR-0047 seam → live). handler.ts stays the
+# unit-tested router + the env.REGISTRY_INDEX seam (503 when unset); this config deploys
+# deploy-entry.ts instead, which esbuild-inlines the CI-built registry/index.json straight into the
+# bundle — no env var, no KV/R2 binding, no 503 path, no binding-size limit on the ~8KB index.
+# Deploy via registry/worker/deploy.sh (`bunx wrangler deploy`). DEPLOY is operator-gated + separate
+# from SHIP (mirrors .github/workflows/deploy-site.yml): token via env CLOUDFLARE_API_TOKEN, account
+# via env CLOUDFLARE_ACCOUNT_ID. Serves the PUBLIC registry index (allowlist source of truth, no
+# secrets) at caisson-registry.<account-subdomain>.workers.dev.
 name = "caisson-registry"
-main = "handler.ts"
+main = "deploy-entry.ts"
 compatibility_date = "2026-06-27"
+# ../schema/registry-index.ts statically imports `node:fs` (readFileSync, for the file-read path
+# loadRegistryIndexFromFile) — esbuild bundles the whole module even though deploy-entry only calls
+# loadRegistryIndex over the inlined JSON. The import is evaluated at isolate startup, so without
+# this flag workerd fails to instantiate the Worker. readFileSync is never CALLED at runtime (the
+# index is inlined, not read from disk); the flag only makes the `node:fs` import resolve.
+compatibility_flags = ["nodejs_compat"]
 
-# The CI-built index is supplied at deploy time (bundled, or a KV/R2 binding). Placeholder:
-# [vars]
-# REGISTRY_INDEX = "<the contents of registry/index.json, injected by the deploy step>"
+# Publish to the account's workers.dev subdomain. A custom route on caisson.sh is a fast-follow once
+# DNS is decided; infra/terraform owns the zone records, not this file.
+workers_dev = true
