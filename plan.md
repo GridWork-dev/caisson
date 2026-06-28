@@ -5,7 +5,24 @@ golden-file regression before any compliance logic, no product code before Gate 
 lists tasks + an **exit gate** (the verify). `tooling/` standards seam first; the module
 production-standards pipeline is a **separate dedicated session** (D9) — P0 fixes the seam only.
 
+**Live per-phase + per-package status detail: `docs/build-state.md`** (this file = the plan;
+that file = the state). If `docs/build-state.md` is absent, the per-phase **STATUS** tags below
+plus `docs/state/decisions-and-forks.md` (the live board, CLAUDE.md SoT #1) are authoritative.
+The tags here are a synthesized phase index, NOT a new source of truth — canonical status stays
+in the board + `knowledge/decisions/` ADRs.
+
+**STATUS legend** (verified against the tree, 2026-06-28):
+`SHIPPED` = built + tested + in `main`, exit gate met · `MERGED (Wave-1)` = packages landed in
+`main` with real, tested implementation but NOT yet wired into a runnable, entitlement-gated
+edition product · `SPEC+PLAN ready` = design locked, code not yet written · `PENDING` = not
+started · `ROADMAP` = post-v1, no code.
+
 ## P0 — Foundations
+
+> **STATUS: SHIPPED.** `tooling/` (eslint-config · tsconfig · standards-gate · testing),
+> `kernel` (12 src / 9 tests), `registry/` runtime + the CI workflows
+> (`.github/workflows/{ci,deploy-site,lighthouse}.yml`) are all in `main`; exit gate met.
+> Owners: ADR-0001/0002/0021/0022.
 
 - T0.1 Monorepo init: Bun workspaces + Turborepo + changesets (ADR-0001).
 - T0.2 `tooling/`: eslint-config + tsconfig + testing harness + the lint-gate (ADR-0002). Wire
@@ -22,6 +39,12 @@ production-standards pipeline is a **separate dedicated session** (D9) — P0 fi
 
 ## P1 — Base substrate
 
+> **STATUS: SHIPPED.** `auth` · `tenancy-rls` (fail-closed RLS + integration test) · `billing` ·
+> `credits` (integer wallet + append-only ledger) · `ai-config` · `mcp-server` · `ui` · `jobs` ·
+> `email` + `apps/base` all built + tested in `main` (P0+P1 base substrate green). `ai-config`/
+> `jobs`/`email` are real but minimal; the core (auth/tenancy-rls/billing/credits) is substantial.
+> Owners: ADR-0005/0007/0008/0011/0014–0019, ADR-0024.
+
 - T1.1 `auth` (← gridwork) · T1.2 `tenancy-rls` fail-closed (← gwdigital, ADR-0005) ·
   T1.3 `billing` (MoR/Stripe) · T1.4 `credits` integer wallet + append-only ledger + 402 (ADR-0007) ·
   T1.5 `ai-config` provider-agnostic (ADR-0011) · T1.6 `mcp-server` auth-gated (ADR-0008) ·
@@ -31,6 +54,14 @@ production-standards pipeline is a **separate dedicated session** (D9) — P0 fi
   debit is atomic + idempotent; the buyer MCP answers an authed query.
 
 ## P2 — Compliance edition (hero)
+
+> **STATUS: MERGED (Wave-1).** `compliance` (16 src / 11 tests, ~2.9k LOC: deterministic
+> evidence-pack generator · soc2/hipaa/eu-ai-act catalogs · Ed25519 signing · OSCAL seam ·
+> flag-never-guess), `audit-worm` (S3 Object-Lock store + SHA-256 hash chain + version store +
+> migrations), `field-crypto` (per-tenant HKDF AEAD, AES-256-GCM) and `apps/compliance` all
+> landed in `main` with real, tested code. NOT yet a runnable, entitlement-gated product (apps
+> thin, no commerce wiring). Owners: ADR-0006/0043/0045/0046/0051–0058.
+> **Flag:** ADR-0082 §3's "empty stub" line predates Wave-1 and is stale for these packages.
 
 - T2.1 `audit-worm` (S3 Object-Lock + SHA-256 hash chain, ADR-0006) · T2.2 `field-crypto`
   (column custom-type + key-version registry) · T2.3 append-only versioning (supersede-never-mutate) ·
@@ -42,6 +73,11 @@ production-standards pipeline is a **separate dedicated session** (D9) — P0 fi
 
 ## P3 — AI Production Kit
 
+> **STATUS: MERGED (Wave-1).** `ai-kit` (single metered-inference gateway, Vercel AI SDK v5
+> chokepoint), `ai-meter` (estimate→reserve→reconcile, PG-atomic spend, ~957 LOC), `prompt-registry`,
+> `ai-evals`, `guardrails` and `apps/ai-kit` landed + tested in `main`. Package code is real;
+> not yet wired into a runnable product. Owners: ADR-0059/0060.
+
 - T3.1 token-metering (PG-atomic) · T3.2 per-tenant spend caps + circuit breaker ·
   T3.3 eval-harness + CI gate · T3.4 versioned prompt registry · T3.5 guardrails
   (input/output moderation, PII redaction) · T3.6 agent-assisted setup (the coach).
@@ -50,6 +86,11 @@ production-standards pipeline is a **separate dedicated session** (D9) — P0 fi
 
 ## P4 — Local-first AI + Agentic-Dev
 
+> **STATUS: MERGED (Wave-1).** `local-ai` (~2.2k LOC, 9 tests), `local-store`, `license-verify`
+> (offline Ed25519), `agent-dev` + `agent-kernel`, and `apps/{local-ai,agent-dev}` landed +
+> tested in `main`. Local-first is now fully-commercial (AGPL flank killed, ADR-0050/0083).
+> Agentic-Dev is the most roadmap-grade surface of the four; none are runnable products yet.
+
 - T4.1 `local-ai`: compute seam + privacy gate + sqlite-vec ANN + offline Ed25519 license
   (← tessera) · T4.2 local canonical store (← health-service) · T4.3 `agent-dev`: typed
   agent/skill/rule schema + lifecycle state machine + local hybrid memory + hooks (← gridwork-core).
@@ -57,6 +98,13 @@ production-standards pipeline is a **separate dedicated session** (D9) — P0 fi
   license verifies offline; the kernel drives one lifecycle act.
 
 ## P5 — Generator + registry (Option C)
+
+> **STATUS: SPEC+PLAN ready (`outputs/specs/wave1-p5-generator/{SPEC,PLAN}.md`), NOT built.**
+> Wave-0 already shipped the seams: `registry/` index + read-path + worker handler (ADR-0047),
+> the `create-caisson` generator engine + skeleton (`packages/cli`, ADR-0048), and codegen
+> credit-debit (`packages/cli/src/meter.ts`, ADR-0049). The FULL P5 — gated publish flow,
+> P2–P4 backfill as registry modules, agent-driven generation via the MCP server, per-generation
+> metering wired end-to-end — is unbuilt. Owners: ADR-0020/0021/0047/0048/0049.
 
 - T5.1 `registry/`: the catalog/index + publish flow — the standards-gate is the only ingress
   (ADR-0020 manifest · ADR-0021 publish flow + attestation · ADR-0022 lint gates). Each module
@@ -73,6 +121,11 @@ production-standards pipeline is a **separate dedicated session** (D9) — P0 fi
 
 ## P6 — Commerce + support + docs
 
+> **STATUS: PENDING.** `services/{license,support-bot,docs}` are empty (0 LOC); no license-issuer,
+> support-bot, AI-native docs-service, or buyer/seller-dashboard code exists yet. ADR-0009/0010
+> are locked but build has not started. NB: the GTM marketing+docs site (`apps/site`, Fumadocs)
+> shipped separately in the GTM wave (ADR-0084–0087) and is distinct from P6's `services/docs`.
+
 - T6.1 `services/license`: Ed25519 issuer + MoR webhook + credit grants (idempotent) ·
   T6.2 entitlement/registry-access on purchase · T6.3 `services/support-bot` (Discord + Python
   LLM dispatch + codebase RAG + hosted inference, cloud-runner deploy, ADR-0009) · T6.4
@@ -81,6 +134,8 @@ production-standards pipeline is a **separate dedicated session** (D9) — P0 fi
   and escalates a tagged ticket with an AI brief; docs feed both bot + buyer agents.
 
 ## P7+ — Round-out (roadmap)
+
+> **STATUS: ROADMAP.** Post-v1; no code.
 
 Compliance vertical packs (legal-doc, fin-ops, certified-payroll, EU-AI-Act Annex-IV) · AI-feature
 packs · local-first verticals · the module marketplace (per-module commerce at scale).
