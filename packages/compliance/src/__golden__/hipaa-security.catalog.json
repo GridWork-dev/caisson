@@ -1,0 +1,280 @@
+{
+  "id": "hipaa-security",
+  "title": "HIPAA Security Rule (45 CFR Part 164, Subpart C)",
+  "version": "2024.1",
+  "description": "Own-authored HIPAA Security Rule coverage pack: Administrative, Physical, Technical, Organizational, and Documentation safeguards for electronic protected health information (ePHI), crosswalked to the CFR citation identifiers. Control text is clean-room Caisson prose.",
+  "controls": [
+    {
+      "id": "GOVERNANCE.SECURITY-MANAGEMENT",
+      "title": "Security management process and risk analysis",
+      "family": "Administrative Safeguards",
+      "statement": "The organization runs a security management process for electronic protected health information (ePHI), beginning with an accurate and thorough risk analysis of the confidentiality, integrity, and availability of the ePHI it holds.",
+      "guidance": "Record the risk-analysis date and scope as evidence; re-run it after material change to systems handling ePHI.",
+      "crosswalk": [
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.308(a)(1)(i)"
+        },
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.308(a)(1)(ii)(A)"
+        }
+      ]
+    },
+    {
+      "id": "RISK-MANAGEMENT.REMEDIATION",
+      "title": "Risk management measures",
+      "family": "Administrative Safeguards",
+      "statement": "The organization implements security measures sufficient to reduce risks to ePHI to a reasonable and appropriate level, and tracks those measures to completion.",
+      "crosswalk": [
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.308(a)(1)(ii)(B)"
+        }
+      ]
+    },
+    {
+      "id": "GOVERNANCE.SANCTION-POLICY",
+      "title": "Workforce sanction policy",
+      "family": "Administrative Safeguards",
+      "statement": "A documented sanction policy applies appropriate consequences to workforce members who fail to comply with the organization's security policies and procedures.",
+      "crosswalk": [
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.308(a)(1)(ii)(C)"
+        }
+      ]
+    },
+    {
+      "id": "GOVERNANCE.SECURITY-RESPONSIBILITY",
+      "title": "Assigned security responsibility and accountability",
+      "family": "Administrative Safeguards",
+      "statement": "A named individual or role holds documented accountability for the information security program, and security responsibilities are assigned across the organization with sufficient authority and resources to execute them.",
+      "crosswalk": [
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.308(a)(2)"
+        },
+        {
+          "framework": "SOC2-TSC",
+          "reference": "CC1.3",
+          "note": "Equivalent assignment of security responsibility."
+        }
+      ]
+    },
+    {
+      "id": "ACCESS-CONTROL.WORKFORCE",
+      "title": "Workforce authorization and access management",
+      "family": "Administrative Safeguards",
+      "statement": "Access to ePHI is authorized and supervised; the organization grants, documents, reviews, and terminates each workforce member's access on the principle of minimum necessary use.",
+      "crosswalk": [
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.308(a)(3)(i)"
+        },
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.308(a)(4)(i)"
+        }
+      ]
+    },
+    {
+      "id": "ACCESS-CONTROL.UNIQUE-ID",
+      "title": "Unique user identification",
+      "family": "Technical Safeguards",
+      "statement": "Each user is assigned a unique identifier so that access to and actions on ePHI are attributable to a single individual; shared or anonymous accounts for ePHI access are prohibited.",
+      "crosswalk": [
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.312(a)(2)(i)"
+        }
+      ]
+    },
+    {
+      "id": "ACCESS-CONTROL.EMERGENCY",
+      "title": "Emergency access procedure",
+      "family": "Technical Safeguards",
+      "statement": "A documented and tested procedure provides necessary access to ePHI during an emergency, while preserving attribution and a record of the emergency access for later review.",
+      "crosswalk": [
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.312(a)(2)(ii)"
+        }
+      ]
+    },
+    {
+      "id": "ACCESS-CONTROL.AUTO-LOGOFF",
+      "title": "Automatic logoff of inactive sessions",
+      "family": "Technical Safeguards",
+      "statement": "Electronic sessions that access ePHI terminate automatically after a defined period of inactivity, reducing the risk of unauthorized access to an unattended workstation.",
+      "crosswalk": [
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.312(a)(2)(iii)"
+        }
+      ]
+    },
+    {
+      "id": "AUTHENTICATION.ENTITY",
+      "title": "Person or entity authentication",
+      "family": "Technical Safeguards",
+      "statement": "The organization verifies that a person or entity seeking access to ePHI is the one claimed before access is granted, using authentication that resists credential reuse.",
+      "crosswalk": [
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.312(d)"
+        }
+      ]
+    },
+    {
+      "id": "DATA-PROTECTION.ENCRYPTION-REST",
+      "title": "Encryption of ePHI at rest",
+      "family": "Technical Safeguards",
+      "statement": "ePHI maintained by the organization is encrypted at rest using a current, industry-accepted mechanism, with keys held under controlled custody so that exposure of the storage medium does not disclose plaintext ePHI.",
+      "crosswalk": [
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.312(a)(2)(iv)"
+        }
+      ]
+    },
+    {
+      "id": "DATA-PROTECTION.INTEGRITY",
+      "title": "ePHI integrity protection",
+      "family": "Technical Safeguards",
+      "statement": "The organization protects ePHI from improper alteration or destruction and can detect when ePHI has been altered, both in storage and in transit.",
+      "crosswalk": [
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.312(c)(1)"
+        },
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.312(e)(2)(i)"
+        }
+      ]
+    },
+    {
+      "id": "DATA-PROTECTION.TRANSMISSION",
+      "title": "Transmission security for ePHI",
+      "family": "Technical Safeguards",
+      "statement": "ePHI transmitted over an electronic communications network is guarded against unauthorized access, including encryption of the transmission where appropriate to the risk.",
+      "crosswalk": [
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.312(e)(1)"
+        },
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.312(e)(2)(ii)"
+        }
+      ]
+    },
+    {
+      "id": "AUDIT.CONTROLS",
+      "title": "Audit controls over ePHI systems",
+      "family": "Technical Safeguards",
+      "statement": "Hardware, software, or procedural mechanisms record and examine activity in systems that contain or use ePHI, so that access and changes are attributable and reviewable.",
+      "crosswalk": [
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.312(b)"
+        },
+        {
+          "framework": "SOC2-TSC",
+          "reference": "CC7.2",
+          "note": "Satisfied by the immutable audit log."
+        }
+      ]
+    },
+    {
+      "id": "INCIDENT-RESPONSE.PROCEDURES",
+      "title": "Security incident procedures",
+      "family": "Administrative Safeguards",
+      "statement": "The organization identifies and responds to suspected or known security incidents, mitigates their harmful effects to the extent practicable, and documents incidents and their outcomes.",
+      "crosswalk": [
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.308(a)(6)(ii)"
+        }
+      ]
+    },
+    {
+      "id": "BUSINESS-CONTINUITY.CONTINGENCY",
+      "title": "Contingency plan and data backup",
+      "family": "Administrative Safeguards",
+      "statement": "A contingency plan governs response to events that damage systems containing ePHI, including a data backup plan and a disaster recovery plan that are tested and kept current.",
+      "crosswalk": [
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.308(a)(7)(i)"
+        },
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.308(a)(7)(ii)(A)"
+        }
+      ]
+    },
+    {
+      "id": "PHYSICAL-SECURITY.FACILITY",
+      "title": "Facility access controls",
+      "family": "Physical Safeguards",
+      "statement": "Physical access to facilities and systems that house ePHI is limited to authorized personnel, while ensuring properly authorized access is allowed.",
+      "crosswalk": [
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.310(a)(1)"
+        }
+      ]
+    },
+    {
+      "id": "PHYSICAL-SECURITY.DEVICE-MEDIA",
+      "title": "Device and media controls",
+      "family": "Physical Safeguards",
+      "statement": "The receipt, removal, reuse, and disposal of hardware and electronic media that contain ePHI are governed so that ePHI is not improperly disclosed or left recoverable on decommissioned media.",
+      "crosswalk": [
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.310(d)(1)"
+        }
+      ]
+    },
+    {
+      "id": "VENDOR-MANAGEMENT.BAA",
+      "title": "Business associate agreements",
+      "family": "Organizational Requirements",
+      "statement": "Before a business associate creates, receives, maintains, or transmits ePHI on the organization's behalf, a written agreement binds the associate to safeguard the ePHI to the standard the organization is itself held to.",
+      "crosswalk": [
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.308(b)(1)"
+        },
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.314(a)(1)"
+        }
+      ]
+    },
+    {
+      "id": "GOVERNANCE.DOCUMENTATION",
+      "title": "Policies, procedures, and documentation retention",
+      "family": "Documentation Requirements",
+      "statement": "Security policies and procedures are documented, and required actions, activities, and assessments are recorded and retained for the regulatory period, available to those responsible for implementing them.",
+      "guidance": "Retain documentation for the HIPAA six-year floor; the WORM retention helper enforces the minimum so evidence is not disposed of early.",
+      "crosswalk": [
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.316(a)"
+        },
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.316(b)(1)"
+        },
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.316(b)(2)(i)"
+        }
+      ]
+    }
+  ]
+}

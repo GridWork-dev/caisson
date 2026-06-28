@@ -1,0 +1,35 @@
+{
+  "name": "@caisson/app-compliance",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The P2 Compliance edition reference app (Next.js App Router, ADR-0044) — a thin wiring shell that runs the compliance leg end to end: seed → encrypt under withTenantCrypto → lock to WORM + chain anchor → emit + validate a deterministic evidence pack → prove an unresolved flag blocks generation. No dashboard.",
+  "scripts": {
+    "dev": "next dev -p 3040",
+    "build": "next build",
+    "start": "next start -p 3040",
+    "lint": "eslint .",
+    "test": "bun test ./lib"
+  },
+  "dependencies": {
+    "@caisson/audit-worm": "workspace:*",
+    "@caisson/compliance": "workspace:*",
+    "@caisson/field-crypto": "workspace:*",
+    "@caisson/kernel": "workspace:*",
+    "@caisson/tenancy-rls": "workspace:*",
+    "@electric-sql/pglite": "^0.5.3",
+    "next": "^16.2.9",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "eslint": "^9.13.0",
+    "typescript": "^5.7.3"
+  }
+}
