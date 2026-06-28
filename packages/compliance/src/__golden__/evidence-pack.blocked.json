@@ -1,0 +1,17 @@
+{
+  "formatVersion": "1",
+  "tenantId": "tenant-acme-prod",
+  "framework": {
+    "id": "soc2-tsc",
+    "title": "SOC 2 — Trust Services Criteria",
+    "version": "2024.1"
+  },
+  "blocked": true,
+  "unresolved": [
+    {
+      "controlId": "AVAILABILITY.BACKUP-RESTORE",
+      "collectorId": "substrate.worm-retention",
+      "reason": "no WORM retention term was found for the backup artifact class; evidence absent, status cannot be determined"
+    }
+  ]
+}
