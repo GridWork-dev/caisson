@@ -21,3 +21,23 @@ edition-only surface.
 
 > T9 scaffold: the package barrel composes the shipped base seams; the edition feature surface
 > (sync, inference, privacy, at-rest, tenancy, migration) lands per `outputs/specs/wave1-p4a-local-ai/PLAN.md`.
+
+## Local inference backend (`OnnxEmbeddingBackend`, T13)
+
+The real on-device embedding backend (`src/inference/onnx-backend.ts`) runs a MiniLM-class ONNX model
+via transformers.js (`@huggingface/transformers`) behind the `InferenceBackend` port. It is **never
+exercised in CI** (ADR-0064) — the deterministic `StubInferenceBackend` is the only backend CI runs,
+leaving the live model load the single un-exercised seam — so the runtime is an **optional peer**:
+`bun add @huggingface/transformers` only where you actually run local inference.
+
+- **Model is first-run-fetched + cached, never in the tarball** (`.npmignore` keeps the cache,
+  `*.onnx`, and weight blobs out of the published package). Air-gap deployments pre-seed the cache and
+  construct the backend with `offline: true` for literally zero egress.
+- **Hash-pinned integrity (TM-MODEL):** the config requires at least one `filename → SHA-256` pin;
+  every pinned file is verified before its bytes reach the runtime, fail-closed on mismatch.
+- **Single guarded egress chokepoint (TM-EGRESS):** transformers.js's `env.fetch` is overwritten with
+  a guard that hard-blocks any host but the one sanctioned `modelHost` (and any non-https scheme) and
+  routes through the kernel `fetchWithTimeout` — no raw `fetch`, no out-of-band download, no silent
+  hosted fallback. (T14's privacy/egress guard later wraps this same chokepoint.)
+- Embedding-only: text generation is a separate seam (the rented backend, T20) — `complete()` fails
+  closed here.
