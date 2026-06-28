@@ -28,6 +28,8 @@ export {
 
 export { buildAad } from "./aad.ts";
 
+export { encryptField, decryptField } from "./encrypt-field.ts";
+
 export {
   type FieldKeyProvider,
   type SyncFieldKeyProvider,
