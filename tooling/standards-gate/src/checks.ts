@@ -25,6 +25,26 @@ const EDITION_NAMES = new Set([
   "@caisson/agent-dev",
 ]);
 
+// Open-core (ADR-0094/0097). The open Base substrate ships `Apache-2.0`; every OTHER published module
+// (editions + their members, the compliance primitives field-crypto/audit-worm, the cli generator, the
+// commercial registry SERVICE, updates) ships `LicenseRef-Caisson-Commercial`. The open set is the
+// ADR-0094 ten PLUS `@caisson/registry-schema` (the open registry contract split out by ADR-0097).
+const OPEN_LICENSE = "Apache-2.0";
+const COMMERCIAL_LICENSE = "LicenseRef-Caisson-Commercial";
+const OPEN_BASE_NAMES = new Set([
+  "@caisson/kernel",
+  "@caisson/auth",
+  "@caisson/tenancy-rls",
+  "@caisson/ui",
+  "@caisson/billing",
+  "@caisson/credits",
+  "@caisson/jobs",
+  "@caisson/email",
+  "@caisson/ai-config",
+  "@caisson/mcp-server",
+  "@caisson/registry-schema",
+]);
+
 // A registry-module candidate is a `packages/` member. `apps/` are reference applications (the
 // base/edition reference apps + the design studio) — never published to the registry, so they are
 // not held to the module declaration rules (they still face the AGPL + down-only checks below).
@@ -39,8 +59,9 @@ export interface Finding {
 }
 
 /**
- * DORMANT TRIPWIRE (ADR-0050). Under the uniform fully-commercial model — ADR-0050 retired the lone
- * AGPL Local-first flank ADR-0023 carved out — NO AGPL/copyleft source exists in the tree, so Gate 1
+ * DORMANT TRIPWIRE (ADR-0050/0094). Under the open-core model (ADR-0094: base Apache-2.0, editions/
+ * primitives/cli/registry commercial; amends the ADR-0050 uniform-commercial stance) the SPDX
+ * allowlist is {Commercial, Apache-2.0} — still NO AGPL/copyleft source in the tree, so Gate 1
  * and Gate 1b NEVER fire by construction: there is no AGPL package for them to catch. They stay
  * wired ON PURPOSE as a standing tripwire — a re-introduced AGPL dependency (workspace OR external
  * npm) MUST still hard-fail CI. Do not delete: this is the guard that keeps copyleft out of the
@@ -186,11 +207,22 @@ export async function checkManifestAgreement(pkgs: Pkg[]): Promise<Finding[]> {
       const mod = await import(p.manifestPath);
       manifest = (mod.default ?? mod.manifest ?? mod) as typeof manifest;
     } catch (e) {
+      const msg = (e as Error).message ?? String(e);
+      // A genuine module-RESOLUTION failure (deps not installed — e.g. the pre-install CI pass) stays
+      // a non-blocking warn. ANY OTHER load failure is fail-closed to an ERROR: notably a ZodError
+      // from `defineModule` rejecting the manifest at load (an invalid manifest — incl. a license⟺tier
+      // violation, ADR-0094/0097) must HARD-FAIL, since this gate is the registry-ingress authority
+      // and must not pass a manifest the schema rejects.
+      const isResolutionFailure =
+        (e as { code?: string }).code === "ERR_MODULE_NOT_FOUND" ||
+        /cannot find (module|package)|failed to resolve/i.test(msg);
       findings.push({
-        severity: "warn",
+        severity: isResolutionFailure ? "warn" : "error",
         rule: "manifest-agreement",
         pkg: p.name,
-        message: `could not load manifest.ts (${(e as Error).message}) — agreement check skipped; CI must run post-install.`,
+        message: isResolutionFailure
+          ? `could not RESOLVE manifest.ts deps (${msg}) — agreement check skipped; CI must run post-install.`
+          : `manifest.ts failed to load/validate (${msg}) — defineModule rejected it (ADR-0020/0094/0097).`,
       });
       continue;
     }
@@ -211,6 +243,67 @@ export async function checkManifestAgreement(pkgs: Pkg[]): Promise<Finding[]> {
     const md = [...(manifest.dependencies ?? [])].sort().join(",");
     const pd = [...p.workspaceDeps].sort().join(",");
     mismatch("dependencies", md, pd);
+  }
+  return findings;
+}
+
+/**
+ * Open-core licensing split (ADR-0094/0097). Every shipped `packages/` module must carry the license
+ * its tier mandates: the open Base set (`OPEN_BASE_NAMES`) ships `Apache-2.0`; every other module
+ * ships `LicenseRef-Caisson-Commercial`. This is the gate change ADR-0094 scheduled (it replaces the
+ * former implicit "all modules commercial" posture). The commercial registry SERVICE lives at
+ * `registry/` (outside `packages/`) so it is not a module candidate here — only the open registry
+ * CONTRACT, `@caisson/registry-schema` under `packages/`, is checked (and must be open). A missing
+ * `license` is `checkDeclarations`' job, so an unlicensed package is skipped here (not double-flagged).
+ */
+export function checkOpenCoreLicensing(pkgs: Pkg[]): Finding[] {
+  const findings: Finding[] = [];
+  for (const p of pkgs) {
+    if (!isModuleCandidate(p) || !p.hasCode || !p.license) continue;
+    const shouldBeOpen = OPEN_BASE_NAMES.has(p.name);
+    const expected = shouldBeOpen ? OPEN_LICENSE : COMMERCIAL_LICENSE;
+    if (p.license !== expected) {
+      findings.push({
+        severity: "error",
+        rule: "open-core-license",
+        pkg: p.name,
+        message: `${shouldBeOpen ? "open Base" : "commercial"} module must ship ${expected} (ADR-0094/0097); found ${p.license}.`,
+      });
+    }
+  }
+  return findings;
+}
+
+/**
+ * Open↔commercial no-depend-up boundary (ADR-0094/0097). An open (`Apache-2.0`) package may depend
+ * only on other open packages — the open Base must be resolvable against open deps alone (the
+ * acquisition/trust premise of ADR-0094). A commercial package may depend on anything (commercial→open
+ * is always fine). Keyed on the package's actual SPDX `license` (not a name allowlist) so it stays
+ * correct if the open set changes. This is the LICENSE-keyed half of the boundary; dependency-cruiser
+ * (which cannot read SPDX) owns the graph-direction half (down-only base↛edition), per ADR-0022.
+ */
+export function checkOpenCommercialBoundary(pkgs: Pkg[]): Finding[] {
+  const licenseByName = new Map(pkgs.map((p) => [p.name, p.license]));
+  const findings: Finding[] = [];
+  for (const p of pkgs) {
+    if (!isModuleCandidate(p) || p.license !== OPEN_LICENSE) continue;
+    for (const dep of p.workspaceDeps) {
+      // workspaceDeps are @caisson/* runtime deps only (devDeps excluded — they don't ship). An open
+      // package must resolve every one to an in-workspace OPEN package. Fail closed: a non-open dep
+      // OR a dep absent from the workspace (an external/renamed @caisson pkg we can't verify is open)
+      // is a violation — never silently allowed.
+      const depLicense = licenseByName.get(dep);
+      if (depLicense === OPEN_LICENSE) continue;
+      findings.push({
+        severity: "error",
+        rule: "open-core-boundary",
+        pkg: p.name,
+        message:
+          depLicense === undefined
+            ? `open (Apache-2.0) package depends on @caisson dep ${dep} absent from the workspace — cannot verify it is open; the open Base must resolve against open packages only (ADR-0094/0097).`
+            : `open (Apache-2.0) package depends "up" on non-open ${dep} (${depLicense ?? "unlicensed"}) — the open Base must depend only on open packages (ADR-0094/0097).`,
+      });
+    }
   }
   return findings;
 }
