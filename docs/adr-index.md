@@ -14,7 +14,7 @@ conflict, the ADR file and the board win over this index.
   (no files). The 0040 jump was a deliberate block reservation for the brand/positioning set.
   **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit);
   **0094-0096** = the 2026-06-29 GTM-report locks (open-core Base / GTM offer / services-docs);
-  **0097-0100** = the 2026-06-29 design-system-harden track locks (component-recipe+kit / token+theming / gates / signature-animation).
+  **0097-0101** = the 2026-06-29 design-system-harden track locks (component-recipe+kit / token+theming / gates / signature-animation / brand-mark "Pressure vessel").
 - Status tokens read from each ADR's own header line:
   - `proposed` = literal header value on the founding + foundations sets (0001-0019, 0024).
     Per the board (line 90) these are **in force / locked** despite the stale "proposed"
@@ -228,7 +228,7 @@ pricing numbers).
 | [0095](../knowledge/decisions/ADR-0095-gtm-offer-structure.md)      | GTM offer structure: free EU-AI-Act sample · Enterprise tier · annual cadence · pricing deferred | GTM/Pricing  | accepted | extends 0012/0081/0082/0089          |
 | [0096](../knowledge/decisions/ADR-0096-services-docs-standalone.md) | `services/docs` standalone AI-native docs service                                                | Docs/Support | accepted | composes 0009/0084; build at P6      |
 
-### Design-system-harden track (0097-0100, 2026-06-29) - status `accepted`
+### Design-system-harden track (0097-0101, 2026-06-29) - status `accepted`
 
 Eight forks (F1-F8) from `outputs/kickoffs/design-marketing-rebuild.md`, locked on a 7-agent code-grounded
 fanout. Adopts the _mechanism_ of `outputs/research/wardfile-frontend-playbook.md` (token/brand VALUES stay
@@ -240,6 +240,7 @@ Caisson's). The track is harden-not-build (Caisson already owned the token found
 | [0098](../knowledge/decisions/ADR-0098-token-theming-hardening.md)            | Token & theming hardening: breakpoint ladder · scrim · 3-prong dark mode (F4/F3) | Design/Tokens    | accepted | extends 0042/0078; ThemeToggle per 0097                                    |
 | [0099](../knowledge/decisions/ADR-0099-deterministic-design-quality-gates.md) | Deterministic design-quality gates (staged) + advisory critic (F5)               | Design/CI        | accepted | extends 0016/0022/0062; enforces 0097/0098                                 |
 | [0100](../knowledge/decisions/ADR-0100-signature-animation-css-svg.md)        | Marketing signature animation: tokenized CSS/SVG, video deferred (F6)            | Design/Marketing | accepted | adopts hero-concepts; under 0078 §6 / 0080 §3                              |
+| [0101](../knowledge/decisions/ADR-0101-brand-mark-pressure-vessel.md)         | Brand mark: the "Pressure vessel" (operator pick); signature sketch deferred     | Design/Brand     | accepted | supersedes 0078 §2 glyph; defers 0100 sketch; under 0078 §8 / 0097         |
 
 ---
 
