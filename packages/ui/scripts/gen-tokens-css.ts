@@ -10,11 +10,12 @@ import { foundation } from "../src/tokens/foundation";
 import {
   darkTheme,
   fonts,
-  functional,
+  functionalDark,
+  functionalLight,
   lightTheme,
   selected,
 } from "../src/tokens/theme";
-import type { SemanticTheme } from "../src/tokens/types";
+import type { FunctionalTokens, SemanticTheme } from "../src/tokens/types";
 
 /** Semantic role → CSS var suffix. Explicit (not derived) for stable ordering + clean names. */
 const SEMANTIC_VARS: ReadonlyArray<readonly [keyof SemanticTheme, string]> = [
@@ -41,13 +42,20 @@ function semanticBlock(theme: SemanticTheme): string {
   ).join("\n");
 }
 
+// Functional/status tokens are per-mode (the dark set fails AA on light surfaces) — emitted with
+// the semantic block in each theme block, NOT in the mode-independent sharedBlock.
+function functionalBlock(fn: FunctionalTokens): string {
+  return [
+    "  /* functional / status */",
+    `  --cs-success: ${fn.success};`,
+    `  --cs-warning: ${fn.warning};`,
+    `  --cs-danger: ${fn.danger};`,
+    `  --cs-info: ${fn.info};`,
+  ].join("\n");
+}
+
 function sharedBlock(): string {
   const lines: string[] = [];
-  lines.push("  /* functional / status */");
-  lines.push(`  --cs-success: ${functional.success};`);
-  lines.push(`  --cs-warning: ${functional.warning};`);
-  lines.push(`  --cs-danger: ${functional.danger};`);
-  lines.push(`  --cs-info: ${functional.info};`);
   lines.push("  /* type */");
   lines.push(`  --cs-font-sans: ${fonts.sans};`);
   lines.push(`  --cs-font-mono: ${fonts.mono};`);
@@ -88,21 +96,24 @@ const css = `/* GENERATED — packages/ui/scripts/gen-tokens-css.ts. Do not edit
 [data-theme="dark"] {
   /* colour — semantic (dark, default) */
 ${semanticBlock(darkTheme)}
+${functionalBlock(functionalDark)}
 ${sharedBlock()}
 }
 
 /* OS-seed: follow the system's light preference until the user pins a theme. */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
-    /* colour — semantic (light, OS-seeded) */
+    /* colour — semantic + functional (light, OS-seeded) */
 ${semanticBlock(lightTheme)}
+${functionalBlock(functionalLight)}
   }
 }
 
 /* manual override — wins over the OS seed */
 [data-theme="light"] {
-  /* colour — semantic (light); shared type/scale/functional inherited from :root */
+  /* colour — semantic + functional (light); shared type/scale inherited from :root */
 ${semanticBlock(lightTheme)}
+${functionalBlock(functionalLight)}
 }
 `;
 
