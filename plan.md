@@ -99,12 +99,15 @@ started · `ROADMAP` = post-v1, no code.
 
 ## P5 — Generator + registry (Option C)
 
-> **STATUS: SPEC+PLAN ready (`outputs/specs/wave1-p5-generator/{SPEC,PLAN}.md`), NOT built.**
-> Wave-0 already shipped the seams: `registry/` index + read-path + worker handler (ADR-0047),
-> the `create-caisson` generator engine + skeleton (`packages/cli`, ADR-0048), and codegen
-> credit-debit (`packages/cli/src/meter.ts`, ADR-0049). The FULL P5 — gated publish flow,
-> P2–P4 backfill as registry modules, agent-driven generation via the MCP server, per-generation
-> metering wired end-to-end — is unbuilt. Owners: ADR-0020/0021/0047/0048/0049.
+> **STATUS: SHIPPED (PR#12 merged; security audit PASS).** Real disk `FileSetWriter` (path-safe
+> atomic write) + templated engine (golden), `runGeneration` (debit-before-spend → write → audit
+> row, PGlite, 402-writes-nothing, idempotent), buyer-MCP `generate` converged on the registry
+> index (id+version validate, ADR-0071 entitlement-expand) **driving** `runGeneration` end-to-end,
+> test-doubled publish → byte-identical index, runnable `create-caisson` bin, `@caisson/migrate`
+> assemble. The registry-read Worker is now **LIVE** (`caisson-registry.broken-wood-97a9.workers.dev`,
+> ADR-0047 seam → live). **Deferred (P6 forks):** publishability flip (T2/T3), compose-time
+> migration-bundle (empty no-op today), `@caisson/migrate` promotion, MCP rate-limit.
+> Owners: ADR-0004/0020/0021/0047/0048/0049/0068–0071/0077.
 
 - T5.1 `registry/`: the catalog/index + publish flow — the standards-gate is the only ingress
   (ADR-0020 manifest · ADR-0021 publish flow + attestation · ADR-0022 lint gates). Each module

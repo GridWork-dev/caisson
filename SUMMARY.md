@@ -58,7 +58,7 @@ vs exit gates per the caveat above:**
 - **Agentic-Dev** ← gridwork-core — governed-agent kernel (also powers the generator + buyer MCP). **Roadmap edition (most skeletal).**
 - **Base** ← gridwork + gwdigital + tessera — auth + fail-closed RLS + billing + credits + design floor + **buyer MCP (auth)** + AGENTS.md
 
-**Canonical decisions:** ADRs `0001–0088` (with gaps `0025–0039`) in `knowledge/decisions/`. The full
+**Canonical decisions:** ADRs `0001–0093` (with gaps `0025–0039`) in `knowledge/decisions/`. The full
 numbering map + supersession chain is owned by `docs/state/decisions-and-forks.md` (do not duplicate
 here). Founding set `ADR-0001..0012` covers Bun+Turborepo+changesets, TS-strict/Zod/integer-credits,
 composable packages, generator+registry, fail-closed RLS, WORM+audit-chain+field-crypto, credit
@@ -68,7 +68,8 @@ config, pricing.
 **Build plan (`plan.md`):** P0 foundations → P1 base → P2 compliance → P3 AI-kit → P4 local-first +
 agentic → P5 generator → P6 commerce + support + docs → P7+ round-out. **Done so far:** P0, P1, the
 D9 pipeline, Wave 0 substrate, Wave 1 editions (merged-but-partial), GTM site, **P5 generator + registry
-full drive** (built, PR open — SHIP review; publishability flip deferred). Exit gate per phase, no dates.
+full drive** (shipped — PR#12 merged, security audit PASS; registry Worker now LIVE; publishability flip
+deferred to P6). **Next: P6** (commerce + support + docs). Exit gate per phase, no dates.
 
 ## Specs (canonical concept docs — `specs/`)
 
@@ -96,9 +97,9 @@ full drive** (built, PR open — SHIP review; publishability flip deferred). Exi
 ## STILL OPEN (not locked — do NOT pre-bind)
 
 - **Pricing numbers** — display fork CLOSED (ADR-0082 shows committed anchors), but any FINAL number
-  adjustment before checkout + the grandfathering policy stay operator-owned (ADR-0012). Carries the
-  **X-2 gap**: no component maps the recurring billing cycle → `grant()` and no price-book holds the
-  USD↔credit conversion. Surface at P6. See the board's Open table.
+  adjustment before checkout + the grandfathering policy stay operator-owned (ADR-0012); deferred to
+  P6/checkout. The **X-2 gap** (recurring billing cycle → `grant()` + USD↔credit price-book) is no
+  longer undesigned: **locked-pending design ADR-0089** (`outputs/specs/billing-x2/`) — build at P6.
 - **App framework per edition** — standardized on Next.js App Router for reference apps (ADR-0044);
   any per-edition deviation decided when that app is built.
 
@@ -118,20 +119,19 @@ deleted — point here:
 `market-findings.json` · `scores.json` · `support-strategy.md` · `options.md` · `wave1-forks.md` ·
 `review-findings.json` · `demand-probe.ts` · `metrics.sh` · `design-session/`.
 
-Specs → `specs/` (top-level). ADRs → `knowledge/decisions/ADR-0001..0088`. Build plan → `plan.md`.
+Specs → `specs/` (top-level). ADRs → `knowledge/decisions/ADR-0001..0093`. Build plan → `plan.md`.
 Session kickoffs → `outputs/kickoffs/`. Per-phase SPEC/PLAN → `outputs/specs/`.
 
 ## Next
 
-**P5 — Generator + registry full drive.** SPEC + PLAN are written and ADR-locked:
-`outputs/specs/wave1-p5-generator/{SPEC.md,PLAN.md}`. Drives the Wave-0 generator + registry **seams
-to completion** — `create-caisson` (CLI) and the buyer MCP both compose a runnable, testable buyer
-repo from a registry selection (debit-before-spend, path-safe atomic write), and the registry
-publishes its substrate through one CI-only gated flow + index backfill (ADRs 0068–0072, plus new
-`@caisson/migrate`). Tags: `external-system · security · billing`.
+**~~P5 — Generator + registry full drive~~ SHIPPED** (PR#12 merged, security audit PASS; registry
+Worker now LIVE at `caisson-registry.broken-wood-97a9.workers.dev`). Deferred to P6: publishability
+flip (T2/T3), compose-time migration-bundle, `@caisson/migrate` promotion, MCP rate-limit.
 
-**Then P6 — commerce + support + docs:** `services/license` (Ed25519 issuer + MoR webhook + idempotent
-credit grants), entitlement/registry-access on purchase, `services/support-bot` (Discord + Python RAG
-
-- hosted inference, ADR-0009), `services/docs` AI-native + `llms.txt`, buyer dashboard + seller
-  cockpit. Closes the X-2 price-book gap. Then P7+ round-out (vertical compliance packs, marketplace).
+**P6 — commerce + support + docs (the single big pending phase).** `services/{license,support-bot,docs}`
+are empty scaffolds (0 LOC). `services/license` (Ed25519 issuer + MoR webhook + idempotent credit
+grants), entitlement/registry-access on purchase, `services/support-bot` (Discord + Python RAG +
+hosted inference, ADR-0009), `services/docs` AI-native + `llms.txt`, buyer dashboard + seller cockpit.
+Closes the **X-2 price-book gap** — design now locked-pending in `outputs/specs/billing-x2/` (grant on
+`invoice.paid`, new `@caisson/pricebook`, cycle→grant mapper; ADR-0089). Tags:
+`external-system · security · billing`. Then P7+ round-out (vertical compliance packs, marketplace).
