@@ -76,6 +76,18 @@ function baseMembers(index: RegistryIndex): string[] {
     .map((m) => m.id);
 }
 
+/**
+ * The index-derived base module ids — every module scoped to NO edition (`editions[] === []`). These
+ * are the open Apache-2.0 substrate (ADR-0094): free, always discoverable/installable, independent of
+ * any entitlement. The registry Worker unions this into every served view (community gets exactly
+ * this; a licensed buyer gets base ∪ their expanded editions). NOT auto-included by
+ * `expandEntitlements` for an edition purchase — base inclusion is the read-path/view policy, kept out
+ * of the canonical purchase→member expansion so the gate stays exact.
+ */
+export function baseModuleIds(index: RegistryIndex): readonly string[] {
+  return baseMembers(index);
+}
+
 /** The bundle = base ∪ every edition's members, derived purely from the index (== the full catalog). */
 function bundleMembers(index: RegistryIndex): string[] {
   const out = new Set<string>(baseMembers(index));
@@ -124,9 +136,12 @@ export function expandEntitlements(
 }
 
 /**
- * Convenience over `expandEntitlements`: load the built registry index from disk through the single
- * sanctioned read path (`loadRegistryIndexFromFile`, ADR-0047) and expand. This is the ADR-0071
- * wiring — the resolver consumes the built index, never raw manifests.
+ * Convenience over `expandEntitlements` for callers that hold the index on DISK (e.g. CLI / build
+ * tooling): load the built registry index through the single sanctioned read path
+ * (`loadRegistryIndexFromFile`, ADR-0047), then expand. NOTE: the live entitlement paths do NOT route
+ * through this — the server resolver (`resolveAccountEntitlements`) and the registry Worker both
+ * expand against an in-memory `RegistryIndex` via `expandEntitlements`. Exported as part of the
+ * @caisson/registry-schema public surface (ADR-0097).
  */
 export function expandEntitlementsFromFile(
   indexPath: string,

@@ -23,6 +23,7 @@
     "test": "bun test ./schema ./scripts ./worker"
   },
   "dependencies": {
+    "@caisson/license-verify": "workspace:*",
     "@caisson/registry-schema": "workspace:*",
     "zod": "^3.23.8"
   },
