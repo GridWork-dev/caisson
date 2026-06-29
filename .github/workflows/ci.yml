@@ -113,12 +113,13 @@ jobs:
   # ubuntu only, so the macOS native binary path would otherwise ship unexercised. This matrix runs
   # the local-store suite (vec0 + FTS5 + RRF hybrid retrieval) on BOTH runners; a missing/broken
   # platform extension fails CI here. `fail-fast: false` so a break on one OS never masks the other.
-  # Both legs now run on the self-hosted fleet's native lanes: the amd64 box exercises the Linux `.so`
-  # path and the Mac mini's native macOS-arm64 lane exercises the `.dylib` path on real hardware
-  # (replacing GitHub-hosted macos-latest — ~10× cost). This job is NOT a required check, so a
-  # macOS-runner prereq gap surfaces visibly without blocking merges. macOS prereq: the mini's runner
-  # user needs Homebrew's extension-capable SQLite reachable (the brew step below installs it;
-  # docs/operations.md tracks first-run fleet verification).
+  # Linux leg → the fleet's amd64 lane (exercises the sqlite-vec `.so`). macOS leg → STAYS
+  # GitHub-hosted `macos-latest` for now: the fleet's native macOS lane (<host>) dispatches
+  # fine (checkout + bun install are green on it), but its runner user has no Homebrew
+  # extension-capable SQLite, so the `brew install sqlite` step fails there. Moving the macOS leg to
+  # the fleet is a follow-up gated on provisioning Homebrew + extension-capable SQLite on the Mac
+  # mini's runner user (docs/operations.md §7); until then this keeps the leg green. `fail-fast:
+  # false` so a break on one OS never masks the other.
   native-ext:
     strategy:
       fail-fast: false
@@ -127,7 +128,7 @@ jobs:
           - platform: linux
             runs-on: [self-hosted, <host>]
           - platform: macos
-            runs-on: [self-hosted, <host>]
+            runs-on: macos-latest
     runs-on: ${{ matrix.runs-on }}
     timeout-minutes: 20
     steps:
