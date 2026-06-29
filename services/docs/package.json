@@ -3,5 +3,33 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "AI-native docs that feed the support-bot + buyer agents (P6 — scaffold)."
+  "license": "LicenseRef-Caisson-Commercial",
+  "description": "AI-native docs corpus + retrieval service (P6, ADR-0096/0009). Builds a chunked, agent-queryable corpus from the repo's authoritative docs, emits a canonical llms.txt, and serves a typed POST /query retrieval contract that the (Python) support-bot and buyer agents consume cross-language. Read-by-agents — distinct from apps/site's read-by-humans Fumadocs site.",
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "bun test ./src",
+    "start": "bun run src/server.ts"
+  },
+  "dependencies": {
+    "@caisson/kernel": "workspace:*",
+    "@caisson/local-store": "workspace:*",
+    "sqlite-vec": "^0.1.9",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "@types/bun": "^1.1.14",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.0"
+  }
 }
