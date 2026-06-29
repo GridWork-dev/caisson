@@ -83,8 +83,10 @@ names `ai-kit` an empty stub.
 
 ## Layer: Local-first AI edition
 
-Fully commercial, AGPL flank removed: [`ADR-0050`](../knowledge/decisions/ADR-0050-local-ai-fully-commercial.md) /
-[`ADR-0083`](../knowledge/decisions/ADR-0083-local-first-fully-commercial.md).
+Commercial edition, AGPL flank removed: [`ADR-0050`](../knowledge/decisions/ADR-0050-local-ai-fully-commercial.md) /
+[`ADR-0083`](../knowledge/decisions/ADR-0083-local-first-fully-commercial.md). (The **Base substrate** went
+**open-core Apache-2.0** per [`ADR-0094`](../knowledge/decisions/ADR-0094-open-core-base-apache2.md), 2026-06-29;
+editions like Local-first AI stay commercial. Re-licensing impl scheduled — work item W1.)
 
 | Package       | Purpose                                                                                                                     | Edition             | Status                    | Evidence src/test | Key ADRs                                                                                      |
 | ------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------- | ------------------------- | ----------------- | --------------------------------------------------------------------------------------------- |

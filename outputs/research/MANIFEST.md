@@ -50,3 +50,14 @@ Excluded per task: `worktrees/`, `.zed/`. `docs/` = reference only.
 | 5     | `plan.md` (phased build plan P0–P7, exit criteria)                                                    | done                                  |
 | 5     | `knowledge/decisions/ADR-0001..0012` (12 ADRs)                                                        | **done → GATE 4 (awaiting approval)** |
 | 6     | scaffold of new library repo (working name "Forge")                                                   | pending (Gate 4)                      |
+
+## Post-founding research imports (2026-06-29)
+
+External decision-grade reports prepared by **Perplexity Computer** (June 27–28, 2026), imported
+2026-06-29. Inputs, not decisions — locks stay operator-owned (`docs/state/decisions-and-forks.md`).
+
+| Artifact                                                                      | What                                                                                                                                            | Status   |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `gtm-customer-acquisition.md` (+ `gtm-customer-acquisition-report.pdf`)       | GTM & customer-acquisition plan: motion, beachhead, channels, funnel, CAC, pricing-page rec, launch, SWOT                                       | imported |
+| `market-competitive-analysis.md` (+ `market-competitive-analysis-report.pdf`) | Market sizing (TAM/SAM/SOM), competitor matrices (boilerplate/compliance/AI/local-first), business model, ICP, threats, trends, recommendations | imported |
+| `gtm-market-analysis-2026-06.md`                                              | **Cross-analysis** of both reports vs the current locked state: VALIDATES / GAP / CONFLICT / INSIGHT, fork register for the picker              | produced |

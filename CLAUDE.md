@@ -61,8 +61,12 @@ implementation**. The harvestable license kit is taken from PUBLIC `tessera`.
   by **ADR-0078** (supersedes 0042). Site SEO → **ADR-0079**; copy laws → **ADR-0080** (extends specs/04).
   The old "AI production codebase starter" frame is superseded.
 - **Module production-standards + pipeline** — LOCKED: manifest · publish flow · lint gates ·
-  fully-commercial licensing (ADR-0020-0023, **all four editions commercial** — Local-first's AGPL
-  flank removed by **ADR-0083**); `tooling/`+`registry/` is the seam.
+  commercial **editions** (ADR-0020-0023, **all four editions commercial** — Local-first's AGPL
+  flank removed by **ADR-0083**); `tooling/`+`registry/` is the seam. **Open-core amendment (ADR-0094,
+  2026-06-29):** the **Base substrate** (kernel·auth·tenancy-rls·ui·billing·credits·jobs·email·ai-config·
+  mcp-server) is now **Apache-2.0**; editions + field-crypto + audit-worm + generator + registry +
+  updates stay commercial. Re-licensing the standards-gate + manifests is **scheduled** (work item W1,
+  not yet in code).
 - **Site go-live posture** — LOCKED (**ADR-0082**): the site reads **live self-serve** (purchase CTAs,
   no waitlist), **committed prices** (no "indicative/subject-to-change" frame — supersedes ADR-0081),
   **artifacts true-to-built** (no fabricated CLI/CI for the unbuilt editions); Agentic-Dev the one
