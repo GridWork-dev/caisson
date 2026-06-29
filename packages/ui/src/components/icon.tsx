@@ -17,9 +17,11 @@ import {
   GitBranch,
   KeyRound,
   Lock,
+  Moon,
   Scale,
   Server,
   ShieldCheck,
+  Sun,
   Terminal,
   Wallet,
   type LucideIcon,
@@ -47,6 +49,8 @@ const LUCIDE: Record<string, LucideIcon> = {
   check: Check,
   alert: CircleAlert,
   arrow: ArrowRight,
+  sun: Sun,
+  moon: Moon,
 };
 
 type BespokeName =

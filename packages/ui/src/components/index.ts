@@ -27,3 +27,6 @@ export { Glyph, Wordmark } from "./brand";
 export type { WordmarkProps } from "./brand";
 export { Reveal } from "./reveal";
 export type { RevealProps } from "./reveal";
+export { ThemeToggle } from "./theme-toggle";
+export type { ThemeToggleProps } from "./theme-toggle";
+export { THEME_STORAGE_KEY, themeInitScript } from "./theme-init";
