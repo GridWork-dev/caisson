@@ -1,16 +1,18 @@
 {
-  "pricebookVersion": "2026-06-29",
+  "pricebookVersion": "2026-06-29.2",
   "creditConversion": { "microUsdPerCredit": 1000 },
   "plans": {
     "price_developer_monthly_PLACEHOLDER": {
       "planTag": "developer",
       "creditsPerCycle": 1000,
-      "cadence": "month"
+      "cadence": "month",
+      "entitlements": []
     },
     "price_compliance_updates_annual_PLACEHOLDER": {
       "planTag": "compliance_updates",
       "creditsPerCycle": 12000,
-      "cadence": "year"
+      "cadence": "year",
+      "entitlements": ["compliance"]
     }
   },
   "centsToCredits": [

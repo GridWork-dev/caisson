@@ -631,6 +631,7 @@
       "name": "@caisson/registry",
       "version": "0.0.0",
       "dependencies": {
+        "@caisson/license-verify": "workspace:*",
         "@caisson/registry-schema": "workspace:*",
         "zod": "^3.23.8",
       },
@@ -654,6 +655,7 @@
         "@caisson/credits": "workspace:*",
         "@caisson/kernel": "workspace:*",
         "@caisson/pricebook": "workspace:*",
+        "@caisson/registry-schema": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
       },
       "devDependencies": {

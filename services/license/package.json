@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
-  "description": "Merchant-of-Record billing webhook + idempotent credit grants (P6, ADR-0089/0017). Hosts the subscription cycle->grant mapper (invoice.paid -> sub_allotment). Ed25519 license issuer + entitlement resolver land in follow-on Bucket-B slices.",
+  "description": "Merchant-of-Record billing webhook + idempotent credit grants + account-entitlement store/resolver (P6, ADR-0089/0017/0071). A gated invoice.paid grants cycle credits AND the plan's entitlements; resolveAccountEntitlements expands stored purchased ids to member slugs against the registry index. Ed25519 license issuer lands in a follow-on Bucket-B slice.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -22,6 +22,7 @@
     "@caisson/credits": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/pricebook": "workspace:*",
+    "@caisson/registry-schema": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*"
   },
   "devDependencies": {

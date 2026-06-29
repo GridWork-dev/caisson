@@ -14,11 +14,22 @@ import { z } from "zod";
 import { ConfigError, parseStrict, strictObject } from "@caisson/kernel";
 
 /** Append-only version stamp — a plan-row change bumps this, never edits it in place (ADR-0006). */
-export const PRICEBOOK_VERSION = "2026-06-29";
+export const PRICEBOOK_VERSION = "2026-06-29.2";
 
 /** Billing cadence; an annual invoice grants the annual allotment once (ADR-0095). */
 export const planCadenceSchema = z.enum(["month", "year"]);
 export type PlanCadence = z.infer<typeof planCadenceSchema>;
+
+/**
+ * The PURCHASED IDS a plan grants entitlement to (ADR-0071): edition names (`compliance`), the bundle
+ * sentinel (`bundle`), or à-la-carte module ids (`@caisson/<slug>`) — NEVER the expanded member-slug
+ * leaf set. Commerce carries WHAT WAS BOUGHT; the registry index does the expansion at gate time
+ * (`expandEntitlements`), so a module added to an edition reaches existing buyers with no plan edit
+ * (ADR-0071 binding). A credits-only plan (no edition) carries `[]`. Bounded like the resolver's input.
+ */
+export const planEntitlementsSchema = z.array(
+  z.string().trim().min(1).max(128),
+);
 
 export const planBookEntrySchema = strictObject({
   /** Stable internal plan tag (NOT the Stripe id) — survives a price-id rotation. */
@@ -26,6 +37,8 @@ export const planBookEntrySchema = strictObject({
   /** EXACT integer credits granted each cycle — never derived from the charged amount (ADR-0089 §5). */
   creditsPerCycle: z.number().int().positive(),
   cadence: planCadenceSchema,
+  /** Purchased ids this plan entitles the buyer to (editions/bundle/modules) — `[]` for credits-only. */
+  entitlements: planEntitlementsSchema,
 });
 export type PlanBookEntry = z.infer<typeof planBookEntrySchema>;
 
@@ -39,11 +52,13 @@ export const PLAN_BOOK: Record<string, PlanBookEntry> = {
     planTag: "developer",
     creditsPerCycle: 1000,
     cadence: "month",
+    entitlements: [], // a credits-only dev plan — grants credits, no edition access
   },
   price_compliance_updates_annual_PLACEHOLDER: {
     planTag: "compliance_updates",
     creditsPerCycle: 12000,
     cadence: "year",
+    entitlements: ["compliance"], // the compliance edition (expanded to member slugs by the index)
   },
 };
 
