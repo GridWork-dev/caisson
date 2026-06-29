@@ -9,12 +9,15 @@ import {
   BookOpen,
   Boxes,
   Check,
+  Circle,
   CircleAlert,
+  CircleDot,
   Cpu,
   Database,
   FileCheck2,
   Gauge,
   GitBranch,
+  Info,
   KeyRound,
   Lock,
   Moon,
@@ -24,9 +27,10 @@ import {
   Sun,
   Terminal,
   Wallet,
+  X,
   type LucideIcon,
 } from "lucide-react";
-import type { ReactNode, SVGProps } from "react";
+import { forwardRef, type ReactNode, type Ref, type SVGProps } from "react";
 
 import "./icon.css";
 
@@ -48,6 +52,10 @@ const LUCIDE: Record<string, LucideIcon> = {
   boxes: Boxes,
   check: Check,
   alert: CircleAlert,
+  x: X,
+  info: Info,
+  circle: Circle,
+  "circle-dot": CircleDot,
   arrow: ArrowRight,
   sun: Sun,
   moon: Moon,
@@ -65,7 +73,12 @@ type BespokeName =
 /** Bespoke domain glyphs — 24-grid, 2px stroke, currentColor, no fill (matches Lucide). */
 const BESPOKE: Record<
   BespokeName,
-  (p: SVGProps<SVGSVGElement> & { "data-size"?: "md" | "lg" }) => ReactNode
+  (
+    p: SVGProps<SVGSVGElement> & {
+      "data-size"?: "md" | "lg";
+      ref?: Ref<SVGSVGElement>;
+    },
+  ) => ReactNode
 > = {
   // Row-level security: a table whose locked row admits only the keyed tenant.
   rls: (p) => (
@@ -118,32 +131,33 @@ const BESPOKE: Record<
       />
     </svg>
   ),
-  // Append-only audit chain: hashed links.
+  // Append-only audit chain: interlocking links (link-2 form) with a verified hash tick.
   "audit-chain": (p) => (
     <svg viewBox="0 0 24 24" fill="none" {...p}>
-      <rect
-        x="3"
-        y="9"
-        width="7"
-        height="6"
-        rx="2"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
-      <rect
-        x="14"
-        y="9"
-        width="7"
-        height="6"
-        rx="2"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
       <path
-        d="M10 12h4"
+        d="M9.5 16H7.5a4 4 0 0 1 0-8H9.5"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
+      />
+      <path
+        d="M14.5 8h2a4 4 0 0 1 0 8h-2"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M8.5 12h7"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M12 4.5v2M12 17.5v2"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        opacity="0.55"
       />
     </svg>
   ),
@@ -167,21 +181,27 @@ const BESPOKE: Record<
       />
     </svg>
   ),
-  // Per-tenant field encryption: a keyed field cell.
+  // Per-tenant field encryption: a data field/row locked by a keyhole.
   "field-crypto": (p) => (
     <svg viewBox="0 0 24 24" fill="none" {...p}>
       <rect
         x="3"
-        y="6"
+        y="5"
         width="18"
-        height="12"
+        height="14"
         rx="2"
         stroke="currentColor"
         strokeWidth="2"
       />
-      <circle cx="9" cy="12" r="2" stroke="currentColor" strokeWidth="2" />
       <path
-        d="M11 12h6M15 12v2.5"
+        d="M3 9.5h18"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        opacity="0.5"
+      />
+      <circle cx="12" cy="13" r="2" stroke="currentColor" strokeWidth="2" />
+      <path
+        d="M12 15v2.4"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
@@ -207,23 +227,32 @@ const BESPOKE: Record<
       />
     </svg>
   ),
-  // The caisson cross-section: waterline over a chambered foundation.
+  // The caisson cross-section: cold waterline, a shaft down to the working chamber, one light.
   caisson: (p) => (
     <svg viewBox="0 0 24 24" fill="none" {...p}>
       <path
-        d="M3 8h6M15 8h6M9 8q3-2 6 0"
+        d="M3 6.5q2.2-2 4.5 0t4.5 0t4.5 0t4-0.3"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
-        d="M6 11v9h12v-9"
+        d="M12 11.5V7"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
+      <rect
+        x="6"
+        y="11.5"
+        width="12"
+        height="8.5"
+        rx="1.5"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <circle cx="12" cy="15.75" r="1.7" fill="currentColor" />
     </svg>
   ),
 };
@@ -237,21 +266,28 @@ export interface IconProps {
   "aria-label"?: string;
 }
 
-export function Icon({
-  name,
-  size = "md",
-  className,
-  "aria-label": ariaLabel,
-}: IconProps) {
+export const Icon = forwardRef<SVGSVGElement, IconProps>(function Icon(
+  { name, size = "md", className, "aria-label": ariaLabel },
+  ref,
+) {
   const cls = className ? `cs-icon ${className}` : "cs-icon";
   const a11y = ariaLabel
     ? ({ role: "img", "aria-label": ariaLabel } as const)
     : ({ "aria-hidden": true } as const);
 
   const bespoke = BESPOKE[name as BespokeName];
-  if (bespoke) return bespoke({ className: cls, "data-size": size, ...a11y });
+  if (bespoke)
+    return bespoke({ ref, className: cls, "data-size": size, ...a11y });
 
   const Lucide = LUCIDE[name];
   if (!Lucide) return null;
-  return <Lucide className={cls} data-size={size} strokeWidth={2} {...a11y} />;
-}
+  return (
+    <Lucide
+      ref={ref}
+      className={cls}
+      data-size={size}
+      strokeWidth={2}
+      {...a11y}
+    />
+  );
+});
