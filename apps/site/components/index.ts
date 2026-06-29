@@ -1,17 +1,24 @@
-// Barrel for the marketing surface's component set. Kit-first (ADR-0097): the shared primitives
-// are the SINGLE implementation in `@caisson/ui/components` — re-exported here, never re-inlined.
-// The only site-local wrappers are the framework seams: `Button` injects `next/link`, and
-// Icon/Glyph/Wordmark/Reveal/MobileNav carry app-specific glyph sets / client behavior.
+// Barrel for the marketing surface's component set. Kit-first (ADR-0097): every shared primitive is
+// the SINGLE implementation in `@caisson/ui/components` — re-exported here, never re-inlined. The
+// Icon/Glyph/Wordmark/Reveal/ThemeToggle primitives now live in the kit too (consolidated from the
+// former site-local copies — drift-proofing the marketing surface against the gallery). The only
+// site-local components are the framework seams: `Button` injects `next/link`, and `MobileNav` owns
+// app-specific client nav behavior.
 export {
   Card,
   CodeBlock,
   CredentialStrip,
   EditionCard,
+  Glyph,
   Hero,
+  Icon,
+  Reveal,
   Section,
   SkuMatrix,
   StatusChip,
   Terminal,
+  ThemeToggle,
+  Wordmark,
 } from "@caisson/ui/components";
 export type {
   CardProps,
@@ -19,18 +26,20 @@ export type {
   CredentialStripProps,
   EditionCardProps,
   HeroProps,
+  IconName,
+  IconProps,
+  RevealProps,
   SectionProps,
   SkuMatrixProps,
   StatusChipProps,
   TerminalProps,
+  ThemeToggleProps,
+  WordmarkProps,
 } from "@caisson/ui/components";
 
 // Framework-seam wrapper over the kit Button (next/link injection).
 export { Button } from "./button";
 export type { ButtonProps } from "./button";
 
-// Site-local components (app-specific glyph set + client behavior).
-export { Icon, type IconName } from "./icon";
-export { Glyph, Wordmark } from "./brand";
-export { Reveal } from "./reveal";
+// Site-local component (app-specific client nav behavior).
 export { MobileNav } from "./mobile-nav";

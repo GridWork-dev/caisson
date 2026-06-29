@@ -37,12 +37,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html
-      lang="en"
-      data-theme="dark"
-      className={fontVariables}
-      suppressHydrationWarning
-    >
+    <html lang="en" className={fontVariables} suppressHydrationWarning>
       <head>
         {/* Self-hosted fonts (next/font, lib/fonts.ts) — no render-blocking Google <link>.
             No-flash theme set is externalized to /theme-init.js so script-src can drop
