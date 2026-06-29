@@ -9,9 +9,11 @@ import type { SVGProps } from "react";
 import "./brand.css";
 
 /**
- * The waterline-over-chamber mark, monochrome (`currentColor`). The favicon variant (app/icon.svg)
- * carries the accent waterline; in-product it stays monochrome. Geometry preserved verbatim from the
- * original `apps/site` primitive; `forwardRef` added per the recipe (single SVG DOM root).
+ * The Caisson mark — the "Pressure vessel" (ADR-0101): a sealed steel port holding a single
+ * instrument light, with a waterline seam across the crown. Monochrome (`currentColor`) in-product;
+ * the favicon / app-icon variant (app/icon.svg) carries the accent light on a dark steel field. The
+ * accent never enters the in-product mark (ADR-0078 §2, protects the ≤10% budget). `forwardRef` per
+ * the recipe (single SVG DOM root).
  */
 export const Glyph = forwardRef<SVGSVGElement, SVGProps<SVGSVGElement>>(
   function Glyph(props, ref) {
@@ -23,20 +25,34 @@ export const Glyph = forwardRef<SVGSVGElement, SVGProps<SVGSVGElement>>(
         aria-hidden="true"
         {...props}
       >
-        <path
-          d="M6 11h7M19 11h7M13 11q3 -2.5 6 0"
+        {/* vessel body */}
+        <rect
+          x="5"
+          y="5"
+          width="22"
+          height="22"
+          rx="7"
           stroke="currentColor"
           strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
         />
+        {/* crown seam — the waterline */}
         <path
-          d="M9 15v9h14v-9"
+          d="M11 10.5h10"
           stroke="currentColor"
-          strokeWidth="2"
+          strokeWidth="1.5"
           strokeLinecap="round"
-          strokeLinejoin="round"
+          opacity="0.5"
         />
+        {/* instrument light — halo ring + core, monochrome in-product */}
+        <circle
+          cx="16"
+          cy="17"
+          r="3.4"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          opacity="0.5"
+        />
+        <circle cx="16" cy="17" r="1.7" fill="currentColor" />
       </svg>
     );
   },
