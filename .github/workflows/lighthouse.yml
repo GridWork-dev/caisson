@@ -11,14 +11,19 @@ on:
 
 jobs:
   lighthouse:
+    # STAYS GitHub-hosted by design: needs a headless Chrome (the fleet runner image ships no browser)
+    # and uploads to temporary-public-storage with LHCI_GITHUB_APP_TOKEN. Non-blocking (warn-only), so
+    # lowest stakes staying hosted; moving it would require a Chrome-equipped fleet image.
     runs-on: ubuntu-latest
     continue-on-error: true
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          # Pinned to the repo's packageManager bun (was `latest` — drift risk).
+          bun-version: "1.3.14"
 
       - name: install dependencies
         run: bun install --frozen-lockfile
