@@ -111,10 +111,12 @@ changeset -> version bump -> STANDARDS GATE -> publish (CI-only) -> index rebuil
 compliance primitives -> editions -> app-templates`. Publish only what exists; each edition
   publishes as it lands. `create-caisson --edition` degrades gracefully against the
   not-yet-published set.
-- **Status: the publish step is deferred to P6 (publishability flip) and NOT yet active.** The `publish-and-index` job is
-  **commented out** at the bottom of `ci.yml`. What runs today is the `registry-index` job
-  (proves `index.json` is a clean rebuild from the ledger) and the `standards-gate` job. Full
-  enforcement lands with the P6 publish job (deferred publishability flip).
+- **Status: the `publish-and-index` job is WIRED + active but DRY-RUN by default** (`CAISSON_PUBLISH_DRY_RUN=true`,
+  ADR-0069). It runs main-only (`needs: [check, standards-gate, registry-index]`) and scaffolds the
+  full flow without pushing packages; set the env var `=false` operator-side to go live. The actual
+  **publishability flip** (24 pkgs private→public + per-pkg license correctness + the changeset
+  presence gate) is the deferred P6 readiness pass. Today's enforcing jobs are `registry-index`
+  (proves `index.json` is a clean rebuild from the ledger) + `standards-gate`.
 
 Canonical: [`knowledge/decisions/ADR-0021-registry-publish-pipeline.md`](../knowledge/decisions/ADR-0021-registry-publish-pipeline.md)
 · schema [`registry/SCHEMA.md`](../registry/SCHEMA.md) · read-path worker
@@ -170,22 +172,60 @@ Creates: `cloudflare_pages_project.site` (`caisson-site`, prod branch `main`),
 ## 7. CI workflows
 
 Three workflows under [`.github/workflows/`](../.github/workflows/). All Bun + Turbo,
-`--frozen-lockfile`.
+`--frozen-lockfile`, bun pinned to `1.3.14` (the `packageManager` line — no `latest` floats).
+
+### Self-hosted runner fleet (2026-06-29)
+
+The pure-compute gate jobs run on the **GridWork-dev self-hosted runner fleet** — the same
+per-repo, JIT, one-job-then-reset machinery as gridwork-core. **The canonical fleet machinery
+(supervisor, systemd/launchd units, runner image) + its SPEC live in
+`gridwork-core/system/ci/` + `gridwork-core/outputs/specs/selfhosted-runner-fleet/`** — caisson
+does not duplicate it; it consumes the fleet by targeting the runner labels below.
+
+- **Enrollment: DONE.** Caisson has **3 runners registered + ONLINE** (verify:
+  `gh api repos/GridWork-dev/caisson/actions/runners`): `gw-linux-amd64` (the gw-ms-a2 box, the
+  primary lane), `gw-linux-arm64` + `gw-macos-arm64` (the Mac mini). GridWork-dev is a personal
+  account (no org runner groups), so the fleet registers **per-repo** — caisson's runners are its
+  own, not an org pool.
+- **Isolation.** The amd64 lane runs each job in a throwaway `docker run --rm` container with no
+  host mounts, so operator secrets on the box are unreachable from job code (proven by
+  gridwork-core's `runner-isolation-probe.yml`). The macOS lane runs native (it tests macOS) under
+  an unprivileged runner user with the admin PAT scrubbed from the job env.
+- **Posture = DEDICATED LANES, no auto-fallback.** GitHub has no self-hosted-first preference: if a
+  fleet host is **down**, jobs targeting it **QUEUE indefinitely — they do NOT fall back to hosted**.
+  MANUAL fallback during host maintenance: flip the affected job's `runs-on: [self-hosted,
+gw-linux-amd64]` → `runs-on: ubuntu-latest` (one line) and re-run. Every job carries a
+  `timeout-minutes` ceiling so a hung job frees the runner rather than holding it to the 6h default.
 
 ### `ci.yml` (push to `main` + every PR)
 
 Required-check intent: build · lint · test(unit) · test(integration) · standards-gate ·
 golden-file (ADR-0016). PGlite makes integration + golden-file hermetic, so they fold into the
-`check` job rather than separate jobs.
+`check` job rather than separate jobs. A `concurrency` group cancels superseded in-flight runs so
+the limited fleet is not tied up on stale commits. Required status checks on `main` (CODEOWNERS):
+`check`, `standards-gate`, `registry-index`.
 
-| Job                 | Runner / Bun                                | Does                                                                                                                                                                                                                                                    |
-| ------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `standards-gate`    | ubuntu, bun latest                          | The sole registry ingress (ADR-0021/0022). Runs `tooling/standards-gate` pre-install (SPDX/AGPL/down-only/declarations) AND post-install (external-AGPL + manifest agreement), then `eslint .` (provider-SDK boundaries) + `depcruise` graph boundaries |
-| `check`             | ubuntu, bun 1.3.14                          | `format:check` then `bunx turbo run build lint test --no-daemon --concurrency=50% && bun run gate`. `--concurrency=50%` avoids PGlite `beforeAll` starvation under fan-out (38-pkg tree, 5 Next builds)                                                 |
-| `eval`              | ubuntu, bun 1.3.14                          | `bun run eval` -- regression vs committed baseline, offline cassette replay, BLESS unset (ADR-0062). Monorepo-only; never injected into a buyer repo (ADR-0072)                                                                                         |
-| `native-ext`        | ubuntu + macos (matrix, `fail-fast: false`) | `bun test packages/local-store/src` -- exercises the platform-specific sqlite-vec `.so`/`.dylib`; macOS step `brew install sqlite` + `Database.setCustomSQLite`                                                                                         |
-| `registry-index`    | ubuntu, bun 1.3.14                          | Registry schema/builder/worker tests, then rebuilds `registry/index.json` from the ledger and `git diff --exit-code` -- proves the index is CI-built, not hand-edited                                                                                   |
-| `publish-and-index` | --                                          | **Commented out (P6 -- deferred publishability flip)**: changesets publish (CI-only `GITHUB_TOKEN`) -> append ledger -> rebuild index. Not active yet                                                                                                   |
+| Job                 | Runner (timeout)                                                                                        | Does                                                                                                                                                                                                                                                                                                                                                         |
+| ------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `standards-gate`    | **fleet** `gw-linux-amd64` (15m)                                                                        | The sole registry ingress (ADR-0021/0022). Runs `tooling/standards-gate` pre-install (SPDX/AGPL/down-only/declarations) AND post-install (external-AGPL + manifest agreement), then `eslint .` (provider-SDK boundaries) + `depcruise` graph boundaries                                                                                                      |
+| `check`             | **fleet** `gw-linux-amd64` (30m)                                                                        | `format:check` then `bunx turbo run build lint test --no-daemon --concurrency=50% && bun run gate`. `--concurrency=50%` avoids PGlite `beforeAll` starvation under fan-out (38-pkg tree, 5 Next builds). The heaviest job → biggest fleet-compute win                                                                                                        |
+| `eval`              | **fleet** `gw-linux-amd64` (15m)                                                                        | `bun run eval` -- regression vs committed baseline, offline cassette replay, BLESS unset (ADR-0062). Monorepo-only; never injected into a buyer repo (ADR-0072)                                                                                                                                                                                              |
+| `native-ext`        | linux → **fleet** `gw-linux-amd64`; macos → **hosted** `macos-latest` (matrix, `fail-fast: false`, 20m) | `bun test packages/local-store/src` -- exercises the platform-specific sqlite-vec `.so`/`.dylib`; macOS step `brew install sqlite` + `Database.setCustomSQLite`. NOT a required check. **macOS leg stays hosted pending a fleet provisioning follow-up** (below)                                                                                             |
+| `registry-index`    | **fleet** `gw-linux-amd64` (15m)                                                                        | Registry schema/builder/worker tests, then rebuilds `registry/index.json` from the ledger and `git diff --exit-code` -- proves the index is CI-built, not hand-edited                                                                                                                                                                                        |
+| `token-drift`       | **fleet** `gw-linux-amd64` (15m)                                                                        | Rebuilds `packages/ui/styles/tokens.css` from the TS token objects and `git diff --exit-code` -- proves the committed sheet is a byte-identical rebuild (ADR-0101 design-quality gate #1)                                                                                                                                                                    |
+| `publish-and-index` | **hosted** `ubuntu-latest` (15m)                                                                        | Main-only (`if: refs/heads/main`), `needs: [check, standards-gate, registry-index]`. Changesets publish (CI-only ephemeral `GITHUB_TOKEN`) → append ledger → rebuild index → commit registry files back to main. **Active but dry-run by default** (`CAISSON_PUBLISH_DRY_RUN=true`). **Stays hosted** — write/publish privilege does not belong on the fleet |
+
+**Fleet first-run verification (done on PR#22, the wiring PR).** All `gw-linux-amd64` jobs picked
+up the runner and ran (they SERIALIZE — there is one amd64 runner, one-job-then-reset, so the gate
+jobs run one at a time rather than in parallel like GitHub-hosted; `eval` passed first). The
+**macOS-arm64 lane dispatches fine** (checkout + `bun install` are green on it) but its runner user
+has **no Homebrew extension-capable SQLite**, so `brew install sqlite` fails there — hence the macOS
+`native-ext` leg was kept on GitHub-hosted `macos-latest` for now (green).
+
+**Open follow-up — move the macOS `native-ext` leg onto the fleet:** provision Homebrew +
+extension-capable SQLite for the Mac mini's runner user, then flip `native-ext`'s macos leg
+`runs-on: macos-latest` → `runs-on: [self-hosted, gw-macos-arm64]` (saves the ~10×-cost hosted macOS
+minutes). Tracked in `docs/state/readiness-and-backlog.md`.
 
 ### `deploy-site.yml` (DEPLOY -- operator-gated)
 
@@ -196,14 +236,18 @@ golden-file (ADR-0016). PGlite makes integration + golden-file hermetic, so they
   `bunx wrangler pages deploy out --project-name=caisson-site --branch=main`.
 - Least privilege: `permissions: contents: read`; uses Cloudflare secrets, not `GITHUB_TOKEN`.
   Third-party actions pinned to commit SHAs (this job holds a prod deploy token).
-  `concurrency: deploy-site`, `cancel-in-progress`.
+  `concurrency: deploy-site`, `cancel-in-progress`, `timeout-minutes: 15`.
+- **Stays GitHub-hosted (not on the fleet):** a production Cloudflare deploy token does not belong
+  on the self-hosted box; keep it on a clean hosted runner.
 
 ### `lighthouse.yml` (informational)
 
 - Trigger: `pull_request` on `apps/site/**` + `packages/ui/**`.
 - `continue-on-error: true`; all assertions are `warn` level (`apps/site/lighthouserc.json`).
   Non-blocking until scores stabilize (ADR-0079 §6). Builds the static export, runs
-  `bunx @lhci/cli autorun`. Secret: `LHCI_GITHUB_APP_TOKEN`.
+  `bunx @lhci/cli autorun`. Secret: `LHCI_GITHUB_APP_TOKEN`. `timeout-minutes: 20`.
+- **Stays GitHub-hosted (not on the fleet):** needs a headless Chrome (the fleet runner image ships
+  no browser) + uploads to temporary-public-storage; moving it would require a Chrome-equipped image.
 
 ---
 
