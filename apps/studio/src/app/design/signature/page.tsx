@@ -1,4 +1,4 @@
-import { Reveal, StatusChip } from "@caisson/ui/components";
+import { StatusChip } from "@caisson/ui/components";
 
 import { CaissonCrossSection } from "./caisson-cross-section";
 import { BreakTheChain } from "./break-the-chain";
@@ -110,15 +110,13 @@ export default function SignaturePage() {
           fail-closed gate, the shaft = the append-only audit chain rising to
           the surface as evidence.
         </p>
-        <Reveal>
-          <figure
-            className="signature-frame"
-            style={{ margin: 0 }}
-            aria-label="Caisson cross-section diagram"
-          >
-            <CaissonCrossSection />
-          </figure>
-        </Reveal>
+        <figure
+          className="signature-frame"
+          style={{ margin: 0 }}
+          aria-label="Caisson cross-section diagram"
+        >
+          <CaissonCrossSection />
+        </figure>
       </section>
 
       {/* chain — break the chain */}
@@ -131,15 +129,13 @@ export default function SignaturePage() {
           <code>verifyChain()</code> flips OK → FAIL. On the site this animates
           once on scroll; reduced-motion gets this broken state, static.
         </p>
-        <Reveal>
-          <figure
-            className="signature-frame"
-            style={{ margin: 0 }}
-            aria-label="Audit hash-chain with a tampered block breaking every link after it"
-          >
-            <BreakTheChain />
-          </figure>
-        </Reveal>
+        <figure
+          className="signature-frame"
+          style={{ margin: 0 }}
+          aria-label="Audit hash-chain with a tampered block breaking every link after it"
+        >
+          <BreakTheChain />
+        </figure>
       </section>
 
       <hr className="divider" />
