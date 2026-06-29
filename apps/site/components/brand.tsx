@@ -1,27 +1,39 @@
-// Wordmark + glyph (ADR-0078 §2). The lowercase mono `caisson` wordmark is primary; the
-// waterline-over-chamber glyph rides beside it in tight contexts. MONOCHROME ALWAYS — the accent
-// never enters the wordmark (protects the ≤10% accent budget, ADR-0078 §8). Server-safe.
+// Wordmark + glyph (ADR-0078 §2, mark locked by ADR-0101). The lowercase mono `caisson` wordmark is
+// primary; the "Pressure vessel" mark — a sealed steel port holding one instrument light — rides
+// beside it. MONOCHROME ALWAYS in-product — the accent never enters the wordmark (protects the ≤10%
+// accent budget, ADR-0078 §8); only the favicon/app-icon carries the accent light. Server-safe.
 import type { SVGProps } from "react";
 
-/** The waterline-over-chamber mark, monochrome (currentColor). The favicon variant (app/icon.svg)
- *  carries the accent waterline; in-product it stays monochrome. */
+/** The Caisson "Pressure vessel" mark (ADR-0101), monochrome (currentColor). The favicon variant
+ *  (app/icon.svg) carries the accent light; in-product it stays monochrome. */
 export function Glyph(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 32 32" fill="none" aria-hidden="true" {...props}>
-      <path
-        d="M6 11h7M19 11h7M13 11q3 -2.5 6 0"
+      <rect
+        x="5"
+        y="5"
+        width="22"
+        height="22"
+        rx="7"
         stroke="currentColor"
         strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
       />
       <path
-        d="M9 15v9h14v-9"
+        d="M11 10.5h10"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="1.5"
         strokeLinecap="round"
-        strokeLinejoin="round"
+        opacity="0.5"
       />
+      <circle
+        cx="16"
+        cy="17"
+        r="3.4"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        opacity="0.5"
+      />
+      <circle cx="16" cy="17" r="1.7" fill="currentColor" />
     </svg>
   );
 }
