@@ -279,7 +279,12 @@ export default function ComponentsGalleryPage() {
                 <Button variant="ghost">Read the docs</Button>
               </>
             }
-            credentials={<CredentialStrip items={["SOC 2", "HIPAA", "GDPR"]} />}
+            credentials={
+              <CredentialStrip
+                items={["SOC 2", "HIPAA", "GDPR"]}
+                note="Caisson gives you the controls; certification is your audit."
+              />
+            }
             artifact={
               <Terminal
                 label="caisson · audit"

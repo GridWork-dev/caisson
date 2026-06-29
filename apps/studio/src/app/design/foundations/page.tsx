@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { Icon } from "@caisson/ui/components";
+import type { IconName } from "@caisson/ui/components";
 import { accentCandidates, functional } from "@caisson/ui/tokens";
 import type { AccentCandidate, SemanticTheme } from "@caisson/ui/tokens";
 
@@ -20,11 +22,12 @@ const SWATCHES: ReadonlyArray<readonly [string, keyof SemanticTheme]> = [
   ["accent-tint", "accentTint"],
 ];
 
-const STATUS: ReadonlyArray<readonly [string, string, string]> = [
-  ["✓", "pass", functional.success],
-  ["▲", "warn", functional.warning],
-  ["✕", "fail", functional.danger],
-  ["ℹ", "info", functional.info],
+// Status via the one icon surface (ADR-0078 §3), not ad-hoc Unicode glyphs.
+const STATUS: ReadonlyArray<readonly [IconName, string, string]> = [
+  ["check", "pass", functional.success],
+  ["alert", "warn", functional.warning],
+  ["x", "fail", functional.danger],
+  ["info", "info", functional.info],
 ];
 
 function Mockup({ t }: { t: SemanticTheme }) {
@@ -74,14 +77,14 @@ function Mockup({ t }: { t: SemanticTheme }) {
         </div>
       </div>
       <div className="row" style={{ gap: "0.9rem", marginTop: "0.7rem" }}>
-        {STATUS.map(([glyph, label, color]) => (
+        {STATUS.map(([icon, label, color]) => (
           <span
             key={label}
             className="row"
             style={{ gap: "0.4ch", fontSize: "var(--cs-text-xs)" }}
           >
-            <span aria-hidden="true" style={{ color }}>
-              {glyph}
+            <span className="row" style={{ color }}>
+              <Icon name={icon} />
             </span>
             <span style={{ color: t.fgMuted }}>{label}</span>
           </span>
@@ -130,8 +133,16 @@ function Meters({ t }: { t: SemanticTheme }) {
           <div key={label} className="meter">
             <span className="meter-label">{label}</span>
             <span className="meter-val mono">{fmt(r.ratio)}</span>
-            <span className="meter-verdict mono" data-ok={ok}>
-              {ok ? "✓" : "✕"} AA {kind}
+            <span
+              className="meter-verdict mono"
+              data-ok={ok}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.4ch",
+              }}
+            >
+              <Icon name={ok ? "check" : "x"} /> AA {kind}
             </span>
           </div>
         );
