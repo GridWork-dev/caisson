@@ -556,6 +556,21 @@
         "typescript": "^5.6.0",
       },
     },
+    "packages/pricebook": {
+      "name": "@caisson/pricebook",
+      "version": "0.0.0",
+      "dependencies": {
+        "@caisson/kernel": "workspace:*",
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
+    },
     "packages/prompt-registry": {
       "name": "@caisson/prompt-registry",
       "version": "0.0.0",
@@ -616,6 +631,7 @@
       "name": "@caisson/registry",
       "version": "0.0.0",
       "dependencies": {
+        "@caisson/license-verify": "workspace:*",
         "@caisson/registry-schema": "workspace:*",
         "zod": "^3.23.8",
       },
@@ -634,6 +650,21 @@
     "services/license": {
       "name": "@caisson/service-license",
       "version": "0.0.0",
+      "dependencies": {
+        "@caisson/billing": "workspace:*",
+        "@caisson/credits": "workspace:*",
+        "@caisson/kernel": "workspace:*",
+        "@caisson/pricebook": "workspace:*",
+        "@caisson/registry-schema": "workspace:*",
+        "@caisson/tenancy-rls": "workspace:*",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
     },
     "tooling/eslint-config": {
       "name": "@caisson/eslint-config",
@@ -808,6 +839,8 @@
     "@caisson/mcp-server": ["@caisson/mcp-server@workspace:packages/mcp-server"],
 
     "@caisson/migrate": ["@caisson/migrate@workspace:packages/migrate"],
+
+    "@caisson/pricebook": ["@caisson/pricebook@workspace:packages/pricebook"],
 
     "@caisson/prompt-registry": ["@caisson/prompt-registry@workspace:packages/prompt-registry"],
 
