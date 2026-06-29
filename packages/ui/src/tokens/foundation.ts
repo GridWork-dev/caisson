@@ -64,6 +64,21 @@ export const foundation = {
     pill: "999px",
   },
   /**
+   * The ONE rem breakpoint ladder (ADR-0098 F4). Single source of truth for every `@media`
+   * width: the breakpoint guard (ADR-0099) rejects any width not on this ladder, because media
+   * queries can't read CSS vars. Authored in rem so the breakpoints track the root font size.
+   * NOT emitted as CSS vars (a media-query condition can't consume them) — TS-only, read by
+   * the guard + by component TS that needs a numeric breakpoint.
+   */
+  breakpoint: {
+    xs: "30rem",
+    sm: "40rem",
+    md: "48rem",
+    lg: "60rem",
+    xl: "72rem",
+    "2xl": "90rem",
+  },
+  /**
    * Expressive tokenized motion (ADR-0078 §6). transform/opacity-first; exit ~20% faster than
    * enter; authored curves, never the default `ease`. Honor `prefers-reduced-motion` at use sites.
    */
