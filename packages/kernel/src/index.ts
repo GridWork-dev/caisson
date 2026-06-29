@@ -83,3 +83,11 @@ export type {
   SchemaVersionEntry,
   MigrationAssembly,
 } from "./migration-assembly.ts";
+
+export {
+  CREDIT_CONVERSION,
+  creditConversionSchema,
+  parseCreditConversion,
+  centsToCredits,
+} from "./credit-conversion.ts";
+export type { CreditConversion } from "./credit-conversion.ts";
