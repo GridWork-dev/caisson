@@ -274,6 +274,13 @@ kbd,
   font-size: var(--cs-text-base);
 }
 
+/* Active-page cue + pointer feedback in the drawer — the markup sets aria-current="page" but the
+ * desktop nav had the only matching rule, so mobile users got no wayfinding. Mirror the desktop nav. */
+.cs-nav-mobile a:hover,
+.cs-nav-mobile a[aria-current="page"] {
+  color: var(--cs-fg);
+}
+
 @media (max-width: 900px) {
   .cs-nav-links {
     display: none;
