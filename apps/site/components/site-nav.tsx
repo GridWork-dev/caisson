@@ -7,16 +7,16 @@ import { ThemeToggle, Wordmark } from "@caisson/ui/components";
 
 import { MobileNav } from "./mobile-nav";
 import { Button } from "./button";
+import { NAV_ROUTES } from "@/lib/routes";
 import styles from "./site-nav.module.css";
 
-// Agentic-Dev is intentionally absent from the primary nav (roadmap edition, ADR-0082 §4).
-const NAV_LINKS = [
-  { href: "/compliance", label: "Compliance" },
-  { href: "/ai-kit", label: "AI Production Kit" },
-  { href: "/local-first", label: "Local-first" },
-  { href: "/pricing", label: "Pricing" },
+// Marketing nav links derive from the canonical registry (lib/routes.ts); `/agentic-dev`'s absence
+// is now expressed as `nav: false` there, not a magic omission. Docs is a documentation surface, not
+// a marketing route, so it is appended explicitly.
+const NAV_LINKS: readonly { href: string; label: string }[] = [
+  ...NAV_ROUTES.map((r) => ({ href: r.path, label: r.navLabel ?? r.label })),
   { href: "/docs", label: "Docs" },
-] as const;
+];
 
 export function SiteNav() {
   const pathname = usePathname();
