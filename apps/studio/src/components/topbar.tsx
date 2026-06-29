@@ -5,11 +5,13 @@ import { usePathname } from "next/navigation";
 
 import { ThemeToggle } from "@caisson/ui/components";
 
+// Signature is intentionally absent — the four-beat sketches are deferred (the only deferred
+// surface); the route still exists but is unlinked until the direction is reworked.
 const LINKS = [
   { href: "/", label: "Overview" },
   { href: "/design/foundations", label: "Foundations" },
   { href: "/design/typography", label: "Typography" },
-  { href: "/design/signature", label: "Signature" },
+  { href: "/design/wordmark", label: "Wordmark" },
   { href: "/components", label: "Components" },
 ] as const;
 

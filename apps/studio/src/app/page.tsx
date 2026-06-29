@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { Icon } from "@caisson/ui/components";
+import type { IconName } from "@caisson/ui/components";
 import { accentCandidates, selected, typeCandidates } from "@caisson/ui/tokens";
 
 type SurfaceState = "ready" | "later" | "locked";
@@ -30,10 +32,10 @@ const SURFACES: Surface[] = [
     state: "locked",
   },
   {
-    title: "Signature",
-    desc: "The four-beat sketch: caisson cross-section + break-the-chain.",
+    title: "Wordmark",
+    desc: "Three high-craft mark candidates — pick one to lock the logo.",
     state: "ready",
-    href: "/design/signature",
+    href: "/design/wordmark",
   },
   {
     title: "Components",
@@ -41,13 +43,18 @@ const SURFACES: Surface[] = [
     state: "ready",
     href: "/components",
   },
-  { title: "Wordmark", desc: "Logo + mark treatments.", state: "later" },
+  {
+    title: "Signature",
+    desc: "Four-beat motion sketch — deferred for rework; leaves a blank slot on the site.",
+    state: "later",
+  },
 ];
 
-const GLYPH: Record<SurfaceState, string> = {
-  ready: "●",
-  locked: "▣",
-  later: "○",
+// ADR-0078 §3: one icon surface, never ad-hoc Unicode glyphs.
+const GLYPH: Record<SurfaceState, IconName> = {
+  ready: "circle-dot",
+  locked: "lock",
+  later: "circle",
 };
 const STATE_LABEL: Record<SurfaceState, string> = {
   ready: "ready",
@@ -87,12 +94,8 @@ export default function HubPage() {
           {SURFACES.map((s) => {
             const inner = (
               <>
-                <span
-                  className="board-glyph"
-                  aria-hidden="true"
-                  data-state={s.state}
-                >
-                  {GLYPH[s.state]}
+                <span className="board-glyph" data-state={s.state}>
+                  <Icon name={GLYPH[s.state]} />
                 </span>
                 <span className="board-main">
                   <span className="board-title">{s.title}</span>
@@ -100,8 +103,8 @@ export default function HubPage() {
                 </span>
                 <span className="board-state mono">{STATE_LABEL[s.state]}</span>
                 {s.href ? (
-                  <span className="board-arrow" aria-hidden="true">
-                    →
+                  <span className="board-arrow">
+                    <Icon name="arrow" />
                   </span>
                 ) : null}
               </>
