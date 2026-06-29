@@ -2,7 +2,8 @@
 // package.json on id/version/license/dependencies (the gate fails the build on drift). `kind:
 // "edition"` — this is the Compliance EDITION (the hero, ADR-0040), a composition of base packages,
 // never a fork (ADR-0003); it names its own edition membership in `editions`. Paid +
-// LicenseRef-Caisson-Commercial under the uniform-commercial model (ADR-0050).
+// LicenseRef-Caisson-Commercial under the open-core model (ADR-0094/0097, amends ADR-0050): base is
+// Apache-2.0; editions/primitives/cli/registry stay commercial.
 //
 // `priceCents` is a PLACEHOLDER pending the still-open Pricing lock (ADR-0012 anchors only) — it must
 // be a positive integer (ADR-0007), not a final number. Evidence generation is FREE in v1 (no

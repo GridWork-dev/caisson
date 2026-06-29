@@ -1,7 +1,7 @@
 // Registry manifest (ADR-0020). Loaded by @caisson/standards-gate; must agree with package.json on
 // id/version/license/dependencies. `kind: "primitive"` — a shared licensing primitive (offline
 // verify only; the issuer is P6), not a base service or an edition. Paid + LicenseRef-Caisson-
-// Commercial under the uniform-commercial model (ADR-0050); `priceCents` is the established
+// Commercial under the open-core model (ADR-0094/0097, amends ADR-0050); `priceCents` is the established
 // pre-launch placeholder anchor (4900) — final pricing is the open "Pricing numbers" board fork.
 import { defineModule } from "../../registry/schema/module-manifest";
 

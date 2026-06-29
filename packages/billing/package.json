@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "license": "LicenseRef-Caisson-Commercial",
+  "license": "Apache-2.0",
   "description": "Stripe billing behind a BillingProvider port: HMAC-raw-body webhook verify + DomainBillingEvent. ADR-0017.",
   "exports": {
     ".": {

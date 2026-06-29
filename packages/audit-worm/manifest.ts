@@ -1,8 +1,8 @@
 // Registry manifest (ADR-0020/0021). Loaded by @caisson/standards-gate; must agree with
 // package.json on id/version/license/dependencies (the gate fails the build on drift). `kind:
 // "primitive"` — a shared compliance primitive (WORM store + audit chain + locked-version DB), not
-// a base service or an edition. Paid + LicenseRef-Caisson-Commercial under the uniform-commercial
-// model (ADR-0050). `priceCents` is a PLACEHOLDER (4900) pending the still-open Pricing lock — it
+// a base service or an edition. Paid + LicenseRef-Caisson-Commercial under the open-core model
+// (ADR-0094/0097, amends ADR-0050; base is Apache-2.0). `priceCents` is a PLACEHOLDER (4900) pending the still-open Pricing lock — it
 // must be a positive integer (ADR-0007), not a final number.
 import { defineModule } from "../../registry/schema/module-manifest";
 
