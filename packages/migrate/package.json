@@ -1,10 +1,10 @@
 {
-  "name": "@caisson/compliance",
+  "name": "@caisson/migrate",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
-  "description": "Compliance edition (the hero): tenant-scoped field crypto + WORM audit chain + own-authored SOC2-TSC/HIPAA control packs + the deterministic, signed control→evidence-pack generator. ADR-0005/0006/0051-0058.",
+  "description": "The base migration assembler + runner (ADR-0070/0090): reads each selected package's on-disk migrations/NNNN_*.sql, merges them via the kernel into ONE renumbered sequence + single schema_version ledger, emits the generated-app file set, and applies the sequence forward-only through an injected runner port. Owned here so @caisson/cli and @caisson/compliance import it, never copy it.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -18,13 +18,7 @@
     "test": "bun test ./src"
   },
   "dependencies": {
-    "@caisson/audit-worm": "workspace:*",
-    "@caisson/field-crypto": "workspace:*",
-    "@caisson/kernel": "workspace:*",
-    "@caisson/migrate": "workspace:*",
-    "@caisson/tenancy-rls": "workspace:*",
-    "@noble/ed25519": "^3.1.0",
-    "zod": "^3.23.8"
+    "@caisson/kernel": "workspace:*"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
