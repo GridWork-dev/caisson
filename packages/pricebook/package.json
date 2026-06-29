@@ -1,10 +1,10 @@
 {
-  "name": "@caisson/service-license",
+  "name": "@caisson/pricebook",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
-  "description": "Merchant-of-Record billing webhook + idempotent credit grants + account-entitlement store/resolver (P6, ADR-0089/0017/0071). A gated invoice.paid grants cycle credits AND the plan's entitlements; resolveAccountEntitlements expands stored purchased ids to member slugs against the registry index. Ed25519 license issuer lands in a follow-on Bucket-B slice.",
+  "description": "The commerce price-book (ADR-0089): plan-book (stripePriceId -> creditsPerCycle), action-book (per-action credit cost), and the shared cents->credits grant conversion. Distinct from ai-meter's per-ai-call cost book; both share kernel's one credit denomination.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -18,12 +18,8 @@
     "test": "bun test ./src"
   },
   "dependencies": {
-    "@caisson/billing": "workspace:*",
-    "@caisson/credits": "workspace:*",
     "@caisson/kernel": "workspace:*",
-    "@caisson/pricebook": "workspace:*",
-    "@caisson/registry-schema": "workspace:*",
-    "@caisson/tenancy-rls": "workspace:*"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",

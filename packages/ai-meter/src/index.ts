@@ -15,7 +15,7 @@ export {
 // Price book + cost normalization.
 export {
   BUNDLED_PRICE_BOOK,
-  DEFAULT_CREDIT_CONVERSION,
+  CREDIT_CONVERSION,
   PRICE_BOOK_VERSION,
   priceBookEntrySchema,
   priceBookSchema,
