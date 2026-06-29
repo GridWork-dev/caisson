@@ -1,15 +1,22 @@
-// Integration proof for the compliance edition's migration assembly (ADR-0070/0014; TM-O). Assembles
-// the REAL per-package on-disk migrations — field-crypto KEY tables → audit-worm chain+version — into
-// ONE ordered, renumbered sequence under ONE `schema_version` checksum ledger (the kernel's pure
-// merge), then APPLIES that sequence against PGlite (a true Postgres with FORCE RLS, SET ROLE,
-// plpgsql triggers, advisory locks) to prove the ordered apply is idempotent, the ledger is stamped,
-// every composed tenant table still ships its RLS policy, and a tampered ledger fails closed. No
-// network, no live cloud — PGlite only. The apply loop mirrors the @caisson/cli runner seam (skip
-// already-recorded versions; checksum drift on a recorded version is fatal, ADR-0006) so the
-// edition's assembled output is provably consumable by the canonical forward-only runner.
+// Integration proof for the compliance edition's migration assembly (ADR-0070/0090/0014; TM-O).
+// Assembles the REAL per-package on-disk migrations — field-crypto KEY tables → audit-worm
+// chain+version — into ONE ordered, renumbered sequence under ONE `schema_version` checksum ledger
+// (the kernel's pure merge), then APPLIES that sequence against PGlite (a true Postgres with FORCE
+// RLS, SET ROLE, plpgsql triggers, advisory locks) to prove the ordered apply is idempotent, the
+// ledger is stamped, every composed tenant table still ships its RLS policy, and a tampered ledger
+// fails closed. No network, no live cloud — PGlite only. The apply loop is the SHARED `runMigrations`
+// from @caisson/migrate (ADR-0090) — this test re-implements NOTHING; it injects a PGlite-backed
+// `MigrationApplier` port, proving the edition's assembled output is consumable by the canonical
+// forward-only runner (skip already-recorded versions; checksum drift on a recorded version is fatal,
+// ADR-0006).
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
-import type { MigrationAssembly } from "@caisson/kernel";
+import type { MergedMigration, MigrationAssembly } from "@caisson/kernel";
+import {
+  type MigrationApplier,
+  type MigrationRunResult,
+  runMigrations,
+} from "@caisson/migrate";
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { assembleComplianceMigrations } from "./assemble.ts";
 
@@ -28,63 +35,39 @@ const COMPOSED_TABLES = [
   "locked_version",
 ] as const;
 
-interface ApplyResult {
-  readonly applied: number[];
-  readonly skipped: number[];
-}
-
 /**
- * Apply an assembled sequence in order, recording each `schema_version` row inside one transaction.
- * Forward-only + idempotent: an already-recorded version is skipped; if a recorded version's checksum
- * no longer matches the assembled one the run fails CLOSED — a shipped migration's bytes changed,
- * which ADR-0006 (append-only) forbids. (A migration checksum is a public content hash, not a secret,
- * so a plain compare is correct.)
+ * A PGlite-backed `MigrationApplier` (ADR-0090) — the ONLY thing this test supplies. The forward-only
+ * apply/skip/checksum-drift loop is the SHARED `runMigrations` from @caisson/migrate; this port just
+ * wires it to a real DB: `applied()` reads the `schema_version` ledger, `apply()` runs the migration
+ * SQL and records its ledger row inside ONE transaction. Forward-only idempotency + fail-closed on
+ * checksum drift (ADR-0006) are proven here against a true Postgres, not re-implemented.
  */
-async function applyAssembly(
-  tp: TestPg,
-  assembly: MigrationAssembly,
-): Promise<ApplyResult> {
-  const prior = new Map<number, string>();
-  for (const row of await tp.query<{ version: number; checksum: string }>(
-    "SELECT version, checksum FROM schema_version ORDER BY version",
-  )) {
-    prior.set(row.version, row.checksum);
-  }
-
-  const applied: number[] = [];
-  const skipped: number[] = [];
-  for (const migration of assembly.sequence) {
-    const seen = prior.get(migration.seq);
-    if (seen !== undefined) {
-      if (seen !== migration.checksum) {
-        throw new Error(
-          `migration checksum drift at version ${migration.seq} (${migration.filename})`,
+function pgApplier(tp: TestPg): MigrationApplier {
+  return {
+    applied: () =>
+      tp.query<{ version: number; checksum: string }>(
+        "SELECT version, checksum FROM schema_version ORDER BY version",
+      ),
+    apply: (migration: MergedMigration) =>
+      tp.pg.transaction(async (tx) => {
+        await tx.exec(migration.sql);
+        await tx.query(
+          "INSERT INTO schema_version (version, checksum) VALUES ($1, $2)",
+          [migration.seq, migration.checksum],
         );
-      }
-      skipped.push(migration.seq);
-      continue;
-    }
-    await tp.pg.transaction(async (tx) => {
-      await tx.exec(migration.sql);
-      await tx.query(
-        "INSERT INTO schema_version (version, checksum) VALUES ($1, $2)",
-        [migration.seq, migration.checksum],
-      );
-    });
-    applied.push(migration.seq);
-  }
-  return { applied, skipped };
+      }),
+  };
 }
 
 let tp: TestPg;
 let assembly: MigrationAssembly;
-let firstRun: ApplyResult;
+let firstRun: MigrationRunResult;
 
 beforeAll(async () => {
   tp = await newTestPg();
   await tp.exec(SCHEMA_VERSION_DDL);
   assembly = assembleComplianceMigrations();
-  firstRun = await applyAssembly(tp, assembly);
+  firstRun = await runMigrations(assembly, pgApplier(tp));
 });
 
 afterAll(async () => {
@@ -152,7 +135,7 @@ describe("ordered apply + ledger (PGlite)", () => {
   });
 
   test("re-running the assembled apply is idempotent — every version skipped", async () => {
-    const second = await applyAssembly(tp, assembly);
+    const second = await runMigrations(assembly, pgApplier(tp));
     expect(second.applied).toEqual([]);
     expect(second.skipped).toEqual([1, 2, 3]);
   });
@@ -216,6 +199,8 @@ describe("ledger fails closed (ADR-0006)", () => {
       "UPDATE schema_version SET checksum = $1 WHERE version = 1",
       ["deadbeef"],
     );
-    await expect(applyAssembly(tp, assembly)).rejects.toThrow(/checksum drift/);
+    await expect(runMigrations(assembly, pgApplier(tp))).rejects.toThrow(
+      /checksum drift/,
+    );
   });
 });

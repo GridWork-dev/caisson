@@ -16,13 +16,14 @@
     "create-caisson": "./src/cli.ts"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "lint": "eslint src",
-    "test": "bun test ./src"
+    "build": "bun run scripts/bundle-migrations.ts && tsc -p tsconfig.json && tsc -p tsconfig.scripts.json",
+    "lint": "eslint src scripts",
+    "test": "bun test ./src ./scripts"
   },
   "dependencies": {
     "@caisson/credits": "workspace:*",
     "@caisson/kernel": "workspace:*",
+    "@caisson/migrate": "workspace:*",
     "@caisson/registry": "workspace:*",
     "zod": "^3.23.8"
   },

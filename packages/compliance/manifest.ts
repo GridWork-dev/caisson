@@ -20,13 +20,20 @@ export default defineModule({
   tier: "paid",
   priceCents: 99900,
   license: "LicenseRef-Caisson-Commercial",
+  // Must mirror package.json's @caisson/* deps exactly (the gate fails on drift). @caisson/migrate is
+  // the base migration assembler/runner the edition COMPOSES at build/test time (ADR-0090).
   dependencies: [
     "@caisson/audit-worm",
     "@caisson/field-crypto",
+    "@caisson/migrate",
     "@caisson/tenancy-rls",
     "@caisson/kernel",
   ],
-  // Frozen member pin map (ADR-0077): edition self + every bundled dependency, exact-version.
+  // Frozen member pin map (ADR-0077): edition self + every BUYER-FACING bundled module, exact-version.
+  // @caisson/migrate is intentionally NOT a member: it is compose-time tooling (resolved transitively
+  // via npm when the edition installs), not a buyer top-level module — folding it would force migrate
+  // to be published before the edition could generate (members pins fail closed if absent from the
+  // index, meter.ts resolveEditionMembers). It stays a dependency, not a frozen member pin.
   members: {
     "@caisson/compliance": "0.0.0",
     "@caisson/audit-worm": "0.0.0",

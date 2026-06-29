@@ -1,9 +1,16 @@
 // The generator CONTRACT (ADR-0048/0068) — the leaf seam shared by `generate.ts` (the core) and
 // every engine implementation (`engine-templates.ts`, the `defaultEngine` skeleton). It owns the
-// buyer `Selection` schema + type and the engine seam types (`GeneratedFile` / `GeneratedFileSet` /
-// `GeneratorEngine`). Kept dependency-free of the core so an engine can import the contract without
-// a back-edge into `generate.ts` (which would be a build cycle). `generate.ts` re-exports every
-// symbol here, so external importers keep importing from `@caisson/cli` unchanged.
+// buyer `Selection` schema + type and the engine seam type (`GeneratorEngine`). Kept free of a
+// back-edge into `generate.ts` (the core — that would be a build cycle); the only import is `zod` plus
+// the base file-emit primitive. `generate.ts` re-exports every symbol here, so external importers keep
+// importing from `@caisson/cli` unchanged.
+//
+// The file-emit shape (`GeneratedFile`/`GeneratedFileSet`) is the base `EmittedFile`/`EmittedFileSet`
+// hoisted to `@caisson/migrate` (ADR-0090) so the migration assembler/runner and the generator share
+// ONE declaration without the base reaching "up" into the cli. We re-export it under the
+// generator-contract names so every `@caisson/cli` importer of `GeneratedFile`/`GeneratedFileSet` is
+// unchanged; `@caisson/migrate` is a down-only base dependency, no cycle.
+import type { EmittedFile, EmittedFileSet } from "@caisson/migrate";
 import { z } from "zod";
 
 const EDITIONS = ["compliance", "ai-kit", "local-ai", "agent-dev"] as const;
@@ -35,12 +42,10 @@ export const Selection = z
   );
 export type Selection = z.infer<typeof Selection>;
 
-export interface GeneratedFile {
-  /** Relative path within the generated repo. Always a fixed literal here — never built from input. */
-  readonly path: string;
-  readonly content: string;
-}
-export type GeneratedFileSet = readonly GeneratedFile[];
+/** A file in the generated repo — the base `EmittedFile` primitive (ADR-0090), re-exported under the
+ *  generator-contract name. `path` is always a fixed literal here, never built from input. */
+export type GeneratedFile = EmittedFile;
+export type GeneratedFileSet = EmittedFileSet;
 
 /** The generator engine seam (ADR-0048). Swap the deterministic copy/transform for ts-morph later. */
 export interface GeneratorEngine {
