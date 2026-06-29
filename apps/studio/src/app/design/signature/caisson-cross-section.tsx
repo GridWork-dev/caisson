@@ -1,5 +1,5 @@
 /**
- * Caisson cross-section — the signature diagram (ADR-0100 "hold" beat). Inline SVG, every colour a
+ * Caisson cross-section — the signature diagram (ADR-0102 "hold" beat). Inline SVG, every colour a
  * var(--cs-*) token; static (the scroll-reveal is the parent <Reveal>; no looping motion). The
  * metaphor is load-bearing: the pressurized working chamber holds the tenant boundary while the cold
  * harbor water bears down, and the central shaft carries append-only evidence up to the surface.

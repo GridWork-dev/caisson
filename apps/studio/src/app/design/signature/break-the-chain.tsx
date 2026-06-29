@@ -1,5 +1,5 @@
 /**
- * Break-the-chain — the "chain" beat (ADR-0100), shown mid-tamper as a STATIC still (the site
+ * Break-the-chain — the "chain" beat (ADR-0102), shown mid-tamper as a STATIC still (the site
  * animates OK→FAIL once on scroll; reduced-motion gets exactly this frame). Block 03 is edited, so
  * its hash recomputes and the stored prev-hash in every block after it no longer matches — the chain
  * breaks at 02→03 and verifyChain() reads FAIL. The break uses the reserved `danger` token only

@@ -1,4 +1,4 @@
-// Server-safe theming constants + the pre-paint init script (ADR-0098 F3). Kept OUT of the
+// Server-safe theming constants + the pre-paint init script (ADR-0100 F3). Kept OUT of the
 // "use client" ThemeToggle so a server root layout can import `themeInitScript` without pulling a
 // client component across the boundary.
 

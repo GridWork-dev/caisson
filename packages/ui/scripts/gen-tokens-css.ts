@@ -83,7 +83,7 @@ function sharedBlock(): string {
   return lines.join("\n");
 }
 
-// 3-prong dark mode (ADR-0098 F3). Dark is the un-attributed default (:root). The OS-seed block
+// 3-prong dark mode (ADR-0100 F3). Dark is the un-attributed default (:root). The OS-seed block
 // follows prefers-color-scheme:light UNLESS the user has explicitly chosen — the
 // `:root:not([data-theme="dark"])` selector (specificity 0,2,0) beats the base `:root` (0,1,0),
 // so OS-light wins by default but a manual `[data-theme]` choice still wins (it nulls the :not or

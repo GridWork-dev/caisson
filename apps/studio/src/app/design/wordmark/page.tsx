@@ -47,7 +47,7 @@ export default function WordmarkPage() {
         </div>
       </section>
 
-      {/* candidates — B "Pressure vessel" is the locked mark (ADR-0101); the rest stay for the record */}
+      {/* candidates — B "Pressure vessel" is the locked mark (ADR-0103); the rest stay for the record */}
       {CONCEPTS.map((c, i) => {
         const { Mark } = c;
         const locked = c.id === "vessel";

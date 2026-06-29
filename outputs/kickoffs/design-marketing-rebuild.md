@@ -14,7 +14,7 @@ Two phases, in order:
 
 1. **Design-system lock + harden** — adopt the transplantable Wardfile playbook
    (`outputs/research/wardfile-frontend-playbook.md`) onto Caisson's existing token system, resolve
-   the open recipe/quality forks, and lock them as append-only ADRs (number from **0097+**).
+   the open recipe/quality forks, and lock them as append-only ADRs (number from **0099+**).
 2. **Marketing-site ground-up rebuild** — rebuild `apps/site` on the locked kit + the hero/standout/
    diagram concepts (`outputs/research/marketing-hero-concepts.md`), kit-first.
 
@@ -41,7 +41,7 @@ kit packaging) · 6 of 7 deterministic quality gates absent (only a partial hand
 two token divergences (2-prong dark mode, no breakpoint ladder/`scrim`) · `apps/studio` consumes tokens
 not components (drift risk) · Next version skew (site 16 / studio 15).
 
-## Forks to resolve FIRST (research-backed recommendations; lock each via picker → ADR 0097+)
+## Forks to resolve FIRST (research-backed recommendations; lock each via picker → ADR 0099+)
 
 | #                                            | Fork                                                                                                                                         | Recommendation                                                                                                                                                                                                                                                                            |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -85,7 +85,7 @@ the tokens-as-TS→codegen mechanism (keep + harden) · the centralized SEO modu
 
 ## Exit criteria
 
-Design-system ADRs (0097+) locked · component kit in `packages/ui` consumed by both `apps/studio` +
+Design-system ADRs (0099+) locked · component kit in `packages/ui` consumed by both `apps/studio` +
 `apps/site` (no drift) · the 6 deterministic gates green in `bun run check` · `apps/site` rebuilt
 kit-first with the four-beat hero narrative · UI-review + a11y (axe both modes) audits pass at SHIP ·
 goal-backward VERIFY against this kickoff.

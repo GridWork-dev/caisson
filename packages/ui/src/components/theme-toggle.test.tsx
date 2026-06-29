@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { ThemeToggle } from "./theme-toggle";
 import { themeInitScript } from "./theme-init";
 
-describe("ThemeToggle + theme-init (ADR-0098 F3)", () => {
+describe("ThemeToggle + theme-init (ADR-0100 F3)", () => {
   test("renders an icon button (no text label) defaulting to dark, labelled by action", () => {
     const html = renderToStaticMarkup(<ThemeToggle />);
     expect(html).toContain("<button");

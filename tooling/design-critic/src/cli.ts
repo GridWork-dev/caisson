@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 /**
  * design-critic-reconcile — reconcile a fresh critic run against the persisted findings.toml, write
- * the merged ledger back, print the per-id classification. ADVISORY (ADR-0099 Layer 3): this ALWAYS
+ * the merged ledger back, print the per-id classification. ADVISORY (ADR-0101 Layer 3): this ALWAYS
  * exits 0 — the critic informs, it never gates a merge.
  *
  * Input: a JSON array of raw findings ({workflow, surface, title, severity, status?}) from a path arg

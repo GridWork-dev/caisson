@@ -5,7 +5,7 @@ import { contrast, fmt } from "./contrast";
 /**
  * Studio foundations read-out helper (the swatch contrast meters). This is the STUDIO-LOCAL display
  * utility — distinct from the kit's canonical WCAG matrix gate (@caisson/ui tokens-contrast.test.ts,
- * ADR-0099 #2), which is the deterministic gate over the token objects. This test just pins the
+ * ADR-0101 #2), which is the deterministic gate over the token objects. This test just pins the
  * helper's thresholds + formatting so the gallery's meters stay truthful.
  */
 describe("studio contrast read-out helper", () => {

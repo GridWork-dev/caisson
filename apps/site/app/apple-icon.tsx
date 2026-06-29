@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-// Apple touch icon (180×180) — the "Pressure vessel" mark (ADR-0101) on a padded dark tile: a
+// Apple touch icon (180×180) — the "Pressure vessel" mark (ADR-0103) on a padded dark tile: a
 // sealed steel port holding one instrument light. Build-time raster; satori can't read OKLCH (or
 // SVG filters), so the locked palette is mirrored as hex and the glow is a solid halo ring.
 export const dynamic = "force-static";

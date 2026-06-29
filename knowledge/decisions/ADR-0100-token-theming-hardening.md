@@ -1,8 +1,8 @@
-# ADR-0098 — Token & theming hardening: breakpoint ladder · scrim · 3-prong dark mode
+# ADR-0100 — Token & theming hardening: breakpoint ladder · scrim · 3-prong dark mode
 
 **Status:** accepted · 2026-06-29 (design-system-harden track — operator lock, picker round F4·F3).
 **Relates:** ADR-0042 (token center — palette A + Structural type, **kept**), ADR-0078 (brand expansion —
-motion/elevation tokens; "dark is the brand"), ADR-0097 (the ThemeToggle is built per the kit recipe).
+motion/elevation tokens; "dark is the brand"), ADR-0099 (the ThemeToggle is built per the kit recipe).
 **Adopts the mechanism of** `outputs/research/wardfile-frontend-playbook.md` (token additions; VALUES stay
 Caisson's). Evidence: the 2026-06-29 grounding of `packages/ui/src/tokens/*` + `gen-tokens-css.ts`
 (`outputs/kickoffs/design-marketing-rebuild.md` F3/F4).
@@ -18,7 +18,7 @@ rebuild:
   radius/motion/elevation — no `breakpoint` object. The playbook's breakpoint guard needs one rem ladder
   because `@media` widths can't read CSS vars. (`packages/ui/src/tokens/foundation.ts:7-89`.)
 - **No `scrim` token.** `SemanticTheme` has 14 fields; none is a scrim/overlay/backdrop fill. Overlays and
-  the dialog/drawer primitives (ADR-0097) need one. (`packages/ui/src/tokens/types.ts:8-32`.)
+  the dialog/drawer primitives (ADR-0099) need one. (`packages/ui/src/tokens/types.ts:8-32`.)
 - **Dark mode is half-built.** `gen-tokens-css.ts` writes dark into `:root,[data-theme="dark"]` and light
   into `[data-theme="light"]` — **dark-default + manual override only**. There is **no**
   `@media(prefers-color-scheme)` seed anywhere. The current ThemeToggle is a two-button **text**
@@ -31,7 +31,7 @@ rebuild:
 
 - **Breakpoint ladder** in `foundation.ts` (Tier-1, mode-independent): one rem ladder
   `xs 30 · sm 40 · md 48 · lg 60 · xl 72 · 2xl 90` (rem). Every `@media` width must be a rung (enforced by
-  the breakpoint guard, ADR-0099).
+  the breakpoint guard, ADR-0101).
 - **`scrim`** added as a Tier-2 semantic mode-flipping token in `SemanticTheme` (a per-theme overlay fill,
   with an explicit light-theme value) → emits `--cs-scrim`. Defined from scratch (no existing
   overlay/backdrop token; elevation shadows + `glowAccent` are not scrims).
@@ -51,13 +51,13 @@ prong set:
 3. `[data-theme="dark"] { <dark> }` / `[data-theme="light"] { <light> }` — **manual override wins** over the
    OS (the `:not([data-theme="dark"])` guard preserves dark-default semantics).
 
-The **ThemeToggle** (built per ADR-0097) **follows the OS live until the first click**, then **pins +
+The **ThemeToggle** (built per ADR-0099) **follows the OS live until the first click**, then **pins +
 persists** the choice to `localStorage`; a pre-paint inline script kills FOUC. It is an **icon toggle, not
 the current text buttons** — a single icon+state control (e.g. a sun/moon-class Lucide glyph reflecting
 active mode), no "Dark"/"Light" word labels. Accessible name via `aria-label`/`aria-pressed`.
 
 A **contrast assertion** over the `SemanticTheme` pairs in **both** modes lands with this change (today
-`tokens.test.ts` has none) — folded into the full-contrast-matrix gate (ADR-0099); any palette/scrim edit
+`tokens.test.ts` has none) — folded into the full-contrast-matrix gate (ADR-0101); any palette/scrim edit
 ships contrast-guarded.
 
 ## Rejected
@@ -75,10 +75,10 @@ ships contrast-guarded.
   → `--cs-scrim`; `surface1`/`surface2` naming is **kept** (no rename).
 - `gen-tokens-css.ts` emits the 3-prong dark mode (dark `:root` default + `prefers-color-scheme: light`
   OS-seed + manual `[data-theme]` override-wins). The generated `styles/tokens.css` is regenerated
-  (`bun run gen:tokens`) in the same change (drift-guarded, ADR-0099).
+  (`bun run gen:tokens`) in the same change (drift-guarded, ADR-0101).
 - ThemeToggle = **icon** control, OS-follow-until-first-click, then pin to `localStorage`; pre-paint
   anti-FOUC script retained.
-- A both-modes contrast assertion over the token pairs is added (folds into ADR-0099's matrix).
+- A both-modes contrast assertion over the token pairs is added (folds into ADR-0101's matrix).
 - Palette A + Structural type center is **unchanged** (ADR-0042/0078).
 
-Implementation in Phase 1 of the harden track. Gate wiring → **ADR-0099**.
+Implementation in Phase 1 of the harden track. Gate wiring → **ADR-0101**.

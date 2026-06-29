@@ -1,9 +1,9 @@
-# ADR-0101 — Brand mark: the "Pressure vessel" (supersedes the waterline-over-chamber glyph)
+# ADR-0103 — Brand mark: the "Pressure vessel" (supersedes the waterline-over-chamber glyph)
 
 **Status:** accepted · 2026-06-29 (design-system-harden track — operator mark pick).
 **Relates:** ADR-0078 §2 (brand mark + favicon kit — **supersedes its glyph geometry**, keeps the rest
 of the brand system intact) · ADR-0078 §8 (≤10% accent budget — accent stays out of the in-product
-mark) · ADR-0097 (kit recipe — `Glyph` is a single-SVG-root `forwardRef` primitive) · ADR-0100
+mark) · ADR-0099 (kit recipe — `Glyph` is a single-SVG-root `forwardRef` primitive) · ADR-0102
 (signature — now deferred-for-rework, see the note below). **Evidence:** the three-candidate studio
 exploration (`apps/studio/src/app/design/wordmark/marks.tsx` + `page.tsx`), rendered at app/UI/16px
 sizes and operator-picked on the favicon-first test.
@@ -40,12 +40,12 @@ the most premium read at 64, and the strongest figure-ground.
 `apps/studio/src/app/icon.svg` (the studio favicon, previously a 404). The bespoke `caisson` domain
 **icon** (`icon.tsx`) stays a distinct line cross-section — it no longer duplicates the mark.
 
-## Signature note (amends ADR-0100 scope)
+## Signature note (amends ADR-0102 scope)
 
 Per the same operator review, the four-beat **signature sketches** (caisson cross-section +
-break-the-chain, ADR-0100) are **deferred for rework** — unlinked from the studio nav + hub and kept
+break-the-chain, ADR-0102) are **deferred for rework** — unlinked from the studio nav + hub and kept
 off the site, with a **blank slot reserved** for the hero. The signature is the **one** deferred design
-surface. ADR-0100's direction (tokenized CSS/SVG over a video pipeline) **stands**; only the v1 sketch
+surface. ADR-0102's direction (tokenized CSS/SVG over a video pipeline) **stands**; only the v1 sketch
 execution is deferred.
 
 ## Consequences

@@ -18,7 +18,7 @@ const raw = (over: Partial<RawFinding> = {}): RawFinding => ({
   ...over,
 });
 
-describe("stableId — identity survives rewording (ADR-0099 Layer 3)", () => {
+describe("stableId — identity survives rewording (ADR-0101 Layer 3)", () => {
   test("is deterministic", () => {
     expect(stableId("ui-review", "hero", "Eyebrow contrast below AA")).toBe(
       stableId("ui-review", "hero", "Eyebrow contrast below AA"),

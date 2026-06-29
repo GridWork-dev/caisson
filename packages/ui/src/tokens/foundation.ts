@@ -64,8 +64,8 @@ export const foundation = {
     pill: "999px",
   },
   /**
-   * The ONE rem breakpoint ladder (ADR-0098 F4). Single source of truth for every `@media`
-   * width: the breakpoint guard (ADR-0099) rejects any width not on this ladder, because media
+   * The ONE rem breakpoint ladder (ADR-0100 F4). Single source of truth for every `@media`
+   * width: the breakpoint guard (ADR-0101) rejects any width not on this ladder, because media
    * queries can't read CSS vars. Authored in rem so the breakpoints track the root font size.
    * NOT emitted as CSS vars (a media-query condition can't consume them) — TS-only, read by
    * the guard + by component TS that needs a numeric breakpoint.

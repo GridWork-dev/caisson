@@ -1,5 +1,5 @@
 <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Caisson">
-  <!-- "Pressure vessel" mark (ADR-0101): a sealed steel port holding one instrument light, a
+  <!-- "Pressure vessel" mark (ADR-0103): a sealed steel port holding one instrument light, a
        waterline seam across the crown. Build-time asset, so the locked palette is mirrored as hex
        here (sanctioned exception, like the OG image): bg #0d1216, steel #2b353b, accent #43bcd0. -->
   <rect width="32" height="32" rx="7" fill="#0d1216" />

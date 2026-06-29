@@ -17,7 +17,7 @@ import {
 } from "@caisson/ui/components";
 
 /**
- * Components — the live @caisson/ui gallery (ADR-0097 recipe). Every primitive rendered from the
+ * Components — the live @caisson/ui gallery (ADR-0099 recipe). Every primitive rendered from the
  * SHIPPED kit (not a studio re-implementation), so this page is the operator's eyes-on surface for
  * the locked component layer before the marketing-site rebuild. The studio chrome (`.shell` / `.panel`
  * / `.section-title`) frames it; the components themselves carry only their own co-located `cs-*` CSS.
@@ -67,7 +67,7 @@ export default function ComponentsGalleryPage() {
         <p className="lede">
           Every primitive below comes straight from <code>@caisson/ui</code> —
           Radix behavior, co-located CSS reading only <code>var(--cs-*)</code>,
-          variants as <code>data-*</code> attributes (ADR-0097). What ships to
+          variants as <code>data-*</code> attributes (ADR-0099). What ships to
           the site is what you see here.
         </p>
       </section>

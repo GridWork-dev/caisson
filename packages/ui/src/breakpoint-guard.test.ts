@@ -5,8 +5,8 @@ import { join } from "node:path";
 import { foundation } from "./tokens/foundation";
 
 /**
- * Breakpoint guard — ADR-0099 gate #5. Every `@media` WIDTH in the kit's CSS must be a rung on the
- * ADR-0098 rem ladder (`foundation.breakpoint`, the single source of truth). Media queries can't read
+ * Breakpoint guard — ADR-0101 gate #5. Every `@media` WIDTH in the kit's CSS must be a rung on the
+ * ADR-0100 rem ladder (`foundation.breakpoint`, the single source of truth). Media queries can't read
  * CSS custom properties, so a width is a raw literal that silently drifts off the ladder; this test
  * is the deterministic gate that keeps every breakpoint snapped to a named rung.
  *
@@ -46,7 +46,7 @@ function collectWidths(): { file: string; raw: string }[] {
   return hits;
 }
 
-describe("breakpoint guard — every @media width is a ladder rung (ADR-0099 gate #5)", () => {
+describe("breakpoint guard — every @media width is a ladder rung (ADR-0101 gate #5)", () => {
   const widths = collectWidths();
 
   test("the kit declares at least one width breakpoint (guard is live, not vacuously green)", () => {
@@ -54,7 +54,7 @@ describe("breakpoint guard — every @media width is a ladder rung (ADR-0099 gat
   });
 
   for (const { file, raw } of widths) {
-    test(`${file}: ${raw} is on the ADR-0098 ladder`, () => {
+    test(`${file}: ${raw} is on the ADR-0100 ladder`, () => {
       expect([...ALLOWED]).toContain(raw);
     });
   }

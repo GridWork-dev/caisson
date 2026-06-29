@@ -27,7 +27,7 @@ export interface EditionCardProps extends Omit<
 
 /**
  * EditionCard — a featured-lead edition link (V12), ported from the inline-style `apps/site`
- * primitive to the recipe (ADR-0097): co-located CSS reading only `var(--cs-*)`, the `lead`
+ * primitive to the recipe (ADR-0099): co-located CSS reading only `var(--cs-*)`, the `lead`
  * variant expressed as the `data-lead` attribute, and a self-contained `.cs-edition` surface that
  * replicates the interactive-card tonal hover + lift (no dependency on the sibling `card`).
  *

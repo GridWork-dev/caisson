@@ -34,7 +34,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           crossOrigin="anonymous"
         />
         <link rel="stylesheet" href={FONTS_HREF} />
-        {/* 3-prong dark mode (ADR-0098 F3): the kit's pre-paint script pins ONLY an operator
+        {/* 3-prong dark mode (ADR-0100 F3): the kit's pre-paint script pins ONLY an operator
             choice; with none, CSS follows the OS. No hardcoded data-theme → OS-follow is live. */}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>

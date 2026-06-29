@@ -14,7 +14,7 @@ export interface CredentialStripProps extends Omit<
 }
 
 /**
- * CredentialStrip (V7) — presentational compliance-framework strip. Recipe primitive (ADR-0097):
+ * CredentialStrip (V7) — presentational compliance-framework strip. Recipe primitive (ADR-0099):
  *   - No Radix (no behavior/polymorphism), no `"use client"` (server-safe, no hook/handler).
  *   - Co-located plain CSS (`credential-strip.css`) reading only `var(--cs-*)`.
  *   - BEM block `cs-credentials` / elements `__item` `__sep` `__note`. No inline style.

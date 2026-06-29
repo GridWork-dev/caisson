@@ -168,7 +168,7 @@ operator-owned remainders are deferred-by-decision (pricing numbers → P6; CF g
 Work is bucketed into two disjoint-tree tracks; **sequencing is the next operator picker.**
 
 - **Design track** — `outputs/kickoffs/design-marketing-rebuild.md`. Phase 1: design-system lock +
-  harden (resolve forks F1–F8 → ADRs 0097+; component kit into `packages/ui`; the 6 deterministic
+  harden (resolve forks F1–F8 → ADRs 0099+; component kit into `packages/ui`; the 6 deterministic
   gates) → sketch in `apps/studio`. Phase 2: rebuild `apps/site` ground-up (IntentLadder SEO template,
   kit-first, hero "the denial" → "break the chain" standout → caisson cross-section diagram). Touches
   `packages/ui` + `apps/site` + `apps/studio`. Research: `wardfile-frontend-playbook.md` +

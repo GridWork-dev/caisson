@@ -1,6 +1,6 @@
 # @caisson/ui — the component recipe
 
-Operationalizes **ADR-0097**. Every primitive in `src/components/` is built the same way; the
+Operationalizes **ADR-0099**. Every primitive in `src/components/` is built the same way; the
 **reference is `button.tsx` + `button.css`** — copy its shape. The kit is **framework-agnostic raw
 `.tsx`**: it never imports `next/*` or any framework.
 
@@ -14,7 +14,7 @@ Operationalizes **ADR-0097**. Every primitive in `src/components/` is built the 
 2. **Co-located plain CSS.** One `foo.css` next to `foo.tsx`, imported at the top
    (`import "./foo.css"`). Every value is a `var(--cs-*)` token — **no** raw hex, no `oklch(...)`
    literal, no Tailwind / cva / CSS-modules / vanilla-extract / class-string lib. (The anti-slop gate,
-   ADR-0099, enforces this.)
+   ADR-0101, enforces this.)
 3. **Variants as `data-*`.** Express variants with `data-variant` / `data-size` / `data-status` /
    `data-surface` and style them with attribute selectors (`.cs-foo[data-variant="x"] { … }`). No
    variant logic in JS; theming is pure cascade. For multi-token components use a **local-indirection
@@ -30,7 +30,7 @@ Operationalizes **ADR-0097**. Every primitive in `src/components/` is built the 
 ## Brand floor the kit must honor (cite, don't relitigate)
 
 - Accent ≤10%, only on the 5 named slots (DESIGN.md §8). Icons = **Lucide** + bespoke domain glyphs,
-  one `<Icon name=… />` surface (ADR-0097 F8). Code blocks always-dark. Numerals tabular Martian Mono.
+  one `<Icon name=… />` surface (ADR-0099 F8). Code blocks always-dark. Numerals tabular Martian Mono.
 - Motion: tokenized `--cs-duration-*` / `--cs-ease-*`, transform/opacity-first, `prefers-reduced-motion`
   honored, content **never** stuck at `opacity:0`, no loop/gimmick (ADR-0078 §6).
 - Elevation: tonal surface + hairline is the default; `--cs-shadow-*` / `--cs-glow-accent` is the

@@ -1,4 +1,4 @@
-/* EditionCard (ADR-0097) — co-located; `lead` variant via [data-lead]; values via --cs-* only.
+/* EditionCard (ADR-0099) — co-located; `lead` variant via [data-lead]; values via --cs-* only.
  * Self-contained: replicates the interactive-card surface + tonal hover/lift (no `card` dep). */
 
 /* Grid wrapper the page wraps EditionCards in (exported for pages). */

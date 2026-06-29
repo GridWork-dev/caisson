@@ -20,7 +20,7 @@ export interface RevealProps {
 }
 
 /**
- * Fade-up-once scroll reveal (recipe kit port of the old `apps/site` primitive, ADR-0097).
+ * Fade-up-once scroll reveal (recipe kit port of the old `apps/site` primitive, ADR-0099).
  *
  *   1. CLIENT — uses `IntersectionObserver` + `useState`/`useEffect`/`useRef`, so `"use client"`.
  *   2. Co-located plain CSS (`reveal.css`) reading only `var(--cs-*)`; the hidden state is gated on

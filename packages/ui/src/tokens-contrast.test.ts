@@ -10,7 +10,7 @@ import {
 import type { FunctionalTokens, SemanticTheme } from "./tokens/index";
 
 /**
- * WCAG contrast matrix — ADR-0099 gate #2 (the deterministic design-quality gate that REPLACES the
+ * WCAG contrast matrix — ADR-0101 gate #2 (the deterministic design-quality gate that REPLACES the
  * hand-transcribed, drifted contrast spot-checks in apps/site + apps/studio). Pairs are derived from
  * the live token objects (not copied hex), so a palette edit is checked automatically in BOTH modes.
  *
@@ -86,7 +86,7 @@ function checkFunctional(
   }
 }
 
-describe("WCAG contrast matrix — both modes (ADR-0099 gate #2)", () => {
+describe("WCAG contrast matrix — both modes (ADR-0101 gate #2)", () => {
   checkTheme(darkTheme, "dark");
   checkTheme(lightTheme, "light");
   checkFunctional(darkTheme, functionalDark, "dark");

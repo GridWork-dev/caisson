@@ -1,4 +1,4 @@
-/* Terminal — recipe primitive (ADR-0097). Co-located; values via --cs-* only.
+/* Terminal — recipe primitive (ADR-0099). Co-located; values via --cs-* only.
  * The framed evidence artifact: a tonal chrome bar over a monospace body. */
 .cs-terminal {
   border: 1px solid var(--cs-border);

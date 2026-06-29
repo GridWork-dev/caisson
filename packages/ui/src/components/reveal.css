@@ -1,4 +1,4 @@
-/* Reveal — fade-up-once scroll reveal (recipe port, ADR-0097). Co-located; values via --cs-* only.
+/* Reveal — fade-up-once scroll reveal (recipe port, ADR-0099). Co-located; values via --cs-* only.
    Gated on `.cs-js` (consuming app sets it on <html> pre-paint) so no-JS / pre-hydration shows
    content — never a stuck opacity:0. */
 .cs-reveal {

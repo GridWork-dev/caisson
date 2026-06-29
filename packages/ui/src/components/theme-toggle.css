@@ -1,4 +1,4 @@
-/* ThemeToggle (ADR-0098 F3) — icon control. Co-located; values via --cs-* only. */
+/* ThemeToggle (ADR-0100 F3) — icon control. Co-located; values via --cs-* only. */
 .cs-theme-toggle {
   display: inline-flex;
   align-items: center;

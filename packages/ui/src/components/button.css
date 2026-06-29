@@ -1,4 +1,4 @@
-/* Button — recipe reference (ADR-0097). Co-located; variants via [data-*]; values via --cs-* only. */
+/* Button — recipe reference (ADR-0099). Co-located; variants via [data-*]; values via --cs-* only. */
 .cs-button {
   display: inline-flex;
   align-items: center;

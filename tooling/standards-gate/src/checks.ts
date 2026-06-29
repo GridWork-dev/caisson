@@ -218,10 +218,10 @@ export async function checkManifestAgreement(pkgs: Pkg[]): Promise<Finding[]> {
 }
 
 /**
- * Gate #4 — TS-compiler copy-guard (ADR-0099). Flags a source module COPY-PASTED across packages:
+ * Gate #4 — TS-compiler copy-guard (ADR-0101). Flags a source module COPY-PASTED across packages:
  * two `src/**` modules in *different* workspace packages whose code is token-identical. The motivating
  * case is the contrast spot-check that was hand-duplicated (and drifted) across apps/site + apps/studio
- * (ADR-0099 Context) — shared logic belongs in ONE package, imported, not copied.
+ * (ADR-0101 Context) — shared logic belongs in ONE package, imported, not copied.
  *
  * Normalization is done with the TypeScript SCANNER (not a text hash): trivia — all whitespace AND
  * comments — is skipped, so reformatting or a reworded header never hides a copy, and a genuine
@@ -281,7 +281,7 @@ export function checkCopyPaste(root: string): Finding[] {
           .map((g) => g.file)
           .join(
             " ≡ ",
-          )} — extract to ONE shared package and import it, don't copy (ADR-0099 #4).`,
+          )} — extract to ONE shared package and import it, don't copy (ADR-0101 #4).`,
       });
     }
   }
