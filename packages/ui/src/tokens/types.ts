@@ -21,6 +21,12 @@ export interface SemanticTheme {
   link: string;
   /** Accent instrument-glow box-shadow (ADR-0078 §7) — per-theme so it tracks the accent. */
   glowAccent: string;
+  /**
+   * Modal/drawer/sheet backdrop scrim (ADR-0100 F4) — a translucent fill that sits under an
+   * overlay and above every surface. Per-theme + hue-tinted (no pure black, DESIGN.md). Excluded
+   * from the contrast matrix (it's an alpha veil, not a text/surface pair).
+   */
+  scrim: string;
 }
 
 /** Functional status colours — shared across candidates. Never used color-alone (pair glyph + label). */

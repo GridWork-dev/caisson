@@ -1,46 +1,32 @@
-"use client";
-
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 
-import { Wordmark } from "./brand";
+import { ThemeToggle, Wordmark } from "@caisson/ui/components";
+
 import { MobileNav } from "./mobile-nav";
-import { ThemeToggle } from "./theme-toggle";
-import { Button } from "./ui";
+import { NavLinks } from "./nav-links";
+import { Button } from "./button";
+import { NAV_ROUTES } from "@/lib/routes";
 import styles from "./site-nav.module.css";
 
-// Agentic-Dev is intentionally absent from the primary nav (roadmap edition, ADR-0082 §4).
-const NAV_LINKS = [
-  { href: "/compliance", label: "Compliance" },
-  { href: "/ai-kit", label: "AI Production Kit" },
-  { href: "/local-first", label: "Local-first" },
-  { href: "/pricing", label: "Pricing" },
+// Server component (kickoff Phase-2). The shell — brand lockup, CTA group, layout — renders as RSC;
+// only the active-link row (NavLinks), the theme toggle, and the mobile drawer ship as client
+// islands. Marketing nav links derive from the canonical registry (lib/routes.ts); `/agentic-dev`'s
+// absence is `nav: false` there, not a magic omission. Docs is a documentation surface, not a
+// marketing route, so it is appended explicitly.
+const NAV_LINKS: readonly { href: string; label: string }[] = [
+  ...NAV_ROUTES.map((r) => ({ href: r.path, label: r.navLabel ?? r.label })),
   { href: "/docs", label: "Docs" },
-] as const;
+];
 
 export function SiteNav() {
-  const pathname = usePathname();
   return (
     <header className="cs-nav">
       <Link href="/" className="cs-brand" aria-label="Caisson home">
         <Wordmark />
       </Link>
 
-      {/* Desktop link row — hidden below 680 px via global.css */}
-      <nav className="cs-nav-links" aria-label="Primary">
-        {NAV_LINKS.map((l) => {
-          const active = pathname.startsWith(l.href);
-          return (
-            <Link
-              key={l.href}
-              href={l.href}
-              aria-current={active ? "page" : undefined}
-            >
-              {l.label}
-            </Link>
-          );
-        })}
-      </nav>
+      {/* Desktop link row — hidden below 900px via global.css; active-link state is the one client island */}
+      <NavLinks links={NAV_LINKS} />
 
       {/* Desktop CTA group — primary "Get started" → /pricing + theme toggle. Docs lives in the link row
           above (and the mobile drawer), so no duplicate ghost Docs button here. */}
@@ -49,7 +35,7 @@ export function SiteNav() {
         <ThemeToggle />
       </div>
 
-      {/* Mobile hamburger + drawer (display:none above 680 px via global.css). Live self-serve
+      {/* Mobile hamburger + drawer (display:none above 900px via global.css). Live self-serve
           posture (ADR-0082): the global CTA drives to /pricing, not a waitlist. */}
       <MobileNav
         links={NAV_LINKS}

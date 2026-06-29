@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import { Button } from "./button";
+
 type State = "idle" | "loading" | "ok" | "error";
 
 // Low-key product-updates capture (ADR-0082 — the site is live self-serve; this is NOT the
@@ -121,13 +123,9 @@ export function UpdatesForm({ source = "site" }: { source?: string }) {
           fontSize: "var(--cs-text-sm)",
         }}
       />
-      <button
-        type="submit"
-        className="cs-btn cs-btn--ghost"
-        disabled={state === "loading"}
-      >
+      <Button type="submit" variant="ghost" disabled={state === "loading"}>
         {state === "loading" ? "Subscribing…" : "Get product updates"}
-      </button>
+      </Button>
       <p
         className="cs-muted"
         style={{

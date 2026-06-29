@@ -1,7 +1,11 @@
-/* Caisson site — all colour/type/space from @caisson/ui tokens (--cs-*, ADR-0042/0078).
- * Tailwind v4 + fumadocs-ui power the /docs surface only; marketing is plain CSS keyed off --cs-*.
- * No hard-coded hex, no ad-hoc rgba. Depth: tonal surface + hairline is the DEFAULT; the elevation
- * + glow scale (--cs-shadow-*, --cs-glow-accent, ADR-0078 §7) is the deliberate raised step. */
+/* Caisson site stylesheet — kit-first (ADR-0099). The design-system base (reset, layout primitives,
+ * type utilities, elevation/glow, tok-* tints, skip-link, reduced-motion) is owned by
+ * `@caisson/ui/styles/base.css` (imported in layout.tsx before this file), and every shared
+ * component (Button/Card/Hero/Section/Terminal/CodeBlock/StatusChip/CredentialStrip/EditionCard/
+ * SkuMatrix) ships its own co-located CSS from the kit. This file holds ONLY app-specific concerns:
+ * the Tailwind/Fumadocs docs surface + fd-bridge, the reset re-assert (must win over Tailwind
+ * preflight, which loads after base.css), and site chrome (nav · footer · brand · proof strip ·
+ * status line · reveal · theme toggle). All values are --cs-* tokens; no hard-coded hex, no ad-hoc rgba. */
 
 @import "tailwindcss";
 @import "fumadocs-ui/css/neutral.css";
@@ -12,7 +16,7 @@
  * tracks the same toggle as marketing. */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-/* ===== fd-bridge: map every Fumadocs theme var onto the --cs-* contract (ADR-0045).
+/* ===== fd-bridge: map every Fumadocs theme var onto the --cs-* contract (ADR-0086).
  * --cs-* already switch value by [data-theme], so mapping once on :root inherits the right
  * tone in both themes — no second light/dark block needed. Theme, never fork. ===== */
 :root {
@@ -34,7 +38,8 @@
   --color-fd-ring: var(--cs-focus);
 }
 
-/* ===== Caisson base ===== */
+/* ===== Reset re-assert — base.css already sets these, but it loads BEFORE the Tailwind/Fumadocs
+ * @imports above; re-declaring here (after preflight) keeps Caisson's reset authoritative. ===== */
 *,
 *::before,
 *::after {
@@ -86,58 +91,21 @@ kbd,
   font-feature-settings: "ss01", "zero";
 }
 
-/* ===== Marketing layout primitives (plain CSS, --cs-* only) ===== */
-.cs-container {
-  width: 100%;
-  max-width: 1140px;
-  margin-inline: auto;
-  padding-inline: var(--cs-space-6);
+/* ===== Page layout/type utilities used DIRECTLY by pages (not only via a kit component, so they
+ * must live in an always-loaded sheet, not a co-located component CSS). cs-cta-row: the CTA flex row
+ * (error/404/security/framework pages use it without a Hero). cs-card-title: card heading type used
+ * on content pages. Both mirror the kit's internal copies (hero.css / card.css) — identical rules. ===== */
+.cs-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cs-space-3);
+  margin-top: var(--cs-space-8);
 }
 
-.cs-section {
-  padding-block: var(--cs-space-24);
-  border-top: 1px solid var(--cs-border);
-}
-
-.cs-section--flush {
-  border-top: 0;
-}
-
-.cs-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--cs-space-2);
-  font-family: var(--cs-font-mono);
-  font-size: var(--cs-text-xs);
-  font-weight: var(--cs-weight-medium);
-  letter-spacing: var(--cs-tracking-wide);
-  text-transform: uppercase;
-  color: var(--cs-accent);
-}
-
-.cs-section-title {
-  font-size: var(--cs-text-3xl);
+.cs-card-title {
+  font-size: var(--cs-text-lg);
   font-weight: var(--cs-weight-semibold);
   letter-spacing: var(--cs-tracking-tight);
-  line-height: var(--cs-leading-tight);
-  margin-block: var(--cs-space-4) var(--cs-space-3);
-  max-width: 28ch;
-}
-
-.cs-lede {
-  color: var(--cs-fg-muted);
-  font-size: var(--cs-text-lg);
-  line-height: var(--cs-leading-relaxed);
-  max-width: 62ch;
-}
-
-.cs-muted {
-  color: var(--cs-fg-muted);
-}
-
-.cs-footnote {
-  color: var(--cs-fg-muted);
-  font-size: var(--cs-text-sm);
 }
 
 /* ===== Navigation ===== */
@@ -191,95 +159,8 @@ kbd,
   color: var(--cs-fg-muted);
 }
 
-/* ===== Buttons ===== */
-.cs-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--cs-space-2);
-  padding: var(--cs-space-3) var(--cs-space-5);
-  border-radius: var(--cs-radius-md);
-  border: 1px solid transparent;
-  font-size: var(--cs-text-sm);
-  font-weight: var(--cs-weight-medium);
-  cursor: pointer;
-  transition:
-    background var(--cs-duration-fast) var(--cs-ease-out),
-    border-color var(--cs-duration-fast) var(--cs-ease-out),
-    color var(--cs-duration-fast) var(--cs-ease-out),
-    box-shadow var(--cs-duration-fast) var(--cs-ease-out);
-}
-
-.cs-btn--primary:hover {
-  box-shadow: var(--cs-glow-accent);
-}
-
-.cs-btn--primary {
-  background: var(--cs-accent);
-  color: var(--cs-on-accent);
-}
-
-.cs-btn--primary:hover {
-  background: var(--cs-accent-hover);
-}
-
-.cs-btn--ghost {
-  background: transparent;
-  color: var(--cs-fg);
-  border-color: var(--cs-border-strong);
-}
-
-.cs-btn--ghost:hover {
-  border-color: var(--cs-accent);
-  color: var(--cs-accent);
-}
-
-/* ===== Cards / panels ===== */
-.cs-card {
-  border: 1px solid var(--cs-border);
-  border-radius: var(--cs-radius-lg);
-  background: var(--cs-surface-1);
-  padding: var(--cs-space-6);
-}
-
-.cs-card--accent {
-  border-color: var(--cs-accent);
-  background: var(--cs-accent-tint);
-}
-
-.cs-card-title {
-  font-size: var(--cs-text-lg);
-  font-weight: var(--cs-weight-semibold);
-  letter-spacing: var(--cs-tracking-tight);
-}
-
-/* ===== Grid helpers ===== */
-.cs-grid {
-  display: grid;
-  gap: var(--cs-space-5);
-}
-
-.cs-grid--2 {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.cs-grid--3 {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.cs-grid--4 {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
-@media (max-width: 860px) {
-  .cs-grid--2,
-  .cs-grid--3,
-  .cs-grid--4 {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ===== Status pill — never colour-alone: glyph + label (ADR-0042 WCAG AA). ===== */
+/* ===== Status line — never colour-alone: glyph + label (ADR-0042 WCAG AA). Page utility used
+ * directly by the home evidence cards (the kit StatusChip is the pill; this is the inline label). ===== */
 .cs-status {
   display: inline-flex;
   align-items: center;
@@ -295,7 +176,7 @@ kbd,
   color: var(--cs-accent);
 }
 
-/* ===== Tags / chips ===== */
+/* ===== Tags ===== */
 .cs-tag {
   display: inline-flex;
   align-items: center;
@@ -305,20 +186,6 @@ kbd,
   font-family: var(--cs-font-mono);
   font-size: var(--cs-text-xs);
   color: var(--cs-fg-muted);
-}
-
-/* ===== Code block (evidence) — always-dark, code-mono (ADR-0078 §1, §8) ===== */
-.cs-code {
-  border: 1px solid var(--cs-border);
-  border-radius: var(--cs-radius-md);
-  background: var(--cs-surface-1);
-  padding: var(--cs-space-5);
-  overflow-x: auto;
-  font-family: var(--cs-font-mono-code);
-  font-size: var(--cs-text-sm);
-  line-height: var(--cs-leading-snug);
-  color: var(--cs-fg);
-  tab-size: 2;
 }
 
 /* ===== Footer ===== */
@@ -349,297 +216,7 @@ kbd,
   }
 }
 
-/* ===== Theme toggle (segmented) ===== */
-.cs-seg {
-  display: inline-flex;
-  border: 1px solid var(--cs-border);
-  border-radius: var(--cs-radius-pill);
-  overflow: hidden;
-}
-
-.cs-seg button {
-  padding: var(--cs-space-1) var(--cs-space-3);
-  background: transparent;
-  color: var(--cs-fg-muted);
-  border: 0;
-  font-family: var(--cs-font-mono);
-  font-size: var(--cs-text-xs);
-  cursor: pointer;
-}
-
-.cs-seg button[aria-pressed="true"] {
-  background: var(--cs-accent-tint);
-  color: var(--cs-fg);
-}
-
-/* ===== Numerals — Martian Mono tabular figures everywhere (ADR-0078 §8) ===== */
-.cs-num {
-  font-family: var(--cs-font-mono);
-  font-feature-settings:
-    "tnum" 1,
-    "zero" 1;
-  font-variant-numeric: tabular-nums;
-}
-
-/* ===== Skip link (a11y G0.3) ===== */
-.cs-skip-link {
-  position: fixed;
-  top: var(--cs-space-3);
-  left: var(--cs-space-3);
-  z-index: 100;
-  padding: var(--cs-space-2) var(--cs-space-4);
-  background: var(--cs-accent);
-  color: var(--cs-on-accent);
-  border-radius: var(--cs-radius-md);
-  font-family: var(--cs-font-mono);
-  font-size: var(--cs-text-sm);
-  transform: translateY(-150%);
-  transition: transform var(--cs-duration-fast) var(--cs-ease-out);
-}
-
-.cs-skip-link:focus {
-  transform: translateY(0);
-}
-
-/* ===== Display type — fluid clamp (V28/X5) ===== */
-.cs-display {
-  font-size: var(--cs-text-display);
-  line-height: var(--cs-leading-tight);
-  letter-spacing: var(--cs-tracking-tighter);
-  font-weight: var(--cs-weight-semibold);
-  margin: 0;
-  max-width: 18ch;
-  text-wrap: balance;
-}
-
-/* ===== CTA row ===== */
-.cs-cta-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--cs-space-3);
-  margin-top: var(--cs-space-8);
-}
-
-/* ===== Elevation + glow utilities (ADR-0078 §7) ===== */
-.cs-elevate-sm {
-  box-shadow: var(--cs-shadow-sm);
-}
-.cs-elevate-md {
-  box-shadow: var(--cs-shadow-md);
-}
-.cs-elevate-lg {
-  box-shadow: var(--cs-shadow-lg);
-}
-.cs-glow {
-  box-shadow: var(--cs-glow-accent);
-}
-
-/* Interactive card — tonal hover (border brighten + surface step + lift), motion-tokened. */
-.cs-card--interactive {
-  transition:
-    border-color var(--cs-duration-fast) var(--cs-ease-out),
-    background var(--cs-duration-fast) var(--cs-ease-out),
-    box-shadow var(--cs-duration-base) var(--cs-ease-out),
-    transform var(--cs-duration-base) var(--cs-ease-out);
-  will-change: transform;
-}
-
-.cs-card--interactive:hover {
-  border-color: var(--cs-border-strong);
-  background: var(--cs-surface-2);
-  box-shadow: var(--cs-shadow-md);
-  transform: translateY(-2px);
-}
-
-/* ===== Toned section band (V19 rhythm) ===== */
-.cs-band {
-  background: var(--cs-surface-1);
-}
-
-.cs-band--tint {
-  background: var(--cs-accent-tint);
-}
-
-/* ===== Hero — split layout (V1) ===== */
-.cs-hero {
-  display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
-  gap: var(--cs-space-12);
-  align-items: center;
-}
-
-.cs-hero__artifact {
-  min-width: 0;
-}
-
-@media (max-width: 1024px) {
-  .cs-hero {
-    grid-template-columns: 1fr;
-    gap: var(--cs-space-10);
-  }
-}
-
-/* ===== Terminal chrome — framed evidence artifact (V2) ===== */
-.cs-terminal {
-  border: 1px solid var(--cs-border);
-  border-radius: var(--cs-radius-lg);
-  background: var(--cs-surface-1);
-  overflow: hidden;
-  box-shadow: var(--cs-shadow-lg);
-}
-
-.cs-terminal__bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--cs-space-3);
-  padding: var(--cs-space-3) var(--cs-space-4);
-  border-bottom: 1px solid var(--cs-border);
-  background: var(--cs-surface-2);
-  font-family: var(--cs-font-mono);
-  font-size: var(--cs-text-xs);
-  color: var(--cs-fg-muted);
-}
-
-.cs-terminal__body {
-  margin: 0;
-  padding: var(--cs-space-5);
-  overflow-x: auto;
-  font-family: var(--cs-font-mono-code);
-  font-size: var(--cs-text-sm);
-  line-height: var(--cs-leading-snug);
-  color: var(--cs-fg);
-  tab-size: 2;
-}
-
-/* Semantic code tints — only load-bearing tokens (V4). Never colour-alone in prose; here the
- * surrounding monospace context + label carry meaning, the tint reinforces. */
-.cs-tok-danger {
-  color: var(--cs-danger);
-}
-.cs-tok-accent {
-  color: var(--cs-accent);
-}
-.cs-tok-muted {
-  color: var(--cs-fg-muted);
-}
-.cs-tok-success {
-  color: var(--cs-success);
-}
-
-/* ===== Status chip — glyph + label, never colour-alone (ADR-0078 §7) ===== */
-.cs-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--cs-space-2);
-  padding: var(--cs-space-1) var(--cs-space-3);
-  border: 1px solid var(--cs-border);
-  border-radius: var(--cs-radius-pill);
-  background: var(--cs-surface-1);
-  font-family: var(--cs-font-mono);
-  font-size: var(--cs-text-xs);
-  letter-spacing: var(--cs-tracking-wide);
-  color: var(--cs-fg-muted);
-  white-space: nowrap;
-}
-
-.cs-chip__dot {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: var(--cs-radius-pill);
-  background: currentColor;
-  flex: none;
-}
-
-.cs-chip--accent {
-  color: var(--cs-accent);
-  border-color: color-mix(in oklab, var(--cs-accent) 40%, var(--cs-border));
-}
-.cs-chip--success {
-  color: var(--cs-success);
-}
-.cs-chip--muted {
-  color: var(--cs-fg-muted);
-}
-
-/* ===== Credential strip (V7) ===== */
-.cs-credentials {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--cs-space-3) var(--cs-space-5);
-  font-family: var(--cs-font-mono);
-  font-size: var(--cs-text-xs);
-  letter-spacing: var(--cs-tracking-wide);
-  color: var(--cs-fg-muted);
-}
-
-.cs-credentials__item {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--cs-space-2);
-}
-
-.cs-credentials__sep {
-  color: var(--cs-border-strong);
-}
-
-/* ===== Edition grid — featured-lead hierarchy (V12) ===== */
-.cs-editions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--cs-space-5);
-}
-
-.cs-editions__lead {
-  grid-column: 1 / -1;
-}
-
-@media (max-width: 680px) {
-  .cs-editions {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ===== SKU matrix (V14) ===== */
-.cs-matrix {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--cs-text-sm);
-}
-
-.cs-matrix th,
-.cs-matrix td {
-  padding: var(--cs-space-3) var(--cs-space-4);
-  border-bottom: 1px solid var(--cs-border);
-  text-align: left;
-  vertical-align: top;
-}
-
-.cs-matrix thead th {
-  font-family: var(--cs-font-mono);
-  font-size: var(--cs-text-xs);
-  letter-spacing: var(--cs-tracking-wide);
-  text-transform: uppercase;
-  color: var(--cs-fg-muted);
-  font-weight: var(--cs-weight-medium);
-}
-
-.cs-matrix td.cs-matrix__yes {
-  color: var(--cs-accent);
-}
-
-.cs-matrix__price {
-  font-family: var(--cs-font-mono);
-  font-variant-numeric: tabular-nums;
-  color: var(--cs-fg);
-}
-
-.cs-matrix__wrap {
-  overflow-x: auto;
-}
-
-/* ===== Proof / CI strip (C5) ===== */
+/* ===== Proof / CI strip (page utility — the green-checks substitute for a logo wall, C5) ===== */
 .cs-proof {
   display: flex;
   flex-wrap: wrap;
@@ -657,37 +234,6 @@ kbd,
 
 .cs-proof__check svg {
   color: var(--cs-success);
-}
-
-/* ===== Icon sizing (ADR-0078 §3 — 2px stroke, 24px grid) ===== */
-.cs-icon {
-  display: inline-block;
-  vertical-align: middle;
-  width: 1.25rem;
-  height: 1.25rem;
-  stroke-width: 2;
-}
-
-.cs-icon--lg {
-  width: 1.75rem;
-  height: 1.75rem;
-}
-
-/* ===== Wordmark + glyph ===== */
-.cs-wordmark {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--cs-space-2);
-  font-family: var(--cs-font-mono);
-  font-weight: var(--cs-weight-medium);
-  letter-spacing: -0.02em;
-  color: var(--cs-fg);
-}
-
-.cs-wordmark__glyph {
-  width: 1.25rem;
-  height: 1.25rem;
-  flex: none;
 }
 
 /* ===== Mobile nav (V27) ===== */
@@ -728,6 +274,13 @@ kbd,
   font-size: var(--cs-text-base);
 }
 
+/* Active-page cue + pointer feedback in the drawer — the markup sets aria-current="page" but the
+ * desktop nav had the only matching rule, so mobile users got no wayfinding. Mirror the desktop nav. */
+.cs-nav-mobile a:hover,
+.cs-nav-mobile a[aria-current="page"] {
+  color: var(--cs-fg);
+}
+
 @media (max-width: 900px) {
   .cs-nav-links {
     display: none;
@@ -737,14 +290,7 @@ kbd,
   }
 }
 
-/* ===== Responsive grid tiers — 4-up steps to 2-up before collapsing (V27) ===== */
-@media (min-width: 681px) and (max-width: 1024px) {
-  .cs-grid--4 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-/* ===== Scroll reveal — fade-up-once, gated on cs-js so no-JS shows content (V36/V41) ===== */
+/* ===== Scroll reveal — site Reveal; fade-up-once, gated on cs-js so no-JS shows content (V36/V41) ===== */
 .cs-reveal {
   transition:
     opacity var(--cs-duration-slow) var(--cs-ease-reveal),
@@ -756,22 +302,7 @@ kbd,
   transform: translateY(12px);
 }
 
-/* ===== Forced-colors (Windows high-contrast) — keep affordances visible (X7) ===== */
-@media (forced-colors: active) {
-  .cs-btn,
-  .cs-card,
-  .cs-terminal,
-  .cs-chip {
-    border: 1px solid CanvasText;
-  }
-  .cs-btn--primary {
-    forced-color-adjust: none;
-    background: Highlight;
-    color: HighlightText;
-  }
-}
-
-/* ===== Print (X10) ===== */
+/* ===== Print (X10) — hide chrome, flatten framed surfaces ===== */
 @media print {
   .cs-nav,
   .cs-nav-toggle,
@@ -794,21 +325,11 @@ kbd,
   }
 }
 
-/* ===== Reduced motion — content never stuck at opacity:0 (ADR-0078 §6) ===== */
+/* ===== Reduced motion — the site Reveal never stuck at opacity:0 (ADR-0078 §6). base.css carries
+ * the global transition kill; this re-asserts the reveal un-hide after the Tailwind/Fumadocs imports. ===== */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
-  }
   .cs-js .cs-reveal:not(.is-visible) {
     opacity: 1;
-    transform: none;
-  }
-  .cs-card--interactive:hover {
     transform: none;
   }
 }

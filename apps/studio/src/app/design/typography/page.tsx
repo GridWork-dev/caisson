@@ -53,7 +53,10 @@ function Specimen({ c }: { c: TypeCandidate }) {
         ))}
       </div>
 
-      <p className="spec-body" style={{ fontFamily: c.sans, fontWeight: 350 }}>
+      <p
+        className="spec-body"
+        style={{ fontFamily: c.sans, fontWeight: "var(--cs-weight-body)" }}
+      >
         Retrofitting RLS, WORM storage, and an append-only audit chain into a
         live multi-tenant database costs months. Compliance-grade infrastructure
         for regulated SaaS, wired and tested before your first customer, not

@@ -1,17 +1,18 @@
 import Link from "next/link";
 
-import { Wordmark } from "./brand";
+import { Wordmark } from "@caisson/ui/components";
+
+import { EDITION_ROUTES, LEGAL_ROUTES } from "@/lib/routes";
 import { UpdatesForm } from "./waitlist-form";
 
+// Editions + legal-page links derive from the canonical registry (lib/routes.ts) so they can't
+// drift from the nav/sitemap. Product/Resources stay hand-authored — they mix in docs sub-pages,
+// llms.txt, and the external GitHub link, which are not marketing page routes. The Legal column
+// appends `.well-known/security.txt` (a static file, not a registered page route).
 const COLS: { heading: string; links: { href: string; label: string }[] }[] = [
   {
     heading: "Editions",
-    links: [
-      { href: "/compliance", label: "Compliance" },
-      { href: "/ai-kit", label: "AI Production Kit" },
-      { href: "/local-first", label: "Local-first AI" },
-      { href: "/agentic-dev", label: "Agentic-Dev" },
-    ],
+    links: EDITION_ROUTES.map((r) => ({ href: r.path, label: r.label })),
   },
   {
     heading: "Product",
@@ -36,9 +37,7 @@ const COLS: { heading: string; links: { href: string; label: string }[] }[] = [
   {
     heading: "Legal",
     links: [
-      { href: "/legal/privacy", label: "Privacy policy" },
-      { href: "/legal/terms", label: "Terms of service" },
-      { href: "/legal/license", label: "License" },
+      ...LEGAL_ROUTES.map((r) => ({ href: r.path, label: r.label })),
       { href: "/.well-known/security.txt", label: "Security" },
     ],
   },

@@ -3,7 +3,7 @@
 
 :root,
 [data-theme="dark"] {
-  /* colour — semantic (dark) */
+  /* colour — semantic (dark, default) */
   --cs-bg: oklch(0.16 0.012 220);
   --cs-surface-1: oklch(0.20 0.013 220);
   --cs-surface-2: oklch(0.25 0.014 220);
@@ -18,6 +18,7 @@
   --cs-focus: oklch(0.74 0.115 205);
   --cs-link: oklch(0.78 0.10 205);
   --cs-glow-accent: 0 0 0 1px oklch(0.74 0.115 205 / 0.40), 0 0 28px oklch(0.74 0.115 205 / 0.22);
+  --cs-scrim: oklch(0.1 0.012 220 / 0.6);
   /* functional / status */
   --cs-success: oklch(0.72 0.15 150);
   --cs-warning: oklch(0.78 0.13 75);
@@ -80,8 +81,10 @@
   --cs-shadow-lg: 0 18px 48px oklch(0 0 0 / 0.50), 0 6px 14px oklch(0 0 0 / 0.32);
 }
 
-[data-theme="light"] {
-  /* colour — semantic (light); shared type/scale/functional inherited from :root */
+/* OS-seed: follow the system's light preference until the user pins a theme. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    /* colour — semantic + functional (light, OS-seeded) */
   --cs-bg: oklch(0.99 0.003 220);
   --cs-surface-1: oklch(0.975 0.005 220);
   --cs-surface-2: oklch(0.95 0.006 220);
@@ -89,11 +92,43 @@
   --cs-border-strong: oklch(0.80 0.010 220);
   --cs-fg: oklch(0.22 0.015 220);
   --cs-fg-muted: oklch(0.45 0.018 220);
-  --cs-accent: oklch(0.55 0.13 215);
+  --cs-accent: oklch(0.50 0.13 215);
   --cs-accent-hover: oklch(0.48 0.13 215);
   --cs-on-accent: oklch(0.99 0.01 220);
   --cs-accent-tint: oklch(0.93 0.03 205);
-  --cs-focus: oklch(0.55 0.13 215);
+  --cs-focus: oklch(0.50 0.13 215);
   --cs-link: oklch(0.50 0.13 215);
-  --cs-glow-accent: 0 0 0 1px oklch(0.55 0.13 215 / 0.28), 0 0 22px oklch(0.55 0.13 215 / 0.16);
+  --cs-glow-accent: 0 0 0 1px oklch(0.50 0.13 215 / 0.28), 0 0 22px oklch(0.50 0.13 215 / 0.16);
+  --cs-scrim: oklch(0.22 0.015 220 / 0.45);
+  /* functional / status */
+  --cs-success: oklch(0.50 0.15 150);
+  --cs-warning: oklch(0.50 0.12 75);
+  --cs-danger: oklch(0.50 0.19 25);
+  --cs-info: oklch(0.50 0.13 240);
+  }
+}
+
+/* manual override — wins over the OS seed */
+[data-theme="light"] {
+  /* colour — semantic + functional (light); shared type/scale inherited from :root */
+  --cs-bg: oklch(0.99 0.003 220);
+  --cs-surface-1: oklch(0.975 0.005 220);
+  --cs-surface-2: oklch(0.95 0.006 220);
+  --cs-border: oklch(0.88 0.008 220);
+  --cs-border-strong: oklch(0.80 0.010 220);
+  --cs-fg: oklch(0.22 0.015 220);
+  --cs-fg-muted: oklch(0.45 0.018 220);
+  --cs-accent: oklch(0.50 0.13 215);
+  --cs-accent-hover: oklch(0.48 0.13 215);
+  --cs-on-accent: oklch(0.99 0.01 220);
+  --cs-accent-tint: oklch(0.93 0.03 205);
+  --cs-focus: oklch(0.50 0.13 215);
+  --cs-link: oklch(0.50 0.13 215);
+  --cs-glow-accent: 0 0 0 1px oklch(0.50 0.13 215 / 0.28), 0 0 22px oklch(0.50 0.13 215 / 0.16);
+  --cs-scrim: oklch(0.22 0.015 220 / 0.45);
+  /* functional / status */
+  --cs-success: oklch(0.50 0.15 150);
+  --cs-warning: oklch(0.50 0.12 75);
+  --cs-danger: oklch(0.50 0.19 25);
+  --cs-info: oklch(0.50 0.13 240);
 }

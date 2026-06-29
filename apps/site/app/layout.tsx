@@ -1,4 +1,5 @@
 import "@caisson/ui/styles/tokens.css";
+import "@caisson/ui/styles/base.css";
 import "./global.css";
 
 import type { Metadata, Viewport } from "next";
@@ -36,12 +37,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html
-      lang="en"
-      data-theme="dark"
-      className={fontVariables}
-      suppressHydrationWarning
-    >
+    <html lang="en" className={fontVariables} suppressHydrationWarning>
       <head>
         {/* Self-hosted fonts (next/font, lib/fonts.ts) — no render-blocking Google <link>.
             No-flash theme set is externalized to /theme-init.js so script-src can drop

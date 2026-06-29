@@ -85,7 +85,7 @@ const sealed = aesgcm.seal(dek, sensitiveTrainingField);
     article: "Article 9 · Annex IV §5",
     label: "Accuracy and robustness testing",
     title: "Eval harness gates every pull request against a golden set.",
-    body: "Article 9 risk-management and Annex IV §5 require documented testing for accuracy, robustness, and cybersecurity. The AI Production Kit (in development) ships a golden-file eval harness that gates pull requests on score regression past a declared tolerance — the gate is config in the repo, not a dashboard claim.",
+    body: "Article 9 risk-management and Annex IV §5 require documented testing for accuracy, robustness, and cybersecurity. The AI Production Kit ships a golden-file eval harness that gates pull requests on score regression past a declared tolerance — the gate is config in the repo, not a dashboard claim.",
     evidence: `# caisson.ai.toml — eval gate configuration (AI Production Kit)
 # Wires CI to fail the PR when accuracy drops past the declared tolerance.
 # The golden set, baseline, and report are repo artifacts an assessor can read.

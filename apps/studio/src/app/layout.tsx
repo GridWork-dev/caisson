@@ -1,8 +1,11 @@
 import "@caisson/ui/styles/tokens.css";
+import "@caisson/ui/styles/base.css";
 import "./globals.css";
 
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+
+import { themeInitScript } from "@caisson/ui/components";
 
 import { Topbar } from "@/components/topbar";
 
@@ -20,12 +23,9 @@ const FONTS_HREF =
   "&family=JetBrains+Mono:wght@400;500;600" +
   "&family=Martian+Mono:wght@300;400;500;600&display=swap";
 
-// Set theme before paint to avoid a flash if the operator previously chose light.
-const NO_FLASH = `try{var t=localStorage.getItem('cs-theme');if(t)document.documentElement.setAttribute('data-theme',t);}catch(e){}`;
-
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" data-theme="dark" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
@@ -34,7 +34,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           crossOrigin="anonymous"
         />
         <link rel="stylesheet" href={FONTS_HREF} />
-        <script dangerouslySetInnerHTML={{ __html: NO_FLASH }} />
+        {/* 3-prong dark mode (ADR-0100 F3): the kit's pre-paint script pins ONLY an operator
+            choice; with none, CSS follows the OS. No hardcoded data-theme → OS-follow is live. */}
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body>
         <Topbar />

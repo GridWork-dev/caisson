@@ -8,20 +8,37 @@ import {
   type RefObject,
 } from "react";
 
-// Fade-up-once scroll reveal (V36). The `.cs-reveal` hidden state is gated on `.cs-js` in CSS, so
-// with no JS (or before hydration) content is fully visible — progressive enhancement, never a
-// stuck `opacity:0`. Respects prefers-reduced-motion via the global.css reduced-motion override.
+import "./reveal.css";
+
+export interface RevealProps {
+  children: ReactNode;
+  /** Polymorphic root tag. Default `div`. */
+  as?: "div" | "section" | "li" | "article";
+  className?: string;
+  /** Per-instance stagger, ms. Applied as the one dynamic `transitionDelay`. */
+  delay?: number;
+}
+
+/**
+ * Fade-up-once scroll reveal (recipe kit port of the old `apps/site` primitive, ADR-0099).
+ *
+ *   1. CLIENT — uses `IntersectionObserver` + `useState`/`useEffect`/`useRef`, so `"use client"`.
+ *   2. Co-located plain CSS (`reveal.css`) reading only `var(--cs-*)`; the hidden state is gated on
+ *      `.cs-js` (the consuming app sets `.cs-js` on `<html>` pre-paint), so with no JS — or before
+ *      hydration — content is fully visible. Never a stuck `opacity:0`.
+ *   3. `prefers-reduced-motion` honored both in JS (skip the observer, reveal immediately) and in
+ *      CSS (the co-located reduced-motion block forces the hidden state visible).
+ *
+ * Polymorphism here is a fixed tag-name union via `as` (not Radix `Slot`/`asChild`): the element
+ * always renders one of a few block-level tags and owns its own internal ref for the observer, so
+ * there is no consumer ref to forward.
+ */
 export function Reveal({
   children,
   as: Tag = "div",
   className,
   delay = 0,
-}: {
-  children: ReactNode;
-  as?: "div" | "section" | "li" | "article";
-  className?: string;
-  delay?: number;
-}) {
+}: RevealProps) {
   const ref = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(false);
 
