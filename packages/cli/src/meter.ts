@@ -1,8 +1,11 @@
 // The codegen credit-debit seam (ADR-0049/0024/0007). Every generation meters a credit DEBIT
 // BEFORE any file is written (debit-before-spend): a short balance returns 402 and nothing is
-// written; a retried generation with the same `idempotencyKey` debits once. Both `create-caisson`
-// and the buyer MCP call `runGeneration`, minting/accepting one `idempotencyKey` (UUID) per
-// generation. Runs inside `withTenant` so the debit + the ledger are tenant-scoped (ADR-0005).
+// written; a retried generation with the same `idempotencyKey` debits once. The HOSTED buyer MCP
+// calls `runGeneration`, minting/accepting one `idempotencyKey` (UUID) per generation. The local
+// `create-caisson` CLI generates FREE — no DB/tenant context on the buyer's machine, so it calls
+// `generate` + the writer directly and never `runGeneration`; its monetization is the license-gated
+// package install (NODE_AUTH_TOKEN), not a codegen credit (ADR-0093). Runs inside `withTenant` so
+// the debit + the ledger are tenant-scoped (ADR-0005).
 import { fileURLToPath } from "node:url";
 import type { CreditResult } from "@caisson/credits";
 import { debit } from "@caisson/credits";
