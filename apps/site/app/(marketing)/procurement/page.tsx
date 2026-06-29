@@ -1,6 +1,4 @@
-import Link from "next/link";
-
-import { Section, Card, Icon, Reveal } from "@/components";
+import { Button, Section, Card, Icon, Reveal } from "@/components";
 import { buildMetadata } from "@/lib/metadata";
 import { serializeJsonLd, breadcrumb, faqPage } from "@/lib/jsonld";
 
@@ -238,18 +236,15 @@ export default function ProcurementPage() {
             flexWrap: "wrap",
           }}
         >
-          <a
-            href="mailto:security@caisson.sh"
-            className="cs-btn cs-btn--primary"
-          >
+          <Button href="mailto:security@caisson.sh" external variant="primary">
             Email security@caisson.sh
-          </a>
-          <a href="/.well-known/security.txt" className="cs-btn cs-btn--ghost">
+          </Button>
+          <Button href="/.well-known/security.txt" external variant="ghost">
             security.txt
-          </a>
-          <Link href="/security" className="cs-btn cs-btn--ghost">
+          </Button>
+          <Button href="/security" variant="ghost">
             Security page
-          </Link>
+          </Button>
         </div>
       </Section>
 
@@ -302,12 +297,12 @@ export default function ProcurementPage() {
             flexWrap: "wrap",
           }}
         >
-          <Link href="/pricing" className="cs-btn cs-btn--primary">
+          <Button href="/pricing" variant="primary">
             Get Compliance
-          </Link>
-          <Link href="/docs" className="cs-btn cs-btn--ghost">
+          </Button>
+          <Button href="/docs" variant="ghost">
             Read the docs
-          </Link>
+          </Button>
         </div>
       </Section>
     </>

@@ -1,4 +1,4 @@
-import { Section, Card, StatusChip, Reveal } from "@/components";
+import { Button, Section, Card, StatusChip, Reveal } from "@/components";
 import { buildMetadata } from "@/lib/metadata";
 import { serializeJsonLd, techArticle, breadcrumb } from "@/lib/jsonld";
 import { CHANGELOG_ENTRIES, FEED_RSS_URL } from "@/lib/changelog";
@@ -43,13 +43,14 @@ export default function ChangelogPage() {
         lede="New modules, control mappings, and framework coverage. The single-source feed for what ships and what changes."
       >
         <div style={{ marginTop: "var(--cs-space-5)" }}>
-          <a
+          <Button
             href={FEED_RSS_URL}
-            className="cs-btn cs-btn--ghost"
+            external
+            variant="ghost"
             aria-label="Subscribe via RSS"
           >
             RSS feed
-          </a>
+          </Button>
         </div>
       </Section>
 

@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 
+import { Button } from "./button";
+
 // Mobile hamburger nav (V27). The toggle + drawer are display:none above 680px (global.css); the
 // shell's desktop link row stays as-is. Closes on route change and on Escape.
 export function MobileNav({
@@ -61,13 +63,13 @@ export function MobileNav({
           );
         })}
         {cta && (
-          <Link
+          <Button
             href={cta.href}
-            className="cs-btn cs-btn--primary"
+            variant="primary"
             style={{ marginTop: "var(--cs-space-3)" }}
           >
             {cta.label}
-          </Link>
+          </Button>
         )}
       </nav>
     </>
