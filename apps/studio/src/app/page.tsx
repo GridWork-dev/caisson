@@ -32,8 +32,9 @@ const SURFACES: Surface[] = [
   { title: "Motion", desc: "Easing + duration tokens.", state: "later" },
   {
     title: "Components",
-    desc: "Button / surface / text primitives, live gallery.",
-    state: "later",
+    desc: "The @caisson/ui kit, rendered live (ADR-0097 recipe).",
+    state: "ready",
+    href: "/components",
   },
   { title: "Wordmark", desc: "Logo + mark treatments.", state: "later" },
 ];
