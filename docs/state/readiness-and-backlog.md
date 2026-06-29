@@ -23,13 +23,14 @@ ai-kit, ai-meter, cli, field-crypto, guardrails, prompt-registry`) — the regis
 - **Whole-monorepo gate** — `bun run gate` (standards-gate) green ("36 checked, 2 scaffold-skipped,
   all conform, ADR-0002"); `turbo run build lint test` green on-box (`--concurrency=50%` per the
   PGlite-fan-out gotcha).
-- **CI moved onto the self-hosted fleet** (this session). Caisson's 3 GridWork-dev runners
-  (`gw-linux-amd64` · `gw-linux-arm64` · `gw-macos-arm64`) are registered + ONLINE; the 6 pure-compute
-  gate jobs (`standards-gate` · `check` · `eval` · `registry-index` · `token-drift` · `native-ext`
-  both legs) now `runs-on` the fleet, while the 3 write/deploy/browser jobs (`publish-and-index` ·
-  `deploy-site` · `lighthouse`) deliberately stay GitHub-hosted. Posture + first-run verification:
-  `docs/operations.md` §7 (the CI owner). **Pending verify:** confirm fleet jobs pick up runners on
-  the first PR + the macOS leg's Homebrew-SQLite prereq on the Mac mini.
+- **CI moved onto the self-hosted fleet** (this session, PR#22). Caisson's 3 GridWork-dev runners
+  (`gw-linux-amd64` · `gw-linux-arm64` · `gw-macos-arm64`) are registered + ONLINE; the pure-compute
+  gate jobs (`standards-gate` · `check` · `eval` · `registry-index` · `token-drift` + `native-ext`
+  linux leg) now `runs-on` the fleet, while the write/deploy/browser jobs (`publish-and-index` ·
+  `deploy-site` · `lighthouse`) deliberately stay GitHub-hosted. **First-run verified on PR#22:** the
+  amd64 jobs dispatch + run (they serialize on the one amd64 runner; `eval` passed first). Posture +
+  the CI owner doc: `docs/operations.md` §7. **Open follow-up (below):** the macOS `native-ext` leg is
+  still on GitHub-hosted `macos-latest` — the fleet macOS lane dispatches but lacks Homebrew SQLite.
 
 ## 1. Live-test readiness matrix
 
@@ -116,6 +117,14 @@ needs a real external account, infra, or deploy (DEPLOY-class, operator-gated).
   settings, tracked on the fork board).
 - **`CAISSON_PUBLISH_DRY_RUN`** — the `publish-and-index` job is wired + active but dry-run by default;
   set `=false` to actually publish (moot until editions are GA + the publishability flip lands).
+- **Move the macOS `native-ext` CI leg onto the fleet** — provision Homebrew + extension-capable
+  SQLite for the Mac mini's runner user, then flip that leg `runs-on: macos-latest` → `runs-on:
+[self-hosted, gw-macos-arm64]` (saves the ~10×-cost hosted macOS minutes). The fleet macOS lane
+  already dispatches (checkout + `bun install` green on PR#22); only the `brew install sqlite` prereq
+  is missing. `docs/operations.md` §7.
+- **Single amd64 runner serializes fleet CI** — the gate jobs run one-at-a-time on the one
+  `gw-linux-amd64` runner (vs parallel on GitHub-hosted), so PR wall-clock is the serial sum. Fine for
+  a solo repo; add a second amd64 lane if wall-clock becomes a constraint.
 
 ## 3. Next-work backlog (prioritized, fork-gated)
 
