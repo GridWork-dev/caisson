@@ -32,6 +32,7 @@ const SEMANTIC_VARS: ReadonlyArray<readonly [keyof SemanticTheme, string]> = [
   ["focus", "focus"],
   ["link", "link"],
   ["glowAccent", "glow-accent"],
+  ["scrim", "scrim"],
 ];
 
 function semanticBlock(theme: SemanticTheme): string {
@@ -74,16 +75,31 @@ function sharedBlock(): string {
   return lines.join("\n");
 }
 
+// 3-prong dark mode (ADR-0098 F3). Dark is the un-attributed default (:root). The OS-seed block
+// follows prefers-color-scheme:light UNLESS the user has explicitly chosen — the
+// `:root:not([data-theme="dark"])` selector (specificity 0,2,0) beats the base `:root` (0,1,0),
+// so OS-light wins by default but a manual `[data-theme]` choice still wins (it nulls the :not or
+// matches the equal-specificity later rule). No JS needed for the OS follow; the ThemeToggle only
+// writes [data-theme] once the user pins a choice.
 const css = `/* GENERATED — packages/ui/scripts/gen-tokens-css.ts. Do not edit by hand.
  * Locked selection: palette "${selected.palette}", type "${selected.type}". Run: bun run gen:tokens */
 
 :root,
 [data-theme="dark"] {
-  /* colour — semantic (dark) */
+  /* colour — semantic (dark, default) */
 ${semanticBlock(darkTheme)}
 ${sharedBlock()}
 }
 
+/* OS-seed: follow the system's light preference until the user pins a theme. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    /* colour — semantic (light, OS-seeded) */
+${semanticBlock(lightTheme)}
+  }
+}
+
+/* manual override — wins over the OS seed */
 [data-theme="light"] {
   /* colour — semantic (light); shared type/scale/functional inherited from :root */
 ${semanticBlock(lightTheme)}
