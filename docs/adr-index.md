@@ -9,16 +9,17 @@ conflict, the ADR file and the board win over this index.
 - ADRs are append-only and immutable (ADR-0006). A later ADR _supersedes_ a clause; it
   never edits the prior file. So most rows below are **partial** supersessions (one clause),
   not a wholesale replacement.
-- 73 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 73). Numbering is **not**
-  contiguous: present are **0001-0024** and **0040-0088**; **0025-0039 are an unused gap**
+- 78 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 78). Numbering is **not**
+  contiguous: present are **0001-0024** and **0040-0093**; **0025-0039 are an unused gap**
   (no files). The 0040 jump was a deliberate block reservation for the brand/positioning set.
+  **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit).
 - Status tokens read from each ADR's own header line:
   - `proposed` = literal header value on the founding + foundations sets (0001-0019, 0024).
     Per the board (line 90) these are **in force / locked** despite the stale "proposed"
     header text written during the Phase-5 spec; the header was never updated. See accuracy
     flags at the bottom.
   - `locked` = D9 module-pipeline set (0020-0023).
-  - `accepted` = brand/wave-0/wave-1/design/gtm sets (0040-0088).
+  - `accepted` = brand/wave-0/wave-1/design/gtm sets + picker-round locks (0040-0093).
 
 Domain detail and rationale: read the ADR file. Architecture overview: `specs/01-architecture.md`.
 Product framing: `specs/00-product-spec.md`. Build plan: `plan.md`.
@@ -202,6 +203,20 @@ implements as stated in each ADR header.
 | #                                                                        | Title                                                      | Domain | Status   | Relations                                      |
 | ------------------------------------------------------------------------ | ---------------------------------------------------------- | ------ | -------- | ---------------------------------------------- |
 | [0088](../knowledge/decisions/ADR-0088-adr-number-collision-renumber.md) | Resolve 0045-0048 collision: renumber GTM set -> 0084-0087 | Meta   | accepted | knowingly exempts 0006 immutability (one-time) |
+
+### Picker-round locks (0089-0093, 2026-06-28) - status `accepted`
+
+Eight open forks decided in a two-round operator picker (research from a 12-agent workflow). Five
+locked as ADRs below; three deferred to P6 on the board (publishability flip, MCP rate-limit, final
+pricing numbers).
+
+| #                                                                             | Title                                                                 | Domain    | Status   | Relations                                            |
+| ----------------------------------------------------------------------------- | --------------------------------------------------------------------- | --------- | -------- | ---------------------------------------------------- |
+| [0089](../knowledge/decisions/ADR-0089-billing-credit-grant.md)               | Subscription cycle -> credit grant + commerce price-book (closes X-2) | Billing   | accepted | composes 0007/0012/0017/0024/0060; build at P6       |
+| [0090](../knowledge/decisions/ADR-0090-caisson-migrate-base-package.md)       | Promote @caisson/migrate base pkg (full extract)                      | Generator | accepted | resolves 0070 impl fork; ADR-0003                    |
+| [0091](../knowledge/decisions/ADR-0091-compose-time-migration-bundling.md)    | Compose-time migration bundling via CLI build-step copy               | Generator | accepted | resolves bundling fork; 0070/0014; relocatable→0090  |
+| [0092](../knowledge/decisions/ADR-0092-create-caisson-bin-runtime.md)         | create-caisson bin -> dist/cli.js + node shebang (npx reach)          | CLI       | accepted | operator override; impl at P6 w/ publishability 0021 |
+| [0093](../knowledge/decisions/ADR-0093-local-cli-free-codegen-debit-scope.md) | Local CLI free; codegen debit scoped to hosted path                   | CLI       | accepted | clarifies 0049; 0024/0005/0008                       |
 
 ---
 

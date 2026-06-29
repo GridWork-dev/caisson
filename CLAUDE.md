@@ -20,7 +20,7 @@ edited — supersede with a later ADR).
 ## Source-of-truth hierarchy
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
-2. `knowledge/decisions/` — the ADRs themselves (**0001–0088**: 0001–0024 founding+substrate+pipeline · 0040–0044 brand+crypto+framework · 0045–0049 Wave-0 substrate · 0050–0077 Wave-1 editions · 0078–0083 design+go-live · 0084–0088 GTM+collision-fix; append-only, all locked). Canonical ADR catalog: `docs/adr-index.md`
+2. `knowledge/decisions/` — the ADRs themselves (**0001–0093**: 0001–0024 founding+substrate+pipeline · 0040–0044 brand+crypto+framework · 0045–0049 Wave-0 substrate · 0050–0077 Wave-1 editions · 0078–0083 design+go-live · 0084–0088 GTM+collision-fix · 0089–0093 picker-round locks (billing-X2/migrate/mig-bundle/bin/local-debit); append-only, all locked). Canonical ADR catalog: `docs/adr-index.md`
 3. `specs/` — locked concept docs; `specs/00-product-spec.md` is the founding spec
 4. `plan.md` / `SUMMARY.md` — build plan + consolidated summary
 5. `outputs/` — session artifacts (kickoffs, research, syntheses)
