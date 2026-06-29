@@ -14,6 +14,8 @@
  */
 import { join } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import ts from "typescript";
 import type { Pkg } from "./workspace";
 import { isAgpl } from "./workspace";
 
@@ -211,6 +213,77 @@ export async function checkManifestAgreement(pkgs: Pkg[]): Promise<Finding[]> {
     const md = [...(manifest.dependencies ?? [])].sort().join(",");
     const pd = [...p.workspaceDeps].sort().join(",");
     mismatch("dependencies", md, pd);
+  }
+  return findings;
+}
+
+/**
+ * Gate #4 — TS-compiler copy-guard (ADR-0099). Flags a source module COPY-PASTED across packages:
+ * two `src/**` modules in *different* workspace packages whose code is token-identical. The motivating
+ * case is the contrast spot-check that was hand-duplicated (and drifted) across apps/site + apps/studio
+ * (ADR-0099 Context) — shared logic belongs in ONE package, imported, not copied.
+ *
+ * Normalization is done with the TypeScript SCANNER (not a text hash): trivia — all whitespace AND
+ * comments — is skipped, so reformatting or a reworded header never hides a copy, and a genuine
+ * comment-only difference never *creates* a false copy. Files below MIN_TOKENS are ignored so trivial
+ * re-export barrels / tiny stubs that happen to coincide don't trip the gate. Tests + .d.ts + golden
+ * fixtures are out of scope (intentional shared shapes / generated).
+ */
+const COPY_MIN_TOKENS = 80;
+
+function tokenizeNormalized(src: string): { norm: string; count: number } {
+  const scanner = ts.createScanner(
+    ts.ScriptTarget.Latest,
+    /* skipTrivia */ true,
+    ts.LanguageVariant.JSX,
+    src,
+  );
+  const toks: string[] = [];
+  let k = scanner.scan();
+  while (k !== ts.SyntaxKind.EndOfFileToken) {
+    toks.push(scanner.getTokenText());
+    k = scanner.scan();
+  }
+  return { norm: toks.join(""), count: toks.length };
+}
+
+const COPY_SKIP =
+  /(?:\.test\.|\.integration\.test\.|\.d\.ts$|__golden__|[/\\](?:dist|node_modules|\.next|\.turbo)[/\\])/;
+
+export function checkCopyPaste(root: string): Finding[] {
+  // Bun.Glob (this gate runs under bun, via cli.ts). `{packages,apps,tooling}/*/src/**` is the
+  // published+app+tooling source surface; the leading `*` is the package dir → the "different
+  // package" key.
+  const glob = new Bun.Glob("{packages,apps,tooling}/*/src/**/*.{ts,tsx}");
+  const byHash = new Map<string, { file: string; pkg: string }[]>();
+  for (const rel of glob.scanSync({ cwd: root })) {
+    if (COPY_SKIP.test(rel)) continue;
+    const { norm, count } = tokenizeNormalized(
+      readFileSync(join(root, rel), "utf8"),
+    );
+    if (count < COPY_MIN_TOKENS) continue;
+    const hash = createHash("sha256").update(norm).digest("hex");
+    const pkg = rel.split(/[/\\]/).slice(0, 2).join("/");
+    const bucket = byHash.get(hash) ?? [];
+    bucket.push({ file: rel, pkg });
+    byHash.set(hash, bucket);
+  }
+  const findings: Finding[] = [];
+  for (const group of byHash.values()) {
+    const pkgs = new Set(group.map((g) => g.pkg));
+    // Only ACROSS packages — an intentional in-package duplicate is a different (local) smell.
+    if (group.length > 1 && pkgs.size > 1) {
+      findings.push({
+        severity: "error",
+        rule: "copy-guard",
+        pkg: [...pkgs].join(", "),
+        message: `token-identical module copy-pasted across packages: ${group
+          .map((g) => g.file)
+          .join(
+            " ≡ ",
+          )} — extract to ONE shared package and import it, don't copy (ADR-0099 #4).`,
+      });
+    }
   }
   return findings;
 }

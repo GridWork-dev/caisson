@@ -619,6 +619,20 @@
       "name": "@caisson/service-license",
       "version": "0.0.0",
     },
+    "tooling/design-critic": {
+      "name": "@caisson/design-critic",
+      "version": "0.0.0",
+      "bin": {
+        "design-critic-reconcile": "./src/cli.ts",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
+    },
     "tooling/eslint-config": {
       "name": "@caisson/eslint-config",
       "version": "0.0.0",
@@ -767,6 +781,8 @@
     "@caisson/compliance": ["@caisson/compliance@workspace:packages/compliance"],
 
     "@caisson/credits": ["@caisson/credits@workspace:packages/credits"],
+
+    "@caisson/design-critic": ["@caisson/design-critic@workspace:tooling/design-critic"],
 
     "@caisson/email": ["@caisson/email@workspace:packages/email"],
 

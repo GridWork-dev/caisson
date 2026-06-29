@@ -8,7 +8,7 @@
   gap: var(--cs-space-5);
 }
 
-@media (max-width: 680px) {
+@media (max-width: 48rem) {
   .cs-editions {
     grid-template-columns: 1fr;
   }

@@ -8,6 +8,7 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import { boundaries } from "./boundaries.js";
+import { antiSlop } from "./anti-slop.js";
 
 /** @type {import("typescript-eslint").ConfigArray} */
 export default tseslint.config(
@@ -51,6 +52,9 @@ export default tseslint.config(
   // D9 import-boundary rules (ADR-0011/0022): provider-SDK denylist. Static backstop;
   // dependency-cruiser is the authoritative dynamic/transitive layer.
   ...boundaries,
+  // Anti-slop AST guard (ADR-0099 gate #3): bans inline-style / raw-colour / AI-slop copy in kit
+  // components — the recipe (ADR-0097) enforced statically. Scoped to packages/ui today (staged).
+  ...antiSlop,
   {
     ignores: ["dist/**", "**/*.d.ts", "migrations/**", "**/__golden__/**"],
   },

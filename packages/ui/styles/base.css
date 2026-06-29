@@ -82,14 +82,17 @@ kbd,
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-/* 4-up steps to 2-up before collapsing to 1-up (V27). */
-@media (min-width: 681px) and (max-width: 1024px) {
+/* 4-up steps to 2-up (≤ lg rung) before every grid collapses to 1-up (≤ md rung). Both widths are
+ * rungs on the ADR-0098 rem ladder (lg 60rem / md 48rem) — enforced by the breakpoint guard
+ * (ADR-0099 #5). Source order matters: the lg block sets 4-up→2-up, the md block (later) wins below
+ * 48rem and forces 1fr. */
+@media (max-width: 60rem) {
   .cs-grid--4 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 860px) {
+@media (max-width: 48rem) {
   .cs-grid--2,
   .cs-grid--3,
   .cs-grid--4 {

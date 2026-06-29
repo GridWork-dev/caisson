@@ -22,6 +22,7 @@ import {
   checkDownOnly,
   checkDeclarations,
   checkManifestAgreement,
+  checkCopyPaste,
   type Finding,
 } from "./checks";
 
@@ -34,6 +35,7 @@ async function main(): Promise<number> {
     ...checkDownOnly(pkgs),
     ...checkDeclarations(pkgs),
     ...(await checkManifestAgreement(pkgs)),
+    ...checkCopyPaste(root), // ADR-0099 gate #4: cross-package copy-paste
   ];
 
   const errors = findings.filter((f) => f.severity === "error");

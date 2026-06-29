@@ -34,8 +34,8 @@
   margin-top: var(--cs-space-8);
 }
 
-/* Collapse the split to a single stacked column on tablet/below (ladder width, ADR-0098). */
-@media (max-width: 1024px) {
+/* Collapse the split to a single stacked column on tablet/below (lg rung, ADR-0098 ladder). */
+@media (max-width: 60rem) {
   .cs-hero {
     grid-template-columns: 1fr;
   }
