@@ -1,0 +1,7 @@
+{
+  "strictness": 2,
+  "commentTypes": ["logic", "syntax", "style"],
+  "excludeAuthors": ["dependabot[bot]", "*-bot"],
+  "excludeBranches": ["dependabot/**"],
+  "ignorePatterns": "bun.lock\n**/dist/**\n**/*.d.ts\n**/__golden__/**\n**/*.snap\n**/migrations-bundle/**\n**/.next/**\n**/coverage/**\nregistry/index.json"
+}
