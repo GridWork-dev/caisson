@@ -173,12 +173,14 @@ Work is bucketed into two disjoint-tree tracks; **sequencing is the next operato
   kit-first, hero "the denial" → "break the chain" standout → caisson cross-section diagram). Touches
   `packages/ui` + `apps/site` + `apps/studio`. Research: `wardfile-frontend-playbook.md` +
   `marketing-hero-concepts.md`.
-- **Code/wiring track** — `outputs/kickoffs/code-wiring-track.md`. Buckets: **A** fast-follows (W2
-  `@caisson/migrate` extract + bundle · W1 open-core re-licensing) → **B** P6 commerce spine
-  (`@caisson/pricebook` · `services/license` annual cycle→grant · entitlement resolver · worker
-  filtering · dashboards) → **C** support/docs → **D** publish-readiness (flip · npx bin · index
-  backfill) → **E** GTM (free EU-AI-Act sample · Enterprise tier) → **F** live-test runbook (W8).
-  Touches `services/*` + `packages/{migrate,cli,billing,…}` + `tooling/` + `registry/`.
+- **Code/wiring track** — `outputs/kickoffs/code-wiring-track.md`. **Bucket-A progress: W1 open-core
+  re-licensing ✅ SHIPPED** (ADR-0097: open `@caisson/registry-schema` split + 11 base pkgs → Apache-2.0
+  - standards-gate enforces the split & open↔commercial boundary; `apps/site` licensing copy is the
+    design-track tail). Buckets: **A** fast-follows (W2 `@caisson/migrate` extract + bundle · ~~W1~~) → **B** P6 commerce spine
+    (`@caisson/pricebook` · `services/license` annual cycle→grant · entitlement resolver · worker
+    filtering · dashboards) → **C** support/docs → **D** publish-readiness (flip · npx bin · index
+    backfill) → **E** GTM (free EU-AI-Act sample · Enterprise tier) → **F** live-test runbook (W8).
+    Touches `services/*` + `packages/{migrate,cli,billing,…}` + `tooling/` + `registry/`.
 
 The two tracks touch **disjoint trees** → can run as parallel worktree streams (playbook §4), merged
 at a barrier. The codebase carries **zero** accidental TODO/FIXME markers; all in-source "seams" are

@@ -65,8 +65,11 @@ implementation**. The harvestable license kit is taken from PUBLIC `tessera`.
   flank removed by **ADR-0083**); `tooling/`+`registry/` is the seam. **Open-core amendment (ADR-0094,
   2026-06-29):** the **Base substrate** (kernel·auth·tenancy-rls·ui·billing·credits·jobs·email·ai-config·
   mcp-server) is now **Apache-2.0**; editions + field-crypto + audit-worm + generator + registry +
-  updates stay commercial. Re-licensing the standards-gate + manifests is **scheduled** (work item W1,
-  not yet in code).
+  updates stay commercial. Re-licensing is **DONE in code** (work item W1, ADR-0094 + **ADR-0097**):
+  the open registry contract split into Apache-2.0 `@caisson/registry-schema` (the commercial
+  `@caisson/registry` service re-exports it); 11 base pkgs flipped to Apache-2.0/oss + Apache `LICENSE`
+  files; the standards-gate enforces the license split + the open↔commercial no-depend-up boundary.
+  Remaining W1 tail: `apps/site` licensing copy (design track owns that tree).
 - **Site go-live posture** — LOCKED (**ADR-0082**): the site reads **live self-serve** (purchase CTAs,
   no waitlist), **committed prices** (no "indicative/subject-to-change" frame — supersedes ADR-0081),
   **artifacts true-to-built** (no fabricated CLI/CI for the unbuilt editions); Agentic-Dev the one

@@ -9,7 +9,7 @@ import {
   NotFoundError,
   ValidationError,
 } from "@caisson/kernel";
-import { loadRegistryIndex } from "@caisson/registry";
+import { loadRegistryIndex } from "@caisson/registry-schema";
 import {
   createMcpServer,
   type GenerateContext,
