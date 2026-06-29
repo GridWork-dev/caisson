@@ -153,12 +153,33 @@ Compliance vertical packs · AI-feature packs · local-first verticals · the mo
 
 ## 4. Open operator decisions (forks needing a picker)
 
-| Fork                                       | Status                                                         | Why it needs you                                                                                                                  |
-| ------------------------------------------ | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| **Final pricing numbers + grandfathering** | standing open (ADR-0012); display already committed (ADR-0082) | the only pure-operator-owned item; gates the X-2 `creditsPerCycle`/`codegenRunCredits` numbers + dashboard credit displays        |
-| **`services/docs` scope**                  | **NEW — no ADR pins it**                                       | separate AI-native docs _service_ vs extend `apps/site` Fumadocs + `llms.txt` + a buyer-agent endpoint; changes the P6 docs build |
-| **Cloudflare Access go-live gate**         | configured; gating the site                                    | removing it is the public-launch act (DEPLOY-class) — paired with Stripe config                                                   |
+| Fork                                       | Status                          | Why it needs you                                                                                         |
+| ------------------------------------------ | ------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| ~~Final pricing numbers + grandfathering~~ | **CLOSED — ADR-0095**           | deliberately deferred to P6/checkout; reports' $2,999–$4,999 anchor + ICP/keyword validation = the input |
+| ~~`services/docs` scope~~                  | **CLOSED — ADR-0096**           | standalone AI-native docs service (separate from `apps/site` Fumadocs)                                   |
+| **Cloudflare Access go-live gate**         | **decided (board): keep gated** | flip only when checkout works + Compliance is buyable — the deliberate launch act (DEPLOY-class)         |
 
-_Everything else surfaced this session is either locked (ADRs 0089–0093 + the deferred-fork set) or a
-by-design seam. The codebase carries **zero** accidental TODO/FIXME/XXX/HACK markers; all in-source
-"seams" are ADR-sanctioned ports._
+_The 2026-06-29 GTM-report picker round closed all strategy forks (ADR-0094 open-core Base · ADR-0095
+GTM offer structure · ADR-0096 services-docs). **No open operator forks remain** — the only
+operator-owned remainders are deferred-by-decision (pricing numbers → P6; CF go-live → launch act)._
+
+## 5. The two queued tracks (kickoffs ready)
+
+Work is bucketed into two disjoint-tree tracks; **sequencing is the next operator picker.**
+
+- **Design track** — `outputs/kickoffs/design-marketing-rebuild.md`. Phase 1: design-system lock +
+  harden (resolve forks F1–F8 → ADRs 0097+; component kit into `packages/ui`; the 6 deterministic
+  gates) → sketch in `apps/studio`. Phase 2: rebuild `apps/site` ground-up (IntentLadder SEO template,
+  kit-first, hero "the denial" → "break the chain" standout → caisson cross-section diagram). Touches
+  `packages/ui` + `apps/site` + `apps/studio`. Research: `wardfile-frontend-playbook.md` +
+  `marketing-hero-concepts.md`.
+- **Code/wiring track** — `outputs/kickoffs/code-wiring-track.md`. Buckets: **A** fast-follows (W2
+  `@caisson/migrate` extract + bundle · W1 open-core re-licensing) → **B** P6 commerce spine
+  (`@caisson/pricebook` · `services/license` annual cycle→grant · entitlement resolver · worker
+  filtering · dashboards) → **C** support/docs → **D** publish-readiness (flip · npx bin · index
+  backfill) → **E** GTM (free EU-AI-Act sample · Enterprise tier) → **F** live-test runbook (W8).
+  Touches `services/*` + `packages/{migrate,cli,billing,…}` + `tooling/` + `registry/`.
+
+The two tracks touch **disjoint trees** → can run as parallel worktree streams (playbook §4), merged
+at a barrier. The codebase carries **zero** accidental TODO/FIXME markers; all in-source "seams" are
+ADR-sanctioned ports.
