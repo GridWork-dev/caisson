@@ -9,19 +9,20 @@ conflict, the ADR file and the board win over this index.
 - ADRs are append-only and immutable (ADR-0006). A later ADR _supersedes_ a clause; it
   never edits the prior file. So most rows below are **partial** supersessions (one clause),
   not a wholesale replacement.
-- 82 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 82). Numbering is **not**
-  contiguous: present are **0001-0024** and **0040-0097**; **0025-0039 are an unused gap**
+- 89 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 89). Numbering is **not**
+  contiguous: present are **0001-0024** and **0040-0104**; **0025-0039 are an unused gap**
   (no files). The 0040 jump was a deliberate block reservation for the brand/positioning set.
   **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit);
-  **0094-0096** = the 2026-06-29 GTM-report round (open-core Base / GTM offer / services-docs);
-  **0097** = the W1 registry schema/service split (open-core impl lock).
+  **0094-0096** = the 2026-06-29 GTM-report locks (open-core Base / GTM offer / services-docs);
+  **0097** = the W1 registry schema/service split; **0098** = the B1 credit-denomination home (resolves 0089 SD-3);
+  **0099-0104** = the 2026-06-29 design-system-harden track locks (component-recipe+kit / token+theming / gates / signature-animation / brand-mark "Pressure vessel" / Phase-2 hero static-code-as-proof).
 - Status tokens read from each ADR's own header line:
   - `proposed` = literal header value on the founding + foundations sets (0001-0019, 0024).
     Per the board (line 90) these are **in force / locked** despite the stale "proposed"
     header text written during the Phase-5 spec; the header was never updated. See accuracy
     flags at the bottom.
   - `locked` = D9 module-pipeline set (0020-0023).
-  - `accepted` = brand/wave-0/wave-1/design/gtm sets + picker-round locks (0040-0097).
+  - `accepted` = brand/wave-0/wave-1/design/gtm sets + picker-round locks (0040-0104).
 
 Domain detail and rationale: read the ADR file. Architecture overview: `specs/01-architecture.md`.
 Product framing: `specs/00-product-spec.md`. Build plan: `plan.md`.
@@ -220,7 +221,7 @@ pricing numbers).
 | [0092](../knowledge/decisions/ADR-0092-create-caisson-bin-runtime.md)         | create-caisson bin -> dist/cli.js + node shebang (npx reach)          | CLI       | accepted | operator override; impl at P6 w/ publishability 0021 |
 | [0093](../knowledge/decisions/ADR-0093-local-cli-free-codegen-debit-scope.md) | Local CLI free; codegen debit scoped to hosted path                   | CLI       | accepted | clarifies 0049; 0024/0005/0008                       |
 
-### GTM-report + W1 locks (0094-0097, 2026-06-29) - status `accepted`
+### GTM-report + W1/B1 locks (0094-0098, 2026-06-29) - status `accepted`
 
 | ADR                                                                      | Title                                                                                               | Domain             | Status   | Notes                                                |
 | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------ | -------- | ---------------------------------------------------- |
@@ -228,6 +229,22 @@ pricing numbers).
 | [0095](../knowledge/decisions/ADR-0095-gtm-offer-structure.md)           | GTM offer: free EU-AI-Act sample · Enterprise "Contact us" tier · annual cadence · pricing deferred | GTM                | accepted | extends 0012/0081/0082/0089                          |
 | [0096](../knowledge/decisions/ADR-0096-services-docs-standalone.md)      | services/docs standalone AI-native docs service                                                     | Docs               | accepted | separate from apps/site Fumadocs; build at P6        |
 | [0097](../knowledge/decisions/ADR-0097-registry-schema-service-split.md) | Registry schema/service split: open @caisson/registry-schema + commercial registry service          | Licensing/Registry | accepted | amends 0094; W1 impl lock (open↔commercial boundary) |
+| [0098](../knowledge/decisions/ADR-0098-credit-conversion-home.md)        | Credit denomination lives in @caisson/kernel (resolves 0089 SD-3)                                   | Billing/Credits    | accepted | B1 lock; composes 0007/0024/0089                     |
+
+### Design-system-harden track (0099-0104, 2026-06-29) - status `accepted`
+
+Eight forks (F1-F8) from `outputs/kickoffs/design-marketing-rebuild.md`, locked on a 7-agent code-grounded
+fanout. Adopts the _mechanism_ of `outputs/research/wardfile-frontend-playbook.md` (token/brand VALUES stay
+Caisson's). The track is harden-not-build (Caisson already owned the token foundation).
+
+| #                                                                             | Title                                                                            | Domain           | Status   | Relations                                                                  |
+| ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------- | -------- | -------------------------------------------------------------------------- |
+| [0099](../knowledge/decisions/ADR-0099-component-recipe-kit-packaging.md)     | Component recipe + framework-agnostic kit packaging (F1/F2/F7/F8)                | Design/UI        | accepted | adopts wardfile playbook; Lucide per DESIGN.md §4; ADR-0078/0042/0003/0044 |
+| [0100](../knowledge/decisions/ADR-0100-token-theming-hardening.md)            | Token & theming hardening: breakpoint ladder · scrim · 3-prong dark mode (F4/F3) | Design/Tokens    | accepted | extends 0042/0078; ThemeToggle per 0099                                    |
+| [0101](../knowledge/decisions/ADR-0101-deterministic-design-quality-gates.md) | Deterministic design-quality gates (staged) + advisory critic (F5)               | Design/CI        | accepted | extends 0016/0022/0062; enforces 0099/0100                                 |
+| [0102](../knowledge/decisions/ADR-0102-signature-animation-css-svg.md)        | Marketing signature animation: tokenized CSS/SVG, video deferred (F6)            | Design/Marketing | accepted | adopts hero-concepts; under 0078 §6 / 0080 §3                              |
+| [0103](../knowledge/decisions/ADR-0103-brand-mark-pressure-vessel.md)         | Brand mark: the "Pressure vessel" (operator pick); signature sketch deferred     | Design/Brand     | accepted | supersedes 0078 §2 glyph; defers 0102 sketch; under 0078 §8 / 0099         |
+| [0104](../knowledge/decisions/ADR-0104-phase2-hero-static-code-as-proof.md)   | Phase-2 hero: static code-as-proof (operator pick); three.js spike deferred      | Design/Marketing | accepted | amends 0102/0103 hero plan; under 0080/0079/0078 §6 §8; ADR-0082           |
 
 ---
 

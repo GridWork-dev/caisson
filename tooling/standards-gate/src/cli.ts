@@ -22,6 +22,7 @@ import {
   checkDownOnly,
   checkDeclarations,
   checkManifestAgreement,
+  checkCopyPaste,
   checkOpenCoreLicensing,
   checkOpenCommercialBoundary,
   type Finding,
@@ -38,6 +39,7 @@ async function main(): Promise<number> {
     ...checkOpenCommercialBoundary(pkgs),
     ...checkDeclarations(pkgs),
     ...(await checkManifestAgreement(pkgs)),
+    ...checkCopyPaste(root), // ADR-0101 gate #4: cross-package copy-paste
   ];
 
   const errors = findings.filter((f) => f.severity === "error");

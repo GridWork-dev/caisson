@@ -6,13 +6,27 @@
  */
 import type { AccentCandidate, FunctionalTokens, TypeCandidate } from "./types";
 
-/** Shared functional/status set — same across every palette. Never color-alone. */
-export const functional: FunctionalTokens = {
+/** Functional/status set — per mode. The dark set inherits-down onto the near-white light surfaces
+ *  and fails WCAG AA there, so light gets its own darkened set. Same across every palette; never
+ *  colour-alone (always paired with a glyph + label). */
+export const functionalDark: FunctionalTokens = {
   success: "oklch(0.72 0.15 150)",
   warning: "oklch(0.78 0.13 75)",
   danger: "oklch(0.65 0.18 25)",
   info: "oklch(0.70 0.12 240)",
 };
+
+/** Light-surface functional set — darkened so each clears WCAG AA (>=4.5:1) on bg/surface1/surface2
+ *  (computed + asserted, ADR-0101 gate #2). The hue/chroma stay; only L drops for the light field. */
+export const functionalLight: FunctionalTokens = {
+  success: "oklch(0.50 0.15 150)",
+  warning: "oklch(0.50 0.12 75)",
+  danger: "oklch(0.50 0.19 25)",
+  info: "oklch(0.50 0.13 240)",
+};
+
+/** @deprecated back-compat alias = the dark set (the un-attributed :root default). */
+export const functional = functionalDark;
 
 export const accentCandidates: readonly AccentCandidate[] = [
   {
@@ -37,6 +51,7 @@ export const accentCandidates: readonly AccentCandidate[] = [
       link: "oklch(0.78 0.10 205)",
       glowAccent:
         "0 0 0 1px oklch(0.74 0.115 205 / 0.40), 0 0 28px oklch(0.74 0.115 205 / 0.22)",
+      scrim: "oklch(0.1 0.012 220 / 0.6)",
     },
     light: {
       bg: "oklch(0.99 0.003 220)",
@@ -46,14 +61,15 @@ export const accentCandidates: readonly AccentCandidate[] = [
       borderStrong: "oklch(0.80 0.010 220)",
       fg: "oklch(0.22 0.015 220)",
       fgMuted: "oklch(0.45 0.018 220)",
-      accent: "oklch(0.55 0.13 215)",
+      accent: "oklch(0.50 0.13 215)",
       accentHover: "oklch(0.48 0.13 215)",
       onAccent: "oklch(0.99 0.01 220)",
       accentTint: "oklch(0.93 0.03 205)",
-      focus: "oklch(0.55 0.13 215)",
+      focus: "oklch(0.50 0.13 215)",
       link: "oklch(0.50 0.13 215)",
       glowAccent:
-        "0 0 0 1px oklch(0.55 0.13 215 / 0.28), 0 0 22px oklch(0.55 0.13 215 / 0.16)",
+        "0 0 0 1px oklch(0.50 0.13 215 / 0.28), 0 0 22px oklch(0.50 0.13 215 / 0.16)",
+      scrim: "oklch(0.22 0.015 220 / 0.45)",
     },
   },
   {
@@ -78,6 +94,7 @@ export const accentCandidates: readonly AccentCandidate[] = [
       link: "oklch(0.74 0.11 150)",
       glowAccent:
         "0 0 0 1px oklch(0.70 0.13 150 / 0.40), 0 0 28px oklch(0.70 0.13 150 / 0.22)",
+      scrim: "oklch(0.1 0.012 160 / 0.6)",
     },
     light: {
       bg: "oklch(0.99 0.003 160)",
@@ -95,6 +112,7 @@ export const accentCandidates: readonly AccentCandidate[] = [
       link: "oklch(0.48 0.13 150)",
       glowAccent:
         "0 0 0 1px oklch(0.52 0.14 150 / 0.28), 0 0 22px oklch(0.52 0.14 150 / 0.16)",
+      scrim: "oklch(0.22 0.015 160 / 0.45)",
     },
   },
   {
@@ -119,6 +137,7 @@ export const accentCandidates: readonly AccentCandidate[] = [
       link: "oklch(0.82 0.03 235)",
       glowAccent:
         "0 0 0 1px oklch(0.80 0.030 235 / 0.40), 0 0 28px oklch(0.80 0.030 235 / 0.20)",
+      scrim: "oklch(0.09 0.006 235 / 0.6)",
     },
     light: {
       bg: "oklch(0.99 0.002 235)",
@@ -136,6 +155,7 @@ export const accentCandidates: readonly AccentCandidate[] = [
       link: "oklch(0.42 0.04 235)",
       glowAccent:
         "0 0 0 1px oklch(0.45 0.040 235 / 0.26), 0 0 22px oklch(0.45 0.040 235 / 0.14)",
+      scrim: "oklch(0.2 0.01 235 / 0.45)",
     },
   },
 ];
@@ -146,7 +166,7 @@ export const typeCandidates: readonly TypeCandidate[] = [
     name: "Instrument",
     blurb:
       "Geist + Geist Mono: one family, two cuts, free (OFL); built for developer products. Dense, neutral, production-infra. Mono carries audit artifacts and token names.",
-    recommended: true,
+    recommended: false,
     sans: '"Geist", ui-sans-serif, system-ui, sans-serif',
     mono: '"Geist Mono", ui-monospace, "SFMono-Regular", monospace',
   },
@@ -155,7 +175,7 @@ export const typeCandidates: readonly TypeCandidate[] = [
     name: "Structural",
     blurb:
       "Hubot Sans + Martian Mono: GitHub's engineered variable grotesk with more mechanical character; wide technical mono for labels. More ownable.",
-    recommended: false,
+    recommended: true,
     sans: '"Hubot Sans", ui-sans-serif, system-ui, sans-serif',
     mono: '"Martian Mono", ui-monospace, "SFMono-Regular", monospace',
   },

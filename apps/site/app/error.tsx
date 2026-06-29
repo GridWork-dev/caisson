@@ -4,7 +4,7 @@
 // No stack trace in prod copy; terse technical register per ADR-0080.
 import { useEffect } from "react";
 
-import { Section } from "@/components";
+import { Button, Section } from "@/components";
 
 export default function ErrorBoundary({
   error,
@@ -49,16 +49,12 @@ export default function ErrorBoundary({
           navigate away. If it persists, the digest below helps track it down.
         </p>
         <div className="cs-cta-row">
-          <button
-            type="button"
-            onClick={reset}
-            className="cs-btn cs-btn--primary"
-          >
+          <Button onClick={reset} variant="primary">
             Retry
-          </button>
-          <a href="/" className="cs-btn cs-btn--ghost">
+          </Button>
+          <Button href="/" variant="ghost">
             Home
-          </a>
+          </Button>
         </div>
         {digest && (
           <p

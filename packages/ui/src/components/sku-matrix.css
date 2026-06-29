@@ -1,0 +1,43 @@
+/* SkuMatrix (V14 — editions × modules). Co-located; values via --cs-* only; the row-label
+ * font-weight that was an inline style in the old apps/site primitive lives here. */
+.cs-matrix__wrap {
+  overflow-x: auto;
+}
+
+.cs-matrix {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--cs-text-sm);
+}
+
+.cs-matrix th,
+.cs-matrix td {
+  padding: var(--cs-space-3) var(--cs-space-4);
+  border-bottom: 1px solid var(--cs-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+/* Row-label weight — was `style={{ fontWeight: "var(--cs-weight-medium)" }}` inline. */
+.cs-matrix th[scope="row"] {
+  font-weight: var(--cs-weight-medium);
+}
+
+.cs-matrix thead th {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  letter-spacing: var(--cs-tracking-wide);
+  text-transform: uppercase;
+  color: var(--cs-fg-muted);
+  font-weight: var(--cs-weight-medium);
+}
+
+.cs-matrix td.cs-matrix__yes {
+  color: var(--cs-accent);
+}
+
+.cs-matrix__price {
+  font-family: var(--cs-font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--cs-fg);
+}

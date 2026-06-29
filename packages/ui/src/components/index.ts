@@ -1,0 +1,32 @@
+// Component kit barrel (ADR-0099). Consumers import from `@caisson/ui/components`; set
+// `transpilePackages: ["@caisson/ui"]` in next.config so the raw .tsx + co-located .css transpile.
+// Kit-first rule: new reusable UI lands HERE, never inlined on a screen.
+export { Button } from "./button";
+export type { ButtonProps, ButtonSize, ButtonVariant } from "./button";
+export { Section } from "./section";
+export type { SectionProps, SectionBand } from "./section";
+export { Hero } from "./hero";
+export type { HeroProps } from "./hero";
+export { Card } from "./card";
+export type { CardProps } from "./card";
+export { Terminal } from "./terminal";
+export type { TerminalProps } from "./terminal";
+export { CodeBlock } from "./code-block";
+export type { CodeBlockProps } from "./code-block";
+export { StatusChip } from "./status-chip";
+export type { StatusChipProps, StatusChipTone } from "./status-chip";
+export { CredentialStrip } from "./credential-strip";
+export type { CredentialStripProps } from "./credential-strip";
+export { EditionCard } from "./edition-card";
+export type { EditionCardProps } from "./edition-card";
+export { SkuMatrix } from "./sku-matrix";
+export type { SkuMatrixProps, SkuMatrixRow } from "./sku-matrix";
+export { Icon } from "./icon";
+export type { IconName, IconProps } from "./icon";
+export { Glyph, Wordmark } from "./brand";
+export type { WordmarkProps } from "./brand";
+export { Reveal } from "./reveal";
+export type { RevealProps } from "./reveal";
+export { ThemeToggle } from "./theme-toggle";
+export type { ThemeToggleProps } from "./theme-toggle";
+export { THEME_STORAGE_KEY, themeInitScript } from "./theme-init";

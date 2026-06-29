@@ -10,3 +10,6 @@
 
 # misc
 *.tsbuildinfo
+
+# local perf/review artifacts (lighthouse traces, screenshots, stream logs)
+/outputs/

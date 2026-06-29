@@ -1,0 +1,62 @@
+/* Button — recipe reference (ADR-0099). Co-located; variants via [data-*]; values via --cs-* only. */
+.cs-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cs-space-2);
+  padding: var(--cs-space-3) var(--cs-space-5);
+  border-radius: var(--cs-radius-md);
+  border: 1px solid transparent;
+  font-family: inherit;
+  font-size: var(--cs-text-sm);
+  font-weight: var(--cs-weight-medium);
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background var(--cs-duration-fast) var(--cs-ease-out),
+    border-color var(--cs-duration-fast) var(--cs-ease-out),
+    color var(--cs-duration-fast) var(--cs-ease-out),
+    box-shadow var(--cs-duration-fast) var(--cs-ease-out);
+}
+
+.cs-button[data-size="sm"] {
+  padding: var(--cs-space-2) var(--cs-space-4);
+  font-size: var(--cs-text-xs);
+}
+
+.cs-button[data-variant="primary"] {
+  background: var(--cs-accent);
+  color: var(--cs-on-accent);
+}
+.cs-button[data-variant="primary"]:hover {
+  background: var(--cs-accent-hover);
+  box-shadow: var(--cs-glow-accent);
+}
+
+.cs-button[data-variant="ghost"] {
+  background: transparent;
+  color: var(--cs-fg);
+  border-color: var(--cs-border-strong);
+}
+.cs-button[data-variant="ghost"]:hover {
+  border-color: var(--cs-accent);
+  color: var(--cs-accent);
+}
+
+.cs-button:focus-visible {
+  outline: 2px solid var(--cs-focus);
+  outline-offset: 2px;
+}
+
+/* Forced-colors (Windows high-contrast) — keep affordances visible. */
+@media (forced-colors: active) {
+  .cs-button {
+    border: 1px solid CanvasText;
+  }
+  .cs-button[data-variant="primary"] {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+}

@@ -1,0 +1,29 @@
+/* ThemeToggle (ADR-0100 F3) — icon control. Co-located; values via --cs-* only. */
+.cs-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: transparent;
+  color: var(--cs-fg-muted);
+  cursor: pointer;
+  transition:
+    color var(--cs-duration-fast) var(--cs-ease-out),
+    border-color var(--cs-duration-fast) var(--cs-ease-out),
+    background var(--cs-duration-fast) var(--cs-ease-out);
+}
+
+.cs-theme-toggle:hover {
+  color: var(--cs-fg);
+  border-color: var(--cs-border-strong);
+}
+
+@media (forced-colors: active) {
+  .cs-theme-toggle {
+    border: 1px solid CanvasText;
+  }
+}

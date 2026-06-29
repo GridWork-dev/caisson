@@ -1,0 +1,22 @@
+{
+  "name": "@caisson/design-critic",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Advisory design critic (ADR-0101 Layer 3 — NON-BLOCKING). Stable-ID findings.toml ledger + reconcile() classifying each run new/regressed/closed/unchanged, so rewording never forks a finding and a fixed-then-reappearing issue flips to regressed. Informs; never gates a merge.",
+  "bin": {
+    "design-critic-reconcile": "./src/cli.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "bun test ./src"
+  },
+  "devDependencies": {
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.0"
+  }
+}

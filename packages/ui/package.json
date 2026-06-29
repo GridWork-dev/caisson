@@ -4,10 +4,16 @@
   "private": true,
   "type": "module",
   "license": "Apache-2.0",
-  "description": "Typed token floor (ADR-0042 design foundation: palette + type) — OKLCH token objects → generated tokens.css (Wardfile gen-script pattern).",
+  "description": "Caisson design-system kit — typed OKLCH token floor (ADR-0042/0078) + the component recipe (ADR-0099): Radix behavior + co-located CSS + data-* variants, shipped as framework-agnostic raw .tsx.",
+  "sideEffects": [
+    "*.css"
+  ],
   "exports": {
     ".": "./src/index.ts",
     "./tokens": "./src/tokens/index.ts",
+    "./components": "./src/components/index.ts",
+    "./components/*": "./src/components/*",
+    "./styles/base.css": "./styles/base.css",
     "./styles/tokens.css": "./styles/tokens.css"
   },
   "scripts": {
@@ -16,12 +22,27 @@
     "test": "bun test ./src",
     "gen:tokens": "bun run scripts/gen-tokens-css.ts"
   },
+  "dependencies": {
+    "radix-ui": "^1.6.0"
+  },
+  "peerDependencies": {
+    "lucide-react": "^1.21.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
+    "@types/culori": "^2.1.1",
     "@types/node": "^22.10.5",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "culori": "^4.0.1",
     "eslint": "^9.13.0",
+    "lucide-react": "^1.22.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "typescript": "^5.6.0"
   }
 }

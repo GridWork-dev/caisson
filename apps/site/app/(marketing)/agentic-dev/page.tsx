@@ -134,7 +134,7 @@ export default function AgenticDevPage() {
         }
         credentials={
           <StatusChip
-            label="Roadmap — post-wedge, not yet shipped"
+            label="Roadmap — not yet shipped"
             tone="muted"
             icon="alert"
             dot

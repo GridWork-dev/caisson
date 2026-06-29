@@ -4,7 +4,13 @@
  * change `SELECTED_*` here, then `bun run gen:tokens`. Append-only spirit: the candidate sets
  * in `candidates.ts` stay; only the pointer moves.
  */
-import { accentCandidates, functional, typeCandidates } from "./candidates";
+import {
+  accentCandidates,
+  functional,
+  functionalDark,
+  functionalLight,
+  typeCandidates,
+} from "./candidates";
 import type { AccentCandidate, SemanticTheme, TypeCandidate } from "./types";
 
 const SELECTED_PALETTE = "a";
@@ -33,7 +39,7 @@ const type: TypeCandidate = requireCandidate(
 
 export const darkTheme: SemanticTheme = palette.dark;
 export const lightTheme: SemanticTheme = palette.light;
-export { functional };
+export { functional, functionalDark, functionalLight };
 
 /**
  * Locked font stacks. Wrapped in the `next/font` CSS variables the site sets on <html>
