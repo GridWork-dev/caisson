@@ -27,8 +27,8 @@
 }
 
 .cs-chip__dot {
-  width: 0.5rem;
-  height: 0.5rem;
+  width: var(--cs-space-2);
+  height: var(--cs-space-2);
   border-radius: var(--cs-radius-pill);
   background: currentColor;
   flex: none;
