@@ -75,8 +75,8 @@ Releases are **changesets-driven** (ADR-0001 / ADR-0069). No hand-edited version
   packages by `^` range with `updateInternalDependencies: false` -- a base **patch** does NOT
   cascade a republish through every edition (ADR-0021).
 - A source change to a package requires a changeset; CI gates on `changeset status --since`
-  presence. **Status: the presence gate is designed, not yet wired** -- it lands with the P5
-  publish job (the `# Changeset presence is a PUBLISH-time gate` note in `ci.yml`). Pre-publish
+  presence. **Status: the presence gate is designed, not yet wired** -- it lands with the P6 publish job (deferred publishability flip; the
+  `# Changeset presence is a PUBLISH-time gate` note in `ci.yml`). Pre-publish
   every package is `0.0.0`/private, so there is nothing to release-gate yet.
 - No pending `.changeset/*.md` files and no root `release`/`publish` script exist today (verified).
 
@@ -111,10 +111,10 @@ changeset -> version bump -> STANDARDS GATE -> publish (CI-only) -> index rebuil
 compliance primitives -> editions -> app-templates`. Publish only what exists; each edition
   publishes as it lands. `create-caisson --edition` degrades gracefully against the
   not-yet-published set.
-- **Status: the publish step is P5 and NOT yet active.** The `publish-and-index` job is
+- **Status: the publish step is deferred to P6 (publishability flip) and NOT yet active.** The `publish-and-index` job is
   **commented out** at the bottom of `ci.yml`. What runs today is the `registry-index` job
   (proves `index.json` is a clean rebuild from the ledger) and the `standards-gate` job. Full
-  enforcement lands with the P5 publish/generator code.
+  enforcement lands with the P6 publish job (deferred publishability flip).
 
 Canonical: [`knowledge/decisions/ADR-0021-registry-publish-pipeline.md`](../knowledge/decisions/ADR-0021-registry-publish-pipeline.md)
 · schema [`registry/SCHEMA.md`](../registry/SCHEMA.md) · read-path worker
@@ -185,7 +185,7 @@ golden-file (ADR-0016). PGlite makes integration + golden-file hermetic, so they
 | `eval`              | ubuntu, bun 1.3.14                          | `bun run eval` -- regression vs committed baseline, offline cassette replay, BLESS unset (ADR-0062). Monorepo-only; never injected into a buyer repo (ADR-0072)                                                                                         |
 | `native-ext`        | ubuntu + macos (matrix, `fail-fast: false`) | `bun test packages/local-store/src` -- exercises the platform-specific sqlite-vec `.so`/`.dylib`; macOS step `brew install sqlite` + `Database.setCustomSQLite`                                                                                         |
 | `registry-index`    | ubuntu, bun 1.3.14                          | Registry schema/builder/worker tests, then rebuilds `registry/index.json` from the ledger and `git diff --exit-code` -- proves the index is CI-built, not hand-edited                                                                                   |
-| `publish-and-index` | --                                          | **Commented out (P5)**: changesets publish (CI-only `GITHUB_TOKEN`) -> append ledger -> rebuild index. Not active yet                                                                                                                                   |
+| `publish-and-index` | --                                          | **Commented out (P6 -- deferred publishability flip)**: changesets publish (CI-only `GITHUB_TOKEN`) -> append ledger -> rebuild index. Not active yet                                                                                                   |
 
 ### `deploy-site.yml` (DEPLOY -- operator-gated)
 

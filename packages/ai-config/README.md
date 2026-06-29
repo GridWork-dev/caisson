@@ -6,5 +6,5 @@ Provider-agnostic AI config (all providers) + buyer settings file.
 - **Seeds (rebuild-clean):** gridwork, gridwork-core
 - **Key ADR:** ADR-0011
 
-> Structure only — no feature code yet (scaffold session: base structure, no skeleton).
+> **Built (thin)** — real src + tests (provider-agnostic config; minimal surface, verify before extending). Live per-package status: ../../docs/build-state.md
 > Build per `/plan.md`. Pro-private `media-pipeline` contributes patterns only, never code.
