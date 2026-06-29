@@ -6,5 +6,5 @@ Merchant-of-Record / Stripe billing + webhooks.
 - **Seeds (rebuild-clean):** gridwork
 - **Key ADR:** ADR-0012
 
-> Structure only — no feature code yet (scaffold session: base structure, no skeleton).
+> **Built** — real src + tests (Stripe MoR + webhook events). Live per-package status: ../../docs/build-state.md
 > Build per `/plan.md`. Pro-private `media-pipeline` contributes patterns only, never code.

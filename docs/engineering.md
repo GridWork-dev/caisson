@@ -122,7 +122,7 @@ rebuilt from it by `registry/scripts/build-index.ts` (CI only, never hand-edited
 `registry-index` job re-runs the build and fails on any drift (`git diff --exit-code`), so
 the index is provably CI-built. The index IS the allowlist - every generation validates a
 caller's module id + version against it before any path/subprocess. The publish-and-index
-job that appends a gated publish is wired at build phase **P5** and is currently commented
+job that appends a gated publish is wired at build phase **P6** (deferred publishability flip) and is currently commented
 in `.github/workflows/ci.yml` (pre-publish every package is private `0.0.0`).
 
 ## Testing
