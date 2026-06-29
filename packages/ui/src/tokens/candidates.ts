@@ -152,7 +152,7 @@ export const typeCandidates: readonly TypeCandidate[] = [
     name: "Instrument",
     blurb:
       "Geist + Geist Mono: one family, two cuts, free (OFL); built for developer products. Dense, neutral, production-infra. Mono carries audit artifacts and token names.",
-    recommended: true,
+    recommended: false,
     sans: '"Geist", ui-sans-serif, system-ui, sans-serif',
     mono: '"Geist Mono", ui-monospace, "SFMono-Regular", monospace',
   },
@@ -161,7 +161,7 @@ export const typeCandidates: readonly TypeCandidate[] = [
     name: "Structural",
     blurb:
       "Hubot Sans + Martian Mono: GitHub's engineered variable grotesk with more mechanical character; wide technical mono for labels. More ownable.",
-    recommended: false,
+    recommended: true,
     sans: '"Hubot Sans", ui-sans-serif, system-ui, sans-serif',
     mono: '"Martian Mono", ui-monospace, "SFMono-Regular", monospace',
   },
