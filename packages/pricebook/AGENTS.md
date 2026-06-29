@@ -9,9 +9,12 @@ package. Distinct from `@caisson/ai-meter`'s per-ai-call COST book — this is t
 The credit grant must answer two questions deterministically: which plan does a paid invoice map to,
 and how many credits does it grant. This package owns both tables and the unit they share:
 
-1. **plan-book** (`PLAN_BOOK`, keyed by Stripe price id) — `{ planTag, creditsPerCycle, cadence }`.
-   EXACT integer credits per cycle, never derived from the charged amount (ADR-0089 §5). `resolvePlan`
-   is fail-closed: an unknown price id THROWS (never a guessed grant, ADR-0089 §6).
+1. **plan-book** (`PLAN_BOOK`, keyed by Stripe price id) — `{ planTag, creditsPerCycle, cadence,
+entitlements }`. EXACT integer credits per cycle, never derived from the charged amount (ADR-0089
+   §5). `entitlements` is the PURCHASED IDS the plan grants (edition names / the `bundle` sentinel /
+   à-la-carte module ids), NEVER the expanded member-slug leaf set — the registry index expands those
+   at gate time (ADR-0071); a credits-only plan carries `[]`. `resolvePlan` is fail-closed: an unknown
+   price id THROWS (never a guessed grant, ADR-0089 §6).
 2. **action-book** (`ACTION_BOOK`) — flat per-action credit cost (e.g. `codegenRunCredits`). The
    per-ai-call cost is NOT here — that stays computed from token usage by `@caisson/ai-meter`.
 3. **conversion** — re-exports the ONE credit denomination + `centsToCredits` (round-DOWN grant) from
@@ -19,14 +22,14 @@ and how many credits does it grant. This package owns both tables and the unit t
 
 ## Public API
 
-| Symbol                                        | Use                                                                               |
-| --------------------------------------------- | --------------------------------------------------------------------------------- |
-| `PLAN_BOOK` / `resolvePlan(id)`               | Stripe price id → plan entry; unknown id throws (fail-closed, ADR-0089 §6).       |
-| `planBookEntrySchema` / `parsePlanBook`       | Strict-validate a plan-book override at a boundary.                               |
-| `ACTION_BOOK` / `resolveActionCost(tag)`      | Action tag → integer credit cost (closed union; unknown tag throws).              |
-| `actionBookSchema` / `parseActionBook`        | Strict-validate an action-book override at a boundary.                            |
-| `CREDIT_CONVERSION` / `centsToCredits(cents)` | The credit denomination + cents→credits round-DOWN grant (re-export from kernel). |
-| `PRICEBOOK_VERSION`                           | Append-only version stamp — a row change bumps it, never edits in place.          |
+| Symbol                                        | Use                                                                                                 |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `PLAN_BOOK` / `resolvePlan(id)`               | Stripe price id → plan entry (incl. `entitlements` purchased ids); unknown id throws (fail-closed). |
+| `planBookEntrySchema` / `parsePlanBook`       | Strict-validate a plan-book override at a boundary.                                                 |
+| `ACTION_BOOK` / `resolveActionCost(tag)`      | Action tag → integer credit cost (closed union; unknown tag throws).                                |
+| `actionBookSchema` / `parseActionBook`        | Strict-validate an action-book override at a boundary.                                              |
+| `CREDIT_CONVERSION` / `centsToCredits(cents)` | The credit denomination + cents→credits round-DOWN grant (re-export from kernel).                   |
+| `PRICEBOOK_VERSION`                           | Append-only version stamp — a row change bumps it, never edits in place.                            |
 
 ## Invariants
 

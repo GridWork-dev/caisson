@@ -10,15 +10,22 @@ import { CREDIT_SCHEMA_SQL, balance, getLedger } from "@caisson/credits";
 import { withTenant } from "@caisson/tenancy-rls";
 import { type DomainBillingEvent, parseStripeEvent } from "@caisson/billing";
 import { applyBillingEvent } from "./apply-billing-event.ts";
+import {
+  ENTITLEMENT_SCHEMA_SQL,
+  readEntitlements,
+} from "./entitlement-store.ts";
 
-const PLAN_ID = "price_developer_monthly_PLACEHOLDER"; // 1000 credits/cycle (placeholder)
+const PLAN_ID = "price_developer_monthly_PLACEHOLDER"; // 1000 credits/cycle, entitlements [] (placeholder)
 const CREDITS = 1000;
+// An edition plan (12000 credits/cycle) that ALSO grants the `compliance` entitlement (ADR-0071).
+const EDITION_PLAN_ID = "price_compliance_updates_annual_PLACEHOLDER";
 
 let tp: TestPg;
 
 beforeAll(async () => {
   tp = await newTestPg();
   await tp.exec(CREDIT_SCHEMA_SQL);
+  await tp.exec(ENTITLEMENT_SCHEMA_SQL);
 });
 
 afterAll(async () => {
@@ -176,7 +183,7 @@ describe("applyBillingEvent — subscription cycle -> grant (ADR-0089)", () => {
     expect(ledger[0]?.source_event_id).toBe("in_rt");
   });
 
-  test("purchase.completed grants nothing here (one-time entitlement is the resolver's job)", async () => {
+  test("purchase.completed grants nothing here (one-time entitlement needs line-item enrichment)", async () => {
     const acct = "acct_purchase";
     await withTenant(tp.pg, acct, (tx) =>
       applyBillingEvent(tx, {
@@ -189,5 +196,75 @@ describe("applyBillingEvent — subscription cycle -> grant (ADR-0089)", () => {
     );
     const ledger = await withTenant(tp.pg, acct, (tx) => getLedger(tx, acct));
     expect(ledger).toHaveLength(0);
+  });
+});
+
+describe("applyBillingEvent — entitlement grant on cycle (ADR-0071)", () => {
+  test("an edition plan grants credits AND the plan's entitlement in one transaction", async () => {
+    const acct = "acct_ent";
+    const bal = await withTenant(tp.pg, acct, async (tx) => {
+      await applyBillingEvent(
+        tx,
+        invoicePaid(acct, "in_ent", { priceId: EDITION_PLAN_ID }),
+      );
+      return balance(tx, acct);
+    });
+    expect(bal).toBe(12000); // the edition plan's creditsPerCycle
+    const ents = await withTenant(tp.pg, acct, (tx) =>
+      readEntitlements(tx, acct),
+    );
+    expect(ents).toEqual(["compliance"]); // the plan's purchased id (expanded at the gate, not here)
+  });
+
+  test("a renewal cycle re-confirms the same entitlement idempotently (no duplicate)", async () => {
+    const acct = "acct_ent_renew";
+    // First cycle.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        invoicePaid(acct, "in_y1", { priceId: EDITION_PLAN_ID }),
+      ),
+    );
+    // Next cycle — a DISTINCT invoice → credits grant again, but the entitlement is already held.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        invoicePaid(acct, "in_y2", { priceId: EDITION_PLAN_ID }),
+      ),
+    );
+    const ents = await withTenant(tp.pg, acct, (tx) =>
+      readEntitlements(tx, acct),
+    );
+    expect(ents).toEqual(["compliance"]); // one row, not two
+    const bal = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
+    expect(bal).toBe(24000); // credits DID accrue twice (two distinct invoices)
+  });
+
+  test("a credits-only plan grants no entitlement (entitlements: [])", async () => {
+    const acct = "acct_ent_none";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, invoicePaid(acct, "in_co")),
+    );
+    const ents = await withTenant(tp.pg, acct, (tx) =>
+      readEntitlements(tx, acct),
+    );
+    expect(ents).toEqual([]);
+  });
+
+  test("a non-granting reason (proration) grants no entitlement either", async () => {
+    const acct = "acct_ent_prorate";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        invoicePaid(acct, "in_pr", {
+          priceId: EDITION_PLAN_ID,
+          billingReason: "subscription_update",
+        }),
+      ),
+    );
+    const ents = await withTenant(tp.pg, acct, (tx) =>
+      readEntitlements(tx, acct),
+    );
+    expect(ents).toEqual([]); // gated out before the grant, same as the credit path
   });
 });

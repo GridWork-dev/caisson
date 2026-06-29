@@ -11,6 +11,7 @@ import { grant } from "@caisson/credits";
 import { ConfigError } from "@caisson/kernel";
 import { resolvePlan } from "@caisson/pricebook";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
+import { grantEntitlements } from "./entitlement-store.ts";
 
 // Only these two billing reasons grant: the first charge and each renewal. `subscription_update`
 // (proration on upgrade) grants nothing by default (ADR-0089 §6, SD-1) — the next cycle invoice grants
@@ -18,10 +19,15 @@ import type { TenantExecutor } from "@caisson/tenancy-rls";
 const GRANTING_REASONS = new Set(["subscription_create", "subscription_cycle"]);
 
 /**
- * Apply a verified domain billing event. The only path that moves credits is a gated `invoice.paid`;
- * every other event is a deliberate no-op here (lifecycle is recorded elsewhere; one-time entitlement +
- * any bundled credits land in the entitlement resolver, a follow-on Bucket-B slice). No clawback ever
- * (append-only ledger): a cancel/downgrade never negates a past grant.
+ * Apply a verified domain billing event. A gated `invoice.paid` does TWO things atomically (one
+ * transaction): grants the cycle credit allotment AND grants the plan's entitlements (ADR-0071 — the
+ * purchased ids the plan covers, expanded to member slugs at gate time). The credit grant is
+ * idempotent on the Stripe invoice id; the entitlement grant is idempotent on
+ * (account_id, entitlement_id) — so both a webhook retry and a renewal re-grant are no-ops. Every
+ * other event is a deliberate no-op here. Credits are append-only / no-clawback; entitlements are
+ * mutable state but
+ * REVOKE-on-cancel is a follow-on slice (needs subscription→entitlement provenance not on the current
+ * cancel event), so a cancel here still negates nothing.
  */
 export async function applyBillingEvent(
   tx: TenantExecutor,
@@ -43,13 +49,22 @@ export async function applyBillingEvent(
         amount: plan.creditsPerCycle, // exact table integer — no conversion (ADR-0089 §5)
         sourceEventId: ev.invoiceId, // cycle-stable idempotency anchor (ADR-0089 §4)
       });
+      // Grant the plan's edition/bundle/module entitlements (ADR-0071). Idempotent on
+      // (account, entitlement_id), so each renewal cycle re-confirms the same access as a no-op. A
+      // credits-only plan carries `entitlements: []` → this is a no-op. The store holds the PURCHASED
+      // IDS; the index expands them to member slugs at the gate (resolveAccountEntitlements / Worker).
+      await grantEntitlements(tx, {
+        accountId: ev.accountId,
+        entitlementIds: plan.entitlements,
+        sourceEventId: ev.invoiceId,
+      });
       return;
     }
     // Lifecycle + one-time signals: no recurring grant here.
-    case "purchase.completed": // one-time entitlement + bundled credits -> entitlement resolver (follow-on)
+    case "purchase.completed": // one-time edition/bundle entitlement -> needs line-item enrichment (follow-on)
     case "subscription.created": // signup only — granting here would never renew (the X-2 trap)
     case "subscription.updated": // plan change recorded; proration grant is the deferred SD-1
-    case "subscription.canceled": // access ends via the entitlement layer; credits keep their value
+    case "subscription.canceled": // access-revoke is a follow-on (needs sub→entitlement provenance)
       return;
     default: {
       // Exhaustiveness guard: a future DomainBillingEvent member forces an explicit decision here

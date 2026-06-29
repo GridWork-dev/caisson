@@ -21,6 +21,7 @@ const goldenSchema = z.object({
       planTag: z.string(),
       creditsPerCycle: z.number().int().positive(),
       cadence: z.enum(["month", "year"]),
+      entitlements: z.array(z.string()),
     }),
   ),
   centsToCredits: z.array(
