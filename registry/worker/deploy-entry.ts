@@ -7,17 +7,23 @@
 // ~8KB index. handler.ts + its env.REGISTRY_INDEX contract + handler.test.ts are left UNTOUCHED and
 // still valid; this file is the deploy-only composition root.
 //
-// Entitlement filtering (knowing a module ≠ being entitled to it, ADR-0008) remains a SEPARATE P6
-// request-time gate — none ships here. This serves the full PUBLIC allowlist index, which is already
-// the CI-built source of truth (no secrets).
+// Entitlement filtering (ADR-0008/0071) IS wired here (code-wiring B2): the live edge verifies the
+// caller's license offline (licenseEntitlementResolver) and serves only base ∪ their entitled
+// editions. This CHANGES the live behavior at the next DEPLOY (operator-gated, separate from SHIP): an
+// anonymous/community caller then sees only the free Apache-2.0 base; a licensed buyer sees base + the
+// editions they bought; an unentitled module is 404. Until redeployed, the running Worker keeps its
+// current unfiltered behavior. The index itself stays the CI-built public source of truth (no secrets).
 import index from "../index.json";
 import { loadRegistryIndex } from "../schema/registry-index";
+import { licenseEntitlementResolver } from "./entitlement-filter";
 import { createIndexHandler } from "./handler";
 
 // Parse-or-throw at module load (cold start) over the bundled JSON: a tampered/malformed bundle fails
 // loudly rather than serving a half-typed object. createIndexHandler re-validates as defense in depth
 // (its own contract); the redundant parse over a handful of modules is negligible and intentional.
-const handler = createIndexHandler(loadRegistryIndex(index));
+const handler = createIndexHandler(loadRegistryIndex(index), {
+  resolveEntitlements: licenseEntitlementResolver,
+});
 
 export default {
   fetch(request: Request): Response {

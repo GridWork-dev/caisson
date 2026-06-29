@@ -9,7 +9,22 @@
 // `ceil(tokens * perMTok / 1_000_000)` micro-USD — rounded UP per leg so a partial-cache mix can
 // never under-bill — and the call's credit charge is `ceil(costMicroUsd / microUsdPerCredit)`.
 import { z } from "zod";
-import { ConfigError, parseStrict, strictObject } from "@caisson/kernel";
+import {
+  ConfigError,
+  CREDIT_CONVERSION,
+  type CreditConversion,
+  creditConversionSchema,
+  parseCreditConversion,
+  parseStrict,
+  strictObject,
+} from "@caisson/kernel";
+
+// The credit denomination moved to @caisson/kernel (ADR-0098, SD-3): exactly ONE definition across
+// the codebase, shared by this COST book (rounds up) and @caisson/pricebook's COMMERCE book (rounds
+// down). The schema + parser keep their names on the re-export; the constant was intentionally renamed
+// DEFAULT_CREDIT_CONVERSION -> CREDIT_CONVERSION to match the kernel home (pre-launch, no consumers).
+export { CREDIT_CONVERSION, creditConversionSchema, parseCreditConversion };
+export type { CreditConversion };
 
 /** Rates are quoted per MILLION tokens; a leg divides the token·rate product by this. */
 const MICRO_PER_MTOK = 1_000_000n;
@@ -25,12 +40,6 @@ export type PriceBookEntry = z.infer<typeof priceBookEntrySchema>;
 /** `provider/model` → rates. Keyed by `priceKey()`. */
 export const priceBookSchema = z.record(z.string(), priceBookEntrySchema);
 export type PriceBook = z.infer<typeof priceBookSchema>;
-
-/** Integer micro-USD per credit — the credit denomination (ADR-0007). */
-export const creditConversionSchema = strictObject({
-  microUsdPerCredit: z.number().int().positive(),
-});
-export type CreditConversion = z.infer<typeof creditConversionSchema>;
 
 /** Actual (or estimated) token usage for one call. `cachedInputTokens` is the cache-read subset of
  *  `inputTokens` — the non-cached remainder is billed at the full input rate. */
@@ -50,11 +59,6 @@ export interface CostBreakdown {
   /** Integer credit units charged (ceil of cost ÷ conversion). */
   credits: number;
 }
-
-/** The default credit denomination: 1 credit = 1000 micro-USD ($0.001). */
-export const DEFAULT_CREDIT_CONVERSION: CreditConversion = {
-  microUsdPerCredit: 1000,
-};
 
 /** The bundled price book version stamp (append-only: a new price set bumps this). */
 export const PRICE_BOOK_VERSION = "2026-06-27";
@@ -140,9 +144,4 @@ export function computeCost(
 /** Validate a `forge.config` price-book override at the boundary (Zod `.strict()` per entry). */
 export function parsePriceBook(input: unknown): PriceBook {
   return parseStrict(priceBookSchema, input);
-}
-
-/** Validate a `forge.config` credit-conversion override at the boundary. */
-export function parseCreditConversion(input: unknown): CreditConversion {
-  return parseStrict(creditConversionSchema, input);
 }

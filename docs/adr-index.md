@@ -9,11 +9,12 @@ conflict, the ADR file and the board win over this index.
 - ADRs are append-only and immutable (ADR-0006). A later ADR _supersedes_ a clause; it
   never edits the prior file. So most rows below are **partial** supersessions (one clause),
   not a wholesale replacement.
-- 87 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 87). Numbering is **not**
+- 89 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 89). Numbering is **not**
   contiguous: present are **0001-0024** and **0040-0104**; **0025-0039 are an unused gap**
   (no files). The 0040 jump was a deliberate block reservation for the brand/positioning set.
   **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit);
   **0094-0096** = the 2026-06-29 GTM-report locks (open-core Base / GTM offer / services-docs);
+  **0097** = the W1 registry schema/service split; **0098** = the B1 credit-denomination home (resolves 0089 SD-3);
   **0099-0104** = the 2026-06-29 design-system-harden track locks (component-recipe+kit / token+theming / gates / signature-animation / brand-mark "Pressure vessel" / Phase-2 hero static-code-as-proof).
 - Status tokens read from each ADR's own header line:
   - `proposed` = literal header value on the founding + foundations sets (0001-0019, 0024).
@@ -21,7 +22,7 @@ conflict, the ADR file and the board win over this index.
     header text written during the Phase-5 spec; the header was never updated. See accuracy
     flags at the bottom.
   - `locked` = D9 module-pipeline set (0020-0023).
-  - `accepted` = brand/wave-0/wave-1/design/gtm sets + picker-round locks (0040-0093).
+  - `accepted` = brand/wave-0/wave-1/design/gtm sets + picker-round locks (0040-0104).
 
 Domain detail and rationale: read the ADR file. Architecture overview: `specs/01-architecture.md`.
 Product framing: `specs/00-product-spec.md`. Build plan: `plan.md`.
@@ -220,13 +221,15 @@ pricing numbers).
 | [0092](../knowledge/decisions/ADR-0092-create-caisson-bin-runtime.md)         | create-caisson bin -> dist/cli.js + node shebang (npx reach)          | CLI       | accepted | operator override; impl at P6 w/ publishability 0021 |
 | [0093](../knowledge/decisions/ADR-0093-local-cli-free-codegen-debit-scope.md) | Local CLI free; codegen debit scoped to hosted path                   | CLI       | accepted | clarifies 0049; 0024/0005/0008                       |
 
-### GTM-report locks (0094-0096, 2026-06-29) - status `accepted`
+### GTM-report + W1/B1 locks (0094-0098, 2026-06-29) - status `accepted`
 
-| #                                                                   | Title                                                                                            | Domain       | Status   | Relations                            |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------ | -------- | ------------------------------------ |
-| [0094](../knowledge/decisions/ADR-0094-open-core-base-apache2.md)   | Open-core Base: Apache-2.0 base substrate (editions stay commercial)                             | Licensing    | accepted | amends 0023/0050/0083; re-license W1 |
-| [0095](../knowledge/decisions/ADR-0095-gtm-offer-structure.md)      | GTM offer structure: free EU-AI-Act sample · Enterprise tier · annual cadence · pricing deferred | GTM/Pricing  | accepted | extends 0012/0081/0082/0089          |
-| [0096](../knowledge/decisions/ADR-0096-services-docs-standalone.md) | `services/docs` standalone AI-native docs service                                                | Docs/Support | accepted | composes 0009/0084; build at P6      |
+| ADR                                                                      | Title                                                                                               | Domain             | Status   | Notes                                                |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------ | -------- | ---------------------------------------------------- |
+| [0094](../knowledge/decisions/ADR-0094-open-core-base-apache2.md)        | Open-core Base: Apache-2.0 substrate; editions/primitives/generator/registry/updates commercial     | Licensing          | accepted | amends 0023/0050/0083 (Base tier only); impl = W1    |
+| [0095](../knowledge/decisions/ADR-0095-gtm-offer-structure.md)           | GTM offer: free EU-AI-Act sample · Enterprise "Contact us" tier · annual cadence · pricing deferred | GTM                | accepted | extends 0012/0081/0082/0089                          |
+| [0096](../knowledge/decisions/ADR-0096-services-docs-standalone.md)      | services/docs standalone AI-native docs service                                                     | Docs               | accepted | separate from apps/site Fumadocs; build at P6        |
+| [0097](../knowledge/decisions/ADR-0097-registry-schema-service-split.md) | Registry schema/service split: open @caisson/registry-schema + commercial registry service          | Licensing/Registry | accepted | amends 0094; W1 impl lock (open↔commercial boundary) |
+| [0098](../knowledge/decisions/ADR-0098-credit-conversion-home.md)        | Credit denomination lives in @caisson/kernel (resolves 0089 SD-3)                                   | Billing/Credits    | accepted | B1 lock; composes 0007/0024/0089                     |
 
 ### Design-system-harden track (0099-0104, 2026-06-29) - status `accepted`
 

@@ -12,7 +12,12 @@ export default defineModule({
   tier: "paid",
   priceCents: 4900,
   license: "LicenseRef-Caisson-Commercial",
-  dependencies: ["@caisson/credits", "@caisson/kernel", "@caisson/registry"],
+  dependencies: [
+    "@caisson/credits",
+    "@caisson/kernel",
+    "@caisson/migrate",
+    "@caisson/registry",
+  ],
   golden: "src/__golden__",
   description:
     "create-caisson generator: registry-allowlist-gated repo composition + codegen-credit debit-before-spend seam.",

@@ -23,7 +23,7 @@ import type { EstimateMessage } from "./estimate.ts";
 import {
   BUNDLED_PRICE_BOOK,
   computeCost,
-  DEFAULT_CREDIT_CONVERSION,
+  CREDIT_CONVERSION,
   resolvePriceEntry,
   usageSchema,
 } from "./pricebook.ts";
@@ -156,7 +156,7 @@ const reconcileCoreSchema = strictObject({
 function resolveConfig(config: MeterConfig | undefined): ResolvedConfig {
   return {
     priceBook: config?.priceBook ?? BUNDLED_PRICE_BOOK,
-    conversion: config?.conversion ?? DEFAULT_CREDIT_CONVERSION,
+    conversion: config?.conversion ?? CREDIT_CONVERSION,
     scope: config?.scope ?? DEFAULT_SCOPE,
     now: config?.now ?? new Date(),
   };

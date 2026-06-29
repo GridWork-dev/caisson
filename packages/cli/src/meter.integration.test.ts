@@ -1,10 +1,11 @@
 // Codegen metering — the ADR-0049/0007/0024 binding: a generation debits BEFORE any file is written;
 // a 402 aborts with nothing written; a same-key retry debits once. Runs on PGlite inside withTenant
 // (SET ROLE app) over the real credits ledger.
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   afterAll,
   afterEach,
@@ -364,5 +365,50 @@ describe("runGeneration — edition pin resolution (ADR-0077)", () => {
       5,
     ); // never charged
     expect(await genCount(ACCOUNT)).toBe(0);
+  });
+});
+
+// --- Compose-time migration merge (ADR-0091): the W2b deliverable. When the build-step bundle is
+// populated, runGeneration must FOLD a migration-bearing module's assembled migrations into the
+// generated file set. This is the seam the layout-mismatch bug silently broke (a misaligned bundle →
+// zero migrations → no-op), so it gets an explicit assertion. We stage the bundle in the EXACT layout
+// the resolver reads — `<bundleRoot>/<name>/migrations/NNNN_*.sql`, where `bundleRoot` is the same
+// `../migrations-bundle` packageDir() resolves via import.meta.url — with one synthetic migration for
+// field-crypto (the selected module), then assert the emitted set carries a renumbered
+// `migrations/NNNN_*.sql` + the single schema_version ledger. The `migrations/` segment is load-bearing:
+// drop it on either side (bundler dest or readPackageMigrations) and this fails. The bundle is the real
+// (gitignored) build-artifact dir, so we stage then tear it down. ---
+describe("runGeneration — compose-time migration merge (ADR-0091)", () => {
+  // packageDir() resolves `../migrations-bundle/<name>` relative to meter.ts (also in src/), so the
+  // same URL math from this test points at the dir the generator actually reads.
+  const bundleRoot = fileURLToPath(
+    new URL("../migrations-bundle", import.meta.url),
+  );
+  const fcMigrations = join(bundleRoot, "field-crypto", "migrations");
+
+  beforeEach(() => {
+    mkdirSync(fcMigrations, { recursive: true });
+    writeFileSync(
+      join(fcMigrations, "0001_seam.sql"),
+      "CREATE TABLE seam_probe (id integer primary key);\n",
+    );
+  });
+  afterEach(() => {
+    rmSync(bundleRoot, { recursive: true, force: true });
+  });
+
+  test("a migration-bearing module's migrations are merged into the generated file set", async () => {
+    await grantSome(5);
+    const spy = writerSpy();
+    const outcome = await withTenant(tp.pg, ACCOUNT, (tx) =>
+      runGeneration(tx, { index: INDEX, writeFileSet: spy.writer }, SELECTION, {
+        accountId: ACCOUNT,
+        idempotencyKey: "gen-mig",
+      }),
+    );
+    const paths = outcome.files.map((f) => f.path);
+    // field-crypto contributes one migration → one renumbered NNNN_*.sql + the single ledger.
+    expect(paths.some((p) => /^migrations\/\d+_.+\.sql$/.test(p))).toBe(true);
+    expect(paths).toContain("migrations/schema_version.json");
   });
 });

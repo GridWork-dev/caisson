@@ -1,8 +1,9 @@
 // Registry manifest (ADR-0020). Loaded by @caisson/standards-gate; must agree with package.json on
 // id/version/license/dependencies. `kind: "edition"` — the Local-first AI edition is a COMPOSITION,
 // not a fork (ADR-0003): it depends DOWN-ONLY on base/primitive packages and never up on a peer
-// edition (ADR-0022). Fully-commercial under the uniform model (ADR-0050; the former AGPL Local-first
-// flank is retired — the package license is now LicenseRef-Caisson-Commercial like every edition).
+// edition (ADR-0022). Commercial under the open-core model (ADR-0094/0097, amends ADR-0050; base is
+// Apache-2.0, editions stay commercial; the former AGPL Local-first flank stays retired — the package
+// license is LicenseRef-Caisson-Commercial like every edition).
 // `priceCents` is a pre-launch PLACEHOLDER anchored to the ADR-0012 Local-first AI one-time low
 // ($349 = 34900) — final pricing is the still-open "Pricing numbers" board fork, out of scope here.
 // `golden` points at the sync-reconcile conflict fixtures (src/sync/__golden__ — the LWW + tombstone

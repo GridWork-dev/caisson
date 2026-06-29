@@ -79,6 +79,57 @@ describe("event mapping", () => {
     });
   });
 
+  test("invoice.paid → enriched domain event (ADR-0089 seam)", () => {
+    const event = {
+      id: "evt_inv",
+      type: "invoice.paid",
+      data: {
+        object: {
+          id: "in_123",
+          amount_paid: 9900,
+          currency: "usd",
+          subscription: "sub_123",
+          billing_reason: "subscription_cycle",
+          metadata: { account_id: "acct_a" },
+          lines: { data: [{ price: { id: "price_dev_PLACEHOLDER" } }] },
+        },
+      },
+    } as Parameters<typeof parseStripeEvent>[0];
+    expect(parseStripeEvent(event)).toEqual({
+      type: "invoice.paid",
+      sourceEventId: "evt_inv",
+      accountId: "acct_a",
+      amountTotal: 9900,
+      currency: "usd",
+      subscriptionId: "sub_123",
+      priceId: "price_dev_PLACEHOLDER",
+      billingReason: "subscription_cycle",
+      invoiceId: "in_123",
+    });
+  });
+
+  test("invoice.paid resolves the account from subscription_details.metadata (cycle invoice)", () => {
+    // A real subscription cycle invoice carries the account on subscription_details.metadata (reflected
+    // from subscription_data[metadata] at checkout) — NOT on top-level metadata / client_reference_id,
+    // which Stripe never copies onto invoices. readAccountId must read it here or the grant never fires.
+    const event = {
+      id: "evt_sub",
+      type: "invoice.paid",
+      data: {
+        object: {
+          id: "in_sub",
+          amount_paid: 9900,
+          currency: "usd",
+          subscription: "sub_x",
+          billing_reason: "subscription_cycle",
+          subscription_details: { metadata: { account_id: "acct_sub" } },
+          lines: { data: [{ price: { id: "price_dev_PLACEHOLDER" } }] },
+        },
+      },
+    } as Parameters<typeof parseStripeEvent>[0];
+    expect(parseStripeEvent(event)?.accountId).toBe("acct_sub");
+  });
+
   test("an unhandled event type maps to null", () => {
     expect(
       parseStripeEvent({

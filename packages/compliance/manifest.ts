@@ -2,7 +2,8 @@
 // package.json on id/version/license/dependencies (the gate fails the build on drift). `kind:
 // "edition"` — this is the Compliance EDITION (the hero, ADR-0040), a composition of base packages,
 // never a fork (ADR-0003); it names its own edition membership in `editions`. Paid +
-// LicenseRef-Caisson-Commercial under the uniform-commercial model (ADR-0050).
+// LicenseRef-Caisson-Commercial under the open-core model (ADR-0094/0097, amends ADR-0050): base is
+// Apache-2.0; editions/primitives/cli/registry stay commercial.
 //
 // `priceCents` is a PLACEHOLDER pending the still-open Pricing lock (ADR-0012 anchors only) — it must
 // be a positive integer (ADR-0007), not a final number. Evidence generation is FREE in v1 (no
@@ -19,13 +20,20 @@ export default defineModule({
   tier: "paid",
   priceCents: 99900,
   license: "LicenseRef-Caisson-Commercial",
+  // Must mirror package.json's @caisson/* deps exactly (the gate fails on drift). @caisson/migrate is
+  // the base migration assembler/runner the edition COMPOSES at build/test time (ADR-0090).
   dependencies: [
     "@caisson/audit-worm",
     "@caisson/field-crypto",
+    "@caisson/migrate",
     "@caisson/tenancy-rls",
     "@caisson/kernel",
   ],
-  // Frozen member pin map (ADR-0077): edition self + every bundled dependency, exact-version.
+  // Frozen member pin map (ADR-0077): edition self + every BUYER-FACING bundled module, exact-version.
+  // @caisson/migrate is intentionally NOT a member: it is compose-time tooling (resolved transitively
+  // via npm when the edition installs), not a buyer top-level module — folding it would force migrate
+  // to be published before the edition could generate (members pins fail closed if absent from the
+  // index, meter.ts resolveEditionMembers). It stays a dependency, not a frozen member pin.
   members: {
     "@caisson/compliance": "0.0.0",
     "@caisson/audit-worm": "0.0.0",
