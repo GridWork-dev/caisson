@@ -10,10 +10,10 @@ import {
   Section,
   SkuMatrix,
   StatusChip,
+  Terminal,
 } from "@/components";
 import Link from "next/link";
 
-import { HomeHeroMotion } from "@/components/home-hero-motion";
 import { serializeJsonLd, softwareApplication } from "@/lib/jsonld";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import { formatPrice, priceById } from "@/lib/pricing";
@@ -110,7 +110,19 @@ export default function HomePage() {
               gap: "var(--cs-space-4)",
             }}
           >
-            <HomeHeroMotion />
+            {/* The denial, as code-as-proof (ADR-0102 hero = static): a query that never set
+                the tenant context returns nothing, never everything. */}
+            <Terminal
+              label="psql — cross-tenant read"
+              status={<StatusChip tone="accent" dot label="denied" />}
+            >
+              <span className="cs-tok-muted">
+                -- tenant context was never set
+              </span>
+              {
+                "\n$ SELECT count(*) FROM invoices;\n\n count\n-------\n     0\n(1 row)"
+              }
+            </Terminal>
             <CodeBlock
               label="install"
               code={
@@ -120,6 +132,9 @@ export default function HomePage() {
                 </>
               }
             />
+            {/* Signature slot — RESERVED + blank (ADR-0101/0102). The marketing signature is
+                deferred-for-rework; a future three.js / CSS-SVG studio-candidate spike mounts
+                here. Intentionally renders nothing until then (no fabricated placeholder). */}
           </div>
         }
       />
