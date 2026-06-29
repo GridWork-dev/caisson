@@ -31,8 +31,7 @@
   will-change: transform;
 }
 
-/* Featured lead — spans the grid row, accent border + tint. Declared before :hover so the
- * interactive hover (surface step) wins on hover, mirroring the original class cascade. */
+/* Featured lead — spans the grid row, accent border + tint. */
 .cs-edition[data-lead] {
   grid-column: 1 / -1;
   border-color: var(--cs-accent);
@@ -44,6 +43,15 @@
   background: var(--cs-surface-2);
   box-shadow: var(--cs-shadow-md);
   transform: translateY(-2px);
+}
+
+/* The featured-lead card keeps its accent identity on hover — the generic :hover above would
+ * otherwise strip it back to a neutral surface, de-emphasizing the hero card exactly when engaged.
+ * Higher specificity ([data-lead]:hover) wins; the lift transform is inherited from :hover. */
+.cs-edition[data-lead]:hover {
+  border-color: var(--cs-accent);
+  background: var(--cs-accent-tint);
+  box-shadow: var(--cs-glow-accent);
 }
 
 .cs-edition:focus-visible {
