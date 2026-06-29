@@ -7,8 +7,10 @@ backlog with fork gates. Canonical _decisions_ stay in `knowledge/decisions/` (A
 _fork_ board stays in `docs/state/decisions-and-forks.md`. This file is a readiness map, not a
 decision record.
 
-Verified against `main` post-PR#13 (2026-06-29). Evidence: code-on-disk, ADR trail, a live HTTP
-smoke-test of the deployed Worker, and `bun run check` on-box.
+Verified against `main` post-PR#21 (2026-06-29 — the code-wiring W1/W2/B1/B2 stack PR#16–19 + the
+design-system + Phase-2 site rebuild PR#21 have all merged). Evidence: code-on-disk, ADR trail, a live
+HTTP smoke-test of the deployed Worker, and `bun run check` on-box. The CI-fleet wiring (§0) is this
+session's change.
 
 ## 0. Live verification done this session
 
@@ -21,6 +23,13 @@ ai-kit, ai-meter, cli, field-crypto, guardrails, prompt-registry`) — the regis
 - **Whole-monorepo gate** — `bun run gate` (standards-gate) green ("36 checked, 2 scaffold-skipped,
   all conform, ADR-0002"); `turbo run build lint test` green on-box (`--concurrency=50%` per the
   PGlite-fan-out gotcha).
+- **CI moved onto the self-hosted fleet** (this session). Caisson's 3 GridWork-dev runners
+  (`gw-linux-amd64` · `gw-linux-arm64` · `gw-macos-arm64`) are registered + ONLINE; the 6 pure-compute
+  gate jobs (`standards-gate` · `check` · `eval` · `registry-index` · `token-drift` · `native-ext`
+  both legs) now `runs-on` the fleet, while the 3 write/deploy/browser jobs (`publish-and-index` ·
+  `deploy-site` · `lighthouse`) deliberately stay GitHub-hosted. Posture + first-run verification:
+  `docs/operations.md` §7 (the CI owner). **Pending verify:** confirm fleet jobs pick up runners on
+  the first PR + the macOS leg's Homebrew-SQLite prereq on the Mac mini.
 
 ## 1. Live-test readiness matrix
 
@@ -142,6 +151,43 @@ spine is **P6**, plus locked fast-follows and one true open operator fork.
 | MCP per-account rate-limit (PG token-bucket, T21b)                                               | build with the entitlement store; debit-before-spend stays primary control |
 | Complete the registry index backfill (publish base + compliance/local-ai modules)                | only 7 of ~24 in the live index today                                      |
 
+### Code-review findings (Greptile — unaddressed, triaged 2026-06-29)
+
+The Greptile GitHub app reviews opened PRs (config landed PR#20: `.greptile/{config.json,rules.md}`
+
+- advisory `.githooks/pre-push`). Across PRs #18–#20 it left **7 findings, all severity P2, all still
+  live on `main`** — none block (P2 ≤ merge threshold). PR#21 (design+site, 116 files) **exceeded
+  Greptile's 100-file limit and got zero AI review** — a coverage gap, not a clean pass. None of these
+  are accidental TODOs; all are test-hygiene/clarity. Triaged here (NOT fixed in the CI-fleet branch —
+  the real one needs a small, deliberate, test-injectable change, not a rushed patch):
+
+| #   | File:line                                                  | Finding                                                                                                                                                                                                                                                                                                                                                      | Recommended fix                                                                                                                                                                                                                                                           | Priority     |
+| --- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| 1   | `packages/cli/src/meter.integration.test.ts:396-398`       | `afterEach` does `rmSync(bundleRoot, {recursive,force})` on the **real** gitignored `packages/cli/migrations-bundle/` (a Turbo build output) → after the run the bundle is empty while Turbo still thinks it is fresh; the generator's `packageDir()` then finds no migrations until a forced rebuild (a local-dev hazard; low blast-radius on ephemeral CI) | Make the bundle root injectable into `readPackageMigrations`/`packageDir` so the test stages into a `mkdtemp` dir (as `bundle-migrations.test.ts` already does), OR scope cleanup to only the synthetic `field-crypto/` subdir + snapshot-restore any pre-existing bundle | **real bug** |
+| 2   | `packages/cli/src/meter.integration.test.ts:389-394`       | paired `beforeEach` writes `0001_seam.sql` into the real bundle without cleaning first → if Turbo restores a populated `cli` cache, `readPackageMigrations` returns a non-deterministic set (passes today only because the kernel renumbers silently)                                                                                                        | same temp-dir isolation as #1                                                                                                                                                                                                                                             | **real bug** |
+| 3   | `services/license/src/webhook.integration.test.ts:14-17`   | `beforeAll` execs `CREDIT_SCHEMA_SQL` but not the entitlement schema; passes today only because the test plan has `entitlements: []`. A future edition-plan webhook test fails with a confusing `relation account_entitlement does not exist`                                                                                                                | add the entitlement schema to `beforeAll` defensively                                                                                                                                                                                                                     | defensive    |
+| 4   | `packages/cli/scripts/bundle-migrations.test.ts:42-45,128` | asserts exact filenames + `sequence.length === 3`; any new forward migration breaks CI for a data-driven bundler (the file IS otherwise `mkdtemp`-isolated)                                                                                                                                                                                                  | assert structural invariants (files present, `NNNN_*.sql` under `bundleRoot/<module>/migrations/`, non-empty) instead of exact counts                                                                                                                                     | nit          |
+| 5   | `packages/billing/src/billing.test.ts:~91-109`             | the generic "invoice.paid → enriched event" fixture uses top-level `metadata.account_id` (the fallback), not the primary `subscription_details.metadata` path real cycle invoices use (the X-2 root cause) — the primary path IS covered by the adjacent dedicated test, so this is a clarity nit                                                            | swap the generic fixture to `subscription_details.metadata` so the primary path is the default                                                                                                                                                                            | nit          |
+| 6   | `.githooks/pre-push:31-32`                                 | hardcoded `-b main` would diff against the wrong base for a non-`main` target                                                                                                                                                                                                                                                                                | derive base from the upstream tracking ref, or document the main-only assumption                                                                                                                                                                                          | nit          |
+| 7   | `.githooks/pre-push:23`                                    | auth check scrapes `greptile whoami` stdout for `"not signed in"` — brittle if the CLI wording changes                                                                                                                                                                                                                                                       | use an exit-code-based auth check                                                                                                                                                                                                                                         | nit          |
+
+**Process follow-up:** PRs over ~100 files silently bypass Greptile. For large design/site PRs, split
+them or run an on-demand local pass (`/greptile` skill) before merge.
+
+### Edition act-trail debt (non-blocking — lives in the per-phase SWEEP/VERIFY trails)
+
+Surfaced from `outputs/specs/wave1-*/{VERIFY,SWEEP}.md` so it is discoverable from the backlog (not
+just buried in act trails). All non-blocking; queue with the relevant edition's next pass:
+
+- **P4a local-ai** — the **EVAL act was never recorded** for the phase, and a **phase-level
+  `SECURITY.md` was never authored** (7 threats are coded but no adversarial-audit artifact exists).
+- **P3 ai-kit** — streaming `infer()` (request/response only today); concurrency test for the atomic
+  spend counter; soft-cap warn-without-block test; per-tenant encrypted BYOK (P3-25, deferred fork).
+- **P2 compliance** — thin pinned-control depth (SOC2-TSC 3 controls; add a HIPAA leg); EU-AI-Act
+  high-risk controls not yet authored (reserved named slot); OSCAL export un-wired (T15).
+- **P4b agent-dev** — multi-tenant RLS on agent memory (seam); GA-promotion (embedding lane +
+  deferred Next.js inspector).
+
 ### Live-testing the by-design seams (needs external infra — DEPLOY-class)
 
 S3 Object-Lock WORM · ONNX on-device + hosted/rented inference · OSCAL push · cloud KMS. No code
@@ -163,25 +209,27 @@ _The 2026-06-29 GTM-report picker round closed all strategy forks (ADR-0094 open
 GTM offer structure · ADR-0096 services-docs). **No open operator forks remain** — the only
 operator-owned remainders are deferred-by-decision (pricing numbers → P6; CF go-live → launch act)._
 
-## 5. The two queued tracks (kickoffs ready)
+## 5. The two tracks — both substantially MERGED (status, 2026-06-29)
 
-Work is bucketed into two disjoint-tree tracks; **sequencing is the next operator picker.**
+Work was bucketed into two disjoint-tree tracks (design + code-wiring). Both have since landed their
+main body to `main`; what remains is the back half of each.
 
-- **Design track** — `outputs/kickoffs/design-marketing-rebuild.md`. Phase 1: design-system lock +
-  harden (resolve forks F1–F8 → ADRs 0099+; component kit into `packages/ui`; the 6 deterministic
-  gates) → sketch in `apps/studio`. Phase 2: rebuild `apps/site` ground-up (IntentLadder SEO template,
-  kit-first, hero "the denial" → "break the chain" standout → caisson cross-section diagram). Touches
-  `packages/ui` + `apps/site` + `apps/studio`. Research: `wardfile-frontend-playbook.md` +
-  `marketing-hero-concepts.md`.
-- **Code/wiring track** — `outputs/kickoffs/code-wiring-track.md`. **Bucket-A progress: W1 open-core
-  re-licensing ✅ SHIPPED** (ADR-0097: open `@caisson/registry-schema` split + 11 base pkgs → Apache-2.0
-  - standards-gate enforces the split & open↔commercial boundary; `apps/site` licensing copy is the
-    design-track tail). Buckets: **A** fast-follows (W2 `@caisson/migrate` extract + bundle · ~~W1~~) → **B** P6 commerce spine
-    (`@caisson/pricebook` · `services/license` annual cycle→grant · entitlement resolver · worker
-    filtering · dashboards) → **C** support/docs → **D** publish-readiness (flip · npx bin · index
-    backfill) → **E** GTM (free EU-AI-Act sample · Enterprise tier) → **F** live-test runbook (W8).
-    Touches `services/*` + `packages/{migrate,cli,billing,…}` + `tooling/` + `registry/`.
+- **Design track** (`outputs/kickoffs/design-marketing-rebuild.md`) — **MERGED** (PR#6 brand+site P0,
+  PR#21 design-system lock + Phase-2 site rebuild). Phase 1 (forks F1–F8 → ADR-0099–0102; `@caisson/ui`
+  kit; 6 deterministic gates; brand mark ADR-0103) and Phase 2 (kit-first `apps/site` rebuild; static
+  code-as-proof hero ADR-0104) are done. **Live residuals only:** the deferred **signature slot /
+  three.js studio spike** (ADR-0103/0104) and the **SEO IntentLadder revisit** (§ Parked, decisions
+  board) + the queued design launch-polish (`design-brand-site-seo/VERIFY-SWEEP.md` — docs-surface
+  polish, Turnstile widget, consent checkbox).
+- **Code/wiring track** (`outputs/kickoffs/code-wiring-track.md`) — **Buckets A+B MERGED** (PR#16 W1
+  open-core; PR#19 W2 `@caisson/migrate`; PR#18 B1 billing-X2 + B2 entitlement resolver + worker
+  filtering). **Remaining:** **C** support/docs (`services/{support-bot,docs}`, both empty scaffolds) →
+  **D** publish-readiness (publishability flip · npx bin ADR-0092 · registry index backfill — only 7 of
+  ~24 modules live today) → **E** GTM (free EU-AI-Act sample ADR-0095 · Enterprise tier) → **F**
+  live-test runbook (W8). Plus the P6 commerce remainders in §3 (license **issuer** · revoke-on-cancel ·
+  one-time-purchase entitlement · dashboards) and the `apps/site` Apache-2 licensing-copy tail.
 
-The two tracks touch **disjoint trees** → can run as parallel worktree streams (playbook §4), merged
-at a barrier. The codebase carries **zero** accidental TODO/FIXME markers; all in-source "seams" are
-ADR-sanctioned ports.
+The codebase carries **zero** accidental TODO/FIXME markers; all in-source "seams" are ADR-sanctioned
+ports. **Next coherent unit of work:** P6 Bucket C (support-bot + docs) or the license **issuer** +
+revoke/one-time entitlement slices — gated only by the deferred-by-decision pricing numbers + a Stripe
+account, neither of which blocks building the mechanism.
