@@ -1,0 +1,27 @@
+/* Brand lockup (ADR-0078 §2) — co-located; values via --cs-* only. Monochrome: color = --cs-fg, the
+   glyph inherits it via currentColor. Non-interactive / non-bordered → no :focus-visible and no
+   forced-colors block (currentColor text + SVG stay visible in high-contrast by inheritance). */
+.cs-wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cs-space-2);
+  font-family: var(--cs-font-mono);
+  font-weight: var(--cs-weight-medium);
+  letter-spacing: var(--cs-tracking-tight);
+  color: var(--cs-fg);
+}
+
+/* 1.25rem square (= --cs-space-5); never shrinks beside the wordmark text. */
+.cs-wordmark__glyph {
+  width: var(--cs-space-5);
+  height: var(--cs-space-5);
+  flex: none;
+}
+
+/* Footer/OG descriptor — pairs with the base `cs-muted` utility for color; this class owns only its
+   own spacing/size/weight (the original inline style={{…}}, now tokenized). */
+.cs-wordmark__descriptor {
+  margin-left: var(--cs-space-2);
+  font-size: var(--cs-text-xs);
+  font-weight: var(--cs-weight-body);
+}

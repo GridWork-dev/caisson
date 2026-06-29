@@ -1,0 +1,42 @@
+/* Hero — split marketing header (V1, ADR-0097). Co-located; values via --cs-* only. Owns ONLY its
+ * own layout + spacing; cs-section/cs-container/cs-display/cs-eyebrow/cs-lede live elsewhere. */
+.cs-hero {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: var(--cs-space-12);
+  align-items: center;
+}
+
+/* Right half: framed evidence artifact. min-width:0 lets the grid track shrink (pre/code overflow). */
+.cs-hero__artifact {
+  min-width: 0;
+}
+
+/* Lead column spacing — formerly inline styles on the display/lede/credentials elements. */
+.cs-hero__title {
+  margin-top: var(--cs-space-5);
+}
+
+.cs-hero__lede {
+  margin-top: var(--cs-space-5);
+  max-width: 52ch;
+}
+
+.cs-hero__credentials {
+  margin-top: var(--cs-space-8);
+}
+
+/* CTA row — wraps under the lede. */
+.cs-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cs-space-3);
+  margin-top: var(--cs-space-8);
+}
+
+/* Collapse the split to a single stacked column on tablet/below (ladder width, ADR-0098). */
+@media (max-width: 1024px) {
+  .cs-hero {
+    grid-template-columns: 1fr;
+  }
+}

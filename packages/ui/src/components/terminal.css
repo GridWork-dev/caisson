@@ -1,0 +1,41 @@
+/* Terminal — recipe primitive (ADR-0097). Co-located; values via --cs-* only.
+ * The framed evidence artifact: a tonal chrome bar over a monospace body. */
+.cs-terminal {
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-lg);
+  background: var(--cs-surface-1);
+  overflow: hidden;
+  box-shadow: var(--cs-shadow-lg);
+}
+
+.cs-terminal__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cs-space-3);
+  padding: var(--cs-space-3) var(--cs-space-4);
+  border-bottom: 1px solid var(--cs-border);
+  background: var(--cs-surface-2);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.cs-terminal__body {
+  margin: 0;
+  padding: var(--cs-space-5);
+  overflow-x: auto;
+  font-family: var(--cs-font-mono-code);
+  font-size: var(--cs-text-sm);
+  line-height: var(--cs-leading-snug);
+  color: var(--cs-fg);
+  tab-size: 2;
+}
+
+/* Forced-colors (Windows high-contrast) — the bordered frame stays visible (the old global
+ * reset bundled the terminal into its CanvasText-border rule). */
+@media (forced-colors: active) {
+  .cs-terminal {
+    border: 1px solid CanvasText;
+  }
+}
