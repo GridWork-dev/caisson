@@ -6,13 +6,27 @@
  */
 import type { AccentCandidate, FunctionalTokens, TypeCandidate } from "./types";
 
-/** Shared functional/status set — same across every palette. Never color-alone. */
-export const functional: FunctionalTokens = {
+/** Functional/status set — per mode. The dark set inherits-down onto the near-white light surfaces
+ *  and fails WCAG AA there, so light gets its own darkened set. Same across every palette; never
+ *  colour-alone (always paired with a glyph + label). */
+export const functionalDark: FunctionalTokens = {
   success: "oklch(0.72 0.15 150)",
   warning: "oklch(0.78 0.13 75)",
   danger: "oklch(0.65 0.18 25)",
   info: "oklch(0.70 0.12 240)",
 };
+
+/** Light-surface functional set — darkened so each clears WCAG AA (>=4.5:1) on bg/surface1/surface2
+ *  (computed + asserted, ADR-0099 gate #2). The hue/chroma stay; only L drops for the light field. */
+export const functionalLight: FunctionalTokens = {
+  success: "oklch(0.50 0.15 150)",
+  warning: "oklch(0.50 0.12 75)",
+  danger: "oklch(0.50 0.19 25)",
+  info: "oklch(0.50 0.13 240)",
+};
+
+/** @deprecated back-compat alias = the dark set (the un-attributed :root default). */
+export const functional = functionalDark;
 
 export const accentCandidates: readonly AccentCandidate[] = [
   {
@@ -47,14 +61,14 @@ export const accentCandidates: readonly AccentCandidate[] = [
       borderStrong: "oklch(0.80 0.010 220)",
       fg: "oklch(0.22 0.015 220)",
       fgMuted: "oklch(0.45 0.018 220)",
-      accent: "oklch(0.55 0.13 215)",
+      accent: "oklch(0.50 0.13 215)",
       accentHover: "oklch(0.48 0.13 215)",
       onAccent: "oklch(0.99 0.01 220)",
       accentTint: "oklch(0.93 0.03 205)",
-      focus: "oklch(0.55 0.13 215)",
+      focus: "oklch(0.50 0.13 215)",
       link: "oklch(0.50 0.13 215)",
       glowAccent:
-        "0 0 0 1px oklch(0.55 0.13 215 / 0.28), 0 0 22px oklch(0.55 0.13 215 / 0.16)",
+        "0 0 0 1px oklch(0.50 0.13 215 / 0.28), 0 0 22px oklch(0.50 0.13 215 / 0.16)",
       scrim: "oklch(0.22 0.015 220 / 0.45)",
     },
   },

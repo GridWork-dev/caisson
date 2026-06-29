@@ -7,7 +7,11 @@
   align-items: center;
 }
 
-/* Right half: framed evidence artifact. min-width:0 lets the grid track shrink (pre/code overflow). */
+/* Both grid tracks need min-width:0 so a nowrap descendant (a long StatusChip label, a <pre>) can't
+ * force the track wider than the viewport. The artifact track always had it; the lead column did not
+ * — a sentence-length credential chip on /agentic-dev pinned a ~390px min-content floor and the page
+ * scrolled horizontally across the phone-width band. */
+.cs-hero__lead,
 .cs-hero__artifact {
   min-width: 0;
 }
@@ -34,9 +38,11 @@
   margin-top: var(--cs-space-8);
 }
 
-/* Collapse the split to a single stacked column on tablet/below (lg rung, ADR-0098 ladder). */
+/* Collapse the split to a single stacked column on tablet/below (lg rung, ADR-0098 ladder).
+ * minmax(0,1fr) (not 1fr) so the single track may shrink below its content's min-content width —
+ * the second guard against phone-width horizontal overflow. */
 @media (max-width: 60rem) {
   .cs-hero {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
