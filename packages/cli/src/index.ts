@@ -39,6 +39,8 @@ export {
   createFileSetWriter,
 } from "./writer.ts";
 
+// The migration assembler + runner are owned by the base @caisson/migrate (ADR-0090); the cli imports
+// them, never copies them. Re-exported here so the cli's existing public API is unchanged.
 export {
   type SelectedPackage,
   type AppliedMigration,
@@ -48,4 +50,4 @@ export {
   assembleSelected,
   emitMigrationFileSet,
   runMigrations,
-} from "./migrate/assemble.ts";
+} from "@caisson/migrate";

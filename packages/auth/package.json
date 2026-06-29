@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "license": "LicenseRef-Caisson-Commercial",
+  "license": "Apache-2.0",
   "description": "Auth seam: EdDSA-JWT account tokens (the RLS seam) + session contract. Provider = better-auth (ADR-0015).",
   "exports": {
     ".": {

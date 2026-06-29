@@ -13,7 +13,12 @@ import { describe, expect, test } from "bun:test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { matchGolden } from "@caisson/testing";
-import { BUNDLE_ID, expandEntitlements } from "./entitlements";
+import {
+  BUNDLE_ID,
+  baseModuleIds,
+  expandEntitlements,
+  expandEntitlementsFromFile,
+} from "./entitlements";
 import { loadRegistryIndexFromFile } from "./registry-index";
 
 const FIXTURE_INDEX = join(
@@ -69,5 +74,35 @@ describe("ADR-0071 entitlement expansion (golden-first, ADR-0013)", () => {
 
   test("no purchases yield no entitlements (empty allowlist, fail-closed)", () => {
     expect([...expandEntitlements(index, [])]).toEqual([]);
+  });
+});
+
+describe("baseModuleIds (ADR-0094 — the free, always-served substrate)", () => {
+  test("returns exactly the modules scoped to no edition (editions[] === [])", () => {
+    const base = [...baseModuleIds(index)].sort();
+    const expected = index.modules
+      .filter((m) => {
+        const v =
+          m.versions.find((x) => x.version === m.latest) ??
+          m.versions[m.versions.length - 1];
+        return v !== undefined && v.manifest.editions.length === 0;
+      })
+      .map((m) => m.id)
+      .sort();
+    expect(base).toEqual(expected);
+    expect(base.length).toBeGreaterThan(0); // the fixture has base members
+  });
+
+  test("base ⊆ the bundle (bundle = base ∪ all editions)", () => {
+    const bundle = expandEntitlements(index, [BUNDLE_ID]);
+    for (const id of baseModuleIds(index)) expect(bundle.has(id)).toBe(true);
+  });
+});
+
+describe("expandEntitlementsFromFile (ADR-0047 disk read path)", () => {
+  test("composes loadRegistryIndexFromFile + expandEntitlements", () => {
+    expect(
+      [...expandEntitlementsFromFile(FIXTURE_INDEX, ["compliance"])].sort(),
+    ).toEqual([...expandEntitlements(index, ["compliance"])].sort());
   });
 });

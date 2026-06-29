@@ -23,6 +23,8 @@ import {
   checkDeclarations,
   checkManifestAgreement,
   checkCopyPaste,
+  checkOpenCoreLicensing,
+  checkOpenCommercialBoundary,
   type Finding,
 } from "./checks";
 
@@ -33,6 +35,8 @@ async function main(): Promise<number> {
     ...checkAgplBoundary(pkgs),
     ...checkExternalAgpl(pkgs, root),
     ...checkDownOnly(pkgs),
+    ...checkOpenCoreLicensing(pkgs),
+    ...checkOpenCommercialBoundary(pkgs),
     ...checkDeclarations(pkgs),
     ...(await checkManifestAgreement(pkgs)),
     ...checkCopyPaste(root), // ADR-0101 gate #4: cross-package copy-paste

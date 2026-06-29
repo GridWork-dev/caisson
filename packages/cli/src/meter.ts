@@ -23,8 +23,11 @@ import {
   generate,
 } from "./generate.ts";
 import { hashFileSet, recordGeneration } from "./generation-record.ts";
-import { assembleSelected, emitMigrationFileSet } from "./migrate/assemble.ts";
-import type { SelectedPackage } from "./migrate/assemble.ts";
+import {
+  type SelectedPackage,
+  assembleSelected,
+  emitMigrationFileSet,
+} from "@caisson/migrate";
 import { type FileSetWriter, createFileSetWriter } from "./writer.ts";
 
 /** A generation's billing identity. `idempotencyKey` is a caller-minted UUID, one per generation. */
@@ -68,10 +71,13 @@ export interface GenerationOutcome {
 
 /** The BUNDLED migrations dir for a `@caisson/<name>` module, resolved relative to THIS file (via
  *  `import.meta.url`) — cwd-stable across `turbo`/root test runs AND present in a published CLI,
- *  unlike a workspace-source read. `readPackageMigrations` looks for `<dir>/migrations/NNNN_*.sql`.
- *  The bundle is populated by the compose-time-migration follow-up (open board fork: "bundle module
- *  migrations into the cli"); until it lands the dir is absent, so no module contributes a migration
- *  and the merge below is a clean, deterministic no-op (never a cwd-dependent partial read). */
+ *  unlike a workspace-source read. `readPackageMigrations` looks for `<dir>/migrations/NNNN_*.sql`,
+ *  so the bundle stores each module's files at `<bundleRoot>/<name>/migrations/`.
+ *  The bundle is POPULATED at build time by `scripts/bundle-migrations.ts` (ADR-0091, the first CLI
+ *  build step) from each module's canonical `src/migrations/`: under a built or published CLI the dir
+ *  is present and migration-bearing modules contribute their files; on a clean source checkout with no
+ *  prior build the dir is absent, so the merge below falls back to a clean, deterministic no-op (never
+ *  a cwd-dependent partial read). */
 function packageDir(moduleId: string): string {
   const name = moduleId.replace(/^@caisson\//, "");
   return fileURLToPath(

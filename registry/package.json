@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
-  "description": "Registry catalog: module manifest + index schema + allowlist helpers + the CI index builder (ADR-0020/0021/0047).",
+  "description": "Registry SERVICE (commercial, ADR-0097): the CI index builder + gated publish + Cloudflare worker read-path (ADR-0021/0047). Re-exports the open @caisson/registry-schema contract.",
   "exports": {
     ".": {
       "bun": "./schema/index.ts",
@@ -23,6 +23,8 @@
     "test": "bun test ./schema ./scripts ./worker"
   },
   "dependencies": {
+    "@caisson/license-verify": "workspace:*",
+    "@caisson/registry-schema": "workspace:*",
     "zod": "^3.23.8"
   },
   "devDependencies": {

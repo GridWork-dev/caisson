@@ -3,7 +3,7 @@
 // appear in any tool output — is asserted directly, not assumed.
 import { describe, expect, test } from "bun:test";
 import { NotFoundError, ValidationError } from "@caisson/kernel";
-import { loadRegistryIndex } from "@caisson/registry";
+import { loadRegistryIndex } from "@caisson/registry-schema";
 import {
   createMcpServer,
   presenceEnvPort,

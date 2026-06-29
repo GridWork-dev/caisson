@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "license": "LicenseRef-Caisson-Commercial",
+  "license": "Apache-2.0",
   "description": "Governance kernel: typed config loader, the CaissonError model (ADR-0019), security primitives, and the standards gate (ADR-0016).",
   "exports": {
     ".": {

@@ -1,0 +1,30 @@
+{
+  "name": "@caisson/migrate",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "LicenseRef-Caisson-Commercial",
+  "description": "The base migration assembler + runner (ADR-0070/0090): reads each selected package's on-disk migrations/NNNN_*.sql, merges them via the kernel into ONE renumbered sequence + single schema_version ledger, emits the generated-app file set, and applies the sequence forward-only through an injected runner port. Owned here so @caisson/cli and @caisson/compliance import it, never copy it.",
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "bun test ./src"
+  },
+  "dependencies": {
+    "@caisson/kernel": "workspace:*"
+  },
+  "devDependencies": {
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.0"
+  }
+}
