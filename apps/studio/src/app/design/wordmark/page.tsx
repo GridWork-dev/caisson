@@ -47,9 +47,10 @@ export default function WordmarkPage() {
         </div>
       </section>
 
-      {/* candidates */}
+      {/* candidates — B "Pressure vessel" is the locked mark (ADR-0101); the rest stay for the record */}
       {CONCEPTS.map((c, i) => {
         const { Mark } = c;
+        const locked = c.id === "vessel";
         return (
           <section
             key={c.id}
@@ -60,7 +61,12 @@ export default function WordmarkPage() {
               <h2 className="section-title">
                 {String.fromCharCode(65 + i)} · {c.name}
               </h2>
-              <span className="board-state mono">candidate</span>
+              <span
+                className="board-state mono"
+                style={locked ? { color: "var(--cs-accent)" } : undefined}
+              >
+                {locked ? "locked · the mark" : "candidate"}
+              </span>
             </div>
             <p className="muted" style={{ maxWidth: "64ch" }}>
               {c.blurb}

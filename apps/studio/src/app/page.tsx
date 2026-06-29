@@ -33,8 +33,8 @@ const SURFACES: Surface[] = [
   },
   {
     title: "Wordmark",
-    desc: "Three high-craft mark candidates — pick one to lock the logo.",
-    state: "ready",
+    desc: "Pressure vessel — the locked mark (ADR-0101). Candidates kept for the record.",
+    state: "locked",
     href: "/design/wordmark",
   },
   {
