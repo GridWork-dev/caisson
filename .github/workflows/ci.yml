@@ -9,15 +9,40 @@ on:
 # jobs. The conceptual six — build · lint · test(unit) · test(integration) · standards-gate ·
 # golden-file — map to the steps below; a Neon branch DB is the opt-in escape hatch via
 # TEST_DATABASE_URL, never the default.
+#
+# SELF-HOSTED FLEET (2026-06-29): the pure-compute gate jobs run on the GridWork-dev ephemeral
+# runner fleet (the same per-repo, JIT, one-job-then-reset machinery as gridwork-core — canonical
+# SPEC + supervisor live in gridwork-core/system/ci/; caisson posture doc: docs/operations.md). The
+# amd64 lane (<host>) runs each job in a throwaway `docker run --rm` container, so operator
+# secrets are unreachable (proven by gridwork-core's runner-isolation-probe). Caisson's 3 runners
+# (<host> · <host> · <host>) are registered + ONLINE.
+#
+# Posture = DEDICATED LANES, no auto-fallback: GitHub has no self-hosted-first preference, so a
+# DOWN host QUEUES the job (it does NOT fall back to hosted). MANUAL fallback if a fleet host is
+# down for maintenance: flip the affected job's `runs-on: [self-hosted, <host>]` back to
+# `runs-on: ubuntu-latest` (one line). Jobs that hold write/deploy privilege or need a browser
+# (publish-and-index · deploy-site · lighthouse) deliberately STAY GitHub-hosted (see each below).
+
+concurrency:
+  # One in-flight run per PR / ref; a new push cancels the prior run so the limited fleet is not
+  # tied up on superseded commits.
+  group: "ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   # The standards gate (ADR-0021/0022) — the only registry ingress. Three layers, all block merge.
   standards-gate:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, <host>]
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          # Pinned to the repo's packageManager bun (was `latest` — drift risk on a persistent fleet).
+          bun-version: "1.3.14"
       # Layer 1a — SPDX/license authority, fs-only pass. Runs BEFORE install so AGPL-workspace +
       # down-only + declarations are checked even if the workspace install is broken.
       - name: standards-gate (pre-install — AGPL workspace + down-only + declarations)
@@ -38,7 +63,10 @@ jobs:
       # (0.0.0) so there is nothing to release-gate yet.
 
   check:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, <host>]
+    # The heaviest job (38-pkg turbo tree incl. 5 Next.js builds + many in-process PGlite instances);
+    # generous ceiling so a hung PGlite hook frees the runner rather than holding it to the 6h default.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
@@ -68,7 +96,8 @@ jobs:
   # and baseline; gating their merges on OUR regression baseline is wrong. The eval task ships in the
   # library for the buyer to opt into, but it is not one of the required buyer-repo CI checks.
   eval:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, <host>]
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
@@ -84,12 +113,24 @@ jobs:
   # ubuntu only, so the macOS native binary path would otherwise ship unexercised. This matrix runs
   # the local-store suite (vec0 + FTS5 + RRF hybrid retrieval) on BOTH runners; a missing/broken
   # platform extension fails CI here. `fail-fast: false` so a break on one OS never masks the other.
+  # Linux leg → the fleet's amd64 lane (exercises the sqlite-vec `.so`). macOS leg → STAYS
+  # GitHub-hosted `macos-latest` for now: the fleet's native macOS lane (<host>) dispatches
+  # fine (checkout + bun install are green on it), but its runner user has no Homebrew
+  # extension-capable SQLite, so the `brew install sqlite` step fails there. Moving the macOS leg to
+  # the fleet is a follow-up gated on provisioning Homebrew + extension-capable SQLite on the Mac
+  # mini's runner user (docs/operations.md §7); until then this keeps the leg green. `fail-fast:
+  # false` so a break on one OS never masks the other.
   native-ext:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+        include:
+          - platform: linux
+            runs-on: [self-hosted, <host>]
+          - platform: macos
+            runs-on: macos-latest
+    runs-on: ${{ matrix.runs-on }}
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
@@ -102,7 +143,7 @@ jobs:
       - name: ensure extension-capable SQLite (macOS)
         if: runner.os == 'macOS'
         run: brew install sqlite
-      - name: local-store native sqlite-vec ext (vec0 + FTS5 + RRF) on ${{ matrix.os }}
+      - name: local-store native sqlite-vec ext (vec0 + FTS5 + RRF) on ${{ matrix.platform }}
         run: bun test packages/local-store/src
 
   # registry/ tests also run under turbo (`bun run check`, the `check` job); this job is the
@@ -112,7 +153,8 @@ jobs:
   # (blocking the merge) needs this job marked a required check + CODEOWNERS on a real handle +
   # branch protection (operator GitHub settings; forks board). The ledger APPEND step is P5 (below).
   registry-index:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, <host>]
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
@@ -131,7 +173,8 @@ jobs:
   # `bun run gen:tokens`, or hand-editing tokens.css, fails `git diff --exit-code`. Mirrors the
   # registry-index provenance gate; tokens.css is .prettierignore'd so the generator is sole authority.
   token-drift:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, <host>]
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
@@ -162,7 +205,12 @@ jobs:
   publish-and-index:
     needs: [check, standards-gate, registry-index]
     if: github.ref == 'refs/heads/main'
+    # STAYS GitHub-hosted: this job holds contents:write + packages:write, writes ~/.npmrc, publishes
+    # to GitHub Packages, and pushes commits to main. Write/publish privilege belongs on a clean hosted
+    # runner, not the fleet (mirrors gridwork-core keeping its egress/write jobs hosted). Main-only +
+    # dry-run-by-default, so it runs rarely and gains nothing from fleet compute.
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: write
       packages: write

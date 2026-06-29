@@ -25,7 +25,11 @@ concurrency:
 
 jobs:
   deploy:
+    # STAYS GitHub-hosted by design: this job holds a production Cloudflare deploy token. A prod
+    # deploy credential does not belong on the self-hosted fleet — keep it on a clean hosted runner
+    # (and the actions below are SHA-pinned for the same supply-chain reason).
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       # Third-party actions pinned to commit SHAs (supply-chain: this job holds a prod deploy token).
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
