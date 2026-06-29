@@ -9,10 +9,12 @@ conflict, the ADR file and the board win over this index.
 - ADRs are append-only and immutable (ADR-0006). A later ADR _supersedes_ a clause; it
   never edits the prior file. So most rows below are **partial** supersessions (one clause),
   not a wholesale replacement.
-- 78 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 78). Numbering is **not**
-  contiguous: present are **0001-0024** and **0040-0093**; **0025-0039 are an unused gap**
+- 85 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 85). Numbering is **not**
+  contiguous: present are **0001-0024** and **0040-0100**; **0025-0039 are an unused gap**
   (no files). The 0040 jump was a deliberate block reservation for the brand/positioning set.
-  **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit).
+  **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit);
+  **0094-0096** = the 2026-06-29 GTM-report locks (open-core Base / GTM offer / services-docs);
+  **0097-0100** = the 2026-06-29 design-system-harden track locks (component-recipe+kit / token+theming / gates / signature-animation).
 - Status tokens read from each ADR's own header line:
   - `proposed` = literal header value on the founding + foundations sets (0001-0019, 0024).
     Per the board (line 90) these are **in force / locked** despite the stale "proposed"
@@ -217,6 +219,27 @@ pricing numbers).
 | [0091](../knowledge/decisions/ADR-0091-compose-time-migration-bundling.md)    | Compose-time migration bundling via CLI build-step copy               | Generator | accepted | resolves bundling fork; 0070/0014; relocatable→0090  |
 | [0092](../knowledge/decisions/ADR-0092-create-caisson-bin-runtime.md)         | create-caisson bin -> dist/cli.js + node shebang (npx reach)          | CLI       | accepted | operator override; impl at P6 w/ publishability 0021 |
 | [0093](../knowledge/decisions/ADR-0093-local-cli-free-codegen-debit-scope.md) | Local CLI free; codegen debit scoped to hosted path                   | CLI       | accepted | clarifies 0049; 0024/0005/0008                       |
+
+### GTM-report locks (0094-0096, 2026-06-29) - status `accepted`
+
+| #                                                                   | Title                                                                                            | Domain       | Status   | Relations                            |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------ | -------- | ------------------------------------ |
+| [0094](../knowledge/decisions/ADR-0094-open-core-base-apache2.md)   | Open-core Base: Apache-2.0 base substrate (editions stay commercial)                             | Licensing    | accepted | amends 0023/0050/0083; re-license W1 |
+| [0095](../knowledge/decisions/ADR-0095-gtm-offer-structure.md)      | GTM offer structure: free EU-AI-Act sample · Enterprise tier · annual cadence · pricing deferred | GTM/Pricing  | accepted | extends 0012/0081/0082/0089          |
+| [0096](../knowledge/decisions/ADR-0096-services-docs-standalone.md) | `services/docs` standalone AI-native docs service                                                | Docs/Support | accepted | composes 0009/0084; build at P6      |
+
+### Design-system-harden track (0097-0100, 2026-06-29) - status `accepted`
+
+Eight forks (F1-F8) from `outputs/kickoffs/design-marketing-rebuild.md`, locked on a 7-agent code-grounded
+fanout. Adopts the _mechanism_ of `outputs/research/wardfile-frontend-playbook.md` (token/brand VALUES stay
+Caisson's). The track is harden-not-build (Caisson already owned the token foundation).
+
+| #                                                                             | Title                                                                            | Domain           | Status   | Relations                                                                  |
+| ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------------- | -------- | -------------------------------------------------------------------------- |
+| [0097](../knowledge/decisions/ADR-0097-component-recipe-kit-packaging.md)     | Component recipe + framework-agnostic kit packaging (F1/F2/F7/F8)                | Design/UI        | accepted | adopts wardfile playbook; Lucide per DESIGN.md §4; ADR-0078/0042/0003/0044 |
+| [0098](../knowledge/decisions/ADR-0098-token-theming-hardening.md)            | Token & theming hardening: breakpoint ladder · scrim · 3-prong dark mode (F4/F3) | Design/Tokens    | accepted | extends 0042/0078; ThemeToggle per 0097                                    |
+| [0099](../knowledge/decisions/ADR-0099-deterministic-design-quality-gates.md) | Deterministic design-quality gates (staged) + advisory critic (F5)               | Design/CI        | accepted | extends 0016/0022/0062; enforces 0097/0098                                 |
+| [0100](../knowledge/decisions/ADR-0100-signature-animation-css-svg.md)        | Marketing signature animation: tokenized CSS/SVG, video deferred (F6)            | Design/Marketing | accepted | adopts hero-concepts; under 0078 §6 / 0080 §3                              |
 
 ---
 
