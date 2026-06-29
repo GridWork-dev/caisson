@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { Wordmark } from "./brand";
 import { MobileNav } from "./mobile-nav";
 import { ThemeToggle } from "./theme-toggle";
-import { Button } from "./ui";
+import { Button } from "./button";
 import styles from "./site-nav.module.css";
 
 // Agentic-Dev is intentionally absent from the primary nav (roadmap edition, ADR-0082 §4).

@@ -1,4 +1,5 @@
 import "@caisson/ui/styles/tokens.css";
+import "@caisson/ui/styles/base.css";
 import "./global.css";
 
 import type { Metadata, Viewport } from "next";
