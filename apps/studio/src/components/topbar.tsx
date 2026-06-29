@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { ThemeToggle } from "./theme-toggle";
+import { ThemeToggle } from "@caisson/ui/components";
 
 const LINKS = [
   { href: "/", label: "Overview" },
   { href: "/design/foundations", label: "Foundations" },
   { href: "/design/typography", label: "Typography" },
+  { href: "/components", label: "Components" },
 ] as const;
 
 export function Topbar() {

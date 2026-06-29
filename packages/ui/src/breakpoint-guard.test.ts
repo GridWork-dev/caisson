@@ -37,8 +37,10 @@ function collectWidths(): { file: string; raw: string }[] {
     for (const name of readdirSync(dir)) {
       if (!name.endsWith(".css")) continue;
       const css = readFileSync(join(dir, name), "utf8");
-      for (const m of css.matchAll(widthRe))
-        hits.push({ file: name, raw: m[1].trim() });
+      for (const m of css.matchAll(widthRe)) {
+        const w = m[1];
+        if (w !== undefined) hits.push({ file: name, raw: w.trim() });
+      }
     }
   }
   return hits;
