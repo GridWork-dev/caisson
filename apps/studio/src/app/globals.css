@@ -489,6 +489,19 @@ p {
   white-space: nowrap;
 }
 
+/* ---- signature sketch (four-beat / cross-section / break-the-chain) ----- */
+
+.signature-frame {
+  background: var(--cs-surface-1);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-lg);
+  padding: clamp(1rem, 0.5rem + 2vw, 2.5rem);
+}
+
+.panel[data-here] {
+  border-color: color-mix(in oklab, var(--cs-accent) 55%, var(--cs-border));
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition-duration: 0.01ms !important;

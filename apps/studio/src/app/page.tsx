@@ -29,7 +29,12 @@ const SURFACES: Surface[] = [
     desc: "Tagline, hero copy, banned list, locked in specs/04.",
     state: "locked",
   },
-  { title: "Motion", desc: "Easing + duration tokens.", state: "later" },
+  {
+    title: "Signature",
+    desc: "The four-beat sketch: caisson cross-section + break-the-chain.",
+    state: "ready",
+    href: "/design/signature",
+  },
   {
     title: "Components",
     desc: "The @caisson/ui kit, rendered live (ADR-0097 recipe).",
