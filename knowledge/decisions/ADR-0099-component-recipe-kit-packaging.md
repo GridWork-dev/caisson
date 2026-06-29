@@ -1,4 +1,4 @@
-# ADR-0097 — Component recipe + framework-agnostic kit packaging
+# ADR-0099 — Component recipe + framework-agnostic kit packaging
 
 **Status:** accepted · 2026-06-29 (design-system-harden track — operator lock, picker round F1·F2·F7·F8).
 **Relates:** ADR-0078 (brand foundation — the recipe renders its tokens/icons; **Lucide lock cited from
@@ -87,5 +87,5 @@ choice; DESIGN.md resolved it to Lucide — cite DESIGN.md to avoid reopening th
   ADR is the component-layer mechanism, not a brand change.
 
 Implementation lands in Phase 1 of the design-system-harden track (the build). The dark-mode/icon-toggle
-_behavior_ the ThemeToggle component encodes is decided in **ADR-0098**; the gates that enforce the recipe
-(anti-slop AST guard, co-located-CSS, no-inline-style) are decided in **ADR-0099**.
+_behavior_ the ThemeToggle component encodes is decided in **ADR-0100**; the gates that enforce the recipe
+(anti-slop AST guard, co-located-CSS, no-inline-style) are decided in **ADR-0101**.

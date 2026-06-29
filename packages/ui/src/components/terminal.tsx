@@ -13,7 +13,7 @@ export interface TerminalProps extends HTMLAttributes<HTMLDivElement> {
 
 /**
  * Terminal — the framed evidence artifact (a chrome bar + a monospace body). Purely
- * presentational (no Radix, server-safe per recipe rule 1). Built to the ADR-0097 recipe:
+ * presentational (no Radix, server-safe per recipe rule 1). Built to the ADR-0099 recipe:
  *   - Co-located plain CSS (`terminal.css`) reading only `var(--cs-*)`.
  *   - BEM block `cs-terminal` / elements `cs-terminal__bar` + `cs-terminal__body`.
  *   - `forwardRef` onto the single DOM root, matching the Button reference.

@@ -4,7 +4,7 @@ import { CaissonCrossSection } from "./caisson-cross-section";
 import { BreakTheChain } from "./break-the-chain";
 
 /**
- * Signature — the still sketch of the marketing four-beat (deny → chain → hold → sign, ADR-0100).
+ * Signature — the still sketch of the marketing four-beat (deny → chain → hold → sign, ADR-0102).
  * Motion is Phase 2 (on apps/site); THIS is the Phase-1 design-direction surface the kickoff asks
  * for ("sketch the hero/diagram in studio before the site rebuild"). Everything is tokenized inline
  * SVG reading only var(--cs-*) — the ADR-0078 §6 craft floor — and honors ADR-0080 §3: the diagrams
@@ -64,7 +64,7 @@ export default function SignaturePage() {
         <p className="lede">
           The marketing &ldquo;wow&rdquo; is one four-beat narrative —{" "}
           <strong>deny → chain → hold → sign</strong> — rendered entirely as
-          tokenized CSS + inline SVG (ADR-0100, no video pipeline). Phase 2
+          tokenized CSS + inline SVG (ADR-0102, no video pipeline). Phase 2
           builds the motion on the site; these are the stills that lock the
           direction.
         </p>

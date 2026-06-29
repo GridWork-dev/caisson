@@ -1,8 +1,8 @@
-# ADR-0099 — Deterministic design-quality gates (staged) + advisory critic ledger
+# ADR-0101 — Deterministic design-quality gates (staged) + advisory critic ledger
 
 **Status:** accepted · 2026-06-29 (design-system-harden track — operator lock, picker round F5).
 **Relates:** ADR-0016 (CI/CD + the standards gate), ADR-0062 (eval regression-vs-baseline gate precedent),
-ADR-0022 (import-boundary lint gates), ADR-0097 (the recipe these gates enforce), ADR-0098 (tokens these
+ADR-0022 (import-boundary lint gates), ADR-0099 (the recipe these gates enforce), ADR-0100 (tokens these
 gates check). **Adopts the mechanism of** `outputs/research/wardfile-frontend-playbook.md` §quality (the
 three-layer separation). Evidence: the 2026-06-29 grounding of the gate surfaces
 (`outputs/kickoffs/design-marketing-rebuild.md` F5).
@@ -33,7 +33,7 @@ advisory critic strictly **non-blocking**. Each gate lands in the home that fits
 | 2   | **Full contrast matrix**      | WCAG AA over **every** legitimate token pair (text 4.5:1 / non-text 3.0:1) in **both** modes, derived from the token object (not hand-typed) | a **`packages/ui` test** (runs under `turbo test`); **replaces + deletes** the two duplicated `apps/*` contrast tests                                                                    |
 | 3   | **Anti-slop AST guard**       | bans house AI-slop tells + raw hex / arbitrary color / inline-style in kit code (the recipe demands `var(--cs-*)` only)                      | a flat-config block in **`tooling/eslint-config`** (mirrors the existing `boundaries.js` no-restricted-imports precedent) → every package's `lint`                                       |
 | 4   | **TS-compiler copy-guard**    | flags identical non-test modules across packages (parses with the TS compiler)                                                               | a new check in **`tooling/standards-gate/src/checks.ts`** (CI via `cli.ts`)                                                                                                              |
-| 5   | **Breakpoint guard**          | every `@media` width is a rung on the ADR-0098 rem ladder                                                                                    | a **`packages/ui` (or apps/site) test** under `turbo test`                                                                                                                               |
+| 5   | **Breakpoint guard**          | every `@media` width is a rung on the ADR-0100 rem ladder                                                                                    | a **`packages/ui` (or apps/site) test** under `turbo test`                                                                                                                               |
 | 6   | **axe both-modes + overflow** | browser a11y in dark+light + no horizontal overflow (boundingRect, not `scrollWidth`)                                                        | runs as the **SHIP a11y audit**, **not** inside `bun run check` (operator lock) — needs `axe-core` + a browser harness over the static export                                            |
 
 **Advisory critic (Layer 3, never blocks):** a `gw-frontend-designer`-style pass scores surfaces on the

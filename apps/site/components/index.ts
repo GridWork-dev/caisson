@@ -1,4 +1,4 @@
-// Barrel for the marketing surface's component set. Kit-first (ADR-0097): every shared primitive is
+// Barrel for the marketing surface's component set. Kit-first (ADR-0099): every shared primitive is
 // the SINGLE implementation in `@caisson/ui/components` — re-exported here, never re-inlined. The
 // Icon/Glyph/Wordmark/Reveal/ThemeToggle primitives now live in the kit too (consolidated from the
 // former site-local copies — drift-proofing the marketing surface against the gallery). The only

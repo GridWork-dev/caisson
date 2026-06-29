@@ -20,7 +20,7 @@ export interface SkuMatrixProps extends HTMLAttributes<HTMLDivElement> {
 
 /**
  * SkuMatrix (V14 — editions × modules). Presentational; no Radix behavior needed.
- * Recipe-compliant (ADR-0097): co-located CSS reading only `var(--cs-*)`, BEM block `cs-matrix`,
+ * Recipe-compliant (ADR-0099): co-located CSS reading only `var(--cs-*)`, BEM block `cs-matrix`,
  * `forwardRef` on the single DOM root (the scroll wrapper). The row-label weight that was an inline
  * `style` in the old `apps/site` primitive is now the `.cs-matrix th[scope="row"]` rule.
  */

@@ -1,4 +1,4 @@
-# ADR-0100 — Marketing signature animation: tokenized CSS/SVG, video pipeline deferred
+# ADR-0102 — Marketing signature animation: tokenized CSS/SVG, video pipeline deferred
 
 **Status:** accepted · 2026-06-29 (design-system-harden track — operator lock, picker round F6).
 **Relates:** ADR-0078 §6 (expressive tokenized motion — the bounding craft law), ADR-0080 §3 (honesty
@@ -65,4 +65,4 @@ without reopening this ADR.
 - The **video pipeline is deferred** to a possible fast-follow (real product capture only); the gated
   `<video>` player pattern may be added later without a new ADR.
 
-Implementation in Phase 2 of the track (the marketing-site rebuild), on the kit locked by ADR-0097/0098/0099.
+Implementation in Phase 2 of the track (the marketing-site rebuild), on the kit locked by ADR-0099/0100/0101.

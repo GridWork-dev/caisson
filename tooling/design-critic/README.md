@@ -1,13 +1,13 @@
 # @caisson/design-critic
 
-The **advisory** layer of the three-layer design-quality model (ADR-0099 Layer 3). It is the
+The **advisory** layer of the three-layer design-quality model (ADR-0101 Layer 3). It is the
 counterpart to the **deterministic, blocking** gates (#1–#6) — and unlike them it **never gates a
 merge**. A `gw-frontend-designer`-style pass scores a surface on the Nielsen heuristics and emits
 findings; this package gives those findings durable identity and reconciles them run-to-run.
 
 ## Why a ledger (not a fresh dump each run)
 
-A rubric score swings ±6 between runs (ADR-0099 Rejected: "Block on the critic's rubric score"), so
+A rubric score swings ±6 between runs (ADR-0101 Rejected: "Block on the critic's rubric score"), so
 the score must never block. But the _findings_ are worth tracking — if a finding keeps reappearing, or
 an operator has triaged one as `accepted`, that state must survive a reword. Hence:
 

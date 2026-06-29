@@ -1,4 +1,4 @@
-// Wordmark + glyph (ADR-0078 §2) — ported to the @caisson/ui kit recipe (ADR-0097). The lowercase
+// Wordmark + glyph (ADR-0078 §2) — ported to the @caisson/ui kit recipe (ADR-0099). The lowercase
 // mono `caisson` wordmark is primary; the waterline-over-chamber glyph rides beside it in tight
 // contexts. MONOCHROME ALWAYS — the accent never enters the wordmark (protects the ≤10% accent
 // budget, ADR-0078 §8). Server-safe (no hook/handler/browser API → no "use client"). Both render a
@@ -9,7 +9,7 @@ import type { SVGProps } from "react";
 import "./brand.css";
 
 /**
- * The Caisson mark — the "Pressure vessel" (ADR-0101): a sealed steel port holding a single
+ * The Caisson mark — the "Pressure vessel" (ADR-0103): a sealed steel port holding a single
  * instrument light, with a waterline seam across the crown. Monochrome (`currentColor`) in-product;
  * the favicon / app-icon variant (app/icon.svg) carries the accent light on a dark steel field. The
  * accent never enters the in-product mark (ADR-0078 §2, protects the ≤10% budget). `forwardRef` per

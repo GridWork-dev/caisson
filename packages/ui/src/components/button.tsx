@@ -22,7 +22,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 /**
- * Recipe REFERENCE component (ADR-0097) — the template every other kit primitive copies:
+ * Recipe REFERENCE component (ADR-0099) — the template every other kit primitive copies:
  *   1. Radix behavior/polymorphism (here `Slot` for `asChild`); never a framework import.
  *   2. Co-located plain CSS (`button.css`) reading only `var(--cs-*)`.
  *   3. Variants as `data-*` attributes styled by attribute selectors — no variant logic in JS;

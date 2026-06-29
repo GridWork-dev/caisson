@@ -18,7 +18,7 @@ export interface SectionProps {
 }
 
 /**
- * Section — recipe primitive (ADR-0097). Purely presentational (no Radix), server-safe.
+ * Section — recipe primitive (ADR-0099). Purely presentational (no Radix), server-safe.
  *   3. Variants as `data-*`: `data-flush` (boolean) drops the hairline, `data-band` tones the
  *      background — styled by attribute selectors, no variant logic in JS.
  *   4. `forwardRef` onto the single `<section>` root; BEM block name `cs-section`.

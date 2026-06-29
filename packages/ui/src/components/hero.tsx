@@ -14,7 +14,7 @@ export interface HeroProps {
 }
 
 /**
- * Hero — the split marketing header (V1). Recipe primitive (ADR-0097):
+ * Hero — the split marketing header (V1). Recipe primitive (ADR-0099):
  *   1. Purely presentational → no Radix, no framework import; server-safe (no hooks/handlers).
  *   2. Co-located plain CSS (`hero.css`) reading only `var(--cs-*)`.
  *   3. Layout + spacing live in CSS classes — every former inline `style={{…}}` is now a

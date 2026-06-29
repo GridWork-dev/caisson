@@ -34,7 +34,7 @@ export interface ThemeToggleProps {
 }
 
 /**
- * ThemeToggle (ADR-0098 F3) — an ICON control (no text), single button. 3-prong dark mode:
+ * ThemeToggle (ADR-0100 F3) — an ICON control (no text), single button. 3-prong dark mode:
  * before any click the document follows the OS via CSS (`prefers-color-scheme`); this toggle tracks
  * that live and only PINS a choice on click (writes `data-theme` + localStorage). Paired with
  * `themeInitScript` (theme-init.ts) for FOUC-free pinned loads.

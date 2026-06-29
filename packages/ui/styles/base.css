@@ -1,7 +1,7 @@
 /* @caisson/ui base — the design-system reset + shared utilities (ADR-0042/0078). Hand-authored
  * (NOT generated; tokens.css is the generated sibling). Every value is a --cs-* token. Consumers
  * import this once at the root layout, after tokens.css. Component-specific rules live co-located
- * with each component (the recipe, ADR-0097) — this file holds ONLY cross-component base + utilities.
+ * with each component (the recipe, ADR-0099) — this file holds ONLY cross-component base + utilities.
  * Site-specific concerns (Tailwind/Fumadocs imports, the fd-bridge, nav/footer/print chrome) stay
  * in the consuming app's stylesheet. */
 
@@ -83,8 +83,8 @@ kbd,
 }
 
 /* 4-up steps to 2-up (≤ lg rung) before every grid collapses to 1-up (≤ md rung). Both widths are
- * rungs on the ADR-0098 rem ladder (lg 60rem / md 48rem) — enforced by the breakpoint guard
- * (ADR-0099 #5). Source order matters: the lg block sets 4-up→2-up, the md block (later) wins below
+ * rungs on the ADR-0100 rem ladder (lg 60rem / md 48rem) — enforced by the breakpoint guard
+ * (ADR-0101 #5). Source order matters: the lg block sets 4-up→2-up, the md block (later) wins below
  * 48rem and forces 1fr. */
 @media (max-width: 60rem) {
   .cs-grid--4 {

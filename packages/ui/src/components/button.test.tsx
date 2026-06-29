@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { Button } from "./button";
 
-describe("Button — recipe reference (ADR-0097)", () => {
+describe("Button — recipe reference (ADR-0099)", () => {
   test("native <button>: data-* variants + type=button by default", () => {
     const html = renderToStaticMarkup(
       <Button variant="ghost" size="sm">

@@ -13,7 +13,7 @@ export interface ButtonProps extends Omit<KitButtonProps, "asChild"> {
 }
 
 /**
- * Site Button — the Next navigation seam over the framework-agnostic kit `Button` (ADR-0097): the kit
+ * Site Button — the Next navigation seam over the framework-agnostic kit `Button` (ADR-0099): the kit
  * never imports `next/link`, so the app injects it here via `asChild`. `href` → `<Link>` (or a plain
  * `<a>` when `external`); no `href` → a real `<button>`. The kit owns all styling (`cs-button` +
  * `data-variant`/`data-size`); this wrapper only wires routing so pages keep `<Button href variant>`.

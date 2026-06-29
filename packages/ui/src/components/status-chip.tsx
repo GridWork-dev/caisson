@@ -22,7 +22,7 @@ export interface StatusChipProps extends HTMLAttributes<HTMLSpanElement> {
 /**
  * StatusChip — glyph + label status pill (ADR-0078 §7), never colour-alone.
  *
- * Recipe-compliant (ADR-0097): co-located CSS reading only `var(--cs-*)`; tone is a `data-tone`
+ * Recipe-compliant (ADR-0099): co-located CSS reading only `var(--cs-*)`; tone is a `data-tone`
  * attribute resolved by attribute selectors to a local-indirection `--chip-fg` var (rule 3) so
  * light/dark "just works" by cascade with no theme branching in JS. Presentational — no Radix.
  */

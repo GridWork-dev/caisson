@@ -1,4 +1,4 @@
-/* Hero — split marketing header (V1, ADR-0097). Co-located; values via --cs-* only. Owns ONLY its
+/* Hero — split marketing header (V1, ADR-0099). Co-located; values via --cs-* only. Owns ONLY its
  * own layout + spacing; cs-section/cs-container/cs-display/cs-eyebrow/cs-lede live elsewhere. */
 .cs-hero {
   display: grid;
@@ -38,7 +38,7 @@
   margin-top: var(--cs-space-8);
 }
 
-/* Collapse the split to a single stacked column on tablet/below (lg rung, ADR-0098 ladder).
+/* Collapse the split to a single stacked column on tablet/below (lg rung, ADR-0100 ladder).
  * minmax(0,1fr) (not 1fr) so the single track may shrink below its content's min-content width —
  * the second guard against phone-width horizontal overflow. */
 @media (max-width: 60rem) {

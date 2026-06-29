@@ -13,7 +13,7 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 /**
- * Card — presentational panel primitive (recipe per ADR-0097). Renders a single `<div>`, so it is
+ * Card — presentational panel primitive (recipe per ADR-0099). Renders a single `<div>`, so it is
  * server-safe and `forwardRef`s its DOM root. No Radix: a card never navigates or toggles.
  *   - `accent` → `data-accent` (boolean attribute), `interactive` → `data-interactive`; both styled
  *     by attribute selectors in `card.css` — no variant logic in JS.

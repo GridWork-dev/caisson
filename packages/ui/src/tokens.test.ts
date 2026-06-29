@@ -31,7 +31,7 @@ describe("design token contract (ADR-0042)", () => {
     expect(fonts.mono.length).toBeGreaterThan(0);
   });
 
-  test("every palette carries a scrim in both modes (ADR-0098 F4)", () => {
+  test("every palette carries a scrim in both modes (ADR-0100 F4)", () => {
     // The scrim token is required by the overlay primitives (dialog/drawer). Guard it on every
     // candidate so a future palette add can't ship without one.
     for (const c of accentCandidates) {
@@ -42,8 +42,8 @@ describe("design token contract (ADR-0042)", () => {
     expect(lightTheme.scrim.length).toBeGreaterThan(0);
   });
 
-  test("the rem breakpoint ladder is the canonical ascending set (ADR-0098 F4)", () => {
-    // The single source of truth for every @media width; the breakpoint guard (ADR-0099) reads it.
+  test("the rem breakpoint ladder is the canonical ascending set (ADR-0100 F4)", () => {
+    // The single source of truth for every @media width; the breakpoint guard (ADR-0101) reads it.
     const bp = foundation.breakpoint;
     expect(Object.keys(bp)).toEqual(["xs", "sm", "md", "lg", "xl", "2xl"]);
     const rems = Object.values(bp).map((v) => Number.parseFloat(v));

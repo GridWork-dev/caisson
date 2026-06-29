@@ -1,7 +1,7 @@
 /**
- * Anti-slop AST guard (ADR-0099 gate #3) — the recipe's deterministic ESLint layer. A custom rule
+ * Anti-slop AST guard (ADR-0101 gate #3) — the recipe's deterministic ESLint layer. A custom rule
  * (inline flat-config plugin, mirroring the boundaries.js precedent) bans, in KIT COMPONENT code,
- * the three slop tells ADR-0097 forbids:
+ * the three slop tells ADR-0099 forbids:
  *
  *   1. inline `style={{…}}` JSX attributes — variants ride `data-*` + co-located CSS, never inline.
  *      The ONE sanctioned exception is a genuinely DYNAMIC value (Reveal's per-instance
@@ -11,7 +11,7 @@
  *      (foundation.ts / candidates.ts), which live in src/tokens, NOT src/components.
  *   3. house AI-slop copy tells in rendered JSX text.
  *
- * STAGED (ADR-0099): scoped to the kit (`packages/ui/src/components`) today — the recipe's reference
+ * STAGED (ADR-0101): scoped to the kit (`packages/ui/src/components`) today — the recipe's reference
  * home; it broadens to `apps/*` once each app is rebuilt kit-first (P1.5 studio / Phase-2 site).
  * basePath is pinned to the repo root so the same absolute files match whether ESLint runs from the
  * repo root (`eslint .`) or per-package (`eslint src`, turbo) — the boundaries.js basePath lesson.
@@ -36,15 +36,15 @@ const noSlop = {
     type: "problem",
     docs: {
       description:
-        "ban design slop in kit components: inline style, raw colour, AI-slop copy (ADR-0099 #3)",
+        "ban design slop in kit components: inline style, raw colour, AI-slop copy (ADR-0101 #3)",
     },
     schema: [],
     messages: {
       inlineStyle:
-        "Inline `style={{…}}` is banned in kit components (recipe ADR-0097) — use a `data-*` variant + co-located CSS. Only a genuinely dynamic value may use inline style (see reveal.tsx, scoped out).",
+        "Inline `style={{…}}` is banned in kit components (recipe ADR-0099) — use a `data-*` variant + co-located CSS. Only a genuinely dynamic value may use inline style (see reveal.tsx, scoped out).",
       rawColor:
-        "Raw colour literal `{{value}}` in component source (ADR-0099 #3). Components read `var(--cs-*)` via CSS; colour values live only in src/tokens.",
-      slop: "AI-slop copy tell `{{value}}` in rendered text (ADR-0099 #3 / voice ADR-0080).",
+        "Raw colour literal `{{value}}` in component source (ADR-0101 #3). Components read `var(--cs-*)` via CSS; colour values live only in src/tokens.",
+      slop: "AI-slop copy tell `{{value}}` in rendered text (ADR-0101 #3 / voice ADR-0080).",
     },
   },
   create(context) {

@@ -19,7 +19,7 @@ export interface CodeBlockProps {
 }
 
 /**
- * Recipe primitive (ADR-0097) — purely presentational, server-safe (no hook/handler/browser API,
+ * Recipe primitive (ADR-0099) — purely presentational, server-safe (no hook/handler/browser API,
  * so no `"use client"`). Two shapes from one prop API:
  *   - `frame` → defers to the sibling `<Terminal>` primitive (chrome bar + body); terminal classes
  *     are owned there, never redefined here.

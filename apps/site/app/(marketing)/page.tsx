@@ -110,7 +110,7 @@ export default function HomePage() {
               gap: "var(--cs-space-4)",
             }}
           >
-            {/* The denial, as code-as-proof (ADR-0102 hero = static): a query that never set
+            {/* The denial, as code-as-proof (ADR-0104 hero = static): a query that never set
                 the tenant context returns nothing, never everything. */}
             <Terminal
               label="psql — cross-tenant read"
@@ -132,7 +132,7 @@ export default function HomePage() {
                 </>
               }
             />
-            {/* Signature slot — RESERVED + blank (ADR-0101/0102). The marketing signature is
+            {/* Signature slot — RESERVED + blank (ADR-0103/0104). The marketing signature is
                 deferred-for-rework; a future three.js / CSS-SVG studio-candidate spike mounts
                 here. Intentionally renders nothing until then (no fabricated placeholder). */}
           </div>

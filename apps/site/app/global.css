@@ -1,4 +1,4 @@
-/* Caisson site stylesheet — kit-first (ADR-0097). The design-system base (reset, layout primitives,
+/* Caisson site stylesheet — kit-first (ADR-0099). The design-system base (reset, layout primitives,
  * type utilities, elevation/glow, tok-* tints, skip-link, reduced-motion) is owned by
  * `@caisson/ui/styles/base.css` (imported in layout.tsx before this file), and every shared
  * component (Button/Card/Hero/Section/Terminal/CodeBlock/StatusChip/CredentialStrip/EditionCard/

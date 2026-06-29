@@ -17,7 +17,7 @@ export const functionalDark: FunctionalTokens = {
 };
 
 /** Light-surface functional set — darkened so each clears WCAG AA (>=4.5:1) on bg/surface1/surface2
- *  (computed + asserted, ADR-0099 gate #2). The hue/chroma stay; only L drops for the light field. */
+ *  (computed + asserted, ADR-0101 gate #2). The hue/chroma stay; only L drops for the light field. */
 export const functionalLight: FunctionalTokens = {
   success: "oklch(0.50 0.15 150)",
   warning: "oklch(0.50 0.12 75)",
