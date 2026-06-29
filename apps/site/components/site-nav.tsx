@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { Wordmark } from "./brand";
+import { ThemeToggle, Wordmark } from "@caisson/ui/components";
+
 import { MobileNav } from "./mobile-nav";
-import { ThemeToggle } from "./theme-toggle";
 import { Button } from "./button";
 import styles from "./site-nav.module.css";
 

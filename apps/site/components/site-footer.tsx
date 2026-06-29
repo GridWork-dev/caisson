@@ -1,6 +1,7 @@
 import Link from "next/link";
 
-import { Wordmark } from "./brand";
+import { Wordmark } from "@caisson/ui/components";
+
 import { UpdatesForm } from "./waitlist-form";
 
 const COLS: { heading: string; links: { href: string; label: string }[] }[] = [
