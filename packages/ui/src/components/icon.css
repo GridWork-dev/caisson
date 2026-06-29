@@ -1,0 +1,14 @@
+/* Icon (ADR-0078 §3). Co-located; size via [data-size]; color is `currentColor` from the SVG,
+   so this file declares only box metrics — no color tokens to read. */
+.cs-icon {
+  display: inline-block;
+  vertical-align: middle;
+  width: 1.25rem;
+  height: 1.25rem;
+  stroke-width: 2;
+}
+
+.cs-icon[data-size="lg"] {
+  width: 1.75rem;
+  height: 1.75rem;
+}

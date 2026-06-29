@@ -13,6 +13,7 @@
     "./tokens": "./src/tokens/index.ts",
     "./components": "./src/components/index.ts",
     "./components/*": "./src/components/*",
+    "./styles/base.css": "./styles/base.css",
     "./styles/tokens.css": "./styles/tokens.css"
   },
   "scripts": {

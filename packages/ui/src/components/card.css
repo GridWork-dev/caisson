@@ -1,0 +1,52 @@
+/* Card — presentational panel (ADR-0097). Co-located; variants via [data-*]; values via --cs-* only. */
+.cs-card {
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-lg);
+  background: var(--cs-surface-1);
+  padding: var(--cs-space-6);
+}
+
+/* Accent treatment — accent border + tinted surface. */
+.cs-card[data-accent] {
+  border-color: var(--cs-accent);
+  background: var(--cs-accent-tint);
+}
+
+/* Interactive card — tonal hover (border brighten + surface step + lift), motion-tokened. */
+.cs-card[data-interactive] {
+  transition:
+    border-color var(--cs-duration-fast) var(--cs-ease-out),
+    background var(--cs-duration-fast) var(--cs-ease-out),
+    box-shadow var(--cs-duration-base) var(--cs-ease-out),
+    transform var(--cs-duration-base) var(--cs-ease-out);
+  will-change: transform;
+}
+
+.cs-card[data-interactive]:hover {
+  border-color: var(--cs-border-strong);
+  background: var(--cs-surface-2);
+  box-shadow: var(--cs-shadow-md);
+  transform: translateY(-2px);
+}
+
+/* Card title — used by composing screens inside a card. */
+.cs-card-title {
+  font-size: var(--cs-text-lg);
+  font-weight: var(--cs-weight-semibold);
+  letter-spacing: var(--cs-tracking-tight);
+}
+
+/* Reduced motion — drop the lift transform (the global base reset zeroes durations; this also
+ * neutralizes the translate so the card never appears mid-lift). */
+@media (prefers-reduced-motion: reduce) {
+  .cs-card[data-interactive]:hover {
+    transform: none;
+  }
+}
+
+/* Forced-colors (Windows high-contrast) — keep the bordered affordance visible. */
+@media (forced-colors: active) {
+  .cs-card {
+    border: 1px solid CanvasText;
+  }
+}
