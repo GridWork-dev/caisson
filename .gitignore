@@ -3,6 +3,11 @@ dist/
 .turbo/
 .next/
 *.tsbuildinfo
+
+# CLI compose-time migration bundle (ADR-0091): a BUILD ARTIFACT regenerated from each module's
+# canonical src/migrations/ by packages/cli/scripts/bundle-migrations.ts — never hand-edited, never
+# committed (the source packages stay the single source of truth).
+packages/cli/migrations-bundle/
 .env
 .env.*
 !.env.example
