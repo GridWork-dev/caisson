@@ -32,7 +32,7 @@ import {
   assertKnownModule,
   assertKnownVersion,
   expandEntitlements,
-} from "@caisson/registry";
+} from "@caisson/registry-schema";
 import { registerCoachTools, type CoachOptions } from "./coach.ts";
 
 export interface BuyerToken {

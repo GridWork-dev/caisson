@@ -5,7 +5,7 @@
 // (a caught 23505 would poison it). Run inside `withTenant` so RLS scopes the ledger.
 import { randomUUID } from "node:crypto";
 import { InsufficientCreditsError, ValidationError } from "@caisson/kernel";
-import { type FeatureTag, FeatureTagSchema } from "@caisson/registry";
+import { type FeatureTag, FeatureTagSchema } from "@caisson/registry-schema";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 
 // `feature_grant` / `feature_debit` are the generic feature-meter envelopes (ADR-0074): an edition

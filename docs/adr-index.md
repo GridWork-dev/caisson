@@ -9,17 +9,19 @@ conflict, the ADR file and the board win over this index.
 - ADRs are append-only and immutable (ADR-0006). A later ADR _supersedes_ a clause; it
   never edits the prior file. So most rows below are **partial** supersessions (one clause),
   not a wholesale replacement.
-- 78 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 78). Numbering is **not**
-  contiguous: present are **0001-0024** and **0040-0093**; **0025-0039 are an unused gap**
+- 82 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 82). Numbering is **not**
+  contiguous: present are **0001-0024** and **0040-0097**; **0025-0039 are an unused gap**
   (no files). The 0040 jump was a deliberate block reservation for the brand/positioning set.
-  **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit).
+  **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit);
+  **0094-0096** = the 2026-06-29 GTM-report round (open-core Base / GTM offer / services-docs);
+  **0097** = the W1 registry schema/service split (open-core impl lock).
 - Status tokens read from each ADR's own header line:
   - `proposed` = literal header value on the founding + foundations sets (0001-0019, 0024).
     Per the board (line 90) these are **in force / locked** despite the stale "proposed"
     header text written during the Phase-5 spec; the header was never updated. See accuracy
     flags at the bottom.
   - `locked` = D9 module-pipeline set (0020-0023).
-  - `accepted` = brand/wave-0/wave-1/design/gtm sets + picker-round locks (0040-0093).
+  - `accepted` = brand/wave-0/wave-1/design/gtm sets + picker-round locks (0040-0097).
 
 Domain detail and rationale: read the ADR file. Architecture overview: `specs/01-architecture.md`.
 Product framing: `specs/00-product-spec.md`. Build plan: `plan.md`.
@@ -217,6 +219,15 @@ pricing numbers).
 | [0091](../knowledge/decisions/ADR-0091-compose-time-migration-bundling.md)    | Compose-time migration bundling via CLI build-step copy               | Generator | accepted | resolves bundling fork; 0070/0014; relocatable→0090  |
 | [0092](../knowledge/decisions/ADR-0092-create-caisson-bin-runtime.md)         | create-caisson bin -> dist/cli.js + node shebang (npx reach)          | CLI       | accepted | operator override; impl at P6 w/ publishability 0021 |
 | [0093](../knowledge/decisions/ADR-0093-local-cli-free-codegen-debit-scope.md) | Local CLI free; codegen debit scoped to hosted path                   | CLI       | accepted | clarifies 0049; 0024/0005/0008                       |
+
+### GTM-report + W1 locks (0094-0097, 2026-06-29) - status `accepted`
+
+| ADR                                                                      | Title                                                                                               | Domain             | Status   | Notes                                                |
+| ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------ | -------- | ---------------------------------------------------- |
+| [0094](../knowledge/decisions/ADR-0094-open-core-base-apache2.md)        | Open-core Base: Apache-2.0 substrate; editions/primitives/generator/registry/updates commercial     | Licensing          | accepted | amends 0023/0050/0083 (Base tier only); impl = W1    |
+| [0095](../knowledge/decisions/ADR-0095-gtm-offer-structure.md)           | GTM offer: free EU-AI-Act sample · Enterprise "Contact us" tier · annual cadence · pricing deferred | GTM                | accepted | extends 0012/0081/0082/0089                          |
+| [0096](../knowledge/decisions/ADR-0096-services-docs-standalone.md)      | services/docs standalone AI-native docs service                                                     | Docs               | accepted | separate from apps/site Fumadocs; build at P6        |
+| [0097](../knowledge/decisions/ADR-0097-registry-schema-service-split.md) | Registry schema/service split: open @caisson/registry-schema + commercial registry service          | Licensing/Registry | accepted | amends 0094; W1 impl lock (open↔commercial boundary) |
 
 ---
 
