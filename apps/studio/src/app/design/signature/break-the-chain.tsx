@@ -146,26 +146,26 @@ export function BreakTheChain() {
         </text>
         {/* alert glyph */}
         <path
-          d="M104 124 l8 14 h-16 z"
+          d="M120 124 l8 14 h-16 z"
           fill="none"
           stroke="var(--cs-danger)"
           strokeWidth="1.5"
           strokeLinejoin="round"
         />
         <line
-          x1="104"
+          x1="120"
           y1="129"
-          x2="104"
+          x2="120"
           y2="133"
           stroke="var(--cs-danger)"
           strokeWidth="1.5"
         />
-        <circle cx="104" cy="136" r="0.8" fill="var(--cs-danger)" />
-        <text x="120" y="132" fill="var(--cs-danger)" fontWeight="600">
+        <circle cx="120" cy="136" r="0.8" fill="var(--cs-danger)" />
+        <text x="136" y="132" fill="var(--cs-danger)" fontWeight="600">
           FAIL
         </text>
-        <text x="170" y="132" fill="var(--cs-fg-muted)">
-          01–02 intact · 03–06 broken from the 02→03 link
+        <text x="184" y="132" fill="var(--cs-fg-muted)">
+          01–02 intact · 03–06 broken
         </text>
       </g>
     </svg>

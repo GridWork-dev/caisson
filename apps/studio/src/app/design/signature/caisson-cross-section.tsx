@@ -171,8 +171,7 @@ export function CaissonCrossSection() {
       >
         <g stroke="var(--cs-border-strong)" strokeWidth="1" opacity="0.85">
           <path d="M244 130 L300 130" fill="none" />
-          <path d="M150 284 L96 284" fill="none" />
-          <path d="M234 284 L300 300" fill="none" opacity="0" />
+          <path d="M150 284 L126 284" fill="none" />
         </g>
         <text x="304" y="120">
           evidence shaft
@@ -180,14 +179,14 @@ export function CaissonCrossSection() {
         <text x="304" y="134" fill="var(--cs-accent)">
           audit chain ↑
         </text>
-        <text x="92" y="280" textAnchor="end">
+        <text x="24" y="280">
           working chamber
         </text>
-        <text x="92" y="294" textAnchor="end">
+        <text x="24" y="294">
           tenant boundary
         </text>
         <text x="24" y="90">
-          untrusted edge · cold water
+          untrusted edge
         </text>
         <text x="252" y="288" fill="var(--cs-accent)">
           the gate holds
