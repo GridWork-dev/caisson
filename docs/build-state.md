@@ -150,12 +150,13 @@ source LOC. Counts are the disk truth on `main`, not a quality judgement.
 
 ## Routing (canonical sources - this file does not duplicate them)
 
-| For                                        | See                                                                                                           |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| Why a decision was made                    | `knowledge/decisions/ADR-NNNN-*.md` (append-only; `ADR-0088` records the GTM 0045-0048 -> 0084-0087 renumber) |
-| Architecture + package boundaries          | `specs/01-architecture.md`, `specs/00-product-spec.md`                                                        |
-| The phase plan + exit gates                | `plan.md`                                                                                                     |
-| Live + open _decision_ forks               | `docs/state/decisions-and-forks.md` (CLAUDE.md source-of-truth #1)                                            |
-| Consolidated job rollup (research -> spec) | `SUMMARY.md`                                                                                                  |
-| Per-phase act trail                        | `outputs/specs/<slug>/{SPEC,PLAN,VERIFY,SWEEP}.md`                                                            |
-| Engineering invariants                     | `knowledge/decisions/ADR-0002-engineering-invariants.md`, root `CLAUDE.md`                                    |
+| For                                                        | See                                                                                                           |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Why a decision was made                                    | `knowledge/decisions/ADR-NNNN-*.md` (append-only; `ADR-0088` records the GTM 0045-0048 -> 0084-0087 renumber) |
+| Architecture + package boundaries                          | `specs/01-architecture.md`, `specs/00-product-spec.md`                                                        |
+| The phase plan + exit gates                                | `plan.md`                                                                                                     |
+| Live + open _decision_ forks                               | `docs/state/decisions-and-forks.md` (CLAUDE.md source-of-truth #1)                                            |
+| Live-test readiness · config/secrets · prioritized backlog | `docs/state/readiness-and-backlog.md` (2026-06-29 investigation — operator-actionable buckets)                |
+| Consolidated job rollup (research -> spec)                 | `SUMMARY.md`                                                                                                  |
+| Per-phase act trail                                        | `outputs/specs/<slug>/{SPEC,PLAN,VERIFY,SWEEP}.md`                                                            |
+| Engineering invariants                                     | `knowledge/decisions/ADR-0002-engineering-invariants.md`, root `CLAUDE.md`                                    |

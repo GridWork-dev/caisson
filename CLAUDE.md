@@ -30,8 +30,10 @@ On conflict, the higher item wins.
 ## Cadence (spec-first)
 
 Research → spec → ADR lock → code. **No product code before the spec/ADR it implements is
-locked.** Current state: **structure scaffolded, NO feature code yet** (this was a base-structure
-session). Build proceeds per `plan.md` (P0 → P7) only after the relevant kickoff.
+locked.** Current state: **P0 foundations + P1 base substrate SHIPPED; Wave-0 substrate + Wave-1
+editions (merged-but-partial) + P5 generator (PR#12 merged) built; registry Worker LIVE.**
+P6 (`services/{license,support-bot,docs}`) is the single pending phase. Live per-package
+truth: `docs/build-state.md`.
 
 ## Engineering invariants (locked, ADR-0002 — apply to all product code)
 
@@ -79,7 +81,7 @@ Pages + `caisson.sh` + a single static-export Next 16 app with Fumadocs MDX (ADR
 ## Commits
 
 Conventional commits, atomic, one logical change each. Scopes: `scaffold` `specs` `adr` `state`
-`kickoffs` `tooling` `kernel` — plus, once code starts, per-package: `auth` `tenancy-rls`
+`kickoffs` `tooling` `kernel` — plus the per-package scopes: `auth` `tenancy-rls`
 `billing` `credits` `ai-config` `mcp` `ui` `audit-worm` `field-crypto` `compliance` `ai-kit`
 `local-ai` `agent-dev` `cli` `support-bot` `license` `docs` `site` (the `apps/site` marketing+docs app).
 

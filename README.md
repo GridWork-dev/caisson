@@ -47,7 +47,7 @@ apps/         # 7 apps: 5 Next.js (ADR-0044) — site (marketing+docs) · studio
 services/     # support-bot (Python) · license · docs
 specs/        # locked concept set: 00 founding · 01 architecture · 02 core-loop · 03 design · 04 voice-and-brand
 plan.md       # P0–P7 build plan
-knowledge/decisions/   # ADRs 0001–0088 (gaps exist; numbering map in docs/state/decisions-and-forks.md)
+knowledge/decisions/   # ADRs 0001–0093 (gaps 0025–0039; numbering map in docs/state/decisions-and-forks.md)
 docs/state/   # decisions-and-forks live board
 outputs/kickoffs/      # kickoff docs for future sessions
 SUMMARY.md    # consolidated summary of how we got here
