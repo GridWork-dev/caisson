@@ -4,14 +4,16 @@ import { fileURLToPath } from "node:url";
 import type { MergedMigration } from "@caisson/kernel";
 import { matchGolden } from "@caisson/testing";
 import {
-  type AppliedMigration,
-  type MigrationApplier,
   type SelectedPackage,
   assembleSelected,
   emitMigrationFileSet,
   readPackageMigrations,
-  runMigrations,
 } from "./assemble.ts";
+import {
+  type AppliedMigration,
+  type MigrationApplier,
+  runMigrations,
+} from "./runner.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FIX = join(HERE, "__fixtures__");
