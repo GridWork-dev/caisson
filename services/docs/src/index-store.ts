@@ -64,9 +64,15 @@ export class DocsIndex {
     // network embedder; with no embedder `embedOrSkip` is a no-op and this stays instant. The store
     // upserts run sequentially afterward (bun:sqlite is synchronous — no concurrent-writer hazard).
     const texts = chunks.map((chunk) => indexText(chunk));
-    const embeddings = await mapPool(texts, EMBED_CONCURRENCY, (text) =>
-      embedOrSkip(embedder, text),
-    );
+    const embeddings = await mapPool(texts, EMBED_CONCURRENCY, async (text) => {
+      try {
+        return await embedOrSkip(embedder, text);
+      } catch {
+        // One transient embed failure must NOT collapse the whole vector leg: this chunk stays
+        // FTS-only (no vector) while every other chunk keeps its semantic coverage.
+        return undefined;
+      }
+    });
     chunks.forEach((chunk, i) => {
       const embedding = embeddings[i];
       store.upsert({
@@ -81,7 +87,13 @@ export class DocsIndex {
 
   /** Retrieve the top-`k` chunks for `query`, fused across the FTS and (when wired) vector legs. */
   async search(query: string, k = 5): Promise<ScoredChunk[]> {
-    const queryVector = await embedOrSkip(this.embedder, query);
+    let queryVector: number[] | undefined;
+    try {
+      queryVector = await embedOrSkip(this.embedder, query);
+    } catch {
+      // A provider blip on the query embed degrades THIS query to the FTS floor rather than 500ing.
+      queryVector = undefined;
+    }
     const hits = this.store.hybridSearch({
       queryText: query,
       limit: k,
