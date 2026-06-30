@@ -17,7 +17,7 @@ import { resolveAccountEntitlements } from "./resolve-entitlements.ts";
 export interface IssueAppDeps {
   /** Bearer secret for POST /issue. Must be non-empty — server.ts fails closed if it is unset. */
   token: string;
-  /** The signing identity (default Ed25519Signer over an env seed; KMS is an un-wired seam). */
+  /** The signing identity (default Ed25519Signer over a PKCS8 env key; KMS is an un-wired seam). */
   signer: Signer;
   /** The built registry index — membership truth for entitlement expansion (ADR-0071). */
   index: RegistryIndex;

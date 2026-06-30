@@ -1,18 +1,24 @@
 // The license-issuer HTTP surface end to end (ADR-0108): POST /issue resolves an account's entitlements
 // over PGlite + real `withTenant` RLS, signs them via @caisson/license-issue, and the returned token
-// verifies under the SHIPPED @caisson/license-verify `verifyLicense`. The signer uses the deterministic
-// KAT seed — SHA-256("caisson-license-verify-KAT-seed-v1") — so the issued signature validates against
-// the public key BAKED into verify.ts (the only key the verifier trusts). Also asserts the security
-// floor: timing-safe Bearer gate (missing/wrong → 401), Zod `.strict()` body (unknown field → 400),
-// /health public + security headers.
+// verifies under the SHIPPED @caisson/license-verify verify logic. The SHIPPED verifier bakes the
+// PRODUCTION public key, whose private half is not in the repo — so the test signer uses a deterministic
+// DEV keypair (SHA-256("caisson-license-verify-KAT-seed-v1"), a TEST vector) and the issued token is
+// verified through the explicit-key seam `verifyLicenseWithKey(token, DEV_PUB)`. Also asserts the
+// security floor: timing-safe Bearer gate (missing/wrong → 401), Zod `.strict()` body (unknown field →
+// 400), /health public + security headers.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { createHash } from "node:crypto";
+import {
+  type KeyObject,
+  createHash,
+  createPrivateKey,
+  createPublicKey,
+} from "node:crypto";
 import {
   type RegistryIndex,
   loadRegistryIndex,
 } from "@caisson/registry-schema";
 import { Ed25519Signer } from "@caisson/license-issue";
-import { verifyLicense } from "@caisson/license-verify";
+import { verifyLicenseWithKey } from "@caisson/license-verify";
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { withTenant } from "@caisson/tenancy-rls";
 import { createApp } from "./app.ts";
@@ -22,10 +28,24 @@ import {
 } from "./entitlement-store.ts";
 
 const TOKEN = "test-license-issue-token-0123456789";
-const KAT_SEED = Uint8Array.from(
-  createHash("sha256").update("caisson-license-verify-KAT-seed-v1").digest(),
+const DEV_SEED = createHash("sha256")
+  .update("caisson-license-verify-KAT-seed-v1")
+  .digest();
+// Ed25519 PKCS#8 DER = 16-byte fixed prefix ‖ 32-byte raw seed (RFC 8410).
+const devPrivate: KeyObject = createPrivateKey({
+  key: Buffer.concat([
+    Buffer.from("302e020100300506032b657004220420", "hex"),
+    DEV_SEED,
+  ]),
+  format: "der",
+  type: "pkcs8",
+});
+/** The DEV public key the issued token is verified against (the SHIPPED baked key is prod).
+ * Derived via the private key's PEM (`createPublicKey(KeyObject)`'s overload is absent from bun-types). */
+const DEV_PUB: KeyObject = createPublicKey(
+  devPrivate.export({ format: "pem", type: "pkcs8" }),
 );
-const signer = new Ed25519Signer("kat", KAT_SEED);
+const signer = new Ed25519Signer("dev", devPrivate);
 
 /** A synthetic registry index: base (oss/Apache) + a compliance edition member (commercial/paid). */
 function entry(id: string, editions: readonly string[]): unknown {
@@ -108,7 +128,7 @@ describe("POST /issue (ADR-0108)", () => {
     const body = (await res.json()) as { token: string; licenseId: string };
     expect(body.licenseId).toMatch(/^[0-9a-f-]{36}$/);
 
-    const verified = verifyLicense(body.token);
+    const verified = verifyLicenseWithKey(body.token, DEV_PUB);
     expect(verified.valid).toBe(true);
     expect(verified.tier).toBe("pro");
     // The signed entitlements are the account's index-resolved member slugs (server-side truth).
@@ -130,7 +150,7 @@ describe("POST /issue (ADR-0108)", () => {
     );
     expect(res.status).toBe(200);
     const body = (await res.json()) as { token: string };
-    expect(verifyLicense(body.token).entitlements).toEqual([]);
+    expect(verifyLicenseWithKey(body.token, DEV_PUB).entitlements).toEqual([]);
   });
 
   test("without a Bearer → 401", async () => {
