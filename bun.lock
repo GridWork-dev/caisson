@@ -74,6 +74,7 @@
         "@caisson/credits": "workspace:*",
         "@caisson/kernel": "workspace:*",
         "@caisson/mcp-server": "workspace:*",
+        "@caisson/service-license": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
       },
       "devDependencies": {
