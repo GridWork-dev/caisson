@@ -1,0 +1,22 @@
+/* MoneyCell — integer credit/cent formatter (ADR-0007, ADR-0099 recipe). Co-located;
+ * sign tone via [data-sign] → a local-indirection --money-fg var (recipe rule 3); values
+ * via --cs-* only. */
+.cs-money {
+  font-family: var(--cs-font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings:
+    "tnum" 1,
+    "zero" 1;
+  color: var(--money-fg, inherit);
+  white-space: nowrap;
+}
+
+.cs-money[data-sign="positive"] {
+  --money-fg: var(--cs-success);
+}
+.cs-money[data-sign="negative"] {
+  --money-fg: var(--cs-danger);
+}
+.cs-money[data-sign="zero"] {
+  --money-fg: var(--cs-fg-muted);
+}
