@@ -20,7 +20,7 @@ edited — supersede with a later ADR).
 ## Source-of-truth hierarchy
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
-2. `knowledge/decisions/` — the ADRs themselves (**0001–0113**: 0001–0024 founding+substrate+pipeline · 0040–0044 brand+crypto+framework · 0045–0049 Wave-0 substrate · 0050–0077 Wave-1 editions · 0078–0083 design+go-live · 0084–0088 GTM+collision-fix · 0089–0093 picker-round locks · 0094–0098 GTM-report+W1/B1 (open-core/offer/docs-svc/registry-split/credit-home) · 0099–0104 design-system harden+brand-mark+hero · 0105 support-bot impl · 0106–0109 P6 operator-gates (pricing/CF-Access/Paddle-MoR/support-bot-member-mgmt) · 0110–0113 P6 code-track (license-issuer/publish-flip/MCP-rate-limit/entitlement-revoke); append-only, all locked). Canonical ADR catalog: `docs/adr-index.md`
+2. `knowledge/decisions/` — the ADRs themselves (**0001–0118**: 0001–0024 founding+substrate+pipeline · 0040–0044 brand+crypto+framework · 0045–0049 Wave-0 substrate · 0050–0077 Wave-1 editions · 0078–0083 design+go-live · 0084–0088 GTM+collision-fix · 0089–0093 picker-round locks · 0094–0098 GTM-report+W1/B1 (open-core/offer/docs-svc/registry-split/credit-home) · 0099–0104 design-system harden+brand-mark+hero · 0105 support-bot impl · 0106–0109 P6 operator-gates (pricing/CF-Access/Paddle-MoR/support-bot-member-mgmt) · 0110–0113 P6 code-track (license-issuer/publish-flip/MCP-rate-limit/entitlement-revoke) · 0114–0115 unified-Railway-app + Railway-PG · 0116–0118 billing-scope + observability-SigNoz + analytics-Plausible; append-only, all locked). Canonical ADR catalog: `docs/adr-index.md`
 3. `specs/` — locked concept docs; `specs/00-product-spec.md` is the founding spec
 4. `plan.md` / `SUMMARY.md` — build plan + consolidated summary
 5. `outputs/` — session artifacts (kickoffs, research, syntheses)
@@ -30,13 +30,18 @@ On conflict, the higher item wins.
 ## Cadence (spec-first)
 
 Research → spec → ADR lock → code. **No product code before the spec/ADR it implements is
-locked.** Current state: **P0+P1, Wave-0 substrate, Wave-1 editions (merged-but-partial), and P5
-generator all SHIPPED; registry Worker LIVE.** P6 is **nearly complete** — Bucket C (`services/docs`
-PR#23 + `services/support-bot` PR#24) merged + DEPLOYED, X-2 billing + entitlement resolver + Worker
-filtering merged (PR#18); the 2026-06-30 P6 integration then built the **license issuer (ADR-0110),
-publish-readiness flip (ADR-0111), MCP rate-limit (ADR-0112) + entitlement-revoke/one-time/clawback
-(ADR-0113)**; **remaining: dashboards** + the operator/DEPLOY-class go-live steps. Live per-package
-truth: `docs/build-state.md`.
+locked.** Current state: **P0+P1, Wave-0 substrate, Wave-1 editions (merged-but-partial), P5
+generator, and P6 all SHIPPED in-repo; registry Worker LIVE.** P6 closed out with Bucket C
+(`services/docs` PR#23 + `services/support-bot` PR#24) merged + DEPLOYED, X-2 billing + entitlement
+resolver + Worker filtering merged (PR#18), the 2026-06-30 P6 integration's **license issuer
+(ADR-0110), publish-readiness flip (ADR-0111), MCP rate-limit (ADR-0112) + entitlement-revoke/
+one-time/clawback (ADR-0113)**, and the 2026-06-30 unified-app session's **dashboard host/DB
+(ADR-0114/0115), billing driver scope (ADR-0116), observability (ADR-0117) + web analytics
+(ADR-0118)**. The unified Railway-standalone Next app (5-view buyer dashboard, real tenant reads)
+and the rewired CI are **BUILT on the integration branch, not yet deployed**. Remaining work is
+operator/DEPLOY-class: Railway provisioning + DNS cutover off Cloudflare Pages, the 7 services-
+hardening punch-list fixes, and the Paddle webhook binding. Live per-package truth:
+`docs/build-state.md`.
 
 ## Engineering invariants (locked, ADR-0002 — apply to all product code)
 
@@ -84,9 +89,11 @@ implementation**. The harvestable license kit is taken from PUBLIC `tessera`.
   the operator may still adjust a number before checkout goes live, but the site no longer **says** so;
   grandfathering policy stays operator-owned. The display fork is closed.
 
-_Closed since: **app framework** → Next.js App Router (ADR-0044); **hosting/site** → Cloudflare
-Pages + `caisson.sh` + a single static-export Next 16 app with Fumadocs MDX (ADR-0084), built in
-`apps/site` (marketing + docs)._
+_Closed since: **app framework** → Next.js App Router (ADR-0044); **hosting/site deploy mode** →
+one dynamic Next 16 `standalone` app (marketing + docs + buyer dashboard, Fumadocs MDX kept) on
+**Railway**, superseding the ADR-0084 static-export-to-Cloudflare-Pages mode (ADR-0114/0115,
+2026-06-30; built on the integration branch). **Currently still live on Cloudflare Pages** — the
+Railway provisioning + DNS cutover + Pages teardown are DEPLOY-class and not yet done._
 
 ## Commits
 
