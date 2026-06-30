@@ -11,7 +11,7 @@ plus `docs/state/decisions-and-forks.md` (the live board, CLAUDE.md SoT #1) are 
 The tags here are a synthesized phase index, NOT a new source of truth — canonical status stays
 in the board + `knowledge/decisions/` ADRs.
 
-**STATUS legend** (verified against the tree, 2026-06-28):
+**STATUS legend** (verified against the tree, 2026-06-29 — post-PR#24):
 `SHIPPED` = built + tested + in `main`, exit gate met · `MERGED (Wave-1)` = packages landed in
 `main` with real, tested implementation but NOT yet wired into a runnable, entitlement-gated
 edition product · `SPEC+PLAN ready` = design locked, code not yet written · `PENDING` = not
@@ -124,10 +124,13 @@ started · `ROADMAP` = post-v1, no code.
 
 ## P6 — Commerce + support + docs
 
-> **STATUS: PENDING.** `services/{license,support-bot,docs}` are empty (0 LOC); no license-issuer,
-> support-bot, AI-native docs-service, or buyer/seller-dashboard code exists yet. ADR-0009/0010
-> are locked but build has not started. NB: the GTM marketing+docs site (`apps/site`, Fumadocs)
-> shipped separately in the GTM wave (ADR-0084–0087) and is distinct from P6's `services/docs`.
+> **STATUS: PARTIAL.** `services/docs` (AI-native corpus + `llms.txt` + Bearer `/query`, PR#23,
+> ADR-0096) + `services/support-bot` (Discord RAG, PR#24, ADR-0009/0105) BUILT + merged;
+> `services/license` carries the X-2 cycle→grant mapper + entitlement resolver + Worker filtering
+> (B1/B2, PR#18, ADR-0089/0098/0071). **Remaining:** Ed25519 license **issuer** (ADR-0010, only
+> verify exists), revoke-on-cancel + one-time-purchase entitlement, buyer/seller dashboards,
+> publish-readiness. NB: the GTM marketing+docs site (`apps/site`, Fumadocs) shipped separately in
+> the GTM wave (ADR-0084–0087) and is distinct from P6's `services/docs`.
 
 - T6.1 `services/license`: Ed25519 issuer + MoR webhook + credit grants (idempotent) ·
   T6.2 entitlement/registry-access on purchase · T6.3 `services/support-bot` (Discord + Python
