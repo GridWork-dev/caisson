@@ -39,6 +39,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
+        with:
+          # Full history so the changeset-presence gate below can diff against origin/main
+          # (`changeset status --since=origin/main` resolves that ref from the fetched history).
+          fetch-depth: 0
       - uses: oven-sh/setup-bun@v2
         with:
           # Pinned to the repo's packageManager bun (was `latest` — drift risk on a persistent fleet).
@@ -58,9 +62,15 @@ jobs:
       # Layer 3 — real module graph: dynamic/transitive provider reach + base↔edition direction.
       - name: dependency-cruiser graph boundaries (ADR-0022)
         run: bunx depcruise packages apps tooling --config .dependency-cruiser.cjs
-      # Changeset presence is a PUBLISH-time gate (ADR-0021) — it lands with the registry
-      # publish-and-index job at P5 (commented below). Pre-publish, every package is private
-      # (0.0.0) so there is nothing to release-gate yet.
+      # Changeset-presence gate (ADR-0021/0111). Now that the packages are PUBLIC (0.1.0, ADR-0111),
+      # every PR that changes a publishable package must carry a changeset, or the release/version
+      # history drifts from the published versions. `changeset status --since=origin/main` exits 1
+      # when there are changed packages but no new changeset (changesets `checking-for-changesets`).
+      # SKIPPED on the main branch: main has no base to diff against and is the merge target, not a
+      # release-gated PR — the actual ledger append/publish lives in publish-and-index (main-only).
+      - name: changeset presence (PR only — every package change needs a changeset)
+        if: github.ref != 'refs/heads/main'
+        run: bunx changeset status --since=origin/main
 
   check:
     runs-on: [self-hosted, <host>]

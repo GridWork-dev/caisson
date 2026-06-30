@@ -1,0 +1,18 @@
+# Build-context excludes for the services/docs image (its build context = the repo root).
+# Keep dist/ (workspace deps may resolve to it); keep source dirs the corpus reads (apps/site/content,
+# packages/**/README.md). Excludes below are runtime-irrelevant or heavy.
+node_modules
+**/node_modules
+.git
+.github
+.turbo
+**/.turbo
+.next
+**/.next
+coverage
+**/coverage
+*.log
+.DS_Store
+graphify-out
+outputs
+.changeset

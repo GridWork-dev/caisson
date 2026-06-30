@@ -16,4 +16,8 @@ export {
   type LicenseClaims,
   type LicenseTier,
 } from "./claims.ts";
-export { verifyLicense, type VerifiedLicense } from "./verify.ts";
+export {
+  verifyLicense,
+  verifyLicenseWithKey,
+  type VerifiedLicense,
+} from "./verify.ts";

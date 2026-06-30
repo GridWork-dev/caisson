@@ -11,15 +11,16 @@
 // scope here; it must only be a positive integer (ADR-0007). Dependencies are DOWN-ONLY (ADR-0003):
 // migrate depends on @caisson/kernel (the pure merge algorithm) and nothing "up" — never on the cli
 // or an edition.
+import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
 export default defineModule({
   id: "@caisson/migrate",
-  version: "0.0.0",
+  version: pkg.version,
   kind: "base",
   tier: "paid",
   priceCents: 4900,
-  license: "LicenseRef-Caisson-Commercial",
+  license: pkg.license,
   dependencies: ["@caisson/kernel"],
   golden: "src/__golden__",
   description:

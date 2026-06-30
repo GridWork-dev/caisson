@@ -1,6 +1,7 @@
-# services/support-bot — cloud-runner image (ADR-0105). Target is operator-gated at DEPLOY
-# (recommended: Railway; Fly.io is the cheaper edge alternative). The bot's gateway connection is
-# outbound; the only inbound surface is /health for the runner's liveness probe.
+# services/support-bot — cloud-runner image (ADR-0105). Built from the REPO ROOT context (Railway
+# uploads the project root; the Dockerfile is selected via RAILWAY_DOCKERFILE_PATH=services/support-bot/
+# Dockerfile). All COPY paths are therefore repo-root-relative. The bot's gateway connection is
+# outbound; the only inbound surface is /health for the runner's liveness probe (binds $PORT).
 FROM python:3.12-slim AS base
 
 # uv for fast, locked installs. Pinned to the same version CI uses (setup-uv 0.11.18) so the lock
@@ -17,10 +18,10 @@ WORKDIR /app
 # Install deps first (cache layer) from the lockfile, then the project. `--frozen` unconditionally —
 # uv.lock is committed (the source of truth), so a `--frozen` failure is a real drift we want to fail
 # the build, not silently install an unlocked resolve.
-COPY pyproject.toml uv.lock ./
+COPY services/support-bot/pyproject.toml services/support-bot/uv.lock ./
 RUN uv sync --no-dev --no-install-project --frozen
 
-COPY . .
+COPY services/support-bot/ ./
 RUN uv sync --no-dev --no-editable --frozen
 
 EXPOSE 8080

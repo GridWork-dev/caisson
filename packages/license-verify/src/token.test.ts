@@ -4,12 +4,14 @@
 // logic that cryptographically proves the same token — the fixture precedes the logic it pins.
 // Asserted with `BLESS` unset; re-bless only via `BLESS=1 bun test` when the format legitimately moves.
 //
-// KAT keypair — deterministic Ed25519 (RFC 8032), a TEST vector, NEVER a production secret:
+// DEV keypair — deterministic Ed25519 (RFC 8032), a TEST vector, NEVER a production secret:
 //   seed (hex) = SHA-256("caisson-license-verify-KAT-seed-v1")
 //              = 84ad00d02c1648eb572b65e73c98707f243b3ee3ff1ac85db8c6ce2c255737c8
 //   pubkey     = (SPKI DER, base64) MCowBQYDK2VwAyEAbQaycFQ6zDCiACKFQ83ucxYtdL++cvlUXf4dqRwvQgs=
-// T7 bakes the above public key into `verify.ts` and proves `crypto.verify` accepts this token's
-// signature over the kernel-canonical payload, mapping the SIGNED tier "pro" (cosmetic TIER "PRO").
+// IMPORTANT (ADR-0110): `verify.ts` bakes the PRODUCTION public key, NOT this dev key — the dev seed
+// above is publicly documented, so baking it would let anyone forge a `pro` license. This dev key is
+// only for the codec round-trip here + the dev-golden in `verify.test.ts` via `verifyLicenseWithKey`.
+// This codec test is key-independent: it asserts decode/encode round-trips, not a signature.
 import { describe, expect, test } from "bun:test";
 import { ValidationError } from "@caisson/kernel";
 import { matchGolden } from "@caisson/testing";

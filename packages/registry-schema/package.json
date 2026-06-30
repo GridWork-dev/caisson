@@ -1,9 +1,12 @@
 {
   "name": "@caisson/registry-schema",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "description": "Open registry contract (Apache-2.0, ADR-0094/0097): module-manifest schema + index schema + allowlist helpers + feature-tags + entitlement-expansion. zod/fs-only. The commercial @caisson/registry service re-exports this.",
   "exports": {
     ".": {

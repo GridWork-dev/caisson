@@ -8,8 +8,15 @@ role, the Postgres DSN) degrade gracefully when unset.
 
 from __future__ import annotations
 
-from pydantic import Field, HttpUrl, field_validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class SelfAssignRole(BaseModel):
+    """One self-assignable role surfaced as a button by ``/post-roles`` (ADR-0109)."""
+
+    role_id: int
+    label: str = Field(min_length=1, max_length=80)
 
 
 class Settings(BaseSettings):
@@ -47,6 +54,33 @@ class Settings(BaseSettings):
     support_human_role_id: int | None = Field(
         default=None,
         description="Role id tagged on escalation; a plain mention is skipped when unset.",
+    )
+
+    # --- optional member-management surfaces (ADR-0109; all degrade gracefully when unset) ---
+    member_role_id: int | None = Field(
+        default=None,
+        description="Default role auto-assigned on join. Setting this ENABLES the privileged `members` "
+        "intent — enable 'Server Members Intent' in the Developer Portal FIRST, or the gateway refuses "
+        "to connect.",
+    )
+    welcome_channel_id: int | None = Field(
+        default=None, description="Channel for the on-join welcome message; skipped when unset."
+    )
+    customer_role_id: int | None = Field(
+        default=None,
+        description="Umbrella role granted alongside any edition role by /grant-role.",
+    )
+    role_compliance_id: int | None = Field(default=None, description="Compliance edition role id.")
+    role_ai_kit_id: int | None = Field(
+        default=None, description="AI Production Kit edition role id."
+    )
+    role_local_first_id: int | None = Field(
+        default=None, description="Local-first AI edition role id."
+    )
+    role_agentic_id: int | None = Field(default=None, description="Agentic-Dev edition role id.")
+    self_assign_roles: list[SelfAssignRole] = Field(
+        default_factory=list,
+        description="Self-assignable roles for /post-roles buttons; JSON list of {role_id,label}.",
     )
 
     # --- optional persistence ---

@@ -1,9 +1,12 @@
 {
   "name": "@caisson/compliance",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
   "description": "Compliance edition (the hero): tenant-scoped field crypto + WORM audit chain + own-authored SOC2-TSC/HIPAA control packs + the deterministic, signed control→evidence-pack generator. ADR-0005/0006/0051-0058.",
   "exports": {
     ".": {

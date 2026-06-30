@@ -1,9 +1,12 @@
 {
   "name": "@caisson/mcp-server",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "description": "Auth-gated buyer MCP: timing-safe Bearer, entitlement-scoped reads, allowlist+credit-gated generate. ADR-0008/0004.",
   "exports": {
     ".": {

@@ -1,8 +1,9 @@
-// account_entitlement store on PGlite + real withTenant RLS (ADR-0071/0005). Asserts: grant persists
-// the purchased ids; read returns them sorted; a re-grant of a held id is idempotent (no extra row);
-// an empty grant is a no-op; RLS isolates accounts (B never sees A's rows); and a cross-tenant write
-// (account_id ≠ the bound GUC) is refused by the policy WITH CHECK (fail-closed). Each test uses its
-// own account id so no cross-test cleanup is needed.
+// entitlement_grant junction on PGlite + real withTenant RLS (ADR-0113/0071/0005). Asserts: a grant
+// persists per-source rows; read returns the DISTINCT active ids sorted; a same-source re-grant is
+// idempotent (refcount stays one); REFCOUNT — two sources granting the same edition keep it entitled
+// until BOTH are revoked; subscription revoke strips only that subscription's grants; a one-time grant
+// survives a subscription cancel; revokes are soft (status flips, row stays) + idempotent; RLS isolates
+// accounts and refuses a cross-tenant write. Each test uses its own account id — no cross-test cleanup.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { withTenant } from "@caisson/tenancy-rls";
@@ -10,6 +11,8 @@ import {
   ENTITLEMENT_SCHEMA_SQL,
   grantEntitlements,
   readEntitlements,
+  revokePurchaseGrants,
+  revokeSubscriptionGrants,
 } from "./entitlement-store.ts";
 
 let tp: TestPg;
@@ -23,14 +26,20 @@ afterAll(async () => {
   await tp.close();
 });
 
-describe("account_entitlement store (ADR-0071, RLS)", () => {
-  test("grant persists the purchased ids; read returns them sorted", async () => {
+const sub = (subscriptionId: string) =>
+  ({ kind: "subscription", subscriptionId }) as const;
+const onetime = (purchaseId: string) =>
+  ({ kind: "one_time", purchaseId }) as const;
+
+describe("entitlement_grant junction (ADR-0113, RLS)", () => {
+  test("grant persists the purchased ids; read returns the active set sorted", async () => {
     const acct = "acct_grant";
     const n = await withTenant(tp.pg, acct, (tx) =>
       grantEntitlements(tx, {
         accountId: acct,
         entitlementIds: ["local-ai", "compliance"],
         sourceEventId: "in_1",
+        source: sub("sub_1"),
       }),
     );
     expect(n).toBe(2);
@@ -40,51 +49,123 @@ describe("account_entitlement store (ADR-0071, RLS)", () => {
     expect(ids).toEqual(["compliance", "local-ai"]);
   });
 
-  test("a re-grant of a held id is idempotent — adds no row", async () => {
+  test("a same-source re-grant is idempotent — refcount stays one (no extra row)", async () => {
     const acct = "acct_idem";
     await withTenant(tp.pg, acct, (tx) =>
       grantEntitlements(tx, {
         accountId: acct,
         entitlementIds: ["compliance"],
         sourceEventId: "in_a",
+        source: sub("sub_idem"),
       }),
     );
-    // Same entitlement, a FRESH source event (a renewal cycle / manual resend) — still one row.
+    // Same entitlement + same subscription, FRESH source event (a renewal cycle) — still one grant.
     const n2 = await withTenant(tp.pg, acct, (tx) =>
       grantEntitlements(tx, {
         accountId: acct,
         entitlementIds: ["compliance"],
         sourceEventId: "in_b",
+        source: sub("sub_idem"),
       }),
     );
-    expect(n2).toBe(0); // already held → no new grant
-    const ids = await withTenant(tp.pg, acct, (tx) =>
-      readEntitlements(tx, acct),
-    );
-    expect(ids).toEqual(["compliance"]);
+    expect(n2).toBe(0);
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]);
   });
 
-  test("a partial re-grant counts only the newly added id", async () => {
-    const acct = "acct_partial";
+  test("REFCOUNT: two sources back the same edition — revoke one, still entitled; revoke both, gone", async () => {
+    const acct = "acct_refcount";
+    // A subscription AND a one-time purchase both grant `compliance`.
     await withTenant(tp.pg, acct, (tx) =>
       grantEntitlements(tx, {
         accountId: acct,
         entitlementIds: ["compliance"],
-        sourceEventId: "in_p1",
+        sourceEventId: "in_sub",
+        source: sub("sub_rc"),
       }),
     );
-    const n = await withTenant(tp.pg, acct, (tx) =>
+    await withTenant(tp.pg, acct, (tx) =>
       grantEntitlements(tx, {
         accountId: acct,
-        entitlementIds: ["compliance", "ai-kit"], // compliance held, ai-kit new
-        sourceEventId: "in_p2",
+        entitlementIds: ["compliance"],
+        sourceEventId: "pi_rc",
+        source: onetime("pi_rc"),
       }),
     );
-    expect(n).toBe(1);
-    const ids = await withTenant(tp.pg, acct, (tx) =>
-      readEntitlements(tx, acct),
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]);
+
+    // Revoke the subscription source — the one-time grant still backs the entitlement.
+    const r1 = await withTenant(tp.pg, acct, (tx) =>
+      revokeSubscriptionGrants(tx, {
+        accountId: acct,
+        subscriptionId: "sub_rc",
+      }),
     );
-    expect(ids).toEqual(["ai-kit", "compliance"]);
+    expect(r1).toBe(1);
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]); // refcount still > 0
+
+    // Revoke the one-time source too — refcount hits 0, entitlement lost.
+    const r2 = await withTenant(tp.pg, acct, (tx) =>
+      revokePurchaseGrants(tx, { accountId: acct, purchaseId: "pi_rc" }),
+    );
+    expect(r2).toBe(1);
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual([]);
+  });
+
+  test("subscription revoke strips ONLY that subscription's grants", async () => {
+    const acct = "acct_two_subs";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "in_x",
+        source: sub("sub_keep"),
+      }),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["ai-kit"],
+        sourceEventId: "in_y",
+        source: sub("sub_drop"),
+      }),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      revokeSubscriptionGrants(tx, {
+        accountId: acct,
+        subscriptionId: "sub_drop",
+      }),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]); // sub_keep's grant untouched
+  });
+
+  test("a soft-revoke is idempotent — revoking an already-revoked source revokes nothing", async () => {
+    const acct = "acct_softidem";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pi_si",
+        source: onetime("pi_si"),
+      }),
+    );
+    const first = await withTenant(tp.pg, acct, (tx) =>
+      revokePurchaseGrants(tx, { accountId: acct, purchaseId: "pi_si" }),
+    );
+    expect(first).toBe(1);
+    const second = await withTenant(tp.pg, acct, (tx) =>
+      revokePurchaseGrants(tx, { accountId: acct, purchaseId: "pi_si" }),
+    );
+    expect(second).toBe(0); // already revoked → no-op
   });
 
   test("an empty grant is a no-op", async () => {
@@ -94,13 +175,13 @@ describe("account_entitlement store (ADR-0071, RLS)", () => {
         accountId: acct,
         entitlementIds: [],
         sourceEventId: "in_e",
+        source: sub("sub_e"),
       }),
     );
     expect(n).toBe(0);
-    const ids = await withTenant(tp.pg, acct, (tx) =>
-      readEntitlements(tx, acct),
-    );
-    expect(ids).toEqual([]);
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual([]);
   });
 
   test("RLS isolates accounts — B never sees A's entitlements", async () => {
@@ -111,9 +192,9 @@ describe("account_entitlement store (ADR-0071, RLS)", () => {
         accountId: a,
         entitlementIds: ["ai-kit"],
         sourceEventId: "in_a",
+        source: sub("sub_a"),
       }),
     );
-    // Under B's tenant scope, even querying A's id explicitly returns nothing — RLS, not the WHERE.
     const crossRead = await withTenant(tp.pg, b, (tx) =>
       readEntitlements(tx, a),
     );
@@ -123,14 +204,13 @@ describe("account_entitlement store (ADR-0071, RLS)", () => {
   test("a cross-tenant write is refused by the policy WITH CHECK (fail-closed)", async () => {
     const owner = "acct_owner";
     const attacker = "acct_attacker";
-    // Under withTenant(attacker), grantEntitlements inserts account_id = owner; the policy
-    // WITH CHECK (account_id = GUC = attacker) rejects it — a forged cross-tenant grant cannot land.
     await expect(
       withTenant(tp.pg, attacker, (tx) =>
         grantEntitlements(tx, {
           accountId: owner,
           entitlementIds: ["compliance"],
           sourceEventId: "in_x",
+          source: sub("sub_x"),
         }),
       ),
     ).rejects.toThrow();
