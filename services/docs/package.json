@@ -19,6 +19,7 @@
     "start": "bun run src/server.ts"
   },
   "dependencies": {
+    "@caisson/kernel": "workspace:*",
     "@caisson/local-store": "workspace:*",
     "sqlite-vec": "^0.1.9",
     "zod": "^3.23.8"
