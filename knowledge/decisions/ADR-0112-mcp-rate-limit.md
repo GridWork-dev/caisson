@@ -62,9 +62,13 @@ records the forks the operator resolved (2026-06-30). It references the kernel `
 ## Tests (golden-before-logic where a fixture pins behaviour)
 
 Store (PGlite + real RLS): drains to zero then denies with a retry-after; lazy refill restores tokens
-after an injected elapsed time; refill clamps to capacity on a long idle; the atomic UPDATE is
-race-safe (two concurrent consumes on one token → exactly one wins); a per-account override changes
-the limit; a fresh account auto-provisions the full default; a forged cross-tenant write is refused.
+after an injected elapsed time; refill clamps to capacity on a long idle; the WHERE-guarded
+conditional UPDATE admits exactly one of two consumes on a single token — verified on PGlite, which
+serializes one in-process connection, so this proves the conditional-update CORRECTNESS (no
+double-spend), NOT OS-level backend contention; the cross-backend exactly-one-winner guarantee rests
+on standard Postgres READ COMMITTED EvalPlanQual re-evaluating the inlined guard against the live row
+(reasoned, not load-tested — there is no real Postgres in CI). A per-account override changes the
+limit; a fresh account auto-provisions the full default; a forged cross-tenant write is refused.
 Hook: under-limit resolves; over-limit throws `RateLimitError` (429 + retry-after); a store error
 fails OPEN (resolves + alerts, with and without a sink). Server seam: an absent hook runs unthrottled;
 a denied hook blocks the tool (handler never runs); the hook fires once per call across base and

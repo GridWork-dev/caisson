@@ -27,7 +27,11 @@ export interface RateLimitHookDeps {
    * `console.log`. Omit only in tests; absent ⇒ the fail-open is silent (still allowed).
    */
   onStoreError?: (err: unknown, accountId: string) => void;
-  /** Optional per-account override config to apply on every check (ADR-0112 lock 4). */
+  /**
+   * Optional bucket config applied when an account's row is FIRST provisioned (ADR-0112 lock 4). It
+   * does NOT mutate an already-provisioned row — an existing account keeps its stored columns; change
+   * a live account's limit via `setAccountRateLimit`. Omit to use `DEFAULT_RATE_LIMIT`.
+   */
   config?: RateLimitConfig;
   /** Injectable epoch-ms clock (default `Date.now`) — deterministic in tests. */
   now?: () => number;

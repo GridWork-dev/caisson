@@ -54,8 +54,10 @@ export interface RateLimitDecision {
 
 // One row per account. `last_refill_ms` is an integer epoch-ms watermark, advanced only by WHOLE
 // consumed refill intervals (never to `now`), so sub-interval accrual is not silently dropped. The
-// column DEFAULTs equal DEFAULT_RATE_LIMIT — kept in sync with the const below; a per-account
-// override simply writes different column values (see `setAccountRateLimit`).
+// config columns (capacity/refill_amount/refill_interval_ms) carry DEFAULTs equal to
+// DEFAULT_RATE_LIMIT — kept in sync with the const below; `tokens`/`last_refill_ms` are always
+// inserted explicitly (no column DEFAULT). A per-account override writes different column values
+// (see `setAccountRateLimit`).
 export const RATE_LIMIT_SCHEMA_SQL = `
 CREATE TABLE rate_limit (
   account_id text PRIMARY KEY,
@@ -75,15 +77,20 @@ ${buildTenantPolicySql("rate_limit")}
 
 // The lazily-refilled token count for the CURRENT row, clamped to capacity. `$1` is `now` in epoch
 // ms (a bigint). Integer math throughout: GREATEST(0, …) guards a backward clock so periods never
-// goes negative; integer division floors the elapsed-over-interval period count. Referenced twice
-// (SET and WHERE) by one UPDATE so the WHERE-guard re-checks the live row under concurrency.
+// goes negative; integer division floors the elapsed-over-interval period count. The period count is
+// also capped at `capacity` (LEAST) BEFORE the multiply — a purely defensive overflow guard: once
+// periods ≥ capacity the bucket already saturates (refill_amount ≥ 1), so the cap is result-identical
+// to leaving it uncapped, but it bounds `periods * refill_amount` to `capacity * refill_amount` so a
+// pathological config (tiny interval + a long idle) can never overflow int8 and trip the fail-open
+// path. Referenced twice (SET and WHERE) by one UPDATE so the WHERE-guard re-checks the live row.
 const REFILLED_TOKENS = `LEAST(
   capacity,
-  tokens + GREATEST(0, ($1::bigint - last_refill_ms) / refill_interval_ms) * refill_amount
+  tokens + LEAST(capacity::bigint, GREATEST(0, ($1::bigint - last_refill_ms) / refill_interval_ms)) * refill_amount
 )`;
 
 // How far to advance the watermark: by the WHOLE intervals consumed (not to `now`), preserving the
-// remainder so fractional accrual is not lost across rapid checks.
+// remainder so fractional accrual is not lost across rapid checks. NOT capped (unlike the refill
+// product): this reconstructs ≈`now`, bounded by the clock, so it cannot overflow int8.
 const ADVANCED_WATERMARK = `last_refill_ms + GREATEST(0, ($1::bigint - last_refill_ms) / refill_interval_ms) * refill_interval_ms`;
 
 /**
@@ -91,6 +98,10 @@ const ADVANCED_WATERMARK = `last_refill_ms + GREATEST(0, ($1::bigint - last_refi
  * SINGLE atomic conditional UPDATE. Returns whether the call is allowed plus the remaining balance
  * and a retry-after on a deny. Must run inside `withTenant(db, accountId, …)` — RLS scopes every
  * statement to the bound account, and the policy WITH CHECK refuses a forged cross-tenant write.
+ *
+ * `config` seeds a NEWLY provisioned row only (the `INSERT … ON CONFLICT DO NOTHING`); an
+ * already-provisioned account keeps its stored columns and a passed `config` is NOT applied to it —
+ * change a live account's limit via `setAccountRateLimit`, not by re-passing `config` here.
  *
  * `now` is an injected epoch-ms clock (default `Date.now()` at the call site) — pass a fixed value
  * in tests for deterministic lazy-refill assertions.
