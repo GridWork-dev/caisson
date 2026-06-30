@@ -19,8 +19,11 @@ import type {
 } from "./seam.ts";
 import { type JsonObject, deepMerge, replaceTokens } from "./transform.ts";
 
-/** Absolute path to the in-repo template tree (sibling of `src/`, resolved from this module). */
-const TEMPLATES_ROOT = join(
+/** Absolute path to the in-repo template tree (sibling of `src/`, resolved from this module).
+ *  Exported so the free-sample engine (`sample-templates.ts`, ADR-0095 W3) shares the same root +
+ *  reader instead of re-deriving them — the two generator paths stay mechanically consistent even
+ *  though samples are NOT composed through `Selection`/the paid registry allowlist. */
+export const TEMPLATES_ROOT = join(
   dirname(fileURLToPath(import.meta.url)),
   "..",
   "templates",
@@ -35,7 +38,7 @@ const EDITION_LABELS: Record<NonNullable<Selection["edition"]>, string> = {
 };
 
 /** One template directory's worth of raw (pre-token) files, keyed by POSIX-relative path. */
-interface RawTemplateFile {
+export interface RawTemplateFile {
   /** Path relative to the template root, always `/`-separated (deterministic across platforms). */
   readonly rel: string;
   readonly content: string;
@@ -46,7 +49,7 @@ interface RawTemplateFile {
  * walked in sorted order so the read order is deterministic regardless of filesystem enumeration.
  * `root` is always a fixed in-repo path (`base` or an edition slug) — never user input.
  */
-function readTemplateDir(root: string): RawTemplateFile[] {
+export function readTemplateDir(root: string): RawTemplateFile[] {
   const out: RawTemplateFile[] = [];
   const walk = (absDir: string, prefix: string): void => {
     const entries = readdirSync(absDir, { withFileTypes: true }).sort((a, b) =>
