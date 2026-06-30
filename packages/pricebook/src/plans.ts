@@ -1,15 +1,17 @@
-// The commerce plan-book (ADR-0089): which subscription price grants how many credits per cycle.
-// Distinct from @caisson/ai-meter's per-ai-call COST book — this is the COMMERCE grant table. Keyed by
-// Stripe price id (`invoice.lines[0].price.id`); the cycle->grant mapper in services/license reads it
-// on a gated `invoice.paid`. Append-only + versioned (PRICEBOOK_VERSION): a price change BUMPS the
-// stamp, never edits a row in place (ADR-0006/0012 grandfathering — a buyer pins the version bought on).
+// The commerce plan-book (ADR-0089, provider rename ADR-0108): which subscription price grants how
+// many credits per cycle. Distinct from @caisson/ai-meter's per-ai-call COST book — this is the
+// COMMERCE grant table. Keyed by the provider's price id (`providerPriceId` — Paddle's
+// `items[0].price.id` on a subscription-linked `transaction.completed`, formerly Stripe's
+// `invoice.lines[0].price.id`); the cycle->grant mapper in services/license reads it on a gated
+// invoice/cycle event. Append-only + versioned (PRICEBOOK_VERSION): a price change BUMPS the stamp,
+// never edits a row in place (ADR-0006/0012 grandfathering — a buyer pins the version bought on).
 // Fail-closed: an unknown price id THROWS (never a guessed grant, ADR-0089 §6).
 //
 // The credit NUMBERS are operator-owned + deferred (SD-6/ADR-0012). The rows below are clearly-marked
 // PLACEHOLDERS (fake `price_…PLACEHOLDER` keys + round, NON-FINAL credit amounts) pinned only so
-// resolvePlan + the golden have data; the operator replaces them with real Stripe price ids + the final
+// resolvePlan + the golden have data; the operator replaces them with real Paddle price ids + the final
 // locked amounts when checkout goes live — the same pre-launch-placeholder posture @caisson/cli and
-// @caisson/migrate use for `priceCents`. resolvePlan throws on any real Stripe id until then.
+// @caisson/migrate use for `priceCents`. resolvePlan throws on any real provider id until then.
 import { z } from "zod";
 import { ConfigError, parseStrict, strictObject } from "@caisson/kernel";
 
@@ -43,9 +45,9 @@ export const planBookEntrySchema = strictObject({
 export type PlanBookEntry = z.infer<typeof planBookEntrySchema>;
 
 /**
- * `stripePriceId -> PlanBookEntry`. PLACEHOLDER rows — the live mapping lands when the operator creates
- * the Stripe products and locks the final numbers (SD-6/ADR-0012). Until then resolvePlan throws on any
- * real price id (fail-closed): a plan launched without a row grants NOTHING (ADR-0089 §6).
+ * `providerPriceId -> PlanBookEntry`. PLACEHOLDER rows — the live mapping lands when the operator
+ * creates the Paddle products and locks the final numbers (SD-6/ADR-0012). Until then resolvePlan
+ * throws on any real price id (fail-closed): a plan launched without a row grants NOTHING (ADR-0089 §6).
  */
 export const PLAN_BOOK: Record<string, PlanBookEntry> = {
   price_developer_monthly_PLACEHOLDER: {
@@ -67,7 +69,7 @@ export function parsePlanBook(input: unknown): Record<string, PlanBookEntry> {
   return parseStrict(z.record(z.string(), planBookEntrySchema), input);
 }
 
-/** Resolve a Stripe price id to its plan entry, fail-closed: an unknown id THROWS (ADR-0089 §6). */
+/** Resolve a provider price id to its plan entry, fail-closed: an unknown id THROWS (ADR-0089 §6). */
 export function resolvePlan(
   priceId: string,
   book: Record<string, PlanBookEntry> = PLAN_BOOK,

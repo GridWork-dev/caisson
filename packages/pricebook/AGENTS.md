@@ -1,15 +1,16 @@
 # @caisson/pricebook — agent contract
 
-The single **commerce** price-book (ADR-0089): which Stripe subscription grants how many credits per
-cycle, the flat per-action credit cost, and the shared cents→credits GRANT conversion. Commercial base
-package. Distinct from `@caisson/ai-meter`'s per-ai-call COST book — this is the COMMERCE grant table.
+The single **commerce** price-book (ADR-0089, provider rename ADR-0108): which provider (Paddle)
+subscription grants how many credits per cycle, the flat per-action credit cost, and the shared
+cents→credits GRANT conversion. Commercial base package. Distinct from `@caisson/ai-meter`'s
+per-ai-call COST book — this is the COMMERCE grant table.
 
 ## What it does
 
-The credit grant must answer two questions deterministically: which plan does a paid invoice map to,
+The credit grant must answer two questions deterministically: which plan does a paid cycle map to,
 and how many credits does it grant. This package owns both tables and the unit they share:
 
-1. **plan-book** (`PLAN_BOOK`, keyed by Stripe price id) — `{ planTag, creditsPerCycle, cadence,
+1. **plan-book** (`PLAN_BOOK`, keyed by `providerPriceId`) — `{ planTag, creditsPerCycle, cadence,
 entitlements }`. EXACT integer credits per cycle, never derived from the charged amount (ADR-0089
    §5). `entitlements` is the PURCHASED IDS the plan grants (edition names / the `bundle` sentinel /
    à-la-carte module ids), NEVER the expanded member-slug leaf set — the registry index expands those
@@ -22,14 +23,14 @@ entitlements }`. EXACT integer credits per cycle, never derived from the charged
 
 ## Public API
 
-| Symbol                                        | Use                                                                                                 |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `PLAN_BOOK` / `resolvePlan(id)`               | Stripe price id → plan entry (incl. `entitlements` purchased ids); unknown id throws (fail-closed). |
-| `planBookEntrySchema` / `parsePlanBook`       | Strict-validate a plan-book override at a boundary.                                                 |
-| `ACTION_BOOK` / `resolveActionCost(tag)`      | Action tag → integer credit cost (closed union; unknown tag throws).                                |
-| `actionBookSchema` / `parseActionBook`        | Strict-validate an action-book override at a boundary.                                              |
-| `CREDIT_CONVERSION` / `centsToCredits(cents)` | The credit denomination + cents→credits round-DOWN grant (re-export from kernel).                   |
-| `PRICEBOOK_VERSION`                           | Append-only version stamp — a row change bumps it, never edits in place.                            |
+| Symbol                                        | Use                                                                                                   |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `PLAN_BOOK` / `resolvePlan(id)`               | Provider price id → plan entry (incl. `entitlements` purchased ids); unknown id throws (fail-closed). |
+| `planBookEntrySchema` / `parsePlanBook`       | Strict-validate a plan-book override at a boundary.                                                   |
+| `ACTION_BOOK` / `resolveActionCost(tag)`      | Action tag → integer credit cost (closed union; unknown tag throws).                                  |
+| `actionBookSchema` / `parseActionBook`        | Strict-validate an action-book override at a boundary.                                                |
+| `CREDIT_CONVERSION` / `centsToCredits(cents)` | The credit denomination + cents→credits round-DOWN grant (re-export from kernel).                     |
+| `PRICEBOOK_VERSION`                           | Append-only version stamp — a row change bumps it, never edits in place.                              |
 
 ## Invariants
 
@@ -44,4 +45,4 @@ entitlements }`. EXACT integer credits per cycle, never derived from the charged
 
 > The credit **numbers** are operator-owned and deferred (SD-6/ADR-0012). The shipped plan/action rows
 > are clearly-marked **placeholders** (`price_…PLACEHOLDER` keys); the operator replaces them with real
-> Stripe price ids + the final locked amounts when checkout goes live.
+> Paddle price ids + the final locked amounts when checkout goes live (ADR-0108).
