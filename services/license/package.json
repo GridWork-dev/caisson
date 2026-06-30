@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
-  "description": "Merchant-of-Record billing webhook + idempotent credit grants + account-entitlement store/resolver (P6, ADR-0089/0017/0071). A gated invoice.paid grants cycle credits AND the plan's entitlements; resolveAccountEntitlements expands stored purchased ids to member slugs against the registry index. Ed25519 license issuer lands in a follow-on Bucket-B slice.",
+  "description": "Merchant-of-Record billing webhook + idempotent credit grants + account-entitlement store/resolver + the Ed25519 offline-license ISSUER HTTP surface (P6, ADR-0089/0017/0071/0108). A gated invoice.paid grants cycle credits AND the plan's entitlements; resolveAccountEntitlements expands stored purchased ids to member slugs against the registry index; the lazy bearer-gated POST /issue signs an account's resolved entitlements into a license token via @caisson/license-issue.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -15,12 +15,15 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src",
-    "test": "bun test ./src"
+    "test": "bun test ./src",
+    "start": "bun run src/server.ts"
   },
   "dependencies": {
     "@caisson/billing": "workspace:*",
     "@caisson/credits": "workspace:*",
     "@caisson/kernel": "workspace:*",
+    "@caisson/license-issue": "workspace:*",
+    "@caisson/license-verify": "workspace:*",
     "@caisson/pricebook": "workspace:*",
     "@caisson/registry-schema": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*"
@@ -29,6 +32,7 @@
     "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
+    "@types/bun": "^1.1.14",
     "eslint": "^9.13.0",
     "typescript": "^5.6.0"
   }

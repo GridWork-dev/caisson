@@ -73,16 +73,17 @@ const QUERY = "encryption"; // FTS5 phrase-matches only d4 → deterministic top
 const SECRET = "patient SSN 123-45-6789";
 
 /**
- * The PUBLIC license KAT token (a `pro`/`local-ai` test vector signed by the documented TEST key —
- * see `packages/license-verify/src/token.test.ts`; the private signing key never ships, so this is a
- * fixture, NOT a production secret). Used to demonstrate a valid offline verify with zero network.
+ * A real PRODUCTION-signed `pro`/`local-ai` license token (minted offline with the issuer's private
+ * key; a license token is public-safe — its detached signature reveals nothing about the private key,
+ * which never ships). Verifies against the production public key baked into `@caisson/license-verify`
+ * (ADR-0108). Used to demonstrate a valid offline verify with zero network. Keep in sync with that key.
  */
-const KAT_PRO_TOKEN =
-  "CAISSON-PRO-eyJlbnRpdGxlbWVudHMiOlsibG9jYWwtYWkiXSwiZXhwaXJ5IjpudWxsLCJsaWNlbnNlSWQiOiJmNDdhYzEwYi01OGNjLTQzNzItYTU2Ny0wZTAyYjJjM2Q0NzkiLCJtYWpvciI6MSwidGllciI6InBybyJ9mLtVqk-91jkIh6xD8M0BPmwVbwZfFtH9A0hnBM7zNgI6C1BHuiZEdyBYBtj2dftdSQRNPX9RnIjV21FDEfgdBQ";
+const PRO_TOKEN =
+  "CAISSON-PRO-eyJlbnRpdGxlbWVudHMiOlsibG9jYWwtYWkiXSwiZXhwaXJ5IjpudWxsLCJsaWNlbnNlSWQiOiIyMjIyMjIyMi0yMjIyLTQyMjItODIyMi0yMjIyMjIyMjIyMjIiLCJtYWpvciI6MSwidGllciI6InBybyJ9JCCq8unU9ASs7NpgsOQSFpKl6Bti7J41yCKbLV8-1q0HbeUzZ-K7cfdaBge2_gyn38fKvEomzkH35GRQ0RbFBA";
 
 /** Flip the final character → a tampered token whose Ed25519 signature no longer verifies. */
 const TAMPERED_TOKEN =
-  KAT_PRO_TOKEN.slice(0, -1) + (KAT_PRO_TOKEN.endsWith("Q") ? "R" : "Q");
+  PRO_TOKEN.slice(0, -1) + (PRO_TOKEN.endsWith("Q") ? "R" : "Q");
 
 // ── result shape (a serializable summary the route returns + the page renders) ──────────────────────
 
@@ -329,7 +330,7 @@ export async function runDemo(
     dbA.close();
 
     // 4) Offline Ed25519 license verify (TM-LIC) — valid → pro; tampered + absent → community.
-    const valid = verifyLicense(KAT_PRO_TOKEN);
+    const valid = verifyLicense(PRO_TOKEN);
     const tampered = verifyLicense(TAMPERED_TOKEN);
     const absent = verifyLicense(null);
 
