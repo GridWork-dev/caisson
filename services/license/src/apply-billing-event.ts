@@ -95,15 +95,20 @@ export async function applyBillingEvent(
       });
       return;
     case "refund.completed": {
-      // Refund of a one-time purchase (ADR-0109, operator-locked money policy). (a) Soft-revoke the
-      // purchase's entitlement grants; the count is the IDEMPOTENCY LATCH — a re-delivered refund finds
-      // nothing active to revoke and stops, so the clawback runs at most once. (b) Claw back ONLY the
-      // UNSPENT credits this purchase granted, bounded to the current balance (never negative).
-      const revoked = await revokePurchaseGrants(tx, {
+      // Refund of a one-time purchase (ADR-0109, operator-locked money policy). Act ONLY on a FULL
+      // refund — a partial `charge.refunded` must not revoke all access or claw the whole grant.
+      if (!ev.fullyRefunded) return;
+      // (a) Soft-revoke the purchase's entitlement grants (idempotent — only active rows flip; a
+      // re-delivery finds none). A credits-only purchase has zero grants — that is fine.
+      await revokePurchaseGrants(tx, {
         accountId: ev.accountId,
         purchaseId: ev.paymentId,
       });
-      if (revoked === 0) return; // already processed (or nothing to revoke) — do not re-claw
+      // (b) Claw back ONLY the UNSPENT credits this purchase granted, bounded to the current balance
+      // (never negative). This runs whether or not an entitlement was revoked, so a credits-only pack
+      // refund still reclaims credits (the entitlement-revoke count is NOT the latch). Idempotency is
+      // the compensating debit's own (paymentId, refund_clawback) unique key — a re-delivered refund
+      // writes no second debit (ADR-0109).
       const granted = await creditsGrantedBySource(
         tx,
         ev.accountId,
@@ -113,7 +118,7 @@ export async function applyBillingEvent(
         await clawback(tx, {
           accountId: ev.accountId,
           amount: granted,
-          sourceEventId: ev.paymentId, // defense-in-depth idempotency on the compensating debit
+          sourceEventId: ev.paymentId,
         });
       }
       return;

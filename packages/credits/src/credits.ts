@@ -314,7 +314,14 @@ export async function clawback(
 ): Promise<ClawbackResult> {
   assertPositiveInt(input.amount);
   const idem = idemColumns(input);
-  const current = await balance(tx, input.accountId);
+  // LOCK the wallet row before reading the balance, so a concurrent debit cannot decrement it between
+  // the read and the compensating UPDATE — otherwise the ledger row could land with no matching wallet
+  // decrement, diverging sum(ledger) from balance (mirrors `debit`'s safety). A missing row → 0 (no-op).
+  const locked = await tx.query<{ balance: number }>(
+    `SELECT balance FROM credit_wallet WHERE account_id = $1 FOR UPDATE`,
+    [input.accountId],
+  );
+  const current = locked.rows[0]?.balance ?? 0;
   const actual = Math.min(input.amount, current);
   if (actual === 0) {
     // Fully spent (or empty wallet): nothing unspent to reclaim. Never write a zero-amount row
@@ -332,13 +339,20 @@ export async function clawback(
     // A re-delivered refund on the same id — the compensating debit already landed; do not repeat it.
     return { balance: current, clawedBack: 0, idempotent: true };
   }
-  // actual <= current (the balance just read in this same transaction), so the floor guard matches.
+  // We hold the row lock and actual <= current (the locked balance), so the guarded UPDATE matches.
   const r = await tx.query<{ balance: number }>(
     `UPDATE credit_wallet SET balance = balance - $2
      WHERE account_id = $1 AND balance >= $2
      RETURNING balance`,
     [input.accountId, actual],
   );
+  if (r.rows.length === 0) {
+    // Unreachable while the FOR UPDATE lock pins balance >= actual — but fail closed (roll back the
+    // compensating debit) rather than return a fabricated balance with an orphaned ledger row.
+    throw new ValidationError(
+      "clawback: wallet decrement matched no row despite the row lock",
+    );
+  }
   return {
     balance: r.rows[0]?.balance ?? current - actual,
     clawedBack: actual,
