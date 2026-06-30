@@ -9,13 +9,14 @@ conflict, the ADR file and the board win over this index.
 - ADRs are append-only and immutable (ADR-0006). A later ADR _supersedes_ a clause; it
   never edits the prior file. So most rows below are **partial** supersessions (one clause),
   not a wholesale replacement.
-- 89 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 89). Numbering is **not**
-  contiguous: present are **0001-0024** and **0040-0104**; **0025-0039 are an unused gap**
+- 90 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 90). Numbering is **not**
+  contiguous: present are **0001-0024** and **0040-0105**; **0025-0039 are an unused gap**
   (no files). The 0040 jump was a deliberate block reservation for the brand/positioning set.
   **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit);
   **0094-0096** = the 2026-06-29 GTM-report locks (open-core Base / GTM offer / services-docs);
   **0097** = the W1 registry schema/service split; **0098** = the B1 credit-denomination home (resolves 0089 SD-3);
-  **0099-0104** = the 2026-06-29 design-system-harden track locks (component-recipe+kit / token+theming / gates / signature-animation / brand-mark "Pressure vessel" / Phase-2 hero static-code-as-proof).
+  **0099-0104** = the 2026-06-29 design-system-harden track locks (component-recipe+kit / token+theming / gates / signature-animation / brand-mark "Pressure vessel" / Phase-2 hero static-code-as-proof);
+  **0105** = the 2026-06-29 support-bot implementation locks (discord.py / OpenRouter / thread+Postgres escalation — implements 0009, P6 Bucket C item 2).
 - Status tokens read from each ADR's own header line:
   - `proposed` = literal header value on the founding + foundations sets (0001-0019, 0024).
     Per the board (line 90) these are **in force / locked** despite the stale "proposed"
@@ -245,6 +246,15 @@ Caisson's). The track is harden-not-build (Caisson already owned the token found
 | [0102](../knowledge/decisions/ADR-0102-signature-animation-css-svg.md)        | Marketing signature animation: tokenized CSS/SVG, video deferred (F6)            | Design/Marketing | accepted | adopts hero-concepts; under 0078 §6 / 0080 §3                              |
 | [0103](../knowledge/decisions/ADR-0103-brand-mark-pressure-vessel.md)         | Brand mark: the "Pressure vessel" (operator pick); signature sketch deferred     | Design/Brand     | accepted | supersedes 0078 §2 glyph; defers 0102 sketch; under 0078 §8 / 0099         |
 | [0104](../knowledge/decisions/ADR-0104-phase2-hero-static-code-as-proof.md)   | Phase-2 hero: static code-as-proof (operator pick); three.js spike deferred      | Design/Marketing | accepted | amends 0102/0103 hero plan; under 0080/0079/0078 §6 §8; ADR-0082           |
+
+### P6 support-bot impl (0105, 2026-06-29) - status `accepted`
+
+Implementation forks for `services/support-bot` (P6 Bucket C item 2), resolved in an operator picker
+after exa + codebase research. Implements ADR-0009's shape; does not supersede it.
+
+| #                                                                     | Title                                                                          | Domain           | Status   | Relations                                                         |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ---------------- | -------- | ----------------------------------------------------------------- |
+| [0105](../knowledge/decisions/ADR-0105-support-bot-implementation.md) | support-bot impl: discord.py · OpenRouter (one key) · thread+Postgres escalate | Services/Support | accepted | implements 0009; consumes 0096 (/query); full-build + deploy seam |
 
 ---
 

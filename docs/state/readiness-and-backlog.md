@@ -133,16 +133,16 @@ spine is **P6**, plus locked fast-follows and one true open operator fork.
 
 ### P6 — Commerce + support + docs (the single big pending phase)
 
-| Item                                                                           | State                                           | Depends on / gate                                                                                                                                                                  |
-| ------------------------------------------------------------------------------ | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `services/license` issuer + grants (Ed25519 + MoR webhook + idempotent grants) | **ready** (ADR-0089) — anchor of P6             | needs `@caisson/pricebook` + billing `invoice.paid` enrichment                                                                                                                     |
-| X-2 billing: `@caisson/pricebook` + cycle→grant mapper                         | **mechanism ready** (ADR-0089)                  | the **numbers** are the open pricing fork                                                                                                                                          |
-| Entitlement-on-purchase resolver wiring (ADR-0071/0076)                        | ready after license service                     | depends on `services/license` purchase flow                                                                                                                                        |
-| Registry Worker entitlement filtering (ADR-0047 defers it)                     | ready after the resolver                        | the one **genuine code loose end** today                                                                                                                                           |
-| Buyer dashboard + seller cockpit                                               | ready after commerce backend                    | depends on license + resolver + final pricing                                                                                                                                      |
-| Real Stripe checkout + EULA drafting (CLAUDE.md/ADR-0082 fast-follows)         | partial-blocked                                 | Stripe account; EULA is operator/legal content                                                                                                                                     |
-| `services/support-bot` (Discord + Python RAG + hosted inference)               | **ready** (ADR-0009) — corpus now exists        | consumes `services/docs` `POST /query` over HTTP; cloud-runner deploy is separate                                                                                                  |
-| `services/docs` + `llms.txt`                                                   | **BUILT** (ADR-0096, `feature/p6-docs-service`) | corpus + `llms.txt`/`llms-full.txt` + Bearer `POST /query` (hybrid FTS5+vec via `@caisson/local-store`); live OpenRouter embedder = deploy seam; partial until the bot consumes it |
+| Item                                                                           | State                                               | Depends on / gate                                                                                                                                                                  |
+| ------------------------------------------------------------------------------ | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `services/license` issuer + grants (Ed25519 + MoR webhook + idempotent grants) | **ready** (ADR-0089) — anchor of P6                 | needs `@caisson/pricebook` + billing `invoice.paid` enrichment                                                                                                                     |
+| X-2 billing: `@caisson/pricebook` + cycle→grant mapper                         | **mechanism ready** (ADR-0089)                      | the **numbers** are the open pricing fork                                                                                                                                          |
+| Entitlement-on-purchase resolver wiring (ADR-0071/0076)                        | ready after license service                         | depends on `services/license` purchase flow                                                                                                                                        |
+| Registry Worker entitlement filtering (ADR-0047 defers it)                     | ready after the resolver                            | the one **genuine code loose end** today                                                                                                                                           |
+| Buyer dashboard + seller cockpit                                               | ready after commerce backend                        | depends on license + resolver + final pricing                                                                                                                                      |
+| Real Stripe checkout + EULA drafting (CLAUDE.md/ADR-0082 fast-follows)         | partial-blocked                                     | Stripe account; EULA is operator/legal content                                                                                                                                     |
+| `services/support-bot` (Discord + Python RAG + hosted inference)               | **BUILT** (ADR-0009/0105, `feature/p6-support-bot`) | discord.py RAG over docs `POST /query` + OpenRouter + thread+Postgres escalation; 32 tests, hermetic CI; live secrets + cloud-runner deploy (Railway rec) = operator-gated seam    |
+| `services/docs` + `llms.txt`                                                   | **BUILT** (ADR-0096, `feature/p6-docs-service`)     | corpus + `llms.txt`/`llms-full.txt` + Bearer `POST /query` (hybrid FTS5+vec via `@caisson/local-store`); live OpenRouter embedder = deploy seam; partial until the bot consumes it |
 
 ### Fast-follow (locked, no fork, ready NOW, not exit-gate-blocking)
 
@@ -232,16 +232,18 @@ main body to `main`; what remains is the back half of each.
   polish, Turnstile widget, consent checkbox).
 - **Code/wiring track** (`outputs/kickoffs/code-wiring-track.md`) — **Buckets A+B MERGED** (PR#16 W1
   open-core; PR#19 W2 `@caisson/migrate`; PR#18 B1 billing-X2 + B2 entitlement resolver + worker
-  filtering). **Remaining:** **C** support/docs — **`services/docs` BUILT** (`feature/p6-docs-service`,
-  ADR-0096: corpus + `llms.txt` + Bearer `POST /query`; real embedder = deploy seam), `services/support-bot`
-  still an empty scaffold (its RAG now has a corpus + `/query` contract to consume) → **D**
+  filtering). **Bucket C BUILT:** **`services/docs`** (ADR-0096: corpus + `llms.txt` + Bearer `POST
+/query`; real embedder = deploy seam) **+ `services/support-bot`** (`feature/p6-support-bot`,
+  ADR-0009/0105: discord.py RAG over the docs `/query`, OpenRouter generation, thread+Postgres
+  escalation; live secrets + cloud deploy = operator-gated seam). **Remaining:** **D**
   publish-readiness (publishability flip · npx bin ADR-0092 · registry index backfill — only 7 of ~24
   modules live today) → **E** GTM (free EU-AI-Act sample ADR-0095 · Enterprise tier) → **F** live-test
   runbook (W8). Plus the P6 commerce remainders in §3 (license **issuer** · revoke-on-cancel ·
   one-time-purchase entitlement · dashboards) and the `apps/site` Apache-2 licensing-copy tail.
 
 The codebase carries **zero** accidental TODO/FIXME markers; all in-source "seams" are ADR-sanctioned
-ports. **Next coherent unit of work:** P6 Bucket C remainder — **`services/support-bot`** (Discord +
-Python RAG consuming the new `services/docs` `/query`) — or the license **issuer** + revoke/one-time
-entitlement slices — gated only by the deferred-by-decision pricing numbers + a Stripe account, neither
-of which blocks building the mechanism.
+ports. **Next coherent unit of work:** the license **issuer** (`ADR-0010`) + revoke-on-cancel +
+one-time-purchase entitlement slices, or the **publish-readiness** pass (D) — gated only by the
+deferred-by-decision pricing numbers + a Stripe account, neither of which blocks building the
+mechanism. (P6 Bucket C — `services/docs` + `services/support-bot` — is now built; the support-bot's
+live secrets + cloud deploy are the one operator-gated DEPLOY seam left in that bucket.)
