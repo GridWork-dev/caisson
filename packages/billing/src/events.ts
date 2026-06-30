@@ -13,6 +13,12 @@ export const DomainBillingEventSchema = z.discriminatedUnion("type", [
     accountId: z.string(),
     amountTotal: z.number().int().nonnegative(),
     currency: z.string(),
+    // ADR-0109 one-time enrichment: the Stripe price id (from the session's `metadata.price_id`,
+    // stamped at checkout) the one-time PURCHASE_BOOK resolves to {credits, entitlements}, and the
+    // PaymentIntent id (`payment_intent`) — the STABLE join key a later `charge.refunded` carries, so a
+    // refund can revoke this purchase's entitlement grant + claw back its credits. "" when absent.
+    priceId: z.string(),
+    paymentId: z.string(),
   }),
   strictObject({
     type: z.literal("subscription.created"),
@@ -28,6 +34,22 @@ export const DomainBillingEventSchema = z.discriminatedUnion("type", [
     type: z.literal("subscription.canceled"),
     sourceEventId: z.string(),
     accountId: z.string(),
+    // ADR-0109: the deleted subscription's id (the `customer.subscription.deleted` object IS the
+    // subscription, so its `id`). The revoke path soft-revokes exactly the grants whose
+    // source_kind=subscription AND subscription_id = this id — never another subscription's grants.
+    subscriptionId: z.string(),
+  }),
+  // ADR-0109 refund: a `charge.refunded` on a one-time purchase. `paymentId` (the charge's
+  // `payment_intent`) joins back to the original purchase's entitlement grant + credit grant. The
+  // account is read from the charge metadata (copied from the PaymentIntent metadata stamped at
+  // checkout). The clawback amount is the GRANTED credits (looked up by paymentId), NOT amountRefunded.
+  strictObject({
+    type: z.literal("refund.completed"),
+    sourceEventId: z.string(),
+    accountId: z.string(),
+    paymentId: z.string(),
+    amountRefunded: z.number().int().nonnegative(),
+    currency: z.string(),
   }),
   strictObject({
     type: z.literal("invoice.paid"),
@@ -58,12 +80,17 @@ function readString(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
 }
 
-/** Read `account_id` from a `{ metadata: { account_id } }` shape, or "" if absent. */
-function readMetadataAccountId(value: unknown): string {
+/** Read `metadata.<key>` from a `{ metadata: { … } }` shape, or "" if absent. */
+function readMetadataString(value: unknown, key: string): string {
   if (typeof value !== "object" || value === null) return "";
   const metadata = (value as Record<string, unknown>).metadata;
   if (typeof metadata !== "object" || metadata === null) return "";
-  return readString((metadata as Record<string, unknown>).account_id);
+  return readString((metadata as Record<string, unknown>)[key]);
+}
+
+/** Read `account_id` from a `{ metadata: { account_id } }` shape, or "" if absent. */
+function readMetadataAccountId(value: unknown): string {
+  return readMetadataString(value, "account_id");
 }
 
 // Resolve the tenant account. A subscription invoice carries it on
@@ -111,6 +138,11 @@ export function parseStripeEvent(
         accountId,
         amountTotal: readInt(obj.amount_total),
         currency: readString(obj.currency, "usd"),
+        // The one-time PURCHASE_BOOK key — stamped at checkout on `metadata.price_id` (a session
+        // carries no webhook-readable line items without expansion). The PaymentIntent id is the
+        // refund join key (ADR-0109).
+        priceId: readMetadataString(obj, "price_id"),
+        paymentId: readString(obj.payment_intent),
       };
     case "customer.subscription.created":
       return {
@@ -129,6 +161,18 @@ export function parseStripeEvent(
         type: "subscription.canceled",
         sourceEventId: event.id,
         accountId,
+        // The deleted object IS the subscription, so its own `id` is the subscription id (ADR-0109).
+        subscriptionId: readString(obj.id),
+      };
+    case "charge.refunded":
+      return {
+        type: "refund.completed",
+        sourceEventId: event.id,
+        accountId,
+        // The charge's PaymentIntent id — the same id the original purchase grant keyed on (ADR-0109).
+        paymentId: readString(obj.payment_intent),
+        amountRefunded: readInt(obj.amount_refunded),
+        currency: readString(obj.currency, "usd"),
       };
     case "invoice.paid":
       return {

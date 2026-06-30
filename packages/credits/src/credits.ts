@@ -21,6 +21,10 @@ export const DEBIT_EVENT_TYPES = [
   "codegen_debit",
   "ai_feature_debit",
   "feature_debit",
+  // The compensating debit a refund writes to claw back UNSPENT credits granted by the refunded
+  // purchase (ADR-0109). It is NOT a spendable-balance debit (no 402 floor): the amount is bounded to
+  // the current balance so the wallet never goes negative. Written only via `clawback`, never `debit`.
+  "refund_clawback",
 ] as const;
 export type GrantEventType = (typeof GRANT_EVENT_TYPES)[number];
 export type DebitEventType = (typeof DEBIT_EVENT_TYPES)[number];
@@ -257,4 +261,87 @@ export async function getLedger(
     [accountId],
   );
   return r.rows;
+}
+
+/**
+ * Sum the credits GRANTED (positive amounts) under a given provider source event id, for an account.
+ * The provenance lookup a refund uses to learn how much a one-time purchase granted (ADR-0109): a
+ * one-time purchase grant lands as a `purchase` event keyed `source_event_id = <PaymentIntent id>`, so
+ * the refund passes that same id here. Returns 0 when nothing was granted under it. Run inside
+ * `withTenant` (RLS scopes the read to the account).
+ */
+export async function creditsGrantedBySource(
+  tx: TenantExecutor,
+  accountId: string,
+  sourceEventId: string,
+): Promise<number> {
+  const r = await tx.query<{ total: number }>(
+    `SELECT COALESCE(SUM(amount), 0)::int AS total
+     FROM credit_event
+     WHERE account_id = $1 AND source_event_id = $2 AND amount > 0`,
+    [accountId, sourceEventId],
+  );
+  return r.rows[0]?.total ?? 0;
+}
+
+export interface ClawbackInput extends IdempotencySource {
+  accountId: string;
+  /** Credits originally granted by the refunded purchase (a positive integer). */
+  amount: number;
+}
+
+export interface ClawbackResult {
+  /** The wallet balance after the clawback. */
+  balance: number;
+  /** Credits actually reclaimed — `min(amount, prior balance)`; 0 when the buyer already spent them. */
+  clawedBack: number;
+  /** True when this was a no-op replay (the refund's compensating debit already landed). */
+  idempotent: boolean;
+}
+
+/**
+ * Claw back UNSPENT credits granted by a refunded purchase (ADR-0109, the operator-locked money
+ * policy). Writes exactly ONE compensating negative `refund_clawback` ledger entry of
+ * `min(amount, currentBalance)` — NEVER pushing the wallet negative: if the buyer already spent some or
+ * all of those credits, only the remainder (down to 0 → no entry) is reclaimed. Idempotent on the
+ * supplied id/key (a re-delivered refund does not double-claw). Append-only (ADR-0007): the clawback is
+ * a new compensating entry, not a mutation of the original grant. Run inside `withTenant` so the
+ * decrement is RLS-scoped + atomic with the surrounding refund transaction.
+ */
+export async function clawback(
+  tx: TenantExecutor,
+  input: ClawbackInput,
+): Promise<ClawbackResult> {
+  assertPositiveInt(input.amount);
+  const idem = idemColumns(input);
+  const current = await balance(tx, input.accountId);
+  const actual = Math.min(input.amount, current);
+  if (actual === 0) {
+    // Fully spent (or empty wallet): nothing unspent to reclaim. Never write a zero-amount row
+    // (credit_event_amount_nonzero CHECK) — the wallet stays at its floor.
+    return { balance: current, clawedBack: 0, idempotent: false };
+  }
+  const fresh = await insertEvent(tx, {
+    accountId: input.accountId,
+    eventType: "refund_clawback",
+    amount: -actual,
+    feature: null,
+    ...idem,
+  });
+  if (!fresh) {
+    // A re-delivered refund on the same id — the compensating debit already landed; do not repeat it.
+    return { balance: current, clawedBack: 0, idempotent: true };
+  }
+  // actual <= current (the balance just read in this same transaction), so the floor guard matches.
+  const r = await tx.query<{ balance: number }>(
+    `UPDATE credit_wallet SET balance = balance - $2
+     WHERE account_id = $1 AND balance >= $2
+     RETURNING balance`,
+    [input.accountId, actual],
+  );
+  return {
+    balance: r.rows[0]?.balance ?? current - actual,
+    clawedBack: actual,
+    idempotent: false,
+  };
 }

@@ -24,7 +24,8 @@ const checkoutBody = JSON.stringify({
     object: {
       amount_total: 89900,
       currency: "usd",
-      metadata: { account_id: "acct_a" },
+      payment_intent: "pi_123",
+      metadata: { account_id: "acct_a", price_id: "price_pack_PLACEHOLDER" },
     },
   },
 });
@@ -66,7 +67,7 @@ describe("Stripe webhook verification", () => {
 });
 
 describe("event mapping", () => {
-  test("checkout.session.completed → purchase.completed", () => {
+  test("checkout.session.completed → purchase.completed (one-time enrichment, ADR-0109)", () => {
     const event = JSON.parse(checkoutBody) as Parameters<
       typeof parseStripeEvent
     >[0];
@@ -75,6 +76,47 @@ describe("event mapping", () => {
       sourceEventId: "evt_123",
       accountId: "acct_a",
       amountTotal: 89900,
+      currency: "usd",
+      priceId: "price_pack_PLACEHOLDER",
+      paymentId: "pi_123",
+    });
+  });
+
+  test("customer.subscription.deleted → subscription.canceled carries the subscription id (ADR-0109)", () => {
+    const event = {
+      id: "evt_del",
+      type: "customer.subscription.deleted",
+      data: { object: { id: "sub_gone", metadata: { account_id: "acct_a" } } },
+    } as Parameters<typeof parseStripeEvent>[0];
+    expect(parseStripeEvent(event)).toEqual({
+      type: "subscription.canceled",
+      sourceEventId: "evt_del",
+      accountId: "acct_a",
+      subscriptionId: "sub_gone",
+    });
+  });
+
+  test("charge.refunded → refund.completed joins on the PaymentIntent id (ADR-0109)", () => {
+    // The Charge carries the account on its own metadata (Stripe copies the PaymentIntent metadata
+    // stamped at checkout onto the Charge) and `payment_intent` — the join key back to the purchase.
+    const event = {
+      id: "evt_ref",
+      type: "charge.refunded",
+      data: {
+        object: {
+          payment_intent: "pi_123",
+          amount_refunded: 89900,
+          currency: "usd",
+          metadata: { account_id: "acct_a" },
+        },
+      },
+    } as Parameters<typeof parseStripeEvent>[0];
+    expect(parseStripeEvent(event)).toEqual({
+      type: "refund.completed",
+      sourceEventId: "evt_ref",
+      accountId: "acct_a",
+      paymentId: "pi_123",
+      amountRefunded: 89900,
       currency: "usd",
     });
   });

@@ -14,6 +14,15 @@ export {
 export type { PlanBookEntry, PlanCadence } from "./plans.ts";
 
 export {
+  PURCHASE_BOOK_VERSION,
+  PURCHASE_BOOK,
+  purchaseBookEntrySchema,
+  parsePurchaseBook,
+  resolvePurchase,
+} from "./purchases.ts";
+export type { PurchaseBookEntry } from "./purchases.ts";
+
+export {
   ACTION_BOOK,
   actionBookSchema,
   parseActionBook,
