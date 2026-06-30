@@ -1,0 +1,215 @@
+// The Paddle webhook HTTP route end to end (ADR-0108/0116, services-hardening #3): drive POST /webhook
+// on the REAL createApp router with the REAL createPaddleBilling provider (real HMAC verify + parse +
+// the real grant mapper over PGlite/withTenant), proving the route binds a verified purchase to BOTH
+// the credit grant and the entitlement grant in one tenant transaction. The handleBillingWebhook /
+// applyBillingEvent grant LOGIC is covered in webhook.integration.test.ts + paddle-webhook.integration.
+// test.ts; this file covers the ROUTE seam the audit flagged (status codes, raw-body verification,
+// AuthnError→401 fail-closed, replay idempotency through the HTTP surface).
+import { createHash, createHmac, createPrivateKey } from "node:crypto";
+import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import type { BillingProvider } from "@caisson/billing";
+import { createPaddleBilling } from "@caisson/billing";
+import { CREDIT_SCHEMA_SQL, balance } from "@caisson/credits";
+import { Ed25519Signer } from "@caisson/license-issue";
+import {
+  type RegistryIndex,
+  loadRegistryIndex,
+} from "@caisson/registry-schema";
+import { type TestPg, newTestPg } from "@caisson/testing";
+import { withTenant } from "@caisson/tenancy-rls";
+import { createApp } from "./app.ts";
+import {
+  ENTITLEMENT_SCHEMA_SQL,
+  readEntitlements,
+} from "./entitlement-store.ts";
+
+const SECRET = "pdl_ntfset_webhook_route_secret";
+
+// REAL Paddle sandbox price ids (paddle-pricebook-roundtrip.test.ts). The edition buys grant entitlements
+// (credits: 0); the only one-time row carrying credits is the credit-pack PLACEHOLDER, so the credit-grant
+// path is exercised through that — no single price-book row carries BOTH credits and an entitlement.
+const PRICE_COMPLIANCE_ONETIME = "pri_01kwd76be2eq96kff5nqw236c0"; // -> entitlement "compliance"
+const PRICE_DEVELOPER_SUB = "pri_01kwd76d64rz2ecm090pt4nq5q"; // -> 1000 credits/cycle, no entitlement
+const PRICE_CREDIT_PACK = "price_credit_pack_PLACEHOLDER"; // -> 5000 credits, no entitlement
+
+function signed(body: string, t: number): string {
+  const sig = createHmac("sha256", SECRET).update(`${t}:${body}`).digest("hex");
+  return `ts=${t};h1=${sig}`;
+}
+
+// A dev signer + empty index satisfy createApp's deps; POST /webhook touches NEITHER (only /issue does).
+const devPrivate = createPrivateKey({
+  key: Buffer.concat([
+    Buffer.from("302e020100300506032b657004220420", "hex"),
+    createHash("sha256").update("caisson-webhook-route-test-seed").digest(),
+  ]),
+  format: "der",
+  type: "pkcs8",
+});
+const signer = new Ed25519Signer("dev", devPrivate);
+const index: RegistryIndex = loadRegistryIndex({
+  schemaVersion: 1,
+  modules: [],
+});
+
+let tp: TestPg;
+let provider: BillingProvider;
+
+beforeAll(async () => {
+  tp = await newTestPg();
+  await tp.exec(CREDIT_SCHEMA_SQL);
+  await tp.exec(ENTITLEMENT_SCHEMA_SQL);
+  provider = createPaddleBilling({ webhookSecret: SECRET, apiKey: "pdl_test" });
+});
+afterAll(async () => {
+  await tp.close();
+});
+
+function makeApp(
+  p: BillingProvider | null,
+): (req: Request) => Promise<Response> {
+  return createApp({
+    token: "unused-issue-token",
+    signer,
+    index,
+    db: tp.pg,
+    provider: p,
+  });
+}
+
+function webhookReq(rawBody: string, signature: string | null): Request {
+  return new Request("http://license.test/webhook", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      ...(signature !== null ? { "paddle-signature": signature } : {}),
+    },
+    body: rawBody,
+  });
+}
+
+function oneTimeBody(eventId: string, txnId: string, priceId: string): string {
+  return JSON.stringify({
+    event_id: eventId,
+    event_type: "transaction.completed",
+    data: {
+      id: txnId,
+      subscription_id: null,
+      currency_code: "usd",
+      custom_data: { account_id: `acct_${txnId}` },
+      items: [{ price: { id: priceId } }],
+      details: { totals: { grand_total: "129900" } },
+    },
+  });
+}
+
+describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
+  test("a valid one-time edition purchase returns 200 and grants the entitlement", async () => {
+    const app = makeApp(provider);
+    const acct = "acct_txn_edition_1";
+    const t = Math.floor(Date.now() / 1000);
+    const body = JSON.stringify({
+      event_id: "evt_edition_1",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_edition_1",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: acct },
+        items: [{ price: { id: PRICE_COMPLIANCE_ONETIME } }],
+        details: { totals: { grand_total: "249900" } },
+      },
+    });
+    const res = await app(webhookReq(body, signed(body, t)));
+    expect(res.status).toBe(200);
+
+    const entitlements = await withTenant(tp.pg, acct, (tx) =>
+      readEntitlements(tx, acct),
+    );
+    expect(entitlements).toEqual(["compliance"]); // entitlement-grant path fired
+    const bal = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
+    expect(bal).toBe(0); // credit-grant branch ran as a clean no-op (this row carries no credits)
+  });
+
+  test("a valid one-time credit-pack purchase grants credits, and a replay of the same event_id is a no-op", async () => {
+    const app = makeApp(provider);
+    const acct = "acct_txn_credits_1";
+    const t = Math.floor(Date.now() / 1000);
+    const body = JSON.stringify({
+      event_id: "evt_credits_1",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_credits_1",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: acct },
+        items: [{ price: { id: PRICE_CREDIT_PACK } }],
+        details: { totals: { grand_total: "5000" } },
+      },
+    });
+    const sig = signed(body, t);
+
+    const first = await app(webhookReq(body, sig));
+    expect(first.status).toBe(200);
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(5000);
+
+    // Replay the byte-identical signed delivery — same event_id → same txn/payment id → the credit
+    // ledger's source-id idempotency absorbs it (ADR-0113). Balance must NOT double.
+    const replay = await app(webhookReq(body, sig));
+    expect(replay.status).toBe(200);
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(5000);
+  });
+
+  test("a subscription-linked transaction grants the cycle credits (invoice.paid path)", async () => {
+    const app = makeApp(provider);
+    const acct = "acct_txn_sub_1";
+    const t = Math.floor(Date.now() / 1000);
+    const body = JSON.stringify({
+      event_id: "evt_sub_1",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_sub_1",
+        subscription_id: "sub_route_1",
+        origin: "subscription_charge",
+        currency_code: "usd",
+        custom_data: { account_id: acct },
+        items: [{ price: { id: PRICE_DEVELOPER_SUB } }],
+        details: { totals: { grand_total: "49900" } },
+      },
+    });
+    const res = await app(webhookReq(body, signed(body, t)));
+    expect(res.status).toBe(200);
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(1000);
+  });
+
+  test("a bad signature returns 401 and provisions NOTHING (fail-closed, never throws to the socket)", async () => {
+    const app = makeApp(provider);
+    const acct = "acct_badsig";
+    const body = oneTimeBody("evt_badsig", "acct_badsig", PRICE_CREDIT_PACK);
+    const res = await app(webhookReq(body, "ts=1;h1=deadbeef"));
+    expect(res.status).toBe(401);
+    // No grant landed under the (forged) tenant.
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(0);
+  });
+
+  test("a missing signature header returns 401", async () => {
+    const app = makeApp(provider);
+    const body = oneTimeBody("evt_nosig", "txn_nosig", PRICE_CREDIT_PACK);
+    const res = await app(webhookReq(body, null));
+    expect(res.status).toBe(401);
+  });
+
+  test("a null provider (PADDLE_WEBHOOK_SECRET unset) fails closed with 401", async () => {
+    const app = makeApp(null);
+    const t = Math.floor(Date.now() / 1000);
+    const body = oneTimeBody("evt_noprov", "txn_noprov", PRICE_CREDIT_PACK);
+    const res = await app(webhookReq(body, signed(body, t)));
+    expect(res.status).toBe(401);
+  });
+
+  test("a non-POST method on /webhook → 405", async () => {
+    const app = makeApp(provider);
+    const res = await app(new Request("http://license.test/webhook"));
+    expect(res.status).toBe(405);
+  });
+});
