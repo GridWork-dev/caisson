@@ -11,6 +11,7 @@
 // operator-gated DEPLOY concern as the docs-service real-embedder seam.
 import { resolve } from "node:path";
 import { Ed25519Signer } from "@caisson/license-issue";
+import { initObservability } from "@caisson/observability";
 import { loadRegistryIndexFromFile } from "@caisson/registry-schema";
 import type { Transactor } from "@caisson/tenancy-rls";
 import { createApp } from "./app.ts";
@@ -35,6 +36,11 @@ export function startServer(
   db: Transactor,
   options: StartServerOptions = {},
 ): { port: number; stop: () => void } {
+  // ADR-0117: wired first, before any other boot work — instrumentation must be live before the
+  // modules it patches (node:http, pg) are first required. Env-gated: a no-op when
+  // OTEL_EXPORTER_OTLP_ENDPOINT is unset (CI / local / no SigNoz configured).
+  initObservability({ serviceName: "service-license" });
+
   const token = process.env.LICENSE_ISSUE_TOKEN ?? "";
   if (token.length === 0) {
     throw new Error(
