@@ -20,7 +20,7 @@ edited — supersede with a later ADR).
 ## Source-of-truth hierarchy
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
-2. `knowledge/decisions/` — the ADRs themselves (**0001–0105**: 0001–0024 founding+substrate+pipeline · 0040–0044 brand+crypto+framework · 0045–0049 Wave-0 substrate · 0050–0077 Wave-1 editions · 0078–0083 design+go-live · 0084–0088 GTM+collision-fix · 0089–0093 picker-round locks · 0094–0098 GTM-report+W1/B1 (open-core/offer/docs-svc/registry-split/credit-home) · 0099–0104 design-system harden+brand-mark+hero · 0105 support-bot impl; append-only, all locked). Canonical ADR catalog: `docs/adr-index.md`
+2. `knowledge/decisions/` — the ADRs themselves (**0001–0113**: 0001–0024 founding+substrate+pipeline · 0040–0044 brand+crypto+framework · 0045–0049 Wave-0 substrate · 0050–0077 Wave-1 editions · 0078–0083 design+go-live · 0084–0088 GTM+collision-fix · 0089–0093 picker-round locks · 0094–0098 GTM-report+W1/B1 (open-core/offer/docs-svc/registry-split/credit-home) · 0099–0104 design-system harden+brand-mark+hero · 0105 support-bot impl · 0106–0109 P6 operator-gates (pricing/CF-Access/Paddle-MoR/support-bot-member-mgmt) · 0110–0113 P6 code-track (license-issuer/publish-flip/MCP-rate-limit/entitlement-revoke); append-only, all locked). Canonical ADR catalog: `docs/adr-index.md`
 3. `specs/` — locked concept docs; `specs/00-product-spec.md` is the founding spec
 4. `plan.md` / `SUMMARY.md` — build plan + consolidated summary
 5. `outputs/` — session artifacts (kickoffs, research, syntheses)
@@ -31,10 +31,12 @@ On conflict, the higher item wins.
 
 Research → spec → ADR lock → code. **No product code before the spec/ADR it implements is
 locked.** Current state: **P0+P1, Wave-0 substrate, Wave-1 editions (merged-but-partial), and P5
-generator all SHIPPED; registry Worker LIVE.** P6 is **partially built** — Bucket C (`services/docs`
-PR#23 + `services/support-bot` PR#24) merged, X-2 billing + entitlement resolver + Worker filtering
-merged (PR#18); **remaining: license issuer (ADR-0010) + dashboards + publish-readiness**. Live
-per-package truth: `docs/build-state.md`.
+generator all SHIPPED; registry Worker LIVE.** P6 is **nearly complete** — Bucket C (`services/docs`
+PR#23 + `services/support-bot` PR#24) merged + DEPLOYED, X-2 billing + entitlement resolver + Worker
+filtering merged (PR#18); the 2026-06-30 P6 integration then built the **license issuer (ADR-0110),
+publish-readiness flip (ADR-0111), MCP rate-limit (ADR-0112) + entitlement-revoke/one-time/clawback
+(ADR-0113)**; **remaining: dashboards** + the operator/DEPLOY-class go-live steps. Live per-package
+truth: `docs/build-state.md`.
 
 ## Engineering invariants (locked, ADR-0002 — apply to all product code)
 
