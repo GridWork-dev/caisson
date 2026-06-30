@@ -3,15 +3,16 @@
 // all editions that send emails route through this port. Open Base: Apache-2.0, oss tier (ADR-0094 open-core).
 //
 // Open Base ships free: tier `oss`, no priceCents (ADR-0094 open-core). Dependencies are DOWN-ONLY (ADR-0003).
+import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest.ts";
 
 export default defineModule({
   id: "@caisson/email",
-  version: "0.0.0",
+  version: pkg.version,
   kind: "base",
   tier: "oss",
   priceCents: null,
-  license: "Apache-2.0",
+  license: pkg.license,
   dependencies: ["@caisson/kernel"],
   description:
     "Transactional email port: provider-agnostic Emailer interface + capture (test) + Resend (prod) drivers (ADR-0018).",

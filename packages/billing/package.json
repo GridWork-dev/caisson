@@ -1,9 +1,12 @@
 {
   "name": "@caisson/billing",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "description": "Stripe billing behind a BillingProvider port: HMAC-raw-body webhook verify + DomainBillingEvent. ADR-0017.",
   "exports": {
     ".": {

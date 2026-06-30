@@ -1,9 +1,12 @@
 {
   "name": "@caisson/migrate",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
   "description": "The base migration assembler + runner (ADR-0070/0090): reads each selected package's on-disk migrations/NNNN_*.sql, merges them via the kernel into ONE renumbered sequence + single schema_version ledger, emits the generated-app file set, and applies the sequence forward-only through an injected runner port. Owned here so @caisson/cli and @caisson/compliance import it, never copy it.",
   "exports": {
     ".": {
