@@ -59,7 +59,7 @@ a confidence-tagged recommendation + file:line evidence). Output per lane: a str
 
 Consolidate **all** forks surfaced in Phase 1 into **one** `AskUserQuestion` round (group by item;
 recommendation first, confidence + evidence on each). The operator locks them. Record each lock as an
-**append-only ADR starting at ADR-0108** (operator session reserves 0106–0107). This honors the repo's
+**append-only ADR starting at ADR-0110** (the go-live operator track landed 0106–0109). This honors the repo's
 one-operator rule: _never auto-decide a fork._ Update `docs/state/decisions-and-forks.md` Locked table.
 
 ### Phase 3 — EXECUTE (parallel workflow, **worktree-isolated** writers)

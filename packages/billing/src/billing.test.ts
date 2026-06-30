@@ -67,7 +67,7 @@ describe("Stripe webhook verification", () => {
 });
 
 describe("event mapping", () => {
-  test("checkout.session.completed → purchase.completed (one-time enrichment, ADR-0109)", () => {
+  test("checkout.session.completed → purchase.completed (one-time enrichment, ADR-0113)", () => {
     const event = JSON.parse(checkoutBody) as Parameters<
       typeof parseStripeEvent
     >[0];
@@ -82,7 +82,7 @@ describe("event mapping", () => {
     });
   });
 
-  test("customer.subscription.deleted → subscription.canceled carries the subscription id (ADR-0109)", () => {
+  test("customer.subscription.deleted → subscription.canceled carries the subscription id (ADR-0113)", () => {
     const event = {
       id: "evt_del",
       type: "customer.subscription.deleted",
@@ -96,7 +96,7 @@ describe("event mapping", () => {
     });
   });
 
-  test("charge.refunded → refund.completed joins on the PaymentIntent id (ADR-0109)", () => {
+  test("charge.refunded → refund.completed joins on the PaymentIntent id (ADR-0113)", () => {
     // The Charge carries the account on its own metadata (Stripe copies the PaymentIntent metadata
     // stamped at checkout onto the Charge) and `payment_intent` — the join key back to the purchase.
     const event = {
@@ -125,7 +125,7 @@ describe("event mapping", () => {
 
   test("a PARTIAL charge.refunded maps with fullyRefunded=false (mapper no-ops downstream)", () => {
     // Stripe leaves `refunded` false on a partial refund; the services/license mapper must not revoke
-    // all access or claw the whole grant (ADR-0109 W1).
+    // all access or claw the whole grant (ADR-0113 W1).
     const event = {
       id: "evt_partial",
       type: "charge.refunded",
@@ -148,7 +148,7 @@ describe("event mapping", () => {
 
   test("a subscription-mode checkout.session.completed maps to null (not a one-time purchase)", () => {
     // Subscription signups fire this event too, but carry no PaymentIntent — the first grant arrives
-    // via invoice.paid. Mapping to purchase.completed would throw on the empty paymentId (ADR-0109 B1).
+    // via invoice.paid. Mapping to purchase.completed would throw on the empty paymentId (ADR-0113 B1).
     const event = {
       id: "evt_cs_sub",
       type: "checkout.session.completed",
@@ -242,7 +242,7 @@ describe("event mapping", () => {
   });
 });
 
-describe("createCheckout — metadata stamping (ADR-0109 refund tenant-resolution)", () => {
+describe("createCheckout — metadata stamping (ADR-0113 refund tenant-resolution)", () => {
   const realFetch = globalThis.fetch;
   afterEach(() => {
     globalThis.fetch = realFetch;

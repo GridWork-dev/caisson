@@ -63,7 +63,7 @@ export async function applyBillingEvent(
       return;
     }
     case "purchase.completed": {
-      // A one-time (non-subscription) edition/module/credit-pack buy (ADR-0109). The PaymentIntent id
+      // A one-time (non-subscription) edition/module/credit-pack buy (ADR-0113). The PaymentIntent id
       // anchors BOTH the credit grant and the entitlement grant so a later charge.refunded can find +
       // reverse them. Fail closed without it — a one-time grant we cannot later revoke must not land.
       if (ev.paymentId === "") {
@@ -87,7 +87,7 @@ export async function applyBillingEvent(
       return;
     }
     case "subscription.canceled":
-      // IMMEDIATE revoke (ADR-0109): soft-revoke every grant backed by this subscription. An entitlement
+      // IMMEDIATE revoke (ADR-0113): soft-revoke every grant backed by this subscription. An entitlement
       // also held via an active one-time grant survives (refcount). Idempotent (only active grants flip).
       await revokeSubscriptionGrants(tx, {
         accountId: ev.accountId,
@@ -95,7 +95,7 @@ export async function applyBillingEvent(
       });
       return;
     case "refund.completed": {
-      // Refund of a one-time purchase (ADR-0109, operator-locked money policy). Act ONLY on a FULL
+      // Refund of a one-time purchase (ADR-0113, operator-locked money policy). Act ONLY on a FULL
       // refund — a partial `charge.refunded` must not revoke all access or claw the whole grant.
       if (!ev.fullyRefunded) return;
       // (a) Soft-revoke the purchase's entitlement grants (idempotent — only active rows flip; a
@@ -108,7 +108,7 @@ export async function applyBillingEvent(
       // (never negative). This runs whether or not an entitlement was revoked, so a credits-only pack
       // refund still reclaims credits (the entitlement-revoke count is NOT the latch). Idempotency is
       // the compensating debit's own (paymentId, refund_clawback) unique key — a re-delivered refund
-      // writes no second debit (ADR-0109).
+      // writes no second debit (ADR-0113).
       const granted = await creditsGrantedBySource(
         tx,
         ev.accountId,

@@ -1,4 +1,4 @@
-// src/app.ts — the license-ISSUER HTTP router (ADR-0108, implements ADR-0010). A pure
+// src/app.ts — the license-ISSUER HTTP router (ADR-0110, implements ADR-0010). A pure
 // `Request → Response` function over injected deps (token, signer, registry index, tenant Transactor)
 // so it is testable without a live socket. Issuance is LAZY + bearer-gated: POST /issue mints a signed
 // license for an account by resolving its server-side entitlements (the EXISTING `resolveAccountEntitlements`

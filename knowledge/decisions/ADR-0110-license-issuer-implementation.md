@@ -1,4 +1,4 @@
-# ADR-0108 — license-issuer implementation locks (private @caisson/license-issue · node:crypto PKCS8 Signer port · production verify-key bake · lazy bearer-gated POST /issue)
+# ADR-0110 — license-issuer implementation locks (private @caisson/license-issue · node:crypto PKCS8 Signer port · production verify-key bake · lazy bearer-gated POST /issue)
 
 Status: accepted · 2026-06-30 · implements ADR-0010 (does not supersede it) · reconciled to ADR-0107 (operator-provisioned production keypair) · Phase P6 Bucket C
 

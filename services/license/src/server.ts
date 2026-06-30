@@ -1,4 +1,4 @@
-// src/server.ts — the runnable license-issuer entrypoint (ADR-0108). Mirrors services/docs/src/server.ts:
+// src/server.ts — the runnable license-issuer entrypoint (ADR-0110). Mirrors services/docs/src/server.ts:
 // build deps ONCE at boot, serve the router over Bun.serve, and FAIL CLOSED before binding a socket.
 // The issuer refuses to start without BOTH (1) the `LICENSE_ISSUE_TOKEN` Bearer (POST /issue is gated)
 // and (2) the signing key (`Ed25519Signer.fromEnv` throws a ConfigError on a missing/malformed/

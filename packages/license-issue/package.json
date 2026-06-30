@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
-  "description": "Ed25519 offline-license ISSUER (P6, ADR-0108 / implements ADR-0010). The PRIVATE counterpart to @caisson/license-verify: holds the signing key behind a Signer port (default Ed25519Signer over a node:crypto PKCS8 env key, CAISSON_LICENSE_SIGNING_KEY; KMS is an un-wired seam) and mints tessera-format license tokens by signing exactly canonicalize(parse(claims)) — the byte-identical payload @caisson/license-verify re-derives. NEVER published, NEVER installable into a buyer repo; the signing code lives only with the issuer service.",
+  "description": "Ed25519 offline-license ISSUER (P6, ADR-0110 / implements ADR-0010). The PRIVATE counterpart to @caisson/license-verify: holds the signing key behind a Signer port (default Ed25519Signer over a node:crypto PKCS8 env key, CAISSON_LICENSE_SIGNING_KEY; KMS is an un-wired seam) and mints tessera-format license tokens by signing exactly canonicalize(parse(claims)) — the byte-identical payload @caisson/license-verify re-derives. NEVER published, NEVER installable into a buyer repo; the signing code lives only with the issuer service.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",

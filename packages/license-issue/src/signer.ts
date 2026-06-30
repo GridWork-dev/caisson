@@ -1,5 +1,5 @@
 // @caisson/license-issue — the signing-identity port + the default Ed25519 signer + its env key loader
-// (ADR-0108, implements ADR-0010). This is the PRIVATE half of the license system: the verifier
+// (ADR-0110, implements ADR-0010). This is the PRIVATE half of the license system: the verifier
 // (@caisson/license-verify) bakes the PRODUCTION public key and `crypto.verify`s offline; HERE the
 // matching PRIVATE key signs. The key is loaded as `node:crypto` PKCS8 — the SAME primitive the
 // verifier accepts (Ed25519 over SPKI) — from `CAISSON_LICENSE_SIGNING_KEY` (PKCS8 DER, base64; the
@@ -39,7 +39,7 @@ const SigningKeyEnv = z
   .strip();
 
 /**
- * The signing-identity port (ADR-0108). The base path is {@link Ed25519Signer}; a buyer-supplied AWS
+ * The signing-identity port (ADR-0110). The base path is {@link Ed25519Signer}; a buyer-supplied AWS
  * KMS asymmetric Sign is a drop-in implementation of this same interface (the key never leaves the
  * HSM) — a documented UN-WIRED seam (ADR-0047 ethos), NOT the v1 base. `sign` returns the detached
  * 64-byte Ed25519 signature over the EXACT bytes given (the issuer passes `canonicalize(claims)`).
@@ -167,7 +167,7 @@ export class Ed25519Signer implements Signer {
 }
 
 /**
- * UN-WIRED SEAM (ADR-0108 / ADR-0047 ethos): a buyer-supplied AWS KMS asymmetric signer. It implements
+ * UN-WIRED SEAM (ADR-0110 / ADR-0047 ethos): a buyer-supplied AWS KMS asymmetric signer. It implements
  * the same {@link Signer} port — `sign` issues a `Sign` call to KMS (the private key never leaves the
  * HSM) and `publicKey` a `GetPublicKey` — so the issuer service swaps it in by configuration alone,
  * with NO change to `issueLicense`. It is intentionally NOT wired in v1: there is no AWS SDK dependency

@@ -1,4 +1,4 @@
-// Refund clawback of unspent credits (ADR-0109, operator-locked money policy) on PGlite + real
+// Refund clawback of unspent credits (ADR-0113, operator-locked money policy) on PGlite + real
 // withTenant RLS. Asserts: clawback = min(granted, balance); NEVER goes negative when partly/fully
 // spent; writes exactly ONE compensating refund_clawback ledger row (append-only, ADR-0007);
 // idempotent on the source id (a re-delivered refund does not double-claw); creditsGrantedBySource
@@ -51,7 +51,7 @@ async function purchaseGrant(
   );
 }
 
-describe("clawback — unspent-only, never-negative (ADR-0109)", () => {
+describe("clawback — unspent-only, never-negative (ADR-0113)", () => {
   test("an unspent purchase claws back the full granted amount", async () => {
     const acct = "acct_full";
     await purchaseGrant(acct, 5000, "pi_full");

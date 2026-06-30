@@ -1,4 +1,4 @@
-# ADR-0109 — Entitlement revocation + one-time purchases (reference-counted grants)
+# ADR-0113 — Entitlement revocation + one-time purchases (reference-counted grants)
 
 Status: accepted · 2026-06-30 (operator lock, P6 Bucket C item I2) · implements/extends ADR-0071
 (entitlement store/resolver), ADR-0007 (append-only credit ledger / debit-before-spend), ADR-0089

@@ -1,4 +1,4 @@
-// @caisson/license-issue — public surface (ADR-0108, implements ADR-0010). The PRIVATE Ed25519
+// @caisson/license-issue — public surface (ADR-0110, implements ADR-0010). The PRIVATE Ed25519
 // license ISSUER: the signing-identity port + the default node:crypto PKCS8-env Ed25519 signer (KMS
 // un-wired seam) and `issueLicense`, which signs `canonicalize(parse(claims))` into a tessera-format
 // token the offline `@caisson/license-verify` re-derives byte-for-byte. `private: true` — NEVER

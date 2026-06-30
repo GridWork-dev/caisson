@@ -1,4 +1,4 @@
-// entitlement_grant junction on PGlite + real withTenant RLS (ADR-0109/0071/0005). Asserts: a grant
+// entitlement_grant junction on PGlite + real withTenant RLS (ADR-0113/0071/0005). Asserts: a grant
 // persists per-source rows; read returns the DISTINCT active ids sorted; a same-source re-grant is
 // idempotent (refcount stays one); REFCOUNT — two sources granting the same edition keep it entitled
 // until BOTH are revoked; subscription revoke strips only that subscription's grants; a one-time grant
@@ -31,7 +31,7 @@ const sub = (subscriptionId: string) =>
 const onetime = (purchaseId: string) =>
   ({ kind: "one_time", purchaseId }) as const;
 
-describe("entitlement_grant junction (ADR-0109, RLS)", () => {
+describe("entitlement_grant junction (ADR-0113, RLS)", () => {
   test("grant persists the purchased ids; read returns the active set sorted", async () => {
     const acct = "acct_grant";
     const n = await withTenant(tp.pg, acct, (tx) =>

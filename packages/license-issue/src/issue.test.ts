@@ -1,9 +1,9 @@
-// @caisson/license-issue — issuer round-trip + golden (ADR-0108, the SINGLE most important guard).
+// @caisson/license-issue — issuer round-trip + golden (ADR-0110, the SINGLE most important guard).
 // Proves issue→verify is whole: a token minted here verifies under the SHIPPED `@caisson/license-verify`
 // verify logic to its signed tier/entitlements/expiry, and the SAME token satisfies the registry
 // Worker's `licenseEntitlementResolver` (the 2nd consumer).
 //
-// KEY MODEL (ADR-0108): the SHIPPED verifier bakes the PRODUCTION public key, whose private half never
+// KEY MODEL (ADR-0110): the SHIPPED verifier bakes the PRODUCTION public key, whose private half never
 // lives in this repo — so tests sign with a DETERMINISTIC DEV keypair (SHA-256(
 // "caisson-license-verify-KAT-seed-v1"), a documented TEST vector) and verify through the explicit-key
 // seam `verifyLicenseWithKey(token, DEV_PUB)`. Ed25519 is deterministic (RFC 8032), so the DEV claims

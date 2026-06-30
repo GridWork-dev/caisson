@@ -1,4 +1,4 @@
-// The one-time PURCHASE_BOOK (ADR-0109): resolvePurchase returns a placeholder entry, fails closed on
+// The one-time PURCHASE_BOOK (ADR-0113): resolvePurchase returns a placeholder entry, fails closed on
 // an unknown / real Stripe id, and is prototype-pollution safe. Mirrors plans.test.ts for the
 // recurring book.
 import { describe, expect, test } from "bun:test";
@@ -9,7 +9,7 @@ import {
   resolvePurchase,
 } from "./purchases.ts";
 
-describe("resolvePurchase (ADR-0109, fail-closed)", () => {
+describe("resolvePurchase (ADR-0113, fail-closed)", () => {
   test("resolves a credit-pack placeholder (credits, no entitlement)", () => {
     const entry = resolvePurchase("price_credit_pack_PLACEHOLDER");
     expect(entry.credits).toBe(5000);

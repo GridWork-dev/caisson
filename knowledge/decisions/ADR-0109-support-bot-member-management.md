@@ -5,8 +5,9 @@ manage members … create all the channels and permissions") · **extends ADR-01
 **inside the ADR-0009 envelope** — does not supersede either · Phase P6 Bucket C. Append-only;
 supersede with a later ADR, never edit.
 
-> **ADR numbering:** ADR-0108 reserved **0109+** for the code track; this is that next code-track ADR.
-> No collision — 0109 exists on no ref as of this lock. Next free: **0110**.
+> **ADR numbering (reconciled at integration merge):** this is the last ADR of the go-live operator
+> track (**0106–0109**); the code track owns **0110–0113** (issuer · publish · rate-limit · entitlement).
+> Next free: **0114**.
 
 ## Context
 

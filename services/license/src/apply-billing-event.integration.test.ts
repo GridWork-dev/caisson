@@ -19,7 +19,7 @@ const PLAN_ID = "price_developer_monthly_PLACEHOLDER"; // 1000 credits/cycle, en
 const CREDITS = 1000;
 // An edition plan (12000 credits/cycle) that ALSO grants the `compliance` entitlement (ADR-0071).
 const EDITION_PLAN_ID = "price_compliance_updates_annual_PLACEHOLDER";
-// One-time PURCHASE_BOOK placeholders (ADR-0109): a 5000-credit pack (no entitlement) + a license-only
+// One-time PURCHASE_BOOK placeholders (ADR-0113): a 5000-credit pack (no entitlement) + a license-only
 // compliance buy (0 credits, grants the `compliance` entitlement).
 const CREDIT_PACK_ID = "price_credit_pack_PLACEHOLDER";
 const PACK_CREDITS = 5000;
@@ -157,7 +157,7 @@ describe("applyBillingEvent — subscription cycle -> grant (ADR-0089)", () => {
     expect(ledger).toHaveLength(0);
   });
 
-  test("subscription.canceled never claws back credits (only entitlements revoke, ADR-0109)", async () => {
+  test("subscription.canceled never claws back credits (only entitlements revoke, ADR-0113)", async () => {
     const acct = "acct_cancel";
     await withTenant(tp.pg, acct, (tx) =>
       applyBillingEvent(tx, invoicePaid(acct, "in_c")),
@@ -245,7 +245,7 @@ describe("applyBillingEvent — subscription cycle -> grant (ADR-0089)", () => {
   });
 });
 
-describe("applyBillingEvent — one-time purchase grant (ADR-0109)", () => {
+describe("applyBillingEvent — one-time purchase grant (ADR-0113)", () => {
   test("a one-time credit pack grants credits keyed on the payment id (no entitlement)", async () => {
     const acct = "acct_pack";
     await withTenant(tp.pg, acct, (tx) =>
@@ -335,7 +335,7 @@ describe("applyBillingEvent — one-time purchase grant (ADR-0109)", () => {
   });
 });
 
-describe("applyBillingEvent — refund: revoke + claw unspent credits (ADR-0109)", () => {
+describe("applyBillingEvent — refund: revoke + claw unspent credits (ADR-0113)", () => {
   test("refund soft-revokes the purchase's entitlement AND claws back the full unspent grant", async () => {
     const acct = "acct_refund_full";
     await withTenant(tp.pg, acct, (tx) =>
@@ -446,7 +446,7 @@ describe("applyBillingEvent — refund: revoke + claw unspent credits (ADR-0109)
     expect(bal).toBe(PACK_CREDITS); // only the post-refund pack survives; no second clawback
   });
 
-  test("a PARTIAL refund (fullyRefunded=false) is a no-op — no revoke, no clawback (ADR-0109 W1)", async () => {
+  test("a PARTIAL refund (fullyRefunded=false) is a no-op — no revoke, no clawback (ADR-0113 W1)", async () => {
     const acct = "acct_refund_partial";
     await withTenant(tp.pg, acct, (tx) =>
       applyBillingEvent(tx, purchaseCompleted(acct, "pi_pt", CREDIT_PACK_ID)),
@@ -470,7 +470,7 @@ describe("applyBillingEvent — refund: revoke + claw unspent credits (ADR-0109)
 
   test("a credits-only pack refund claws back the unspent credits (no entitlement to revoke)", async () => {
     // The clawback fires on the granted-credits lookup, NOT the entitlement-revoke count — so a pure
-    // credit-pack refund (entitlements: []) still reclaims the unspent credits (ADR-0109 N1).
+    // credit-pack refund (entitlements: []) still reclaims the unspent credits (ADR-0113 N1).
     const acct = "acct_refund_pack_only";
     await withTenant(tp.pg, acct, (tx) =>
       applyBillingEvent(tx, purchaseCompleted(acct, "pi_pk", CREDIT_PACK_ID)),

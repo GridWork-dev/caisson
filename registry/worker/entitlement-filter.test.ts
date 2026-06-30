@@ -1,6 +1,6 @@
 // licenseEntitlementResolver — the Worker's offline license → purchased-ids path (ADR-0010/0047/0071).
 // Drives the REAL @caisson/license-verify Ed25519 verifier with a PRODUCTION-signed token (the verifier
-// bakes the production public key, ADR-0108; entitlements ["local-ai"], tier pro, non-expiring), proving
+// bakes the production public key, ADR-0110; entitlements ["local-ai"], tier pro, non-expiring), proving
 // the verify→entitlements seam end to end against the SHIPPED key. An absent / malformed / non-Bearer /
 // forged license resolves to null (community), so the handler serves the free base only (TM-LIC).
 import { describe, expect, test } from "bun:test";

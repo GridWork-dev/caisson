@@ -34,7 +34,7 @@ secrets / billing tagged** — confirm before each irreversible/outward act; cre
 
 Surface A1 + A2 in **one `AskUserQuestion` round** (recommendation + confidence + the report-anchored
 evidence). Write each lock as an **append-only ADR (0106, 0107)** + update the `docs/state/` board. The
-code track reserves ADR-0108+ — do not collide.
+code track owns ADR-0110+ (renumbered from 0108+ at merge to clear the collision).
 
 ## Part B — Creds checklist + live deploy execution (DEPLOY-class — each step is operator-gated)
 
@@ -57,7 +57,7 @@ env-vars / the platform secret store only. Confirm before each outward step.
 - **Pricing (A1) → code track I3 dashboards.** Lock A1 early so the code session can wire real numbers
   (it builds against `@caisson/pricebook` config meanwhile — non-blocking).
 - **Keypair (B4) → code track I1 issuer.** Provision before I1's EXECUTE phase needs to sign.
-- **ADR numbers:** this session = 0106–0107; code session = 0108+. No collision.
+- **ADR numbers:** this session = 0106–0109; code session = 0110–0113 (renumbered at merge).
 - Both sessions edit `docs/state/decisions-and-forks.md` — this session is **authoritative on the
   decision board + creds/deploy state**; the code session appends only its impl-fork ADR rows. Rebase, don't clobber.
 

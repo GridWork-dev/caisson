@@ -5,7 +5,7 @@
 // but it is still a `packages/` member, so it carries the same commercial declaration the gate enforces:
 // `paid` + `LicenseRef-Caisson-Commercial` (ADR-0094/0097 open-core split — issuer is commercial, NOT
 // open Base). `priceCents` mirrors @caisson/license-verify's pre-launch placeholder anchor (4900);
-// final pricing is the open "Pricing numbers" board fork. ADR-0108.
+// final pricing is the open "Pricing numbers" board fork. ADR-0110.
 import { defineModule } from "../../registry/schema/module-manifest";
 
 export default defineModule({
