@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { createApp } from "./app.ts";
 import { FakeEmbedder } from "./embedder.ts";
 import { DocsIndex } from "./index-store.ts";
+import { loadRateLimitConfig, TokenBucketLimiter } from "./rate-limit.ts";
 import type { DocChunk } from "./types.ts";
 
 const TOKEN = "test-docs-service-token-0123456789";
@@ -28,6 +29,8 @@ beforeAll(async () => {
     llmsTxt: "# Caisson\n\n> idx\n",
     llmsFull: "# Billing\n",
     token: TOKEN,
+    // Generous default budget — these routing assertions stay well under the burst caps.
+    limiter: new TokenBucketLimiter(loadRateLimitConfig({})),
   });
 });
 afterAll(() => index.close());

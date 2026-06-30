@@ -12,6 +12,18 @@ export { renderLlmsTxt, renderLlmsFull } from "./llms-txt.ts";
 export type { RenderOptions } from "./llms-txt.ts";
 export { createApp } from "./app.ts";
 export type { AppDeps } from "./app.ts";
+export {
+  TokenBucketLimiter,
+  loadRateLimitConfig,
+  clientIp,
+} from "./rate-limit.ts";
+export type {
+  RateLimiter,
+  RateLimitConfig,
+  RateBucket,
+  RateDecision,
+  BucketConfig,
+} from "./rate-limit.ts";
 export { startServer } from "./server.ts";
 export { DocChunkSchema, ScoredChunkSchema, DocKindSchema } from "./types.ts";
 export type {

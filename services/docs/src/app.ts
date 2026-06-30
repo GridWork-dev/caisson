@@ -6,6 +6,7 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import type { DocsIndex } from "./index-store.ts";
+import { clientIp, type RateBucket, type RateLimiter } from "./rate-limit.ts";
 
 export interface AppDeps {
   index: DocsIndex;
@@ -13,6 +14,8 @@ export interface AppDeps {
   llmsFull: string;
   /** Bearer secret for POST /query. Must be non-empty — server.ts fails closed if it is unset. */
   token: string;
+  /** Per-IP token-bucket limiter (hardening #1). Static routes get a looser budget than POST /query. */
+  limiter: RateLimiter;
 }
 
 /** POST /query body. `.strict()` rejects unknown fields; query + k are bounded (no unbounded compute). */
@@ -29,17 +32,25 @@ const SECURITY_HEADERS: Record<string, string> = {
   "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
 };
 
-function respond(body: string, status: number, contentType: string): Response {
+function respond(
+  body: string,
+  status: number,
+  contentType: string,
+  extra?: Record<string, string>,
+): Response {
   return new Response(body, {
     status,
-    headers: { ...SECURITY_HEADERS, "Content-Type": contentType },
+    headers: { ...SECURITY_HEADERS, "Content-Type": contentType, ...extra },
   });
 }
 
 const json = (data: unknown, status = 200): Response =>
   respond(JSON.stringify(data), status, "application/json; charset=utf-8");
-const text = (body: string, status = 200): Response =>
-  respond(body, status, "text/plain; charset=utf-8");
+const text = (
+  body: string,
+  status = 200,
+  extra?: Record<string, string>,
+): Response => respond(body, status, "text/plain; charset=utf-8", extra);
 
 /**
  * Timing-safe Bearer check. `DOCS_SERVICE_TOKEN` is an opaque secret of not-guaranteed-fixed length, so
@@ -59,28 +70,51 @@ function authorized(req: Request, token: string): boolean {
 
 /** Build the request handler. Async because /query awaits retrieval. */
 export function createApp(deps: AppDeps): (req: Request) => Promise<Response> {
+  /**
+   * Per-IP rate gate. Returns a 429 Response when the bucket is exhausted, or `null` to proceed. FAILS OPEN
+   * on any limiter internal error (logs to stderr — never silently disables the limiter) so a limiter bug
+   * can never take a public route offline.
+   */
+  const rateLimited = (bucket: RateBucket, req: Request): Response | null => {
+    try {
+      const decision = deps.limiter.check(bucket, clientIp(req));
+      if (decision.allowed) return null;
+      return text("rate limit exceeded", 429, {
+        "Retry-After": String(decision.retryAfterSec),
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      process.stderr.write(
+        `[service-docs] rate-limiter error (failing open): ${msg}\n`,
+      );
+      return null;
+    }
+  };
+
   return async (req: Request): Promise<Response> => {
     const url = new URL(req.url);
     const { pathname } = url;
     const method = req.method.toUpperCase();
 
+    // /health is intentionally NOT rate-limited — liveness/readiness probes must never be throttled.
     if (pathname === "/health") {
       return method === "GET"
         ? json({ ok: true, chunks: deps.index.size })
         : text("method not allowed", 405);
     }
     if (pathname === "/llms.txt") {
-      return method === "GET"
-        ? text(deps.llmsTxt)
-        : text("method not allowed", 405);
+      if (method !== "GET") return text("method not allowed", 405);
+      return rateLimited("static", req) ?? text(deps.llmsTxt);
     }
     if (pathname === "/llms-full.txt") {
-      return method === "GET"
-        ? text(deps.llmsFull)
-        : text("method not allowed", 405);
+      if (method !== "GET") return text("method not allowed", 405);
+      return rateLimited("static", req) ?? text(deps.llmsFull);
     }
     if (pathname === "/query") {
       if (method !== "POST") return text("method not allowed", 405);
+      // Rate-gate BEFORE auth: an unauthenticated flood is the cost-DoS vector we are capping.
+      const limited = rateLimited("query", req);
+      if (limited !== null) return limited;
       if (!authorized(req, deps.token))
         return json({ error: "unauthorized" }, 401);
 
