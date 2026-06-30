@@ -51,6 +51,22 @@ async def test_sentinel_escalates_with_sources() -> None:
     assert result.brief.suggested_owner == "@caisson/a"  # first chunk with a pkg
 
 
+async def test_sentinel_boundary_escalates_lead_but_not_mention() -> None:
+    # A reply that LEADS with the sentinel (model disobeyed "nothing else") still escalates — safe.
+    docs = FakeRetriever([chunk("a.md", "ctx")])
+    lead = RagPipeline(docs=docs, inference=FakeInference(reply=f"{SENTINEL} — not enough detail"))
+    assert (await lead.answer("q")).resolved is False
+    # A grounded answer that merely MENTIONS the token mid-sentence is a real answer, not an escalation
+    # (the word-boundary fix — Greptile P2: a bare startswith/substring would wrongly escalate this).
+    mention = RagPipeline(
+        docs=docs,
+        inference=FakeInference(reply=f"The {SENTINEL} token signals a refusal."),
+    )
+    res = await mention.answer("what does the token mean?")
+    assert res.resolved is True
+    assert res.answer.startswith(f"The {SENTINEL}")
+
+
 async def test_retrieval_failure_escalates() -> None:
     docs = FakeRetriever(error=DocsUnavailableError("down"))
     pipe = RagPipeline(docs=docs, inference=FakeInference(reply="x"))
