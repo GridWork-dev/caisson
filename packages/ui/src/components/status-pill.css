@@ -1,0 +1,48 @@
+/* StatusPill — entitlement/license status pill (ADR-0099 recipe). Co-located; status via
+ * [data-status] → a local-indirection --pill-fg var (recipe rule 3); values via --cs-*
+ * only. */
+.cs-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cs-space-2);
+  padding: var(--cs-space-1) var(--cs-space-3);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-pill);
+  background: var(--cs-surface-1);
+  font-size: var(--cs-text-xs);
+  font-weight: var(--cs-weight-medium);
+  letter-spacing: var(--cs-tracking-wide);
+  color: var(--pill-fg, var(--cs-fg-muted));
+  white-space: nowrap;
+}
+
+.cs-pill[data-status="active"] {
+  --pill-fg: var(--cs-success);
+  border-color: color-mix(in oklab, var(--cs-success) 35%, var(--cs-border));
+}
+.cs-pill[data-status="pending"] {
+  --pill-fg: var(--cs-warning);
+  border-color: color-mix(in oklab, var(--cs-warning) 35%, var(--cs-border));
+}
+.cs-pill[data-status="expired"] {
+  --pill-fg: var(--cs-fg-muted);
+}
+.cs-pill[data-status="revoked"] {
+  --pill-fg: var(--cs-danger);
+  border-color: color-mix(in oklab, var(--cs-danger) 35%, var(--cs-border));
+}
+
+.cs-pill__dot {
+  width: var(--cs-space-2);
+  height: var(--cs-space-2);
+  border-radius: var(--cs-radius-pill);
+  background: currentColor;
+  flex: none;
+}
+
+/* Forced-colors (Windows high-contrast) — keep the bordered pill visible. */
+@media (forced-colors: active) {
+  .cs-pill {
+    border: 1px solid CanvasText;
+  }
+}

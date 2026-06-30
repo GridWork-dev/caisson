@@ -30,3 +30,30 @@ export type { RevealProps } from "./reveal";
 export { ThemeToggle } from "./theme-toggle";
 export type { ThemeToggleProps } from "./theme-toggle";
 export { THEME_STORAGE_KEY, themeInitScript } from "./theme-init";
+// Dashboard primitives (the buyer-dashboard data-app surface).
+export { AppShell } from "./app-shell";
+export type {
+  AppShellNavItem,
+  AppShellNavItemRenderProps,
+  AppShellProps,
+} from "./app-shell";
+export { DataTable } from "./data-table";
+export type { DataTableColumn, DataTableProps } from "./data-table";
+export { MetricStat } from "./metric-stat";
+export type { MetricStatProps, MetricStatTone } from "./metric-stat";
+export { MoneyCell, formatMoneyCellValue } from "./money-cell";
+export type { MoneyCellProps, MoneyCellUnit } from "./money-cell";
+export { LedgerList, LedgerRow, formatLedgerTimestamp } from "./ledger-list";
+export type {
+  LedgerEntry,
+  LedgerListProps,
+  LedgerRowProps,
+} from "./ledger-list";
+export { StatusPill } from "./status-pill";
+export type { EntitlementStatus, StatusPillProps } from "./status-pill";
+export { EmptyState } from "./empty-state";
+export type { EmptyStateProps } from "./empty-state";
+export { ErrorState } from "./error-state";
+export type { ErrorStateProps } from "./error-state";
+export { LoadingState } from "./loading-state";
+export type { LoadingStateProps, LoadingStateVariant } from "./loading-state";
