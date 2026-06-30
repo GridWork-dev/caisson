@@ -247,6 +247,34 @@ describe("idempotency — settle exactly once", () => {
   });
 });
 
+describe("soft cap → warning without tripping the breaker", () => {
+  test("crossing the soft cap while staying under the hard cap warns but does not throw or trip", async () => {
+    await seed(1000);
+    await inA((tx) =>
+      tx.query(
+        `INSERT INTO ${SPEND_POLICY_TABLE}
+           (account_id, scope, unit, window_granularity, soft_limit, hard_limit)
+         VALUES ($1, 'account', 'credits', 'day', 4, 100)`,
+        [A],
+      ),
+    );
+
+    // One reserve costs 4 credits (see MESSAGES/CFG above): spent lands exactly on soft_limit 4,
+    // far under hard_limit 100 — a warning signal, not a block.
+    const r = await inA((tx) => reserve(tx, reserveInput("soft_1")));
+    expect(r.spent).toBe(4);
+    expect(r.softExceeded).toBe(true);
+    expect(r.breakerTripped).toBe(false);
+
+    // The breaker never tripped — no row exists (absence of a row is "closed", per readBreaker).
+    const brk = await tp.query(
+      `SELECT 1 FROM ${SPEND_BREAKER_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(brk).toHaveLength(0);
+  });
+});
+
 describe("hard cap → circuit breaker", () => {
   test("crossing a hard spend cap trips the breaker; the next reserve returns 402", async () => {
     await seed(1000);
