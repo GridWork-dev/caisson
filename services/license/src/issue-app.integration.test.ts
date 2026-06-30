@@ -94,7 +94,9 @@ beforeAll(async () => {
   tp = await newTestPg();
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   await tp.exec(LICENSE_GRANT_SCHEMA_SQL);
-  app = createApp({ token: TOKEN, signer, index, db: tp.pg });
+  // provider: null — these tests exercise POST /issue only; /webhook is covered in
+  // webhook-app.integration.test.ts. A null provider makes /webhook fail closed (401), not these routes.
+  app = createApp({ token: TOKEN, signer, index, db: tp.pg, provider: null });
 });
 afterAll(async () => {
   await tp.close();

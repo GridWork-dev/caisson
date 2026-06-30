@@ -6,18 +6,24 @@
 // IDEMPOTENT per (accountId, major) ("persist & reuse"): the first call mints, signs, and persists the
 // token via `license-grant-store.ts`; every later call for the same (accountId, major) re-serves the
 // STORED token byte-identical — never re-mints, never proliferates fresh perpetual tokens for one
-// purchase. A different major always mints its own grant. /health is public (like services/docs). Every
+// purchase. A different major always mints its own grant. POST /webhook is the Paddle Merchant-of-Record
+// destination (license.caisson.sh/webhook, ADR-0108/0116): it verifies the `Paddle-Signature` HMAC over
+// the RAW body (timing-safe, fail-closed) and provisions a verified purchase by running BOTH the credit
+// grant AND the entitlement grant in ONE tenant transaction. /health is public (like services/docs). Every
 // response carries the gridwork security-floor headers (nosniff / frame-deny / HSTS). The Bearer gate is
 // timing-safe over the VARIABLE-LENGTH token (SHA-256 → `timingSafeEqual`, the security-floor rule) and
 // fail-closed when the token is unset. Server-to-server contract — no CORS.
 import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
+import type { BillingProvider } from "@caisson/billing";
+import { AuthnError } from "@caisson/kernel";
 import { issueLicense, type Signer } from "@caisson/license-issue";
 import { licenseTierSchema } from "@caisson/license-verify";
 import type { RegistryIndex } from "@caisson/registry-schema";
 import { type Transactor, withTenant } from "@caisson/tenancy-rls";
 import { readLicenseGrant, storeLicenseGrant } from "./license-grant-store.ts";
 import { resolveAccountEntitlements } from "./resolve-entitlements.ts";
+import { handleBillingWebhook } from "./webhook.ts";
 
 export interface IssueAppDeps {
   /** Bearer secret for POST /issue. Must be non-empty — server.ts fails closed if it is unset. */
@@ -28,6 +34,12 @@ export interface IssueAppDeps {
   index: RegistryIndex;
   /** The tenant Transactor — `resolveAccountEntitlements` runs inside `withTenant` over it (RLS). */
   db: Transactor;
+  /**
+   * The Paddle Merchant-of-Record billing provider (verify + parse, ADR-0108/0116). `null` when
+   * `PADDLE_WEBHOOK_SECRET` is unset — POST /webhook then fails closed (401): an unverifiable payload
+   * must NEVER provision. server.ts builds it from env and injects it.
+   */
+  provider: BillingProvider | null;
 }
 
 /**
@@ -186,6 +198,44 @@ export function createApp(
           ? { token: winner.token, licenseId: winner.licenseId }
           : { token, licenseId: claims.licenseId },
       );
+    }
+
+    if (pathname === "/webhook") {
+      // The Paddle MoR webhook destination (license.caisson.sh/webhook, ADR-0108/0116). A real purchase
+      // lands here; this route provisions it. It runs BOTH the credit grant AND the entitlement grant in
+      // ONE tenant transaction (apply-billing-event.ts) — the seam the services-hardening audit (#3)
+      // flagged as bound to no server.
+      if (method !== "POST") return text("method not allowed", 405);
+
+      // Fail closed when the webhook secret is unconfigured: a null provider cannot verify ANY signature,
+      // so an unverifiable payload must be rejected, never provisioned (security floor — fail-closed auth).
+      if (deps.provider === null) return json({ error: "unauthorized" }, 401);
+
+      const signature = req.headers.get("paddle-signature") ?? "";
+      // Verify against the RAW request body — a parsed + re-serialized payload would not match Paddle's
+      // `ts:rawBody` HMAC. `req.text()` reads the bytes exactly as delivered.
+      const rawBody = await req.text();
+      try {
+        // handleBillingWebhook verifies the Paddle signature (throws AuthnError on a missing/invalid one
+        // BEFORE any DB work) then applies the domain event inside `withTenant`: a one-time
+        // purchase.completed grants its entitlements AND any credits; a subscription invoice.paid grants
+        // the cycle credits AND the plan's entitlements — both in one RLS-scoped transaction (ADR-0071/
+        // 0089/0113). The grant stores are idempotent on their natural keys (payment/invoice id), so a
+        // Paddle retry of the same event_id re-applies as a no-op (ADR-0113) — no separate event-dedupe
+        // table needed.
+        await handleBillingWebhook(deps.db, deps.provider, rawBody, signature);
+      } catch (err) {
+        if (err instanceof AuthnError) {
+          // Missing/invalid signature — fail closed, never provision (no secret or body echoed back).
+          return json({ error: "unauthorized" }, 401);
+        }
+        // A grant-time failure (unknown price id → fail-closed throw, or a DB error) MUST return non-2xx
+        // so Paddle RETRIES the delivery — a 2xx here would silently drop a real, paid purchase.
+        process.stderr.write("[service-license] webhook processing failed\n");
+        return json({ error: "webhook processing failed" }, 500);
+      }
+      // 2xx ONLY after the grant commits, so Paddle stops retrying only on a durable success.
+      return json({ ok: true });
     }
 
     return json({ error: "not found" }, 404);
