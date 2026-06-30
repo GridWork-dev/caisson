@@ -50,6 +50,9 @@ export const DomainBillingEventSchema = z.discriminatedUnion("type", [
     paymentId: z.string(),
     amountRefunded: z.number().int().nonnegative(),
     currency: z.string(),
+    // Whether the charge was FULLY refunded (Stripe `charge.refunded === true`). The mapper acts only
+    // on a full refund — a PARTIAL refund must not revoke all access or claw the whole grant (ADR-0109).
+    fullyRefunded: z.boolean(),
   }),
   strictObject({
     type: z.literal("invoice.paid"),
@@ -132,6 +135,12 @@ export function parseStripeEvent(
   const accountId = readAccountId(obj);
   switch (event.type) {
     case "checkout.session.completed":
+      // A subscription-mode Checkout Session also fires this event, but it has no PaymentIntent and is
+      // NOT a one-time purchase — the subscription's first grant arrives via invoice.paid
+      // (subscription_create). Mapping it to purchase.completed would throw on the empty paymentId
+      // (apply-billing-event) and storm Stripe with retries. Only the payment (one-time) mode is a
+      // purchase here (ADR-0109).
+      if (readString(obj.mode) === "subscription") return null;
       return {
         type: "purchase.completed",
         sourceEventId: event.id,
@@ -173,6 +182,9 @@ export function parseStripeEvent(
         paymentId: readString(obj.payment_intent),
         amountRefunded: readInt(obj.amount_refunded),
         currency: readString(obj.currency, "usd"),
+        // Stripe sets `refunded` true ONLY when the charge is fully refunded; a partial refund leaves
+        // it false. The mapper no-ops on a partial refund (never a full revoke/clawback) — ADR-0109.
+        fullyRefunded: obj.refunded === true,
       };
     case "invoice.paid":
       return {

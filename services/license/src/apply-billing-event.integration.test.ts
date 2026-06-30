@@ -44,6 +44,7 @@ function purchaseCompleted(
 function refundCompleted(
   accountId: string,
   paymentId: string,
+  fullyRefunded = true,
 ): DomainBillingEvent {
   return {
     type: "refund.completed",
@@ -52,6 +53,7 @@ function refundCompleted(
     paymentId,
     amountRefunded: 499900,
     currency: "usd",
+    fullyRefunded,
   };
 }
 
@@ -435,12 +437,52 @@ describe("applyBillingEvent — refund: revoke + claw unspent credits (ADR-0109)
     await withTenant(tp.pg, acct, (tx) =>
       applyBillingEvent(tx, purchaseCompleted(acct, "pi_new", CREDIT_PACK_ID)),
     );
-    // A stale re-delivery of the SAME refund must do nothing (latch: no active grant left to revoke).
+    // A stale re-delivery of the SAME refund must do nothing: the revoke is a no-op (no active grant
+    // left) AND the clawback dedups on its (paymentId, refund_clawback) unique key — no second debit.
     await withTenant(tp.pg, acct, (tx) =>
       applyBillingEvent(tx, refundCompleted(acct, "pi_id")),
     );
     const bal = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
     expect(bal).toBe(PACK_CREDITS); // only the post-refund pack survives; no second clawback
+  });
+
+  test("a PARTIAL refund (fullyRefunded=false) is a no-op — no revoke, no clawback (ADR-0109 W1)", async () => {
+    const acct = "acct_refund_partial";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, purchaseCompleted(acct, "pi_pt", CREDIT_PACK_ID)),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pi_pt", ONETIME_EDITION_ID),
+      ),
+    );
+    // A partial charge.refunded must NOT strip access or claw the whole grant.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, refundCompleted(acct, "pi_pt", false)),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]); // still entitled
+    const bal = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
+    expect(bal).toBe(PACK_CREDITS); // nothing clawed
+  });
+
+  test("a credits-only pack refund claws back the unspent credits (no entitlement to revoke)", async () => {
+    // The clawback fires on the granted-credits lookup, NOT the entitlement-revoke count — so a pure
+    // credit-pack refund (entitlements: []) still reclaims the unspent credits (ADR-0109 N1).
+    const acct = "acct_refund_pack_only";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, purchaseCompleted(acct, "pi_pk", CREDIT_PACK_ID)),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual([]); // a credit pack grants no entitlement
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, refundCompleted(acct, "pi_pk")),
+    );
+    const bal = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
+    expect(bal).toBe(0); // the full 5000 unspent pack clawed back
   });
 
   test("a refund round-trips from a parsed charge.refunded (W2/B1 seam)", async () => {
@@ -462,6 +504,7 @@ describe("applyBillingEvent — refund: revoke + claw unspent credits (ADR-0109)
           payment_intent: "pi_rt",
           amount_refunded: 499900,
           currency: "usd",
+          refunded: true, // a FULL refund — the mapper acts (a partial leaves this false)
           // Stripe copies the PaymentIntent metadata (stamped at checkout) onto the Charge.
           metadata: { account_id: acct },
         },

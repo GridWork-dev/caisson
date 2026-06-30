@@ -1,7 +1,7 @@
 // Billing seam (ADR-0017): raw-body HMAC webhook verification + Stripe→domain event mapping.
 // The verified event carries everything the credit grant needs (sourceEventId → idempotency).
 import { createHmac } from "node:crypto";
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 import { AuthnError } from "@caisson/kernel";
 import {
   createStripeBilling,
@@ -107,6 +107,7 @@ describe("event mapping", () => {
           payment_intent: "pi_123",
           amount_refunded: 89900,
           currency: "usd",
+          refunded: true,
           metadata: { account_id: "acct_a" },
         },
       },
@@ -118,7 +119,49 @@ describe("event mapping", () => {
       paymentId: "pi_123",
       amountRefunded: 89900,
       currency: "usd",
+      fullyRefunded: true,
     });
+  });
+
+  test("a PARTIAL charge.refunded maps with fullyRefunded=false (mapper no-ops downstream)", () => {
+    // Stripe leaves `refunded` false on a partial refund; the services/license mapper must not revoke
+    // all access or claw the whole grant (ADR-0109 W1).
+    const event = {
+      id: "evt_partial",
+      type: "charge.refunded",
+      data: {
+        object: {
+          payment_intent: "pi_123",
+          amount_refunded: 100,
+          currency: "usd",
+          refunded: false,
+          metadata: { account_id: "acct_a" },
+        },
+      },
+    } as Parameters<typeof parseStripeEvent>[0];
+    const parsed = parseStripeEvent(event);
+    expect(parsed?.type).toBe("refund.completed");
+    expect(parsed && "fullyRefunded" in parsed && parsed.fullyRefunded).toBe(
+      false,
+    );
+  });
+
+  test("a subscription-mode checkout.session.completed maps to null (not a one-time purchase)", () => {
+    // Subscription signups fire this event too, but carry no PaymentIntent — the first grant arrives
+    // via invoice.paid. Mapping to purchase.completed would throw on the empty paymentId (ADR-0109 B1).
+    const event = {
+      id: "evt_cs_sub",
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          mode: "subscription",
+          payment_intent: null,
+          metadata: { account_id: "acct_a" },
+          client_reference_id: "acct_a",
+        },
+      },
+    } as Parameters<typeof parseStripeEvent>[0];
+    expect(parseStripeEvent(event)).toBeNull();
   });
 
   test("invoice.paid → enriched domain event (ADR-0089 seam)", () => {
@@ -194,5 +237,62 @@ describe("event mapping", () => {
       type: "purchase.completed",
       accountId: "acct_a",
     });
+  });
+});
+
+describe("createCheckout — metadata stamping (ADR-0109 refund tenant-resolution)", () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+
+  // Capture the form-encoded body createCheckout POSTs to Stripe, returning a stub session url.
+  async function paramsFor(input: {
+    mode: "payment" | "subscription";
+    priceId: string;
+    accountId: string;
+  }): Promise<URLSearchParams> {
+    let body = "";
+    globalThis.fetch = (async (_url: unknown, init?: { body?: string }) => {
+      body = init?.body ?? "";
+      return new Response(JSON.stringify({ url: "https://checkout.test/s" }), {
+        status: 200,
+      });
+    }) as unknown as typeof fetch;
+    const billing = createStripeBilling({
+      webhookSecret: SECRET,
+      apiKey: "sk_test",
+    });
+    await billing.createCheckout({
+      ...input,
+      successUrl: "https://app.test/ok",
+      cancelUrl: "https://app.test/no",
+    });
+    return new URLSearchParams(body);
+  }
+
+  test("a one-time (payment) checkout stamps payment_intent_data metadata (the refund join key)", async () => {
+    const p = await paramsFor({
+      mode: "payment",
+      priceId: "price_x",
+      accountId: "acct_a",
+    });
+    // Load-bearing: Stripe copies PaymentIntent metadata onto the Charge, so charge.refunded can
+    // resolve the tenant + the purchase. Dropping these silently breaks the refund clawback path.
+    expect(p.get("payment_intent_data[metadata][account_id]")).toBe("acct_a");
+    expect(p.get("payment_intent_data[metadata][price_id]")).toBe("price_x");
+    expect(p.get("metadata[price_id]")).toBe("price_x");
+    expect(p.get("metadata[account_id]")).toBe("acct_a");
+  });
+
+  test("a subscription checkout stamps subscription_data metadata (cycle-invoice tenant resolution)", async () => {
+    const p = await paramsFor({
+      mode: "subscription",
+      priceId: "price_sub",
+      accountId: "acct_b",
+    });
+    expect(p.get("subscription_data[metadata][account_id]")).toBe("acct_b");
+    // A subscription checkout must NOT stamp the one-time payment_intent_data fields.
+    expect(p.get("payment_intent_data[metadata][account_id]")).toBeNull();
   });
 });

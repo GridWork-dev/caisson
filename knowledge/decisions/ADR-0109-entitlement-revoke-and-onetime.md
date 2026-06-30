@@ -58,11 +58,16 @@ writing exactly ONE compensating negative `refund_clawback` ledger entry (intege
 **never goes negative**: if the buyer already spent some/all of those credits, only the remainder is
 reclaimed (down to 0 → no debit row, since `credit_event_amount<>0`). This requires the original credit
 grant to be traceable to its source: a one-time purchase grants credits keyed on the PaymentIntent id, so
-the refund (carrying the same PaymentIntent id on the Charge) looks the granted amount up. The whole
-refund is **idempotent within ONE transaction**, RLS-scoped: the latch is the entitlement revoke
-(`active→revoked` count) — a re-delivered refund finds nothing active to revoke and stops before the
-clawback; the compensating debit is additionally keyed on the payment id (defense-in-depth). Respects the
-append-only ledger (ADR-0007): the clawback is a NEW compensating entry, never a mutation of the grant.
+the refund (carrying the same PaymentIntent id on the Charge) looks the granted amount up. The refund
+acts **only on a FULL refund** (`charge.refunded === true`); a partial refund is a no-op (it must not
+strip all access or claw the whole grant). The whole refund is **idempotent within ONE transaction**,
+RLS-scoped: the clawback runs whenever the purchase granted credits — NOT gated on the entitlement-revoke
+count — so a credits-only purchase still reclaims its unspent credits; idempotency is the compensating
+debit's own `(paymentId, refund_clawback)` unique key (distinct from the original grant's `(paymentId,
+purchase)`), so a re-delivered refund writes no second debit. `clawback` locks the wallet row
+(`SELECT … FOR UPDATE`) before computing `min(granted, balance)`, so a concurrent debit cannot diverge
+the ledger from the wallet. Respects the append-only ledger (ADR-0007): the clawback is a NEW
+compensating entry, never a mutation of the grant.
 
 **5. Soft-revoke everywhere — never hard delete.** Revocation flips `status`/`revoked_at`; the row stays
 for the audit trail. (Entitlements remain mutable current-truth, distinct from the immutable credit
@@ -72,16 +77,19 @@ ledger.)
 
 `apply-billing-event.ts` handles `subscription.canceled` (→ `revokeSubscriptionGrants`),
 `purchase.completed` (→ one-time credit grant + `one_time` entitlement grant, fail-closed on a missing
-payment id or unknown price), and the new `refund.completed` (→ `revokePurchaseGrants` latch + `clawback`).
-`@caisson/billing` enriches `subscription.canceled` with `subscriptionId`, `purchase.completed` with
-`priceId` + `paymentId`, and adds a `refund.completed` mapping from `charge.refunded`. The W2/B1 seam trap
-is covered by a round-trip test: `parseStripeEvent(charge.refunded) → applyBillingEvent` asserts the
-PaymentIntent join key actually resolves. Account resolution on the refund relies on Stripe copying the
-PaymentIntent metadata (stamped at checkout via `payment_intent_data[metadata][account_id]`) onto the
-Charge — `createCheckout` now stamps it for payment-mode sessions, plus `metadata[price_id]` so the
-one-time purchase resolves without line-item expansion. `@caisson/credits` gains `clawback` +
+payment id or unknown price), and the new `refund.completed` (→ a full-refund-gated revoke-and-clawback).
+The mapper skips a subscription-mode `checkout.session.completed` (returns null) — it has no PaymentIntent
+and its first grant arrives via `invoice.paid`; mapping it to a purchase would throw on the empty payment
+id and storm Stripe with retries. `@caisson/billing` enriches `subscription.canceled` with
+`subscriptionId`, `purchase.completed` with `priceId` + `paymentId`, and adds a `refund.completed` mapping
+(carrying `fullyRefunded`) from `charge.refunded`. The W2/B1 seam trap is covered by a round-trip test:
+`parseStripeEvent(charge.refunded) → applyBillingEvent` asserts the PaymentIntent join key resolves.
+Account resolution on the refund relies on Stripe copying the PaymentIntent metadata (stamped at checkout
+via `payment_intent_data[metadata][account_id]`) onto the Charge — `createCheckout` now stamps it for
+payment-mode sessions, plus `metadata[price_id]` so the one-time purchase resolves without line-item
+expansion (guarded by a checkout-param unit test). `@caisson/credits` gains `clawback` +
 `creditsGrantedBySource` (and `refund_clawback` in the debit taxonomy); `clawback` is NOT `debit` (no 402
-floor — it bounds to balance instead of throwing).
+floor — it bounds to balance, locks the wallet row, instead of throwing).
 
 ## Consequences
 
@@ -97,9 +105,8 @@ floor — it bounds to balance instead of throwing).
 - **Resubscribe reactivation.** A `one_time`/subscription grant revoked then re-granted from the same
   source is currently absorbed by `ON CONFLICT DO NOTHING` (stays revoked). Re-activation on re-grant is
   a follow-on (resubscribe-after-cancel).
-- **Pure credit-pack refund without an entitlement.** The refund latch keys on the entitlement-grant
-  revoke; a one-time purchase that granted ONLY credits (no entitlement) is out of I2 scope.
-- **Partial refunds / proration.** A refund reclaims the whole grant (bounded to balance); partial-amount
-  refunds are not modeled.
+- **Partial-refund / proration MODELING.** A partial `charge.refunded` is now a no-op (gated on
+  `fullyRefunded`) — it never over-revokes or over-claws. Pro-rated partial reclaim (claw a fraction,
+  revoke nothing) is the deferred modeling, not in I2.
 - **Issuer / revoke-broadcast to the edge.** The offline-Ed25519 license (ADR-0047) is not re-issued on
   revoke; edge entitlement freshness is the issuer slice's concern.
