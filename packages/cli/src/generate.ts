@@ -8,7 +8,7 @@ import {
   type RegistryIndex,
   assertKnownModule,
   assertKnownVersion,
-} from "@caisson/registry";
+} from "@caisson/registry-schema";
 import { templatesEngine } from "./engine-templates.ts";
 import {
   type GeneratedFile,

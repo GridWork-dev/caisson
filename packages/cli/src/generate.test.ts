@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { loadRegistryIndex } from "@caisson/registry";
+import { loadRegistryIndex } from "@caisson/registry-schema";
 import { matchGolden } from "@caisson/testing";
 import {
   type GeneratorEngine,

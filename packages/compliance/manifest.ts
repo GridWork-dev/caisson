@@ -10,16 +10,17 @@
 // @caisson/credits dependency, ADR-0007 unit deferred to P6): the edition composes the WORM/crypto
 // primitives directly. Dependencies are DOWN-ONLY (ADR-0003): the edition imports base/primitive
 // packages, never the reverse.
+import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
 export default defineModule({
   id: "@caisson/compliance",
-  version: "0.0.0",
+  version: pkg.version,
   kind: "edition",
   editions: ["compliance"],
   tier: "paid",
   priceCents: 99900,
-  license: "LicenseRef-Caisson-Commercial",
+  license: pkg.license,
   // Must mirror package.json's @caisson/* deps exactly (the gate fails on drift). @caisson/migrate is
   // the base migration assembler/runner the edition COMPOSES at build/test time (ADR-0090).
   dependencies: [

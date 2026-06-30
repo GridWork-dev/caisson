@@ -9,16 +9,17 @@
 // `golden` points at the sync-reconcile conflict fixtures (src/sync/__golden__ — the LWW + tombstone
 // resolves asserted via `matchGolden`); create-caisson (P5) consumes this relative path. The relative
 // import keeps `@caisson/registry` out of the runtime deps.
+import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
 export default defineModule({
   id: "@caisson/local-ai",
-  version: "0.0.0",
+  version: pkg.version,
   kind: "edition",
   editions: ["local-ai"],
   tier: "paid",
   priceCents: 34900,
-  license: "LicenseRef-Caisson-Commercial",
+  license: pkg.license,
   dependencies: [
     "@caisson/kernel",
     "@caisson/local-store",

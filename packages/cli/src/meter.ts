@@ -15,7 +15,7 @@ import {
   type ModuleManifest,
   type RegistryIndex,
   assertKnownVersion,
-} from "@caisson/registry";
+} from "@caisson/registry-schema";
 import {
   type GeneratedFile,
   type GeneratedFileSet,

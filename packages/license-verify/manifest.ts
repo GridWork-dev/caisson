@@ -3,15 +3,16 @@
 // verify only; the issuer is P6), not a base service or an edition. Paid + LicenseRef-Caisson-
 // Commercial under the open-core model (ADR-0094/0097, amends ADR-0050); `priceCents` is the established
 // pre-launch placeholder anchor (4900) — final pricing is the open "Pricing numbers" board fork.
+import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
 export default defineModule({
   id: "@caisson/license-verify",
-  version: "0.0.0",
+  version: pkg.version,
   kind: "primitive",
   tier: "paid",
   priceCents: 4900,
-  license: "LicenseRef-Caisson-Commercial",
+  license: pkg.license,
   dependencies: ["@caisson/kernel"],
   golden: "src/__golden__",
   description:
