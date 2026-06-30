@@ -18,7 +18,7 @@ import { type TestPg, newTestPg } from "@caisson/testing";
 import { InsufficientCreditsError } from "@caisson/kernel";
 import { withTenant } from "@caisson/tenancy-rls";
 import { CREDIT_SCHEMA_SQL, balance, getLedger, grant } from "@caisson/credits";
-import { loadRegistryIndex } from "@caisson/registry";
+import { loadRegistryIndex } from "@caisson/registry-schema";
 import { GENERATION_SCHEMA_SQL } from "./generation-record.ts";
 import { runGeneration } from "./meter.ts";
 import { type FileSetWriter, createFileSetWriter } from "./writer.ts";
