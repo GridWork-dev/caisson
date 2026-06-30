@@ -101,6 +101,38 @@ not legacy Paddle Classic.
    cycle→grant mapper credits the wallet + grants entitlements. Paddle's dashboard can simulate/replay
    webhook events for the smoke; no local CLI tunnel required.
 
+## Railway CLI deploy (exact commands)
+
+CLI authenticated as GridWork.dev. Secrets read from `~/.gridwork/env` at runtime (never inlined).
+Prod-project creation + deploys are operator-gated DEPLOY acts.
+
+```bash
+cd ~/lab/caisson-ops
+railway list                                   # confirm workspace
+railway init --name caisson-prod               # workspace = GridWork.dev
+
+# docs-service — subpath Dockerfile, build context = repo root (RAILWAY_DOCKERFILE_PATH)
+railway add --service caisson-docs
+railway variables --service caisson-docs \
+  --set "RAILWAY_DOCKERFILE_PATH=services/docs/Dockerfile" \
+  --set "DOCS_SERVICE_TOKEN=$(grep -E '^(export )?DOCS_SERVICE_TOKEN=' ~/.gridwork/env | sed -E 's/^(export )?DOCS_SERVICE_TOKEN=//')" \
+  --set "OPENROUTER_API_KEY=$(grep -E '^(export )?OPENROUTER_API_KEY=' ~/.gridwork/env | sed -E 's/^(export )?OPENROUTER_API_KEY=//')"
+railway up -y --service caisson-docs --ci
+railway domain --service caisson-docs           # → DOCS_SERVICE_URL
+
+# support-bot — self-contained Dockerfile (context = its own dir)
+railway add --service caisson-support-bot
+railway variables --service caisson-support-bot \
+  --set "DISCORD_TOKEN=$(grep -E '^(export )?DISCORD_TOKEN=' ~/.gridwork/env | sed -E 's/^(export )?DISCORD_TOKEN=//')" \
+  --set "OPENROUTER_API_KEY=$(grep -E '^(export )?OPENROUTER_API_KEY=' ~/.gridwork/env | sed -E 's/^(export )?OPENROUTER_API_KEY=//')" \
+  --set "DOCS_SERVICE_URL=https://<caisson-docs-domain>" \
+  --set "DOCS_SERVICE_TOKEN=$(grep -E '^(export )?DOCS_SERVICE_TOKEN=' ~/.gridwork/env | sed -E 's/^(export )?DOCS_SERVICE_TOKEN=//')"
+railway up -y --service caisson-support-bot ./services/support-bot
+```
+
+- docs-service runs the **FTS5 floor** until the code-track OpenRouter embedder lands; redeploy after.
+- Set the bot's `DOCS_SERVICE_URL` to the docs domain from `railway domain`, then redeploy the bot.
+
 ## Code-track hand-off (NOT this operator session — file under code track, ADR-0109+)
 
 1. **docs-service real embedder** — implement an `OpenRouterEmbedder` (the `@caisson/local-store`
