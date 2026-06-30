@@ -9,21 +9,22 @@ conflict, the ADR file and the board win over this index.
 - ADRs are append-only and immutable (ADR-0006). A later ADR _supersedes_ a clause; it
   never edits the prior file. So most rows below are **partial** supersessions (one clause),
   not a wholesale replacement.
-- 90 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 90). Numbering is **not**
-  contiguous: present are **0001-0024** and **0040-0105**; **0025-0039 are an unused gap**
+- 92 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 92). Numbering is **not**
+  contiguous: present are **0001-0024** and **0040-0107**; **0025-0039 are an unused gap**
   (no files). The 0040 jump was a deliberate block reservation for the brand/positioning set.
   **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit);
   **0094-0096** = the 2026-06-29 GTM-report locks (open-core Base / GTM offer / services-docs);
   **0097** = the W1 registry schema/service split; **0098** = the B1 credit-denomination home (resolves 0089 SD-3);
   **0099-0104** = the 2026-06-29 design-system-harden track locks (component-recipe+kit / token+theming / gates / signature-animation / brand-mark "Pressure vessel" / Phase-2 hero static-code-as-proof);
-  **0105** = the 2026-06-29 support-bot implementation locks (discord.py / OpenRouter / thread+Postgres escalation — implements 0009, P6 Bucket C item 2).
+  **0105** = the 2026-06-29 support-bot implementation locks (discord.py / OpenRouter / thread+Postgres escalation — implements 0009, P6 Bucket C item 2);
+  **0106-0107** = the 2026-06-29 P6 operator-gates locks (final pricing numbers + grandfathering / CF-Access go-live gate). Code track reserves **0108+**.
 - Status tokens read from each ADR's own header line:
   - `proposed` = literal header value on the founding + foundations sets (0001-0019, 0024).
     Per the board (line 90) these are **in force / locked** despite the stale "proposed"
     header text written during the Phase-5 spec; the header was never updated. See accuracy
     flags at the bottom.
   - `locked` = D9 module-pipeline set (0020-0023).
-  - `accepted` = brand/wave-0/wave-1/design/gtm sets + picker-round locks (0040-0104).
+  - `accepted` = brand/wave-0/wave-1/design/gtm sets + picker-round locks (0040-0107).
 
 Domain detail and rationale: read the ADR file. Architecture overview: `specs/01-architecture.md`.
 Product framing: `specs/00-product-spec.md`. Build plan: `plan.md`.
@@ -255,6 +256,17 @@ after exa + codebase research. Implements ADR-0009's shape; does not supersede i
 | #                                                                     | Title                                                                          | Domain           | Status   | Relations                                                         |
 | --------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ---------------- | -------- | ----------------------------------------------------------------- |
 | [0105](../knowledge/decisions/ADR-0105-support-bot-implementation.md) | support-bot impl: discord.py · OpenRouter (one key) · thread+Postgres escalate | Services/Support | accepted | implements 0009; consumes 0096 (/query); full-build + deploy seam |
+
+### P6 operator-gates (0106-0107, 2026-06-29) - status `accepted`
+
+The DEPLOY-class operator session's two go-live forks (pricing + CF-Access), locked on a grounded
+research fanout. ADR-0106 executes the ADR-0095 §4 deferral; ADR-0107 formalizes the keep-gated board
+decision into a launch runbook.
+
+| #                                                                       | Title                                                                                    | Domain           | Status   | Relations                                                            |
+| ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------- | -------- | -------------------------------------------------------------------- |
+| [0106](../knowledge/decisions/ADR-0106-final-pricing-grandfathering.md) | Final pricing numbers + grandfathering (Compliance $2,499 · Bundle $3,499 · annual subs) | Commerce/Pricing | accepted | executes 0095 §4; supersedes 0082 §2 display; extends 0012/0081/0089 |
+| [0107](../knowledge/decisions/ADR-0107-cf-access-go-live-gate.md)       | CF-Access go-live gate: keep gated until checkout works; flip = the launch act           | Infra/Go-live    | accepted | formalizes board decision; relates 0082/0106/0089/0009/0096          |
 
 ---
 

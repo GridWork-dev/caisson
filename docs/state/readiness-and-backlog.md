@@ -89,6 +89,8 @@ needs a real external account, infra, or deploy (DEPLOY-class, operator-gated).
 - **Cloudflare Access pre-launch gate** (`access.tf` APPLIED) — `caisson.sh` + `www` sit behind
   email-OTP, restricted to `@gridwork.dev`. For a public v1 launch this gate **must be removed**
   (delete `access.tf` + `terraform apply`) or flipped to bypass. **DEPLOY-class, operator-gated.**
+  Sequencing + go-live checklist locked: **ADR-0107** (keep gated until checkout works + Compliance
+  buyable; pages.dev sealed via Pages-native Access at flip).
 - **Stripe** (`STRIPE_SECRET_KEY` + per-endpoint `STRIPE_WEBHOOK_SECRET`) — **real commerce blocker**;
   no account/keys exist anywhere. Needed for live paid checkout + the X-2 grant path.
 
@@ -208,15 +210,18 @@ Compliance vertical packs · AI-feature packs · local-first verticals · the mo
 
 ## 4. Open operator decisions (forks needing a picker)
 
-| Fork                                       | Status                          | Why it needs you                                                                                         |
-| ------------------------------------------ | ------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| ~~Final pricing numbers + grandfathering~~ | **CLOSED — ADR-0095**           | deliberately deferred to P6/checkout; reports' $2,999–$4,999 anchor + ICP/keyword validation = the input |
-| ~~`services/docs` scope~~                  | **CLOSED — ADR-0096**           | standalone AI-native docs service (separate from `apps/site` Fumadocs)                                   |
-| **Cloudflare Access go-live gate**         | **decided (board): keep gated** | flip only when checkout works + Compliance is buyable — the deliberate launch act (DEPLOY-class)         |
+| Fork                                       | Status                | Why it needs you                                                                                                                                                                |
+| ------------------------------------------ | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ~~Final pricing numbers + grandfathering~~ | **LOCKED — ADR-0106** | numbers set 2026-06-29 (Compliance $2,499 · Bundle $3,499 · Updates $1,499/yr · Developer $499/yr · Enterprise contact-us); forward grandfather; code track wires the pricebook |
+| ~~`services/docs` scope~~                  | **CLOSED — ADR-0096** | standalone AI-native docs service (separate from `apps/site` Fumadocs)                                                                                                          |
+| ~~Cloudflare Access go-live gate~~         | **LOCKED — ADR-0107** | keep gated; flip only when checkout works + Compliance buyable — the deliberate launch act (DEPLOY-class); go-live checklist in the ADR                                         |
 
 _The 2026-06-29 GTM-report picker round closed all strategy forks (ADR-0094 open-core Base · ADR-0095
-GTM offer structure · ADR-0096 services-docs). **No open operator forks remain** — the only
-operator-owned remainders are deferred-by-decision (pricing numbers → P6; CF go-live → launch act)._
+GTM offer structure · ADR-0096 services-docs); the **2026-06-29 P6 operator-gates round** then locked
+the two remaining operator forks — **final pricing numbers + grandfathering (ADR-0106)** and the
+**CF-Access go-live gate (ADR-0107)**. **No open operator forks remain.** The only remaining go-live
+action is the deliberate CF-Access flip itself, held until the commerce spine + a buyable Compliance
+edition land (the ADR-0107 trigger)._
 
 ## 5. The two tracks — both substantially MERGED (status, 2026-06-29)
 
