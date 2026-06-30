@@ -28,6 +28,7 @@ import {
   ENTITLEMENT_SCHEMA_SQL,
   grantEntitlements,
 } from "./entitlement-store.ts";
+import { loadRateLimitConfig, TokenBucketLimiter } from "./rate-limit.ts";
 import {
   LICENSE_GRANT_SCHEMA_SQL,
   readLicenseGrant,
@@ -96,7 +97,15 @@ beforeAll(async () => {
   await tp.exec(LICENSE_GRANT_SCHEMA_SQL);
   // provider: null — these tests exercise POST /issue only; /webhook is covered in
   // webhook-app.integration.test.ts. A null provider makes /webhook fail closed (401), not these routes.
-  app = createApp({ token: TOKEN, signer, index, db: tp.pg, provider: null });
+  // A permissive limiter (default budgets) lets the suite's handful of /issue calls through.
+  app = createApp({
+    token: TOKEN,
+    signer,
+    index,
+    db: tp.pg,
+    provider: null,
+    limiter: new TokenBucketLimiter(loadRateLimitConfig()),
+  });
 });
 afterAll(async () => {
   await tp.close();

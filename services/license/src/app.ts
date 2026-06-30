@@ -22,6 +22,7 @@ import { licenseTierSchema } from "@caisson/license-verify";
 import type { RegistryIndex } from "@caisson/registry-schema";
 import { type Transactor, withTenant } from "@caisson/tenancy-rls";
 import { readLicenseGrant, storeLicenseGrant } from "./license-grant-store.ts";
+import { clientIp, type RateBucket, type RateLimiter } from "./rate-limit.ts";
 import { resolveAccountEntitlements } from "./resolve-entitlements.ts";
 import { handleBillingWebhook } from "./webhook.ts";
 
@@ -40,6 +41,12 @@ export interface IssueAppDeps {
    * must NEVER provision. server.ts builds it from env and injects it.
    */
   provider: BillingProvider | null;
+  /**
+   * Per-IP token-bucket limiter (services-hardening #4). Gates POST /webhook (the public grey-origin MoR
+   * surface) and POST /issue (defense-in-depth before the bearer check). The bearer / HMAC stay the
+   * primary auth — this only caps an abusive flood. server.ts injects it.
+   */
+  limiter: RateLimiter;
 }
 
 /**
@@ -69,17 +76,25 @@ const SECURITY_HEADERS: Record<string, string> = {
   "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
 };
 
-function respond(body: string, status: number, contentType: string): Response {
+function respond(
+  body: string,
+  status: number,
+  contentType: string,
+  extra?: Record<string, string>,
+): Response {
   return new Response(body, {
     status,
-    headers: { ...SECURITY_HEADERS, "Content-Type": contentType },
+    headers: { ...SECURITY_HEADERS, "Content-Type": contentType, ...extra },
   });
 }
 
 const json = (data: unknown, status = 200): Response =>
   respond(JSON.stringify(data), status, "application/json; charset=utf-8");
-const text = (body: string, status = 200): Response =>
-  respond(body, status, "text/plain; charset=utf-8");
+const text = (
+  body: string,
+  status = 200,
+  extra?: Record<string, string>,
+): Response => respond(body, status, "text/plain; charset=utf-8", extra);
 
 /**
  * Timing-safe Bearer check. `LICENSE_ISSUE_TOKEN` is an opaque secret of not-guaranteed-fixed length, so
@@ -100,6 +115,27 @@ function authorized(req: Request, token: string): boolean {
 export function createApp(
   deps: IssueAppDeps,
 ): (req: Request) => Promise<Response> {
+  /**
+   * Per-IP rate gate. Returns a 429 Response when the bucket is exhausted, or `null` to proceed. FAILS
+   * OPEN on any limiter internal error (logs to stderr — never silently disables) so a limiter bug can
+   * never take the commerce webhook or the issuer offline.
+   */
+  const rateLimited = (bucket: RateBucket, req: Request): Response | null => {
+    try {
+      const decision = deps.limiter.check(bucket, clientIp(req));
+      if (decision.allowed) return null;
+      return text("rate limit exceeded", 429, {
+        "Retry-After": String(decision.retryAfterSec),
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      process.stderr.write(
+        `[service-license] rate-limiter error (failing open): ${msg}\n`,
+      );
+      return null;
+    }
+  };
+
   return async (req: Request): Promise<Response> => {
     const url = new URL(req.url);
     const { pathname } = url;
@@ -113,6 +149,9 @@ export function createApp(
 
     if (pathname === "/issue") {
       if (method !== "POST") return text("method not allowed", 405);
+      // Rate-gate BEFORE the bearer check (defense-in-depth) so an unauthenticated flood is capped too.
+      const limited = rateLimited("issue", req);
+      if (limited !== null) return limited;
       if (!authorized(req, deps.token))
         return json({ error: "unauthorized" }, 401);
 
@@ -206,6 +245,11 @@ export function createApp(
       // ONE tenant transaction (apply-billing-event.ts) — the seam the services-hardening audit (#3)
       // flagged as bound to no server.
       if (method !== "POST") return text("method not allowed", 405);
+
+      // Rate-gate FIRST: /webhook is the public grey-origin (`*.up.railway.app`) surface, so an
+      // unsigned flood (each costs an HMAC compute) is capped before any verify/DB work.
+      const limited = rateLimited("webhook", req);
+      if (limited !== null) return limited;
 
       // Fail closed when the webhook secret is unconfigured: a null provider cannot verify ANY signature,
       // so an unverifiable payload must be rejected, never provisioned (security floor — fail-closed auth).

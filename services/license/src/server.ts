@@ -16,6 +16,7 @@ import { initObservability } from "@caisson/observability";
 import { loadRegistryIndexFromFile } from "@caisson/registry-schema";
 import type { Transactor } from "@caisson/tenancy-rls";
 import { createApp } from "./app.ts";
+import { loadRateLimitConfig, TokenBucketLimiter } from "./rate-limit.ts";
 
 const DEFAULT_PORT = 8789;
 
@@ -74,9 +75,14 @@ export function startServer(
     );
   }
 
+  // Per-IP token-bucket limiter (services-hardening #4) for POST /webhook + POST /issue. Config is
+  // Zod-validated from env with safe defaults; a present-but-invalid limit fails startup closed rather
+  // than serving with a silently-wrong budget.
+  const limiter = new TokenBucketLimiter(loadRateLimitConfig());
+
   // `||` not `??`: a blank PORT="" must fall back to the default, not coerce to Number("")=0 (ephemeral).
   const port = Number(process.env.PORT || DEFAULT_PORT);
-  const handler = createApp({ token, signer, index, db, provider });
+  const handler = createApp({ token, signer, index, db, provider, limiter });
   const server = Bun.serve({ port, fetch: handler });
   process.stderr.write(
     `[service-license] issuer serving on :${String(server.port)}\n`,
