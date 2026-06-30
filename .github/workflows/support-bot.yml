@@ -43,6 +43,15 @@ jobs:
         run: |
           uv run ruff check .
           uv run ruff format --check .
+      # pyright-python downloads its own Node to run pyright; that prebuilt Node is dynamically linked
+      # against libatomic, which the throwaway fleet container does not ship. Install it (root in the
+      # container ⇒ no sudo; fall back to sudo on a non-root runner). Best-effort: pyright still runs if
+      # libatomic is already present.
+      - name: ensure libatomic (pyright bundled Node dependency)
+        run: |
+          (apt-get update -qq && apt-get install -y -qq libatomic1) \
+            || (sudo apt-get update -qq && sudo apt-get install -y -qq libatomic1) \
+            || echo "libatomic install skipped (already present or no apt)"
       - name: typecheck (pyright)
         run: uv run pyright
       - name: test (pytest — hermetic; no Discord/OpenRouter/Postgres)
