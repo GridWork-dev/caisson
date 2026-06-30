@@ -57,9 +57,9 @@ needs a real external account, infra, or deploy (DEPLOY-class, operator-gated).
 
 ### needs-config (one secret flips it live)
 
-| Surface                                                 | Flip                                                       | Gates                                                           |
-| ------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------- |
-| Stripe live checkout + real webhook + cycle→grant (X-2) | `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` + Stripe CLI | the X-2 cycle→grant code **does not exist yet** (P6 / ADR-0089) |
+| Surface                                       | Flip                                                               | Gates                                                             |
+| --------------------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| Paddle checkout + webhook + cycle→grant (X-2) | `PADDLE_API_KEY` + `PADDLE_WEBHOOK_SECRET` + `PADDLE_CLIENT_TOKEN` | mapper exists but Stripe-shaped — rework Stripe→Paddle (ADR-0108) |
 
 ### needs-external (real account / infra / deploy — DEPLOY-class)
 
@@ -91,8 +91,9 @@ needs a real external account, infra, or deploy (DEPLOY-class, operator-gated).
   (delete `access.tf` + `terraform apply`) or flipped to bypass. **DEPLOY-class, operator-gated.**
   Sequencing + go-live checklist locked: **ADR-0107** (keep gated until checkout works + Compliance
   buyable; pages.dev sealed via Pages-native Access at flip).
-- **Stripe** (`STRIPE_SECRET_KEY` + per-endpoint `STRIPE_WEBHOOK_SECRET`) — **real commerce blocker**;
-  no account/keys exist anywhere. Needed for live paid checkout + the X-2 grant path.
+- **Paddle** (Merchant of Record, ADR-0108 — switched from Stripe) — `PADDLE_API_KEY` +
+  `PADDLE_WEBHOOK_SECRET` + `PADDLE_CLIENT_TOKEN`; **real commerce blocker**, no account/keys yet.
+  Needed for live paid checkout + the X-2 grant path (the mapper is reworked Stripe→Paddle, code track).
 
 ### Provisioned this session (P6 operator-gates, 2026-06-30)
 

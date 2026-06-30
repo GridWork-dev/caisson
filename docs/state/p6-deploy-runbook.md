@@ -10,12 +10,12 @@ the commerce backend follow the same posture.
 
 ## Status at a glance
 
-| Seam                   | Built                                                         | Provisioned this session                                                                                                                                             | Still blocked on                                                                             |
-| ---------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| **B4 license keypair** | issuer code = code-track I1                                   | ✅ Ed25519 keypair generated, round-trip-verified; private → `~/.gridwork/env` (`CAISSON_LICENSE_SIGNING_KEY`); public → `infra/license-issuer/ISSUER_PUBLIC_KEY.md` | code-track: bake the public key into `verify.ts`; build the issuer sign path                 |
-| **B3 docs-service**    | ✅ (FTS5 floor)                                               | ✅ `Dockerfile` + `railway.toml` + `DOCS_SERVICE_TOKEN` (in env)                                                                                                     | code-track: real OpenRouter embedder wire; then `railway up`                                 |
-| **B2 support-bot**     | ✅ (Dockerfile + 32 tests)                                    | ✅ `railway.toml`                                                                                                                                                    | operator: Discord app + `DISCORD_TOKEN`; B3 live (for `DOCS_SERVICE_URL`); then `railway up` |
-| **B1 Stripe**          | X-2 annual cycle→grant mapper ✅ (services/license, ADR-0089) | runbook below                                                                                                                                                        | operator: Stripe MoR account + products/prices + keys; code-track: pricebook price-id wire   |
+| Seam                   | Built                                                                    | Provisioned this session                                                                                                                                             | Still blocked on                                                                                   |
+| ---------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| **B4 license keypair** | issuer code = code-track I1                                              | ✅ Ed25519 keypair generated, round-trip-verified; private → `~/.gridwork/env` (`CAISSON_LICENSE_SIGNING_KEY`); public → `infra/license-issuer/ISSUER_PUBLIC_KEY.md` | code-track: bake the public key into `verify.ts`; build the issuer sign path                       |
+| **B3 docs-service**    | ✅ (FTS5 floor)                                                          | ✅ `Dockerfile` + `railway.toml` + `DOCS_SERVICE_TOKEN` (in env)                                                                                                     | code-track: real OpenRouter embedder wire; then `railway up`                                       |
+| **B2 support-bot**     | ✅ (Dockerfile + 32 tests)                                               | ✅ `railway.toml`                                                                                                                                                    | operator: Discord app + `DISCORD_TOKEN`; B3 live (for `DOCS_SERVICE_URL`); then `railway up`       |
+| **B1 Paddle (MoR)**    | X-2 cycle→grant mapper ✅ but Stripe-shaped (services/license, ADR-0089) | runbook below (ADR-0108)                                                                                                                                             | operator: Paddle account + catalog + keys; code-track: rework mapper Stripe→Paddle + price-id wire |
 
 ## B4 — license issuer keypair ✅ provisioned
 
@@ -60,39 +60,48 @@ the commerce backend follow the same posture.
 > Env-name correction vs the kickoff: the bot reads **`DISCORD_TOKEN`** (not `DISCORD_BOT_TOKEN`);
 > `DISCORD_APP_ID` is unused.
 
-## B1 — Stripe (real commerce, operator = Merchant of Record)
+## B1 — Paddle (real commerce; Paddle = Merchant of Record) — ADR-0108
 
-1. **Account:** create/confirm the Stripe account; enable **Stripe Tax**. Capture
-   `STRIPE_SECRET_KEY` → `~/.gridwork/env`.
-2. **Products + prices** — match the **ADR-0106** lock exactly (one-time unless noted):
+Paddle is the **MoR**: it collects + remits global tax/VAT and owns the buyer invoice — the operator
+does NOT register for or remit sales tax. (Switched from Stripe — ADR-0108.) Use **Paddle Billing**,
+not legacy Paddle Classic.
 
-   | Product                 | Price            | Type                               |
+1. **Account:** sign up at paddle.com → Paddle **Billing**; complete seller verification (website =
+   `caisson.sh`, business details). Wire + smoke in the **Sandbox** environment first; flip to
+   **Production** for go-live.
+2. **Catalog — Products + Prices** matching the **ADR-0106** lock (Paddle dashboard → Catalog, or the
+   API). One Paddle Price per SKU:
+
+   | Product                 | Price            | Billing                            |
    | ----------------------- | ---------------- | ---------------------------------- |
    | Compliance              | $2,499.00        | one-time                           |
    | Everything Bundle       | $3,499.00        | one-time                           |
    | AI Production Kit       | $599.00          | one-time                           |
    | Local-first AI          | $499.00          | one-time                           |
    | Per-module (à la carte) | from $49.00      | one-time (one price per module)    |
-   | Compliance-Updates      | $1,499.00 / year | recurring (annual)                 |
-   | Developer               | $499.00 / year   | recurring (annual)                 |
+   | Compliance-Updates      | $1,499.00 / year | recurring annual                   |
+   | Developer               | $499.00 / year   | recurring annual                   |
    | Enterprise / SLA        | —                | no price (Contact us, ADR-0095 §2) |
 
-   Agentic-Dev is labeled-roadmap (ADR-0082 §4) — **no active price** until it ships.
+   Agentic-Dev = labeled-roadmap (ADR-0082 §4) — no active price.
 
-3. **Capture the Price IDs** → hand to the **code track** to wire into `@caisson/pricebook`
-   (`stripePriceId → creditsPerCycle` / entitlements). ⚠️ **B1 blocking gotcha (ADR-0089 / B1 memory):**
-   Stripe does NOT propagate Checkout-Session metadata onto subscription invoices — at checkout the code
-   must stamp `subscription_data[metadata]` and the webhook must read
-   `invoice.subscription_details.metadata`, else the recurring annual grant silently no-ops.
-4. **Webhook endpoint:** point it at the deployed license/billing webhook
-   (`services/license` `handleBillingWebhook`); subscribe `invoice.paid` (+ `checkout.session.completed`
-   for one-time). Capture the per-endpoint `STRIPE_WEBHOOK_SECRET` → `~/.gridwork/env`.
-5. **Smoke (local, no deploy needed):** `stripe listen --forward-to localhost:<port>/webhook` →
-   trigger an `invoice.paid` → assert the X-2 annual cycle→grant mapper credits the wallet + grants
-   entitlements (round-trip `parseStripeEvent → mapper`, the W2-class seam test). The mapper is built +
-   PGlite-tested; this exercises it against real Stripe event shapes.
+3. **Keys → `~/.gridwork/env`:** Developer Tools → Authentication →
+   `PADDLE_API_KEY` (server; `pdl_sdbx_*` sandbox / `pdl_live_*` prod) + `PADDLE_CLIENT_TOKEN`
+   (Paddle.js checkout on `apps/site`) + set `PADDLE_ENV=sandbox|production`.
+4. **Capture the Paddle Price `id`s** → hand to the code track for `@caisson/pricebook`
+   (`providerPriceId → creditsPerCycle` / entitlements). ✅ **No metadata-stamping hack** — the
+   account/tenant id rides as Paddle **`custom_data`** at checkout and propagates onto
+   `transaction.completed` (ADR-0108; this is exactly the Stripe gotcha Paddle removes).
+5. **Webhook:** Developer Tools → Notifications → add a destination at the deployed license/billing
+   webhook (`services/license`); subscribe **`transaction.completed`** (grant trigger — fires on the
+   initial purchase + every renewal) + `subscription.created/activated/canceled` (lifecycle). Capture
+   `PADDLE_WEBHOOK_SECRET` → `~/.gridwork/env`. The endpoint reads the **raw** body and verifies via
+   `paddle.webhooks.unmarshal(rawBody, secret, signature)`.
+6. **Smoke (sandbox):** run a sandbox checkout → `transaction.completed` fires → assert the (reworked)
+   cycle→grant mapper credits the wallet + grants entitlements. Paddle's dashboard can simulate/replay
+   webhook events for the smoke; no local CLI tunnel required.
 
-## Code-track hand-off (NOT this operator session — file under code track, ADR-0108+)
+## Code-track hand-off (NOT this operator session — file under code track, ADR-0109+)
 
 1. **docs-service real embedder** — implement an `OpenRouterEmbedder` (the `@caisson/local-store`
    `Embedder` port) calling `qwen3-embedding-8b` via `fetchWithTimeout`; wire at `server.ts:33`, gated
@@ -101,8 +110,10 @@ the commerce backend follow the same posture.
    provisioned public SPKI (`infra/license-issuer/ISSUER_PUBLIC_KEY.md`); update the token KAT tests.
 3. **license issuer sign path (I1)** — load `CAISSON_LICENSE_SIGNING_KEY`, sign kernel-canonical claims
    (Ed25519). Consumes the keypair provisioned this session.
-4. **pricebook numbers (ADR-0106)** — set the per-tier amounts + map the Stripe Price IDs (from B1.3);
-   stamp `subscription_data[metadata]` at checkout.
+4. **billing mapper Stripe→Paddle (ADR-0108) + pricebook numbers (ADR-0106)** — rework the ADR-0089
+   mapper: parse Paddle `transaction.completed` (not Stripe `invoice.paid`), key `@caisson/pricebook`
+   on Paddle Price ids (`providerPriceId`), read the account from `custom_data`, verify webhooks via
+   `@paddle/paddle-node-sdk`; set the ADR-0106 amounts. Drop the Stripe metadata-stamping workaround.
 
 ## Go-live flip (ADR-0107) — the last act
 
