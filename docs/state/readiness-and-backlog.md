@@ -7,10 +7,10 @@ backlog with fork gates. Canonical _decisions_ stay in `knowledge/decisions/` (A
 _fork_ board stays in `docs/state/decisions-and-forks.md`. This file is a readiness map, not a
 decision record.
 
-Verified against `main` post-PR#21 (2026-06-29 — the code-wiring W1/W2/B1/B2 stack PR#16–19 + the
-design-system + Phase-2 site rebuild PR#21 have all merged). Evidence: code-on-disk, ADR trail, a live
-HTTP smoke-test of the deployed Worker, and `bun run check` on-box. The CI-fleet wiring (§0) is this
-session's change.
+Verified against `main` post-PR#24 (2026-06-29 — the code-wiring W1/W2/B1/B2 stack PR#16–19, the
+design-system + Phase-2 site rebuild PR#21, the CI fleet PR#22, `services/docs` PR#23, and
+`services/support-bot` PR#24 have all merged). Evidence: code-on-disk, ADR trail, a live HTTP
+smoke-test of the deployed Worker, and `bun run check` on-box. The CI-fleet wiring (§0) merged in PR#22.
 
 ## 0. Live verification done this session
 
@@ -23,7 +23,7 @@ ai-kit, ai-meter, cli, field-crypto, guardrails, prompt-registry`) — the regis
 - **Whole-monorepo gate** — `bun run gate` (standards-gate) green ("36 checked, 2 scaffold-skipped,
   all conform, ADR-0002"); `turbo run build lint test` green on-box (`--concurrency=50%` per the
   PGlite-fan-out gotcha).
-- **CI moved onto the self-hosted fleet** (this session, PR#22). Caisson's 3 GridWork-dev runners
+- **CI moved onto the self-hosted fleet** (merged, PR#22). Caisson's 3 GridWork-dev runners
   (`gw-linux-amd64` · `gw-linux-arm64` · `gw-macos-arm64`) are registered + ONLINE; the pure-compute
   gate jobs (`standards-gate` · `check` · `eval` · `registry-index` · `token-drift` + `native-ext`
   linux leg) now `runs-on` the fleet, while the write/deploy/browser jobs (`publish-and-index` ·
@@ -57,9 +57,9 @@ needs a real external account, infra, or deploy (DEPLOY-class, operator-gated).
 
 ### needs-config (one secret flips it live)
 
-| Surface                                                 | Flip                                                       | Gates                                                           |
-| ------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------- |
-| Stripe live checkout + real webhook + cycle→grant (X-2) | `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` + Stripe CLI | the X-2 cycle→grant code **does not exist yet** (P6 / ADR-0089) |
+| Surface                                                 | Flip                                                       | Gates                                                                                            |
+| ------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Stripe live checkout + real webhook + cycle→grant (X-2) | `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` + Stripe CLI | the X-2 cycle→grant code is **built** (B1, PR#18, ADR-0089/0098); live Stripe secrets flip it on |
 
 ### needs-external (real account / infra / deploy — DEPLOY-class)
 
@@ -131,18 +131,18 @@ needs a real external account, infra, or deploy (DEPLOY-class, operator-gated).
 P5 is SHIPPED; editions merged-but-partial; Worker LIVE; edition VERIFY-debt closed. The remaining
 spine is **P6**, plus locked fast-follows and one true open operator fork.
 
-### P6 — Commerce + support + docs (the single big pending phase)
+### P6 — Commerce + support + docs (partially merged; remaining = license issuer + dashboards + publish-readiness)
 
-| Item                                                                           | State                                               | Depends on / gate                                                                                                                                                                  |
-| ------------------------------------------------------------------------------ | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `services/license` issuer + grants (Ed25519 + MoR webhook + idempotent grants) | **ready** (ADR-0089) — anchor of P6                 | needs `@caisson/pricebook` + billing `invoice.paid` enrichment                                                                                                                     |
-| X-2 billing: `@caisson/pricebook` + cycle→grant mapper                         | **mechanism ready** (ADR-0089)                      | the **numbers** are the open pricing fork                                                                                                                                          |
-| Entitlement-on-purchase resolver wiring (ADR-0071/0076)                        | ready after license service                         | depends on `services/license` purchase flow                                                                                                                                        |
-| Registry Worker entitlement filtering (ADR-0047 defers it)                     | ready after the resolver                            | the one **genuine code loose end** today                                                                                                                                           |
-| Buyer dashboard + seller cockpit                                               | ready after commerce backend                        | depends on license + resolver + final pricing                                                                                                                                      |
-| Real Stripe checkout + EULA drafting (CLAUDE.md/ADR-0082 fast-follows)         | partial-blocked                                     | Stripe account; EULA is operator/legal content                                                                                                                                     |
-| `services/support-bot` (Discord + Python RAG + hosted inference)               | **BUILT** (ADR-0009/0105, `feature/p6-support-bot`) | discord.py RAG over docs `POST /query` + OpenRouter + thread+Postgres escalation; 32 tests, hermetic CI; live secrets + cloud-runner deploy (Railway rec) = operator-gated seam    |
-| `services/docs` + `llms.txt`                                                   | **BUILT** (ADR-0096, `feature/p6-docs-service`)     | corpus + `llms.txt`/`llms-full.txt` + Bearer `POST /query` (hybrid FTS5+vec via `@caisson/local-store`); live OpenRouter embedder = deploy seam; partial until the bot consumes it |
+| Item                                                                           | State                                   | Depends on / gate                                                                                                                                                                  |
+| ------------------------------------------------------------------------------ | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `services/license` issuer + grants (Ed25519 + MoR webhook + idempotent grants) | **ready** (ADR-0089) — anchor of P6     | needs `@caisson/pricebook` + billing `invoice.paid` enrichment                                                                                                                     |
+| X-2 billing: `@caisson/pricebook` + cycle→grant mapper                         | **mechanism ready** (ADR-0089)          | the **numbers** are the open pricing fork                                                                                                                                          |
+| Entitlement-on-purchase resolver wiring (ADR-0071/0076)                        | ready after license service             | depends on `services/license` purchase flow                                                                                                                                        |
+| Registry Worker entitlement filtering (ADR-0047 defers it)                     | ready after the resolver                | the one **genuine code loose end** today                                                                                                                                           |
+| Buyer dashboard + seller cockpit                                               | ready after commerce backend            | depends on license + resolver + final pricing                                                                                                                                      |
+| Real Stripe checkout + EULA drafting (CLAUDE.md/ADR-0082 fast-follows)         | partial-blocked                         | Stripe account; EULA is operator/legal content                                                                                                                                     |
+| `services/support-bot` (Discord + Python RAG + hosted inference)               | **BUILT** (ADR-0009/0105, merged PR#24) | discord.py RAG over docs `POST /query` + OpenRouter + thread+Postgres escalation; 32 tests, hermetic CI; live secrets + cloud-runner deploy (Railway rec) = operator-gated seam    |
+| `services/docs` + `llms.txt`                                                   | **BUILT** (ADR-0096, merged PR#23)      | corpus + `llms.txt`/`llms-full.txt` + Bearer `POST /query` (hybrid FTS5+vec via `@caisson/local-store`); live OpenRouter embedder = deploy seam; partial until the bot consumes it |
 
 ### Fast-follow (locked, no fork, ready NOW, not exit-gate-blocking)
 
@@ -167,8 +167,8 @@ The Greptile GitHub app reviews opened PRs (config landed PR#20: `.greptile/{con
 - advisory `.githooks/pre-push`). Across PRs #18–#20 it left **7 findings, all severity P2, all still
   live on `main`** — none block (P2 ≤ merge threshold). PR#21 (design+site, 116 files) **exceeded
   Greptile's 100-file limit and got zero AI review** — a coverage gap, not a clean pass. None of these
-  are accidental TODOs; all are test-hygiene/clarity. Triaged here (NOT fixed in the CI-fleet branch —
-  the real one needs a small, deliberate, test-injectable change, not a rushed patch):
+  are accidental TODOs; all are test-hygiene/clarity. Triaged here (NOT yet fixed on `main` —
+  each needs a small, deliberate, test-injectable change, not a rushed patch):
 
 | #   | File:line                                                  | Finding                                                                                                                                                                                                                                                                                                                                                      | Recommended fix                                                                                                                                                                                                                                                           | Priority     |
 | --- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
@@ -233,7 +233,7 @@ main body to `main`; what remains is the back half of each.
 - **Code/wiring track** (`outputs/kickoffs/code-wiring-track.md`) — **Buckets A+B MERGED** (PR#16 W1
   open-core; PR#19 W2 `@caisson/migrate`; PR#18 B1 billing-X2 + B2 entitlement resolver + worker
   filtering). **Bucket C BUILT:** **`services/docs`** (ADR-0096: corpus + `llms.txt` + Bearer `POST
-/query`; real embedder = deploy seam) **+ `services/support-bot`** (`feature/p6-support-bot`,
+/query`; real embedder = deploy seam) **+ `services/support-bot`** (merged PR#24,
   ADR-0009/0105: discord.py RAG over the docs `/query`, OpenRouter generation, thread+Postgres
   escalation; live secrets + cloud deploy = operator-gated seam). **Remaining:** **D**
   publish-readiness (publishability flip · npx bin ADR-0092 · registry index backfill — only 7 of ~24

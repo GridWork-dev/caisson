@@ -6,7 +6,7 @@ for "what is actually built right now". Canonical _decisions_ stay in `knowledge
 (ADRs) and `specs/`; the live _fork_ board stays in `docs/state/decisions-and-forks.md`. This
 is a map/catalog, not a re-statement of those.
 
-Verified against the working tree at 2026-06-29 (post-PR#12 on `main`, plus the stacked code-wiring branches: W1 open-core → W2 migrate → B1 billing-X2 → B2 entitlement resolver + worker filtering).
+Verified against `main` at 2026-06-29 (post-PR#24: the code-wiring stack W1 open-core → W2 migrate → B1 billing-X2 → B2 entitlement resolver + worker filtering merged via PR#16/18/19, plus PR#21 design-system, PR#22 CI fleet, PR#23 `services/docs`, PR#24 `services/support-bot`).
 Method: `packages/*/src` + test presence, `apps/`/`services/` contents, ADR + spec artifact
 trail, git chronology. Status reflects code-on-disk, not marketing copy.
 
@@ -30,7 +30,7 @@ trail, git chronology. Status reflects code-on-disk, not marketing copy.
 
 Canonical test command is `bun run check` (turbo: build + lint + test + standards gate). A naive
 `bun test <pkg>` mis-fires on compiled `dist/__golden__` fixtures (known dist-glob gotcha) - it is
-not the source suite. CI green = PR#11.
+not the source suite. CI green = PR#24 (CI moved onto the self-hosted fleet at PR#22).
 
 ## Phase status (P0-P7)
 
@@ -52,7 +52,8 @@ Phases map to `plan.md`. "Artifacts" = the `outputs/specs/<slug>/` act trail.
 (`apps/site`, Next + Fumadocs -> Cloudflare Pages, `ADR-0084`-`0087`, brand `ADR-0078`-`0081`,
 go-live posture `ADR-0082`/`0083`) and the design decision studio (`apps/studio`, `ADR-0040`-`0042`).
 Both **shipped**. Note: the public docs live in `apps/site`; `services/docs` (the AI-native docs
-_service_, P6) is unbuilt.
+_service_, P6 Bucket C, ADR-0096) is **built** (PR#23) and distinct from the `apps/site` Fumadocs
+static docs.
 
 ## Per-package reality check
 
