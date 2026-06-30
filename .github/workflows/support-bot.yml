@@ -1,0 +1,49 @@
+name: support-bot
+
+# Python gate for services/support-bot (the repo's only Python surface — ADR-0105). Path-scoped so it
+# runs ONLY when the bot changes; deliberately NOT one of the ADR-0016 required checks (advisory until
+# the lane is proven on the fleet). Runs on the same self-hosted gw-linux-amd64 fleet as the TS gates
+# (docs/operations.md); setup-uv installs uv and uv fetches Python 3.12 + the locked deps inside the
+# throwaway container, so no interpreter needs to pre-exist on the runner.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "services/support-bot/**"
+      - ".github/workflows/support-bot.yml"
+  pull_request:
+    paths:
+      - "services/support-bot/**"
+      - ".github/workflows/support-bot.yml"
+
+concurrency:
+  group: "support-bot-${{ github.event.pull_request.number || github.ref }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  support-bot:
+    runs-on: [self-hosted, gw-linux-amd64]
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: services/support-bot
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.18" # pinned (matches the operator box; no drift on a persistent fleet)
+          enable-cache: true
+          cache-dependency-glob: services/support-bot/uv.lock
+      - name: sync (frozen — lockfile is the source of truth)
+        run: uv sync --frozen
+      - name: lint + format check (ruff)
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: typecheck (pyright)
+        run: uv run pyright
+      - name: test (pytest — hermetic; no Discord/OpenRouter/Postgres)
+        run: uv run pytest -q
