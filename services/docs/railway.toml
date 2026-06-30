@@ -7,7 +7,7 @@
 # Service env vars (set in the Railway service — NEVER committed):
 #   DOCS_SERVICE_TOKEN  (required; fail-closed — server refuses to start without it; mint = the value
 #                        provisioned to ~/.gridwork/env this session; copy it in)
-#   OPENROUTER_API_KEY  (consumed only once the code-track embedder wire lands; harmless before)
+#   OPENROUTER_API_KEY  (the live embedder; absent ⇒ FTS5 floor)
 #   PORT                (Railway injects; server binds it)
 [build]
 builder = "DOCKERFILE"
@@ -15,6 +15,9 @@ dockerfilePath = "services/docs/Dockerfile"
 
 [deploy]
 healthcheckPath = "/health"
-healthcheckTimeout = 30
+# 300s, not 30: the semantic index embeds all corpus chunks (network calls) BEFORE Bun.serve binds, so
+# /health is unreachable for the first ~60-90s of a cold boot. A tight window would mark the deploy
+# failed and crash-loop it (the floor-fallback only catches THROWS, not a slow-but-successful embed).
+healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 numReplicas = 1

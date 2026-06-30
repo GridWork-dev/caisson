@@ -56,13 +56,19 @@ export interface OpenRouterEmbedderOptions {
   title?: string;
   /** Injectable transport for tests — defaults to `fetchWithTimeout`. */
   fetchImpl?: EmbedFetch;
+  /** Max retries on a transient 429/5xx/network failure (default 2). 0 = no retry. */
+  maxRetries?: number;
+  /** Base backoff (ms); exponential per attempt unless the response carries Retry-After (default 500). */
+  retryBaseMs?: number;
 }
 
 /**
  * The raw OpenRouter embedder (UNGUARDED — call `createOpenRouterEmbedder` for the egress-scrubbed
- * value wired at deploy). One text → one `dim`-width vector. Throws `ValidationError` on an empty key,
- * `InternalError` on a non-2xx (status only — never the body, key, or content) or an empty payload,
- * and `ValidationError` on a wrong-width vector. Nothing here logs the input or the key.
+ * value wired at deploy). One text → one `dim`-width vector. Retries transient failures (429 / 5xx /
+ * network throw) with bounded backoff honoring Retry-After — a single boot-burst rate-limit must not
+ * poison the whole vector leg. Throws `ValidationError` on an empty key, `InternalError` on a terminal
+ * non-2xx (status only — never the body, key, or content) or an empty payload, and `ValidationError`
+ * on a wrong-width vector. Nothing here logs the input or the key.
  */
 class OpenRouterEmbedder implements Embedder {
   readonly dim: number;
@@ -72,6 +78,8 @@ class OpenRouterEmbedder implements Embedder {
   private readonly referer: string;
   private readonly title: string;
   private readonly fetchImpl: EmbedFetch;
+  private readonly maxRetries: number;
+  private readonly retryBaseMs: number;
 
   constructor(opts: OpenRouterEmbedderOptions) {
     if (opts.apiKey.length === 0) {
@@ -87,10 +95,12 @@ class OpenRouterEmbedder implements Embedder {
     this.referer = opts.referer ?? "https://caisson.sh";
     this.title = opts.title ?? "Caisson Docs Service";
     this.fetchImpl = opts.fetchImpl ?? fetchWithTimeout;
+    this.maxRetries = opts.maxRetries ?? 2;
+    this.retryBaseMs = opts.retryBaseMs ?? 500;
   }
 
-  async embed(text: string): Promise<number[]> {
-    const res = await this.fetchImpl(
+  private post(text: string): Promise<Response> {
+    return this.fetchImpl(
       OPENROUTER_EMBEDDINGS_URL,
       {
         method: "POST",
@@ -111,20 +121,49 @@ class OpenRouterEmbedder implements Embedder {
       },
       { timeoutMs: this.timeoutMs },
     );
-    if (!res.ok) {
+  }
+
+  private backoff(attempt: number, retryAfter: string | null): Promise<void> {
+    const ra = retryAfter !== null ? Number(retryAfter) : NaN;
+    const ms =
+      Number.isFinite(ra) && ra > 0
+        ? ra * 1000
+        : this.retryBaseMs * 2 ** attempt;
+    return new Promise((r) => setTimeout(r, ms));
+  }
+
+  async embed(text: string): Promise<number[]> {
+    // Retry transient failures (429 / 5xx / network throw); a 4xx other than 429 (bad key / model) is
+    // terminal. Bounded by maxRetries so a hard outage still fails fast (caught upstream → FTS floor).
+    for (let attempt = 0; ; attempt++) {
+      let res: Response;
+      try {
+        res = await this.post(text);
+      } catch (err) {
+        if (attempt >= this.maxRetries) throw err;
+        await this.backoff(attempt, null);
+        continue;
+      }
+      if (res.ok) {
+        const json: unknown = await res.json();
+        const parsed = EmbeddingsResponse.parse(json);
+        const first = parsed.data[0];
+        if (first === undefined) {
+          throw new InternalError("OpenRouter embeddings returned no data", {});
+        }
+        assertEmbeddingDim(this.dim, first.embedding);
+        return first.embedding;
+      }
+      const transient = res.status === 429 || res.status >= 500;
+      if (transient && attempt < this.maxRetries) {
+        await this.backoff(attempt, res.headers.get("retry-after"));
+        continue;
+      }
       // Status only — never the response body, the key, or the content.
       throw new InternalError("OpenRouter embeddings request failed", {
         status: res.status,
       });
     }
-    const json: unknown = await res.json();
-    const parsed = EmbeddingsResponse.parse(json);
-    const first = parsed.data[0];
-    if (first === undefined) {
-      throw new InternalError("OpenRouter embeddings returned no data", {});
-    }
-    assertEmbeddingDim(this.dim, first.embedding);
-    return first.embedding;
   }
 }
 

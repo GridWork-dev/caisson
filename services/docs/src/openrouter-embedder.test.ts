@@ -94,6 +94,7 @@ describe("OpenRouterEmbedder", () => {
     const captured: Captured = {};
     const embedder = createOpenRouterEmbedder({
       apiKey: "test-key",
+      maxRetries: 0, // terminal-throw path, no backoff delay
       fetchImpl: fakeFetch(
         captured,
         { error: "super-secret-internal-detail" },
@@ -104,6 +105,31 @@ describe("OpenRouterEmbedder", () => {
     await expect(embedder.embed("x")).rejects.not.toThrow(
       /super-secret-internal-detail/,
     );
+  });
+
+  test("retries a transient 429 then succeeds", async () => {
+    let calls = 0;
+    const seqFetch = (async (): Promise<Response> => {
+      calls++;
+      if (calls === 1) {
+        return new Response("rate limited", {
+          status: 429,
+          headers: { "retry-after": "0" },
+        });
+      }
+      return new Response(JSON.stringify({ data: [{ embedding: vec() }] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }) as unknown as EmbedFetch;
+    const embedder = createOpenRouterEmbedder({
+      apiKey: "test-key",
+      retryBaseMs: 1,
+      fetchImpl: seqFetch,
+    });
+    const out = await embedder.embed("x");
+    expect(out).toHaveLength(OPENROUTER_EMBED_DIM);
+    expect(calls).toBe(2); // one 429, one success
   });
 
   test("an empty apiKey is rejected at construction (fail-closed)", () => {
