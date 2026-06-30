@@ -16,7 +16,7 @@ import { ConfigError, parseStrict, strictObject } from "@caisson/kernel";
 import { planEntitlementsSchema } from "./plans.ts";
 
 /** Append-only version stamp — a purchase-row change bumps this, never edits it in place (ADR-0006). */
-export const PURCHASE_BOOK_VERSION = "2026-06-30.1";
+export const PURCHASE_BOOK_VERSION = "2026-06-30.2";
 
 export const purchaseBookEntrySchema = strictObject({
   /** Stable internal purchase tag (NOT the Stripe id) — survives a price-id rotation. */
@@ -44,6 +44,43 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
     purchaseTag: "compliance_onetime",
     credits: 0, // a perpetual license-only buy — grants access, no credit pack
     entitlements: ["compliance"], // the compliance edition (expanded to member slugs by the index)
+  },
+  // ---- REAL Paddle sandbox price ids (ADR-0106/0116 go-live wiring) ----
+  // The PLACEHOLDER rows above are kept in place (existing test-suite fixtures); these are the
+  // LIVE rows the Paddle checkout + webhook actually resolve against. Every row is a perpetual
+  // license-only buy — `credits: 0` (no bundled credit pack; carried over from the
+  // `compliance_onetime` placeholder's number, SD-6 — operator-deferred, non-final).
+  //
+  // ENTITLEMENT-ID NOTE: the registry-schema canonical edition slug for the "Agentic-Dev" edition
+  // is `agent-dev` (`packages/registry-schema/src/module-manifest.ts` EDITIONS), NOT
+  // `agentic-dev` — the marketing label/route slug differ from the entitlement id on purpose.
+  // Using "agentic-dev" here would make `expandEntitlements` throw (unknown purchased id,
+  // ADR-0071 TM-E) the first time this SKU's webhook event tried to grant. Verified against
+  // `resolve-entitlements.ts` before wiring (do not "fix" this back to agentic-dev).
+  pri_01kwd76be2eq96kff5nqw236c0: {
+    purchaseTag: "compliance",
+    credits: 0,
+    entitlements: ["compliance"],
+  },
+  pri_01kwd76bp60acq51mftvpgr42k: {
+    purchaseTag: "bundle",
+    credits: 0,
+    entitlements: ["bundle"], // the BUNDLE_ID sentinel — base ∪ every edition (entitlements.ts)
+  },
+  pri_01kwd76c1pgs2csxcj2n0y7vv0: {
+    purchaseTag: "ai-kit",
+    credits: 0,
+    entitlements: ["ai-kit"],
+  },
+  pri_01kwd76cahy825m14334aqf209: {
+    purchaseTag: "local-ai",
+    credits: 0,
+    entitlements: ["local-ai"],
+  },
+  pri_01kwd76ck3w8myy4p4f1gj0dcy: {
+    purchaseTag: "agentic-dev",
+    credits: 0,
+    entitlements: ["agent-dev"], // see the ENTITLEMENT-ID NOTE above — not "agentic-dev"
   },
 };
 

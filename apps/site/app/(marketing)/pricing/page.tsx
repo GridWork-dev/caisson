@@ -9,6 +9,7 @@ import {
   StatusChip,
   Terminal,
 } from "@/components";
+import { CheckoutCta } from "@/components/checkout-cta";
 import { UpdatesForm } from "@/components/waitlist-form";
 import { breadcrumb, serializeJsonLd, softwareApplication } from "@/lib/jsonld";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
@@ -39,6 +40,9 @@ type EditionMeta = {
   readonly accent: boolean;
   readonly cta: string;
   readonly ctaHref: string;
+  /** True for a real purchase CTA (-> the authed `/dashboard/plan` checkout entry, fires the
+   * "Checkout: edition" Plausible event, ADR-0118); false for the roadmap edition's GitHub link. */
+  readonly checkout: boolean;
   readonly includes: readonly string[];
 };
 
@@ -48,7 +52,8 @@ const EDITION_META: readonly EditionMeta[] = [
     tag: "Hero edition",
     accent: true,
     cta: "Get Compliance",
-    ctaHref: "#compliance",
+    ctaHref: "/dashboard/plan?edition=compliance",
+    checkout: true,
     includes: [
       "Fail-closed Postgres RLS (FORCE) + cross-tenant isolation tests",
       "S3 Object-Lock WORM evidence store, COMPLIANCE mode",
@@ -62,7 +67,8 @@ const EDITION_META: readonly EditionMeta[] = [
     tag: "Edition #2",
     accent: false,
     cta: "Get AI Kit",
-    ctaHref: "#ai-kit",
+    ctaHref: "/dashboard/plan?edition=ai-kit",
+    checkout: true,
     includes: [
       "Provider-agnostic AI config + PG-atomic token metering",
       "Spend caps and per-tenant circuit breaker",
@@ -76,7 +82,8 @@ const EDITION_META: readonly EditionMeta[] = [
     tag: "Edition #3",
     accent: false,
     cta: "Get Local-first AI",
-    ctaHref: "#local-first",
+    ctaHref: "/dashboard/plan?edition=local-first",
+    checkout: true,
     includes: [
       "Compute seam — same code, on-device or hosted",
       "Privacy gate enforcing the no-egress boundary",
@@ -91,6 +98,7 @@ const EDITION_META: readonly EditionMeta[] = [
     accent: false,
     cta: "Follow development on GitHub",
     ctaHref: "https://github.com/GridWork-dev/caisson",
+    checkout: false,
     includes: [
       "Typed agent / skill / rule schema",
       "Lifecycle state machine for governed runs",
@@ -207,7 +215,10 @@ export default function PricingPage() {
 
   // Split plan types for the "own it or subscribe" framing section
   const oneTimePlans = PLAN_PRICES.filter((p) => p.unit === "once");
-  const subscriptionPlans = PLAN_PRICES.filter((p) => p.unit === "month");
+  const subscriptionPlans = PLAN_PRICES.filter((p) => p.unit === "year");
+  // Enterprise has no fixed unit (custom procurement, "Contact us") — its own framing, not a row
+  // in either the one-time or subscription lists.
+  const enterprise = PLAN_PRICES.find((p) => p.id === "enterprise");
 
   return (
     <>
@@ -246,7 +257,7 @@ export default function PricingPage() {
           >
             {"edition."}
             <span className="cs-tok-accent">compliance</span>
-            {"        from $1,299   perpetual\nedition."}
+            {"        from $2,499   perpetual\nedition."}
             <span className="cs-tok-accent">ai-kit</span>
             {"             from $599     perpetual\nedition."}
             <span className="cs-tok-accent">local-first</span>
@@ -255,7 +266,7 @@ export default function PricingPage() {
             {"        "}
             <span className="cs-tok-muted">roadmap</span>
             {
-              "\nsub.compliance-updates    $199/mo    framework maps\nsub.developer             $99/mo     credits + registry"
+              "\nsub.compliance-updates    $1,499/yr  framework maps\nsub.developer             $499/yr    credits + registry"
             }
           </Terminal>
         }
@@ -344,12 +355,23 @@ export default function PricingPage() {
 
                     {/* CTA */}
                     <div style={{ marginTop: "var(--cs-space-6)" }}>
-                      <Button
-                        href={ed.ctaHref}
-                        variant={ed.accent ? "primary" : "ghost"}
-                      >
-                        {ed.cta}
-                      </Button>
+                      {ed.checkout ? (
+                        <CheckoutCta
+                          edition={ed.id}
+                          href={ed.ctaHref}
+                          variant={ed.accent ? "primary" : "ghost"}
+                        >
+                          {ed.cta}
+                        </CheckoutCta>
+                      ) : (
+                        <Button
+                          href={ed.ctaHref}
+                          external
+                          variant={ed.accent ? "primary" : "ghost"}
+                        >
+                          {ed.cta}
+                        </Button>
+                      )}
                     </div>
                   </Card>
                 </div>
@@ -622,6 +644,55 @@ export default function PricingPage() {
             );
           })}
         </div>
+
+        {/* Enterprise — custom procurement, no fixed price (ADR-0106: "Contact us"). */}
+        {enterprise && (
+          <Reveal delay={160}>
+            <div id={enterprise.id} style={{ marginTop: "var(--cs-space-6)" }}>
+              <Card>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "baseline",
+                    gap: "var(--cs-space-3)",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <span className="cs-card-title">{enterprise.label}</span>
+                  <span
+                    className="cs-num"
+                    style={{
+                      fontFamily: "var(--cs-font-mono)",
+                      fontSize: "var(--cs-text-xl)",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {formatPrice(enterprise)}
+                  </span>
+                </div>
+                <p
+                  className="cs-muted"
+                  style={{
+                    marginTop: "var(--cs-space-3)",
+                    fontSize: "var(--cs-text-sm)",
+                  }}
+                >
+                  {enterprise.note}
+                </p>
+                <div style={{ marginTop: "var(--cs-space-6)" }}>
+                  <Button
+                    href="mailto:security@caisson.sh"
+                    external
+                    variant="ghost"
+                  >
+                    Contact us
+                  </Button>
+                </div>
+              </Card>
+            </div>
+          </Reveal>
+        )}
 
         {/* EU AI Act add-on note */}
         <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
