@@ -477,6 +477,22 @@
         "typescript": "^5.6.0",
       },
     },
+    "packages/license-issue": {
+      "name": "@caisson/license-issue",
+      "version": "0.0.0",
+      "dependencies": {
+        "@caisson/kernel": "workspace:*",
+        "@caisson/license-verify": "workspace:*",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/registry-schema": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
+    },
     "packages/license-verify": {
       "name": "@caisson/license-verify",
       "version": "0.0.0",
@@ -684,6 +700,8 @@
         "@caisson/billing": "workspace:*",
         "@caisson/credits": "workspace:*",
         "@caisson/kernel": "workspace:*",
+        "@caisson/license-issue": "workspace:*",
+        "@caisson/license-verify": "workspace:*",
         "@caisson/pricebook": "workspace:*",
         "@caisson/registry-schema": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
@@ -692,6 +710,7 @@
         "@caisson/eslint-config": "workspace:*",
         "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
+        "@types/bun": "^1.1.14",
         "eslint": "^9.13.0",
         "typescript": "^5.6.0",
       },
@@ -873,6 +892,8 @@
     "@caisson/jobs": ["@caisson/jobs@workspace:packages/jobs"],
 
     "@caisson/kernel": ["@caisson/kernel@workspace:packages/kernel"],
+
+    "@caisson/license-issue": ["@caisson/license-issue@workspace:packages/license-issue"],
 
     "@caisson/license-verify": ["@caisson/license-verify@workspace:packages/license-verify"],
 
