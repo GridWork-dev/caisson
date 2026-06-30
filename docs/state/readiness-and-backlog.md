@@ -7,10 +7,21 @@ backlog with fork gates. Canonical _decisions_ stay in `knowledge/decisions/` (A
 _fork_ board stays in `docs/state/decisions-and-forks.md`. This file is a readiness map, not a
 decision record.
 
-Verified against `main` post-PR#21 (2026-06-29 — the code-wiring W1/W2/B1/B2 stack PR#16–19 + the
-design-system + Phase-2 site rebuild PR#21 have all merged). Evidence: code-on-disk, ADR trail, a live
-HTTP smoke-test of the deployed Worker, and `bun run check` on-box. The CI-fleet wiring (§0) is this
-session's change.
+Verified against `main` post-**PR#31** (2026-06-30 — the P6 integration: the go-live operator gates
+`ADR-0106`–`0109` + the unattended code track `ADR-0110`–`0113` merged in one branch on top of the
+earlier W1/W2/B1/B2 + design + CI-fleet stack). Evidence: code-on-disk, ADR trail, a live HTTP
+smoke-test of the deployed Worker, and `bun run check` (125/125 + kernel gate) on-box.
+
+> **Post-P6-integration triage (2026-06-30) — three buckets:**
+> **A) P6 tail (build, autonomous-capable):** buyer/seller dashboards · complete the live registry
+> index backfill (7 → full set, now unblocked by the publish-readiness flip).
+> **B) Go-live execution (operator / DEPLOY-class, gated):** Paddle account + creds → Stripe→Paddle
+> mapper rework + webhook smoke · real checkout wiring + EULA drafting · CF-Access flip (the launch
+> act, `ADR-0107`) · Discord — enable the two privileged intents + wire `SUPPORT_CHANNEL_ID`/
+> `MEMBER_ROLE_ID` + scope the bot role down from Administrator · rotate the leaked Discord/OpenRouter
+> creds · durable `deploy-site` CI token (Pages:Edit).
+> **C) P7+ roadmap (later):** OSCAL push · compliance vertical packs · marketplace.
+> **Forks: none blocking** (pricing/CF-Access/docs all locked; see §4).
 
 ## 0. Live verification done this session
 
@@ -141,39 +152,49 @@ needs a real external account, infra, or deploy (DEPLOY-class, operator-gated).
 
 ## 3. Next-work backlog (prioritized, fork-gated)
 
-P5 is SHIPPED; editions merged-but-partial; Worker LIVE; edition VERIFY-debt closed. The remaining
-spine is **P6**, plus locked fast-follows and one true open operator fork.
+P5 is SHIPPED; editions merged-but-partial; Worker LIVE; edition VERIFY-debt closed. **P6 is nearly
+complete** after the 2026-06-30 integration — only dashboards + the live index backfill remain as
+build work; everything else is go-live (operator/DEPLOY-class) or P7 roadmap.
 
-### P6 — Commerce + support + docs (the single big pending phase)
+### P6 — Commerce + support + docs (status after the 2026-06-30 integration)
 
-| Item                                                                           | State                                               | Depends on / gate                                                                                                                                                                  |
-| ------------------------------------------------------------------------------ | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `services/license` issuer + grants (Ed25519 + MoR webhook + idempotent grants) | **ready** (ADR-0089) — anchor of P6                 | needs `@caisson/pricebook` + billing `invoice.paid` enrichment                                                                                                                     |
-| X-2 billing: `@caisson/pricebook` + cycle→grant mapper                         | **mechanism ready** (ADR-0089)                      | the **numbers** are the open pricing fork                                                                                                                                          |
-| Entitlement-on-purchase resolver wiring (ADR-0071/0076)                        | ready after license service                         | depends on `services/license` purchase flow                                                                                                                                        |
-| Registry Worker entitlement filtering (ADR-0047 defers it)                     | ready after the resolver                            | the one **genuine code loose end** today                                                                                                                                           |
-| Buyer dashboard + seller cockpit                                               | ready after commerce backend                        | depends on license + resolver + final pricing                                                                                                                                      |
-| Real Stripe checkout + EULA drafting (CLAUDE.md/ADR-0082 fast-follows)         | partial-blocked                                     | Stripe account; EULA is operator/legal content                                                                                                                                     |
-| `services/support-bot` (Discord + Python RAG + hosted inference)               | **BUILT** (ADR-0009/0105, `feature/p6-support-bot`) | discord.py RAG over docs `POST /query` + OpenRouter + thread+Postgres escalation; 32 tests, hermetic CI; live secrets + cloud-runner deploy (Railway rec) = operator-gated seam    |
-| `services/docs` + `llms.txt`                                                   | **BUILT** (ADR-0096, `feature/p6-docs-service`)     | corpus + `llms.txt`/`llms-full.txt` + Bearer `POST /query` (hybrid FTS5+vec via `@caisson/local-store`); live OpenRouter embedder = deploy seam; partial until the bot consumes it |
+| Item                                                           | State                                           | Note                                                                                                                                             |
+| -------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `services/license` Ed25519 **issuer** + `POST /issue`          | **BUILT** (`ADR-0110`)                          | private `@caisson/license-issue` signer + baked production verify-key; lazy bearer-gated issue endpoint resolves entitlements + signs            |
+| X-2 billing: `@caisson/pricebook` + cycle→grant mapper         | **BUILT** (`ADR-0089`/`0098`)                   | numbers locked `ADR-0106`; mapper is currently Stripe-shaped — **Stripe→Paddle rework is the remaining wiring** (`ADR-0108`, needs Paddle creds) |
+| Entitlement resolver + **revoke + one-time + refund clawback** | **BUILT** (`ADR-0071`/`0113`)                   | reference-counted `entitlement_grant` junction; `subscription.canceled` soft-revokes, full-refund claws unspent credits only                     |
+| Registry Worker entitlement filtering                          | **BUILT + LIVE** (`ADR-0047`)                   | offline Ed25519 verify at the edge → base ∪ entitled, non-entitled 404, fail-safe to base                                                        |
+| Buyer-MCP per-account **rate limit**                           | **BUILT** (`ADR-0112`)                          | fail-open lazy-refill token bucket, port-injected                                                                                                |
+| **Publishability flip** (private→public, npx bin)              | **BUILT** (`ADR-0111`)                          | tier-driven open-base→npm / commercial→GH split; the never-published signer stays private                                                        |
+| **Buyer dashboard + seller cockpit**                           | **PENDING (Bucket A)**                          | the one remaining unbuilt P6 surface; ready now (commerce backend + resolver exist)                                                              |
+| **Live registry index backfill** (7 → full set)                | **PENDING (Bucket A)**                          | only 7 of ~24 modules in the live index; unblocked now the publish flip landed (`ADR-0069` incremental backfill)                                 |
+| Real checkout wiring + EULA drafting                           | **PENDING (Bucket B, operator)**                | Paddle checkout + EULA is operator/legal content (`ADR-0082` fast-follows)                                                                       |
+| `services/support-bot` (Discord RAG + member-mgmt)             | **BUILT + DEPLOYED** (`ADR-0009`/`0105`/`0109`) | ● Online on Railway; remaining = enable 2 privileged intents + wire channel/role ids + scope role down (Bucket B)                                |
+| `services/docs` + `llms.txt` (+ live embedder)                 | **BUILT + DEPLOYED** (`ADR-0096`)               | semantic at `docs-api.caisson.sh` (OpenRouter qwen3-embedding-8b wired)                                                                          |
 
 ### Fast-follow (locked, no fork, ready NOW, not exit-gate-blocking)
 
-| Item                                                     | Note                                                                                      |
-| -------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `@caisson/migrate` base extract (assembler + runner)     | ADR-0090 — pays down ADR-0070 debt before more consumers fork the copy                    |
-| Compose-time migration-bundle copy step (CLI build-step) | ADR-0091 — mirrors the proven `templates/` pattern; may relocate under `@caisson/migrate` |
+| Item                                                     | Note                                                                 |
+| -------------------------------------------------------- | -------------------------------------------------------------------- |
+| ~~`@caisson/migrate` base extract (assembler + runner)~~ | **BUILT** (ADR-0090, W2 / PR#17) — pays down the ADR-0070 debt       |
+| ~~Compose-time migration-bundle copy step~~              | **BUILT** (ADR-0091, W2b / PR#19) — bundles under `@caisson/migrate` |
 
 ### Publish-readiness (deferred-fork — decision LOCKED to do at P6, no new picker)
 
-| Item                                                                                             | Note                                                                       |
-| ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
-| Publishability flip (24 pkgs private→public) + `@caisson/registry` coherence + changeset/T3 gate | one P6 readiness pass                                                      |
-| `create-caisson` → `dist/cli.js` + `#!/usr/bin/env node` (npx reach)                             | ADR-0092 — rides into the publishability flip                              |
-| MCP per-account rate-limit (PG token-bucket, T21b)                                               | build with the entitlement store; debit-before-spend stays primary control |
-| Complete the registry index backfill (publish base + compliance/local-ai modules)                | only 7 of ~24 in the live index today                                      |
+| Item                                                                                    | Note                                                                                |
+| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| ~~Publishability flip (private→public) + license-split publishConfig + changeset gate~~ | **BUILT** — `ADR-0111` (PR#28 / integration)                                        |
+| ~~`create-caisson` → `dist/cli.js` + npx bin~~                                          | **BUILT** — `ADR-0092`/`0111`                                                       |
+| ~~MCP per-account rate-limit (token-bucket)~~                                           | **BUILT** — `ADR-0112` (fail-open, port-injected)                                   |
+| **Complete the registry index backfill** (publish base + compliance/local-ai modules)   | **PENDING (Bucket A)** — only 7 of ~24 in the live index; now unblocked by the flip |
 
-### Code-review findings (Greptile — unaddressed, triaged 2026-06-29)
+### Code-review findings (Greptile)
+
+> **Update 2026-06-30:** the test-hygiene backlog below (findings #1–#7) was **cleared by I6 (PR#26)**;
+> the P6 **integration** additionally folded in every per-PR Greptile finding on the code-track PRs
+> (#27/#28) — the two **P1s** (unguarded `issueLicense` rejection → structured 500; stale `0.0.0`
+> ledger member pins → repinned + a new validation test) plus the P2 doc/trust-assumption nits. The
+> 2026-06-29 table is retained below as the historical record.
 
 The Greptile GitHub app reviews opened PRs (config landed PR#20: `.greptile/{config.json,rules.md}`
 
