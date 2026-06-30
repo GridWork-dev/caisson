@@ -18,6 +18,7 @@
     "@caisson/credits": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/observability": "workspace:*",
+    "@caisson/platform-reads": "workspace:*",
     "@caisson/pricebook": "workspace:*",
     "@caisson/service-license": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",

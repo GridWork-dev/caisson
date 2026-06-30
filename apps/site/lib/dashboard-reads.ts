@@ -2,101 +2,38 @@
 // (lib/db.ts -> withTenant, ADR-0005 fail-closed RLS) and returns plain data the `/dashboard`
 // views render through the `@caisson/ui` kit — no mock data.
 //
-// FLAGGED COUPLING: `readEntitlementGrants` and `readLicenseGrantRow` query `entitlement_grant` /
-// `license_grant` directly via raw SQL — tables OWNED by `services/license` (a separately
-// deployed service, `@caisson/service-license`). apps/site does not import that service's query
-// functions (entitlement-store.ts / license-grant-store.ts); it knows the table SHAPE, not the
-// service's business logic, which is the smaller and more honest coupling for two independently
-// deployable surfaces that share one Postgres. The schema SQL constants ARE shared (lib/db.ts's
-// dev bootstrap imports `ENTITLEMENT_SCHEMA_SQL`/`LICENSE_GRANT_SCHEMA_SQL` from
-// `@caisson/service-license` rather than hand-copying the DDL a third time) — only the QUERIES
-// are duplicated here. The future fix is a shared `@caisson/platform-reads` (or similar) package
-// both apps/site and services/license depend on, exporting typed read-only query functions over
-// these tables; until that exists, a column rename in either schema silently desyncs the other
-// side's raw SQL with no compiler signal — grep for `entitlement_grant`/`license_grant` across
-// both trees before changing either schema.
+// CROSS-SERVICE READS EXTRACTED (Seam 1): `readEntitlementGrants` / `readLicenseGrantRows` (and their
+// row types `EntitlementGrantRow` / `LicenseGrantRow`) query `entitlement_grant` / `license_grant` —
+// tables OWNED by `services/license` (`@caisson/service-license`). They used to be hand-copied raw SQL
+// here, so a column rename in either schema silently desynced this file with no compiler signal. They
+// now live in `@caisson/platform-reads`, whose columns-contract test parses the shared DDL and fails
+// on a rename. This file re-exports them so the `/dashboard` views keep importing from one place
+// (`@/lib/dashboard-reads`), but the raw SQL — and the coupling risk — is gone from apps/site.
+//
+// `readUsageEvents` + `readCreditsSummary` stay here: they read BASE-package tables (`@caisson/ai-meter`'s
+// `usage_event`, `@caisson/credits`' `credit_wallet`/`credit_event`) — ordinary composable dependencies,
+// not the separately-deployed services/license tables — so they are not the flagged cross-service coupling.
 import { balance, getLedger } from "@caisson/credits";
+import {
+  readEntitlementGrants,
+  readLicenseGrantRows,
+} from "@caisson/platform-reads";
+import type {
+  EntitlementGrantRow,
+  LicenseGrantRow,
+} from "@caisson/platform-reads";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
+
+// Re-export the extracted cross-service reads so `/dashboard` views keep a stable import surface
+// (`@/lib/dashboard-reads`). The queries + row types now live in `@caisson/platform-reads`.
+export { readEntitlementGrants, readLicenseGrantRows };
+export type { EntitlementGrantRow, LicenseGrantRow };
 
 /** `timestamptz` columns come back as a driver-native `Date` instance on both PGlite and
  * node-postgres, never a string — normalize explicitly at every raw-SQL read boundary in this
  * file rather than trust the declared row type (mirrors the fix in `@caisson/credits#getLedger`). */
 function toIsoString(value: unknown): string {
   return value instanceof Date ? value.toISOString() : String(value);
-}
-
-function toIsoStringOrNull(value: unknown): string | null {
-  return value === null || value === undefined ? null : toIsoString(value);
-}
-
-export interface EntitlementGrantRow {
-  entitlementId: string;
-  sourceKind: "subscription" | "one_time";
-  status: "active" | "revoked";
-  grantedAt: string;
-}
-
-/** Every grant (active AND revoked) for the account, newest first — the Overview view's source. */
-export async function readEntitlementGrants(
-  tx: TenantExecutor,
-  accountId: string,
-): Promise<EntitlementGrantRow[]> {
-  const r = await tx.query<{
-    entitlement_id: string;
-    source_kind: "subscription" | "one_time";
-    status: "active" | "revoked";
-    granted_at: unknown;
-  }>(
-    `SELECT entitlement_id, source_kind, status, granted_at
-     FROM entitlement_grant
-     WHERE account_id = $1
-     ORDER BY granted_at DESC`,
-    [accountId],
-  );
-  return r.rows.map((row) => ({
-    entitlementId: row.entitlement_id,
-    sourceKind: row.source_kind,
-    status: row.status,
-    grantedAt: toIsoString(row.granted_at),
-  }));
-}
-
-export interface LicenseGrantRow {
-  major: number;
-  licenseId: string;
-  tier: string;
-  expiry: string | null;
-  token: string;
-  issuedAt: string;
-}
-
-/** The buyer's issued license grants (mirrors `license-grant-store.ts`'s row shape), newest major first. */
-export async function readLicenseGrantRows(
-  tx: TenantExecutor,
-  accountId: string,
-): Promise<LicenseGrantRow[]> {
-  const r = await tx.query<{
-    major: number;
-    license_id: string;
-    tier: string;
-    expiry: unknown;
-    token: string;
-    issued_at: unknown;
-  }>(
-    `SELECT major, license_id, tier, expiry, token, issued_at
-     FROM license_grant
-     WHERE account_id = $1
-     ORDER BY major DESC`,
-    [accountId],
-  );
-  return r.rows.map((row) => ({
-    major: row.major,
-    licenseId: row.license_id,
-    tier: row.tier,
-    expiry: toIsoStringOrNull(row.expiry),
-    token: row.token,
-    issuedAt: toIsoString(row.issued_at),
-  }));
 }
 
 export interface UsageEventRow {
