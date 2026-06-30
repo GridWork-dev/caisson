@@ -74,6 +74,16 @@ export interface ToolHandlerContext {
 }
 
 /**
+ * The per-account abuse-throttle PORT (ADR-0112). An implementation throws `RateLimitError` (429)
+ * when the account is over its limit, and resolves to allow. Defined here so the base mcp-server
+ * package stays DB-free — `services/license` supplies the token-bucket-backed implementation; this
+ * package only declares the seam and awaits it. By contract a thrown error is a DENY; the
+ * implementation owns the fail-OPEN decision (a store fault must resolve, never throw — ADR-0112
+ * lock 5), so the server treats a resolving hook as "allowed" without inspecting why.
+ */
+export type RateLimitHook = (accountId: string) => Promise<void>;
+
+/**
  * One registered buyer-MCP tool (ADR-0076). `requiredEntitlement` is the edition slug a caller
  * must own to *see* and *invoke* this tool; `null` marks a base tool visible to every
  * authenticated buyer. The entitlement is re-validated timing-safe on every call (ADR-0008/0010).
@@ -106,6 +116,15 @@ export interface McpServerOptions {
    * omitted no coach tool exists (fail-closed). See `coach.ts`.
    */
   coach?: CoachOptions;
+  /**
+   * Optional server-side per-account rate-limit gate (ADR-0112). When present it is AWAITED before
+   * EVERY tool dispatch (base or edition) — a buyer over their limit is blocked with `RateLimitError`
+   * (429) before reaching any handler, so one licensed caller cannot exhaust shared capacity. When
+   * omitted the server runs UNTHROTTLED (the Wave-0 contract — backward-compatible). The hook owns
+   * the fail-OPEN policy (ADR-0112 lock 5): a store fault resolves (allow + alert), only a genuine
+   * deny throws. `services/license` provides the token-bucket-backed implementation.
+   */
+  checkRateLimit?: RateLimitHook;
 }
 
 export interface McpServer {
@@ -207,6 +226,13 @@ export function createMcpServer(options: McpServerOptions): McpServer {
       !isEntitled(session, registration.requiredEntitlement)
     ) {
       throw new NotFoundError(`Unknown tool: ${tool}`);
+    }
+    // Abuse-throttle gate (ADR-0112): awaited before dispatching ANY tool — base or edition. A
+    // genuine deny throws RateLimitError (429) and the handler never runs; a store fault resolves
+    // (fail-OPEN, decided in the hook) so a paying buyer is never locked out by infrastructure.
+    // Absent hook ⇒ unthrottled, the Wave-0 contract.
+    if (options.checkRateLimit !== undefined) {
+      await options.checkRateLimit(session.accountId);
     }
     return registration.handler({ session, args });
   }
