@@ -111,6 +111,7 @@ describe("POST /issue (ADR-0110)", () => {
         accountId: acct,
         entitlementIds: ["compliance"],
         sourceEventId: "in_1",
+        source: { kind: "subscription", subscriptionId: "sub_1" },
       }),
     );
     const res = await app(
