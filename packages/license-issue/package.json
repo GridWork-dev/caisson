@@ -1,0 +1,33 @@
+{
+  "name": "@caisson/license-issue",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "LicenseRef-Caisson-Commercial",
+  "description": "Ed25519 offline-license ISSUER (P6, ADR-0108 / implements ADR-0010). The PRIVATE counterpart to @caisson/license-verify: holds the signing key behind a Signer port (default Ed25519Signer over a 32-byte env-hex seed; KMS is an un-wired seam) and mints tessera-format license tokens by signing exactly canonicalize(parse(claims)) — the byte-identical payload @caisson/license-verify re-derives. NEVER published, NEVER installable into a buyer repo; the signing code lives only with the issuer service.",
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "bun test ./src"
+  },
+  "dependencies": {
+    "@caisson/kernel": "workspace:*",
+    "@caisson/license-verify": "workspace:*",
+    "@noble/ed25519": "^3.1.0"
+  },
+  "devDependencies": {
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/registry-schema": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.0"
+  }
+}
