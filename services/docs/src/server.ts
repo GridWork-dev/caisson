@@ -1,17 +1,52 @@
 // src/server.ts — the runnable entrypoint (ADR-0096). Builds the corpus + index ONCE at boot, renders
 // the llms artifacts, and serves the router over Bun.serve. Fail-closed: a missing DOCS_SERVICE_TOKEN
-// aborts startup rather than serving an open /query. Retrieval runs on the bare FTS5 floor here (no
-// embedder): PRECISE (exact phrase / keyword) — a natural-language sentence with no exact match returns
-// [] rather than a confidently-wrong chunk (the honest, fail-closed degraded mode; FakeEmbedder is a
-// test-only WIRING stub, not a retriever — semantically inert on the real corpus). Semantic recall is
-// the DEPLOY wire: pass a real embedder (OpenRouter qwen3-embedding-8b) to DocsIndex.build below,
-// behind the same local-store Embedder port, to light up the hybrid vector leg.
+// aborts startup rather than serving an open /query.
+//
+// Retrieval mode is chosen at boot by the presence of OPENROUTER_API_KEY (the ADR-0096 DEPLOY wire):
+//   • key present → the live OpenRouter `qwen3-embedding-8b` embedder lights up the hybrid vector leg
+//     (semantic recall). A failure building that leg (OpenRouter down / bad key / dim drift) DEGRADES to
+//     the FTS5 floor rather than crash-looping the service — the floor is the honest degraded mode.
+//   • no key (CI / local / offline) → the deterministic FTS5 floor alone: a natural-language sentence
+//     with no exact match returns [] rather than a confidently-wrong chunk.
 import { createApp } from "./app.ts";
 import { buildCorpus } from "./corpus.ts";
 import { DocsIndex } from "./index-store.ts";
 import { renderLlmsFull, renderLlmsTxt } from "./llms-txt.ts";
+import { createOpenRouterEmbedder } from "./openrouter-embedder.ts";
+import type { DocChunk } from "./types.ts";
 
 const DEFAULT_PORT = 8788;
+
+/**
+ * Build the retrieval index. Wires the live OpenRouter embedder when OPENROUTER_API_KEY is set (hybrid
+ * semantic + FTS5), else the deterministic FTS5 floor. A throw while building the vector leg (provider
+ * outage, bad key, dim drift) is caught and degraded to the floor — a degraded answer beats a crash-loop.
+ */
+async function buildIndex(chunks: DocChunk[]): Promise<DocsIndex> {
+  const key = process.env.OPENROUTER_API_KEY ?? "";
+  if (key.length === 0) {
+    process.stderr.write(
+      "[service-docs] no OPENROUTER_API_KEY — FTS5 floor only\n",
+    );
+    return DocsIndex.build(chunks);
+  }
+  try {
+    const index = await DocsIndex.build(
+      chunks,
+      createOpenRouterEmbedder({ apiKey: key }),
+    );
+    process.stderr.write(
+      "[service-docs] semantic index built (OpenRouter qwen3-embedding-8b, 1024-dim)\n",
+    );
+    return index;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    process.stderr.write(
+      `[service-docs] embedder build failed — degrading to FTS5 floor: ${msg}\n`,
+    );
+    return DocsIndex.build(chunks);
+  }
+}
 
 export async function startServer(): Promise<{
   port: number;
@@ -28,9 +63,7 @@ export async function startServer(): Promise<{
   const origin = process.env.DOCS_SITE_ORIGIN;
 
   const corpus = buildCorpus();
-  // FTS5 floor (no embedder). At deploy, wire the real embedder here for semantic recall:
-  // DocsIndex.build(corpus.chunks, openRouterEmbedder).
-  const index = await DocsIndex.build(corpus.chunks);
+  const index = await buildIndex(corpus.chunks);
   const llmsTxt = renderLlmsTxt(corpus, origin !== undefined ? { origin } : {});
   const llmsFull = renderLlmsFull(corpus);
 
