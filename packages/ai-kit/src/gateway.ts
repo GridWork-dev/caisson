@@ -4,6 +4,10 @@
 //   resolve → render → input-guard → cap/credit-check (reserve) → provider call → record usage →
 //   output-guard → reconcile
 //
+// `inferStream(lane, input, opts)` is the same pipeline with a STREAMING provider call (token deltas
+// as the model produces them, via the AI SDK's `streamText`/`doStream`). The request/response shape
+// above is unchanged by this — `infer()` still runs item-for-item as written.
+//
 // Each step is a base primitive (down-only, ADR-0003 — the gateway never imports another edition):
 //   - prompt-registry  resolvePrompt + renderVersion  (a `name@version|alias` ref → escaped messages)
 //   - guardrails       guardInput / guardOutput + detokenizePii  (moderation + PII redact / restore)
@@ -12,13 +16,19 @@
 //
 // The backing model is INJECTED (`opts.resolveModel`): production wires `buildRegistryResolver` over
 // the real `@ai-sdk/*` adapters, CI injects a mock `LanguageModelV2`. The Vercel AI SDK v5 surface
-// (`createProviderRegistry` / `wrapLanguageModel` / `generateText`) is hidden behind `infer()`, so the
-// SDK stays swappable — and the live transport is the only path not exercised by a test.
+// (`createProviderRegistry` / `wrapLanguageModel` / `generateText` / `streamText`) is hidden behind
+// `infer()` / `inferStream()`, so the SDK stays swappable — and the live transport is the only path
+// not exercised by a test.
 //
 // Each meter leg runs in its OWN `withTenant` transaction: a DB transaction is never held open across
 // the (slow, network) provider call, and reserve/reconcile are independently idempotent on `callId`.
 import { randomUUID } from "node:crypto";
-import { createProviderRegistry, generateText, wrapLanguageModel } from "ai";
+import {
+  createProviderRegistry,
+  generateText,
+  streamText,
+  wrapLanguageModel,
+} from "ai";
 import type {
   LanguageModelMiddleware,
   LanguageModelUsage,
@@ -27,7 +37,12 @@ import type {
 import type { LanguageModelV2, ProviderV2 } from "@ai-sdk/provider";
 import type { AiSettings } from "@caisson/ai-config";
 import { resolveProvider } from "@caisson/ai-config";
-import { reconcile, reserve } from "@caisson/ai-meter";
+import {
+  estimateInputTokens,
+  estimateTokens,
+  reconcile,
+  reserve,
+} from "@caisson/ai-meter";
 import type {
   MeterConfig,
   ReconcileResult,
@@ -98,6 +113,60 @@ export interface InferResult {
   readonly usage: Usage;
   readonly reserved: ReserveResult;
   readonly reconciled: ReconcileResult;
+}
+
+export interface InferStreamOptions extends InferOptions {
+  /**
+   * Abort the in-flight provider call (the caller hung up, the user navigated away, …). The stream
+   * still reconciles — see `InferStreamSettled.abandoned` — so an abort never leaks the up-front
+   * reservation and never double-charges a retry under the same `callId`.
+   */
+  readonly abortSignal?: AbortSignal;
+}
+
+export interface InferStreamSettled {
+  /**
+   * The text the gateway settles on. On a normal finish this is the FULL output — output-guarded
+   * and PII-restored, exactly like `InferResult.text`. On abandonment it is the raw partial text
+   * already yielded on `textStream` (un-guarded, un-restored — there was no complete output to
+   * check; see the abandonment note on `inferStream`).
+   */
+  readonly text: string;
+  /**
+   * The usage the reconcile leg settled against. On a normal finish this is the provider's
+   * REPORTED usage (from the `finish` stream part), same as `InferResult.usage`. On abandonment
+   * there is no provider report yet, so this is an ESTIMATE — the same chars/4 heuristic
+   * `reserve()` itself uses — over the text actually yielded before the stream ended.
+   */
+  readonly usage: Usage;
+  readonly reconciled: ReconcileResult;
+  /**
+   * True when the stream ended before the model's own `finish` part — the consumer stopped
+   * iterating early, `abortSignal` fired, or the provider stream errored. `usage`/`text` are then
+   * estimates/partials, not the provider's report.
+   */
+  readonly abandoned: boolean;
+}
+
+export interface InferStreamResult {
+  /** The correlation id used for both meter legs (same idempotency contract as `infer()`). */
+  readonly callId: string;
+  /** The rendered + input-guarded messages actually sent to the model (PII already redacted). */
+  readonly messages: readonly RenderedMessage[];
+  readonly promptVersionId: string | null;
+  readonly reserved: ReserveResult;
+  /**
+   * Text deltas as the model produces them. NOT PII-restored per delta — a redaction placeholder
+   * can split across chunks, so restoration is a whole-text operation (see `InferStreamSettled`).
+   */
+  readonly textStream: AsyncIterable<string>;
+  /**
+   * Resolves — EXACTLY once — once the gateway has reconciled, however the stream ended: drained
+   * to the model's own `finish`, stopped early by the consumer (a `break`/`return()` on
+   * `textStream`), aborted via `opts.abortSignal`, or errored. The up-front reservation from
+   * `reserved` is never left un-reconciled and never double-charged.
+   */
+  readonly settled: Promise<InferStreamSettled>;
 }
 
 const ZERO_USAGE: Usage = {
@@ -267,6 +336,229 @@ export async function infer(
     usage,
     reserved,
     reconciled,
+  };
+}
+
+/** A promise plus its own resolve/reject — lets a generator settle `InferStreamResult.settled` as a
+ *  side effect of its `finally` block, independent of how (or whether) the caller drains it. */
+interface Deferred<T> {
+  readonly promise: Promise<T>;
+  readonly resolve: (value: T) => void;
+  readonly reject: (reason: unknown) => void;
+}
+
+function deferred<T>(): Deferred<T> {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
+/**
+ * The usage `inferStream` reconciles against when a stream ends WITHOUT the model's own `finish`
+ * part (abandoned — see `inferStream`'s design note). The provider never reports actual usage in
+ * that case, so this reuses `reserve()`'s own chars/4 heuristic (`@caisson/ai-meter`): input tokens
+ * over the messages actually sent, output tokens over the text actually yielded before the stream
+ * ended.
+ */
+function estimateConsumedUsage(
+  messages: RenderedMessage[],
+  consumedText: string,
+): Usage {
+  return {
+    inputTokens: estimateInputTokens(messages),
+    outputTokens: estimateTokens(consumedText),
+    cachedInputTokens: 0,
+  };
+}
+
+/**
+ * Run one metered inference through the gateway with a STREAMING provider call: the same
+ * resolve → render → input-guard → reserve pipeline as `infer()` (items 1-3, unchanged), then text
+ * deltas as the model produces them — via `streamText`/`doStream` — instead of one final string.
+ *
+ * **Reconcile timing on stream abandonment (the design call this method makes):** the reservation
+ * is sized up front against an ESTIMATE, exactly like `infer()` — debit-before-spend either way,
+ * unconditionally. What differs is the RECONCILE leg's input usage. A stream that runs to
+ * completion reaches the model's own `finish` part, which carries the provider's ACTUAL usage —
+ * reconcile trues up to that, identically to `infer()`. But a stream can also end WITHOUT a
+ * `finish`: the consumer stops draining `textStream` early (a `break`, which triggers the
+ * generator's `.return()`), `opts.abortSignal` fires mid-call, or the provider stream itself
+ * errors. None of those give the provider a chance to report actual usage — so reconcile instead
+ * settles to `estimateConsumedUsage`, the SAME chars/4 heuristic the up-front reservation used,
+ * applied to the text actually yielded before the stream ended. The invariant that matters: the
+ * reservation is NEVER left un-reconciled (no leaked hold on the wallet) and the settle leg stays
+ * idempotent on `callId` (a retry under the same id settles once, never double-charges) — but an
+ * abandoned stream's settle amount is necessarily an estimate, not a provider-verified number,
+ * because the provider was never asked to finish billing a call the caller walked away from.
+ *
+ * This is implemented as an async generator with a `finally` block driving the settle: JS
+ * guarantees `finally` runs on a natural drain, an early `for await...of` `break`, AND a thrown
+ * error — so exactly one settle happens on every exit path (`settleOnce`'s own guard is the second,
+ * belt-and-suspenders line of defense against a double-settle). Output guardrails + PII restore run
+ * ONLY on a normal finish (mirrors `infer()`'s items 6/7) — there is no complete output to check,
+ * or restore PII placeholders across, on an abandoned stream; the raw partial text already yielded
+ * on `textStream` is what `InferStreamSettled.text` carries instead.
+ */
+export async function inferStream(
+  lane: string,
+  input: InferInput,
+  opts: InferStreamOptions,
+): Promise<InferStreamResult> {
+  const { tx, accountId, settings, guard } = opts;
+  const { policy, runtime } = guard;
+  const callId = opts.callId ?? randomUUID();
+  const cfg = resolveProvider(settings, lane);
+
+  // 1. resolve + render — identical to infer().
+  let messages: readonly RenderedMessage[];
+  let promptVersionId: string | null;
+  if ("messages" in input) {
+    messages = input.messages;
+    promptVersionId = null;
+  } else {
+    const version = await withTenant(tx, accountId, (t) =>
+      resolvePrompt(t, accountId, input.promptRef),
+    );
+    messages = renderVersion(version, input.vars ?? {});
+    promptVersionId = version.id;
+  }
+
+  // 2. input-guard — identical to infer(): a block throws BEFORE any spend or model call.
+  const guarded: RenderedMessage[] = [];
+  const tokens: PiiToken[] = [];
+  for (const m of messages) {
+    const out = await guardInput(m.content, policy, runtime);
+    guarded.push({ role: m.role, content: out.text });
+    tokens.push(...out.tokens);
+  }
+
+  // 3. cap/credit-check — identical to infer(): reserve the ESTIMATE up front, fail-closed. The
+  //    soft/hard spend cap is evaluated here exactly as for infer() — the streamed call never
+  //    reaches the provider on a short wallet or an open breaker.
+  const reserved = await withTenant(tx, accountId, (t) =>
+    reserve(t, {
+      accountId,
+      callId,
+      provider: cfg.provider,
+      model: cfg.model,
+      lane,
+      messages: guarded,
+      ...(opts.maxOutputTokens !== undefined
+        ? { maxOutputTokens: opts.maxOutputTokens }
+        : {}),
+      ...(opts.meter !== undefined ? { config: opts.meter } : {}),
+    }),
+  );
+
+  // Settle to a given usage in its own transaction; idempotent on `callId` (a retry settles once).
+  const settle = (usage: Usage): Promise<ReconcileResult> =>
+    withTenant(tx, accountId, (t) =>
+      reconcile(t, {
+        accountId,
+        callId,
+        provider: cfg.provider,
+        model: cfg.model,
+        lane,
+        reservedCredits: reserved.reservedCredits,
+        usage,
+        promptVersionId,
+        ...(opts.meter !== undefined ? { config: opts.meter } : {}),
+      }),
+    );
+
+  // 4. provider call (STREAMING) — the model is resolved/wrapped exactly like infer(); only the
+  //    call shape (streamText vs generateText) and the settle timing differ (see the abandonment
+  //    note above).
+  const model = await opts.resolveModel(lane);
+  const wrapped =
+    opts.middleware !== undefined
+      ? wrapLanguageModel({ model, middleware: opts.middleware })
+      : model;
+
+  const settled = deferred<InferStreamSettled>();
+  let settledOnce = false;
+
+  const settleOnce = async (
+    consumedText: string,
+    finishUsage: Usage | null,
+  ): Promise<void> => {
+    if (settledOnce) return;
+    settledOnce = true;
+    const abandoned = finishUsage === null;
+    const usage = finishUsage ?? estimateConsumedUsage(guarded, consumedText);
+    try {
+      let outText = consumedText;
+      if (!abandoned) {
+        // 6. output-guard (+ PII restore) — only on a normal finish; mirrors infer()'s items 6/7.
+        //    A blocked output still reconciles the actual spend before the 422 propagates.
+        try {
+          await guardOutput(consumedText, policy, runtime);
+          outText =
+            tokens.length > 0
+              ? restorePii(consumedText, tokens, policy)
+              : consumedText;
+        } catch (guardErr) {
+          await settle(usage);
+          settled.reject(guardErr);
+          return;
+        }
+      }
+      // 7. reconcile — actual usage on a normal finish, an ESTIMATE on abandonment (see above).
+      const reconciled = await settle(usage);
+      settled.resolve({ text: outText, usage, reconciled, abandoned });
+    } catch (err) {
+      settled.reject(err);
+    }
+  };
+
+  async function* driveTextStream(): AsyncGenerator<string, void, void> {
+    let consumedText = "";
+    let finishUsage: Usage | null = null;
+    let streamErr: unknown;
+    try {
+      const result = streamText({
+        model: wrapped,
+        messages: toModelMessages(guarded),
+        ...(opts.maxOutputTokens !== undefined
+          ? { maxOutputTokens: opts.maxOutputTokens }
+          : {}),
+        ...(opts.abortSignal !== undefined
+          ? { abortSignal: opts.abortSignal }
+          : {}),
+      });
+      for await (const part of result.fullStream) {
+        if (part.type === "text-delta") {
+          consumedText += part.text;
+          yield part.text;
+        } else if (part.type === "finish") {
+          finishUsage = mapUsage(part.totalUsage);
+        } else if (part.type === "error") {
+          streamErr = part.error;
+          break;
+        }
+      }
+      if (streamErr !== undefined) throw streamErr;
+    } catch (err) {
+      streamErr = err;
+      throw err;
+    } finally {
+      // Runs on a natural drain, an early consumer break (the for-await loop's implicit
+      // generator.return()), OR a thrown error — the reservation is reconciled on every exit path.
+      await settleOnce(consumedText, finishUsage);
+    }
+  }
+
+  return {
+    callId,
+    messages: guarded,
+    promptVersionId,
+    reserved,
+    textStream: driveTextStream(),
+    settled: settled.promise,
   };
 }
 

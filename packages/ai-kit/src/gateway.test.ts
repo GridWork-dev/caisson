@@ -4,6 +4,11 @@
 // ever calling the model, blocks a guardrailed input with a 422 (no spend), restores tokenized PII on
 // the output while the model only ever sees redacted text, resolves a prompt by `name@version`, and
 // runs over a `createProviderRegistry` resolver. The live provider transport stays un-exercised.
+//
+// The `inferStream` block below is the streaming counterpart: same fixtures, a mock `doStream`
+// instead of `doGenerate`, proving the reconcile-on-abandonment design (a normal drain trues up to
+// the provider's ACTUAL usage; an early-stopped/aborted stream still reconciles, to an ESTIMATE,
+// never leaking the up-front reservation).
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import { newTestPg, type TestPg } from "@caisson/testing";
 import { CREDIT_SCHEMA_SQL, balance, grant } from "@caisson/credits";
@@ -31,9 +36,20 @@ import {
 import { DerivedKeyProvider, derivedContext } from "@caisson/field-crypto";
 import type { AiSettings } from "@caisson/ai-config";
 import { withTenant } from "@caisson/tenancy-rls";
+import { simulateReadableStream } from "ai";
 import { MockLanguageModelV2 } from "ai/test";
-import type { LanguageModelV2, ProviderV2 } from "@ai-sdk/provider";
-import { buildRegistryResolver, infer, type InferOptions } from "./gateway.ts";
+import type {
+  LanguageModelV2,
+  LanguageModelV2StreamPart,
+  ProviderV2,
+} from "@ai-sdk/provider";
+import {
+  buildRegistryResolver,
+  infer,
+  inferStream,
+  type InferOptions,
+  type InferStreamOptions,
+} from "./gateway.ts";
 
 let tp: TestPg;
 const A = "acct_kit_a";
@@ -75,6 +91,35 @@ function mockModel(text = "ok"): MockLanguageModelV2 {
   });
 }
 
+/**
+ * A mock model that STREAMS `chunks` as separate `text-delta` parts, then a `finish` part carrying
+ * `usage` — the low-level `LanguageModelV2StreamPart` shape `doStream` returns (note: `delta`, not
+ * `text` — that field only exists on the higher-level `streamText().fullStream` parts). A
+ * `chunkDelayInMs` lets a test deterministically stop draining before `finish` arrives.
+ */
+function mockStreamModel(
+  chunks: string[],
+  usage: { inputTokens: number; outputTokens: number; totalTokens: number },
+  chunkDelayInMs: number | null = null,
+): MockLanguageModelV2 {
+  const parts: LanguageModelV2StreamPart[] = [
+    { type: "stream-start", warnings: [] },
+    { type: "text-start", id: "1" },
+    ...chunks.map((delta): LanguageModelV2StreamPart => ({
+      type: "text-delta",
+      id: "1",
+      delta,
+    })),
+    { type: "text-end", id: "1" },
+    { type: "finish", finishReason: "stop", usage },
+  ];
+  return new MockLanguageModelV2({
+    doStream: async () => ({
+      stream: simulateReadableStream({ chunks: parts, chunkDelayInMs }),
+    }),
+  });
+}
+
 function sink(): InMemoryEventSink {
   return new InMemoryEventSink();
 }
@@ -93,7 +138,9 @@ function baseOpts(
   model: LanguageModelV2,
   policy: GuardPolicy,
   s: InMemoryEventSink,
-  over: Partial<InferOptions> = {},
+  // `Partial<InferStreamOptions>` (a superset of InferOptions — adds only `abortSignal`) so the
+  // same builder serves both infer() and inferStream() call sites.
+  over: Partial<InferStreamOptions> = {},
 ): InferOptions {
   return {
     tx: tp.pg,
@@ -341,5 +388,173 @@ describe("createProviderRegistry resolver", () => {
 
     expect(res.text).toBe("from-registry");
     expect(model.doGenerateCalls).toHaveLength(1);
+  });
+});
+
+describe("streaming infer — inferStream", () => {
+  test("happy path: a fully-drained stream reconciles to the provider's ACTUAL usage", async () => {
+    await seed(1000);
+    const s = sink();
+    const model = mockStreamModel(["Hi", " world", "!"], {
+      inputTokens: 10,
+      outputTokens: 20,
+      totalTokens: 30,
+    });
+
+    const res = await inferStream(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), s),
+    );
+
+    const deltas: string[] = [];
+    for await (const delta of res.textStream) deltas.push(delta);
+    expect(deltas.join("")).toBe("Hi world!");
+
+    const settled = await res.settled;
+    expect(settled.abandoned).toBe(false);
+    expect(settled.text).toBe("Hi world!");
+    expect(settled.usage).toEqual({
+      inputTokens: 10,
+      outputTokens: 20,
+      cachedInputTokens: 0,
+    });
+    // Same math as infer()'s happy path: 10 in + 20 out → 50 micro → 1 credit ACTUAL.
+    expect(settled.reconciled.actualCredits).toBe(1);
+    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(999);
+    const rows = await tp.query<{ credits: number }>(
+      `SELECT credits FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.credits).toBe(1);
+  });
+
+  test("an abandoned stream (consumer stops early) still reconciles — no leaked reservation", async () => {
+    await seed(1000);
+    const s = sink();
+    // A finish part that would NEVER be reached if the consumer stops draining after one chunk.
+    const model = mockStreamModel(
+      ["Hi", " world", "!", " more", " than", " needed"],
+      { inputTokens: 999, outputTokens: 999, totalTokens: 1998 },
+      5,
+    );
+
+    const res = await inferStream(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), s, { maxOutputTokens: 50 }),
+    );
+
+    const deltas: string[] = [];
+    for await (const delta of res.textStream) {
+      deltas.push(delta);
+      if (deltas.length === 2) break; // consumer walks away before `finish`
+    }
+    expect(deltas.join("")).toBe("Hi world");
+
+    const settled = await res.settled;
+    expect(settled.abandoned).toBe(true);
+    // The provider's (huge) reported usage was NEVER consulted — reconcile used the chars/4
+    // estimate over "Hi world" instead (the text actually yielded before the stream stopped).
+    expect(settled.usage.outputTokens).toBeLessThan(10);
+    expect(settled.usage).not.toEqual({
+      inputTokens: 999,
+      outputTokens: 999,
+      cachedInputTokens: 0,
+    });
+
+    // The reservation is settled exactly once — one usage_event row, balance reflects the (small)
+    // estimated actual rather than either the full reservation or the never-reached huge usage.
+    const rows = await tp.query<{ credits: number }>(
+      `SELECT credits FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(rows).toHaveLength(1);
+    const balanceAfter = await withTenant(tp.pg, A, (tx) => balance(tx, A));
+    expect(balanceAfter).toBe(1000 - rows[0]!.credits);
+    expect(res.reserved.reservedCredits).toBeGreaterThan(rows[0]!.credits);
+  });
+
+  test("an aborted stream (abortSignal fires mid-call) still reconciles — no leaked reservation", async () => {
+    await seed(1000);
+    const s = sink();
+    const model = mockStreamModel(
+      ["partial", " before", " abort"],
+      { inputTokens: 999, outputTokens: 999, totalTokens: 1998 },
+      5,
+    );
+    const ac = new AbortController();
+
+    const res = await inferStream(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), s, { abortSignal: ac.signal }),
+    );
+
+    let n = 0;
+    for await (const _delta of res.textStream) {
+      n++;
+      if (n === 1) ac.abort();
+    }
+
+    const settled = await res.settled;
+    expect(settled.abandoned).toBe(true);
+    const rows = await tp.query(
+      `SELECT 1 FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(rows).toHaveLength(1); // reconciled exactly once, never left pending
+  });
+
+  test("soft/hard cap is enforced on the streamed estimate, before the provider is ever reached", async () => {
+    await seed(1000);
+    await withTenant(tp.pg, A, (tx) =>
+      tx.query(
+        `INSERT INTO ${SPEND_POLICY_TABLE}
+           (account_id, scope, unit, window_granularity, soft_limit, hard_limit)
+         VALUES ($1, 'account', 'credits', 'day', NULL, 1)`,
+        [A],
+      ),
+    );
+    const s = sink();
+
+    // First call reserves > 1 credit → crosses the hard cap of 1 → trips the breaker, identically
+    // to infer()'s hard-cap test — the reserve leg is shared, unmodified, by both entry points.
+    const first = await inferStream(
+      "default",
+      { messages: [{ role: "user", content: "first call here" }] },
+      baseOpts(
+        mockStreamModel(["one"], {
+          inputTokens: 1,
+          outputTokens: 1,
+          totalTokens: 2,
+        }),
+        cleanPolicy(),
+        s,
+      ),
+    );
+    expect(first.reserved.breakerTripped).toBe(true);
+    // Drain + settle so the test doesn't leak an unawaited stream into the next assertion.
+    for await (const _d of first.textStream) {
+      // drain
+    }
+    await first.settled;
+
+    // Next call: the breaker is open → reserve() 402s BEFORE inferStream even returns, so the
+    // provider is never reached — identical fail-closed contract to infer().
+    const blocked = mockStreamModel(["should not run"], {
+      inputTokens: 1,
+      outputTokens: 1,
+      totalTokens: 2,
+    });
+    await expect(
+      inferStream(
+        "default",
+        { messages: [{ role: "user", content: "second call here" }] },
+        baseOpts(blocked, cleanPolicy(), s),
+      ),
+    ).rejects.toBeInstanceOf(SpendCapError);
+    expect(blocked.doStreamCalls).toHaveLength(0);
   });
 });
