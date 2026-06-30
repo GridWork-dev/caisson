@@ -1,0 +1,105 @@
+name: publish
+# publish-and-index: previously declared `needs: [check, standards-gate, registry-index]` inside
+# ci.yml. GitHub Actions' `needs:` only resolves job IDs within the SAME workflow run — it cannot
+# reference a job defined in another file (an unresolvable `needs:` fails the whole workflow at
+# parse time: "Job depends on unknown job"). Now that those three jobs live in ci.yml and this job
+# lives here, the `needs:` is intentionally DROPPED; the ordering is enforced structurally instead —
+# this workflow triggers on `push: branches: [main]`, which only fires after a PR has already merged
+# to main, which only happens after ci.yml's three required checks passed on that PR. Main-only
+# (ADR-0021).
+# Auth: built-in GITHUB_TOKEN ephemeral (written to ~/.npmrc at runtime; NO stored PAT, NO
+# NODE_AUTH_TOKEN repository secret — ADR-0069). Changesets publish is guarded by
+# CAISSON_PUBLISH_DRY_RUN (default "true") — the job scaffolds the full flow without pushing
+# packages; set the env var to "false" operator-side to go live.
+#
+# P5-25: GHEC provenance attestation = DECLINED. Lightweight provenance is already embedded in
+#        each LedgerEntry's gateAttestation field ("<run-id>@<commit-sha>"); a full SLSA/GHEC
+#        attestation blob is deferred to a post-P5 hardening pass.
+# P5-26: Worker-deploy = DEFERRED. Cloudflare Worker registry endpoint not yet live; this job
+#        commits the rebuilt index.json which the Worker will consume once deployed.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# The shared ci.yml concurrency group used to serialize this job against rapid main pushes; now
+# that it's split out, give it its own group. cancel-in-progress: false (not true) — this job
+# publishes packages and pushes a registry commit back to main, so an in-flight run must finish
+# rather than be killed mid-step; a second rapid push just queues behind it.
+concurrency:
+  group: publish-and-index
+  cancel-in-progress: false
+
+jobs:
+  publish-and-index:
+    if: github.ref == 'refs/heads/main'
+    # STAYS GitHub-hosted: this job holds contents:write + packages:write, writes ~/.npmrc, publishes
+    # to GitHub Packages, and pushes commits to main. Write/publish privilege belongs on a clean hosted
+    # runner, not the fleet (mirrors gridwork-core keeping its egress/write jobs hosted). Main-only +
+    # dry-run-by-default, so it runs rarely and gains nothing from fleet compute.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      packages: write
+    env:
+      # Operator publish gate (ADR-0069). Default is dry-run; set "false" to go live.
+      CAISSON_PUBLISH_DRY_RUN: "true"
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # Full history so changesets can read tags; built-in GITHUB_TOKEN for commit-back
+          # (not a stored PAT — the ephemeral token does not trigger downstream CI runs).
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+      - name: cache bun install
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
+      - run: bun install --frozen-lockfile
+      # Write the GitHub Packages registry URL + ephemeral GITHUB_TOKEN to ~/.npmrc.
+      # This is the built-in short-lived token, NOT a stored PAT or NODE_AUTH_TOKEN secret (ADR-0069).
+      - name: configure GitHub Packages registry (ephemeral GITHUB_TOKEN — no stored PAT)
+        run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
+      # Changeset version + publish, guarded by CAISSON_PUBLISH_DRY_RUN (default "true").
+      # In dry-run mode both are skipped; the rest of the job still validates the CI flow.
+      - name: changeset version + publish (dry-run by default — set CAISSON_PUBLISH_DRY_RUN=false to go live)
+        run: |
+          if [ "${CAISSON_PUBLISH_DRY_RUN}" != "false" ]; then
+            echo "[publish-and-index] dry-run: changeset version + publish skipped (CAISSON_PUBLISH_DRY_RUN=${CAISSON_PUBLISH_DRY_RUN})"
+          else
+            bunx changeset version
+            bunx changeset publish
+          fi
+      # Scan workspace manifest.ts files → append newly-published versions to the ledger →
+      # rebuild registry/index.json. In dry-run mode the script reports without writing;
+      # the subsequent git diff finds no changes and no commit is created.
+      - name: append ledger entries + rebuild registry/index.json
+        run: |
+          bun registry/scripts/ci-publish-step.ts \
+            --run-id "${{ github.run_id }}" \
+            --sha "${{ github.sha }}" \
+            --published-at "$(date -u '+%Y-%m-%dT%H:%M:%S.000Z')" \
+            --dry-run "${CAISSON_PUBLISH_DRY_RUN}"
+      # Commit ONLY registry/ledger.jsonl + registry/index.json back to main.
+      # In dry-run mode the diff is empty → no commit. git pull --rebase before push guards
+      # against concurrent writes (rare but safe to handle).
+      - name: commit registry files to main (ledger.jsonl + index.json only)
+        run: |
+          if git diff --quiet registry/ledger.jsonl registry/index.json; then
+            echo "[publish-and-index] registry files unchanged — nothing to commit"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add registry/ledger.jsonl registry/index.json
+            git commit -m "chore(registry): append ledger + rebuild index.json [ci-publish]"
+            git pull --rebase origin main
+            git push
+          fi
