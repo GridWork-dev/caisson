@@ -1,9 +1,12 @@
 {
   "name": "@caisson/agent-kernel",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
   "description": "Engine-neutral agent kernel: agent/skill/rule Zod schema + lifecycle act FSM + hooks dispatcher (ADR-0065). The shared base layer cli/mcp-server and the agent-dev edition compose down-only — no vendor SDK, no LLM call.",
   "exports": {
     ".": {

@@ -10,15 +10,16 @@
 // carry); FINAL pricing is the still-open Pricing fork (SD-6/ADR-0012), out of scope here — it need
 // only be a positive integer (ADR-0007). Deps are DOWN-ONLY (ADR-0003): @caisson/kernel (the credit
 // denomination + strict-boundary helpers) and nothing "up".
+import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
 export default defineModule({
   id: "@caisson/pricebook",
-  version: "0.0.0",
+  version: pkg.version,
   kind: "base",
   tier: "paid",
   priceCents: 4900,
-  license: "LicenseRef-Caisson-Commercial",
+  license: pkg.license,
   dependencies: ["@caisson/kernel"],
   golden: "src/__golden__",
   description:
