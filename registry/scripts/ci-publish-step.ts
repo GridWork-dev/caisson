@@ -54,8 +54,32 @@ export type PublishStepResult = {
 const DEFAULT_PACKAGES_DIR = join(import.meta.dir, "..", "..", "packages");
 
 /**
- * Return absolute paths of every `packages/<name>/manifest.ts` that exists on disk.
- * Exported for isolated testing.
+ * True when `<packageDir>/package.json` declares `private: true`. A private package (e.g.
+ * `@caisson/license-issue`, ADR-0110 — the signing key must NEVER reach a buyer tarball) is
+ * intentionally never published by changesets, so it must never be appended to the ledger
+ * either — appending it would advertise an "as if published" version that npm never actually
+ * carries (the inverse of ADR-0111's "never-published = paid + no publishConfig" invariant).
+ * Data-driven off package.json, never a hardcoded package name. Missing/unparseable
+ * package.json fails OPEN to "not private" — the standards-gate, not this script, is the
+ * authority on manifest/package.json validity. Exported for isolated testing.
+ */
+export function isPrivatePackage(packageDir: string): boolean {
+  const pkgJsonPath = join(packageDir, "package.json");
+  if (!existsSync(pkgJsonPath)) return false;
+  try {
+    const pkg = JSON.parse(readFileSync(pkgJsonPath, "utf8")) as {
+      private?: unknown;
+    };
+    return pkg.private === true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Return absolute paths of every `packages/<name>/manifest.ts` that exists on disk, EXCLUDING
+ * any package whose `package.json` declares `private: true` — a never-published package must
+ * never reach the ledger/index (see `isPrivatePackage`). Exported for isolated testing.
  */
 export function findManifestPaths(
   packagesDir: string = DEFAULT_PACKAGES_DIR,
@@ -63,6 +87,7 @@ export function findManifestPaths(
   if (!existsSync(packagesDir)) return [];
   return readdirSync(packagesDir, { withFileTypes: true })
     .filter((d) => d.isDirectory())
+    .filter((d) => !isPrivatePackage(join(packagesDir, d.name)))
     .map((d) => join(packagesDir, d.name, "manifest.ts"))
     .filter((p) => existsSync(p));
 }
