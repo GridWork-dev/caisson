@@ -45,6 +45,9 @@ const OPEN_BASE_NAMES = new Set([
   "@caisson/ai-config",
   "@caisson/mcp-server",
   "@caisson/registry-schema",
+  // ADR-0117: vendor-neutral OTel bootstrap is base substrate every buyer gets, same as the rest
+  // of the open Base set above — never edition-gated.
+  "@caisson/observability",
 ]);
 
 // A registry-module candidate is a `packages/` member. `apps/` are reference applications (the
