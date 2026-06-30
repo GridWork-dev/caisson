@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { newTestPg, type TestPg } from "@caisson/testing";
 import { generateAccountKeyPair, signAccountJwt } from "@caisson/auth";
 import { CREDIT_SCHEMA_SQL } from "@caisson/credits";
+import { RATE_LIMIT_SCHEMA_SQL } from "@caisson/service-license";
 import { createStripeBilling } from "@caisson/billing";
 import { loadRegistryIndex } from "@caisson/registry";
 import { createBaseApp, createFetchHandler } from "./index.ts";
@@ -40,6 +41,9 @@ function authHeader(): string {
 beforeAll(async () => {
   tp = await newTestPg();
   await tp.exec(CREDIT_SCHEMA_SQL);
+  // The buyer MCP is now rate-limit-throttled BY DEFAULT (ADR-0112) — provision the token-bucket
+  // table so the capstone exercises the REAL throttle (allow path) instead of silently failing open.
+  await tp.exec(RATE_LIMIT_SCHEMA_SQL);
   const app = createBaseApp({
     db: tp.pg,
     billing: createStripeBilling({
