@@ -181,5 +181,86 @@ railway up -y --service caisson-support-bot ./services/support-bot
 
 After B1–B4 + the code-track items land and Compliance is buyable end-to-end (402 → checkout → grant →
 entitlement → license issued → offline verify), execute the deliberate CF-Access flip: `rm
-infra/terraform/access.tf` + `terraform apply` (or policy → bypass/everyone), seal the `*.pages.dev`
-origin via the Pages-native Access integration, and verify `caisson.sh` + `www` serve publicly.
+infra/terraform/access.tf` + `terraform apply` (or policy → bypass/everyone) and verify `caisson.sh` +
+`www` serve publicly.
+
+> **UPDATED 2026-06-30 (ADR-0114/0115/0117):** the site origin is **no longer `*.pages.dev`** — the
+> marketing site + docs UI + `/dashboard` migrate to a unified Next app on **Railway** (Part C below).
+> CF Access is **hostname-bound**, so it carries over the DNS flip with zero changes; Access removal is
+> the deliberate last act here, AFTER Pages is retired (Part C step 7). The "seal the pages.dev origin"
+> note above is moot post-cutover.
+
+---
+
+# Part C — Site → Railway cutover + CI rewire (2026-06-30 plan)
+
+Full plan in this doc; companions: `services-hardening-audit.md` (gaps), `adapter-expansion.md`
+(drivers). **CF Access stays ON throughout; Pages teardown is the LAST step (C7); Access removal is a
+separate future act (C8).**
+
+## C.0 — Railway provisioning (operator-locked, 2026-06-30 picker)
+
+`caisson-prod` — **one service each** (6 resources): `caisson-site` (NEW unified Next app — marketing +
+docs + `/dashboard`, `apps/site/Dockerfile`, build-on-Railway), `services/docs` (live, keep),
+`services/license` (`license.caisson.sh` — issuer + **Paddle webhook**, hardening #3),
+`services/support-bot` (live, keep), **Postgres** (platform DB, ADR-0115), **SigNoz** stack
+(ClickHouse + otel-collector + UI, **self-host NOW**, ADR-0117 — **UI behind CF Access**). Plan **Pro**,
+~512MB–1GB autoscale per service.
+
+## C.1 — Registry Worker STAYS on Cloudflare Workers (no migration)
+
+`caisson-registry` is a Workers script (`registry/worker/deploy.sh` → `wrangler deploy`), not the Pages
+project — zero `apps/site` coupling, no DB (`node:crypto` Ed25519 + inlined `index.json`), edge-served.
+Retiring the Pages project does not touch it. **Action: none.** Fast-follow (independent): custom route
+`registry.caisson.sh`.
+
+## C.2 — CI rewire (preserve required checks `check` · `standards-gate` · `registry-index`)
+
+Branch protection matches the **job name**, not the file. The 3 required jobs stay **unconditional, no
+`paths:`** in `ci.yml`; affected-only runs **inside** `check` via `turbo … --affected` (exits 0 in
+seconds on an empty set). New files: `quality.yml` (eval/token-drift/native-ext — non-required,
+`dorny/paths-filter`-gated), `publish.yml` (publish-and-index), `deploy-railway.yml` (`railway up
+--service caisson-site --ci`, project token, build-on-Railway, no DNS/Access touched). Keep
+`lighthouse.yml` (retarget Node build) + `support-bot.yml`. Cache: `actions/cache` over `~/.bun/install/cache`
+
+- `.turbo` (fleet containers are throwaway → cache must be network-backed); `--affected` needs
+  `fetch-depth: 0` + `TURBO_SCM_BASE/HEAD`; keep `--no-daemon --concurrency=50%`.
+  **THE TRAP:** never `paths:`-skip a required job → it never reports → merge blocked forever.
+  **Retire `deploy-site.yml` at C7, not before.**
+
+## C.3 — Pages Functions re-home (owned by `apps/site`; verify in Phase 2 diff)
+
+`functions/api/waitlist.ts` → **MIGRATE** to `app/api/waitlist/route.ts` (LIVE — `UpdatesForm` POSTs it
+on 5 surfaces). `functions/_middleware.ts` → **SPLIT** (headers → `next.config.ts headers()`/`middleware.ts`;
+**drop** the `*.pages.dev`→apex 302). `public/_headers` → **MIGRATE** CSP+headers to `next.config.ts`
+(opportunity: Node nonce → drop `script-src 'unsafe-inline'`). `wrangler.jsonc` → **DROP** at teardown.
+
+## C — Cutover steps (sequenced · CF Access stays · Pages last · reversibility)
+
+| #   | Step                                                                                                                                                                                         | Class      | Reversible                             |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | -------------------------------------- |
+| C1  | Land standalone app on main: `output:'standalone'`, Dockerfile, railway.toml, the C.3 re-homes, `/dashboard`. CI green.                                                                      | autonomous | ✅ code-only                           |
+| C2  | Create Railway `caisson-site` (Root `/`, `RAILWAY_DOCKERFILE_PATH=apps/site/Dockerfile`); provision PG; set env/secrets; mint CI `RAILWAY_TOKEN`.                                            | DEPLOY     | ✅ delete service                      |
+| C3  | First deploy `railway up --service caisson-site`; capture `*.up.railway.app`.                                                                                                                | DEPLOY     | ✅ delete revision                     |
+| C4  | **VERIFY on Railway (no prod traffic):** `/health`, SSG, `/docs`, `/api/waitlist`, `/dashboard` `withTenant`, headers/CSP, lighthouse.                                                       | verify     | ✅ no exposure                         |
+| C5  | **DNS flip:** apex+www CNAME `caisson-site.pages.dev`→`*.up.railway.app`, **keep `proxied=true`**; add caisson.sh+www as Railway custom domains; CF SSL **Full**. **`access.tf` untouched.** | DEPLOY     | ✅ flip CNAME back                     |
+| C6  | **VERIFY caisson.sh:** Access-gated, Railway-served, all routes + `/dashboard`, CDN caching. Soak.                                                                                           | verify     | ✅ C5 rollback                         |
+| C7  | **Retire Pages LAST:** delete `caisson-site` Pages project; remove `deploy-site.yml`, `wrangler.jsonc`, `public/_headers`, `functions/`, Pages-only Terraform. **NOT `access.tf`, NOT DNS.** | DEPLOY     | ⚠️ least reversible — gate behind soak |
+| C8  | _(future, separate — the ADR-0107 act above)_ remove CF Access.                                                                                                                              | DEPLOY     | —                                      |
+
+## C — Hardening blockers before public exposure (`services-hardening-audit.md`)
+
+**#1 HIGH** docs per-IP rate-limit · **#2 MED** wire ADR-0112 MCP rate-limit hook (built, inert) ·
+**#3 MED** bind the **Paddle** webhook at `services/license` (`Paddle-Signature`, timing-safe HMAC) →
+**both** credit + entitlement grant (today `apps/base` hardcodes `stripe-signature` + the entitlement
+handler is bound nowhere → **purchases won't provision**) · #4 license `/issue` rate-limit · #5
+support-bot RAG fencing · #6 docs `Cache-Control` · #7 `apps/base` HSTS. #2/#3 confirm against the
+deploy entrypoint before commerce go-live.
+
+## C — Build sequencing
+
+1. **Parallel-safe now** (independent of Phase 2's `apps/site`): CI rewire (`.github/`); independent
+   hardening (#1,#4,#5,#6,#7 + #3 in `services/license`).
+2. **On Phase 2 landing:** review diff vs the C.3 re-home checklist; wire #2 + confirm #3 at the
+   entrypoint; integrate.
+3. **Gated (operator DEPLOY):** C2–C7 + the ADR-0107 Access removal (C8).
