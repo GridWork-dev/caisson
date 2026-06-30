@@ -88,17 +88,55 @@ describe("hipaa-security pack", () => {
   });
 });
 
-describe("eu-ai-act reserved slot", () => {
-  test("is a named reservation with no authored control content", () => {
+describe("eu-ai-act pack", () => {
+  test("is a well-formed own-authored catalog", () => {
     expect(euAiAct.id).toBe("eu-ai-act");
-    expect(euAiAct.status).toBe("reserved");
-    // No catalog golden and no controls — this is a manifest slot, not a defineFramework pack.
-    expect("controls" in euAiAct).toBe(false);
-    expect(euAiAct.outline.length).toBeGreaterThan(0);
-    for (const item of euAiAct.outline) {
-      expect(item.section).not.toBe("");
-      expect(item.heading).not.toBe("");
+    expect(euAiAct.version).toBe("2024.1");
+    assertWellFormedCatalog(euAiAct);
+  });
+
+  test("every control crosswalks to at least one external reference", () => {
+    for (const control of euAiAct.controls) {
+      expect(control.crosswalk.length).toBeGreaterThan(0);
     }
+  });
+
+  test("covers the high-risk Title III Chapter 2-3 obligations via EU-AI-Act article references", () => {
+    const refs = euAiAct.controls
+      .flatMap((c) => c.crosswalk)
+      .filter((x) => x.framework === "EU-AI-Act")
+      .map((x) => x.reference);
+    // Representative coverage: requirements (Art 9-15) through provider duties (Art 17-73).
+    for (const expected of [
+      "Art. 9", // risk management system
+      "Art. 10", // data and data governance
+      "Art. 11", // technical documentation
+      "Art. 12", // record-keeping / automatic logging
+      "Art. 14", // human oversight
+      "Art. 15", // accuracy, robustness, cybersecurity
+      "Art. 17", // quality management system
+      "Art. 43", // conformity assessment
+      "Art. 72", // post-market monitoring
+      "Art. 73", // serious-incident reporting
+    ]) {
+      expect(refs).toContain(expected);
+    }
+  });
+
+  test("reuses the shared AUDIT.IMMUTABLE-LOG and GOVERNANCE.DOCUMENTATION canonical ids verbatim", () => {
+    // Mirrors the GOVERNANCE.SECURITY-RESPONSIBILITY precedent shared by soc2-tsc/hipaa-security:
+    // the SAME canonical control (id/title/family/statement) reused across frameworks, with each
+    // pack supplying only its own crosswalk entry — never a duplicated-but-drifted definition.
+    const shared = (id: string) => euAiAct.controls.find((c) => c.id === id);
+    const auditLog = shared("AUDIT.IMMUTABLE-LOG");
+    expect(auditLog?.statement).toBe(
+      soc2Tsc.controls.find((c) => c.id === "AUDIT.IMMUTABLE-LOG")?.statement,
+    );
+    const docRetention = shared("GOVERNANCE.DOCUMENTATION");
+    expect(docRetention?.statement).toBe(
+      hipaaSecurity.controls.find((c) => c.id === "GOVERNANCE.DOCUMENTATION")
+        ?.statement,
+    );
   });
 });
 
@@ -111,5 +149,9 @@ describe("catalog goldens", () => {
 
   test("hipaa-security catalog is byte-stable", () => {
     matchGolden(PKG_SRC_META, "hipaa-security.catalog", hipaaSecurity);
+  });
+
+  test("eu-ai-act catalog is byte-stable", () => {
+    matchGolden(PKG_SRC_META, "eu-ai-act.catalog", euAiAct);
   });
 });

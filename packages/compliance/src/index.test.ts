@@ -42,7 +42,7 @@ describe("@caisson/compliance barrel", () => {
     expect(typeof defineFramework).toBe("function");
     expect(soc2Tsc.id).toBeDefined();
     expect(hipaaSecurity.id).toBeDefined();
-    expect(euAiAct.status).toBe("reserved");
+    expect(euAiAct.id).toBeDefined();
   });
 
   test("re-exports the evidence engine surface (T11–T15)", () => {

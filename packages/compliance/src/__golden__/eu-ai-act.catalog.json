@@ -1,0 +1,249 @@
+{
+  "id": "eu-ai-act",
+  "title": "EU AI Act — High-Risk System Obligations",
+  "version": "2024.1",
+  "description": "Own-authored high-risk AI system obligations coverage pack (Regulation (EU) 2024/1689, Title III Chapters 2-3): risk management, data governance, technical documentation, record-keeping, transparency, human oversight, accuracy/robustness/cybersecurity, and the provider's quality-management, corrective-action, conformity-assessment, registration, post-market-monitoring, and serious-incident-reporting duties — crosswalked to the regulation's article identifiers. Control text is clean-room Caisson prose; references are citations.",
+  "controls": [
+    {
+      "id": "RISK-MANAGEMENT.AI-LIFECYCLE",
+      "title": "AI system risk management across the lifecycle",
+      "family": "Risk Management",
+      "statement": "The provider establishes, implements, documents, and maintains a risk management system run as a continuous iterative process across the high-risk AI system's entire lifecycle (design, development, deployment, and monitoring): identifying and analyzing the known and reasonably foreseeable risks the system poses to health, safety, and fundamental rights, and adopting risk-elimination or risk-mitigation measures proportionate to those risks.",
+      "guidance": "Tie each identified risk to a mitigation measure or an explicit accepted-risk decision, and re-run the iteration after any material change to the model, training data, or intended purpose so the risk register stays current, not a one-time assessment.",
+      "crosswalk": [
+        {
+          "framework": "EU-AI-Act",
+          "reference": "Art. 9"
+        },
+        {
+          "framework": "SOC2-TSC",
+          "reference": "CC3.1",
+          "note": "Equivalent ongoing risk-identification discipline, scoped to AI-specific health, safety, and fundamental-rights risk rather than general security risk."
+        }
+      ]
+    },
+    {
+      "id": "DATA-GOVERNANCE.TRAINING-DATA-QUALITY",
+      "title": "Training, validation, and testing data governance",
+      "family": "Data Governance",
+      "statement": "Training, validation, and testing datasets used to develop the high-risk AI system are subject to data governance practices covering relevant design choices, data collection and provenance, preparation and labelling, an examination for possible biases, and the identification of data gaps or shortcomings, so the datasets are relevant, sufficiently representative, and to the best extent possible free of errors for the system's intended purpose.",
+      "guidance": "Record the data-governance decisions and the bias-examination outcome alongside the dataset version identifier so the gate is evidentiable against a specific training run, not asserted in the abstract.",
+      "crosswalk": [
+        {
+          "framework": "EU-AI-Act",
+          "reference": "Art. 10"
+        }
+      ]
+    },
+    {
+      "id": "DOCUMENTATION.TECHNICAL-FILE",
+      "title": "Technical documentation drawn up before market placement",
+      "family": "Technical Documentation",
+      "statement": "Technical documentation is drawn up before the high-risk AI system is placed on the market or put into service and is kept up to date, demonstrating that the system complies with the applicable requirements and providing competent authorities the information needed to assess that compliance.",
+      "guidance": "Structure the file against the regulation's technical-documentation outline: (1) general system description, (2) detailed description of the system's elements and development process, (3) monitoring/functioning/control, (4) performance-metric appropriateness, (5) the risk management system, (6) lifecycle changes, (7) harmonised standards applied, (8) the EU declaration of conformity, (9) the post-market monitoring plan — and version the file so each section's evidence is traceable to a specific release.",
+      "crosswalk": [
+        {
+          "framework": "EU-AI-Act",
+          "reference": "Art. 11"
+        }
+      ]
+    },
+    {
+      "id": "AUDIT.IMMUTABLE-LOG",
+      "title": "Immutable, hash-chained audit log",
+      "family": "Record-Keeping",
+      "statement": "Security-relevant events are written to an append-only, hash-chained log that cannot be altered or deleted after the fact; integrity is verifiable against a trusted anchor so tampering, truncation, or rewriting is detectable.",
+      "crosswalk": [
+        {
+          "framework": "EU-AI-Act",
+          "reference": "Art. 12"
+        },
+        {
+          "framework": "SOC2-TSC",
+          "reference": "CC7.2",
+          "note": "Satisfies the automatic event-logging requirement for high-risk AI systems with the same append-only, tamper-evident log."
+        }
+      ]
+    },
+    {
+      "id": "TRANSPARENCY.INSTRUCTIONS-FOR-USE",
+      "title": "Transparency and instructions for use",
+      "family": "Transparency",
+      "statement": "The high-risk AI system is designed so its operation is sufficiently transparent for deployers to interpret its output and use it appropriately, and is accompanied by instructions for use that disclose the provider's identity, the system's intended purpose, its level of accuracy and known limitations, and the human-oversight measures a deployer must implement.",
+      "crosswalk": [
+        {
+          "framework": "EU-AI-Act",
+          "reference": "Art. 13"
+        }
+      ]
+    },
+    {
+      "id": "HUMAN-OVERSIGHT.DESIGN",
+      "title": "Human oversight built into system design",
+      "family": "Human Oversight",
+      "statement": "The high-risk AI system is designed and built, including with appropriate human-machine interface tools, so that it can be effectively overseen by natural persons during the period it is in use — able to understand the system's capacities and limitations, remain aware of the risk of automation bias, correctly interpret the system's output, and intervene in or halt the system's operation through a stop mechanism.",
+      "crosswalk": [
+        {
+          "framework": "EU-AI-Act",
+          "reference": "Art. 14"
+        }
+      ]
+    },
+    {
+      "id": "PERFORMANCE.ACCURACY-ROBUSTNESS",
+      "title": "Accuracy and robustness throughout the lifecycle",
+      "family": "Accuracy, Robustness & Cybersecurity",
+      "statement": "The high-risk AI system achieves an appropriate level of accuracy, robustness, and consistent performance throughout its lifecycle; the relevant accuracy metrics and expected level are declared in the accompanying instructions for use, and the system is resilient against errors, faults, or inconsistencies that may arise from its own operation or its interaction with other systems.",
+      "crosswalk": [
+        {
+          "framework": "EU-AI-Act",
+          "reference": "Art. 15"
+        }
+      ]
+    },
+    {
+      "id": "SECURITY.AI-RESILIENCE",
+      "title": "Cybersecurity resilience against AI-specific attack vectors",
+      "family": "Accuracy, Robustness & Cybersecurity",
+      "statement": "The high-risk AI system is resilient against attempts by unauthorized third parties to alter its use, behavior, or performance by exploiting system vulnerabilities, including AI-specific attack vectors such as training-data poisoning, adversarial examples, model evasion, and confidentiality attacks against the model or its training data, with technical and organizational measures proportionate to the identified risks.",
+      "crosswalk": [
+        {
+          "framework": "EU-AI-Act",
+          "reference": "Art. 15"
+        },
+        {
+          "framework": "SOC2-TSC",
+          "reference": "CC7.1",
+          "note": "Extends general anomaly monitoring to AI-specific attack vectors (poisoning, evasion, model exfiltration)."
+        }
+      ]
+    },
+    {
+      "id": "GOVERNANCE.QUALITY-MANAGEMENT-SYSTEM",
+      "title": "Provider quality management system",
+      "family": "Provider Obligations",
+      "statement": "The provider operates a documented quality management system, proportionate to the size of the organization, covering its regulatory-compliance strategy, design-control and verification procedures, data-management procedures, the risk management system, and the post-market monitoring system — kept as systematic, orderly documentation in the form of written policies, procedures, and instructions.",
+      "crosswalk": [
+        {
+          "framework": "EU-AI-Act",
+          "reference": "Art. 17"
+        }
+      ]
+    },
+    {
+      "id": "GOVERNANCE.DOCUMENTATION",
+      "title": "Policies, procedures, and documentation retention",
+      "family": "Documentation Requirements",
+      "statement": "Security policies and procedures are documented, and required actions, activities, and assessments are recorded and retained for the regulatory period, available to those responsible for implementing them.",
+      "guidance": "Retain the technical documentation and quality-management-system records for the regulation's post-market-placement floor; the WORM retention helper enforces the minimum so evidence is not disposed of early.",
+      "crosswalk": [
+        {
+          "framework": "EU-AI-Act",
+          "reference": "Art. 18"
+        },
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.316(b)(2)(i)",
+          "note": "Equivalent retained-documentation safeguard under a different regulatory retention floor."
+        }
+      ]
+    },
+    {
+      "id": "MONITORING.CORRECTIVE-ACTION",
+      "title": "Corrective action and duty to inform on non-conformity",
+      "family": "Provider Obligations",
+      "statement": "When the provider has reason to consider that a high-risk AI system it has placed on the market does not conform to the regulation, it immediately takes the corrective action necessary to bring the system into conformity, withdraw it, disable it, or recall it as appropriate, and informs the relevant distributors, deployers, and competent authorities.",
+      "crosswalk": [
+        {
+          "framework": "EU-AI-Act",
+          "reference": "Art. 20"
+        }
+      ]
+    },
+    {
+      "id": "GOVERNANCE.AUTHORITY-COOPERATION",
+      "title": "Cooperation with competent authorities",
+      "family": "Provider Obligations",
+      "statement": "Upon a reasoned request from a competent authority, the provider supplies all information and documentation necessary to demonstrate the high-risk AI system's conformity, in a language the authority can readily understand, and grants access to automatically generated logs that are within the provider's control.",
+      "crosswalk": [
+        {
+          "framework": "EU-AI-Act",
+          "reference": "Art. 21"
+        }
+      ]
+    },
+    {
+      "id": "CONFORMITY.ASSESSMENT-PROCEDURE",
+      "title": "Conformity assessment before market placement",
+      "family": "Conformity Assessment",
+      "statement": "Before placing a high-risk AI system on the market or putting it into service, the provider carries out the applicable conformity assessment procedure for that system, and repeats the assessment in the event of a substantial modification to the system.",
+      "crosswalk": [
+        {
+          "framework": "EU-AI-Act",
+          "reference": "Art. 43"
+        }
+      ]
+    },
+    {
+      "id": "CONFORMITY.DECLARATION-AND-MARKING",
+      "title": "EU declaration of conformity and CE marking",
+      "family": "Conformity Assessment",
+      "statement": "The provider draws up a written EU declaration of conformity for each high-risk AI system, keeps it available to competent authorities for the regulatory period, and affixes the CE marking visibly, legibly, and indelibly to the system or its documentation before it is placed on the market.",
+      "crosswalk": [
+        {
+          "framework": "EU-AI-Act",
+          "reference": "Art. 47"
+        },
+        {
+          "framework": "EU-AI-Act",
+          "reference": "Art. 48"
+        }
+      ]
+    },
+    {
+      "id": "GOVERNANCE.EU-DATABASE-REGISTRATION",
+      "title": "Registration in the EU database",
+      "family": "Registration",
+      "statement": "Before placing a high-risk AI system on the market or putting it into service, the provider registers itself and the system in the EU database for high-risk AI systems, and keeps the registered information accurate and up to date.",
+      "crosswalk": [
+        {
+          "framework": "EU-AI-Act",
+          "reference": "Art. 49"
+        },
+        {
+          "framework": "EU-AI-Act",
+          "reference": "Art. 71"
+        }
+      ]
+    },
+    {
+      "id": "MONITORING.POST-MARKET-PLAN",
+      "title": "Post-market monitoring system",
+      "family": "Post-Market Monitoring",
+      "statement": "The provider establishes and documents a post-market monitoring system proportionate to the nature of the AI technology and the risks of the high-risk AI system, actively and systematically collecting, documenting, and analyzing relevant data on the system's performance throughout its lifecycle.",
+      "crosswalk": [
+        {
+          "framework": "EU-AI-Act",
+          "reference": "Art. 72"
+        }
+      ]
+    },
+    {
+      "id": "INCIDENT-RESPONSE.SERIOUS-INCIDENT-REPORTING",
+      "title": "Reporting of serious incidents",
+      "family": "Incident Reporting",
+      "statement": "The provider reports any serious incident involving the high-risk AI system to the market surveillance authorities of the member states where the incident occurred, within the regulation's defined reporting timelines, and investigates the incident and the system in connection with it.",
+      "crosswalk": [
+        {
+          "framework": "EU-AI-Act",
+          "reference": "Art. 73"
+        },
+        {
+          "framework": "SOC2-TSC",
+          "reference": "CC7.3",
+          "note": "Extends general incident handling with an EU-AI-Act-specific external reporting deadline to market surveillance authorities."
+        }
+      ]
+    }
+  ]
+}
