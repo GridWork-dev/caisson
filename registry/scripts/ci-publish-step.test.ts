@@ -14,7 +14,11 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { INDEX_PATH, LEDGER_PATH } from "./build-index";
-import { findManifestPaths, runPublishStep } from "./ci-publish-step";
+import {
+  findManifestPaths,
+  isPrivatePackage,
+  runPublishStep,
+} from "./ci-publish-step";
 
 /** Unique temp dir scoped to this test run (no cross-test contamination). */
 function tmpDir(label: string): string {
@@ -41,6 +45,75 @@ describe("ci-publish-step (ADR-0021/0069)", () => {
   test("returns an empty array when the packagesDir does not exist", () => {
     const paths = findManifestPaths("/nonexistent/caisson/packages");
     expect(paths).toEqual([]);
+  });
+
+  test("excludes @caisson/license-issue (private:true, ADR-0110) from the real scan", () => {
+    const paths = findManifestPaths();
+    expect(paths.some((p) => p.includes("license-issue"))).toBe(false);
+  });
+
+  // -------------------------------------------------------------------------
+  // Private-package skip (data-driven off package.json `private`, ADR-0111 inverse —
+  // never-published must never reach the ledger/index)
+  // -------------------------------------------------------------------------
+
+  test("isPrivatePackage: true only when package.json declares private:true", () => {
+    const trueDir = tmpDir("is-private-true");
+    const falseDir = tmpDir("is-private-false");
+    const missingDir = tmpDir("is-private-missing");
+    try {
+      writeFileSync(
+        join(trueDir, "package.json"),
+        JSON.stringify({ name: "@caisson/x", private: true }),
+      );
+      expect(isPrivatePackage(trueDir)).toBe(true);
+
+      writeFileSync(
+        join(falseDir, "package.json"),
+        JSON.stringify({ name: "@caisson/y", private: false }),
+      );
+      expect(isPrivatePackage(falseDir)).toBe(false);
+
+      // No package.json at all: fail open to "not private".
+      expect(isPrivatePackage(missingDir)).toBe(false);
+    } finally {
+      rmSync(trueDir, { recursive: true, force: true });
+      rmSync(falseDir, { recursive: true, force: true });
+      rmSync(missingDir, { recursive: true, force: true });
+    }
+  });
+
+  test("findManifestPaths: a synthetic private:true package is skipped, a normal one is included", () => {
+    const dir = tmpDir("private-skip-scan");
+    try {
+      const privateDir = join(dir, "private-pkg");
+      const publicDir = join(dir, "public-pkg");
+      mkdirSync(privateDir, { recursive: true });
+      mkdirSync(publicDir, { recursive: true });
+
+      writeFileSync(
+        join(privateDir, "package.json"),
+        JSON.stringify({
+          name: "@caisson/private-pkg",
+          version: "0.0.0",
+          private: true,
+        }),
+      );
+      writeFileSync(join(privateDir, "manifest.ts"), "export default {};\n");
+
+      writeFileSync(
+        join(publicDir, "package.json"),
+        JSON.stringify({ name: "@caisson/public-pkg", version: "0.1.0" }),
+      );
+      writeFileSync(join(publicDir, "manifest.ts"), "export default {};\n");
+
+      const paths = findManifestPaths(dir);
+
+      expect(paths).toEqual([join(publicDir, "manifest.ts")]);
+      expect(paths.some((p) => p.includes("private-pkg"))).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   // -------------------------------------------------------------------------
