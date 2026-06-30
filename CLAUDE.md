@@ -20,7 +20,7 @@ edited — supersede with a later ADR).
 ## Source-of-truth hierarchy
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
-2. `knowledge/decisions/` — the ADRs themselves (**0001–0093**: 0001–0024 founding+substrate+pipeline · 0040–0044 brand+crypto+framework · 0045–0049 Wave-0 substrate · 0050–0077 Wave-1 editions · 0078–0083 design+go-live · 0084–0088 GTM+collision-fix · 0089–0093 picker-round locks (billing-X2/migrate/mig-bundle/bin/local-debit); append-only, all locked). Canonical ADR catalog: `docs/adr-index.md`
+2. `knowledge/decisions/` — the ADRs themselves (**0001–0105**: 0001–0024 founding+substrate+pipeline · 0040–0044 brand+crypto+framework · 0045–0049 Wave-0 substrate · 0050–0077 Wave-1 editions · 0078–0083 design+go-live · 0084–0088 GTM+collision-fix · 0089–0093 picker-round locks · 0094–0098 GTM-report+W1/B1 (open-core/offer/docs-svc/registry-split/credit-home) · 0099–0104 design-system harden+brand-mark+hero · 0105 support-bot impl; append-only, all locked). Canonical ADR catalog: `docs/adr-index.md`
 3. `specs/` — locked concept docs; `specs/00-product-spec.md` is the founding spec
 4. `plan.md` / `SUMMARY.md` — build plan + consolidated summary
 5. `outputs/` — session artifacts (kickoffs, research, syntheses)
@@ -30,10 +30,11 @@ On conflict, the higher item wins.
 ## Cadence (spec-first)
 
 Research → spec → ADR lock → code. **No product code before the spec/ADR it implements is
-locked.** Current state: **P0 foundations + P1 base substrate SHIPPED; Wave-0 substrate + Wave-1
-editions (merged-but-partial) + P5 generator (PR#12 merged) built; registry Worker LIVE.**
-P6 (`services/{license,support-bot,docs}`) is the single pending phase. Live per-package
-truth: `docs/build-state.md`.
+locked.** Current state: **P0+P1, Wave-0 substrate, Wave-1 editions (merged-but-partial), and P5
+generator all SHIPPED; registry Worker LIVE.** P6 is **partially built** — Bucket C (`services/docs`
+PR#23 + `services/support-bot` PR#24) merged, X-2 billing + entitlement resolver + Worker filtering
+merged (PR#18); **remaining: license issuer (ADR-0010) + dashboards + publish-readiness**. Live
+per-package truth: `docs/build-state.md`.
 
 ## Engineering invariants (locked, ADR-0002 — apply to all product code)
 
