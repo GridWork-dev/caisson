@@ -143,6 +143,7 @@
         "@caisson/credits": "workspace:*",
         "@caisson/kernel": "workspace:*",
         "@caisson/observability": "workspace:*",
+        "@caisson/platform-reads": "workspace:*",
         "@caisson/pricebook": "workspace:*",
         "@caisson/service-license": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
@@ -617,6 +618,21 @@
         "typescript": "^5.6.0",
       },
     },
+    "packages/platform-reads": {
+      "name": "@caisson/platform-reads",
+      "version": "0.1.0",
+      "dependencies": {
+        "@caisson/tenancy-rls": "workspace:*",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/service-license": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
+    },
     "packages/pricebook": {
       "name": "@caisson/pricebook",
       "version": "0.1.0",
@@ -956,6 +972,8 @@
     "@caisson/migrate": ["@caisson/migrate@workspace:packages/migrate"],
 
     "@caisson/observability": ["@caisson/observability@workspace:packages/observability"],
+
+    "@caisson/platform-reads": ["@caisson/platform-reads@workspace:packages/platform-reads"],
 
     "@caisson/pricebook": ["@caisson/pricebook@workspace:packages/pricebook"],
 
