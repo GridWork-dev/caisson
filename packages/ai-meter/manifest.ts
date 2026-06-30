@@ -4,15 +4,16 @@
 // service or an edition. Paid + LicenseRef-Caisson-Commercial (ADR-0050). `priceCents` is a
 // PLACEHOLDER pending the Pricing lock (a positive integer is required to validate; the number is
 // not the locked price).
+import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
 export default defineModule({
   id: "@caisson/ai-meter",
-  version: "0.0.0",
+  version: pkg.version,
   kind: "primitive",
   tier: "paid",
   priceCents: 4900,
-  license: "LicenseRef-Caisson-Commercial",
+  license: pkg.license,
   dependencies: ["@caisson/kernel", "@caisson/credits", "@caisson/tenancy-rls"],
   golden: "src/__golden__",
   description:

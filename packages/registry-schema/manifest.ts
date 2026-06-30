@@ -6,15 +6,16 @@
 //
 // tier `oss` + no priceCents — open Base ships free (ADR-0094). Dependencies are DOWN-ONLY (ADR-0003)
 // and OPEN-ONLY (ADR-0097): the only runtime dep is `zod` (external), no @caisson workspace dep.
+import pkg from "./package.json";
 import { defineModule } from "./src/module-manifest.ts";
 
 export default defineModule({
   id: "@caisson/registry-schema",
-  version: "0.0.0",
+  version: pkg.version,
   kind: "base",
   tier: "oss",
   priceCents: null,
-  license: "Apache-2.0",
+  license: pkg.license,
   dependencies: [],
   description:
     "Open registry contract: module-manifest schema + index schema + allowlist helpers + feature-tags (ADR-0074) + entitlement-expansion (ADR-0071). zod/fs-only, Apache-2.0 (ADR-0094/0097).",

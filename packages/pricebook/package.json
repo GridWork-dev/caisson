@@ -1,9 +1,12 @@
 {
   "name": "@caisson/pricebook",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
   "description": "The commerce price-book (ADR-0089): plan-book (stripePriceId -> creditsPerCycle), action-book (per-action credit cost), and the shared cents->credits grant conversion. Distinct from ai-meter's per-ai-call cost book; both share kernel's one credit denomination.",
   "exports": {
     ".": {

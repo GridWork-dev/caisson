@@ -1,9 +1,12 @@
 {
   "name": "@caisson/ai-meter",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
   "description": "Metered-inference money path: estimate->reserve->reconcile over the credit ledger + versioned price book + atomic spend window + soft/hard caps + circuit breaker, all FORCE-RLS. ADR-0060/0014/0070.",
   "exports": {
     ".": {

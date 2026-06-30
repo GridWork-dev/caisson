@@ -1,9 +1,12 @@
 {
   "name": "@caisson/field-crypto",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
   "description": "Per-tenant authenticated field encryption: HKDF key derivation + AES-256-GCM + versioned envelope + Drizzle column + pluggable FieldKeyProvider (KMS seam). ADR-0043/0046/0045/0006.",
   "exports": {
     ".": {

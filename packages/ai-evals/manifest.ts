@@ -7,15 +7,16 @@
 // committed baseline + case fixtures are this module's golden artifacts (ADR-0013, landed at T10).
 // `priceCents` is a PLACEHOLDER pending the Pricing lock (a positive integer is required to validate;
 // the number is not the locked price).
+import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
 export default defineModule({
   id: "@caisson/ai-evals",
-  version: "0.0.0",
+  version: pkg.version,
   kind: "primitive",
   tier: "paid",
   priceCents: 4900,
-  license: "LicenseRef-Caisson-Commercial",
+  license: pkg.license,
   dependencies: [],
   golden: "__evals__",
   description:

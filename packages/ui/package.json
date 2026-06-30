@@ -1,9 +1,12 @@
 {
   "name": "@caisson/ui",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "description": "Caisson design-system kit — typed OKLCH token floor (ADR-0042/0078) + the component recipe (ADR-0099): Radix behavior + co-located CSS + data-* variants, shipped as framework-agnostic raw .tsx.",
   "sideEffects": [
     "*.css"
