@@ -247,6 +247,34 @@ describe("idempotency — settle exactly once", () => {
   });
 });
 
+describe("soft cap → warning without tripping the breaker", () => {
+  test("crossing the soft cap while staying under the hard cap warns but does not throw or trip", async () => {
+    await seed(1000);
+    await inA((tx) =>
+      tx.query(
+        `INSERT INTO ${SPEND_POLICY_TABLE}
+           (account_id, scope, unit, window_granularity, soft_limit, hard_limit)
+         VALUES ($1, 'account', 'credits', 'day', 4, 100)`,
+        [A],
+      ),
+    );
+
+    // One reserve costs 4 credits (see MESSAGES/CFG above): spent lands exactly on soft_limit 4,
+    // far under hard_limit 100 — a warning signal, not a block.
+    const r = await inA((tx) => reserve(tx, reserveInput("soft_1")));
+    expect(r.spent).toBe(4);
+    expect(r.softExceeded).toBe(true);
+    expect(r.breakerTripped).toBe(false);
+
+    // The breaker never tripped — no row exists (absence of a row is "closed", per readBreaker).
+    const brk = await tp.query(
+      `SELECT 1 FROM ${SPEND_BREAKER_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(brk).toHaveLength(0);
+  });
+});
+
 describe("hard cap → circuit breaker", () => {
   test("crossing a hard spend cap trips the breaker; the next reserve returns 402", async () => {
     await seed(1000);
@@ -284,5 +312,37 @@ describe("hard cap → circuit breaker", () => {
     expect((caught as SpendCapError).httpStatus).toBe(402);
     // the blocked reserve never debited
     expect(await inA((tx) => balance(tx, A))).toBe(balBefore);
+  });
+});
+
+describe("concurrent reserves — atomic spend window", () => {
+  test("N concurrent reserve() calls on one account/scope/window land every increment (no lost updates)", async () => {
+    const N = 10;
+    await seed(1000); // covers N * 4 reserved credits below
+
+    // Distinct callIds (so none short-circuits as an idempotent replay) but the SAME
+    // account/scope/window — every reserve contends on the one tenant_spend_window row.
+    // NOTE: PGlite is a single in-process connection that serializes these transactions, so this
+    // proves the atomic `INSERT … ON CONFLICT DO UPDATE … RETURNING` SQL is correct under
+    // interleaving (no lost increment from a read-modify-write), NOT a true multi-process
+    // OS-level race — same caveat as the I5 clawback / rate-limit-store concurrent tests.
+    const results = await Promise.all(
+      Array.from({ length: N }, (_, i) =>
+        inA((tx) => reserve(tx, reserveInput(`concurrent_${i}`))),
+      ),
+    );
+
+    const totalReserved = results.reduce(
+      (sum, r) => sum + r.reservedCredits,
+      0,
+    );
+    expect(totalReserved).toBe(N * 4);
+
+    const win = await tp.query<{ spent: number }>(
+      `SELECT spent FROM ${TENANT_SPEND_WINDOW_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(win).toHaveLength(1);
+    expect(win[0]?.spent).toBe(totalReserved); // every concurrent increment landed
   });
 });
