@@ -2,16 +2,21 @@
 // `Request → Response` function over injected deps (token, signer, registry index, tenant Transactor)
 // so it is testable without a live socket. Issuance is LAZY + bearer-gated: POST /issue mints a signed
 // license for an account by resolving its server-side entitlements (the EXISTING `resolveAccountEntitlements`
-// inside `withTenant`, RLS-scoped) and signing them via `@caisson/license-issue`. /health is public
-// (like services/docs). Every response carries the gridwork security-floor headers (nosniff / frame-deny
-// / HSTS). The Bearer gate is timing-safe over the VARIABLE-LENGTH token (SHA-256 → `timingSafeEqual`,
-// the security-floor rule) and fail-closed when the token is unset. Server-to-server contract — no CORS.
+// inside `withTenant`, RLS-scoped) and signing them via `@caisson/license-issue`. POST /issue is
+// IDEMPOTENT per (accountId, major) ("persist & reuse"): the first call mints, signs, and persists the
+// token via `license-grant-store.ts`; every later call for the same (accountId, major) re-serves the
+// STORED token byte-identical — never re-mints, never proliferates fresh perpetual tokens for one
+// purchase. A different major always mints its own grant. /health is public (like services/docs). Every
+// response carries the gridwork security-floor headers (nosniff / frame-deny / HSTS). The Bearer gate is
+// timing-safe over the VARIABLE-LENGTH token (SHA-256 → `timingSafeEqual`, the security-floor rule) and
+// fail-closed when the token is unset. Server-to-server contract — no CORS.
 import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { issueLicense, type Signer } from "@caisson/license-issue";
 import { licenseTierSchema } from "@caisson/license-verify";
 import type { RegistryIndex } from "@caisson/registry-schema";
 import { type Transactor, withTenant } from "@caisson/tenancy-rls";
+import { readLicenseGrant, storeLicenseGrant } from "./license-grant-store.ts";
 import { resolveAccountEntitlements } from "./resolve-entitlements.ts";
 
 export interface IssueAppDeps {
@@ -114,6 +119,16 @@ export function createApp(
       }
       const { accountId, tier, major, expiry } = parsed.data;
 
+      // Idempotent re-serve (persist & reuse): a prior /issue for this exact (accountId, major)
+      // already minted + stored a token — return it byte-identical, never re-mint. Read is RLS-scoped
+      // (withTenant), so this can only ever see the caller's own account's grants.
+      const existing = await withTenant(deps.db, accountId, (tx) =>
+        readLicenseGrant(tx, accountId, major),
+      );
+      if (existing !== null) {
+        return json({ token: existing.token, licenseId: existing.licenseId });
+      }
+
       // Server-side entitlement truth: resolve the account's purchases → member slugs, RLS-scoped.
       // A stored purchased id absent from the index fails closed (`expandEntitlements` throws); we map
       // that to a 422 with a GENERIC message (never echo internal ids).
@@ -143,7 +158,34 @@ export function createApp(
         // leaks internal error detail. Mirrors the entitlement-resolution guard above.
         return json({ error: "signing failed" }, 500);
       }
-      return json({ token, licenseId: claims.licenseId });
+
+      // Persist, idempotently: a concurrent /issue for the same (accountId, major) may have minted
+      // its OWN token and stored it first — `storeLicenseGrant`'s unique-index ON CONFLICT silently
+      // drops the loser's insert. Re-read on a lost race so every caller converges on the SAME stored
+      // (winning) token, never two live tokens for one (account, major).
+      const stored = await withTenant(deps.db, accountId, (tx) =>
+        storeLicenseGrant(tx, {
+          accountId,
+          major,
+          licenseId: claims.licenseId,
+          tier,
+          expiry,
+          token,
+        }),
+      );
+      if (stored) {
+        return json({ token, licenseId: claims.licenseId });
+      }
+      const winner = await withTenant(deps.db, accountId, (tx) =>
+        readLicenseGrant(tx, accountId, major),
+      );
+      // The unique-index insert just reported a conflict, so a row MUST exist; this null branch is an
+      // unreachable defensive fallback (never observed) rather than a silent re-mint on a read failure.
+      return json(
+        winner !== null
+          ? { token: winner.token, licenseId: winner.licenseId }
+          : { token, licenseId: claims.licenseId },
+      );
     }
 
     return json({ error: "not found" }, 404);
