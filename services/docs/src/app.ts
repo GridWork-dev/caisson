@@ -32,6 +32,13 @@ const SECURITY_HEADERS: Record<string, string> = {
   "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
 };
 
+// The /llms*.txt artifacts are byte-stable (rebuilt only at boot from the committed corpus), so they are
+// safe to cache at the edge/CDN — this lets Railway/a fronting CDN absorb repeat scrapes instead of every
+// hit reaching the origin. NOT applied to POST /query (dynamic, retrieval-dependent).
+const LLMS_CACHE_HEADERS: Record<string, string> = {
+  "Cache-Control": "public, max-age=3600",
+};
+
 function respond(
   body: string,
   status: number,
@@ -104,11 +111,17 @@ export function createApp(deps: AppDeps): (req: Request) => Promise<Response> {
     }
     if (pathname === "/llms.txt") {
       if (method !== "GET") return text("method not allowed", 405);
-      return rateLimited("static", req) ?? text(deps.llmsTxt);
+      return (
+        rateLimited("static", req) ??
+        text(deps.llmsTxt, 200, LLMS_CACHE_HEADERS)
+      );
     }
     if (pathname === "/llms-full.txt") {
       if (method !== "GET") return text("method not allowed", 405);
-      return rateLimited("static", req) ?? text(deps.llmsFull);
+      return (
+        rateLimited("static", req) ??
+        text(deps.llmsFull, 200, LLMS_CACHE_HEADERS)
+      );
     }
     if (pathname === "/query") {
       if (method !== "POST") return text("method not allowed", 405);

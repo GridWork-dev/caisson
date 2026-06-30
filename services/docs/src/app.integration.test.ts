@@ -54,13 +54,22 @@ describe("createApp routing", () => {
     expect(res.headers.get("Strict-Transport-Security")).toContain("max-age=");
   });
 
-  test("GET /llms.txt and /llms-full.txt → public text", async () => {
+  test("GET /llms.txt and /llms-full.txt → public text, edge-cacheable", async () => {
     const a = await app(new Request("http://docs.test/llms.txt"));
     expect(a.status).toBe(200);
     expect(await a.text()).toBe("# Caisson\n\n> idx\n");
+    expect(a.headers.get("Cache-Control")).toBe("public, max-age=3600");
     const b = await app(new Request("http://docs.test/llms-full.txt"));
     expect(b.status).toBe(200);
     expect(await b.text()).toBe("# Billing\n");
+    expect(b.headers.get("Cache-Control")).toBe("public, max-age=3600");
+  });
+
+  test("POST /query is NOT cached", async () => {
+    const res = await app(
+      post(JSON.stringify({ query: "billing" }), `Bearer ${TOKEN}`),
+    );
+    expect(res.headers.get("Cache-Control")).toBeNull();
   });
 
   test("POST /query without a Bearer → 401", async () => {
