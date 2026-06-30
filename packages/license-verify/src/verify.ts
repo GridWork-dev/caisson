@@ -79,9 +79,10 @@ export function verifyLicense(
  * The verify core, parameterized over the Ed25519 public key. {@link verifyLicense} is the production
  * entrypoint and pins `publicKey` to the baked key — that is the offline contract. This explicit-key
  * form exists for (1) tests, which sign with a dev keypair because the production private half never
- * lives in the repo, and (2) advanced self-hosting where a buyer runs their own issuer key. It is NOT
- * re-exported on the package's default surface implicitly trusted by gates; callers that take it
- * accept responsibility for the key they pass. Same fail-safe-to-community contract — NEVER throws.
+ * lives in the repo, and (2) advanced self-hosting where a buyer runs their own issuer key. It IS
+ * exported for those uses, but it is NOT the gate-trusted entrypoint — that is {@link verifyLicense}
+ * pinned to the baked key. Callers that reach for this explicit-key form accept responsibility for the
+ * key they pass. Same fail-safe-to-community contract — NEVER throws.
  */
 export function verifyLicenseWithKey(
   token: string | null | undefined,

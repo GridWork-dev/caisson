@@ -30,6 +30,12 @@ export interface IssueAppDeps {
  * tier is the SHARED `licenseTierSchema` (never re-declared). `entitlements` are NOT taken from the
  * caller — they are resolved server-side from the account's purchases (ADR-0071), so a caller cannot
  * mint itself entitlements it did not buy. `expiry` is an ISO-8601 instant or `null` (perpetual-per-major).
+ *
+ * TRUST ASSUMPTION (`tier`): unlike `entitlements`, `tier` is asserted by the caller. This is a
+ * server-to-server, bearer-gated endpoint whose sole caller is the billing service, which derives the
+ * tier from the same account-entitlement store. The bearer token (`LICENSE_ISSUE_TOKEN`) is the trust
+ * boundary; there is no independent purchase→tier check here by design — downstream feature access gates
+ * on the server-resolved `entitlements` list, not the `tier` label.
  */
 const IssueBody = z
   .object({
@@ -128,7 +134,15 @@ export function createApp(
         major,
         expiry,
       };
-      const token = await issueLicense(deps.signer, claims);
+      let token: string;
+      try {
+        token = await issueLicense(deps.signer, claims);
+      } catch {
+        // A signer failure (corrupted PKCS8 key, a future KMS adapter timeout) must surface as a
+        // structured 500 — never an unhandled async rejection that Bun renders as a non-JSON body or
+        // leaks internal error detail. Mirrors the entitlement-resolution guard above.
+        return json({ error: "signing failed" }, 500);
+      }
       return json({ token, licenseId: claims.licenseId });
     }
 
