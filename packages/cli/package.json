@@ -1,9 +1,12 @@
 {
   "name": "@caisson/cli",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
   "description": "create-caisson generator: composes a tailored repo from the versioned registry; agent-drivable; codegen-credit metered.",
   "exports": {
     ".": {
@@ -13,10 +16,15 @@
     }
   },
   "bin": {
-    "create-caisson": "./src/cli.ts"
+    "create-caisson": "./dist/cli.js"
   },
+  "files": [
+    "dist",
+    "templates",
+    "migrations-bundle"
+  ],
   "scripts": {
-    "build": "bun run scripts/bundle-migrations.ts && tsc -p tsconfig.json && tsc -p tsconfig.scripts.json",
+    "build": "bun run scripts/bundle-migrations.ts && tsc -p tsconfig.json && tsc -p tsconfig.scripts.json && bun run scripts/add-shebang.ts",
     "lint": "eslint src scripts",
     "test": "bun test ./src ./scripts"
   },
@@ -24,7 +32,7 @@
     "@caisson/credits": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/migrate": "workspace:*",
-    "@caisson/registry": "workspace:*",
+    "@caisson/registry-schema": "workspace:*",
     "zod": "^3.23.8"
   },
   "devDependencies": {
