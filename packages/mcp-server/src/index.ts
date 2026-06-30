@@ -19,3 +19,5 @@ export type {
   ForgeConfigFile,
   CoachWriteResult,
 } from "./coach.ts";
+export { createStdioMcpServer, runStdioServer } from "./stdio.ts";
+export type { StdioServerDeps } from "./stdio.ts";

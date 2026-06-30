@@ -1,0 +1,147 @@
+// T5.3: end-to-end proof of the stdio transport binding — drives the bound `Server` through a REAL
+// `@modelcontextprotocol/sdk` `Client` over `InMemoryTransport` (the SDK's own pair-of-linked-pipes
+// test utility: real JSON-RPC request/response framing, just not a real OS stdin/stdout pipe — the
+// server-side code under test (`createStdioMcpServer`) is transport-agnostic over any `Transport`,
+// so swapping in `InMemoryTransport` here exercises the exact same wiring `runStdioServer` connects
+// to a real `StdioServerTransport`). The host (`onGenerate`) stays an in-memory fixture, mirroring
+// the rest of this DB-free package (`rate-limit.test.ts`) — a real PGlite/Postgres `Transactor` is
+// the deploying app's job (`apps/base`), not this package's.
+import { afterEach, describe, expect, test } from "bun:test";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { AuthnError } from "@caisson/kernel";
+import { loadRegistryIndex } from "@caisson/registry-schema";
+import {
+  createStdioMcpServer,
+  runStdioServer,
+  type StdioServerDeps,
+} from "./stdio.ts";
+
+const index = loadRegistryIndex({
+  schemaVersion: 1,
+  modules: [
+    {
+      id: "@caisson/auth",
+      latest: "0.1.0",
+      versions: [
+        {
+          version: "0.1.0",
+          manifest: {
+            id: "@caisson/auth",
+            version: "0.1.0",
+            kind: "base",
+            tier: "paid",
+            priceCents: 4900,
+            license: "LicenseRef-Caisson-Commercial",
+            description: "Fixture module for the stdio transport test.",
+          },
+          publishedAt: "2026-06-27T00:00:00.000Z",
+          gateAttestation: "ci-fixture@0000000",
+        },
+      ],
+    },
+  ],
+});
+
+const TOKEN = "mcp_tok_stdio_buyer_x000000000000";
+
+function deps(): StdioServerDeps {
+  return {
+    mcp: {
+      tokens: [
+        {
+          token: TOKEN,
+          accountId: "acct_stdio",
+          entitlements: ["@caisson/auth"],
+        },
+      ],
+      index,
+      onGenerate: () => Promise.resolve({ generationId: "gen_stdio_1" }),
+    },
+    bearer: TOKEN,
+  };
+}
+
+let client: Client | undefined;
+
+afterEach(async () => {
+  await client?.close();
+  client = undefined;
+});
+
+describe("stdio transport binding (T5.3)", () => {
+  test("auth gates an unauthenticated call: a bad bearer never reaches a transport", () => {
+    // No `Server` is constructed and no transport connects on a bad token — every tool a valid
+    // buyer could call is unreachable, not just the first one (see stdio.ts file header).
+    expect(() =>
+      createStdioMcpServer({ ...deps(), bearer: "not-a-real-token" }),
+    ).toThrow(AuthnError);
+  });
+
+  test("a valid bearer: list_tools + tools/call round-trip through the real transport", async () => {
+    const server = createStdioMcpServer(deps());
+    const [serverTransport, clientTransport] =
+      InMemoryTransport.createLinkedPair();
+    client = new Client({ name: "stdio-test-client", version: "0.0.0" });
+
+    await Promise.all([
+      server.connect(serverTransport),
+      client.connect(clientTransport),
+    ]);
+
+    const tools = await client.listTools();
+    expect(tools.tools.map((t) => t.name)).toEqual([
+      "describe_module",
+      "generate",
+      "list_modules",
+    ]);
+
+    const result = await client.callTool({
+      name: "list_modules",
+      arguments: {},
+    });
+    expect(result.isError).toBeFalsy();
+    const content = result.content as { type: string; text: string }[];
+    expect(JSON.parse(content[0]?.text ?? "{}")).toEqual({
+      modules: ["@caisson/auth"],
+    });
+  });
+
+  test("a tool-level failure surfaces as an MCP isError result, not a thrown protocol error", async () => {
+    const server = createStdioMcpServer(deps());
+    const [serverTransport, clientTransport] =
+      InMemoryTransport.createLinkedPair();
+    client = new Client({ name: "stdio-test-client", version: "0.0.0" });
+
+    await Promise.all([
+      server.connect(serverTransport),
+      client.connect(clientTransport),
+    ]);
+
+    // describe_module is entitlement-gated; this buyer is not entitled to @caisson/billing.
+    const result = await client.callTool({
+      name: "describe_module",
+      arguments: { name: "@caisson/billing" },
+    });
+    expect(result.isError).toBe(true);
+    const content = result.content as { type: string; text: string }[];
+    expect(JSON.parse(content[0]?.text ?? "{}")).toMatchObject({
+      error: { code: "not_entitled" },
+    });
+  });
+
+  test("runStdioServer connects the bound server to an injected transport and returns it", async () => {
+    const [serverTransport, clientTransport] =
+      InMemoryTransport.createLinkedPair();
+    client = new Client({ name: "stdio-test-client", version: "0.0.0" });
+
+    const [server] = await Promise.all([
+      runStdioServer(deps(), serverTransport),
+      client.connect(clientTransport),
+    ]);
+
+    expect(server.transport).toBeDefined();
+    const tools = await client.listTools();
+    expect(tools.tools.length).toBeGreaterThan(0);
+  });
+});
