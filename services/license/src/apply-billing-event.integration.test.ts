@@ -6,7 +6,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { ConfigError } from "@caisson/kernel";
 import { type TestPg, newTestPg } from "@caisson/testing";
-import { CREDIT_SCHEMA_SQL, balance, getLedger } from "@caisson/credits";
+import { CREDIT_SCHEMA_SQL, balance, debit, getLedger } from "@caisson/credits";
 import { withTenant } from "@caisson/tenancy-rls";
 import { type DomainBillingEvent, parseStripeEvent } from "@caisson/billing";
 import { applyBillingEvent } from "./apply-billing-event.ts";
@@ -19,6 +19,43 @@ const PLAN_ID = "price_developer_monthly_PLACEHOLDER"; // 1000 credits/cycle, en
 const CREDITS = 1000;
 // An edition plan (12000 credits/cycle) that ALSO grants the `compliance` entitlement (ADR-0071).
 const EDITION_PLAN_ID = "price_compliance_updates_annual_PLACEHOLDER";
+// One-time PURCHASE_BOOK placeholders (ADR-0109): a 5000-credit pack (no entitlement) + a license-only
+// compliance buy (0 credits, grants the `compliance` entitlement).
+const CREDIT_PACK_ID = "price_credit_pack_PLACEHOLDER";
+const PACK_CREDITS = 5000;
+const ONETIME_EDITION_ID = "price_compliance_onetime_PLACEHOLDER";
+
+function purchaseCompleted(
+  accountId: string,
+  paymentId: string,
+  priceId: string,
+): DomainBillingEvent {
+  return {
+    type: "purchase.completed",
+    sourceEventId: `evt_${paymentId}`,
+    accountId,
+    amountTotal: 499900,
+    currency: "usd",
+    priceId,
+    paymentId,
+  };
+}
+
+function refundCompleted(
+  accountId: string,
+  paymentId: string,
+  fullyRefunded = true,
+): DomainBillingEvent {
+  return {
+    type: "refund.completed",
+    sourceEventId: `evt_refund_${paymentId}`,
+    accountId,
+    paymentId,
+    amountRefunded: 499900,
+    currency: "usd",
+    fullyRefunded,
+  };
+}
 
 let tp: TestPg;
 
@@ -120,7 +157,7 @@ describe("applyBillingEvent — subscription cycle -> grant (ADR-0089)", () => {
     expect(ledger).toHaveLength(0);
   });
 
-  test("subscription.canceled grants nothing and never claws back", async () => {
+  test("subscription.canceled never claws back credits (only entitlements revoke, ADR-0109)", async () => {
     const acct = "acct_cancel";
     await withTenant(tp.pg, acct, (tx) =>
       applyBillingEvent(tx, invoicePaid(acct, "in_c")),
@@ -130,10 +167,11 @@ describe("applyBillingEvent — subscription cycle -> grant (ADR-0089)", () => {
         type: "subscription.canceled",
         sourceEventId: "evt_x",
         accountId: acct,
+        subscriptionId: "sub_1",
       }),
     );
     const bal = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
-    expect(bal).toBe(CREDITS); // prior balance intact
+    expect(bal).toBe(CREDITS); // credits are append-only / no-clawback on cancel
   });
 
   test("an unknown price id fails closed — throws, writes nothing", async () => {
@@ -183,19 +221,308 @@ describe("applyBillingEvent — subscription cycle -> grant (ADR-0089)", () => {
     expect(ledger[0]?.source_event_id).toBe("in_rt");
   });
 
-  test("purchase.completed grants nothing here (one-time entitlement needs line-item enrichment)", async () => {
-    const acct = "acct_purchase";
-    await withTenant(tp.pg, acct, (tx) =>
-      applyBillingEvent(tx, {
-        type: "purchase.completed",
-        sourceEventId: "evt_p",
-        accountId: acct,
-        amountTotal: 89900,
-        currency: "usd",
-      }),
-    );
+  test("an unknown one-time price id fails closed — throws, writes nothing", async () => {
+    const acct = "acct_purchase_unknown";
+    await expect(
+      withTenant(tp.pg, acct, (tx) =>
+        applyBillingEvent(
+          tx,
+          purchaseCompleted(acct, "pi_unknown", "price_not_in_book"),
+        ),
+      ),
+    ).rejects.toThrow(ConfigError);
     const ledger = await withTenant(tp.pg, acct, (tx) => getLedger(tx, acct));
     expect(ledger).toHaveLength(0);
+  });
+
+  test("purchase.completed with no payment id fails closed (cannot anchor a refund)", async () => {
+    const acct = "acct_purchase_nopid";
+    await expect(
+      withTenant(tp.pg, acct, (tx) =>
+        applyBillingEvent(tx, purchaseCompleted(acct, "", CREDIT_PACK_ID)),
+      ),
+    ).rejects.toThrow(ConfigError);
+  });
+});
+
+describe("applyBillingEvent — one-time purchase grant (ADR-0109)", () => {
+  test("a one-time credit pack grants credits keyed on the payment id (no entitlement)", async () => {
+    const acct = "acct_pack";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, purchaseCompleted(acct, "pi_pack", CREDIT_PACK_ID)),
+    );
+    const bal = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
+    expect(bal).toBe(PACK_CREDITS);
+    const ledger = await withTenant(tp.pg, acct, (tx) => getLedger(tx, acct));
+    expect(ledger).toHaveLength(1);
+    expect(ledger[0]?.event_type).toBe("purchase");
+    expect(ledger[0]?.source_event_id).toBe("pi_pack"); // refund looks up the grant by this id
+    const ents = await withTenant(tp.pg, acct, (tx) =>
+      readEntitlements(tx, acct),
+    );
+    expect(ents).toEqual([]);
+  });
+
+  test("a one-time edition buy grants the entitlement (license-only, no credit pack)", async () => {
+    const acct = "acct_onetime_ed";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pi_ed", ONETIME_EDITION_ID),
+      ),
+    );
+    const ents = await withTenant(tp.pg, acct, (tx) =>
+      readEntitlements(tx, acct),
+    );
+    expect(ents).toEqual(["compliance"]);
+    const bal = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
+    expect(bal).toBe(0); // 0-credit license-only buy grants no credits
+  });
+
+  test("a one-time grant SURVIVES a subscription cancel for the same edition (refcount)", async () => {
+    const acct = "acct_survive";
+    // Subscription grants compliance...
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        invoicePaid(acct, "in_s1", { priceId: EDITION_PLAN_ID }),
+      ),
+    );
+    // ...and a one-time buy ALSO grants compliance.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pi_s1", ONETIME_EDITION_ID),
+      ),
+    );
+    // Cancel the subscription (sub_1, from invoicePaid's fixture).
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, {
+        type: "subscription.canceled",
+        sourceEventId: "evt_cancel",
+        accountId: acct,
+        subscriptionId: "sub_1",
+      }),
+    );
+    const ents = await withTenant(tp.pg, acct, (tx) =>
+      readEntitlements(tx, acct),
+    );
+    expect(ents).toEqual(["compliance"]); // the one-time grant keeps it alive
+  });
+
+  test("subscription.canceled revokes the subscription's entitlement (no other source)", async () => {
+    const acct = "acct_revoke_only";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        invoicePaid(acct, "in_r1", { priceId: EDITION_PLAN_ID }),
+      ),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]);
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, {
+        type: "subscription.canceled",
+        sourceEventId: "evt_c2",
+        accountId: acct,
+        subscriptionId: "sub_1",
+      }),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual([]); // gone — refcount 0
+  });
+});
+
+describe("applyBillingEvent — refund: revoke + claw unspent credits (ADR-0109)", () => {
+  test("refund soft-revokes the purchase's entitlement AND claws back the full unspent grant", async () => {
+    const acct = "acct_refund_full";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, purchaseCompleted(acct, "pi_rf", CREDIT_PACK_ID)),
+    );
+    // Also a one-time edition so the refund has an entitlement to revoke.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        // SAME payment id so the refund revokes this entitlement grant too.
+        purchaseCompleted(acct, "pi_rf", ONETIME_EDITION_ID),
+      ),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]);
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, refundCompleted(acct, "pi_rf")),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual([]); // entitlement revoked
+    const bal = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
+    expect(bal).toBe(0); // full 5000 clawed back (nothing spent)
+  });
+
+  test("a spent-down wallet claws back ONLY the remainder (never negative)", async () => {
+    const acct = "acct_refund_spent";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pi_sp", ONETIME_EDITION_ID),
+      ),
+    );
+    // Grant a separate credit pack on the SAME purchase so there are credits to spend + claw.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, purchaseCompleted(acct, "pi_sp", CREDIT_PACK_ID)),
+    );
+    // Spend 4000 of the 5000.
+    await withTenant(tp.pg, acct, (tx) =>
+      debit(tx, {
+        eventType: "codegen_debit",
+        accountId: acct,
+        amount: 4000,
+        idempotencyKey: "spend_sp",
+      }),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, refundCompleted(acct, "pi_sp")),
+    );
+    const bal = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
+    expect(bal).toBe(0); // only the unspent 1000 clawed; never negative
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual([]);
+  });
+
+  test("a fully-spent wallet claws back nothing (no debit row, never negative)", async () => {
+    const acct = "acct_refund_zero";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, purchaseCompleted(acct, "pi_z", CREDIT_PACK_ID)),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      debit(tx, {
+        eventType: "codegen_debit",
+        accountId: acct,
+        amount: PACK_CREDITS,
+        idempotencyKey: "spend_z",
+      }),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, refundCompleted(acct, "pi_z")),
+    );
+    const bal = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
+    expect(bal).toBe(0);
+    const ledger = await withTenant(tp.pg, acct, (tx) => getLedger(tx, acct));
+    // purchase + spend only — NO refund_clawback row (a zero debit would violate amount<>0).
+    expect(ledger.map((e) => e.event_type)).toEqual([
+      "purchase",
+      "codegen_debit",
+    ]);
+  });
+
+  test("a re-delivered refund does not double-revoke or double-claw (idempotent)", async () => {
+    const acct = "acct_refund_idem";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, purchaseCompleted(acct, "pi_id", CREDIT_PACK_ID)),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pi_id", ONETIME_EDITION_ID),
+      ),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, refundCompleted(acct, "pi_id")),
+    );
+    // Buyer buys a fresh credit pack AFTER the refund (a different payment).
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, purchaseCompleted(acct, "pi_new", CREDIT_PACK_ID)),
+    );
+    // A stale re-delivery of the SAME refund must do nothing: the revoke is a no-op (no active grant
+    // left) AND the clawback dedups on its (paymentId, refund_clawback) unique key — no second debit.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, refundCompleted(acct, "pi_id")),
+    );
+    const bal = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
+    expect(bal).toBe(PACK_CREDITS); // only the post-refund pack survives; no second clawback
+  });
+
+  test("a PARTIAL refund (fullyRefunded=false) is a no-op — no revoke, no clawback (ADR-0109 W1)", async () => {
+    const acct = "acct_refund_partial";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, purchaseCompleted(acct, "pi_pt", CREDIT_PACK_ID)),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pi_pt", ONETIME_EDITION_ID),
+      ),
+    );
+    // A partial charge.refunded must NOT strip access or claw the whole grant.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, refundCompleted(acct, "pi_pt", false)),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]); // still entitled
+    const bal = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
+    expect(bal).toBe(PACK_CREDITS); // nothing clawed
+  });
+
+  test("a credits-only pack refund claws back the unspent credits (no entitlement to revoke)", async () => {
+    // The clawback fires on the granted-credits lookup, NOT the entitlement-revoke count — so a pure
+    // credit-pack refund (entitlements: []) still reclaims the unspent credits (ADR-0109 N1).
+    const acct = "acct_refund_pack_only";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, purchaseCompleted(acct, "pi_pk", CREDIT_PACK_ID)),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual([]); // a credit pack grants no entitlement
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, refundCompleted(acct, "pi_pk")),
+    );
+    const bal = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
+    expect(bal).toBe(0); // the full 5000 unspent pack clawed back
+  });
+
+  test("a refund round-trips from a parsed charge.refunded (W2/B1 seam)", async () => {
+    const acct = "acct_refund_rt";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, purchaseCompleted(acct, "pi_rt", CREDIT_PACK_ID)),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pi_rt", ONETIME_EDITION_ID),
+      ),
+    );
+    const raw = {
+      id: "evt_refund_rt",
+      type: "charge.refunded",
+      data: {
+        object: {
+          payment_intent: "pi_rt",
+          amount_refunded: 499900,
+          currency: "usd",
+          refunded: true, // a FULL refund — the mapper acts (a partial leaves this false)
+          // Stripe copies the PaymentIntent metadata (stamped at checkout) onto the Charge.
+          metadata: { account_id: acct },
+        },
+      },
+    } as Parameters<typeof parseStripeEvent>[0];
+    const ev = parseStripeEvent(raw);
+    expect(ev?.type).toBe("refund.completed");
+    if (ev?.type === "refund.completed") {
+      expect(ev.paymentId).toBe("pi_rt"); // the join key actually resolves
+    }
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, ev as DomainBillingEvent),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual([]);
+    const bal = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
+    expect(bal).toBe(0);
   });
 });
 
