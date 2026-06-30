@@ -184,16 +184,22 @@ the track is **harden, not build**. Locks recorded as append-only ADRs 0099–01
 The DEPLOY-class operator session (worktree `caisson-ops`, branch `chore/p6-go-live`) locked the two
 remaining operator-owned forks before go-live, on a 5-agent grounded research fanout (GTM reports +
 pricing/CF-Access ADRs + state board + deploy feasibility, file:line evidence). Locks recorded as
-append-only ADRs 0106–0107; the code track reserves 0108+.
+append-only ADRs 0106–0107 (+ 0108 Paddle-MoR and 0109 support-bot member-mgmt added in the 2026-06-30 go-live session); the code track reserves 0110+.
 
 | Fork                                            | Decision                                                                                                                                                                                                                                                                                                                                                                                                                          | Record       |
 | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
 | **A1 — final pricing + grandfathering**         | **Moderate raise to the research floor:** Compliance **$2,499** · everything-Bundle **$3,499** (discount, ~15% off $4,096 parts) · Compliance-Updates **$1,499/yr** · Developer **$499/yr** · Enterprise **"Contact us"**; AI-Kit $599 / Local-first $499 / Agentic $499 hold. **Forward grandfather** (zero buyers yet); MEDIUM confidence (WTP unvalidated). Executes ADR-0095 §4; supersedes ADR-0082 §2 display point-values. | **ADR-0106** |
 | **A2 — CF-Access go-live gate**                 | **Keep gated** until checkout works + Compliance buyable end-to-end + license issuer + EULA land; the flip (`rm access.tf` + `terraform apply`, pages.dev sealed via Pages-native Access) is the deliberate DEPLOY launch act, never autonomous. Formalizes the prior board decision + the 10-step go-live checklist.                                                                                                             | **ADR-0107** |
 | **Payment provider (post-kickoff, 2026-06-30)** | **Paddle as Merchant of Record** — supersedes the Stripe-as-MoR assumption (operator carries no tax registration/remittance; Paddle remits + owns the invoice). Code track reworks the ADR-0089 cycle→grant mapper Stripe→Paddle; license/entitlement/registry are provider-agnostic.                                                                                                                                             | **ADR-0108** |
+| **Support-bot member management (2026-06-30)**  | **Extend the one bot** (not a 2nd process) with server ops: on-join auto-role + welcome, persistent self-assign buttons, double-gated mod commands (`/kick`·`/ban`·`/timeout`·`/role-add`·`/role-remove`), `/grant-role` (edition→role). Privileged `members` intent gated on config; billing-webhook grant endpoint deferred to the Paddle phase. Built + DEPLOYED this session.                                                 | **ADR-0109** |
 
 > Part B of the same session (Paddle · support-bot · docs-service · license keypair deploys) is
-> DEPLOY-class + cred-gated — tracked in `readiness-and-backlog.md` §2, not a decision fork.
+> DEPLOY-class + cred-gated — tracked in `readiness-and-backlog.md` §2. **Done in the 2026-06-30
+> go-live session:** docs-service redeployed with the live OpenRouter embedder (semantic search live
+> at `docs-api.caisson.sh`); support-bot redeployed with member management (● Online); the Discord
+> server was fully built out (roles · categories · channels · permissions · icon · name). Remaining
+> operator step: enable the two privileged intents in the Developer Portal, then wire
+> `SUPPORT_CHANNEL_ID` + `MEMBER_ROLE_ID`. Paddle still awaits the operator's account + sandbox creds.
 
 ## Recently closed (Wave-1 forks round, 2026-06-27)
 

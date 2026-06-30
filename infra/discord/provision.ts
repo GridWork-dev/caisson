@@ -46,7 +46,6 @@ const SEND_IN_THREADS = 1n << 38n;
 const KICK = 1n << 1n;
 const BAN = 1n << 2n;
 const MODERATE = 1n << 40n;
-const MANAGE_ROLES = 1n << 28n;
 const MANAGE_THREADS = 1n << 34n;
 const VIEW_AUDIT_LOG = 1n << 7n;
 

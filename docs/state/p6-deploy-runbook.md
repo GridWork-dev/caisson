@@ -12,16 +12,31 @@ the commerce backend follow the same posture.
 >
 > - **docs-service** → `https://docs-api.caisson.sh` (CF CNAME, DNS-only + Railway TLS) and
 >   `caisson-docs-production.up.railway.app`. `/health` 200, `/llms.txt` serving the real corpus,
->   `POST /query` Bearer-authed. **FTS5 keyword floor** — sentence queries return `[]` until the
->   code-track OpenRouter embedder lands (then redeploy lights up the vector leg).
-> - **support-bot** → ● Online, connected to the **Caisson.sh** guild (`1521508737133842533`) as
->   `Caisson.sh Bot`. No public domain (outbound gateway; `/health` is the internal liveness probe only).
-> - Build gotcha (both): Railway uploads the **repo root** and runs Railpack unless
+>   `POST /query` Bearer-authed. **SEMANTIC SEARCH NOW LIVE** — the OpenRouter `qwen3-embedding-8b`
+>   embedder is wired (`ADR-0096` deploy wire, commit `33f4ef3`); natural-language sentence queries
+>   return ranked chunks (verified). Boot 502s for ~60-90s while the 121 chunks embed, then health passes.
+> - **support-bot** → ● Online, connected to the **Caisson** guild (`1521508737133842533`) as the
+>   Caisson bot. **Member management deployed** (`ADR-0109`, commit `ebda98c`): 8 slash commands live
+>   (`/ask /ban /grant-role /kick /post-roles /role-add /role-remove /timeout`). Safe channel/role ids
+>   wired into the Railway env. No public domain (outbound gateway; `/health` is the internal probe only).
+> - **Discord server BUILT** via `infra/discord/provision.ts` (idempotent bot-token REST): 7 roles, 6
+>   categories, 20 channels with permission overwrites, icon + name "Caisson" + verification MEDIUM.
+> - Build gotcha (both services): Railway uploads the **repo root** and runs Railpack unless
 >   `RAILWAY_DOCKERFILE_PATH` is set — it is mandatory on each service, and the Dockerfiles use
->   repo-root-relative `COPY` paths. Bot port: `PORT`+`HEALTH_PORT` pinned to `8080` so Railway's probe
->   matches the bot's health server.
+>   repo-root-relative `COPY` paths. Bot port: `PORT`+`HEALTH_PORT` pinned to `8080`.
+>
+> **Remaining operator steps to finish member-mgmt go-live:**
+>
+> 1. Developer Portal → enable **Server Members Intent** + **Message Content Intent** (privileged).
+> 2. Then set `MEMBER_ROLE_ID=1521528395601805534` + `SUPPORT_CHANNEL_ID=1521528418930524270` on
+>    `caisson-support-bot` and redeploy → auto-role + #ask-ai listener activate. (Held back until the
+>    Portal toggles are on, else the gateway refuses to connect.)
+> 3. Enable **Community** in the dashboard, then re-run `bun infra/discord/provision.ts` to upgrade
+>    #support/#bug-reports/#feature-requests → forum, #announcements/#changelog → announcement.
+> 4. Scope the bot's role down from Administrator to a least-privilege role before go-live (`ADR-0107`).
+>
 > - 🔴 **Rotate** the Discord token + OpenRouter key (pasted into chat earlier) and update the env +
->   Railway service vars once the smoke is green.
+>   Railway service vars once green.
 
 ## Status at a glance
 
