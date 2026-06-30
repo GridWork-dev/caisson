@@ -8,6 +8,7 @@ export type {
   GenerateSelection,
   ToolHandlerContext,
   ToolRegistration,
+  RateLimitHook,
 } from "./server.ts";
 export { registerCoachTools, presenceEnvPort } from "./coach.ts";
 export type {
