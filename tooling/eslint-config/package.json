@@ -11,7 +11,7 @@
   },
   "scripts": {
     "lint": "echo 'eslint-config: config package, no self-lint'",
-    "test": "echo 'eslint-config: rule tests land with the ADR-0013 harness'"
+    "test": "bun test boundaries.test.ts"
   },
   "dependencies": {
     "@eslint/js": "^9.13.0",

@@ -7,12 +7,15 @@
 // never imports another edition.
 
 // The gateway + the provider-registry resolver (AI-SDK core only — no vendor SDK here).
-export { buildRegistryResolver, infer } from "./gateway.ts";
+export { buildRegistryResolver, infer, inferStream } from "./gateway.ts";
 export type {
   GuardConfig,
   InferInput,
   InferOptions,
   InferResult,
+  InferStreamOptions,
+  InferStreamResult,
+  InferStreamSettled,
   ModelResolver,
 } from "./gateway.ts";
 
