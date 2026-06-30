@@ -1,0 +1,109 @@
+/* LoadingState — the kit skeleton (ADR-0099 recipe). Co-located; variant via [data-variant];
+ * values via --cs-* only. A soft pulse animates the bars; disabled under prefers-reduced-motion. */
+.cs-skeleton {
+  display: block;
+  width: 100%;
+}
+
+/* Visually-hidden busy label (kept in the a11y tree, screen-reader only). */
+.cs-skeleton__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.cs-skeleton__bar {
+  display: block;
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-surface-2);
+}
+
+.cs-skeleton__bar--xs {
+  height: 0.75rem;
+  width: 100%;
+}
+.cs-skeleton__bar--sm {
+  height: 1rem;
+  width: 100%;
+}
+.cs-skeleton__bar--lg {
+  height: 1.75rem;
+  width: 60%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cs-skeleton__bar {
+    animation: cs-skeleton-pulse 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes cs-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* variant: table — a header row + N body rows, columns sized as flexible tracks. */
+.cs-skeleton__table {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-3);
+}
+
+.cs-skeleton__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: var(--cs-space-4);
+  padding-block: var(--cs-space-2);
+}
+
+.cs-skeleton__row--head .cs-skeleton__bar {
+  width: 50%;
+}
+
+/* variant: stat — a 4-up tile row (label bar + value bar), matching MetricStat shape. */
+.cs-skeleton__stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--cs-space-5);
+}
+
+.cs-skeleton__tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-2);
+  padding: var(--cs-space-5);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-lg);
+  background: var(--cs-surface-1);
+}
+
+@media (max-width: 48rem) {
+  .cs-skeleton__stat-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* variant: list — stacked single-line rows (e.g. a ledger). */
+.cs-skeleton__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-3);
+}
+
+/* variant: block — a generic two-line placeholder. */
+.cs-skeleton__block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-2);
+}

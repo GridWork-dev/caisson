@@ -1,0 +1,73 @@
+/* DataTable — typed generic table with built-in empty/loading states (ADR-0099 recipe).
+ * Co-located; numeric/dense via [data-*]; values via --cs-* only. */
+.cs-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-lg);
+}
+
+.cs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--cs-text-sm);
+}
+
+.cs-table th,
+.cs-table td {
+  padding: var(--cs-space-4);
+  border-bottom: 1px solid var(--cs-border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.cs-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.cs-table thead th {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  letter-spacing: var(--cs-tracking-wide);
+  text-transform: uppercase;
+  color: var(--cs-fg-muted);
+  font-weight: var(--cs-weight-medium);
+  background: var(--cs-surface-1);
+}
+
+.cs-table th[data-numeric],
+.cs-table td[data-numeric] {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.cs-table tbody tr:hover {
+  background: var(--cs-surface-1);
+}
+
+.cs-table__state-cell {
+  padding: 0;
+  border-bottom: 0;
+}
+
+.cs-table__state-cell > .cs-skeleton,
+.cs-table__state-cell > .cs-empty {
+  padding: var(--cs-space-8) var(--cs-space-6);
+}
+
+/* dense — tighter padding for data-heavy grids. */
+.cs-table[data-dense] th,
+.cs-table[data-dense] td {
+  padding: var(--cs-space-2) var(--cs-space-3);
+}
+
+/* Forced-colors (Windows high-contrast) — keep the bordered chrome visible. */
+@media (forced-colors: active) {
+  .cs-table-wrap {
+    border: 1px solid CanvasText;
+  }
+  .cs-table th,
+  .cs-table td {
+    border-bottom: 1px solid CanvasText;
+  }
+}

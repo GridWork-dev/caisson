@@ -1,0 +1,63 @@
+/* MetricStat — a single dashboard stat tile (ADR-0099 recipe). Co-located; tone via
+ * [data-tone] → a local-indirection --stat-fg var (recipe rule 3); values via --cs-*
+ * only. */
+.cs-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-2);
+  padding: var(--cs-space-5);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-lg);
+  background: var(--cs-surface-1);
+}
+
+.cs-stat__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cs-space-2);
+}
+
+.cs-stat__label {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  font-weight: var(--cs-weight-medium);
+  letter-spacing: var(--cs-tracking-wide);
+  text-transform: uppercase;
+  color: var(--cs-fg-muted);
+}
+
+.cs-stat__icon {
+  display: inline-flex;
+  color: var(--stat-fg, var(--cs-fg-muted));
+}
+
+.cs-stat__value {
+  font-size: var(--cs-text-3xl);
+  font-weight: var(--cs-weight-semibold);
+  letter-spacing: var(--cs-tracking-tight);
+  line-height: var(--cs-leading-tight);
+  color: var(--stat-fg, var(--cs-fg));
+}
+
+.cs-stat__hint {
+  font-size: var(--cs-text-sm);
+  color: var(--cs-fg-muted);
+}
+
+.cs-stat[data-tone="positive"] {
+  --stat-fg: var(--cs-success);
+}
+.cs-stat[data-tone="warning"] {
+  --stat-fg: var(--cs-warning);
+}
+.cs-stat[data-tone="critical"] {
+  --stat-fg: var(--cs-danger);
+}
+
+/* Forced-colors (Windows high-contrast) — keep the bordered tile visible. */
+@media (forced-colors: active) {
+  .cs-stat {
+    border: 1px solid CanvasText;
+  }
+}
