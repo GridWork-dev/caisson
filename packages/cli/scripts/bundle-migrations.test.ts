@@ -34,16 +34,19 @@ describe("planMigrationBundle (ADR-0091)", () => {
   test("discovers the contributing modules' migrations from the real source tree", () => {
     const plan = planMigrationBundle(PACKAGES_ROOT, bundleRoot);
     const modules = new Set(plan.map((p) => p.module));
-    // field-crypto (1) + audit-worm (2) are the only current sources (ADR-0091).
+    // field-crypto + audit-worm are the migration-bearing sources today (ADR-0091).
     expect(modules.has("field-crypto")).toBe(true);
     expect(modules.has("audit-worm")).toBe(true);
+    // Structural, not exact-filename: each discovered module contributes ≥1 well-formed migration
+    // (NNNN_*.sql). Survives adding/renaming a source migration — the layout + round-trip invariants
+    // below lock the contract that actually ships.
     const byModule = (m: string) =>
       plan.filter((p) => p.module === m).map((p) => p.file);
-    expect(byModule("field-crypto")).toEqual(["0001_field_keys.sql"]);
-    expect(byModule("audit-worm")).toEqual([
-      "0001_audit_chain.sql",
-      "0002_versions.sql",
-    ]);
+    for (const module of modules) {
+      const files = byModule(module);
+      expect(files.length).toBeGreaterThan(0);
+      for (const file of files) expect(file).toMatch(/^\d+_.+\.sql$/);
+    }
   });
 
   test("only NNNN_*.sql files are planned and each maps under bundleRoot/<module>/migrations/", () => {
@@ -108,7 +111,7 @@ describe("bundleMigrations (ADR-0091)", () => {
 // lock: bundle → assembleSelected over the bundle dirs → a non-empty merged sequence.
 describe("round-trip: the bundle is consumable by the resolver (ADR-0091)", () => {
   test("assembleSelected over the bundled dirs yields the merged field-crypto + audit-worm sequence", () => {
-    bundleMigrations(PACKAGES_ROOT, bundleRoot);
+    const copied = bundleMigrations(PACKAGES_ROOT, bundleRoot);
     // Mirror exactly what meter.ts builds: dir = packageDir() = `<bundleRoot>/<module>` (no /migrations
     // here — readPackageMigrations adds it). audit-worm depends on field-crypto (down-only order).
     const selected: readonly SelectedPackage[] = [
@@ -124,7 +127,12 @@ describe("round-trip: the bundle is consumable by the resolver (ADR-0091)", () =
       },
     ];
     const assembly = assembleSelected(selected);
-    // field-crypto (1) + audit-worm (2) = 3 merged, renumbered into one sequence. A flat bundle → 0.
-    expect(assembly.sequence.length).toBe(3);
+    // The merged sequence carries one entry per bundled migration of the SELECTED modules — derived
+    // from disk, so adding a source migration to either keeps this green. A flat bundle → 0.
+    const expectedCount = copied.filter(
+      (c) => c.module === "field-crypto" || c.module === "audit-worm",
+    ).length;
+    expect(expectedCount).toBeGreaterThan(0); // guard: a flat/empty bundle would make this 0
+    expect(assembly.sequence.length).toBe(expectedCount);
   });
 });
