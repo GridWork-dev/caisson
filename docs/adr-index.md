@@ -9,8 +9,8 @@ conflict, the ADR file and the board win over this index.
 - ADRs are append-only and immutable (ADR-0006). A later ADR _supersedes_ a clause; it
   never edits the prior file. So most rows below are **partial** supersessions (one clause),
   not a wholesale replacement.
-- 100 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 100). Numbering is **not**
-  contiguous: present are **0001-0024** and **0040-0115**; **0025-0039 are an unused gap**
+- 103 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 103). Numbering is **not**
+  contiguous: present are **0001-0024** and **0040-0118**; **0025-0039 are an unused gap**
   (no files). The 0040 jump was a deliberate block reservation for the brand/positioning set.
   **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit);
   **0094-0096** = the 2026-06-29 GTM-report locks (open-core Base / GTM offer / services-docs);
@@ -22,13 +22,17 @@ conflict, the ADR file and the board win over this index.
   **0114-0115** = the 2026-06-30 dashboard host/DB picker round (unified dynamic Next 16 app on
   Railway, supersedes ADR-0084's static-export deploy mode / Railway managed Postgres, amends
   ADR-0014's Neon default).
+  **0116-0118** = the 2026-06-30 unified-app build-session picker round (billing driver scope —
+  Paddle platform-only, Stripe retained as a buyer `@caisson/billing` driver, extends 0108 /
+  observability — vendor-neutral OpenTelemetry to a self-hosted SigNoz, supports 0114/0115 /
+  web analytics — Plausible, cookieless, env-gated, complements 0117).
 - Status tokens read from each ADR's own header line:
   - `proposed` = literal header value on the founding + foundations sets (0001-0019, 0024).
     Per the board (line 90) these are **in force / locked** despite the stale "proposed"
     header text written during the Phase-5 spec; the header was never updated. See accuracy
     flags at the bottom.
   - `locked` = D9 module-pipeline set (0020-0023).
-  - `accepted` = brand/wave-0/wave-1/design/gtm sets + picker-round locks + P6 go-live/code tracks + the dashboard host/DB picker round (0040-0115).
+  - `accepted` = brand/wave-0/wave-1/design/gtm sets + picker-round locks + P6 go-live/code tracks + the dashboard host/DB picker round + the billing-scope/observability/analytics picker round (0040-0118).
 
 Domain detail and rationale: read the ADR file. Architecture overview: `specs/01-architecture.md`.
 Product framing: `specs/00-product-spec.md`. Build plan: `plan.md`.
@@ -307,6 +311,18 @@ and the dashboard DB-host fork on the live board (`docs/state/decisions-and-fork
 | ----------------------------------------------------------------------- | --------------------------------------------------------------------------- | -------------- | -------- | ------------------------------------------------------------------------------------- |
 | [0114](../knowledge/decisions/ADR-0114-unified-railway-next-app.md)     | Unified dynamic Next 16 app on Railway (marketing + docs + buyer dashboard) | App/Infra      | accepted | supersedes 0084 deploy mode; amends 0079; re-homes 0107; consistent with 0044/0015    |
 | [0115](../knowledge/decisions/ADR-0115-railway-postgres-platform-db.md) | Railway Postgres as the platform DB host                                    | Database/Infra | accepted | amends 0014 (Neon default -> Railway); supports 0114; supports 0005 (RLS transaction) |
+
+### P6 unified-app build session: billing scope + observability + analytics (0116-0118, 2026-06-30) - status `accepted`
+
+Three operator-picked forks surfaced building the unified app: the buyer-facing `@caisson/billing`
+package's Stripe scope post-Paddle-MoR, the observability vendor, and web analytics. Locked in one
+operator-picker round alongside the dashboard build.
+
+| #                                                                                            | Title                                                                                            | Domain             | Status   | Relations                                  |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------ | -------- | ------------------------------------------ |
+| [0116](../knowledge/decisions/ADR-0116-billing-driver-scope-paddle-platform-stripe-buyer.md) | Billing driver scope: Paddle platform-only; Stripe retained as a buyer `@caisson/billing` driver | Commerce/Billing   | accepted | extends 0108; clarifies 0017; relates 0089 |
+| [0117](../knowledge/decisions/ADR-0117-observability-otel-signoz.md)                         | Observability: vendor-neutral OpenTelemetry -> self-hosted SigNoz                                | Observability      | accepted | supports 0114/0115; complemented by 0118   |
+| [0118](../knowledge/decisions/ADR-0118-web-analytics-plausible.md)                           | Web analytics: Plausible (cookieless, env-gated on `PLAUSIBLE_DOMAIN`)                           | GTM-site/Analytics | accepted | complements 0117; fits 0079/0095           |
 
 ---
 
