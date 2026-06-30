@@ -1,0 +1,342 @@
+// Paddle billing seam (ADR-0108): raw-body HMAC webhook verification + Paddle->domain event mapping.
+// Mirrors billing.test.ts's Stripe coverage. Synthetic secrets only — live Paddle creds + a live
+// webhook smoke-test are operator/DEPLOY-class, out of scope here.
+import { createHmac } from "node:crypto";
+import { afterEach, describe, expect, test } from "bun:test";
+import { AuthnError } from "@caisson/kernel";
+import {
+  createPaddleBilling,
+  parsePaddleEvent,
+  verifyPaddleWebhook,
+} from "./index.ts";
+
+const SECRET = "pdl_ntfset_test_secret";
+const T = 1_700_000_000;
+
+function signed(body: string, secret = SECRET, t = T): string {
+  const sig = createHmac("sha256", secret).update(`${t}:${body}`).digest("hex");
+  return `ts=${t};h1=${sig}`;
+}
+
+const oneTimeTxnBody = JSON.stringify({
+  event_id: "evt_01gks14ge726w50ch2tmaw2a1x",
+  event_type: "transaction.completed",
+  data: {
+    id: "txn_01hvcc93znj3mpqt1tenkjb04y",
+    subscription_id: null,
+    currency_code: "usd",
+    custom_data: { account_id: "acct_a" },
+    items: [{ price: { id: "price_credit_pack_PLACEHOLDER" } }],
+    details: { totals: { grand_total: "5000" } },
+  },
+});
+
+describe("Paddle webhook verification", () => {
+  test("accepts a valid signature within tolerance", () => {
+    expect(() =>
+      verifyPaddleWebhook(oneTimeTxnBody, signed(oneTimeTxnBody), SECRET, {
+        now: T,
+      }),
+    ).not.toThrow();
+  });
+
+  test("rejects a tampered body", () => {
+    const header = signed(oneTimeTxnBody);
+    expect(() =>
+      verifyPaddleWebhook(`${oneTimeTxnBody} `, header, SECRET, { now: T }),
+    ).toThrow(AuthnError);
+  });
+
+  test("rejects the wrong secret", () => {
+    expect(() =>
+      verifyPaddleWebhook(
+        oneTimeTxnBody,
+        signed(oneTimeTxnBody, "pdl_ntfset_wrong"),
+        SECRET,
+        { now: T },
+      ),
+    ).toThrow(AuthnError);
+  });
+
+  test("rejects an out-of-tolerance timestamp (replay)", () => {
+    expect(() =>
+      verifyPaddleWebhook(oneTimeTxnBody, signed(oneTimeTxnBody), SECRET, {
+        now: T + 1000,
+      }),
+    ).toThrow(AuthnError);
+  });
+
+  test("rejects a malformed signature header", () => {
+    expect(() =>
+      verifyPaddleWebhook(oneTimeTxnBody, "garbage", SECRET, { now: T }),
+    ).toThrow(AuthnError);
+  });
+});
+
+describe("event mapping", () => {
+  test("a one-time transaction.completed -> purchase.completed", () => {
+    const event = JSON.parse(oneTimeTxnBody) as Parameters<
+      typeof parsePaddleEvent
+    >[0];
+    expect(parsePaddleEvent(event)).toEqual({
+      type: "purchase.completed",
+      sourceEventId: "evt_01gks14ge726w50ch2tmaw2a1x",
+      accountId: "acct_a",
+      amountTotal: 5000,
+      currency: "usd",
+      priceId: "price_credit_pack_PLACEHOLDER",
+      paymentId: "txn_01hvcc93znj3mpqt1tenkjb04y",
+    });
+  });
+
+  test("a subscription-linked transaction.completed never maps to purchase.completed (ADR-0108 guard)", () => {
+    // Paddle fires the SAME event for the subscription's first charge and every renewal — unlike
+    // Stripe's separate checkout.session.completed/invoice.paid split. Mirrors the Stripe driver's
+    // subscription-mode guard: this must never become a one-time purchase.completed.
+    const event = {
+      event_id: "evt_sub_charge",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_sub1",
+        subscription_id: "sub_01gks14ge726w50ch2tmaw2a1x",
+        origin: "subscription_charge",
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        items: [
+          { price: { id: "price_compliance_updates_annual_PLACEHOLDER" } },
+        ],
+        details: { totals: { grand_total: "1290000" } },
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    const parsed = parsePaddleEvent(event);
+    expect(parsed?.type).not.toBe("purchase.completed");
+    expect(parsed).toEqual({
+      type: "invoice.paid",
+      sourceEventId: "evt_sub_charge",
+      accountId: "acct_a",
+      amountTotal: 1290000,
+      currency: "usd",
+      subscriptionId: "sub_01gks14ge726w50ch2tmaw2a1x",
+      priceId: "price_compliance_updates_annual_PLACEHOLDER",
+      billingReason: "subscription_create",
+      invoiceId: "txn_sub1",
+    });
+  });
+
+  test("a subscription renewal transaction.completed maps billingReason=subscription_cycle", () => {
+    const event = {
+      event_id: "evt_sub_renew",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_sub2",
+        subscription_id: "sub_x",
+        origin: "subscription_recurring",
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        items: [
+          { price: { id: "price_compliance_updates_annual_PLACEHOLDER" } },
+        ],
+        details: { totals: { grand_total: "1290000" } },
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    const parsed = parsePaddleEvent(event);
+    expect(parsed?.type).toBe("invoice.paid");
+    expect(parsed && "billingReason" in parsed && parsed.billingReason).toBe(
+      "subscription_cycle",
+    );
+  });
+
+  test("the subscription-mode guard returns null when the transaction carries no anchoring id", () => {
+    // A degenerate subscription-linked transaction.completed (no transaction id) has nothing to key a
+    // grant's idempotency on; the guard returns null rather than risk a malformed grant — mirrors the
+    // Stripe driver's defensive shape for its subscription-mode guard.
+    const event = {
+      event_id: "evt_degenerate",
+      event_type: "transaction.completed",
+      data: {
+        id: "",
+        subscription_id: "sub_x",
+        custom_data: { account_id: "acct_a" },
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    expect(parsePaddleEvent(event)).toBeNull();
+  });
+
+  test("subscription.canceled carries the subscription id", () => {
+    const event = {
+      event_id: "evt_del",
+      event_type: "subscription.canceled",
+      data: { id: "sub_gone", custom_data: { account_id: "acct_a" } },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    expect(parsePaddleEvent(event)).toEqual({
+      type: "subscription.canceled",
+      sourceEventId: "evt_del",
+      accountId: "acct_a",
+      subscriptionId: "sub_gone",
+    });
+  });
+
+  test("an approved refund adjustment -> refund.completed joins on the transaction id", () => {
+    const event = {
+      event_id: "evt_ref",
+      event_type: "adjustment.updated",
+      data: {
+        action: "refund",
+        status: "approved",
+        type: "full",
+        transaction_id: "txn_01hvcc93znj3mpqt1tenkjb04y",
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        totals: { total: "5000" },
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    expect(parsePaddleEvent(event)).toEqual({
+      type: "refund.completed",
+      sourceEventId: "evt_ref",
+      accountId: "acct_a",
+      paymentId: "txn_01hvcc93znj3mpqt1tenkjb04y",
+      amountRefunded: 5000,
+      currency: "usd",
+      fullyRefunded: true,
+    });
+  });
+
+  test("a PARTIAL approved refund maps with fullyRefunded=false", () => {
+    const event = {
+      event_id: "evt_partial",
+      event_type: "adjustment.updated",
+      data: {
+        action: "refund",
+        status: "approved",
+        type: "partial",
+        transaction_id: "txn_x",
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        totals: { total: "100" },
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    const parsed = parsePaddleEvent(event);
+    expect(parsed?.type).toBe("refund.completed");
+    expect(parsed && "fullyRefunded" in parsed && parsed.fullyRefunded).toBe(
+      false,
+    );
+  });
+
+  test("a pending_approval refund is a no-op (not yet settled)", () => {
+    const event = {
+      event_id: "evt_pending",
+      event_type: "adjustment.updated",
+      data: {
+        action: "refund",
+        status: "pending_approval",
+        type: "full",
+        transaction_id: "txn_x",
+        custom_data: { account_id: "acct_a" },
+        totals: { total: "100" },
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    expect(parsePaddleEvent(event)).toBeNull();
+  });
+
+  test("a credit adjustment (not a refund) is a no-op", () => {
+    const event = {
+      event_id: "evt_credit",
+      event_type: "adjustment.updated",
+      data: {
+        action: "credit",
+        status: "approved",
+        type: "full",
+        transaction_id: "txn_x",
+        custom_data: { account_id: "acct_a" },
+        totals: { total: "100" },
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    expect(parsePaddleEvent(event)).toBeNull();
+  });
+
+  test("an unhandled event type maps to null", () => {
+    expect(
+      parsePaddleEvent({
+        event_id: "evt_x",
+        event_type: "customer.created",
+        data: {},
+      }),
+    ).toBeNull();
+  });
+
+  test("verifyAndParse ties verification + mapping behind the port", () => {
+    const billing = createPaddleBilling({
+      webhookSecret: SECRET,
+      apiKey: "pdl_sdbx_test",
+    });
+    const out = billing.verifyAndParse(oneTimeTxnBody, signed(oneTimeTxnBody), {
+      now: T,
+    });
+    expect(out).toMatchObject({
+      type: "purchase.completed",
+      accountId: "acct_a",
+    });
+  });
+});
+
+describe("createCheckout — Paddle transaction-based hosted checkout", () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+
+  test("posts items + custom_data and returns the checkout.url", async () => {
+    let body = "";
+    let url = "";
+    globalThis.fetch = (async (reqUrl: unknown, init?: { body?: string }) => {
+      url = String(reqUrl);
+      body = init?.body ?? "";
+      return new Response(
+        JSON.stringify({
+          data: { checkout: { url: "https://paddle.test/c" } },
+        }),
+        { status: 200 },
+      );
+    }) as unknown as typeof fetch;
+    const billing = createPaddleBilling({
+      webhookSecret: SECRET,
+      apiKey: "pdl_sdbx_test",
+      env: "sandbox",
+    });
+    const result = await billing.createCheckout({
+      accountId: "acct_a",
+      priceId: "price_x",
+      mode: "payment",
+      successUrl: "https://app.test/ok",
+      cancelUrl: "https://app.test/no",
+    });
+    expect(result.url).toBe("https://paddle.test/c");
+    expect(url).toBe("https://sandbox-api.paddle.com/transactions");
+    const parsed = JSON.parse(body) as {
+      items: Array<{ price_id: string; quantity: number }>;
+      custom_data: { account_id: string };
+    };
+    expect(parsed.items).toEqual([{ price_id: "price_x", quantity: 1 }]);
+    expect(parsed.custom_data.account_id).toBe("acct_a");
+  });
+
+  test("throws when Paddle returns no checkout url", async () => {
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify({ data: {} }), {
+        status: 200,
+      })) as unknown as typeof fetch;
+    const billing = createPaddleBilling({
+      webhookSecret: SECRET,
+      apiKey: "pdl_sdbx_test",
+    });
+    await expect(
+      billing.createCheckout({
+        accountId: "acct_a",
+        priceId: "price_x",
+        mode: "payment",
+        successUrl: "https://app.test/ok",
+        cancelUrl: "https://app.test/no",
+      }),
+    ).rejects.toThrow("Paddle returned no checkout url");
+  });
+});
