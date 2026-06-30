@@ -12,6 +12,7 @@ import { ConfigError, ValidationError } from "@caisson/kernel";
 import {
   type KeyObject,
   createPrivateKey,
+  createPublicKey,
   sign as cryptoSign,
 } from "node:crypto";
 import { z } from "zod";
@@ -127,9 +128,14 @@ export class Ed25519Signer implements Signer {
   }
 
   async publicKey(): Promise<Uint8Array> {
-    // Export the public point directly from the private key's JWK (`x` = the raw 32-byte Ed25519
-    // point, base64url). Avoids `createPublicKey(KeyObject)`, whose KeyObject overload bun-types omits.
-    const jwk = this.#key.export({ format: "jwk" }) as { x?: string };
+    // Derive the PUBLIC key in-engine and read its JWK (`x` = the raw 32-byte Ed25519 point,
+    // base64url). createPublicKey(privateKeyObject) computes the public point without copying the
+    // private scalar `d` into JS memory — a public JWK has no `d`. The cast supplies the KeyObject
+    // overload bun-types omits at the type level (node accepts a KeyObject here at runtime).
+    const pub = (createPublicKey as unknown as (k: KeyObject) => KeyObject)(
+      this.#key,
+    );
+    const jwk = pub.export({ format: "jwk" }) as { x?: string };
     if (jwk.x === undefined) {
       throw new ValidationError(
         "ed25519 public key derivation returned a malformed key",
