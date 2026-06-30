@@ -14,6 +14,15 @@ export {
 
 export { templatesEngine } from "./engine-templates.ts";
 
+// The free, Apache-2.0 evaluation-sample engine (ADR-0095 W3) — a SEPARATE allowlist + generation
+// path from the paid `Selection`/registry-gated flow above (samples carry no module selection).
+export {
+  type SampleTemplateId,
+  SAMPLE_TEMPLATES,
+  assertKnownSample,
+  materializeSample,
+} from "./sample-templates.ts";
+
 export {
   type MeterInput,
   type GenerationDeps,
@@ -30,7 +39,7 @@ export {
   recordGeneration,
 } from "./generation-record.ts";
 
-export { parseArgs, runCli } from "./cli.ts";
+export { parseArgs, parseSampleArgs, runCli } from "./cli.ts";
 
 export {
   type WriterOptions,

@@ -1,0 +1,20 @@
+{
+  "name": "{{projectName}}",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "Caisson EU-AI-Act evidence-path sample — SHA-256 hash-chain + Ed25519 signing over a tiny evidence record, built on the open (Apache-2.0) @caisson/kernel audit-chain primitive.",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "bun test ./src",
+    "demo": "bun run src/evidence-path.ts"
+  },
+  "dependencies": {
+    "@caisson/kernel": "^0.1.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.0"
+  }
+}
