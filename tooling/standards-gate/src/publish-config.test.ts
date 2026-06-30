@@ -55,20 +55,34 @@ async function loadPublishable(): Promise<Publishable[]> {
 
 const pkgs = await loadPublishable();
 
+// A `private: true` package is NEVER published (npm refuses it). The deliberate carve-out is the
+// licensing signer primitive (@caisson/license-issue), whose signing key must never reach a buyer
+// tarball (ADR-0110). The flip invariants below apply to the PUBLISHED set; the never-published set
+// gets its own inverse guards so a forgotten oss flip cannot hide here as "private".
+const published = pkgs.filter((p) => p.pj.private !== true);
+const neverPublished = pkgs.filter((p) => p.pj.private === true);
+
 describe("publish-readiness flip (ADR-0111)", () => {
   test("the workspace has the expected publishable surface", () => {
-    expect(pkgs.length).toBeGreaterThanOrEqual(20);
+    expect(published.length).toBeGreaterThanOrEqual(20);
   });
 
-  test("no publishable package is still private (flip removed private:true)", () => {
-    const stillPrivate = pkgs
-      .filter((p) => p.pj.private === true)
+  test("a never-published package is a paid primitive (a forgotten oss flip can't hide as private)", () => {
+    const wrong = neverPublished
+      .filter((p) => p.tier !== "paid")
+      .map((p) => `${p.pj.name}#${p.tier}`);
+    expect(wrong).toEqual([]);
+  });
+
+  test("a never-published package leaks no publishConfig (no registry target)", () => {
+    const leaked = neverPublished
+      .filter((p) => p.pj.publishConfig !== undefined)
       .map((p) => p.pj.name);
-    expect(stillPrivate).toEqual([]);
+    expect(leaked).toEqual([]);
   });
 
-  test("every publishable package is at version 0.1.0", () => {
-    const off = pkgs
+  test("every published package is at version 0.1.0", () => {
+    const off = published
       .filter((p) => p.pj.version !== "0.1.0")
       .map((p) => `${p.pj.name}@${p.pj.version}`);
     expect(off).toEqual([]);
@@ -76,13 +90,15 @@ describe("publish-readiness flip (ADR-0111)", () => {
 
   test("manifest derives version+license from package.json (single source of truth)", () => {
     for (const p of pkgs) {
-      expect(p.manifest.version).toBe(p.pj.version);
-      expect(p.manifest.license).toBe(p.pj.license);
+      // pj is the source; assert from the (possibly-undefined) pj side so a missing
+      // version/license fails the test rather than tripping the type-checker.
+      expect(p.pj.version).toBe(p.manifest.version);
+      expect(p.pj.license).toBe(p.manifest.license);
     }
   });
 
   test("oss tier → public access on public npm; paid tier → restricted on GitHub Packages", () => {
-    for (const p of pkgs) {
+    for (const p of published) {
       const pc = p.pj.publishConfig;
       expect(pc).toBeDefined();
       if (p.tier === "oss") {
@@ -106,7 +122,8 @@ describe("publish-readiness flip (ADR-0111)", () => {
 
   test("publishConfig.access agrees with the manifest tier (drives off tier, not a name list)", () => {
     for (const p of pkgs) {
-      expect(p.tier).toBe(p.manifest.tier);
+      // manifest.tier is widened to string on import; compare from that side.
+      expect(p.manifest.tier).toBe(p.tier);
     }
   });
 
