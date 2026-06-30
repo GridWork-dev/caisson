@@ -8,6 +8,21 @@ the live deploys + cred-bearing accounts are the operator's acts.
 Platform = **Railway** (ADR-0105, operator-locked 2026-06-30). The license issuer (code-track I1) and
 the commerce backend follow the same posture.
 
+> **LIVE — deployed 2026-06-30 (Railway project `caisson-prod`, workspace GridWork.dev):**
+>
+> - **docs-service** → `https://docs-api.caisson.sh` (CF CNAME, DNS-only + Railway TLS) and
+>   `caisson-docs-production.up.railway.app`. `/health` 200, `/llms.txt` serving the real corpus,
+>   `POST /query` Bearer-authed. **FTS5 keyword floor** — sentence queries return `[]` until the
+>   code-track OpenRouter embedder lands (then redeploy lights up the vector leg).
+> - **support-bot** → ● Online, connected to the **Caisson.sh** guild (`1521508737133842533`) as
+>   `Caisson.sh Bot`. No public domain (outbound gateway; `/health` is the internal liveness probe only).
+> - Build gotcha (both): Railway uploads the **repo root** and runs Railpack unless
+>   `RAILWAY_DOCKERFILE_PATH` is set — it is mandatory on each service, and the Dockerfiles use
+>   repo-root-relative `COPY` paths. Bot port: `PORT`+`HEALTH_PORT` pinned to `8080` so Railway's probe
+>   matches the bot's health server.
+> - 🔴 **Rotate** the Discord token + OpenRouter key (pasted into chat earlier) and update the env +
+>   Railway service vars once the smoke is green.
+
 ## Status at a glance
 
 | Seam                   | Built                                                                    | Provisioned this session                                                                                                                                             | Still blocked on                                                                                   |

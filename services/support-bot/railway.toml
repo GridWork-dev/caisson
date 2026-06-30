@@ -1,20 +1,24 @@
 # Railway service config — services/support-bot (caisson_support_bot). ADR-0009 / ADR-0105 / P6.
+# DEPLOYED 2026-06-30 (service caisson-support-bot, project caisson-prod) — ● Online, connected to
+# the Caisson.sh guild.
 #
-# Dashboard settings for THIS service (the Dockerfile is self-contained; context = its own dir):
-#   Root Directory       = services/support-bot              (self-contained Docker build context)
-#   Config-as-code path  = services/support-bot/railway.toml (this file)
+# Build: Railway uploads the REPO ROOT as context (it walks up to the project root), so the build is
+# driven by the service var RAILWAY_DOCKERFILE_PATH=services/support-bot/Dockerfile and the Dockerfile
+# COPYs are repo-root-relative. Without RAILWAY_DOCKERFILE_PATH, Railpack auto-detects the root bun
+# workspace and fails ("no start command") — the var is mandatory.
 #
 # Service env vars (Railway service secrets — NEVER committed):
-#   DISCORD_TOKEN       (required; the bot's gateway token — operator's Discord app)
+#   DISCORD_TOKEN       (required; the bot's gateway token)
 #   OPENROUTER_API_KEY  (required; generation inference, ADR-0105)
-#   DOCS_SERVICE_URL    (required; the deployed docs-service base URL — B3 must be live first)
-#   DOCS_SERVICE_TOKEN  (required; MUST match the docs-service value)
+#   DOCS_SERVICE_URL    (required; the deployed docs-service URL — https://docs-api.caisson.sh)
+#   DOCS_SERVICE_TOKEN  (required; must match the docs service)
+#   PORT + HEALTH_PORT  (both pinned to 8080 so Railway's /health probe matches the bot's health server)
 #   DATABASE_URL        (optional; Postgres support_ticket escalation store)
 #   SUPPORT_CHANNEL_ID / SUPPORT_HUMAN_ROLE_ID / OPENROUTER_MODEL  (optional; degrade gracefully)
-#   PORT                (Railway injects; the /health liveness server binds it)
+#   RAILWAY_DOCKERFILE_PATH=services/support-bot/Dockerfile  (mandatory — forces the Dockerfile builder)
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "services/support-bot/Dockerfile"
 
 [deploy]
 healthcheckPath = "/health"
