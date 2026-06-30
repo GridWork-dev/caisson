@@ -50,4 +50,24 @@ describe("full-tree registry backfill (ADR-0021/0111)", () => {
       expect(e.version).toMatch(/^\d+\.\d+\.\d+/);
     }
   });
+
+  test("edition member versions pin to real published versions (never the 0.0.0 sentinel)", () => {
+    const entries = parseLedger(readFileSync(LEDGER_PATH, "utf8"));
+    // The latest published version per module — the truth a `members` snapshot must agree with.
+    const published = new Map(entries.map((e) => [e.id, e.version]));
+    const stale: string[] = [];
+    for (const e of entries) {
+      const members = e.manifest?.members;
+      if (!members) continue;
+      for (const [memberId, version] of Object.entries(members)) {
+        // A member must resolve to a real ledger entry at that exact version — catches the
+        // never-published "0.0.0" sentinel and any drift from a member's published version (the
+        // gap that let three editions ship 0.0.0 member pins through CI — ADR-0111/0077).
+        if (published.get(memberId) !== version) {
+          stale.push(`${e.id} → ${memberId}@${version}`);
+        }
+      }
+    }
+    expect(stale).toEqual([]);
+  });
 });
