@@ -22,7 +22,7 @@ export const DEBIT_EVENT_TYPES = [
   "ai_feature_debit",
   "feature_debit",
   // The compensating debit a refund writes to claw back UNSPENT credits granted by the refunded
-  // purchase (ADR-0109). It is NOT a spendable-balance debit (no 402 floor): the amount is bounded to
+  // purchase (ADR-0113). It is NOT a spendable-balance debit (no 402 floor): the amount is bounded to
   // the current balance so the wallet never goes negative. Written only via `clawback`, never `debit`.
   "refund_clawback",
 ] as const;
@@ -265,7 +265,7 @@ export async function getLedger(
 
 /**
  * Sum the credits GRANTED (positive amounts) under a given provider source event id, for an account.
- * The provenance lookup a refund uses to learn how much a one-time purchase granted (ADR-0109): a
+ * The provenance lookup a refund uses to learn how much a one-time purchase granted (ADR-0113): a
  * one-time purchase grant lands as a `purchase` event keyed `source_event_id = <PaymentIntent id>`, so
  * the refund passes that same id here. Returns 0 when nothing was granted under it. Run inside
  * `withTenant` (RLS scopes the read to the account).
@@ -300,7 +300,7 @@ export interface ClawbackResult {
 }
 
 /**
- * Claw back UNSPENT credits granted by a refunded purchase (ADR-0109, the operator-locked money
+ * Claw back UNSPENT credits granted by a refunded purchase (ADR-0113, the operator-locked money
  * policy). Writes exactly ONE compensating negative `refund_clawback` ledger entry of
  * `min(amount, currentBalance)` — NEVER pushing the wallet negative: if the buyer already spent some or
  * all of those credits, only the remainder (down to 0 → no entry) is reclaimed. Idempotent on the

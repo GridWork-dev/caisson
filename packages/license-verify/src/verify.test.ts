@@ -1,8 +1,8 @@
-// @caisson/license-verify — offline verify behavior (T7, ADR-0010 / ADR-0108). Proves every failure
+// @caisson/license-verify — offline verify behavior (T7, ADR-0010 / ADR-0110). Proves every failure
 // path fails safe to community: tamper → community, absent → community, expired → community, unknown
 // tier → community, non-canonical payload → community, wrong key → community.
 //
-// KEY MODEL (ADR-0108): verify.ts bakes the PRODUCTION issuer public key, whose private half
+// KEY MODEL (ADR-0110): verify.ts bakes the PRODUCTION issuer public key, whose private half
 // (`CAISSON_LICENSE_SIGNING_KEY`) never lives in this repo — so tests CANNOT mint prod-signed tokens.
 // Instead they mint with a DETERMINISTIC DEV keypair (SHA-256("caisson-license-verify-KAT-seed-v1"),
 // a documented TEST vector, NEVER a production secret) and exercise the verify LOGIC through the

@@ -5,8 +5,10 @@ Stripe-as-Merchant-of-Record assumption** baked into ADR-0012 (commerce model) a
 **amends ADR-0089** (X-2 cycle→grant — the event source changes from Stripe `invoice.paid` to Paddle
 `transaction.completed`). Append-only; supersede with a later ADR, never edit.
 
-> **ADR numbering:** this operator session now owns **0106–0108**; the code track reserves **0109+**
-> (was 0108+). No collision — no 0108 exists on any ref as of this lock.
+> **ADR numbering (reconciled at integration merge):** the go-live operator track owns **0106–0109**
+> (pricing · CF-Access · this Paddle ADR · support-bot member-management); the code track owns
+> **0110–0113** (issuer · publish-readiness · MCP rate-limit · entitlement-revoke). The code-track
+> issuer ADR was renumbered 0108→0110 and entitlement 0109→0113 to clear the collision at merge.
 
 ## Context
 
@@ -75,7 +77,7 @@ fraud handling. The operator receives payouts net of Paddle's fee — no tax reg
 Caisson sells via Paddle Billing as Merchant of Record. Checkout = Paddle.js; grants key off
 `transaction.completed` + `custom_data`; webhooks verified with the Paddle Node SDK. The license,
 entitlement, and registry surfaces are unchanged. The ADR-0089 cycle→grant mapper is reworked from
-Stripe events to Paddle `transaction.completed` (code track, ADR-0109+).
+Stripe events to Paddle `transaction.completed` (code track, ADR-0110+).
 
 Evidence: developer.paddle.com (Billing — Node SDK quickstart, `transaction.completed` webhook,
 `custom_data`); `@paddle/paddle-node-sdk` (PaddleHQ, Apache-2.0); ADR-0012, ADR-0089, ADR-0106; the

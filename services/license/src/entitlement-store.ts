@@ -1,4 +1,4 @@
-// The reference-counted entitlement-GRANT store (ADR-0109, evolving ADR-0071/0009). Replaces the flat
+// The reference-counted entitlement-GRANT store (ADR-0113, evolving ADR-0071/0009). Replaces the flat
 // `account_entitlement` state table with a JUNCTION: one ROW per (account, entitlement, source) grant.
 // An account HAS an entitlement iff it holds >=1 ACTIVE grant for it — so two sources granting the same
 // edition (a subscription AND a one-time buy) survive the loss of either alone (refcount), and a
@@ -56,7 +56,7 @@ ${buildTenantPolicySql("entitlement_grant")}
 `;
 
 // Forward migration from the prior flat `account_entitlement` shape (ADR-0071) → the junction
-// (ADR-0109), for the prod numbered-Drizzle path (ADR-0014). PRE-LAUNCH there is no live data
+// (ADR-0113), for the prod numbered-Drizzle path (ADR-0014). PRE-LAUNCH there is no live data
 // (checkout is not yet live, ADR-0082/0106), so the new schema supersedes the old cleanly; this snippet
 // is the belt-and-suspenders backfill for any environment that DID create the old table. Each legacy
 // row becomes an ACTIVE one_time grant keyed on its source event id (the safe default — legacy grants

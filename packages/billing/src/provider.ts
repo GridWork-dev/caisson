@@ -60,7 +60,7 @@ export function createStripeBilling(config: StripeConfig): BillingProvider {
       if (input.mode === "subscription") {
         params["subscription_data[metadata][account_id]"] = input.accountId;
       } else {
-        // One-time (payment) checkout (ADR-0109). The session carries no webhook-readable line items
+        // One-time (payment) checkout (ADR-0113). The session carries no webhook-readable line items
         // without expansion, so stamp the price id on the SESSION metadata for the purchase->grant
         // resolution. Stamp account id (and price id) on `payment_intent_data[metadata]` too: Stripe
         // copies PaymentIntent metadata onto the Charge, so a later `charge.refunded` can resolve the

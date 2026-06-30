@@ -1,4 +1,4 @@
-// @caisson/license-issue — mint a tessera-format license token (ADR-0108, implements ADR-0010). The
+// @caisson/license-issue — mint a tessera-format license token (ADR-0110, implements ADR-0010). The
 // single correctness invariant: the issuer signs EXACTLY `canonicalize(parse(claims))` — the same
 // kernel-canonical bytes `@caisson/license-verify` `verify.ts` re-derives and asserts byte-for-byte
 // (`canonicalize(claims) === decoded.payload`). A one-byte divergence would make the verifier reject

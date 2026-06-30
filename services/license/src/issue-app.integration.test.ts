@@ -1,4 +1,4 @@
-// The license-issuer HTTP surface end to end (ADR-0108): POST /issue resolves an account's entitlements
+// The license-issuer HTTP surface end to end (ADR-0110): POST /issue resolves an account's entitlements
 // over PGlite + real `withTenant` RLS, signs them via @caisson/license-issue, and the returned token
 // verifies under the SHIPPED @caisson/license-verify verify logic. The SHIPPED verifier bakes the
 // PRODUCTION public key, whose private half is not in the repo — so the test signer uses a deterministic
@@ -103,7 +103,7 @@ const post = (body: string, auth?: string): Request =>
     body,
   });
 
-describe("POST /issue (ADR-0108)", () => {
+describe("POST /issue (ADR-0110)", () => {
   test("issues a token for a purchased account that verifies to its resolved entitlements", async () => {
     const acct = "acct_issue_comp";
     await withTenant(tp.pg, acct, (tx) =>

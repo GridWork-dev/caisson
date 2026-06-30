@@ -1,4 +1,4 @@
-// @caisson/license-issue — signer + env key-loader behavior (ADR-0108). Proves the default
+// @caisson/license-issue — signer + env key-loader behavior (ADR-0110). Proves the default
 // Ed25519Signer constructs/signs/derives correctly from a `node:crypto` PRIVATE KeyObject and — the
 // security-critical part — that the env key loader fails CLOSED on a missing / malformed / non-Ed25519
 // `CAISSON_LICENSE_SIGNING_KEY` with a typed `ConfigError` that NAMES the env key but NEVER echoes the

@@ -8,7 +8,7 @@
 //   seed (hex) = SHA-256("caisson-license-verify-KAT-seed-v1")
 //              = 84ad00d02c1648eb572b65e73c98707f243b3ee3ff1ac85db8c6ce2c255737c8
 //   pubkey     = (SPKI DER, base64) MCowBQYDK2VwAyEAbQaycFQ6zDCiACKFQ83ucxYtdL++cvlUXf4dqRwvQgs=
-// IMPORTANT (ADR-0108): `verify.ts` bakes the PRODUCTION public key, NOT this dev key — the dev seed
+// IMPORTANT (ADR-0110): `verify.ts` bakes the PRODUCTION public key, NOT this dev key — the dev seed
 // above is publicly documented, so baking it would let anyone forge a `pro` license. This dev key is
 // only for the codec round-trip here + the dev-golden in `verify.test.ts` via `verifyLicenseWithKey`.
 // This codec test is key-independent: it asserts decode/encode round-trips, not a signature.
