@@ -22,6 +22,11 @@ import {
   ENTITLEMENT_SCHEMA_SQL,
   readEntitlements,
 } from "./entitlement-store.ts";
+import {
+  loadRateLimitConfig,
+  type RateLimitConfig,
+  TokenBucketLimiter,
+} from "./rate-limit.ts";
 
 const SECRET = "pdl_ntfset_webhook_route_secret";
 
@@ -67,6 +72,7 @@ afterAll(async () => {
 
 function makeApp(
   p: BillingProvider | null,
+  limiterConfig: RateLimitConfig = loadRateLimitConfig(),
 ): (req: Request) => Promise<Response> {
   return createApp({
     token: "unused-issue-token",
@@ -74,14 +80,20 @@ function makeApp(
     index,
     db: tp.pg,
     provider: p,
+    limiter: new TokenBucketLimiter(limiterConfig),
   });
 }
 
-function webhookReq(rawBody: string, signature: string | null): Request {
+function webhookReq(
+  rawBody: string,
+  signature: string | null,
+  ip = "1.2.3.4",
+): Request {
   return new Request("http://license.test/webhook", {
     method: "POST",
     headers: {
       "content-type": "application/json",
+      "x-forwarded-for": ip,
       ...(signature !== null ? { "paddle-signature": signature } : {}),
     },
     body: rawBody,
@@ -211,5 +223,63 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
     const app = makeApp(provider);
     const res = await app(new Request("http://license.test/webhook"));
     expect(res.status).toBe(405);
+  });
+
+  test("a per-IP flood on /webhook is capped with 429 (Retry-After) once the bucket is exhausted", async () => {
+    // Capacity 1 per window: the first signed delivery passes, the second from the SAME ip is throttled.
+    const app = makeApp(provider, {
+      webhook: { capacity: 1, windowMs: 60_000 },
+      issue: { capacity: 1, windowMs: 60_000 },
+      maxEntries: 100,
+    });
+    const acct = "acct_rl_webhook";
+    const t = Math.floor(Date.now() / 1000);
+    const body = JSON.stringify({
+      event_id: "evt_rl_1",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_rl_1",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: acct },
+        items: [{ price: { id: PRICE_CREDIT_PACK } }],
+        details: { totals: { grand_total: "5000" } },
+      },
+    });
+    const sig = signed(body, t);
+
+    const first = await app(webhookReq(body, sig, "9.9.9.9"));
+    expect(first.status).toBe(200);
+    const second = await app(webhookReq(body, sig, "9.9.9.9"));
+    expect(second.status).toBe(429);
+    expect(second.headers.get("Retry-After")).not.toBeNull();
+  });
+
+  test("a per-IP flood on /issue is capped with 429 (limiter runs before the bearer check)", async () => {
+    const app = makeApp(provider, {
+      webhook: { capacity: 1, windowMs: 60_000 },
+      issue: { capacity: 1, windowMs: 60_000 },
+      maxEntries: 100,
+    });
+    const issueReq = (): Request =>
+      new Request("http://license.test/issue", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-for": "8.8.8.8",
+        },
+        body: JSON.stringify({
+          accountId: "a",
+          tier: "pro",
+          major: 1,
+          expiry: null,
+        }),
+      });
+    // First call passes the limiter (then 401 — no bearer); the second from the same ip is throttled
+    // BEFORE the bearer check, proving the limiter is defense-in-depth ahead of auth.
+    const first = await app(issueReq());
+    expect(first.status).toBe(401);
+    const second = await app(issueReq());
+    expect(second.status).toBe(429);
   });
 });
