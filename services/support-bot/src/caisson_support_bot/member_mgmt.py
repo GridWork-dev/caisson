@@ -66,6 +66,20 @@ def role_outranks_bot(role: discord.Role, bot_top_role: discord.Role) -> bool:
     return role >= bot_top_role
 
 
+def member_can_manage_role(member: discord.Member, role: discord.Role) -> bool:
+    """``True`` when ``member`` may NATIVELY manage ``role`` — they're an admin, or ``role`` sits BELOW
+    their own highest role.
+
+    Critical guard: the BOT is the API actor for ``add_roles``/``remove_roles``, so Discord enforces
+    hierarchy only against the BOT's top role, never the invoking moderator's. Without this check a
+    Manage-Roles holder positioned below a valuable role (e.g. Staff, or a paid edition role) could have
+    the bot grant that higher role to themselves — an escalation Discord's native UI would refuse.
+    """
+    if member.guild_permissions.administrator:
+        return True
+    return role < member.top_role
+
+
 async def assign_default_role(member: discord.Member, role: discord.Role, *, reason: str) -> bool:
     """Add ``role`` to ``member``; return ``False`` (never raise) on a permission/hierarchy failure."""
     try:
@@ -285,6 +299,13 @@ def register_member_commands(bot: commands.Bot, settings: Settings) -> None:
     async def role_add(  # pyright: ignore[reportUnusedFunction]
         interaction: discord.Interaction, member: discord.Member, role: discord.Role
     ) -> None:
+        invoker = interaction.user
+        if not isinstance(invoker, discord.Member) or not member_can_manage_role(invoker, role):
+            await interaction.response.send_message(
+                "You can't manage that role — it's at or above your own highest role.",
+                ephemeral=True,
+            )
+            return
         if interaction.guild is not None and role_outranks_bot(role, interaction.guild.me.top_role):
             await interaction.response.send_message(
                 f"**{role.name}** is at/above my role — move my role up to manage it.",
@@ -307,6 +328,13 @@ def register_member_commands(bot: commands.Bot, settings: Settings) -> None:
     async def role_remove(  # pyright: ignore[reportUnusedFunction]
         interaction: discord.Interaction, member: discord.Member, role: discord.Role
     ) -> None:
+        invoker = interaction.user
+        if not isinstance(invoker, discord.Member) or not member_can_manage_role(invoker, role):
+            await interaction.response.send_message(
+                "You can't manage that role — it's at or above your own highest role.",
+                ephemeral=True,
+            )
+            return
         if interaction.guild is not None and role_outranks_bot(role, interaction.guild.me.top_role):
             await interaction.response.send_message(
                 f"**{role.name}** is at/above my role — move my role up to manage it.",
@@ -344,6 +372,13 @@ def register_member_commands(bot: commands.Bot, settings: Settings) -> None:
         if role is None:
             await interaction.response.send_message(
                 f"No role configured for **{edition.value}**.", ephemeral=True
+            )
+            return
+        invoker = interaction.user
+        if not isinstance(invoker, discord.Member) or not member_can_manage_role(invoker, role):
+            await interaction.response.send_message(
+                "You can't grant that role — it's at or above your own highest role.",
+                ephemeral=True,
             )
             return
         if role_outranks_bot(role, guild.me.top_role):

@@ -14,6 +14,7 @@ from caisson_support_bot.member_mgmt import (
     build_role_view,
     edition_role_id,
     grant_edition,
+    member_can_manage_role,
     role_outranks_bot,
     toggle_role,
     welcome_member,
@@ -37,6 +38,9 @@ class _FakeRole:
 
     def __ge__(self, other: _FakeRole) -> bool:
         return self.position >= other.position
+
+    def __lt__(self, other: _FakeRole) -> bool:
+        return self.position < other.position
 
 
 def _settings(**kw: object) -> Settings:
@@ -67,6 +71,25 @@ def test_role_outranks_bot() -> None:
     assert role_outranks_bot(_role(5), bot_top) is True  # equal ⇒ cannot manage
     assert role_outranks_bot(_role(6), bot_top) is True
     assert role_outranks_bot(_role(4), bot_top) is False
+
+
+def _member(*, admin: bool, top: int) -> discord.Member:
+    return cast(
+        discord.Member,
+        SimpleNamespace(
+            guild_permissions=SimpleNamespace(administrator=admin), top_role=_role(top)
+        ),
+    )
+
+
+def test_member_can_manage_role_blocks_escalation() -> None:
+    # admin can manage anything, regardless of position
+    assert member_can_manage_role(_member(admin=True, top=1), _role(99)) is True
+    # a non-admin mod can manage a role BELOW their top, but never at/above it (no self-escalation)
+    mod = _member(admin=False, top=5)
+    assert member_can_manage_role(mod, _role(4)) is True
+    assert member_can_manage_role(mod, _role(5)) is False  # equal ⇒ blocked
+    assert member_can_manage_role(mod, _role(6)) is False  # above ⇒ blocked
 
 
 async def test_assign_default_role_success() -> None:
