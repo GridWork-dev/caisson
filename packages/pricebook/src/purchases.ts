@@ -51,12 +51,9 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
   // license-only buy — `credits: 0` (no bundled credit pack; carried over from the
   // `compliance_onetime` placeholder's number, SD-6 — operator-deferred, non-final).
   //
-  // ENTITLEMENT-ID NOTE: the registry-schema canonical edition slug for the "Agentic-Dev" edition
-  // is `agent-dev` (`packages/registry-schema/src/module-manifest.ts` EDITIONS), NOT
-  // `agentic-dev` — the marketing label/route slug differ from the entitlement id on purpose.
-  // Using "agentic-dev" here would make `expandEntitlements` throw (unknown purchased id,
-  // ADR-0071 TM-E) the first time this SKU's webhook event tried to grant. Verified against
-  // `resolve-entitlements.ts` before wiring (do not "fix" this back to agentic-dev).
+  // ENTITLEMENT-ID NOTE: `purchaseTag`/`entitlements` mirror the registry edition id `agent-dev`
+  // (`packages/registry-schema/src/module-manifest.ts` EDITIONS); the marketing route/label
+  // `/agentic-dev`/"Agentic-Dev" deliberately differ from the entitlement id.
   pri_01kwd76be2eq96kff5nqw236c0: {
     purchaseTag: "compliance",
     credits: 0,
@@ -78,9 +75,9 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
     entitlements: ["local-ai"],
   },
   pri_01kwd76ck3w8myy4p4f1gj0dcy: {
-    purchaseTag: "agentic-dev",
+    purchaseTag: "agent-dev",
     credits: 0,
-    entitlements: ["agent-dev"], // see the ENTITLEMENT-ID NOTE above — not "agentic-dev"
+    entitlements: ["agent-dev"], // see the ENTITLEMENT-ID NOTE above
   },
 };
 
