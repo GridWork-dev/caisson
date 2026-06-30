@@ -1,11 +1,16 @@
 // Codegen metering — the ADR-0049/0007/0024 binding: a generation debits BEFORE any file is written;
 // a 402 aborts with nothing written; a same-key retry debits once. Runs on PGlite inside withTenant
 // (SET ROLE app) over the real credits ledger.
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import {
   afterAll,
   afterEach,
@@ -379,36 +384,58 @@ describe("runGeneration — edition pin resolution (ADR-0077)", () => {
 // drop it on either side (bundler dest or readPackageMigrations) and this fails. The bundle is the real
 // (gitignored) build-artifact dir, so we stage then tear it down. ---
 describe("runGeneration — compose-time migration merge (ADR-0091)", () => {
-  // packageDir() resolves `../migrations-bundle/<name>` relative to meter.ts (also in src/), so the
-  // same URL math from this test points at the dir the generator actually reads.
-  const bundleRoot = fileURLToPath(
-    new URL("../migrations-bundle", import.meta.url),
-  );
-  const fcMigrations = join(bundleRoot, "field-crypto", "migrations");
+  // Stage the synthetic bundle in a THROWAWAY mkdtemp dir injected via `deps.bundleRoot` — never the
+  // real `../migrations-bundle` build artifact (a gitignored Turbo output). Writing into the real
+  // bundle in beforeEach + rmSync-ing it in afterEach would corrupt that build output; the injectable
+  // root keeps the test hermetic. Mirrors scripts/bundle-migrations.test.ts's mkdtempSync pattern.
+  const SEAM_SQL = "CREATE TABLE seam_probe (id integer primary key);\n";
+  let migBundle: string;
 
   beforeEach(() => {
+    migBundle = mkdtempSync(join(tmpdir(), "caisson-migbundle-"));
+    const fcMigrations = join(migBundle, "field-crypto", "migrations");
     mkdirSync(fcMigrations, { recursive: true });
-    writeFileSync(
-      join(fcMigrations, "0001_seam.sql"),
-      "CREATE TABLE seam_probe (id integer primary key);\n",
-    );
+    writeFileSync(join(fcMigrations, "0001_seam.sql"), SEAM_SQL);
   });
   afterEach(() => {
-    rmSync(bundleRoot, { recursive: true, force: true });
+    rmSync(migBundle, { recursive: true, force: true });
   });
 
   test("a migration-bearing module's migrations are merged into the generated file set", async () => {
     await grantSome(5);
     const spy = writerSpy();
     const outcome = await withTenant(tp.pg, ACCOUNT, (tx) =>
-      runGeneration(tx, { index: INDEX, writeFileSet: spy.writer }, SELECTION, {
-        accountId: ACCOUNT,
-        idempotencyKey: "gen-mig",
-      }),
+      runGeneration(
+        tx,
+        { index: INDEX, writeFileSet: spy.writer, bundleRoot: migBundle },
+        SELECTION,
+        { accountId: ACCOUNT, idempotencyKey: "gen-mig" },
+      ),
     );
     const paths = outcome.files.map((f) => f.path);
     // field-crypto contributes one migration → one renumbered NNNN_*.sql + the single ledger.
     expect(paths.some((p) => /^migrations\/\d+_.+\.sql$/.test(p))).toBe(true);
     expect(paths).toContain("migrations/schema_version.json");
+    // and the merged migration carries the injected bundle's content (proves the override is read).
+    expect(outcome.files.some((f) => f.content.includes("seam_probe"))).toBe(
+      true,
+    );
+  });
+
+  test("with bundleRoot undefined, packageDir resolves the import.meta.url default (the injected temp bundle is never read)", async () => {
+    // Regression lock for the default path: omit `bundleRoot` and the merge must resolve the build-time
+    // `../migrations-bundle` via import.meta.url — NOT the temp dir staged above. The synthetic
+    // seam_probe migration lives only in `migBundle`, so it must not leak into a default generation.
+    await grantSome(5);
+    const spy = writerSpy();
+    const outcome = await withTenant(tp.pg, ACCOUNT, (tx) =>
+      runGeneration(tx, { index: INDEX, writeFileSet: spy.writer }, SELECTION, {
+        accountId: ACCOUNT,
+        idempotencyKey: "gen-default",
+      }),
+    );
+    expect(outcome.files.some((f) => f.content.includes("seam_probe"))).toBe(
+      false,
+    );
   });
 });

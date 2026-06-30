@@ -90,7 +90,9 @@ describe("event mapping", () => {
           currency: "usd",
           subscription: "sub_123",
           billing_reason: "subscription_cycle",
-          metadata: { account_id: "acct_a" },
+          // The real cycle-invoice shape: account on subscription_details.metadata (readAccountId's
+          // PRIMARY source), not top-level metadata (its fallback).
+          subscription_details: { metadata: { account_id: "acct_a" } },
           lines: { data: [{ price: { id: "price_dev_PLACEHOLDER" } }] },
         },
       },
