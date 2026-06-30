@@ -96,6 +96,32 @@ describe("rate_limit token-bucket store (ADR-0112, RLS)", () => {
     expect(c.allowed).toBe(false); // clamp held — no hidden surplus
   });
 
+  test("an overflow-prone config (tiny interval + long idle) does not throw and still clamps", async () => {
+    // Regression for the int8 overflow guard: a pathological operator config (1ms interval, a huge
+    // refill_amount) over a long idle makes the RAW period count enormous, so an UNCAPPED
+    // `periods * refill_amount` would exceed int8 → "bigint out of range" → which the hook swallows as
+    // fail-open, silently disabling the throttle for that account. The period count is capped at
+    // `capacity` before the multiply, so the product stays bounded and the refill still clamps to
+    // capacity. (See REFILLED_TOKENS in rate-limit-store.ts.)
+    const acct = "acct_overflow";
+    const BIG = {
+      capacity: 5,
+      refillAmount: 2_000_000_000,
+      refillIntervalMs: 1,
+    };
+    // Seed at T0 so the watermark lags the check below by a huge gap.
+    await withTenant(tp.pg, acct, (tx) =>
+      setAccountRateLimit(tx, acct, BIG, T0),
+    );
+    // ~58 days later: raw periods = 5e9 / 1 = 5e9; uncapped 5e9 * 2e9 = 1e19 > int8 max (9.22e18).
+    const far = T0 + 5_000_000_000;
+    const d = await withTenant(tp.pg, acct, (tx) =>
+      checkRateLimit(tx, acct, far, BIG),
+    );
+    // No throw, refill clamped to capacity (5), one consumed → 4 remaining.
+    expect(d).toMatchObject({ allowed: true, remaining: 4 });
+  });
+
   test("the atomic UPDATE is race-safe — two concurrent consumes on one token, exactly one wins", async () => {
     const acct = "acct_race";
     // Seed a bucket of exactly ONE token (capacity 1) so two consumes contend for it.
@@ -103,7 +129,10 @@ describe("rate_limit token-bucket store (ADR-0112, RLS)", () => {
     await withTenant(tp.pg, acct, (tx) =>
       setAccountRateLimit(tx, acct, ONE, T0),
     );
-    // Fire both at the SAME instant; the WHERE-guarded conditional UPDATE admits exactly one.
+    // Fire both at the SAME instant. NOTE: PGlite is a single in-process connection that serializes
+    // these, so this proves the WHERE-guarded conditional-update CORRECTNESS (no double-spend even if
+    // both observe the token), NOT OS-level backend contention — the cross-backend exactly-one-winner
+    // guarantee rests on Postgres READ COMMITTED EvalPlanQual re-evaluating the inlined guard.
     const [r1, r2] = await Promise.all([
       withTenant(tp.pg, acct, (tx) => checkRateLimit(tx, acct, T0, ONE)),
       withTenant(tp.pg, acct, (tx) => checkRateLimit(tx, acct, T0, ONE)),
