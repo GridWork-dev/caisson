@@ -17,6 +17,7 @@ from discord.ext import commands
 from .config import Settings
 from .contracts import AnswerResult
 from .escalation import Escalator, ThreadOpener, TicketStore
+from .member_mgmt import add_persistent_views, register_member_commands
 from .rag import RagPipeline
 
 # Discord hard-caps a message at 2000 chars; keep headroom for the sources footer.
@@ -121,11 +122,16 @@ def make_bot(
     intents = discord.Intents.default()
     if settings.support_channel_id is not None:
         intents.message_content = True  # required to read #ask-ai messages.
+    if settings.member_role_id is not None:
+        # Privileged: enables on_member_join + the member cache. Requires the "Server Members Intent"
+        # toggle in the Developer Portal — otherwise the gateway refuses to connect (ADR-0109).
+        intents.members = True
 
     bot = commands.Bot(command_prefix="!caisson-unused!", intents=intents)
 
     @bot.event
     async def setup_hook() -> None:  # pyright: ignore[reportUnusedFunction]
+        add_persistent_views(bot, settings)  # re-bind persistent self-assign views after restart.
         await bot.tree.sync()
 
     @bot.tree.command(
@@ -157,4 +163,5 @@ def make_bot(
             )
         await message.reply(reply)
 
+    register_member_commands(bot, settings)
     return bot
