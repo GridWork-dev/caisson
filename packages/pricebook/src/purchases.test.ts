@@ -1,5 +1,5 @@
 // The one-time PURCHASE_BOOK (ADR-0113): resolvePurchase returns a placeholder entry, fails closed on
-// an unknown / real Stripe id, and is prototype-pollution safe. Mirrors plans.test.ts for the
+// an unknown / real provider id, and is prototype-pollution safe. Mirrors plans.test.ts for the
 // recurring book.
 import { describe, expect, test } from "bun:test";
 import { ConfigError } from "@caisson/kernel";
