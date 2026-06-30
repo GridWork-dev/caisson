@@ -10,18 +10,25 @@ on:
 # golden-file — map to the steps below; a Neon branch DB is the opt-in escape hatch via
 # TEST_DATABASE_URL, never the default.
 #
+# THIS FILE = THE 3 REQUIRED STATUS CHECKS ONLY (branch protection matches the job NAME, not the
+# file): standards-gate · check · registry-index. They stay UNCONDITIONAL — no `paths:`, no `if:`
+# that can skip them — a path-skipped required job never reports and the PR blocks forever. Every
+# other job (eval · native-ext · token-drift · publish-and-index · the Railway deploy) has moved to
+# its own workflow file (quality.yml / publish.yml / deploy-railway.yml) where path-filtering and
+# main-only gating are safe because those jobs are not required checks.
+#
 # SELF-HOSTED FLEET (2026-06-29): the pure-compute gate jobs run on the GridWork-dev ephemeral
 # runner fleet (the same per-repo, JIT, one-job-then-reset machinery as gridwork-core — canonical
 # SPEC + supervisor live in gridwork-core/system/ci/; caisson posture doc: docs/operations.md). The
 # amd64 lane (<host>) runs each job in a throwaway `docker run --rm` container, so operator
 # secrets are unreachable (proven by gridwork-core's runner-isolation-probe). Caisson's 3 runners
-# (<host> · <host> · <host>) are registered + ONLINE.
+# (<host> · <host> · <host>) are registered + ONLINE. Nothing persists
+# on-box between jobs, so any cache below is network-backed (actions/cache), never local-disk.
 #
 # Posture = DEDICATED LANES, no auto-fallback: GitHub has no self-hosted-first preference, so a
 # DOWN host QUEUES the job (it does NOT fall back to hosted). MANUAL fallback if a fleet host is
 # down for maintenance: flip the affected job's `runs-on: [self-hosted, <host>]` back to
-# `runs-on: ubuntu-latest` (one line). Jobs that hold write/deploy privilege or need a browser
-# (publish-and-index · deploy-site · lighthouse) deliberately STAY GitHub-hosted (see each below).
+# `runs-on: ubuntu-latest` (one line).
 
 concurrency:
   # One in-flight run per PR / ref; a new push cancels the prior run so the limited fleet is not
@@ -47,6 +54,12 @@ jobs:
         with:
           # Pinned to the repo's packageManager bun (was `latest` — drift risk on a persistent fleet).
           bun-version: "1.3.14"
+      - name: cache bun install
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
       # Layer 1a — SPDX/license authority, fs-only pass. Runs BEFORE install so AGPL-workspace +
       # down-only + declarations are checked even if the workspace install is broken.
       - name: standards-gate (pre-install — AGPL workspace + down-only + declarations)
@@ -77,11 +90,28 @@ jobs:
     # The heaviest job (38-pkg turbo tree incl. 5 Next.js builds + many in-process PGlite instances);
     # generous ceiling so a hung PGlite hook frees the runner rather than holding it to the 6h default.
     timeout-minutes: 30
+    env:
+      # Warm turbo cache lands here (cache step below). turbo reads TURBO_CACHE_DIR, so a cache hit
+      # makes it skip unchanged tasks while still validating every task via input hashes (NOT
+      # --affected — that would skip validation of a required gate).
+      TURBO_CACHE_DIR: .turbo
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.3.14"
+      - name: cache bun install
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
+      - name: cache turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: ${{ runner.os }}-turbo-
       - run: bun install --frozen-lockfile
       - name: format (prettier)
         run: bun run format:check
@@ -96,72 +126,12 @@ jobs:
       # Slow golden-file / testcontainers matrices land here once the compliance
       # edition (P2) has code — kept CI-only, never in the pre-commit hook.
 
-  # The eval gate (ADR-0062). A DISTINCT turbo `eval` task — separate from `test` — that runs the
-  # committed eval suite against the committed JSON baseline (regression-vs-baseline, BLESS-style).
-  # It is offline + deterministic: model-graded scorers replay committed cassettes, so there is no
-  # live provider/model/network call and no secret in CI (SPEC TM6).
-  #
-  # ADR-0072: this is a MONOREPO-ONLY job. It is NEVER injected into a generated buyer repo as a
-  # required CI check — `create-caisson` must not emit this job. A buyer owns their own eval cadence
-  # and baseline; gating their merges on OUR regression baseline is wrong. The eval task ships in the
-  # library for the buyer to opt into, but it is not one of the required buyer-repo CI checks.
-  eval:
-    runs-on: [self-hosted, <host>]
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v5
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: "1.3.14"
-      - run: bun install --frozen-lockfile
-      - name: eval gate (regression vs committed baseline, BLESS unset — offline, cassette-replayed)
-        run: bun run eval
-
-  # Exit-gate clause 6 (P4a local-ai): @caisson/local-store loads a PLATFORM-SPECIFIC native
-  # extension — `db.loadExtension(sqliteVec.getLoadablePath())` in packages/local-store/src/store.ts
-  # resolves a `.so` on Linux and a `.dylib` on macOS. The `check`/`standards-gate` jobs run on
-  # ubuntu only, so the macOS native binary path would otherwise ship unexercised. This matrix runs
-  # the local-store suite (vec0 + FTS5 + RRF hybrid retrieval) on BOTH runners; a missing/broken
-  # platform extension fails CI here. `fail-fast: false` so a break on one OS never masks the other.
-  # Linux leg → the fleet's amd64 lane (exercises the sqlite-vec `.so`). macOS leg → STAYS
-  # GitHub-hosted `macos-latest` for now: the fleet's native macOS lane (<host>) dispatches
-  # fine (checkout + bun install are green on it), but its runner user has no Homebrew
-  # extension-capable SQLite, so the `brew install sqlite` step fails there. Moving the macOS leg to
-  # the fleet is a follow-up gated on provisioning Homebrew + extension-capable SQLite on the Mac
-  # mini's runner user (docs/operations.md §7); until then this keeps the leg green. `fail-fast:
-  # false` so a break on one OS never masks the other.
-  native-ext:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: linux
-            runs-on: [self-hosted, <host>]
-          - platform: macos
-            runs-on: macos-latest
-    runs-on: ${{ matrix.runs-on }}
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v5
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: "1.3.14"
-      - run: bun install --frozen-lockfile
-      # macOS ships a system SQLite with extension loading DISABLED (Apple build). store.ts points
-      # bun:sqlite at Homebrew's extension-capable SQLite via Database.setCustomSQLite; ensure it is
-      # installed so that path exists on the runner. No-op effect on Linux (step is macOS-gated).
-      - name: ensure extension-capable SQLite (macOS)
-        if: runner.os == 'macOS'
-        run: brew install sqlite
-      - name: local-store native sqlite-vec ext (vec0 + FTS5 + RRF) on ${{ matrix.platform }}
-        run: bun test packages/local-store/src
-
   # registry/ tests also run under turbo (`bun run check`, the `check` job); this job is the
   # PROVENANCE proof: rebuilding from the git-tracked ledger must reproduce the committed
   # registry/index.json byte-for-byte (ADR-0021/0047). A hand-edited index (or a stale rebuild) fails
   # `git diff --exit-code`. This is the machine gate — it DETECTS tampering (goes red); PREVENTION
   # (blocking the merge) needs this job marked a required check + CODEOWNERS on a real handle +
-  # branch protection (operator GitHub settings; forks board). The ledger APPEND step is P5 (below).
+  # branch protection (operator GitHub settings; forks board). The ledger APPEND step is publish.yml.
   registry-index:
     runs-on: [self-hosted, <host>]
     timeout-minutes: 15
@@ -170,6 +140,12 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.3.14"
+      - name: cache bun install
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
       - run: bun install --frozen-lockfile
       - name: registry tests (schema · index builder · worker seam)
         run: bun test registry/schema registry/scripts registry/worker
@@ -178,102 +154,7 @@ jobs:
           bun registry/scripts/build-index.ts
           git diff --exit-code registry/index.json
 
-  # tokens.css is GENERATED from the @caisson/ui TS token objects (ADR-0101 design-quality gate #1).
-  # This job proves the committed sheet is a byte-identical rebuild: editing a token without running
-  # `bun run gen:tokens`, or hand-editing tokens.css, fails `git diff --exit-code`. Mirrors the
-  # registry-index provenance gate; tokens.css is .prettierignore'd so the generator is sole authority.
-  token-drift:
-    runs-on: [self-hosted, <host>]
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v5
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: "1.3.14"
-      - run: bun install --frozen-lockfile
-      - name: tokens.css is a byte-identical rebuild from the TS tokens (ADR-0101 #1)
-        run: |
-          bun run packages/ui/scripts/gen-tokens-css.ts
-          git diff --exit-code packages/ui/styles/tokens.css
-
   # The registry index (registry/index.json) is BUILT from the ledger by the registry-index job
   # above — never hand-appended (ADR-0021). Branch protection + CODEOWNERS on registry/index.json +
   # /registry/ledger.jsonl make CI the sole writer; the gateAttestation records provenance, it is not
-  # the access gate. The PUBLISH step that appends a gated publish to the ledger is wired below (P5).
-
-  # publish-and-index: gates on check + standards-gate + registry-index; main-only (ADR-0021).
-  # Auth: built-in GITHUB_TOKEN ephemeral (written to ~/.npmrc at runtime; NO stored PAT, NO
-  # NODE_AUTH_TOKEN repository secret — ADR-0069). Changesets publish is guarded by
-  # CAISSON_PUBLISH_DRY_RUN (default "true") — the job scaffolds the full flow without pushing
-  # packages; set the env var to "false" operator-side to go live.
-  #
-  # P5-25: GHEC provenance attestation = DECLINED. Lightweight provenance is already embedded in
-  #        each LedgerEntry's gateAttestation field ("<run-id>@<commit-sha>"); a full SLSA/GHEC
-  #        attestation blob is deferred to a post-P5 hardening pass.
-  # P5-26: Worker-deploy = DEFERRED. Cloudflare Worker registry endpoint not yet live; this job
-  #        commits the rebuilt index.json which the Worker will consume once deployed.
-  publish-and-index:
-    needs: [check, standards-gate, registry-index]
-    if: github.ref == 'refs/heads/main'
-    # STAYS GitHub-hosted: this job holds contents:write + packages:write, writes ~/.npmrc, publishes
-    # to GitHub Packages, and pushes commits to main. Write/publish privilege belongs on a clean hosted
-    # runner, not the fleet (mirrors gridwork-core keeping its egress/write jobs hosted). Main-only +
-    # dry-run-by-default, so it runs rarely and gains nothing from fleet compute.
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: write
-      packages: write
-    env:
-      # Operator publish gate (ADR-0069). Default is dry-run; set "false" to go live.
-      CAISSON_PUBLISH_DRY_RUN: "true"
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          # Full history so changesets can read tags; built-in GITHUB_TOKEN for commit-back
-          # (not a stored PAT — the ephemeral token does not trigger downstream CI runs).
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: "1.3.14"
-      - run: bun install --frozen-lockfile
-      # Write the GitHub Packages registry URL + ephemeral GITHUB_TOKEN to ~/.npmrc.
-      # This is the built-in short-lived token, NOT a stored PAT or NODE_AUTH_TOKEN secret (ADR-0069).
-      - name: configure GitHub Packages registry (ephemeral GITHUB_TOKEN — no stored PAT)
-        run: echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
-      # Changeset version + publish, guarded by CAISSON_PUBLISH_DRY_RUN (default "true").
-      # In dry-run mode both are skipped; the rest of the job still validates the CI flow.
-      - name: changeset version + publish (dry-run by default — set CAISSON_PUBLISH_DRY_RUN=false to go live)
-        run: |
-          if [ "${CAISSON_PUBLISH_DRY_RUN}" != "false" ]; then
-            echo "[publish-and-index] dry-run: changeset version + publish skipped (CAISSON_PUBLISH_DRY_RUN=${CAISSON_PUBLISH_DRY_RUN})"
-          else
-            bunx changeset version
-            bunx changeset publish
-          fi
-      # Scan workspace manifest.ts files → append newly-published versions to the ledger →
-      # rebuild registry/index.json. In dry-run mode the script reports without writing;
-      # the subsequent git diff finds no changes and no commit is created.
-      - name: append ledger entries + rebuild registry/index.json
-        run: |
-          bun registry/scripts/ci-publish-step.ts \
-            --run-id "${{ github.run_id }}" \
-            --sha "${{ github.sha }}" \
-            --published-at "$(date -u '+%Y-%m-%dT%H:%M:%S.000Z')" \
-            --dry-run "${CAISSON_PUBLISH_DRY_RUN}"
-      # Commit ONLY registry/ledger.jsonl + registry/index.json back to main.
-      # In dry-run mode the diff is empty → no commit. git pull --rebase before push guards
-      # against concurrent writes (rare but safe to handle).
-      - name: commit registry files to main (ledger.jsonl + index.json only)
-        run: |
-          if git diff --quiet registry/ledger.jsonl registry/index.json; then
-            echo "[publish-and-index] registry files unchanged — nothing to commit"
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add registry/ledger.jsonl registry/index.json
-            git commit -m "chore(registry): append ledger + rebuild index.json [ci-publish]"
-            git pull --rebase origin main
-            git push
-          fi
+  # the access gate. The PUBLISH step that appends a gated publish to the ledger lives in publish.yml.
