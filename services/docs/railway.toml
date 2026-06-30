@@ -1,0 +1,20 @@
+# Railway service config — services/docs (@caisson/service-docs). ADR-0096 / ADR-0105 / P6.
+#
+# Dashboard settings for THIS service (the build context must be the repo root, see Dockerfile header):
+#   Root Directory       = /                          (repo root — the Docker build context)
+#   Config-as-code path  = services/docs/railway.toml (this file)
+#
+# Service env vars (set in the Railway service — NEVER committed):
+#   DOCS_SERVICE_TOKEN  (required; fail-closed — server refuses to start without it; mint = the value
+#                        provisioned to ~/.gridwork/env this session; copy it in)
+#   OPENROUTER_API_KEY  (consumed only once the code-track embedder wire lands; harmless before)
+#   PORT                (Railway injects; server binds it)
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "services/docs/Dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+numReplicas = 1

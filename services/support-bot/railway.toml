@@ -1,0 +1,23 @@
+# Railway service config — services/support-bot (caisson_support_bot). ADR-0009 / ADR-0105 / P6.
+#
+# Dashboard settings for THIS service (the Dockerfile is self-contained; context = its own dir):
+#   Root Directory       = services/support-bot              (self-contained Docker build context)
+#   Config-as-code path  = services/support-bot/railway.toml (this file)
+#
+# Service env vars (Railway service secrets — NEVER committed):
+#   DISCORD_TOKEN       (required; the bot's gateway token — operator's Discord app)
+#   OPENROUTER_API_KEY  (required; generation inference, ADR-0105)
+#   DOCS_SERVICE_URL    (required; the deployed docs-service base URL — B3 must be live first)
+#   DOCS_SERVICE_TOKEN  (required; MUST match the docs-service value)
+#   DATABASE_URL        (optional; Postgres support_ticket escalation store)
+#   SUPPORT_CHANNEL_ID / SUPPORT_HUMAN_ROLE_ID / OPENROUTER_MODEL  (optional; degrade gracefully)
+#   PORT                (Railway injects; the /health liveness server binds it)
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+numReplicas = 1

@@ -94,21 +94,31 @@ needs a real external account, infra, or deploy (DEPLOY-class, operator-gated).
 - **Stripe** (`STRIPE_SECRET_KEY` + per-endpoint `STRIPE_WEBHOOK_SECRET`) — **real commerce blocker**;
   no account/keys exist anywhere. Needed for live paid checkout + the X-2 grant path.
 
+### Provisioned this session (P6 operator-gates, 2026-06-30)
+
+- **License issuer keypair (B4)** — Ed25519 generated + round-trip-verified; private →
+  `~/.gridwork/env` (`CAISSON_LICENSE_SIGNING_KEY`), public → `infra/license-issuer/ISSUER_PUBLIC_KEY.md`.
+- **`DOCS_SERVICE_TOKEN` (B3)** — minted → `~/.gridwork/env` (shared docs-service ⇄ support-bot bearer).
+- **Railway deploy configs** — `services/docs/{Dockerfile,railway.toml}` + repo-root `.dockerignore` +
+  `services/support-bot/railway.toml` (platform = Railway, ADR-0105).
+- **Full Part-B runbook** (Stripe · docs-service · support-bot · go-live flip + the code-track
+  hand-off): **`docs/state/p6-deploy-runbook.md`**.
+
 ### Missing — un-exercised seams (needed only when that surface goes GA)
 
-| Need                | Env / resource                                                      | When                                                              |
-| ------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Database            | Neon Postgres `DATABASE_URL`                                        | when an edition/reference app runs live (not for the static site) |
-| Auth runtime        | better-auth instance + `BETTER_AUTH_SECRET` + PG store              | when a logged-in surface ships                                    |
-| Field encryption    | `MASTER_FIELD_KEY` + `FIELD_CRYPTO_SALT` (each 32-byte hex)         | when the compliance edition runs live                             |
-| Field KMS (alt)     | `KMS_KEY_ID` + cloud KMS creds                                      | optional alternative to `MASTER_FIELD_KEY`                        |
-| WORM store          | AWS S3 bucket w/ Object-Lock + creds                                | compliance live path (post-v1)                                    |
-| AI provider keys    | per-lane `apiKeyEnv` (OpenAI/Anthropic/Google)                      | **BYOK** — buyer supplies, not operator                           |
-| Job queue           | Trigger.dev project + key                                           | when a live queue is required (in-memory driver ships)            |
-| Transactional email | Resend API key (injected at composition)                            | when live email ships (capture driver is exercised)               |
-| License issuer      | Ed25519 signing **keypair** (`CAISSON_LICENSE_TOKEN` = verify side) | P6 — issuer is the missing half; verify key is compiled in        |
-| Waitlist function   | `RESEND_API_KEY` + `RESEND_SEGMENT_ID` (+ Turnstile, KV RL)         | legacy/secondary seam post-ADR-0082 self-serve flip               |
-| Lighthouse CI       | `LHCI_GITHUB_APP_TOKEN`                                             | optional — audit runs without it (no GitHub status post)          |
+| Need                | Env / resource                                                                                                            | When                                                                      |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Database            | Neon Postgres `DATABASE_URL`                                                                                              | when an edition/reference app runs live (not for the static site)         |
+| Auth runtime        | better-auth instance + `BETTER_AUTH_SECRET` + PG store                                                                    | when a logged-in surface ships                                            |
+| Field encryption    | `MASTER_FIELD_KEY` + `FIELD_CRYPTO_SALT` (each 32-byte hex)                                                               | when the compliance edition runs live                                     |
+| Field KMS (alt)     | `KMS_KEY_ID` + cloud KMS creds                                                                                            | optional alternative to `MASTER_FIELD_KEY`                                |
+| WORM store          | AWS S3 bucket w/ Object-Lock + creds                                                                                      | compliance live path (post-v1)                                            |
+| AI provider keys    | per-lane `apiKeyEnv` (OpenAI/Anthropic/Google)                                                                            | **BYOK** — buyer supplies, not operator                                   |
+| Job queue           | Trigger.dev project + key                                                                                                 | when a live queue is required (in-memory driver ships)                    |
+| Transactional email | Resend API key (injected at composition)                                                                                  | when live email ships (capture driver is exercised)                       |
+| License issuer      | Ed25519 signing **keypair** — ✅ **provisioned** (`CAISSON_LICENSE_SIGNING_KEY` in env; public → `infra/license-issuer/`) | P6/B4 done; code-track bakes the public key + builds the issuer sign path |
+| Waitlist function   | `RESEND_API_KEY` + `RESEND_SEGMENT_ID` (+ Turnstile, KV RL)                                                               | legacy/secondary seam post-ADR-0082 self-serve flip                       |
+| Lighthouse CI       | `LHCI_GITHUB_APP_TOKEN`                                                                                                   | optional — audit runs without it (no GitHub status post)                  |
 
 ### Ops hygiene (non-blocking)
 
