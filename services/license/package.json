@@ -24,6 +24,7 @@
     "@caisson/kernel": "workspace:*",
     "@caisson/license-issue": "workspace:*",
     "@caisson/license-verify": "workspace:*",
+    "@caisson/observability": "workspace:*",
     "@caisson/pricebook": "workspace:*",
     "@caisson/registry-schema": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*"

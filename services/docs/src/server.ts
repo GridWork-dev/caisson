@@ -8,6 +8,7 @@
 //     the FTS5 floor rather than crash-looping the service — the floor is the honest degraded mode.
 //   • no key (CI / local / offline) → the deterministic FTS5 floor alone: a natural-language sentence
 //     with no exact match returns [] rather than a confidently-wrong chunk.
+import { initObservability } from "@caisson/observability";
 import { createApp } from "./app.ts";
 import { buildCorpus } from "./corpus.ts";
 import { DocsIndex } from "./index-store.ts";
@@ -52,6 +53,11 @@ export async function startServer(): Promise<{
   port: number;
   stop: () => void;
 }> {
+  // ADR-0117: wired first, before any other boot work — instrumentation must be live before the
+  // modules it patches (node:http, pg) are first required. Env-gated: a no-op when
+  // OTEL_EXPORTER_OTLP_ENDPOINT is unset (CI / local / no SigNoz configured).
+  initObservability({ serviceName: "service-docs" });
+
   const token = process.env.DOCS_SERVICE_TOKEN ?? "";
   if (token.length === 0) {
     throw new Error(

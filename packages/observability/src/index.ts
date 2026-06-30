@@ -1,0 +1,7 @@
+export { initObservability, shutdownObservability } from "./observability.ts";
+export type {
+  InitObservabilityOptions,
+  ObservabilityHandle,
+} from "./observability.ts";
+export { scrubAttributes, ScrubbingSpanProcessor } from "./scrub.ts";
+export { SENSITIVE_ATTRIBUTE_KEY } from "./scrub.ts";
