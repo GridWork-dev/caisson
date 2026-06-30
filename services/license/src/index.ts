@@ -13,3 +13,12 @@ export {
 } from "./entitlement-store.ts";
 export type { GrantEntitlementsInput } from "./entitlement-store.ts";
 export { resolveAccountEntitlements } from "./resolve-entitlements.ts";
+export {
+  RATE_LIMIT_SCHEMA_SQL,
+  DEFAULT_RATE_LIMIT,
+  checkRateLimit,
+  setAccountRateLimit,
+} from "./rate-limit-store.ts";
+export type { RateLimitConfig, RateLimitDecision } from "./rate-limit-store.ts";
+export { createRateLimitHook } from "./rate-limit-hook.ts";
+export type { RateLimitHookDeps } from "./rate-limit-hook.ts";
