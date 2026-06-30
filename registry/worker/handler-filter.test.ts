@@ -12,10 +12,12 @@ import {
 import { licenseEntitlementResolver } from "./entitlement-filter";
 import { createIndexHandler } from "./handler";
 
-// The committed KAT license (license-verify/src/token.test.ts) — signs entitlements ["local-ai"], pro,
-// non-expiring. A TEST vector, never a production secret. Lets us drive the REAL verifier→expand→filter.
-const KAT_TOKEN =
-  "CAISSON-PRO-eyJlbnRpdGxlbWVudHMiOlsibG9jYWwtYWkiXSwiZXhwaXJ5IjpudWxsLCJsaWNlbnNlSWQiOiJmNDdhYzEwYi01OGNjLTQzNzItYTU2Ny0wZTAyYjJjM2Q0NzkiLCJtYWpvciI6MSwidGllciI6InBybyJ9mLtVqk-91jkIh6xD8M0BPmwVbwZfFtH9A0hnBM7zNgI6C1BHuiZEdyBYBtj2dftdSQRNPX9RnIjV21FDEfgdBQ";
+// A real PRODUCTION-signed license (minted offline with CAISSON_LICENSE_SIGNING_KEY; public-safe) —
+// signs entitlements ["local-ai"], pro, non-expiring. The verifier bakes the production public key
+// (ADR-0108). Keep in sync with the baked key in license-verify/src/verify.ts. Drives the REAL
+// verifier→expand→filter end to end.
+const PROD_TOKEN =
+  "CAISSON-PRO-eyJlbnRpdGxlbWVudHMiOlsibG9jYWwtYWkiXSwiZXhwaXJ5IjpudWxsLCJsaWNlbnNlSWQiOiIyMjIyMjIyMi0yMjIyLTQyMjItODIyMi0yMjIyMjIyMjIyMjIiLCJtYWpvciI6MSwidGllciI6InBybyJ9JCCq8unU9ASs7NpgsOQSFpKl6Bti7J41yCKbLV8-1q0HbeUzZ-K7cfdaBge2_gyn38fKvEomzkH35GRQ0RbFBA";
 
 function entry(
   id: string,
@@ -162,7 +164,7 @@ describe("Worker entitlement filtering (ADR-0071)", () => {
 });
 
 describe("Worker filtering composed with the REAL license verifier (end-to-end seam)", () => {
-  // An index that actually contains a local-ai member, so the KAT token's signed entitlement
+  // An index that actually contains a local-ai member, so the prod token's signed entitlement
   // (["local-ai"]) expands to a non-empty member set — proving verify → expand → filter end to end.
   const localAiIndex = loadRegistryIndex({
     schemaVersion: 1,
@@ -176,10 +178,10 @@ describe("Worker filtering composed with the REAL license verifier (end-to-end s
     resolveEntitlements: licenseEntitlementResolver,
   });
 
-  test("a real KAT-signed license sees base ∪ its entitled edition (local-ai), not other editions", async () => {
+  test("a real production-signed license sees base ∪ its entitled edition (local-ai), not other editions", async () => {
     const res = realHandler(
       new Request("https://registry.caisson.sh/", {
-        headers: { authorization: `Bearer ${KAT_TOKEN}` },
+        headers: { authorization: `Bearer ${PROD_TOKEN}` },
       }),
     );
     expect(res.status).toBe(200);
