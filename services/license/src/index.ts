@@ -7,7 +7,8 @@
 // grants and claws back ONLY unspent credits. `resolveAccountEntitlements` expands an account's ACTIVE
 // purchased ids to member slugs against the registry index; the lazy, bearer-gated `POST /issue`
 // (createApp/startServer) resolves an account's entitlements and signs them into a license token via
-// `@caisson/license-issue`.
+// `@caisson/license-issue`, then PERSISTS it via `license-grant-store.ts` — `POST /issue` is idempotent
+// per (accountId, major): a later call re-serves the stored token rather than re-minting.
 export { applyBillingEvent } from "./apply-billing-event.ts";
 export { handleBillingWebhook } from "./webhook.ts";
 export type { BillingWebhookResult } from "./webhook.ts";
@@ -26,6 +27,15 @@ export type {
   RevokePurchaseInput,
 } from "./entitlement-store.ts";
 export { resolveAccountEntitlements } from "./resolve-entitlements.ts";
+export {
+  LICENSE_GRANT_SCHEMA_SQL,
+  readLicenseGrant,
+  storeLicenseGrant,
+} from "./license-grant-store.ts";
+export type {
+  LicenseGrantRecord,
+  StoreLicenseGrantInput,
+} from "./license-grant-store.ts";
 export { createApp, type IssueAppDeps } from "./app.ts";
 export { startServer, type StartServerOptions } from "./server.ts";
 export {
