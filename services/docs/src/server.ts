@@ -23,7 +23,8 @@ export async function startServer(): Promise<{
       "DOCS_SERVICE_TOKEN is required (POST /query is fail-closed) — refusing to start.",
     );
   }
-  const port = Number(process.env.PORT ?? DEFAULT_PORT);
+  // `||` not `??`: a blank PORT="" must fall back to the default, not coerce to Number("")=0 (ephemeral).
+  const port = Number(process.env.PORT || DEFAULT_PORT);
   const origin = process.env.DOCS_SITE_ORIGIN;
 
   const corpus = buildCorpus();
