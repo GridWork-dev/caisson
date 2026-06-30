@@ -9,21 +9,23 @@ conflict, the ADR file and the board win over this index.
 - ADRs are append-only and immutable (ADR-0006). A later ADR _supersedes_ a clause; it
   never edits the prior file. So most rows below are **partial** supersessions (one clause),
   not a wholesale replacement.
-- 90 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 90). Numbering is **not**
-  contiguous: present are **0001-0024** and **0040-0105**; **0025-0039 are an unused gap**
+- 98 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 98). Numbering is **not**
+  contiguous: present are **0001-0024** and **0040-0113**; **0025-0039 are an unused gap**
   (no files). The 0040 jump was a deliberate block reservation for the brand/positioning set.
   **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit);
   **0094-0096** = the 2026-06-29 GTM-report locks (open-core Base / GTM offer / services-docs);
   **0097** = the W1 registry schema/service split; **0098** = the B1 credit-denomination home (resolves 0089 SD-3);
   **0099-0104** = the 2026-06-29 design-system-harden track locks (component-recipe+kit / token+theming / gates / signature-animation / brand-mark "Pressure vessel" / Phase-2 hero static-code-as-proof);
-  **0105** = the 2026-06-29 support-bot implementation locks (discord.py / OpenRouter / thread+Postgres escalation — implements 0009, P6 Bucket C item 2).
+  **0105** = the 2026-06-29 support-bot implementation locks (discord.py / OpenRouter / thread+Postgres escalation — implements 0009, P6 Bucket C item 2);
+  **0106-0107** = the 2026-06-29 P6 operator-gates locks (final pricing numbers + grandfathering / CF-Access go-live gate); **0108** = the 2026-06-30 Paddle-MoR payment-provider switch (supersedes Stripe-as-MoR; amends 0089); **0109** = the 2026-06-30 support-bot member-management lock (auto-role / mod commands / /grant-role — extends 0105).
+  **0110-0113** = the 2026-06-30 P6 code-track locks (license-issuer impl + production verify-key bake / publish-readiness private→public flip / buyer-MCP per-account rate-limit / entitlement-revoke + one-time purchases + refund credit-clawback). The code track originally drafted issuer at 0108 and entitlement at 0109; both were **renumbered at the integration merge** (0108→0110, 0109→0113) so the go-live operator track keeps the contiguous 0106-0109 block.
 - Status tokens read from each ADR's own header line:
   - `proposed` = literal header value on the founding + foundations sets (0001-0019, 0024).
     Per the board (line 90) these are **in force / locked** despite the stale "proposed"
     header text written during the Phase-5 spec; the header was never updated. See accuracy
     flags at the bottom.
   - `locked` = D9 module-pipeline set (0020-0023).
-  - `accepted` = brand/wave-0/wave-1/design/gtm sets + picker-round locks (0040-0104).
+  - `accepted` = brand/wave-0/wave-1/design/gtm sets + picker-round locks + P6 go-live/code tracks (0040-0113).
 
 Domain detail and rationale: read the ADR file. Architecture overview: `specs/01-architecture.md`.
 Product framing: `specs/00-product-spec.md`. Build plan: `plan.md`.
@@ -255,6 +257,33 @@ after exa + codebase research. Implements ADR-0009's shape; does not supersede i
 | #                                                                     | Title                                                                          | Domain           | Status   | Relations                                                         |
 | --------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ---------------- | -------- | ----------------------------------------------------------------- |
 | [0105](../knowledge/decisions/ADR-0105-support-bot-implementation.md) | support-bot impl: discord.py · OpenRouter (one key) · thread+Postgres escalate | Services/Support | accepted | implements 0009; consumes 0096 (/query); full-build + deploy seam |
+
+### P6 operator-gates + go-live (0106-0109, 2026-06-29..30) - status `accepted`
+
+The DEPLOY-class operator session's go-live forks. ADR-0106 executes the ADR-0095 §4 pricing deferral;
+ADR-0107 formalizes the keep-gated CF-Access decision into a launch runbook; ADR-0108 switches the
+payment provider to Paddle (Merchant of Record), superseding the Stripe-as-MoR assumption; ADR-0109
+locks support-bot member-management scope (extends 0105) built in the 2026-06-30 go-live session.
+
+| #                                                                        | Title                                                                                    | Domain           | Status   | Relations                                                            |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- | ---------------- | -------- | -------------------------------------------------------------------- |
+| [0106](../knowledge/decisions/ADR-0106-final-pricing-grandfathering.md)  | Final pricing numbers + grandfathering (Compliance $2,499 · Bundle $3,499 · annual subs) | Commerce/Pricing | accepted | executes 0095 §4; supersedes 0082 §2 display; extends 0012/0081/0089 |
+| [0107](../knowledge/decisions/ADR-0107-cf-access-go-live-gate.md)        | CF-Access go-live gate: keep gated until checkout works; flip = the launch act           | Infra/Go-live    | accepted | formalizes board decision; relates 0082/0106/0089/0009/0096          |
+| [0108](../knowledge/decisions/ADR-0108-payment-provider-paddle-mor.md)   | Payment provider: Paddle (Merchant of Record) supersedes Stripe-as-MoR                   | Commerce/Billing | accepted | supersedes Stripe-as-MoR (0012); amends 0089; relates 0106           |
+| [0109](../knowledge/decisions/ADR-0109-support-bot-member-management.md) | Support-bot member management (auto-role · mod cmds · /grant-role) — one bot, new module | Services/Support | accepted | extends 0105 (in the 0009 envelope); defers webhook to 0108          |
+
+### P6 code-track (0110-0113, 2026-06-30) - status `accepted`
+
+The unattended code-track slices landed alongside the go-live operator gates and merged in the same
+P6 integration. Issuer (0110) and entitlement-revoke (0113) were drafted at 0108/0109 and renumbered
+at the merge so the operator track keeps the contiguous 0106-0109 block.
+
+| #                                                                         | Title                                                                                                                      | Domain           | Status   | Relations                                                 |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------- | -------- | --------------------------------------------------------- |
+| [0110](../knowledge/decisions/ADR-0110-license-issuer-implementation.md)  | License-issuer impl: private @caisson/license-issue · PKCS8 Signer port · baked verify-key · lazy bearer-gated POST /issue | Services/License | accepted | implements 0010; private flank of 0097; relates 0047/0071 |
+| [0111](../knowledge/decisions/ADR-0111-publish-readiness.md)              | Publish-readiness: private→public flip · open-base→npm / commercial→GH split · changeset gate                              | Registry/Release | accepted | executes 0094/0097 open-core; relates 0020-0023/0092      |
+| [0112](../knowledge/decisions/ADR-0112-mcp-rate-limit.md)                 | Buyer-MCP per-account rate limit (lazy-refill token bucket · port-injected · fail-open)                                    | Services/MCP     | accepted | extends 0009 MCP surface; relates 0089 metering           |
+| [0113](../knowledge/decisions/ADR-0113-entitlement-revoke-and-onetime.md) | Entitlement revocation + one-time purchases + refund credit-clawback (reference-counted grants)                            | Services/License | accepted | evolves 0071; amends 0089; relates 0007 integer-credits   |
 
 ---
 

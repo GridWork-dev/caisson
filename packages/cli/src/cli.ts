@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import {
   type RegistryIndex,
   loadRegistryIndexFromFile,
-} from "@caisson/registry";
+} from "@caisson/registry-schema";
 import { type GeneratedFileSet, type Selection, generate } from "./generate.ts";
 import { createFileSetWriter } from "./writer.ts";
 

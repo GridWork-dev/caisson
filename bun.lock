@@ -189,7 +189,7 @@
     },
     "packages/agent-dev": {
       "name": "@caisson/agent-dev",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@caisson/agent-kernel": "workspace:*",
         "@caisson/ai-config": "workspace:*",
@@ -206,7 +206,7 @@
     },
     "packages/agent-kernel": {
       "name": "@caisson/agent-kernel",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "zod": "^3.23.8",
@@ -221,7 +221,7 @@
     },
     "packages/ai-config": {
       "name": "@caisson/ai-config",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "zod": "^3.23.8",
@@ -236,7 +236,7 @@
     },
     "packages/ai-evals": {
       "name": "@caisson/ai-evals",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "zod": "^3.23.8",
       },
@@ -250,7 +250,7 @@
     },
     "packages/ai-kit": {
       "name": "@caisson/ai-kit",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@ai-sdk/anthropic": "^2.0.83",
         "@ai-sdk/google": "^2.0.76",
@@ -279,7 +279,7 @@
     },
     "packages/ai-meter": {
       "name": "@caisson/ai-meter",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@caisson/credits": "workspace:*",
         "@caisson/kernel": "workspace:*",
@@ -296,7 +296,7 @@
     },
     "packages/audit-worm": {
       "name": "@caisson/audit-worm",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@aws-sdk/client-s3": "^3.1075.0",
         "@caisson/kernel": "workspace:*",
@@ -313,7 +313,7 @@
     },
     "packages/auth": {
       "name": "@caisson/auth",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
       },
@@ -327,7 +327,7 @@
     },
     "packages/billing": {
       "name": "@caisson/billing",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "zod": "^3.23.8",
@@ -342,15 +342,15 @@
     },
     "packages/cli": {
       "name": "@caisson/cli",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "bin": {
-        "create-caisson": "./src/cli.ts",
+        "create-caisson": "./dist/cli.js",
       },
       "dependencies": {
         "@caisson/credits": "workspace:*",
         "@caisson/kernel": "workspace:*",
         "@caisson/migrate": "workspace:*",
-        "@caisson/registry": "workspace:*",
+        "@caisson/registry-schema": "workspace:*",
         "zod": "^3.23.8",
       },
       "devDependencies": {
@@ -364,7 +364,7 @@
     },
     "packages/compliance": {
       "name": "@caisson/compliance",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@caisson/audit-worm": "workspace:*",
         "@caisson/field-crypto": "workspace:*",
@@ -384,7 +384,7 @@
     },
     "packages/credits": {
       "name": "@caisson/credits",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "@caisson/registry-schema": "workspace:*",
@@ -400,7 +400,7 @@
     },
     "packages/email": {
       "name": "@caisson/email",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
       },
@@ -414,7 +414,7 @@
     },
     "packages/field-crypto": {
       "name": "@caisson/field-crypto",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "drizzle-orm": "^0.45.0",
@@ -431,7 +431,7 @@
     },
     "packages/guardrails": {
       "name": "@caisson/guardrails",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@caisson/field-crypto": "workspace:*",
         "@caisson/kernel": "workspace:*",
@@ -447,7 +447,7 @@
     },
     "packages/jobs": {
       "name": "@caisson/jobs",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "zod": "^3.23.8",
@@ -462,7 +462,7 @@
     },
     "packages/kernel": {
       "name": "@caisson/kernel",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "bin": {
         "caisson-gate": "./src/gate.ts",
       },
@@ -477,9 +477,25 @@
         "typescript": "^5.6.0",
       },
     },
+    "packages/license-issue": {
+      "name": "@caisson/license-issue",
+      "version": "0.0.0",
+      "dependencies": {
+        "@caisson/kernel": "workspace:*",
+        "@caisson/license-verify": "workspace:*",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/registry-schema": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
+    },
     "packages/license-verify": {
       "name": "@caisson/license-verify",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "zod": "^3.23.8",
@@ -494,7 +510,7 @@
     },
     "packages/local-ai": {
       "name": "@caisson/local-ai",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@caisson/field-crypto": "workspace:*",
         "@caisson/kernel": "workspace:*",
@@ -512,7 +528,7 @@
     },
     "packages/local-store": {
       "name": "@caisson/local-store",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "sqlite-vec": "^0.1.9",
@@ -528,7 +544,7 @@
     },
     "packages/mcp-server": {
       "name": "@caisson/mcp-server",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@caisson/ai-config": "workspace:*",
         "@caisson/kernel": "workspace:*",
@@ -545,7 +561,7 @@
     },
     "packages/migrate": {
       "name": "@caisson/migrate",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
       },
@@ -559,7 +575,7 @@
     },
     "packages/pricebook": {
       "name": "@caisson/pricebook",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "zod": "^3.23.8",
@@ -574,7 +590,7 @@
     },
     "packages/prompt-registry": {
       "name": "@caisson/prompt-registry",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
@@ -590,7 +606,7 @@
     },
     "packages/registry-schema": {
       "name": "@caisson/registry-schema",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "zod": "^3.23.8",
       },
@@ -604,7 +620,7 @@
     },
     "packages/tenancy-rls": {
       "name": "@caisson/tenancy-rls",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
       },
@@ -618,7 +634,7 @@
     },
     "packages/ui": {
       "name": "@caisson/ui",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "radix-ui": "^1.6.0",
       },
@@ -663,6 +679,7 @@
       "name": "@caisson/service-docs",
       "version": "0.0.0",
       "dependencies": {
+        "@caisson/kernel": "workspace:*",
         "@caisson/local-store": "workspace:*",
         "sqlite-vec": "^0.1.9",
         "zod": "^3.23.8",
@@ -683,6 +700,8 @@
         "@caisson/billing": "workspace:*",
         "@caisson/credits": "workspace:*",
         "@caisson/kernel": "workspace:*",
+        "@caisson/license-issue": "workspace:*",
+        "@caisson/license-verify": "workspace:*",
         "@caisson/pricebook": "workspace:*",
         "@caisson/registry-schema": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
@@ -691,6 +710,7 @@
         "@caisson/eslint-config": "workspace:*",
         "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
+        "@types/bun": "^1.1.14",
         "eslint": "^9.13.0",
         "typescript": "^5.6.0",
       },
@@ -872,6 +892,8 @@
     "@caisson/jobs": ["@caisson/jobs@workspace:packages/jobs"],
 
     "@caisson/kernel": ["@caisson/kernel@workspace:packages/kernel"],
+
+    "@caisson/license-issue": ["@caisson/license-issue@workspace:packages/license-issue"],
 
     "@caisson/license-verify": ["@caisson/license-verify@workspace:packages/license-verify"],
 

@@ -1,9 +1,12 @@
 {
   "name": "@caisson/prompt-registry",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
   "description": "Append-only versioned prompts + name@version / name@alias addressing + a mutable alias pointer + injection-safe templating. ADR-0061/0006/0014.",
   "exports": {
     ".": {

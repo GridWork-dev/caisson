@@ -8,16 +8,17 @@
 // LicenseRef-Caisson-Commercial (ADR-0050; the AGPL flank is retired). `priceCents` is the established
 // pre-launch placeholder anchor (4900) — final pricing is the open "Pricing numbers" board fork, out
 // of scope here. The relative import keeps `@caisson/registry` out of the runtime dep set.
+import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
 export default defineModule({
   id: "@caisson/agent-dev",
-  version: "0.0.0",
+  version: pkg.version,
   kind: "edition",
   editions: ["agent-dev"],
   tier: "paid",
   priceCents: 4900,
-  license: "LicenseRef-Caisson-Commercial",
+  license: pkg.license,
   dependencies: [
     "@caisson/agent-kernel",
     "@caisson/ai-config",

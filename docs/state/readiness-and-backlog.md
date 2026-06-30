@@ -57,9 +57,9 @@ needs a real external account, infra, or deploy (DEPLOY-class, operator-gated).
 
 ### needs-config (one secret flips it live)
 
-| Surface                                                 | Flip                                                       | Gates                                                           |
-| ------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------- |
-| Stripe live checkout + real webhook + cycle→grant (X-2) | `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` + Stripe CLI | the X-2 cycle→grant code **does not exist yet** (P6 / ADR-0089) |
+| Surface                                       | Flip                                                               | Gates                                                             |
+| --------------------------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| Paddle checkout + webhook + cycle→grant (X-2) | `PADDLE_API_KEY` + `PADDLE_WEBHOOK_SECRET` + `PADDLE_CLIENT_TOKEN` | mapper exists but Stripe-shaped — rework Stripe→Paddle (ADR-0108) |
 
 ### needs-external (real account / infra / deploy — DEPLOY-class)
 
@@ -89,24 +89,37 @@ needs a real external account, infra, or deploy (DEPLOY-class, operator-gated).
 - **Cloudflare Access pre-launch gate** (`access.tf` APPLIED) — `caisson.sh` + `www` sit behind
   email-OTP, restricted to `@gridwork.dev`. For a public v1 launch this gate **must be removed**
   (delete `access.tf` + `terraform apply`) or flipped to bypass. **DEPLOY-class, operator-gated.**
-- **Stripe** (`STRIPE_SECRET_KEY` + per-endpoint `STRIPE_WEBHOOK_SECRET`) — **real commerce blocker**;
-  no account/keys exist anywhere. Needed for live paid checkout + the X-2 grant path.
+  Sequencing + go-live checklist locked: **ADR-0107** (keep gated until checkout works + Compliance
+  buyable; pages.dev sealed via Pages-native Access at flip).
+- **Paddle** (Merchant of Record, ADR-0108 — switched from Stripe) — `PADDLE_API_KEY` +
+  `PADDLE_WEBHOOK_SECRET` + `PADDLE_CLIENT_TOKEN`; **real commerce blocker**, no account/keys yet.
+  Needed for live paid checkout + the X-2 grant path (the mapper is reworked Stripe→Paddle, code track).
+
+### Provisioned this session (P6 operator-gates, 2026-06-30)
+
+- **License issuer keypair (B4)** — Ed25519 generated + round-trip-verified; private →
+  `~/.gridwork/env` (`CAISSON_LICENSE_SIGNING_KEY`), public → `infra/license-issuer/ISSUER_PUBLIC_KEY.md`.
+- **`DOCS_SERVICE_TOKEN` (B3)** — minted → `~/.gridwork/env` (shared docs-service ⇄ support-bot bearer).
+- **Railway deploy configs** — `services/docs/{Dockerfile,railway.toml}` + repo-root `.dockerignore` +
+  `services/support-bot/railway.toml` (platform = Railway, ADR-0105).
+- **Full Part-B runbook** (Stripe · docs-service · support-bot · go-live flip + the code-track
+  hand-off): **`docs/state/p6-deploy-runbook.md`**.
 
 ### Missing — un-exercised seams (needed only when that surface goes GA)
 
-| Need                | Env / resource                                                      | When                                                              |
-| ------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Database            | Neon Postgres `DATABASE_URL`                                        | when an edition/reference app runs live (not for the static site) |
-| Auth runtime        | better-auth instance + `BETTER_AUTH_SECRET` + PG store              | when a logged-in surface ships                                    |
-| Field encryption    | `MASTER_FIELD_KEY` + `FIELD_CRYPTO_SALT` (each 32-byte hex)         | when the compliance edition runs live                             |
-| Field KMS (alt)     | `KMS_KEY_ID` + cloud KMS creds                                      | optional alternative to `MASTER_FIELD_KEY`                        |
-| WORM store          | AWS S3 bucket w/ Object-Lock + creds                                | compliance live path (post-v1)                                    |
-| AI provider keys    | per-lane `apiKeyEnv` (OpenAI/Anthropic/Google)                      | **BYOK** — buyer supplies, not operator                           |
-| Job queue           | Trigger.dev project + key                                           | when a live queue is required (in-memory driver ships)            |
-| Transactional email | Resend API key (injected at composition)                            | when live email ships (capture driver is exercised)               |
-| License issuer      | Ed25519 signing **keypair** (`CAISSON_LICENSE_TOKEN` = verify side) | P6 — issuer is the missing half; verify key is compiled in        |
-| Waitlist function   | `RESEND_API_KEY` + `RESEND_SEGMENT_ID` (+ Turnstile, KV RL)         | legacy/secondary seam post-ADR-0082 self-serve flip               |
-| Lighthouse CI       | `LHCI_GITHUB_APP_TOKEN`                                             | optional — audit runs without it (no GitHub status post)          |
+| Need                | Env / resource                                                                                                            | When                                                                      |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Database            | Neon Postgres `DATABASE_URL`                                                                                              | when an edition/reference app runs live (not for the static site)         |
+| Auth runtime        | better-auth instance + `BETTER_AUTH_SECRET` + PG store                                                                    | when a logged-in surface ships                                            |
+| Field encryption    | `MASTER_FIELD_KEY` + `FIELD_CRYPTO_SALT` (each 32-byte hex)                                                               | when the compliance edition runs live                                     |
+| Field KMS (alt)     | `KMS_KEY_ID` + cloud KMS creds                                                                                            | optional alternative to `MASTER_FIELD_KEY`                                |
+| WORM store          | AWS S3 bucket w/ Object-Lock + creds                                                                                      | compliance live path (post-v1)                                            |
+| AI provider keys    | per-lane `apiKeyEnv` (OpenAI/Anthropic/Google)                                                                            | **BYOK** — buyer supplies, not operator                                   |
+| Job queue           | Trigger.dev project + key                                                                                                 | when a live queue is required (in-memory driver ships)                    |
+| Transactional email | Resend API key (injected at composition)                                                                                  | when live email ships (capture driver is exercised)                       |
+| License issuer      | Ed25519 signing **keypair** — ✅ **provisioned** (`CAISSON_LICENSE_SIGNING_KEY` in env; public → `infra/license-issuer/`) | P6/B4 done; code-track bakes the public key + builds the issuer sign path |
+| Waitlist function   | `RESEND_API_KEY` + `RESEND_SEGMENT_ID` (+ Turnstile, KV RL)                                                               | legacy/secondary seam post-ADR-0082 self-serve flip                       |
+| Lighthouse CI       | `LHCI_GITHUB_APP_TOKEN`                                                                                                   | optional — audit runs without it (no GitHub status post)                  |
 
 ### Ops hygiene (non-blocking)
 
@@ -208,15 +221,18 @@ Compliance vertical packs · AI-feature packs · local-first verticals · the mo
 
 ## 4. Open operator decisions (forks needing a picker)
 
-| Fork                                       | Status                          | Why it needs you                                                                                         |
-| ------------------------------------------ | ------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| ~~Final pricing numbers + grandfathering~~ | **CLOSED — ADR-0095**           | deliberately deferred to P6/checkout; reports' $2,999–$4,999 anchor + ICP/keyword validation = the input |
-| ~~`services/docs` scope~~                  | **CLOSED — ADR-0096**           | standalone AI-native docs service (separate from `apps/site` Fumadocs)                                   |
-| **Cloudflare Access go-live gate**         | **decided (board): keep gated** | flip only when checkout works + Compliance is buyable — the deliberate launch act (DEPLOY-class)         |
+| Fork                                       | Status                | Why it needs you                                                                                                                                                                |
+| ------------------------------------------ | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ~~Final pricing numbers + grandfathering~~ | **LOCKED — ADR-0106** | numbers set 2026-06-29 (Compliance $2,499 · Bundle $3,499 · Updates $1,499/yr · Developer $499/yr · Enterprise contact-us); forward grandfather; code track wires the pricebook |
+| ~~`services/docs` scope~~                  | **CLOSED — ADR-0096** | standalone AI-native docs service (separate from `apps/site` Fumadocs)                                                                                                          |
+| ~~Cloudflare Access go-live gate~~         | **LOCKED — ADR-0107** | keep gated; flip only when checkout works + Compliance buyable — the deliberate launch act (DEPLOY-class); go-live checklist in the ADR                                         |
 
 _The 2026-06-29 GTM-report picker round closed all strategy forks (ADR-0094 open-core Base · ADR-0095
-GTM offer structure · ADR-0096 services-docs). **No open operator forks remain** — the only
-operator-owned remainders are deferred-by-decision (pricing numbers → P6; CF go-live → launch act)._
+GTM offer structure · ADR-0096 services-docs); the **2026-06-29 P6 operator-gates round** then locked
+the two remaining operator forks — **final pricing numbers + grandfathering (ADR-0106)** and the
+**CF-Access go-live gate (ADR-0107)**. **No open operator forks remain.** The only remaining go-live
+action is the deliberate CF-Access flip itself, held until the commerce spine + a buyable Compliance
+edition land (the ADR-0107 trigger)._
 
 ## 5. The two tracks — both substantially MERGED (status, 2026-06-29)
 

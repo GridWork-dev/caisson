@@ -1,9 +1,12 @@
 {
   "name": "@caisson/email",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "description": "Transactional email port: provider-agnostic Emailer + capture (test) + Resend (prod) drivers. ADR-0018.",
   "exports": {
     ".": {

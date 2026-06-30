@@ -1,9 +1,12 @@
 {
   "name": "@caisson/credits",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "description": "Integer credit wallet + append-only ledger + debit-before-spend (402, idempotent). ADR-0007/0020.",
   "exports": {
     ".": {

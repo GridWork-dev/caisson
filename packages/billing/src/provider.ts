@@ -59,6 +59,15 @@ export function createStripeBilling(config: StripeConfig): BillingProvider {
       };
       if (input.mode === "subscription") {
         params["subscription_data[metadata][account_id]"] = input.accountId;
+      } else {
+        // One-time (payment) checkout (ADR-0113). The session carries no webhook-readable line items
+        // without expansion, so stamp the price id on the SESSION metadata for the purchase->grant
+        // resolution. Stamp account id (and price id) on `payment_intent_data[metadata]` too: Stripe
+        // copies PaymentIntent metadata onto the Charge, so a later `charge.refunded` can resolve the
+        // tenant + join back to this purchase by the PaymentIntent id (the refund clawback path).
+        params["metadata[price_id]"] = input.priceId;
+        params["payment_intent_data[metadata][account_id]"] = input.accountId;
+        params["payment_intent_data[metadata][price_id]"] = input.priceId;
       }
       const res = await fetchWithTimeout(
         "https://api.stripe.com/v1/checkout/sessions",

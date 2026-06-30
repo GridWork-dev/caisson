@@ -75,6 +75,7 @@ describe("resolveAccountEntitlements (ADR-0071)", () => {
         accountId: acct,
         entitlementIds: ["compliance"],
         sourceEventId: "in_1",
+        source: { kind: "subscription", subscriptionId: "sub_1" },
       }),
     );
     const resolved = await withTenant(tp.pg, acct, (tx) =>
@@ -90,6 +91,7 @@ describe("resolveAccountEntitlements (ADR-0071)", () => {
         accountId: acct,
         entitlementIds: ["bundle"],
         sourceEventId: "in_b",
+        source: { kind: "one_time", purchaseId: "pi_b" },
       }),
     );
     const resolved = await withTenant(tp.pg, acct, (tx) =>
@@ -117,6 +119,7 @@ describe("resolveAccountEntitlements (ADR-0071)", () => {
         accountId: acct,
         entitlementIds: ["not-an-edition"],
         sourceEventId: "in_s",
+        source: { kind: "subscription", subscriptionId: "sub_s" },
       }),
     );
     await expect(

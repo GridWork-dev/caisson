@@ -3,20 +3,21 @@
 // template). Commercial-licensed (firewall → not AGPL), so the tier⟺license rule forces `paid`;
 // `priceCents` is the established pre-launch placeholder anchor (4900) — final pricing is the open
 // "Pricing numbers" board fork, out of Wave-0 scope.
-import { defineModule } from "@caisson/registry";
+import pkg from "./package.json";
+import { defineModule } from "@caisson/registry-schema";
 
 export default defineModule({
   id: "@caisson/cli",
-  version: "0.0.0",
+  version: pkg.version,
   kind: "base",
   tier: "paid",
   priceCents: 4900,
-  license: "LicenseRef-Caisson-Commercial",
+  license: pkg.license,
   dependencies: [
     "@caisson/credits",
     "@caisson/kernel",
     "@caisson/migrate",
-    "@caisson/registry",
+    "@caisson/registry-schema",
   ],
   golden: "src/__golden__",
   description:

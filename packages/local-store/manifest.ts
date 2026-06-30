@@ -6,15 +6,16 @@
 // pre-launch placeholder anchor (4900) — final pricing is the open "Pricing numbers" board fork, out
 // of scope here. The relative import keeps `@caisson/registry` out of the runtime dep set: the sole
 // declared workspace dependency is `@caisson/kernel` (sqlite-vec is the external native ext).
+import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
 export default defineModule({
   id: "@caisson/local-store",
-  version: "0.0.0",
+  version: pkg.version,
   kind: "base",
   tier: "paid",
   priceCents: 4900,
-  license: "LicenseRef-Caisson-Commercial",
+  license: pkg.license,
   dependencies: ["@caisson/kernel"],
   golden: "src/__golden__",
   description:

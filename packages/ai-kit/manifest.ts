@@ -6,16 +6,17 @@
 // validate; the number is not the locked price). The provider-SDK dependency (`ai` + `@ai-sdk/*`,
 // Apache-2.0) is the Gate-2 carve-out (ADR-0011/0022); it is not a workspace dep so it does not
 // appear here.
+import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
 export default defineModule({
   id: "@caisson/ai-kit",
-  version: "0.0.0",
+  version: pkg.version,
   kind: "edition",
   editions: ["ai-kit"],
   tier: "paid",
   priceCents: 49900,
-  license: "LicenseRef-Caisson-Commercial",
+  license: pkg.license,
   dependencies: [
     "@caisson/ai-config",
     "@caisson/ai-meter",

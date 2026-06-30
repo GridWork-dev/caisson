@@ -6,6 +6,7 @@
 // `generate` + the writer directly and never `runGeneration`; its monetization is the license-gated
 // package install (NODE_AUTH_TOKEN), not a codegen credit (ADR-0093). Runs inside `withTenant` so
 // the debit + the ledger are tenant-scoped (ADR-0005).
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { CreditResult } from "@caisson/credits";
 import { debit } from "@caisson/credits";
@@ -14,7 +15,7 @@ import {
   type ModuleManifest,
   type RegistryIndex,
   assertKnownVersion,
-} from "@caisson/registry";
+} from "@caisson/registry-schema";
 import {
   type GeneratedFile,
   type GeneratedFileSet,
@@ -58,6 +59,10 @@ export interface GenerationDeps {
   writeFileSet?: FileSetWriter;
   /** Where a P5 writer would materialize. Unused until a writer is injected. */
   targetDir?: string;
+  /** Override the migrations-bundle root the compose-time migration merge reads from. Omitted → the
+   *  build-time `../migrations-bundle` dir resolved via `import.meta.url` (the published default). Tests
+   *  inject a throwaway dir so they never read or corrupt the real (gitignored) build artifact. */
+  bundleRoot?: string;
 }
 
 export interface GenerationOutcome {
@@ -77,9 +82,11 @@ export interface GenerationOutcome {
  *  build step) from each module's canonical `src/migrations/`: under a built or published CLI the dir
  *  is present and migration-bearing modules contribute their files; on a clean source checkout with no
  *  prior build the dir is absent, so the merge below falls back to a clean, deterministic no-op (never
- *  a cwd-dependent partial read). */
-function packageDir(moduleId: string): string {
+ *  a cwd-dependent partial read). An optional `bundleRoot` overrides the resolved root — tests inject a
+ *  throwaway dir so they never touch the real (gitignored) build artifact; omitted → the default above. */
+function packageDir(moduleId: string, bundleRoot?: string): string {
   const name = moduleId.replace(/^@caisson\//, "");
+  if (bundleRoot !== undefined) return join(bundleRoot, name);
   return fileURLToPath(
     new URL(`../migrations-bundle/${name}`, import.meta.url),
   );
@@ -171,11 +178,12 @@ function mergeMigrations(
   index: RegistryIndex,
   selection: Selection,
   files: GeneratedFileSet,
+  bundleRoot?: string,
 ): GeneratedFileSet {
   const selected = new Set(selection.modules.map((m) => m.id));
   const packages: SelectedPackage[] = selection.modules.map((m) => ({
     slug: m.id,
-    dir: packageDir(m.id),
+    dir: packageDir(m.id, bundleRoot),
     dependsOn: manifestFor(index, m.id, m.version).dependencies.filter((d) =>
       selected.has(d),
     ),
@@ -198,11 +206,12 @@ function composeGeneratedFileSet(
   index: RegistryIndex,
   selection: Selection,
   files: GeneratedFileSet,
+  bundleRoot?: string,
 ): GeneratedFileSet {
   const folded = selection.edition
     ? foldEditionMembers(files, resolveEditionMembers(index, selection.edition))
     : files;
-  return mergeMigrations(index, selection, folded);
+  return mergeMigrations(index, selection, folded, bundleRoot);
 }
 
 /**
@@ -223,7 +232,12 @@ export async function runGeneration(
   meter: MeterInput,
 ): Promise<GenerationOutcome> {
   const { selection, files } = generate(deps.index, raw, deps.engine);
-  const composed = composeGeneratedFileSet(deps.index, selection, files);
+  const composed = composeGeneratedFileSet(
+    deps.index,
+    selection,
+    files,
+    deps.bundleRoot,
+  );
   const result = await meterGeneration(tx, meter); // debit-before-spend; 402 throws here
   // An injected writer/spy still wins; otherwise default to the path-safe disk writer when a target
   // is given. With neither, nothing is written (Wave 0 returns the file set only).

@@ -1,0 +1,38 @@
+// npx-bin publish smoke (ADR-0092/0111). The published `create-caisson` bin (`./dist/cli.js`) must
+// (a) carry the node shebang on line 1 and (b) be valid ESM `node` can load. Asserts against the
+// BUILT output; guarded by `skipIf` so it never flakes on turbo build/test ordering (the build task
+// has no `dependsOn`, so `dist/` may be absent when this runs concurrently) — it executes after any
+// `bun run build`/`turbo build` and in the publish path. The dist-not-src / bin→dist publish contract
+// is locked unconditionally in tooling/standards-gate/src/publish-config.test.ts.
+//
+// NOTE: full `node dist/cli.js --help` execution additionally requires the workspace dep graph to
+// resolve under pure node ESM, which is blocked today by the repo-wide extensionless relative imports
+// in compiled dist (bundler moduleResolution) — the separately-tracked "publishability / ESM-extension"
+// fork (P5-deferred). This smoke therefore asserts shebang + `node --check` (load-validity), not a
+// full run; the bin WIRING is what publish-readiness owns.
+import { describe, expect, test } from "bun:test";
+import { execFileSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const HERE = dirname(fileURLToPath(import.meta.url)); // packages/cli/scripts
+const CLI_DIST = join(HERE, "..", "dist", "cli.js");
+const built = existsSync(CLI_DIST);
+
+describe("create-caisson npx bin smoke (ADR-0092/0111)", () => {
+  test.skipIf(!built)("dist/cli.js carries the node shebang on line 1", () => {
+    const line1 = readFileSync(CLI_DIST, "utf8").split("\n")[0];
+    expect(line1).toBe("#!/usr/bin/env node");
+  });
+
+  test.skipIf(!built)(
+    "dist/cli.js is valid ESM that node can load (node --check)",
+    () => {
+      // Throws (non-zero exit) if node cannot parse the file.
+      expect(() =>
+        execFileSync("node", ["--check", CLI_DIST], { stdio: "pipe" }),
+      ).not.toThrow();
+    },
+  );
+});

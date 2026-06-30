@@ -1,9 +1,12 @@
 {
   "name": "@caisson/kernel",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "description": "Governance kernel: typed config loader, the CaissonError model (ADR-0019), security primitives, and the standards gate (ADR-0016).",
   "exports": {
     ".": {

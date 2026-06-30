@@ -18,17 +18,25 @@ while read -r _localref localsha _remoteref _remotesha; do
 done
 [ "$have_work" = "1" ] || exit 0
 
-# Needs auth; degrade to a one-line hint rather than block. `whoami` exits 0 even when
-# logged out, so detect on its output. A GREPTILE_API_KEY in the env also authenticates.
-if [ -z "${GREPTILE_API_KEY:-}" ] && greptile whoami 2>&1 | grep -qi "not signed in"; then
+# Needs auth; degrade to a one-line hint rather than block. Prefer an exit-code signal over scraping a
+# localized message. A GREPTILE_API_KEY in the env authenticates directly; otherwise a non-zero
+# `whoami` means logged out. (greptile 3.1.1 `whoami` exits 0 even when logged out, so the advisory
+# review below self-skips on a real auth miss — `|| true` keeps the push non-blocking either way.)
+if [ -z "${GREPTILE_API_KEY:-}" ] && ! greptile whoami >/dev/null 2>&1; then
   echo "pre-push: greptile not signed in - skipping review (run: greptile login --api-key)" >&2
   exit 0
 fi
 
+# Review against the branch's upstream tracking base (strip the remote prefix), not a hard-coded main —
+# a branch tracking a non-main upstream gets the right diff. Fall back to main when no upstream is set.
+upstream="$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
+base="${upstream#*/}"
+[ -n "$base" ] || base="main"
+
 echo "pre-push: greptile review (advisory; GREPTILE_PREPUSH=0 or --no-verify to skip)..." >&2
 if command -v timeout >/dev/null 2>&1; then
-  timeout 180 greptile review --agent -b main || true
+  timeout 180 greptile review --agent -b "$base" || true
 else
-  greptile review --agent -b main || true
+  greptile review --agent -b "$base" || true
 fi
 exit 0
