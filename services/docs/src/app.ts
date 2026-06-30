@@ -3,8 +3,7 @@
 // the retrieval endpoint POST /query is Bearer-gated (timing-safe). Every response carries the security
 // headers from the gridwork security floor (nosniff / frame-deny / HSTS). No CORS header is set — this
 // is a server-to-server contract for the support-bot, not a browser surface.
-import { Buffer } from "node:buffer";
-import { timingSafeEqual } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import type { DocsIndex } from "./index-store.ts";
 
@@ -42,14 +41,20 @@ const json = (data: unknown, status = 200): Response =>
 const text = (body: string, status = 200): Response =>
   respond(body, status, "text/plain; charset=utf-8");
 
-/** Timing-safe Bearer check. Equal-length guard first — a raw compare throws on length mismatch. */
+/**
+ * Timing-safe Bearer check. `DOCS_SERVICE_TOKEN` is an opaque secret of not-guaranteed-fixed length, so
+ * per the security floor's VARIABLE-LENGTH rule both sides are SHA-256-digested to fixed 32-byte buffers
+ * before `timingSafeEqual` — this avoids the equal-length guard, which would leak the token's byte length
+ * to a remote timing oracle (an attacker could binary-search the length). Normalization is identical on
+ * both sides (raw bytes), so only the value is compared.
+ */
 function authorized(req: Request, token: string): boolean {
   if (token.length === 0) return false; // unconfigured ⇒ fail closed
   const header = req.headers.get("authorization") ?? "";
   const presented = header.startsWith("Bearer ") ? header.slice(7) : "";
-  const a = Buffer.from(presented, "utf8");
-  const b = Buffer.from(token, "utf8");
-  return a.length === b.length && timingSafeEqual(a, b);
+  const a = createHash("sha256").update(presented).digest();
+  const b = createHash("sha256").update(token).digest();
+  return timingSafeEqual(a, b);
 }
 
 /** Build the request handler. Async because /query awaits retrieval. */
