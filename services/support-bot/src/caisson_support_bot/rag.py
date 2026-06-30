@@ -9,11 +9,19 @@ paths of the chunks it was given as citations.
 
 from __future__ import annotations
 
+import re
+
 from .contracts import AnswerResult, Brief, ScoredChunk
 from .docs_client import DocsUnavailableError, Retriever
 from .inference import Inference, InferenceError
 
 SENTINEL = "INSUFFICIENT_CONTEXT"
+# The model is told to emit EXACTLY the sentinel, but a real model may disobey "nothing else" and
+# append text (e.g. "INSUFFICIENT_CONTEXT — not enough detail"). We escalate when the reply IS the
+# sentinel OR leads with it as a standalone token (`\b` requires a non-word boundary after, so a mere
+# identifier prefix does not match). Escalation is the safe failure under the ADR-0009 grounding
+# binding — a refusal-prefixed string must never reach the user as a resolved answer.
+_SENTINEL_LEAD = re.compile(rf"^{re.escape(SENTINEL)}\b")
 
 SYSTEM_PROMPT = (
     "You are the Caisson support assistant. Answer the user's question USING ONLY the numbered "
@@ -91,8 +99,8 @@ class RagPipeline:
                 brief=_brief(question, chunks, f"Generation failed ({exc}); retrieval succeeded."),
             )
 
-        # 4. decide — the sentinel (alone) means the model judged the context insufficient.
-        if raw.strip() == SENTINEL or raw.strip().startswith(SENTINEL):
+        # 4. decide — a reply that is (or leads with) the sentinel means insufficient context.
+        if _SENTINEL_LEAD.match(raw.strip()):
             return AnswerResult(
                 resolved=False,
                 brief=_brief(

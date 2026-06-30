@@ -3,8 +3,9 @@
 # outbound; the only inbound surface is /health for the runner's liveness probe.
 FROM python:3.12-slim AS base
 
-# uv for fast, locked installs.
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+# uv for fast, locked installs. Pinned to the same version CI uses (setup-uv 0.11.18) so the lock
+# format can't drift between the gate and the image.
+COPY --from=ghcr.io/astral-sh/uv:0.11.18 /uv /uvx /bin/
 
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
@@ -13,12 +14,14 @@ ENV UV_COMPILE_BYTECODE=1 \
 
 WORKDIR /app
 
-# Install deps first (cache layer) from the lockfile, then the project.
-COPY pyproject.toml uv.lock* ./
-RUN uv sync --no-dev --no-install-project --frozen 2>/dev/null || uv sync --no-dev --no-install-project
+# Install deps first (cache layer) from the lockfile, then the project. `--frozen` unconditionally —
+# uv.lock is committed (the source of truth), so a `--frozen` failure is a real drift we want to fail
+# the build, not silently install an unlocked resolve.
+COPY pyproject.toml uv.lock ./
+RUN uv sync --no-dev --no-install-project --frozen
 
 COPY . .
-RUN uv sync --no-dev --no-editable 2>/dev/null || uv sync --no-dev
+RUN uv sync --no-dev --no-editable --frozen
 
 EXPOSE 8080
 # Liveness: the health server binds $PORT; the gateway runs alongside it.
