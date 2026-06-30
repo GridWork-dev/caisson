@@ -2,7 +2,7 @@
 
 The single **commerce** price-book (ADR-0089). Commercial base package.
 
-- **plan-book** — `stripePriceId → { planTag, creditsPerCycle, cadence }`. Exact integer credits per
+- **plan-book** — `providerPriceId → { planTag, creditsPerCycle, cadence }`. Exact integer credits per
   cycle, never derived from the charged amount. `resolvePlan` is fail-closed (unknown id throws).
 - **action-book** — flat per-action credit cost (e.g. `codegenRunCredits`). The per-ai-call cost is
   **not** here — that stays computed from token usage by `@caisson/ai-meter` (ADR-0060).
@@ -13,5 +13,5 @@ Versioned (`PRICEBOOK_VERSION`, append-only — a price change bumps the stamp, 
 Integer-only (ADR-0007). Depends only on `@caisson/kernel` (down-only, ADR-0003).
 
 > The credit **numbers** are operator-owned and deferred (SD-6/ADR-0012). The shipped plan/action rows
-> are clearly-marked **placeholders**; the operator replaces them with real Stripe price ids + final
-> amounts when checkout goes live.
+> are clearly-marked **placeholders**; the operator replaces them with real Paddle price ids + final
+> amounts when checkout goes live (ADR-0108 — provider switched from Stripe to Paddle).
