@@ -4,10 +4,10 @@ import "./global.css";
 
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import Script from "next/script";
 import { RootProvider } from "fumadocs-ui/provider/next";
 
 import SearchDialog from "@/components/search";
+import { PlausibleInit } from "@/components/plausible-init";
 import { fontVariables } from "@/lib/fonts";
 import { rootGraph, serializeJsonLd } from "@/lib/jsonld";
 
@@ -58,14 +58,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <RootProvider theme={{ enabled: false }} search={{ SearchDialog }}>
           {children}
         </RootProvider>
-        {/* Plausible — cookieless, no consent banner (ADR-0047). Init stub externalized. */}
-        <Script
-          defer
-          data-domain="caisson.sh"
-          src="https://plausible.io/js/script.js"
-          strategy="afterInteractive"
-        />
-        <Script src="/plausible-init.js" strategy="afterInteractive" />
+        {/* Plausible — cookieless, no consent banner, env-gated on NEXT_PUBLIC_PLAUSIBLE_DOMAIN
+            (ADR-0118, supersedes the ADR-0047 raw <Script> wiring). */}
+        <PlausibleInit />
       </body>
     </html>
   );
