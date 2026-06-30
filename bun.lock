@@ -483,7 +483,6 @@
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "@caisson/license-verify": "workspace:*",
-        "@noble/ed25519": "^3.1.0",
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",

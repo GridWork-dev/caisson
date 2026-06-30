@@ -1,12 +1,13 @@
 // src/server.ts — the runnable license-issuer entrypoint (ADR-0108). Mirrors services/docs/src/server.ts:
 // build deps ONCE at boot, serve the router over Bun.serve, and FAIL CLOSED before binding a socket.
 // The issuer refuses to start without BOTH (1) the `LICENSE_ISSUE_TOKEN` Bearer (POST /issue is gated)
-// and (2) the signing seed (`Ed25519Signer.fromEnv` throws a ConfigError on a missing/short/non-hex
-// `LICENSE_SIGNING_SEED`) — an unconfigured issuer must never serve an open or unsigned /issue.
+// and (2) the signing key (`Ed25519Signer.fromEnv` throws a ConfigError on a missing/malformed/
+// non-Ed25519 `CAISSON_LICENSE_SIGNING_KEY`) — an unconfigured issuer must never serve an open or
+// unsigned /issue.
 //
 // The tenant Transactor is INJECTED (the repo wires `db: Transactor` everywhere — apps/base, the billing
 // webhook — and uses PGlite in tests; there is no in-repo production Postgres pool). The deploy entrypoint
-// supplies a Neon-backed Transactor; the signing seed → KMS swap (un-wired Signer seam) is the same
+// supplies a Neon-backed Transactor; the signing key → KMS swap (un-wired Signer seam) is the same
 // operator-gated DEPLOY concern as the docs-service real-embedder seam.
 import { resolve } from "node:path";
 import { Ed25519Signer } from "@caisson/license-issue";
@@ -40,7 +41,7 @@ export function startServer(
       "LICENSE_ISSUE_TOKEN is required (POST /issue is fail-closed) — refusing to start.",
     );
   }
-  // Throws ConfigError if LICENSE_SIGNING_SEED is missing/short/non-hex (never echoes the value).
+  // Throws ConfigError if CAISSON_LICENSE_SIGNING_KEY is missing/malformed/non-Ed25519 (never echoes it).
   const signer = Ed25519Signer.fromEnv();
   const index = loadRegistryIndexFromFile(
     options.indexPath ?? defaultIndexPath(),

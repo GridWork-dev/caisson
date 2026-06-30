@@ -23,13 +23,16 @@ import {
 import { decodeToken } from "./token.ts";
 
 /**
- * The baked-in Ed25519 verification public key (SPKI DER, base64). The matching private signing key
- * lives ONLY with the P6 issuer and never ships in any tarball. Rotating it is a deliberate
- * release-time change. This is the deterministic KAT key (SHA-256("caisson-license-verify-KAT-seed-v1")
- * seed → Ed25519) — a TEST vector, not a production secret; see `token.test.ts` header.
+ * The baked-in Ed25519 verification public key (SPKI DER, base64) — the PRODUCTION issuer key
+ * (fingerprint `0ae7d2abb886ca3d`, provisioned ADR-0107 / `infra/license-issuer/ISSUER_PUBLIC_KEY.md`).
+ * The matching private signing key is `CAISSON_LICENSE_SIGNING_KEY`, held ONLY by the P6 issuer
+ * (`@caisson/license-issue`); it never ships in any tarball and is never committed. Rotating this key
+ * is a deliberate release-time change. Tests do NOT sign with this key (no private half lives in the
+ * repo) — they exercise the verify logic against a dev keypair via {@link verifyLicenseWithKey} and
+ * pin the SHIPPED key with a prod-signed golden token (`__golden__/prod-signed-token.json`).
  */
 const LICENSE_PUBLIC_KEY_SPKI_B64 =
-  "MCowBQYDK2VwAyEAbQaycFQ6zDCiACKFQ83ucxYtdL++cvlUXf4dqRwvQgs=";
+  "MCowBQYDK2VwAyEAYUM+v6AQcPjNRoRJyQpDSA7S/LwNu1CecWQZ7A1OJU0=";
 
 /** Imported once at module load — a fixed, baked key, never reconstructed per call. */
 const licensePublicKey: KeyObject = createPublicKey({
@@ -59,12 +62,30 @@ const COMMUNITY: VerifiedLicense = {
 };
 
 /**
- * Verify a license token offline. `token` may be the raw wire string, or `null` / `undefined` /
- * empty for an unlicensed install. `now` is injectable for deterministic expiry tests (defaults to
- * the wall clock). Returns a {@link VerifiedLicense}; NEVER throws — every error path is community.
+ * Verify a license token offline against the SHIPPED, baked-in production public key. `token` may be
+ * the raw wire string, or `null` / `undefined` / empty for an unlicensed install. `now` is injectable
+ * for deterministic expiry tests (defaults to the wall clock). Returns a {@link VerifiedLicense};
+ * NEVER throws — every error path is community. This is the public contract every consumer (the
+ * kernel license gate, the registry Worker) calls; the baked key is the sole authority.
  */
 export function verifyLicense(
   token: string | null | undefined,
+  now: Date = new Date(),
+): VerifiedLicense {
+  return verifyLicenseWithKey(token, licensePublicKey, now);
+}
+
+/**
+ * The verify core, parameterized over the Ed25519 public key. {@link verifyLicense} is the production
+ * entrypoint and pins `publicKey` to the baked key — that is the offline contract. This explicit-key
+ * form exists for (1) tests, which sign with a dev keypair because the production private half never
+ * lives in the repo, and (2) advanced self-hosting where a buyer runs their own issuer key. It is NOT
+ * re-exported on the package's default surface implicitly trusted by gates; callers that take it
+ * accept responsibility for the key they pass. Same fail-safe-to-community contract — NEVER throws.
+ */
+export function verifyLicenseWithKey(
+  token: string | null | undefined,
+  publicKey: KeyObject,
   now: Date = new Date(),
 ): VerifiedLicense {
   if (token === null || token === undefined || token === "") {
@@ -76,7 +97,7 @@ export function verifyLicense(
 
     // Asymmetric verify over the EXACT signed bytes (Ed25519: algorithm = null). `crypto.verify`,
     // not `timingSafeEqual` — a signature check is not a secret comparison (ADR-0010).
-    if (!cryptoVerify(null, signedBytes, licensePublicKey, decoded.signature)) {
+    if (!cryptoVerify(null, signedBytes, publicKey, decoded.signature)) {
       return COMMUNITY;
     }
 
