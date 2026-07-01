@@ -24,9 +24,20 @@ RUN uv sync --no-dev --no-install-project --frozen
 COPY services/support-bot/ ./
 RUN uv sync --no-dev --no-editable --frozen
 
+# Non-root: the venv + app code are root-owned but world-readable (default COPY/uv perms); the
+# runtime user only ever reads them. `--no-sync` on the CMD's `uv run` is load-bearing for this —
+# without it, `uv run` re-verifies/reinstalls the local project into .venv on every container
+# start and needs WRITE access; the venv was already fully synced by the two `uv sync` steps
+# above, so skip the redundant runtime resync instead of granting write. HOME points at /tmp
+# (world-writable) in case a dep probes for a cache/config dir.
+RUN groupadd --gid 1001 appuser \
+    && useradd --uid 1001 --gid appuser --no-create-home --shell /usr/sbin/nologin appuser
+ENV HOME=/tmp
+USER appuser
+
 EXPOSE 8080
 # Liveness: the health server binds $PORT; the gateway runs alongside it.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \
     CMD python -c "import os,urllib.request;urllib.request.urlopen(f'http://127.0.0.1:{os.environ.get(\"PORT\",\"8080\")}/health').read()" || exit 1
 
-CMD ["uv", "run", "--no-dev", "python", "-m", "caisson_support_bot"]
+CMD ["uv", "run", "--no-sync", "--no-dev", "python", "-m", "caisson_support_bot"]
