@@ -1,8 +1,0 @@
-{
-  // Cloudflare Pages direct-upload config (ADR-0045). CI runs `next build` → `out/` and
-  // `wrangler pages deploy out/`; this file lets bare `wrangler pages deploy` / `pages dev`
-  // find the static-export output. The Pages project + DNS are owned by infra/terraform.
-  "name": "caisson-site",
-  "pages_build_output_dir": "out",
-  "compatibility_date": "2025-01-01"
-}

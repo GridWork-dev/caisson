@@ -22,6 +22,51 @@ const config: NextConfig = {
   // @caisson/ui ships raw TS (exports point at src/*.ts); Next transpiles it (ADR-0042 token floor).
   transpilePackages: ["@caisson/ui"],
   turbopack: { root: monorepoRoot },
+  // Security headers — the CSP/HSTS/X-Frame floor the (now-deleted) Cloudflare Pages public/_headers
+  // served, now emitted by the Node standalone server (which never read _headers). Divergence from
+  // that file: the Paddle Billing overlay checkout is a live surface here, so *.paddle.com is allowed
+  // where Paddle actually loads — script from cdn.paddle.com, the overlay iframe (frame-src) +
+  // checkout XHR (connect-src) from buy/checkout-service.paddle.com, and paddle.css (style-src); the
+  // wildcard covers both sandbox (sandbox-*) and production subdomains. Without these the store
+  // silently no-ops (paddle.js CSP-blocked → getPaddle() undefined). script-src stays pinned to
+  // cdn.paddle.com (the one script origin). CSP keeps 'unsafe-inline' on script/style-src because
+  // Next still inlines its hydration bootstrap without a per-request nonce under App Router; a nonce
+  // path is a tracked follow-up. frame-ancestors 'none' is unchanged (it protects THIS site from
+  // being embedded — unrelated to the Paddle iframe we load).
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            value: "geolocation=(), microphone=(), camera=()",
+          },
+          {
+            key: "Content-Security-Policy",
+            value:
+              "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: https://*.paddle.com; font-src 'self'; style-src 'self' 'unsafe-inline' https://*.paddle.com; script-src 'self' 'unsafe-inline' https://plausible.io https://cdn.paddle.com; frame-src https://*.paddle.com; connect-src 'self' https://plausible.io https://*.paddle.com",
+          },
+        ],
+      },
+      {
+        source: "/_next/static/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 const withMDX = createMDX();
