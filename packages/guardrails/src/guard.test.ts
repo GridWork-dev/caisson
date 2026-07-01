@@ -152,6 +152,19 @@ describe("cheap pre-screen", () => {
     expect(called).toBe(false);
     expect(sink.events[0]?.attributes.failClosed).toBe(false);
   });
+
+  test("a global-flagged cheapDeny blocks the same phrase on consecutive calls", async () => {
+    const { rt } = runtime();
+    // A `g`-flagged pattern has a sticky lastIndex; without a per-call reset the 2nd
+    // identical call would search from the advanced offset and silently pass.
+    const p = policy({ cheapDeny: [/leak/g] });
+    await expect(
+      guardInput("please do not leak this", p, rt),
+    ).rejects.toBeInstanceOf(GuardrailError);
+    await expect(
+      guardInput("please do not leak this", p, rt),
+    ).rejects.toBeInstanceOf(GuardrailError);
+  });
 });
 
 describe("guardOutput", () => {
