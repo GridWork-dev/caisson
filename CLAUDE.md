@@ -129,6 +129,22 @@ check. Never merge until `Greptile Review` is green against the head SHA; a gree
 confidence score only, so still resolve every inline P0/P1 finding first. Full agent workflow: the
 gridwork-core `/greptile` skill (rules 7–9).
 
+## Issue tracking (Linear)
+
+Caisson uses **Linear** (Business tier) for execution tracking + inbound triage via the `linear` MCP.
+**The boundary is binding: Linear owns WORK, git owns DECISIONS.** Full design + operating manual:
+`docs/state/linear-integration.md` (ADR-0177 / PF-3).
+
+- **Never lock a decision in Linear.** ADRs (`knowledge/decisions/`) + `decisions-and-forks.md` stay the
+  git-native decision SOT. A Linear issue may _reference_ an ADR/fork by id; it never replaces one.
+- Create/update issues via the `linear` MCP (`save_issue`/`save_project`/`list_issues`) in team `Caisson`
+  (key `CAISSON`), project = area (Platform & Infra · Site & Buyer Dashboard · Editions & Registry ·
+  Support & Docs). Put the runbook/context in the description; reference the ADR + link the PR.
+- Use the issue's `gitBranchName` for the feature branch → auto-links the PR (Code Intelligence). Move
+  status In Progress → In Review → Done across EXECUTE→SHIP; the decision still lands as an ADR/commit.
+- **Delegate** a first-pass (scope/triage) to the built-in **Linear Agent**; the human stays owner and
+  Claude Code does the real in-repo build. Don't mirror the whole fork board into Linear — only work items.
+
 ## Relationship to gridwork-core
 
 Global `~/CLAUDE.md` + the five auto-loaded gridwork rules apply. This file is additive.
