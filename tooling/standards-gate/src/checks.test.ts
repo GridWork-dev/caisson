@@ -134,14 +134,16 @@ describe("checkOpenCommercialBoundary (ADR-0094/0097)", () => {
   });
 
   test("commercial → commercial and commercial → open both pass (only open is constrained)", () => {
-    const cli = pkg({
-      name: "@caisson/cli",
+    // Synthetic commercial consumer (the real cli is open Apache-2.0 Base as of ADR-0136); the
+    // pricebook is a real commercial package that legitimately depends "down" onto open + commercial.
+    const consumer = pkg({
+      name: "@caisson/pricebook",
       license: COMMERCIAL,
       workspaceDeps: ["@caisson/registry", "@caisson/kernel"],
     });
     const kernel = pkg({ name: "@caisson/kernel", license: APACHE });
     expect(
-      checkOpenCommercialBoundary([cli, kernel, commercialRegistry]),
+      checkOpenCommercialBoundary([consumer, kernel, commercialRegistry]),
     ).toEqual([]);
   });
 

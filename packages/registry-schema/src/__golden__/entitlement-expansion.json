@@ -70,5 +70,60 @@
       "@caisson/evidence-pack",
       "@caisson/kernel"
     ]
+  },
+  {
+    "purchased": [
+      "credits"
+    ],
+    "members": [
+      "@caisson/credits"
+    ]
+  },
+  {
+    "purchased": [
+      "kernel"
+    ],
+    "members": [
+      "@caisson/kernel"
+    ]
+  },
+  {
+    "purchased": [
+      "evidence-pack"
+    ],
+    "members": [
+      "@caisson/evidence-pack"
+    ]
+  },
+  {
+    "purchased": [
+      "credits",
+      "evidence-pack"
+    ],
+    "members": [
+      "@caisson/credits",
+      "@caisson/evidence-pack"
+    ]
+  },
+  {
+    "purchased": [
+      "alerting"
+    ],
+    "members": []
+  },
+  {
+    "purchased": [
+      "retention-runner"
+    ],
+    "members": []
+  },
+  {
+    "purchased": [
+      "credits",
+      "alerting"
+    ],
+    "members": [
+      "@caisson/credits"
+    ]
   }
 ]

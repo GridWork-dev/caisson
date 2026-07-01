@@ -302,13 +302,14 @@
             "version": "0.1.0",
             "kind": "base",
             "editions": [],
-            "tier": "paid",
-            "priceCents": 4900,
-            "license": "LicenseRef-Caisson-Commercial",
+            "tier": "oss",
+            "priceCents": null,
+            "license": "Apache-2.0",
             "dependencies": [
               "@caisson/credits",
               "@caisson/kernel",
-              "@caisson/registry"
+              "@caisson/migrate",
+              "@caisson/registry-schema"
             ],
             "members": {},
             "entry": "src/index.ts",
@@ -549,9 +550,9 @@
             "version": "0.1.0",
             "kind": "primitive",
             "editions": [],
-            "tier": "paid",
-            "priceCents": 4900,
-            "license": "LicenseRef-Caisson-Commercial",
+            "tier": "oss",
+            "priceCents": null,
+            "license": "Apache-2.0",
             "dependencies": [
               "@caisson/kernel"
             ],
@@ -678,9 +679,9 @@
             "version": "0.1.0",
             "kind": "base",
             "editions": [],
-            "tier": "paid",
-            "priceCents": 4900,
-            "license": "LicenseRef-Caisson-Commercial",
+            "tier": "oss",
+            "priceCents": null,
+            "license": "Apache-2.0",
             "dependencies": [
               "@caisson/kernel"
             ],

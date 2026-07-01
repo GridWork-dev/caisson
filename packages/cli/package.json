@@ -2,10 +2,10 @@
   "name": "@caisson/cli",
   "version": "0.1.0",
   "type": "module",
-  "license": "LicenseRef-Caisson-Commercial",
+  "license": "Apache-2.0",
   "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "description": "create-caisson generator: composes a tailored repo from the versioned registry; agent-drivable; codegen-credit metered.",
   "exports": {
