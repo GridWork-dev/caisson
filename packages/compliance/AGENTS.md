@@ -23,9 +23,9 @@ DOWN onto `@caisson/audit-worm`, `@caisson/field-crypto`, `@caisson/tenancy-rls`
   at the edge), is `canonicalize`d, and the archive is byte-stable (fixed mtimes, sorted entries). The
   signature is a per-tenant detached Ed25519 over `canonicalize(manifest) ∥ anchor.tipHash`, distinct
   from the Caisson license key (ADR-0056, TM-L). Compare signatures with `timingSafeEqual`, never `===`.
-- **Clean-room control catalog (TM-J).** SOC2-TSC + HIPAA controls are own-authored; NEVER
-  ingest/copy/transform SCF CC-BY-ND JSON. EU AI Act is a reserved named slot (`eu-ai-act.manifest.ts`,
-  `golden:null`) with no control content until clean-room authoring fills it.
+- **Clean-room control catalog (TM-J).** SOC2-TSC + HIPAA + EU AI Act high-risk controls are ALL
+  own-authored + golden-pinned; NEVER ingest/copy/transform SCF CC-BY-ND JSON. Any new framework stays
+  clean-room authored.
 - **No live cloud on the CI path (TM-G).** S3 Object-Lock, KMS, and the RFC-3161 timestamp authority
   are all behind ports, test-doubled. The live transport is the only un-exercised path.
 
