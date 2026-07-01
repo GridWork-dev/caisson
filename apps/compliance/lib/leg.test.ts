@@ -22,7 +22,7 @@ beforeAll(async () => {
     tenantId: DEMO_TENANT_ID,
     now: DEMO_NOW,
   });
-});
+}, 30_000); // PGlite + WORM + crypto + OSCAL leg exceeds bun's 5s default hook timeout on cold CI
 
 afterAll(async () => {
   await harness.cleanup();
@@ -79,14 +79,16 @@ describe("compliance reference app — the full leg end to end", () => {
     expect(result.hipaaEvidence.sha256).not.toBe(result.evidence.sha256);
   });
 
-  test("6 — the SOC2 pack maps to a shape-correct, deterministic OSCAL v1.1.3 SAR+POA&M bundle (T15, map not push)", () => {
+  test("6 — the SOC2 pack maps to a shape-correct, deterministic OSCAL v1.2.2 SAR+POA&M bundle (T15, map not push)", () => {
     const sar = result.oscal.assessmentResults["assessment-results"];
     const poam =
       result.oscal.planOfActionAndMilestones["plan-of-action-and-milestones"];
     expect(sar.results).toHaveLength(1);
     expect(sar.results[0]?.findings).toHaveLength(result.evidence.controlCount);
-    // A clean (zero-gap) pack fabricates no remediation — zero POA&M items.
-    expect(poam["poam-items"]).toHaveLength(0);
+    // A clean (zero-gap) pack fabricates no remediation, but NIST XSD requires poam-items min-1, so it
+    // carries ONE truthful "no open items" entry (not a made-up gap).
+    expect(poam["poam-items"]).toHaveLength(1);
+    expect(poam["poam-items"][0]?.title).toBe("No open remediation items");
     expect(poam["system-id"].id).toBe(DEMO_TENANT_ID);
   });
 
@@ -129,5 +131,5 @@ describe("compliance reference app — the full leg end to end", () => {
     } finally {
       await second.cleanup();
     }
-  });
+  }, 30_000); // second full leg run — same cold-CI headroom as the beforeAll
 });

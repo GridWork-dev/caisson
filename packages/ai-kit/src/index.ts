@@ -28,7 +28,7 @@ export {
   getTenantProviderKey,
   putTenantProviderKey,
 } from "./byok-store.ts";
-export { buildByokResolver } from "./byok-resolver.ts";
+export { buildByokResolver, laneKeySource } from "./byok-resolver.ts";
 export type {
   ByokResolverOptions,
   TenantKeyResolver,

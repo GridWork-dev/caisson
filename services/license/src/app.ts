@@ -19,6 +19,7 @@ import type { BillingProvider } from "@caisson/billing";
 import { AuthnError } from "@caisson/kernel";
 import { issueLicense, type Signer } from "@caisson/license-issue";
 import { licenseTierSchema } from "@caisson/license-verify";
+import { withRequestSpan } from "@caisson/observability";
 import type { RegistryIndex } from "@caisson/registry-schema";
 import { type Transactor, withTenant } from "@caisson/tenancy-rls";
 import { readLicenseGrant, storeLicenseGrant } from "./license-grant-store.ts";
@@ -136,7 +137,7 @@ export function createApp(
     }
   };
 
-  return async (req: Request): Promise<Response> => {
+  return withRequestSpan(async (req: Request): Promise<Response> => {
     const url = new URL(req.url);
     const { pathname } = url;
     const method = req.method.toUpperCase();
@@ -283,5 +284,5 @@ export function createApp(
     }
 
     return json({ error: "not found" }, 404);
-  };
+  });
 }

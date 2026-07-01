@@ -21,10 +21,13 @@ export * from "./evidence/collector.ts";
 export * from "./evidence/collectors/rls-force.ts";
 export * from "./evidence/collectors/chain-verify.ts";
 export * from "./evidence/collectors/worm-retention.ts";
+export * from "./evidence/collectors/field-crypto-policy.ts";
+export * from "./evidence/collectors/ai-risk-register.ts";
 export * from "./evidence/pack-format.ts";
 export * from "./evidence/generate.ts";
 export * from "./evidence/sign.ts";
 export * from "./evidence/oscal-export.ts";
+export * from "./evidence/oscal-export-xml.ts";
 
 // --- Composition + assembly (T16/T17) — the security-critical crypto×RLS nesting + migration order.
 export * from "./with-tenant-crypto.ts";
