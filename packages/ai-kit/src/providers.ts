@@ -18,9 +18,19 @@ import type { AiSettings, ProviderConfig } from "@caisson/ai-config";
 
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
-/** Build the real provider instance for one lane config (the key is read from `apiKeyEnv`). */
-function providerFor(cfg: ProviderConfig): ProviderV2 {
-  const apiKey = process.env[cfg.apiKeyEnv];
+/**
+ * Build the real provider instance for one lane config. The key is `keyOverride` when supplied (the
+ * per-tenant BYOK path, ADR-0162: a decrypted tenant key) else read from the env var the lane names
+ * (`apiKeyEnv`, ADR-0011). This package still never persists a key — it only reaches for the value at
+ * this edge, to hand to the SDK adapter.
+ */
+export function providerFor(
+  cfg: ProviderConfig,
+  keyOverride?: string,
+): ProviderV2 {
+  const apiKey =
+    keyOverride ??
+    (cfg.apiKeyEnv !== undefined ? process.env[cfg.apiKeyEnv] : undefined);
   const key = apiKey !== undefined ? { apiKey } : {};
   const base = cfg.baseUrl !== undefined ? { baseURL: cfg.baseUrl } : {};
   switch (cfg.provider) {
@@ -76,6 +86,9 @@ export function defaultProviders(
 ): Record<string, ProviderV2> {
   const providers: Record<string, ProviderV2> = {};
   for (const cfg of Object.values(settings.lanes)) {
+    // A per-tenant (BYOK) lane has no boot-time key — it is resolved per-request with the tenant's
+    // decrypted key (ADR-0162), so it is skipped here (there is nothing to build without a tenant).
+    if (cfg.keySource === "tenant") continue;
     if (providers[cfg.provider] === undefined) {
       providers[cfg.provider] = providerFor(cfg);
     }

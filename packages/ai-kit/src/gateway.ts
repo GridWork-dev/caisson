@@ -63,6 +63,7 @@ import type { Transactor } from "@caisson/tenancy-rls";
  */
 export type ModelResolver = (
   lane: string,
+  accountId?: string,
 ) => LanguageModelV2 | Promise<LanguageModelV2>;
 
 /** What to send the model: pre-built messages, or a registry prompt reference to resolve + render. */
@@ -291,7 +292,7 @@ export async function infer(
 
   // 4. provider call — the SDK call against the injected model, optionally middleware-wrapped. A
   //    failure refunds the reservation (reconcile to zero) so a non-delivering call never charges.
-  const model = await opts.resolveModel(lane);
+  const model = await opts.resolveModel(lane, accountId);
   const wrapped =
     opts.middleware !== undefined
       ? wrapLanguageModel({ model, middleware: opts.middleware })
@@ -473,7 +474,7 @@ export async function inferStream(
   // 4. provider call (STREAMING) — the model is resolved/wrapped exactly like infer(); only the
   //    call shape (streamText vs generateText) and the settle timing differ (see the abandonment
   //    note above).
-  const model = await opts.resolveModel(lane);
+  const model = await opts.resolveModel(lane, accountId);
   const wrapped =
     opts.middleware !== undefined
       ? wrapLanguageModel({ model, middleware: opts.middleware })
