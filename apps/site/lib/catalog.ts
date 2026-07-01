@@ -68,7 +68,13 @@ function moduleCartId(slug: string): string {
 }
 
 function modulePlaceholderId(moduleId: string): string {
-  return `price_module_${moduleId.replace(/-/g, "_")}_PLACEHOLDER`;
+  // MUST match @caisson/pricebook's PURCHASE_BOOK key convention EXACTLY
+  // (`price_<slug>_module_PLACEHOLDER`) — the cart passes this priceId to Paddle, and the webhook
+  // resolves that same id in PURCHASE_BOOK to grant the entitlement (ADR-0071/0113). A convention
+  // mismatch fails resolvePurchase closed → a module purchase would grant NOTHING. At go-live the
+  // real Paddle `pri_…` ids replace BOTH this and the pricebook key (a matched, manual 14-id fill).
+  // (catalog.test.ts pins the cross-package invariant against PURCHASE_BOOK.)
+  return `price_${moduleId.replace(/-/g, "_")}_module_PLACEHOLDER`;
 }
 
 function hasAmount(p: PriceAnchor): p is PriceAnchor & { amount: number } {
