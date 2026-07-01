@@ -175,4 +175,61 @@ export const AUDIT_DOMAINS: readonly AuditDomain[] = [
     globs: ["packages/guardrails/src/**", "packages/prompt-registry/src/**"],
     checkers: ["gw-security-auditor"],
   },
+  {
+    id: "admin-plane",
+    description:
+      "apps/admin operator control-plane (live at admin.caisson.sh) + platform-reads: Cloudflare-Access-sole-gate posture (ADR-0107/0140), the RLS-exempt admin DB role (code is the only tenant boundary), SIGNOZ_API_KEY handling, mutating command endpoints.",
+    globs: [
+      "apps/admin/src/**",
+      "apps/admin/app/**",
+      "apps/admin/lib/**",
+      "packages/platform-reads/src/**",
+    ],
+    checkers: ["gw-security-auditor"],
+  },
+  {
+    id: "metering-byok",
+    description:
+      "The metering pipeline that feeds billing: ai-meter integer-only units (ADR-0007) + rounding + breaker fail-open/closed, ai-config apiKey material, and the ai-kit BYOK provider path (ADR-0182 $0-credits + ADR-0198 allowlist + baseUrl SSRF guard).",
+    globs: [
+      "packages/ai-meter/src/**",
+      "packages/ai-kit/src/**",
+      "packages/ai-config/src/**",
+    ],
+    checkers: ["gw-security-auditor"],
+  },
+  {
+    id: "destructive-jobs",
+    description:
+      "Greenfield Stream-B side-effect surface: retention-runner scheduled destructive tenant-data deletes (withTenant scoping = cross-tenant data-loss guard), the jobs side-effect driver, and alerting user-configurable outbound webhooks (SSRF/egress + fetchWithTimeout).",
+    globs: [
+      "packages/retention-runner/src/**",
+      "packages/jobs/src/**",
+      "packages/alerting/src/**",
+    ],
+    checkers: ["gw-security-auditor"],
+  },
+  {
+    id: "composition-roots",
+    description:
+      "The served-app edition composition roots: the dropped-security-option seam trap (an optional entitlement resolver / rate-limit hook / webhook binding silently disabled when omitted) across every edition's composed app.",
+    globs: [
+      "apps/base/src/**",
+      "apps/agent-dev/src/**",
+      "apps/compliance/app/**",
+      "apps/compliance/lib/**",
+      "apps/ai-kit/app/**",
+      "apps/ai-kit/lib/**",
+      "apps/local-ai/app/**",
+      "apps/local-ai/lib/**",
+    ],
+    checkers: ["gw-security-auditor"],
+  },
+  {
+    id: "worm-integrity",
+    description:
+      "packages/audit-worm — the Compliance edition's tamper-evidence core: hash-chain append/verify (silent tamper acceptance = falsely court-admissible evidence), the {account_id}/audit-chain WORM key layout + withTenant tenancy, the retention floor, and S3 creds/egress.",
+    globs: ["packages/audit-worm/src/**"],
+    checkers: ["gw-security-auditor"],
+  },
 ];

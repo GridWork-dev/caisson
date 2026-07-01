@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { AUDIT_DOMAINS } from "./domains.ts";
 
 describe("AUDIT_DOMAINS — the declared inventory (ADR-0134 §1)", () => {
-  test("covers the ADR-0134 domains plus the round-2/3 extensions, each with globs + checkers", () => {
+  test("covers the ADR-0134 domains plus the round-2/3/4/5 extensions, each with globs + checkers", () => {
     const ids = AUDIT_DOMAINS.map((d) => d.id).sort();
     expect(ids).toEqual(
       [
@@ -29,6 +29,13 @@ describe("AUDIT_DOMAINS — the declared inventory (ADR-0134 §1)", () => {
         "generator-templates",
         "guardrails-prompts",
         "mcp-transport",
+        // round-4/5 (2026-07-01): never-audited risk-bearing surfaces + the
+        // audit-worm name-collision correction (round-3 critic said audit-harness)
+        "admin-plane",
+        "composition-roots",
+        "destructive-jobs",
+        "metering-byok",
+        "worm-integrity",
       ].sort(),
     );
     for (const d of AUDIT_DOMAINS) {
