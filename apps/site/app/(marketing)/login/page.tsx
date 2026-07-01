@@ -1,13 +1,13 @@
-// Sign-in stub (ADR-0114/ADR-0015). The dashboard's auth GATE (the `caisson_session` EdDSA-JWT
-// cookie + `requireDashboardSession`) is fully wired; the sign-in FLOW itself — better-auth's
-// magic-link/OAuth UI that actually mints that cookie — is a separate, larger seam this task does
-// not build (investigate-only per the kickoff scope). This page is the real redirect target so
-// `/dashboard` never 404s an unauthenticated visitor; it explains the state honestly rather than
-// faking a working form.
+// Buyer sign-in (ADR-0015 / ADR-0132). A real magic-link + OAuth sign-in: this server page
+// resolves which OAuth providers are configured (env-gated) and hands them to the client form,
+// so an unconfigured provider is never offered. Magic-link (Resend) is the always-on primary. The
+// dashboard gates on the resulting better-auth session (`requireDashboardSession`). Kept minimal —
+// a copy/design polish pass follows separately.
 import type { Metadata } from "next";
 import { Hero, Section } from "@caisson/ui/components";
-import { Button } from "@/components";
+import { configuredProviderIds } from "@/lib/auth-config";
 import { buildMetadata } from "@/lib/metadata";
+import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = buildMetadata({
   title: "Sign in",
@@ -21,27 +21,17 @@ export default async function LoginPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const { next } = await searchParams;
+  const providers = configuredProviderIds(process.env);
 
   return (
     <>
       <Hero
         eyebrow="Sign in"
         title="Buyer dashboard sign-in"
-        lede="Sign-in is being wired up. In the meantime, reach out and we'll get you access to your entitlements, credits, and license."
-        ctas={
-          <Button href="mailto:security@caisson.sh" external variant="primary">
-            Contact us
-          </Button>
-        }
+        lede="Get a one-time sign-in link by email, or continue with a connected account. You'll land back on your entitlements, credits, and license."
       />
-      <Section eyebrow="Why you're here" title="What this page is for">
-        <p className="cs-muted">
-          {next
-            ? `You tried to reach ${next}, which requires an active session.`
-            : "This route requires an active session."}{" "}
-          Once sign-in is live, this page authenticates you and returns you to
-          where you started.
-        </p>
+      <Section eyebrow="Sign in" title="Continue to your dashboard">
+        <LoginForm providers={providers} next={next ?? "/dashboard"} />
       </Section>
     </>
   );
