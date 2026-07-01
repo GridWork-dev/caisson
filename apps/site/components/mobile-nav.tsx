@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 
+import { ThemeToggle } from "@caisson/ui/components";
+
 import { Button } from "./button";
 
 // Mobile hamburger nav (V27). The toggle + drawer are display:none above 680px (global.css); the
@@ -71,6 +73,10 @@ export function MobileNav({
             {cta.label}
           </Button>
         )}
+        {/* Theme toggle reachable on mobile (ADR-0194 / ADR-0195 — was desktop-only). */}
+        <div style={{ marginTop: "var(--cs-space-4)" }}>
+          <ThemeToggle />
+        </div>
       </nav>
     </>
   );
