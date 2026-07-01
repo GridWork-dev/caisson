@@ -16,7 +16,7 @@
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src",
     "test": "bun test ./src",
-    "start": "bun run src/server.ts"
+    "start": "bun run src/deploy.ts"
   },
   "dependencies": {
     "@caisson/billing": "workspace:*",
@@ -27,13 +27,15 @@
     "@caisson/observability": "workspace:*",
     "@caisson/pricebook": "workspace:*",
     "@caisson/registry-schema": "workspace:*",
-    "@caisson/tenancy-rls": "workspace:*"
+    "@caisson/tenancy-rls": "workspace:*",
+    "pg": "^8.16.0"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
     "@types/bun": "^1.1.14",
+    "@types/pg": "^8.11.10",
     "eslint": "^9.13.0",
     "typescript": "^5.6.0"
   }
