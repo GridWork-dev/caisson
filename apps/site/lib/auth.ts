@@ -10,8 +10,15 @@
 // separate concern from this same-process read.
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import type { SessionContext } from "@caisson/auth";
+import {
+  type Role,
+  type SessionContext,
+  ensurePersonalAccount,
+  resolveUserAccounts,
+  selectActiveAccount,
+} from "@caisson/auth";
 import { getAuth } from "./auth-server.ts";
+import { getDb } from "./db.ts";
 
 export { SESSION_COOKIE_NAME } from "./auth-server.ts";
 
@@ -20,11 +27,13 @@ export { SESSION_COOKIE_NAME } from "./auth-server.ts";
  * `null`. Never throws — an unconfigured runtime (no DB/secret), no cookie, or an expired/forged
  * session all collapse to "no session" (fail closed): the caller redirects to `/login`.
  *
- * SEAM (account provisioning — see ADR-0132 / report): a signed-in buyer's tenant `accountId` is
- * keyed by their own `user.id` (a personal account) until org/membership provisioning lands. This
- * is the ONLY value the data layer trusts for RLS (`withTenant`, ADR-0005) and it is sourced
- * solely from the verified better-auth session here — never from a request param/body — so a
- * forged account id cannot cross tenants.
+ * ACCOUNT RESOLUTION (D4, ADR-0176): the tenant `accountId` is resolved from `account_member` — a
+ * user with no membership row gets a personal account (account_id == user_id) created idempotently
+ * on first resolution; org members resolve to their selected/oldest account. The account id is
+ * still sourced solely from the verified better-auth session's user id (never a request param), so
+ * a forged account id cannot cross tenants — `resolveActiveAccount` only ever reads accounts the
+ * verified `userId` belongs to (user-scoped RLS via `withUser`). It is the ONLY value the data
+ * layer trusts for RLS (`withTenant`, ADR-0005).
  */
 export async function getSession(): Promise<SessionContext | null> {
   const auth = getAuth();
@@ -32,13 +41,37 @@ export async function getSession(): Promise<SessionContext | null> {
   try {
     const result = await auth.api.getSession({ headers: await headers() });
     if (result === null) return null;
-    return {
-      userId: result.user.id,
-      accountId: result.user.id,
-      role: "owner",
-    };
+    const userId = result.user.id;
+    const { accountId, role } = await resolveActiveAccount(userId);
+    return { userId, accountId, role };
   } catch {
     return null;
+  }
+}
+
+/**
+ * Resolve the signed-in user's active account via `account_member` (D4, ADR-0176). FAIL-SAFE: any
+ * DB error — the table not yet migrated on this deploy, the pool down — falls back to the personal
+ * account (account_id == user_id, role owner) so an authed dashboard render never breaks. Existing
+ * single-user tenants (no membership row) resolve to exactly that personal account, unchanged.
+ */
+async function resolveActiveAccount(
+  userId: string,
+): Promise<{ accountId: string; role: Role }> {
+  const personal = { accountId: userId, role: "owner" as Role };
+  try {
+    const db = await getDb();
+    let memberships = await resolveUserAccounts(db, userId);
+    if (memberships.length === 0) {
+      await ensurePersonalAccount(db, userId);
+      memberships = await resolveUserAccounts(db, userId);
+    }
+    const active = selectActiveAccount(memberships);
+    return active
+      ? { accountId: active.accountId, role: active.role }
+      : personal;
+  } catch {
+    return personal;
   }
 }
 
