@@ -215,6 +215,109 @@ describe("baseModuleIds (ADR-0094/0097 — the free, always-served OPEN substrat
   });
 });
 
+describe("edition expansion reads the ADR-0077 members map (commercial members with editions[]===[])", () => {
+  // The real catalog's commercial edition MEMBERS (field-crypto, audit-worm, ai-meter, …) carry
+  // editions[]===[] in their own manifest — they do NOT self-declare edition membership — but they ARE
+  // listed in the edition meta-package's frozen `members` map (ADR-0077). Once the free-view floor is
+  // Apache-only, an edition sentinel (["compliance"]) must still deliver them, so the expansion derives
+  // membership from that map. This hermetic index reproduces the real shape (the shared fixture above
+  // happens to have members that self-declare, so it can't exercise this gap).
+  const idx = loadRegistryIndex({
+    schemaVersion: 1,
+    modules: [
+      {
+        id: "@caisson/open-base",
+        latest: "0.1.0",
+        versions: [
+          {
+            version: "0.1.0",
+            publishedAt: "2026-06-30T00:00:00.000Z",
+            gateAttestation: "ci-fixture@0000002",
+            manifest: {
+              id: "@caisson/open-base",
+              version: "0.1.0",
+              kind: "base",
+              editions: [],
+              tier: "oss",
+              license: "Apache-2.0",
+              description: "open Apache-2.0 base (fixture).",
+            },
+          },
+        ],
+      },
+      {
+        id: "@caisson/paid-member",
+        latest: "0.1.0",
+        versions: [
+          {
+            version: "0.1.0",
+            publishedAt: "2026-06-30T00:00:00.000Z",
+            gateAttestation: "ci-fixture@0000002",
+            manifest: {
+              id: "@caisson/paid-member",
+              version: "0.1.0",
+              kind: "primitive",
+              editions: [], // commercial member that does NOT self-declare edition membership
+              tier: "paid",
+              priceCents: 4900,
+              license: "LicenseRef-Caisson-Commercial",
+              description:
+                "commercial member reachable only via the members map (fixture).",
+            },
+          },
+        ],
+      },
+      {
+        id: "@caisson/demo-edition",
+        latest: "0.1.0",
+        versions: [
+          {
+            version: "0.1.0",
+            publishedAt: "2026-06-30T00:00:00.000Z",
+            gateAttestation: "ci-fixture@0000002",
+            manifest: {
+              id: "@caisson/demo-edition",
+              version: "0.1.0",
+              kind: "edition",
+              editions: ["compliance"],
+              tier: "paid",
+              priceCents: 4900,
+              license: "LicenseRef-Caisson-Commercial",
+              members: {
+                "@caisson/demo-edition": "0.1.0",
+                "@caisson/paid-member": "0.1.0",
+                "@caisson/open-base": "0.1.0",
+              },
+              description:
+                "edition meta naming compliance; its members map carries the paid member.",
+            },
+          },
+        ],
+      },
+    ],
+  });
+
+  test("an edition sentinel expands to its members-map members, incl. a commercial member with editions[]===[]", () => {
+    const members = [...expandEntitlements(idx, ["compliance"])].sort();
+    expect(members).toEqual([
+      "@caisson/demo-edition",
+      "@caisson/open-base",
+      "@caisson/paid-member",
+    ]);
+  });
+
+  test("the sentinel does not over-grant beyond the members map (fail-closed, index-derived)", () => {
+    // Only the three ids in the map/self-declarers — nothing else, and never a non-indexed id.
+    expect(expandEntitlements(idx, ["compliance"]).size).toBe(3);
+  });
+
+  test("a members-map member is still gated for the anonymous free floor (Apache-only)", () => {
+    // paid-member is commercial + editions[]===[] → NOT in the free view; it reaches a buyer only
+    // through the edition (or its own bare slug), never the anonymous base floor.
+    expect([...baseModuleIds(idx)]).toEqual(["@caisson/open-base"]);
+  });
+});
+
 describe("expandEntitlementsFromFile (ADR-0047 disk read path)", () => {
   test("composes loadRegistryIndexFromFile + expandEntitlements", () => {
     expect(

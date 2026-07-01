@@ -5,9 +5,11 @@
 // stale/forged entitlement fails SAFE to base (never 500); filtered responses are non-cacheable
 // (private, no-store + Vary); and with NO resolver the full catalog is served unfiltered (Wave-0).
 import { describe, expect, test } from "bun:test";
+import { join } from "node:path";
 import {
   type RegistryIndex,
   loadRegistryIndex,
+  loadRegistryIndexFromFile,
 } from "../schema/registry-index";
 import { licenseEntitlementResolver } from "./entitlement-filter";
 import { createIndexHandler } from "./handler";
@@ -278,5 +280,62 @@ describe("Worker gates COMMERCIAL base-kind modules (ADR-0094/0097 open-core, Q1
       "@caisson/field-crypto",
       "@caisson/kernel",
     ]);
+  });
+});
+
+describe("Worker delivers an edition's COMMERCIAL members via the sentinel — real index (ADR-0077)", () => {
+  // Acceptance over the REAL committed registry/index.json: an edition license carrying ONLY its
+  // sentinel (entitlements:["compliance"]) must still deliver the edition's commercial member modules
+  // (field-crypto, audit-worm), which carry editions[]===[] and are gated from the anonymous free floor.
+  // Membership resolves from the edition meta-package's ADR-0077 `members` map (no license re-issue).
+  const realIndex = loadRegistryIndexFromFile(
+    join(import.meta.dir, "..", "index.json"),
+  );
+  const realHandlerFor = (purchased: readonly string[] | null) =>
+    createIndexHandler(realIndex, { resolveEntitlements: () => purchased });
+
+  test("a Compliance sentinel (['compliance']) delivers field-crypto + audit-worm + compliance", async () => {
+    const served = await ids(realHandlerFor(["compliance"])(req("/")));
+    expect(served).toContain("@caisson/field-crypto");
+    expect(served).toContain("@caisson/audit-worm");
+    expect(served).toContain("@caisson/compliance");
+  });
+
+  test("an anonymous caller over the real index gets NONE of those commercial members (still gated)", async () => {
+    const served = await ids(realHandlerFor(null)(req("/")));
+    expect(served).not.toContain("@caisson/field-crypto");
+    expect(served).not.toContain("@caisson/audit-worm");
+    expect(served).not.toContain("@caisson/compliance");
+    expect(served).toContain("@caisson/kernel"); // Apache-2.0 free floor still served
+  });
+
+  test("an AI Production Kit sentinel delivers its metered members (ai-meter, guardrails, prompt-registry)", async () => {
+    const served = await ids(realHandlerFor(["ai-kit"])(req("/")));
+    for (const id of [
+      "@caisson/ai-kit",
+      "@caisson/ai-meter",
+      "@caisson/guardrails",
+      "@caisson/prompt-registry",
+    ]) {
+      expect(served).toContain(id);
+    }
+  });
+
+  test("a Compliance buyer still does NOT receive an unrelated edition's member (ai-kit's ai-meter)", async () => {
+    // The sentinel grants ONLY the purchased edition's members ∪ the Apache floor — never another
+    // edition's commercial modules (fail-closed, exact expansion).
+    const served = await ids(realHandlerFor(["compliance"])(req("/")));
+    expect(served).not.toContain("@caisson/ai-meter");
+  });
+
+  test("the à-la-carte bare-slug path still delivers exactly one module (unchanged)", async () => {
+    const served = await ids(realHandlerFor(["field-crypto"])(req("/")));
+    expect(served).toContain("@caisson/field-crypto");
+    expect(served).not.toContain("@caisson/audit-worm"); // no edition-sibling bleed
+  });
+
+  test("the bundle still delivers every module in the real index", async () => {
+    const served = await ids(realHandlerFor(["bundle"])(req("/")));
+    expect(served.sort()).toEqual(realIndex.modules.map((m) => m.id).sort());
   });
 });
