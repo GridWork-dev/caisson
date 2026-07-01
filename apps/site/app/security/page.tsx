@@ -117,10 +117,11 @@ const FAQ: ReadonlyArray<{ question: string; answer: string }> = [
 const SHIPPED_CSP = `$ curl -sI https://caisson.sh | grep -i '^content-security-policy'
 content-security-policy: default-src 'self'; base-uri 'self';
   object-src 'none'; frame-ancestors 'none'; form-action 'self';
-  img-src 'self' data:; font-src 'self';
-  style-src 'self' 'unsafe-inline';
-  script-src 'self' 'unsafe-inline' https://plausible.io;
-  connect-src 'self' https://plausible.io`;
+  img-src 'self' data: https://*.paddle.com; font-src 'self';
+  style-src 'self' 'unsafe-inline' https://*.paddle.com;
+  script-src 'self' 'unsafe-inline' https://plausible.io https://cdn.paddle.com;
+  frame-src https://*.paddle.com;
+  connect-src 'self' https://plausible.io https://*.paddle.com`;
 
 export default function SecurityPage() {
   const jsonLd = [
@@ -276,11 +277,15 @@ content-security-policy: default-src 'self'; …`}
                 <code className="mono cs-tok-muted">
                   &apos;unsafe-inline&apos;
                 </code>
-                . A Next.js static export inlines its own hydration bootstrap
-                with no server to mint a per-request nonce, so those inline tags
-                cannot be hash- or nonce-gated without breaking hydration. Our
-                own scripts — theme init, Plausible — are all external{" "}
-                <code className="mono">&apos;self&apos;</code>. Tightening the
+                . Next inlines its own hydration bootstrap with no per-request
+                nonce under the App Router, so those inline tags cannot be hash-
+                or nonce-gated without breaking hydration. Beyond{" "}
+                <code className="mono">&apos;self&apos;</code> the policy allows
+                exactly two third parties, each scoped to the surface that uses
+                it: Plausible for cookieless analytics, and Paddle (
+                <code className="mono">cdn.paddle.com</code> for the checkout
+                script, <code className="mono">*.paddle.com</code> for its
+                overlay iframe and API) — nothing wider. Tightening the inline
                 residual to per-script hashes is a tracked follow-up, not a
                 shipped claim.
               </p>
