@@ -19,15 +19,3 @@ variable "zone_name" {
   default     = "caisson.sh"
   description = "Apex domain."
 }
-
-variable "pages_project_name" {
-  type        = string
-  default     = "caisson-site"
-  description = "Cloudflare Pages project — the marketing + docs Next site (single Next + MDX app, board lock)."
-}
-
-variable "production_branch" {
-  type        = string
-  default     = "main"
-  description = "Git branch Pages treats as production."
-}

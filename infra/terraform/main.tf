@@ -9,13 +9,9 @@
 # the Railway origin over the *.up.railway.app cert; for grey-cloud license.caisson.sh, Railway issues
 # its own Let's Encrypt cert (CAA already allows letsencrypt.org), exactly like docs-api.caisson.sh.
 
-# Pages project retained (empty — custom domains detached below) pending teardown once the Railway
-# cutover soaks (Stage-2 step 10). Serves nothing once the CNAMEs point at Railway.
-resource "cloudflare_pages_project" "site" {
-  account_id        = var.cloudflare_account_id
-  name              = var.pages_project_name
-  production_branch = var.production_branch
-}
+# Cloudflare Pages project (caisson-site) TORN DOWN 2026-07-01 after the Railway cutover soaked:
+# apex/www serve from Railway (CNAMEs below), custom domains were detached, then the empty Pages
+# project was destroyed. Nothing references it now. (Stage-2 step 10 complete.)
 
 # --- apex + www → caisson-site on Railway (PROXIED so Cloudflare Access still gates, ADR-0107) ---
 resource "cloudflare_dns_record" "apex" {
