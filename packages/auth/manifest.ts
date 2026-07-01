@@ -14,7 +14,7 @@ export default defineModule({
   tier: "oss",
   priceCents: null,
   license: pkg.license,
-  dependencies: ["@caisson/kernel"],
+  dependencies: ["@caisson/kernel", "@caisson/tenancy-rls"],
   description:
     "EdDSA-JWT account tokens (the RLS seam) + session contract backed by better-auth — the auth boundary every edition depends on (ADR-0015).",
 });
