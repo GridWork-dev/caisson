@@ -32,6 +32,8 @@ function jsonHeaders(filtering: boolean): Record<string, string> {
   return {
     "content-type": "application/json; charset=utf-8",
     "x-content-type-options": "nosniff",
+    "x-frame-options": "DENY",
+    "strict-transport-security": "max-age=31536000; includeSubDomains",
     // A FILTERED response varies by caller — it must never be served from a shared cache to a
     // different buyer. Public-catalog mode (no resolver) stays edge-cacheable.
     "cache-control": filtering ? "private, no-store" : "public, max-age=60",
