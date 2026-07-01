@@ -239,7 +239,7 @@ export default function HomePage() {
               href="/agentic-dev"
               name="Agentic-Dev"
               icon="git-branch"
-              status={<StatusChip tone="muted" dot label="Roadmap" />}
+              status={<StatusChip tone="muted" dot label="Edition #4" />}
               line="The governed-agent kernel: typed agent/skill/rule schema, a lifecycle state machine, and a hooks dispatcher."
               proof="agent · skill · rule — typed, validated, hooked"
             />

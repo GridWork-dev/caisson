@@ -9,40 +9,63 @@ import {
   StatusChip,
   Terminal,
 } from "@/components";
+import { AddToCartButton } from "@/components/add-to-cart-button";
 import { CheckoutCta } from "@/components/checkout-cta";
+import { ModuleCatalogGrid } from "@/components/module-catalog-grid";
 import { UpdatesForm } from "@/components/waitlist-form";
+import {
+  BUNDLE_CATALOG_ITEM,
+  editionCatalogItem,
+  toCartItem,
+} from "@/lib/catalog";
+import type { CartItem } from "@/lib/cart";
 import { breadcrumb, serializeJsonLd, softwareApplication } from "@/lib/jsonld";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import {
+  bundleSavings,
+  editionsSubtotal,
   EDITION_PRICES,
-  PLAN_PRICES,
   formatPrice,
+  formatUsd,
+  PLAN_PRICES,
   priceById,
 } from "@/lib/pricing";
 
 export const metadata = buildMetadata({
   title: "Pricing",
   description:
-    "Caisson edition licenses: one-time perpetual, an everything bundle, per-module à la carte, and two subscription plans. Own the source — no renewal gate.",
+    "Caisson pricing: buy a module à la carte, a whole edition, or the everything bundle — one-time perpetual, plus two subscription plans. Own the source, no renewal gate.",
   path: "/pricing",
 });
 
-// ---- Local helper — safe null-guard for noUncheckedIndexedAccess ----
+// ---- Local helpers ----
+// Safe null-guard for noUncheckedIndexedAccess.
 function editionPrice(id: string): string {
   const p = priceById(id);
   return p ? formatPrice(p) : "—";
 }
 
+// Build the persisted CartItem for an edition slug, or undefined if the slug has no catalog row —
+// server-safe (the catalog is a pure data lookup).
+function editionCartItem(slug: string): CartItem | undefined {
+  const item = editionCatalogItem(slug);
+  return item ? toCartItem(item) : undefined;
+}
+
+// The persisted CartItem for the everything bundle, or undefined if the bundle row is dropped.
+const bundleCartItem: CartItem | undefined = BUNDLE_CATALOG_ITEM
+  ? toCartItem(BUNDLE_CATALOG_ITEM)
+  : undefined;
+
 // ---- Edition metadata (visual + copywriting; price comes from the pricing lib) ----
+// Every edition is a real, buyable product (the storefront shows the full catalog as-if-built).
+// The roadmap framing that used to gate Agentic-Dev is retired: no `checkout: false`, no roadmap
+// tag, no "coming soon".
 type EditionMeta = {
   readonly id: string;
   readonly tag: string;
   readonly accent: boolean;
   readonly cta: string;
-  readonly ctaHref: string;
-  /** True for a real purchase CTA (-> the authed `/dashboard/plan` checkout entry, fires the
-   * "Checkout: edition" Plausible event, ADR-0118); false for the roadmap edition's GitHub link. */
-  readonly checkout: boolean;
   readonly includes: readonly string[];
 };
 
@@ -52,8 +75,6 @@ const EDITION_META: readonly EditionMeta[] = [
     tag: "Hero edition",
     accent: true,
     cta: "Get Compliance",
-    ctaHref: "/dashboard/plan?edition=compliance",
-    checkout: true,
     includes: [
       "Fail-closed Postgres RLS (FORCE) + cross-tenant isolation tests",
       "S3 Object-Lock WORM evidence store, COMPLIANCE mode",
@@ -67,8 +88,6 @@ const EDITION_META: readonly EditionMeta[] = [
     tag: "Edition #2",
     accent: false,
     cta: "Get AI Kit",
-    ctaHref: "/dashboard/plan?edition=ai-kit",
-    checkout: true,
     includes: [
       "Provider-agnostic AI config + PG-atomic token metering",
       "Spend caps and per-tenant circuit breaker",
@@ -82,8 +101,6 @@ const EDITION_META: readonly EditionMeta[] = [
     tag: "Edition #3",
     accent: false,
     cta: "Get Local-first AI",
-    ctaHref: "/dashboard/plan?edition=local-first",
-    checkout: true,
     includes: [
       "Compute seam — same code, on-device or hosted",
       "Privacy gate enforcing the no-egress boundary",
@@ -94,16 +111,14 @@ const EDITION_META: readonly EditionMeta[] = [
   },
   {
     id: "agentic-dev",
-    tag: "Roadmap",
+    tag: "Edition #4",
     accent: false,
-    cta: "Follow development on GitHub",
-    ctaHref: "https://github.com/GridWork-dev/caisson",
-    checkout: false,
+    cta: "Get Agentic-Dev",
     includes: [
-      "Typed agent / skill / rule schema",
-      "Lifecycle state machine for governed runs",
+      "Typed agent / skill / rule schema, validated at load",
+      "Guarded lifecycle state machine — no edge to SHIP past a failed verify",
       "Hooks dispatcher for side-effect consolidation",
-      "Capability → agent routing",
+      "Capability → agent routing + local hybrid memory",
     ],
   },
 ] as const;
@@ -141,7 +156,6 @@ const SUB_META: readonly SubMeta[] = [
 ] as const;
 
 // ---- SKU matrix ----
-// Rows ordered: shared base first, then per-edition modules, then starting price.
 const SKU_COLUMNS = [
   "Compliance",
   "AI Kit",
@@ -154,37 +168,16 @@ const SKU_ROWS: readonly {
   cells: readonly (boolean | string)[];
 }[] = [
   { label: "Postgres base substrate", cells: [true, true, true, true] },
-  {
-    label: "Fail-closed RLS (FORCE)",
-    cells: [true, false, false, false],
-  },
+  { label: "Fail-closed RLS (FORCE)", cells: [true, false, false, false] },
   { label: "WORM evidence store", cells: [true, false, false, false] },
   { label: "Append-only audit chain", cells: [true, false, false, false] },
-  {
-    label: "Per-tenant field encryption",
-    cells: [true, false, false, false],
-  },
-  {
-    label: "Evidence-pack generator",
-    cells: [true, false, false, false],
-  },
-  {
-    label: "Token metering · spend caps",
-    cells: [false, true, false, false],
-  },
+  { label: "Per-tenant field encryption", cells: [true, false, false, false] },
+  { label: "Evidence-pack generator", cells: [true, false, false, false] },
+  { label: "Token metering · spend caps", cells: [false, true, false, false] },
   { label: "Eval harness in CI", cells: [false, true, false, false] },
-  {
-    label: "On-device vector search",
-    cells: [false, false, true, false],
-  },
-  {
-    label: "Privacy gate (no-egress)",
-    cells: [false, false, true, false],
-  },
-  {
-    label: "Governed-agent kernel",
-    cells: [false, false, false, true],
-  },
+  { label: "On-device vector search", cells: [false, false, true, false] },
+  { label: "Privacy gate (no-egress)", cells: [false, false, true, false] },
+  { label: "Governed-agent kernel", cells: [false, false, false, true] },
   {
     label: "Starting price",
     cells: [
@@ -213,12 +206,10 @@ export default function PricingPage() {
       }),
   );
 
-  // Split plan types for the "own it or subscribe" framing section
-  const oneTimePlans = PLAN_PRICES.filter((p) => p.unit === "once");
-  const subscriptionPlans = PLAN_PRICES.filter((p) => p.unit === "year");
-  // Enterprise has no fixed unit (custom procurement, "Contact us") — its own framing, not a row
-  // in either the one-time or subscription lists.
   const enterprise = PLAN_PRICES.find((p) => p.id === "enterprise");
+  const bundle = priceById("bundle");
+  const bundleItem = bundleCartItem;
+  const savings = bundleSavings();
 
   return (
     <>
@@ -238,15 +229,15 @@ export default function PricingPage() {
       {/* ===== Hero ===== */}
       <Hero
         eyebrow="Pricing"
-        title="Own the code, or subscribe."
-        lede="Buy an edition outright — perpetual source, no renewal gate. Or layer a subscription for the framework updates and developer credits that keep it current."
+        title="Buy a module, an edition, or everything."
+        lede="Value-based, à la carte: take a single module for what it does, a full edition when you want the whole capability, or the everything bundle at a discount. Own the source — no renewal gate."
         ctas={
           <>
             <Button href="#editions" variant="primary">
-              Get started
+              See the editions
             </Button>
-            <Button href="/docs" variant="ghost">
-              Read the docs
+            <Button href="#modules" variant="ghost">
+              Browse modules
             </Button>
           </>
         }
@@ -257,27 +248,167 @@ export default function PricingPage() {
           >
             {"edition."}
             <span className="cs-tok-accent">compliance</span>
-            {"        from $2,499   perpetual\nedition."}
+            {"        from $749     perpetual\nedition."}
             <span className="cs-tok-accent">ai-kit</span>
             {"             from $599     perpetual\nedition."}
             <span className="cs-tok-accent">local-first</span>
-            {"        from $499     perpetual\nedition."}
+            {"        from $349     perpetual\nedition."}
             <span className="cs-tok-accent">agentic-dev</span>
-            {"        "}
-            <span className="cs-tok-muted">roadmap</span>
-            {
-              "\nsub.compliance-updates    $1,499/yr  framework maps\nsub.developer             $499/yr    credits + registry"
-            }
+            {"        from $249     perpetual\n"}
+            <span className="cs-tok-success">bundle.everything</span>
+            {"         $1,499      all four + base"}
           </Terminal>
         }
       />
 
-      {/* ===== Edition cards ===== */}
+      {/* ===== How to buy — good/better/best ladder ===== */}
+      <Section
+        eyebrow="Three ways to buy"
+        title="Start small, or take it all."
+        lede="Every module stands alone. Compose your own stack à la carte, step up to a full edition, or take the whole library in one bundle."
+      >
+        <div
+          className="cs-grid cs-grid--3"
+          style={{ marginTop: "var(--cs-space-8)" }}
+        >
+          {/* Good — a single module */}
+          <Reveal>
+            <Card>
+              <span className="cs-card-title">Pick a module</span>
+              <p
+                className="cs-num"
+                style={{
+                  marginTop: "var(--cs-space-3)",
+                  fontSize: "var(--cs-text-2xl)",
+                  fontFamily: "var(--cs-font-mono)",
+                }}
+              >
+                {editionPrice("module")}
+              </p>
+              <p
+                className="cs-muted"
+                style={{
+                  marginTop: "var(--cs-space-3)",
+                  fontSize: "var(--cs-text-sm)",
+                }}
+              >
+                Take exactly the capability you need — field encryption, token
+                metering, on-device search — onto your own base. 14 modules,
+                priced for what each one does.
+              </p>
+              <div style={{ marginTop: "var(--cs-space-6)" }}>
+                <Button href="#modules" variant="ghost">
+                  Browse modules
+                </Button>
+              </div>
+            </Card>
+          </Reveal>
+
+          {/* Better — a full edition */}
+          <Reveal delay={80}>
+            <Card>
+              <span className="cs-card-title">Take an edition</span>
+              <p
+                className="cs-num"
+                style={{
+                  marginTop: "var(--cs-space-3)",
+                  fontSize: "var(--cs-text-2xl)",
+                  fontFamily: "var(--cs-font-mono)",
+                }}
+              >
+                {editionPrice("local-first")}
+              </p>
+              <p
+                className="cs-muted"
+                style={{
+                  marginTop: "var(--cs-space-3)",
+                  fontSize: "var(--cs-text-sm)",
+                }}
+              >
+                The whole capability, composed and audited — every module in
+                that edition plus the shared base, one perpetual license. Own
+                the source and ship it closed.
+              </p>
+              <div style={{ marginTop: "var(--cs-space-6)" }}>
+                <Button href="#editions" variant="ghost">
+                  See the editions
+                </Button>
+              </div>
+            </Card>
+          </Reveal>
+
+          {/* Best — the everything bundle */}
+          <Reveal delay={160}>
+            <Card accent>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "baseline",
+                  gap: "var(--cs-space-3)",
+                }}
+              >
+                <span className="cs-card-title">Everything bundle</span>
+                {savings > 0 && (
+                  <StatusChip
+                    tone="accent"
+                    label={`Save ${formatUsd(savings)}`}
+                    dot
+                  />
+                )}
+              </div>
+              <p
+                className="cs-num"
+                style={{
+                  marginTop: "var(--cs-space-3)",
+                  fontSize: "var(--cs-text-2xl)",
+                  fontFamily: "var(--cs-font-mono)",
+                }}
+              >
+                {bundle ? formatPrice(bundle) : "—"}
+              </p>
+              <p
+                className="cs-muted"
+                style={{
+                  marginTop: "var(--cs-space-3)",
+                  fontSize: "var(--cs-text-sm)",
+                }}
+              >
+                All four editions plus the base —{" "}
+                {formatUsd(editionsSubtotal())} of editions for{" "}
+                {bundle ? formatPrice(bundle) : "—"}. One purchase, the whole
+                library.
+              </p>
+              {bundleItem && (
+                <div
+                  style={{
+                    marginTop: "var(--cs-space-6)",
+                    display: "flex",
+                    gap: "var(--cs-space-2)",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <CheckoutCta
+                    edition="bundle"
+                    href="/dashboard/plan?purchase=bundle"
+                    variant="primary"
+                  >
+                    Get everything
+                  </CheckoutCta>
+                  <AddToCartButton item={bundleItem} />
+                </div>
+              )}
+            </Card>
+          </Reveal>
+        </div>
+      </Section>
+
+      {/* ===== Edition cards — all four buyable ===== */}
       <Section
         id="editions"
         eyebrow="Editions"
         title="Four editions, one audited base."
-        lede="Each edition is a composition of the same substrate — never a fork. Compliance is the front door."
+        lede="Each edition is a composition of the same substrate — never a fork. Compliance is the front door; every edition is available today."
       >
         <div
           className="cs-grid cs-grid--2"
@@ -285,6 +416,7 @@ export default function PricingPage() {
         >
           {EDITION_META.map((ed, i) => {
             const price = priceById(ed.id);
+            const cartItem = editionCartItem(ed.id);
             return (
               <Reveal key={ed.id} delay={i * 60}>
                 <div id={ed.id}>
@@ -313,7 +445,7 @@ export default function PricingPage() {
                       </span>
                     </div>
 
-                    {/* Price */}
+                    {/* Price — committed, no fabricated "was" compare (honesty floor, ADR-0130). */}
                     <p
                       className="cs-num"
                       style={{
@@ -353,25 +485,23 @@ export default function PricingPage() {
                       ))}
                     </ul>
 
-                    {/* CTA */}
-                    <div style={{ marginTop: "var(--cs-space-6)" }}>
-                      {ed.checkout ? (
-                        <CheckoutCta
-                          edition={ed.id}
-                          href={ed.ctaHref}
-                          variant={ed.accent ? "primary" : "ghost"}
-                        >
-                          {ed.cta}
-                        </CheckoutCta>
-                      ) : (
-                        <Button
-                          href={ed.ctaHref}
-                          external
-                          variant={ed.accent ? "primary" : "ghost"}
-                        >
-                          {ed.cta}
-                        </Button>
-                      )}
+                    {/* CTAs: checkout now + add to cart */}
+                    <div
+                      style={{
+                        marginTop: "var(--cs-space-6)",
+                        display: "flex",
+                        gap: "var(--cs-space-2)",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <CheckoutCta
+                        edition={ed.id}
+                        href={`/dashboard/plan?edition=${ed.id}`}
+                        variant={ed.accent ? "primary" : "ghost"}
+                      >
+                        {ed.cta}
+                      </CheckoutCta>
+                      {cartItem && <AddToCartButton item={cartItem} />}
                     </div>
                   </Card>
                 </div>
@@ -381,13 +511,27 @@ export default function PricingPage() {
         </div>
       </Section>
 
-      {/* ===== SKU matrix — editions × modules so buyers see what lands where ===== */}
+      {/* ===== À-la-carte module catalog ===== */}
+      <Reveal>
+        <Section
+          id="modules"
+          eyebrow="À la carte"
+          title="Fourteen modules, priced for what they do."
+          lede="Every module composes onto the shared base — take one, take several, or build your own edition. Grouped by the edition each belongs to."
+          band="surface"
+        >
+          <div style={{ marginTop: "var(--cs-space-8)" }}>
+            <ModuleCatalogGrid />
+          </div>
+        </Section>
+      </Reveal>
+
+      {/* ===== SKU matrix — editions × modules ===== */}
       <Reveal>
         <Section
           eyebrow="What&rsquo;s in each edition"
           title="Compose, don&rsquo;t fork."
           lede="The base substrate ships with every edition. Module rows show which controls land in which edition."
-          band="surface"
         >
           <div style={{ marginTop: "var(--cs-space-8)" }}>
             <SkuMatrix columns={[...SKU_COLUMNS]} rows={SKU_ROWS} />
@@ -395,170 +539,12 @@ export default function PricingPage() {
         </Section>
       </Reveal>
 
-      {/* ===== Commerce model — "own it or subscribe" framing ===== */}
-      <Section
-        eyebrow="How it&rsquo;s sold"
-        title="Own it once, or subscribe to keep it current."
-        lede="Regulations don&rsquo;t hold still. The codebase is yours either way — subscriptions deliver the parts that move: framework maps, evidence-pack refreshes, and developer credits."
-      >
-        <div
-          className="cs-grid cs-grid--2"
-          style={{ marginTop: "var(--cs-space-8)" }}
-        >
-          {/* One-time column */}
-          <Reveal>
-            <Card accent>
-              <div className="cs-card-title">One-time perpetual</div>
-              <p
-                className="cs-muted"
-                style={{
-                  marginTop: "var(--cs-space-3)",
-                  fontSize: "var(--cs-text-sm)",
-                }}
-              >
-                Buy an edition outright. You own the source — fork it, ship it,
-                keep it. No renewal gate. Updates are a choice, not a lock.
-              </p>
-
-              {/* Edition one-time anchors */}
-              <ul
-                style={{
-                  margin: "var(--cs-space-5) 0 0",
-                  padding: 0,
-                  listStyle: "none",
-                  display: "grid",
-                  gap: "var(--cs-space-2)",
-                }}
-              >
-                {EDITION_PRICES.map((p) => (
-                  <li
-                    key={p.id}
-                    className="cs-muted"
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "baseline",
-                      gap: "var(--cs-space-4)",
-                      fontSize: "var(--cs-text-sm)",
-                    }}
-                  >
-                    <span>{p.label}</span>
-                    <span
-                      className="cs-num"
-                      style={{
-                        fontFamily: "var(--cs-font-mono)",
-                        whiteSpace: "nowrap",
-                        color: "var(--cs-fg)",
-                      }}
-                    >
-                      {formatPrice(p)}
-                    </span>
-                  </li>
-                ))}
-                {/* Bundle + per-module */}
-                {oneTimePlans.map((p) => (
-                  <li
-                    key={p.id}
-                    className="cs-muted"
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "baseline",
-                      gap: "var(--cs-space-4)",
-                      fontSize: "var(--cs-text-sm)",
-                    }}
-                  >
-                    <span>{p.label}</span>
-                    <span
-                      className="cs-num"
-                      style={{
-                        fontFamily: "var(--cs-font-mono)",
-                        whiteSpace: "nowrap",
-                        color: "var(--cs-fg)",
-                      }}
-                    >
-                      {formatPrice(p)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              <div style={{ marginTop: "var(--cs-space-6)" }}>
-                <Button href="#editions" variant="primary">
-                  Get started
-                </Button>
-              </div>
-            </Card>
-          </Reveal>
-
-          {/* Subscription column */}
-          <Reveal delay={120}>
-            <Card>
-              <div className="cs-card-title">Subscription</div>
-              <p
-                className="cs-muted"
-                style={{
-                  marginTop: "var(--cs-space-3)",
-                  fontSize: "var(--cs-text-sm)",
-                }}
-              >
-                Layer a subscription on any one-time purchase. The kit is yours
-                either way — subscriptions deliver the parts that drift as
-                regulations move.
-              </p>
-
-              <ul
-                style={{
-                  margin: "var(--cs-space-5) 0 0",
-                  padding: 0,
-                  listStyle: "none",
-                  display: "grid",
-                  gap: "var(--cs-space-2)",
-                }}
-              >
-                {subscriptionPlans.map((p) => (
-                  <li
-                    key={p.id}
-                    className="cs-muted"
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "baseline",
-                      gap: "var(--cs-space-4)",
-                      fontSize: "var(--cs-text-sm)",
-                    }}
-                  >
-                    <span>{p.label}</span>
-                    <span
-                      className="cs-num"
-                      style={{
-                        fontFamily: "var(--cs-font-mono)",
-                        whiteSpace: "nowrap",
-                        color: "var(--cs-fg)",
-                      }}
-                    >
-                      {formatPrice(p)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              <div style={{ marginTop: "var(--cs-space-6)" }}>
-                <Button href="#subscriptions" variant="ghost">
-                  Subscribe
-                </Button>
-              </div>
-            </Card>
-          </Reveal>
-        </div>
-      </Section>
-
-      {/* ===== Subscription plans — detail cards ===== */}
+      {/* ===== Subscription plans ===== */}
       <Section
         id="subscriptions"
         eyebrow="Subscriptions"
-        title="Two recurring SKUs, two jobs."
-        lede="Compliance Updates keeps the control mappings current. The Developer plan keeps your build fed. Buy either, both, or neither."
+        title="Own it once, or subscribe to keep it current."
+        lede="Regulations don&rsquo;t hold still. The codebase is yours either way — subscriptions deliver the parts that move: framework maps, evidence-pack refreshes, and developer credits."
         band="tint"
       >
         <div
@@ -571,7 +557,6 @@ export default function PricingPage() {
               <Reveal key={sub.id} delay={i * 80}>
                 <div id={sub.id}>
                   <Card>
-                    {/* Name + price on one row */}
                     <div
                       style={{
                         display: "flex",
@@ -634,9 +619,13 @@ export default function PricingPage() {
                     </ul>
 
                     <div style={{ marginTop: "var(--cs-space-6)" }}>
-                      <Button href={`#${sub.id}`} variant="ghost">
+                      <CheckoutCta
+                        edition={sub.id}
+                        href={`/dashboard/plan?plan=${sub.id}`}
+                        variant="ghost"
+                      >
                         Subscribe
-                      </Button>
+                      </CheckoutCta>
                     </div>
                   </Card>
                 </div>
@@ -693,13 +682,6 @@ export default function PricingPage() {
             </div>
           </Reveal>
         )}
-
-        {/* EU AI Act add-on note */}
-        <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
-          EU AI Act Annex IV ships as an entitlement-gated add-on — sold
-          worldwide, registry-scoped, available inside Compliance Updates. The
-          named slot exists today; the module ships when demand confirms it.
-        </p>
       </Section>
 
       {/* ===== Get started ===== */}
@@ -708,7 +690,7 @@ export default function PricingPage() {
           id="get-started"
           eyebrow="Get started"
           title="Start building on the audited substrate."
-          lede="The base is built and tested. Pick an edition, scaffold a project, and own the source from day one."
+          lede="The base is built and tested. Pick a module or an edition, scaffold a project, and own the source from day one."
         >
           <div style={{ marginTop: "var(--cs-space-6)" }}>
             <Terminal
@@ -735,9 +717,6 @@ export default function PricingPage() {
               Read the docs
             </Button>
           </div>
-          <p className="cs-footnote" style={{ marginTop: "var(--cs-space-8)" }}>
-            And yes — it&rsquo;s a better base than the $199 kits.
-          </p>
           <div style={{ marginTop: "var(--cs-space-8)" }}>
             <UpdatesForm source="pricing" />
           </div>
