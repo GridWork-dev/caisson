@@ -47,21 +47,51 @@ export interface OpenCheckoutOptions {
   accountId: string;
 }
 
+/** One line of a multi-item checkout — quantity defaults to 1 (every SKU this site sells is a
+ *  perpetual per-buyer license, never a stackable quantity). */
+export interface CartCheckoutItem {
+  priceId: string;
+  quantity?: number;
+}
+
 /**
- * Open the Paddle.js checkout overlay for `priceId`. A no-op (resolves `false`) when Paddle is
- * not configured for this environment — callers should disable/hide the buy button in that case
- * rather than rely on this throwing.
+ * Open ONE Paddle.js checkout overlay for every line passed in `items` (confirmed against the
+ * Paddle.js docs: `Checkout.open({ items: [...] })` already accepts a multi-item list — this is
+ * the same call `openCheckout` makes below with a single-entry array, just generalized). A buyer
+ * with N cart lines pays once, not N times. Same no-op-when-unconfigured contract as
+ * `openCheckout`, and the same `custom_data.account_id` convention the webhook's
+ * `parsePaddleEvent` reads to resolve the tenant.
+ */
+export async function openCartCheckout(
+  items: readonly CartCheckoutItem[],
+  accountId: string,
+): Promise<boolean> {
+  if (items.length === 0) return false;
+  const paddle = await getPaddle();
+  if (!paddle) return false;
+  paddle.Checkout.open({
+    items: items.map((item) => ({
+      priceId: item.priceId,
+      quantity: item.quantity ?? 1,
+    })),
+    customData: { account_id: accountId },
+  });
+  return true;
+}
+
+/**
+ * Open the Paddle.js checkout overlay for a single `priceId`. A no-op (resolves `false`) when
+ * Paddle is not configured for this environment — callers should disable/hide the buy button in
+ * that case rather than rely on this throwing. A thin single-item convenience over
+ * `openCartCheckout`.
  */
 export async function openCheckout(
   options: OpenCheckoutOptions,
 ): Promise<boolean> {
-  const paddle = await getPaddle();
-  if (!paddle) return false;
-  paddle.Checkout.open({
-    items: [{ priceId: options.priceId, quantity: 1 }],
-    customData: { account_id: options.accountId },
-  });
-  return true;
+  return openCartCheckout(
+    [{ priceId: options.priceId, quantity: 1 }],
+    options.accountId,
+  );
 }
 
 /** Whether Paddle checkout is configured in this environment (for conditionally rendering CTAs). */
