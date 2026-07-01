@@ -12,7 +12,8 @@
 #   NEXT_PUBLIC_PLAUSIBLE_DOMAIN        (e.g. "caisson.sh" — ADR-0118; analytics no-op without it)
 #   OTEL_EXPORTER_OTLP_ENDPOINT         (the SigNoz collector — ADR-0117; observability no-ops without it)
 #   RESEND_API_KEY / RESEND_SEGMENT_ID  (the product-updates capture form — inert (202) without them)
-#   TURNSTILE_SECRET                    (optional bot-challenge on the updates form)
+#   TURNSTILE_SECRET                    (server verify of the bot-challenge; fail-closed when set, D9)
+#   NEXT_PUBLIC_TURNSTILE_SITE_KEY      (renders the Turnstile widget client-side; no widget when unset, D9)
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "apps/site/Dockerfile"
