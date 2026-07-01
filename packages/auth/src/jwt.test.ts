@@ -48,6 +48,37 @@ describe("EdDSA account JWT", () => {
     ).toThrow(AuthnError);
   });
 
+  test("every failure mode yields the same generic client message (no oracle)", () => {
+    const captureMessage = (fn: () => unknown): string => {
+      try {
+        fn();
+      } catch (err) {
+        return err instanceof AuthnError ? err.message : `unexpected: ${err}`;
+      }
+      return "did not throw";
+    };
+
+    const malformed = captureMessage(() =>
+      verifyAccountJwt("not-a-jwt", keys.publicKey),
+    );
+    const badSignature = captureMessage(() => {
+      const other = generateAccountKeyPair();
+      const token = signAccountJwt(claims, other.privateKey);
+      return verifyAccountJwt(token, keys.publicKey);
+    });
+    const expired = captureMessage(() => {
+      const token = signAccountJwt(claims, keys.privateKey, {
+        ttlSeconds: 60,
+        now: 1_000,
+      });
+      return verifyAccountJwt(token, keys.publicKey, { now: 2_000 });
+    });
+
+    expect(malformed).toBe("Invalid token");
+    expect(badSignature).toBe(malformed);
+    expect(expired).toBe(malformed);
+  });
+
   test("requireSession guards a null context", () => {
     expect(() => requireSession(null)).toThrow(AuthnError);
     expect(requireSession(claims)).toEqual(claims);
