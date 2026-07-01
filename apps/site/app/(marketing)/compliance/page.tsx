@@ -4,6 +4,7 @@ import {
   Button,
   Card,
   CredentialStrip,
+  Faq,
   Hero,
   Icon,
   Reveal,
@@ -355,22 +356,7 @@ export default function CompliancePage() {
           eyebrow="Procurement questions"
           title="What a security review asks first."
         >
-          <div
-            className="cs-grid cs-grid--2"
-            style={{ marginTop: "var(--cs-space-8)" }}
-          >
-            {FAQ.map((f) => (
-              <Card key={f.question}>
-                <h3 className="cs-card-title">{f.question}</h3>
-                <p
-                  className="cs-muted"
-                  style={{ marginTop: "var(--cs-space-3)" }}
-                >
-                  {f.answer}
-                </p>
-              </Card>
-            ))}
-          </div>
+          <Faq items={FAQ} style={{ marginTop: "var(--cs-space-8)" }} />
         </Section>
       </Reveal>
 

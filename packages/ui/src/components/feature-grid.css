@@ -1,0 +1,8 @@
+/* FeatureGrid — spacing layer over the shared cs-grid (ADR-0099). Values via --cs-* only. */
+.cs-feature-grid {
+  margin-top: var(--cs-space-8);
+}
+
+.cs-feature-grid--flush {
+  margin-top: 0;
+}

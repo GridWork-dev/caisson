@@ -1,0 +1,74 @@
+/* Faq — native <details> disclosure list (ADR-0099). Co-located; values via --cs-* only. */
+.cs-faq {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-3);
+  max-width: 72ch;
+}
+
+.cs-faq-item {
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-lg);
+  background: var(--cs-surface-1);
+  padding: var(--cs-space-4) var(--cs-space-5);
+}
+
+/* Summary is the clickable question row. Drop the native disclosure triangle; draw our own. */
+.cs-faq-q {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cs-space-4);
+  cursor: pointer;
+  list-style: none;
+  font-size: var(--cs-text-base);
+  font-weight: var(--cs-weight-semibold);
+  letter-spacing: var(--cs-tracking-tight);
+  color: var(--cs-fg);
+}
+
+.cs-faq-q::-webkit-details-marker {
+  display: none;
+}
+
+/* Chevron marker — a rotated bordered square corner; rotates when the item is open. */
+.cs-faq-q::after {
+  content: "";
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 2px solid var(--cs-border-strong);
+  border-bottom: 2px solid var(--cs-border-strong);
+  transform: rotate(45deg);
+  transition: transform var(--cs-duration-fast) var(--cs-ease-out);
+}
+
+.cs-faq-item[open] > .cs-faq-q::after {
+  transform: rotate(-135deg);
+}
+
+.cs-faq-q:hover {
+  color: var(--cs-accent);
+}
+
+.cs-faq-a {
+  margin-top: var(--cs-space-3);
+  line-height: var(--cs-leading-relaxed);
+}
+
+/* Reduced motion — the global reset zeroes durations; also neutralize the chevron transition. */
+@media (prefers-reduced-motion: reduce) {
+  .cs-faq-q::after {
+    transition: none;
+  }
+}
+
+/* Forced-colors (Windows high-contrast) — keep the bordered affordance + chevron visible. */
+@media (forced-colors: active) {
+  .cs-faq-item {
+    border: 1px solid CanvasText;
+  }
+  .cs-faq-q::after {
+    border-color: CanvasText;
+  }
+}

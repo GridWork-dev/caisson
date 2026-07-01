@@ -10,6 +10,7 @@ import { formatPrice, priceById } from "@/lib/pricing";
 import {
   Button,
   Card,
+  Faq,
   Hero,
   Icon,
   Reveal,
@@ -400,27 +401,7 @@ export default function AiKitPage() {
       {/* ===== FAQ ===== */}
       <Section eyebrow="Common questions" band="tint">
         <Reveal>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "var(--cs-space-6)",
-              marginTop: "var(--cs-space-6)",
-              maxWidth: "72ch",
-            }}
-          >
-            {FAQ_ITEMS.map((item) => (
-              <div key={item.question}>
-                <h3
-                  className="cs-card-title"
-                  style={{ marginBottom: "var(--cs-space-2)" }}
-                >
-                  {item.question}
-                </h3>
-                <p className="cs-muted">{item.answer}</p>
-              </div>
-            ))}
-          </div>
+          <Faq items={FAQ_ITEMS} style={{ marginTop: "var(--cs-space-6)" }} />
         </Reveal>
       </Section>
 
