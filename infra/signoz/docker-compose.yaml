@@ -1,0 +1,243 @@
+# SigNoz single-node — reference compose (ADR-0142, Caisson Stage-2 Stream A)
+#
+# THIS DOES NOT DEPLOY. It is checked-in IaC that documents the exact 5-service topology,
+# wiring, volumes, and healthchecks the DEPLOY session provisions on Railway (via the
+# official Foundry-regenerated SigNoz Railway template, railway.com/deploy/signoz). Use it to
+# stand the stack up locally 1:1, or as the source of truth for the Railway service graph.
+#
+# 5 services (Keeper is MANDATORY in stock SigNoz — REPLICATION=true issues ON CLUSTER DDL
+# even single-node, and ReplicatedMergeTree needs a coordinator):
+#   clickhouse-keeper  → coordination (ClickHouse's ZooKeeper-protocol replacement)
+#   clickhouse         → the telemetry store
+#   migrator (one-shot)→ bootstraps + migrates the ClickHouse schema, then exits
+#   signoz             → UI + query-service (port 8080, behind Cloudflare Access)
+#   signoz-otel-collector → the OTLP ingester (4317 gRPC / 4318 HTTP)
+#
+# depends_on encodes the deploy ORDER: keeper(healthy) → clickhouse(healthy) →
+# migrator(completed) → signoz + collector.
+#
+# No secrets inline — the JWT secret is an env placeholder. On Railway, inter-service DNS is
+# the <service>.railway.internal FQDN (a bare hostname silently fails); here on the compose
+# network the service names below resolve directly.
+
+x-common: &common
+  networks:
+    - signoz-net
+  restart: unless-stopped
+  logging:
+    options:
+      max-size: 50m
+      max-file: "3"
+
+services:
+  # ── coordination ────────────────────────────────────────────────────────────────────
+  clickhouse-keeper:
+    <<: *common
+    image: clickhouse/clickhouse-keeper:25.5.6
+    container_name: signoz-clickhouse-keeper
+    configs:
+      - source: keeper_config
+        target: /etc/clickhouse-keeper/keeper_config.xml
+    volumes:
+      - clickhouse-keeper:/var/lib/clickhouse-keeper
+    healthcheck:
+      # Keeper answers the 'ruok' 4-letter word with 'imok' on its client port once RAFT is up.
+      test:
+        [
+          "CMD-SHELL",
+          "bash -c 'exec 3<>/dev/tcp/127.0.0.1/9181 && echo ruok >&3 && head -c4 <&3 | grep -q imok'",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ── telemetry store ─────────────────────────────────────────────────────────────────
+  clickhouse:
+    <<: *common
+    image: clickhouse/clickhouse-server:25.5.6
+    container_name: signoz-clickhouse
+    depends_on:
+      clickhouse-keeper:
+        condition: service_healthy
+    environment:
+      - CLICKHOUSE_SKIP_USER_SETUP=1
+    configs:
+      # cluster.xml → config.d merge: names the single-node 'cluster', points <zookeeper> at
+      # keeper, sets macros, binds :: (IPv6 dual-stack), and caps server memory to 80% of RAM.
+      - source: clickhouse_cluster
+        target: /etc/clickhouse-server/config.d/cluster.xml
+    volumes:
+      - clickhouse:/var/lib/clickhouse
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    # Railway sizing is set on the service (8GB/4vCPU tier, ADR-0142). For local docker the
+    # equivalent hard cap is mem_limit; ClickHouse's own soft cap is
+    # max_server_memory_usage_to_ram_ratio in cluster.xml below.
+    # mem_limit: 6g
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "0.0.0.0:8123/ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ── schema bootstrap (one-shot) ─────────────────────────────────────────────────────
+  # ADR-0142 calls this 'telemetrystore-migrator'. In current SigNoz (v0.144.x) the standalone
+  # signoz-schema-migrator image was folded into the collector binary's `migrate` subcommands,
+  # so it runs the same otel-collector image. It bootstraps + migrates then exits 0.
+  signoz-telemetrystore-migrator:
+    <<: *common
+    image: signoz/signoz-otel-collector:v0.144.5
+    container_name: signoz-telemetrystore-migrator
+    restart: on-failure
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    environment:
+      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_DSN=tcp://clickhouse:9000
+      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_CLUSTER=cluster
+      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_REPLICATION=true
+      - SIGNOZ_OTEL_COLLECTOR_TIMEOUT=10m
+    entrypoint: ["/bin/sh"]
+    command:
+      - -c
+      - |
+        /signoz-otel-collector migrate bootstrap &&
+        /signoz-otel-collector migrate sync up &&
+        /signoz-otel-collector migrate async up
+
+  # ── UI + query service ──────────────────────────────────────────────────────────────
+  signoz:
+    <<: *common
+    image: signoz/signoz:v0.130.1
+    container_name: signoz
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      signoz-telemetrystore-migrator:
+        condition: service_completed_successfully
+    ports:
+      - "8080:8080" # UI + query API — on Railway this is the only public port, gated by Cloudflare Access (ADR-0107)
+    environment:
+      - SIGNOZ_ALERTMANAGER_PROVIDER=signoz
+      - SIGNOZ_TELEMETRYSTORE_CLICKHOUSE_DSN=tcp://clickhouse:9000
+      - SIGNOZ_SQLSTORE_SQLITE_PATH=/var/lib/signoz/signoz.db
+      - SIGNOZ_TOKENIZER_JWT_SECRET=${SIGNOZ_JWT_SECRET:-changeme-set-in-railway}
+    volumes:
+      - signoz:/var/lib/signoz
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "localhost:8080/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ── OTLP ingester ───────────────────────────────────────────────────────────────────
+  signoz-otel-collector:
+    <<: *common
+    image: signoz/signoz-otel-collector:v0.144.5
+    container_name: signoz-otel-collector
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      signoz-telemetrystore-migrator:
+        condition: service_completed_successfully
+    configs:
+      - source: otel_collector_config
+        target: /etc/otel-collector-config.yaml
+    environment:
+      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_DSN=tcp://clickhouse:9000
+      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_CLUSTER=cluster
+      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_REPLICATION=true
+      - SIGNOZ_OTEL_COLLECTOR_TIMEOUT=10m
+    ports:
+      # On Railway these need a TCP Proxy for EXTERNAL senders; same-project senders (the
+      # Caisson services) reach it over private networking at
+      # signoz-otel-collector.railway.internal:4317 — no proxy needed.
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+    entrypoint: ["/bin/sh"]
+    command:
+      # `migrate sync check` gates startup on a ready schema. Production adds
+      # `--manager-config` (OpAMP) so the query-service can push pipeline updates; omitted here
+      # to keep the reference standalone — the mounted config alone runs the 3 core pipelines.
+      - -c
+      - |
+        /signoz-otel-collector migrate sync check &&
+        /signoz-otel-collector --config=/etc/otel-collector-config.yaml
+
+networks:
+  signoz-net:
+    name: signoz-net
+
+volumes:
+  clickhouse:
+    name: signoz-clickhouse
+  clickhouse-keeper:
+    name: signoz-clickhouse-keeper
+  signoz:
+    name: signoz-sqlite
+
+# Inline configs keep the whole stack in one file (Compose spec `content:`). On Railway these
+# become the equivalent mounted config / config.d entries on each service.
+configs:
+  otel_collector_config:
+    file: ./otel-collector-config.yaml
+
+  keeper_config:
+    content: |
+      <clickhouse>
+        <logger>
+          <level>information</level>
+          <console>true</console>
+        </logger>
+        <listen_host>::</listen_host>
+        <max_connections>4096</max_connections>
+        <keeper_server>
+          <tcp_port>9181</tcp_port>
+          <server_id>1</server_id>
+          <log_storage_path>/var/lib/clickhouse-keeper/coordination/log</log_storage_path>
+          <snapshot_storage_path>/var/lib/clickhouse-keeper/coordination/snapshots</snapshot_storage_path>
+          <coordination_settings>
+            <operation_timeout_ms>10000</operation_timeout_ms>
+            <session_timeout_ms>30000</session_timeout_ms>
+            <raft_logs_level>information</raft_logs_level>
+          </coordination_settings>
+          <raft_configuration>
+            <server>
+              <id>1</id>
+              <hostname>clickhouse-keeper</hostname>
+              <port>9234</port>
+            </server>
+          </raft_configuration>
+        </keeper_server>
+      </clickhouse>
+
+  clickhouse_cluster:
+    content: |
+      <clickhouse>
+        <listen_host>::</listen_host>
+        <max_server_memory_usage_to_ram_ratio>0.8</max_server_memory_usage_to_ram_ratio>
+        <zookeeper>
+          <node>
+            <host>clickhouse-keeper</host>
+            <port>9181</port>
+          </node>
+        </zookeeper>
+        <remote_servers>
+          <cluster>
+            <shard>
+              <internal_replication>true</internal_replication>
+              <replica>
+                <host>clickhouse</host>
+                <port>9000</port>
+              </replica>
+            </shard>
+          </cluster>
+        </remote_servers>
+        <macros>
+          <cluster>cluster</cluster>
+          <shard>01</shard>
+          <replica>replica-01</replica>
+        </macros>
+      </clickhouse>
