@@ -5,26 +5,24 @@ import { usePathname } from "next/navigation";
 
 import { ThemeToggle } from "@caisson/ui/components";
 
-// Signature is intentionally absent — the four-beat sketches are deferred (the only deferred
-// surface); the route still exists but is unlinked until the direction is reworked.
+// Top-level control-plane sections. Only surfaces that exist are linked; Ops / Business /
+// Architecture / Decisions land their nav entries as tasks A4-A7 build them (a nav entry to a
+// route that doesn't exist yet is a dead link, not a scaffold).
 const LINKS = [
   { href: "/", label: "Overview" },
-  { href: "/design/foundations", label: "Foundations" },
-  { href: "/design/typography", label: "Typography" },
-  { href: "/design/wordmark", label: "Wordmark" },
-  { href: "/components", label: "Components" },
+  { href: "/design", label: "Design" },
 ] as const;
 
-export function Topbar() {
+export function AdminNav() {
   const pathname = usePathname();
   return (
     <header className="topbar">
       <div className="row" style={{ gap: "1.5rem" }}>
-        <Link href="/" className="brand" aria-label="Caisson Design Studio">
+        <Link href="/" className="brand" aria-label="Caisson Admin">
           <span className="mark">caisson</span>
-          <span className="sub">/ studio</span>
+          <span className="sub">/ admin</span>
         </Link>
-        <nav className="nav" aria-label="Studio sections">
+        <nav className="nav" aria-label="Admin sections">
           {LINKS.map((l) => {
             const active =
               l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);

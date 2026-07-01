@@ -41,7 +41,7 @@ const SURFACES: Surface[] = [
     title: "Components",
     desc: "The @caisson/ui kit, rendered live (ADR-0099 recipe).",
     state: "ready",
-    href: "/components",
+    href: "/design/components",
   },
   {
     title: "Signature",
