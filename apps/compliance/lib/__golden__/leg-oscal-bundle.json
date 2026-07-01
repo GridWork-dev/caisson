@@ -1,12 +1,12 @@
 {
   "assessmentResults": {
     "assessment-results": {
-      "uuid": "00000000-0000-4000-8000-000000000008",
+      "uuid": "00000000-0000-4000-8000-000000000009",
       "metadata": {
         "title": "Security Assessment Results — SOC 2 — Trust Services Criteria",
         "last-modified": "2026-06-27T12:00:00.000Z",
         "version": "2024.1",
-        "oscal-version": "1.1.3",
+        "oscal-version": "1.2.2",
         "props": [
           {
             "name": "caisson-readiness-posture",
@@ -28,11 +28,11 @@
         ]
       },
       "import-ap": {
-        "href": "#caisson-assessment-plan"
+        "href": "#00000000-0000-4000-8000-000000000001"
       },
       "results": [
         {
-          "uuid": "00000000-0000-4000-8000-000000000007",
+          "uuid": "00000000-0000-4000-8000-000000000008",
           "title": "Control evidence assessment — SOC 2 — Trust Services Criteria",
           "description": "3 of 3 controls evidence-ready; no gaps recorded.",
           "start": "2026-06-27T12:00:00.000Z",
@@ -52,7 +52,7 @@
           ],
           "observations": [
             {
-              "uuid": "00000000-0000-4000-8000-000000000001",
+              "uuid": "00000000-0000-4000-8000-000000000002",
               "title": "ACCESS-CONTROL.LOGICAL / substrate.tenant-isolation-force-rls",
               "description": "all 5 tenant tables enforce FORCE row-level security",
               "methods": [
@@ -61,7 +61,7 @@
               "collected": "2026-06-27T12:00:00.000Z"
             },
             {
-              "uuid": "00000000-0000-4000-8000-000000000003",
+              "uuid": "00000000-0000-4000-8000-000000000004",
               "title": "AUDIT.IMMUTABLE-LOG / substrate.audit-chain-integrity",
               "description": "audit chain verified against its anchor (1 entries)",
               "methods": [
@@ -70,7 +70,7 @@
               "collected": "2026-06-27T12:00:00.000Z"
             },
             {
-              "uuid": "00000000-0000-4000-8000-000000000005",
+              "uuid": "00000000-0000-4000-8000-000000000006",
               "title": "DATA-PROTECTION.DISPOSAL / substrate.worm-retention-floor",
               "description": "WORM retention until 2033-06-27T12:00:00.000Z meets the floor (2032-06-27T12:00:00.000Z)",
               "methods": [
@@ -81,7 +81,7 @@
           ],
           "findings": [
             {
-              "uuid": "00000000-0000-4000-8000-000000000002",
+              "uuid": "00000000-0000-4000-8000-000000000003",
               "title": "ACCESS-CONTROL.LOGICAL — Logical access provisioning and least privilege",
               "description": "Logical access to systems and tenant data is granted through an authorized request, provisioned on the principle of least privilege, and recertified periodically; access rights are matched to a documented role rather than granted ad hoc.",
               "target": {
@@ -93,12 +93,12 @@
               },
               "related-observations": [
                 {
-                  "observation-uuid": "00000000-0000-4000-8000-000000000001"
+                  "observation-uuid": "00000000-0000-4000-8000-000000000002"
                 }
               ]
             },
             {
-              "uuid": "00000000-0000-4000-8000-000000000004",
+              "uuid": "00000000-0000-4000-8000-000000000005",
               "title": "AUDIT.IMMUTABLE-LOG — Immutable, hash-chained audit log",
               "description": "Security-relevant events are written to an append-only, hash-chained log that cannot be altered or deleted after the fact; integrity is verifiable against a trusted anchor so tampering, truncation, or rewriting is detectable.",
               "target": {
@@ -110,12 +110,12 @@
               },
               "related-observations": [
                 {
-                  "observation-uuid": "00000000-0000-4000-8000-000000000003"
+                  "observation-uuid": "00000000-0000-4000-8000-000000000004"
                 }
               ]
             },
             {
-              "uuid": "00000000-0000-4000-8000-000000000006",
+              "uuid": "00000000-0000-4000-8000-000000000007",
               "title": "DATA-PROTECTION.DISPOSAL — Secure retention and disposal of confidential data",
               "description": "Confidential data is retained only as long as required and then disposed of so that it is rendered unrecoverable; for encrypted data, destruction of the governing key (crypto-shred) is an accepted disposal mechanism.",
               "target": {
@@ -127,23 +127,44 @@
               },
               "related-observations": [
                 {
-                  "observation-uuid": "00000000-0000-4000-8000-000000000005"
+                  "observation-uuid": "00000000-0000-4000-8000-000000000006"
                 }
               ]
             }
           ]
         }
-      ]
+      ],
+      "back-matter": {
+        "resources": [
+          {
+            "uuid": "00000000-0000-4000-8000-000000000001",
+            "title": "Caisson canonical assessment plan — SOC 2 — Trust Services Criteria",
+            "props": [
+              {
+                "name": "type",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "assessment-plan"
+              }
+            ],
+            "rlinks": [
+              {
+                "href": "https://caisson.sh/oscal/assessment-plan/soc2-tsc.json",
+                "media-type": "application/oscal-assessment-plan+json"
+              }
+            ]
+          }
+        ]
+      }
     }
   },
   "planOfActionAndMilestones": {
     "plan-of-action-and-milestones": {
-      "uuid": "00000000-0000-4000-8000-000000000009",
+      "uuid": "00000000-0000-4000-8000-000000000010",
       "metadata": {
         "title": "Plan of Action and Milestones — SOC 2 — Trust Services Criteria",
         "last-modified": "2026-06-27T12:00:00.000Z",
         "version": "2024.1",
-        "oscal-version": "1.1.3",
+        "oscal-version": "1.2.2",
         "props": [
           {
             "name": "caisson-readiness-posture",

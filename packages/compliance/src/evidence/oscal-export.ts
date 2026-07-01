@@ -30,11 +30,24 @@ import { randomUUID } from "node:crypto";
 import { ValidationError } from "@caisson/kernel";
 import type { EvidencePackManifest, ManifestControl } from "./pack-format.ts";
 
-/** The OSCAL model version these bodies are authored against (NIST OSCAL JSON, csrc.nist.gov/ns/oscal). */
-export const OSCAL_VERSION = "1.1.3" as const;
+/**
+ * The OSCAL model version these bodies are authored against (NIST OSCAL JSON, csrc.nist.gov/ns/oscal).
+ * Locked to v1.2.2 (NIST's latest stable, 2026-04-30) by ADR-0179 — the single `oscal-cli validate`
+ * conformance target. A FedRAMP-package buyer down-converts (the 1.0.4 dual-target mode is not built).
+ */
+export const OSCAL_VERSION = "1.2.2" as const;
 
 /** The Caisson property/extension namespace stamped on OSCAL `prop`/`link` extensions. */
 const CAISSON_OSCAL_NS = "https://caisson.sh/ns/oscal";
+
+/**
+ * The canonical Caisson-hosted per-framework Assessment-Plan (AP) artifact URL (ADR-0179). Instead of a
+ * bare, dangling `#local-fragment`, `import-ap` resolves to a back-matter resource whose `rlink` points
+ * at this stable per-framework AP — so the exported SAR is complete + importable without buyer wiring.
+ */
+export function caissonAssessmentPlanUrl(frameworkId: string): string {
+  return `https://caisson.sh/oscal/assessment-plan/${frameworkId}.json`;
+}
 
 const SHA256_HEX = /^[0-9a-f]{64}$/;
 
@@ -120,12 +133,31 @@ interface OscalImportAp {
   readonly href: string;
 }
 
+/** A remote link on a back-matter resource — the resolvable location of the referenced artifact. */
+interface OscalRlink {
+  readonly href: string;
+  readonly "media-type"?: string;
+}
+
+/** One back-matter resource — a referenced artifact (here, the canonical per-framework AP; ADR-0179). */
+interface OscalBackMatterResource {
+  readonly uuid: string;
+  readonly title: string;
+  readonly props?: readonly OscalProp[];
+  readonly rlinks: readonly OscalRlink[];
+}
+
+interface OscalBackMatter {
+  readonly resources: readonly OscalBackMatterResource[];
+}
+
 /** The SAR body (root `assessment-results`). */
 export interface OscalAssessmentResults {
   readonly uuid: string;
   readonly metadata: OscalMetadata;
   readonly "import-ap": OscalImportAp;
   readonly results: readonly OscalResult[];
+  readonly "back-matter"?: OscalBackMatter;
 }
 
 /** A SAR document — the OSCAL file root wraps the body under its model key. */
@@ -176,7 +208,11 @@ export interface OscalExportOptions {
   readonly now: Date;
   /** OSCAL UUID source. Defaults to `crypto.randomUUID`; a fixed sequence makes the output deterministic. */
   readonly newId?: () => string;
-  /** `import-ap` href for the SAR — the assessment-plan it realizes. Un-wired default is a local fragment. */
+  /**
+   * `import-ap` href for the SAR. When omitted (the default), `import-ap` resolves to a shipped
+   * back-matter resource that rlinks the canonical Caisson per-framework AP (ADR-0179). Supply this to
+   * point at a buyer-hosted assessment plan instead — then no Caisson AP back-matter resource is emitted.
+   */
   readonly assessmentPlanHref?: string;
   /** Optional provenance: the T13 evidence-pack archive SHA-256 (recorded as a `prop`). Must be 64-hex. */
   readonly packSha256?: string;
@@ -258,6 +294,35 @@ export function toOscalAssessmentResults(
   const lastModified = resolveNow(options);
   const newId = options.newId ?? randomUUID;
 
+  // ADR-0179: resolve `import-ap` to a shipped, canonical per-framework AP fragment — a back-matter
+  // resource `#uuid` (resolvable in-document) whose rlink points at the stable Caisson AP artifact —
+  // rather than a bare, dangling local fragment. A buyer-supplied href overrides + ships no AP resource.
+  let importApHref: string;
+  let backMatter: OscalBackMatter | undefined;
+  if (options.assessmentPlanHref !== undefined) {
+    importApHref = options.assessmentPlanHref;
+  } else {
+    const apResourceUuid = newId();
+    importApHref = `#${apResourceUuid}`;
+    backMatter = {
+      resources: [
+        {
+          uuid: apResourceUuid,
+          title: `Caisson canonical assessment plan — ${manifest.framework.title}`,
+          props: [
+            { name: "type", ns: CAISSON_OSCAL_NS, value: "assessment-plan" },
+          ],
+          rlinks: [
+            {
+              href: caissonAssessmentPlanUrl(manifest.framework.id),
+              "media-type": "application/oscal-assessment-plan+json",
+            },
+          ],
+        },
+      ],
+    };
+  }
+
   const observations: OscalObservation[] = [];
   const findings: OscalFinding[] = [];
   for (const control of manifest.controls) {
@@ -320,10 +385,9 @@ export function toOscalAssessmentResults(
         lastModified,
         options,
       ),
-      "import-ap": {
-        href: options.assessmentPlanHref ?? "#caisson-assessment-plan",
-      },
+      "import-ap": { href: importApHref },
       results: [result],
+      ...(backMatter !== undefined ? { "back-matter": backMatter } : {}),
     },
   };
 }

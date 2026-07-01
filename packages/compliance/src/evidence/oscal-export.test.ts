@@ -178,7 +178,14 @@ describe("toOscalAssessmentResults — SAR mapping", () => {
     expect(sar.metadata["last-modified"]).toBe(NOW.toISOString());
     expect(sar.metadata.version).toBe("2024.1");
     expect(sar.metadata.title).toContain("Security Assessment Results");
-    expect(sar["import-ap"].href).toBe("#caisson-assessment-plan");
+    // ADR-0179: import-ap resolves to a shipped back-matter AP resource (not a bare dangling fragment).
+    expect(sar["import-ap"].href).toMatch(/^#[0-9a-f-]{36}$/i);
+    const resources = req(sar["back-matter"], "back-matter").resources;
+    const apResource = req(resources[0], "ap resource");
+    expect(`#${apResource.uuid}`).toBe(sar["import-ap"].href);
+    expect(apResource.rlinks[0]?.href).toBe(
+      "https://caisson.sh/oscal/assessment-plan/soc2-tsc.json",
+    );
   });
 
   test("one finding per control with objective status derived from readiness", () => {

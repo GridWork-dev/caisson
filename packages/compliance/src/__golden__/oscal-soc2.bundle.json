@@ -1,0 +1,189 @@
+{
+  "assessmentResults": {
+    "assessment-results": {
+      "uuid": "00000000-0000-4000-8000-000000000007",
+      "metadata": {
+        "title": "Security Assessment Results — SOC 2 — Trust Services Criteria",
+        "last-modified": "2026-06-28T00:00:00.000Z",
+        "version": "2024.1",
+        "oscal-version": "1.2.2",
+        "props": [
+          {
+            "name": "caisson-readiness-posture",
+            "ns": "https://caisson.sh/ns/oscal",
+            "value": "1 of 2 controls evidence-ready; 1 gap recorded as a remediation item."
+          }
+        ],
+        "links": [
+          {
+            "href": "urn:caisson:audit-chain:0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d",
+            "rel": "caisson-audit-chain-anchor",
+            "text": "Audit-chain anchor (length 128)"
+          }
+        ]
+      },
+      "import-ap": {
+        "href": "#00000000-0000-4000-8000-000000000001"
+      },
+      "results": [
+        {
+          "uuid": "00000000-0000-4000-8000-000000000006",
+          "title": "Control evidence assessment — SOC 2 — Trust Services Criteria",
+          "description": "1 of 2 controls evidence-ready; 1 gap recorded as a remediation item.",
+          "start": "2026-06-28T00:00:00.000Z",
+          "reviewed-controls": {
+            "control-selections": [
+              {
+                "include-all": {}
+              }
+            ]
+          },
+          "props": [
+            {
+              "name": "caisson-readiness-posture",
+              "ns": "https://caisson.sh/ns/oscal",
+              "value": "1 of 2 controls evidence-ready; 1 gap recorded as a remediation item."
+            }
+          ],
+          "observations": [
+            {
+              "uuid": "00000000-0000-4000-8000-000000000002",
+              "title": "AUDIT.IMMUTABLE-LOG / substrate.chain-verify",
+              "description": "the 128-entry chain verifies against its anchor",
+              "methods": [
+                "EXAMINE"
+              ],
+              "collected": "2026-06-28T00:00:00.000Z"
+            },
+            {
+              "uuid": "00000000-0000-4000-8000-000000000004",
+              "title": "DATA-PROTECTION.TENANT-ISOLATION / substrate.rls-force",
+              "description": "one tenant table is missing a FORCE RLS policy",
+              "methods": [
+                "EXAMINE"
+              ],
+              "collected": "2026-06-28T00:00:00.000Z"
+            }
+          ],
+          "findings": [
+            {
+              "uuid": "00000000-0000-4000-8000-000000000003",
+              "title": "AUDIT.IMMUTABLE-LOG — Immutable audit log",
+              "description": "Security-relevant events are written to an append-only, hash-chained log anchored in WORM storage.",
+              "target": {
+                "type": "objective-id",
+                "target-id": "AUDIT.IMMUTABLE-LOG",
+                "status": {
+                  "state": "satisfied"
+                }
+              },
+              "related-observations": [
+                {
+                  "observation-uuid": "00000000-0000-4000-8000-000000000002"
+                }
+              ]
+            },
+            {
+              "uuid": "00000000-0000-4000-8000-000000000005",
+              "title": "DATA-PROTECTION.TENANT-ISOLATION — Row-level tenant isolation",
+              "description": "Every tenant-scoped table enforces FORCE row-level security so no role can read another tenant's rows.",
+              "target": {
+                "type": "objective-id",
+                "target-id": "DATA-PROTECTION.TENANT-ISOLATION",
+                "status": {
+                  "state": "not-satisfied",
+                  "reason": "substrate.rls-force: table \"legacy_export\" has RLS enabled but not FORCEd; a table owner could bypass the policy"
+                }
+              },
+              "related-observations": [
+                {
+                  "observation-uuid": "00000000-0000-4000-8000-000000000004"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "back-matter": {
+        "resources": [
+          {
+            "uuid": "00000000-0000-4000-8000-000000000001",
+            "title": "Caisson canonical assessment plan — SOC 2 — Trust Services Criteria",
+            "props": [
+              {
+                "name": "type",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "assessment-plan"
+              }
+            ],
+            "rlinks": [
+              {
+                "href": "https://caisson.sh/oscal/assessment-plan/soc2-tsc.json",
+                "media-type": "application/oscal-assessment-plan+json"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "planOfActionAndMilestones": {
+    "plan-of-action-and-milestones": {
+      "uuid": "00000000-0000-4000-8000-000000000010",
+      "metadata": {
+        "title": "Plan of Action and Milestones — SOC 2 — Trust Services Criteria",
+        "last-modified": "2026-06-28T00:00:00.000Z",
+        "version": "2024.1",
+        "oscal-version": "1.2.2",
+        "props": [
+          {
+            "name": "caisson-readiness-posture",
+            "ns": "https://caisson.sh/ns/oscal",
+            "value": "1 of 2 controls evidence-ready; 1 gap recorded as a remediation item."
+          }
+        ],
+        "links": [
+          {
+            "href": "urn:caisson:audit-chain:0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d",
+            "rel": "caisson-audit-chain-anchor",
+            "text": "Audit-chain anchor (length 128)"
+          }
+        ]
+      },
+      "system-id": {
+        "identifier-type": "https://caisson.sh/ns/tenant",
+        "id": "tenant-acme-prod"
+      },
+      "props": [
+        {
+          "name": "caisson-readiness-posture",
+          "ns": "https://caisson.sh/ns/oscal",
+          "value": "1 of 2 controls evidence-ready; 1 gap recorded as a remediation item."
+        }
+      ],
+      "observations": [
+        {
+          "uuid": "00000000-0000-4000-8000-000000000008",
+          "title": "DATA-PROTECTION.TENANT-ISOLATION / substrate.rls-force",
+          "description": "table \"legacy_export\" has RLS enabled but not FORCEd; a table owner could bypass the policy",
+          "methods": [
+            "EXAMINE"
+          ],
+          "collected": "2026-06-28T00:00:00.000Z"
+        }
+      ],
+      "poam-items": [
+        {
+          "uuid": "00000000-0000-4000-8000-000000000009",
+          "title": "DATA-PROTECTION.TENANT-ISOLATION — Row-level tenant isolation",
+          "description": "Remediation required for DATA-PROTECTION.TENANT-ISOLATION: substrate.rls-force: table \"legacy_export\" has RLS enabled but not FORCEd; a table owner could bypass the policy",
+          "related-observations": [
+            {
+              "observation-uuid": "00000000-0000-4000-8000-000000000008"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
