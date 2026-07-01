@@ -79,11 +79,12 @@ describe("derived route slices", () => {
     expect(lf?.navLabel).toBe("Local-first");
   });
 
-  test("LEGAL_ROUTES are the three legal pages", () => {
+  test("LEGAL_ROUTES are the four legal pages", () => {
     expect(LEGAL_ROUTES.map((r) => r.path)).toEqual([
       "/legal/privacy",
       "/legal/terms",
       "/legal/license",
+      "/legal/eula",
     ]);
     expect(LEGAL_ROUTES.every((r) => r.group === "legal")).toBe(true);
   });
