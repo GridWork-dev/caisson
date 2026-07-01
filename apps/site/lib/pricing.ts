@@ -51,7 +51,7 @@ export const EDITION_PRICES: readonly PriceAnchor[] = [
     label: "Compliance",
     amount: 749,
     unit: "once",
-    from: true,
+    from: false,
     note: "Own the source. Fail-closed RLS, WORM, audit chain, evidence packs.",
   },
   {
@@ -59,7 +59,7 @@ export const EDITION_PRICES: readonly PriceAnchor[] = [
     label: "AI Production Kit",
     amount: 599,
     unit: "once",
-    from: true,
+    from: false,
     note: "The production-rigor layer cheap AI boilerplate skips.",
   },
   {
@@ -67,7 +67,7 @@ export const EDITION_PRICES: readonly PriceAnchor[] = [
     label: "Agentic-Dev",
     amount: 249,
     unit: "once",
-    from: true,
+    from: false,
     note: "The governed-agent kernel — typed agent/skill/rule schema, a guarded lifecycle, and a hooks dispatcher.",
   },
   {
@@ -75,7 +75,7 @@ export const EDITION_PRICES: readonly PriceAnchor[] = [
     label: "Local-first AI",
     amount: 349,
     unit: "once",
-    from: true,
+    from: false,
     note: "Own the source. On-device inference, a privacy gate, and vector search — your data never leaves the device.",
   },
 ] as const;
