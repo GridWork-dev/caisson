@@ -87,11 +87,39 @@ function latestManifest(
   return version.manifest;
 }
 
-/** Every module whose `editions[]` contains `edition` (index-derived membership). */
+/**
+ * The member-module ids of `edition` (index-derived, ADR-0071/0077). Two membership sources, unioned:
+ *
+ *   (1) a module that SELF-DECLARES membership in its own manifest `editions[]` (the legacy/fixture
+ *       path); AND
+ *   (2) the edition META-package's frozen `members` map (ADR-0077) — the AUTHORITATIVE composition.
+ *       In the real catalog an edition's commercial member modules (field-crypto, audit-worm, ai-meter,
+ *       …) carry `editions[] === []` in their OWN manifest — they do NOT self-declare — so (1) alone
+ *       returns only the edition meta-package itself. Once the free-view floor is Apache-only
+ *       (`baseModuleIds`), an edition license carrying just its sentinel (`["compliance"]`) would then
+ *       no longer deliver those commercial members. Reading the meta-package's `members` map fixes that
+ *       in the EXPANSION/DATA, with no license re-issue and no member-manifest/ledger edit.
+ *
+ * Guarded by the allowlist: a members-map id must be an indexed module to be granted (fail-closed,
+ * index-derived — a stale/phantom pin can never grant a non-existent module; the full-tree pin test
+ * already forbids stale pins). Apache base ids that appear in a members map (kernel, tenancy-rls) are
+ * harmless — they are already the free floor. This never widens the FREE view: an edition's members are
+ * granted only to a caller holding that edition's entitlement, never to the anonymous base floor.
+ */
 function membersOfEdition(index: RegistryIndex, edition: Edition): string[] {
-  return index.modules
-    .filter((m) => latestManifest(m).editions.includes(edition))
-    .map((m) => m.id);
+  const allow = moduleAllowlist(index);
+  const members = new Set<string>();
+  for (const m of index.modules) {
+    const manifest = latestManifest(m);
+    if (manifest.editions.includes(edition)) members.add(m.id); // (1) self-declared
+    // (2) the edition META-package for THIS edition contributes its frozen `members` map (ADR-0077).
+    if (manifest.kind === "edition" && manifest.editions.includes(edition)) {
+      for (const memberId of Object.keys(manifest.members)) {
+        if (allow.has(memberId)) members.add(memberId);
+      }
+    }
+  }
+  return [...members];
 }
 
 /** The base = every module scoped to no edition (`editions[] === []`) — ships with every edition. */
