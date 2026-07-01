@@ -164,6 +164,28 @@ describe("HTTP transport binding (ADR-0161)", () => {
     });
   });
 
+  test("an oversized POST body is rejected 400 before the SDK's uncapped JSON.parse (DoS b719aff8)", async () => {
+    const { server, url } = await listen();
+    openServers.push(server);
+
+    // > MAX_BODY_BYTES (256 KiB): the handler stops accumulating and rejects with a client 400
+    // before the body is fully buffered or JSON-parsed on the shared event loop. Auth is valid, so
+    // this proves the cap fires AFTER auth but BEFORE the transport's own uncapped read.
+    const res = await fetchWithTimeout(url, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        accept: "application/json, text/event-stream",
+        authorization: `Bearer ${TOKEN_A}`,
+      },
+      body: "a".repeat(300 * 1024),
+    });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({
+      error: { code: "validation_error" },
+    });
+  });
+
   test("an invalid bearer: 401, before any tool is reachable", async () => {
     const { server, url } = await listen();
     openServers.push(server);
