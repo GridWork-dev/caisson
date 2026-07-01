@@ -90,7 +90,7 @@ export function LoginForm({
             padding: "var(--cs-space-3)",
             borderRadius: "var(--cs-radius-md)",
             border: "1px solid var(--cs-border)",
-            background: "var(--cs-surface)",
+            background: "var(--cs-surface-1)",
             color: "var(--cs-fg)",
             fontSize: "var(--cs-text-base)",
           }}
