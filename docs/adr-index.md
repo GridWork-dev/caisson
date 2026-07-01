@@ -399,6 +399,20 @@ observability; implementation is post-Stage-1, spec-gated.
 
 ---
 
+### Stage-2 Stream C — edition + AI hardening & drivers (0160-0162, 2026-07-01) - status `accepted`
+
+Adapter/transport/BYOK expansion behind already-locked ports (reserved range 0160-0169; SPEC
+`outputs/specs/stream-c-edition-hardening/SPEC.md`). Board/index cross-stream reconcile is
+integration-owned.
+
+| #                                                                        | Title                                                 | Domain        | Status   | Relations                                        |
+| ------------------------------------------------------------------------ | ----------------------------------------------------- | ------------- | -------- | ------------------------------------------------ |
+| [0160](../knowledge/decisions/ADR-0160-ai-inference-driver-expansion.md) | AI inference drivers: Bedrock · Azure OpenAI · Ollama | AI/Adapters   | accepted | extends 0059/0011; realizes adapter-expansion 2C |
+| [0161](../knowledge/decisions/ADR-0161-mcp-streamable-http-transport.md) | MCP Streamable-HTTP remote transport (beside stdio)   | MCP/Transport | accepted | implements 0008/0112; unblocked by 0110/0113     |
+| [0162](../knowledge/decisions/ADR-0162-per-tenant-encrypted-byok.md)     | Per-tenant encrypted BYOK for AI lanes                | AI/Security   | accepted | amends 0011; composes 0043/0045/0046/0005        |
+
+---
+
 ## Accepted is not the same as shipped
 
 An ADR status of `accepted`/`locked`/`proposed` records a **locked decision**, not a built
