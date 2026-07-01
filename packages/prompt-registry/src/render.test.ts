@@ -8,6 +8,7 @@ import { matchGolden } from "@caisson/testing";
 import { ValidationError } from "@caisson/kernel";
 import {
   buildVarSchema,
+  MAX_CONTENT_LENGTH,
   promptMessagesSchema,
   renderPrompt,
   type PromptMessage,
@@ -94,5 +95,31 @@ describe("renderPrompt — strict variable schema", () => {
     const schema = buildVarSchema({ a: "string" });
     expect(schema.safeParse({ a: "ok" }).success).toBe(true);
     expect(schema.safeParse({ a: "ok", b: "no" }).success).toBe(false);
+  });
+});
+
+describe("renderPrompt — per-value content cap", () => {
+  const tmpl: PromptMessage[] = [{ role: "user", content: "Hi {{name}}" }];
+  const s: VarSpec = { name: "string" };
+
+  test("a normal value renders unchanged", () => {
+    const out = renderPrompt(tmpl, s, { name: "Ada" });
+    expect(out[0]?.content).toBe("Hi Ada");
+  });
+
+  test("a single rawVars value over the content cap is rejected at the boundary", () => {
+    const oversized = "x".repeat(MAX_CONTENT_LENGTH + 1);
+    expect(() => renderPrompt(tmpl, s, { name: oversized })).toThrow(
+      ValidationError,
+    );
+  });
+
+  test("a value at the cap that inflates past it once escaped is rejected", () => {
+    // Each `{` escapes to `\{` (doubles in length), so a value entirely of brace characters
+    // stays within the per-value cap but blows the rendered total past the same cap.
+    const braceHeavy = "{".repeat(MAX_CONTENT_LENGTH);
+    expect(() => renderPrompt(tmpl, s, { name: braceHeavy })).toThrow(
+      ValidationError,
+    );
   });
 });
