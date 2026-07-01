@@ -1,0 +1,226 @@
+{
+  "assessmentResults": {
+    "assessment-results": {
+      "uuid": "00000000-0000-4000-8000-000000000009",
+      "metadata": {
+        "title": "Security Assessment Results — HIPAA Security Rule",
+        "last-modified": "2026-06-28T00:00:00.000Z",
+        "version": "2024.1",
+        "oscal-version": "1.2.2",
+        "props": [
+          {
+            "name": "caisson-readiness-posture",
+            "ns": "https://caisson.sh/ns/oscal",
+            "value": "2 of 3 controls evidence-ready; 1 gap recorded as a remediation item."
+          }
+        ],
+        "links": [
+          {
+            "href": "urn:caisson:audit-chain:0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d",
+            "rel": "caisson-audit-chain-anchor",
+            "text": "Audit-chain anchor (length 128)"
+          }
+        ]
+      },
+      "import-ap": {
+        "href": "#00000000-0000-4000-8000-000000000001"
+      },
+      "results": [
+        {
+          "uuid": "00000000-0000-4000-8000-000000000008",
+          "title": "Control evidence assessment — HIPAA Security Rule",
+          "description": "2 of 3 controls evidence-ready; 1 gap recorded as a remediation item.",
+          "start": "2026-06-28T00:00:00.000Z",
+          "reviewed-controls": {
+            "control-selections": [
+              {
+                "include-all": {}
+              }
+            ]
+          },
+          "props": [
+            {
+              "name": "caisson-readiness-posture",
+              "ns": "https://caisson.sh/ns/oscal",
+              "value": "2 of 3 controls evidence-ready; 1 gap recorded as a remediation item."
+            }
+          ],
+          "observations": [
+            {
+              "uuid": "00000000-0000-4000-8000-000000000002",
+              "title": "AUDIT.IMMUTABLE-LOG / substrate.chain-verify",
+              "description": "the 128-entry chain verifies against its anchor",
+              "methods": [
+                "EXAMINE"
+              ],
+              "collected": "2026-06-28T00:00:00.000Z"
+            },
+            {
+              "uuid": "00000000-0000-4000-8000-000000000004",
+              "title": "ACCESS-CONTROL.PHI-ISOLATION / substrate.rls-force",
+              "description": "one tenant table is missing a FORCE RLS policy",
+              "methods": [
+                "EXAMINE"
+              ],
+              "collected": "2026-06-28T00:00:00.000Z"
+            },
+            {
+              "uuid": "00000000-0000-4000-8000-000000000006",
+              "title": "DATA-PROTECTION.PHI-ENCRYPTION / substrate.field-crypto-policy",
+              "description": "all 2 PHI fields are encrypted at rest (AES-256-GCM field-crypto envelope)",
+              "methods": [
+                "EXAMINE"
+              ],
+              "collected": "2026-06-28T00:00:00.000Z"
+            }
+          ],
+          "findings": [
+            {
+              "uuid": "00000000-0000-4000-8000-000000000003",
+              "title": "AUDIT.IMMUTABLE-LOG — Immutable audit log",
+              "description": "Security-relevant events are written to an append-only, hash-chained log anchored in WORM storage.",
+              "target": {
+                "type": "objective-id",
+                "target-id": "AUDIT.IMMUTABLE-LOG",
+                "status": {
+                  "state": "satisfied"
+                }
+              },
+              "related-observations": [
+                {
+                  "observation-uuid": "00000000-0000-4000-8000-000000000002"
+                }
+              ]
+            },
+            {
+              "uuid": "00000000-0000-4000-8000-000000000005",
+              "title": "ACCESS-CONTROL.PHI-ISOLATION — Row-level tenant isolation",
+              "description": "Every tenant-scoped table enforces FORCE row-level security so no role can read another tenant's rows.",
+              "target": {
+                "type": "objective-id",
+                "target-id": "ACCESS-CONTROL.PHI-ISOLATION",
+                "status": {
+                  "state": "not-satisfied",
+                  "remarks": "substrate.rls-force: table \"legacy_export\" has RLS enabled but not FORCEd; a table owner could bypass the policy"
+                }
+              },
+              "related-observations": [
+                {
+                  "observation-uuid": "00000000-0000-4000-8000-000000000004"
+                }
+              ]
+            },
+            {
+              "uuid": "00000000-0000-4000-8000-000000000007",
+              "title": "DATA-PROTECTION.PHI-ENCRYPTION — PHI encryption at rest",
+              "description": "Electronic PHI is encrypted at rest with per-tenant authenticated (AES-256-GCM) field encryption.",
+              "target": {
+                "type": "objective-id",
+                "target-id": "DATA-PROTECTION.PHI-ENCRYPTION",
+                "status": {
+                  "state": "satisfied"
+                }
+              },
+              "related-observations": [
+                {
+                  "observation-uuid": "00000000-0000-4000-8000-000000000006"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "back-matter": {
+        "resources": [
+          {
+            "uuid": "00000000-0000-4000-8000-000000000001",
+            "title": "Caisson canonical assessment plan — HIPAA Security Rule",
+            "props": [
+              {
+                "name": "type",
+                "ns": "https://caisson.sh/ns/oscal",
+                "value": "assessment-plan"
+              }
+            ],
+            "rlinks": [
+              {
+                "href": "https://caisson.sh/oscal/assessment-plan/hipaa-security.json",
+                "media-type": "application/oscal-assessment-plan+json"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "planOfActionAndMilestones": {
+    "plan-of-action-and-milestones": {
+      "uuid": "00000000-0000-4000-8000-000000000014",
+      "metadata": {
+        "title": "Plan of Action and Milestones — HIPAA Security Rule",
+        "last-modified": "2026-06-28T00:00:00.000Z",
+        "version": "2024.1",
+        "oscal-version": "1.2.2",
+        "props": [
+          {
+            "name": "caisson-readiness-posture",
+            "ns": "https://caisson.sh/ns/oscal",
+            "value": "2 of 3 controls evidence-ready; 1 gap recorded as a remediation item."
+          }
+        ],
+        "links": [
+          {
+            "href": "urn:caisson:audit-chain:0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d0a1b2c3d",
+            "rel": "caisson-audit-chain-anchor",
+            "text": "Audit-chain anchor (length 128)"
+          }
+        ]
+      },
+      "system-id": {
+        "identifier-type": "https://caisson.sh/ns/tenant",
+        "id": "tenant-acme-prod"
+      },
+      "observations": [
+        {
+          "uuid": "00000000-0000-4000-8000-000000000010",
+          "title": "AUDIT.IMMUTABLE-LOG / substrate.chain-verify",
+          "description": "the 128-entry chain verifies against its anchor",
+          "methods": [
+            "EXAMINE"
+          ],
+          "collected": "2026-06-28T00:00:00.000Z"
+        },
+        {
+          "uuid": "00000000-0000-4000-8000-000000000011",
+          "title": "ACCESS-CONTROL.PHI-ISOLATION / substrate.rls-force",
+          "description": "table \"legacy_export\" has RLS enabled but not FORCEd; a table owner could bypass the policy",
+          "methods": [
+            "EXAMINE"
+          ],
+          "collected": "2026-06-28T00:00:00.000Z"
+        },
+        {
+          "uuid": "00000000-0000-4000-8000-000000000013",
+          "title": "DATA-PROTECTION.PHI-ENCRYPTION / substrate.field-crypto-policy",
+          "description": "all 2 PHI fields are encrypted at rest (AES-256-GCM field-crypto envelope)",
+          "methods": [
+            "EXAMINE"
+          ],
+          "collected": "2026-06-28T00:00:00.000Z"
+        }
+      ],
+      "poam-items": [
+        {
+          "uuid": "00000000-0000-4000-8000-000000000012",
+          "title": "ACCESS-CONTROL.PHI-ISOLATION — Row-level tenant isolation",
+          "description": "Remediation required for ACCESS-CONTROL.PHI-ISOLATION: substrate.rls-force: table \"legacy_export\" has RLS enabled but not FORCEd; a table owner could bypass the policy",
+          "related-observations": [
+            {
+              "observation-uuid": "00000000-0000-4000-8000-000000000011"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

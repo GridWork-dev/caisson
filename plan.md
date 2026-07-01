@@ -139,12 +139,28 @@ started · `ROADMAP` = post-v1, no code.
 - **Exit:** a real purchase grants access + license + credits; the bot answers from the codebase
   and escalates a tagged ticket with an AI brief; docs feed both bot + buyer agents.
 
-## P7+ — Round-out (roadmap)
+## P7+ — Round-out
 
-> **STATUS: ROADMAP.** Post-v1; no code.
+> **STATUS: SPLIT (operator picker 2026-07-01).** Three items pulled into the **pre-launch**
+> sellable-surface roadmap; the rest stays post-v1. Pulled items are spec-gated — SPEC/ADR locked
+> before code, same cadence as edition-seam-completion.
 
-Compliance vertical packs (legal-doc, fin-ops, certified-payroll, EU-AI-Act Annex-IV) · AI-feature
-packs · local-first verticals · the module marketplace (per-module commerce at scale).
+**Pulled to pre-launch (spec next, alongside the lift phase):**
+
+- **EU-AI-Act Annex-IV compliance vertical pack** — shortest hop off the just-shipped OSCAL v1.2.2 +
+  EU-AI-Act framework/collector (ADR-0179/0181); a demoable vertical for the hero compliance edition.
+- **OSCAL push** — the ingest/delivery side of the export the seam build just built (export → live
+  GRC-platform push/pull); scope + target fork to be surfaced. **Includes** finishing the OSCAL
+  attestation-wizard seam (operator picker 2026-07-01): the compliance-leg endpoint that turns the
+  wizard's filled `manualSlots[]` into a validate-conformant SAR+POA&M pack (JSON+XML) the buyer can
+  download — apps/site ships the slot-fill half today; the pack-gen half lands here.
+- **Module marketplace** — per-module commerce at scale (browse/discover), extending the existing
+  on-site cart + multi-item Paddle checkout.
+
+**Post-v1 (roadmap; no code):**
+
+- AI-feature packs · local-first verticals · the remaining compliance vertical packs (legal-doc,
+  fin-ops, certified-payroll).
 
 ## Cross-phase invariants (every task)
 

@@ -12,12 +12,34 @@ import {
   unresolvedResult,
   type EvidenceItem,
 } from "./collector.ts";
+import { ALG_AES_256_GCM, serializeEnvelope } from "@caisson/field-crypto";
 import { chainVerifyCollector } from "./collectors/chain-verify.ts";
 import {
   rlsForceCollector,
   type RlsTableFact,
 } from "./collectors/rls-force.ts";
 import { wormRetentionCollector } from "./collectors/worm-retention.ts";
+import { fieldCryptoPolicyCollector } from "./collectors/field-crypto-policy.ts";
+import {
+  aiRiskRegisterCollector,
+  type AiRiskEntryFact,
+} from "./collectors/ai-risk-register.ts";
+
+/** A valid AES-256-GCM field-crypto envelope (base64) — the shape a PHI field carries at rest. */
+function encryptedSample(): string {
+  return serializeEnvelope({
+    algId: ALG_AES_256_GCM,
+    keyVersion: 1,
+    nonce: Buffer.alloc(12, 7),
+    ciphertext: Buffer.from("phi-ciphertext"),
+    tag: Buffer.alloc(16, 9),
+  });
+}
+
+/** A managed (assessed + mitigated) AI risk-register entry. */
+function managedRisk(riskId: string, subject: string): AiRiskEntryFact {
+  return { riskId, subject, assessed: true, mitigated: true };
+}
 
 /** A minimal evidence item for exercising the result constructors directly. */
 function sampleItem(): EvidenceItem {
@@ -216,5 +238,99 @@ describe("wormRetentionCollector", () => {
     expect(r.status).toBe("unresolved");
     expect(r.item.facts.retainUntil).toBeNull();
     expect(r.reason).toContain("no retain_until");
+  });
+});
+
+describe("fieldCryptoPolicyCollector (HIPAA PHI encryption-at-rest)", () => {
+  const collector = fieldCryptoPolicyCollector();
+
+  test("passes when every PHI field is a valid AES-256-GCM envelope", () => {
+    const r = collector.collect({
+      fields: [
+        { field: "patient.ssn", storedValue: encryptedSample() },
+        { field: "patient.dob", storedValue: encryptedSample() },
+      ],
+    });
+    expect(r.status).toBe("pass");
+    expect(r.item.controlId).toBe("DATA-PROTECTION.PHI-ENCRYPTION");
+    expect(r.item.facts.encryptedCount).toBe(2);
+    expect(r.item.facts.plaintextFields).toEqual([]);
+  });
+
+  test("flags a PHI field stored in plaintext", () => {
+    const r = collector.collect({
+      fields: [
+        { field: "patient.ssn", storedValue: encryptedSample() },
+        { field: "patient.mrn", storedValue: "123-45-6789" },
+      ],
+    });
+    expect(r.status).toBe("flagged");
+    expect(r.item.facts.plaintextFields).toEqual(["patient.mrn"]);
+    expect(r.reason).toContain("patient.mrn");
+  });
+
+  test("is unresolved when a PHI field had no stored value to sample", () => {
+    const r = collector.collect({
+      fields: [
+        { field: "patient.ssn", storedValue: encryptedSample() },
+        { field: "patient.dob", storedValue: null },
+      ],
+    });
+    expect(r.status).toBe("unresolved");
+    expect(r.item.facts.unsampledFields).toEqual(["patient.dob"]);
+    expect(r.reason).toContain("patient.dob");
+  });
+
+  test("is unresolved when no PHI fields were inspected", () => {
+    const r = collector.collect({ fields: [] });
+    expect(r.status).toBe("unresolved");
+    expect(r.reason).toContain("no PHI encryption posture");
+  });
+
+  test("prefers flagging plaintext over an unsampled sibling", () => {
+    const r = collector.collect({
+      fields: [
+        { field: "patient.mrn", storedValue: "plaintext" },
+        { field: "patient.dob", storedValue: null },
+      ],
+    });
+    expect(r.status).toBe("flagged");
+    expect(r.item.facts.plaintextFields).toEqual(["patient.mrn"]);
+  });
+});
+
+describe("aiRiskRegisterCollector (EU AI Act Art. 9)", () => {
+  const collector = aiRiskRegisterCollector();
+
+  test("passes when every risk is assessed and mitigated", () => {
+    const r = collector.collect({
+      entries: [
+        managedRisk("R-1", "openai/gpt-4o lane"),
+        managedRisk("R-2", "anthropic/claude lane"),
+      ],
+    });
+    expect(r.status).toBe("pass");
+    expect(r.item.controlId).toBe("RISK-MANAGEMENT.AI-LIFECYCLE");
+    expect(r.item.facts.managedCount).toBe(2);
+    expect(r.item.facts.deficientRisks).toEqual([]);
+  });
+
+  test("flags an unassessed or unmitigated risk (deficient ids sorted)", () => {
+    const r = collector.collect({
+      entries: [
+        managedRisk("R-2", "lane-a"),
+        { riskId: "R-3", subject: "lane-b", assessed: true, mitigated: false },
+        { riskId: "R-1", subject: "lane-c", assessed: false, mitigated: false },
+      ],
+    });
+    expect(r.status).toBe("flagged");
+    expect(r.item.facts.deficientRisks).toEqual(["R-1", "R-3"]);
+    expect(r.reason).toContain("R-1");
+  });
+
+  test("is unresolved when the register is empty", () => {
+    const r = collector.collect({ entries: [] });
+    expect(r.status).toBe("unresolved");
+    expect(r.reason).toContain("no AI risk-register entries");
   });
 });

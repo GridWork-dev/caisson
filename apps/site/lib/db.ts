@@ -21,8 +21,10 @@ import { CREDIT_SCHEMA_SQL } from "@caisson/credits";
 import {
   type TenantExecutor,
   type Transactor,
+  buildTenantPolicySql,
   withTenant,
 } from "@caisson/tenancy-rls";
+import { TENANT_AI_CREDENTIAL_SCHEMA_SQL } from "@caisson/ai-kit";
 // Schema-only import — the DDL string constants, NOT services/license's query functions. apps/
 // site never calls into `@caisson/service-license`'s business logic; every dashboard read against
 // `entitlement_grant` / `license_grant` below is raw SQL written locally (the deliberately
@@ -46,6 +48,43 @@ DO $$ BEGIN
     CREATE ROLE app NOLOGIN;
   END IF;
 END $$;
+`;
+
+// App-owned, tenant-scoped (FORCE RLS) tables the dashboard writes directly. In production these are
+// created by the deploy migration path; the DDL here bootstraps the in-memory PGlite double for
+// `bun dev` / `bun test`.
+//
+// BYOK display metadata (ADR-0183) — holds NO secret: the encrypted key lives in ai-kit's
+// `tenant_ai_credential`; this table carries only the masked tail + version so the write-only edge
+// can render status without ever reading the key back.
+const BYOK_KEY_META_SCHEMA_SQL = `
+CREATE TABLE byok_key_meta (
+  id          text PRIMARY KEY,
+  account_id  text NOT NULL,
+  provider    text NOT NULL,
+  last4       text NOT NULL,
+  key_version integer NOT NULL,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  updated_at  timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (account_id, provider)
+);
+${buildTenantPolicySql("byok_key_meta")}
+`;
+
+// Compliance manual-attestation slots (ADR-0181) — a filled row = the human attested that slot for a
+// framework. Presence = filled; deletion = cleared. No secret; free-text note bounded at the edge.
+const COMPLIANCE_ATTESTATION_SCHEMA_SQL = `
+CREATE TABLE compliance_attestation (
+  id          text PRIMARY KEY,
+  account_id  text NOT NULL,
+  framework   text NOT NULL,
+  slot_id     text NOT NULL,
+  note        text NOT NULL DEFAULT '',
+  attested_by text NOT NULL,
+  attested_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (account_id, framework, slot_id)
+);
+${buildTenantPolicySql("compliance_attestation")}
 `;
 
 function nodePgExecutor(client: PoolClient): TenantExecutor {
@@ -105,6 +144,9 @@ async function bootstrapPglite(): Promise<PGlite> {
   await pg.exec(ENTITLEMENT_SCHEMA_SQL);
   await pg.exec(LICENSE_GRANT_SCHEMA_SQL);
   await pg.exec(AI_METER_SCHEMA_SQL);
+  await pg.exec(TENANT_AI_CREDENTIAL_SCHEMA_SQL);
+  await pg.exec(BYOK_KEY_META_SCHEMA_SQL);
+  await pg.exec(COMPLIANCE_ATTESTATION_SCHEMA_SQL);
   globalDb.caissonPglite = pg;
   return pg;
 }

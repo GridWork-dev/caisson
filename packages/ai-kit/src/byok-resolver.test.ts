@@ -3,7 +3,11 @@
 // client (TTL) so a repeat resolve skips the port. Error paths are fail-closed. No live model call.
 import { describe, expect, test } from "bun:test";
 import { parseAiSettings } from "@caisson/ai-config";
-import { buildByokResolver, type TenantKeyResolver } from "./byok-resolver.ts";
+import {
+  buildByokResolver,
+  laneKeySource,
+  type TenantKeyResolver,
+} from "./byok-resolver.ts";
 
 const settings = parseAiSettings({
   defaultLane: "env",
@@ -92,5 +96,15 @@ describe("buildByokResolver (ADR-0162)", () => {
       resolveTenantKey: async () => "k",
     });
     await expect(resolve("byokBedrock", "acct_1")).rejects.toThrow(/bedrock/);
+  });
+});
+
+describe("laneKeySource (ADR-0182 pricebook discriminator)", () => {
+  test("an env-pointer lane resolves to 'env'", () => {
+    expect(laneKeySource(settings, "env")).toBe("env");
+  });
+
+  test("a per-tenant (BYOK) lane resolves to 'tenant'", () => {
+    expect(laneKeySource(settings, "byok")).toBe("tenant");
   });
 });

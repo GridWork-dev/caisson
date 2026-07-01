@@ -11,11 +11,13 @@
     "test": "bun test ./lib"
   },
   "dependencies": {
+    "@caisson/ai-kit": "workspace:*",
     "@caisson/ai-meter": "workspace:*",
     "@caisson/auth": "workspace:*",
     "@caisson/billing": "workspace:*",
     "@caisson/credits": "workspace:*",
     "@caisson/email": "workspace:*",
+    "@caisson/field-crypto": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/migrate": "workspace:*",
     "@caisson/observability": "workspace:*",

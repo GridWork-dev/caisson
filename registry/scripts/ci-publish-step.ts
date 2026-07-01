@@ -103,7 +103,6 @@ export function findManifestPaths(
  */
 export async function loadManifest(path: string): Promise<ModuleManifest> {
   // Dynamic import; path is an absolute filesystem path resolved by the caller.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mod = (await import(path)) as { default: ModuleManifest };
   return mod.default;
 }

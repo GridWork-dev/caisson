@@ -28,7 +28,7 @@ export {
   parseActionBook,
   resolveActionCost,
 } from "./actions.ts";
-export type { ActionBook, ActionTag } from "./actions.ts";
+export type { ActionBook, ActionKeySource, ActionTag } from "./actions.ts";
 
 export {
   CREDIT_CONVERSION,

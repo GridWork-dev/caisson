@@ -1,0 +1,379 @@
+// src/evidence/oscal-conformance.test.ts — ADR-0181 (framework export) + ADR-0179 (v1.2.2 binding).
+//
+// The three built frameworks (SOC2-TSC / HIPAA-Security / EU-AI-Act) each get a schema-conformant OSCAL
+// export NOW: a deterministic golden fixture per framework (src/__golden__/oscal-<fw>.bundle.json) plus a
+// CI-SAFE JSON-schema-SHAPE assertion (UUID discipline, required metadata, resolvable import-ap + shipped
+// back-matter AP resource, related-observation referential integrity). This is the credless/Java-less
+// conformance floor that runs on every CI leg; the ground-truth `oscal-cli validate` round-trip
+// (oscal-export-xml.test.ts) skips when the external tool is absent. NEW collectors (HIPAA field-crypto,
+// EU-AI-Act risk-register) are a LATER phase — these fixtures exercise the framework-agnostic emitter.
+import { describe, expect, test } from "bun:test";
+import { matchGolden } from "@caisson/testing";
+import { ALG_AES_256_GCM, serializeEnvelope } from "@caisson/field-crypto";
+import {
+  parseEvidencePackManifest,
+  type EvidencePackManifest,
+} from "./pack-format.ts";
+import type { CollectorResult } from "./collector.ts";
+import { fieldCryptoPolicyCollector } from "./collectors/field-crypto-policy.ts";
+import { aiRiskRegisterCollector } from "./collectors/ai-risk-register.ts";
+import {
+  OSCAL_VERSION,
+  toOscalBundle,
+  type OscalExportBundle,
+  type OscalExportOptions,
+} from "./oscal-export.ts";
+
+const PKG_SRC_META = new URL("../index.ts", import.meta.url).href;
+const TIP = "0a1b2c3d".repeat(8);
+const GENESIS = "9f8e7d6c".repeat(8);
+const NOW = new Date("2026-06-28T00:00:00.000Z");
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+
+function req<T>(value: T | undefined, what: string): T {
+  if (value === undefined) throw new Error(`expected ${what} to be defined`);
+  return value;
+}
+
+/** A deterministic UUID source (a counter) — makes each export byte-stable for golden fixturing. */
+function counterIds(): () => string {
+  let n = 0;
+  return () => {
+    n += 1;
+    return `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+  };
+}
+
+function det(): OscalExportOptions {
+  return { now: NOW, newId: counterIds() };
+}
+
+/** A valid AES-256-GCM field-crypto envelope (base64) — the at-rest shape a PHI field carries. */
+const PHI_SAMPLE = serializeEnvelope({
+  algId: ALG_AES_256_GCM,
+  keyVersion: 1,
+  nonce: Buffer.alloc(12, 7),
+  ciphertext: Buffer.from("phi-ciphertext"),
+  tag: Buffer.alloc(16, 9),
+});
+
+/** A manifest control-input block. */
+interface ControlInput {
+  readonly controlId: string;
+  readonly title: string;
+  readonly family: string;
+  readonly statement: string;
+  readonly crosswalk: readonly never[];
+  readonly evidence: readonly {
+    readonly collectorId: string;
+    readonly title: string;
+    readonly summary: string;
+    readonly status: "pass" | "flagged";
+    readonly reason?: string;
+    readonly facts: Record<string, unknown>;
+    readonly manualSlots: readonly {
+      id: string;
+      label: string;
+      required: boolean;
+      filled: boolean;
+    }[];
+  }[];
+  readonly readiness: "ready" | "gap";
+}
+
+/** Map a real collector result into a manifest evidence-item input (drops nothing; edge-filled=false). */
+function evidenceFrom(
+  result: CollectorResult,
+): ControlInput["evidence"][number] {
+  return {
+    collectorId: result.item.collectorId,
+    title: result.item.title,
+    summary: result.item.summary,
+    status: result.status === "flagged" ? "flagged" : "pass",
+    ...(result.reason !== undefined ? { reason: result.reason } : {}),
+    facts: result.item.facts,
+    manualSlots: result.item.manualSlots.map((s) => ({
+      id: s.id,
+      label: s.label,
+      required: s.required,
+      filled: false,
+    })),
+  };
+}
+
+/** HIPAA §164.312 PHI encryption-at-rest control, evidenced by the real field-crypto collector. */
+function phiEncryptionControl(): ControlInput {
+  const result = fieldCryptoPolicyCollector().collect({
+    fields: [
+      { field: "patient.ssn", storedValue: PHI_SAMPLE },
+      { field: "patient.dob", storedValue: PHI_SAMPLE },
+    ],
+  });
+  return {
+    controlId: "DATA-PROTECTION.PHI-ENCRYPTION",
+    title: "PHI encryption at rest",
+    family: "Technical Safeguards",
+    statement:
+      "Electronic PHI is encrypted at rest with per-tenant authenticated (AES-256-GCM) field encryption.",
+    crosswalk: [],
+    evidence: [evidenceFrom(result)],
+    readiness: "ready",
+  };
+}
+
+/** EU-AI-Act Art. 9 risk-management control, evidenced by the real ai-risk-register collector. */
+function aiRiskRegisterControl(): ControlInput {
+  const result = aiRiskRegisterCollector({
+    controlId: "RISK-MANAGEMENT.AI-REGISTER",
+  }).collect({
+    entries: [
+      {
+        riskId: "R-1",
+        subject: "default lane (openai/gpt-4o)",
+        assessed: true,
+        mitigated: true,
+      },
+      {
+        riskId: "R-2",
+        subject: "vision lane (anthropic/claude)",
+        assessed: true,
+        mitigated: true,
+      },
+    ],
+  });
+  return {
+    controlId: "RISK-MANAGEMENT.AI-REGISTER",
+    title: "AI risk register maintained",
+    family: "Risk Management",
+    statement:
+      "A risk register enumerates each AI lane's risks; every entry is assessed and mitigated over the lifecycle.",
+    crosswalk: [],
+    evidence: [evidenceFrom(result)],
+    readiness: "ready",
+  };
+}
+
+/**
+ * Build a manifest for a framework: a ready audit control + a gap RLS control, plus any framework-specific
+ * extra controls (HIPAA → PHI field-crypto evidence, EU-AI-Act → risk-register evidence). Summary counts
+ * are derived from the assembled controls so extras never desync the honesty invariants.
+ */
+function manifestFor(
+  id: string,
+  title: string,
+  readyControlId: string,
+  gapControlId: string,
+  extra: readonly ControlInput[] = [],
+): EvidencePackManifest {
+  const controls: readonly ControlInput[] = [
+    {
+      controlId: readyControlId,
+      title: "Immutable audit log",
+      family: "Audit & Accountability",
+      statement:
+        "Security-relevant events are written to an append-only, hash-chained log anchored in WORM storage.",
+      crosswalk: [],
+      evidence: [
+        {
+          collectorId: "substrate.chain-verify",
+          title: "Audit chain verifies",
+          summary: "the 128-entry chain verifies against its anchor",
+          status: "pass",
+          facts: { entryCount: 128, valid: true },
+          manualSlots: [],
+        },
+      ],
+      readiness: "ready",
+    },
+    {
+      controlId: gapControlId,
+      title: "Row-level tenant isolation",
+      family: "Access Control",
+      statement:
+        "Every tenant-scoped table enforces FORCE row-level security so no role can read another tenant's rows.",
+      crosswalk: [],
+      evidence: [
+        {
+          collectorId: "substrate.rls-force",
+          title: "FORCE RLS posture",
+          summary: "one tenant table is missing a FORCE RLS policy",
+          status: "flagged",
+          reason:
+            'table "legacy_export" has RLS enabled but not FORCEd; a table owner could bypass the policy',
+          facts: { tablesMissingForce: 1 },
+          manualSlots: [],
+        },
+      ],
+      readiness: "gap",
+    },
+    ...extra,
+  ];
+  const controlsReady = controls.filter((c) => c.readiness === "ready").length;
+  const controlsWithGaps = controls.filter((c) => c.readiness === "gap").length;
+  const totalEvidenceItems = controls.reduce(
+    (n, c) => n + c.evidence.length,
+    0,
+  );
+  const gapWord = controlsWithGaps === 1 ? "gap" : "gaps";
+  const tail =
+    controlsWithGaps === 1 ? "a remediation item" : "remediation items";
+  return parseEvidencePackManifest({
+    formatVersion: "1",
+    tenantId: "tenant-acme-prod",
+    framework: { id, title, version: "2024.1" },
+    chainAnchor: { length: 128, tipHash: TIP, genesisHash: GENESIS },
+    controls,
+    summary: {
+      totalControls: controls.length,
+      controlsReady,
+      controlsWithGaps,
+      totalEvidenceItems,
+      posture: `${String(controlsReady)} of ${String(controls.length)} controls evidence-ready; ${String(controlsWithGaps)} ${gapWord} recorded as ${tail}.`,
+    },
+  });
+}
+
+interface FrameworkCase {
+  readonly slug: string;
+  readonly id: string;
+  readonly title: string;
+  readonly ready: string;
+  readonly gap: string;
+  /** Framework-specific extra controls (the new ADR-0181 collectors), appended to the base two. */
+  readonly extra?: readonly ControlInput[];
+}
+
+const FRAMEWORKS: readonly FrameworkCase[] = [
+  {
+    slug: "soc2",
+    id: "soc2-tsc",
+    title: "SOC 2 — Trust Services Criteria",
+    ready: "AUDIT.IMMUTABLE-LOG",
+    gap: "DATA-PROTECTION.TENANT-ISOLATION",
+  },
+  {
+    slug: "hipaa",
+    id: "hipaa-security",
+    title: "HIPAA Security Rule",
+    ready: "AUDIT.IMMUTABLE-LOG",
+    gap: "ACCESS-CONTROL.PHI-ISOLATION",
+    extra: [phiEncryptionControl()],
+  },
+  {
+    slug: "eu-ai-act",
+    id: "eu-ai-act",
+    title: "EU AI Act — High-Risk Obligations",
+    ready: "AUDIT.IMMUTABLE-LOG",
+    gap: "RISK-MANAGEMENT.AI-LIFECYCLE",
+    extra: [aiRiskRegisterControl()],
+  },
+];
+
+/**
+ * CI-safe OSCAL JSON-schema-SHAPE assertion — the required-structure floor `oscal-cli validate` proves
+ * end-to-end. Checks UUID discipline (format + uniqueness), required metadata (incl. `oscal-version` at
+ * the locked value), a resolvable `import-ap` backed by a shipped back-matter AP resource, non-core
+ * props carrying an `ns`, and related-observation referential integrity.
+ */
+function assertOscalShape(bundle: OscalExportBundle): void {
+  const seen = new Set<string>();
+  const uuid = (value: string, where: string): void => {
+    expect(value, `${where} uuid`).toMatch(UUID_RE);
+    expect(seen.has(value), `${where} uuid must be unique`).toBe(false);
+    seen.add(value);
+  };
+  const assertMetadata = (m: {
+    title: string;
+    "last-modified": string;
+    version: string;
+    "oscal-version": string;
+    props?: readonly { name: string; ns?: string }[];
+  }): void => {
+    expect(m.title.length).toBeGreaterThan(0);
+    expect(m["last-modified"]).toMatch(ISO_RE);
+    expect(m.version.length).toBeGreaterThan(0);
+    expect(m["oscal-version"]).toBe(OSCAL_VERSION);
+    for (const p of m.props ?? []) {
+      // Non-core Caisson props MUST declare an ns (research pitfall #4).
+      expect(p.ns, `prop ${p.name} ns`).toBe("https://caisson.sh/ns/oscal");
+    }
+  };
+
+  // --- SAR ---
+  const sar = bundle.assessmentResults["assessment-results"];
+  uuid(sar.uuid, "SAR root");
+  assertMetadata(sar.metadata);
+
+  // import-ap resolves to a shipped back-matter AP resource (ADR-0179) — never a dangling fragment.
+  const href = sar["import-ap"].href;
+  expect(href.length).toBeGreaterThan(0);
+  expect(href.startsWith("#")).toBe(true);
+  const resources = req(sar["back-matter"], "SAR back-matter").resources;
+  expect(resources.length).toBeGreaterThan(0);
+  const ap = req(
+    resources.find((r) => `#${r.uuid}` === href),
+    "resolvable import-ap resource",
+  );
+  uuid(ap.uuid, "AP resource");
+  expect(req(ap.rlinks[0], "AP rlink").href).toMatch(/^https:\/\//);
+
+  expect(sar.results.length).toBeGreaterThan(0);
+  for (const result of sar.results) {
+    uuid(result.uuid, "result");
+    const obsUuids = new Set<string>();
+    for (const obs of result.observations) {
+      uuid(obs.uuid, "observation");
+      obsUuids.add(obs.uuid);
+      expect(obs.methods.length).toBeGreaterThan(0);
+    }
+    for (const finding of result.findings) {
+      uuid(finding.uuid, "finding");
+      expect(finding.target["target-id"].length).toBeGreaterThan(0);
+      for (const rel of finding["related-observations"]) {
+        expect(obsUuids.has(rel["observation-uuid"])).toBe(true);
+      }
+    }
+  }
+
+  // --- POA&M ---
+  const poam =
+    bundle.planOfActionAndMilestones["plan-of-action-and-milestones"];
+  uuid(poam.uuid, "POA&M root");
+  assertMetadata(poam.metadata);
+  expect(poam["system-id"].id.length).toBeGreaterThan(0);
+  const poamObs = new Set((poam.observations ?? []).map((o) => o.uuid));
+  for (const o of poam.observations ?? []) uuid(o.uuid, "poam observation");
+  for (const item of poam["poam-items"]) {
+    uuid(item.uuid, "poam-item");
+    for (const rel of item["related-observations"]) {
+      expect(poamObs.has(rel["observation-uuid"])).toBe(true);
+    }
+  }
+}
+
+describe("OSCAL framework conformance — v1.2.2, all three frameworks (ADR-0179/0181)", () => {
+  for (const fw of FRAMEWORKS) {
+    test(`${fw.id}: shape-conformant SAR + POA&M at the locked version`, () => {
+      const bundle = toOscalBundle(
+        manifestFor(fw.id, fw.title, fw.ready, fw.gap, fw.extra),
+        det(),
+      );
+      expect(
+        bundle.assessmentResults["assessment-results"].metadata[
+          "oscal-version"
+        ],
+      ).toBe("1.2.2");
+      assertOscalShape(bundle);
+    });
+
+    test(`${fw.id}: deterministic golden bundle`, () => {
+      const bundle = toOscalBundle(
+        manifestFor(fw.id, fw.title, fw.ready, fw.gap, fw.extra),
+        det(),
+      );
+      matchGolden(PKG_SRC_META, `oscal-${fw.slug}.bundle`, bundle);
+    });
+  }
+});

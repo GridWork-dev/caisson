@@ -15,7 +15,7 @@
 //      results cited against each framework's own control ids), validate each against the canonical
 //      format contract (T12), sign each per-tenant (Ed25519, T14, ADR-0056), and mirror an
 //      `evidence.generated` ops event through the base `EventSink` (ADR-0075) per pack. The SOC2 pack
-//      is also mapped (never pushed, T15) to an OSCAL v1.1.3 SAR+POA&M bundle. Both byte-stable
+//      is also mapped (never pushed, T15) to an OSCAL v1.2.2 SAR+POA&M bundle. Both byte-stable
 //      manifests are golden-pinned by `leg.test.ts`.
 //   4. BLOCK            — prove flag-never-guess: one control with UNRESOLVED evidence makes the
 //      generator throw `EvidencePackBlockedError` with NO partial pack written (TM-K).
@@ -151,7 +151,7 @@ export interface LegResult {
   readonly manifest: EvidencePackManifest;
   /** The HIPAA-Security byte-stable canonical manifest — golden-pinned by `leg.test.ts`. */
   readonly hipaaManifest: EvidencePackManifest;
-  /** The SOC2 pack mapped (not pushed, T15) to an OSCAL v1.1.3 SAR+POA&M bundle. Deterministic under
+  /** The SOC2 pack mapped (not pushed, T15) to an OSCAL v1.2.2 SAR+POA&M bundle. Deterministic under
    *  the same injected `now` + a fixed `newId` counter. */
   readonly oscal: OscalExportBundle;
   /** True iff every exit check passed (the app route's single health signal). */
@@ -429,7 +429,7 @@ export async function runComplianceLeg(
   });
 
   // OSCAL EXPORT (T15 seam, MAP not PUSH): map the already-generated, already-validated SOC2 pack
-  // into an OSCAL v1.1.3 SAR+POA&M bundle. A fixed counter `newId` keeps the bundle byte-stable
+  // into an OSCAL v1.2.2 SAR+POA&M bundle. A fixed counter `newId` keeps the bundle byte-stable
   // alongside the injected `now`. The live transport (`OscalExportTransport.deliver`) is out of
   // scope (P7) — this call never reaches a network.
   const oscal: OscalExportBundle = toOscalBundle(pack.manifest, {

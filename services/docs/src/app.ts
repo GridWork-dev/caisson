@@ -5,6 +5,7 @@
 // is a server-to-server contract for the support-bot, not a browser surface.
 import { createHash, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
+import { withRequestSpan } from "@caisson/observability";
 import type { DocsIndex } from "./index-store.ts";
 import { clientIp, type RateBucket, type RateLimiter } from "./rate-limit.ts";
 
@@ -98,7 +99,7 @@ export function createApp(deps: AppDeps): (req: Request) => Promise<Response> {
     }
   };
 
-  return async (req: Request): Promise<Response> => {
+  return withRequestSpan(async (req: Request): Promise<Response> => {
     const url = new URL(req.url);
     const { pathname } = url;
     const method = req.method.toUpperCase();
@@ -152,5 +153,5 @@ export function createApp(deps: AppDeps): (req: Request) => Promise<Response> {
     }
 
     return json({ error: "not found" }, 404);
-  };
+  });
 }
