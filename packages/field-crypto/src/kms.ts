@@ -21,27 +21,12 @@ import { type FieldKeyProvider } from "./provider.ts";
 import { aesGcm } from "./cipher.ts";
 import { buildAad } from "./aad.ts";
 import { createAwsKmsClient } from "./kms-aws.ts";
+import type { KmsClient } from "./kms-port.ts";
 
-/**
- * The KMS port. A production impl calls the cloud KMS; the test double wraps locally. Every operation
- * is scoped by `keyId` — a per-(tenant|subject) key identifier. Provisioning per SUBJECT (rather than
- * per tenant) is what makes `scheduleKeyDeletion` a per-subject CRYPTO-SHRED: destroying a subject's
- * KEK renders every DEK wrapped under it permanently un-unwrappable.
- */
-export interface KmsClient {
-  /** Generate a fresh 32-byte DEK and return it alongside its KEK-wrapped form, under scope `keyId`. */
-  generateDataKey(
-    keyId: string,
-  ): Promise<{ plaintextKey: Buffer; wrappedKey: Buffer }>;
-  /** Unwrap a DEK previously wrapped under `keyId`. Throws once `keyId` has been crypto-shredded. */
-  decryptDataKey(keyId: string, wrappedKey: Buffer): Promise<Buffer>;
-  /**
-   * Schedule irreversible deletion of `keyId`'s key material — the crypto-shred primitive. After this
-   * the wrapped DEKs under `keyId` can never be unwrapped, so the field ciphertext they protect is
-   * unrecoverable WITHOUT mutating any append-only store (ADR-0055). Irreversible by design.
-   */
-  scheduleKeyDeletion(keyId: string): Promise<void>;
-}
+// The KmsClient port lives in ./kms-port.ts (a leaf) to break the kms.ts ↔ kms-aws.ts type cycle
+// (dep-cruiser no-circular, tsPreCompilationDeps). Re-exported here for back-compat — index.ts and
+// callers still import `KmsClient` from ./kms.ts.
+export type { KmsClient };
 
 /** Persistence for each tenant's wrapped DEKs by version + the current version. DB-backed via `DbWrappedKeyStore` (P2, below). */
 export interface WrappedKeyStore {

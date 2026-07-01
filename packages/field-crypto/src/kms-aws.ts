@@ -26,7 +26,7 @@ import {
   ScheduleKeyDeletionCommand,
 } from "@aws-sdk/client-kms";
 import { ConfigError, InternalError } from "@caisson/kernel";
-import type { KmsClient } from "./kms.ts";
+import type { KmsClient } from "./kms-port.ts";
 
 /**
  * The injected KMS transport — only `send` is used, so the whole AWS SDK surface collapses to one

@@ -41,6 +41,10 @@ export default defineModule({
     "@caisson/field-crypto": "0.0.0",
     "@caisson/tenancy-rls": "0.0.0",
     "@caisson/kernel": "0.0.0",
+    // Stage-2 harvest primitives folded into the Compliance bundle (ADR-0178). Dev-pinned "0.0.0";
+    // the gated publish rewrites to the real version snapshot in the ledger.
+    "@caisson/alerting": "0.0.0",
+    "@caisson/retention-runner": "0.0.0",
   },
   golden: "src/__golden__",
   description:
