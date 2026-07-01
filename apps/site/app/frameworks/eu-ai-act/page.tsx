@@ -215,7 +215,7 @@ export default function EuAiActPage() {
                 style={{
                   fontFamily: "var(--cs-font-mono)",
                   fontSize: "var(--cs-text-sm)",
-                  color: "var(--cs-fg-accent)",
+                  color: "var(--cs-accent)",
                   marginBottom: "var(--cs-space-3)",
                   textTransform: "uppercase",
                   letterSpacing: "0.08em",

@@ -3,8 +3,10 @@ title: UI
 description: A typed token floor — --cs-* OKLCH tokens, one light and one dark theme.
 ---
 
-`@caisson/ui` is the typed token floor. It ships a set of `--cs-*` custom properties in **OKLCH**,
-delivered as exactly two themes — one light, one dark. This docs site renders on those same tokens.
+`@caisson/ui` is the typed token floor and the styled component kit built on it. It ships a set of
+`--cs-*` custom properties in **OKLCH**, delivered as exactly two themes — one light, one dark — plus
+a catalog of components (Button, Card, Hero, Terminal, DataTable, and more) that read those tokens.
+This docs site renders on those same tokens and components.
 
 ## The contract
 
@@ -22,10 +24,10 @@ component tree.
 /* Re-skin = new values here. Components read the tokens; they never fork. */
 ```
 
-<Callout type="warn">
-  Styled primitives — buttons, inputs, cards as shipped components — are on the
-  roadmap. Today the package is the token contract only. Treat any primitive
-  shown elsewhere as illustrative.
+<Callout type="info">
+  The styled primitives ship today from `@caisson/ui/components` — Button, Card,
+  Hero, Terminal, DataTable, and more. Every one reads the tokens above; re-skin
+  by swapping token values, never by forking a component.
 </Callout>
 
 ## Related
