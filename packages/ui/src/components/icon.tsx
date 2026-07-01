@@ -29,6 +29,7 @@ import {
   Scale,
   Server,
   ShieldCheck,
+  ShoppingCart,
   Sun,
   Terminal,
   TriangleAlert,
@@ -71,6 +72,7 @@ const LUCIDE: Record<string, LucideIcon> = {
   menu: Menu,
   "panel-collapse": PanelLeftClose,
   "panel-expand": PanelLeftOpen,
+  cart: ShoppingCart,
 };
 
 type BespokeName =
