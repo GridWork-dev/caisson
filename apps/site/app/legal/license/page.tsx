@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import Link from "next/link";
 
 import { buildMetadata } from "@/lib/metadata";
 import { Card, Section, StatusChip } from "@/components";
@@ -148,10 +149,12 @@ export default function LicensePage() {
 
         <p style={{ marginTop: "var(--cs-space-5)", ...prose.paragraph }}>
           The full text of the Commercial License Agreement, which is the
-          binding document, will be published at{" "}
-          <code className="mono">caisson.sh/legal/eula</code> before the first
-          sale. The <code className="mono">LicenseRef-Caisson-Commercial</code>{" "}
-          SPDX identifier in each package&apos;s{" "}
+          binding document, is published at{" "}
+          <Link href="/legal/eula" className="mono">
+            caisson.sh/legal/eula
+          </Link>
+          . The <code className="mono">LicenseRef-Caisson-Commercial</code> SPDX
+          identifier in each package&apos;s{" "}
           <code className="mono">package.json</code> resolves to that document.
         </p>
       </Section>

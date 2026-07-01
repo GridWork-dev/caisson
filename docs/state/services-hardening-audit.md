@@ -1,5 +1,16 @@
 # Services hardening audit — go-live punch-list
 
+> **Reconcile 2026-07-01 (Stream D · D13).** `docs/build-state.md` (2026-07-01 correction) records all 7
+> fixes as **code-merged** into `main` (PR#33 + tail). Spot-verified in this pass: **#7** — `apps/base/src/server.ts`
+> `json()` now emits `Strict-Transport-Security` (server.ts:23). **#1/#2/#3 are deploy-composition** (per the
+> Sequencing section) — their code lands with the fix, but the live wiring (docs per-IP limiter at the grey
+> Railway origin · `checkRateLimit` passed at the served MCP composition · the Paddle webhook bound at
+> `services/license` = `license.caisson.sh/webhook`) is **verified at the Railway cutover**, not from this repo
+> snapshot. **These surfaces are all `services/*` / `apps/base` / `packages/mcp-server` — outside Stream D's
+> owned tree** (Stream D is base substrate + `apps/site` + CI); D13 is a doc reconcile only, no code change here.
+> Net: no open **Stream-D** action; the 3 go-live-blocking items are owned by the Stage-2 deploy session
+> (`docs/state/stage2-deploy-plan.md`), which is where their runtime wiring is confirmed.
+
 Status: **audit complete 2026-06-30** (gw-security-auditor, read-only). Surfaces: `services/docs`,
 `services/license`, `services/support-bot`, `registry/worker`, `packages/mcp-server`, + the
 billing-webhook reception in `apps/base`. Verdict: **strong core, thin edges** — timing-safe compares,

@@ -7,7 +7,7 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "description": "Transactional email port: provider-agnostic Emailer + capture (test) + Resend (prod) drivers. ADR-0018.",
+  "description": "Transactional email port: provider-agnostic Emailer + capture (test) + Resend/Postmark/SMTP/SES (prod) drivers. ADR-0018/ADR-0170.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -21,12 +21,14 @@
     "test": "bun test ./src"
   },
   "dependencies": {
-    "@caisson/kernel": "workspace:*"
+    "@caisson/kernel": "workspace:*",
+    "nodemailer": "^9.0.3"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
+    "@types/nodemailer": "^8.0.1",
     "eslint": "^9.13.0",
     "typescript": "^5.6.0"
   }

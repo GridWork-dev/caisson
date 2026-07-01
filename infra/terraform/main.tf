@@ -1,51 +1,81 @@
-# Caisson site infrastructure — Cloudflare Pages + DNS for caisson.sh.
-# The zone already exists on Cloudflare (referenced by id); this module owns the Pages project,
-# its custom domains, and the DNS records that point at it. Data (Neon) is reached over HTTP and
-# is provisioned outside this module.
+# Caisson site infrastructure — DNS for caisson.sh. STAGE-2 cutover (ADR-0114/0139): the marketing +
+# docs + dashboard app moved from Cloudflare Pages (static export) to a Railway Docker service
+# (caisson-site). This module now points DNS at Railway. `access.tf` (the pre-launch Access gate over
+# caisson.sh + www) is UNCHANGED — apex/www stay proxied so Access still gates them.
+#
+# The Railway targets + _railway-verify tokens below are the per-custom-domain values Railway returned
+# from `railway domain <name>` (public DNS values, not secrets). Zone SSL mode stays "strict": for the
+# proxied apex/www, Cloudflare terminates client TLS with its edge cert for caisson.sh and connects to
+# the Railway origin over the *.up.railway.app cert; for grey-cloud license.caisson.sh, Railway issues
+# its own Let's Encrypt cert (CAA already allows letsencrypt.org), exactly like docs-api.caisson.sh.
 
-# The Pages project for the marketing + docs site. Direct-upload model (deploy via Wrangler/CI),
-# so no `source` (Git-integration) block. The site is a Next.js static export (`output: 'export'`,
-# ADR-0045): CI runs `next build` → `out/` and `wrangler pages deploy out/`. There is no
-# Cloudflare-side build, so no `build_config`/`source` belongs on this resource — the only deploy
-# pointer is the `out/` argument to wrangler (mirrored in apps/site/wrangler.jsonc).
+# Pages project retained (empty — custom domains detached below) pending teardown once the Railway
+# cutover soaks (Stage-2 step 10). Serves nothing once the CNAMEs point at Railway.
 resource "cloudflare_pages_project" "site" {
   account_id        = var.cloudflare_account_id
   name              = var.pages_project_name
   production_branch = var.production_branch
 }
 
-# Custom domains on the project (apex + www). Cloudflare issues the edge certificate once the
-# matching DNS records below validate.
-resource "cloudflare_pages_domain" "apex" {
-  account_id   = var.cloudflare_account_id
-  project_name = cloudflare_pages_project.site.name
-  name         = var.zone_name
-}
-
-resource "cloudflare_pages_domain" "www" {
-  account_id   = var.cloudflare_account_id
-  project_name = cloudflare_pages_project.site.name
-  name         = "www.${var.zone_name}"
-}
-
-# DNS → the Pages project, proxied (orange-cloud). Apex relies on CNAME flattening.
-# ttl = 1 means automatic (TTL is ignored for proxied records).
+# --- apex + www → caisson-site on Railway (PROXIED so Cloudflare Access still gates, ADR-0107) ---
 resource "cloudflare_dns_record" "apex" {
   zone_id = var.cloudflare_zone_id
   name    = var.zone_name
   type    = "CNAME"
-  content = "${cloudflare_pages_project.site.name}.pages.dev"
+  content = "uljabg7n.up.railway.app"
   proxied = true
   ttl     = 1
-  comment = "Caisson site (apex → Pages) — managed by Terraform"
+  comment = "Caisson site (apex → Railway caisson-site) — managed by Terraform"
 }
 
 resource "cloudflare_dns_record" "www" {
   zone_id = var.cloudflare_zone_id
   name    = "www.${var.zone_name}"
   type    = "CNAME"
-  content = "${cloudflare_pages_project.site.name}.pages.dev"
+  content = "1sbzv9jz.up.railway.app"
   proxied = true
   ttl     = 1
-  comment = "Caisson site (www → Pages) — managed by Terraform"
+  comment = "Caisson site (www → Railway caisson-site) — managed by Terraform"
+}
+
+# Railway custom-domain ownership proof (read via DNS regardless of proxy) so Railway routes the
+# preserved Host header for the proxied apex/www.
+resource "cloudflare_dns_record" "apex_railway_verify" {
+  zone_id = var.cloudflare_zone_id
+  name    = "_railway-verify"
+  type    = "TXT"
+  content = "railway-verify=4f0ee10f934ae1d0b976dbef64c906e0f76d1cf584cd42b726b3493da9d708aa"
+  ttl     = 1
+  comment = "Railway custom-domain ownership (apex) — managed by Terraform"
+}
+
+resource "cloudflare_dns_record" "www_railway_verify" {
+  zone_id = var.cloudflare_zone_id
+  name    = "_railway-verify.www"
+  type    = "TXT"
+  content = "railway-verify=dc37c60b83a6cba8034c2780685b9d5fb7a3266a08a5dede3287b86bb0bcd8df"
+  ttl     = 1
+  comment = "Railway custom-domain ownership (www) — managed by Terraform"
+}
+
+# --- license.caisson.sh → caisson-license on Railway (DNS-only / grey, like docs-api) ---
+# NOT proxied + NOT Access-gated: the Paddle Merchant-of-Record webhook endpoint Paddle's servers
+# must reach directly. DNS-only lets Railway issue + serve its own cert (docs-api.caisson.sh pattern).
+resource "cloudflare_dns_record" "license" {
+  zone_id = var.cloudflare_zone_id
+  name    = "license.${var.zone_name}"
+  type    = "CNAME"
+  content = "9sk3np1b.up.railway.app"
+  proxied = false
+  ttl     = 1
+  comment = "Caisson license issuer + Paddle webhook (→ Railway caisson-license) — managed by Terraform"
+}
+
+resource "cloudflare_dns_record" "license_railway_verify" {
+  zone_id = var.cloudflare_zone_id
+  name    = "_railway-verify.license"
+  type    = "TXT"
+  content = "railway-verify=1839aaf6efdfadfa516d00e30cbe7d12cfa8ae1590c48c95b3e3c0ea91a42c65"
+  ttl     = 1
+  comment = "Railway custom-domain ownership (license) — managed by Terraform"
 }
