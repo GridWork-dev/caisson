@@ -9,8 +9,8 @@ conflict, the ADR file and the board win over this index.
 - ADRs are append-only and immutable (ADR-0006). A later ADR _supersedes_ a clause; it
   never edits the prior file. So most rows below are **partial** supersessions (one clause),
   not a wholesale replacement.
-- 103 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 103). Numbering is **not**
-  contiguous: present are **0001-0024** and **0040-0118**; **0025-0039 are an unused gap**
+- 110 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 110). Numbering is **not**
+  contiguous: present are **0001-0024** and **0040-0135**; **0025-0039 are an unused gap**
   (no files). The 0040 jump was a deliberate block reservation for the brand/positioning set.
   **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit);
   **0094-0096** = the 2026-06-29 GTM-report locks (open-core Base / GTM offer / services-docs);
@@ -26,13 +26,23 @@ conflict, the ADR file and the board win over this index.
   Paddle platform-only, Stripe retained as a buyer `@caisson/billing` driver, extends 0108 /
   observability — vendor-neutral OpenTelemetry to a self-hosted SigNoz, supports 0114/0115 /
   web analytics — Plausible, cookieless, env-gated, complements 0117).
+  **0129-0135** = the same-day 2026-06-30 pricing + store-rework and harvest grill sessions
+  (0129 value-based per-module pricing + edition-bundle math, supersedes the ADR-0106 Local-first/
+  bundle point-values / 0130 store-front as-if-built availability, supersedes ADR-0082 §3/§4 /
+  0131 on-site cart + multi-item Paddle checkout, extends ADR-0116 / 0132 buyer sign-in — magic-link
+  - OAuth via better-auth / 0133 AI/agent-infra harvest initiative, post-go-live and spec-gated /
+    0134 cross-domain audit/validate harness, full build, generalizes ADR-0101 / 0135 two new
+    commercial Compliance modules — `@caisson/alerting` + `retention-runner`). Numbered above 0128,
+    the highest number used-or-proposed at authoring time (`docs/state/adapter-expansion.md`'s
+    Tier-3 proposals) — **0119-0128 remain proposed-only** (adapter-expansion.md) and are not filed
+    as ADRs.
 - Status tokens read from each ADR's own header line:
   - `proposed` = literal header value on the founding + foundations sets (0001-0019, 0024).
     Per the board (line 90) these are **in force / locked** despite the stale "proposed"
     header text written during the Phase-5 spec; the header was never updated. See accuracy
     flags at the bottom.
   - `locked` = D9 module-pipeline set (0020-0023).
-  - `accepted` = brand/wave-0/wave-1/design/gtm sets + picker-round locks + P6 go-live/code tracks + the dashboard host/DB picker round + the billing-scope/observability/analytics picker round (0040-0118).
+  - `accepted` = brand/wave-0/wave-1/design/gtm sets + picker-round locks + P6 go-live/code tracks + the dashboard host/DB picker round + the billing-scope/observability/analytics picker round + the pricing/store-rework and harvest grill sessions (0040-0135).
 
 Domain detail and rationale: read the ADR file. Architecture overview: `specs/01-architecture.md`.
 Product framing: `specs/00-product-spec.md`. Build plan: `plan.md`.
@@ -77,7 +87,12 @@ supersession of one clause unless noted.
   keeps the 0042 token center, supersedes its "depth = tone + hairline, never shadows" rule).
 - **Pricing display / hero SKU:** `0087` (orig 0048; structure shown, prices deferred to
   waitlist) -> `0081` (indicative placeholder prices) -> `0082` (committed pricing, live
-  self-serve). Current: `0082`.
+  self-serve) -> `0106` (final edition-level numbers + grandfathering) -> `0129` (adds
+  value-based per-module SKUs + edition-bundle math; supersedes 0106's Local-first and
+  Everything-Bundle point-values only, the rest of 0106 holds). Current: `0129`.
+- **Storefront availability posture:** `0082` §3-§4 (true-to-built artifacts, Agentic-Dev the one
+  labeled-roadmap exception) -> `0130` (full 17-SKU catalog shown available, no maturity flags;
+  site stays CF-Access-gated per 0107). Current: `0130`.
 - **Field-crypto:** `0006` (compliance data layer, base "env-key") -> `0043` (per-tenant key
   derivation, amends the base-tier key clause) -> `0055` (P2: crypto-shred granularity +
   row-level AAD). Cipher/envelope implemented by `0045`/`0046`.
@@ -323,6 +338,32 @@ operator-picker round alongside the dashboard build.
 | [0116](../knowledge/decisions/ADR-0116-billing-driver-scope-paddle-platform-stripe-buyer.md) | Billing driver scope: Paddle platform-only; Stripe retained as a buyer `@caisson/billing` driver | Commerce/Billing   | accepted | extends 0108; clarifies 0017; relates 0089 |
 | [0117](../knowledge/decisions/ADR-0117-observability-otel-signoz.md)                         | Observability: vendor-neutral OpenTelemetry -> self-hosted SigNoz                                | Observability      | accepted | supports 0114/0115; complemented by 0118   |
 | [0118](../knowledge/decisions/ADR-0118-web-analytics-plausible.md)                           | Web analytics: Plausible (cookieless, env-gated on `PLAUSIBLE_DOMAIN`)                           | GTM-site/Analytics | accepted | complements 0117; fits 0079/0095           |
+
+### Pricing + store-rework grill session (0129-0132, 2026-06-30) - status `accepted`
+
+A two-round operator picker on the store-rework initiative: round 1 locked the packaging/pricing
+forks (module pricing model, edition-bundle math, catalog scope, availability posture); round 2
+locked the mechanics (checkout, sign-in) alongside sequencing/grandfathering decisions recorded on
+the board rather than as new ADRs.
+
+| #                                                                                | Title                                                                    | Domain           | Status   | Relations                                                                      |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------- | -------- | ------------------------------------------------------------------------------ |
+| [0129](../knowledge/decisions/ADR-0129-pricing-packaging-value-based-modules.md) | Pricing & packaging: value-based per-module + discounted edition bundles | Pricing          | accepted | supersedes 0106's Local-first/bundle numbers; extends 0012/0081/0082/0095/0106 |
+| [0130](../knowledge/decisions/ADR-0130-storefront-as-if-built-availability.md)   | Store-front as-if-built availability: full catalog, no maturity flags    | GTM/Pricing      | accepted | supersedes 0082 §3/§4; composes 0129; extends 0095/0106                        |
+| [0131](../knowledge/decisions/ADR-0131-cart-multiitem-paddle-checkout.md)        | On-site cart + single multi-item Paddle checkout                         | Commerce/Billing | accepted | extends 0116; composes 0129/0089/0098/0113                                     |
+| [0132](../knowledge/decisions/ADR-0132-buyer-signin-magiclink-oauth.md)          | Buyer sign-in: magic-link + GitHub/Google OAuth via better-auth          | Auth             | accepted | extends 0015; closes the sign-in-placeholder gap                               |
+
+### Harvest grill session (0133-0135, 2026-06-30) - status `accepted`
+
+Document-only locks — no code lands under any of these three. Consolidated ranked tracking doc:
+`docs/state/harvest-program.md`. Sequenced strictly post-go-live, after the pricing/store-rework set
+above and the Railway cutover.
+
+| #                                                                                    | Title                                                                            | Domain             | Status   | Relations                                          |
+| ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- | ------------------ | -------- | -------------------------------------------------- |
+| [0133](../knowledge/decisions/ADR-0133-ai-agent-infra-harvest-initiative.md)         | AI/agent-infra harvest initiative: gridwork-core substrate + Wardfile base lifts | Agentic-Dev/AI-Kit | accepted | composes 0059-0063, 0065-0066, 0075; document-only |
+| [0134](../knowledge/decisions/ADR-0134-cross-domain-audit-validate-harness.md)       | Cross-domain audit/validate harness (full build)                                 | Tooling/CI         | accepted | extends 0101; composes 0016; document-only         |
+| [0135](../knowledge/decisions/ADR-0135-new-compliance-modules-alerting-retention.md) | New commercial Compliance modules: `@caisson/alerting` + `retention-runner`      | Compliance         | accepted | composes 0003, 0057, 0075; document-only           |
 
 ---
 
