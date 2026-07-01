@@ -3,6 +3,10 @@
 // FileSetWriter, runs `git init` in the output directory (fail-soft), and prints a next-steps
 // block to stdout. The registry index is resolved via `import.meta.url` (cwd-independent) with
 // an env override for CI / local overrides.
+//
+// `--sample <id>` (ADR-0095 W3) is a SEPARATE, parallel path: a free Apache-2.0 evaluation sample
+// (e.g. `eu-ai-act-sample`) carries no module selection, so it never touches the registry allowlist
+// or `generate()` — it goes straight through `materializeSample` (`sample-templates.ts`).
 import { execFile as execFileCb } from "node:child_process";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,6 +15,7 @@ import {
   loadRegistryIndexFromFile,
 } from "@caisson/registry-schema";
 import { type GeneratedFileSet, type Selection, generate } from "./generate.ts";
+import { materializeSample } from "./sample-templates.ts";
 import { createFileSetWriter } from "./writer.ts";
 
 /**
@@ -61,6 +66,27 @@ export function runCli(
 }
 
 /**
+ * Parse argv for the free-SAMPLE path (ADR-0095 W3): just `--name <slug>`. No `--edition`/
+ * `--module` here — a sample carries no module selection, so it never reaches the registry
+ * allowlist. An unknown flag throws (same fail-closed posture as `parseArgs`).
+ */
+export function parseSampleArgs(argv: readonly string[]): {
+  projectName?: string;
+} {
+  let projectName: string | undefined;
+  for (let i = 0; i < argv.length; i++) {
+    const flag = argv[i];
+    if (flag === "--name") {
+      projectName = argv[i + 1];
+      i++;
+    } else {
+      throw new Error(`unknown argument: ${JSON.stringify(flag)}`);
+    }
+  }
+  return projectName !== undefined ? { projectName } : {};
+}
+
+/**
  * Resolve the registry index the CLI validates against.
  *
  * Priority:
@@ -83,17 +109,20 @@ create-caisson — scaffold a repo from the Caisson registry
 Usage:
   create-caisson --name <slug> --module <id@version> [--module …] \\
     [--edition <e>] [--out <dir>] [--dry-run]
+  create-caisson --sample <id> --name <slug> [--out <dir>] [--dry-run]
 
 Flags:
   --name <slug>          Project name (a-z, 0-9, kebab slug; max 64 chars)
   --module <id@version>  @caisson module (repeatable; exact semver version)
   --edition <e>          compliance | ai-kit | local-ai | agent-dev
+  --sample <id>          A free, Apache-2.0 evaluation sample (e.g. eu-ai-act-sample) — no
+                          --module/--edition; no Caisson license key required to install or run
   --out <dir>            Output directory (defaults to <projectName>)
   --dry-run              Print the file plan without writing anything to disk
   --help, -h             Show this help
 
-Before running the installer, add NODE_AUTH_TOKEN (your Caisson license key) to .npmrc.
-See the generated README for the full setup steps — or https://caisson.sh/docs.
+Before running the installer (non-sample path), add NODE_AUTH_TOKEN (your Caisson license key) to
+.npmrc. See the generated README for the full setup steps — or https://caisson.sh/docs.
 `;
 
 /**
@@ -140,14 +169,29 @@ function printNextSteps(projectName: string, targetDir: string): void {
   );
 }
 
+/** Next-steps for the free-SAMPLE path (ADR-0095 W3) — no license key, since every dependency the
+ *  sample carries (`@caisson/kernel`) is Apache-2.0 on the public npm registry. */
+function printSampleNextSteps(projectName: string, targetDir: string): void {
+  process.stdout.write(
+    `\ncreate-caisson: generated "${projectName}" (free sample) → ${targetDir}\n` +
+      `\nNext steps:\n` +
+      `  1. cd ${targetDir}\n` +
+      `  2. bun install   # public npm only — no Caisson license key needed\n` +
+      `  3. bun run demo  # the evidence-path walkthrough\n` +
+      `  4. bun test      # the sample's own verify suite\n` +
+      `\nDocs: https://caisson.sh/docs\n`,
+  );
+}
+
 if (import.meta.main) {
   void (async () => {
     const argv = process.argv.slice(2);
 
-    // Extract --help / --dry-run / --out before passing the remainder to parseArgs.
+    // Extract --help / --dry-run / --out / --sample before passing the remainder to parseArgs.
     // Flag-value pairs for --name / --edition / --module flow through untouched.
     const selectionArgs: string[] = [];
     let out: string | undefined;
+    let sample: string | undefined;
     let dryRun = false;
     let help = false;
 
@@ -165,6 +209,16 @@ if (import.meta.main) {
         }
         out = next;
         i++;
+      } else if (flag === "--sample") {
+        const next = argv[i + 1];
+        if (next === undefined) {
+          process.stderr.write(
+            "create-caisson: --sample requires a template id\n",
+          );
+          process.exit(1);
+        }
+        sample = next;
+        i++;
       } else if (flag !== undefined) {
         selectionArgs.push(flag);
       }
@@ -174,6 +228,35 @@ if (import.meta.main) {
       if (help) {
         process.stdout.write(HELP);
         process.exit(0);
+      }
+
+      if (sample !== undefined) {
+        const { projectName } = parseSampleArgs(selectionArgs);
+        if (projectName === undefined) {
+          process.stderr.write(
+            "create-caisson: --sample requires --name <slug>\n",
+          );
+          process.exit(1);
+        }
+        const files = materializeSample(sample, projectName);
+        const targetDir = out ?? projectName;
+
+        if (dryRun) {
+          process.stdout.write(
+            `create-caisson: dry-run — ${files.length} files for ` +
+              `"${projectName}" (sample: ${sample})\n`,
+          );
+          for (const f of files) {
+            process.stdout.write(`  ${f.path}\n`);
+          }
+          process.exit(0);
+        }
+
+        const write = createFileSetWriter();
+        await write(targetDir, files);
+        await tryGitInit(targetDir);
+        printSampleNextSteps(projectName, targetDir);
+        return;
       }
 
       const index = loadRegistryIndexFromFile(resolveIndexPath());

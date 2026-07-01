@@ -6,8 +6,8 @@
 //   - purchase.completed        -> grant a ONE-TIME purchase's credits + its one_time entitlement grants
 //   - subscription.canceled     -> IMMEDIATELY soft-revoke that subscription's entitlement grants
 //   - refund.completed          -> soft-revoke the purchase's grants + claw back ONLY unspent credits
-// Fail-closed throughout: an unknown plan/purchase price throws (the webhook returns non-2xx, Stripe
-// retries) — never a guessed grant. Idempotent: the credit ledger keys on the source id; entitlement
+// Fail-closed throughout: an unknown plan/purchase price throws (the webhook returns non-2xx, the
+// provider retries) — never a guessed grant. Idempotent: the credit ledger keys on the source id; entitlement
 // grants key per-source; the refund latches on the active->revoked transition so a re-delivery is inert.
 import type { DomainBillingEvent } from "@caisson/billing";
 import { clawback, creditsGrantedBySource, grant } from "@caisson/credits";
@@ -40,7 +40,7 @@ export async function applyBillingEvent(
       if (ev.invoiceId === "") {
         // The invoice id IS the idempotency anchor (ADR-0089 §4); an empty one would let two cycles
         // collide on ("", "sub_allotment") and silently under-grant. Fail closed — never grant on a
-        // degenerate anchor (the webhook returns non-2xx, Stripe retries).
+        // degenerate anchor (the webhook returns non-2xx, the provider retries).
         throw new ConfigError("invoice.paid is missing an invoice id");
       }
       const plan = resolvePlan(ev.priceId); // fail-closed on an unknown price id

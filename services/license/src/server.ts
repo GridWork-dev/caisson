@@ -10,10 +10,13 @@
 // supplies a Neon-backed Transactor; the signing key → KMS swap (un-wired Signer seam) is the same
 // operator-gated DEPLOY concern as the docs-service real-embedder seam.
 import { resolve } from "node:path";
+import { type BillingProvider, createPaddleBilling } from "@caisson/billing";
 import { Ed25519Signer } from "@caisson/license-issue";
+import { initObservability } from "@caisson/observability";
 import { loadRegistryIndexFromFile } from "@caisson/registry-schema";
 import type { Transactor } from "@caisson/tenancy-rls";
 import { createApp } from "./app.ts";
+import { loadRateLimitConfig, TokenBucketLimiter } from "./rate-limit.ts";
 
 const DEFAULT_PORT = 8789;
 
@@ -35,6 +38,11 @@ export function startServer(
   db: Transactor,
   options: StartServerOptions = {},
 ): { port: number; stop: () => void } {
+  // ADR-0117: wired first, before any other boot work — instrumentation must be live before the
+  // modules it patches (node:http, pg) are first required. Env-gated: a no-op when
+  // OTEL_EXPORTER_OTLP_ENDPOINT is unset (CI / local / no SigNoz configured).
+  initObservability({ serviceName: "service-license" });
+
   const token = process.env.LICENSE_ISSUE_TOKEN ?? "";
   if (token.length === 0) {
     throw new Error(
@@ -47,9 +55,34 @@ export function startServer(
     options.indexPath ?? defaultIndexPath(),
   );
 
+  // Paddle Merchant-of-Record webhook provider (ADR-0108/0116). It verifies the `Paddle-Signature` HMAC
+  // over the raw body; the apiKey is only used by the (unexercised) checkout path, so a webhook-only
+  // deploy may leave it blank. Without PADDLE_WEBHOOK_SECRET we cannot verify any signature, so the
+  // provider is null and POST /webhook fails closed (401) — /issue + /health still serve.
+  const webhookSecret = process.env.PADDLE_WEBHOOK_SECRET ?? "";
+  let provider: BillingProvider | null = null;
+  if (webhookSecret.length > 0) {
+    const paddleEnv =
+      process.env.PADDLE_ENV === "sandbox" ? "sandbox" : "production";
+    provider = createPaddleBilling({
+      webhookSecret,
+      apiKey: process.env.PADDLE_API_KEY ?? "",
+      env: paddleEnv,
+    });
+  } else {
+    process.stderr.write(
+      "[service-license] PADDLE_WEBHOOK_SECRET unset — POST /webhook is fail-closed (401)\n",
+    );
+  }
+
+  // Per-IP token-bucket limiter (services-hardening #4) for POST /webhook + POST /issue. Config is
+  // Zod-validated from env with safe defaults; a present-but-invalid limit fails startup closed rather
+  // than serving with a silently-wrong budget.
+  const limiter = new TokenBucketLimiter(loadRateLimitConfig());
+
   // `||` not `??`: a blank PORT="" must fall back to the default, not coerce to Number("")=0 (ephemeral).
   const port = Number(process.env.PORT || DEFAULT_PORT);
-  const handler = createApp({ token, signer, index, db });
+  const handler = createApp({ token, signer, index, db, provider, limiter });
   const server = Bun.serve({ port, fetch: handler });
   process.stderr.write(
     `[service-license] issuer serving on :${String(server.port)}\n`,

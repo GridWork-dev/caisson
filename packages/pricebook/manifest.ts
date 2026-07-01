@@ -23,5 +23,5 @@ export default defineModule({
   dependencies: ["@caisson/kernel"],
   golden: "src/__golden__",
   description:
-    "The commerce price-book: plan-book (stripePriceId -> creditsPerCycle), action-book (per-action credit cost), and the shared cents->credits grant conversion. Versioned, append-only, fail-closed, integer-only; shares kernel's one credit denomination.",
+    "The commerce price-book: plan-book (providerPriceId -> creditsPerCycle), action-book (per-action credit cost), and the shared cents->credits grant conversion. Versioned, append-only, fail-closed, integer-only; shares kernel's one credit denomination.",
 });

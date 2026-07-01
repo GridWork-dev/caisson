@@ -9,8 +9,8 @@ conflict, the ADR file and the board win over this index.
 - ADRs are append-only and immutable (ADR-0006). A later ADR _supersedes_ a clause; it
   never edits the prior file. So most rows below are **partial** supersessions (one clause),
   not a wholesale replacement.
-- 98 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 98). Numbering is **not**
-  contiguous: present are **0001-0024** and **0040-0113**; **0025-0039 are an unused gap**
+- 113 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 113). Numbering is **not**
+  contiguous: present are **0001-0024** and **0040-0138**; **0025-0039 are an unused gap**
   (no files). The 0040 jump was a deliberate block reservation for the brand/positioning set.
   **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit);
   **0094-0096** = the 2026-06-29 GTM-report locks (open-core Base / GTM offer / services-docs);
@@ -19,13 +19,35 @@ conflict, the ADR file and the board win over this index.
   **0105** = the 2026-06-29 support-bot implementation locks (discord.py / OpenRouter / thread+Postgres escalation — implements 0009, P6 Bucket C item 2);
   **0106-0107** = the 2026-06-29 P6 operator-gates locks (final pricing numbers + grandfathering / CF-Access go-live gate); **0108** = the 2026-06-30 Paddle-MoR payment-provider switch (supersedes Stripe-as-MoR; amends 0089); **0109** = the 2026-06-30 support-bot member-management lock (auto-role / mod commands / /grant-role — extends 0105).
   **0110-0113** = the 2026-06-30 P6 code-track locks (license-issuer impl + production verify-key bake / publish-readiness private→public flip / buyer-MCP per-account rate-limit / entitlement-revoke + one-time purchases + refund credit-clawback). The code track originally drafted issuer at 0108 and entitlement at 0109; both were **renumbered at the integration merge** (0108→0110, 0109→0113) so the go-live operator track keeps the contiguous 0106-0109 block.
+  **0114-0115** = the 2026-06-30 dashboard host/DB picker round (unified dynamic Next 16 app on
+  Railway, supersedes ADR-0084's static-export deploy mode / Railway managed Postgres, amends
+  ADR-0014's Neon default).
+  **0116-0118** = the 2026-06-30 unified-app build-session picker round (billing driver scope —
+  Paddle platform-only, Stripe retained as a buyer `@caisson/billing` driver, extends 0108 /
+  observability — vendor-neutral OpenTelemetry to a self-hosted SigNoz, supports 0114/0115 /
+  web analytics — Plausible, cookieless, env-gated, complements 0117).
+  **0129-0135** = the same-day 2026-06-30 pricing + store-rework and harvest grill sessions
+  (0129 value-based per-module pricing + edition-bundle math, supersedes the ADR-0106 Local-first/
+  bundle point-values / 0130 store-front as-if-built availability, supersedes ADR-0082 §3/§4 /
+  0131 on-site cart + multi-item Paddle checkout, extends ADR-0116 / 0132 buyer sign-in — magic-link
+  - OAuth via better-auth / 0133 AI/agent-infra harvest initiative, post-go-live and spec-gated /
+    0134 cross-domain audit/validate harness, full build, generalizes ADR-0101 / 0135 two new
+    commercial Compliance modules — `@caisson/alerting` + `retention-runner`). Numbered above 0128,
+    the highest number used-or-proposed at authoring time (`docs/state/adapter-expansion.md`'s
+    Tier-3 proposals) — **0119-0128 remain proposed-only** (adapter-expansion.md) and are not filed
+    as ADRs.
+    **0136-0137** = the 2026-06-30 store-rework BUILD wave (locked + built this session): 0136
+    license-keyed registry gating (closes the free-view leak; opens the ships-with-generator tooling
+    trio cli·migrate·license-verify as Apache-2.0 Base — amends ADR-0094/0111) / 0137 edition reprice
+    to full below-sum (supersedes the ADR-0129 edition point-values, reverses its thin-edition-premium
+    thesis).
 - Status tokens read from each ADR's own header line:
   - `proposed` = literal header value on the founding + foundations sets (0001-0019, 0024).
     Per the board (line 90) these are **in force / locked** despite the stale "proposed"
     header text written during the Phase-5 spec; the header was never updated. See accuracy
     flags at the bottom.
   - `locked` = D9 module-pipeline set (0020-0023).
-  - `accepted` = brand/wave-0/wave-1/design/gtm sets + picker-round locks + P6 go-live/code tracks (0040-0113).
+  - `accepted` = brand/wave-0/wave-1/design/gtm sets + picker-round locks + P6 go-live/code tracks + the dashboard host/DB picker round + the billing-scope/observability/analytics picker round + the pricing/store-rework and harvest grill sessions + the store-rework build wave (0040-0137).
 
 Domain detail and rationale: read the ADR file. Architecture overview: `specs/01-architecture.md`.
 Product framing: `specs/00-product-spec.md`. Build plan: `plan.md`.
@@ -70,12 +92,31 @@ supersession of one clause unless noted.
   keeps the 0042 token center, supersedes its "depth = tone + hairline, never shadows" rule).
 - **Pricing display / hero SKU:** `0087` (orig 0048; structure shown, prices deferred to
   waitlist) -> `0081` (indicative placeholder prices) -> `0082` (committed pricing, live
-  self-serve). Current: `0082`.
+  self-serve) -> `0106` (final edition-level numbers + grandfathering) -> `0129` (adds
+  value-based per-module SKUs + edition-bundle math) -> `0137` (edition reprice to full
+  below-sum; supersedes the 0129 edition point-values **in full** and reverses its
+  thin-edition-premium thesis; the 0129 **module** sheet holds). Current: `0137`
+  (Compliance $749 · AI-Kit $599 · Agentic-Dev $249 · Local-first $349 · Bundle $1,499).
+- **Registry read-path visibility / gating:** `0047` (static CI-built index + deferred Worker
+  seam, free view keyed on `editions[]===[]`) -> `0136` (free floor re-keyed on
+  `license === Apache-2.0`; commercial base-kind requires an entitlement, fail-safe to open; the
+  ships-with-generator tooling trio flips open). Current: `0136`. Un-gating takes effect at DEPLOY.
+- **Storefront availability posture:** `0082` §3-§4 (true-to-built artifacts, Agentic-Dev the one
+  labeled-roadmap exception) -> `0130` (full 17-SKU catalog shown available, no maturity flags;
+  site stays CF-Access-gated per 0107). Current: `0130`.
 - **Field-crypto:** `0006` (compliance data layer, base "env-key") -> `0043` (per-tenant key
   derivation, amends the base-tier key clause) -> `0055` (P2: crypto-shred granularity +
   row-level AAD). Cipher/envelope implemented by `0045`/`0046`.
 - **Go-live site posture:** `0085` + `0087` (pre-launch waitlist CTA) + `0081` (indicative
   prices) all superseded by `0082` (live self-serve, committed prices, true-to-built claims).
+- **Site deploy mode:** `0084` (static-export Next app -> Cloudflare Pages direct-upload) ->
+  `0114` (one dynamic Next 16 app, Node `standalone` -> Railway; `/dashboard` route group
+  added). The Fumadocs/MDX docs framework and single-app/one-brand topology of `0084` are kept;
+  only the deploy mode is replaced.
+- **Platform DB host:** `0014` (Drizzle + Neon default) -> `0115` (Railway managed Postgres
+  default; `drizzle-orm/node-postgres` over TCP). The ORM, migration strategy, and
+  swappable-`DATABASE_URL` clause of `0014` are kept; Neon remains a supported, non-default
+  driver target.
 
 ---
 
@@ -103,16 +144,16 @@ implements as stated in each ADR header.
 
 ### Foundations track (0013-0019, 0024) - status `proposed` (in force per board)
 
-| #                                                                      | Title                                              | Domain     | Status   | Relations                       |
-| ---------------------------------------------------------------------- | -------------------------------------------------- | ---------- | -------- | ------------------------------- |
-| [0013](../knowledge/decisions/ADR-0013-testing-golden-file-harness.md) | Testing strategy + golden-file harness (PGlite)    | Testing    | proposed | -                               |
-| [0014](../knowledge/decisions/ADR-0014-database-orm-migrations.md)     | Database, ORM (Drizzle), migration strategy (Neon) | Database   | proposed | migration assembly -> 0070      |
-| [0015](../knowledge/decisions/ADR-0015-auth-session-rls-seam.md)       | Auth (better-auth), session shape, auth->RLS seam  | Auth       | proposed | -                               |
-| [0016](../knowledge/decisions/ADR-0016-ci-cd-standards-gate.md)        | CI/CD pipeline + the standards gate                | CI/CD      | proposed | + eval gate 0062                |
-| [0017](../knowledge/decisions/ADR-0017-billing-stripe-mor.md)          | Billing (Stripe), tax, webhook verification, MoR   | Billing    | proposed | -                               |
-| [0018](../knowledge/decisions/ADR-0018-jobs-email.md)                  | Background jobs (Trigger.dev) + email (Resend)     | Jobs/Email | proposed | Resend reused by 0085           |
-| [0019](../knowledge/decisions/ADR-0019-error-model.md)                 | Typed error model + 402 credit-gate response       | Errors     | proposed | extends 0002; -> 0075 EventSink |
-| [0024](../knowledge/decisions/ADR-0024-credit-idempotency-index.md)    | Credit idempotency index                           | Credits    | proposed | amends 0007                     |
+| #                                                                      | Title                                              | Domain     | Status   | Relations                                                          |
+| ---------------------------------------------------------------------- | -------------------------------------------------- | ---------- | -------- | ------------------------------------------------------------------ |
+| [0013](../knowledge/decisions/ADR-0013-testing-golden-file-harness.md) | Testing strategy + golden-file harness (PGlite)    | Testing    | proposed | -                                                                  |
+| [0014](../knowledge/decisions/ADR-0014-database-orm-migrations.md)     | Database, ORM (Drizzle), migration strategy (Neon) | Database   | proposed | migration assembly -> 0070; Neon default amended by 0115 (Railway) |
+| [0015](../knowledge/decisions/ADR-0015-auth-session-rls-seam.md)       | Auth (better-auth), session shape, auth->RLS seam  | Auth       | proposed | -                                                                  |
+| [0016](../knowledge/decisions/ADR-0016-ci-cd-standards-gate.md)        | CI/CD pipeline + the standards gate                | CI/CD      | proposed | + eval gate 0062                                                   |
+| [0017](../knowledge/decisions/ADR-0017-billing-stripe-mor.md)          | Billing (Stripe), tax, webhook verification, MoR   | Billing    | proposed | -                                                                  |
+| [0018](../knowledge/decisions/ADR-0018-jobs-email.md)                  | Background jobs (Trigger.dev) + email (Resend)     | Jobs/Email | proposed | Resend reused by 0085                                              |
+| [0019](../knowledge/decisions/ADR-0019-error-model.md)                 | Typed error model + 402 credit-gate response       | Errors     | proposed | extends 0002; -> 0075 EventSink                                    |
+| [0024](../knowledge/decisions/ADR-0024-credit-idempotency-index.md)    | Credit idempotency index                           | Credits    | proposed | amends 0007                                                        |
 
 ### D9 module-standards pipeline (0020-0023) - status `locked`
 
@@ -181,12 +222,12 @@ implements as stated in each ADR header.
 
 ### Design / brand / SEO / copy block (0078-0081) - status `accepted`
 
-| #                                                                          | Title                                                        | Domain       | Status   | Relations                                    |
-| -------------------------------------------------------------------------- | ------------------------------------------------------------ | ------------ | -------- | -------------------------------------------- |
-| [0078](../knowledge/decisions/ADR-0078-brand-foundation-expansion.md)      | Brand foundation expansion: mark, icon, illustration, motion | Brand/Design | accepted | supersedes 0042 (widens; keeps token center) |
-| [0079](../knowledge/decisions/ADR-0079-seo-strategy.md)                    | SEO strategy: dev-kit long-tail + programmatic engine        | SEO          | accepted | relates 0040, 0084, 0086, 0087->0081         |
-| [0080](../knowledge/decisions/ADR-0080-copy-messaging-expansion.md)        | Copy & messaging: per-surface laws over specs/04 voice       | Copy         | accepted | extends specs/04                             |
-| [0081](../knowledge/decisions/ADR-0081-pricing-indicative-placeholders.md) | Pricing display: indicative placeholder prices (pre-launch)  | Pricing      | accepted | supersedes 0087; **superseded by 0082**      |
+| #                                                                          | Title                                                        | Domain       | Status   | Relations                                                                          |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------ | ------------ | -------- | ---------------------------------------------------------------------------------- |
+| [0078](../knowledge/decisions/ADR-0078-brand-foundation-expansion.md)      | Brand foundation expansion: mark, icon, illustration, motion | Brand/Design | accepted | supersedes 0042 (widens; keeps token center)                                       |
+| [0079](../knowledge/decisions/ADR-0079-seo-strategy.md)                    | SEO strategy: dev-kit long-tail + programmatic engine        | SEO          | accepted | relates 0040, 0084, 0086, 0087->0081; amended by 0114 (CWV/SEO delivery mechanism) |
+| [0080](../knowledge/decisions/ADR-0080-copy-messaging-expansion.md)        | Copy & messaging: per-surface laws over specs/04 voice       | Copy         | accepted | extends specs/04                                                                   |
+| [0081](../knowledge/decisions/ADR-0081-pricing-indicative-placeholders.md) | Pricing display: indicative placeholder prices (pre-launch)  | Pricing      | accepted | supersedes 0087; **superseded by 0082**                                            |
 
 ### Go-live (0082-0083) - status `accepted` (current authority)
 
@@ -197,12 +238,12 @@ implements as stated in each ADR header.
 
 ### GTM site (0084-0087, renumbered from 0045-0048) - status `accepted`
 
-| #                                                                  | Title (was)                                                   | Domain             | Status   | Relations                                                     |
-| ------------------------------------------------------------------ | ------------------------------------------------------------- | ------------------ | -------- | ------------------------------------------------------------- |
-| [0084](../knowledge/decisions/ADR-0084-gtm-site-stack.md)          | GTM site stack: Fumadocs + MDX -> CF Pages (was 0045)         | GTM-site           | accepted | renumbered per 0088                                           |
-| [0085](../knowledge/decisions/ADR-0085-waitlist-capture-seam.md)   | Waitlist capture seam: CF Function -> Resend (was 0046)       | GTM-site           | accepted | renumbered per 0088; pre-launch CTA stance superseded by 0082 |
-| [0086](../knowledge/decisions/ADR-0086-web-analytics-plausible.md) | Web analytics: Plausible, cookieless (was 0047)               | GTM-site/Analytics | accepted | renumbered per 0088                                           |
-| [0087](../knowledge/decisions/ADR-0087-hero-sku-surface.md)        | Hero SKU surface: structure shown, prices deferred (was 0048) | GTM-site/Pricing   | accepted | renumbered per 0088; **superseded by 0081 -> 0082**           |
+| #                                                                  | Title (was)                                                   | Domain             | Status   | Relations                                                                                                                       |
+| ------------------------------------------------------------------ | ------------------------------------------------------------- | ------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| [0084](../knowledge/decisions/ADR-0084-gtm-site-stack.md)          | GTM site stack: Fumadocs + MDX -> CF Pages (was 0045)         | GTM-site           | accepted | renumbered per 0088; **deploy mode (static-export -> CF Pages) superseded by 0114** (docs framework + single-app topology kept) |
+| [0085](../knowledge/decisions/ADR-0085-waitlist-capture-seam.md)   | Waitlist capture seam: CF Function -> Resend (was 0046)       | GTM-site           | accepted | renumbered per 0088; pre-launch CTA stance superseded by 0082                                                                   |
+| [0086](../knowledge/decisions/ADR-0086-web-analytics-plausible.md) | Web analytics: Plausible, cookieless (was 0047)               | GTM-site/Analytics | accepted | renumbered per 0088                                                                                                             |
+| [0087](../knowledge/decisions/ADR-0087-hero-sku-surface.md)        | Hero SKU surface: structure shown, prices deferred (was 0048) | GTM-site/Pricing   | accepted | renumbered per 0088; **superseded by 0081 -> 0082**                                                                             |
 
 ### Meta (0088) - status `accepted`
 
@@ -265,12 +306,12 @@ ADR-0107 formalizes the keep-gated CF-Access decision into a launch runbook; ADR
 payment provider to Paddle (Merchant of Record), superseding the Stripe-as-MoR assumption; ADR-0109
 locks support-bot member-management scope (extends 0105) built in the 2026-06-30 go-live session.
 
-| #                                                                        | Title                                                                                    | Domain           | Status   | Relations                                                            |
-| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- | ---------------- | -------- | -------------------------------------------------------------------- |
-| [0106](../knowledge/decisions/ADR-0106-final-pricing-grandfathering.md)  | Final pricing numbers + grandfathering (Compliance $2,499 · Bundle $3,499 · annual subs) | Commerce/Pricing | accepted | executes 0095 §4; supersedes 0082 §2 display; extends 0012/0081/0089 |
-| [0107](../knowledge/decisions/ADR-0107-cf-access-go-live-gate.md)        | CF-Access go-live gate: keep gated until checkout works; flip = the launch act           | Infra/Go-live    | accepted | formalizes board decision; relates 0082/0106/0089/0009/0096          |
-| [0108](../knowledge/decisions/ADR-0108-payment-provider-paddle-mor.md)   | Payment provider: Paddle (Merchant of Record) supersedes Stripe-as-MoR                   | Commerce/Billing | accepted | supersedes Stripe-as-MoR (0012); amends 0089; relates 0106           |
-| [0109](../knowledge/decisions/ADR-0109-support-bot-member-management.md) | Support-bot member management (auto-role · mod cmds · /grant-role) — one bot, new module | Services/Support | accepted | extends 0105 (in the 0009 envelope); defers webhook to 0108          |
+| #                                                                        | Title                                                                                    | Domain           | Status   | Relations                                                                                                                                                  |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- | ---------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [0106](../knowledge/decisions/ADR-0106-final-pricing-grandfathering.md)  | Final pricing numbers + grandfathering (Compliance $2,499 · Bundle $3,499 · annual subs) | Commerce/Pricing | accepted | executes 0095 §4; supersedes 0082 §2 display; extends 0012/0081/0089                                                                                       |
+| [0107](../knowledge/decisions/ADR-0107-cf-access-go-live-gate.md)        | CF-Access go-live gate: keep gated until checkout works; flip = the launch act           | Infra/Go-live    | accepted | formalizes board decision; relates 0082/0106/0089/0009/0096; gate mechanism re-homed by 0114 (CF-Pages Access -> app auth / CF Access in front of Railway) |
+| [0108](../knowledge/decisions/ADR-0108-payment-provider-paddle-mor.md)   | Payment provider: Paddle (Merchant of Record) supersedes Stripe-as-MoR                   | Commerce/Billing | accepted | supersedes Stripe-as-MoR (0012); amends 0089; relates 0106                                                                                                 |
+| [0109](../knowledge/decisions/ADR-0109-support-bot-member-management.md) | Support-bot member management (auto-role · mod cmds · /grant-role) — one bot, new module | Services/Support | accepted | extends 0105 (in the 0009 envelope); defers webhook to 0108                                                                                                |
 
 ### P6 code-track (0110-0113, 2026-06-30) - status `accepted`
 
@@ -284,6 +325,77 @@ at the merge so the operator track keeps the contiguous 0106-0109 block.
 | [0111](../knowledge/decisions/ADR-0111-publish-readiness.md)              | Publish-readiness: private→public flip · open-base→npm / commercial→GH split · changeset gate                              | Registry/Release | accepted | executes 0094/0097 open-core; relates 0020-0023/0092      |
 | [0112](../knowledge/decisions/ADR-0112-mcp-rate-limit.md)                 | Buyer-MCP per-account rate limit (lazy-refill token bucket · port-injected · fail-open)                                    | Services/MCP     | accepted | extends 0009 MCP surface; relates 0089 metering           |
 | [0113](../knowledge/decisions/ADR-0113-entitlement-revoke-and-onetime.md) | Entitlement revocation + one-time purchases + refund credit-clawback (reference-counted grants)                            | Services/License | accepted | evolves 0071; amends 0089; relates 0007 integer-credits   |
+
+### P6 dashboard host/DB (0114-0115, 2026-06-30) - status `accepted`
+
+The buyer-dashboard build surfaced a host/URL fork (a static-export Next app and Cloudflare
+Workers/`workerd` both cannot serve the transaction-scoped fail-closed RLS `withTenant` read) and a
+co-located DB-host fork, both locked in one operator picker round. Closes the dashboard host/URL fork
+and the dashboard DB-host fork on the live board (`docs/state/decisions-and-forks.md`).
+
+| #                                                                       | Title                                                                       | Domain         | Status   | Relations                                                                             |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------------- | -------------- | -------- | ------------------------------------------------------------------------------------- |
+| [0114](../knowledge/decisions/ADR-0114-unified-railway-next-app.md)     | Unified dynamic Next 16 app on Railway (marketing + docs + buyer dashboard) | App/Infra      | accepted | supersedes 0084 deploy mode; amends 0079; re-homes 0107; consistent with 0044/0015    |
+| [0115](../knowledge/decisions/ADR-0115-railway-postgres-platform-db.md) | Railway Postgres as the platform DB host                                    | Database/Infra | accepted | amends 0014 (Neon default -> Railway); supports 0114; supports 0005 (RLS transaction) |
+
+### P6 unified-app build session: billing scope + observability + analytics (0116-0118, 2026-06-30) - status `accepted`
+
+Three operator-picked forks surfaced building the unified app: the buyer-facing `@caisson/billing`
+package's Stripe scope post-Paddle-MoR, the observability vendor, and web analytics. Locked in one
+operator-picker round alongside the dashboard build.
+
+| #                                                                                            | Title                                                                                            | Domain             | Status   | Relations                                  |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------ | -------- | ------------------------------------------ |
+| [0116](../knowledge/decisions/ADR-0116-billing-driver-scope-paddle-platform-stripe-buyer.md) | Billing driver scope: Paddle platform-only; Stripe retained as a buyer `@caisson/billing` driver | Commerce/Billing   | accepted | extends 0108; clarifies 0017; relates 0089 |
+| [0117](../knowledge/decisions/ADR-0117-observability-otel-signoz.md)                         | Observability: vendor-neutral OpenTelemetry -> self-hosted SigNoz                                | Observability      | accepted | supports 0114/0115; complemented by 0118   |
+| [0118](../knowledge/decisions/ADR-0118-web-analytics-plausible.md)                           | Web analytics: Plausible (cookieless, env-gated on `PLAUSIBLE_DOMAIN`)                           | GTM-site/Analytics | accepted | complements 0117; fits 0079/0095           |
+
+### Pricing + store-rework grill session (0129-0132, 2026-06-30) - status `accepted`
+
+A two-round operator picker on the store-rework initiative: round 1 locked the packaging/pricing
+forks (module pricing model, edition-bundle math, catalog scope, availability posture); round 2
+locked the mechanics (checkout, sign-in) alongside sequencing/grandfathering decisions recorded on
+the board rather than as new ADRs.
+
+| #                                                                                | Title                                                                    | Domain           | Status   | Relations                                                                      |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------- | -------- | ------------------------------------------------------------------------------ |
+| [0129](../knowledge/decisions/ADR-0129-pricing-packaging-value-based-modules.md) | Pricing & packaging: value-based per-module + discounted edition bundles | Pricing          | accepted | supersedes 0106's Local-first/bundle numbers; extends 0012/0081/0082/0095/0106 |
+| [0130](../knowledge/decisions/ADR-0130-storefront-as-if-built-availability.md)   | Store-front as-if-built availability: full catalog, no maturity flags    | GTM/Pricing      | accepted | supersedes 0082 §3/§4; composes 0129; extends 0095/0106                        |
+| [0131](../knowledge/decisions/ADR-0131-cart-multiitem-paddle-checkout.md)        | On-site cart + single multi-item Paddle checkout                         | Commerce/Billing | accepted | extends 0116; composes 0129/0089/0098/0113                                     |
+| [0132](../knowledge/decisions/ADR-0132-buyer-signin-magiclink-oauth.md)          | Buyer sign-in: magic-link + GitHub/Google OAuth via better-auth          | Auth             | accepted | extends 0015; closes the sign-in-placeholder gap                               |
+
+### Harvest grill session (0133-0135, 2026-06-30) - status `accepted`
+
+Document-only locks — no code lands under any of these three. Consolidated ranked tracking doc:
+`docs/state/harvest-program.md`. Sequenced strictly post-go-live, after the pricing/store-rework set
+above and the Railway cutover.
+
+| #                                                                                    | Title                                                                            | Domain             | Status   | Relations                                          |
+| ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------- | ------------------ | -------- | -------------------------------------------------- |
+| [0133](../knowledge/decisions/ADR-0133-ai-agent-infra-harvest-initiative.md)         | AI/agent-infra harvest initiative: gridwork-core substrate + Wardfile base lifts | Agentic-Dev/AI-Kit | accepted | composes 0059-0063, 0065-0066, 0075; document-only |
+| [0134](../knowledge/decisions/ADR-0134-cross-domain-audit-validate-harness.md)       | Cross-domain audit/validate harness (full build)                                 | Tooling/CI         | accepted | extends 0101; composes 0016; document-only         |
+| [0135](../knowledge/decisions/ADR-0135-new-compliance-modules-alerting-retention.md) | New commercial Compliance modules: `@caisson/alerting` + `retention-runner`      | Compliance         | accepted | composes 0003, 0057, 0075; document-only           |
+
+### Store-rework build wave (0136-0137, 2026-06-30) - status `accepted` (locked + built)
+
+Unlike the document-only 0129-0135 locks, these two landed as code on
+`feat/dashboard-unified-and-p6-tail` this session (gates green).
+
+| #                                                                                     | Title                                                                    | Domain             | Status   | Relations                                                                                   |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------ | -------- | ------------------------------------------------------------------------------------------- |
+| [0136](../knowledge/decisions/ADR-0136-license-keyed-registry-gating-tooling-open.md) | License-keyed registry gating + ships-with-generator tooling opened Base | Registry/Licensing | accepted | extends 0047/0071/0077; amends 0094 (open-Base set) + 0111 (publish split); protects 0129   |
+| [0137](../knowledge/decisions/ADR-0137-edition-reprice-full-below-sum.md)             | Edition reprice: every edition below its module-sum (Q4)                 | Pricing            | accepted | supersedes 0129 edition point-values in full; reverses 0129 §2; extends 0106 grandfathering |
+
+---
+
+### Admin control-plane + fleet observability (0138, 2026-06-30) - status `accepted` (charter, build post-Stage-1)
+
+Base-level architecture lock for the `admin.caisson.sh` operator control-plane + full-fleet
+observability; implementation is post-Stage-1, spec-gated.
+
+| #                                                                                      | Title                                                                        | Domain            | Status   | Relations                                                                 |
+| -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ----------------- | -------- | ------------------------------------------------------------------------- |
+| [0138](../knowledge/decisions/ADR-0138-admin-control-plane-and-fleet-observability.md) | admin.caisson.sh operator control-plane + full-fleet observability (charter) | Ops/Observability | accepted | executes 0117; builds on 0114/0115; absorbs 0099-0104 studio; reuses 0107 |
 
 ---
 

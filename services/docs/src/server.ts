@@ -8,11 +8,13 @@
 //     the FTS5 floor rather than crash-looping the service — the floor is the honest degraded mode.
 //   • no key (CI / local / offline) → the deterministic FTS5 floor alone: a natural-language sentence
 //     with no exact match returns [] rather than a confidently-wrong chunk.
+import { initObservability } from "@caisson/observability";
 import { createApp } from "./app.ts";
 import { buildCorpus } from "./corpus.ts";
 import { DocsIndex } from "./index-store.ts";
 import { renderLlmsFull, renderLlmsTxt } from "./llms-txt.ts";
 import { createOpenRouterEmbedder } from "./openrouter-embedder.ts";
+import { loadRateLimitConfig, TokenBucketLimiter } from "./rate-limit.ts";
 import type { DocChunk } from "./types.ts";
 
 const DEFAULT_PORT = 8788;
@@ -52,6 +54,11 @@ export async function startServer(): Promise<{
   port: number;
   stop: () => void;
 }> {
+  // ADR-0117: wired first, before any other boot work — instrumentation must be live before the
+  // modules it patches (node:http, pg) are first required. Env-gated: a no-op when
+  // OTEL_EXPORTER_OTLP_ENDPOINT is unset (CI / local / no SigNoz configured).
+  initObservability({ serviceName: "service-docs" });
+
   const token = process.env.DOCS_SERVICE_TOKEN ?? "";
   if (token.length === 0) {
     throw new Error(
@@ -67,7 +74,10 @@ export async function startServer(): Promise<{
   const llmsTxt = renderLlmsTxt(corpus, origin !== undefined ? { origin } : {});
   const llmsFull = renderLlmsFull(corpus);
 
-  const handler = createApp({ index, llmsTxt, llmsFull, token });
+  // Per-IP token-bucket limiter (hardening #1). Config is Zod-validated from env with safe defaults; a
+  // present-but-invalid limit fails startup closed rather than serving with a silently-wrong budget.
+  const limiter = new TokenBucketLimiter(loadRateLimitConfig());
+  const handler = createApp({ index, llmsTxt, llmsFull, token, limiter });
   const server = Bun.serve({ port, fetch: handler });
   process.stderr.write(
     `[service-docs] serving ${corpus.chunks.length} chunks on :${server.port}\n`,

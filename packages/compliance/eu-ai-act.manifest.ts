@@ -1,15 +1,14 @@
-// Registry manifest for the RESERVED EU AI Act framework slot (ADR-0057). A NAMED SLOT module: it
-// reserves the `@caisson/eu-ai-act` module id and records that the slot exists, but ships NO control
-// content yet — `golden: null` (no catalog fixture) because there is nothing golden-able until the
-// high-risk obligations are authored as canonical controls in a later task. The framework reservation
-// itself (Annex IV outline, clean-room note) lives in `src/frameworks/eu-ai-act.ts`; this file is the
-// registry-side declaration of the same reservation.
+// Registry manifest for the EU AI Act framework primitive (ADR-0057). The high-risk system
+// obligations control pack (clean-room, own-authored — Title III Chapters 2-3, crosswalked to the
+// regulation's article identifiers) lives in `src/frameworks/eu-ai-act.ts`, golden-pinned alongside
+// the SOC2-TSC/HIPAA-Security packs in the package's one `src/__golden__` dir (T18); this file is
+// the registry-side declaration of that same module.
 //
 // It is a `primitive` content pack scoped to the Compliance edition (`editions: ["compliance"]`,
-// composed DOWN by the edition, never depending "up" on it, ADR-0003), so it carries no dependencies
-// while it is empty. `priceCents` is a forced placeholder (the schema requires a positive integer for
-// any paid module, ADR-0007) — repriced when content is authored and the open Pricing lock (ADR-0012)
-// closes. NO SCF ingest of any kind (TM-J): content is clean-room own-authored when the slot fills.
+// composed DOWN by the edition, never depending "up" on it, ADR-0003), so it carries no runtime
+// dependencies of its own. `priceCents` stays a placeholder (the schema requires a positive integer
+// for any paid module, ADR-0007) pending the open Pricing lock (ADR-0012). NO SCF ingest of any
+// kind (TM-J): the catalog is clean-room own-authored, never an external-catalog transform.
 import { defineModule } from "../../registry/schema/module-manifest";
 
 export default defineModule({
@@ -21,7 +20,7 @@ export default defineModule({
   priceCents: 4900,
   license: "LicenseRef-Caisson-Commercial",
   dependencies: [],
-  golden: null,
+  golden: "src/__golden__",
   description:
-    "RESERVED slot for the EU AI Act high-risk system obligations (Annex IV) — named and reserved, no authored control content or catalog golden yet (ADR-0057). Filled clean-room in a later task; never an SCF ingest.",
+    "EU AI Act high-risk system obligations coverage pack (Regulation (EU) 2024/1689, Title III Chapters 2-3): own-authored canonical controls for risk management, data governance, technical documentation, transparency, human oversight, accuracy/robustness/cybersecurity, and the provider's quality-management, conformity-assessment, registration, post-market-monitoring, and incident-reporting duties — crosswalked to the regulation's article identifiers (ADR-0057, clean-room).",
 });

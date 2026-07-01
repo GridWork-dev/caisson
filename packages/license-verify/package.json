@@ -2,10 +2,10 @@
   "name": "@caisson/license-verify",
   "version": "0.1.0",
   "type": "module",
-  "license": "LicenseRef-Caisson-Commercial",
+  "license": "Apache-2.0",
   "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "description": "Offline license-token verification base: tessera-format wire codec (PREFIX-TIER-base64url(payload+sig)) + offline Ed25519 verify (crypto.verify over kernel canonicalize) with baked-in public key, richer entitlements[]+tier+expiry claims, fail-safe-to-community, perpetual-per-major. Issuer is P6 — only offline verify lives here. ADR-0010/0024.",
   "exports": {

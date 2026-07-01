@@ -1,13 +1,16 @@
-// The BillingProvider port (ADR-0017). Stripe lives behind it; a future MoR swap (Paddle/LS) is a
-// new driver, not a rewrite. P1 ships verify+parse (the seam that feeds the credit grant); the
-// full purchase→entitlement→license→grant orchestration is P6 (services/license).
-import { fetchWithTimeout, InternalError } from "@caisson/kernel";
+// The BillingProvider port (ADR-0017). Stripe was the original driver; ADR-0108 switches the live MoR
+// to Paddle — both implementations live behind this ONE port, so a provider swap is a new driver, not
+// a rewrite. P1 ships verify+parse (the seam that feeds the credit grant); the full
+// purchase→entitlement→license→grant orchestration is P6 (services/license).
+import { fetchWithTimeout, InternalError, parseStrict } from "@caisson/kernel";
 import { verifyStripeWebhook, type VerifyOptions } from "./webhook.ts";
 import {
   parseStripeEvent,
   type DomainBillingEvent,
   type StripeEvent,
 } from "./events.ts";
+import { verifyPaddleWebhook } from "./paddle-webhook.ts";
+import { parsePaddleEvent, PaddleEventSchema } from "./paddle-events.ts";
 
 export interface CheckoutInput {
   accountId: string;
@@ -86,6 +89,77 @@ export function createStripeBilling(config: StripeConfig): BillingProvider {
       if (data.url === undefined)
         throw new InternalError("Stripe returned no checkout url");
       return { url: data.url };
+    },
+  };
+}
+
+export interface PaddleConfig {
+  webhookSecret: string;
+  apiKey: string;
+  /** Selects the Paddle API base url (ADR-0108 `PADDLE_ENV`). Defaults to `production`. */
+  env?: "sandbox" | "production";
+}
+
+function paddleApiBase(env: PaddleConfig["env"]): string {
+  return env === "sandbox"
+    ? "https://sandbox-api.paddle.com"
+    : "https://api.paddle.com";
+}
+
+export function createPaddleBilling(config: PaddleConfig): BillingProvider {
+  return {
+    verifyAndParse(rawBody, signatureHeader, opts) {
+      verifyPaddleWebhook(rawBody, signatureHeader, config.webhookSecret, opts);
+      // Zod `.strict()` at the boundary (services-hardening MED finding): reject an envelope with a
+      // missing/wrong-typed event_id/event_type or any unknown top-level field BEFORE it reaches the
+      // mapper — a signature check alone does not guarantee the payload SHAPE. parseStrict throws a
+      // redaction-safe ValidationError (never echoes the rejected value), which the route layer maps
+      // to a non-2xx so Paddle retries — the mapper's existing fail-closed-to-null/defensive handling
+      // of a well-formed-but-unrecognized `data` payload is unchanged.
+      const event = parseStrict(PaddleEventSchema, JSON.parse(rawBody));
+      return parsePaddleEvent(event);
+    },
+
+    async createCheckout(input) {
+      // Paddle Billing's primary checkout surface is Paddle.js (client-side overlay/inline, a client
+      // token + Price id — ADR-0108), not a server-redirect flow like Stripe's. The `BillingProvider`
+      // port still requires a `{ url }` (Stripe-shaped) result, so this drives Paddle's
+      // transaction-based hosted-checkout path instead: create a `draft`/`ready` Transaction for the
+      // price + tenant, and return the `checkout.url` Paddle hands back ("Pass a transaction to a
+      // checkout" — developer.paddle.com). `input.mode` is unused: Paddle infers one-time vs. recurring
+      // from the Price's own catalog configuration, not a per-request flag (unlike Stripe's
+      // `mode: "payment" | "subscription"`). `cancelUrl` has no Paddle transaction-level equivalent
+      // (handled client-side by Paddle.js) — kept on the shared port for Stripe parity only.
+      const baseUrl = paddleApiBase(config.env);
+      const body = {
+        items: [{ price_id: input.priceId, quantity: 1 }],
+        // The Caisson account/tenant id, propagated NATIVELY by Paddle onto the resulting transaction
+        // (and, for a recurring price, the subscription it creates) — no metadata-stamping workaround
+        // needed (ADR-0108, removes the Stripe driver's subscription_data[metadata] trick).
+        custom_data: { account_id: input.accountId },
+        checkout: { url: input.successUrl },
+      };
+      const res = await fetchWithTimeout(
+        `${baseUrl}/transactions`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${config.apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(body),
+        },
+        { timeoutMs: 15_000 },
+      );
+      if (!res.ok)
+        throw new InternalError("Paddle transaction creation failed");
+      const data = (await res.json()) as {
+        data?: { checkout?: { url?: string } };
+      };
+      const url = data.data?.checkout?.url;
+      if (url === undefined)
+        throw new InternalError("Paddle returned no checkout url");
+      return { url };
     },
   };
 }

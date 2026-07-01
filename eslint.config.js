@@ -19,6 +19,12 @@ export default [
       "outputs/**",
       "infra/**",
       "**/*.cjs",
+      // Deliberate negative-test fixtures (e.g. tooling/eslint-config/__fixtures__/boundaries/
+      // base-package-violation.ts) are meant to violate the rules they exist to test — they are
+      // exercised by boundaries.test.ts, which invokes eslint directly against
+      // tooling/eslint-config/index.js (NOT this root config), so excluding them here only keeps
+      // the repo-wide `bunx eslint .` gate from flagging them; the meta-test is unaffected.
+      "**/__fixtures__/**",
     ],
   },
   ...config,

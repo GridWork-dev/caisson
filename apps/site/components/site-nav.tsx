@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { ThemeToggle, Wordmark } from "@caisson/ui/components";
 
+import { CartTrigger } from "./cart-trigger";
 import { MobileNav } from "./mobile-nav";
 import { NavLinks } from "./nav-links";
 import { Button } from "./button";
@@ -27,6 +28,10 @@ export function SiteNav() {
 
       {/* Desktop link row — hidden below 900px via global.css; active-link state is the one client island */}
       <NavLinks links={NAV_LINKS} />
+
+      {/* Cart trigger — always visible (not gated by the 900px desktop/mobile split below), so it
+          reads the same in the compact header and the full desktop bar. */}
+      <CartTrigger />
 
       {/* Desktop CTA group — primary "Get started" → /pricing + theme toggle. Docs lives in the link row
           above (and the mobile drawer), so no duplicate ghost Docs button here. */}
