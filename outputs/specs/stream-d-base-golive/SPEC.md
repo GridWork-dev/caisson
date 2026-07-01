@@ -1,7 +1,8 @@
 # SPEC — Stream D · Base substrate drivers + go-live surface + CI
 
-**Status:** spec-DRAFT · 2026-06-30 (Stage-2 Stream D) · **awaits operator lock on 3 forks + 1 boundary
-flag before any code.** **Branch:** `stream/base-golive` (off clean `main`). **Reserved ADRs:**
+**Status:** spec-COMMITTED · 2026-06-30 (Stage-2 Stream D) · **all 4 forks locked (D4=org · D7=blank ·
+D8=(a) · license-KMS=exclude); autonomous EXECUTE underway.** ADRs 0170–0176 recorded. **Branch:**
+`stream/base-golive` (off clean `main`). **Reserved ADRs:**
 **0170–0179** (adapter/driver + fork ADRs draw here; the `adapter-expansion.md` "0119+" numbers are advisory
 placeholders — real numbers taken from this range at lock, per the kickoff).
 **Kickoff:** `docs/state/stage2-kickoff-triage.md` §"Stream D" (tasks D1–D13). **Recon:** workflow
@@ -162,7 +163,7 @@ trustedHeader)` that defaults to NOT trusting `x-forwarded-for` (stay provider-a
   rate-limit · MCP-limit wiring · Paddle-webhook binding) are DEPLOY-composition work, not Stream D's tree**
   (`services/*`). D13 here = doc reconcile + correctly routing #1-3 to the deploy session.
 
-## 6. OPEN FORKS — await operator lock before code (per "never auto-decide a fork")
+## 6. FORKS — LOCKED 2026-06-30 (operator): D4=**org** · D7=**leave blank** · D8=**(a)** · license-KMS=**exclude**
 
 ### Fork D4 — buyer account: personal vs org
 

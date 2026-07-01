@@ -10,7 +10,7 @@ conflict, the ADR file and the board win over this index.
   never edits the prior file. So most rows below are **partial** supersessions (one clause),
   not a wholesale replacement.
 - 113 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 113). Numbering is **not**
-  contiguous: present are **0001-0024** and **0040-0138**; **0025-0039 are an unused gap**
+  contiguous: present are **0001-0024** and **0040-0138** + **0170-0176** (Stage-2 Stream-D); **0025-0039 are an unused gap**
   (no files). The 0040 jump was a deliberate block reservation for the brand/positioning set.
   **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit);
   **0094-0096** = the 2026-06-29 GTM-report locks (open-core Base / GTM offer / services-docs);
@@ -396,6 +396,25 @@ observability; implementation is post-Stage-1, spec-gated.
 | #                                                                                      | Title                                                                        | Domain            | Status   | Relations                                                                 |
 | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ----------------- | -------- | ------------------------------------------------------------------------- |
 | [0138](../knowledge/decisions/ADR-0138-admin-control-plane-and-fleet-observability.md) | admin.caisson.sh operator control-plane + full-fleet observability (charter) | Ops/Observability | accepted | executes 0117; builds on 0114/0115; absorbs 0099-0104 studio; reuses 0107 |
+
+---
+
+### Stage-2 Stream-D adapter + org-account locks (0170-0176, 2026-06-30) - status `accepted`
+
+The base-substrate driver buildout (one ADR per port-family, `docs/state/adapter-expansion.md`) + the D4
+org-account fork lock. These take real numbers from Stream D's reserved **0170-0179** range, retiring the
+advisory "0119+" placeholders in `adapter-expansion.md`. Drivers are env-gated/dormant until creds; org-account
+is a real migration. Reserved 0177-0179 for D6 harvest + overflow.
+
+| #                                                                     | Title                                                       | Domain           | Status   | Relations                                                            |
+| --------------------------------------------------------------------- | ----------------------------------------------------------- | ---------------- | -------- | -------------------------------------------------------------------- |
+| [0170](../knowledge/decisions/ADR-0170-email-multi-driver.md)         | Email adapter: SMTP + AWS SES + Postmark behind `Emailer`   | Adapters/Email   | accepted | extends 0018/0085; realizes adapter-expansion §1A                    |
+| [0171](../knowledge/decisions/ADR-0171-field-crypto-aws-kms.md)       | KMS adapter: wire AWS KMS (license KmsSigner excluded, P7)  | Adapters/Crypto  | accepted | extends 0043/0045/0046/0055; realizes §1B                            |
+| [0172](../knowledge/decisions/ADR-0172-workos-sso.md)                 | SSO adapter: WorkOS SAML/SCIM, sign-in scope only           | Adapters/Auth    | accepted | extends 0015; composes 0176; realizes §1C                            |
+| [0173](../knowledge/decisions/ADR-0173-pgboss-jobqueue.md)            | Jobs adapter: pg-boss (Postgres-native) behind `JobQueue`   | Adapters/Jobs    | accepted | extends 0018; composes D6 harvest; realizes §2B                      |
+| [0174](../knowledge/decisions/ADR-0174-supabase-transactor.md)        | DB adapter: Supabase (session-mode/TCP) behind `Transactor` | Adapters/DB      | accepted | extends 0005/0014/0115                                               |
+| [0175](../knowledge/decisions/ADR-0175-lemonsqueezy-polar-billing.md) | Billing adapter: LemonSqueezy + Polar (buyer-facing)        | Adapters/Billing | accepted | extends 0017/0108/0116                                               |
+| [0176](../knowledge/decisions/ADR-0176-org-account-model.md)          | Buyer account: org model via `account_member` (multi-user)  | Auth/Tenancy     | accepted | extends 0015/0132; closes personal placeholder; RLS (0005) unchanged |
 
 ---
 
