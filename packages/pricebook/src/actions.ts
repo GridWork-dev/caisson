@@ -18,15 +18,30 @@ export const ACTION_BOOK: ActionBook = {
 
 export type ActionTag = keyof ActionBook;
 
+/**
+ * Where the resolved provider key for this action's lane came from (ADR-0162 discriminator; mirrors
+ * `@caisson/ai-config`'s `ProviderConfig.keySource`). `"env"` is the operator's platform key (cost
+ * unchanged); `"tenant"` is a per-tenant BYOK key — ADR-0182 makes the action FREE, since the platform
+ * is already billed via the edition/subscription fee, not per-action credits, when the tenant brings
+ * their own key.
+ */
+export type ActionKeySource = "env" | "tenant";
+
 /** Validate an action-book override at a boundary (Zod `.strict()`). */
 export function parseActionBook(input: unknown): ActionBook {
   return parseStrict(actionBookSchema, input);
 }
 
-/** The integer credit cost of an action (closed union — a bad tag is a compile error). */
+/**
+ * The integer credit cost of an action (closed union — a bad tag is a compile error). ADR-0182: a
+ * `"tenant"` (BYOK) `keySource` zeroes the debit — internal metering (the spend-cap/abuse signal)
+ * stays orthogonal and keeps running wherever it's wired; this only zeroes the credit-ledger charge.
+ * An unknown action tag still throws regardless of `keySource` (fail-closed, not silently free).
+ */
 export function resolveActionCost(
   action: ActionTag,
   book: ActionBook = ACTION_BOOK,
+  keySource: ActionKeySource = "env",
 ): number {
   // Own-property check mirrors resolvePlan's prototype-safe, fail-closed lookup — defends against a
   // runtime cast bypass even though ActionTag is a compile-time closed union.
@@ -34,5 +49,5 @@ export function resolveActionCost(
   if (cost === undefined) {
     throw new ConfigError(`no action-book entry for ${action}`);
   }
-  return cost;
+  return keySource === "tenant" ? 0 : cost;
 }

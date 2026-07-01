@@ -9,6 +9,21 @@ describe("action-book", () => {
       ACTION_BOOK.codegenRunCredits,
     );
   });
+  test("resolveActionCost defaults keySource to env (cost unchanged)", () => {
+    expect(resolveActionCost("codegenRunCredits", ACTION_BOOK, "env")).toBe(
+      ACTION_BOOK.codegenRunCredits,
+    );
+  });
+  test("ADR-0182: a tenant (BYOK) keySource zeroes the debit", () => {
+    expect(resolveActionCost("codegenRunCredits", ACTION_BOOK, "tenant")).toBe(
+      0,
+    );
+  });
+  test("an unknown action still throws under a tenant keySource (fail-closed)", () => {
+    expect(() =>
+      resolveActionCost("notARealAction" as never, ACTION_BOOK, "tenant"),
+    ).toThrow(/no action-book entry/);
+  });
   test("parseActionBook rejects a non-integer cost", () => {
     expect(() => parseActionBook({ codegenRunCredits: 1.5 })).toThrow(
       ValidationError,
