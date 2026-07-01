@@ -45,13 +45,12 @@ export { functional, functionalDark, functionalLight };
  * Locked font stacks. Wrapped in the `next/font` CSS variables the site sets on <html>
  * (`apps/site/lib/fonts.ts`) with the literal candidate stack as the fallback — so the site
  * self-hosts the woff2 (ADR-0079 §4) while any context without next/font (the studio) still
- * resolves the named family. `monoCode` (JetBrains Mono, ADR-0078 §1) is code-block only;
- * `mono` (Martian Mono) stays the brand/label/numeral surface.
+ * resolves the named family. `mono` (Martian Mono, ADR-0078 §1 / ADR-0195) is the SINGLE
+ * monospace surface — brand/label/numeral AND code blocks (JetBrains Mono dropped, D-7).
  */
 export const fonts = {
   sans: `var(--font-sans, ${type.sans})`,
   mono: `var(--font-mono, ${type.mono})`,
-  monoCode: `var(--font-mono-code, "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace)`,
 } as const;
 
 /** The locked selection ids — surfaced in the studio so the lock is visible. */
