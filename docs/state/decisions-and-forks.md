@@ -453,7 +453,8 @@ store-rework BUILD wave then added **0136** (license-keyed registry gating + too
 **2026-07-01 edition seam-completion picker** used **0179–0185** (OSCAL export · BYOK buyer · live-transports
 defer · Bun-OTel — resolved below). `0139`/`0144–0149`/`0154–0159`/`0163–0169` stay reserved for per-stream
 spillover; **note ADR-0179 had been advisory-reserved for D6 harvest / Stream-D spillover — the operator
-reassigned it to the OSCAL version fork.** **Ceiling now 0185.** The board's own interim "ADR-0119" placeholder (Railway provisioning topology, recorded above) and
+reassigned it to the OSCAL version fork.** **Ceiling now 0188** (the 2026-07-01 LIFT slice-1 picker added
+0186/0187/0188 — see the LIFT section below). The board's own interim "ADR-0119" placeholder (Railway provisioning topology, recorded above) and
 `adapter-expansion.md`'s proposed 0119-0128 range remain unresolved against each other (flagged there
 already) — this session's numbers do not touch that range and do not resolve that pre-existing flag.
 
@@ -480,6 +481,22 @@ frameworks (`packages/compliance`, golden fixtures under `__golden__/`), the fre
 buyer key form (`packages/{ai-kit,pricebook}` + `apps/site` `/dashboard/{ai-keys,compliance}`), and the
 `withRequestSpan` Bun manual-span helper (`packages/observability`, wired into `services/docs`+`services/license`).
 ADR-0184 (live-transports) stays deferred by design, no build.
+
+## Closed by the 2026-07-01 LIFT slice-1 picker (operator-locked)
+
+Five forks surfaced by the **LIFT phase** (survey `outputs/specs/lift-phase/SLICE-PLAN.md`; per-item
+SPECs `SPEC-agent-runner.md` / `SPEC-support-impersonation.md` / `SPEC-audit-harness-pipeline.md`), all
+operator-locked 2026-07-01 to the recommendation column. Build order: **ADR-0188 (audit-harness) first**
+→ whole-repo multi-model audit → then ADR-0186/0187 (the two new sellables).
+
+| Fork                                                 | Decision                                                                                                                                                                                                                                                                                               | Record                         |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
+| **F1/F2/F5 — agent-runner boundary/config/pricing**  | New commercial `@caisson/agent-runner` (Agentic-Dev member, separate from agent-dev); provider-agnostic `{binary, baseUrlEnv, authEnv, model}` config; folded into the Agentic-Dev edition price, no standalone SKU (ADR-0137 below-sum).                                                              | **ADR-0186** (files at build)  |
+| **F3 — support-impersonation boundary + coverage**   | Fold into `@caisson/compliance` (needs audit-chain/collectors/withTenant — a separate pkg would depend "up", ADR-0003); ship SOC2 **and** HIPAA access-control collectors.                                                                                                                             | **ADR-0187** (files at build)  |
+| **F4 — audit-harness reconcile scope + driver home** | `reconcile(previous, current, scope)` — explicit required `--domains` (fail-loud); out-of-scope previous findings pass through unchanged (fixes the silent cross-domain false-close). Dispatcher + Challenger driver **outside** the package in a Caisson-local skill (ADR-0134 / AGENTS.md boundary). | **ADR-0188** (FILED, building) |
+
+**Ceiling now 0188** (0186/0187 reserved + decision-locked, file at their build; 0188 filed this session).
+Slice-2 hardening tail (Wardfile B-series + convergent lift-sweep ranks) stays queued, unnumbered.
 
 ## Flagged for the Compliance session (P2 pre-work — do NOT build in the foundations track)
 
