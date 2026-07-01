@@ -3,7 +3,7 @@
 // The compliance edition's canonical output is the deterministic, signed Caisson evidence pack (T13).
 // SOME buyers feed a GRC platform (FedRAMP, OpenSCAP, drawio-grade automation) that speaks NIST OSCAL
 // instead. This adapter is the EXPORT SEAM: it maps an already-generated, already-validated
-// `EvidencePackManifest` (the T13 pack shape) into OSCAL v1.1.3 document bodies —
+// `EvidencePackManifest` (the T13 pack shape) into OSCAL v1.2.2 document bodies —
 //   - Security Assessment Results (SAR, root `assessment-results`): one finding per control, one
 //     observation per evidence item; a control's derived readiness drives the finding's objective
 //     status (`ready` → `satisfied`, `gap` → `not-satisfied`);
@@ -93,7 +93,9 @@ interface OscalRelatedObservation {
 /** A finding's objective status — `satisfied`/`not-satisfied` is OSCAL's required enum (format vocab). */
 interface OscalFindingStatus {
   readonly state: "satisfied" | "not-satisfied";
-  readonly reason?: string;
+  // OSCAL `status/@reason` is a constrained TOKEN (allowed values: pass/fail/other) — free prose there
+  // fails NIST XSD (cvc-datatype-valid). The gap rationale is markup, so it lives in `remarks`.
+  readonly remarks?: string;
 }
 
 interface OscalFindingTarget {
@@ -177,12 +179,12 @@ interface OscalPoamItem {
   readonly "related-observations": readonly OscalRelatedObservation[];
 }
 
-/** The POA&M body (root `plan-of-action-and-milestones`). */
+/** The POA&M body (root `plan-of-action-and-milestones`). No root-level `props` — OSCAL doesn't allow
+ * them here (the posture prop lives in `metadata.props`); `poam-items` is required min-1 (NIST XSD). */
 export interface OscalPlanOfActionAndMilestones {
   readonly uuid: string;
   readonly metadata: OscalMetadata;
   readonly "system-id": OscalSystemId;
-  readonly props: readonly OscalProp[];
   readonly observations?: readonly OscalObservation[];
   readonly "poam-items": readonly OscalPoamItem[];
 }
@@ -348,7 +350,7 @@ export function toOscalAssessmentResults(
         : {
             type: "objective-id",
             "target-id": control.controlId,
-            status: { state: "not-satisfied", reason: gapReason(control) },
+            status: { state: "not-satisfied", remarks: gapReason(control) },
           };
     findings.push({
       uuid: newId(),
@@ -407,13 +409,15 @@ export function toOscalPlanOfActionAndMilestones(
   const lastModified = resolveNow(options);
   const newId = options.newId ?? randomUUID;
 
+  // Observations mirror every examined evidence item (like the SAR), so the POA&M is never empty: NIST
+  // XSD requires plan-of-action-and-milestones to carry >=1 of {observation, risk, finding, poam-item},
+  // and a clean pack has zero poam-items. Observations are real (what we examined) — no fabrication.
+  // poam-items are still GAP-only; each references its flagged observations.
   const observations: OscalObservation[] = [];
   const poamItems: OscalPoamItem[] = [];
   for (const control of manifest.controls) {
-    if (control.readiness !== "gap") continue;
     const related: OscalRelatedObservation[] = [];
     for (const item of control.evidence) {
-      if (item.status !== "flagged") continue;
       const uuid = newId();
       observations.push({
         uuid,
@@ -422,13 +426,25 @@ export function toOscalPlanOfActionAndMilestones(
         methods: EXAMINE,
         collected: lastModified,
       });
-      related.push({ "observation-uuid": uuid });
+      if (item.status === "flagged") related.push({ "observation-uuid": uuid });
     }
+    if (control.readiness !== "gap") continue;
     poamItems.push({
       uuid: newId(),
       title: `${control.controlId} — ${control.title}`,
       description: `Remediation required for ${control.controlId}: ${gapReason(control)}`,
       "related-observations": related,
+    });
+  }
+
+  // NIST XSD requires poam-items min-1. A clean pack (zero gaps) has no remediation to fabricate, so
+  // emit ONE truthful informational item stating there are no open items — honest, not a made-up gap.
+  if (poamItems.length === 0) {
+    poamItems.push({
+      uuid: newId(),
+      title: "No open remediation items",
+      description: `All controls are evidence-ready; no gaps recorded. ${manifest.summary.posture}`,
+      "related-observations": [],
     });
   }
 
@@ -444,14 +460,7 @@ export function toOscalPlanOfActionAndMilestones(
       "identifier-type": "https://caisson.sh/ns/tenant",
       id: manifest.tenantId,
     },
-    props: [
-      {
-        name: "caisson-readiness-posture",
-        ns: CAISSON_OSCAL_NS,
-        value: manifest.summary.posture,
-      },
-    ],
-    // `observations` is OSCAL-optional; omit it (not `[]`) for a clean pack to keep the body minimal.
+    // Observations mirror examined evidence (posture prop is in metadata; POA&M root takes no props).
     ...(observations.length > 0 ? { observations } : {}),
     "poam-items": poamItems,
   };

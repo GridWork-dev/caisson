@@ -1,7 +1,7 @@
 // src/evidence/oscal-export.test.ts — OSCAL export adapter (ADR-0058, T15).
 //
 // Seam-tested (no transport, no network, no golden): the adapter is a PURE deterministic mapping of
-// the T13 evidence-pack manifest into OSCAL v1.1.3 SAR + POA&M bodies. The tests assert the OSCAL
+// the T13 evidence-pack manifest into OSCAL v1.2.2 SAR + POA&M bodies. The tests assert the OSCAL
 // shape, the honest readiness→objective-status mapping (ready→satisfied, gap→not-satisfied + POA&M
 // item), determinism under injected clock + id seam, the TM-K honesty floor (no compliant/certified),
 // and fail-closed behaviour on a bad clock / malformed provenance.
@@ -205,7 +205,7 @@ describe("toOscalAssessmentResults — SAR mapping", () => {
       "ready finding",
     );
     expect(ready.target.status.state).toBe("satisfied");
-    expect(ready.target.status.reason).toBeUndefined();
+    expect(ready.target.status.remarks).toBeUndefined();
 
     const gap = req(
       result.findings.find(
@@ -214,7 +214,7 @@ describe("toOscalAssessmentResults — SAR mapping", () => {
       "gap finding",
     );
     expect(gap.target.status.state).toBe("not-satisfied");
-    expect(gap.target.status.reason).toContain("substrate.rls-force");
+    expect(gap.target.status.remarks).toContain("substrate.rls-force");
   });
 
   test("one observation per evidence item, linked from its control's finding", () => {
@@ -273,20 +273,28 @@ describe("toOscalPlanOfActionAndMilestones — POA&M mapping", () => {
     const item = req(poam["poam-items"][0], "poam item");
     expect(item.title).toContain("DATA-PROTECTION.TENANT-ISOLATION");
     expect(item.description).toContain("Remediation required");
-    // The flagged item surfaces as an observation referenced by the poam-item.
-    expect(poam.observations).toHaveLength(1);
-    const obs = req(req(poam.observations, "observations")[0], "observation");
-    expect(item["related-observations"][0]?.["observation-uuid"]).toBe(
-      obs.uuid,
+    // Observations mirror EVERY examined evidence item (3), so the POA&M is never empty (NIST XSD
+    // requires >=1 poam-item and the doc to carry content); the gap poam-item's flagged observation
+    // resolves within that set.
+    expect(poam.observations).toHaveLength(3);
+    const obsUuids = new Set(
+      req(poam.observations, "observations").map((o) => o.uuid),
     );
+    const ref = item["related-observations"][0]?.["observation-uuid"];
+    expect(ref !== undefined && obsUuids.has(ref)).toBe(true);
   });
 
-  test("a clean pack yields zero poam-items and omits observations", () => {
+  test("a clean pack yields one informational poam-item + mirrored observations (NIST min-1)", () => {
     const poam = toOscalPlanOfActionAndMilestones(cleanManifest(), det())[
       "plan-of-action-and-milestones"
     ];
-    expect(poam["poam-items"]).toHaveLength(0);
-    expect(poam.observations).toBeUndefined();
+    // NIST XSD requires poam-items min-1; a clean pack emits ONE truthful "no open items" entry (not a
+    // fabricated gap) and mirrors examined evidence as observations so the doc is schema-valid.
+    expect(poam["poam-items"]).toHaveLength(1);
+    expect(req(poam["poam-items"][0], "poam item").title).toBe(
+      "No open remediation items",
+    );
+    expect((poam.observations ?? []).length).toBeGreaterThan(0);
   });
 
   test("a clean pack's SAR marks every control satisfied", () => {

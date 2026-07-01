@@ -101,7 +101,7 @@
                 "target-id": "RISK-MANAGEMENT.AI-LIFECYCLE",
                 "status": {
                   "state": "not-satisfied",
-                  "reason": "substrate.rls-force: table \"legacy_export\" has RLS enabled but not FORCEd; a table owner could bypass the policy"
+                  "remarks": "substrate.rls-force: table \"legacy_export\" has RLS enabled but not FORCEd; a table owner could bypass the policy"
                 }
               },
               "related-observations": [
@@ -155,7 +155,7 @@
   },
   "planOfActionAndMilestones": {
     "plan-of-action-and-milestones": {
-      "uuid": "00000000-0000-4000-8000-000000000012",
+      "uuid": "00000000-0000-4000-8000-000000000014",
       "metadata": {
         "title": "Plan of Action and Milestones — EU AI Act — High-Risk Obligations",
         "last-modified": "2026-06-28T00:00:00.000Z",
@@ -180,18 +180,29 @@
         "identifier-type": "https://caisson.sh/ns/tenant",
         "id": "tenant-acme-prod"
       },
-      "props": [
-        {
-          "name": "caisson-readiness-posture",
-          "ns": "https://caisson.sh/ns/oscal",
-          "value": "2 of 3 controls evidence-ready; 1 gap recorded as a remediation item."
-        }
-      ],
       "observations": [
         {
           "uuid": "00000000-0000-4000-8000-000000000010",
+          "title": "AUDIT.IMMUTABLE-LOG / substrate.chain-verify",
+          "description": "the 128-entry chain verifies against its anchor",
+          "methods": [
+            "EXAMINE"
+          ],
+          "collected": "2026-06-28T00:00:00.000Z"
+        },
+        {
+          "uuid": "00000000-0000-4000-8000-000000000011",
           "title": "RISK-MANAGEMENT.AI-LIFECYCLE / substrate.rls-force",
           "description": "table \"legacy_export\" has RLS enabled but not FORCEd; a table owner could bypass the policy",
+          "methods": [
+            "EXAMINE"
+          ],
+          "collected": "2026-06-28T00:00:00.000Z"
+        },
+        {
+          "uuid": "00000000-0000-4000-8000-000000000013",
+          "title": "RISK-MANAGEMENT.AI-REGISTER / substrate.ai-risk-register",
+          "description": "all 2 AI risks are assessed and mitigated",
           "methods": [
             "EXAMINE"
           ],
@@ -200,12 +211,12 @@
       ],
       "poam-items": [
         {
-          "uuid": "00000000-0000-4000-8000-000000000011",
+          "uuid": "00000000-0000-4000-8000-000000000012",
           "title": "RISK-MANAGEMENT.AI-LIFECYCLE — Row-level tenant isolation",
           "description": "Remediation required for RISK-MANAGEMENT.AI-LIFECYCLE: substrate.rls-force: table \"legacy_export\" has RLS enabled but not FORCEd; a table owner could bypass the policy",
           "related-observations": [
             {
-              "observation-uuid": "00000000-0000-4000-8000-000000000010"
+              "observation-uuid": "00000000-0000-4000-8000-000000000011"
             }
           ]
         }

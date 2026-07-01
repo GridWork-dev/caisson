@@ -92,7 +92,7 @@
                 "target-id": "DATA-PROTECTION.TENANT-ISOLATION",
                 "status": {
                   "state": "not-satisfied",
-                  "reason": "substrate.rls-force: table \"legacy_export\" has RLS enabled but not FORCEd; a table owner could bypass the policy"
+                  "remarks": "substrate.rls-force: table \"legacy_export\" has RLS enabled but not FORCEd; a table owner could bypass the policy"
                 }
               },
               "related-observations": [
@@ -129,7 +129,7 @@
   },
   "planOfActionAndMilestones": {
     "plan-of-action-and-milestones": {
-      "uuid": "00000000-0000-4000-8000-000000000010",
+      "uuid": "00000000-0000-4000-8000-000000000011",
       "metadata": {
         "title": "Plan of Action and Milestones — SOC 2 — Trust Services Criteria",
         "last-modified": "2026-06-28T00:00:00.000Z",
@@ -154,16 +154,18 @@
         "identifier-type": "https://caisson.sh/ns/tenant",
         "id": "tenant-acme-prod"
       },
-      "props": [
-        {
-          "name": "caisson-readiness-posture",
-          "ns": "https://caisson.sh/ns/oscal",
-          "value": "1 of 2 controls evidence-ready; 1 gap recorded as a remediation item."
-        }
-      ],
       "observations": [
         {
           "uuid": "00000000-0000-4000-8000-000000000008",
+          "title": "AUDIT.IMMUTABLE-LOG / substrate.chain-verify",
+          "description": "the 128-entry chain verifies against its anchor",
+          "methods": [
+            "EXAMINE"
+          ],
+          "collected": "2026-06-28T00:00:00.000Z"
+        },
+        {
+          "uuid": "00000000-0000-4000-8000-000000000009",
           "title": "DATA-PROTECTION.TENANT-ISOLATION / substrate.rls-force",
           "description": "table \"legacy_export\" has RLS enabled but not FORCEd; a table owner could bypass the policy",
           "methods": [
@@ -174,12 +176,12 @@
       ],
       "poam-items": [
         {
-          "uuid": "00000000-0000-4000-8000-000000000009",
+          "uuid": "00000000-0000-4000-8000-000000000010",
           "title": "DATA-PROTECTION.TENANT-ISOLATION — Row-level tenant isolation",
           "description": "Remediation required for DATA-PROTECTION.TENANT-ISOLATION: substrate.rls-force: table \"legacy_export\" has RLS enabled but not FORCEd; a table owner could bypass the policy",
           "related-observations": [
             {
-              "observation-uuid": "00000000-0000-4000-8000-000000000008"
+              "observation-uuid": "00000000-0000-4000-8000-000000000009"
             }
           ]
         }

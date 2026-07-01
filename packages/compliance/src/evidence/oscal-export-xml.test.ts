@@ -17,26 +17,20 @@ import { parseEvidencePackManifest } from "./pack-format.ts";
 const HAVE_CLI = oscalCliAvailable();
 
 describe("oscal-cli arg builders (pure, always run)", () => {
-  test("convert args target the NIST json-to-xml XSLT via arg array (no shell)", () => {
-    expect(
-      buildConvertArgs("assessment-results", "/tmp/in.json", "/tmp/out.xml"),
-    ).toEqual([
-      "assessment-results",
+  test("convert args use the generic auto-detecting converter via arg array (no shell)", () => {
+    expect(buildConvertArgs("/tmp/in.json", "/tmp/out.xml")).toEqual([
       "convert",
       "--to=xml",
       "--overwrite",
       "/tmp/in.json",
       "/tmp/out.xml",
     ]);
-    expect(buildConvertArgs("poam", "/tmp/in.json", "/tmp/out.xml")[0]).toBe(
-      "poam",
-    );
   });
 
-  test("validate args name the model + path", () => {
-    expect(buildValidateArgs("poam", "/tmp/out.xml")).toEqual([
-      "poam",
+  test("validate args are schema-only (constraint validation resolves unpublished refs)", () => {
+    expect(buildValidateArgs("/tmp/out.xml")).toEqual([
       "validate",
+      "--disable-constraint-validation",
       "/tmp/out.xml",
     ]);
   });

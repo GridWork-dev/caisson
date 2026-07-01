@@ -159,7 +159,7 @@
   },
   "planOfActionAndMilestones": {
     "plan-of-action-and-milestones": {
-      "uuid": "00000000-0000-4000-8000-000000000010",
+      "uuid": "00000000-0000-4000-8000-000000000014",
       "metadata": {
         "title": "Plan of Action and Milestones — SOC 2 — Trust Services Criteria",
         "last-modified": "2026-06-27T12:00:00.000Z",
@@ -189,14 +189,43 @@
         "identifier-type": "https://caisson.sh/ns/tenant",
         "id": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d"
       },
-      "props": [
+      "observations": [
         {
-          "name": "caisson-readiness-posture",
-          "ns": "https://caisson.sh/ns/oscal",
-          "value": "3 of 3 controls evidence-ready; no gaps recorded."
+          "uuid": "00000000-0000-4000-8000-000000000010",
+          "title": "ACCESS-CONTROL.LOGICAL / substrate.tenant-isolation-force-rls",
+          "description": "all 5 tenant tables enforce FORCE row-level security",
+          "methods": [
+            "EXAMINE"
+          ],
+          "collected": "2026-06-27T12:00:00.000Z"
+        },
+        {
+          "uuid": "00000000-0000-4000-8000-000000000011",
+          "title": "AUDIT.IMMUTABLE-LOG / substrate.audit-chain-integrity",
+          "description": "audit chain verified against its anchor (1 entries)",
+          "methods": [
+            "EXAMINE"
+          ],
+          "collected": "2026-06-27T12:00:00.000Z"
+        },
+        {
+          "uuid": "00000000-0000-4000-8000-000000000012",
+          "title": "DATA-PROTECTION.DISPOSAL / substrate.worm-retention-floor",
+          "description": "WORM retention until 2033-06-27T12:00:00.000Z meets the floor (2032-06-27T12:00:00.000Z)",
+          "methods": [
+            "EXAMINE"
+          ],
+          "collected": "2026-06-27T12:00:00.000Z"
         }
       ],
-      "poam-items": []
+      "poam-items": [
+        {
+          "uuid": "00000000-0000-4000-8000-000000000013",
+          "title": "No open remediation items",
+          "description": "All controls are evidence-ready; no gaps recorded. 3 of 3 controls evidence-ready; no gaps recorded.",
+          "related-observations": []
+        }
+      ]
     }
   }
 }

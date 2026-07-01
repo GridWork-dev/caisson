@@ -29,21 +29,26 @@ export interface OscalCliOptions {
   readonly timeoutMs?: number;
 }
 
-/** Args for `oscal-cli <model> convert --to=xml <in> <out>` (NIST `oscal_<model>_json-to-xml` XSLT). */
+/**
+ * Args for `oscal-cli convert --to=xml <in> <out>` — the generic converter auto-detects the model from
+ * the JSON root (the per-model subcommands `ar`/`poam` are deprecated in oscal-cli 3.x). Runs the NIST
+ * `oscal_<model>_json-to-xml` XSLT. Arg array, never a shell string.
+ */
 export function buildConvertArgs(
-  model: OscalModel,
   input: string,
   output: string,
 ): readonly string[] {
-  return [model, "convert", "--to=xml", "--overwrite", input, output];
+  return ["convert", "--to=xml", "--overwrite", input, output];
 }
 
-/** Args for `oscal-cli <model> validate <path>` — the NIST-conformance gate at the locked version. */
-export function buildValidateArgs(
-  model: OscalModel,
-  path: string,
-): readonly string[] {
-  return [model, "validate", path];
+/**
+ * Args for `oscal-cli validate --disable-constraint-validation <path>` — the NIST XSD-conformance gate
+ * at the locked version. SCHEMA-only by design: Metaschema *constraint* validation resolves external
+ * refs (e.g. our `import-ap` rlink to the published assessment-plan URL), which is a deploy-time concern,
+ * not an export-well-formedness one. The offline gate proves the emitted doc is schema-valid at v1.2.2.
+ */
+export function buildValidateArgs(path: string): readonly string[] {
+  return ["validate", "--disable-constraint-validation", path];
 }
 
 /**
@@ -83,7 +88,7 @@ export async function convertJsonToXml(
   const output = join(dir, `${model}.xml`);
   try {
     writeFileSync(input, JSON.stringify(jsonBody));
-    await runOscalCli(buildConvertArgs(model, input, output), options);
+    await runOscalCli(buildConvertArgs(input, output), options);
     return readFileSync(output, "utf8");
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -105,8 +110,8 @@ export async function convertAndValidate(
   const output = join(dir, `${model}.xml`);
   try {
     writeFileSync(input, JSON.stringify(jsonBody));
-    await runOscalCli(buildConvertArgs(model, input, output), options);
-    await runOscalCli(buildValidateArgs(model, output), options);
+    await runOscalCli(buildConvertArgs(input, output), options);
+    await runOscalCli(buildValidateArgs(output), options);
     return readFileSync(output, "utf8");
   } finally {
     rmSync(dir, { recursive: true, force: true });
