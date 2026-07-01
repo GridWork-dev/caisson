@@ -335,6 +335,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
+        "@caisson/tenancy-rls": "workspace:*",
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",

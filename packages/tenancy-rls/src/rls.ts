@@ -8,6 +8,16 @@ import { TenancyError } from "@caisson/kernel";
 /** The Postgres GUC that carries the active account id into RLS policies. */
 export const TENANT_GUC = "app.current_account";
 
+/**
+ * The Postgres GUC that carries the active USER id into RLS policies. Used only for the
+ * identity→account resolution bootstrap (ADR-0176): "which accounts does this user belong to?" is a
+ * cross-account read keyed by user, which the tenant GUC cannot express. A table that participates
+ * in that lookup (e.g. `account_member`) carries a policy clause `user_id = current_setting(USER_GUC)`
+ * ORed with the tenant clause. `withUser` binds this GUC and leaves the tenant GUC null (and vice
+ * versa), so the two access paths never widen each other.
+ */
+export const USER_GUC = "app.current_user";
+
 /** Minimal query surface — satisfied by PGlite, a PGlite transaction, and a pg/Drizzle client. */
 export interface TenantExecutor {
   query<T = Record<string, unknown>>(
@@ -41,6 +51,31 @@ export async function withTenant<T>(
   return db.transaction(async (tx) => {
     // Bind the GUC first (as the privileged role), then drop to `app` for the actual work.
     await tx.query(`SELECT set_config($1, $2, true)`, [TENANT_GUC, accountId]);
+    await tx.exec(`SET LOCAL ROLE app`);
+    return fn(tx);
+  });
+}
+
+/**
+ * Run `fn` inside a transaction scoped to a USER (not an account): binds `app.current_user` +
+ * `SET LOCAL ROLE app`. The ONLY sanctioned use is the identity→account bootstrap (ADR-0176) — a
+ * signed-in user reading their own `account_member` rows across accounts to resolve which accounts
+ * they belong to. Fail-closed like `withTenant`: an empty user id is refused, and a table without a
+ * matching `user_id` policy clause returns nothing. The user id must come from a verified session,
+ * never a request param.
+ */
+export async function withUser<T>(
+  db: Transactor,
+  userId: string,
+  fn: (tx: TenantExecutor) => Promise<T>,
+): Promise<T> {
+  if (userId.length === 0) {
+    throw new TenancyError(
+      "Refusing to run a user-scoped query without a user id",
+    );
+  }
+  return db.transaction(async (tx) => {
+    await tx.query(`SELECT set_config($1, $2, true)`, [USER_GUC, userId]);
     await tx.exec(`SET LOCAL ROLE app`);
     return fn(tx);
   });
