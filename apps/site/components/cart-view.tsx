@@ -1,19 +1,21 @@
 "use client";
 
-import { Icon } from "@caisson/ui/components";
+import Link from "next/link";
 
 import { Button, Card } from "@/components";
 import { formatUsd } from "@/lib/pricing";
 
 import { useCart } from "./cart-provider";
+import { CartLineItem, CartTrustNote, CartUpgradeCallout } from "./cart-shared";
+import styles from "./cart.module.css";
 
-/** The `/cart` page body — full line-item review + remove + subtotal. Checkout itself is gated
- *  (`/dashboard/cart`, `requireDashboardSession`): the "Checkout" CTA below just navigates there,
- *  and an unauthenticated visitor is bounced to `/login?next=/dashboard/cart` by the existing
- *  dashboard auth gate — the same pattern the pricing page's single-item `CheckoutCta` already
- *  uses for `/dashboard/plan`. */
+/** The `/cart` page body — the RICH surface (D-5, ADR-0193): full-density line items, the honest
+ *  bundle nudge, a procurement on-ramp, then checkout. Shares its line item + nudge + trust note
+ *  with the drawer, differing only in depth. Checkout itself is gated (`/dashboard/cart`,
+ *  `requireDashboardSession`): the CTA navigates there and an unauthenticated visitor is bounced to
+ *  `/login?next=/dashboard/cart` by the existing dashboard auth gate. */
 export function CartView() {
-  const { items, subtotal, removeItem } = useCart();
+  const { items, subtotal } = useCart();
 
   if (items.length === 0) {
     return (
@@ -30,65 +32,15 @@ export function CartView() {
 
   return (
     <div
-      style={{
-        display: "grid",
-        gap: "var(--cs-space-4)",
-        maxWidth: "36rem",
-      }}
+      style={{ display: "grid", gap: "var(--cs-space-6)", maxWidth: "40rem" }}
     >
-      {items.map((item) => (
-        <Card key={item.id}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "var(--cs-space-4)",
-            }}
-          >
-            <div>
-              <span className="cs-card-title">{item.label}</span>
-              <p
-                className="cs-muted"
-                style={{
-                  fontSize: "var(--cs-text-xs)",
-                  marginTop: "var(--cs-space-1)",
-                  textTransform: "capitalize",
-                }}
-              >
-                {item.kind}
-              </p>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "var(--cs-space-4)",
-              }}
-            >
-              <span
-                className="cs-num"
-                style={{ fontFamily: "var(--cs-font-mono)" }}
-              >
-                {formatUsd(item.amount)}
-              </span>
-              <button
-                type="button"
-                aria-label={`Remove ${item.label} from cart`}
-                onClick={() => removeItem(item.id)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "var(--cs-fg-muted)",
-                }}
-              >
-                <Icon name="x" />
-              </button>
-            </div>
-          </div>
-        </Card>
-      ))}
+      <ul className={styles.lines}>
+        {items.map((item) => (
+          <CartLineItem key={item.id} item={item} density="comfortable" />
+        ))}
+      </ul>
+
+      <CartUpgradeCallout />
 
       <Card accent>
         <div
@@ -109,16 +61,20 @@ export function CartView() {
             {formatUsd(subtotal)}
           </span>
         </div>
-        <p className="cs-footnote" style={{ marginTop: "var(--cs-space-2)" }}>
-          One-time perpetual licenses, billed once — no seat count, no renewal
-          gate.
-        </p>
+        <div style={{ marginTop: "var(--cs-space-2)" }}>
+          <CartTrustNote />
+        </div>
         <div style={{ marginTop: "var(--cs-space-5)" }}>
           <Button href="/dashboard/cart" variant="primary">
             Checkout
           </Button>
         </div>
       </Card>
+
+      <p className="cs-footnote">
+        Buying for a team?{" "}
+        <Link href="/procurement">Purchase orders &amp; invoicing →</Link>
+      </p>
     </div>
   );
 }

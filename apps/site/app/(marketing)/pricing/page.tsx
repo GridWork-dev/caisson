@@ -11,7 +11,6 @@ import {
 } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { CheckoutCta } from "@/components/checkout-cta";
-import { ModuleCatalogGrid } from "@/components/module-catalog-grid";
 import { UpdatesForm } from "@/components/waitlist-form";
 import {
   BUNDLE_CATALOG_ITEM,
@@ -23,12 +22,16 @@ import { breadcrumb, serializeJsonLd, softwareApplication } from "@/lib/jsonld";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import {
   bundleSavings,
+  editionPrice,
   editionsSubtotal,
   EDITION_PRICES,
   formatPrice,
   formatUsd,
   PLAN_PRICES,
   priceById,
+  SKU_COLUMNS,
+  SKU_FEATURE_ROWS,
+  SKU_PRICE_ROW,
 } from "@/lib/pricing";
 
 export const metadata = buildMetadata({
@@ -39,12 +42,6 @@ export const metadata = buildMetadata({
 });
 
 // ---- Local helpers ----
-// Safe null-guard for noUncheckedIndexedAccess.
-function editionPrice(id: string): string {
-  const p = priceById(id);
-  return p ? formatPrice(p) : "—";
-}
-
 // Build the persisted CartItem for an edition slug, or undefined if the slug has no catalog row —
 // server-safe (the catalog is a pure data lookup).
 function editionCartItem(slug: string): CartItem | undefined {
@@ -156,39 +153,6 @@ const SUB_META: readonly SubMeta[] = [
 ] as const;
 
 // ---- SKU matrix ----
-const SKU_COLUMNS = [
-  "Compliance",
-  "AI Kit",
-  "Local-first",
-  "Agentic-Dev",
-] as const;
-
-const SKU_ROWS: readonly {
-  label: string;
-  cells: readonly (boolean | string)[];
-}[] = [
-  { label: "Postgres base substrate", cells: [true, true, true, true] },
-  { label: "Fail-closed RLS (FORCE)", cells: [true, false, false, false] },
-  { label: "WORM evidence store", cells: [true, false, false, false] },
-  { label: "Append-only audit chain", cells: [true, false, false, false] },
-  { label: "Per-tenant field encryption", cells: [true, false, false, false] },
-  { label: "Evidence-pack generator", cells: [true, false, false, false] },
-  { label: "Token metering · spend caps", cells: [false, true, false, false] },
-  { label: "Eval harness in CI", cells: [false, true, false, false] },
-  { label: "On-device vector search", cells: [false, false, true, false] },
-  { label: "Privacy gate (no-egress)", cells: [false, false, true, false] },
-  { label: "Governed-agent kernel", cells: [false, false, false, true] },
-  {
-    label: "Starting price",
-    cells: [
-      editionPrice("compliance"),
-      editionPrice("ai-kit"),
-      editionPrice("local-first"),
-      editionPrice("agentic-dev"),
-    ],
-  },
-];
-
 export default function PricingPage() {
   // JSON-LD — breadcrumb + one SoftwareApplication per edition
   const breadcrumbNode = breadcrumb([
@@ -248,15 +212,15 @@ export default function PricingPage() {
           >
             {"edition."}
             <span className="cs-tok-accent">compliance</span>
-            {"        from $749     perpetual\nedition."}
+            {"    $749     perpetual\nedition."}
             <span className="cs-tok-accent">ai-kit</span>
-            {"             from $599     perpetual\nedition."}
+            {"        $599     perpetual\nedition."}
             <span className="cs-tok-accent">local-first</span>
-            {"        from $349     perpetual\nedition."}
+            {"   $349     perpetual\nedition."}
             <span className="cs-tok-accent">agentic-dev</span>
-            {"        from $249     perpetual\n"}
+            {"   $249     perpetual\n"}
             <span className="cs-tok-success">bundle.everything</span>
-            {"         $1,499      all four + base"}
+            {"     $1,499   all four + base"}
           </Terminal>
         }
       />
@@ -388,14 +352,9 @@ export default function PricingPage() {
                     flexWrap: "wrap",
                   }}
                 >
-                  <CheckoutCta
-                    edition="bundle"
-                    href="/dashboard/plan?purchase=bundle"
-                    variant="primary"
-                  >
-                    Get everything
-                  </CheckoutCta>
-                  <AddToCartButton item={bundleItem} />
+                  {/* One buy verb sitewide: Add to cart (ADR-0192). The bundle has no
+                      detail page, so no secondary link — the cart is the one road. */}
+                  <AddToCartButton item={bundleItem} variant="primary" />
                 </div>
               )}
             </Card>
@@ -485,7 +444,7 @@ export default function PricingPage() {
                       ))}
                     </ul>
 
-                    {/* CTAs: checkout now + add to cart */}
+                    {/* One buy verb: Add to cart primary + a quiet Learn more (ADR-0192). */}
                     <div
                       style={{
                         marginTop: "var(--cs-space-6)",
@@ -494,14 +453,12 @@ export default function PricingPage() {
                         flexWrap: "wrap",
                       }}
                     >
-                      <CheckoutCta
-                        edition={ed.id}
-                        href={`/dashboard/plan?edition=${ed.id}`}
-                        variant={ed.accent ? "primary" : "ghost"}
-                      >
-                        {ed.cta}
-                      </CheckoutCta>
-                      {cartItem && <AddToCartButton item={cartItem} />}
+                      {cartItem && (
+                        <AddToCartButton item={cartItem} variant="primary" />
+                      )}
+                      <Button href={`/${ed.id}`} variant="ghost" size="sm">
+                        Learn more →
+                      </Button>
                     </div>
                   </Card>
                 </div>
@@ -511,17 +468,30 @@ export default function PricingPage() {
         </div>
       </Section>
 
-      {/* ===== À-la-carte module catalog ===== */}
+      {/* ===== À-la-carte marketplace pointer — the catalog now lives on /modules, the
+              configurator on /build (ADR-0191, split so no one page does four jobs). ===== */}
       <Reveal>
         <Section
           id="modules"
           eyebrow="À la carte"
-          title="Fourteen modules, priced for what they do."
-          lede="Every module composes onto the shared base — take one, take several, or build your own edition. Grouped by the edition each belongs to."
+          title="Compose your own edition."
+          lede="Every module composes onto the shared base — take one, take several, or price a full stack. The catalog and the configurator each get their own room now."
           band="surface"
         >
-          <div style={{ marginTop: "var(--cs-space-8)" }}>
-            <ModuleCatalogGrid />
+          <div
+            style={{
+              marginTop: "var(--cs-space-8)",
+              display: "flex",
+              gap: "var(--cs-space-3)",
+              flexWrap: "wrap",
+            }}
+          >
+            <Button href="/build" variant="primary">
+              Build a stack
+            </Button>
+            <Button href="/modules" variant="ghost">
+              Browse the module catalog
+            </Button>
           </div>
         </Section>
       </Reveal>
@@ -534,7 +504,10 @@ export default function PricingPage() {
           lede="The base substrate ships with every edition. Module rows show which controls land in which edition."
         >
           <div style={{ marginTop: "var(--cs-space-8)" }}>
-            <SkuMatrix columns={[...SKU_COLUMNS]} rows={SKU_ROWS} />
+            <SkuMatrix
+              columns={[...SKU_COLUMNS]}
+              rows={[...SKU_FEATURE_ROWS, SKU_PRICE_ROW]}
+            />
           </div>
         </Section>
       </Reveal>

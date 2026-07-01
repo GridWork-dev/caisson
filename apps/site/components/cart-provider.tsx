@@ -25,6 +25,9 @@ export interface CartContextValue {
   drawerOpen: boolean;
   addItem: (item: CartItem) => void;
   removeItem: (id: string) => void;
+  /** Replace the whole cart in place WITHOUT opening the drawer — for an in-place swap (e.g. the
+   *  bundle nudge on /cart), where addItem's drawer-open would pop a modal over the page. */
+  replaceCart: (items: readonly CartItem[]) => void;
   clear: () => void;
   openDrawer: () => void;
   closeDrawer: () => void;
@@ -69,6 +72,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setDrawerOpen(true);
       },
       removeItem: (id) => setItems((prev) => removeCartItem(prev, id)),
+      replaceCart: (next) => setItems([...next]),
       clear: () => setItems([]),
       openDrawer: () => setDrawerOpen(true),
       closeDrawer: () => setDrawerOpen(false),

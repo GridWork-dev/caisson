@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Menu, X } from "lucide-react";
+
+import { ThemeToggle } from "@caisson/ui/components";
 
 import { Button } from "./button";
 
@@ -12,9 +14,12 @@ import { Button } from "./button";
 export function MobileNav({
   links,
   cta,
+  search,
 }: {
   links: readonly { href: string; label: string }[];
   cta?: { href: string; label: string };
+  /** Optional search affordance rendered at the top of the drawer (D-9). */
+  search?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -50,6 +55,9 @@ export function MobileNav({
         data-open={open}
         aria-label="Primary (mobile)"
       >
+        {search && (
+          <div style={{ marginBottom: "var(--cs-space-2)" }}>{search}</div>
+        )}
         {links.map((l) => {
           const active = pathname.startsWith(l.href);
           return (
@@ -71,6 +79,10 @@ export function MobileNav({
             {cta.label}
           </Button>
         )}
+        {/* Theme toggle reachable on mobile (ADR-0194 / ADR-0195 — was desktop-only). */}
+        <div style={{ marginTop: "var(--cs-space-4)" }}>
+          <ThemeToggle />
+        </div>
       </nav>
     </>
   );

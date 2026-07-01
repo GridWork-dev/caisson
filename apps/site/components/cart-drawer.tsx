@@ -1,77 +1,54 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 import { Icon } from "@caisson/ui/components";
 
-import { Button, Card } from "@/components";
+import { Button } from "@/components";
 import { formatUsd } from "@/lib/pricing";
 
 import { useCart } from "./cart-provider";
+import { CartLineItem, CartTrustNote, CartUpgradeCallout } from "./cart-shared";
+import styles from "./cart.module.css";
 
-/** Slide-out cart summary, mounted once in the marketing layout and toggled by `CartTrigger`.
- *  Full review + checkout happens on `/cart` (and the authed `/dashboard/cart`) — this drawer is
- *  a fast glance + remove, not the whole flow. */
+/** Slide-out cart summary, mounted once in the marketing layout and toggled by `CartTrigger`. A
+ *  fast glance + remove + honest bundle nudge — the full review + checkout lives on `/cart` (D-5,
+ *  ADR-0193). Built on a native `<dialog>` opened with `showModal()`, which supplies the focus
+ *  trap, Escape-to-close, inert background, and focus-return the hand-rolled `role="dialog"` div
+ *  lacked (the D-6 gap, WCAG 2.4.11 / 2.1.2). */
 export function CartDrawer() {
-  const { items, subtotal, drawerOpen, removeItem, closeDrawer } = useCart();
+  const { items, subtotal, drawerOpen, closeDrawer } = useCart();
+  const ref = useRef<HTMLDialogElement>(null);
 
-  if (!drawerOpen) return null;
+  // Drive the native dialog from provider state. showModal()/close() are idempotent-guarded so the
+  // dialog's own `close` event (Escape) → closeDrawer() → this effect is a no-op, not a loop.
+  useEffect(() => {
+    const dlg = ref.current;
+    if (!dlg) return;
+    if (drawerOpen && !dlg.open) dlg.showModal();
+    else if (!drawerOpen && dlg.open) dlg.close();
+  }, [drawerOpen]);
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
+    <dialog
+      ref={ref}
+      className={styles.drawer}
       aria-label="Cart"
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 60,
-        display: "flex",
-        justifyContent: "flex-end",
+      onClose={closeDrawer}
+      onClick={(e) => {
+        // A click landing on the dialog element itself is a backdrop click (panel clicks have an
+        // inner target and stop here).
+        if (e.target === ref.current) closeDrawer();
       }}
     >
-      <button
-        type="button"
-        aria-label="Close cart"
-        onClick={closeDrawer}
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: "var(--cs-scrim)",
-          border: "none",
-          cursor: "pointer",
-        }}
-      />
-      <div
-        style={{
-          position: "relative",
-          width: "min(24rem, 100vw)",
-          height: "100%",
-          background: "var(--cs-surface-1)",
-          borderLeft: "1px solid var(--cs-border)",
-          padding: "var(--cs-space-6)",
-          overflowY: "auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--cs-space-4)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
+      <div className={styles.panel}>
+        <div className={styles.header}>
           <span className="cs-card-title">Cart</span>
           <button
             type="button"
+            className={styles.close}
             aria-label="Close cart"
             onClick={closeDrawer}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "var(--cs-fg-muted)",
-            }}
           >
             <Icon name="x" />
           </button>
@@ -83,86 +60,27 @@ export function CartDrawer() {
           </p>
         ) : (
           <>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "var(--cs-space-3)",
-              }}
-            >
+            <ul className={styles.lines}>
               {items.map((item) => (
-                <Card key={item.id}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      gap: "var(--cs-space-3)",
-                    }}
-                  >
-                    <span style={{ fontSize: "var(--cs-text-sm)" }}>
-                      {item.label}
-                    </span>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "var(--cs-space-3)",
-                      }}
-                    >
-                      <span
-                        className="cs-num"
-                        style={{
-                          fontFamily: "var(--cs-font-mono)",
-                          fontSize: "var(--cs-text-sm)",
-                        }}
-                      >
-                        {formatUsd(item.amount)}
-                      </span>
-                      <button
-                        type="button"
-                        aria-label={`Remove ${item.label} from cart`}
-                        onClick={() => removeItem(item.id)}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          color: "var(--cs-fg-muted)",
-                        }}
-                      >
-                        <Icon name="x" />
-                      </button>
-                    </div>
-                  </div>
-                </Card>
+                <CartLineItem key={item.id} item={item} density="compact" />
               ))}
-            </div>
+            </ul>
 
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "baseline",
-                borderTop: "1px solid var(--cs-border)",
-                paddingTop: "var(--cs-space-4)",
-              }}
-            >
+            <CartUpgradeCallout />
+
+            <div className={styles.subtotal}>
               <span
                 className="cs-muted"
                 style={{ fontSize: "var(--cs-text-sm)" }}
               >
                 Subtotal
               </span>
-              <span
-                className="cs-num"
-                style={{
-                  fontFamily: "var(--cs-font-mono)",
-                  fontSize: "var(--cs-text-lg)",
-                }}
-              >
+              <span className={`cs-num ${styles.subtotalNum}`}>
                 {formatUsd(subtotal)}
               </span>
             </div>
+
+            <CartTrustNote />
 
             <Button href="/cart" variant="primary" onClick={closeDrawer}>
               Review cart
@@ -170,6 +88,6 @@ export function CartDrawer() {
           </>
         )}
       </div>
-    </div>
+    </dialog>
   );
 }
