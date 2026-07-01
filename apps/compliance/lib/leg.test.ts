@@ -22,7 +22,7 @@ beforeAll(async () => {
     tenantId: DEMO_TENANT_ID,
     now: DEMO_NOW,
   });
-});
+}, 30_000); // PGlite + WORM + crypto + OSCAL leg exceeds bun's 5s default hook timeout on cold CI
 
 afterAll(async () => {
   await harness.cleanup();
@@ -131,5 +131,5 @@ describe("compliance reference app — the full leg end to end", () => {
     } finally {
       await second.cleanup();
     }
-  });
+  }, 30_000); // second full leg run — same cold-CI headroom as the beforeAll
 });
