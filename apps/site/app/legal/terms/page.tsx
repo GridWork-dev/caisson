@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import Link from "next/link";
 
 import { buildMetadata } from "@/lib/metadata";
 import { Card, Section } from "@/components";
@@ -64,7 +65,9 @@ export default function TermsPage() {
             These terms govern your use of the Caisson site and products. They
             are being finalized with legal counsel and may be updated. The
             controlling document for any purchase is the Commercial License
-            Agreement (&ldquo;EULA&rdquo;) provided at checkout.
+            Agreement (&ldquo;EULA&rdquo;), available at{" "}
+            <Link href="/legal/eula">caisson.sh/legal/eula</Link> and provided
+            at checkout.
           </p>
         </Card>
       </Section>

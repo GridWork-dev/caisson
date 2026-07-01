@@ -21,6 +21,7 @@
     "test": "bun test ./src"
   },
   "dependencies": {
+    "@aws-sdk/client-kms": "^3.1075.0",
     "@caisson/kernel": "workspace:*",
     "drizzle-orm": "^0.45.0",
     "zod": "^3.23.8"

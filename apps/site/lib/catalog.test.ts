@@ -8,6 +8,7 @@ import {
   moduleCatalogItem,
   toCartItem,
 } from "./catalog";
+import { PURCHASE_BOOK } from "@caisson/pricebook";
 import { cartItemSchema } from "./cart";
 import { EDITION_IDS, MODULE_PRICES } from "./pricing";
 
@@ -67,6 +68,16 @@ describe("catalog coverage", () => {
   test("module price ids are placeholders pending pricebook rows", () => {
     for (const c of MODULE_CATALOG) {
       expect(c.priceId).toContain("PLACEHOLDER");
+    }
+  });
+
+  test("every module price id resolves in the pricebook PURCHASE_BOOK (cart→webhook grant path)", () => {
+    // The cart passes catalog.priceId to Paddle.Checkout; the webhook resolves that SAME id in the
+    // pricebook to grant the entitlement. A key-convention mismatch (the bug this guards) fails
+    // resolvePurchase closed → the module purchase grants nothing. Holds for placeholders today and
+    // for the real `pri_…` ids after go-live (both must land matched in catalog + pricebook).
+    for (const c of MODULE_CATALOG) {
+      expect(Object.hasOwn(PURCHASE_BOOK, c.priceId)).toBe(true);
     }
   });
 

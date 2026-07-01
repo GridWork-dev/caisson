@@ -1,11 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "./button";
 
 type State = "idle" | "loading" | "ok" | "error";
+
+// Cloudflare Turnstile client widget (D9) — env-gated on the PUBLIC site key. When unset (dev / not
+// yet provisioned) NO widget renders and the form behaves exactly as before (honeypot only); the
+// server verify (/api/waitlist) is already fail-closed on TURNSTILE_SECRET, so the two halves arm
+// together at DEPLOY. Both are dormant until the operator provisions the CF Turnstile site+secret.
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
 // Low-key product-updates capture (ADR-0082 — the site is live self-serve; this is NOT the
 // conversion CTA, just a "get product updates" subscribe used in the footer / changelog / the
@@ -18,11 +25,38 @@ export function UpdatesForm({ source = "site" }: { source?: string }) {
   // Focus the status message after a terminal state change for screen-reader UX.
   const statusRef = useRef<HTMLParagraphElement>(null);
 
+  // Turnstile: token captured from the widget callback; widget rendered once the api.js script
+  // loads (explicit-render). Only active when TURNSTILE_SITE_KEY is set.
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileReady, setTurnstileReady] = useState(false);
+  const turnstileRef = useRef<HTMLDivElement>(null);
+  const widgetIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (state === "ok" || state === "error") {
       statusRef.current?.focus();
     }
   }, [state]);
+
+  useEffect(() => {
+    if (
+      !TURNSTILE_SITE_KEY ||
+      !turnstileReady ||
+      !turnstileRef.current ||
+      !window.turnstile ||
+      widgetIdRef.current !== null
+    ) {
+      return;
+    }
+    widgetIdRef.current = window.turnstile.render(turnstileRef.current, {
+      sitekey: TURNSTILE_SITE_KEY,
+      callback: (token) => setTurnstileToken(token),
+      "error-callback": () => setTurnstileToken(""),
+      "expired-callback": () => setTurnstileToken(""),
+      theme: "auto",
+      size: "flexible",
+    });
+  }, [turnstileReady]);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -40,7 +74,11 @@ export function UpdatesForm({ source = "site" }: { source?: string }) {
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, source }),
+        body: JSON.stringify(
+          turnstileToken
+            ? { email, source, turnstileToken }
+            : { email, source },
+        ),
         signal: controller.signal,
       });
       if (!res.ok) throw new Error(`status ${res.status}`);
@@ -48,6 +86,11 @@ export function UpdatesForm({ source = "site" }: { source?: string }) {
       window.plausible?.("Signup", { props: { plan: "updates", source } });
     } catch {
       setState("error");
+      // Turnstile tokens are single-use — refresh the widget so a retry gets a fresh one.
+      if (widgetIdRef.current !== null && window.turnstile) {
+        window.turnstile.reset(widgetIdRef.current);
+        setTurnstileToken("");
+      }
     } finally {
       clearTimeout(timer);
     }
@@ -123,7 +166,28 @@ export function UpdatesForm({ source = "site" }: { source?: string }) {
           fontSize: "var(--cs-text-sm)",
         }}
       />
-      <Button type="submit" variant="ghost" disabled={state === "loading"}>
+      {TURNSTILE_SITE_KEY && (
+        <>
+          <Script
+            src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+            strategy="afterInteractive"
+            onLoad={() => setTurnstileReady(true)}
+          />
+          <div
+            ref={turnstileRef}
+            style={{ flexBasis: "100%" }}
+            aria-label="Verification challenge"
+          />
+        </>
+      )}
+      <Button
+        type="submit"
+        variant="ghost"
+        disabled={
+          state === "loading" ||
+          (Boolean(TURNSTILE_SITE_KEY) && !turnstileToken)
+        }
+      >
         {state === "loading" ? "Subscribing…" : "Get product updates"}
       </Button>
       <p
