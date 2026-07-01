@@ -216,6 +216,18 @@ Surfaced for the operator picker; **nothing locked**.
 _Flip-back trigger if Grafana ever proves insufficient: HIPAA/BAA or PHI-in-telemetry customer → self-hosted
 SigNoz or SigNoz Cloud Teams ($49). PostHog error-tracking stays OFF (OTLP owns errors)._
 
+**Resolved 2026-07-01 (whole-repo-audit remediation picker — LOCKED as ADR-0197 + ADR-0198):**
+
+- **AWS KMS per-tenant crypto-shred → BUILD NOW** (was: build vs defer-to-first-AWS-customer). The
+  `kms-aws.ts` driver honors the per-call tenant `keyId`; `scheduleKeyDeletion` refuses without an
+  explicit keyId; tenant bound into `EncryptionContext` → **ADR-0197**.
+- **BYOK 0-credit metering → per-action allowlist, default metered** (refines ADR-0182, does not
+  reverse it: inference-class actions under a tenant key stay $0) → **ADR-0198**.
+- **Audit remediation packaging → ONE PR** (all round-1+2+3 findings on `audit/whole-repo-2026-07-01`,
+  PR #40), Greptile forced via `@greptileai`; **round 3 runs before final ship** (7 new domains:
+  generator-templates, auth-boundary, email-egress, ai-evals-integrity, mcp-transport,
+  agent-governance, guardrails-prompts).
+
 ### Parked / deferred (non-blocking — revisit later, do NOT auto-decide)
 
 | Item                                                         | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
