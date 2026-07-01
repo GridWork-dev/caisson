@@ -19,5 +19,12 @@ export type {
 
 export { checkScope } from "./scope-guard.ts";
 
+export {
+  enumerateSurface,
+  selectValidateCandidates,
+  summarize,
+} from "./surface.ts";
+export type { LedgerSummary } from "./surface.ts";
+
 export { majorityKills, validateHighRisk } from "./validate.ts";
 export type { ChallengeVerdict, Challenger } from "./validate.ts";
