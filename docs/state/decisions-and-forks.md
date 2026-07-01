@@ -228,6 +228,15 @@ SigNoz or SigNoz Cloud Teams ($49). PostHog error-tracking stays OFF (OTLP owns 
   generator-templates, auth-boundary, email-egress, ai-evals-integrity, mcp-transport,
   agent-governance, guardrails-prompts).
 
+**Resolved 2026-07-01 (round-3 picker — second remediation round):**
+
+- **Round 4 → RUN SLIM NOW** (the 4 never-audited risk-bearing surfaces the round-3 critic named:
+  admin-plane, metering-byok, destructive-jobs, composition-roots — then fix everything before
+  shipping PR #40). Round 4's critic then surfaced a name-collision (round-3 critic wrote
+  `audit-harness` meaning `packages/audit-worm`) → a slim round 5 (`worm-integrity`) ran to correct
+  the audit's own scoping error under the same lock.
+- **tool-exec members-fold gap → WIRE IT** (honor ADR-0178, do not de-scope) → **ADR-0199**.
+
 ### Parked / deferred (non-blocking — revisit later, do NOT auto-decide)
 
 | Item                                                         | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |

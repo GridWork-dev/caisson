@@ -487,15 +487,16 @@ shipped ceiling at authoring time: 0178) — renumbers by-meaning at merge if li
 | [0195](../knowledge/decisions/ADR-0195-design-system-martian-mono-codify.md)                | Design-system codify: Martian-only mono + de-dup + button lock (D-7)       | Design/Tokens       | accepted | extends 0042/0099/0100; co-locks button variants with 0192 |
 | [0196](../knowledge/decisions/ADR-0196-extend-cmdk-search-sitewide.md)                      | Extend ⌘K search sitewide (D-9)                                            | Design/IA           | accepted | extends 0096; sequenced after nav 0190                     |
 
-### Whole-repo-audit remediation session (0197-0198, 2026-07-01) - status `accepted`
+### Whole-repo-audit remediation session (0197-0199, 2026-07-01) - status `accepted`
 
-Two audit-surfaced latent ceilings locked BUILD-NOW in the 2026-07-01 remediation picker
-(ledger findings `1665248bff049c36` + `3991eccd659c6dc4`; ADR-0134/0188 harness).
+Audit-surfaced latent ceilings locked BUILD-NOW in the 2026-07-01 remediation pickers
+(ledger findings `1665248bff049c36` + `3991eccd659c6dc4` + `b090309f83aff1a3`; ADR-0134/0188 harness).
 
 | #                                                                      | Title                                                                    | Domain            | Status   | Relations                                    |
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------ | ----------------- | -------- | -------------------------------------------- |
 | [0197](../knowledge/decisions/ADR-0197-field-crypto-per-tenant-cmk.md) | field-crypto AWS KMS honors per-tenant CMKs; shred refuses without keyId | Security/Crypto   | accepted | extends 0057/0171; surfaced by 0134/0188     |
 | [0198](../knowledge/decisions/ADR-0198-byok-metering-allowlist.md)     | BYOK zero-cost is per-action allowlisted, default metered                | Commerce/Metering | accepted | refines 0182; extends 0007; surfaced by 0134 |
+| [0199](../knowledge/decisions/ADR-0199-agent-dev-tool-exec-wired.md)   | @caisson/tool-exec wired into the Agentic-Dev edition (members-fold gap) | Editions/Agentic  | accepted | honors 0178/0153; surfaced by 0134/0188      |
 
 ---
 
