@@ -5,9 +5,22 @@ charter: ADR-0138 (executes ADR-0117, builds on ADR-0114/0115, reuses ADR-0107)
 reserved_adrs: 0140–0149
 branch: stream/obs-admin
 tags: [infra, observability, auth, security, frontend, ui, external-system]
-status: LOCKED (2026-06-30) — forks resolved as ADR-0140..0143; execution started at A1
+status: BUILT (2026-07-01) — A1–A7 shipped on stream/obs-admin; full workspace check + gate green; local-only, DEPLOY pending
 date: 2026-06-30
 ---
+
+> **Execution complete (2026-07-01).** All seven tasks are built and committed on `stream/obs-admin`
+> (A1 scaffold+studio-absorption · A2 `infra/signoz/` config · A3 support-bot Python OTLP + Worker
+> CF-native destinations · A4 business read views + the local admin-read RLS role · A5 SigNoz ops
+> widgets · A6 React Flow architecture diagram · A7 decisions/ADR-trail board). Verified: `bun run
+check` **131/131 tasks green**, `bun run gate` **45 packages conform**, support-bot `ruff`/`pyright`/
+> `pytest` green, the admin-read fail-closed security test proves no cross-tenant leak, and the
+> architecture page baked a non-empty topology at build. Every new surface is env-gated inert (no
+> `DATABASE_URL`/`CAISSON_ADMIN_DB_URL`/`OTEL_*`/`SIGNOZ_*` needed to build or test). **Nothing
+> deployed** — the Railway provisioning of admin + the 5-service SigNoz stack, the DNS + CF-Access
+> apply, and the `admin` PG role creation are the DEPLOY session's work (per ADR-0140/0141/0142).
+> Goal-backward VERIFY: the operator control-plane + its observability backend both exist as specced;
+> **PASS.**
 
 # SPEC — Stream A: `admin.caisson.sh` control-plane + self-hosted SigNoz observability
 
