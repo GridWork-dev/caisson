@@ -77,24 +77,34 @@ async def handle_question(
 
 
 class _DiscordThreadOpener:
-    """ThreadOpener bound to a specific channel; opens a public thread and posts the brief. Best-effort."""
+    """ThreadOpener bound to a specific channel; opens a public thread and posts the brief. Best-effort.
 
-    def __init__(self, channel: discord.abc.Messageable) -> None:
+    ``body`` embeds user-controlled text (the escalated question, RAG-considered sources) plus, when
+    configured, the support-role ping. The bot-wide ``AllowedMentions.none()`` default (set on the
+    ``commands.Bot`` in ``make_bot``) already makes any ``@everyone``/user/role mention INERT unless
+    re-allowed here — so only the one configured ``mention_role_id`` is re-enabled, never an arbitrary
+    role/user a question might contain.
+    """
+
+    def __init__(self, channel: discord.abc.Messageable, *, mention_role_id: int | None = None) -> None:
         self._channel = channel
+        self._allowed_mentions = discord.AllowedMentions(
+            roles=[discord.Object(id=mention_role_id)] if mention_role_id is not None else False
+        )
 
     async def open_thread(self, *, title: str, body: str) -> int | None:
         create = getattr(self._channel, "create_thread", None)
         if create is None:
             # Not a thread-capable channel (e.g. a DM): post inline so the brief isn't lost.
-            await self._channel.send(body)
+            await self._channel.send(body, allowed_mentions=self._allowed_mentions)
             return None
         try:
             thread = await create(name=title[:100], type=discord.ChannelType.public_thread)
-            await thread.send(body)
+            await thread.send(body, allowed_mentions=self._allowed_mentions)
             return thread.id
         # Forbidden subclasses HTTPException, so this also covers permission errors.
         except discord.HTTPException:
-            await self._channel.send(body)  # fall back to an inline post.
+            await self._channel.send(body, allowed_mentions=self._allowed_mentions)  # fall back inline.
             return None
 
 
@@ -106,7 +116,9 @@ def _escalator_factory(
     mention = f"<@&{settings.support_human_role_id}>" if settings.support_human_role_id else None
 
     def make() -> Escalator:
-        opener: ThreadOpener = _DiscordThreadOpener(channel)
+        opener: ThreadOpener = _DiscordThreadOpener(
+            channel, mention_role_id=settings.support_human_role_id
+        )
         return Escalator(store=store, thread_opener=opener, human_mention=mention)
 
     return make
@@ -127,7 +139,14 @@ def make_bot(
         # toggle in the Developer Portal — otherwise the gateway refuses to connect (ADR-0109).
         intents.members = True
 
-    bot = commands.Bot(command_prefix="!caisson-unused!", intents=intents)
+    # Bot-wide mention floor (WARN finding): a user's question (or the LLM's answer) could embed
+    # @everyone/@here or an arbitrary user/role mention; every send() inherits this default unless a
+    # call site explicitly re-allows a specific, intentional mention (see _DiscordThreadOpener).
+    bot = commands.Bot(
+        command_prefix="!caisson-unused!",
+        intents=intents,
+        allowed_mentions=discord.AllowedMentions.none(),
+    )
 
     @bot.event
     async def setup_hook() -> None:  # pyright: ignore[reportUnusedFunction]
