@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const dynamic = "force-static";
-export const alt = "Caisson Agentic-Dev — a governed-agent kernel (Roadmap)";
+export const alt = "Caisson Agentic-Dev — a governed-agent kernel";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -32,7 +32,7 @@ export default function AgenticDevOpengraphImage() {
         fontFamily: "monospace",
       }}
     >
-      {/* Top — wordmark + edition label + roadmap badge */}
+      {/* Top — wordmark + edition label */}
       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
         <span style={{ fontSize: 34, color: C.fg, fontWeight: 600 }}>
           caisson
@@ -48,18 +48,6 @@ export default function AgenticDevOpengraphImage() {
           }}
         >
           Agentic-Dev
-        </span>
-        <span
-          style={{
-            fontSize: 14,
-            color: C.muted,
-            background: C.surface,
-            padding: "4px 12px",
-            letterSpacing: 1,
-            textTransform: "uppercase",
-          }}
-        >
-          Roadmap
         </span>
       </div>
 
@@ -106,7 +94,7 @@ export default function AgenticDevOpengraphImage() {
           paddingTop: 28,
         }}
       >
-        <span>Post-wedge · on the roadmap, not yet shipped</span>
+        <span>An edition on the audited Caisson base · own the source</span>
         <span style={{ background: C.surface, padding: "8px 16px" }}>
           caisson.sh/agentic-dev
         </span>
