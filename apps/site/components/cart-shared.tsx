@@ -63,15 +63,14 @@ export function CartLineItem({
  *  the cart for less than its current subtotal (`cartUpgrade`). "Switch" replaces the cart with the
  *  single bundle line, since the bundle is a strict superset of everything the cart could hold. */
 export function CartUpgradeCallout() {
-  const { items, clear, addItem } = useCart();
+  const { items, replaceCart } = useCart();
   if (BUNDLE_CATALOG_ITEM === undefined) return null;
   const upgrade = cartUpgrade(items, toCartItem(BUNDLE_CATALOG_ITEM));
   if (upgrade === undefined) return null;
 
-  const switchToBundle = () => {
-    clear();
-    addItem(upgrade.bundle);
-  };
+  // The bundle is a strict superset, so switching REPLACES the cart with the single bundle line.
+  // replaceCart (not clear()+addItem) so this in-place swap doesn't pop the modal drawer on /cart.
+  const switchToBundle = () => replaceCart([upgrade.bundle]);
 
   return (
     <div className={styles.upgrade}>

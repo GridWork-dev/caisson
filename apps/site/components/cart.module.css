@@ -146,7 +146,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 1.75rem; /* >=24px target (WCAG 2.5.8), matches .remove */
+  height: 1.75rem;
+  flex: none;
   border: 0;
+  border-radius: var(--cs-radius-sm);
   background: none;
   color: var(--cs-fg-muted);
   cursor: pointer;

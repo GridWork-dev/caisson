@@ -53,11 +53,16 @@ export function StackBuilder() {
     }
   };
 
-  // The upgrade nudge — add the whole edition or the bundle INSTEAD of the loose modules.
+  // The upgrade nudge — add the whole edition or the bundle INSTEAD of the loose modules. Clearing
+  // the picker is the "instead": it drops the redundant module lines so a following "Add to cart"
+  // can't stack the edition on top of the modules it already covers (double coverage / overpay).
   const addUpgradeToCart = (target: EditionId | "bundle") => {
     const item =
       target === "bundle" ? BUNDLE_CATALOG_ITEM : editionCatalogItem(target);
-    if (item) addItem(toCartItem(item));
+    if (item) {
+      addItem(toCartItem(item));
+      setSelected(new Set());
+    }
   };
 
   // Debounced polite announcement (ADR-0194): initialized empty, settles ~400ms after the last
