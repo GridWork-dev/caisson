@@ -16,7 +16,7 @@ import { ConfigError, parseStrict, strictObject } from "@caisson/kernel";
 import { planEntitlementsSchema } from "./plans.ts";
 
 /** Append-only version stamp — a purchase-row change bumps this, never edits it in place (ADR-0006). */
-export const PURCHASE_BOOK_VERSION = "2026-06-30.2";
+export const PURCHASE_BOOK_VERSION = "2026-06-30.3";
 
 export const purchaseBookEntrySchema = strictObject({
   /** Stable internal purchase tag (NOT the Stripe id) — survives a price-id rotation. */
@@ -78,6 +78,95 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
     purchaseTag: "agent-dev",
     credits: 0,
     entitlements: ["agent-dev"], // see the ENTITLEMENT-ID NOTE above
+  },
+
+  // ---- Per-module à-la-carte PLACEHOLDER rows (P6-store track: sell every commercial module
+  // individually, operator-locked — entitlement infra ADR-0071 already supports it). Same
+  // PLACEHOLDER posture as the rows above: `price_<slug>_module_PLACEHOLDER` fake keys, real Paddle
+  // one-time price ids land here at go-live wiring. Every row is a perpetual license-only buy
+  // (`credits: 0`). `entitlements` carries the BARE package slug (no `@caisson/` prefix) — the
+  // per-module entitlement-id convention `expandEntitlements` (@caisson/registry-schema
+  // entitlements.ts) resolves against the registry index alongside the long-supported full
+  // `@caisson/<slug>` module-id form and the edition/bundle sentinels above. 12 CURRENT modules
+  // (already published to the registry) + 2 FUTURE Compliance modules whose packages don't exist
+  // yet — `alerting` and `retention-runner` are RESERVED entitlement ids
+  // (`RESERVED_MODULE_ENTITLEMENT_IDS`): the row here lets a buyer purchase + hold the grant now,
+  // but expansion resolves to NOTHING until each package ships and is indexed (never a 500, never a
+  // substitute grant). `compliance`/`ai-kit`/`local-ai`/`agent-dev` reuse their EDITION entitlement
+  // id (they name their own edition membership in the registry, ADR-0071) — buying the module row
+  // below and buying the edition row above both resolve through the same edition expansion; this is
+  // the one true "buy just this" price point for a buyer who does not want the rest of the edition.
+  price_compliance_module_PLACEHOLDER: {
+    purchaseTag: "compliance_module",
+    credits: 0,
+    entitlements: ["compliance"],
+  },
+  price_field_crypto_module_PLACEHOLDER: {
+    purchaseTag: "field-crypto_module",
+    credits: 0,
+    entitlements: ["field-crypto"],
+  },
+  price_audit_worm_module_PLACEHOLDER: {
+    purchaseTag: "audit-worm_module",
+    credits: 0,
+    entitlements: ["audit-worm"],
+  },
+  price_ai_meter_module_PLACEHOLDER: {
+    purchaseTag: "ai-meter_module",
+    credits: 0,
+    entitlements: ["ai-meter"],
+  },
+  price_ai_evals_module_PLACEHOLDER: {
+    purchaseTag: "ai-evals_module",
+    credits: 0,
+    entitlements: ["ai-evals"],
+  },
+  price_guardrails_module_PLACEHOLDER: {
+    purchaseTag: "guardrails_module",
+    credits: 0,
+    entitlements: ["guardrails"],
+  },
+  price_prompt_registry_module_PLACEHOLDER: {
+    purchaseTag: "prompt-registry_module",
+    credits: 0,
+    entitlements: ["prompt-registry"],
+  },
+  price_ai_kit_module_PLACEHOLDER: {
+    purchaseTag: "ai-kit_module",
+    credits: 0,
+    entitlements: ["ai-kit"],
+  },
+  price_local_ai_module_PLACEHOLDER: {
+    purchaseTag: "local-ai_module",
+    credits: 0,
+    entitlements: ["local-ai"],
+  },
+  price_local_store_module_PLACEHOLDER: {
+    purchaseTag: "local-store_module",
+    credits: 0,
+    entitlements: ["local-store"],
+  },
+  price_agent_kernel_module_PLACEHOLDER: {
+    purchaseTag: "agent-kernel_module",
+    credits: 0,
+    entitlements: ["agent-kernel"],
+  },
+  price_agent_dev_module_PLACEHOLDER: {
+    purchaseTag: "agent-dev_module",
+    credits: 0,
+    entitlements: ["agent-dev"],
+  },
+  // FUTURE — package not yet built; reserved entitlement id (expands to nothing until it ships).
+  price_alerting_module_PLACEHOLDER: {
+    purchaseTag: "alerting_module",
+    credits: 0,
+    entitlements: ["alerting"],
+  },
+  // FUTURE — package not yet built; reserved entitlement id (expands to nothing until it ships).
+  price_retention_runner_module_PLACEHOLDER: {
+    purchaseTag: "retention-runner_module",
+    credits: 0,
+    entitlements: ["retention-runner"],
   },
 };
 
