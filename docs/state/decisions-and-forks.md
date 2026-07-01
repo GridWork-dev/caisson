@@ -174,9 +174,9 @@ buyer billing (**ADR-0175**). Out-of-tree D5 items deferred by the partition: R2
 
 _The Phase-2 hero fork is locked → **ADR-0104** (static code-as-proof, option 1)._
 
-| Item                               | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Edition members-fold (Stage-2)** | The three new commercial primitives — `@caisson/alerting` + `@caisson/retention-runner` (Compliance) and `@caisson/tool-exec` (Agentic-Dev) — are PUBLISHED standalone in the registry (index 27→32). Whether to **fold them into the edition `members` bundle** (buyer gets them with the edition price) was **NOT auto-decided at integration** — it changes edition-bundle economics (ADR-0137 repriced below module-sum without these). Their manifests already note "membership added by the edition at integration." Locking this = a 5-line members-map edit + edition version bump/republish. Needs operator lock (bundle vs à-la-carte add-on). |
+| Item                               | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Edition members-fold (Stage-2)** | The three new commercial primitives — `@caisson/alerting` + `@caisson/retention-runner` (Compliance) and `@caisson/tool-exec` (Agentic-Dev) — are PUBLISHED standalone in the registry (index 27→32). Whether to **fold them into the edition `members` bundle** (buyer gets them with the edition price) was **NOT auto-decided at integration** — it changes edition-bundle economics (ADR-0137 repriced below module-sum without these). Their manifests already note "membership added by the edition at integration." **LOCKED 2026-07-01 → ADR-0178: FOLD into edition bundles** (Compliance `members` += alerting + retention-runner; Agentic-Dev += tool-exec). Source manifests edited on **PR #34**; realized at the next gated edition republish (`resolveEditionMembers` reads the index snapshot). |
 
 ### Provider-optimization forks (2026-07-01 — Exa-research-backed, verified pricing, DO NOT auto-decide)
 
@@ -194,23 +194,27 @@ Surfaced for the operator picker; **nothing locked**.
 | **PF-6 Firecrawl (scrape)**                | Keep Exa + crawl4ai · Add Firecrawl MCP ($19-99/mo).                                                                                                                                                                                                                                                      | **Skip — redundant** with crawl4ai ($0 local, already wired) + Exa; sole differentiator (managed anti-bot proxies) not needed. Close, no spend. `high`                                                                                                 |
 | **PF-7 Hosting (Railway, LOCKED)**         | Railway ~$65-90/mo (LOCKED ADR-0114/0115) vs Fly ~$50-65 · Render ~$180-220 · Fargate ~$220-260 (informational).                                                                                                                                                                                          | **No change** — Railway cheapest-for-fit for the many-small-idle topology + SOC2. Switching math never clears. Real cost lever = PF-1 (SigNoz block ≈ half the bill), not the host. `high`                                                             |
 
-**Resolved 2026-07-01 (operator calls — board closeout; not yet ADR-locked):**
+**Resolved 2026-07-01 (operator picker — LOCKED as ADR-0177 (provider stack) + ADR-0178 (members-fold)):**
 
-- **PF-1 → KEEP self-hosted SigNoz** (not retired; brand / data-custody wins over the −$45-70/mo saving).
-  **Grafana Cloud (US-West Free) added _alongside_** for operator ops dashboards / optional 2nd OTLP sink —
-  `grafanactl` installed, Cloud Access Policy token handoff pending. The forgone saving is the accepted cost.
+- **PF-1 → DROP self-hosted SigNoz; Grafana Cloud (`caisson.grafana.net`, US-West) is the SOLE OTLP sink**
+  (reverses the earlier same-day "keep"; −$45-70/mo → new floor ≈$30-55/mo). `grafanactl` connected (Grafana
+  13.2). **Cutover BLOCKED on an OTLP credential:** the `glsa_` service-account token can't auth the OTLP
+  gateway (probe 401) — needs a `glc_` Cloud Access Policy token (`metrics/logs/traces:write`) or the stack's
+  OTLP env snippet. Runbook + gate: [`providers.md` → SigNoz→Grafana cutover](providers.md). Teardown of the
+  5 SigNoz services happens only AFTER Grafana OTLP is verified receiving data.
 - **PF-2 → PostHog ADDED + LIVE** — dashboard-only (US Cloud), Plausible stays on marketing, error-tracking
   OFF. Site key `NEXT_PUBLIC_POSTHOG_KEY` set on `caisson-site` + redeployed; MCP connected.
-- **PF-3 → Linear ADDED** — MCP connected (`lin_api_` Bearer). Business plan (agent automations) optional later.
+- **PF-3 → Linear ADDED + fully wired** — MCP connected (`lin_api_` Bearer), full surface. Business plan
+  ($16/mo, agent-automations) = operator billing action; CRUD works on any plan now.
 - **PF-5 → Cookiy ADDED** — MCP connected (`cky_` headless Bearer). Positioning research only, no customer PII.
-- **PF-4 / PF-6 / PF-7 → still open** (recommended-closes): keep Greptile+TREX only · skip Firecrawl · Railway
-  no change. No spend implied; close on operator nod.
+- **Greptile review gate** — pre-push advisory hook **removed** (`.githooks/pre-push` deleted); Greptile is now
+  the **PR required check only** + `/greptile` skill for on-demand local review of large/uncommitted work.
+- **PF-4 → Keep Greptile+TREX only** (no 2nd AI reviewer; free Starter covers solo volume). **PF-6 → Skip
+  Firecrawl** (crawl4ai + Exa cover it). **Edition members-fold → FOLD into bundles** (ADR-0178, PR #34).
+  PF-7 (hosting) stays LOCKED Railway (no change). All open provider forks now closed.
 
-_ADR formalization pending — say the word and these lock as ADR-0177+._
-
-_Cross-cut (historical, PF-1 now decided): PostHog error-tracking stays OFF to avoid overlap with the OTLP
-backend. Flip-back trigger if SigNoz is ever offloaded later: HIPAA/BAA or PHI-in-telemetry customer → keep
-self-hosted SigNoz or SigNoz Cloud Teams ($49)._
+_Flip-back trigger if Grafana ever proves insufficient: HIPAA/BAA or PHI-in-telemetry customer → self-hosted
+SigNoz or SigNoz Cloud Teams ($49). PostHog error-tracking stays OFF (OTLP owns errors)._
 
 ### Parked / deferred (non-blocking — revisit later, do NOT auto-decide)
 

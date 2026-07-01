@@ -9,8 +9,8 @@ conflict, the ADR file and the board win over this index.
 - ADRs are append-only and immutable (ADR-0006). A later ADR _supersedes_ a clause; it
   never edits the prior file. So most rows below are **partial** supersessions (one clause),
   not a wholesale replacement.
-- 113 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 113). Numbering is **not**
-  contiguous: present are **0001-0024** and **0040-0143** + **0160-0162** + **0170-0176** (Stage-2 Streams A/C/D); **0025-0039 are an unused gap**
+- 115 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 115). Numbering is **not**
+  contiguous: present are **0001-0024** and **0040-0143** + **0160-0162** + **0170-0178** (Stage-2 Streams A/C/D + the 2026-07-01 provider picker); **0025-0039 are an unused gap**
   (no files). The 0040 jump was a deliberate block reservation for the brand/positioning set.
   **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit);
   **0094-0096** = the 2026-06-29 GTM-report locks (open-core Base / GTM offer / services-docs);
@@ -429,7 +429,7 @@ integration-owned.
 The base-substrate driver buildout (one ADR per port-family, `docs/state/adapter-expansion.md`) + the D4
 org-account fork lock. These take real numbers from Stream D's reserved **0170-0179** range, retiring the
 advisory "0119+" placeholders in `adapter-expansion.md`. Drivers are env-gated/dormant until creds; org-account
-is a real migration. Reserved 0177-0179 for D6 harvest + overflow.
+is a real migration. **0177-0178 used by the 2026-07-01 provider picker (below); 0179 reserved for D6 harvest.**
 
 | #                                                                     | Title                                                       | Domain           | Status   | Relations                                                            |
 | --------------------------------------------------------------------- | ----------------------------------------------------------- | ---------------- | -------- | -------------------------------------------------------------------- |
@@ -440,6 +440,15 @@ is a real migration. Reserved 0177-0179 for D6 harvest + overflow.
 | [0174](../knowledge/decisions/ADR-0174-supabase-transactor.md)        | DB adapter: Supabase (session-mode/TCP) behind `Transactor` | Adapters/DB      | accepted | extends 0005/0014/0115                                               |
 | [0175](../knowledge/decisions/ADR-0175-lemonsqueezy-polar-billing.md) | Billing adapter: LemonSqueezy + Polar (buyer-facing)        | Adapters/Billing | accepted | extends 0017/0108/0116                                               |
 | [0176](../knowledge/decisions/ADR-0176-org-account-model.md)          | Buyer account: org model via `account_member` (multi-user)  | Auth/Tenancy     | accepted | extends 0015/0132; closes personal placeholder; RLS (0005) unchanged |
+
+### Provider picker (0177-0178, 2026-07-01) - status `accepted`
+
+The 2026-07-01 operator provider picker (research: forks PF-1..PF-7, `docs/state/providers.md`).
+
+| #                                                                 | Title                                                                          | Domain              | Status   | Relations                               |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------- | -------- | --------------------------------------- |
+| [0177](../knowledge/decisions/ADR-0177-provider-stack-2026-07.md) | Provider stack: Grafana-sole OTLP · PostHog · Linear+Cookiy · Greptile PR-gate | Infra/Observability | accepted | supersedes 0117; relates 0118/0138/0086 |
+| [0178](../knowledge/decisions/ADR-0178-edition-members-fold.md)   | Edition members-fold: bundle Stage-2 harvest primitives into editions          | Pricebook           | accepted | extends 0077/0137/0003; PR #34          |
 
 ---
 
