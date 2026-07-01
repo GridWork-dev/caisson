@@ -150,7 +150,10 @@ started · `ROADMAP` = post-v1, no code.
 - **EU-AI-Act Annex-IV compliance vertical pack** — shortest hop off the just-shipped OSCAL v1.2.2 +
   EU-AI-Act framework/collector (ADR-0179/0181); a demoable vertical for the hero compliance edition.
 - **OSCAL push** — the ingest/delivery side of the export the seam build just built (export → live
-  GRC-platform push/pull); scope + target fork to be surfaced.
+  GRC-platform push/pull); scope + target fork to be surfaced. **Includes** finishing the OSCAL
+  attestation-wizard seam (operator picker 2026-07-01): the compliance-leg endpoint that turns the
+  wizard's filled `manualSlots[]` into a validate-conformant SAR+POA&M pack (JSON+XML) the buyer can
+  download — apps/site ships the slot-fill half today; the pack-gen half lands here.
 - **Module marketplace** — per-module commerce at scale (browse/discover), extending the existing
   on-site cart + multi-item Paddle checkout.
 
