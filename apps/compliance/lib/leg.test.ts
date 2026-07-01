@@ -65,6 +65,31 @@ describe("compliance reference app — the full leg end to end", () => {
     expect(result.blocked.noPartialPack).toBe(true);
   });
 
+  test("5 — a HIPAA-Security evidence pack is generated from the SAME 3 collector results, deterministic, format-valid, and signed", () => {
+    expect(result.hipaaEvidence.framework).toBe("hipaa-security");
+    expect(result.hipaaEvidence.deterministic).toBe(true);
+    expect(result.hipaaEvidence.validatedAgainstFormat).toBe(true);
+    expect(result.hipaaEvidence.signatureValid).toBe(true);
+    expect(result.hipaaEvidence.controlCount).toBe(3);
+    expect(result.hipaaEvidence.controlsWithGaps).toBe(0);
+    expect(result.hipaaEvidence.sha256).toMatch(/^[0-9a-f]{64}$/);
+    // Readiness copy only — never an attestation (ADR-0058 / TM-K).
+    expect(result.hipaaEvidence.posture).not.toMatch(/compliant|certified/i);
+    // A DIFFERENT pack than the SOC2 one (own framework id + own control ids → own hash).
+    expect(result.hipaaEvidence.sha256).not.toBe(result.evidence.sha256);
+  });
+
+  test("6 — the SOC2 pack maps to a shape-correct, deterministic OSCAL v1.1.3 SAR+POA&M bundle (T15, map not push)", () => {
+    const sar = result.oscal.assessmentResults["assessment-results"];
+    const poam =
+      result.oscal.planOfActionAndMilestones["plan-of-action-and-milestones"];
+    expect(sar.results).toHaveLength(1);
+    expect(sar.results[0]?.findings).toHaveLength(result.evidence.controlCount);
+    // A clean (zero-gap) pack fabricates no remediation — zero POA&M items.
+    expect(poam["poam-items"]).toHaveLength(0);
+    expect(poam["system-id"].id).toBe(DEMO_TENANT_ID);
+  });
+
   test("the whole leg passes", () => {
     expect(result.allChecksPassed).toBe(true);
   });
@@ -75,7 +100,21 @@ describe("compliance reference app — the full leg end to end", () => {
     matchGolden(import.meta.url, "leg-evidence-pack", result.manifest);
   });
 
-  test("re-running the leg on a fresh substrate yields the same byte-stable manifest", async () => {
+  test("the HIPAA evidence manifest is byte-stable against its golden fixture", () => {
+    expect(result.hipaaManifest.tenantId).toBe(DEMO_TENANT_ID);
+    expect(result.hipaaManifest.framework.id).toBe("hipaa-security");
+    matchGolden(
+      import.meta.url,
+      "leg-evidence-pack-hipaa",
+      result.hipaaManifest,
+    );
+  });
+
+  test("the OSCAL export bundle is byte-stable against its golden fixture", () => {
+    matchGolden(import.meta.url, "leg-oscal-bundle", result.oscal);
+  });
+
+  test("re-running the leg on a fresh substrate yields the same byte-stable manifests + OSCAL bundle", async () => {
     const second = await createLegHarness();
     try {
       const again = await runComplianceLeg(second, {
@@ -84,6 +123,9 @@ describe("compliance reference app — the full leg end to end", () => {
       });
       expect(again.manifest).toEqual(result.manifest);
       expect(again.evidence.sha256).toBe(result.evidence.sha256);
+      expect(again.hipaaManifest).toEqual(result.hipaaManifest);
+      expect(again.hipaaEvidence.sha256).toBe(result.hipaaEvidence.sha256);
+      expect(again.oscal).toEqual(result.oscal);
     } finally {
       await second.cleanup();
     }

@@ -11,9 +11,12 @@
 //      retention term. Prove `verifyChain` passes against the trusted anchor.
 //   3. EMIT + VALIDATE  — gather REAL substrate facts (chain integrity, FORCE-RLS posture, WORM
 //      retention) through the T11 collectors, generate the deterministic control→evidence pack (T13,
-//      ADR-0058), validate it against the canonical format contract (T12), sign it per-tenant
-//      (Ed25519, T14, ADR-0056), and mirror an `evidence.generated` ops event through the base
-//      `EventSink` (ADR-0075). The byte-stable manifest is golden-pinned by `leg.test.ts`.
+//      ADR-0058) for TWO frameworks (SOC2-TSC + HIPAA-Security, ADR-0057 — the same 3 collector
+//      results cited against each framework's own control ids), validate each against the canonical
+//      format contract (T12), sign each per-tenant (Ed25519, T14, ADR-0056), and mirror an
+//      `evidence.generated` ops event through the base `EventSink` (ADR-0075) per pack. The SOC2 pack
+//      is also mapped (never pushed, T15) to an OSCAL v1.1.3 SAR+POA&M bundle. Both byte-stable
+//      manifests are golden-pinned by `leg.test.ts`.
 //   4. BLOCK            — prove flag-never-guess: one control with UNRESOLVED evidence makes the
 //      generator throw `EvidencePackBlockedError` with NO partial pack written (TM-K).
 //
@@ -42,10 +45,12 @@ import {
   chainVerifyCollector,
   emitEvidenceGenerated,
   generateEvidencePack,
+  hipaaSecurity,
   parseEvidencePackManifest,
   rlsForceCollector,
   signEvidencePack,
   soc2Tsc,
+  toOscalBundle,
   verifyEvidenceSignature,
   withTenantCrypto,
   wormRetentionCollector,
@@ -54,7 +59,9 @@ import {
   type EvidencePackChainAnchor,
   type EvidencePackFramework,
   type EvidencePackManifest,
+  type Framework,
   type GenerateEvidencePackInput,
+  type OscalExportBundle,
   type RlsTableFact,
 } from "@caisson/compliance";
 import { type LegHarness, PHI_TABLE, TENANT_TABLES } from "./harness";
@@ -132,12 +139,21 @@ export interface LegResult {
   readonly tenantId: string;
   readonly encryptedField: EncryptedFieldCheck;
   readonly wormLock: WormLockCheck;
+  /** The SOC2-TSC evidence pack (framework `soc2-tsc`). */
   readonly evidence: EvidenceCheck;
+  /** The HIPAA-Security evidence pack (framework `hipaa-security`) — the SAME 3 collector results,
+   *  cited against HIPAA's own control ids (ADR-0057). */
+  readonly hipaaEvidence: EvidenceCheck;
   readonly blocked: BlockedCheck;
   /** Operational event names mirrored through the `EventSink` (e.g. `evidence.generated`). */
   readonly emittedEvents: readonly string[];
-  /** The byte-stable canonical manifest — golden-pinned by `leg.test.ts`. */
+  /** The SOC2-TSC byte-stable canonical manifest — golden-pinned by `leg.test.ts`. */
   readonly manifest: EvidencePackManifest;
+  /** The HIPAA-Security byte-stable canonical manifest — golden-pinned by `leg.test.ts`. */
+  readonly hipaaManifest: EvidencePackManifest;
+  /** The SOC2 pack mapped (not pushed, T15) to an OSCAL v1.1.3 SAR+POA&M bundle. Deterministic under
+   *  the same injected `now` + a fixed `newId` counter. */
+  readonly oscal: OscalExportBundle;
   /** True iff every exit check passed (the app route's single health signal). */
   readonly allChecksPassed: boolean;
 }
@@ -181,14 +197,17 @@ async function readRlsPosture(
   return facts;
 }
 
-/** Build an `EvidenceControlPlan` from an own-authored SOC2-TSC control + its gathered evidence. */
+/** Build an `EvidenceControlPlan` from an own-authored control (any framework catalog) + its
+ *  gathered evidence — the 3 substrate collectors are framework-agnostic, so the same
+ *  `CollectorResult` can back a control in more than one framework's plan. */
 function controlPlan(
+  framework: Framework,
   controlId: string,
   evidence: readonly CollectorResult[],
 ): EvidenceControlPlan {
-  const control = soc2Tsc.controls.find((c) => c.id === controlId);
+  const control = framework.controls.find((c) => c.id === controlId);
   if (control === undefined) {
-    throw new Error(`leg: unknown SOC2-TSC control id "${controlId}"`);
+    throw new Error(`leg: unknown ${framework.id} control id "${controlId}"`);
   }
   return {
     controlId: control.id,
@@ -197,6 +216,16 @@ function controlPlan(
     statement: control.statement,
     crosswalk: control.crosswalk,
     evidence,
+  };
+}
+
+/** A deterministic OSCAL UUID source (a counter) — makes the OSCAL bundle byte-stable for the
+ *  golden fixture (mirrors `oscal-export.test.ts`'s own `counterIds()` pattern). */
+function counterIds(): () => string {
+  let n = 0;
+  return () => {
+    n += 1;
+    return `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
   };
 }
 
@@ -350,9 +379,9 @@ export async function runComplianceLeg(
   });
 
   const controls = [
-    controlPlan("AUDIT.IMMUTABLE-LOG", [chainResult]),
-    controlPlan("DATA-PROTECTION.DISPOSAL", [wormResult]),
-    controlPlan("ACCESS-CONTROL.LOGICAL", [rlsResult]),
+    controlPlan(soc2Tsc, "AUDIT.IMMUTABLE-LOG", [chainResult]),
+    controlPlan(soc2Tsc, "DATA-PROTECTION.DISPOSAL", [wormResult]),
+    controlPlan(soc2Tsc, "ACCESS-CONTROL.LOGICAL", [rlsResult]),
   ];
   const generateInput: GenerateEvidencePackInput = {
     tenantId,
@@ -399,10 +428,71 @@ export async function runComplianceLeg(
     generatedAt: pack.generatedAt,
   });
 
+  // OSCAL EXPORT (T15 seam, MAP not PUSH): map the already-generated, already-validated SOC2 pack
+  // into an OSCAL v1.1.3 SAR+POA&M bundle. A fixed counter `newId` keeps the bundle byte-stable
+  // alongside the injected `now`. The live transport (`OscalExportTransport.deliver`) is out of
+  // scope (P7) — this call never reaches a network.
+  const oscal: OscalExportBundle = toOscalBundle(pack.manifest, {
+    now,
+    newId: counterIds(),
+    packSha256: pack.sha256,
+  });
+
+  // HIPAA-SECURITY LEG: the SAME 3 collector results (chain / WORM / RLS) cited against HIPAA's own
+  // control ids (ADR-0057) — the substrate facts don't care which framework cites them.
+  const hipaaFramework: EvidencePackFramework = {
+    id: hipaaSecurity.id,
+    title: hipaaSecurity.title,
+    version: hipaaSecurity.version,
+  };
+  const hipaaControls = [
+    controlPlan(hipaaSecurity, "AUDIT.CONTROLS", [chainResult]),
+    controlPlan(hipaaSecurity, "GOVERNANCE.DOCUMENTATION", [wormResult]),
+    controlPlan(hipaaSecurity, "ACCESS-CONTROL.WORKFORCE", [rlsResult]),
+  ];
+  const hipaaGenerateInput: GenerateEvidencePackInput = {
+    tenantId,
+    framework: hipaaFramework,
+    chainAnchor,
+    controls: hipaaControls,
+    now,
+  };
+
+  const hipaaPack = generateEvidencePack(hipaaGenerateInput);
+  const hipaaRepeat = generateEvidencePack(hipaaGenerateInput);
+  const hipaaDeterministic =
+    hipaaPack.sha256 === hipaaRepeat.sha256 &&
+    hipaaPack.canonicalManifest === hipaaRepeat.canonicalManifest;
+
+  let hipaaValidatedAgainstFormat = false;
+  try {
+    parseEvidencePackManifest(JSON.parse(hipaaPack.canonicalManifest));
+    hipaaValidatedAgainstFormat = true;
+  } catch {
+    hipaaValidatedAgainstFormat = false;
+  }
+
+  // Same per-tenant signer as the SOC2 pack — one Ed25519 identity signs every framework's pack
+  // for a given tenant.
+  const hipaaSignature = await signEvidencePack(signer, hipaaPack.manifest);
+  const hipaaSignatureValid = await verifyEvidenceSignature(
+    hipaaPack.manifest,
+    hipaaSignature,
+  );
+
+  await emitEvidenceGenerated(sink, {
+    tenantId,
+    framework: hipaaPack.manifest.framework.id,
+    sha256: hipaaPack.sha256,
+    controlCount: hipaaPack.manifest.summary.totalControls,
+    flaggedCount: hipaaPack.manifest.summary.controlsWithGaps,
+    generatedAt: hipaaPack.generatedAt,
+  });
+
   // 4 — BLOCK: one UNRESOLVED control refuses the whole pack (flag-never-guess, no partial pack).
   const blockedControls = [
     ...controls,
-    controlPlan("AVAILABILITY.BACKUP-RECOVERY", [
+    controlPlan(soc2Tsc, "AVAILABILITY.BACKUP-RECOVERY", [
       wormRetentionCollector().collect({
         key: `${tenantId}/backups/2026-06`,
         retainUntil: null,
@@ -458,6 +548,19 @@ export async function runComplianceLeg(
     signatureValid,
     generatedAt: pack.generatedAt,
   };
+  const hipaaEvidence: EvidenceCheck = {
+    framework: hipaaPack.manifest.framework.id,
+    sha256: hipaaPack.sha256,
+    deterministic: hipaaDeterministic,
+    validatedAgainstFormat: hipaaValidatedAgainstFormat,
+    controlCount: hipaaPack.manifest.summary.totalControls,
+    controlsReady: hipaaPack.manifest.summary.controlsReady,
+    controlsWithGaps: hipaaPack.manifest.summary.controlsWithGaps,
+    totalEvidenceItems: hipaaPack.manifest.summary.totalEvidenceItems,
+    posture: hipaaPack.manifest.summary.posture,
+    signatureValid: hipaaSignatureValid,
+    generatedAt: hipaaPack.generatedAt,
+  };
   const emittedEvents = sink.events.map((e) => e.name);
 
   const allChecksPassed =
@@ -471,6 +574,10 @@ export async function runComplianceLeg(
     evidence.validatedAgainstFormat &&
     evidence.signatureValid &&
     evidence.controlsWithGaps === 0 &&
+    hipaaEvidence.deterministic &&
+    hipaaEvidence.validatedAgainstFormat &&
+    hipaaEvidence.signatureValid &&
+    hipaaEvidence.controlsWithGaps === 0 &&
     blocked &&
     noPartialPack &&
     emittedEvents.includes("evidence.generated");
@@ -480,9 +587,12 @@ export async function runComplianceLeg(
     encryptedField,
     wormLock,
     evidence,
+    hipaaEvidence,
     blocked: { blocked, unresolvedCount, noPartialPack },
     emittedEvents,
     manifest: pack.manifest,
+    hipaaManifest: hipaaPack.manifest,
+    oscal,
     allChecksPassed,
   };
 }

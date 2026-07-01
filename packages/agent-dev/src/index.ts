@@ -38,9 +38,12 @@ export {
 export type { AuditChainEntry, AuditChainAnchor } from "@caisson/kernel";
 
 // ── The composition factory ────────────────────────────────────────────────────────────────────
+import { mkdirSync } from "node:fs";
+import { resolve } from "node:path";
 import type { Artifact, AuditLifecycleStore } from "@caisson/agent-kernel";
 import { AuditedLifecycle, validateArtifactSet } from "@caisson/agent-kernel";
-import { LocalStore } from "@caisson/local-store";
+import { LocalStore, tenantDbPath } from "@caisson/local-store";
+import { ValidationError } from "@caisson/kernel";
 import {
   renderHarnessBundles,
   writeBundle,
@@ -57,7 +60,15 @@ export interface AgentDevEditionOptions {
   readonly audited?: boolean;
   /** Local hybrid-memory vector width; fixes the `vec0` table at open (ADR-0067). */
   readonly memoryDim: number;
-  /** Memory DB path; omit for an in-memory store (tests / ephemeral). */
+  /**
+   * Per-tenant memory isolation (ADR-0073 file-per-tenant floor). The local tier has no RLS, so
+   * isolation is PHYSICAL: the edition opens its memory at `tenantDbPath(root, tenantId)` and the
+   * resolved path IS the boundary — a cross-tenant read is inexpressible. Resolution is FAIL-CLOSED
+   * (a malformed `tenantId` throws before any file opens), so a multi-tenant host cannot silently ship
+   * a single shared store. Multi-tenant hosts MUST use this; mutually exclusive with `memoryPath`.
+   */
+  readonly tenant?: { readonly root: string; readonly tenantId: string };
+  /** Explicit memory DB path (single-tenant / tests); omit for an in-memory store. Mutually exclusive with `tenant`. */
   readonly memoryPath?: string;
   /** The authored artifact set the edition governs + emits. Defaults to the curated Caisson set. */
   readonly artifacts?: readonly Artifact[];
@@ -105,9 +116,27 @@ export function createAgentDevEdition(
     ...(options.now !== undefined ? { now: options.now } : {}),
   });
 
+  // Resolve the memory path. A `tenant` opts into the ADR-0073 file-per-tenant isolation floor —
+  // `tenantDbPath` throws (fail-closed) on a malformed id BEFORE any file opens, so an unscoped or
+  // traversal path can never reach `LocalStore.open`. `tenant` and `memoryPath` are mutually
+  // exclusive: allowing both would let a caller believe they are isolated while pointing at a shared
+  // file. Neither ⇒ in-memory (tests / ephemeral single-tenant).
+  if (options.tenant !== undefined && options.memoryPath !== undefined) {
+    throw new ValidationError(
+      "agent-dev: `tenant` and `memoryPath` are mutually exclusive",
+      {},
+    );
+  }
+  let memoryPath: string | undefined = options.memoryPath;
+  if (options.tenant !== undefined) {
+    const { root, tenantId } = options.tenant;
+    memoryPath = tenantDbPath(root, tenantId); // fail-closed on a bad id, before any open
+    mkdirSync(resolve(root), { recursive: true }); // LocalStore.open does not create the parent dir
+  }
+
   const memory = LocalStore.open({
     dim: options.memoryDim,
-    ...(options.memoryPath !== undefined ? { path: options.memoryPath } : {}),
+    ...(memoryPath !== undefined ? { path: memoryPath } : {}),
   });
 
   const render = (hooks: readonly EmitHookBinding[] = []): EmittedBundle =>

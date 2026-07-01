@@ -21,3 +21,9 @@ export type {
 } from "./coach.ts";
 export { createStdioMcpServer, runStdioServer } from "./stdio.ts";
 export type { StdioServerDeps } from "./stdio.ts";
+export { createHttpMcpHandler, runHttpServer } from "./http.ts";
+export type {
+  HttpServerDeps,
+  HttpMcpHandler,
+  HttpListenOptions,
+} from "./http.ts";

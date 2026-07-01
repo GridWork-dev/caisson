@@ -6,12 +6,65 @@
 import { z } from "zod";
 import { NotFoundError, parseStrict, strictObject } from "@caisson/kernel";
 
-/** One provider binding: provider/model for a lane + where its key lives. */
+/**
+ * One provider binding: provider/model for a lane + where its key lives. The provider set is a
+ * config enum, never a code literal (ADR-0011) — new backends are additive here (ADR-0160):
+ *   • `bedrock` (AWS) reads a region + a two-part credential: `apiKeyEnv` names the access-key-id env
+ *     var and `apiSecretEnv` names the secret-access-key env var (omit both to let the AWS default
+ *     credential chain resolve them);
+ *   • `azure-openai` addresses a DEPLOYMENT via `model` and needs `apiVersion` + `baseUrl` (the Azure
+ *     resource endpoint);
+ *   • `ollama` is OpenAI-API-compatible — it rides the same transport as `local`, the buyer names its
+ *     `baseUrl`.
+ * As with every lane, this package only carries env-var NAMES, never a key value.
+ */
 const ProviderConfigSchema = strictObject({
-  provider: z.enum(["openai", "anthropic", "google", "openrouter", "local"]),
+  provider: z.enum([
+    "openai",
+    "anthropic",
+    "google",
+    "openrouter",
+    "local",
+    "bedrock",
+    "azure-openai",
+    "ollama",
+  ]),
   model: z.string().min(1),
-  apiKeyEnv: z.string().min(1),
+  /**
+   * Where the lane's key comes from (ADR-0162). Omitted/`env` is the operator-supplied env-pointer:
+   * `apiKeyEnv` names the env var. `tenant` is per-tenant encrypted BYOK: the key is stored encrypted
+   * per tenant (field-crypto) and resolved at inference time — the lane names NO `apiKeyEnv`. Left
+   * OPTIONAL (not defaulted) so an existing env config round-trips byte-identically.
+   */
+  keySource: z.enum(["env", "tenant"]).optional(),
+  /** Env-var NAME holding the key (required for an `env` lane; forbidden for a `tenant` lane). */
+  apiKeyEnv: z.string().min(1).optional(),
   baseUrl: z.string().url().optional(),
+  /** AWS region for `bedrock` (defaults to `AWS_REGION` when omitted). */
+  region: z.string().min(1).optional(),
+  /** API version for `azure-openai` (Azure OpenAI is versioned per call). */
+  apiVersion: z.string().min(1).optional(),
+  /** Env-var NAME holding the secret half of a two-part credential (`bedrock` secret-access-key). */
+  apiSecretEnv: z.string().min(1).optional(),
+}).superRefine((cfg, ctx) => {
+  // The key-source discriminator: an env lane MUST name its env var; a per-tenant BYOK lane must NOT
+  // (its key lives encrypted per tenant, not in env). Keeps ADR-0011's "carry the name, never the
+  // value" contract intact for both modes.
+  if (cfg.keySource === "tenant" && cfg.apiKeyEnv !== undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["apiKeyEnv"],
+      message:
+        "a per-tenant (BYOK) lane must not name apiKeyEnv — the key is stored encrypted per tenant",
+    });
+  }
+  if (cfg.keySource !== "tenant" && cfg.apiKeyEnv === undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["apiKeyEnv"],
+      message: "an env-pointer lane requires apiKeyEnv",
+    });
+  }
 });
 
 /** Buyer `forge.config` surface: a default lane + capability→provider map. */
