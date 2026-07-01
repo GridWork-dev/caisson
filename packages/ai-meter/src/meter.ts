@@ -65,6 +65,12 @@ export interface ReserveInput {
   lane: string;
   messages: EstimateMessage[];
   maxOutputTokens?: number;
+  /**
+   * The lane's key source (ADR-0182). `"tenant"` (BYOK) debits $0 from the wallet — the caller
+   * supplied their own provider key — while internal metering (spend window + caps) still runs.
+   * Omitted/`"env"` is the platform key: billed as usual.
+   */
+  keySource?: "env" | "tenant";
   config?: MeterConfig;
 }
 
@@ -81,6 +87,11 @@ export interface ReserveResult {
   breakerTripped: boolean;
   /** True when this was an idempotent replay of an already-applied reservation. */
   idempotent: boolean;
+  /**
+   * The spend-window bucket this reserve accounted into — thread it back into `reconcile()` so a
+   * call straddling a day/month boundary trues its delta into the SAME bucket it reserved against.
+   */
+  windowKey: string;
 }
 
 export interface ReconcileInput {
@@ -91,8 +102,22 @@ export interface ReconcileInput {
   lane: string;
   /** What `reserve()` debited — the baseline the actual is trued against. */
   reservedCredits: number;
-  /** The provider's actual usage. */
+  /** The provider's actual usage (the estimate tokens when the provider reported none). */
   usage: Usage;
+  /**
+   * False when the provider completed the call but reported NO usage. Settle at the reserved
+   * estimate (delta 0 — never refund a real completed call to zero) rather than trueing down.
+   * Defaults to true.
+   */
+  usageReported?: boolean;
+  /**
+   * The reserve leg's spend-window bucket (`ReserveResult.windowKey`). When set, `reconcile()`
+   * trues the delta into THIS bucket instead of recomputing one from a fresh clock — so a boundary-
+   * straddling call can't misattribute its delta to the next day/month.
+   */
+  windowKey?: string;
+  /** The lane's key source (ADR-0182); `"tenant"` (BYOK) makes no wallet movement at reconcile. */
+  keySource?: "env" | "tenant";
   /** The prompt_registry version that produced the call (the version→usage link); null for ad-hoc. */
   promptVersionId?: string | null;
   config?: MeterConfig;
@@ -140,6 +165,7 @@ const reserveCoreSchema = strictObject({
   lane: z.string().min(1),
   messages: z.array(estimateMessageSchema),
   maxOutputTokens: z.number().int().positive().optional(),
+  keySource: z.enum(["env", "tenant"]).optional(),
 });
 
 const reconcileCoreSchema = strictObject({
@@ -150,6 +176,9 @@ const reconcileCoreSchema = strictObject({
   lane: z.string().min(1),
   reservedCredits: z.number().int().nonnegative(),
   usage: usageSchema,
+  usageReported: z.boolean().optional(),
+  windowKey: z.string().min(1).optional(),
+  keySource: z.enum(["env", "tenant"]).optional(),
   promptVersionId: z.string().min(1).nullable().optional(),
 });
 
@@ -271,6 +300,7 @@ export async function reserve(
     ...(input.maxOutputTokens !== undefined
       ? { maxOutputTokens: input.maxOutputTokens }
       : {}),
+    ...(input.keySource !== undefined ? { keySource: input.keySource } : {}),
   });
   const cfg = resolveConfig(input.config);
 
@@ -285,10 +315,13 @@ export async function reserve(
     core.maxOutputTokens,
   );
   const reservedCredits = est.credits;
+  // BYOK (ADR-0182): the caller brought their own provider key, so a metered action debits $0.
+  // Internal metering (the spend window + caps below) still runs — it is just not the billing signal.
+  const billable = core.keySource !== "tenant";
 
   let walletBalance: number;
   let idempotent: boolean;
-  if (reservedCredits > 0) {
+  if (billable && reservedCredits > 0) {
     // Debit-before-spend (ADR-0007): a short wallet throws 402 and rolls everything back.
     const res = await debit(tx, {
       accountId: core.accountId,
@@ -300,6 +333,10 @@ export async function reserve(
     walletBalance = res.balance;
     idempotent = res.idempotent;
   } else {
+    // Nothing to hold: a BYOK lane bills $0, and a zero-credit estimate holds nothing either way.
+    // ponytail: a BYOK reserve has no wallet debit to anchor idempotency on, so a same-callId reserve
+    // RETRY re-bumps the window (the reconcile leg stays idempotent via the usage_event UNIQUE). Add a
+    // reservation-marker row if BYOK reserve retries ever become a real path.
     walletBalance = await balance(tx, core.accountId);
     idempotent = false;
   }
@@ -319,6 +356,7 @@ export async function reserve(
       softExceeded: false,
       breakerTripped: false,
       idempotent,
+      windowKey: key,
     };
   }
 
@@ -337,6 +375,7 @@ export async function reserve(
     softExceeded: caps.softExceeded,
     breakerTripped: caps.breakerTripped,
     idempotent: false,
+    windowKey: key,
   };
 }
 
@@ -358,19 +397,31 @@ export async function reconcile(
     lane: input.lane,
     reservedCredits: input.reservedCredits,
     usage: input.usage,
+    ...(input.usageReported !== undefined
+      ? { usageReported: input.usageReported }
+      : {}),
+    ...(input.windowKey !== undefined ? { windowKey: input.windowKey } : {}),
+    ...(input.keySource !== undefined ? { keySource: input.keySource } : {}),
     ...(input.promptVersionId !== undefined
       ? { promptVersionId: input.promptVersionId }
       : {}),
   });
   const cfg = resolveConfig(input.config);
+  // BYOK (ADR-0182) makes no wallet movement; the usage_event + window/cap below still run.
+  const billable = core.keySource !== "tenant";
+  const usageReported = core.usageReported ?? true;
 
   const entry = resolvePriceEntry(cfg.priceBook, core.provider, core.model);
   const actual = computeCost(core.usage, entry, cfg.conversion);
+  // A provider that completed the call but reported no usage settles at the RESERVED estimate
+  // (delta 0 — no refund of a real completed call) while still recording the estimate token counts.
+  const settledCredits = usageReported ? actual.credits : core.reservedCredits;
   const policy = await loadPolicy(tx, core.accountId, cfg.scope);
-  const key = windowKey(
-    policy?.window_granularity ?? DEFAULT_GRANULARITY,
-    cfg.now,
-  );
+  // Reuse the reserve leg's bucket when threaded in (never recompute from a fresh clock) so a call
+  // straddling a day/month boundary trues its delta into the SAME bucket it reserved against.
+  const key =
+    core.windowKey ??
+    windowKey(policy?.window_granularity ?? DEFAULT_GRANULARITY, cfg.now);
 
   // The append-only usage_event UNIQUE (account, call_id) is the reconcile idempotency anchor.
   const ins = await tx.query<{ id: string }>(
@@ -392,14 +443,14 @@ export async function reconcile(
       core.usage.outputTokens,
       core.usage.cachedInputTokens,
       actual.costMicroUsd,
-      actual.credits,
+      settledCredits,
     ],
   );
 
   // Already reconciled → settle once: no second charge, no second window move.
   if (ins.rows.length === 0) {
     return {
-      actualCredits: actual.credits,
+      actualCredits: settledCredits,
       costMicroUsd: actual.costMicroUsd,
       deltaCredits: 0,
       refundedCredits: 0,
@@ -412,11 +463,11 @@ export async function reconcile(
     };
   }
 
-  const delta = actual.credits - core.reservedCredits;
+  const delta = settledCredits - core.reservedCredits;
   let walletBalance = await balance(tx, core.accountId);
   let refundedCredits = 0;
   let chargedCredits = 0;
-  if (delta > 0) {
+  if (billable && delta > 0) {
     const res = await debit(tx, {
       accountId: core.accountId,
       amount: delta,
@@ -426,7 +477,7 @@ export async function reconcile(
     });
     walletBalance = res.balance;
     chargedCredits = delta;
-  } else if (delta < 0) {
+  } else if (billable && delta < 0) {
     const res = await grant(tx, {
       accountId: core.accountId,
       amount: -delta,
@@ -437,7 +488,7 @@ export async function reconcile(
     walletBalance = res.balance;
     refundedCredits = -delta;
   }
-  // delta === 0: a zero-delta reconcile writes no credit row (CHECK amount<>0).
+  // delta === 0 (or a BYOK lane): no credit row moves — the wallet stays put.
 
   // Move the window by the delta so it reflects ACTUAL spend (reserve already counted the estimate).
   const spent =
@@ -447,7 +498,7 @@ export async function reconcile(
   const caps = await evaluateCaps(tx, core.accountId, cfg.scope, spent, policy);
 
   return {
-    actualCredits: actual.credits,
+    actualCredits: settledCredits,
     costMicroUsd: actual.costMicroUsd,
     deltaCredits: delta,
     refundedCredits,

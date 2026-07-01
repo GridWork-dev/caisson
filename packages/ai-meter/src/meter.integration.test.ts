@@ -315,6 +315,111 @@ describe("hard cap → circuit breaker", () => {
   });
 });
 
+describe("BYOK lane — $0 wallet, metering still runs (ADR-0182)", () => {
+  test("a BYOK reserve+reconcile never moves the wallet, but records usage and advances the window/cap", async () => {
+    await seed(1000);
+    // A day-granularity policy whose hard cap the BYOK actual will cross — the cap must still evaluate.
+    await inA((tx) =>
+      tx.query(
+        `INSERT INTO ${SPEND_POLICY_TABLE}
+           (account_id, scope, unit, window_granularity, soft_limit, hard_limit)
+         VALUES ($1, 'account', 'credits', 'day', NULL, 8)`,
+        [A],
+      ),
+    );
+
+    const r = await inA((tx) =>
+      reserve(tx, { ...reserveInput("byok_1"), keySource: "tenant" }),
+    );
+    expect(r.reservedCredits).toBe(4);
+    expect(r.balance).toBe(1000); // BYOK: wallet untouched at reserve
+    expect(r.spent).toBe(4); // window still advanced (internal metering runs)
+    expect(await inA((tx) => balance(tx, A))).toBe(1000);
+
+    const rc = await inA((tx) =>
+      reconcile(tx, {
+        ...reconcileInput("byok_1", r.reservedCredits, SHORTFALL),
+        keySource: "tenant",
+        windowKey: r.windowKey,
+      }),
+    );
+    expect(rc.actualCredits).toBe(8);
+    expect(rc.deltaCredits).toBe(4);
+    expect(rc.chargedCredits).toBe(0); // BYOK: no wallet movement at reconcile either
+    expect(rc.refundedCredits).toBe(0);
+    expect(rc.balance).toBe(1000); // wallet STILL untouched after reconcile
+    expect(rc.spent).toBe(8); // window trued to actual — cap accounting advanced
+    expect(rc.breakerTripped).toBe(true); // the cap still evaluates (8 >= hard 8)
+    expect(await inA((tx) => balance(tx, A))).toBe(1000);
+
+    // The usage_event is recorded with the REAL token cost — metering is not the billing signal.
+    const rows = await tp.query<{ credits: number }>(
+      `SELECT credits FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.credits).toBe(8);
+
+    // No wallet ledger row was written for the BYOK call (neither a debit nor a grant).
+    const ledger = await tp.query(
+      `SELECT 1 FROM credit_event
+         WHERE account_id = $1 AND event_type IN ('feature_debit', 'feature_grant')`,
+      [A],
+    );
+    expect(ledger).toHaveLength(0);
+  });
+});
+
+describe("window bucket is fixed at reserve (no boundary misattribution)", () => {
+  test("a call reserving before a day boundary and reconciling after trues into the RESERVE bucket", async () => {
+    await seed(1000);
+    await inA((tx) =>
+      tx.query(
+        `INSERT INTO ${SPEND_POLICY_TABLE}
+           (account_id, scope, unit, window_granularity, soft_limit, hard_limit)
+         VALUES ($1, 'account', 'credits', 'day', NULL, 8)`,
+        [A],
+      ),
+    );
+
+    const reserveCfg: MeterConfig = {
+      ...CFG,
+      now: new Date("2026-06-27T23:59:59Z"),
+    };
+    const reconcileCfg: MeterConfig = {
+      ...CFG,
+      now: new Date("2026-06-28T00:00:01Z"),
+    };
+
+    const r = await inA((tx) =>
+      reserve(tx, { ...reserveInput("bnd_1"), config: reserveCfg }),
+    );
+    expect(r.windowKey).toBe("2026-06-27");
+    expect(r.spent).toBe(4);
+
+    // Reconcile the NEXT day. Threading the reserve bucket keeps the delta in 2026-06-27; recomputing
+    // it from the reconcile clock would split the spend across two buckets and undercount the cap.
+    const rc = await inA((tx) =>
+      reconcile(tx, {
+        ...reconcileInput("bnd_1", r.reservedCredits, SHORTFALL),
+        config: reconcileCfg,
+        windowKey: r.windowKey,
+      }),
+    );
+    expect(rc.spent).toBe(8); // 4 reserve + 4 delta, all in the reserve-day bucket
+    expect(rc.breakerTripped).toBe(true); // the cap sees the FULL 8, not a split 4 / 4
+
+    const buckets = await tp.query<{ window_key: string; spent: number }>(
+      `SELECT window_key, spent FROM ${TENANT_SPEND_WINDOW_TABLE}
+         WHERE account_id = $1 ORDER BY window_key`,
+      [A],
+    );
+    expect(buckets).toHaveLength(1); // one bucket — the spend never split across the day boundary
+    expect(buckets[0]?.window_key).toBe("2026-06-27");
+    expect(buckets[0]?.spent).toBe(8);
+  });
+});
+
 describe("concurrent reserves — atomic spend window", () => {
   test("N concurrent reserve() calls on one account/scope/window land every increment (no lost updates)", async () => {
     const N = 10;
