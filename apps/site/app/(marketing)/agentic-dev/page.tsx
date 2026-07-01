@@ -8,16 +8,18 @@ import {
   StatusChip,
   Terminal,
 } from "@/components";
-import { UpdatesForm } from "@/components/waitlist-form";
 import { breadcrumb, serializeJsonLd, softwareApplication } from "@/lib/jsonld";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
+import { formatPrice, priceById } from "@/lib/pricing";
 
 export const metadata = buildMetadata({
   title: "Agentic-Dev",
   description:
-    "A governed-agent kernel for TypeScript codebases: typed agent/skill/rule schema, a guarded lifecycle state machine, local hybrid memory, and a hooks dispatcher. Roadmap — ships after the Compliance wedge.",
+    "A governed-agent kernel for TypeScript codebases: typed agent/skill/rule schema, a guarded lifecycle state machine, local hybrid memory, and a hooks dispatcher. Own the source.",
   path: "/agentic-dev",
 });
+
+const agenticDevPrice = priceById("agentic-dev");
 
 /* ---------- Kernel pieces ---------- */
 const PIECES = [
@@ -51,9 +53,9 @@ const FAQS = [
       "The kernel validates each agent declaration against a schema at load time, holds all credentials, and owns the lifecycle state machine — so an agent that wants to deploy cannot. That capability lives on one audited side of the seam.",
   },
   {
-    question: "When does Agentic-Dev ship?",
+    question: "How do I buy Agentic-Dev?",
     answer:
-      "It is on the roadmap, post-wedge. Compliance lands first; Agentic-Dev opens once the base is proven in production.",
+      "Buy the edition outright for a perpetual license, or take just the kernel à la carte onto your existing Caisson base. Either way you own the source — fork it, ship it, keep it.",
   },
   {
     question: "Can I take just the kernel without the full edition?",
@@ -87,8 +89,9 @@ export default function AgenticDevPage() {
   const appLd = softwareApplication({
     name: "Caisson Agentic-Dev",
     description:
-      "A governed-agent kernel: typed agent/skill/rule schema, guarded lifecycle state machine, local hybrid memory, and a hooks dispatcher. Roadmap — not yet available.",
+      "A governed-agent kernel: typed agent/skill/rule schema, guarded lifecycle state machine, local hybrid memory, and a hooks dispatcher. Own the source.",
     url: `${SITE_URL}/agentic-dev`,
+    priceId: "agentic-dev",
   });
 
   const bcLd = breadcrumb([
@@ -120,23 +123,22 @@ export default function AgenticDevPage() {
         }
         ctas={
           <>
-            <Button
-              href="https://github.com/GridWork-dev/caisson"
-              variant="primary"
-              external
-            >
-              Follow on GitHub
+            <Button href="/pricing#agentic-dev" variant="primary">
+              Get Agentic-Dev
             </Button>
-            <Button href="#updates" variant="ghost">
-              Get product updates
+            <Button href="/docs/agentic-dev" variant="ghost">
+              Read the docs
             </Button>
           </>
         }
         credentials={
           <StatusChip
-            label="Roadmap — not yet shipped"
-            tone="muted"
-            icon="alert"
+            tone="accent"
+            label={
+              agenticDevPrice
+                ? `Own the source · ${formatPrice(agenticDevPrice)}`
+                : "Own the source"
+            }
             dot
           />
         }
@@ -264,7 +266,7 @@ export default function AgenticDevPage() {
         <Section
           eyebrow="How it ships"
           title="A composition of the same base."
-          lede="Agentic-Dev is an edition, not a fork — built on the audited Caisson base every other edition shares. It opens after the Compliance wedge lands."
+          lede="Agentic-Dev is an edition, not a fork — built on the audited Caisson base every other edition shares. Buy it outright, take the kernel à la carte, or subscribe for credits and updates."
         >
           <div
             className="cs-grid cs-grid--3"
@@ -327,30 +329,27 @@ export default function AgenticDevPage() {
         </Section>
       </Reveal>
 
-      {/* ===== Follow / product updates ===== */}
-      <Section eyebrow="Roadmap" id="updates">
-        <h2 className="cs-section-title">Follow the build.</h2>
+      {/* ===== Get started ===== */}
+      <Section eyebrow="Get started" id="get-started">
+        <h2 className="cs-section-title">Ship governed agents.</h2>
         <p className="cs-lede" style={{ marginBottom: "var(--cs-space-6)" }}>
-          Agentic-Dev is on the roadmap, shipping after the Compliance wedge is
-          proven in production. Watch the repo for milestones, or subscribe for
-          low-frequency product updates.
+          Buy the edition outright and own the source, or take the kernel à la
+          carte onto your existing Caisson base. Scaffold a project and put a
+          governed agent to work.
         </p>
         <div
           style={{
             display: "flex",
-            flexDirection: "column",
-            gap: "var(--cs-space-4)",
-            alignItems: "flex-start",
+            gap: "var(--cs-space-3)",
+            flexWrap: "wrap",
           }}
         >
-          <Button
-            href="https://github.com/GridWork-dev/caisson"
-            variant="primary"
-            external
-          >
-            Follow development on GitHub
+          <Button href="/pricing#agentic-dev" variant="primary">
+            Get Agentic-Dev
           </Button>
-          <UpdatesForm source="agentic-dev" />
+          <Button href="/docs/agentic-dev" variant="ghost">
+            Read the docs
+          </Button>
         </div>
       </Section>
     </>
