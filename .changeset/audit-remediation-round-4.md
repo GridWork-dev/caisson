@@ -1,0 +1,18 @@
+---
+"@caisson/ai-meter": patch
+"@caisson/ai-kit": patch
+"@caisson/alerting": patch
+"@caisson/jobs": patch
+"@caisson/retention-runner": patch
+---
+
+Whole-repo audit round-4 remediation (ledger 2026-07-01): BYOK (tenant-key) inference now
+makes zero wallet movement while internal metering still runs, implementing ADR-0182/0198;
+provider-unreported token usage is kept distinct from genuine zero so reconcile settles at
+the reserved estimate instead of silently refunding a real call; the spend-window bucket is
+fixed at reserve and reused at reconcile so boundary-straddling calls no longer undercount
+the hard-cap breaker. Alerting webhook/Slack/Telegram destinations get an https-only +
+private/metadata-range SSRF guard at both the Zod boundary and the fetch seam, mirroring the
+ai-kit baseUrl policy. The retention_audit table gets fail-closed RLS via an append-only
+follow-up migration. The pg-boss production job driver now validates task name + payload
+schema on enqueue like its sibling drivers.
