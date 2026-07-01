@@ -51,6 +51,18 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
   // license-only buy — `credits: 0` (no bundled credit pack; carried over from the
   // `compliance_onetime` placeholder's number, SD-6 — operator-deferred, non-final).
   //
+  // REPRICE — Q4 "full below-sum" operator lock (per-edition price CHANGE): the price a buyer is
+  // CHARGED is NOT stored here. This book keys the Paddle price id -> credits + entitlements; the
+  // dollar AMOUNT lives on the Paddle product (dashboard/API), and the site DISPLAY amount is owned
+  // by `apps/site/lib/pricing.ts` (the single display SOT, integer USD — FE-2's tree). So a reprice
+  // is a Paddle-side + site-display change, NOT a pricebook code change — no amount is invented here.
+  // New locked below-sum targets (USD, one-time perpetual), by `purchaseTag` / Paddle price id:
+  //   compliance  -> $749   (pri_01kwd76be2eq96kff5nqw236c0)
+  //   ai-kit      -> $599   (pri_01kwd76c1pgs2csxcj2n0y7vv0)  — unchanged
+  //   local-ai    -> $349   (pri_01kwd76cahy825m14334aqf209)
+  //   agent-dev   -> $249   (pri_01kwd76ck3w8myy4p4f1gj0dcy)
+  //   bundle      -> $1,499 (pri_01kwd76bp60acq51mftvpgr42k)  — below the sum of its parts
+  //
   // ENTITLEMENT-ID NOTE: `purchaseTag`/`entitlements` mirror the registry edition id `agent-dev`
   // (`packages/registry-schema/src/module-manifest.ts` EDITIONS); the marketing route/label
   // `/agentic-dev`/"Agentic-Dev" deliberately differ from the entitlement id.
