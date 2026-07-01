@@ -22,11 +22,17 @@ const config: NextConfig = {
   // @caisson/ui ships raw TS (exports point at src/*.ts); Next transpiles it (ADR-0042 token floor).
   transpilePackages: ["@caisson/ui"],
   turbopack: { root: monorepoRoot },
-  // Security headers — ported verbatim from the (now-deleted) Cloudflare Pages public/_headers so
-  // the Node standalone server serves the same CSP/HSTS/X-Frame floor the static Pages deploy did
-  // (the Node server never read _headers). Values are byte-identical so the /security page stays
-  // honest. CSP keeps 'unsafe-inline' on script/style-src because Next still inlines its hydration
-  // bootstrap without a per-request nonce under App Router; a nonce path is a tracked follow-up.
+  // Security headers — the CSP/HSTS/X-Frame floor the (now-deleted) Cloudflare Pages public/_headers
+  // served, now emitted by the Node standalone server (which never read _headers). Divergence from
+  // that file: the Paddle Billing overlay checkout is a live surface here, so *.paddle.com is allowed
+  // where Paddle actually loads — script from cdn.paddle.com, the overlay iframe (frame-src) +
+  // checkout XHR (connect-src) from buy/checkout-service.paddle.com, and paddle.css (style-src); the
+  // wildcard covers both sandbox (sandbox-*) and production subdomains. Without these the store
+  // silently no-ops (paddle.js CSP-blocked → getPaddle() undefined). script-src stays pinned to
+  // cdn.paddle.com (the one script origin). CSP keeps 'unsafe-inline' on script/style-src because
+  // Next still inlines its hydration bootstrap without a per-request nonce under App Router; a nonce
+  // path is a tracked follow-up. frame-ancestors 'none' is unchanged (it protects THIS site from
+  // being embedded — unrelated to the Paddle iframe we load).
   async headers() {
     return [
       {
@@ -46,7 +52,7 @@ const config: NextConfig = {
           {
             key: "Content-Security-Policy",
             value:
-              "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data:; font-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://plausible.io; connect-src 'self' https://plausible.io",
+              "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: https://*.paddle.com; font-src 'self'; style-src 'self' 'unsafe-inline' https://*.paddle.com; script-src 'self' 'unsafe-inline' https://plausible.io https://cdn.paddle.com; frame-src https://*.paddle.com; connect-src 'self' https://plausible.io https://*.paddle.com",
           },
         ],
       },
