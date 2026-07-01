@@ -1,0 +1,29 @@
+{
+  "name": "@caisson/audit-harness",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cross-domain audit/validate harness (ADR-0134, generalizes ADR-0101): audit surface manifest + append-only reconciling ledger + workflow-scope guard + high-risk /validate spine (Challenger port, majority-kills, default-to-refuted). Internal engineering tooling — NON-BLOCKING, not a sellable module.",
+  "bin": {
+    "audit-harness-reconcile": "./src/cli.ts"
+  },
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "bun test ./src"
+  },
+  "devDependencies": {
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.0"
+  }
+}
