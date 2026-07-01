@@ -270,6 +270,17 @@ The Greptile GitHub app reviews opened PRs (config landed PR#20: `.greptile/{con
 **Process follow-up:** PRs over ~100 files silently bypass Greptile. For large design/site PRs, split
 them or run an on-demand local pass (`/greptile` skill) before merge.
 
+**PR #35 (edition-seam) — all 3 Greptile findings FIXED in-PR** (fail-closed BYOK crypto, Gemini key
+out of the URL, `clearAction` Zod boundary). A follow-on adversarial sweep for sibling instances of the
+same floor patterns surfaced **3 pre-existing P3 defense-in-depth items** (none in this PR's diff, none a
+live hole — each guards only synthetic/demo data today; queue when the surface changes):
+
+| #   | File:line                                     | Finding                                                                                                                                                                     | Fix                                                                   | Priority |
+| --- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | -------- |
+| 1   | `apps/site/app/dashboard/members/page.tsx:22` | `AddMemberInput` uses `z.object()` without `.strict()`; contained (hand-built parse object, trimmed/bounded, owner-gated, RLS, parameterized)                               | append `.strict()` for floor consistency                              | P3       |
+| 2   | `apps/local-ai/app/demo/pipeline.ts:250`      | `demoProvider()` constant-key fallback has no `NODE_ENV==='production'` guard (unlike the now-fixed byok.ts); demo route seals only synthetic data into throwaway temp dirs | add the same fail-closed guard byok.ts uses (parity/defense-in-depth) | P3       |
+| 3   | `apps/compliance/lib/harness.ts:41`           | `createLegHarness()` always builds `DerivedKeyProvider` from constant demo vectors; each call is a fresh in-memory PGlite + temp WORM with synthetic PHI only               | prefer `fromEnv` when set + throw under prod when unset (parity)      | P3       |
+
 ### Edition act-trail debt (non-blocking — lives in the per-phase SWEEP/VERIFY trails)
 
 Surfaced from `outputs/specs/wave1-*/{VERIFY,SWEEP}.md` so it is discoverable from the backlog (not

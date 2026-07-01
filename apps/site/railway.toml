@@ -6,6 +6,8 @@
 #
 # Service env vars (set in the Railway service — NEVER committed):
 #   DATABASE_URL                       (required for real tenant reads; PGlite double when unset — dev only)
+#   MASTER_FIELD_KEY / FIELD_CRYPTO_SALT (required — field-crypto master secret for BYOK, ADR-0183; BYOK
+#                                        submit THROWS in production when unset, never seals under a demo vector)
 #   BETTER_AUTH_SECRET                  (required — better-auth session signing; /dashboard sign-in 503s without it)
 #   BETTER_AUTH_URL                     (the canonical origin, e.g. https://caisson.sh — better-auth callback base)
 #   NEXT_PUBLIC_PADDLE_CLIENT_TOKEN     (Paddle.js client token — ADR-0116; MUST be a build ARG, see Dockerfile)
