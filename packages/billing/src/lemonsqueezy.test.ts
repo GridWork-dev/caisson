@@ -208,6 +208,58 @@ describe("event mapping", () => {
     });
   });
 
+  // The credit grant keys idempotency on `sourceEventId` (ADR-0007: exactly-once). LemonSqueezy retries
+  // a delivery with a fresh `meta.webhook_id`, so the key must NOT vary with it — it derives from the
+  // stable resource `type:id` composite, and two different orders must yield two different keys.
+  test("a retry with a different meta.webhook_id yields the SAME idempotency key (webhook_id ignored)", () => {
+    const make = (webhookId: string) =>
+      ({
+        meta: {
+          event_name: "order_created",
+          custom_data: { account_id: "acct_a" },
+          webhook_id: webhookId,
+        },
+        data: {
+          type: "orders",
+          id: "77",
+          attributes: {
+            total: 5000,
+            currency: "USD",
+            first_order_item: { variant_id: 42 },
+          },
+        },
+      }) as Parameters<typeof parseLemonSqueezyEvent>[0];
+    const first = parseLemonSqueezyEvent(make("wh_delivery_1"));
+    const retry = parseLemonSqueezyEvent(make("wh_delivery_2"));
+    expect(first?.sourceEventId).toBe("orders:77");
+    expect(retry?.sourceEventId).toBe(first?.sourceEventId);
+  });
+
+  test("two different orders yield two distinct idempotency keys", () => {
+    const make = (id: string) =>
+      ({
+        meta: {
+          event_name: "order_created",
+          custom_data: { account_id: "acct_a" },
+          webhook_id: `wh_${id}`,
+        },
+        data: {
+          type: "orders",
+          id,
+          attributes: {
+            total: 5000,
+            currency: "USD",
+            first_order_item: { variant_id: 42 },
+          },
+        },
+      }) as Parameters<typeof parseLemonSqueezyEvent>[0];
+    const a = parseLemonSqueezyEvent(make("100"));
+    const b = parseLemonSqueezyEvent(make("200"));
+    expect(a?.sourceEventId).toBe("orders:100");
+    expect(b?.sourceEventId).toBe("orders:200");
+    expect(a?.sourceEventId).not.toBe(b?.sourceEventId);
+  });
+
   test("an unhandled event type maps to null", () => {
     const event = {
       meta: { event_name: "license_key_created" },

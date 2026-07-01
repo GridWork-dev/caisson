@@ -82,12 +82,12 @@ function readAccountId(event: LemonSqueezyEvent): string {
   return readString((customData as Record<string, unknown>).account_id);
 }
 
-/** LemonSqueezy has no dedicated per-delivery event id in the envelope; `meta.webhook_id` is present on
- * real deliveries but undocumented as guaranteed, so fall back to a `type:id` composite of the resource
- * itself — stable and unique enough per delivery for the credit grant's idempotency key. */
+/** LemonSqueezy's envelope carries no dependable per-delivery event id: `meta.webhook_id` is present on
+ * real deliveries but VARIES per delivery/retry, so keying the credit-grant idempotency on it would
+ * double-grant on a retry (ADR-0007: grants are exactly-once). Derive the STABLE `type:id` composite of
+ * the resource itself instead — identical across a delivery and its retries (mirrors the Polar driver's
+ * same gap); `meta.webhook_id` is intentionally ignored. */
 function readSourceEventId(event: LemonSqueezyEvent): string {
-  const webhookId = (event.meta as Record<string, unknown>).webhook_id;
-  if (typeof webhookId === "string" && webhookId !== "") return webhookId;
   return `${readString(event.data.type)}:${readIdString(event.data.id)}`;
 }
 
