@@ -49,10 +49,10 @@ describe("topology discovery", () => {
     expect(byId.get("signoz")?.kind).toBe("observability");
   });
 
-  test("is resilient to an absent manifest (services/license has none yet)", () => {
-    // No services/license/railway.toml -> absent node, never a throw. If a stream ever adds that
-    // manifest, this expectation flips (and the license edges below start rendering).
-    expect(byId.has("license")).toBe(false);
+  test("discovers the license service now it carries a deploy manifest (Stage-2)", () => {
+    // Stage-2 folded in services/license/railway.toml (the deploy-prep branch), so the node the
+    // earlier absence-resilience test anticipated ("this expectation flips") now renders.
+    expect(byId.has("license")).toBe(true);
   });
 });
 
@@ -67,10 +67,10 @@ describe("buildGraph merge", () => {
     }
   });
 
-  test("drops the license edges + orphan Paddle node while license is absent", () => {
-    expect(ids.has("license")).toBe(false);
-    expect(ids.has("paddle")).toBe(false); // pruned: its only edge referenced the absent license
-    expect(g.edges.some((e) => e.source === "license")).toBe(false);
+  test("renders the license node + its Paddle billing edge now license has a manifest (Stage-2)", () => {
+    expect(ids.has("license")).toBe(true);
+    expect(ids.has("paddle")).toBe(true); // present: the license->paddle billing edge now connects
+    expect(g.edges.some((e) => e.source === "license")).toBe(true);
   });
 
   test("keeps live telemetry edges into SigNoz", () => {
