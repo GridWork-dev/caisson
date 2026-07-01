@@ -81,6 +81,42 @@ export function softwareApplication(opts: {
   };
 }
 
+/**
+ * ItemList of the à-la-carte modules for the /modules catalog (ADR-0191). The editions carry their
+ * own SoftwareApplication nodes on /pricing; the 14 modules had none. Each element is a
+ * SoftwareApplication with its committed Offer (ADR-0082 — live self-serve, InStock), reflecting the
+ * cards visible on the page. `url` points at the catalog (modules have no per-module page).
+ */
+export function moduleItemList(
+  modules: readonly { label: string; amount: number; blurb: string }[],
+) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Caisson modules",
+    numberOfItems: modules.length,
+    itemListElement: modules.map((m, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      item: {
+        "@type": "SoftwareApplication",
+        name: m.label,
+        applicationCategory: "DeveloperApplication",
+        operatingSystem: "Any",
+        description: m.blurb,
+        url: `${SITE_URL}/modules`,
+        publisher: { "@id": ORG_ID },
+        offers: {
+          "@type": "Offer",
+          price: m.amount,
+          priceCurrency: "USD",
+          availability: "https://schema.org/InStock",
+        },
+      },
+    })),
+  };
+}
+
 /** BreadcrumbList for hub/spoke crawl paths (ADR-0079 §2). */
 export function breadcrumb(items: readonly { name: string; path: string }[]) {
   return {

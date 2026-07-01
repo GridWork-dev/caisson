@@ -1,7 +1,8 @@
 import { Button, Hero, Section, StatusChip, Terminal } from "@/components";
 import { ModuleCatalog } from "@/components/module-catalog";
-import { breadcrumb, serializeJsonLd } from "@/lib/jsonld";
+import { breadcrumb, moduleItemList, serializeJsonLd } from "@/lib/jsonld";
 import { buildMetadata } from "@/lib/metadata";
+import { MODULE_PRICES } from "@/lib/pricing";
 
 export const metadata = buildMetadata({
   title: "Modules",
@@ -17,12 +18,17 @@ export default function ModulesPage() {
     { name: "Home", path: "/" },
     { name: "Modules", path: "/modules" },
   ]);
+  const catalogNode = moduleItemList(MODULE_PRICES);
 
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbNode) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(catalogNode) }}
       />
 
       <Hero
