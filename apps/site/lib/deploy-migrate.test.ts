@@ -41,18 +41,18 @@ afterAll(async () => {
 
 test("platform migrations apply in order then are idempotent", async () => {
   const first = await runPlatformMigrations(pgliteApplier(tp));
-  expect(first.applied).toEqual([1, 2, 3, 4, 5]);
+  expect(first.applied).toEqual([1, 2, 3, 4, 5, 6]);
 
   const second = await runPlatformMigrations(pgliteApplier(tp));
   expect(second.applied).toEqual([]);
-  expect(second.skipped).toEqual([1, 2, 3, 4, 5]);
+  expect(second.skipped).toEqual([1, 2, 3, 4, 5, 6]);
 });
 
 test("every composed tenant table ships FORCE row-level security", async () => {
   const rows = await tp.query<{ relname: string; force: boolean }>(
     `SELECT relname, relforcerowsecurity AS force FROM pg_class
-     WHERE relname IN ('credit_wallet','credit_event','entitlement_grant','license_grant','usage_event')`,
+     WHERE relname IN ('credit_wallet','credit_event','entitlement_grant','license_grant','usage_event','account_member')`,
   );
-  expect(rows.length).toBeGreaterThanOrEqual(5);
+  expect(rows.length).toBeGreaterThanOrEqual(6);
   expect(rows.every((r) => r.force)).toBe(true);
 });
