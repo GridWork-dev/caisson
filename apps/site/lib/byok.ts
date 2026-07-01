@@ -57,8 +57,9 @@ interface ProviderProbe {
   readonly headers: (apiKey: string) => Record<string, string>;
 }
 
-// Minimal-scope, read-only probes. The key rides in a header (or query for Gemini, which has no
-// header auth) — this module never logs the URL or the headers.
+// Minimal-scope, read-only probes. The key ALWAYS rides in a header, never the URL — query-string
+// secrets leak into infra/proxy/provider access logs (security floor). This module never logs the
+// URL or the headers.
 const PROVIDER_PROBES: Record<ByokProvider, ProviderProbe> = {
   openai: {
     url: "https://api.openai.com/v1/models",
@@ -69,9 +70,9 @@ const PROVIDER_PROBES: Record<ByokProvider, ProviderProbe> = {
     headers: (k) => ({ "x-api-key": k, "anthropic-version": "2023-06-01" }),
   },
   google: {
-    // Gemini authenticates with `?key=`; no Authorization header. Bounded read-only list call.
+    // Gemini accepts the key as `x-goog-api-key` — keep it out of the URL. Bounded read-only list call.
     url: "https://generativelanguage.googleapis.com/v1beta/models",
-    headers: () => ({}),
+    headers: (k) => ({ "x-goog-api-key": k }),
   },
   openrouter: {
     // `/key` echoes the key's own metadata — the cheapest authenticated probe.
@@ -93,13 +94,9 @@ export async function validateProviderKey(
   apiKey: string,
 ): Promise<ValidationResult> {
   const probe = PROVIDER_PROBES[provider];
-  const url =
-    provider === "google"
-      ? `${probe.url}?key=${encodeURIComponent(apiKey)}`
-      : probe.url;
   try {
     const res = await fetchWithTimeout(
-      url,
+      probe.url,
       { method: "GET", headers: probe.headers(apiKey) },
       { timeoutMs: 8_000 },
     );
@@ -142,6 +139,13 @@ export function getFieldKeyProvider(): SyncFieldKeyProvider {
   const hasEnv =
     process.env.MASTER_FIELD_KEY !== undefined &&
     process.env.FIELD_CRYPTO_SALT !== undefined;
+  if (!hasEnv && process.env.NODE_ENV === "production") {
+    // Fail closed: never seal real tenant BYOK secrets under the public demo vector in production
+    // (security floor — no constant/hardcoded key material). A deployment MUST set both.
+    throw new Error(
+      "BYOK field-crypto is not configured: set MASTER_FIELD_KEY and FIELD_CRYPTO_SALT.",
+    );
+  }
   // ponytail: dev/test fallback is a fixed reference vector, clearly not a real secret — a real
   // deployment always sets MASTER_FIELD_KEY/FIELD_CRYPTO_SALT (same posture as local-ai).
   g.caissonByokKeyProvider = hasEnv

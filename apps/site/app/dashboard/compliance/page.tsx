@@ -35,10 +35,15 @@ async function attestAction(formData: FormData): Promise<void> {
 async function clearAction(formData: FormData): Promise<void> {
   "use server";
   const session = await requireDashboardSession(PATH);
-  const framework = String(formData.get("framework") ?? "");
-  const slotId = String(formData.get("slotId") ?? "");
-  if (framework.length === 0 || slotId.length === 0) return;
-  await clearSlot(session.accountId, framework, slotId);
+  const parsed = AttestationInput.pick({
+    framework: true,
+    slotId: true,
+  }).safeParse({
+    framework: formData.get("framework"),
+    slotId: formData.get("slotId"),
+  });
+  if (!parsed.success) return;
+  await clearSlot(session.accountId, parsed.data.framework, parsed.data.slotId);
   revalidatePath(PATH);
 }
 

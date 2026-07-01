@@ -76,6 +76,47 @@ test("validateProviderKey: 200 ok; 401 rejects; neither leaks the key", async ()
   if (!bad.ok) expect(bad.reason.includes("sk-leakme-1234")).toBe(false);
 });
 
+test("the google probe carries the key in x-goog-api-key, never in the URL", async () => {
+  let seenUrl = "";
+  let seenHeaders: Record<string, string> = {};
+  globalThis.fetch = (async (url: string, init: RequestInit) => {
+    seenUrl = String(url);
+    seenHeaders = (init.headers ?? {}) as Record<string, string>;
+    return new Response("{}", { status: 200 });
+  }) as unknown as typeof fetch;
+  const key = "AIza-secret-xyz-1234";
+  expect(await validateProviderKey("google", key)).toEqual({ ok: true });
+  // Query-string secrets leak into infra/proxy/provider logs — the key must NOT be in the URL.
+  expect(seenUrl.includes(key)).toBe(false);
+  expect(seenUrl.includes("key=")).toBe(false);
+  expect(seenHeaders["x-goog-api-key"]).toBe(key);
+});
+
+test("getFieldKeyProvider fails closed in production when field-crypto env is unset", () => {
+  const g = globalThis as unknown as { caissonByokKeyProvider?: unknown };
+  const env = process.env as Record<string, string | undefined>; // NODE_ENV is typed read-only
+  const prev = {
+    node: env.NODE_ENV,
+    master: env.MASTER_FIELD_KEY,
+    salt: env.FIELD_CRYPTO_SALT,
+  };
+  try {
+    g.caissonByokKeyProvider = undefined;
+    delete env.MASTER_FIELD_KEY;
+    delete env.FIELD_CRYPTO_SALT;
+    env.NODE_ENV = "production";
+    // Must throw, not silently seal tenant keys under the public demo vector (security floor).
+    expect(() => getFieldKeyProvider()).toThrow(/not configured/);
+  } finally {
+    g.caissonByokKeyProvider = undefined;
+    env.NODE_ENV = prev.node;
+    if (prev.master === undefined) delete env.MASTER_FIELD_KEY;
+    else env.MASTER_FIELD_KEY = prev.master;
+    if (prev.salt === undefined) delete env.FIELD_CRYPTO_SALT;
+    else env.FIELD_CRYPTO_SALT = prev.salt;
+  }
+});
+
 test("submit -> encrypted store round-trip; read-back is masked metadata only", async () => {
   stubFetch(200);
   const account = "acct-byok-1";
