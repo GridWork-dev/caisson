@@ -27,6 +27,19 @@ smoke-test of the deployed Worker, and `bun run check` (125/125 + kernel gate) o
 > **C) P7+ roadmap (later):** OSCAL push · compliance vertical packs · marketplace.
 > **Forks: none blocking** (pricing/CF-Access/docs/dashboard-host/DB all locked; see §4).
 
+> **Stage-2 integration + deploy (2026-07-01):** the four Stage-2 streams + the deploy-prep branch are
+> folded into **`integration/stage2`** (Streams A/B/C/D); **ADR ceiling `0176`**. The live Railway
+> services **`caisson-site` + `caisson-license` are ● ONLINE + verified running this code** (site
+> routes 200 with security headers + Paddle CSP; license `/health` 200, `/issue` gated 401; live DB
+> migrated + verified: app role NOSUPERUSER/NOBYPASSRLS, 5 tenant tables FORCE-RLS, 4 better-auth
+> tables, idempotent). `registry/index.json` is rebuilt **27 → 32 modules** (5 Stage-2 modules
+> published, byte-identical round-trip) — the **deployed Worker still serves the old 27-module index**,
+> redeploy PENDING. **Remaining acts are all DEPLOY-class** (in flight this session): DNS flip
+> `caisson.sh` CF Pages → Railway + Pages teardown · registry Worker redeploy · `apps/admin` + SigNoz
+> Railway provisioning + `admin.caisson.sh` DNS/CF-Access + the `admin` PG role (later wave). One NEW
+> **open operator decision** (edition members-fold) landed on the board — see §4. New backlog items
+> bucketed into §3.
+
 ## 0. Live verification done this session
 
 - **Registry Worker — LIVE + smoke-tested GREEN.** `https://caisson-registry.broken-wood-97a9.workers.dev`:
@@ -183,6 +196,20 @@ go-live (operator/DEPLOY-class, including the registry Worker redeploy) or P7 ro
 | `services/support-bot` (Discord RAG + member-mgmt)             | **BUILT + DEPLOYED** (`ADR-0009`/`0105`/`0109`) | ● Online on Railway; remaining = enable 2 privileged intents + wire channel/role ids + scope role down (Bucket B)                                                                                         |
 | `services/docs` + `llms.txt` (+ live embedder)                 | **BUILT + DEPLOYED** (`ADR-0096`)               | semantic at `docs-api.caisson.sh` (OpenRouter qwen3-embedding-8b wired)                                                                                                                                   |
 
+### Stage-2 tails + follow-ups (from `integration/stage2`)
+
+Bucketed by wave + class. Non-blocking; the streams themselves are BUILT + integrated.
+
+| Item                                      | Class                        | Note                                                                                                                                                                                                                                                              |
+| ----------------------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Edition members-fold**                  | **operator decision (OPEN)** | fold `alerting`/`retention-runner` into the Compliance edition bundle + `tool-exec` into Agentic-Dev, vs keep them à-la-carte add-ons. Changes `ADR-0137` bundle economics → needs operator lock + edition version bump/republish. On the decisions board; see §4 |
+| **D8(a) tail** (site UI)                  | mechanical                   | migrate 3 more FAQ pages to `<Faq>` + broaden `<FeatureGrid>` adoption. Primitives shipped in Stream D                                                                                                                                                            |
+| **C2 streaming test hygiene**             | build (small)                | ~80 LOC of streaming-path coverage on the ai-kit inference lane                                                                                                                                                                                                   |
+| **C5 local-ai `RentedTransport` drivers** | build                        | wire the Stream-C new-provider drivers (Bedrock/Azure/Ollama) through `local-ai`'s rented/hosted transport                                                                                                                                                        |
+| **C7 write-half BYOK**                    | build (fork-gated)           | buyer encrypt-on-write key-submission UI + credit-vs-BYOK pricebook policy — **P3-24-gated** (read-half BYOK shipped Stream C, `ADR-0162`)                                                                                                                        |
+| **D6 harvest** (`ADR-0133`)               | build (spec-gated)           | 11 gridwork-core + 6 Wardfile lifts — **wave-3, lowest priority**, per-package spec-gated (`docs/state/harvest-program.md`)                                                                                                                                       |
+| **`apps/admin` + SigNoz provisioning**    | **DEPLOY-class**             | Railway apps + `admin.caisson.sh` DNS/CF-Access + the `admin` PG role + `OTEL`/`SIGNOZ` env. Later DEPLOY wave (`ADR-0138`/`0140`–`0143`)                                                                                                                         |
+
 ### Fast-follow (locked, no fork, ready NOW, not exit-gate-blocking)
 
 | Item                                                     | Note                                                                 |
@@ -270,12 +297,16 @@ Compliance vertical packs · AI-feature packs · local-first verticals · the mo
 | ~~`services/docs` scope~~                  | **CLOSED — ADR-0096** | standalone AI-native docs service (separate from `apps/site` Fumadocs)                                                                                                                                                                                                                                                                                                    |
 | ~~Cloudflare Access go-live gate~~         | **LOCKED — ADR-0107** | keep gated; flip only when checkout works + Compliance buyable — the deliberate launch act (DEPLOY-class); go-live checklist in the ADR                                                                                                                                                                                                                                   |
 
+| **Edition members-fold** (Stage-2) | **OPEN** | fold `alerting`/`retention-runner` (Stream B Compliance primitives) into the Compliance edition bundle + `tool-exec` into Agentic-Dev, vs keep them à-la-carte add-ons. Changes `ADR-0137` bundle economics — needs an operator lock + an edition version bump/republish. On the decisions board |
+
 _The 2026-06-29 GTM-report picker round closed all strategy forks (ADR-0094 open-core Base · ADR-0095
 GTM offer structure · ADR-0096 services-docs); the **2026-06-29 P6 operator-gates round** then locked
 the two remaining operator forks — **final pricing numbers + grandfathering (ADR-0106)** and the
-**CF-Access go-live gate (ADR-0107)**. **No open operator forks remain.** The only remaining go-live
-action is the deliberate CF-Access flip itself, held until the commerce spine + a buyable Compliance
-edition land (the ADR-0107 trigger)._
+**CF-Access go-live gate (ADR-0107)**. **One NEW operator fork is open** (2026-07-01, Stage-2): the
+**edition members-fold** (row above) — whether the Stream-B commercial primitives ship inside an
+edition bundle or as à-la-carte add-ons. The remaining go-live action is otherwise the deliberate
+CF-Access flip itself, held until the commerce spine + a buyable Compliance edition land (the ADR-0107
+trigger)._
 
 ## 5. The two tracks — both substantially MERGED (status, 2026-06-29)
 

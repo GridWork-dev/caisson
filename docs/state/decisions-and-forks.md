@@ -172,7 +172,11 @@ buyer billing (**ADR-0175**). Out-of-tree D5 items deferred by the partition: R2
 
 ## Open (waiting on operator — DO NOT auto-decide)
 
-_**None actively blocking.** The Phase-2 hero fork is locked → **ADR-0104** (static code-as-proof, option 1)._
+_The Phase-2 hero fork is locked → **ADR-0104** (static code-as-proof, option 1)._
+
+| Item                               | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Edition members-fold (Stage-2)** | The three new commercial primitives — `@caisson/alerting` + `@caisson/retention-runner` (Compliance) and `@caisson/tool-exec` (Agentic-Dev) — are PUBLISHED standalone in the registry (index 27→32). Whether to **fold them into the edition `members` bundle** (buyer gets them with the edition price) was **NOT auto-decided at integration** — it changes edition-bundle economics (ADR-0137 repriced below module-sum without these). Their manifests already note "membership added by the edition at integration." Locking this = a 5-line members-map edit + edition version bump/republish. Needs operator lock (bundle vs à-la-carte add-on). |
 
 ### Parked / deferred (non-blocking — revisit later, do NOT auto-decide)
 
@@ -406,7 +410,7 @@ locked). The pricing/store-rework + harvest locks start **above** that ceiling a
 contiguously through **0135** (0129 pricing · 0130 as-if-built storefront · 0131 cart/checkout · 0132
 sign-in · 0133 harvest initiative · 0134 audit harness · 0135 new Compliance modules); the
 store-rework BUILD wave then added **0136** (license-keyed registry gating + tooling-open) and
-**0137** (Q4 edition reprice, supersedes 0129 point-values). The admin-control-plane picker then added **0138** (admin.caisson.sh operator control-plane + full-fleet observability charter, executes ADR-0117). **Ceiling now 0138.** The board's own interim "ADR-0119" placeholder (Railway provisioning topology, recorded above) and
+**0137** (Q4 edition reprice, supersedes 0129 point-values). The admin-control-plane picker then added **0138** (admin.caisson.sh operator control-plane + full-fleet observability charter, executes ADR-0117). The **2026-07-01 Stage-2 build** then locked four parallel-stream ranges above that: **0140–0143** (Stream A obs-admin detail forks) · **0150–0153** (Stream B harvest modules — parallel ship / all-4-channel alerting / retention-runner scheduling / tool-exec) · **0160–0162** (Stream C edition hardening — inference drivers / MCP Streamable-HTTP / per-tenant BYOK) · **0170–0176** (Stream D adapters + org account_member). `0139`/`0144–0149`/`0154–0159`/`0163–0169`/`0177–0179` stay reserved for per-stream spillover. **Ceiling now 0176.** The board's own interim "ADR-0119" placeholder (Railway provisioning topology, recorded above) and
 `adapter-expansion.md`'s proposed 0119-0128 range remain unresolved against each other (flagged there
 already) — this session's numbers do not touch that range and do not resolve that pre-existing flag.
 
