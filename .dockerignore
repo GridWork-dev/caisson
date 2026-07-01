@@ -16,3 +16,13 @@ coverage
 graphify-out
 outputs
 .changeset
+
+# Secrets: every image below (site/admin/docs/license/support-bot) builds from this root context
+# with `COPY . .` — a stray credential file must never bake into a published layer. The license
+# issuer's Ed25519 PUBLIC key ships as infra/license-issuer/ISSUER_PUBLIC_KEY.md (unaffected).
+.env
+.env.*
+**/.env
+**/.env.*
+*.pem
+*.key

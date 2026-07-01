@@ -20,6 +20,12 @@ ENV NODE_ENV=production \
 COPY . .
 RUN bun install --frozen-lockfile
 
+# Non-root: DocsIndex.build backs its bun:sqlite store with LocalStore.open({ dim }) — no `path`,
+# so it's `:memory:` (index-store.ts) — the process never writes to disk at runtime, only reads
+# the workspace installed above. `bun` (uid/gid 1000) is the oven/bun base image's baked-in
+# non-root user.
+USER bun
+
 # DOCS_SERVICE_TOKEN is injected by the platform secret store at run time (server.ts refuses to start
 # without it). The real OpenRouter embedder (qwen3-embedding-8b) is a CODE-TRACK wire at
 # services/docs/src/server.ts (DocsIndex.build 2nd arg); until it lands this serves the FTS5 floor.

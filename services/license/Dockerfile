@@ -24,6 +24,12 @@ ENV NODE_ENV=production \
 COPY . .
 RUN bun install --frozen-lockfile
 
+# Non-root: the signing key / tokens / DB URL all come from env (no local key file — the issuer's
+# Ed25519 signing key is CAISSON_LICENSE_SIGNING_KEY, not a baked file; the PUBLIC key ships
+# separately as infra/license-issuer/ISSUER_PUBLIC_KEY.md), and the process writes nothing to disk
+# at runtime. `bun` (uid/gid 1000) is the oven/bun base image's baked-in non-root user.
+USER bun
+
 # DATABASE_URL, CAISSON_LICENSE_SIGNING_KEY, LICENSE_ISSUE_TOKEN, PADDLE_WEBHOOK_SECRET are injected
 # by the platform secret store at run time (deploy.ts / server.ts refuse to start without them).
 EXPOSE 8789
