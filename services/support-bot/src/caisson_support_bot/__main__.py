@@ -23,9 +23,11 @@ from .escalation import PostgresTicketStore
 from .health import serve_health
 from .inference import OpenRouterInference
 from .rag import RagPipeline
+from .telemetry import init_telemetry
 
 
 async def _run(settings: Settings) -> None:
+    init_telemetry()  # env-gated OTLP export; must patch httpx/asyncpg before the clients below.
     timeout = httpx.Timeout(settings.request_timeout_s)
     async with httpx.AsyncClient(timeout=timeout) as http:
         docs = DocsClient(
