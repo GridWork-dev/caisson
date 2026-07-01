@@ -1,5 +1,13 @@
 # Services hardening audit — go-live punch-list
 
+> **VERIFIED RESOLVED 2026-07-01 — all 7 punch-list items confirmed implemented in code + green**
+> (workflow `wf_9d763cf8`): docs **#1/#6** — `rate-limit.ts` + `Cache-Control` (114 tests); license **#3/#4**
+> — `/webhook` Paddle-HMAC receiver + per-IP rate-limit (119 tests); mcp **#2** — `checkRateLimit` wired at
+> the served composition (commit `6768330`); support-bot **#5** — structural `<context>` fencing (commit
+> `23d2e45`, 50 tests); **#7** HSTS on `apps/base` `json()` (already spot-verified below). **No open code
+> items.** The remaining live-wiring confirmations (#1/#2/#3 deploy composition) are verified at the Railway
+> cutover per the Stream-D reconcile note below.
+
 > **Reconcile 2026-07-01 (Stream D · D13).** `docs/build-state.md` (2026-07-01 correction) records all 7
 > fixes as **code-merged** into `main` (PR#33 + tail). Spot-verified in this pass: **#7** — `apps/base/src/server.ts`
 > `json()` now emits `Strict-Transport-Security` (server.ts:23). **#1/#2/#3 are deploy-composition** (per the

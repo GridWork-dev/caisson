@@ -9,8 +9,8 @@ conflict, the ADR file and the board win over this index.
 - ADRs are append-only and immutable (ADR-0006). A later ADR _supersedes_ a clause; it
   never edits the prior file. So most rows below are **partial** supersessions (one clause),
   not a wholesale replacement.
-- 115 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 115). Numbering is **not**
-  contiguous: present are **0001-0024** and **0040-0143** + **0160-0162** + **0170-0178** (Stage-2 Streams A/C/D + the 2026-07-01 provider picker); **0025-0039 are an unused gap**
+- 140 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 140). Numbering is **not**
+  contiguous: present are **0001-0024** and **0040-0143** + **0160-0162** + **0170-0185** (Stage-2 Streams A/C/D · the 2026-07-01 provider picker · the 2026-07-01 edition seam-completion picker 0179-0185); **0025-0039 are an unused gap**
   (no files). The 0040 jump was a deliberate block reservation for the brand/positioning set.
   **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit);
   **0094-0096** = the 2026-06-29 GTM-report locks (open-core Base / GTM offer / services-docs);
@@ -449,6 +449,24 @@ The 2026-07-01 operator provider picker (research: forks PF-1..PF-7, `docs/state
 | ----------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------- | -------- | --------------------------------------- |
 | [0177](../knowledge/decisions/ADR-0177-provider-stack-2026-07.md) | Provider stack: Grafana-sole OTLP · PostHog · Linear+Cookiy · Greptile PR-gate | Infra/Observability | accepted | supersedes 0117; relates 0118/0138/0086 |
 | [0178](../knowledge/decisions/ADR-0178-edition-members-fold.md)   | Edition members-fold: bundle Stage-2 harvest primitives into editions          | Pricebook           | accepted | extends 0077/0137/0003; PR #34          |
+
+### Edition seam-completion picker (0179-0185, 2026-07-01) - status `accepted`
+
+Seven operator-locked forks from the **edition seam-completion** initiative (SPECs under
+`outputs/specs/edition-seam-completion/`). 0179-0181 = the OSCAL export seam; 0182-0183 = the BYOK
+buyer edge; 0184 = live-transports (decided-to-defer, no build); 0185 = Bun OTel request spans. Two
+diverged from the draft recommendation (0181 scope-broadest, 0184 defer-all). **Note:** 0179 had been
+advisory-reserved for D6 harvest / Stream-D spillover; the operator reassigned it here.
+
+| #                                                                          | Title                                                                            | Domain            | Status   | Relations                                     |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ----------------- | -------- | --------------------------------------------- |
+| [0179](../knowledge/decisions/ADR-0179-oscal-version-catalog-binding.md)   | OSCAL version + catalog binding: emit v1.2.2 + per-framework AP fragment         | Compliance/OSCAL  | accepted | relates 0058/0057/0181                        |
+| [0180](../knowledge/decisions/ADR-0180-oscal-output-format.md)             | OSCAL output format: JSON primary + oscal-cli XML converter path (CI round-trip) | Compliance/OSCAL  | accepted | relates 0058/0179                             |
+| [0181](../knowledge/decisions/ADR-0181-oscal-collector-framework-scope.md) | OSCAL collector + framework scope: all 3 + HIPAA/EU-AI-Act collectors + wizard   | Compliance/OSCAL  | accepted | relates 0058/0043/0162/0179; diverges (broad) |
+| [0182](../knowledge/decisions/ADR-0182-byok-credit-billing-policy.md)      | BYOK billing: free ($0 credit debit under a tenant key; metering = spend-cap)    | Billing/Pricebook | accepted | resolves 0162 §6; relates 0007/0137/0106      |
+| [0183](../knowledge/decisions/ADR-0183-byok-key-submission-ux.md)          | BYOK edge: `apps/site` route-handler; validate-on-submit · write-only · rotate   | Secrets/Auth      | accepted | relates 0162/0114/0182                        |
+| [0184](../knowledge/decisions/ADR-0184-live-transport-unstub-scope.md)     | Live transports: defer all three (S3 WORM · hosted infer · ONNX); no build       | Infra             | accepted | relates 0054/0064; diverges (defer-all)       |
+| [0185](../knowledge/decisions/ADR-0185-bun-otel-instrumentation.md)        | Bun OTel: manual `withSpan` request spans (Bun bypasses node auto-instr)         | Observability     | accepted | relates 0117/0140-0143/0177; ADR-0002         |
 
 ---
 
