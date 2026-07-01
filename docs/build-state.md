@@ -22,6 +22,29 @@ C.2/C7):** the static-export `deploy-site.yml` (which built `out/` for Cloudflar
 `lighthouse.yml` is **gated to `workflow_dispatch`-only** (its `staticDistDir: out` target is gone;
 re-arm against the live Railway origin post-cutover); and `deploy-railway.yml` now **guards on
 `RAILWAY_TOKEN`** so it is a green no-op (never a red `main`) until the operator arms it at C2.
+
+**2026-06-30 pricing + store-rework wave** locked the store rework (sequenced BEFORE the Railway
+cutover per the operator's explicit ordering) AND built it on `feat/dashboard-unified-and-p6-tail`:
+value-based per-module pricing across the module catalog + edition-bundle math (`ADR-0129`), with the
+final Q4 below-sum edition points — Compliance $749 / AI Production Kit $599 / Agentic-Dev $249 /
+Local-first $349 / All-Access Bundle $1,499 — locked by the reprice ADR `ADR-0137` (supersedes the
+`ADR-0129`/`ADR-0106` point-values); the gated pre-launch storefront showing the full catalog with no
+maturity flags (`ADR-0130`, supersedes `ADR-0082` §3/§4); a site cart feeding one multi-item Paddle
+checkout with a verified fallback path (`ADR-0131`, extends `ADR-0116`); buyer sign-in via better-auth
+magic-link + GitHub/Google OAuth (`ADR-0132`); and license-keyed registry gating that closes the
+free-view leak while opening the ships-with-generator tooling trio (cli · migrate · license-verify) as
+Apache-2.0 Base (`ADR-0136`). **Status: BUILT + integrated this session** — the reprice, storefront
+catalog grid, cart + multi-item Paddle checkout, better-auth sign-in, and the license-keyed free floor
+all landed; module Paddle price-ids, the buyer-account/tenant mapping, and the customer-facing copy
+rewrite remain Stage-2/fast-follow seams.
+
+**2026-06-30 harvest grill session** (document-only, this session) locked the **next initiative
+after** the store rework + Railway cutover: the 11 gridwork-core infra packages become sellable
+substrate for Agentic-Dev + AI Production Kit, the 6 Wardfile product-code lifts harden the base,
+the cross-domain audit/validate harness gets a full build (generalizing `ADR-0101`), and two new
+commercial Compliance modules (`@caisson/alerting`, `retention-runner`) join the catalog — `ADR-0133`,
+`ADR-0134`, `ADR-0135`. **Status: locked, zero code** — spec-gated per package, ranked execution
+order tracked in `docs/state/harvest-program.md`. ADR ceiling on this catalog is now **0137**.
 Method: `packages/*/src` + test presence, `apps/`/`services/` contents, ADR + spec artifact
 trail, git chronology. Status reflects code-on-disk, not marketing copy.
 
