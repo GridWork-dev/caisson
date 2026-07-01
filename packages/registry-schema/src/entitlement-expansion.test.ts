@@ -15,11 +15,12 @@ import { fileURLToPath } from "node:url";
 import { matchGolden } from "@caisson/testing";
 import {
   BUNDLE_ID,
+  RESERVED_MODULE_ENTITLEMENT_IDS,
   baseModuleIds,
   expandEntitlements,
   expandEntitlementsFromFile,
 } from "./entitlements";
-import { loadRegistryIndexFromFile } from "./registry-index";
+import { loadRegistryIndex, loadRegistryIndexFromFile } from "./registry-index";
 
 const FIXTURE_INDEX = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -38,6 +39,17 @@ const CASES: ReadonlyArray<{ readonly purchased: readonly string[] }> = [
   { purchased: ["@caisson/credits"] },
   { purchased: ["ai-kit", "local-ai"] },
   { purchased: ["compliance", "@caisson/kernel"] },
+  // Bare package-slug per-module purchase-id form (P6-store track, no `@caisson/` prefix) — resolves
+  // the same indexed module the full-id form above does.
+  { purchased: ["credits"] },
+  { purchased: ["kernel"] },
+  { purchased: ["evidence-pack"] },
+  { purchased: ["credits", "evidence-pack"] },
+  // A reserved future-module bare slug (sold, not yet published) expands to nothing — no throw.
+  { purchased: ["alerting"] },
+  { purchased: ["retention-runner"] },
+  // Mixing an indexed bare-slug module with a reserved one still resolves (only the indexed member).
+  { purchased: ["credits", "alerting"] },
 ];
 
 describe("ADR-0071 entitlement expansion (golden-first, ADR-0013)", () => {
@@ -74,6 +86,93 @@ describe("ADR-0071 entitlement expansion (golden-first, ADR-0013)", () => {
 
   test("no purchases yield no entitlements (empty allowlist, fail-closed)", () => {
     expect([...expandEntitlements(index, [])]).toEqual([]);
+  });
+});
+
+describe("per-module bare-slug purchase-id form (P6-store track)", () => {
+  test("a bare slug resolves to the same member the full @caisson/<slug> id would", () => {
+    expect([...expandEntitlements(index, ["credits"])]).toEqual([
+      ...expandEntitlements(index, ["@caisson/credits"]),
+    ]);
+  });
+
+  test("a bare slug for a module scoped to an edition still resolves to just that module", () => {
+    expect([...expandEntitlements(index, ["evidence-pack"])]).toEqual([
+      "@caisson/evidence-pack",
+    ]);
+  });
+
+  test("a bare slug absent from the index and not reserved fails closed", () => {
+    expect(() => expandEntitlements(index, ["not-a-real-module"])).toThrow();
+  });
+
+  test("RESERVED_MODULE_ENTITLEMENT_IDS names the P6-store-locked future Compliance modules", () => {
+    expect([...RESERVED_MODULE_ENTITLEMENT_IDS].sort()).toEqual([
+      "alerting",
+      "retention-runner",
+    ]);
+  });
+
+  test("a reserved future-module slug expands to nothing (fail-soft, never a throw)", () => {
+    for (const reserved of RESERVED_MODULE_ENTITLEMENT_IDS) {
+      expect([...expandEntitlements(index, [reserved])]).toEqual([]);
+    }
+  });
+
+  test("a reserved id never collides with a real indexed module (sold ≠ silently substituted)", () => {
+    for (const reserved of RESERVED_MODULE_ENTITLEMENT_IDS) {
+      expect(index.modules.map((m) => m.id)).not.toContain(
+        `@caisson/${reserved}`,
+      );
+    }
+  });
+
+  test("a reserved id alongside a real purchase still resolves the real member (no whole-expansion throw)", () => {
+    expect(
+      [...expandEntitlements(index, ["credits", "alerting"])].sort(),
+    ).toEqual(["@caisson/credits"]);
+  });
+
+  test("once a reserved module is published its bare slug resolves normally (simulated)", () => {
+    // Prove the carve-out is temporary: an index that DOES carry `@caisson/alerting` resolves the
+    // bare slug to it exactly like any other indexed module — the reserved-set membership is a
+    // pre-publish gap-filler, not a permanent block.
+    const published = loadRegistryIndex({
+      schemaVersion: 1,
+      modules: [
+        ...index.modules,
+        {
+          id: "@caisson/alerting",
+          latest: "0.1.0",
+          versions: [
+            {
+              version: "0.1.0",
+              manifest: {
+                id: "@caisson/alerting",
+                version: "0.1.0",
+                kind: "primitive",
+                editions: [],
+                tier: "paid",
+                priceCents: 4900,
+                license: "LicenseRef-Caisson-Commercial",
+                dependencies: [],
+                members: {},
+                entry: "src/index.ts",
+                agents: "AGENTS.md",
+                golden: null,
+                stability: "alpha",
+                description: "simulated future module",
+              },
+              publishedAt: "2026-06-30T00:00:00.000Z",
+              gateAttestation: "ci-fixture@0000001",
+            },
+          ],
+        },
+      ],
+    });
+    expect([...expandEntitlements(published, ["alerting"])]).toEqual([
+      "@caisson/alerting",
+    ]);
   });
 });
 

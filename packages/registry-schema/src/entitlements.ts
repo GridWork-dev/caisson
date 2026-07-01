@@ -13,14 +13,20 @@
  * already-built index (the derived allowlist projection), not raw manifests per call (ADR-0071
  * rejected "resolve from manifests live on every gate call").
  *
+ * Per-module à-la-carte purchase ids (P6-store track) are the BARE package slug, no `@caisson/`
+ * prefix (e.g. `field-crypto` for `@caisson/field-crypto`) — `@caisson/pricebook`'s PURCHASE_BOOK
+ * rows key `entitlements` this way. `expandEntitlements` resolves a bare slug against the index the
+ * same as the long-supported full `@caisson/<slug>` module-id form, plus a fail-SOFT carve-out for a
+ * module that is SOLD but not yet published (`RESERVED_MODULE_ENTITLEMENT_IDS`, below).
+ *
  * Security (threat TM-E — over-expansion): the expansion is fail-closed. An unknown purchased id (not
- * the bundle sentinel, not a known edition, not an indexed module) THROWS rather than silently
- * granting or silently dropping; one bad id rejects the whole expansion. No `timingSafeEqual` is used
- * here on purpose — purchased ids, edition names, and module slugs are PUBLIC catalog identifiers, not
- * secrets, so there is no timing side-channel to close. The timing-safe entitlement compare lives at
- * the per-tool buyer-MCP gate (ADR-0076), where a caller's entitlement set is matched against a
- * tool's required entitlement. Scope (ADR-0071): this fixes the expansion DATA MODEL only;
- * entitlement-vs-allowlist enforcement TIMING is the separate P5 question.
+ * the bundle sentinel, not a known edition, not an indexed module, not a reserved future-module slug)
+ * THROWS rather than silently granting or silently dropping; one bad id rejects the whole expansion.
+ * No `timingSafeEqual` is used here on purpose — purchased ids, edition names, and module slugs are
+ * PUBLIC catalog identifiers, not secrets, so there is no timing side-channel to close. The
+ * timing-safe entitlement compare lives at the per-tool buyer-MCP gate (ADR-0076), where a caller's
+ * entitlement set is matched against a tool's required entitlement. Scope (ADR-0071): this fixes the
+ * expansion DATA MODEL only; entitlement-vs-allowlist enforcement TIMING is the separate P5 question.
  */
 import { z } from "zod";
 import { EDITIONS, type ModuleManifest } from "./module-manifest";
@@ -39,6 +45,25 @@ export const BUNDLE_ID = "bundle" as const;
 type Edition = (typeof EDITIONS)[number];
 const EDITION_SET: ReadonlySet<string> = new Set<string>(EDITIONS);
 const MODULE_ID_RE = /^@caisson\/[a-z0-9-]+$/;
+/** Bare package-slug form (no `@caisson/` prefix) — the per-module purchase-id convention. Same
+ *  character class as the slug half of `MODULE_ID_RE`. */
+const MODULE_SLUG_RE = /^[a-z0-9-]+$/;
+
+/**
+ * Bare-slug entitlement ids reserved for a commercial module that is SOLD (a `PURCHASE_BOOK` /
+ * `PLAN_BOOK` row exists, so a buyer may already hold a grant for it) but not yet published to the
+ * registry index. A purchased reserved id must never fail-closed-throw (TM-E) — that would break
+ * `expandEntitlements` for the buyer's ENTIRE purchased-id set the moment they hold any other
+ * entitlement alongside it (one bad id rejects the whole expansion), which would 500/lock out an
+ * already-paying buyer's unrelated modules. It also must not silently substitute a different grant:
+ * a reserved id expands to NOTHING until its package ships and lands in the ledger. Remove an id here
+ * in the SAME change that first indexes its package — its bare slug then resolves through the
+ * ordinary indexed-module branch below.
+ */
+export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> = new Set([
+  "alerting",
+  "retention-runner",
+]);
 
 /** Boundary guard (ADR-0021 input-validation): the purchased ids are an array of bounded, non-empty
  *  strings. Classification + fail-closed rejection of unknown values happens below. */
@@ -98,10 +123,13 @@ function bundleMembers(index: RegistryIndex): string[] {
 }
 
 /**
- * Expand a buyer's purchased ids (editions / the bundle / à-la-carte module slugs) into the flat
+ * Expand a buyer's purchased ids (editions / the bundle / à-la-carte module slugs, either the full
+ * `@caisson/<slug>` module-id form or the bare `<slug>` per-module purchase-id form) into the flat
  * member-module slug set the ADR-0008/0021 allowlist gate checks. Membership is read from `index`
- * ONLY (ADR-0071). Fail-closed: an unknown purchased id throws (TM-E). An empty purchase yields an
- * empty set (no entitlement → no access).
+ * ONLY (ADR-0071). Fail-closed: an unknown purchased id throws (TM-E) — EXCEPT a reserved future-
+ * module slug (`RESERVED_MODULE_ENTITLEMENT_IDS`), which expands to nothing rather than throwing
+ * (fail-soft: the module is sold but not yet published, never a substitute grant). An empty purchase
+ * yields an empty set (no entitlement → no access).
  */
 export function expandEntitlements(
   index: RegistryIndex,
@@ -124,9 +152,20 @@ export function expandEntitlements(
       members.add(purchased);
       continue;
     }
-    // Fail closed (TM-E): not the bundle, not a known edition, not an indexed module → never grant.
+    if (MODULE_SLUG_RE.test(purchased)) {
+      const candidate = `@caisson/${purchased}`;
+      if (allowlist.has(candidate)) {
+        members.add(candidate);
+        continue;
+      }
+      if (RESERVED_MODULE_ENTITLEMENT_IDS.has(purchased)) {
+        continue; // reserved (sold, not yet published) — grants nothing yet; never throws (TM-E carve-out)
+      }
+    }
+    // Fail closed (TM-E): not the bundle, not a known edition, not an indexed module, and not a
+    // reserved future-module slug → never grant.
     throw new Error(
-      `unknown purchased entitlement id (not the bundle, a known edition, or an indexed module): ${JSON.stringify(
+      `unknown purchased entitlement id (not the bundle, a known edition, an indexed module, or a reserved future module): ${JSON.stringify(
         purchased,
       )}`,
     );
