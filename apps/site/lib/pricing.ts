@@ -352,3 +352,81 @@ export const SKU_PRICE_ROW: SkuRow = {
     editionPrice("agentic-dev"),
   ],
 };
+
+// ---- /build configurator: compose-a-stack running total + upgrade nudge (ADR-0191) ----
+// The math that proves the "compose, don't fork" thesis: pick modules, see the live total, and get
+// nudged toward the edition or bundle that covers the same modules for less. Pure + integer USD
+// (money is never a float, ADR-0007) so it is unit-tested and shared by /build and the cart.
+
+/** The single best "buy this instead and save" offer for a set of selected modules. */
+export interface StackUpgrade {
+  /** An edition slug or `"bundle"`. */
+  target: EditionId | "bundle";
+  /** Display label, e.g. "Compliance edition" or "Everything bundle". */
+  label: string;
+  /** The target's committed price (integer USD). */
+  price: number;
+  /** How much the buyer saves vs the à-la-carte total (> 0; else no offer is returned). */
+  saves: number;
+}
+
+/** A composed à-la-carte stack: its line items, running total, and the best upgrade offer. */
+export interface StackSummary {
+  lineItems: readonly ModulePrice[];
+  moduleCount: number;
+  /** Sum of the selected module prices, integer USD. */
+  total: number;
+  /** Present only when an edition or the bundle costs strictly less than the à-la-carte total. */
+  upgrade?: StackUpgrade;
+}
+
+/** The cheapest covering upgrade (edition if the selection is single-edition, else/also the bundle),
+ *  or `undefined` if buying à la carte is already the cheapest path. */
+function bestStackUpgrade(
+  lineItems: readonly ModulePrice[],
+  total: number,
+): StackUpgrade | undefined {
+  const offers: StackUpgrade[] = [];
+  // Single-edition selection → the whole edition (which includes these modules and more) may cost
+  // less than buying them separately.
+  const editions = new Set(lineItems.map((m) => m.edition));
+  if (editions.size === 1) {
+    const [edition] = [...editions] as [EditionId];
+    const anchor = priceById(edition);
+    if (anchor && anchor.amount != null && anchor.amount < total) {
+      offers.push({
+        target: edition,
+        label: `${anchor.label} edition`,
+        price: anchor.amount,
+        saves: total - anchor.amount,
+      });
+    }
+  }
+  // The everything bundle — relevant once a cross-edition selection outgrows the bundle price.
+  const bundle = priceById("bundle");
+  if (bundle && bundle.amount != null && bundle.amount < total) {
+    offers.push({
+      target: "bundle",
+      label: bundle.label,
+      price: bundle.amount,
+      saves: total - bundle.amount,
+    });
+  }
+  if (offers.length === 0) return undefined;
+  return offers.reduce((best, o) => (o.saves > best.saves ? o : best));
+}
+
+/** Summarize a selected set of module ids into a running total + the best upgrade nudge. Unknown or
+ *  duplicate ids are ignored (each SKU is a one-time license, never a quantity). */
+export function buildStackSummary(moduleIds: readonly string[]): StackSummary {
+  const ids = new Set(moduleIds);
+  const lineItems = MODULE_PRICES.filter((m) => ids.has(m.id));
+  const total = lineItems.reduce((sum, m) => sum + m.amount, 0);
+  const upgrade = bestStackUpgrade(lineItems, total);
+  return {
+    lineItems,
+    moduleCount: lineItems.length,
+    total,
+    ...(upgrade ? { upgrade } : {}),
+  };
+}

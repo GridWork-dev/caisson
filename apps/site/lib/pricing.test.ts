@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import {
+  buildStackSummary,
   bundleSavings,
   EDITION_IDS,
   EDITION_PRICES,
@@ -147,5 +148,52 @@ describe("PLAN_PRICES", () => {
   test("carries no null-amount rows except Enterprise", () => {
     const nullRows = PLAN_PRICES.filter((p) => p.amount === null);
     expect(nullRows.map((p) => p.id)).toEqual(["enterprise"]);
+  });
+});
+
+describe("buildStackSummary (compose-a-stack math, ADR-0191)", () => {
+  const idsOf = (edition: Parameters<typeof modulesByEdition>[0]) =>
+    modulesByEdition(edition).map((m) => m.id);
+
+  test("all of one edition's modules nudge to that edition when it costs less", () => {
+    const s = buildStackSummary(idsOf("compliance"));
+    // 299 + 199 + 149 + 199 = 846 a la carte; the Compliance edition is 749.
+    expect(s.total).toBe(846);
+    expect(s.moduleCount).toBe(4);
+    expect(s.upgrade?.target).toBe("compliance");
+    expect(s.upgrade?.price).toBe(749);
+    expect(s.upgrade?.saves).toBe(97);
+  });
+
+  test("a cross-edition selection above the bundle price nudges to the bundle", () => {
+    const s = buildStackSummary([...idsOf("compliance"), ...idsOf("ai-kit")]);
+    // 846 + 944 = 1790 a la carte; the Everything bundle is 1499.
+    expect(s.total).toBe(1790);
+    expect(s.upgrade?.target).toBe("bundle");
+    expect(s.upgrade?.saves).toBe(291);
+  });
+
+  test("no upgrade offer when a la carte is already the cheapest path", () => {
+    // Three of Compliance's four modules (199 + 149 + 199 = 547) cost less than the 749 edition,
+    // so nudging to the edition would cost MORE — no offer.
+    const s = buildStackSummary([
+      "field-crypto",
+      "audit-worm",
+      "retention-runner",
+    ]);
+    expect(s.total).toBe(547);
+    expect(s.upgrade).toBeUndefined();
+  });
+
+  test("empty and unknown ids are ignored", () => {
+    expect(buildStackSummary([]).total).toBe(0);
+    expect(buildStackSummary([]).upgrade).toBeUndefined();
+    expect(buildStackSummary(["not-a-real-module"]).moduleCount).toBe(0);
+  });
+
+  test("the running total is always an integer (money is never a float, ADR-0007)", () => {
+    expect(Number.isInteger(buildStackSummary(idsOf("ai-kit")).total)).toBe(
+      true,
+    );
   });
 });
