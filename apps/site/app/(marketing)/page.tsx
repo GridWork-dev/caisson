@@ -16,14 +16,7 @@ import Link from "next/link";
 
 import { serializeJsonLd, softwareApplication } from "@/lib/jsonld";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
-import { formatPrice, priceById } from "@/lib/pricing";
-
-// Edition entry price for the SKU grid (ADR-0082, committed) — read from the single pricing
-// source so the number never drifts. Guarded for the strict noUncheckedIndexedAccess lookup.
-function editionPrice(id: string): string {
-  const p = priceById(id);
-  return p ? formatPrice(p) : "—";
-}
+import { SKU_COLUMNS, SKU_FEATURE_ROWS } from "@/lib/pricing";
 
 export const metadata = buildMetadata({
   description:
@@ -255,53 +248,7 @@ export default function HomePage() {
           lede="Every edition draws from the same audited base. Modules differ by composition, never by a divergent copy."
         >
           <div style={{ marginTop: "var(--cs-space-8)" }}>
-            <SkuMatrix
-              columns={["Compliance", "AI Kit", "Local-first", "Agentic-Dev"]}
-              rows={[
-                { label: "Fail-closed RLS", cells: [true, true, true, true] },
-                {
-                  label: "WORM evidence store",
-                  cells: [true, false, false, false],
-                },
-                {
-                  label: "Append-only audit chain",
-                  cells: [true, true, false, true],
-                },
-                {
-                  label: "Per-tenant field crypto",
-                  cells: [true, false, true, false],
-                },
-                {
-                  label: "Evidence-pack generator",
-                  cells: [true, false, false, false],
-                },
-                {
-                  label: "Token metering · spend caps",
-                  cells: [false, true, false, false],
-                },
-                {
-                  label: "Eval harness in CI",
-                  cells: [false, true, false, true],
-                },
-                {
-                  label: "On-device vector search",
-                  cells: [false, false, true, false],
-                },
-                {
-                  label: "Governed-agent kernel",
-                  cells: [false, false, false, true],
-                },
-                {
-                  label: "Price",
-                  cells: [
-                    editionPrice("compliance"),
-                    editionPrice("ai-kit"),
-                    editionPrice("local-first"),
-                    editionPrice("agentic-dev"),
-                  ],
-                },
-              ]}
-            />
+            <SkuMatrix columns={[...SKU_COLUMNS]} rows={SKU_FEATURE_ROWS} />
             <p
               className="cs-footnote"
               style={{ marginTop: "var(--cs-space-5)" }}

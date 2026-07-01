@@ -5,6 +5,7 @@ import {
   CART_STORAGE_KEY,
   cartItemSchema,
   cartSubtotal,
+  cartUpgrade,
   type CartItem,
   isInCart,
   parseStoredCart,
@@ -122,4 +123,52 @@ describe("cartItemSchema", () => {
 test("CART_STORAGE_KEY is namespaced and non-empty", () => {
   expect(CART_STORAGE_KEY.length).toBeGreaterThan(0);
   expect(CART_STORAGE_KEY.startsWith("cs-")).toBe(true);
+});
+
+describe("cartUpgrade (bundle nudge, ADR-0193)", () => {
+  const bundle: CartItem = {
+    id: "bundle",
+    priceId: "pri_01kwd76bp60acq51mftvpgr42k",
+    label: "Everything bundle",
+    amount: 1499,
+    kind: "bundle",
+  };
+  const edition = (slug: string, amount: number): CartItem => ({
+    id: `edition:${slug}`,
+    priceId: "pri_x",
+    label: slug,
+    amount,
+    kind: "edition",
+  });
+
+  test("suggests the bundle when the cart totals more than it, with the real saving", () => {
+    // 749 + 599 + 249 = 1597 > 1499 bundle → save 98.
+    const u = cartUpgrade(
+      [
+        edition("compliance", 749),
+        edition("ai-kit", 599),
+        edition("agentic-dev", 249),
+      ],
+      bundle,
+    );
+    expect(u?.bundle.kind).toBe("bundle");
+    expect(u?.saves).toBe(1597 - 1499);
+  });
+
+  test("no suggestion when the subtotal is at or below the bundle price", () => {
+    // 749 + 599 = 1348 < 1499 → the bundle would cost MORE, so no fabricated saving.
+    expect(
+      cartUpgrade([edition("compliance", 749), edition("ai-kit", 599)], bundle),
+    ).toBeUndefined();
+  });
+
+  test("no suggestion when a bundle is already in the cart", () => {
+    expect(
+      cartUpgrade([bundle, edition("compliance", 749)], bundle),
+    ).toBeUndefined();
+  });
+
+  test("no suggestion for an empty cart", () => {
+    expect(cartUpgrade([], bundle)).toBeUndefined();
+  });
 });

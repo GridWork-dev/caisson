@@ -51,7 +51,7 @@ export const EDITION_PRICES: readonly PriceAnchor[] = [
     label: "Compliance",
     amount: 749,
     unit: "once",
-    from: true,
+    from: false,
     note: "Own the source. Fail-closed RLS, WORM, audit chain, evidence packs.",
   },
   {
@@ -59,7 +59,7 @@ export const EDITION_PRICES: readonly PriceAnchor[] = [
     label: "AI Production Kit",
     amount: 599,
     unit: "once",
-    from: true,
+    from: false,
     note: "The production-rigor layer cheap AI boilerplate skips.",
   },
   {
@@ -67,7 +67,7 @@ export const EDITION_PRICES: readonly PriceAnchor[] = [
     label: "Agentic-Dev",
     amount: 249,
     unit: "once",
-    from: true,
+    from: false,
     note: "The governed-agent kernel — typed agent/skill/rule schema, a guarded lifecycle, and a hooks dispatcher.",
   },
   {
@@ -75,7 +75,7 @@ export const EDITION_PRICES: readonly PriceAnchor[] = [
     label: "Local-first AI",
     amount: 349,
     unit: "once",
-    from: true,
+    from: false,
     note: "Own the source. On-device inference, a privacy gate, and vector search — your data never leaves the device.",
   },
 ] as const;
@@ -299,4 +299,134 @@ export function bundleSavings(): number {
   const bundle = priceById("bundle");
   if (!bundle || bundle.amount === null) return 0;
   return Math.max(0, editionsSubtotal() - bundle.amount);
+}
+
+/** Formatted starting price for an edition slug, or an em-dash if the slug has no anchor. */
+export function editionPrice(id: string): string {
+  const p = priceById(id);
+  return p ? formatPrice(p) : "—";
+}
+
+// ---- The editions × capabilities comparison matrix — SINGLE SOURCE (ADR-0195) ----
+// Was hand-duplicated across /pricing and the home teaser and had drifted (the two copies
+// disagreed on ≥3 rows); this is now the one authoritative copy. /pricing renders the feature
+// rows PLUS the starting-price row; the home teaser renders the feature rows only.
+
+/** A comparison-matrix row — structurally the kit's `SkuMatrixRow`, kept UI-decoupled here. */
+export interface SkuRow {
+  label: string;
+  /** One cell per column: `true` = included, `false` = not, or a display string. */
+  cells: readonly (boolean | string)[];
+}
+
+/** Matrix columns, in edition display order. */
+export const SKU_COLUMNS = [
+  "Compliance",
+  "AI Kit",
+  "Local-first",
+  "Agentic-Dev",
+] as const;
+
+/** The capability rows (no price row) — the home teaser shows exactly these. */
+export const SKU_FEATURE_ROWS: readonly SkuRow[] = [
+  { label: "Postgres base substrate", cells: [true, true, true, true] },
+  { label: "Fail-closed RLS (FORCE)", cells: [true, false, false, false] },
+  { label: "WORM evidence store", cells: [true, false, false, false] },
+  { label: "Append-only audit chain", cells: [true, false, false, false] },
+  { label: "Per-tenant field encryption", cells: [true, false, false, false] },
+  { label: "Evidence-pack generator", cells: [true, false, false, false] },
+  { label: "Token metering · spend caps", cells: [false, true, false, false] },
+  { label: "Eval harness in CI", cells: [false, true, false, false] },
+  { label: "On-device vector search", cells: [false, false, true, false] },
+  { label: "Privacy gate (no-egress)", cells: [false, false, true, false] },
+  { label: "Governed-agent kernel", cells: [false, false, false, true] },
+];
+
+/** The starting-price row — /pricing appends this after the feature rows; the home teaser omits it. */
+export const SKU_PRICE_ROW: SkuRow = {
+  label: "Starting price",
+  cells: [
+    editionPrice("compliance"),
+    editionPrice("ai-kit"),
+    editionPrice("local-first"),
+    editionPrice("agentic-dev"),
+  ],
+};
+
+// ---- /build configurator: compose-a-stack running total + upgrade nudge (ADR-0191) ----
+// The math that proves the "compose, don't fork" thesis: pick modules, see the live total, and get
+// nudged toward the edition or bundle that covers the same modules for less. Pure + integer USD
+// (money is never a float, ADR-0007) so it is unit-tested and shared by /build and the cart.
+
+/** The single best "buy this instead and save" offer for a set of selected modules. */
+export interface StackUpgrade {
+  /** An edition slug or `"bundle"`. */
+  target: EditionId | "bundle";
+  /** Display label, e.g. "Compliance edition" or "Everything bundle". */
+  label: string;
+  /** The target's committed price (integer USD). */
+  price: number;
+  /** How much the buyer saves vs the à-la-carte total (> 0; else no offer is returned). */
+  saves: number;
+}
+
+/** A composed à-la-carte stack: its line items, running total, and the best upgrade offer. */
+export interface StackSummary {
+  lineItems: readonly ModulePrice[];
+  moduleCount: number;
+  /** Sum of the selected module prices, integer USD. */
+  total: number;
+  /** Present only when an edition or the bundle costs strictly less than the à-la-carte total. */
+  upgrade?: StackUpgrade;
+}
+
+/** The cheapest covering upgrade (edition if the selection is single-edition, else/also the bundle),
+ *  or `undefined` if buying à la carte is already the cheapest path. */
+function bestStackUpgrade(
+  lineItems: readonly ModulePrice[],
+  total: number,
+): StackUpgrade | undefined {
+  const offers: StackUpgrade[] = [];
+  // Single-edition selection → the whole edition (which includes these modules and more) may cost
+  // less than buying them separately.
+  const editions = new Set(lineItems.map((m) => m.edition));
+  if (editions.size === 1) {
+    const [edition] = [...editions] as [EditionId];
+    const anchor = priceById(edition);
+    if (anchor && anchor.amount != null && anchor.amount < total) {
+      offers.push({
+        target: edition,
+        label: `${anchor.label} edition`,
+        price: anchor.amount,
+        saves: total - anchor.amount,
+      });
+    }
+  }
+  // The everything bundle — relevant once a cross-edition selection outgrows the bundle price.
+  const bundle = priceById("bundle");
+  if (bundle && bundle.amount != null && bundle.amount < total) {
+    offers.push({
+      target: "bundle",
+      label: bundle.label,
+      price: bundle.amount,
+      saves: total - bundle.amount,
+    });
+  }
+  if (offers.length === 0) return undefined;
+  return offers.reduce((best, o) => (o.saves > best.saves ? o : best));
+}
+
+/** Summarize a selected set of module ids into a running total + the best upgrade nudge. Unknown or
+ *  duplicate ids are ignored (each SKU is a one-time license, never a quantity). */
+export function buildStackSummary(moduleIds: readonly string[]): StackSummary {
+  const ids = new Set(moduleIds);
+  const lineItems = MODULE_PRICES.filter((m) => ids.has(m.id));
+  const total = lineItems.reduce((sum, m) => sum + m.amount, 0);
+  const upgrade = bestStackUpgrade(lineItems, total);
+  return {
+    lineItems,
+    moduleCount: lineItems.length,
+    total,
+    ...(upgrade ? { upgrade } : {}),
+  };
 }

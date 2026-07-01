@@ -6,7 +6,7 @@
   background: var(--cs-surface-1);
   padding: var(--cs-space-5);
   overflow-x: auto;
-  font-family: var(--cs-font-mono-code);
+  font-family: var(--cs-font-mono);
   font-size: var(--cs-text-sm);
   line-height: var(--cs-leading-snug);
   color: var(--cs-fg);

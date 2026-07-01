@@ -8,6 +8,8 @@ import {
   StatusChip,
   Terminal,
 } from "@/components";
+import { AddToCartButton } from "@/components/add-to-cart-button";
+import { editionCatalogItem, toCartItem } from "@/lib/catalog";
 import { breadcrumb, serializeJsonLd, softwareApplication } from "@/lib/jsonld";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import { formatPrice, priceById } from "@/lib/pricing";
@@ -20,6 +22,10 @@ export const metadata = buildMetadata({
 });
 
 const agenticDevPrice = priceById("agentic-dev");
+
+// Cart-ready CatalogItem for the peak-intent buy CTAs below (ADR-0192 single add-to-cart buy-verb).
+const _catalogItem = editionCatalogItem("agentic-dev");
+const editionCartItem = _catalogItem ? toCartItem(_catalogItem) : undefined;
 
 /* ---------- Kernel pieces ---------- */
 const PIECES = [
@@ -123,9 +129,9 @@ export default function AgenticDevPage() {
         }
         ctas={
           <>
-            <Button href="/pricing#agentic-dev" variant="primary">
-              Get Agentic-Dev
-            </Button>
+            {editionCartItem && (
+              <AddToCartButton item={editionCartItem} variant="primary" />
+            )}
             <Button href="/docs/agentic-dev" variant="ghost">
               Read the docs
             </Button>
@@ -344,9 +350,9 @@ export default function AgenticDevPage() {
             flexWrap: "wrap",
           }}
         >
-          <Button href="/pricing#agentic-dev" variant="primary">
-            Get Agentic-Dev
-          </Button>
+          {editionCartItem && (
+            <AddToCartButton item={editionCartItem} variant="primary" />
+          )}
           <Button href="/docs/agentic-dev" variant="ghost">
             Read the docs
           </Button>

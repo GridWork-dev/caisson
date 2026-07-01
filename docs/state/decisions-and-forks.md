@@ -503,3 +503,29 @@ Slice-2 hardening tail (Wardfile B-series + convergent lift-sweep ranks) stays q
 | Item                                                          | Why                                                                                                                                                                                                                                                                                                                       | Owner              |
 | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
 | **Amend ADR-0006 — field-crypto base tier → LOCKED ADR-0043** | Decision locked: per-tenant **HKDF** derivation at base tier + pluggable `FieldKeyProvider` KMS port (AWS adapter, GCP/Azure/Vault seam). Implementation lands in P2 `field-crypto` — golden-file + cross-tenant-isolation integration test before any evidence logic. **P2 crypto-shred + row-AAD now locked ADR-0055.** | compliance session |
+
+## Closed by the 2026-07-01 site-marketplace-rework session (operator picker)
+
+Nine forks (D-1…D-9) from the site-marketplace-rework audit, resolved in an operator picker after
+code-grounding refuted several premised gaps (no second accent, one theme toggle, codified elevation, AA
+nav contrast). D-8 closed no-op — no ADR.
+
+| Fork                           | Decision                                                                                                                                           | ADR          |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| **D-1 — accent lock**          | Reaffirm the ≤10% single-accent lock; optional `--cs-proof` status token, no new brand hue.                                                        | **ADR-0189** |
+| **D-2 — primary nav**          | Editions disclosure panel (WAI-ARIA APG Disclosure, text+mono, no icon grid).                                                                      | **ADR-0190** |
+| **D-3 — marketplace routes**   | Three-route split (`/pricing` · `/modules` · `/build`) sharing one cart/pricing hook, `/build` flagship.                                           | **ADR-0191** |
+| **D-4 — buy verb**             | Single "Add to cart" sitewide; demote/retire "Get X"; fix "Get started" nav CTA.                                                                   | **ADR-0192** |
+| **D-5 — checkout surfaces**    | Differentiate drawer (glance) vs `/cart` (rich+procurement) vs `/dashboard/cart` (pay handoff); single-sourced line-item + bundle-math primitives. | **ADR-0193** |
+| **D-6 — accessibility**        | WCAG 2.2 AA floor; every gap folds into its owning fork (drawer focus → D-5, mobile toggle → D-7, live regions → D-3).                             | **ADR-0194** |
+| **D-7 — design-system codify** | Drop JetBrains Mono, Martian-only; hoist de-duped SKU matrix; mobile `ThemeToggle`; lock 2 button variants + 1 tertiary link.                      | **ADR-0195** |
+| **D-8 — hero cursor-glow dot** | Closed no-op — does not exist in code; static `--cs-glow-accent` hover stays locked per DESIGN.md §6.                                              | — (no ADR)   |
+| **D-9 — ⌘K search**            | Extend the trigger + key listener sitewide via `useSearchContext`; sequenced after D-2 as a secondary trigger.                                     | **ADR-0196** |
+
+**Build sequence:** D-4 → D-7 → D-3 → D-2 → D-5 → D-9 → D-1, with a11y (D-6) folded into each owning fork
+rather than a standalone phase, and copy/SEO passes last.
+
+**ADR numbering (2026-07-01 site-marketplace-rework):** started at **0189** to sidestep the concurrent
+"lift" phase's claim on 0186-0188 — the live shipped ceiling at authoring time is **0178**. If the lift
+phase lands 0186-0188 first, this whole block renumbers by-meaning at merge (the repo's standard pattern
+for concurrent-track ADR collisions, per the 0108→0110/0109→0113 P6 precedent).

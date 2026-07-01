@@ -18,6 +18,8 @@ import {
   StatusChip,
   Terminal,
 } from "@/components";
+import { AddToCartButton } from "@/components/add-to-cart-button";
+import { editionCatalogItem, toCartItem } from "@/lib/catalog";
 
 export const metadata = buildMetadata({
   title: "AI Production Kit",
@@ -29,6 +31,10 @@ export const metadata = buildMetadata({
 // Price from the canonical pricing table.
 const aiKitPrice = priceById("ai-kit");
 const modulePrice = priceById("module");
+
+// Cart-ready CatalogItem for the peak-intent buy CTAs below (ADR-0192 single add-to-cart buy-verb).
+const _catalogItem = editionCatalogItem("ai-kit");
+const editionCartItem = _catalogItem ? toCartItem(_catalogItem) : undefined;
 
 // FAQ items — answer-first (ADR-0080 §6); also rendered as faqPage JSON-LD.
 const FAQ_ITEMS = [
@@ -147,9 +153,9 @@ export default function AiKitPage() {
         }
         ctas={
           <>
-            <Button href="/pricing" variant="primary">
-              Get the AI Production Kit
-            </Button>
+            {editionCartItem && (
+              <AddToCartButton item={editionCartItem} variant="primary" />
+            )}
             <Button href="/docs/ai-kit" variant="ghost">
               Read the docs
             </Button>
@@ -431,9 +437,9 @@ export default function AiKitPage() {
             flexWrap: "wrap",
           }}
         >
-          <Button href="/pricing" variant="primary">
-            Get the AI Production Kit
-          </Button>
+          {editionCartItem && (
+            <AddToCartButton item={editionCartItem} variant="primary" />
+          )}
           <Button href="/docs/ai-kit" variant="ghost">
             Read the docs
           </Button>

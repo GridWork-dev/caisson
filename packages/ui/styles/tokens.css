@@ -27,7 +27,6 @@
   /* type */
   --cs-font-sans: var(--font-sans, "Hubot Sans", ui-sans-serif, system-ui, sans-serif);
   --cs-font-mono: var(--font-mono, "Martian Mono", ui-monospace, "SFMono-Regular", monospace);
-  --cs-font-mono-code: var(--font-mono-code, "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace);
   --cs-text-xs: 0.75rem;
   --cs-text-sm: 0.875rem;
   --cs-text-base: 1rem;

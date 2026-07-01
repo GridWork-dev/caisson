@@ -59,7 +59,6 @@ function sharedBlock(): string {
   lines.push("  /* type */");
   lines.push(`  --cs-font-sans: ${fonts.sans};`);
   lines.push(`  --cs-font-mono: ${fonts.mono};`);
-  lines.push(`  --cs-font-mono-code: ${fonts.monoCode};`);
   for (const [k, v] of Object.entries(foundation.fontSize))
     lines.push(`  --cs-text-${k}: ${v};`);
   for (const [k, v] of Object.entries(foundation.fontWeight))
