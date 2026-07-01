@@ -51,6 +51,17 @@
 > `apps/admin` — auto-trace fine). Live-transport un-stubbing (S3 WORM / hosted inference / on-device ONNX)
 > stays explicitly **deferred** (`ADR-0184`, no build).
 
+> **LIFT slice-1 (task 1) + DEPLOY-class + backlog-P3 DONE (2026-07-01, latest — ceiling `0188`):** merged
+> to `main` @ `84052aa` — PR#35 seam, **PR#36** `@caisson/audit-harness` pipeline completion
+> (`ADR-0188`: scoped `reconcile` fail-loud must-fix + `enumerateSurface`/`report`/`check-scope` +
+> orchestration runbook), **PR#37** backlog-P3 (members `.strict()`; fail-closed demo field-crypto in
+> `local-ai`/`compliance`). **DEPLOY-class executed:** `caisson-license` + `caisson-docs` **redeployed**
+> from `main` (both `/health` 200) → the `withRequestSpan` Bun-OTel spans now emit to the Grafana OTLP sink
+> (endpoint verified provisioned on both); **Cloudflare Pages torn down** (0 Pages projects in the account;
+> DNS on Railway). Remaining housekeeping: 3 detached SigNoz volumes (operator-delete, agent-blocked; see
+> `docs/state/providers.md`). **Next:** the whole-repo multi-model audit (READY, not yet run) → LIFT
+> sellables `ADR-0186`/`0187`.
+
 Live build status for the Caisson monorepo. **This file OWNS the synthesized build-status
 view** - `plan.md` (the P0-P7 plan) and `SUMMARY.md` (the consolidated job rollup) route here
 for "what is actually built right now". Canonical _decisions_ stay in `knowledge/decisions/`

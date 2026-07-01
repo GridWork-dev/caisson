@@ -51,6 +51,20 @@ smoke-test of the deployed Worker, and `bun run check` (125/125 + kernel gate) o
 > buyer key-submission UI (closes the §3 "C7 write-half BYOK" item below), and a manual Bun request-span
 > helper (`ADR-0179`-`0185`).
 
+> **DEPLOY-class + backlog-P3 executed (2026-07-01, latest — closes the fast-follows above):** ADR ceiling
+> is now **0188** (PR#35 seam + PR#36 audit-harness ADR-0188 + PR#37 backlog-P3, all merged to `main` @
+> `84052aa`). **DEPLOY-class DONE:** `caisson-license` + `caisson-docs` **redeployed** from `main` (both
+> `/health` 200; license's idempotent `preDeployCommand` migrate re-ran) so the seam's `withRequestSpan`
+> Bun-OTel spans now emit; **Grafana OTLP verified provisioned** on both services
+> (`OTEL_EXPORTER_OTLP_ENDPOINT` → `otlp-gateway-prod-us-west-0.grafana.net`, matching the operator Grafana
+> creds) — spans export to the sole sink (ADR-0177). **Cloudflare Pages teardown DONE** — the account has
+> **0 Pages projects** (the `caisson-site` project is gone; DNS already on Railway), so the "Pages project
+> deletion (post-soak)" fast-follow is complete. The "SigNoz `SIGNOZ_API_KEY` + ingester TCP-proxy"
+> fast-follow stays **moot** (SigNoz deleted, ADR-0177). **Backlog P3 DONE** (PR#37): the 3 defense-in-depth
+> items in §3 (members `.strict()` + fail-closed demo field-crypto in local-ai/compliance) are merged.
+> **No DEPLOY-class fast-follows remain open.** Next: the whole-repo multi-model audit (READY,
+> `outputs/specs/lift-phase/AUDIT-RUNBOOK.md`) then the two LIFT sellables (ADR-0186/0187).
+
 ## 0. Live verification done this session
 
 - **Registry Worker — LIVE + smoke-tested GREEN.** `https://caisson-registry.broken-wood-97a9.workers.dev`:
@@ -273,7 +287,13 @@ them or run an on-demand local pass (`/greptile` skill) before merge.
 **PR #35 (edition-seam) — all 3 Greptile findings FIXED in-PR** (fail-closed BYOK crypto, Gemini key
 out of the URL, `clearAction` Zod boundary). A follow-on adversarial sweep for sibling instances of the
 same floor patterns surfaced **3 pre-existing P3 defense-in-depth items** (none in this PR's diff, none a
-live hole — each guards only synthetic/demo data today; queue when the surface changes):
+live hole — each guards only synthetic/demo data today).
+
+> **✅ ALL 3 CLOSED — PR#37 merged (`84052aa`, 2026-07-01).** #1 `.strict()` appended. #2/#3 fail closed
+> under `NODE_ENV=production` (byok.ts parity) — the compliance leg's #3 fix is a prod-throw, **not** the
+> `fromEnv` switch the table proposed, because the leg is golden-deterministic and `fromEnv` would break
+> the fixtures. Guards never fire today (apps not deployed; tests run `NODE_ENV=test`). Table kept as the
+> historical record.
 
 | #   | File:line                                     | Finding                                                                                                                                                                     | Fix                                                                   | Priority |
 | --- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | -------- |

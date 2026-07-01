@@ -67,9 +67,19 @@ SigNoz is **removed**. Cutover executed: (1) `OTEL_EXPORTER_OTLP_ENDPOINT` (`htt
 > spans never fire; only **manual** spans export (this is why the probe landed but synthetic `/query` traffic
 > produced no deployed-service span). The **Node/Next** services (`caisson-site`, `caisson-admin`) auto-trace
 > inbound on the Node runtime. SigNoz had the identical limitation, so its removal is a zero-observability
-> regression. Closing this needs manual request spans in the Bun handlers or a Bun-compatible instrumentation
-> — tracked as an edition seam (see `decisions-and-forks.md`). **Cleanup pending:** 3 detached SigNoz volumes
-> (`signoz-*-volume`, ~1 GB each) — delete in the Railway dashboard (negligible storage cost).
+> regression.
+>
+> **✅ CLOSED (2026-07-01, ADR-0185 `withRequestSpan`).** The manual Bun request-span helper shipped in the
+> edition seam (PR#35) and was **deployed** to both Bun services — `caisson-docs` + `caisson-license`
+> redeployed from `main` @ `84052aa` (both `/health` 200), so manual request spans now fire on the Bun
+> handlers and export to the Grafana OTLP sink. No auto child-spans for DB/fetch (named ceiling, ADR-0185);
+> Bun-native auto-instrumentation remains the future upgrade path if/when it exists.
+>
+> **Cleanup still pending (operator action):** 3 detached SigNoz volumes remain in `caisson-prod`
+> (`signoz-telemetrystore-clickhouse-volume`, `signoz-telemetrykeeper-clickhousekeeper-volume`,
+> `signoz-signoz-volume`; ~1 GB each, `Attached: N/A`). `railway volume delete -y -v <name>` is
+> **agent-blocked** (mass prod-storage delete guardrail) — the operator deletes them (CLI or Railway
+> dashboard). Negligible storage cost; purely housekeeping.
 
 ---
 
