@@ -19,9 +19,11 @@ export const metadata: Metadata = { title: "Members" };
 // A better-auth user id (the value `addAccountMember` writes to `account_member.user_id`). Bounded +
 // trimmed at the boundary (security floor). ponytail: add-by-user-id, not invite-by-email — the
 // email->user lookup + invite flow is the follow-up; the backend seam (addAccountMember) is by id.
-const AddMemberInput = z.object({
-  userId: z.string().trim().min(1).max(200),
-});
+const AddMemberInput = z
+  .object({
+    userId: z.string().trim().min(1).max(200),
+  })
+  .strict();
 
 async function addMemberAction(formData: FormData): Promise<void> {
   "use server";
