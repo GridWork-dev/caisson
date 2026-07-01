@@ -6,6 +6,7 @@ import { CartTrigger } from "./cart-trigger";
 import { EditionsMenu, type EditionMenuItem } from "./editions-menu";
 import { MobileNav } from "./mobile-nav";
 import { NavLinks } from "./nav-links";
+import { NavSearchTrigger } from "./nav-search-trigger";
 import { Button } from "./button";
 import { editionPrice, priceById } from "@/lib/pricing";
 import { EDITION_ROUTES, NAV_ROUTES } from "@/lib/routes";
@@ -75,14 +76,19 @@ export function SiteNav() {
           reads the same in the compact header and the full desktop bar. */}
       <CartTrigger />
 
-      {/* Desktop CTA group — primary "Get started" + theme toggle. */}
+      {/* Desktop CTA group — search, primary "Get started", theme toggle. */}
       <div className={styles.navCtas}>
+        <NavSearchTrigger />
         <Button href={GET_STARTED.href}>{GET_STARTED.label}</Button>
         <ThemeToggle />
       </div>
 
       {/* Mobile hamburger + drawer (display:none above 900px via global.css). */}
-      <MobileNav links={MOBILE_LINKS} cta={GET_STARTED} />
+      <MobileNav
+        links={MOBILE_LINKS}
+        cta={GET_STARTED}
+        search={<NavSearchTrigger />}
+      />
     </header>
   );
 }
