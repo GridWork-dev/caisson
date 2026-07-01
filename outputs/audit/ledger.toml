@@ -265,3 +265,148 @@ subject = "packages/ai-kit/src/providers.ts:110"
 title = "Buyer-supplied provider baseUrl (BYOK lane config) was passed to the SDK client unvalidated, allowing SSRF to internal/loopback/metadata endpoints from the tenant AI path"
 severity = "high"
 status = "fixed"
+
+
+[[finding]]
+id = "a56db83990ebdbc5"
+domain = "generator-templates"
+subject = "packages/cli/templates/base/.github/workflows/ci.yml:1-43 (and packages/cli/templates/eu-ai-act-sample/.github/workflows/ci.yml:1-33)"
+title = "Emitted buyer CI workflows carry no least-privilege `permissions:` block, leaving default (often read-write) GITHUB_TOKEN exposed via actions/checkout's persisted git credentials"
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "a8a54176102f40e6"
+domain = "auth-boundary"
+subject = "packages/auth/src/jwt.ts:57-108"
+title = "verifyAccountJwt leaks the specific token-validation failure reason to the client, contradicting its own documented mitigation"
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "e1b26983d3490030"
+domain = "ai-evals-integrity"
+subject = "packages/ai-evals/src/graders.ts:156-172"
+title = "judgeGrader forwards an arbitrary Judge's score with zero runtime clamping/validation, unlike the cassette path"
+severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "98a14a4174b5ca2f"
+domain = "ai-evals-integrity"
+subject = "packages/ai-evals/src/judge.ts:21"
+title = "judgeRequestSchema.output (the evaluated content itself) has no length bound, while the trusted rubric field does"
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "b719aff8e0c66b93"
+domain = "mcp-transport"
+subject = "packages/mcp-server/src/server.ts:160-162"
+title = "`generate`'s `modules` array (and each entry's id/version strings) has no upper bound, letting a single ADR-0112-rate-limited call drive unbounded server-side work"
+severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "e428a73d64a8bed1"
+domain = "agent-governance"
+subject = "packages/agent-dev/src/emitter.ts:82-96 (claudeAgent) + packages/agent-kernel/src/schema.ts:13 (nonEmpty)"
+title = "Unescaped free-text artifact fields let a crafted description/whenToInvoke truncate the emitted YAML frontmatter, erasing the declared `tools:` allowlist and escalating to Claude Code's fail-open \"inherit all tools\" default"
+severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "b090309f83aff1a3"
+domain = "agent-governance"
+subject = "packages/agent-dev/src/index.ts:1-153 vs packages/agent-dev/manifest.ts:29-38"
+title = "The Agentic-Dev edition's manifest declares `@caisson/tool-exec` a bundled member (ADR-0178) but the edition composition never imports, wires, or re-exports it"
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "9cdac68a24b86223"
+domain = "guardrails-prompts"
+subject = "packages/guardrails/src/guard.ts:110-114"
+title = "cheapDeny pre-screen silently and permanently stops blocking after its first hit if given a global-flagged RegExp (sticky lastIndex guard bypass)"
+severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "ca10fada64ef90fe"
+domain = "guardrails-prompts"
+subject = "packages/prompt-registry/src/render.ts:58-67"
+title = "Prompt template string variables are unbounded, letting one rawVars value blow past the template's own content cap at the declared injection-safety boundary"
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "67772d1f469d4947"
+domain = "admin-plane"
+subject = "apps/admin (ADR-0140) + infra/terraform/main.tf:83-91"
+title = "CF-Access-sole-gate has no defense-in-depth against the publicly committed, reachable Railway grey origin — admin pages render unauthenticated when hit directly"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "4f5cc95c48e9b0fd"
+domain = "admin-plane"
+subject = "apps/admin/next.config.ts"
+title = "apps/admin emits none of the security-floor response headers (X-Frame-Options, Strict-Transport-Security, X-Content-Type-Options)"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "f4bd523fdcaa3c10"
+domain = "metering-byok"
+subject = "packages/ai-kit/src/gateway.ts:262"
+title = "BYOK inference is never billed $0 — reserve()/reconcile() have no keySource awareness, leaving ADR-0182/0198's locked $0-credits policy unimplemented"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "092f7b2065099fb8"
+domain = "metering-byok"
+subject = "packages/ai-kit/src/gateway.ts:196"
+title = "mapUsage() coalesces provider-unreported token counts to 0, so reconcile() silently refunds the entire reservation for a real completed call"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "bab24d4f8392ad40"
+domain = "metering-byok"
+subject = "packages/ai-meter/src/meter.ts:156"
+title = "reserve() and reconcile() independently recompute the spend-window bucket from wall-clock now, so boundary-straddling calls misattribute deltas and the hard-cap breaker undercounts spend"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "80fec1dffe39028d"
+domain = "destructive-jobs"
+subject = "packages/alerting/src/channels.ts:99"
+title = "Outbound webhook/Slack/Telegram destinations have zero SSRF guard — any protocol/host is fetched verbatim"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "3516b3d491752e54"
+domain = "destructive-jobs"
+subject = "packages/retention-runner/src/migrations/0001_retention_audit.sql:10"
+title = "retention_audit table ships with no Row-Level Security — the only tenant-scoped migration in the domain missing DB-layer isolation"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "5fcedb950a641b85"
+domain = "destructive-jobs"
+subject = "packages/jobs/src/pgboss.ts:67"
+title = "The pg-boss production JobQueue driver skips Zod schema/task-registry validation on enqueue, unlike its sibling drivers"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "27e95da0ca7911ff"
+domain = "composition-roots"
+subject = "apps/compliance/next.config.ts + apps/ai-kit/next.config.ts + apps/local-ai/next.config.ts"
+title = "Three of the four served-app edition composition roots ship with zero security-header wiring, diverging from the hardened sibling reference apps"
+severity = "high"
+status = "open"
