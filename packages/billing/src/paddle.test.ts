@@ -3,10 +3,11 @@
 // webhook smoke-test are operator/DEPLOY-class, out of scope here.
 import { createHmac } from "node:crypto";
 import { afterEach, describe, expect, test } from "bun:test";
-import { AuthnError } from "@caisson/kernel";
+import { AuthnError, ValidationError } from "@caisson/kernel";
 import {
   createPaddleBilling,
   parsePaddleEvent,
+  PaddleEventSchema,
   verifyPaddleWebhook,
 } from "./index.ts";
 
@@ -276,6 +277,68 @@ describe("event mapping", () => {
       type: "purchase.completed",
       accountId: "acct_a",
     });
+  });
+});
+
+describe("PaddleEventSchema (envelope boundary validation, services-hardening MED)", () => {
+  test("accepts a well-formed envelope", () => {
+    const result = PaddleEventSchema.safeParse({
+      event_id: "evt_x",
+      event_type: "transaction.completed",
+      data: { id: "txn_1" },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("rejects an envelope with an unexpected extra top-level field", () => {
+    const result = PaddleEventSchema.safeParse({
+      event_id: "evt_x",
+      event_type: "transaction.completed",
+      data: {},
+      occurred_at: "2026-01-01T00:00:00Z", // not a declared envelope field
+    });
+    expect(result.success).toBe(false);
+  });
+
+  test("rejects an envelope missing event_id or with the wrong shape", () => {
+    expect(
+      PaddleEventSchema.safeParse({ event_type: "x", data: {} }).success,
+    ).toBe(false);
+    expect(
+      PaddleEventSchema.safeParse({
+        event_id: 123,
+        event_type: "x",
+        data: {},
+      }).success,
+    ).toBe(false);
+  });
+
+  test("verifyAndParse rejects a signed body carrying an unexpected extra top-level field", () => {
+    // The signature is valid (verifyPaddleWebhook passes) — this proves the NEW schema boundary
+    // rejects a malformed envelope even when authenticity already checked out; a signature alone
+    // never guaranteed the payload shape.
+    const extraFieldBody = JSON.stringify({
+      event_id: "evt_extra",
+      event_type: "transaction.completed",
+      occurred_at: "2026-01-01T00:00:00Z",
+      data: {
+        id: "txn_extra",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        items: [{ price: { id: "price_credit_pack_PLACEHOLDER" } }],
+        details: { totals: { grand_total: "5000" } },
+      },
+    });
+    const billing = createPaddleBilling({
+      webhookSecret: SECRET,
+      apiKey: "pdl_sdbx_test",
+    });
+    expect(() =>
+      billing.verifyAndParse(extraFieldBody, signed(extraFieldBody), {
+        now: T,
+      }),
+    ).toThrow(ValidationError);
   });
 });
 

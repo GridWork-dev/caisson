@@ -14,13 +14,28 @@
 // The tenant resolves from `custom_data.account_id`, stamped at checkout and propagated NATIVELY by
 // Paddle onto the transaction + subscription — this removes the Stripe driver's
 // subscription_data[metadata]-stamping workaround (ADR-0089 §worked-around by ADR-0108).
+//
+// The envelope (event_id/event_type/data) is Zod-`.strict()`-validated at the boundary
+// (services-hardening MED finding): the raw webhook body used to be trusted via a bare
+// `JSON.parse(rawBody) as PaddleEvent` cast — a type-level assertion with no runtime check, so a
+// malformed or field-injected delivery would flow straight into the mapper below. `PaddleEventSchema`
+// rejects any envelope that is missing `event_id`/`event_type`, has the wrong top-level shape, or
+// carries an extra/unknown top-level key; `provider.ts`'s `verifyAndParse` parses through it
+// (`parseStrict`, throwing a `ValidationError`) BEFORE this file's mapper ever sees the event. `data`
+// itself stays a loose `Record<string, unknown>` — Paddle's per-event-type payload shape varies, and
+// the `read*` helpers below are ALREADY the defensive/fail-closed-to-safe-default layer for it; this
+// schema only closes the envelope-level gap, it does not re-validate every event type's inner fields.
+import { z } from "zod";
+import { strictObject } from "@caisson/kernel";
 import type { DomainBillingEvent } from "./events.ts";
 
-export interface PaddleEvent {
-  event_id: string;
-  event_type: string;
-  data: Record<string, unknown>;
-}
+export const PaddleEventSchema = strictObject({
+  event_id: z.string(),
+  event_type: z.string(),
+  data: z.record(z.string(), z.unknown()),
+});
+
+export type PaddleEvent = z.infer<typeof PaddleEventSchema>;
 
 function readString(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;

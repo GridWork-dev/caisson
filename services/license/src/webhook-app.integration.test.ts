@@ -194,6 +194,29 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
     expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(1000);
   });
 
+  test("a verified purchase with no resolvable account_id returns non-2xx, so Paddle retries (services-hardening LOW)", async () => {
+    // A genuine, correctly-signed purchase whose custom_data never carried account_id (or carried an
+    // empty one) — provisioning nothing must NOT be a silent 2xx: that would drop a real purchase for
+    // good once Paddle stops retrying. The route must surface this as a server error.
+    const app = makeApp(provider);
+    const t = Math.floor(Date.now() / 1000);
+    const body = JSON.stringify({
+      event_id: "evt_unattributed",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_unattributed",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: {},
+        items: [{ price: { id: PRICE_CREDIT_PACK } }],
+        details: { totals: { grand_total: "5000" } },
+      },
+    });
+    const res = await app(webhookReq(body, signed(body, t)));
+    expect(res.status).toBeGreaterThanOrEqual(500);
+    expect(res.status).toBeLessThan(600);
+  });
+
   test("a bad signature returns 401 and provisions NOTHING (fail-closed, never throws to the socket)", async () => {
     const app = makeApp(provider);
     const acct = "acct_badsig";
@@ -281,5 +304,35 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
     expect(first.status).toBe(401);
     const second = await app(issueReq());
     expect(second.status).toBe(429);
+  });
+
+  test("a spoofed leftmost x-forwarded-for hop does not mint a fresh /issue bucket", async () => {
+    // Same flood as above, but each request rotates a fake LEFTMOST hop (attacker-controlled) while
+    // the edge-appended rightmost hop stays fixed — the exact spoof the HIGH finding described. With
+    // clientIp reading the rightmost hop, all three requests must still collapse onto one bucket.
+    const app = makeApp(provider, {
+      webhook: { capacity: 1, windowMs: 60_000 },
+      issue: { capacity: 1, windowMs: 60_000 },
+      maxEntries: 100,
+    });
+    const realIp = "8.8.8.8";
+    const issueReq = (fakeLeftHop: string): Request =>
+      new Request("http://license.test/issue", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-for": `${fakeLeftHop}, ${realIp}`,
+        },
+        body: JSON.stringify({
+          accountId: "a",
+          tier: "pro",
+          major: 1,
+          expiry: null,
+        }),
+      });
+    const first = await app(issueReq("1.1.1.1"));
+    expect(first.status).toBe(401); // passed the limiter, failed the bearer check
+    const second = await app(issueReq("2.2.2.2"));
+    expect(second.status).toBe(429); // same rightmost hop → same bucket → throttled
   });
 });

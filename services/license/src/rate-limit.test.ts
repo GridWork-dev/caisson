@@ -71,11 +71,32 @@ describe("TokenBucketLimiter", () => {
 });
 
 describe("clientIp", () => {
-  test("reads the leftmost x-forwarded-for entry", () => {
+  test("reads the RIGHTMOST x-forwarded-for hop, never the leftmost", () => {
     const req = new Request("http://x.test/", {
       headers: { "x-forwarded-for": "203.0.113.7, 10.0.0.1" },
     });
-    expect(clientIp(req)).toBe("203.0.113.7");
+    expect(clientIp(req)).toBe("10.0.0.1");
+  });
+
+  test("a client-spoofed leftmost hop does not change the derived IP", () => {
+    const spoofed = new Request("http://x.test/", {
+      headers: { "x-forwarded-for": "9.9.9.9, 203.0.113.7" },
+    });
+    const unspoofed = new Request("http://x.test/", {
+      headers: { "x-forwarded-for": "203.0.113.7" },
+    });
+    expect(clientIp(spoofed)).toBe(clientIp(unspoofed));
+    expect(clientIp(spoofed)).toBe("203.0.113.7");
+  });
+
+  test("X-Envoy-External-Address, when present, wins over x-forwarded-for entirely", () => {
+    const req = new Request("http://x.test/", {
+      headers: {
+        "x-envoy-external-address": "198.51.100.1",
+        "x-forwarded-for": "9.9.9.9, 8.8.8.8",
+      },
+    });
+    expect(clientIp(req)).toBe("198.51.100.1");
   });
 
   test("collapses a missing header onto a shared 'unknown' bucket", () => {
