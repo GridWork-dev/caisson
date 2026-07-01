@@ -22,7 +22,7 @@ dockerfilePath = "services/license/Dockerfile"
 # the @caisson/migrate ledger. This service's image is the FULL workspace (COPY . .), so it can run
 # the site's migrate orchestrator; the site's own standalone image cannot (migrate is not traced
 # into it). Deploy order therefore puts caisson-license before caisson-site.
-preDeployCommand = "bun apps/site/scripts/deploy-migrate.ts"
+preDeployCommand = "bun apps/site/lib/deploy-migrate.ts"
 healthcheckPath = "/health"
 # 30s, not docs' 300: the issuer binds the socket immediately (it opens a lazy pg pool, it does not
 # embed a corpus at boot).

@@ -13,6 +13,11 @@
       "bun": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./pg": {
+      "bun": "./src/pg-applier.ts",
+      "types": "./dist/pg-applier.d.ts",
+      "default": "./dist/pg-applier.js"
     }
   },
   "scripts": {
@@ -23,10 +28,19 @@
   "dependencies": {
     "@caisson/kernel": "workspace:*"
   },
+  "peerDependencies": {
+    "pg": "^8.0.0"
+  },
+  "peerDependenciesMeta": {
+    "pg": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
+    "@types/pg": "^8.11.10",
     "eslint": "^9.13.0",
     "typescript": "^5.6.0"
   }

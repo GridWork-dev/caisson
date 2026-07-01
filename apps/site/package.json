@@ -17,6 +17,7 @@
     "@caisson/credits": "workspace:*",
     "@caisson/email": "workspace:*",
     "@caisson/kernel": "workspace:*",
+    "@caisson/migrate": "workspace:*",
     "@caisson/observability": "workspace:*",
     "@caisson/platform-reads": "workspace:*",
     "@caisson/pricebook": "workspace:*",
