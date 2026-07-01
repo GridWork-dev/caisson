@@ -104,6 +104,9 @@ describe("JSON → XML → validate round-trip (needs external oscal-cli)", () =
         const xml = await convertAndValidate(model, body);
         expect(xml).toContain("<?xml");
       },
+      // Two JVM oscal-cli spawns (convert + validate) — cold JVM startup exceeds bun's 5s default on a
+      // slow CI runner (observed 5001ms). Generous headroom so oscal-conformance stops flaking.
+      60_000,
     );
   }
 });
