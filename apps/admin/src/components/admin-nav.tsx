@@ -5,11 +5,14 @@ import { usePathname } from "next/navigation";
 
 import { ThemeToggle } from "@caisson/ui/components";
 
-// Top-level control-plane sections. Only surfaces that exist are linked; Ops / Business /
-// Architecture / Decisions land their nav entries as tasks A4-A7 build them (a nav entry to a
-// route that doesn't exist yet is a dead link, not a scaffold).
+// Top-level control-plane sections (ADR-0138): ops/observability, business admin, live
+// architecture, the decisions SOT board, and the absorbed design system.
 const LINKS = [
   { href: "/", label: "Overview" },
+  { href: "/ops", label: "Ops" },
+  { href: "/business", label: "Business" },
+  { href: "/architecture", label: "Architecture" },
+  { href: "/decisions", label: "Decisions" },
   { href: "/design", label: "Design" },
 ] as const;
 
