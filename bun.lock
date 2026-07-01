@@ -313,6 +313,36 @@
         "typescript": "^5.6.0",
       },
     },
+    "packages/alerting": {
+      "name": "@caisson/alerting",
+      "version": "0.1.0",
+      "dependencies": {
+        "@caisson/email": "workspace:*",
+        "@caisson/kernel": "workspace:*",
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
+    },
+    "packages/audit-harness": {
+      "name": "@caisson/audit-harness",
+      "version": "0.0.0",
+      "bin": {
+        "audit-harness-reconcile": "./src/cli.ts",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
+    },
     "packages/audit-worm": {
       "name": "@caisson/audit-worm",
       "version": "0.1.0",
@@ -680,11 +710,42 @@
         "typescript": "^5.6.0",
       },
     },
+    "packages/retention-runner": {
+      "name": "@caisson/retention-runner",
+      "version": "0.1.0",
+      "dependencies": {
+        "@caisson/jobs": "workspace:*",
+        "@caisson/kernel": "workspace:*",
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
+    },
     "packages/tenancy-rls": {
       "name": "@caisson/tenancy-rls",
       "version": "0.1.0",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
+    },
+    "packages/tool-exec": {
+      "name": "@caisson/tool-exec",
+      "version": "0.1.0",
+      "dependencies": {
+        "@caisson/kernel": "workspace:*",
+        "zod": "^3.23.8",
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
@@ -945,11 +1006,15 @@
 
     "@caisson/ai-meter": ["@caisson/ai-meter@workspace:packages/ai-meter"],
 
+    "@caisson/alerting": ["@caisson/alerting@workspace:packages/alerting"],
+
     "@caisson/app-agent-dev": ["@caisson/app-agent-dev@workspace:apps/agent-dev"],
 
     "@caisson/app-base": ["@caisson/app-base@workspace:apps/base"],
 
     "@caisson/app-compliance": ["@caisson/app-compliance@workspace:apps/compliance"],
+
+    "@caisson/audit-harness": ["@caisson/audit-harness@workspace:packages/audit-harness"],
 
     "@caisson/audit-worm": ["@caisson/audit-worm@workspace:packages/audit-worm"],
 
@@ -1003,6 +1068,8 @@
 
     "@caisson/registry-schema": ["@caisson/registry-schema@workspace:packages/registry-schema"],
 
+    "@caisson/retention-runner": ["@caisson/retention-runner@workspace:packages/retention-runner"],
+
     "@caisson/service-docs": ["@caisson/service-docs@workspace:services/docs"],
 
     "@caisson/service-license": ["@caisson/service-license@workspace:services/license"],
@@ -1016,6 +1083,8 @@
     "@caisson/tenancy-rls": ["@caisson/tenancy-rls@workspace:packages/tenancy-rls"],
 
     "@caisson/testing": ["@caisson/testing@workspace:tooling/testing"],
+
+    "@caisson/tool-exec": ["@caisson/tool-exec@workspace:packages/tool-exec"],
 
     "@caisson/tsconfig": ["@caisson/tsconfig@workspace:tooling/tsconfig"],
 
