@@ -62,15 +62,15 @@ describe("derived route slices", () => {
     ]);
   });
 
-  test("NAV_ROUTES are the nav-flagged routes; agentic-dev is intentionally excluded", () => {
+  test("NAV_ROUTES are the nav-flagged routes; all four editions are buyable so all four are navigable", () => {
     const navPaths = NAV_ROUTES.map((r) => r.path);
     expect(navPaths).toEqual([
       "/compliance",
       "/ai-kit",
       "/local-first",
+      "/agentic-dev",
       "/pricing",
     ]);
-    expect(navPaths).not.toContain("/agentic-dev");
   });
 
   test("local-first carries a short navLabel distinct from its full label", () => {

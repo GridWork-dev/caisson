@@ -26,7 +26,7 @@ export interface MarketingRoute {
   changeFrequency: ChangeFrequency;
   /** Grouping for nav/footer derivation + sitemap ordering. */
   group: RouteGroup;
-  /** Appears in the primary desktop/mobile nav. `/agentic-dev` is intentionally omitted (roadmap edition, ADR-0082 §4). */
+  /** Appears in the primary desktop/mobile nav. */
   nav?: boolean;
 }
 
@@ -37,7 +37,7 @@ export const MARKETING_ROUTES: readonly MarketingRoute[] = [
   { path: "/compliance", label: "Compliance", priority: 0.9, changeFrequency: "weekly", group: "edition", nav: true }, // prettier-ignore
   { path: "/ai-kit", label: "AI Production Kit", priority: 0.9, changeFrequency: "weekly", group: "edition", nav: true }, // prettier-ignore
   { path: "/local-first", label: "Local-first AI", navLabel: "Local-first", priority: 0.9, changeFrequency: "weekly", group: "edition", nav: true }, // prettier-ignore
-  { path: "/agentic-dev", label: "Agentic-Dev", priority: 0.9, changeFrequency: "weekly", group: "edition" }, // prettier-ignore
+  { path: "/agentic-dev", label: "Agentic-Dev", priority: 0.9, changeFrequency: "weekly", group: "edition", nav: true }, // prettier-ignore
   { path: "/pricing", label: "Pricing", priority: 0.85, changeFrequency: "weekly", group: "product", nav: true }, // prettier-ignore
   { path: "/security", label: "Security", priority: 0.75, changeFrequency: "weekly", group: "trust" }, // prettier-ignore
   { path: "/changelog", label: "Changelog", priority: 0.7, changeFrequency: "weekly", group: "trust" }, // prettier-ignore
