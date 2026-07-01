@@ -15,6 +15,7 @@
     "@caisson/kernel": "workspace:*",
     "@caisson/observability": "workspace:*",
     "@caisson/platform-reads": "workspace:*",
+    "@caisson/service-license": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",
     "@caisson/ui": "workspace:*",
     "@electric-sql/pglite": "^0.5.3",

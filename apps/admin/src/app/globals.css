@@ -503,6 +503,34 @@ p {
   border-color: color-mix(in oklab, var(--cs-accent) 55%, var(--cs-border));
 }
 
+/* ---- business-admin read tables (ADR-0141) ----- */
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--cs-text-sm);
+}
+.admin-table th,
+.admin-table td {
+  text-align: left;
+  padding: var(--cs-space-2) var(--cs-space-3);
+  border-bottom: 1px solid var(--cs-border);
+  white-space: nowrap;
+}
+.admin-table th {
+  font-weight: var(--cs-weight-semibold);
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-xs);
+  letter-spacing: var(--cs-tracking-wide);
+  text-transform: uppercase;
+}
+.admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.admin-table td.mono {
+  font-family: var(--cs-font-mono);
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition-duration: 0.01ms !important;
