@@ -20,7 +20,7 @@ edited — supersede with a later ADR).
 ## Source-of-truth hierarchy
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
-2. `knowledge/decisions/` — the ADRs themselves (**0001–0118**: 0001–0024 founding+substrate+pipeline · 0040–0044 brand+crypto+framework · 0045–0049 Wave-0 substrate · 0050–0077 Wave-1 editions · 0078–0083 design+go-live · 0084–0088 GTM+collision-fix · 0089–0093 picker-round locks · 0094–0098 GTM-report+W1/B1 (open-core/offer/docs-svc/registry-split/credit-home) · 0099–0104 design-system harden+brand-mark+hero · 0105 support-bot impl · 0106–0109 P6 operator-gates (pricing/CF-Access/Paddle-MoR/support-bot-member-mgmt) · 0110–0113 P6 code-track (license-issuer/publish-flip/MCP-rate-limit/entitlement-revoke) · 0114–0115 unified-Railway-app + Railway-PG · 0116–0118 billing-scope + observability-SigNoz + analytics-Plausible; append-only, all locked). Canonical ADR catalog: `docs/adr-index.md`
+2. `knowledge/decisions/` — the ADRs themselves (**0001–0137**: 0001–0024 founding+substrate+pipeline · 0040–0044 brand+crypto+framework · 0045–0049 Wave-0 substrate · 0050–0077 Wave-1 editions · 0078–0083 design+go-live · 0084–0088 GTM+collision-fix · 0089–0093 picker-round locks · 0094–0098 GTM-report+W1/B1 (open-core/offer/docs-svc/registry-split/credit-home) · 0099–0104 design-system harden+brand-mark+hero · 0105 support-bot impl · 0106–0109 P6 operator-gates (pricing/CF-Access/Paddle-MoR/support-bot-member-mgmt) · 0110–0113 P6 code-track (license-issuer/publish-flip/MCP-rate-limit/entitlement-revoke) · 0114–0115 unified-Railway-app + Railway-PG · 0116–0118 billing-scope + observability-SigNoz + analytics-Plausible · 0119–0128 reserved/proposed-only (adapter-expansion Tier-3, not filed) · 0129–0135 pricing + store-rework + harvest grill locks · 0136–0137 store-rework build wave (license-keyed registry gating + tooling opened to Apache-2.0 · edition reprice below-sum); append-only, all locked). Canonical ADR catalog: `docs/adr-index.md`
 3. `specs/` — locked concept docs; `specs/00-product-spec.md` is the founding spec
 4. `plan.md` / `SUMMARY.md` — build plan + consolidated summary
 5. `outputs/` — session artifacts (kickoffs, research, syntheses)
@@ -37,8 +37,12 @@ resolver + Worker filtering merged (PR#18), the 2026-06-30 P6 integration's **li
 (ADR-0110), publish-readiness flip (ADR-0111), MCP rate-limit (ADR-0112) + entitlement-revoke/
 one-time/clawback (ADR-0113)**, and the 2026-06-30 unified-app session's **dashboard host/DB
 (ADR-0114/0115), billing driver scope (ADR-0116), observability (ADR-0117) + web analytics
-(ADR-0118)**. The unified Railway-standalone Next app (5-view buyer dashboard, real tenant reads)
-and the rewired CI are **BUILT on the integration branch, not yet deployed**. Remaining work is
+(ADR-0118)**, plus the 2026-06-30 **store-rework build wave** — an on-site cart + multi-item Paddle
+checkout, an edition reprice below module-sum (**ADR-0137**), license-keyed registry gating with the
+ships-with-generator tooling (`cli`/`migrate`/`license-verify`) opened to Apache-2.0 (**ADR-0136**),
+and better-auth buyer sign-in. The unified Railway-standalone Next app (5-view buyer dashboard, real
+tenant reads), the reworked store, buyer sign-in, and the rewired CI are **BUILT on the integration
+branch (`feat/dashboard-unified-and-p6-tail`), not yet deployed**. Remaining work is
 operator/DEPLOY-class: Railway provisioning + DNS cutover off Cloudflare Pages, the 7 services-
 hardening punch-list fixes, and the Paddle webhook binding. Live per-package truth:
 `docs/build-state.md`.
@@ -72,11 +76,12 @@ implementation**. The harvestable license kit is taken from PUBLIC `tessera`.
   commercial **editions** (ADR-0020-0023, **all four editions commercial** — Local-first's AGPL
   flank removed by **ADR-0083**); `tooling/`+`registry/` is the seam. **Open-core amendment (ADR-0094,
   2026-06-29):** the **Base substrate** (kernel·auth·tenancy-rls·ui·billing·credits·jobs·email·ai-config·
-  mcp-server) is now **Apache-2.0**; editions + field-crypto + audit-worm + generator + registry +
-  updates stay commercial. Re-licensing is **DONE in code** (work item W1, ADR-0094 + **ADR-0097**):
+  mcp-server) is now **Apache-2.0**; editions + field-crypto + audit-worm + registry-service + updates
+  stay commercial. Re-licensing is **DONE in code** (work item W1, ADR-0094 + **ADR-0097**):
   the open registry contract split into Apache-2.0 `@caisson/registry-schema` (the commercial
-  `@caisson/registry` service re-exports it); 11 base pkgs flipped to Apache-2.0/oss + Apache `LICENSE`
-  files; the standards-gate enforces the license split + the open↔commercial no-depend-up boundary.
+  `@caisson/registry` service re-exports it); 15 base pkgs flipped to Apache-2.0/oss + Apache `LICENSE`
+  files (ADR-0136 added cli·migrate·license-verify — incl. the generator — to the open Base set); the
+  standards-gate enforces the license split + the open↔commercial no-depend-up boundary.
   Remaining W1 tail: `apps/site` licensing copy (design track owns that tree).
 - **Site go-live posture** — LOCKED (**ADR-0082**): the site reads **live self-serve** (purchase CTAs,
   no waitlist), **committed prices** (no "indicative/subject-to-change" frame — supersedes ADR-0081),
