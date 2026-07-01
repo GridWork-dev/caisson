@@ -1,5 +1,5 @@
 // @caisson/agent-dev — the Agentic-Dev EDITION composition (ADR-0065/0066/0067 · T21). An edition is
-// NOT a new primitive: it composes three shipped base seams DOWN-ONLY (ADR-0003/0022) into one
+// NOT a new primitive: it composes the shipped base seams DOWN-ONLY (ADR-0003/0022) into one
 // buyer-facing surface —
 //   • the governed, engine-neutral agent kernel (@caisson/agent-kernel): the agent/skill/rule schema +
 //     define*() builders, the reference-integrity validator, the pure lifecycle FSM, governance guards
@@ -10,13 +10,20 @@
 //     dedup/TTL/GC retention default;
 //   • the thin multi-harness emitter (./emitter.ts): one typed schema → `.claude/` + Codex `AGENTS.md`
 //     + Cursor — Claude Code is ONE emit target among several, never the substrate (the ADR-0066
-//     binding contract VERIFY re-asks).
+//     binding contract VERIFY re-asks);
+//   • the governed sandboxed tool-exec gate (@caisson/tool-exec, ADR-0178): a default-deny allowlist +
+//     Zod-strict argv schemas + execFile arg-arrays (never a shell) — wired as a live gate on the
+//     composed edition so a buyer gets the exec seam from this one import home.
 // Plus the curated Caisson-native default content and the @caisson/ai-config embedder-lane seam.
 // Engine-neutral end to end: no LLM call, no vendor SDK, no harness assumption lives in the kernel.
 
-// ── The three composed base surfaces + curated content, re-exported as ONE edition import home ──────
+// ── The composed base surfaces + curated content, re-exported as ONE edition import home ────────────
 export * from "@caisson/agent-kernel";
 export * from "@caisson/local-store";
+// The governed sandboxed tool-exec gate (ADR-0178): a default-deny allowlist + Zod-strict argv schemas
+// + execFile arg-arrays (never a shell). Bundled into the edition so a buyer gets the exec gate from
+// this one import home — the composition factory wires a live instance below.
+export * from "@caisson/tool-exec";
 export * from "./emitter.ts";
 export * from "./content/index.ts";
 
@@ -43,6 +50,11 @@ import { resolve } from "node:path";
 import type { Artifact, AuditLifecycleStore } from "@caisson/agent-kernel";
 import { AuditedLifecycle, validateArtifactSet } from "@caisson/agent-kernel";
 import { LocalStore, tenantDbPath } from "@caisson/local-store";
+import {
+  createToolExec,
+  type ToolExec,
+  type ToolExecConfig,
+} from "@caisson/tool-exec";
 import { ValidationError } from "@caisson/kernel";
 import {
   renderHarnessBundles,
@@ -72,6 +84,11 @@ export interface AgentDevEditionOptions {
   readonly memoryPath?: string;
   /** The authored artifact set the edition governs + emits. Defaults to the curated Caisson set. */
   readonly artifacts?: readonly Artifact[];
+  /**
+   * Configuration for the bundled sandboxed tool-exec gate (ADR-0178). Omit ⇒ a FAIL-CLOSED
+   * default-deny gate (empty allowlist) that refuses every call until the host registers commands.
+   */
+  readonly toolExec?: ToolExecConfig;
   /** Deterministic clock seam for the audited lifecycle (tests inject a fixed clock). */
   readonly now?: () => string;
 }
@@ -82,6 +99,8 @@ export interface AgentDevEdition {
   readonly lifecycle: AuditedLifecycle;
   /** The local hybrid-memory store (vec0 + FTS5 + RRF; FTS-only offline floor). */
   readonly memory: LocalStore;
+  /** The governed sandboxed tool-exec gate (default-deny allowlist; ADR-0178). */
+  readonly toolExec: ToolExec;
   /** The reference-consistent artifact set this edition governs + emits. */
   readonly artifacts: readonly Artifact[];
   /** PURE render of the artifact set + hook bindings into the multi-harness bundle. */
@@ -101,7 +120,8 @@ export interface AgentDevEdition {
  *      here — never reaches the emitter or the lifecycle);
  *   2. the governed (optionally audited / tamper-evident) lifecycle over a host-supplied store;
  *   3. the local hybrid-memory store (FTS-only offline when no embedder is wired);
- *   4. the bound multi-harness emitter (`render` = pure; `emit` = the fail-closed guarded write).
+ *   4. the bound multi-harness emitter (`render` = pure; `emit` = the fail-closed guarded write);
+ *   5. the governed sandboxed tool-exec gate (default-deny allowlist; ADR-0178).
  * Holds NO credential and makes NO network/LLM call — engine-neutral (ADR-0066).
  */
 export function createAgentDevEdition(
@@ -139,12 +159,18 @@ export function createAgentDevEdition(
     ...(memoryPath !== undefined ? { path: memoryPath } : {}),
   });
 
+  // The governed sandboxed tool-exec gate (ADR-0178). No `toolExec` config ⇒ fail-closed default-deny
+  // (empty allowlist refuses every call). Construction holds no credential and spawns nothing — the
+  // execFile only runs on `toolExec.run(...)`, keeping the edition engine-neutral (ADR-0066).
+  const toolExec = createToolExec(options.toolExec ?? { allowlist: [] });
+
   const render = (hooks: readonly EmitHookBinding[] = []): EmittedBundle =>
     renderHarnessBundles({ artifacts, hooks });
 
   return {
     lifecycle,
     memory,
+    toolExec,
     artifacts,
     render,
     emit: (targetRoot, hooks = []) => writeBundle(targetRoot, render(hooks)),
