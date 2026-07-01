@@ -9,8 +9,8 @@ conflict, the ADR file and the board win over this index.
 - ADRs are append-only and immutable (ADR-0006). A later ADR _supersedes_ a clause; it
   never edits the prior file. So most rows below are **partial** supersessions (one clause),
   not a wholesale replacement.
-- 110 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 110). Numbering is **not**
-  contiguous: present are **0001-0024** and **0040-0135**; **0025-0039 are an unused gap**
+- 112 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 112). Numbering is **not**
+  contiguous: present are **0001-0024** and **0040-0137**; **0025-0039 are an unused gap**
   (no files). The 0040 jump was a deliberate block reservation for the brand/positioning set.
   **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit);
   **0094-0096** = the 2026-06-29 GTM-report locks (open-core Base / GTM offer / services-docs);
@@ -36,13 +36,18 @@ conflict, the ADR file and the board win over this index.
     the highest number used-or-proposed at authoring time (`docs/state/adapter-expansion.md`'s
     Tier-3 proposals) — **0119-0128 remain proposed-only** (adapter-expansion.md) and are not filed
     as ADRs.
+    **0136-0137** = the 2026-06-30 store-rework BUILD wave (locked + built this session): 0136
+    license-keyed registry gating (closes the free-view leak; opens the ships-with-generator tooling
+    trio cli·migrate·license-verify as Apache-2.0 Base — amends ADR-0094/0111) / 0137 edition reprice
+    to full below-sum (supersedes the ADR-0129 edition point-values, reverses its thin-edition-premium
+    thesis).
 - Status tokens read from each ADR's own header line:
   - `proposed` = literal header value on the founding + foundations sets (0001-0019, 0024).
     Per the board (line 90) these are **in force / locked** despite the stale "proposed"
     header text written during the Phase-5 spec; the header was never updated. See accuracy
     flags at the bottom.
   - `locked` = D9 module-pipeline set (0020-0023).
-  - `accepted` = brand/wave-0/wave-1/design/gtm sets + picker-round locks + P6 go-live/code tracks + the dashboard host/DB picker round + the billing-scope/observability/analytics picker round + the pricing/store-rework and harvest grill sessions (0040-0135).
+  - `accepted` = brand/wave-0/wave-1/design/gtm sets + picker-round locks + P6 go-live/code tracks + the dashboard host/DB picker round + the billing-scope/observability/analytics picker round + the pricing/store-rework and harvest grill sessions + the store-rework build wave (0040-0137).
 
 Domain detail and rationale: read the ADR file. Architecture overview: `specs/01-architecture.md`.
 Product framing: `specs/00-product-spec.md`. Build plan: `plan.md`.
@@ -88,8 +93,14 @@ supersession of one clause unless noted.
 - **Pricing display / hero SKU:** `0087` (orig 0048; structure shown, prices deferred to
   waitlist) -> `0081` (indicative placeholder prices) -> `0082` (committed pricing, live
   self-serve) -> `0106` (final edition-level numbers + grandfathering) -> `0129` (adds
-  value-based per-module SKUs + edition-bundle math; supersedes 0106's Local-first and
-  Everything-Bundle point-values only, the rest of 0106 holds). Current: `0129`.
+  value-based per-module SKUs + edition-bundle math) -> `0137` (edition reprice to full
+  below-sum; supersedes the 0129 edition point-values **in full** and reverses its
+  thin-edition-premium thesis; the 0129 **module** sheet holds). Current: `0137`
+  (Compliance $749 · AI-Kit $599 · Agentic-Dev $249 · Local-first $349 · Bundle $1,499).
+- **Registry read-path visibility / gating:** `0047` (static CI-built index + deferred Worker
+  seam, free view keyed on `editions[]===[]`) -> `0136` (free floor re-keyed on
+  `license === Apache-2.0`; commercial base-kind requires an entitlement, fail-safe to open; the
+  ships-with-generator tooling trio flips open). Current: `0136`. Un-gating takes effect at DEPLOY.
 - **Storefront availability posture:** `0082` §3-§4 (true-to-built artifacts, Agentic-Dev the one
   labeled-roadmap exception) -> `0130` (full 17-SKU catalog shown available, no maturity flags;
   site stays CF-Access-gated per 0107). Current: `0130`.
@@ -364,6 +375,16 @@ above and the Railway cutover.
 | [0133](../knowledge/decisions/ADR-0133-ai-agent-infra-harvest-initiative.md)         | AI/agent-infra harvest initiative: gridwork-core substrate + Wardfile base lifts | Agentic-Dev/AI-Kit | accepted | composes 0059-0063, 0065-0066, 0075; document-only |
 | [0134](../knowledge/decisions/ADR-0134-cross-domain-audit-validate-harness.md)       | Cross-domain audit/validate harness (full build)                                 | Tooling/CI         | accepted | extends 0101; composes 0016; document-only         |
 | [0135](../knowledge/decisions/ADR-0135-new-compliance-modules-alerting-retention.md) | New commercial Compliance modules: `@caisson/alerting` + `retention-runner`      | Compliance         | accepted | composes 0003, 0057, 0075; document-only           |
+
+### Store-rework build wave (0136-0137, 2026-06-30) - status `accepted` (locked + built)
+
+Unlike the document-only 0129-0135 locks, these two landed as code on
+`feat/dashboard-unified-and-p6-tail` this session (gates green).
+
+| #                                                                                     | Title                                                                    | Domain             | Status   | Relations                                                                                   |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------ | -------- | ------------------------------------------------------------------------------------------- |
+| [0136](../knowledge/decisions/ADR-0136-license-keyed-registry-gating-tooling-open.md) | License-keyed registry gating + ships-with-generator tooling opened Base | Registry/Licensing | accepted | extends 0047/0071/0077; amends 0094 (open-Base set) + 0111 (publish split); protects 0129   |
+| [0137](../knowledge/decisions/ADR-0137-edition-reprice-full-below-sum.md)             | Edition reprice: every edition below its module-sum (Q4)                 | Pricing            | accepted | supersedes 0129 edition point-values in full; reverses 0129 §2; extends 0106 grandfathering |
 
 ---
 

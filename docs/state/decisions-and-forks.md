@@ -300,27 +300,35 @@ security hardening · error-routes/a11y · content-cadence/funnel) are **launch-
 lower-level forks default to their FORK-BOARD recommendation in `outputs/specs/design-brand-site-seo/SPEC.md`
 (the build PLAN seed). **Numbering:** design ADRs **0078–0081** (Wave-1 reserved through 0077).
 
-## Closed by the 2026-06-30 pricing + store-rework grill session (operator-locked)
+## Closed by the 2026-06-30 pricing + store-rework wave (operator-locked + BUILT)
 
 A two-round operator picker (research-backed price sheet retrieved by a cited research agent) opened
-and closed four packaging/pricing forks (round 1) and four mechanics/sequencing forks (round 2). All
-eight are locked as append-only ADRs. Build scope (SKUs, cart, cards, copy, as-if-live) is queued
-BEFORE the Railway cutover per the operator's explicit sequencing (round 2, fork 7).
+and closed four packaging/pricing forks (round 1) and four mechanics/sequencing forks (round 2), then
+a store-rework BUILD wave locked three more forks (Q1 registry gating, Fork A tooling licensing, Q4
+reprice) and **built the whole store on `feat/dashboard-unified-and-p6-tail`** — reprice, storefront
+catalog grid, cart + multi-item Paddle checkout, better-auth sign-in, and license-keyed registry
+gating all landed with gates green. Remaining before the Railway cutover: the customer-facing copy
+rewrite (fast-follow) + module Paddle price-ids + the buyer-account/tenant mapping (Stage-2 ops).
 
-| Fork                              | Decision                                                                                                                                                                                                                               | Record                           |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| **Module pricing model**          | Value-based, research-backed price **per module** (not uniform); 12 modules get their own SKU (table in ADR-0129).                                                                                                                     | **ADR-0129**                     |
-| **Edition-vs-module bundle math** | Fat editions (AI-Kit, 5 modules) discount vs. module-sum (~25% off); thin editions (Compliance/Local-first/Agentic-Dev, 2-3 modules) stay value-anchored premiums ABOVE module-sum until the harvest fattens them.                     | **ADR-0129**                     |
-| **Catalog scope**                 | ALL substantial commercial modules sold individually (~12); thin seams (`ai-config`/`tenancy-rls`/`jobs`/`email`) stay bundle-only.                                                                                                    | **ADR-0129**                     |
-| **Availability / maturity flags** | ALL 17 SKUs (5 editions + 12 modules) shown fully available, no maturity flags — pure as-if-live. **Supersedes ADR-0082 §3** (true-to-built) **+ §4** (Agentic-Dev roadmap-gating). Site stays CF-Access-gated (ADR-0107), not public. | **ADR-0130** (super. 0082 §3/§4) |
-| **Checkout mechanics**            | Custom site cart → ONE multi-item Paddle checkout (primary); sequential single-item overlays (fallback) if Paddle doesn't support multi-item one-time line items — verify before building.                                             | **ADR-0131** (extends 0116)      |
-| **Copy rewrite**                  | Full research-backed customer-facing rewrite of every product/edition/module page (refero + competitor research + ADR-0080 copy laws); kill internal-doc tone. Copy/design track builds this — not a new ADR.                          | board (→ copy/design track)      |
-| **Build sequencing**              | Store rework (SKUs + cart + cards + pricing + copy + as-if-live) ships BEFORE the Railway cutover — one cutover with the finished store already live.                                                                                  | board                            |
-| **Grandfathering (extended)**     | One-time buyers locked at purchase price forever, forward-only changes — extends ADR-0106's grandfather policy to the new per-module/per-edition SKUs from ADR-0129.                                                                   | **ADR-0129** (extends 0106)      |
+| Fork                                      | Decision                                                                                                                                                                                                                                                                                                                                                   | Record                           |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| **Module pricing model**                  | Value-based, research-backed price **per module** (not uniform); 12 modules get their own SKU (table in ADR-0129).                                                                                                                                                                                                                                         | **ADR-0129**                     |
+| **Edition-vs-module bundle math**         | ~~Fat editions discount vs. module-sum; thin editions stay premiums ABOVE module-sum~~ — **REVERSED by ADR-0137 (Q4):** EVERY edition is now priced below its module-sum (a genuine bundle discount), abandoning the thin-edition-premium thesis.                                                                                                          | **ADR-0129 → ADR-0137**          |
+| **Q4 edition reprice (build wave)**       | Full below-sum: Compliance **$2,499→$749** · AI-Kit **$599 hold** · Agentic-Dev **$499→$249** · Local-first **$499→$349** · Bundle **$3,499→$1,499** (savings $447 vs edition-sum $1,946). Supersedes the ADR-0129 edition point-values in full; module sheet holds. **BUILT** (`apps/site/lib/pricing.ts`).                                               | **ADR-0137** (super. 0129 pts)   |
+| **Q1 registry gating (build wave)**       | Free floor re-keyed on `license === Apache-2.0` (was `editions[]===[]`) — closes the free-view leak that served ~12 commercial base-kind modules free; edition entitlements expand to member modules; fail-safe to open. **BUILT** (registry-schema + Worker), un-gating takes effect at DEPLOY.                                                           | **ADR-0136** (extends 0047/0071) |
+| **Fork A tooling licensing (build wave)** | The ships-with-generator trio `cli`·`migrate`·`license-verify` flips to open **Apache-2.0** Base (every buyer's generated repo embeds them); `pricebook` stays commercial + gated. **BUILT** (license flip + ledger/index regen + standards-gate).                                                                                                         | **ADR-0136** (amends 0094/0111)  |
+| **Catalog scope**                         | ALL substantial commercial modules sold individually (~12); thin seams (`ai-config`/`tenancy-rls`/`jobs`/`email`) stay bundle-only.                                                                                                                                                                                                                        | **ADR-0129**                     |
+| **Availability / maturity flags**         | ALL 17 SKUs (5 editions + 12 modules) shown fully available, no maturity flags — pure as-if-live. **Supersedes ADR-0082 §3** (true-to-built) **+ §4** (Agentic-Dev roadmap-gating). Site stays CF-Access-gated (ADR-0107), not public.                                                                                                                     | **ADR-0130** (super. 0082 §3/§4) |
+| **Checkout mechanics**                    | Custom site cart → ONE multi-item Paddle checkout (primary); sequential single-item overlays (fallback) if Paddle doesn't support multi-item one-time line items — verify before building.                                                                                                                                                                 | **ADR-0131** (extends 0116)      |
+| **Copy rewrite**                          | Full research-backed customer-facing rewrite of every product/edition/module page (refero + competitor research + ADR-0080 copy laws); kill internal-doc tone. Copy/design track builds this — not a new ADR. **Status: FAST-FOLLOW** — the storefront ships functional with minimal copy; the deep rewrite is a follow-up before public launch (Stage 4). | board (→ copy/design track)      |
+| **Build sequencing**                      | Store rework (SKUs + cart + cards + pricing + as-if-live) ships BEFORE the Railway cutover — one cutover with the finished store already live. **Status: BUILT** on `feat/dashboard-unified-and-p6-tail` (copy rewrite the one fast-follow tail).                                                                                                          | board                            |
+| **Grandfathering (extended)**             | One-time buyers locked at purchase price forever, forward-only changes — extends ADR-0106's grandfather policy to the new per-module/per-edition SKUs from ADR-0129.                                                                                                                                                                                       | **ADR-0129** (extends 0106)      |
 
-Local-first AI drops **$499 → $399** and the Everything Bundle drops **$3,499 → $2,999** under
-ADR-0129 — the only two ADR-0106 point-values this session changes; every other ADR-0106 number
-holds. Full price sheet (editions + 12 modules + competitive comparables): `ADR-0129`.
+ADR-0129 was an interim (Local-first $499→$399, Bundle $3,499→$2,999, Compliance held at $2,499); the
+**Q4 build-wave reprice (ADR-0137) is the current authority** — every edition below its module-sum:
+Compliance **$749** · AI-Kit **$599** · Agentic-Dev **$249** · Local-first **$349** · Bundle
+**$1,499**. Module sheet (12 modules + competitive comparables) unchanged: `ADR-0129`. Reprice
+rationale + the reversed thin-edition-premium thesis: `ADR-0137`.
 
 ## Closed by the 2026-06-30 harvest grill session (operator-locked)
 
@@ -329,12 +337,12 @@ harvest, when, how thoroughly to build the audit tooling, and how buyers sign in
 no code lands under any of these locks. Consolidated ranked tracking doc:
 `docs/state/harvest-program.md`.
 
-| Fork                             | Decision                                                                                                                                                                                                                                              | Record       |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| **Harvest intent + scope**       | The 11 gridwork-core infra packages become **sellable substrate** for Agentic-Dev + AI Production Kit (a product investment, not internal-only); the 6 Wardfile product-code lifts harden the BASE.                                                   | **ADR-0133** |
-| **Harvest sequencing**           | ALL post-go-live — the store-rework (ADR-0129/0130/0131) + Railway cutover finish first; the harvest is the next initiative, not folded into go-live. Spec-gated per package.                                                                         | **ADR-0133** |
-| **Audit/validate harness depth** | **FULL build** — audit surface manifest + unified cross-domain reconciling ledger (generalizes `tooling/design-critic`, ADR-0101) + workflow-scope guard + `/validate` multi-provider spine (PAL `challenge` ×2, majority-kills, default-to-refuted). | **ADR-0134** |
-| **Buyer sign-in**                | Magic-link (primary, Resend-wired) + GitHub/Google OAuth (one-click), both via better-auth (ADR-0015). **Closes the buyer-sign-in-placeholder gap** flagged in `docs/build-state.md`.                                                                 | **ADR-0132** |
+| Fork                             | Decision                                                                                                                                                                                                                                                                                                                           | Record       |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| **Harvest intent + scope**       | The 11 gridwork-core infra packages become **sellable substrate** for Agentic-Dev + AI Production Kit (a product investment, not internal-only); the 6 Wardfile product-code lifts harden the BASE.                                                                                                                                | **ADR-0133** |
+| **Harvest sequencing**           | ALL post-go-live — the store-rework (ADR-0129/0130/0131) + Railway cutover finish first; the harvest is the next initiative, not folded into go-live. Spec-gated per package.                                                                                                                                                      | **ADR-0133** |
+| **Audit/validate harness depth** | **FULL build** — audit surface manifest + unified cross-domain reconciling ledger (generalizes `tooling/design-critic`, ADR-0101) + workflow-scope guard + `/validate` multi-provider spine (PAL `challenge` ×2, majority-kills, default-to-refuted).                                                                              | **ADR-0134** |
+| **Buyer sign-in**                | Magic-link (primary, Resend-wired) + GitHub/Google OAuth (one-click), both via better-auth (ADR-0015). **Closes the buyer-sign-in-placeholder gap** flagged in `docs/build-state.md`. **Status: BUILT** (`better-auth@1.6.23` wired real on the branch, 71 tests; account/tenant mapping + table migration are Stage-2 ops seams). | **ADR-0132** |
 
 Two NEW commercial Compliance modules from the 6-repo lift sweep's top-15 (`caisson-lift-sweep-REPORT.md`,
 ranks #1 and #3) are locked alongside the harvest scope: `@caisson/alerting` (SOC2 CC7.2
@@ -343,13 +351,14 @@ document-only, pricing deferred to build time under ADR-0129's methodology.
 
 **ADR numbering (2026-06-30 sessions):** the highest number used or proposed before this session was
 **0128** (`docs/state/adapter-expansion.md`'s Tier-3 MCP-HTTP-transport proposal — proposed, not
-locked). The pricing/store-rework + harvest locks above start **above** that ceiling at **0129** and
-run contiguously through **0135** (0129 pricing · 0130 as-if-built storefront · 0131 cart/checkout ·
-0132 sign-in · 0133 harvest initiative · 0134 audit harness · 0135 new Compliance modules). **Ceiling
-now 0135.** The board's own interim "ADR-0119" placeholder (Railway provisioning topology, recorded
-above) and `adapter-expansion.md`'s proposed 0119-0128 range remain unresolved against each other
-(flagged there already) — this session's numbers do not touch that range and do not resolve that
-pre-existing flag.
+locked). The pricing/store-rework + harvest locks start **above** that ceiling at **0129** and run
+contiguously through **0135** (0129 pricing · 0130 as-if-built storefront · 0131 cart/checkout · 0132
+sign-in · 0133 harvest initiative · 0134 audit harness · 0135 new Compliance modules); the
+store-rework BUILD wave then added **0136** (license-keyed registry gating + tooling-open) and
+**0137** (Q4 edition reprice, supersedes 0129 point-values). **Ceiling now 0137.** The board's own
+interim "ADR-0119" placeholder (Railway provisioning topology, recorded above) and
+`adapter-expansion.md`'s proposed 0119-0128 range remain unresolved against each other (flagged there
+already) — this session's numbers do not touch that range and do not resolve that pre-existing flag.
 
 ## Flagged for the Compliance session (P2 pre-work — do NOT build in the foundations track)
 
