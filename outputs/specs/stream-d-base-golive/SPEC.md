@@ -1,7 +1,9 @@
 # SPEC — Stream D · Base substrate drivers + go-live surface + CI
 
-**Status:** spec-COMMITTED · 2026-06-30 (Stage-2 Stream D) · **all 4 forks locked (D4=org · D7=blank ·
-D8=(a) · license-KMS=exclude); autonomous EXECUTE underway.** ADRs 0170–0176 recorded. **Branch:**
+**Status:** EXECUTED (in-scope surface) · 2026-07-01 (Stage-2 Stream D) · **4 forks locked (D4=org · D7=blank ·
+D8=(a) · license-KMS=exclude), ADRs 0170–0176 recorded; D5 adapters + D1/D2/D8a/D9/D4-core built, `bun run
+check` GREEN (131 tasks + kernel gate 45/45).** VERIFY+SWEEP: `VERIFY-SWEEP.md` (deferred remainder: D4
+activation/UI · D8a tail · D6 harvest · D11 host-gated · D12 full review). **Branch:**
 `stream/base-golive` (off clean `main`). **Reserved ADRs:**
 **0170–0179** (adapter/driver + fork ADRs draw here; the `adapter-expansion.md` "0119+" numbers are advisory
 placeholders — real numbers taken from this range at lock, per the kickoff).
