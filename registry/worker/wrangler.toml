@@ -19,3 +19,10 @@ compatibility_flags = ["nodejs_compat"]
 # Publish to the account's workers.dev subdomain. A custom route on caisson.sh is a fast-follow once
 # DNS is decided; infra/terraform owns the zone records, not this file.
 workers_dev = true
+
+# Cloudflare Workers observability (native Workers Logs) — invocation logs + sampling in the CF
+# dashboard, no external collector. Distinct from the app-side OTel→SigNoz stack (ADR-0117). Enabled
+# so the license-gating redeploy (ADR-0136) is observable at the edge.
+[observability]
+enabled = true
+head_sampling_rate = 1
