@@ -1,0 +1,291 @@
+// ADR-0161: end-to-end proof of the Streamable-HTTP transport binding — mirrors `stdio.test.ts`
+// but drives a REAL loopback `node:http.Server` (via `runHttpServer`) with a real
+// `@modelcontextprotocol/sdk` `Client` over `StreamableHTTPClientTransport` (a real socket, real
+// JSON-RPC framing, real HTTP status codes) instead of the in-memory pipe stdio uses — this is the
+// genuinely new surface (network-reachable, one process serving N buyers) the ADR calls out.
+// Loopback only: no real external egress. The host (`onGenerate`) stays an in-memory fixture,
+// mirroring the rest of this DB-free package.
+import { createServer, type Server as NodeHttpServer } from "node:http";
+import type { AddressInfo } from "node:net";
+import { afterEach, describe, expect, test } from "bun:test";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import { ConfigError, RateLimitError, fetchWithTimeout } from "@caisson/kernel";
+import { loadRegistryIndex } from "@caisson/registry-schema";
+import {
+  createHttpMcpHandler,
+  runHttpServer,
+  type HttpServerDeps,
+} from "./http.ts";
+import type { McpServerOptions } from "./server.ts";
+
+const index = loadRegistryIndex({
+  schemaVersion: 1,
+  modules: [
+    {
+      id: "@caisson/auth",
+      latest: "0.1.0",
+      versions: [
+        {
+          version: "0.1.0",
+          manifest: {
+            id: "@caisson/auth",
+            version: "0.1.0",
+            kind: "base",
+            tier: "paid",
+            priceCents: 4900,
+            license: "LicenseRef-Caisson-Commercial",
+            description: "Fixture module for the HTTP transport test.",
+          },
+          publishedAt: "2026-06-27T00:00:00.000Z",
+          gateAttestation: "ci-fixture@0000000",
+        },
+      ],
+    },
+  ],
+});
+
+// Two distinct buyers: A owns the fixture module, B owns nothing — used to prove the stateless
+// per-request transport never leaks one caller's session into another's response.
+const TOKEN_A = "mcp_tok_http_buyer_a000000000000";
+const TOKEN_B = "mcp_tok_http_buyer_b000000000000";
+
+function baseMcpOptions(): McpServerOptions {
+  return {
+    tokens: [
+      {
+        token: TOKEN_A,
+        accountId: "acct_http_a",
+        entitlements: ["@caisson/auth"],
+      },
+      { token: TOKEN_B, accountId: "acct_http_b", entitlements: [] },
+    ],
+    index,
+    onGenerate: () => Promise.resolve({ generationId: "gen_http_1" }),
+  };
+}
+
+function deps(
+  mcp: McpServerOptions = baseMcpOptions(),
+  hostHeader = "127.0.0.1",
+): HttpServerDeps {
+  return {
+    mcp,
+    allowedHosts: [hostHeader],
+    allowedOrigins: ["https://buyer.example.test"],
+  };
+}
+
+/**
+ * Starts a real loopback MCP HTTP server and returns its endpoint URL. The SDK's rebinding
+ * protection matches the raw `Host` header verbatim (`host:port`), so a free port is grabbed
+ * FIRST (a throwaway probe listener) and fed into `allowedHosts` before the real server — carrying
+ * the fixture's `checkRateLimit` hook, etc. — is built and bound to that exact port.
+ */
+async function listen(mcp: McpServerOptions = baseMcpOptions()) {
+  const probe = createServer();
+  const port = await new Promise<number>((resolve, reject) => {
+    probe.once("error", reject);
+    probe.listen(0, "127.0.0.1", () => {
+      resolve((probe.address() as AddressInfo).port);
+    });
+  });
+  await new Promise<void>((resolve) => probe.close(() => resolve()));
+
+  const server = await runHttpServer(deps(mcp, `127.0.0.1:${port}`), {
+    port,
+    host: "127.0.0.1",
+  });
+  return { server, url: new URL(`http://127.0.0.1:${port}/`) };
+}
+
+function bearerTransport(url: URL, token: string): Transport {
+  const transport = new StreamableHTTPClientTransport(url, {
+    requestInit: { headers: { authorization: `Bearer ${token}` } },
+  });
+  // Same upstream declaration-file gap as `http.ts`'s server-side cast: this class's
+  // onclose/onerror/onmessage/sessionId accessors are typed `T | undefined`, one notch looser
+  // than `Transport`'s plain optional `T` fields — only surfaces under
+  // `exactOptionalPropertyTypes`; the class implements `Transport` at runtime.
+  return transport as unknown as Transport;
+}
+
+/** `callTool`'s declared return type is a union with a legacy `{ toolResult }` arm that has no
+ *  `content` field — this server never returns that shape (see `buildBoundServer` in `http.ts`),
+ *  so narrow it explicitly rather than widen the helper's parameter type to `unknown`. */
+function textOf(result: Awaited<ReturnType<Client["callTool"]>>): unknown {
+  if (!("content" in result) || !Array.isArray(result.content)) {
+    throw new Error("expected a content-array tool result");
+  }
+  const [first] = result.content as { type: string; text: string }[];
+  return JSON.parse(first?.text ?? "{}");
+}
+
+const openServers: NodeHttpServer[] = [];
+const openClients: Client[] = [];
+
+afterEach(async () => {
+  await Promise.all(openClients.splice(0).map((c) => c.close()));
+  await Promise.all(
+    openServers
+      .splice(0)
+      .map((s) => new Promise<void>((resolve) => s.close(() => resolve()))),
+  );
+});
+
+describe("createHttpMcpHandler construction (ADR-0161 decision 4 — fail-closed)", () => {
+  test("an empty allowedHosts allowlist is rejected at construction", () => {
+    expect(() => createHttpMcpHandler({ ...deps(), allowedHosts: [] })).toThrow(
+      ConfigError,
+    );
+  });
+
+  test("an empty allowedOrigins allowlist is rejected at construction", () => {
+    expect(() =>
+      createHttpMcpHandler({ ...deps(), allowedOrigins: [] }),
+    ).toThrow(ConfigError);
+  });
+});
+
+describe("HTTP transport binding (ADR-0161)", () => {
+  test("missing Authorization: 401, before any tool is reachable", async () => {
+    const { server, url } = await listen();
+    openServers.push(server);
+
+    const res = await fetchWithTimeout(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{}",
+    });
+    expect(res.status).toBe(401);
+    expect(await res.json()).toMatchObject({
+      error: { code: "unauthenticated" },
+    });
+  });
+
+  test("an invalid bearer: 401, before any tool is reachable", async () => {
+    const { server, url } = await listen();
+    openServers.push(server);
+
+    const res = await fetchWithTimeout(url, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: "Bearer not-a-real-token",
+      },
+      body: "{}",
+    });
+    expect(res.status).toBe(401);
+    expect(await res.json()).toMatchObject({
+      error: { code: "unauthenticated" },
+    });
+  });
+
+  test("a valid bearer: list_tools + tools/call round-trip through the real HTTP transport", async () => {
+    const { server, url } = await listen();
+    openServers.push(server);
+
+    const client = new Client({ name: "http-test-client", version: "0.0.0" });
+    openClients.push(client);
+    await client.connect(bearerTransport(url, TOKEN_A));
+
+    const tools = await client.listTools();
+    expect(tools.tools.map((t) => t.name)).toEqual([
+      "describe_module",
+      "generate",
+      "list_modules",
+    ]);
+
+    const result = await client.callTool({
+      name: "list_modules",
+      arguments: {},
+    });
+    expect(result.isError).toBeFalsy();
+    expect(textOf(result)).toEqual({ modules: ["@caisson/auth"] });
+  });
+
+  test("a tool-level failure surfaces as an MCP isError result, not a thrown protocol error", async () => {
+    const { server, url } = await listen();
+    openServers.push(server);
+
+    const client = new Client({ name: "http-test-client", version: "0.0.0" });
+    openClients.push(client);
+    await client.connect(bearerTransport(url, TOKEN_A));
+
+    const result = await client.callTool({
+      name: "describe_module",
+      arguments: { name: "@caisson/billing" },
+    });
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toMatchObject({ error: { code: "not_entitled" } });
+  });
+
+  test("two different bearers get two independent, non-cross-talking sessions", async () => {
+    const { server, url } = await listen();
+    openServers.push(server);
+
+    const clientA = new Client({
+      name: "http-test-client-a",
+      version: "0.0.0",
+    });
+    const clientB = new Client({
+      name: "http-test-client-b",
+      version: "0.0.0",
+    });
+    openClients.push(clientA, clientB);
+    await Promise.all([
+      clientA.connect(bearerTransport(url, TOKEN_A)),
+      clientB.connect(bearerTransport(url, TOKEN_B)),
+    ]);
+
+    // Same tool, same server process, two concurrent callers — each must see ONLY their own
+    // entitlements, proving the per-request session is never shared or reused across bearers.
+    const [resultA, resultB] = await Promise.all([
+      clientA.callTool({ name: "list_modules", arguments: {} }),
+      clientB.callTool({ name: "list_modules", arguments: {} }),
+    ]);
+    expect(textOf(resultA)).toEqual({ modules: ["@caisson/auth"] });
+    expect(textOf(resultB)).toEqual({ modules: [] });
+
+    // B never owned the fixture module — an edition-blind 404-shaped denial, same as stdio.
+    const describeB = await clientB.callTool({
+      name: "describe_module",
+      arguments: { name: "@caisson/auth" },
+    });
+    expect(describeB.isError).toBe(true);
+    expect(textOf(describeB)).toMatchObject({
+      error: { code: "not_entitled" },
+    });
+
+    // A is unaffected by B's failed call in between — no shared mutable session state.
+    const describeA = await clientA.callTool({
+      name: "describe_module",
+      arguments: { name: "@caisson/auth" },
+    });
+    expect(describeA.isError).toBeFalsy();
+  });
+
+  test("an over-limit checkRateLimit hook blocks the call and renders isError, matching stdio", async () => {
+    const limited: McpServerOptions = {
+      ...baseMcpOptions(),
+      checkRateLimit: () =>
+        Promise.reject(
+          new RateLimitError("over limit", { retryAfterMs: 1000 }),
+        ),
+    };
+    const { server, url } = await listen(limited);
+    openServers.push(server);
+
+    const client = new Client({ name: "http-test-client", version: "0.0.0" });
+    openClients.push(client);
+    await client.connect(bearerTransport(url, TOKEN_A));
+
+    const result = await client.callTool({
+      name: "list_modules",
+      arguments: {},
+    });
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toMatchObject({ error: { code: "rate_limited" } });
+  });
+});
