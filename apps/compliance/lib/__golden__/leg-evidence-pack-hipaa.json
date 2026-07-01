@@ -1,0 +1,137 @@
+{
+  "formatVersion": "1",
+  "tenantId": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
+  "framework": {
+    "id": "hipaa-security",
+    "title": "HIPAA Security Rule (45 CFR Part 164, Subpart C)",
+    "version": "2024.1"
+  },
+  "chainAnchor": {
+    "length": 1,
+    "tipHash": "cd61b3f1612b3c972f75b5ff2ff1d9fbaf02be08d18bcbaaa552adb054e9a19a",
+    "genesisHash": "cd61b3f1612b3c972f75b5ff2ff1d9fbaf02be08d18bcbaaa552adb054e9a19a"
+  },
+  "controls": [
+    {
+      "controlId": "ACCESS-CONTROL.WORKFORCE",
+      "title": "Workforce authorization and access management",
+      "family": "Administrative Safeguards",
+      "statement": "Access to ePHI is authorized and supervised; the organization grants, documents, reviews, and terminates each workforce member's access on the principle of minimum necessary use.",
+      "crosswalk": [
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.308(a)(3)(i)"
+        },
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.308(a)(4)(i)"
+        }
+      ],
+      "evidence": [
+        {
+          "collectorId": "substrate.tenant-isolation-force-rls",
+          "title": "Tenant isolation enforced by FORCE row-level security",
+          "summary": "all 5 tenant tables enforce FORCE row-level security",
+          "status": "pass",
+          "facts": {
+            "tableCount": 5,
+            "forcedCount": 5,
+            "deficientTables": []
+          },
+          "manualSlots": [
+            {
+              "id": "tenant-isolation-test-report",
+              "label": "Tenant-isolation / penetration test report",
+              "required": false,
+              "filled": false
+            }
+          ]
+        }
+      ],
+      "readiness": "ready"
+    },
+    {
+      "controlId": "AUDIT.CONTROLS",
+      "title": "Audit controls over ePHI systems",
+      "family": "Technical Safeguards",
+      "statement": "Hardware, software, or procedural mechanisms record and examine activity in systems that contain or use ePHI, so that access and changes are attributable and reviewable.",
+      "crosswalk": [
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.312(b)"
+        },
+        {
+          "framework": "SOC2-TSC",
+          "reference": "CC7.2",
+          "note": "Satisfied by the immutable audit log."
+        }
+      ],
+      "evidence": [
+        {
+          "collectorId": "substrate.audit-chain-integrity",
+          "title": "Append-only audit chain integrity (WORM-anchored)",
+          "summary": "audit chain verified against its anchor (1 entries)",
+          "status": "pass",
+          "facts": {
+            "entryCount": 1,
+            "anchorPresent": true,
+            "anchorLength": 1,
+            "valid": true,
+            "brokenAt": null
+          },
+          "manualSlots": []
+        }
+      ],
+      "readiness": "ready"
+    },
+    {
+      "controlId": "GOVERNANCE.DOCUMENTATION",
+      "title": "Policies, procedures, and documentation retention",
+      "family": "Documentation Requirements",
+      "statement": "Security policies and procedures are documented, and required actions, activities, and assessments are recorded and retained for the regulatory period, available to those responsible for implementing them.",
+      "crosswalk": [
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.316(a)"
+        },
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.316(b)(1)"
+        },
+        {
+          "framework": "HIPAA-Security",
+          "reference": "164.316(b)(2)(i)"
+        }
+      ],
+      "evidence": [
+        {
+          "collectorId": "substrate.worm-retention-floor",
+          "title": "WORM retention meets the legal floor",
+          "summary": "WORM retention until 2033-06-27T12:00:00.000Z meets the floor (2032-06-27T12:00:00.000Z)",
+          "status": "pass",
+          "facts": {
+            "key": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d/artifacts/compliance-policy-v1.json",
+            "retainUntil": "2033-06-27T12:00:00.000Z",
+            "requiredUntil": "2032-06-27T12:00:00.000Z"
+          },
+          "manualSlots": [
+            {
+              "id": "object-lock-configuration",
+              "label": "S3 Object-Lock / WORM configuration evidence",
+              "required": false,
+              "filled": false
+            }
+          ]
+        }
+      ],
+      "readiness": "ready"
+    }
+  ],
+  "summary": {
+    "totalControls": 3,
+    "controlsReady": 3,
+    "controlsWithGaps": 0,
+    "totalEvidenceItems": 3,
+    "posture": "3 of 3 controls evidence-ready; no gaps recorded."
+  }
+}
