@@ -1,9 +1,14 @@
 name: deploy-railway
-# Project token RAILWAY_TOKEN is a repo secret scoped to caisson-prod (not yet set → this job is
-# inert until the operator adds it). Build-on-Railway via the service's
-# RAILWAY_DOCKERFILE_PATH=apps/site/Dockerfile env var (configured on the Railway service, not
-# here). This job touches NO DNS and NO CF Access; it coexists with deploy-site.yml (Cloudflare
-# Pages) until the cutover, at which point deploy-site.yml retires.
+# Automated redeploy of the unified apps/site Next app (marketing + docs + /dashboard) to Railway.
+# Build-on-Railway via the service's RAILWAY_DOCKERFILE_PATH=apps/site/Dockerfile env var (set on the
+# Railway service, not here). Touches NO DNS and NO CF Access.
+#
+# STAYS INERT UNTIL ARMED: the project token RAILWAY_TOKEN (scoped to caisson-prod) is not yet a repo
+# secret. The guard step below reads it and SKIPS every real step when it is absent, so the job runs
+# as a GREEN no-op — it never attempts a deploy and never reddens main. The operator ARMS it by adding
+# the RAILWAY_TOKEN secret at the cutover (deploy-runbook C2); it then self-enables on the next push.
+# The static-export deploy-site.yml (Cloudflare Pages) it once coexisted with is already retired (its
+# CI half); deleting the Pages project itself is the DEPLOY-class teardown step C7.
 on:
   push:
     branches: [main]
@@ -22,16 +27,35 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest # holds the prod Railway token → hosted, like deploy-site
+    runs-on: ubuntu-latest # holds the prod Railway token → hosted (a prod deploy cred stays off the fleet)
     timeout-minutes: 25
     steps:
+      # Inert-until-armed guard: `secrets` can't be referenced in a job/step `if:`, so map RAILWAY_TOKEN
+      # to an env here and publish an `armed` output. Absent token → armed=false → every step below skips
+      # → the job succeeds as a no-op. This is what keeps main GREEN before the operator provisions the
+      # token; it does NOT arm the deploy (no token is added here — it self-arms when the secret is set).
+      - name: arm check (RAILWAY_TOKEN present?)
+        id: guard
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          if [ -n "${RAILWAY_TOKEN}" ]; then
+            echo "armed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "armed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::deploy-railway is inert — RAILWAY_TOKEN not set; skipping deploy (operator arms at cutover C2)"
+          fi
       - uses: actions/checkout@v5
+        if: steps.guard.outputs.armed == 'true'
       - uses: oven-sh/setup-bun@v2
+        if: steps.guard.outputs.armed == 'true'
         with:
           bun-version: "1.3.14"
       - name: install Railway CLI
+        if: steps.guard.outputs.armed == 'true'
         run: bun add -g @railway/cli
       - name: deploy apps/site to Railway (build-on-Railway, repo-root context)
+        if: steps.guard.outputs.armed == 'true'
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: railway up --service caisson-site --ci

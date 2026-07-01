@@ -16,8 +16,12 @@ RLS tenant reads; CI rewired into split workflows with turbo/bun build-cache + a
 `deploy-railway.yml` (inert until `RAILWAY_TOKEN` is set); observability (OTel → SigNoz, `ADR-0117`),
 jobs, and the `@caisson/ui` kit integrated into the app. **Not yet deployed** — the live site is
 still served by Cloudflare Pages; Railway provisioning + DNS cutover + Pages teardown are
-DEPLOY-class and operator-gated. `deploy-site.yml`/`lighthouse.yml` still assume the retired
-static-export (`out/`) and will fail on the next push to `main` until the cutover lands.
+DEPLOY-class and operator-gated. **CI rewired for standalone mode (2026-06-30, CI half of runbook
+C.2/C7):** the static-export `deploy-site.yml` (which built `out/` for Cloudflare Pages) is
+**retired/deleted** — deleting the Pages project itself stays the DEPLOY-class teardown (C7);
+`lighthouse.yml` is **gated to `workflow_dispatch`-only** (its `staticDistDir: out` target is gone;
+re-arm against the live Railway origin post-cutover); and `deploy-railway.yml` now **guards on
+`RAILWAY_TOKEN`** so it is a green no-op (never a red `main`) until the operator arms it at C2.
 Method: `packages/*/src` + test presence, `apps/`/`services/` contents, ADR + spec artifact
 trail, git chronology. Status reflects code-on-disk, not marketing copy.
 

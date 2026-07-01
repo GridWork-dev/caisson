@@ -1,8 +1,10 @@
 // handleBillingWebhook wiring (ADR-0089): a verified actionable event runs the mapper inside withTenant;
-// a null event (unhandled type) is a no-op success; a bad signature throws before any DB work. The
-// BillingProvider is FAKED (no real HMAC) — the verify path itself is covered in @caisson/billing.
+// a null event (unhandled type) is a no-op success; a verified actionable event with an unresolvable
+// accountId throws (non-2xx, so the provider retries — services-hardening LOW finding); a bad signature
+// throws before any DB work. The BillingProvider is FAKED (no real HMAC) — the verify path itself is
+// covered in @caisson/billing.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { AuthnError } from "@caisson/kernel";
+import { AuthnError, InternalError } from "@caisson/kernel";
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { CREDIT_SCHEMA_SQL, balance } from "@caisson/credits";
 import { withTenant } from "@caisson/tenancy-rls";
@@ -64,10 +66,13 @@ describe("handleBillingWebhook", () => {
     expect(bal).toBe(1000);
   });
 
-  test("an actionable invoice.paid with an empty accountId is a no-op success — never grants under an empty tenant", async () => {
-    // readAccountId returns "" when no metadata resolves. The guard short-circuits to a 2xx no-op;
-    // WITHOUT it, handleBillingWebhook would call withTenant(pg, "", …), which fail-closes
-    // (TenancyError). So this asserting it returns cleanly (does not throw) proves the guard holds.
+  test("an actionable invoice.paid with an empty accountId throws (non-2xx) — never silently drops a paid cycle", async () => {
+    // readAccountId returns "" when no metadata resolves. This is a VERIFIED, actionable event we
+    // cannot attribute to a tenant — a genuinely paid purchase/cycle, not a benign unhandled-type
+    // no-op. It must throw (so the HTTP layer returns non-2xx and the provider retries) rather than
+    // silently 2xx-ing and dropping the grant for good (services-hardening LOW finding). It must also
+    // NEVER reach withTenant(pg, "", …), which would fail-closed on an empty tenant anyway (TenancyError)
+    // but for the wrong reason.
     const ev: DomainBillingEvent = {
       type: "invoice.paid",
       sourceEventId: "evt_empty",
@@ -79,13 +84,9 @@ describe("handleBillingWebhook", () => {
       billingReason: "subscription_cycle",
       invoiceId: "in_empty",
     };
-    const res = await handleBillingWebhook(
-      tp.pg,
-      fakeProvider(ev),
-      "{}",
-      "sig",
-    );
-    expect(res.event?.type).toBe("invoice.paid"); // returned as a no-op success, no grant attempted
+    await expect(
+      handleBillingWebhook(tp.pg, fakeProvider(ev), "{}", "sig"),
+    ).rejects.toThrow(InternalError);
   });
 
   test("an unhandled event (null) is a no-op success", async () => {

@@ -2,7 +2,7 @@
 // to Paddle — both implementations live behind this ONE port, so a provider swap is a new driver, not
 // a rewrite. P1 ships verify+parse (the seam that feeds the credit grant); the full
 // purchase→entitlement→license→grant orchestration is P6 (services/license).
-import { fetchWithTimeout, InternalError } from "@caisson/kernel";
+import { fetchWithTimeout, InternalError, parseStrict } from "@caisson/kernel";
 import { verifyStripeWebhook, type VerifyOptions } from "./webhook.ts";
 import {
   parseStripeEvent,
@@ -10,7 +10,7 @@ import {
   type StripeEvent,
 } from "./events.ts";
 import { verifyPaddleWebhook } from "./paddle-webhook.ts";
-import { parsePaddleEvent, type PaddleEvent } from "./paddle-events.ts";
+import { parsePaddleEvent, PaddleEventSchema } from "./paddle-events.ts";
 
 export interface CheckoutInput {
   accountId: string;
@@ -110,7 +110,13 @@ export function createPaddleBilling(config: PaddleConfig): BillingProvider {
   return {
     verifyAndParse(rawBody, signatureHeader, opts) {
       verifyPaddleWebhook(rawBody, signatureHeader, config.webhookSecret, opts);
-      const event = JSON.parse(rawBody) as PaddleEvent;
+      // Zod `.strict()` at the boundary (services-hardening MED finding): reject an envelope with a
+      // missing/wrong-typed event_id/event_type or any unknown top-level field BEFORE it reaches the
+      // mapper — a signature check alone does not guarantee the payload SHAPE. parseStrict throws a
+      // redaction-safe ValidationError (never echoes the rejected value), which the route layer maps
+      // to a non-2xx so Paddle retries — the mapper's existing fail-closed-to-null/defensive handling
+      // of a well-formed-but-unrecognized `data` payload is unchanged.
+      const event = parseStrict(PaddleEventSchema, JSON.parse(rawBody));
       return parsePaddleEvent(event);
     },
 

@@ -149,16 +149,26 @@ export class TokenBucketLimiter implements RateLimiter {
 }
 
 /**
- * Derive the client IP from the leftmost `x-forwarded-for` entry. TRUST ASSUMPTION: on Railway, the platform
- * edge proxy is the only hop that sets/prepends this header before the request reaches the container, so the
- * leftmost entry is the original client as Railway observed it. This is ONLY safe because the container is not
- * directly internet-reachable (no client can forge a leading entry past the edge). If the header is absent or
- * blank, all such requests collapse onto one shared "unknown" bucket — conservative (collectively throttled)
- * rather than fail-open per request.
+ * Derive the client IP. TRUST MODEL (corrected — the leftmost-XFF read this replaces was
+ * client-spoofable): `X-Forwarded-For` is a comma-appended list a CLIENT can seed with arbitrary
+ * leftmost entries of its own choosing before the request ever reaches Railway's edge — an
+ * attacker rotates a fake leftmost hop on every request to mint a fresh rate-limit bucket per
+ * request, defeating the limiter entirely. Prefer Railway's own `X-Envoy-External-Address`
+ * (single-value, edge-set, not attacker-appendable) when present. Otherwise fall back to the
+ * RIGHTMOST `X-Forwarded-For` hop — the entry the edge proxy itself appended for the connection it
+ * directly observed, never a client-supplied one — and NEVER the leftmost. If neither is present,
+ * all such requests collapse onto one shared "unknown" bucket — conservative (collectively
+ * throttled) rather than fail-open per request.
  */
 export function clientIp(req: Request): string {
+  const envoy = req.headers.get("x-envoy-external-address")?.trim();
+  if (envoy !== undefined && envoy.length > 0) return envoy;
   const xff = req.headers.get("x-forwarded-for");
   if (xff === null) return "unknown";
-  const first = xff.split(",")[0]?.trim();
-  return first !== undefined && first.length > 0 ? first : "unknown";
+  const hops = xff
+    .split(",")
+    .map((hop) => hop.trim())
+    .filter((hop) => hop.length > 0);
+  const last = hops[hops.length - 1];
+  return last !== undefined ? last : "unknown";
 }
