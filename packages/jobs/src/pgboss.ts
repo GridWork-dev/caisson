@@ -1,7 +1,6 @@
 // pg-boss production driver for the `JobQueue` port (ADR-0173). A thin wrapper over pg-boss's
-// Postgres-backed queue — `enqueue(name, payload)` maps straight to `boss.send(name, payload)`.
-// No task registry / schema validation here (that stays with the in-memory + Trigger.dev drivers);
-// this driver only wraps the send leg.
+// Postgres-backed queue — `enqueue(name, payload)` validates against the same task registry the
+// in-memory + Trigger.dev drivers use, then maps to `boss.send(name, payload)`.
 //
 // Env-gated: `connectionString` (e.g. `DATABASE_URL`) is read by the CALLER and injected via
 // `config` — never a module-level constant. Calling `createPgBossJobQueue` without a
@@ -13,8 +12,8 @@
 // synchronous (matching the other two drivers' shape). The real boss instance is started lazily on
 // the first `enqueue` call and cached for the lifetime of the returned `JobQueue`.
 import { PgBoss } from "pg-boss";
-import { ConfigError } from "@caisson/kernel";
-import type { JobQueue } from "./queue.ts";
+import { ConfigError, NotFoundError, parseStrict } from "@caisson/kernel";
+import type { JobQueue, TaskDefinition } from "./queue.ts";
 
 /**
  * The minimal surface of the pg-boss SDK this driver depends on. Real usage is backed by an actual
@@ -37,10 +36,20 @@ export interface PgBossJobQueueConfig {
 }
 
 /**
- * The pg-boss `JobQueue` driver. `enqueue` lazily starts (or reuses the injected) client, ensures
- * the named queue exists (`createQueue` is idempotent in pg-boss v10+), then sends the job.
+ * The pg-boss `JobQueue` driver. `enqueue` validates against the same task registry as the
+ * in-memory + Trigger.dev drivers (404 on an unregistered name, `ValidationError` on a
+ * schema-invalid payload) BEFORE anything reaches pg-boss, then lazily starts (or reuses the
+ * injected) client, ensures the named queue exists (`createQueue` is idempotent in pg-boss v10+),
+ * and sends the validated job.
  */
-export function createPgBossJobQueue(config: PgBossJobQueueConfig): JobQueue {
+export function createPgBossJobQueue(
+  tasks: readonly TaskDefinition<unknown>[],
+  config: PgBossJobQueueConfig,
+): JobQueue {
+  const registry = new Map<string, TaskDefinition<unknown>>(
+    tasks.map((task) => [task.name, task]),
+  );
+
   if (
     (config.connectionString === undefined ||
       config.connectionString.length === 0) &&
@@ -66,12 +75,20 @@ export function createPgBossJobQueue(config: PgBossJobQueueConfig): JobQueue {
 
   return {
     async enqueue(name: string, payload: unknown): Promise<void> {
+      const task = registry.get(name);
+      if (task === undefined) {
+        throw new NotFoundError(`No task registered for "${name}"`, {
+          task: name,
+        });
+      }
+      const validated = parseStrict(task.schema, payload);
+
       const client = await getClient();
       if (!knownQueues.has(name)) {
         await client.createQueue(name);
         knownQueues.add(name);
       }
-      await client.send(name, (payload as object | null) ?? null);
+      await client.send(name, (validated as object | null) ?? null);
     },
   };
 }

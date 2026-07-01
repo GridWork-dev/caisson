@@ -52,7 +52,10 @@ const drivers: ReadonlyArray<{ name: string; queue: JobQueue }> = [
   },
   {
     name: "pg-boss",
-    queue: createPgBossJobQueue({ client: fakePgBossClient() }),
+    queue: createPgBossJobQueue(
+      [defineTask(taskName, payloadSchema, async () => {})],
+      { client: fakePgBossClient() },
+    ),
   },
 ];
 
