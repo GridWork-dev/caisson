@@ -41,17 +41,17 @@ revenue-contingent. The one material lever is the self-hosted SigNoz block (≈$
 
 ## Open forks
 
-Seven provider-optimization forks are OPEN and waiting on the operator (PF-1..PF-7) — see
-[`decisions-and-forks.md` → Provider-optimization forks](decisions-and-forks.md). Headline: **PF-1 the
-SigNoz backend** (keep self-hosted for brand vs offload to a free managed OTLP tier for −$45-70/mo) is the
-single decision needing an explicit call; the rest are $0-adds or recommended-closes.
+Provider-optimization forks — see [`decisions-and-forks.md` → Provider-optimization forks](decisions-and-forks.md).
+**Resolved 2026-07-01:** PF-1 **keep SigNoz** (not retired; Grafana Cloud added alongside), PF-2 PostHog **added +
+live**, PF-3 Linear **added + connected**, PF-5 Cookiy **added + connected**. Remaining: PF-4/PF-6/PF-7
+(recommended-closes) + the Grafana token handoff.
 
-## Fast-follow (SigNoz API key — enables admin ops widgets)
+## SigNoz — kept (API key optional)
 
-`admin` reads `SIGNOZ_API_KEY` for its ops widgets. Create it in the SigNoz UI (see the walkthrough the
-operator was given 2026-07-01), then set it on the `caisson-admin` Railway service env. Requires the SigNoz
-first-run admin account to exist. A second fast-follow (CF-Worker OTLP export) needs an external TCP-proxy
-on `signoz-ingester`.
+SigNoz is **not** being retired (operator call 2026-07-01). `admin` can read `SIGNOZ_API_KEY` for its ops
+widgets, but it's **optional** — the SigNoz UI login covers day-to-day ops. If you do want the widgets:
+create the key in the SigNoz UI, set it on `caisson-admin`. (A CF-Worker OTLP export would separately need an
+external TCP-proxy on `signoz-ingester`.)
 
 ---
 
@@ -95,25 +95,25 @@ OpenRouter / Plausible / SigNoz / Exa / Discord have **no standalone CLI** — d
 - **Trigger.dev** — `bunx trigger.dev@latest deploy`; `TRIGGER_SECRET_KEY` (SET). Config `trigger.config.ts`. **State: ✅** key set; free tier.
 - **OpenRouter** — `OPENROUTER_API_KEY` (SET), no CLI. **State: ✅** support-bot RAG live.
 - **GitHub Packages** — `gh` + `GITHUB_PERSONAL_ACCESS_TOKEN` (SET); `.npmrc` scope. **State: ✅**.
-- **Plausible** — script tag on marketing pages; `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` on `caisson-site` (SET). Config in the Plausible dashboard (add site + $9 Starter plan). **State: ⚠** domain wired; **confirm the Plausible account/site is active on the paid plan or it won't collect**.
-- **SigNoz** (self-host) — 5-svc Railway stack; config in `infra/` + the SigNoz UI. `SIGNOZ_API_KEY` for admin widgets. **State: ✅ running / ⚠** API key unset (admin ops widgets) — and PF-1 may retire this whole block.
+- **Plausible** — script tag on marketing pages; `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` on `caisson-site` (SET). Config in the Plausible dashboard. **State: ✅** confirmed active on the $9 Starter plan and collecting (2026-07-01).
+- **SigNoz** (self-host) — 5-svc Railway stack; config in `infra/` + the SigNoz UI. **State: ✅ running — KEPT, not retired** (operator call 2026-07-01: self-hosted observability stays part of the product story). `SIGNOZ_API_KEY` for the admin ops widgets is **optional** — the SigNoz UI login covers ops; create it only if you want the widgets in `apps/admin`.
 - **Greptile + TREX** — `.greptile/config.json` (`statusCheck`+`triggerOnUpdates`) + `rules.md`; org TREX toggle; `GREPTILE_API_KEY` (SET). **State: ✅** required check live on `main`; re-trigger `gh pr comment <PR> --body "@greptileai"`.
 - **Discord** — `infra/discord/provision.ts` (idempotent REST); bot tokens on `caisson-support-bot` Railway svc. **State: ✅** guild built, bot online.
 - **Exa / crawl4ai** — gridwork-core MCPs; `EXA_API_KEY` / `CRAWL4AI_API_TOKEN` (SET). **State: ✅**.
 
-**Agent tooling / MCP providers** (gridwork-core manifests → `link-mcps.ts` → `~/.claude.json`; **live after Claude Code restart**)
+**Agent tooling / MCP providers** (gridwork-core manifests → `link-mcps.ts` → `~/.claude.json`; **connected 2026-07-01**)
 
-- **PostHog** — _two_ keys: **(site)** `NEXT_PUBLIC_POSTHOG_KEY` (`phc_…`, client ingest) → **must be set on `caisson-site` + `railway up`**; the merged `PostHogInit` is **inert until then**. **(MCP)** `POSTHOG_MCP_API_KEY` (`phx_…`, SET + probe-verified HTTP 200). US Cloud. **State: MCP ✅ (restart) / site ⚠ (key + redeploy)**.
-- **Linear** — MCP `LINEAR_API_KEY` (`lin_api_…`, SET + probe-verified). **State: ✅ (restart)**; agent automations need the **Business** plan on the workspace.
-- **Cookiy** — MCP `COOKIY_API_KEY` (`cky_…`, SET + probe-verified; headless Bearer, not OAuth). Scope: positioning research, **no customer PII**. **State: ✅ (restart)**.
-- **Grafana Cloud** — PF-1 offload target. `grafanactl` installed; needs `grafanactl config set` + an OTLP endpoint/token. **State: ⚠ pending** — operator to hand the US-West OTLP endpoint + Cloud Access Policy token; then repoint `OTEL_EXPORTER_OTLP_ENDPOINT`/`_HEADERS` on the 5 app services and retire SigNoz.
+- **PostHog** — _two_ keys: **(site)** `NEXT_PUBLIC_POSTHOG_KEY` (`phc_…`, client ingest) — **SET on `caisson-site` + redeployed 2026-07-01**; value pulled from the connected PostHog MCP (project `caisson-prod` id 493539), no separate fetch needed. **(MCP)** `POSTHOG_MCP_API_KEY` (`phx_…`, connected). US Cloud. **State: ✅ both live**.
+- **Linear** — MCP `LINEAR_API_KEY` (`lin_api_…`, connected). **State: ✅ connected**; agent automations need the **Business** plan on the workspace.
+- **Cookiy** — MCP `COOKIY_API_KEY` (`cky_…`, connected; headless Bearer, not OAuth). Scope: positioning research, **no customer PII**. **State: ✅ connected**.
+- **Grafana Cloud** — US-West stack (operator-created). `grafanactl` installed; needs `grafanactl config set` + a Cloud Access Policy token. **State: ⚠ token pending.** SigNoz is **not** retired, so Grafana runs **alongside** (operator ops dashboards / optional second OTLP sink) — wired on token handoff.
 
-## Config audit — what still needs doing (2026-07-01)
+## Config audit — closeout (2026-07-01)
 
-1. **Restart Claude Code** → linear + posthog + cookiy MCPs go live (keys set + probe-verified).
-2. **PostHog site analytics:** set `NEXT_PUBLIC_POSTHOG_KEY` (`phc_…` US project key) on `caisson-site` → `railway up -s caisson-site`. (Code merged; currently inert.)
-3. **Grafana Cloud (PF-1):** hand over OTLP endpoint + access token → repoint OTLP on 5 services → shut down SigNoz (−$45-70/mo).
-4. **Paddle production:** live account + prices (go-live gate).
-5. **Plausible:** confirm the site is added on the active $9 plan.
-6. **SigNoz API key** (if SigNoz stays): create in UI → set `SIGNOZ_API_KEY` on `caisson-admin`.
-7. **Linear Business plan** for agent automations (issue-key already works for read/write).
+1. ✅ **MCPs connected** — linear + posthog + cookiy live after CC restart (keys probe-verified).
+2. ✅ **PostHog site analytics** — `NEXT_PUBLIC_POSTHOG_KEY` set on `caisson-site` + rebuilt.
+3. ✅ **Plausible** — confirmed active on the $9 plan and collecting.
+4. ✅ **SigNoz** — kept (not retired); `SIGNOZ_API_KEY` not required (UI login covers ops).
+5. ⚠ **Grafana Cloud** — hand over the Cloud Access Policy token → `grafanactl config set` (alongside SigNoz).
+6. ⚠ **Paddle production** — live account + prices (go-live gate).
+7. ○ **Linear Business plan** — for agent automations (read/write already works).

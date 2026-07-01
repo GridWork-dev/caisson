@@ -194,10 +194,23 @@ Surfaced for the operator picker; **nothing locked**.
 | **PF-6 Firecrawl (scrape)**                | Keep Exa + crawl4ai · Add Firecrawl MCP ($19-99/mo).                                                                                                                                                                                                                                                      | **Skip — redundant** with crawl4ai ($0 local, already wired) + Exa; sole differentiator (managed anti-bot proxies) not needed. Close, no spend. `high`                                                                                                 |
 | **PF-7 Hosting (Railway, LOCKED)**         | Railway ~$65-90/mo (LOCKED ADR-0114/0115) vs Fly ~$50-65 · Render ~$180-220 · Fargate ~$220-260 (informational).                                                                                                                                                                                          | **No change** — Railway cheapest-for-fit for the many-small-idle topology + SOC2. Switching math never clears. Real cost lever = PF-1 (SigNoz block ≈ half the bill), not the host. `high`                                                             |
 
-_Cross-cut: **SigNoz is the hinge across PF-1/PF-2/PF-6/PF-7** — decide the observability backend ONCE
-(PF-1); PF-7 surfaces the same ~$40-70/mo block from the host angle. PostHog error-tracking must stay OFF
-to avoid overlap with the OTLP backend. If PF-1 offloads to a free managed tier, document the flip-back
-trigger: HIPAA/BAA or PHI-in-telemetry customer → back to self-hosted SigNoz or SigNoz Cloud Teams ($49)._
+**Resolved 2026-07-01 (operator calls — board closeout; not yet ADR-locked):**
+
+- **PF-1 → KEEP self-hosted SigNoz** (not retired; brand / data-custody wins over the −$45-70/mo saving).
+  **Grafana Cloud (US-West Free) added _alongside_** for operator ops dashboards / optional 2nd OTLP sink —
+  `grafanactl` installed, Cloud Access Policy token handoff pending. The forgone saving is the accepted cost.
+- **PF-2 → PostHog ADDED + LIVE** — dashboard-only (US Cloud), Plausible stays on marketing, error-tracking
+  OFF. Site key `NEXT_PUBLIC_POSTHOG_KEY` set on `caisson-site` + redeployed; MCP connected.
+- **PF-3 → Linear ADDED** — MCP connected (`lin_api_` Bearer). Business plan (agent automations) optional later.
+- **PF-5 → Cookiy ADDED** — MCP connected (`cky_` headless Bearer). Positioning research only, no customer PII.
+- **PF-4 / PF-6 / PF-7 → still open** (recommended-closes): keep Greptile+TREX only · skip Firecrawl · Railway
+  no change. No spend implied; close on operator nod.
+
+_ADR formalization pending — say the word and these lock as ADR-0177+._
+
+_Cross-cut (historical, PF-1 now decided): PostHog error-tracking stays OFF to avoid overlap with the OTLP
+backend. Flip-back trigger if SigNoz is ever offloaded later: HIPAA/BAA or PHI-in-telemetry customer → keep
+self-hosted SigNoz or SigNoz Cloud Teams ($49)._
 
 ### Parked / deferred (non-blocking — revisit later, do NOT auto-decide)
 
