@@ -40,8 +40,10 @@ const localAiManifest: ModuleManifestInput = {
   description: "Local-first AI edition — commercial (ADR-0050/0083).",
 };
 
-// Faithful mirrors of the two committed commercial manifests (packages/field-crypto/manifest.ts,
-// packages/cli/manifest.ts) — they must keep validating as paid/commercial under the open-core model.
+// Faithful mirrors of two committed manifests: field-crypto stays a commercial primitive
+// (packages/field-crypto/manifest.ts), cli is now open Apache-2.0 Base (packages/cli/manifest.ts,
+// flipped by ADR-0136 — the ships-with-generator tooling trio) — both must keep validating under the
+// open-core model, on opposite sides of the license⟺tier split.
 const fieldCryptoManifest: ModuleManifestInput = {
   id: "@caisson/field-crypto",
   version: "0.0.0",
@@ -58,10 +60,15 @@ const cliManifest: ModuleManifestInput = {
   id: "@caisson/cli",
   version: "0.0.0",
   kind: "base",
-  tier: "paid",
-  priceCents: 4900,
-  license: "LicenseRef-Caisson-Commercial",
-  dependencies: ["@caisson/credits", "@caisson/kernel", "@caisson/registry"],
+  tier: "oss",
+  priceCents: null,
+  license: "Apache-2.0",
+  dependencies: [
+    "@caisson/credits",
+    "@caisson/kernel",
+    "@caisson/migrate",
+    "@caisson/registry-schema",
+  ],
   golden: "src/__golden__",
   description:
     "create-caisson generator: registry-allowlist-gated repo composition + codegen-credit debit-before-spend seam.",
@@ -116,12 +123,14 @@ describe("ADR-0094 open-core licensing", () => {
     ).toThrow();
   });
 
-  test("the committed field-crypto + cli manifest shapes still validate (paid/commercial)", () => {
+  test("the committed field-crypto (commercial) + cli (open Base) manifest shapes both validate", () => {
     const fc = defineModule({ ...fieldCryptoManifest });
     expect(fc.license).toBe("LicenseRef-Caisson-Commercial");
     expect(fc.tier).toBe("paid");
+    // cli is open Apache-2.0 Base as of ADR-0136 (ships-with-generator tooling) — oss tier, no price.
     const cli = defineModule({ ...cliManifest });
-    expect(cli.license).toBe("LicenseRef-Caisson-Commercial");
-    expect(cli.tier).toBe("paid");
+    expect(cli.license).toBe("Apache-2.0");
+    expect(cli.tier).toBe("oss");
+    expect(cli.priceCents).toBeNull();
   });
 });

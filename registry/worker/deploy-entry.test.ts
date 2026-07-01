@@ -23,11 +23,13 @@ describe("deploy-entry live composition root (B2b seam pin)", () => {
     const ids = await idsOf(res);
     expect(ids).not.toContain("@caisson/ai-kit"); // edition-scoped → must never leak to community
     expect(ids).toContain("@caisson/kernel"); // an OPEN Apache-2.0 base module is still served free
+    // The ships-with-generator tooling is OPEN Apache-2.0 Base (ADR-0136) — served free, same as the
+    // rest of the open substrate: every buyer's generated repo embeds cli·migrate·license-verify.
+    expect(ids).toContain("@caisson/cli");
     // Commercial base-kind modules (editions[]===[] but LicenseRef-Caisson-Commercial) are NOT free
     // base — 404/invisible to an anonymous caller. Regression pin for the CLOSED leak (ADR-0094/0097):
-    // field-crypto (à-la-carte primitive) + cli (bundle-only commercial tooling) were served free.
+    // field-crypto (à-la-carte primitive) was served free before the license-keyed floor closed it.
     expect(ids).not.toContain("@caisson/field-crypto");
-    expect(ids).not.toContain("@caisson/cli");
     // The per-caller (non-cacheable) headers prove the resolver is actually wired — not the
     // public-catalog branch that a dropped option would silently fall back to.
     expect(res.headers.get("cache-control")).toBe("private, no-store");

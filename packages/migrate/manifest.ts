@@ -3,14 +3,12 @@
 // assembler + runner that @caisson/cli and @caisson/compliance COMPOSE; ADR-0090); it is not an
 // edition, a compliance primitive, or a per-app template.
 //
-// Commercial under the open-core model (ADR-0094/0097): the assembler/runner is NOT among the
-// enumerated open Base packages (kernel·auth·tenancy-rls·ui·billing·credits·jobs·email·ai-config·
-// mcp-server·registry-schema), so it ships LicenseRef-Caisson-Commercial — and the license⟺tier rule
-// therefore forces `paid`. `priceCents` mirrors the established pre-launch placeholder anchor (4900,
-// the same anchor @caisson/cli carries) — final pricing is the still-open Pricing board fork, out of
-// scope here; it must only be a positive integer (ADR-0007). Dependencies are DOWN-ONLY (ADR-0003):
-// migrate depends on @caisson/kernel (the pure merge algorithm) and nothing "up" — never on the cli
-// or an edition.
+// Open Base under the open-core model (ADR-0094/0097 + the license-based registry gating ADR-0136):
+// @caisson/cli composes migrate into every generated repo, so the assembler/runner ships with each
+// buyer and joins the open Apache-2.0 set alongside @caisson/cli + @caisson/license-verify — free
+// `oss` tier, no `priceCents` (the license⟺tier rule requires oss carry no price). Dependencies are
+// DOWN-ONLY (ADR-0003) and open-only (ADR-0094): migrate depends on @caisson/kernel (the pure merge
+// algorithm, Apache-2.0) and nothing "up" — never on the cli or an edition.
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
@@ -18,8 +16,7 @@ export default defineModule({
   id: "@caisson/migrate",
   version: pkg.version,
   kind: "base",
-  tier: "paid",
-  priceCents: 4900,
+  tier: "oss",
   license: pkg.license,
   dependencies: ["@caisson/kernel"],
   golden: "src/__golden__",
