@@ -14,6 +14,7 @@
 // support_ticket is intentionally NOT here: the support-bot self-bootstraps it via ensure_schema
 // (CREATE TABLE IF NOT EXISTS) on its own boot.
 import { AI_METER_SCHEMA_SQL } from "@caisson/ai-meter";
+import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
 import { CREDIT_SCHEMA_SQL } from "@caisson/credits";
 import { createCaptureEmailer } from "@caisson/email";
 import { type PackageMigrations, assembleMigrations } from "@caisson/kernel";
@@ -67,6 +68,10 @@ function platformPackage(): PackageMigrations {
       },
       { name: "0004_license_grant.sql", sql: LICENSE_GRANT_SCHEMA_SQL },
       { name: "0005_ai_meter.sql", sql: AI_METER_SCHEMA_SQL },
+      // D4 (ADR-0176): the org account_member table + dual-GUC RLS. After the app role (0001)
+      // because its GRANT targets `app`. Additive/forward-only; existing single-user tenants keep
+      // working (getSession fail-safes to the personal account when a user has no membership row).
+      { name: "0006_account_member.sql", sql: ACCOUNT_MEMBER_SCHEMA_SQL },
     ],
   };
 }
