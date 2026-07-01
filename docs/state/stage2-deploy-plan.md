@@ -18,6 +18,12 @@ session, ready on your go. Nothing here has been executed.
 | **Paddle env**   | **Sandbox** (`NEXT_PUBLIC_PADDLE_ENV=sandbox`) — no real charges; production flip stays a later act                      |
 | **CF Access**    | **Stays gated** (binding) — `access.tf` untouched; Access is hostname-bound, carries the DNS flip free                   |
 
+> **Railway auth (updated 2026-07-01):** the `railway` CLI (5.23.3) is already logged in as
+> `GridWork.dev (admin@gridwork.dev)` via `~/.railway`, so the **live deploy is NOT blocked** by the
+> absent `RAILWAY_TOKEN` env var. That token is only the **CI repo secret** for the `deploy-railway.yml`
+> auto-deploy Action (D9), which the lock defers to after the manual first deploy. Every live step
+> below (D1–D8, D10, D11) runs off the CLI's own session auth.
+
 ## 1. Ground truth (recon 2026-07-01)
 
 - **Railway `caisson-prod`** (project `df952e9d-d796-4e47-bf85-2a240f8de181`): `caisson-docs`
@@ -32,7 +38,14 @@ session, ready on your go. Nothing here has been executed.
   `CAISSON_LICENSE_SIGNING_KEY`, Paddle sandbox (`NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`/`_ENV`,
   `PADDLE_API_KEY`, `PADDLE_WEBHOOK_SECRET`), Turnstile secret, `OPENROUTER_API_KEY`,
   `DISCORD_TOKEN`, `DOCS_SERVICE_TOKEN`, `RESEND_API_KEY`, `CLOUDFLARE_API_TOKEN`/`_ACCOUNT_ID`.
-  `RAILWAY_TOKEN` **absent** (minted at D0).
+  `RAILWAY_TOKEN` **absent** but the `railway` CLI is session-authed (see the §0 note) — only CI
+  arming (D9) needs the token.
+- **Paddle sandbox webhook is ALREADY BOUND via the API** — notification setting
+  `ntfset_01kwd7734h85sffq840qxmfkk5` → `https://license.caisson.sh/webhook`, active, 7 events; its
+  endpoint secret is already `PADDLE_WEBHOOK_SECRET` in env. So **D6 collapses to verify+replay** once
+  the license service is live (no operator dashboard step).
+- **CF Pages project = `caisson-site`** (claims `caisson.sh` + `www.caisson.sh`); the CF token reads
+  Pages (HTTP 200), so **D10 teardown runs via the CF API** — no operator click.
 - **All 7 services-hardening fixes are DONE in code** (merged on `main`) — docs rate-limit,
   MCP rate-limit wiring, Paddle-signature webhook, HSTS, cache-control, RAG fencing. The
   already-live `caisson-docs` only needs a **redeploy** to ship them.
@@ -40,9 +53,25 @@ session, ready on your go. Nothing here has been executed.
   (`apps/site/lib/{db,auth-server}.ts`); env stores the value as `CAISSON_DATABASE_URL`. The
   Railway service var must be set as **`DATABASE_URL`** (service-scoped, clobbers nothing global).
 
-## 2. Build-prep (autonomous EXECUTE — must land before the live deploy)
+## 2. Build-prep — ✅ DONE (2026-07-01)
 
-Ordered by dependency. All ≤~300 LOC, reversible (code-only, PR-gated). Commit atomically.
+Built + committed locally on `chore/stage2-deploy-and-triage`, all deterministic gates green (kernel
+gate · standards-gate · dependency-cruiser · `turbo build+lint+test` 24/24 incl. the real `next build`
+
+- the migration idempotency/RLS test) and an adversarial verify pass (security-floor PASS; CSP blocker
+  found + fixed):
+
+* `c7ea1af` **B-SITE** — security headers → `next.config` `headers()`; `NEXT_PUBLIC_*` Docker build-args; railway.toml env fix; dead CF Pages files deleted.
+* `4add6c0` **B-LIC** — `services/license/src/deploy.ts` (Pool→Transactor injected into `startServer`, fail-closed on absent `DATABASE_URL`) + Dockerfile + railway.toml.
+* `d469cba` **B-MIG** — `@caisson/migrate/pg` node-postgres applier + `apps/site/lib/deploy-migrate.ts` (in-memory assembly from the existing `*_SCHEMA_SQL` constants → app-role-first → credits/entitlement/license_grant/ai-meter, then better-auth's own migrator).
+* `49281d6` **CSP fix** — the ported CSP silently blocked Paddle checkout (script/frame/connect/style-src); added `cdn.paddle.com` + `*.paddle.com`; `/security` page updated to match.
+
+**Migration ownership (key architecture):** the site's standalone image does NOT contain
+`@caisson/migrate`, so it cannot self-migrate. The migration runs from the **full-workspace license
+image** (its railway.toml `preDeployCommand = "bun apps/site/lib/deploy-migrate.ts"` — a valid Railway
+`[deploy]` key) and/or **manually** for the first cutover. `preDeployCommand` is idempotent + forward-only.
+
+Original task spec (historical — what was built):
 
 | #          | Task                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Tree                                               |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
@@ -53,6 +82,26 @@ Ordered by dependency. All ≤~300 LOC, reversible (code-only, PR-gated). Commit
 ## 3. Live deploy sequence (operator-gated; executes on go)
 
 Legend: **CLI** = I run it · **hands** = operator/dashboard action · reversibility noted.
+
+> **REVISED execution order (2026-07-01, supersedes the D0-numbering below).** The adversarial verify
+> flagged a **deploy-ordering hazard**: the site `/healthz` does no DB round-trip and the site image
+> can't self-migrate, so Railway could serve `/dashboard` before the license predeploy provisions the
+> schema → every `withTenant` 500s. Mitigation is a **single-threaded, migrate-first** order:
+>
+> 1. **`railway link`** caisson-prod; **create** the `caisson-license` + `caisson-site` services (Dockerfile paths + service vars; `caisson-site` needs the three `NEXT_PUBLIC_*` as **build vars** so they inline at `next build`). — CLI, reversible (delete service)
+> 2. **Migrate FIRST, manually:** `DATABASE_URL=$CAISSON_DATABASE_PUBLIC_URL bun apps/site/lib/deploy-migrate.ts` against the fresh Railway PG (the **public** proxy URL — the internal `railway.internal` host isn't reachable from the box). Creates the `app` role + platform tables + better-auth tables. — CLI, forward-only/idempotent
+> 3. **Deploy `caisson-license`** (`railway up`, manual first). Its `preDeployCommand` re-runs the same migrate (idempotent no-op). Capture the `*.up.railway.app` URL. — CLI
+> 4. **Deploy `caisson-site` LAST** (`railway up`). Schema already exists → `/dashboard` + sign-in work on first boot. — CLI
+> 5. **Redeploy `caisson-docs`** (ship the merged hardening). — CLI
+> 6. **VERIFY on Railway URLs** (no prod traffic): site `/healthz`, SSG pages, `/docs`, `/dashboard`→`/login`, **security headers incl. the Paddle CSP**, **Paddle sandbox checkout actually opens**, Plausible fires; license `/health` + `/issue` bearer-gated. — CLI
+> 7. **Paddle webhook** — already bound via API (§1); **replay** a sandbox `transaction.completed`, assert the credit+entitlement grant. — CLI
+> 8. **DNS flip (Terraform):** apex+www CNAME → `*.up.railway.app`, add Railway custom domains, CF SSL Full, **`access.tf` untouched**. — CLI, reversible (flip CNAME back)
+> 9. **VERIFY `caisson.sh`** (Access-gated 302, Railway-served, all routes + `/dashboard` + `/api/*`, webhook reachable). **Soak.** — CLI
+> 10. **Retire Pages** (LEAST reversible, behind the soak): `DELETE /accounts/{acct}/pages/projects/caisson-site` via the CF API. — CLI
+> 11. **Bind `registry.caisson.sh`** custom route to the Worker (independent fast-follow). — CLI
+> 12. **Arm CI (deferred per lock):** mint a Railway **project token** in the dashboard (Settings → Tokens, env production) → `gh secret set RAILWAY_TOKEN --repo GridWork-dev/caisson`; re-arm lighthouse. — **operator hands** (dashboard) + CLI
+>
+> **Only operator-hands step: #12** (mint the CI token — not CLI-mintable), and it's deferred past first deploy. Everything else is CLI/API.
 
 | #   | Step                                                                                                                                                                                                                                                                                                                                                                                                                         | Who       | Reversible                |
 | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------------------------- |
@@ -84,7 +133,9 @@ the D8 soak. `access.tf` is never touched, so the Access gate cannot be lost by 
 
 ## 5. What needs operator hands vs CLI
 
-- **Operator hands:** Paddle dashboard webhook destination (D6), the `RAILWAY_TOKEN` repo secret
-  (D9), the CF Pages project deletion (D10). Everything else is `railway`/`terraform`/`gh` CLI I run.
+- **Operator hands:** ONLY minting the Railway **project token** in the dashboard (step #12, CI arming —
+  not CLI-mintable), and it's deferred past the manual first deploy. The Paddle webhook is already bound
+  via API (no dashboard step) and the CF Pages deletion runs via the CF API — both were operator-hands in
+  the original plan, now automated. Everything else is `railway`/`terraform`/`gh`/CF-API CLI I run.
 - **Not in this deploy (deferred):** SigNoz sink (ADR-0138 kickoff), production Paddle flip, the two
   Discord privileged intents + bot role scope-down, leaked-cred rotation.
