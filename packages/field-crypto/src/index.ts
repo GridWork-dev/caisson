@@ -57,11 +57,19 @@ export {
 export {
   type KmsClient,
   type WrappedKeyStore,
+  type KeyValueStore,
   InMemoryWrappedKeyStore,
+  DbWrappedKeyStore,
   KmsKeyProvider,
   LocalKmsClient,
   awsKmsClient,
 } from "./kms.ts";
+
+export {
+  type KmsSendable,
+  type AwsKmsClientConfig,
+  createAwsKmsClient,
+} from "./kms-aws.ts";
 
 export {
   type CryptoShredRequest,
