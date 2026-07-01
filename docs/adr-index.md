@@ -9,8 +9,8 @@ conflict, the ADR file and the board win over this index.
 - ADRs are append-only and immutable (ADR-0006). A later ADR _supersedes_ a clause; it
   never edits the prior file. So most rows below are **partial** supersessions (one clause),
   not a wholesale replacement.
-- 112 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 112). Numbering is **not**
-  contiguous: present are **0001-0024** and **0040-0137**; **0025-0039 are an unused gap**
+- 113 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 113). Numbering is **not**
+  contiguous: present are **0001-0024** and **0040-0138**; **0025-0039 are an unused gap**
   (no files). The 0040 jump was a deliberate block reservation for the brand/positioning set.
   **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit);
   **0094-0096** = the 2026-06-29 GTM-report locks (open-core Base / GTM offer / services-docs);
@@ -385,6 +385,17 @@ Unlike the document-only 0129-0135 locks, these two landed as code on
 | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------ | -------- | ------------------------------------------------------------------------------------------- |
 | [0136](../knowledge/decisions/ADR-0136-license-keyed-registry-gating-tooling-open.md) | License-keyed registry gating + ships-with-generator tooling opened Base | Registry/Licensing | accepted | extends 0047/0071/0077; amends 0094 (open-Base set) + 0111 (publish split); protects 0129   |
 | [0137](../knowledge/decisions/ADR-0137-edition-reprice-full-below-sum.md)             | Edition reprice: every edition below its module-sum (Q4)                 | Pricing            | accepted | supersedes 0129 edition point-values in full; reverses 0129 §2; extends 0106 grandfathering |
+
+---
+
+### Admin control-plane + fleet observability (0138, 2026-06-30) - status `accepted` (charter, build post-Stage-1)
+
+Base-level architecture lock for the `admin.caisson.sh` operator control-plane + full-fleet
+observability; implementation is post-Stage-1, spec-gated.
+
+| #                                                                                      | Title                                                                        | Domain            | Status   | Relations                                                                 |
+| -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ----------------- | -------- | ------------------------------------------------------------------------- |
+| [0138](../knowledge/decisions/ADR-0138-admin-control-plane-and-fleet-observability.md) | admin.caisson.sh operator control-plane + full-fleet observability (charter) | Ops/Observability | accepted | executes 0117; builds on 0114/0115; absorbs 0099-0104 studio; reuses 0107 |
 
 ---
 
