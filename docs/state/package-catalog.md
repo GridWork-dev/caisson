@@ -37,26 +37,29 @@ un-exercised live transports or thin coverage (see build-state for the seam) · 
 real code + tests, un-exercised live transports or no recorded VERIFY/SWEEP · **pending** = scaffold
 only or, for the 2 new ADR-0135 modules, **zero code, document-only lock**.
 
-**† = one of the 8 currently-commercial modules the registry Worker serves FREE today** (Q1 gating
-pending — see §3 note). Full build-status prose for any row: `docs/build-state.md` (search the package
-name).
+**† = one of the 8 commercial modules the registry Worker still serves FREE on the un-deployed live
+path** (license-keyed gating CLOSED by ADR-0136 on this branch; un-gating takes effect at deploy — see
+§3 note). Full build-status prose for any row: `docs/build-state.md` (search the package name).
 
-### Open Base substrate (Apache-2.0) — 12 packages
+### Open Base substrate (Apache-2.0) — 15 packages
 
-| Package           | License    | Sold as                                                     | Edition     | Build status | Owns                                                                                  |
-| ----------------- | ---------- | ----------------------------------------------------------- | ----------- | ------------ | ------------------------------------------------------------------------------------- |
-| `kernel`          | Apache-2.0 | bundle-only substrate — free, ships with every install      | Base (open) | built        | config/schema/error model, SHA-256 chain, credit denomination (ADR-0098)              |
-| `auth`            | Apache-2.0 | free                                                        | Base (open) | built        | session/RLS seam                                                                      |
-| `tenancy-rls`     | Apache-2.0 | free                                                        | Base (open) | built (thin) | fail-closed RLS guard                                                                 |
-| `billing`         | Apache-2.0 | free                                                        | Base (open) | built        | Stripe MoR + webhook events (buyer-side driver; platform billing is Paddle, ADR-0116) |
-| `credits`         | Apache-2.0 | free                                                        | Base (open) | built        | integer wallet + append-only ledger + 402                                             |
-| `jobs`            | Apache-2.0 | free                                                        | Base (open) | built (thin) | job seam                                                                              |
-| `email`           | Apache-2.0 | free                                                        | Base (open) | built (thin) | email seam                                                                            |
-| `ai-config`       | Apache-2.0 | free                                                        | Base (open) | built (thin) | provider-agnostic AI config                                                           |
-| `mcp-server`      | Apache-2.0 | free (open transport; the commercial value it gates is not) | Base (open) | built        | auth-gated buyer MCP transport + rate-limit hook (ADR-0112)                           |
-| `ui`              | Apache-2.0 | free                                                        | Base (open) | built        | token floor (ADR-0042/0078)                                                           |
-| `registry-schema` | Apache-2.0 | free                                                        | Base (open) | built        | open registry contract split from `@caisson/registry` (ADR-0097)                      |
-| `observability`   | Apache-2.0 | free                                                        | Base (open) | built        | vendor-neutral OTel bootstrap (ADR-0117; see note below)                              |
+| Package           | License    | Sold as                                                       | Edition     | Build status          | Owns                                                                                                        |
+| ----------------- | ---------- | ------------------------------------------------------------- | ----------- | --------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `kernel`          | Apache-2.0 | bundle-only substrate — free, ships with every install        | Base (open) | built                 | config/schema/error model, SHA-256 chain, credit denomination (ADR-0098)                                    |
+| `auth`            | Apache-2.0 | free                                                          | Base (open) | built                 | session/RLS seam                                                                                            |
+| `tenancy-rls`     | Apache-2.0 | free                                                          | Base (open) | built (thin)          | fail-closed RLS guard                                                                                       |
+| `billing`         | Apache-2.0 | free                                                          | Base (open) | built                 | Stripe MoR + webhook events (buyer-side driver; platform billing is Paddle, ADR-0116)                       |
+| `credits`         | Apache-2.0 | free                                                          | Base (open) | built                 | integer wallet + append-only ledger + 402                                                                   |
+| `jobs`            | Apache-2.0 | free                                                          | Base (open) | built (thin)          | job seam                                                                                                    |
+| `email`           | Apache-2.0 | free                                                          | Base (open) | built (thin)          | email seam                                                                                                  |
+| `ai-config`       | Apache-2.0 | free                                                          | Base (open) | built (thin)          | provider-agnostic AI config                                                                                 |
+| `mcp-server`      | Apache-2.0 | free (open transport; the commercial value it gates is not)   | Base (open) | built                 | auth-gated buyer MCP transport + rate-limit hook (ADR-0112)                                                 |
+| `ui`              | Apache-2.0 | free                                                          | Base (open) | built                 | token floor (ADR-0042/0078)                                                                                 |
+| `registry-schema` | Apache-2.0 | free                                                          | Base (open) | built                 | open registry contract split from `@caisson/registry` (ADR-0097)                                            |
+| `observability`   | Apache-2.0 | free                                                          | Base (open) | built                 | vendor-neutral OTel bootstrap (ADR-0117; see note below)                                                    |
+| `cli`             | Apache-2.0 | bundle-only substrate — free, ships with every generated repo | Base (open) | built (full P5 drive) | `create-caisson` index gate, templated engine, `runGeneration`, migration bundler (Apache-2.0 per ADR-0136) |
+| `migrate`         | Apache-2.0 | bundle-only substrate — free, ships with every generated repo | Base (open) | built                 | the one migration assembler + runner + file-emit (ADR-0090/0091; Apache-2.0 per ADR-0136)                   |
+| `license-verify`  | Apache-2.0 | bundle-only substrate — free, ships with every generated repo | Base (open) | substantial           | offline Ed25519 license verification (Apache-2.0 per ADR-0136)                                              |
 
 **Note on `observability`:** enforced open by the standards-gate's `OPEN_BASE_NAMES` allowlist, citing
 ADR-0117 inline ("base substrate every buyer gets, never edition-gated") — this makes it a **12th**
@@ -64,7 +67,8 @@ enforced open package, one more than the 11 named explicitly in ADR-0094 (10) + 
 `registry-schema`). ADR-0117's own text never states the license binding; the gate comment is the actual
 source of record. Not a defect — the gate is correctly enforcing it and its only workspace dep
 (`@caisson/kernel`) is itself open — but a future ADR should fold this into ADR-0094/0097's binding list
-for literal accuracy.
+for literal accuracy. `cli`, `migrate`, and `license-verify` join the open set on top of that (ADR-0136,
+commercial→Apache-2.0), bringing the enforced-open total to **15**.
 
 ### Commercial — Compliance edition ($749) + members
 
@@ -102,14 +106,14 @@ for literal accuracy.
 
 ### Commercial — bundle-only substrate (never a standalone SKU)
 
-| Package          | License                                   | Sold as                                                                      | Edition       | Build status          | Owns                                                                              |
-| ---------------- | ----------------------------------------- | ---------------------------------------------------------------------------- | ------------- | --------------------- | --------------------------------------------------------------------------------- |
-| `license-verify` | Commercial                                | bundle-only — ships inside local-ai/agent-dev installs + the registry Worker | cross-edition | substantial           | offline Ed25519 license verification                                              |
-| `license-issue`  | Commercial, **private** (never published) | not sold — operator-only issuer service code                                 | n/a           | built                 | Ed25519 issuer, holds the signing key (ADR-0110)                                  |
-| `cli`            | Commercial                                | bundle-only — the generator itself, ships with every purchase                | n/a           | built (full P5 drive) | `create-caisson` index gate, templated engine, `runGeneration`, migration bundler |
-| `migrate`        | Commercial                                | bundle-only substrate                                                        | n/a           | built                 | the one migration assembler + runner + file-emit (ADR-0090/0091)                  |
-| `pricebook`      | Commercial                                | bundle-only substrate (backs every purchase's price resolution)              | n/a           | built                 | plan/action price books + credit-conversion (ADR-0089/0098)                       |
-| `platform-reads` | Commercial                                | bundle-only substrate (dashboard-internal)                                   | n/a           | built                 | typed read-only queries over `services/license` tables for the buyer dashboard    |
+`license-verify`, `cli`, and `migrate` moved out of this table — ADR-0136 flipped them to Apache-2.0
+open Base substrate (§1's first table). Remaining bundle-only commercial rows:
+
+| Package          | License                                   | Sold as                                                         | Edition | Build status | Owns                                                                           |
+| ---------------- | ----------------------------------------- | --------------------------------------------------------------- | ------- | ------------ | ------------------------------------------------------------------------------ |
+| `license-issue`  | Commercial, **private** (never published) | not sold — operator-only issuer service code                    | n/a     | built        | Ed25519 issuer, holds the signing key (ADR-0110)                               |
+| `pricebook`      | Commercial                                | bundle-only substrate (backs every purchase's price resolution) | n/a     | built        | plan/action price books + credit-conversion (ADR-0089/0098)                    |
+| `platform-reads` | Commercial                                | bundle-only substrate (dashboard-internal)                      | n/a     | built        | typed read-only queries over `services/license` tables for the buyer dashboard |
 
 ### Commercial — services (infra, not packages; never individually sold)
 
@@ -200,13 +204,14 @@ only by ADR-0129 §3, and now also **free/open** anyway (ADR-0094).
 
 ## 3. Open-core split (the license invariant)
 
-**Open (Apache-2.0, 12 packages):** the full list in §1's first table — the free discovery/trust
-substrate every buyer (and every non-buyer) can use unrestricted.
+**Open (Apache-2.0, 15 packages):** the full list in §1's first table — the free discovery/trust
+substrate every buyer (and every non-buyer) can use unrestricted. Includes `cli`, `migrate`, and
+`license-verify`, flipped commercial→Apache-2.0 by ADR-0136.
 
 **Commercial (`LicenseRef-Caisson-Commercial`, everything else under `packages/`, `services/`,
 `registry/`):** the 4 editions + their 12 built member modules, the 2 pending ADR-0135 modules, the
-compliance primitives, the generator (`cli`), the registry service, every commercial base-kind package
-(`migrate`/`pricebook`/`license-verify`/`license-issue`/`platform-reads`), and all three services.
+compliance primitives, the registry service, every commercial base-kind package
+(`pricebook`/`license-issue`/`platform-reads`), and all three services.
 
 **The invariant (ADR-0094/0097):** an open package may depend only on other open packages — the open
 Base must resolve against open deps alone. Enforced in code by two standards-gate checks
@@ -215,25 +220,26 @@ tier mandates) and `checkOpenCommercialBoundary` (an Apache-2.0 package's worksp
 themselves be Apache-2.0, checked by actual SPDX `license` field, not a name allowlist — self-correcting
 if the open set changes). Commercial → open is always allowed; open → commercial is a CI-blocking error.
 
-**Code-truth addendum — the registry Worker currently over-serves.** The Worker's `baseModuleIds`
-(`packages/registry-schema/src/entitlements.ts`) computes "free base" as **every module whose manifest
-declares `editions: []`**, not "every module whose license is Apache-2.0." On the current
-`registry/index.json`, that predicate is also true for 4 **commercial** bundle-only packages —
-`cli`, `migrate`, `pricebook`, `license-verify` — in addition to the **† 8 sellable modules** flagged
-throughout this doc (`field-crypto`, `ai-meter`, `audit-worm`, `ai-evals`, `guardrails`,
-`prompt-registry`, `local-store`, `agent-kernel`). The 8 † modules are the Q1-priority gate because
-they're individually-priced SKUs leaking for free; the 4 bundle-only packages are lower priority (never
-had a standalone price to protect) but are the same code-level gap and should close in the same Q1 pass.
+**Code-truth addendum — the registry free-base floor (ADR-0136).** The Worker's `baseModuleIds`
+(`packages/registry-schema/src/entitlements.ts`) was previously keyed on `editions: []` rather than
+`license === "Apache-2.0"`, which over-served the **† 8 sellable modules** flagged throughout this doc
+(`field-crypto`, `ai-meter`, `audit-worm`, `ai-evals`, `guardrails`, `prompt-registry`, `local-store`,
+`agent-kernel`) for free. ADR-0136 re-keys the floor on `license === "Apache-2.0"` (built on this
+branch), closing that leak; the live deployed Worker un-gates at deploy. ADR-0136 also flips `cli`,
+`migrate`, and `license-verify` to Apache-2.0, so they are now legitimately open — leaving `pricebook`
+as the only commercial base-kind package intentionally served free (never had a standalone price to
+protect).
 
 ---
 
 ## 4. Not sold / why
 
-- **The 12-package open Base** — never sold. Per ADR-0094, it is the **trust + acquisition layer**:
-  table-stakes substrate (auth/RLS/billing/credits/jobs/email/config/MCP-transport/UI/registry-contract/
-  observability) with **no compliance, AI, or evidence value on its own**. Giving it away removes the
-  friction of a free-boilerplate undercut (ShipFast/t3-class competitors) while the actual moat — the
-  editions, the compliance primitives, the generator, the registry service, and update subscriptions —
+- **The 15-package open Base** — never sold. Per ADR-0094 (extended by ADR-0136), it is the **trust +
+  acquisition layer**: table-stakes substrate (auth/RLS/billing/credits/jobs/email/config/MCP-transport/
+  UI/registry-contract/observability) plus the installer/migrator/verifier tooling
+  (`cli`/`migrate`/`license-verify`) with **no compliance, AI, or evidence value on its own**. Giving it
+  away removes the friction of a free-boilerplate undercut (ShipFast/t3-class competitors) while the
+  actual moat — the editions, the compliance primitives, the registry service, and update subscriptions —
   stays commercial.
 - **`tooling/*`** — never sold, never even licensed for external use (all 5 are `private` with no
   `license` field). Build-time/dev-time infra only (eslint config, tsconfig, test harness, the

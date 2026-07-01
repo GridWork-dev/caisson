@@ -99,21 +99,24 @@ not legacy Paddle Classic.
 1. **Account:** sign up at paddle.com → Paddle **Billing**; complete seller verification (website =
    `caisson.sh`, business details). Wire + smoke in the **Sandbox** environment first; flip to
    **Production** for go-live.
-2. **Catalog — Products + Prices** matching the **ADR-0106** lock (Paddle dashboard → Catalog, or the
-   API). One Paddle Price per SKU:
+2. **Catalog — Products + Prices** matching the **ADR-0137** edition reprice (below module-sum; the
+   recurring SKUs + grandfathering hold from **ADR-0106**). Paddle dashboard → Catalog, or the API.
+   One Paddle Price per SKU:
 
-   | Product                 | Price            | Billing                            |
-   | ----------------------- | ---------------- | ---------------------------------- |
-   | Compliance              | $2,499.00        | one-time                           |
-   | Everything Bundle       | $3,499.00        | one-time                           |
-   | AI Production Kit       | $599.00          | one-time                           |
-   | Local-first AI          | $499.00          | one-time                           |
-   | Per-module (à la carte) | from $49.00      | one-time (one price per module)    |
-   | Compliance-Updates      | $1,499.00 / year | recurring annual                   |
-   | Developer               | $499.00 / year   | recurring annual                   |
-   | Enterprise / SLA        | —                | no price (Contact us, ADR-0095 §2) |
+   | Product                 | Price            | Billing                                                               |
+   | ----------------------- | ---------------- | --------------------------------------------------------------------- |
+   | Compliance              | $749.00          | one-time                                                              |
+   | All-Access Bundle       | $1,499.00        | one-time                                                              |
+   | AI Production Kit       | $599.00          | one-time                                                              |
+   | Local-first AI          | $349.00          | one-time                                                              |
+   | Agentic-Dev             | $249.00          | one-time                                                              |
+   | Per-module (à la carte) | from $99.00      | one-time (one price per module — the ADR-0129 module sheet: $99–$299) |
+   | Compliance-Updates      | $1,499.00 / year | recurring annual                                                      |
+   | Developer               | $499.00 / year   | recurring annual                                                      |
+   | Enterprise / SLA        | —                | no price (Contact us, ADR-0095 §2)                                    |
 
-   Agentic-Dev = labeled-roadmap (ADR-0082 §4) — no active price.
+   Agentic-Dev is now **as-if-live buyable** ($249, ADR-0130 supersedes the ADR-0082 §4 roadmap-gating
+   — the storefront presents all four editions with real prices).
 
 3. **Keys → `~/.gridwork/env`:** Developer Tools → Authentication →
    `PADDLE_API_KEY` (server; `pdl_sdbx_*` sandbox / `pdl_live_*` prod) + `PADDLE_CLIENT_TOKEN`

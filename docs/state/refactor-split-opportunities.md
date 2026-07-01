@@ -19,15 +19,17 @@ those own _adding_ and _narrowing_.
 
 ## The open↔commercial split is a hard constraint on every extraction
 
-Read from disk (`packages/*/package.json` `license`, not any embedded list): the **11 Apache-2.0 base
+Read from disk (`packages/*/package.json` `license`, not any embedded list): the **15 Apache-2.0 base
 packages** are `kernel · auth · tenancy-rls · billing · credits · ai-config · email · jobs · mcp-server ·
-ui · registry-schema · observability` (12 — `observability` added post-ADR-0094). Everything else —
-editions, `field-crypto`, `audit-worm`, `compliance`, `migrate`, `pricebook`, `platform-reads`,
-`license-verify`/`license-issue`, `cli`, and all three `services/*` — is `LicenseRef-Caisson-Commercial`
-(ADR-0094 open-core, ADR-0097 registry split). `tooling/standards-gate/src/checks.ts:30-35` is the
-authority (`OPEN_LICENSE`/`COMMERCIAL_LICENSE`) and enforces the no-depend-up boundary. **An extraction
-must not move a commercial concern into an Apache-2.0 package unless the concern is genuinely generic
-infra** (then it _becomes_ Apache-2.0), and must never make an open package depend up on a commercial one.
+ui · registry-schema · observability · cli · migrate · license-verify` (`observability` added
+post-ADR-0094; `cli · migrate · license-verify` flipped commercial→Apache-2.0 by ADR-0136). Everything
+else — editions, `field-crypto`, `audit-worm`, `compliance`, `pricebook`, `platform-reads`,
+`license-issue`, and all three `services/*` — is `LicenseRef-Caisson-Commercial` (ADR-0094 open-core,
+ADR-0097 registry split, ADR-0136 further widened the open set). `tooling/standards-gate/src/checks.ts:30-35`
+is the authority (`OPEN_LICENSE`/`COMMERCIAL_LICENSE`) and enforces the no-depend-up boundary. **An
+extraction must not move a commercial concern into an Apache-2.0 package unless the concern is
+genuinely generic infra** (then it _becomes_ Apache-2.0), and must never make an open package depend up
+on a commercial one.
 
 **Precedents to follow** (this pattern is already proven three times — extract shared concern → own
 package → consumers import DOWN, never copy):

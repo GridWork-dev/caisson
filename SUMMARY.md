@@ -58,7 +58,7 @@ vs exit gates per the caveat above:**
 - **Agentic-Dev** ← gridwork-core — governed-agent kernel (also powers the generator + buyer MCP). **Roadmap edition (most skeletal).**
 - **Base** ← gridwork + gwdigital + tessera — auth + fail-closed RLS + billing + credits + design floor + **buyer MCP (auth)** + AGENTS.md
 
-**Canonical decisions:** ADRs `0001–0113` (with gaps `0025–0039`) in `knowledge/decisions/`. The full
+**Canonical decisions:** ADRs `0001–0137` (with gaps `0025–0039`, and `0119–0128` proposed-only) in `knowledge/decisions/`. The full
 numbering map + supersession chain is owned by `docs/state/decisions-and-forks.md` (do not duplicate
 here). Founding set `ADR-0001..0012` covers Bun+Turborepo+changesets, TS-strict/Zod/integer-credits,
 composable packages, generator+registry, fail-closed RLS, WORM+audit-chain+field-crypto, credit
@@ -121,7 +121,7 @@ deleted — point here:
 `market-findings.json` · `scores.json` · `support-strategy.md` · `options.md` · `wave1-forks.md` ·
 `review-findings.json` · `demand-probe.ts` · `metrics.sh` · `design-session/`.
 
-Specs → `specs/` (top-level). ADRs → `knowledge/decisions/ADR-0001..0113`. Build plan → `plan.md`.
+Specs → `specs/` (top-level). ADRs → `knowledge/decisions/ADR-0001..0137`. Build plan → `plan.md`.
 Session kickoffs → `outputs/kickoffs/`. Per-phase SPEC/PLAN → `outputs/specs/`.
 
 ## Next

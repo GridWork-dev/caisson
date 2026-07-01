@@ -1,14 +1,17 @@
 # Public-surface minimization
 
 **What:** how to MINIMIZE what Caisson gives away publicly while keeping open-core adoption intact —
-the current leak (commercial modules served free by the registry Worker), the locked Q1 fix, and the
-principled boundary of what stays open vs gated.
+the base-kind leak (commercial modules served free by the registry Worker) — CLOSED in code by
+ADR-0136 (floor re-keyed on `license === "Apache-2.0"`), built on this branch with only the
+live-worker deploy pending — and the principled boundary of what stays open vs gated.
 
 **Why:** the open-core premise (ADR-0094) is _give away the substrate, sell the differentiated
-modules_. Today the registry Worker over-gives: it keys "free" off edition-membership, not off
-license/price, so 8 commercial (`LicenseRef-Caisson-Commercial`, `tier: paid`) modules are pullable
-free and unauthenticated. That is revenue walking out the door and a mismatch with the standards-gate,
-which correctly marks those same modules commercial.
+modules_. ADR-0136 closed a leak where the registry Worker over-gave: it keyed "free" off
+edition-membership, not off license/price, so 8 commercial (`LicenseRef-Caisson-Commercial`,
+`tier: paid`) modules were pullable free and unauthenticated. The free-set floor is now re-keyed on
+`license === "Apache-2.0"` (built on the branch); the un-gating goes live at deploy, so the live
+Worker stays unfiltered until then. This resolved the mismatch with the standards-gate, which already
+marked those modules commercial.
 
 Ground truth for this doc is disk, not memory: the built `registry/index.json`, every
 `packages/*/package.json` + `services/*/package.json` `license` field, every `packages/*/manifest.ts`,
@@ -69,24 +72,26 @@ registry/worker/handler.ts:150      "This entry serves UNFILTERED — the live d
 
 So **right now the live Worker serves the entire 27-module `index.json` unfiltered and
 unauthenticated** — including all four paid editions (`compliance`, `ai-kit`, `local-ai`, `agent-dev`).
-That is the worst-case current surface. The pending ADR-0047 DEPLOY closes the _edition_ half; the
-Q1 fix (§2) closes the _base-kind_ half that ADR-0047 alone does not.
+That is the worst-case current surface. The pending ADR-0047 DEPLOY closes the _edition_ half; ADR-0136
+(§2) closed the _base-kind_ half that ADR-0047 alone does not — built on this branch, live at deploy.
 
 ### The public surface, from disk (built `registry/index.json`, 27 modules)
 
-**A. Legitimately open — Apache-2.0 / `tier: oss` / `editions: []` (11 modules, keep free):**
+**A. Legitimately open — Apache-2.0 / `tier: oss` / `editions: []` (15 modules, keep free):**
 
 `kernel` · `auth` · `tenancy-rls` · `ui` · `billing` · `credits` · `jobs` · `email` · `ai-config` ·
-`mcp-server` · `registry-schema`
+`mcp-server` · `registry-schema` · `observability` · `cli` · `migrate` · `license-verify`
 
-(These are the ADR-0094 open Base. A 12th Apache-2.0 package, `@caisson/observability` (ADR-0117), is
-open but **not yet published to the index**. `@caisson/platform-reads` and `@caisson/license-issue` are
-commercial and also absent from the index — server-side surfaces, never distributed.)
+(These are the ADR-0094 open Base plus `@caisson/observability` (ADR-0117, now published) and
+`cli` / `migrate` / `license-verify` — flipped from commercial to Apache-2.0 by ADR-0136.
+`@caisson/platform-reads` and `@caisson/license-issue` remain commercial and absent from the index —
+server-side surfaces, never distributed.)
 
 **B. The LEAK — `LicenseRef-Caisson-Commercial` / `tier: paid` but `editions: []`, so served in the
-free base view (12 modules).** Split by the Q1 lock into gate-these-8 vs keep-tooling-free-4:
+free base view (9 modules).** CLOSED in code by ADR-0136 (floor re-keyed on
+`license === "Apache-2.0"`, built on this branch); the live Worker un-gates at deploy:
 
-| Module            | kind      | manifest `tier` / `license` | Locked price | Q1 disposition      |
+| Module            | kind      | manifest `tier` / `license` | Locked price | Disposition         |
 | ----------------- | --------- | --------------------------- | ------------ | ------------------- |
 | `field-crypto`    | primitive | paid / Commercial           | $199         | **GATE**            |
 | `audit-worm`      | primitive | paid / Commercial           | $149         | **GATE**            |
@@ -96,15 +101,12 @@ free base view (12 modules).** Split by the Q1 lock into gate-these-8 vs keep-to
 | `prompt-registry` | primitive | paid / Commercial           | $99          | **GATE**            |
 | `local-store`     | base      | paid / Commercial           | $99          | **GATE**            |
 | `agent-kernel`    | base      | paid / Commercial           | $199         | **GATE**            |
-| `cli`             | base      | paid / Commercial           | —            | keep free (tooling) |
-| `migrate`         | base      | paid / Commercial           | —            | keep free (tooling) |
-| `license-verify`  | primitive | paid / Commercial           | —            | keep free (tooling) |
 | `pricebook`       | base      | paid / Commercial           | —            | keep free (tooling) |
 
 The 8 gated modules are the differentiated compliance/AI/local/agent primitives — the code buyers pay
-for. The 4 kept-free are the entry-point/tooling surface: you cannot gate `create-caisson` behind a
-license (it is the installer), you cannot gate `license-verify` behind a license (it is the verifier),
-and `migrate`/`pricebook` are consumed by the free base at compose time.
+for. `pricebook` is the one remaining kept-free tooling item: it is consumed by the free base at
+compose time and never had a standalone price to protect. `cli`, `migrate`, and `license-verify` are
+no longer in this table — ADR-0136 flipped them to Apache-2.0 open Base (§A).
 
 **C. Edition roots — `editions: [<name>]`, gated by ADR-0047 once deployed (4 modules):**
 `compliance` · `ai-kit` · `local-ai` · `agent-dev`. These already fail the free-view rule
@@ -121,6 +123,15 @@ a leaky proxy for "free" — a commercial primitive that happens to belong to no
 through.
 
 **The fix (Q1 lock): gate on a paid signal, not on edition membership.**
+
+> **BUILT (ADR-0136) — the shipped mechanism is simpler than the sketch below.** The free floor was
+> re-keyed purely on `manifest.editions.length === 0 && manifest.license === "Apache-2.0"` (see
+> `packages/registry-schema/src/entitlements.ts` → `baseModuleIds`). There is **no `paid` flag and no
+> `FREE_TOOLING` allowlist**: `cli`/`migrate`/`license-verify` were instead **flipped to `Apache-2.0`**
+> so they fall in the open Base by license, and `pricebook` stays the one gated commercial base-kind
+> module. The `paid`-flag + `FREE_TOOLING`-allowlist design in steps 1–2 below was the rejected
+> alternative (ADR-0136 §Rejected), kept here for historical context. Un-gating goes live at the
+> operator DEPLOY.
 
 1. **Add a `paid` flag to the index, derived at build time from the PURCHASE_BOOK** (the pricing SOT,
    `packages/pricebook/src/purchases.ts` — `PURCHASE_BOOK` / `PURCHASE_BOOK_VERSION`; cross-checked
@@ -233,16 +244,15 @@ same discipline: a new ADR, not an edit to an old one.
 
 ---
 
-## 5. ADR pointer (this decision needs a formal gating ADR — do NOT write it here)
+## 5. ADR pointer (the gating decision is recorded as ADR-0136)
 
-`knowledge/decisions/` is append-only and numbered; this analysis is not an ADR. The Q1 gating lock —
+`knowledge/decisions/` is append-only and numbered; this analysis is not an ADR. The gating lock —
 "gate the 8 paid base-kind modules behind a valid Ed25519 license/entitlement; keep the Apache-2.0
-base + the 4 tooling modules always-free; derive the `paid` flag from the PURCHASE_BOOK at index-build;
-extend ADR-0047; fail-safe to open+tooling; grandfather-forward per ADR-0106/0129" — must be recorded
-as its own ADR at the next docs wave.
+base + `pricebook` always-free; derive the `paid` flag from the PURCHASE_BOOK at index-build; extend
+ADR-0047; fail-safe to open+tooling; grandfather-forward per ADR-0106/0129" — is recorded as ADR-0136,
+built and integrated on this branch.
 
-**Pending number:** the catalog ceiling on disk is **ADR-0135**; the Q1 registry-gating ADR takes the
-**next free number (≥ ADR-0136)**. Register it in [`../adr-index.md`](../adr-index.md) and flip the
-open sub-flag in [`decisions-and-forks.md`](./decisions-and-forks.md) on lock.
-</content>
-</invoke>
+**Number:** the catalog ceiling on disk is **ADR-0137**; the Q1 registry-gating decision landed as
+**ADR-0136** (license-keyed registry gating, floor re-keyed on `license === "Apache-2.0"`), built and
+integrated on this branch. It is registered in [`../adr-index.md`](../adr-index.md) with the
+open sub-flag flipped in [`decisions-and-forks.md`](./decisions-and-forks.md).

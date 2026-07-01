@@ -21,7 +21,7 @@ started · `ROADMAP` = post-v1, no code.
 
 > **STATUS: SHIPPED.** `tooling/` (eslint-config · tsconfig · standards-gate · testing),
 > `kernel` (12 src / 9 tests), `registry/` runtime + the CI workflows
-> (`.github/workflows/{ci,deploy-site,lighthouse}.yml`) are all in `main`; exit gate met.
+> (`.github/workflows/{ci,lighthouse}.yml`) are all in `main`; exit gate met.
 > Owners: ADR-0001/0002/0021/0022.
 
 - T0.1 Monorepo init: Bun workspaces + Turborepo + changesets (ADR-0001).
