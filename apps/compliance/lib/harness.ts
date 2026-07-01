@@ -92,6 +92,16 @@ export async function createLegHarness(): Promise<LegHarness> {
 
   const root = mkdtempSync(join(tmpdir(), "caisson-worm-"));
   const store = new LocalArtifactStore(root);
+  if (process.env.NODE_ENV === "production") {
+    // Fail closed: this leg is a golden-pinned DETERMINISTIC demo that seals SYNTHETIC PHI under a
+    // fixed demo vector — it must never run in production, where a refactor could route real tenant
+    // data through it (parity with apps/site byok.ts, ADR-0183). apps/compliance is not deployed; tests
+    // run under NODE_ENV=test, and the leg's determinism forbids fromEnv, so this guard is the safe
+    // defense-in-depth (not a fromEnv switch, which would break the golden fixtures).
+    throw new Error(
+      "compliance leg harness must not run in production (demo key material only).",
+    );
+  }
   const provider = new DerivedKeyProvider(DEMO_MASTER_KEY, DEMO_FIELD_SALT);
   const sink = new InMemoryEventSink();
 

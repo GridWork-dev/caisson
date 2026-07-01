@@ -246,6 +246,14 @@ function demoProvider(
   ) {
     return DerivedKeyProvider.fromEnv(env);
   }
+  if (env.NODE_ENV === "production") {
+    // Fail closed: never seal under the public demo vector in production (parity with apps/site
+    // byok.ts, ADR-0183). apps/local-ai is not a deployed service today — defense-in-depth against a
+    // future deploy with unset field-crypto env. Tests/dev (NODE_ENV≠production) keep the demo path.
+    throw new Error(
+      "local-ai field-crypto is not configured: set MASTER_FIELD_KEY and FIELD_CRYPTO_SALT.",
+    );
+  }
   // A fixed 32-byte demo master + salt (clearly a reference vector, never a real secret).
   const masterKey = Buffer.alloc(32, 0xa1);
   const salt = Buffer.alloc(32, 0xb2);
