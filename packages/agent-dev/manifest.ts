@@ -32,6 +32,9 @@ export default defineModule({
     "@caisson/ai-config": "0.0.0",
     "@caisson/kernel": "0.0.0",
     "@caisson/local-store": "0.0.0",
+    // Stage-2 harvest primitive folded into the Agentic-Dev bundle (ADR-0178). Dev-pinned "0.0.0";
+    // the gated publish rewrites to the real version snapshot in the ledger.
+    "@caisson/tool-exec": "0.0.0",
   },
   golden: "src/__golden__",
   description:
