@@ -20,4 +20,16 @@ export type {
 } from "./gateway.ts";
 
 // The live provider transport (the real `@ai-sdk/*` adapters; the one path not exercised in CI).
-export { defaultProviders } from "./providers.ts";
+export { defaultProviders, providerFor } from "./providers.ts";
+
+// Per-tenant encrypted BYOK (ADR-0162): the encrypted key store + the BYOK-aware resolver.
+export {
+  TENANT_AI_CREDENTIAL_SCHEMA_SQL,
+  getTenantProviderKey,
+  putTenantProviderKey,
+} from "./byok-store.ts";
+export { buildByokResolver } from "./byok-resolver.ts";
+export type {
+  ByokResolverOptions,
+  TenantKeyResolver,
+} from "./byok-resolver.ts";

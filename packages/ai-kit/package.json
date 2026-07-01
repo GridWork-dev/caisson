@@ -30,6 +30,7 @@
     "@caisson/ai-config": "workspace:*",
     "@caisson/ai-meter": "workspace:*",
     "@caisson/credits": "workspace:*",
+    "@caisson/field-crypto": "workspace:*",
     "@caisson/guardrails": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/prompt-registry": "workspace:*",
@@ -40,7 +41,6 @@
   "devDependencies": {
     "@caisson/ai-evals": "workspace:*",
     "@caisson/eslint-config": "workspace:*",
-    "@caisson/field-crypto": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
     "eslint": "^9.13.0",
