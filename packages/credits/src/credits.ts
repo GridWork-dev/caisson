@@ -248,6 +248,10 @@ export interface LedgerEntry {
   feature: string | null;
   source_event_id: string | null;
   idempotency_key: string | null;
+  /** ISO-8601 instant the event was recorded — the row's own `created_at`, the same column the
+   * query orders by. Added for the buyer-dashboard ledger view (ADR-0114), which needs a real
+   * timestamp per entry rather than fabricating one. */
+  created_at: string;
 }
 
 /** The append-only ledger for an account, oldest first. `sum(amount)` equals the balance. */
@@ -255,12 +259,24 @@ export async function getLedger(
   tx: TenantExecutor,
   accountId: string,
 ): Promise<LedgerEntry[]> {
-  const r = await tx.query<LedgerEntry>(
-    `SELECT id, event_type, amount, feature, source_event_id, idempotency_key
+  // `created_at` comes back as a driver-native `timestamptz` value — a JS `Date` instance on both
+  // PGlite and node-postgres, NOT a string, despite the column being declared `string` on the
+  // wire-facing `LedgerEntry` type. Normalize explicitly rather than trust the raw row shape (the
+  // type-checker cannot catch a driver returning a different runtime type than its declared one).
+  const r = await tx.query<
+    Omit<LedgerEntry, "created_at"> & { created_at: unknown }
+  >(
+    `SELECT id, event_type, amount, feature, source_event_id, idempotency_key, created_at
      FROM credit_event WHERE account_id = $1 ORDER BY created_at, id`,
     [accountId],
   );
-  return r.rows;
+  return r.rows.map((row) => ({
+    ...row,
+    created_at:
+      row.created_at instanceof Date
+        ? row.created_at.toISOString()
+        : String(row.created_at),
+  }));
 }
 
 /**

@@ -9,7 +9,8 @@ export const dynamic = "force-static";
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: { userAgent: "*", allow: "/" },
+    // The authed buyer dashboard (ADR-0114) has no SEO value and no business being crawled.
+    rules: { userAgent: "*", allow: "/", disallow: "/dashboard" },
     sitemap: "https://caisson.sh/sitemap.xml",
     host: "https://caisson.sh",
   };

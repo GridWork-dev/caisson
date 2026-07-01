@@ -53,6 +53,7 @@ const index = loadRegistryIndex({
     entry("@caisson/kernel", []), // base
     entry("@caisson/compliance", ["compliance"]),
     entry("@caisson/ai-kit", ["ai-kit"]),
+    entry("@caisson/audit-worm", []), // per-module bare-slug purchase target below
   ],
 });
 
@@ -99,6 +100,7 @@ describe("resolveAccountEntitlements (ADR-0071)", () => {
     );
     expect([...resolved].sort()).toEqual([
       "@caisson/ai-kit",
+      "@caisson/audit-worm",
       "@caisson/compliance",
       "@caisson/kernel",
     ]);
@@ -127,5 +129,40 @@ describe("resolveAccountEntitlements (ADR-0071)", () => {
         resolveAccountEntitlements(tx, acct, index),
       ),
     ).rejects.toThrow();
+  });
+
+  test("a bare-slug per-module purchase resolves to exactly that module (P6-store track)", async () => {
+    const acct = "acct_module";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["audit-worm"], // the bare package slug, not @caisson/audit-worm
+        sourceEventId: "in_m",
+        source: { kind: "one_time", purchaseId: "pi_m" },
+      }),
+    );
+    const resolved = await withTenant(tp.pg, acct, (tx) =>
+      resolveAccountEntitlements(tx, acct, index),
+    );
+    expect([...resolved]).toEqual(["@caisson/audit-worm"]);
+  });
+
+  test("a reserved future-module purchase alongside a real one resolves only the real member (fail-soft, never throws)", async () => {
+    const acct = "acct_reserved";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        // "alerting" has NO row in this synthetic index yet (its package doesn't exist, P6-store
+        // track) — the resolver must not throw and must not grant a substitute; only the real
+        // "audit-worm" purchase resolves.
+        entitlementIds: ["audit-worm", "alerting"],
+        sourceEventId: "in_r",
+        source: { kind: "one_time", purchaseId: "pi_r" },
+      }),
+    );
+    const resolved = await withTenant(tp.pg, acct, (tx) =>
+      resolveAccountEntitlements(tx, acct, index),
+    );
+    expect([...resolved]).toEqual(["@caisson/audit-worm"]);
   });
 });

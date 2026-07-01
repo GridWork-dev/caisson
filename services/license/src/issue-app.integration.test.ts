@@ -5,7 +5,9 @@
 // DEV keypair (SHA-256("caisson-license-verify-KAT-seed-v1"), a TEST vector) and the issued token is
 // verified through the explicit-key seam `verifyLicenseWithKey(token, DEV_PUB)`. Also asserts the
 // security floor: timing-safe Bearer gate (missing/wrong → 401), Zod `.strict()` body (unknown field →
-// 400), /health public + security headers.
+// 400), /health public + security headers. And the persistence contract ("persist & reuse"): a second
+// /issue for the SAME (accountId, major) re-serves the byte-identical STORED token (no re-mint, no
+// second row), while a different major mints + stores its own independent grant.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import {
   type KeyObject,
@@ -26,6 +28,11 @@ import {
   ENTITLEMENT_SCHEMA_SQL,
   grantEntitlements,
 } from "./entitlement-store.ts";
+import { loadRateLimitConfig, TokenBucketLimiter } from "./rate-limit.ts";
+import {
+  LICENSE_GRANT_SCHEMA_SQL,
+  readLicenseGrant,
+} from "./license-grant-store.ts";
 
 const TOKEN = "test-license-issue-token-0123456789";
 const DEV_SEED = createHash("sha256")
@@ -87,7 +94,18 @@ let app: (req: Request) => Promise<Response>;
 beforeAll(async () => {
   tp = await newTestPg();
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
-  app = createApp({ token: TOKEN, signer, index, db: tp.pg });
+  await tp.exec(LICENSE_GRANT_SCHEMA_SQL);
+  // provider: null — these tests exercise POST /issue only; /webhook is covered in
+  // webhook-app.integration.test.ts. A null provider makes /webhook fail closed (401), not these routes.
+  // A permissive limiter (default budgets) lets the suite's handful of /issue calls through.
+  app = createApp({
+    token: TOKEN,
+    signer,
+    index,
+    db: tp.pg,
+    provider: null,
+    limiter: new TokenBucketLimiter(loadRateLimitConfig()),
+  });
 });
 afterAll(async () => {
   await tp.close();
@@ -152,6 +170,106 @@ describe("POST /issue (ADR-0110)", () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as { token: string };
     expect(verifyLicenseWithKey(body.token, DEV_PUB).entitlements).toEqual([]);
+  });
+
+  test("persist & reuse: a second /issue for the SAME (account, major) re-serves the stored token", async () => {
+    const acct = "acct_issue_persist";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "in_persist",
+        source: { kind: "subscription", subscriptionId: "sub_persist" },
+      }),
+    );
+    const body = JSON.stringify({
+      accountId: acct,
+      tier: "pro",
+      major: 1,
+      expiry: null,
+    });
+
+    const first = await app(post(body, `Bearer ${TOKEN}`));
+    expect(first.status).toBe(200);
+    const firstJson = (await first.json()) as {
+      token: string;
+      licenseId: string;
+    };
+
+    const second = await app(post(body, `Bearer ${TOKEN}`));
+    expect(second.status).toBe(200);
+    const secondJson = (await second.json()) as {
+      token: string;
+      licenseId: string;
+    };
+
+    // Byte-identical re-serve, not a re-mint — a re-mint would stamp a FRESH randomUUID licenseId.
+    expect(secondJson.token).toBe(firstJson.token);
+    expect(secondJson.licenseId).toBe(firstJson.licenseId);
+
+    // Exactly one row landed for (account, major) — no proliferation of perpetual tokens.
+    const rows = await tp.query(
+      `SELECT count(*)::int AS n FROM license_grant WHERE account_id = $1 AND major = $2`,
+      [acct, 1],
+    );
+    expect((rows[0] as { n: number }).n).toBe(1);
+
+    // Round-trip: the persisted grant IS the served token, and it independently verifies.
+    const stored = await withTenant(tp.pg, acct, (tx) =>
+      readLicenseGrant(tx, acct, 1),
+    );
+    expect(stored?.token).toBe(firstJson.token);
+    expect(verifyLicenseWithKey(stored?.token ?? "", DEV_PUB).valid).toBe(true);
+  });
+
+  test("a different major for the same account mints + stores its own independent grant", async () => {
+    const acct = "acct_issue_major";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "in_major",
+        source: { kind: "subscription", subscriptionId: "sub_major" },
+      }),
+    );
+    const v1Res = await app(
+      post(
+        JSON.stringify({
+          accountId: acct,
+          tier: "pro",
+          major: 1,
+          expiry: null,
+        }),
+        `Bearer ${TOKEN}`,
+      ),
+    );
+    const v2Res = await app(
+      post(
+        JSON.stringify({
+          accountId: acct,
+          tier: "pro",
+          major: 2,
+          expiry: null,
+        }),
+        `Bearer ${TOKEN}`,
+      ),
+    );
+    const v1Json = (await v1Res.json()) as {
+      token: string;
+      licenseId: string;
+    };
+    const v2Json = (await v2Res.json()) as {
+      token: string;
+      licenseId: string;
+    };
+    expect(v1Json.licenseId).not.toBe(v2Json.licenseId);
+    expect(v1Json.token).not.toBe(v2Json.token);
+
+    const rows = await tp.query(
+      `SELECT count(*)::int AS n FROM license_grant WHERE account_id = $1`,
+      [acct],
+    );
+    expect((rows[0] as { n: number }).n).toBe(2);
   });
 
   test("without a Bearer → 401", async () => {

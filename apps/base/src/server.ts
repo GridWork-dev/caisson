@@ -20,6 +20,7 @@ function json(status: number, body: unknown): Response {
       "content-type": "application/json",
       "X-Content-Type-Options": "nosniff",
       "X-Frame-Options": "DENY",
+      "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
     },
   });
 }

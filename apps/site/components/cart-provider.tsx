@@ -1,0 +1,89 @@
+"use client";
+
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+
+import {
+  addCartItem,
+  CART_STORAGE_KEY,
+  cartSubtotal,
+  type CartItem,
+  parseStoredCart,
+  removeCartItem,
+  serializeCart,
+} from "@/lib/cart";
+
+export interface CartContextValue {
+  items: readonly CartItem[];
+  subtotal: number;
+  drawerOpen: boolean;
+  addItem: (item: CartItem) => void;
+  removeItem: (id: string) => void;
+  clear: () => void;
+  openDrawer: () => void;
+  closeDrawer: () => void;
+  toggleDrawer: () => void;
+}
+
+const CartContext = createContext<CartContextValue | undefined>(undefined);
+
+/**
+ * Cart state, persisted to `localStorage` under `CART_STORAGE_KEY`. Hydrates AFTER mount (the
+ * `hydrated` gate below) so the server-rendered markup and the first client render agree —
+ * reading `localStorage` during the initial render would desync hydration.
+ *
+ * Scoped per route group: the marketing layout and the authed `/dashboard/cart` page each mount
+ * their own `CartProvider`. Both read/write the SAME `CART_STORAGE_KEY` on the SAME origin (this
+ * is one unified Next app, ADR-0114), so the cart a visitor builds on the public pricing page is
+ * the same cart the authed checkout panel sees once they sign in — no server-side cart state to
+ * keep in sync, no cart id to pass around.
+ */
+export function CartProvider({ children }: { children: ReactNode }) {
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setItems(parseStoredCart(window.localStorage.getItem(CART_STORAGE_KEY)));
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    window.localStorage.setItem(CART_STORAGE_KEY, serializeCart(items));
+  }, [items, hydrated]);
+
+  const value = useMemo<CartContextValue>(
+    () => ({
+      items,
+      subtotal: cartSubtotal(items),
+      drawerOpen,
+      addItem: (item) => {
+        setItems((prev) => addCartItem(prev, item));
+        setDrawerOpen(true);
+      },
+      removeItem: (id) => setItems((prev) => removeCartItem(prev, id)),
+      clear: () => setItems([]),
+      openDrawer: () => setDrawerOpen(true),
+      closeDrawer: () => setDrawerOpen(false),
+      toggleDrawer: () => setDrawerOpen((v) => !v),
+    }),
+    [items, drawerOpen],
+  );
+
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+}
+
+export function useCart(): CartContextValue {
+  const ctx = useContext(CartContext);
+  if (ctx === undefined) {
+    throw new Error("useCart must be used within a CartProvider");
+  }
+  return ctx;
+}

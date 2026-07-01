@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { createApp } from "./app.ts";
 import { FakeEmbedder } from "./embedder.ts";
 import { DocsIndex } from "./index-store.ts";
+import { loadRateLimitConfig, TokenBucketLimiter } from "./rate-limit.ts";
 import type { DocChunk } from "./types.ts";
 
 const TOKEN = "test-docs-service-token-0123456789";
@@ -28,6 +29,8 @@ beforeAll(async () => {
     llmsTxt: "# Caisson\n\n> idx\n",
     llmsFull: "# Billing\n",
     token: TOKEN,
+    // Generous default budget — these routing assertions stay well under the burst caps.
+    limiter: new TokenBucketLimiter(loadRateLimitConfig({})),
   });
 });
 afterAll(() => index.close());
@@ -51,13 +54,22 @@ describe("createApp routing", () => {
     expect(res.headers.get("Strict-Transport-Security")).toContain("max-age=");
   });
 
-  test("GET /llms.txt and /llms-full.txt → public text", async () => {
+  test("GET /llms.txt and /llms-full.txt → public text, edge-cacheable", async () => {
     const a = await app(new Request("http://docs.test/llms.txt"));
     expect(a.status).toBe(200);
     expect(await a.text()).toBe("# Caisson\n\n> idx\n");
+    expect(a.headers.get("Cache-Control")).toBe("public, max-age=3600");
     const b = await app(new Request("http://docs.test/llms-full.txt"));
     expect(b.status).toBe(200);
     expect(await b.text()).toBe("# Billing\n");
+    expect(b.headers.get("Cache-Control")).toBe("public, max-age=3600");
+  });
+
+  test("POST /query is NOT cached", async () => {
+    const res = await app(
+      post(JSON.stringify({ query: "billing" }), `Bearer ${TOKEN}`),
+    );
+    expect(res.headers.get("Cache-Control")).toBeNull();
   });
 
   test("POST /query without a Bearer → 401", async () => {

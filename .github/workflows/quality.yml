@@ -1,0 +1,151 @@
+name: quality
+# The NON-required quality gates — split out of ci.yml so they can be path-filtered without
+# risking a required check (branch protection only watches standards-gate/check/registry-index,
+# which stay unconditional in ci.yml). Each job here is safe to skip when its package tree is
+# untouched: skip just means "nothing to validate," never "merge blocked."
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: "quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Detects which package trees changed so the jobs below can skip when irrelevant. `pull-requests:
+  # read` is required by dorny/paths-filter for the pull_request event (it reads the changed-file
+  # list via the GitHub REST API); for push it falls back to git against the pre-push commit, which
+  # works against the default shallow checkout below (the action fetches additional history itself).
+  changes:
+    runs-on: [self-hosted, <host>]
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      eval: ${{ steps.filter.outputs.eval }}
+      ui: ${{ steps.filter.outputs.ui }}
+      local-store: ${{ steps.filter.outputs.local-store }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            eval:
+              - 'packages/**'
+              - 'apps/**'
+            ui:
+              - 'packages/ui/**'
+            local-store:
+              - 'packages/local-store/**'
+
+  # The eval gate (ADR-0062). A DISTINCT turbo `eval` task — separate from `test` — that runs the
+  # committed eval suite against the committed JSON baseline (regression-vs-baseline, BLESS-style).
+  # It is offline + deterministic: model-graded scorers replay committed cassettes, so there is no
+  # live provider/model/network call and no secret in CI (SPEC TM6).
+  #
+  # ADR-0072: this is a MONOREPO-ONLY job. It is NEVER injected into a generated buyer repo as a
+  # required CI check — `create-caisson` must not emit this job. A buyer owns their own eval cadence
+  # and baseline; gating their merges on OUR regression baseline is wrong. The eval task ships in the
+  # library for the buyer to opt into, but it is not one of the required buyer-repo CI checks.
+  #
+  # NOT a required check → safe to path-skip on packages/** and apps/** changes.
+  eval:
+    needs: changes
+    if: needs.changes.outputs.eval == 'true'
+    runs-on: [self-hosted, <host>]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+      - name: cache bun install
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
+      - run: bun install --frozen-lockfile
+      - name: eval gate (regression vs committed baseline, BLESS unset — offline, cassette-replayed)
+        run: bun run eval
+
+  # tokens.css is GENERATED from the @caisson/ui TS token objects (ADR-0101 design-quality gate #1).
+  # This job proves the committed sheet is a byte-identical rebuild: editing a token without running
+  # `bun run gen:tokens`, or hand-editing tokens.css, fails `git diff --exit-code`. Mirrors the
+  # registry-index provenance gate; tokens.css is .prettierignore'd so the generator is sole authority.
+  #
+  # NOT a required check → safe to path-skip on packages/ui/** changes.
+  token-drift:
+    needs: changes
+    if: needs.changes.outputs.ui == 'true'
+    runs-on: [self-hosted, <host>]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+      - name: cache bun install
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
+      - run: bun install --frozen-lockfile
+      - name: tokens.css is a byte-identical rebuild from the TS tokens (ADR-0101 #1)
+        run: |
+          bun run packages/ui/scripts/gen-tokens-css.ts
+          git diff --exit-code packages/ui/styles/tokens.css
+
+  # Exit-gate clause 6 (P4a local-ai): @caisson/local-store loads a PLATFORM-SPECIFIC native
+  # extension — `db.loadExtension(sqliteVec.getLoadablePath())` in packages/local-store/src/store.ts
+  # resolves a `.so` on Linux and a `.dylib` on macOS. The `check`/`standards-gate` jobs run on
+  # ubuntu only, so the macOS native binary path would otherwise ship unexercised. This matrix runs
+  # the local-store suite (vec0 + FTS5 + RRF hybrid retrieval) on BOTH runners; a missing/broken
+  # platform extension fails CI here. `fail-fast: false` so a break on one OS never masks the other.
+  # Linux leg → the fleet's amd64 lane (exercises the sqlite-vec `.so`). macOS leg → STAYS
+  # GitHub-hosted `macos-latest` for now: the fleet's native macOS lane (<host>) dispatches
+  # fine (checkout + bun install are green on it), but its runner user has no Homebrew
+  # extension-capable SQLite, so the `brew install sqlite` step fails there. Moving the macOS leg to
+  # the fleet is a follow-up gated on provisioning Homebrew + extension-capable SQLite on the Mac
+  # mini's runner user (docs/operations.md §7); until then this keeps the leg green.
+  #
+  # NOT a required check → safe to path-skip on packages/local-store/** changes.
+  native-ext:
+    needs: changes
+    if: needs.changes.outputs.local-store == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux
+            runs-on: [self-hosted, <host>]
+          - platform: macos
+            runs-on: macos-latest
+    runs-on: ${{ matrix.runs-on }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+      - name: cache bun install
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
+      # macOS ships a system SQLite with extension loading DISABLED (Apple build). store.ts points
+      # bun:sqlite at Homebrew's extension-capable SQLite via Database.setCustomSQLite; ensure it is
+      # installed so that path exists on the runner. No-op effect on Linux (step is macOS-gated).
+      - name: ensure extension-capable SQLite (macOS)
+        if: runner.os == 'macOS'
+        run: brew install sqlite
+      - name: local-store native sqlite-vec ext (vec0 + FTS5 + RRF) on ${{ matrix.platform }}
+        run: bun test packages/local-store/src

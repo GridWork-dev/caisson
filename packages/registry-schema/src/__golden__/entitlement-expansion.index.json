@@ -12,10 +12,9 @@
             "version": "0.1.0",
             "kind": "base",
             "editions": [],
-            "tier": "paid",
-            "priceCents": 4900,
-            "license": "LicenseRef-Caisson-Commercial",
-            "description": "Shared base library — every edition composes it (fixture base member)."
+            "tier": "oss",
+            "license": "Apache-2.0",
+            "description": "Shared open base library — every edition composes it (fixture OPEN Apache-2.0 base member)."
           },
           "publishedAt": "2026-06-27T00:00:00.000Z",
           "gateAttestation": "ci-fixture@0000000"

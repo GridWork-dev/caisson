@@ -28,9 +28,12 @@ const EDITION_NAMES = new Set([
 ]);
 
 // Open-core (ADR-0094/0097). The open Base substrate ships `Apache-2.0`; every OTHER published module
-// (editions + their members, the compliance primitives field-crypto/audit-worm, the cli generator, the
-// commercial registry SERVICE, updates) ships `LicenseRef-Caisson-Commercial`. The open set is the
-// ADR-0094 ten PLUS `@caisson/registry-schema` (the open registry contract split out by ADR-0097).
+// (editions + their members, the compliance primitives field-crypto/audit-worm, the commercial
+// registry SERVICE, updates, the pricebook) ships `LicenseRef-Caisson-Commercial`. The open set is the
+// ADR-0094 ten PLUS `@caisson/registry-schema` (the open registry contract split out by ADR-0097),
+// `@caisson/observability` (ADR-0117), and the ships-with-generator tooling trio cli·migrate·
+// license-verify (ADR-0136): every buyer's generated repo embeds all three, so they are open Base,
+// not sold à-la-carte. `@caisson/pricebook` stays commercial (it is the seller's price catalog).
 const OPEN_LICENSE = "Apache-2.0";
 const COMMERCIAL_LICENSE = "LicenseRef-Caisson-Commercial";
 const OPEN_BASE_NAMES = new Set([
@@ -45,6 +48,16 @@ const OPEN_BASE_NAMES = new Set([
   "@caisson/ai-config",
   "@caisson/mcp-server",
   "@caisson/registry-schema",
+  // ADR-0117: vendor-neutral OTel bootstrap is base substrate every buyer gets, same as the rest
+  // of the open Base set above — never edition-gated.
+  "@caisson/observability",
+  // ADR-0136: ships-with-generator tooling. create-caisson (cli) composes migrate + embeds the
+  // offline license verifier into EVERY generated repo, so all three ship with each buyer and are
+  // open Apache-2.0 Base — never gated, never sold à-la-carte. cli→credits·kernel·migrate·
+  // registry-schema, migrate→kernel, license-verify→kernel: all open, so open-only holds (ADR-0094).
+  "@caisson/cli",
+  "@caisson/migrate",
+  "@caisson/license-verify",
 ]);
 
 // A registry-module candidate is a `packages/` member. `apps/` are reference applications (the
