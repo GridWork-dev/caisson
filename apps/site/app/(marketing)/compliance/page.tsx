@@ -13,6 +13,8 @@ import {
   Terminal,
   type IconName,
 } from "@/components";
+import { AddToCartButton } from "@/components/add-to-cart-button";
+import { editionCatalogItem, toCartItem } from "@/lib/catalog";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import {
   breadcrumb,
@@ -108,6 +110,10 @@ const FAQ: readonly { question: string; answer: string }[] = [
 
 const compliancePrice = priceById("compliance");
 
+// Cart-ready CatalogItem for the peak-intent buy CTAs below (ADR-0192 single add-to-cart buy-verb).
+const _catalogItem = editionCatalogItem("compliance");
+const editionCartItem = _catalogItem ? toCartItem(_catalogItem) : undefined;
+
 export default function CompliancePage() {
   const heroArtifact: ReactNode = (
     <Terminal
@@ -164,9 +170,9 @@ export default function CompliancePage() {
         lede="The Compliance edition wires the technical controls an auditor asks for — tenant isolation, immutable evidence, and a tamper-evident log — in before your first customer, tested in CI. You start fail-closed, then prove it on demand."
         ctas={
           <>
-            <Button href="/pricing" variant="primary">
-              Get Compliance
-            </Button>
+            {editionCartItem && (
+              <AddToCartButton item={editionCartItem} variant="primary" />
+            )}
             <Button href="/docs" variant="ghost">
               Read the docs
             </Button>
@@ -398,9 +404,9 @@ export default function CompliancePage() {
               control mappings current as SOC 2 / HIPAA guidance moves.
             </p>
             <div className="cs-cta-row">
-              <Button href="/pricing" variant="primary">
-                Get Compliance
-              </Button>
+              {editionCartItem && (
+                <AddToCartButton item={editionCartItem} variant="primary" />
+              )}
               <Button href="/pricing" variant="ghost">
                 See the full lineup
               </Button>
@@ -423,9 +429,9 @@ export default function CompliancePage() {
           </Terminal>
         </div>
         <div className="cs-cta-row" style={{ marginTop: "var(--cs-space-6)" }}>
-          <Button href="/pricing" variant="primary">
-            Get Compliance
-          </Button>
+          {editionCartItem && (
+            <AddToCartButton item={editionCartItem} variant="primary" />
+          )}
           <Button href="/docs" variant="ghost">
             Read the docs
           </Button>

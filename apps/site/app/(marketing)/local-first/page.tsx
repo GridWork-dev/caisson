@@ -8,6 +8,8 @@ import {
   StatusChip,
   Terminal,
 } from "@/components";
+import { AddToCartButton } from "@/components/add-to-cart-button";
+import { editionCatalogItem, toCartItem } from "@/lib/catalog";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import { breadcrumb, serializeJsonLd, softwareApplication } from "@/lib/jsonld";
 import { formatPrice, priceById } from "@/lib/pricing";
@@ -21,6 +23,10 @@ export const metadata = buildMetadata({
 
 const PAGE_URL = `${SITE_URL}/local-first`;
 const localFirstPrice = priceById("local-first");
+
+// Cart-ready CatalogItem for the peak-intent buy CTAs below (ADR-0192 single add-to-cart buy-verb).
+const _catalogItem = editionCatalogItem("local-first");
+const editionCartItem = _catalogItem ? toCartItem(_catalogItem) : undefined;
 
 const ldApp = softwareApplication({
   name: "Caisson Local-first AI",
@@ -79,9 +85,9 @@ export default function LocalFirstPage() {
         lede="Inference, embeddings, and search that run on the machine in front of you. Sovereignty is the default — not a setting you harden in later. The egress is zero because there is no outbound call to make."
         ctas={
           <>
-            <Button href="/pricing" variant="primary">
-              Get Local-first AI
-            </Button>
+            {editionCartItem && (
+              <AddToCartButton item={editionCartItem} variant="primary" />
+            )}
             <Button href="/docs/local-first" variant="ghost">
               Read the docs
             </Button>
@@ -260,9 +266,9 @@ export default function LocalFirstPage() {
               flexWrap: "wrap",
             }}
           >
-            <Button href="/pricing" variant="primary">
-              Get Local-first AI
-            </Button>
+            {editionCartItem && (
+              <AddToCartButton item={editionCartItem} variant="primary" />
+            )}
             <Button href="/docs/local-first" variant="ghost">
               Read the docs
             </Button>

@@ -388,14 +388,9 @@ export default function PricingPage() {
                     flexWrap: "wrap",
                   }}
                 >
-                  <CheckoutCta
-                    edition="bundle"
-                    href="/dashboard/plan?purchase=bundle"
-                    variant="primary"
-                  >
-                    Get everything
-                  </CheckoutCta>
-                  <AddToCartButton item={bundleItem} />
+                  {/* One buy verb sitewide: Add to cart (ADR-0192). The bundle has no
+                      detail page, so no secondary link — the cart is the one road. */}
+                  <AddToCartButton item={bundleItem} variant="primary" />
                 </div>
               )}
             </Card>
@@ -485,7 +480,7 @@ export default function PricingPage() {
                       ))}
                     </ul>
 
-                    {/* CTAs: checkout now + add to cart */}
+                    {/* One buy verb: Add to cart primary + a quiet Learn more (ADR-0192). */}
                     <div
                       style={{
                         marginTop: "var(--cs-space-6)",
@@ -494,14 +489,12 @@ export default function PricingPage() {
                         flexWrap: "wrap",
                       }}
                     >
-                      <CheckoutCta
-                        edition={ed.id}
-                        href={`/dashboard/plan?edition=${ed.id}`}
-                        variant={ed.accent ? "primary" : "ghost"}
-                      >
-                        {ed.cta}
-                      </CheckoutCta>
-                      {cartItem && <AddToCartButton item={cartItem} />}
+                      {cartItem && (
+                        <AddToCartButton item={cartItem} variant="primary" />
+                      )}
+                      <Button href={`/${ed.id}`} variant="ghost" size="sm">
+                        Learn more →
+                      </Button>
                     </div>
                   </Card>
                 </div>
