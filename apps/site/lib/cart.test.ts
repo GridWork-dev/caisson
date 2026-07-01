@@ -16,7 +16,7 @@ const compliance: CartItem = {
   id: "compliance",
   priceId: "pri_01kwd76be2eq96kff5nqw236c0",
   label: "Compliance",
-  amount: 2499,
+  amount: 749,
   kind: "edition",
 };
 
@@ -56,7 +56,7 @@ describe("cart item operations", () => {
   });
 
   test("cartSubtotal sums integer amounts", () => {
-    expect(cartSubtotal([compliance, fieldCrypto])).toBe(2698);
+    expect(cartSubtotal([compliance, fieldCrypto])).toBe(948);
   });
 
   test("cartSubtotal of an empty cart is 0", () => {
