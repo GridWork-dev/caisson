@@ -33,12 +33,13 @@ smoke-test of the deployed Worker, and `bun run check` (125/125 + kernel gate) o
 > routes 200 with security headers + Paddle CSP; license `/health` 200, `/issue` gated 401; live DB
 > migrated + verified: app role NOSUPERUSER/NOBYPASSRLS, 5 tenant tables FORCE-RLS, 4 better-auth
 > tables, idempotent). `registry/index.json` is rebuilt **27 → 32 modules** (5 Stage-2 modules
-> published, byte-identical round-trip) — the **deployed Worker still serves the old 27-module index**,
-> redeploy PENDING. **Remaining acts are all DEPLOY-class** (in flight this session): DNS flip
-> `caisson.sh` CF Pages → Railway + Pages teardown · registry Worker redeploy · `apps/admin` + SigNoz
-> Railway provisioning + `admin.caisson.sh` DNS/CF-Access + the `admin` PG role (later wave). One NEW
-> **open operator decision** (edition members-fold) landed on the board — see §4. New backlog items
-> bucketed into §3.
+> published, byte-identical round-trip). **DEPLOY EXECUTED (2026-07-01):** DNS cutover applied
+> (caisson.sh/www/admin/license → Railway, Pages custom-domains detached); `caisson-admin` + the SigNoz
+> 5-service stack provisioned; `admin` PG role created; registry Worker **redeployed** (serves the
+> rebuilt 27→32 index); OTLP wired on the fleet. **Fast-follows still open:** SigNoz `SIGNOZ_API_KEY`
+> (create in the Access-gated UI) + ingester TCP-proxy for CF-Worker OTLP; full Cloudflare Pages
+> **project** deletion (post-soak — custom domains already detached); one **open operator decision**
+> (edition members-fold, §4). New backlog items bucketed into §3.
 
 ## 0. Live verification done this session
 

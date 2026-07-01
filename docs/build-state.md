@@ -12,11 +12,19 @@
 > `apps/site/lib/deploy-migrate.ts` orchestrator; the dead Cloudflare-Pages files (`functions/`,
 > `_headers`, `wrangler.jsonc`, `normalize-export`) are removed. What the four streams added is folded
 > into the tables below (new `apps/admin`, `infra/signoz/`, 6 new packages, edition + adapter
-> driver-sets). **Remaining acts are DEPLOY-class** (in flight this session): DNS flip `caisson.sh` CF
-> Pages → Railway (terraform) + Pages teardown; **registry Worker redeploy** to serve the rebuilt
-> 32-module index; `apps/admin` + SigNoz Railway provisioning + `admin.caisson.sh` DNS/CF-Access (later
-> wave); create the `admin` PG role on live. Stream-A row below (`stream/obs-admin`, ADR ceiling 0143)
-> is now folded into this integration.
+> driver-sets). Stream-A row below (`stream/obs-admin`, ADR ceiling 0143) is now folded into this integration.
+>
+> **DEPLOY EXECUTED (2026-07-01):** merged to `main` (`747ea25..c6dbaa5`) and **fully deployed to
+> Railway** (`caisson-prod`, all `railway up`). LIVE: `caisson-site`→caisson.sh + www (200, CF-Access
+> pre-launch gate on) · `caisson-license`→license.caisson.sh (service /health 200; custom-domain cert
+> auto-issuing) · `caisson-admin`→admin.caisson.sh (200, PERMANENT operator CF-Access gate) · `caisson-docs`
+> · `caisson-support-bot` · **SigNoz 5-service stack** provisioned (`railway deploy -t signoz`). DNS
+> cutover applied via terraform (apex/www Pages→Railway, license + admin added, Pages custom-domains
+> detached). **admin PG role** provisioned (`admin` NOLOGIN + `admin_app` non-super login). Registry
+> **Worker redeployed** (serves rebuilt 27→32 index; anon base-set gated). D4 org accounts ACTIVATED.
+> OTLP endpoint wired on the fleet. **Fast-follows:** SigNoz `SIGNOZ_API_KEY` (UI) + ingester TCP-proxy
+> for CF-Worker export; Cloudflare Pages PROJECT deletion (post-soak — custom domains already detached);
+> edition members-fold (open operator fork).
 >
 > **STAGE-2 CORRECTION (2026-07-01):** the `feat/dashboard-unified-and-p6-tail` branch is **MERGED to
 > `main`** (PR#33, `747ea25`) — every "built on the integration branch, not merged / not pushed / not
