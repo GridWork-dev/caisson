@@ -10,6 +10,10 @@ import { z } from "zod";
 
 export const JUDGE_VERDICTS = ["pass", "fail"] as const;
 
+// ponytail: 100k-char ceiling on the evaluated output (the exact injection vector) — mirrors
+// @caisson/local-store MAX_TEXT; the largest plausible model response, not a hard product limit.
+const MAX_OUTPUT = 100_000;
+
 /** The request a model-grader hands the judge — never carries a secret or a provider handle. */
 export const judgeRequestSchema = z
   .object({
@@ -18,7 +22,7 @@ export const judgeRequestSchema = z
     scorer: z.string().min(1).max(200),
     caseId: z.string().min(1).max(200),
     input: z.unknown(),
-    output: z.string(),
+    output: z.string().max(MAX_OUTPUT),
     criteria: z.string().max(4000).optional(),
   })
   .strict();
