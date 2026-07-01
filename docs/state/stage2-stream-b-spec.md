@@ -1,10 +1,31 @@
 # Stage-2 Stream B — SPEC: new sellable packages + audit harness
 
-Status: **SPEC (awaiting operator fork-locks — no code lands until the 4 forks below are locked as
-ADRs 0150–0154).** · 2026-07-01 · branch `stream/harvest-modules` (local checkout off clean `main`,
-**no live deploy**). Implements the Stream B row of `docs/state/stage2-kickoff-triage.md`; governed by
-**ADR-0134** (audit harness), **ADR-0135** (alerting + retention-runner), **ADR-0133** (harvest
-initiative + rebuild-clean discipline). Reserved ADR range **0150–0159**.
+Status: **BUILT + all gates green (2026-07-01).** 4 forks locked (ADRs **0150–0153**), all 4 packages
+built + Opus-verified, `bun run check` (turbo 143/143 + `bun run gate` 49/49) green on this checkout.
+· branch `stream/harvest-modules` (local checkout off clean `main`, **no live deploy**). Implements the
+Stream B row of `docs/state/stage2-kickoff-triage.md`; governed by **ADR-0134** (audit harness),
+**ADR-0135** (alerting + retention-runner), **ADR-0133** (harvest initiative + rebuild-clean).
+Reserved ADR range **0150–0159** (used: 0150 parallel-build · 0151 alerting transport · 0152 retention
+scheduling · 0153 tool-exec).
+
+## Build outcome (2026-07-01 — operator fork-locks + autonomous build)
+
+| Fork               | Lock                                                                                   | ADR      |
+| ------------------ | -------------------------------------------------------------------------------------- | -------- |
+| Ship order         | **Parallel** — no interdep (all deps point down to base); not a serial order           | ADR-0150 |
+| Alerting transport | **All 4 channels** — email + webhook + Slack + Telegram behind one `AlertChannel` port | ADR-0151 |
+| Retention sched    | **`@caisson/jobs` port + in-memory driver** (auto_90d task; ccpa/manual call direct)   | ADR-0152 |
+| B4 scope           | **Build `@caisson/tool-exec` now** (governed tool-call primitive)                      | ADR-0153 |
+
+Built by 4 Sonnet agents (disjoint dirs, single pre-install → no lockfile race) → Opus adversarial
+verify (each pass: security floor + goal-backward + genericness-not-WORM). Verify caught + fixed one
+real bug (audit-harness scope-guard interior-star globs silently unmatched → `Bun.Glob`). Tests:
+audit-harness 27 · alerting 14 · retention-runner 8 · tool-exec 7 (0 fail). Commits `819c612`
+(audit-harness) · `c3f7419` (alerting) · `345d0a9` (retention-runner) · `aadd9c0` (tool-exec, +
+`bun.lock`). **Deferred to integration** (not in-stream, to avoid cross-stream conflict): the
+`decisions-and-forks.md`/`adr-index.md`/`build-state.md` aggregation, the registry `index.json`
+rebuild, edition `members`-map wiring (`compliance` ← alerting/retention; `agent-dev` ← tool-exec),
+and the `CLAUDE.md` commit-scope additions.
 
 ## Goal (WHAT + WHY)
 
@@ -17,7 +38,7 @@ harvest lifts of existing packages belong to Streams C/D):
 | **B1** | `@caisson/audit-harness`    | internal tooling (unsold) | ADR-0134 | Generalizes the ADR-0101 design gates to a cross-domain audit/validate spine |
 | **B2** | `@caisson/alerting`         | commercial Compliance mod | ADR-0135 | SOC2 CC7.2 multi-channel alerting pipeline — **no current owner**            |
 | **B3** | `@caisson/retention-runner` | commercial Compliance mod | ADR-0135 | CCPA/GDPR right-to-erasure runner — **zero current owner**                   |
-| **B4** | `@caisson/tool-exec` (opt.) | Agentic-Dev primitive     | new      | Governed tool-call / sandboxed-exec allowlist — no current owner (optional)  |
+| **B4** | `@caisson/tool-exec`        | Agentic-Dev primitive     | ADR-0153 | Governed tool-call / sandboxed-exec allowlist — no current owner (built)     |
 
 **Why now:** B2/B3 are ranks **#1** and **#3** of the adversarially-corrected lift-sweep
 (`caisson-lift-sweep-REPORT.md`) — the two capabilities the report confirms have no owner anywhere in
@@ -170,7 +191,7 @@ auto-decided.**
 - **(b)** internal `setInterval`/cron inside retention-runner — self-contained, reinvents `jobs`.
 - **(c)** no scheduler — expose `runErasure()` only; the caller schedules.
 
-### Fork 4 — B4 scope · → ADR-0154 (only if built)
+### Fork 4 — B4 scope · → ADR-0153 (operator locked: BUILD)
 
 - **(a)** build `@caisson/tool-exec` now (governed tool-call primitive for Agentic-Dev).
 - **(b, REC)** **defer B4** to a later harvest wave — under-specified (no locked ADR; ambiguous
