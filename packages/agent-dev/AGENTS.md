@@ -39,11 +39,17 @@ Caisson schema** and gets a governed lifecycle, local hybrid memory, and per-har
 
 ## Compose
 
-`createAgentDevEdition({ store, audited?, memoryDim, memoryPath?, artifacts?, now? })` wires the
+`createAgentDevEdition({ store, audited?, memoryDim, tenant?, memoryPath?, artifacts?, now? })` wires the
 governed lifecycle (over a host-supplied `AuditLifecycleStore`; `audited: true` turns on the
 tamper-evident record), opens the local hybrid memory, and binds the emitter. It returns
 `{ lifecycle, memory, artifacts, render(hooks?), emit(targetRoot, hooks?), close() }`. `artifacts`
 defaults to the curated `CAISSON_DEFAULT_ARTIFACTS`; `render` is pure and `emit` is the guarded write.
+
+**Multi-tenant hosts MUST pass `tenant: { root, tenantId }`** — the edition then opens memory at the
+ADR-0073 file-per-tenant path (`tenantDbPath(root, tenantId)`), the resolved path IS the isolation
+boundary, and a malformed id is refused fail-closed before any file opens. `tenant` and `memoryPath`
+are mutually exclusive (both ⇒ throws); `memoryPath` alone is the single-tenant/explicit-path escape,
+and omitting both opens an in-memory store (tests / ephemeral).
 
 ## Golden (ADR-0013)
 
