@@ -83,6 +83,11 @@ const DEFAULT_KEY_ENV: Record<ProviderConfig["provider"], string> = {
   google: "GOOGLE_API_KEY",
   openrouter: "OPENROUTER_API_KEY",
   local: "LOCAL_AI_API_KEY",
+  // ADR-0160 backends. Bedrock's access-key-id is the `apiKeyEnv` half of its two-part credential
+  // (the secret half is `apiSecretEnv`); azure-openai + ollama name a single key.
+  bedrock: "AWS_ACCESS_KEY_ID",
+  "azure-openai": "AZURE_OPENAI_API_KEY",
+  ollama: "OLLAMA_API_KEY",
 };
 
 function defaultKeyEnv(provider: string): string {
@@ -92,10 +97,15 @@ function defaultKeyEnv(provider: string): string {
   );
 }
 
-/** Distinct, sorted env-var NAMES referenced by a settings object's lanes. */
+/** Distinct, sorted env-var NAMES referenced by a settings object's lanes. A per-tenant BYOK lane
+ *  (ADR-0162) names no env var (its key is stored encrypted per tenant), so it contributes none. */
 function keyNames(settings: AiSettings): string[] {
   return [
-    ...new Set(Object.values(settings.lanes).map((lane) => lane.apiKeyEnv)),
+    ...new Set(
+      Object.values(settings.lanes)
+        .map((lane) => lane.apiKeyEnv)
+        .filter((name): name is string => name !== undefined),
+    ),
   ].sort();
 }
 
