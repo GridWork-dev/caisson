@@ -1,62 +1,42 @@
-// The dashboard auth seam (ADR-0015 / ADR-0114): resolves the logged-in buyer's session from the
-// EdDSA-JWT cookie, never trusting any client-supplied account id. `better-auth` is the chosen
-// SessionProvider runtime (packages/auth/src/session.ts) — wiring the FULL better-auth sign-in
-// flow (magic link / OAuth / its own Drizzle tables) is a separate, larger seam this task does not
-// build; what's here is the half ADR-0114 scoped: read the cookie, verify it with `@caisson/auth`'s
-// `verifyAccountJwt`, and gate `/dashboard` on the result. `requireDashboardSession` is the ONE
-// call every dashboard route makes before any tenant read.
-import { createPublicKey, type KeyObject } from "node:crypto";
-import { cookies } from "next/headers";
+// The dashboard auth seam (ADR-0015). better-auth is the self-hosted SessionProvider; for a
+// SAME-PROCESS read (the dashboard) `resolveSession` returns `{ userId, accountId, role }`
+// straight from the better-auth server session (its `Secure; HttpOnly; SameSite=Strict` cookie,
+// configured in `lib/auth-server.ts`). `requireDashboardSession` is the ONE call every dashboard
+// route makes before any tenant read; its signature is unchanged so no route had to change.
+//
+// This supersedes the earlier placeholder that read a self-minted EdDSA `caisson_session` cookie:
+// that cookie was a stand-in until the real sign-in flow existed. The EdDSA account JWT
+// (`@caisson/auth`'s `jwt.ts`) remains the CROSS-SERVICE seam (execution-plane / buyer MCP), a
+// separate concern from this same-process read.
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { type SessionContext, verifyAccountJwt } from "@caisson/auth";
-import { ConfigError } from "@caisson/kernel";
+import type { SessionContext } from "@caisson/auth";
+import { getAuth } from "./auth-server.ts";
 
-/** `Secure; HttpOnly; SameSite=Strict` (security floor) — set by the auth runtime at sign-in. */
-export const SESSION_COOKIE_NAME = "caisson_session";
-
-const PUBLIC_KEY_ENV = "CAISSON_ACCOUNT_JWT_PUBLIC_KEY";
-
-let cachedPublicKey: KeyObject | undefined;
+export { SESSION_COOKIE_NAME } from "./auth-server.ts";
 
 /**
- * Load the account-JWT verification key from env: a base64-encoded SPKI DER Ed25519 public key,
- * mirroring `@caisson/license-issue`'s `Ed25519Signer.fromEnv` loader convention (same algorithm,
- * same encoding, same "name the env var, never echo the value" discipline). Throws `ConfigError`
- * when unset or malformed — callers MUST treat that as "no session" (see `getSession` below),
- * never propagate it as a 500.
- */
-function loadPublicKey(): KeyObject {
-  if (cachedPublicKey) return cachedPublicKey;
-  const raw = process.env[PUBLIC_KEY_ENV];
-  if (raw === undefined || raw.trim() === "") {
-    throw new ConfigError(`${PUBLIC_KEY_ENV} is not set`);
-  }
-  try {
-    cachedPublicKey = createPublicKey({
-      key: Buffer.from(raw.trim(), "base64"),
-      format: "der",
-      type: "spki",
-    });
-  } catch {
-    throw new ConfigError(
-      `${PUBLIC_KEY_ENV} is not a valid base64 SPKI Ed25519 public key`,
-    );
-  }
-  return cachedPublicKey;
-}
-
-/**
- * Resolve the current request's session from the `caisson_session` cookie, or `null`. Never
- * throws — a missing cookie, an unconfigured verification key, a malformed/expired/forged token
- * all collapse to "no session" (fail closed): the caller redirects to `/login` either way.
+ * Resolve the current request's session from better-auth, mapped to the base `SessionContext`, or
+ * `null`. Never throws — an unconfigured runtime (no DB/secret), no cookie, or an expired/forged
+ * session all collapse to "no session" (fail closed): the caller redirects to `/login`.
+ *
+ * SEAM (account provisioning — see ADR-0132 / report): a signed-in buyer's tenant `accountId` is
+ * keyed by their own `user.id` (a personal account) until org/membership provisioning lands. This
+ * is the ONLY value the data layer trusts for RLS (`withTenant`, ADR-0005) and it is sourced
+ * solely from the verified better-auth session here — never from a request param/body — so a
+ * forged account id cannot cross tenants.
  */
 export async function getSession(): Promise<SessionContext | null> {
-  const jar = await cookies();
-  const token = jar.get(SESSION_COOKIE_NAME)?.value;
-  if (token === undefined || token.length === 0) return null;
+  const auth = getAuth();
+  if (auth === null) return null;
   try {
-    const publicKey = loadPublicKey();
-    return verifyAccountJwt(token, publicKey);
+    const result = await auth.api.getSession({ headers: await headers() });
+    if (result === null) return null;
+    return {
+      userId: result.user.id,
+      accountId: result.user.id,
+      role: "owner",
+    };
   } catch {
     return null;
   }
