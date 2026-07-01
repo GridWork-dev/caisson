@@ -76,16 +76,30 @@ export function withId(f: RawFinding): Finding {
 
 /**
  * Reconcile a fresh audit run against the persisted ledger. Pure: no IO, deterministic.
+ *
+ * `scope` = the domains ACTUALLY audited this run (ADR-0188 / F4). Only a finding whose
+ * `domain ∈ scope` is eligible for the new/closed transitions; every previous finding in an
+ * UN-audited domain passes through UNCHANGED. Without this, a domain-by-domain run silently
+ * marks every open finding in the domains it didn't touch as `fixed` (the must-fix false-close).
+ * Scope is an explicit required argument, never inferred from `current` — a domain that was
+ * audited but produced zero findings must still be in scope so its stale findings close.
+ *
  *  - present this run, absent before        → `new`        (status open)
  *  - present this run, was `fixed` before    → `regressed`  (status open — it came back)
  *  - present this run, was open/accepted      → `unchanged`  (status PRESERVED — operator triage sticks)
- *  - absent this run, was open/accepted       → `closed`     (status fixed)
+ *  - absent this run, in scope, was open/accepted → `closed`  (status fixed)
+ *  - absent this run, OUT of scope            → passed through unchanged (NOT closed)
  *  - absent this run, was already `fixed`     → carried forward, no class (stays closed)
+ *
+ * Fail-loud: a `current` finding whose domain ∉ `scope` throws — it's a caller inconsistency
+ * (the domain produced a finding, so it WAS audited, so `scope` is wrong).
  */
 export function reconcile(
   previous: Finding[],
   current: RawFinding[],
+  scope: readonly string[],
 ): ReconcileResult {
+  const inScope = new Set(scope);
   const prev = new Map(previous.map((f) => [f.id, f]));
   const seen = new Set<string>();
   const ledger: Finding[] = [];
@@ -93,6 +107,11 @@ export function reconcile(
 
   for (const raw of current) {
     const f = withId(raw);
+    if (!inScope.has(f.domain)) {
+      throw new Error(
+        `reconcile: finding "${f.title}" is in domain "${f.domain}" but that domain is not in the audited scope [${[...inScope].join(", ")}] — declare it in --domains.`,
+      );
+    }
     seen.add(f.id);
     const p = prev.get(f.id);
     if (!p) {
@@ -108,6 +127,12 @@ export function reconcile(
   }
   for (const p of previous) {
     if (seen.has(p.id)) continue;
+    // The fix: a previous finding in a domain we did NOT audit this run is passed through
+    // untouched — reconciling only closes findings inside the audited scope.
+    if (!inScope.has(p.domain)) {
+      ledger.push(p);
+      continue;
+    }
     if (p.status === "fixed") {
       ledger.push(p);
     } else {

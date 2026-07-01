@@ -39,8 +39,10 @@ describe("stableId — identity survives rewording, across domains (ADR-0134 §2
 });
 
 describe("reconcile — run-to-run classification across all domains", () => {
+  const SEC = ["security"] as const;
+
   test("a finding absent from the ledger is `new` and opens", () => {
-    const { ledger, classes } = reconcile([], [raw()]);
+    const { ledger, classes } = reconcile([], [raw()], SEC);
     const id = withId(raw()).id;
     expect(classes[id]).toBe("new");
     expect(ledger.find((f) => f.id === id)?.status).toBe("open");
@@ -48,42 +50,67 @@ describe("reconcile — run-to-run classification across all domains", () => {
 
   test("a persisting finding is `unchanged` and PRESERVES an operator `accepted` status", () => {
     const accepted: Finding = { ...withId(raw()), status: "accepted" };
-    const { ledger, classes } = reconcile([accepted], [raw()]);
+    const { ledger, classes } = reconcile([accepted], [raw()], SEC);
     expect(classes[accepted.id]).toBe("unchanged");
     expect(ledger.find((f) => f.id === accepted.id)?.status).toBe("accepted");
   });
 
-  test("a finding that disappears is `closed` → fixed", () => {
+  test("a finding that disappears (in scope) is `closed` → fixed", () => {
     const open: Finding = { ...withId(raw()), status: "open" };
-    const { ledger, classes } = reconcile([open], []);
+    const { ledger, classes } = reconcile([open], [], SEC);
     expect(classes[open.id]).toBe("closed");
     expect(ledger.find((f) => f.id === open.id)?.status).toBe("fixed");
   });
 
   test("full round-trip: new → closed (fixed, absent) → regressed (present again)", () => {
     // 1. new
-    const r1 = reconcile([], [raw()]);
+    const r1 = reconcile([], [raw()], SEC);
     const id = withId(raw()).id;
     expect(r1.classes[id]).toBe("new");
     expect(r1.ledger.find((f) => f.id === id)?.status).toBe("open");
 
     // 2. absent this run → closed/fixed
-    const r2 = reconcile(r1.ledger, []);
+    const r2 = reconcile(r1.ledger, [], SEC);
     expect(r2.classes[id]).toBe("closed");
     expect(r2.ledger.find((f) => f.id === id)?.status).toBe("fixed");
 
     // 3. present again → regressed, reopened
-    const r3 = reconcile(r2.ledger, [raw()]);
+    const r3 = reconcile(r2.ledger, [raw()], SEC);
     expect(r3.classes[id]).toBe("regressed");
     expect(r3.ledger.find((f) => f.id === id)?.status).toBe("open");
   });
 
   test("an already-fixed finding still absent carries forward with no class", () => {
     const fixed: Finding = { ...withId(raw()), status: "fixed" };
-    const { ledger, classes } = reconcile([fixed], []);
+    const { ledger, classes } = reconcile([fixed], [], SEC);
     expect(classes[fixed.id]).toBeUndefined();
     expect(ledger).toHaveLength(1);
     expect(ledger[0]?.status).toBe("fixed");
+  });
+
+  // ── the must-fix (ADR-0188 / F4): a single-domain run must NOT false-close other domains ──
+  test("a finding in an UN-audited domain passes through UNCHANGED (no silent false-close)", () => {
+    const otherOpen: Finding = {
+      ...withId(
+        raw({ domain: "design-ui", subject: "apps/site/hero", title: "x" }),
+      ),
+      status: "open",
+    };
+    const secAccepted: Finding = { ...withId(raw()), status: "accepted" };
+    // This run audited ONLY security, and found nothing.
+    const { ledger, classes } = reconcile([otherOpen, secAccepted], [], SEC);
+    // design-ui finding: untouched — still open, no class.
+    expect(classes[otherOpen.id]).toBeUndefined();
+    expect(ledger.find((f) => f.id === otherOpen.id)?.status).toBe("open");
+    // security finding: in scope, absent this run → closed/fixed.
+    expect(classes[secAccepted.id]).toBe("closed");
+    expect(ledger.find((f) => f.id === secAccepted.id)?.status).toBe("fixed");
+  });
+
+  test("fail-loud: a current finding outside the declared scope throws", () => {
+    expect(() => reconcile([], [raw({ domain: "design-ui" })], SEC)).toThrow(
+      /not in the audited scope/,
+    );
   });
 });
 
