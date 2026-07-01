@@ -29,8 +29,9 @@ never guess). A COMPOSITION of base packages, never a fork (ADR-0003).
 ## Dependencies
 
 Down-only (ADR-0003): `@caisson/audit-worm` + `@caisson/field-crypto` + `@caisson/tenancy-rls` +
-`@caisson/kernel`. Evidence is FREE in v1 — no `@caisson/credits`. The EU AI Act slot is reserved
-(`eu-ai-act.manifest.ts`, `golden:null`) until its controls are authored.
+`@caisson/kernel`. Evidence is FREE in v1 — no `@caisson/credits`. All three framework catalogs —
+SOC2-TSC, HIPAA-Security, and the EU AI Act high-risk set — are authored + golden-pinned
+(`eu-ai-act.manifest.ts` carries `golden: "src/__golden__"`).
 
 ## Golden
 

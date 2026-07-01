@@ -233,14 +233,21 @@ them or run an on-demand local pass (`/greptile` skill) before merge.
 Surfaced from `outputs/specs/wave1-*/{VERIFY,SWEEP}.md` so it is discoverable from the backlog (not
 just buried in act trails). All non-blocking; queue with the relevant edition's next pass:
 
-- **P4a local-ai** — the **EVAL act was never recorded** for the phase, and a **phase-level
-  `SECURITY.md` was never authored** (7 threats are coded but no adversarial-audit artifact exists).
-- **P3 ai-kit** — streaming `infer()` (request/response only today); concurrency test for the atomic
-  spend counter; soft-cap warn-without-block test; per-tenant encrypted BYOK (P3-25, deferred fork).
-- **P2 compliance** — thin pinned-control depth (SOC2-TSC 3 controls; add a HIPAA leg); EU-AI-Act
-  high-risk controls not yet authored (reserved named slot); OSCAL export un-wired (T15).
-- **P4b agent-dev** — multi-tenant RLS on agent memory (seam); GA-promotion (embedding lane +
-  deferred Next.js inspector).
+- ~~**P4a local-ai** — the EVAL act was never recorded / phase `SECURITY.md` never authored.~~
+  **CLOSED (`ac052f3`):** `outputs/specs/wave1-p4a-local-ai/EVAL.md` (PASS, golden-determinism
+  substitute) + `SECURITY.md` (PASS, all 7 threats mitigated) both exist and are merged.
+- ~~**P3 ai-kit** — streaming `infer()`; spend-counter concurrency test; soft-cap warn test; per-tenant
+  encrypted BYOK (P3-25).~~ **CLOSED:** streaming `inferStream()` + concurrency + soft-cap tests
+  shipped (`261d7ba`, green); **per-tenant encrypted BYOK BUILT** (Stream C, `ADR-0162` — buyer-facing
+  key-submission UI + credit-vs-BYOK policy remain deferred).
+- ~~**P2 compliance** — thin pinned-control depth (add a HIPAA leg); EU-AI-Act high-risk controls not
+  authored; OSCAL export un-wired (T15).~~ **CLOSED (Stream C):** HIPAA evidence leg + OSCAL export
+  bundle wired into `apps/compliance` (C3); EU-AI-Act high-risk catalog authored (`e4aaf8a`, 18
+  controls). **Still deferred:** the live OSCAL _push_ (`OscalExportTransport.deliver()`, T15/P7).
+- ~~**P4b agent-dev** — multi-tenant RLS on agent memory (seam)~~ **CLOSED (Stream C, `ADR-0073`):**
+  `createAgentDevEdition({ tenant })` opens memory at the fail-closed file-per-tenant path (C4).
+  **GA-promotion** partially open: embedding lane is the documented buyer-wired `Embedder` port
+  (ADR-0067 engine-neutral); the Next.js inspector stays deferred (`ADR-0082` §4).
 
 ### Live-testing the by-design seams (needs external infra — DEPLOY-class)
 
