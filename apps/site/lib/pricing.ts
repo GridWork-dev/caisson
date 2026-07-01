@@ -300,3 +300,55 @@ export function bundleSavings(): number {
   if (!bundle || bundle.amount === null) return 0;
   return Math.max(0, editionsSubtotal() - bundle.amount);
 }
+
+/** Formatted starting price for an edition slug, or an em-dash if the slug has no anchor. */
+export function editionPrice(id: string): string {
+  const p = priceById(id);
+  return p ? formatPrice(p) : "—";
+}
+
+// ---- The editions × capabilities comparison matrix — SINGLE SOURCE (ADR-0195) ----
+// Was hand-duplicated across /pricing and the home teaser and had drifted (the two copies
+// disagreed on ≥3 rows); this is now the one authoritative copy. /pricing renders the feature
+// rows PLUS the starting-price row; the home teaser renders the feature rows only.
+
+/** A comparison-matrix row — structurally the kit's `SkuMatrixRow`, kept UI-decoupled here. */
+export interface SkuRow {
+  label: string;
+  /** One cell per column: `true` = included, `false` = not, or a display string. */
+  cells: readonly (boolean | string)[];
+}
+
+/** Matrix columns, in edition display order. */
+export const SKU_COLUMNS = [
+  "Compliance",
+  "AI Kit",
+  "Local-first",
+  "Agentic-Dev",
+] as const;
+
+/** The capability rows (no price row) — the home teaser shows exactly these. */
+export const SKU_FEATURE_ROWS: readonly SkuRow[] = [
+  { label: "Postgres base substrate", cells: [true, true, true, true] },
+  { label: "Fail-closed RLS (FORCE)", cells: [true, false, false, false] },
+  { label: "WORM evidence store", cells: [true, false, false, false] },
+  { label: "Append-only audit chain", cells: [true, false, false, false] },
+  { label: "Per-tenant field encryption", cells: [true, false, false, false] },
+  { label: "Evidence-pack generator", cells: [true, false, false, false] },
+  { label: "Token metering · spend caps", cells: [false, true, false, false] },
+  { label: "Eval harness in CI", cells: [false, true, false, false] },
+  { label: "On-device vector search", cells: [false, false, true, false] },
+  { label: "Privacy gate (no-egress)", cells: [false, false, true, false] },
+  { label: "Governed-agent kernel", cells: [false, false, false, true] },
+];
+
+/** The starting-price row — /pricing appends this after the feature rows; the home teaser omits it. */
+export const SKU_PRICE_ROW: SkuRow = {
+  label: "Starting price",
+  cells: [
+    editionPrice("compliance"),
+    editionPrice("ai-kit"),
+    editionPrice("local-first"),
+    editionPrice("agentic-dev"),
+  ],
+};
