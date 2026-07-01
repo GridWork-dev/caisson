@@ -282,4 +282,34 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
     const second = await app(issueReq());
     expect(second.status).toBe(429);
   });
+
+  test("a spoofed leftmost x-forwarded-for hop does not mint a fresh /issue bucket", async () => {
+    // Same flood as above, but each request rotates a fake LEFTMOST hop (attacker-controlled) while
+    // the edge-appended rightmost hop stays fixed — the exact spoof the HIGH finding described. With
+    // clientIp reading the rightmost hop, all three requests must still collapse onto one bucket.
+    const app = makeApp(provider, {
+      webhook: { capacity: 1, windowMs: 60_000 },
+      issue: { capacity: 1, windowMs: 60_000 },
+      maxEntries: 100,
+    });
+    const realIp = "8.8.8.8";
+    const issueReq = (fakeLeftHop: string): Request =>
+      new Request("http://license.test/issue", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-for": `${fakeLeftHop}, ${realIp}`,
+        },
+        body: JSON.stringify({
+          accountId: "a",
+          tier: "pro",
+          major: 1,
+          expiry: null,
+        }),
+      });
+    const first = await app(issueReq("1.1.1.1"));
+    expect(first.status).toBe(401); // passed the limiter, failed the bearer check
+    const second = await app(issueReq("2.2.2.2"));
+    expect(second.status).toBe(429); // same rightmost hop → same bucket → throttled
+  });
 });

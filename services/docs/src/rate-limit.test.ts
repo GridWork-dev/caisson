@@ -66,11 +66,34 @@ describe("TokenBucketLimiter", () => {
 });
 
 describe("clientIp", () => {
-  test("takes the leftmost x-forwarded-for entry", () => {
+  test("takes the RIGHTMOST x-forwarded-for hop, never the leftmost", () => {
     const req = new Request("http://docs.test/llms.txt", {
       headers: { "x-forwarded-for": "203.0.113.5, 70.1.2.3, 10.0.0.9" },
     });
-    expect(clientIp(req)).toBe("203.0.113.5");
+    expect(clientIp(req)).toBe("10.0.0.9");
+  });
+
+  test("a client-spoofed leftmost hop does not change the derived IP", () => {
+    // The client controls every hop except the one the edge proxy itself appends last. Prepending
+    // an attacker-chosen leftmost value must have zero effect on the derived identity.
+    const spoofed = new Request("http://docs.test/llms.txt", {
+      headers: { "x-forwarded-for": "1.2.3.4, 203.0.113.5" },
+    });
+    const unspoofed = new Request("http://docs.test/llms.txt", {
+      headers: { "x-forwarded-for": "203.0.113.5" },
+    });
+    expect(clientIp(spoofed)).toBe(clientIp(unspoofed));
+    expect(clientIp(spoofed)).toBe("203.0.113.5");
+  });
+
+  test("X-Envoy-External-Address, when present, wins over x-forwarded-for entirely", () => {
+    const req = new Request("http://docs.test/llms.txt", {
+      headers: {
+        "x-envoy-external-address": "198.51.100.1",
+        "x-forwarded-for": "9.9.9.9, 8.8.8.8",
+      },
+    });
+    expect(clientIp(req)).toBe("198.51.100.1");
   });
 
   test("missing header → 'unknown' sentinel (shared, conservative)", () => {
@@ -149,6 +172,38 @@ describe("createApp rate limiting", () => {
     expect(over.headers.get("X-Content-Type-Options")).toBe("nosniff");
     now = 60_000;
     expect((await app(reqLlms(ip))).status).toBe(200);
+    index.close();
+  });
+
+  test("a spoofed leftmost x-forwarded-for hop does not mint a fresh bucket", async () => {
+    // The attacker rotates the LEFTMOST hop on every request while the edge-appended rightmost hop
+    // (the real, unforgeable identity) stays fixed. If clientIp still trusted the leftmost entry,
+    // each request below would land in its OWN bucket and never be throttled — the exact bypass the
+    // HIGH finding described. With the rightmost-hop fix, all three collapse onto one bucket.
+    const index = await DocsIndex.build(CHUNKS, new FakeEmbedder());
+    const app = createApp({
+      index,
+      llmsTxt: "# Caisson\n",
+      llmsFull: "# Full\n",
+      token: TOKEN,
+      limiter: new TokenBucketLimiter(
+        {
+          query: { capacity: 1, windowMs: 60_000 },
+          static: { capacity: 2, windowMs: 60_000 },
+          maxEntries: 100,
+        },
+        () => 0,
+      ),
+    });
+    const realIp = "203.0.113.51";
+    const spoofedReq = (fakeLeftHop: string): Request =>
+      new Request("http://docs.test/llms.txt", {
+        headers: { "x-forwarded-for": `${fakeLeftHop}, ${realIp}` },
+      });
+    expect((await app(spoofedReq("1.1.1.1"))).status).toBe(200);
+    expect((await app(spoofedReq("2.2.2.2"))).status).toBe(200);
+    const third = await app(spoofedReq("3.3.3.3"));
+    expect(third.status).toBe(429);
     index.close();
   });
 
