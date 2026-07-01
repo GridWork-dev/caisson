@@ -10,27 +10,27 @@ _Last swept 2026-07-01 (Stage-2 deploy). Pricing verified against vendor pages b
 
 ## Live stack
 
-| Provider               | Role                                                                                                       | Tier / cost (2026-07-01)                             | ADR                |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ------------------ |
-| **Railway**            | Hosting — all 11 caisson-prod services + managed Postgres                                                  | Pro $20/mo base + usage → **~$65-90/mo all-in**      | 0114 / 0115        |
-| **Cloudflare**         | DNS + registry Worker + CF-Access gates (Pages torn down 07-01)                                            | Free                                                 | 0047 / 0107 / 0140 |
-| **Paddle**             | Merchant-of-Record (tax/invoicing/remittance)                                                              | % of revenue (revenue-contingent)                    | 0108 / 0116        |
-| **Stripe**             | Buyer billing driver (behind `BillingProvider` port)                                                       | % of revenue                                         | 0017 / 0116        |
-| **Resend**             | Transactional email (magic-link, billing side-effects)                                                     | Free tier (3k/mo, 100/day)                           | 0018 / 0132        |
-| **Trigger.dev**        | Background jobs (billing/credit side-effects, self-hostable)                                               | Free tier ($5 compute/mo)                            | 0018               |
-| **OpenRouter**         | LLM inference (support-bot RAG, one key)                                                                   | Usage (pre-launch ~$0)                               | 0105               |
-| **GitHub Packages**    | Private registry for commercial `@caisson/*` modules                                                       | Free within org quota                                | 0021               |
-| **Plausible**          | Web analytics — **cookieless** marketing (no consent banner)                                               | $9/mo Starter (no free hosted tier)                  | 0118 (0086)        |
-| **Grafana Cloud**      | Observability — **sole OTLP sink** (traces/metrics/logs), US-West                                          | **Free tier ($0)** — 50GB logs + 50GB traces, 14-day | PF-1 (ADR pending) |
-| **SigNoz** (self-host) | Observability — **BEING DROPPED** (replaced by Grafana Cloud)                                              | ~~$45-70/mo Railway~~ → **$0 after cutover**         | 0117 (superseded)  |
-| **Greptile + TREX**    | AI code review — **PR required check only** (pre-push hook removed 07-01; `/greptile` for local on-demand) | Free Starter (solo); TREX $2/run since 2026-06-30    | — (not ADR-locked) |
-| **Discord**            | Community + support-bot channel                                                                            | Free                                                 | 0105 / 0109        |
-| **Exa** (MCP)          | Semantic web search / AI contents (internal research)                                                      | Free 20k req/mo                                      | (gridwork-core)    |
-| **crawl4ai** (MCP)     | $0 local scrape / crawl / extract (loopback daemon)                                                        | Free (self-hosted, no egress)                        | (gridwork-core)    |
+| Provider                   | Role                                                                                                       | Tier / cost (2026-07-01)                             | ADR                |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ------------------ |
+| **Railway**                | Hosting — 5 caisson services (site/admin/license/docs/support-bot) + managed Postgres                      | Pro $20/mo base + usage → **~$20-40/mo all-in**      | 0114 / 0115        |
+| **Cloudflare**             | DNS + registry Worker + CF-Access gates (Pages torn down 07-01)                                            | Free                                                 | 0047 / 0107 / 0140 |
+| **Paddle**                 | Merchant-of-Record (tax/invoicing/remittance)                                                              | % of revenue (revenue-contingent)                    | 0108 / 0116        |
+| **Stripe**                 | Buyer billing driver (behind `BillingProvider` port)                                                       | % of revenue                                         | 0017 / 0116        |
+| **Resend**                 | Transactional email (magic-link, billing side-effects)                                                     | Free tier (3k/mo, 100/day)                           | 0018 / 0132        |
+| **Trigger.dev**            | Background jobs (billing/credit side-effects, self-hostable)                                               | Free tier ($5 compute/mo)                            | 0018               |
+| **OpenRouter**             | LLM inference (support-bot RAG, one key)                                                                   | Usage (pre-launch ~$0)                               | 0105               |
+| **GitHub Packages**        | Private registry for commercial `@caisson/*` modules                                                       | Free within org quota                                | 0021               |
+| **Plausible**              | Web analytics — **cookieless** marketing (no consent banner)                                               | $9/mo Starter (no free hosted tier)                  | 0118 (0086)        |
+| **Grafana Cloud**          | Observability — **sole OTLP sink** (traces/metrics/logs), US-West · cutover DONE                           | **Free tier ($0)** — 50GB logs + 50GB traces, 14-day | 0177 (0117 super.) |
+| ~~**SigNoz** (self-host)~~ | Observability — **REMOVED 2026-07-01** (5 services deleted; replaced by Grafana Cloud)                     | ~~$45-70/mo~~ → **$0**                               | 0117 → 0177        |
+| **Greptile + TREX**        | AI code review — **PR required check only** (pre-push hook removed 07-01; `/greptile` for local on-demand) | Free Starter (solo); TREX $2/run since 2026-06-30    | — (not ADR-locked) |
+| **Discord**                | Community + support-bot channel                                                                            | Free                                                 | 0105 / 0109        |
+| **Exa** (MCP)              | Semantic web search / AI contents (internal research)                                                      | Free 20k req/mo                                      | (gridwork-core)    |
+| **crawl4ai** (MCP)         | $0 local scrape / crawl / extract (loopback daemon)                                                        | Free (self-hosted, no egress)                        | (gridwork-core)    |
 
-**Cost floor:** Railway ≈$65-90 + Plausible $9 = **≈$75-100/mo today**; everything else free-tier or
-revenue-contingent. **After the SigNoz→Grafana cutover** the SigNoz block (≈$45-70/mo) drops to $0 →
-**≈$30-55/mo floor**. Grafana Cloud Free covers current volume ($0).
+**Cost floor:** with SigNoz removed (2026-07-01), Railway drops to ≈$20-40/mo + Plausible $9 =
+**≈$30-50/mo floor today**; everything else free-tier or revenue-contingent. Grafana Cloud Free covers
+current volume ($0).
 
 ## Live URLs
 
@@ -39,7 +39,7 @@ revenue-contingent. **After the SigNoz→Grafana cutover** the SigNoz block (≈
 - `license.caisson.sh` → Railway `caisson-license` (grey/DNS-only, Paddle webhook; cert issued)
 - `docs-api.caisson.sh` → Railway `caisson-docs`
 - Registry Worker → `caisson-registry.broken-wood-97a9.workers.dev` (license-keyed entitlement filtering, 32-module index)
-- SigNoz UI → `https://signoz-signoz-production-2f89.up.railway.app` (:8080, SigNoz's own login; **not** CF-Access gated)
+- Observability → Grafana Cloud `caisson.grafana.net` (sole OTLP sink; SigNoz UI removed 2026-07-01)
 
 ## Open forks
 
@@ -48,19 +48,27 @@ Provider-optimization forks — see [`decisions-and-forks.md` → Provider-optim
 "keep"; −$45-70/mo), PF-2 PostHog **added + live**, PF-3 Linear **added + connected**, PF-5 Cookiy **added +
 connected**. Remaining forks → operator picker: PF-4 (2nd reviewer), PF-6 (Firecrawl), Edition members-fold.
 
-## SigNoz → Grafana cutover (in progress — BLOCKED on OTLP credential)
+## SigNoz → Grafana cutover — DONE (2026-07-01, ADR-0177)
 
-Grafana Cloud (`caisson.grafana.net`, US-West `prod-us-west-0`) replaces self-hosted SigNoz as the **sole**
-OTLP sink. `grafanactl` is configured + connected (dashboard/stack mgmt). **Blocker:** the `glsa_` service-account
-token manages the Grafana instance but **cannot** auth the OTLP ingestion gateway (probe: HTTP 401) — that needs a
-**Cloud Access Policy token** (`glc_`, scopes `metrics:write`+`logs:write`+`traces:write`) or the ready-made
-`OTEL_EXPORTER_OTLP_ENDPOINT`/`_HEADERS` from the stack's **Connections → OpenTelemetry (OTLP)** page.
+Grafana Cloud (`caisson.grafana.net`, US-West `prod-us-west-0`) is now the **sole** OTLP sink; self-hosted
+SigNoz is **removed**. Cutover executed: (1) `OTEL_EXPORTER_OTLP_ENDPOINT` (`https://otlp-gateway-prod-us-west-0.grafana.net/otlp`)
 
-**Cutover runbook (once the OTLP credential lands):** (1) set `OTEL_EXPORTER_OTLP_ENDPOINT` (Grafana OTLP gateway)
+- `OTEL_EXPORTER_OTLP_HEADERS` (`Authorization=Basic <base64(1709803:glc_…)>`) set on all 5 services →
+  redeployed; (2) pipeline **verified** — a manual probe span landed in Tempo (datasource-proxy TraceQL search);
+  (3) the **5 SigNoz Railway services deleted** + the SigNoz UI URL dropped. Ingestion authed with a **Cloud
+  Access Policy token** (`glc_`, write scopes) — the `glsa_` service-account token only manages the instance
+  (`grafanactl` + query proxy), it can't auth the OTLP gateway (probe: 401). Operator UI tail: `grafana-setup-runbook.md`.
 
-- `OTEL_EXPORTER_OTLP_HEADERS` (`Authorization=Basic …`) on the 5 emitting services (site/admin/license/docs/
-  support-bot) → redeploy; (2) **verify traces/metrics landing in Grafana**; (3) only then delete the 5 SigNoz
-  Railway services + drop the SigNoz UI URL. Observability must never go dark mid-cutover.
+> **Known instrumentation gap (finding, 2026-07-01).** `@caisson/observability` registers OTel's
+> `HttpInstrumentation` + `UndiciInstrumentation` + `PgInstrumentation`, all of which patch **Node**
+> internals (`node:http`, `undici`, the `pg` package). The **Bun** services (`caisson-docs`, `caisson-license`)
+> use `Bun.serve` + Bun-native fetch + Bun SQL, which bypass every one of those patches — so their **auto**
+> spans never fire; only **manual** spans export (this is why the probe landed but synthetic `/query` traffic
+> produced no deployed-service span). The **Node/Next** services (`caisson-site`, `caisson-admin`) auto-trace
+> inbound on the Node runtime. SigNoz had the identical limitation, so its removal is a zero-observability
+> regression. Closing this needs manual request spans in the Bun handlers or a Bun-compatible instrumentation
+> — tracked as an edition seam (see `decisions-and-forks.md`). **Cleanup pending:** 3 detached SigNoz volumes
+> (`signoz-*-volume`, ~1 GB each) — delete in the Railway dashboard (negligible storage cost).
 
 ---
 
