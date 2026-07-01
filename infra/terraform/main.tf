@@ -79,3 +79,26 @@ resource "cloudflare_dns_record" "license_railway_verify" {
   ttl     = 1
   comment = "Railway custom-domain ownership (license) — managed by Terraform"
 }
+
+# --- admin.caisson.sh → caisson-admin on Railway (PROXIED — CF-Access is the SOLE auth, ADR-0140) ---
+# The operator control-plane (ADR-0138). Proxied/orange so the permanent operator Access app in
+# access.tf gates it; the app carries no auth code. Unlike the pre-launch site gate (removed at
+# go-live), the admin gate is permanent.
+resource "cloudflare_dns_record" "admin" {
+  zone_id = var.cloudflare_zone_id
+  name    = "admin.${var.zone_name}"
+  type    = "CNAME"
+  content = "vfk89jp0.up.railway.app"
+  proxied = true
+  ttl     = 1
+  comment = "Caisson admin control-plane (admin → Railway caisson-admin) — managed by Terraform"
+}
+
+resource "cloudflare_dns_record" "admin_railway_verify" {
+  zone_id = var.cloudflare_zone_id
+  name    = "_railway-verify.admin"
+  type    = "TXT"
+  content = "railway-verify=23f1ec9133c0dfe19383db6c6e90d6f55faf1eaed7c46075eba08a1ebe299f58"
+  ttl     = 1
+  comment = "Railway custom-domain ownership (admin) — managed by Terraform"
+}

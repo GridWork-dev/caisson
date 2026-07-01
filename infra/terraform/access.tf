@@ -51,3 +51,29 @@ output "site_access_app_id" {
   value       = cloudflare_zero_trust_access_application.site_gate.id
   description = "Cloudflare Access application gating the pre-launch site (caisson.sh + www)."
 }
+
+# --- Cloudflare Access: PERMANENT operator gate for admin.caisson.sh (ADR-0138/0140) -----------
+# The admin control-plane carries NO auth code — CF-Access is the sole gate (ADR-0140). Unlike the
+# pre-launch site gate (removed at go-live), this app is permanent: admin.caisson.sh stays
+# operator-only forever. Reuses the same @gridwork.dev email-OTP allow policy.
+resource "cloudflare_zero_trust_access_application" "admin_gate" {
+  account_id           = var.cloudflare_account_id
+  name                 = "Caisson admin control-plane (operator-only)"
+  type                 = "self_hosted"
+  session_duration     = "24h"
+  app_launcher_visible = false
+
+  destinations = [
+    { type = "public", uri = "admin.${var.zone_name}" },
+  ]
+
+  policies = [{
+    id         = cloudflare_zero_trust_access_policy.site_gate.id
+    precedence = 1
+  }]
+}
+
+output "admin_access_app_id" {
+  value       = cloudflare_zero_trust_access_application.admin_gate.id
+  description = "Cloudflare Access application permanently gating admin.caisson.sh (operator-only)."
+}
