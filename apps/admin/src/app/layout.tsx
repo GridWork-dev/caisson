@@ -7,12 +7,14 @@ import type { ReactNode } from "react";
 
 import { themeInitScript } from "@caisson/ui/components";
 
-import { Topbar } from "@/components/topbar";
+import { AdminNav } from "@/components/admin-nav";
 
 export const metadata: Metadata = {
-  title: "Caisson · Design Studio",
+  title: "Caisson · Admin",
   description:
-    "Token foundation and design decisions for Caisson, compliance-grade infrastructure.",
+    "The operator control-plane: ops, business admin, live architecture, decisions, and the design system.",
+  // Operator-only surface (CF-Access-gated, ADR-0140) — never index.
+  robots: { index: false, follow: false },
 };
 
 const FONTS_HREF =
@@ -39,7 +41,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body>
-        <Topbar />
+        <AdminNav />
         <main>{children}</main>
       </body>
     </html>

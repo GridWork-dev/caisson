@@ -26,3 +26,26 @@ workers_dev = true
 [observability]
 enabled = true
 head_sampling_rate = 1
+
+# SigNoz bridge (ADR-0142): CF-native OpenTelemetry export — the sanctioned way to get the edge
+# Worker's spans/logs into the same SigNoz stack as the Node services (ADR-0117), instead of a
+# hand-rolled tail worker. Cloudflare's OTel export is in open beta; the wrangler syntax below is the
+# documented form (developers.cloudflare.com/workers/observability/exporting-opentelemetry-data).
+#
+# INERT UNTIL DEPLOY — committing these blocks does NOT open any surface:
+#   1. `destinations` names must match typed destinations REGISTERED IN THE CF DASHBOARD at deploy
+#      time (Workers Observability → Add destination → one Traces + one Logs, each pointing at the
+#      SigNoz OTLP endpoint with the ingestion-key header). Until then there is nothing to export to.
+#   2. Export requires a Workers Paid subscription; the account is on the free plan pre-cutover.
+#   3. `deploy.sh`/`bunx wrangler deploy` is operator-gated + separate from SHIP.
+# The blocks keep wrangler parsing valid regardless; `persist` is left at its default (true) so the
+# existing CF-dashboard leg above is unchanged and SigNoz gets a copy.
+[observability.traces]
+enabled = true
+head_sampling_rate = 1
+destinations = ["signoz-otlp-traces"]
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+destinations = ["signoz-otlp-logs"]
