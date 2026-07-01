@@ -193,3 +193,90 @@ describe("Worker filtering composed with the REAL license verifier (end-to-end s
     expect(await ids(res)).toEqual(["@caisson/kernel"]);
   });
 });
+
+describe("Worker gates COMMERCIAL base-kind modules (ADR-0094/0097 open-core, Q1 lock)", () => {
+  // A commercial module scoped to NO edition (editions[]===[] BUT LicenseRef-Caisson-Commercial) — the
+  // à-la-carte compliance/AI primitives (field-crypto, ai-meter, …) + bundle-only tooling (cli, migrate,
+  // license-verify, pricebook). Under the OLD "editions[]===[] ⇒ free base" rule these LEAKED to
+  // anonymous callers; the license-keyed free-view floor now gates them behind their own Ed25519
+  // entitlement. The `entry()` helper above hard-ties open↔editions[]===[], so a commercial base module
+  // needs its own explicit builder.
+  // Returns a plain literal (not the cast `RegistryIndex["modules"][number]` the `entry()` helper uses:
+  // its ternaries widen tier/license to the full unions, giving the cast enough overlap; these FIXED
+  // commercial literals do not). `loadRegistryIndex` takes `unknown` and parse-validates, so no cast is
+  // needed or wanted here.
+  const commercialBase = (id: string) => ({
+    id,
+    latest: "1.0.0",
+    versions: [
+      {
+        version: "1.0.0",
+        publishedAt: "2026-01-01T00:00:00.000Z",
+        gateAttestation: "ci-run-1@deadbeef",
+        manifest: {
+          id,
+          version: "1.0.0",
+          kind: "base",
+          tier: "paid",
+          license: "LicenseRef-Caisson-Commercial",
+          priceCents: 4900,
+          editions: [] as const,
+          description: id,
+        },
+      },
+    ],
+  });
+
+  const gatedIndex = loadRegistryIndex({
+    schemaVersion: 1,
+    modules: [
+      entry("@caisson/kernel", []), // OPEN Apache-2.0 base — free-view
+      commercialBase("@caisson/field-crypto"), // commercial base-kind — gated
+      entry("@caisson/ai-kit", ["ai-kit"]), // edition — gated
+    ],
+  });
+  const gatedHandlerFor = (purchased: readonly string[] | null) =>
+    createIndexHandler(gatedIndex, { resolveEntitlements: () => purchased });
+
+  test("(a) unauthenticated does NOT receive a paid base-kind module (was served, now gated)", async () => {
+    const listed = await ids(gatedHandlerFor(null)(req("/")));
+    expect(listed).toEqual(["@caisson/kernel"]); // ONLY the open base
+    expect(listed).not.toContain("@caisson/field-crypto");
+    // invisible at the item route too (404, indistinguishable from unknown — ADR-0076).
+    expect(
+      gatedHandlerFor(null)(req("/modules/@caisson%2Ffield-crypto")).status,
+    ).toBe(404);
+  });
+
+  test("(b) an entitled (bare-slug) license DOES receive the commercial base-kind module", async () => {
+    const res = gatedHandlerFor(["field-crypto"])(req("/"));
+    expect(await ids(res)).toEqual([
+      "@caisson/field-crypto",
+      "@caisson/kernel",
+    ]);
+    expect(
+      gatedHandlerFor(["field-crypto"])(req("/modules/@caisson%2Ffield-crypto"))
+        .status,
+    ).toBe(200);
+  });
+
+  test("(c) the OPEN Apache-2.0 base is still served unauthenticated", async () => {
+    expect(
+      gatedHandlerFor(null)(req("/modules/@caisson%2Fkernel")).status,
+    ).toBe(200);
+  });
+
+  test("(d) a malformed/unknown entitlement fails SAFE to the OPEN base only — zero paid leak", async () => {
+    const res = gatedHandlerFor(["not-a-real-entitlement"])(req("/"));
+    expect(res.status).toBe(200);
+    expect(await ids(res)).toEqual(["@caisson/kernel"]); // never field-crypto on error
+  });
+
+  test("(e) the bundle still receives the commercial base-kind module (gated, not removed)", async () => {
+    expect(await ids(gatedHandlerFor(["bundle"])(req("/")))).toEqual([
+      "@caisson/ai-kit",
+      "@caisson/field-crypto",
+      "@caisson/kernel",
+    ]);
+  });
+});

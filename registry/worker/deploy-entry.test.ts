@@ -17,12 +17,17 @@ const idsOf = async (res: Response): Promise<string[]> =>
   );
 
 describe("deploy-entry live composition root (B2b seam pin)", () => {
-  test("an anonymous caller sees the free base only — the edition-scoped module is filtered out", async () => {
+  test("an anonymous caller sees the OPEN base only — editions AND commercial base-kind are filtered out", async () => {
     const res = get();
     expect(res.status).toBe(200);
     const ids = await idsOf(res);
     expect(ids).not.toContain("@caisson/ai-kit"); // edition-scoped → must never leak to community
-    expect(ids).toContain("@caisson/cli"); // a base (editions[]===[]) module is still served
+    expect(ids).toContain("@caisson/kernel"); // an OPEN Apache-2.0 base module is still served free
+    // Commercial base-kind modules (editions[]===[] but LicenseRef-Caisson-Commercial) are NOT free
+    // base — 404/invisible to an anonymous caller. Regression pin for the CLOSED leak (ADR-0094/0097):
+    // field-crypto (à-la-carte primitive) + cli (bundle-only commercial tooling) were served free.
+    expect(ids).not.toContain("@caisson/field-crypto");
+    expect(ids).not.toContain("@caisson/cli");
     // The per-caller (non-cacheable) headers prove the resolver is actually wired — not the
     // public-catalog branch that a dropped option would silently fall back to.
     expect(res.headers.get("cache-control")).toBe("private, no-store");

@@ -176,25 +176,42 @@ describe("per-module bare-slug purchase-id form (P6-store track)", () => {
   });
 });
 
-describe("baseModuleIds (ADR-0094 — the free, always-served substrate)", () => {
-  test("returns exactly the modules scoped to no edition (editions[] === [])", () => {
+describe("baseModuleIds (ADR-0094/0097 — the free, always-served OPEN substrate)", () => {
+  test("returns only the OPEN (Apache-2.0) modules scoped to no edition — commercial base is gated", () => {
     const base = [...baseModuleIds(index)].sort();
     const expected = index.modules
       .filter((m) => {
         const v =
           m.versions.find((x) => x.version === m.latest) ??
           m.versions[m.versions.length - 1];
-        return v !== undefined && v.manifest.editions.length === 0;
+        return (
+          v !== undefined &&
+          v.manifest.editions.length === 0 &&
+          v.manifest.license === "Apache-2.0"
+        );
       })
       .map((m) => m.id)
       .sort();
     expect(base).toEqual(expected);
-    expect(base.length).toBeGreaterThan(0); // the fixture has base members
+    expect(base).toEqual(["@caisson/kernel"]); // kernel is the fixture's open Apache-2.0 base
+    // @caisson/credits is base-scoped (editions[]===[]) but COMMERCIAL → NOT free-view (now gated).
+    expect(base).not.toContain("@caisson/credits");
   });
 
   test("base ⊆ the bundle (bundle = base ∪ all editions)", () => {
     const bundle = expandEntitlements(index, [BUNDLE_ID]);
     for (const id of baseModuleIds(index)) expect(bundle.has(id)).toBe(true);
+  });
+
+  test("a commercial base-kind module stays bundle-deliverable + à-la-carte (gated, not removed)", () => {
+    // credits is commercial base: excluded from the FREE floor, but an entitled bundle OR bare-slug
+    // buyer still receives it — the license gate is on the free-view floor only, never on expansion.
+    expect(expandEntitlements(index, [BUNDLE_ID]).has("@caisson/credits")).toBe(
+      true,
+    );
+    expect([...expandEntitlements(index, ["credits"])]).toEqual([
+      "@caisson/credits",
+    ]);
   });
 });
 

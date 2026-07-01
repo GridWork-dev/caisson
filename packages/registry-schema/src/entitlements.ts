@@ -102,15 +102,44 @@ function baseMembers(index: RegistryIndex): string[] {
 }
 
 /**
- * The index-derived base module ids — every module scoped to NO edition (`editions[] === []`). These
- * are the open Apache-2.0 substrate (ADR-0094): free, always discoverable/installable, independent of
- * any entitlement. The registry Worker unions this into every served view (community gets exactly
- * this; a licensed buyer gets base ∪ their expanded editions). NOT auto-included by
- * `expandEntitlements` for an edition purchase — base inclusion is the read-path/view policy, kept out
- * of the canonical purchase→member expansion so the gate stays exact.
+ * The open SPDX license (ADR-0094/0097). A base-kind module ships this IFF it belongs to the free
+ * open Base substrate; every commercial module ships `LicenseRef-Caisson-Commercial`. Mirrors the
+ * standards-gate authority `tooling/standards-gate` (`OPEN_LICENSE` / `OPEN_BASE_NAMES`,
+ * `checkOpenCoreLicensing`) so the free-view floor and the license gate agree.
+ */
+const OPEN_LICENSE = "Apache-2.0";
+
+/**
+ * The FREE-VIEW substrate — the module ids the registry Worker serves UNAUTHENTICATED (ADR-0094/0097
+ * open-core). A module is free-view ONLY IF it is base-scoped (`editions[] === []`) AND ships the open
+ * `Apache-2.0` license: the open substrate (kernel · auth · tenancy-rls · ui · billing · credits ·
+ * jobs · email · ai-config · mcp-server · registry-schema) — free, always discoverable/installable,
+ * independent of any entitlement.
+ *
+ * A COMMERCIAL base-kind module (`editions[] === []` but `LicenseRef-Caisson-Commercial` — the
+ * à-la-carte compliance/AI primitives field-crypto · audit-worm · ai-meter · ai-evals · guardrails ·
+ * prompt-registry · local-store · agent-kernel, AND the bundle-only commercial tooling cli · migrate ·
+ * license-verify · pricebook) is DELIBERATELY EXCLUDED: it is NOT free base — it requires its own
+ * offline-verified Ed25519 entitlement (a bare-slug / edition / bundle grant, resolved by
+ * `expandEntitlements`). This closes the leak where any `editions[] === []` module was served free.
+ *
+ * Keyed on the manifest `license` (the SPDX legal lever), not a hand-maintained slug allowlist, so it
+ * agrees with the standards-gate authority and stays correct if the open set changes. `baseMembers`
+ * (above, index-derived by edition scope ALONE) stays license-blind on purpose: the BUNDLE = base ∪
+ * every edition must still include the commercial base modules, so an entitled bundle/à-la-carte buyer
+ * receives them. Only THIS free-view floor is license-gated. The Worker unions this into every served
+ * view (community gets exactly this; a licensed buyer gets this ∪ their expanded purchases); fail-safe,
+ * on any resolver error the Worker degrades to THIS open set only — never a commercial module.
  */
 export function baseModuleIds(index: RegistryIndex): readonly string[] {
-  return baseMembers(index);
+  return index.modules
+    .filter((m) => {
+      const manifest = latestManifest(m);
+      return (
+        manifest.editions.length === 0 && manifest.license === OPEN_LICENSE
+      );
+    })
+    .map((m) => m.id);
 }
 
 /** The bundle = base ∪ every edition's members, derived purely from the index (== the full catalog). */
