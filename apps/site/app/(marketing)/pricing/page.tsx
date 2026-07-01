@@ -11,7 +11,6 @@ import {
 } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { CheckoutCta } from "@/components/checkout-cta";
-import { ModuleCatalogGrid } from "@/components/module-catalog-grid";
 import { UpdatesForm } from "@/components/waitlist-form";
 import {
   BUNDLE_CATALOG_ITEM,
@@ -469,17 +468,30 @@ export default function PricingPage() {
         </div>
       </Section>
 
-      {/* ===== À-la-carte module catalog ===== */}
+      {/* ===== À-la-carte marketplace pointer — the catalog now lives on /modules, the
+              configurator on /build (ADR-0191, split so no one page does four jobs). ===== */}
       <Reveal>
         <Section
           id="modules"
           eyebrow="À la carte"
-          title="Fourteen modules, priced for what they do."
-          lede="Every module composes onto the shared base — take one, take several, or build your own edition. Grouped by the edition each belongs to."
+          title="Compose your own edition."
+          lede="Every module composes onto the shared base — take one, take several, or price a full stack. The catalog and the configurator each get their own room now."
           band="surface"
         >
-          <div style={{ marginTop: "var(--cs-space-8)" }}>
-            <ModuleCatalogGrid />
+          <div
+            style={{
+              marginTop: "var(--cs-space-8)",
+              display: "flex",
+              gap: "var(--cs-space-3)",
+              flexWrap: "wrap",
+            }}
+          >
+            <Button href="/build" variant="primary">
+              Build a stack
+            </Button>
+            <Button href="/modules" variant="ghost">
+              Browse the module catalog
+            </Button>
           </div>
         </Section>
       </Reveal>
