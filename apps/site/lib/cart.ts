@@ -72,3 +72,29 @@ export function parseStoredCart(raw: string | null): CartItem[] {
 export function serializeCart(items: readonly CartItem[]): string {
   return JSON.stringify(items);
 }
+
+export interface CartUpgrade {
+  /** The Everything-bundle line the cart would switch to. */
+  bundle: CartItem;
+  /** Whole USD saved vs the current line-item subtotal (always > 0). */
+  saves: number;
+}
+
+/**
+ * A genuine bundle upsell for the current cart, or `undefined` when the bundle wouldn't help.
+ * The Everything bundle is a strict superset (all four editions, hence every module), so switching
+ * to it only ever ADDS coverage — it is honest to suggest it exactly when it also costs LESS than
+ * what the cart already totals. Never suggested when a bundle is already in the cart, nor when the
+ * subtotal is at or below the bundle price (that would cost more — a fabricated "saving", ADR-0130).
+ * Pure: the bundle line is passed in (from the catalog) so this stays React- and pricing-free.
+ */
+export function cartUpgrade(
+  items: readonly CartItem[],
+  bundle: CartItem,
+): CartUpgrade | undefined {
+  if (items.length === 0) return undefined;
+  if (items.some((i) => i.kind === "bundle")) return undefined;
+  const saves = cartSubtotal(items) - bundle.amount;
+  if (saves <= 0) return undefined;
+  return { bundle, saves };
+}
