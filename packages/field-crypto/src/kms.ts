@@ -6,8 +6,8 @@
 //
 // SCOPE (Wave 0): the seam + the wrapped-DEK envelope are REAL and tested via a local wrap double;
 // NO live cloud call runs in CI — the network is behind the port. Production supplies a real
-// `KmsClient` (AWS wiring sketched in `awsKmsClient` below). The DEK plaintext is held only
-// transiently to (un)wrap and to encrypt; it is never logged or persisted.
+// `KmsClient` (AWS wiring in `kms-aws.ts`, exported here as `awsKmsClient` for back-compat, ADR-0171).
+// The DEK plaintext is held only transiently to (un)wrap and to encrypt; it is never logged or persisted.
 //
 // CRYPTO-SHRED (P2 / ADR-0055): every key is scoped by a `keyId` (a per-tenant OR per-subject key
 // identifier). `scheduleKeyDeletion(keyId)` destroys that scope's KEK — the NIST SP 800-88
@@ -16,10 +16,11 @@
 // permanently unrecoverable WITHOUT mutating the append-only wrapped-DEK store (ADR-0014). The
 // erasure-vs-immutable-chain reconciliation lives in `crypto-shred.ts`.
 import { createHash, hkdfSync, randomBytes } from "node:crypto";
-import { ConfigError, NotFoundError, ValidationError } from "@caisson/kernel";
+import { NotFoundError, ValidationError } from "@caisson/kernel";
 import { type FieldKeyProvider } from "./provider.ts";
 import { aesGcm } from "./cipher.ts";
 import { buildAad } from "./aad.ts";
+import { createAwsKmsClient } from "./kms-aws.ts";
 
 /**
  * The KMS port. A production impl calls the cloud KMS; the test double wraps locally. Every operation
@@ -42,7 +43,7 @@ export interface KmsClient {
   scheduleKeyDeletion(keyId: string): Promise<void>;
 }
 
-/** Persistence for each tenant's wrapped DEKs by version + the current version. DB-backed in P2. */
+/** Persistence for each tenant's wrapped DEKs by version + the current version. DB-backed via `DbWrappedKeyStore` (P2, below). */
 export interface WrappedKeyStore {
   getWrapped(tenantId: string, keyVersion: number): Promise<Buffer | undefined>;
   putWrapped(
@@ -78,6 +79,60 @@ export class InMemoryWrappedKeyStore implements WrappedKeyStore {
   }
   async setCurrentVersion(tenantId: string, keyVersion: number): Promise<void> {
     this.current.set(tenantId, keyVersion);
+  }
+}
+
+/**
+ * The minimal async key-value seam a {@link DbWrappedKeyStore} persists through — deliberately NOT
+ * a pg client: the caller wires `get`/`put` to Postgres (or Redis, or anything durable) so this
+ * package stays free of a hard DB dependency. Values are opaque strings.
+ */
+export interface KeyValueStore {
+  get(key: string): Promise<string | undefined>;
+  put(key: string, value: string): Promise<void>;
+}
+
+/**
+ * DB-backed `WrappedKeyStore` (the P2 upgrade from `InMemoryWrappedKeyStore`) over an injected
+ * `KeyValueStore`. Wrapped DEK bytes are stored base64-encoded; the current version as a decimal
+ * string. Every key is namespaced under `field-crypto:` so the injected store can be shared.
+ */
+export class DbWrappedKeyStore implements WrappedKeyStore {
+  constructor(private readonly kv: KeyValueStore) {}
+
+  private wrappedKey(tenantId: string, keyVersion: number): string {
+    return `field-crypto:wrapped:${tenantId}:${keyVersion}`;
+  }
+  private currentKey(tenantId: string): string {
+    return `field-crypto:current:${tenantId}`;
+  }
+
+  async getWrapped(
+    tenantId: string,
+    keyVersion: number,
+  ): Promise<Buffer | undefined> {
+    const v = await this.kv.get(this.wrappedKey(tenantId, keyVersion));
+    return v === undefined ? undefined : Buffer.from(v, "base64");
+  }
+
+  async putWrapped(
+    tenantId: string,
+    keyVersion: number,
+    wrapped: Buffer,
+  ): Promise<void> {
+    await this.kv.put(
+      this.wrappedKey(tenantId, keyVersion),
+      wrapped.toString("base64"),
+    );
+  }
+
+  async currentVersion(tenantId: string): Promise<number | undefined> {
+    const v = await this.kv.get(this.currentKey(tenantId));
+    return v === undefined ? undefined : Number(v);
+  }
+
+  async setCurrentVersion(tenantId: string, keyVersion: number): Promise<void> {
+    await this.kv.put(this.currentKey(tenantId), String(keyVersion));
   }
 }
 
@@ -225,24 +280,18 @@ export class LocalKmsClient implements KmsClient {
 }
 
 /**
- * AWS KMS adapter (documented seam — wire in production). The real impl uses `@aws-sdk/client-kms`:
+ * AWS KMS adapter (ADR-0171 — wired). Real impl lives in `kms-aws.ts` (`createAwsKmsClient`) so this
+ * file doesn't grow an `@aws-sdk/client-kms` dependency of its own; this export is kept for the
+ * original documented-seam name. See `kms-aws.ts`'s header for the exact command mapping.
  *
- *   generateDataKey:    KMS `GenerateDataKey({ KeyId, KeySpec: "AES_256" })`
- *     → { Plaintext (the DEK), CiphertextBlob (the wrapped DEK) }
- *   decryptDataKey:     KMS `Decrypt({ KeyId, CiphertextBlob })` → { Plaintext (the DEK) }
- *   scheduleKeyDeletion: KMS `ScheduleKeyDeletion({ KeyId, PendingWindowInDays })` — the crypto-shred
- *     (a per-subject CMK is destroyed after the pending window; the wrapped DEKs become inert).
- *
- * Left unwired here so CI makes no live cloud call (the SDK is added + the client constructed by the
- * buyer's deployment). GCP KMS (`encrypt`/`decrypt`/`destroyCryptoKeyVersion`), Azure Key Vault
+ * GCP KMS (`encrypt`/`decrypt`/`destroyCryptoKeyVersion`), Azure Key Vault
  * (`wrapKey`/`unwrapKey`/`deleteKey`), and HashiCorp Vault Transit
- * (`/transit/encrypt|decrypt`, delete the key) implement the same three methods.
+ * (`/transit/encrypt|decrypt`, delete the key) implement the same three methods and are equally
+ * drop-in behind the `KmsClient` port.
  */
-export function awsKmsClient(_config: {
+export function awsKmsClient(config: {
   keyId: string;
   region?: string;
 }): KmsClient {
-  throw new ConfigError(
-    "field-crypto: awsKmsClient is a documented seam — supply @aws-sdk/client-kms wiring in your deployment (see kms.ts)",
-  );
+  return createAwsKmsClient(config);
 }

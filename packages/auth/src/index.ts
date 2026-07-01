@@ -16,3 +16,9 @@ export {
   verifyAccountJwt,
 } from "./jwt.ts";
 export type { AccountClaims, SignOptions } from "./jwt.ts";
+export { createWorkosSsoProvider } from "./workos.ts";
+export type {
+  WorkosSsoConfig,
+  WorkosSsoProfile,
+  WorkosSsoProvider,
+} from "./workos.ts";
