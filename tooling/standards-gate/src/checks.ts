@@ -13,7 +13,13 @@
  * only constraint is composition (ADR-0011/0022), not copyleft.
  */
 import { join } from "node:path";
-import { existsSync, readFileSync } from "node:fs";
+import {
+  existsSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  statSync,
+} from "node:fs";
 import { createHash } from "node:crypto";
 import ts from "typescript";
 import type { Pkg } from "./workspace";
@@ -103,11 +109,105 @@ export function checkAgplBoundary(pkgs: Pkg[]): Finding[] {
   return findings;
 }
 
+/** SSPL per SPDX (`SSPL-1.0` etc.) — the other copyleft license this tree must never carry. */
+function isSspl(license: string | null): boolean {
+  return license !== null && /\bSSPL\b/i.test(license);
+}
+
+const isForbiddenLicense = (license: string | null): boolean =>
+  isAgpl(license) || isSspl(license);
+
 /**
- * Gate 1b — AGPL boundary over EXTERNAL (npm) deps. The workspace check misses an external AGPL
- * lib. When node_modules is present, read each external dep's package.json `license`; otherwise
- * WARN that the resolved-tree scan was skipped (CI must run it post-install). dependency-cruiser
- * backstops dynamic/transitive reach.
+ * npm's `license` field has three live shapes in the wild: the modern SPDX string, the legacy
+ * `{ type: "..." }` object, and the older-still `licenses: [{ type: "..." }, ...]` array — all three
+ * still appear in real published packages. Reading only the string form treats an object/array
+ * form as unlicensed, which PASSES the AGPL tripwire it should trip.
+ */
+function parseLicenseField(pkgJson: unknown): string | null {
+  if (typeof pkgJson !== "object" || pkgJson === null) return null;
+  const j = pkgJson as Record<string, unknown>;
+  if (typeof j.license === "string") return j.license;
+  if (typeof j.license === "object" && j.license !== null) {
+    const type = (j.license as Record<string, unknown>).type;
+    if (typeof type === "string") return type;
+  }
+  if (Array.isArray(j.licenses) && j.licenses.length > 0) {
+    const first = j.licenses[0] as Record<string, unknown> | undefined;
+    if (first && typeof first.type === "string") return first.type;
+  }
+  return null;
+}
+
+function licenseOf(packageJsonPath: string): string | null {
+  if (!existsSync(packageJsonPath)) return null;
+  try {
+    return parseLicenseField(JSON.parse(readFileSync(packageJsonPath, "utf8")));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Recursively walks an installed node_modules tree, checking every package's license. bun hoists,
+ * but a version conflict still leaves a nested node_modules — this follows those too, so a
+ * transitive AGPL/SSPL dep can't hide two levels down. A scoped dir (`@scope/`) is one more path
+ * segment, not a separate node_modules level. `.bin` is skipped (never a package), and a
+ * visited-realpath set both breaks symlink cycles (workspace links, content-addressable stores)
+ * and dedupes a package hoisted/linked into more than one spot.
+ */
+function walkForForbiddenLicenses(
+  dir: string,
+  relPath: string,
+  visited: Set<string>,
+  out: { relPath: string; license: string }[],
+): void {
+  let entries: string[];
+  try {
+    entries = readdirSync(dir);
+  } catch {
+    return;
+  }
+  for (const entry of entries) {
+    if (entry === ".bin") continue;
+    const entryPath = join(dir, entry);
+    let real: string;
+    try {
+      real = realpathSync(entryPath);
+    } catch {
+      continue; // broken symlink
+    }
+    if (visited.has(real)) continue;
+    visited.add(real);
+    if (!statSync(entryPath).isDirectory()) continue;
+    const entryRel = `${relPath}${entry}`;
+    if (entry.startsWith("@")) {
+      // Scope namespace — its children are the real packages, not another node_modules level.
+      walkForForbiddenLicenses(entryPath, `${entryRel}/`, visited, out);
+      continue;
+    }
+    const license = licenseOf(join(entryPath, "package.json"));
+    if (isForbiddenLicense(license)) {
+      out.push({ relPath: entryRel, license: license as string });
+    }
+    const nested = join(entryPath, "node_modules");
+    if (existsSync(nested)) {
+      walkForForbiddenLicenses(
+        nested,
+        `${entryRel}/node_modules/`,
+        visited,
+        out,
+      );
+    }
+  }
+}
+
+/**
+ * Gate 1b — AGPL/SSPL boundary over the INSTALLED (npm) tree. The workspace check misses an
+ * external copyleft lib; a per-package direct-dep lookup misses one pulled in transitively (a dep
+ * of a dep). When node_modules is present this walks the whole resolved tree — direct and nested —
+ * so a transitive offender can't escape the tripwire the docstring above already claims to run;
+ * otherwise WARN that the scan was skipped (CI must run it post-install). dependency-cruiser
+ * backstops dynamic reach; it cannot read SPDX/license fields, so this stays the license authority.
  */
 export function checkExternalAgpl(pkgs: Pkg[], root: string): Finding[] {
   const nm = join(root, "node_modules");
@@ -121,31 +221,18 @@ export function checkExternalAgpl(pkgs: Pkg[], root: string): Finding[] {
       },
     ];
   }
-  const findings: Finding[] = [];
-  const licenseOf = (depName: string): string | null => {
-    const pj = join(nm, depName, "package.json");
-    if (!existsSync(pj)) return null;
-    try {
-      const j = JSON.parse(readFileSync(pj, "utf8"));
-      return typeof j.license === "string" ? j.license : null;
-    } catch {
-      return null;
-    }
-  };
-  for (const p of pkgs) {
-    if (isAgpl(p.license)) continue;
-    for (const dep of p.externalDeps) {
-      if (isAgpl(licenseOf(dep))) {
-        findings.push({
-          severity: "error",
-          rule: "agpl-external",
-          pkg: p.name,
-          message: `non-AGPL package depends on AGPL npm package ${dep} (ADR-0010).`,
-        });
-      }
-    }
-  }
-  return findings;
+  // `pkgs` isn't needed to walk the installed tree (an offender is disqualifying regardless of
+  // which workspace package's manifest pulled it in) — kept in the signature for call-site
+  // stability with the other gates in cli.ts.
+  void pkgs;
+  const offenders: { relPath: string; license: string }[] = [];
+  walkForForbiddenLicenses(nm, "node_modules/", new Set<string>(), offenders);
+  return offenders.map((o) => ({
+    severity: "error",
+    rule: "agpl-external",
+    pkg: "(external-tree)",
+    message: `external dependency at ${o.relPath} carries a forbidden copyleft license (${o.license}) — AGPL/SSPL may not enter the tree, direct or transitive (ADR-0010).`,
+  }));
 }
 
 /** Gate 3 — down-only dependency boundary (ADR-0003). base/primitive ↛ edition; edition ↛ edition. */
