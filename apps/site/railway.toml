@@ -6,10 +6,11 @@
 #
 # Service env vars (set in the Railway service — NEVER committed):
 #   DATABASE_URL                       (required for real tenant reads; PGlite double when unset — dev only)
-#   CAISSON_ACCOUNT_JWT_PUBLIC_KEY      (base64 SPKI Ed25519 — verifies the caisson_session cookie, ADR-0015)
-#   NEXT_PUBLIC_PADDLE_CLIENT_TOKEN     (Paddle.js client token — ADR-0116; checkout buttons no-op without it)
-#   NEXT_PUBLIC_PADDLE_ENV              ("sandbox" | "production"; defaults to sandbox)
-#   NEXT_PUBLIC_PLAUSIBLE_DOMAIN        (e.g. "caisson.sh" — ADR-0118; analytics no-op without it)
+#   BETTER_AUTH_SECRET                  (required — better-auth session signing; /dashboard sign-in 503s without it)
+#   BETTER_AUTH_URL                     (the canonical origin, e.g. https://caisson.sh — better-auth callback base)
+#   NEXT_PUBLIC_PADDLE_CLIENT_TOKEN     (Paddle.js client token — ADR-0116; MUST be a build ARG, see Dockerfile)
+#   NEXT_PUBLIC_PADDLE_ENV              ("sandbox" | "production"; defaults to sandbox; build ARG)
+#   NEXT_PUBLIC_PLAUSIBLE_DOMAIN        (e.g. "caisson.sh" — ADR-0118; build ARG; analytics no-op without it)
 #   OTEL_EXPORTER_OTLP_ENDPOINT         (the SigNoz collector — ADR-0117; observability no-ops without it)
 #   RESEND_API_KEY / RESEND_SEGMENT_ID  (the product-updates capture form — inert (202) without them)
 #   TURNSTILE_SECRET                    (optional bot-challenge on the updates form)

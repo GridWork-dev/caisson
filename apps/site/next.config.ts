@@ -22,6 +22,45 @@ const config: NextConfig = {
   // @caisson/ui ships raw TS (exports point at src/*.ts); Next transpiles it (ADR-0042 token floor).
   transpilePackages: ["@caisson/ui"],
   turbopack: { root: monorepoRoot },
+  // Security headers — ported verbatim from the (now-deleted) Cloudflare Pages public/_headers so
+  // the Node standalone server serves the same CSP/HSTS/X-Frame floor the static Pages deploy did
+  // (the Node server never read _headers). Values are byte-identical so the /security page stays
+  // honest. CSP keeps 'unsafe-inline' on script/style-src because Next still inlines its hydration
+  // bootstrap without a per-request nonce under App Router; a nonce path is a tracked follow-up.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            value: "geolocation=(), microphone=(), camera=()",
+          },
+          {
+            key: "Content-Security-Policy",
+            value:
+              "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data:; font-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://plausible.io; connect-src 'self' https://plausible.io",
+          },
+        ],
+      },
+      {
+        source: "/_next/static/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 const withMDX = createMDX();

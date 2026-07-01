@@ -17,6 +17,19 @@ FROM oven/bun:1.3.14-slim AS build
 WORKDIR /app
 COPY . .
 RUN bun install --frozen-lockfile
+
+# NEXT_PUBLIC_* are inlined into the client bundle at BUILD time by `next build` — runtime-only
+# service vars never reach the already-inlined bundle. Railway forwards service variables of the
+# same name to the Dockerfile builder as build ARGs, so declaring them here + promoting to ENV is
+# what actually bakes the Paddle client token / env and the Plausible domain into the client.
+# Empty defaults keep a bare `docker build` (no --build-arg) working — Paddle/Plausible just no-op.
+ARG NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=""
+ARG NEXT_PUBLIC_PADDLE_ENV="sandbox"
+ARG NEXT_PUBLIC_PLAUSIBLE_DOMAIN=""
+ENV NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=$NEXT_PUBLIC_PADDLE_CLIENT_TOKEN \
+    NEXT_PUBLIC_PADDLE_ENV=$NEXT_PUBLIC_PADDLE_ENV \
+    NEXT_PUBLIC_PLAUSIBLE_DOMAIN=$NEXT_PUBLIC_PLAUSIBLE_DOMAIN
+
 RUN bunx turbo run build --filter=@caisson/site --concurrency=50%
 
 FROM oven/bun:1.3.14-slim AS runtime
