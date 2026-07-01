@@ -452,6 +452,25 @@ The 2026-07-01 operator provider picker (research: forks PF-1..PF-7, `docs/state
 
 ---
 
+### Site-marketplace-rework session (0189-0196, 2026-07-01) - status `accepted`
+
+Nine forks (D-1…D-9) from the site-marketplace-rework audit, locked in an operator picker (D-8 closed
+no-op, no ADR). Numbered from **0189** to sidestep the concurrent lift phase's claim on 0186-0188 (live
+shipped ceiling at authoring time: 0178) — renumbers by-meaning at merge if lift lands first.
+
+| #                                                                                           | Title                                                                      | Domain              | Status   | Relations                                                  |
+| ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------- | -------- | ---------------------------------------------------------- |
+| [0189](../knowledge/decisions/ADR-0189-reaffirm-single-accent-lock-optional-proof-token.md) | Reaffirm ≤10% single-accent lock; optional `--cs-proof` status token (D-1) | Design/Tokens       | accepted | extends 0042/0078; enforced by 0101 contrast gate          |
+| [0190](../knowledge/decisions/ADR-0190-nav-editions-disclosure-panel.md)                    | Primary nav: Editions disclosure panel (D-2)                               | Design/IA           | accepted | extends 0078/0099/0102; fixes CTA under 0192               |
+| [0191](../knowledge/decisions/ADR-0191-marketplace-three-route-split-build-configurator.md) | Marketplace: three-route split + `/build` configurator (D-3)               | Commerce/Storefront | accepted | extends 0129/0131/0136/0137; live regions per 0194         |
+| [0192](../knowledge/decisions/ADR-0192-single-add-to-cart-buy-verb.md)                      | Single "Add to cart" buy-verb sitewide (D-4)                               | Commerce/Storefront | accepted | extends 0116/0131; co-locks button variants with 0195      |
+| [0193](../knowledge/decisions/ADR-0193-checkout-drawer-vs-cart-differentiation.md)          | Checkout: differentiate drawer vs `/cart`, single-sourced primitives (D-5) | Commerce/Checkout   | accepted | extends 0131/0132; closes drawer focus gap under 0194      |
+| [0194](../knowledge/decisions/ADR-0194-wcag-22-aa-accessibility-floor.md)                   | WCAG 2.2 AA accessibility floor (D-6)                                      | Design/A11y         | accepted | extends 0100/0101; requires 0191/0193/0195                 |
+| [0195](../knowledge/decisions/ADR-0195-design-system-martian-mono-codify.md)                | Design-system codify: Martian-only mono + de-dup + button lock (D-7)       | Design/Tokens       | accepted | extends 0042/0099/0100; co-locks button variants with 0192 |
+| [0196](../knowledge/decisions/ADR-0196-extend-cmdk-search-sitewide.md)                      | Extend ⌘K search sitewide (D-9)                                            | Design/IA           | accepted | extends 0096; sequenced after nav 0190                     |
+
+---
+
 ## Accepted is not the same as shipped
 
 An ADR status of `accepted`/`locked`/`proposed` records a **locked decision**, not a built
