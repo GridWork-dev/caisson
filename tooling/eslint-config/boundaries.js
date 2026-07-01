@@ -44,6 +44,8 @@ export const PROVIDER_SDKS = [
   "@ai-sdk/anthropic",
   "@ai-sdk/google",
   "@ai-sdk/openrouter",
+  "@ai-sdk/amazon-bedrock",
+  "@ai-sdk/azure",
 ];
 
 const restrictedPatterns = PROVIDER_SDKS.map((name) => ({

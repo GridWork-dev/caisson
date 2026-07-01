@@ -8,7 +8,9 @@
 // the env var the lane NAMES (`apiKeyEnv`, ADR-0011) — ai-config never reads the key itself; the SDK
 // adapter does, here, at the edge. `openrouter` + `local` are OpenAI-API-compatible, so they reach
 // through the OpenAI adapter with an explicit `baseURL` (no extra SDK).
+import { createAmazonBedrock } from "@ai-sdk/amazon-bedrock";
 import { createAnthropic } from "@ai-sdk/anthropic";
+import { createAzure } from "@ai-sdk/azure";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import type { ProviderV2 } from "@ai-sdk/provider";
@@ -33,8 +35,34 @@ function providerFor(cfg: ProviderConfig): ProviderV2 {
         ...key,
         baseURL: cfg.baseUrl ?? OPENROUTER_BASE_URL,
       });
+    // `ollama` serves an OpenAI-compatible endpoint, so it rides the same adapter as `local` — the
+    // buyer names the `baseUrl` of their host (no localhost default, per the security floor).
     case "local":
+    case "ollama":
       return createOpenAI({ apiKey: apiKey ?? "local", ...base });
+    // AWS Bedrock (ADR-0160): SigV4, a two-part credential + region. `apiKeyEnv` names the
+    // access-key-id env var, `apiSecretEnv` the secret-access-key env var; omit both to fall back to
+    // the AWS SDK's default credential chain. `region` defaults to `AWS_REGION` when unset.
+    case "bedrock": {
+      const secret =
+        cfg.apiSecretEnv !== undefined
+          ? process.env[cfg.apiSecretEnv]
+          : undefined;
+      return createAmazonBedrock({
+        ...(cfg.region !== undefined ? { region: cfg.region } : {}),
+        ...(apiKey !== undefined ? { accessKeyId: apiKey } : {}),
+        ...(secret !== undefined ? { secretAccessKey: secret } : {}),
+        ...base,
+      });
+    }
+    // Azure OpenAI (ADR-0160): `model` addresses a DEPLOYMENT; `baseUrl` is the resource endpoint and
+    // `apiVersion` pins the per-call API version.
+    case "azure-openai":
+      return createAzure({
+        ...key,
+        ...base,
+        ...(cfg.apiVersion !== undefined ? { apiVersion: cfg.apiVersion } : {}),
+      });
   }
 }
 
