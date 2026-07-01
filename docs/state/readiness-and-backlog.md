@@ -201,6 +201,10 @@ go-live (operator/DEPLOY-class, including the registry Worker redeploy) or P7 ro
 
 ### Code-review findings (Greptile)
 
+> **Stream D re-verify 2026-07-01 (D10):** confirmed the two real cli-meter bugs (#1/#2) are fixed on
+> `main` — `meter.integration.test.ts` now stages into an `mkdtemp` bundle dir with an injectable
+> `bundleRoot` (never the real gitignored build artifact). Backlog stays **cleared**; no open D10 action.
+>
 > **Update 2026-06-30:** the test-hygiene backlog below (findings #1–#7) was **cleared by I6 (PR#26)**;
 > the P6 **integration** additionally folded in every per-PR Greptile finding on the code-track PRs
 > (#27/#28) — the two **P1s** (unguarded `issueLicense` rejection → structured 500; stale `0.0.0`
