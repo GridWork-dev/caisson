@@ -1,0 +1,22 @@
+# Railway service config — apps/admin (@caisson/admin), the operator control-plane at
+# admin.caisson.sh (ADR-0138). CF-Access-gated operator-only (ADR-0140) — the edge is the sole
+# auth; the app carries no auth code.
+#
+# Dashboard settings for THIS service (the build context must be the repo root, see Dockerfile):
+#   Root Directory       = /                      (repo root — the Docker build context)
+#   Config-as-code path  = apps/admin/railway.toml (this file)
+#
+# Service env vars (set in the Railway service — NEVER committed; every surface no-ops when unset):
+#   CAISSON_ADMIN_DB_URL          (the read-only `admin` Postgres role DSN — ADR-0141; cross-tenant reads)
+#   OTEL_EXPORTER_OTLP_ENDPOINT   (the SigNoz collector — ADR-0117/0142; observability no-ops without it)
+#   SIGNOZ_QUERY_URL              (the SigNoz query-service base URL — ADR-0142; ops widgets empty without it)
+#   SIGNOZ_API_KEY                (SigNoz service-account key for the query API — ADR-0142)
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "apps/admin/Dockerfile"
+
+[deploy]
+healthcheckPath = "/healthz"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
+numReplicas = 1

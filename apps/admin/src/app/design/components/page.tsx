@@ -128,7 +128,7 @@ export default function ComponentsGalleryPage() {
           </Button>
           <Button disabled>Disabled</Button>
           <Button asChild>
-            <a href="/components">As link (asChild)</a>
+            <a href="/design/components">As link (asChild)</a>
           </Button>
         </div>
       </section>
@@ -215,7 +215,7 @@ export default function ComponentsGalleryPage() {
         <div className="cs-editions">
           <EditionCard
             lead
-            href="/components"
+            href="/design/components"
             name="Compliance"
             icon="shield"
             status={<StatusChip tone="accent" label="edition" />}
@@ -223,14 +223,14 @@ export default function ComponentsGalleryPage() {
             proof="$ caisson audit verify --chain  ✓ intact"
           />
           <EditionCard
-            href="/components"
+            href="/design/components"
             name="AI Production Kit"
             icon="cpu"
             status={<StatusChip tone="muted" label="edition" />}
             line="Eval gates, cassette replay, provider-swappable inference."
           />
           <EditionCard
-            href="/components"
+            href="/design/components"
             name="Local-first AI"
             icon="database"
             status={<StatusChip tone="muted" label="edition" />}
