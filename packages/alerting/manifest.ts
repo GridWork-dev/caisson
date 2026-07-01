@@ -1,0 +1,21 @@
+// Registry manifest (ADR-0020). Loaded by @caisson/standards-gate; must agree with package.json on
+// id/version/license/dependencies. `kind: "primitive"` — a shared compliance primitive, not a base
+// service or an edition (edition membership is added by the Compliance edition at integration, not
+// self-declared here — mirrors field-crypto). Paid + LicenseRef-Caisson-Commercial (ADR-0135).
+import pkg from "./package.json";
+import { defineModule } from "../../registry/schema/module-manifest";
+
+export default defineModule({
+  id: "@caisson/alerting",
+  version: pkg.version,
+  kind: "primitive",
+  tier: "paid",
+  // PLACEHOLDER price pending ADR-0135 pricing lock (ADR-0129 methodology); positive int required
+  // by the manifest refine (ADR-0007).
+  priceCents: 4900,
+  license: pkg.license,
+  dependencies: ["@caisson/kernel", "@caisson/email"],
+  golden: null,
+  description:
+    "SOC2 CC7.2 multi-channel alerting pipeline: dedup -> rate-cap+digest -> IANA-tz quiet-hours (critical override) -> multi-channel delivery (email/webhook/Slack/Telegram) -> structured audit log.",
+});
