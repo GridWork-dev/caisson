@@ -4,6 +4,7 @@
 import type { ReactNode } from "react";
 import { Button } from "@caisson/ui/components";
 import { DashboardShell } from "@/components/dashboard-shell";
+import { PostHogInit } from "@/components/posthog-init";
 import { requireDashboardSession } from "@/lib/auth";
 
 // Never statically cached — a tenant's dashboard must not be served from a shared cache (no
@@ -42,5 +43,12 @@ export default async function DashboardLayout({
     </form>
   );
 
-  return <DashboardShell topBar={topBar}>{children}</DashboardShell>;
+  return (
+    <>
+      {/* PostHog product analytics — authed dashboard only (never the cookieless marketing site).
+          No-op until NEXT_PUBLIC_POSTHOG_KEY is set on the caisson-site service. */}
+      <PostHogInit accountId={session.accountId} />
+      <DashboardShell topBar={topBar}>{children}</DashboardShell>
+    </>
+  );
 }
