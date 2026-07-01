@@ -17,12 +17,30 @@ FROM oven/bun:1.3.14-slim AS build
 WORKDIR /app
 COPY . .
 RUN bun install --frozen-lockfile
+
+# NEXT_PUBLIC_* are inlined into the client bundle at BUILD time by `next build` — runtime-only
+# service vars never reach the already-inlined bundle. Railway forwards service variables of the
+# same name to the Dockerfile builder as build ARGs, so declaring them here + promoting to ENV is
+# what actually bakes the Paddle client token / env and the Plausible domain into the client.
+# Empty defaults keep a bare `docker build` (no --build-arg) working — Paddle/Plausible just no-op.
+ARG NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=""
+ARG NEXT_PUBLIC_PADDLE_ENV="sandbox"
+ARG NEXT_PUBLIC_PLAUSIBLE_DOMAIN=""
+ENV NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=$NEXT_PUBLIC_PADDLE_CLIENT_TOKEN \
+    NEXT_PUBLIC_PADDLE_ENV=$NEXT_PUBLIC_PADDLE_ENV \
+    NEXT_PUBLIC_PLAUSIBLE_DOMAIN=$NEXT_PUBLIC_PLAUSIBLE_DOMAIN
+
 RUN bunx turbo run build --filter=@caisson/site --concurrency=50%
 
 FROM oven/bun:1.3.14-slim AS runtime
 WORKDIR /app
+# HOSTNAME=0.0.0.0 is load-bearing: Next's standalone server.js binds to process.env.HOSTNAME, and
+# Docker auto-sets HOSTNAME to the container id — so without this the server binds only to the
+# container-hostname interface and Railway's edge gets a 502 (unlike docs/support-bot, which use
+# Bun.serve and bind 0.0.0.0 by default). This is Next's own documented Docker requirement.
 ENV NODE_ENV=production \
-    PORT=3030
+    PORT=3030 \
+    HOSTNAME=0.0.0.0
 
 # output:'standalone' traces the minimal node_modules subset the server actually needs into
 # .next/standalone, preserving the monorepo-relative path (server.js lands at apps/site/server.js,

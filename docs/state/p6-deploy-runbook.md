@@ -8,6 +8,12 @@ the live deploys + cred-bearing accounts are the operator's acts.
 Platform = **Railway** (ADR-0105, operator-locked 2026-06-30). The license issuer (code-track I1) and
 the commerce backend follow the same posture.
 
+> **STAGE-2 (2026-07-01):** the executable, operator-locked cutover plan is now
+> **`stage2-deploy-plan.md`** (full cutover incl. Pages teardown, behind CF Access; sandbox Paddle;
+> manual-first-then-armed auto-deploy). This runbook stays the per-seam reference; the plan is the
+> ordered runbook of record. Recon (`wf_6a11b902-537`) found the deploy is a **build+deploy** — no
+> license deploy entrypoint, no Postgres migration path — see the plan's §2 build-prep.
+
 > **LIVE — deployed 2026-06-30 (Railway project `caisson-prod`, workspace GridWork.dev):**
 >
 > - **docs-service** → `https://docs-api.caisson.sh` (CF CNAME, DNS-only + Railway TLS) and
