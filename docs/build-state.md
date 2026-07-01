@@ -1,5 +1,12 @@
 # Build state & roadmap
 
+> **STAGE-2 CORRECTION (2026-07-01):** the `feat/dashboard-unified-and-p6-tail` branch is **MERGED to
+> `main`** (PR#33, `747ea25`) — every "built on the integration branch, not merged / not pushed / not
+> yet deployed" claim below is **stale**. The unified `caisson-site` app, store-rework, better-auth
+> sign-in, and CI rewire are on `main`. The live **cutover** (Railway provisioning + DNS + Pages
+> teardown) is the remaining act — plan: `docs/state/stage2-deploy-plan.md`; next-work partition:
+> `docs/state/stage2-kickoff-triage.md`. All 7 services-hardening fixes are also merged (code done).
+
 Live build status for the Caisson monorepo. **This file OWNS the synthesized build-status
 view** - `plan.md` (the P0-P7 plan) and `SUMMARY.md` (the consolidated job rollup) route here
 for "what is actually built right now". Canonical _decisions_ stay in `knowledge/decisions/`
