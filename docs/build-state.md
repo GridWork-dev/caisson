@@ -18,6 +18,25 @@ jobs, and the `@caisson/ui` kit integrated into the app. **Not yet deployed** �
 still served by Cloudflare Pages; Railway provisioning + DNS cutover + Pages teardown are
 DEPLOY-class and operator-gated. `deploy-site.yml`/`lighthouse.yml` still assume the retired
 static-export (`out/`) and will fail on the next push to `main` until the cutover lands.
+
+**2026-06-30 pricing + store-rework grill session** (document-only, this session) locked the next
+build wave, sequenced BEFORE the Railway cutover per the operator's explicit ordering: value-based
+per-module pricing across a 12-module catalog + edition-bundle math (`ADR-0129`, supersedes two of
+`ADR-0106`'s point-values — Local-first $499→$399, Everything Bundle $3,499→$2,999), the gated
+pre-launch storefront showing the full 17-SKU catalog with no maturity flags (`ADR-0130`,
+supersedes `ADR-0082` §3/§4), a site cart feeding one multi-item Paddle checkout with a verified
+fallback path (`ADR-0131`, extends `ADR-0116`), and buyer sign-in via better-auth magic-link +
+GitHub/Google OAuth (`ADR-0132`, closes the sign-in-placeholder gap flagged below). **Status: locked,
+not built** — SKUs, cart UI, pricing-page copy rewrite, and the sign-in flow are all still queued
+implementation work on the integration branch, ahead of the Railway cutover.
+
+**2026-06-30 harvest grill session** (document-only, this session) locked the **next initiative
+after** the store rework + Railway cutover: the 11 gridwork-core infra packages become sellable
+substrate for Agentic-Dev + AI Production Kit, the 6 Wardfile product-code lifts harden the base,
+the cross-domain audit/validate harness gets a full build (generalizing `ADR-0101`), and two new
+commercial Compliance modules (`@caisson/alerting`, `retention-runner`) join the catalog — `ADR-0133`,
+`ADR-0134`, `ADR-0135`. **Status: locked, zero code** — spec-gated per package, ranked execution
+order tracked in `docs/state/harvest-program.md`. ADR ceiling on this catalog is now **0135**.
 Method: `packages/*/src` + test presence, `apps/`/`services/` contents, ADR + spec artifact
 trail, git chronology. Status reflects code-on-disk, not marketing copy.
 
