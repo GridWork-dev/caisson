@@ -16,6 +16,28 @@ const config: NextConfig = {
   // @caisson/ui ships raw TS (exports point at src/*.ts); Next transpiles it (ADR-0042 token floor).
   transpilePackages: ["@caisson/ui"],
   turbopack: { root: monorepoRoot },
+  // Security-floor response headers (identity/security.md), same values as apps/site/next.config.ts —
+  // admin.caisson.sh is a LIVE served surface and carries no documented embedding feature.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            value: "geolocation=(), microphone=(), camera=()",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default config;
