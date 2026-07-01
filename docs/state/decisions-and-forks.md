@@ -313,10 +313,23 @@ operator control-plane + full-fleet observability initiative (**ADR-0138**, char
 | **Observability backend**     | **Self-host SigNoz on Railway** (executes ADR-0117) — all services (app · docs · support-bot · license via OTLP; the registry Worker via CF-native logs + a tail→OTLP bridge) report to it; SigNoz + Railway PG = substrate. | **ADR-0138** |
 | **Live architecture diagram** | **Hybrid** — auto-derived service/deploy topology (Railway graph + manifests + health probes + graphify) + hand-authored annotations.                                                                                        | **ADR-0138** |
 
-Still open (locked at the initiative SPEC, post-Stage-1): admin auth detail, per-service OTel wiring +
-the Worker tail→OTLP bridge, business-admin mutation surface + RLS, SigNoz sizing/retention, diagram
-render tech, studio-removal migration. Sequenced after the Stage-1 PR + Railway/DNS cutover; ordered
-against the ADR-0133 harvest at kickoff.
+## Closed by the Stage-2 Stream A initiative SPEC (2026-06-30, operator picker)
+
+The ADR-0138 detail forks, locked at the `stream/obs-admin` SPEC (`outputs/specs/stage2-stream-a-obs-admin/`).
+Build is local-only on the stream; deploy is the integration session.
+
+| Detail fork                 | Lock                                                                                                                                                        | ADR          |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| **admin auth**              | **CF-Access alone** — one new Access app for `admin.caisson.sh`, no app-side auth code (single-operator, read-only).                                        | **ADR-0140** |
+| **business-admin**          | **Read-only cockpit first** — cross-tenant via a read-only `admin` Postgres role (`buildAdminReadPolicySql` + `withAdminRead`); mutation deferred.          | **ADR-0141** |
+| **SigNoz sizing/retention** | **Single-node Foundry template (5 svcs incl. Keeper), 14-day retention, 100% head sampling**; Worker→SigNoz via CF-native `[observability.*]` destinations. | **ADR-0142** |
+| **diagram render tech**     | **Client-side interactive React Flow** (hybrid auto-topology + versioned annotation layer).                                                                 | **ADR-0143** |
+
+Per-service OTel wiring resolved in-SPEC: `services/docs` + `services/license` already instrumented;
+**support-bot Python OTLP + the Worker CF-native destinations block are the only new OTLP work.**
+Still deferred (own future ADR): the **business-admin mutation surface + audit trail**. Studio-removal
+migration is Stream A task A1. Sequenced after the Stage-1 PR + Railway/DNS cutover; ordered against the
+ADR-0133 harvest at kickoff.
 
 ## Closed by the 2026-06-30 pricing + store-rework wave (operator-locked + BUILT)
 

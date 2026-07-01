@@ -5,7 +5,7 @@ charter: ADR-0138 (executes ADR-0117, builds on ADR-0114/0115, reuses ADR-0107)
 reserved_adrs: 0140–0149
 branch: stream/obs-admin
 tags: [infra, observability, auth, security, frontend, ui, external-system]
-status: DRAFT — 4 forks await operator lock before any code
+status: LOCKED (2026-06-30) — forks resolved as ADR-0140..0143; execution started at A1
 date: 2026-06-30
 ---
 
@@ -152,53 +152,17 @@ trees.
   ships with a FORCE-RLS fail-closed test; no secret/PII in spans (existing scrub allowlist covers
   `email`/`phone`/tokens); admin surface is operator-only (Fork 1). A security audit fires at SHIP.
 
-## Open forks — AWAIT OPERATOR LOCK (no code until locked)
+## Forks — LOCKED 2026-06-30 (operator picker)
 
-Recommendations are labeled with confidence + evidence per the one-operator rule. Locks → ADRs
-0140–0143.
+| Fork               | Lock                                                                                                                                                       | ADR      | Note                                      |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------------------------------------- |
+| 1 — admin auth     | **CF-Access alone** — one new Access app for `admin.caisson.sh`, no app-side auth code                                                                     | ADR-0140 | as recommended                            |
+| 2 — business-admin | **Read-only cockpit first** — cross-tenant via a read-only `admin` Postgres role (`buildAdminReadPolicySql` + `withAdminRead`), mutation deferred          | ADR-0141 | as recommended                            |
+| 3 — SigNoz         | **Single-node Foundry template (5 svcs incl. Keeper), 14-day retention, 100% head sampling**; Worker→SigNoz via CF-native `[observability.*]` destinations | ADR-0142 | **14d chosen over 7d rec**                |
+| 4 — diagram        | **Client-side interactive React Flow** — hybrid auto-topology + versioned annotation layer                                                                 | ADR-0143 | **React Flow chosen over server-SVG rec** |
 
-### Fork 1 — admin auth model → **ADR-0140**
-
-- **Rec (HIGH): CF-Access alone.** ADR-0138 describes a _single-operator_ cockpit; CF-Access today is
-  pure edge-trust (Terraform `access.tf`, `@gridwork.dev` OTP) with **zero** app-side JWT code. Option A
-  = one new `cloudflare_zero_trust_access_application` for `admin.caisson.sh`, **no app auth code**.
-- **Alt: better-auth operator role behind CF-Access** — buys per-operator identity/audit inside the app,
-  but `apps/site`'s role model is `owner|seat` (buyer-scoped, wrong to reuse); needs a new operator role
-  - session storage + a second attack surface. Only justified if Fork 2 locks **mutation** (audit-who).
-- **Evidence:** recon `cf-access-model`; ADR-0107; `packages/auth/src/session.ts` (`Role="owner"|"seat"`).
-
-### Fork 2 — business-admin read-vs-mutate + cross-tenant mechanism → **ADR-0141**
-
-- **Rec (HIGH): read-only cockpit first.** Defers the mutation surface + its audit/RLS posture; the
-  charter's business-mutation value is real but unvalidated and blast-radius-heavy.
-- **Cross-tenant read mechanism (rec, MEDIUM):** a dedicated **read-only `admin` Postgres role** with
-  permissive `USING(true)` SELECT policies (a `buildAdminReadPolicySql` sibling in `@caisson/tenancy-rls`)
-  — keeps RLS the single mechanism, avoids a BYPASSRLS superuser's unbounded blast radius, and needs no
-  separate synced view. Alternatives: BYPASSRLS service role (simplest, most dangerous) · a
-  materialized/aggregate admin view (smallest surface, another schema to sync).
-- **Evidence:** recon `railway-pg-schema` — _no cross-tenant path exists today_; `withTenant`/
-  `buildTenantPolicySql` are single-tenant by construction; ADR-0005 fail-closed contract; ADR-0138 §2b.
-
-### Fork 3 — SigNoz sizing / retention / sampling (+ Worker-bridge mechanism) → **ADR-0142**
-
-- **Rec (MEDIUM): the official Foundry Railway template, single-node, 7-day trace/log TTL, 100% head
-  sampling, ClickHouse memory-capped.** Caveat surfaced by recon: stock SigNoz forces ClickHouse
-  **Keeper** (REPLICATION=true + `ON CLUSTER` even single-node) → the honest minimum is **5 services**,
-  not 3; dropping Keeper (`REPLICATION=false`) is an unsupported tweak. Real idle footprint ~1.6 GB;
-  4 GB is the documented floor → an 8 GB/4 vCPU Railway tier is the safe sizing.
-- **Worker-bridge sub-decision (rec, HIGH): CF-native `[observability.traces/logs]` destinations** (zero
-  new code) over a hand-rolled `tail_consumers` bridge worker (ADR-0138's literal wording). I'll default
-  to native-destinations unless you redirect — flagging because ADR-0138 named "tail-worker" specifically.
-- **Evidence:** recon `signoz-selfhost-ref` (cited) + `registry-worker`; ADR-0117 (DEPLOY-class provision).
-
-### Fork 4 — live architecture diagram render tech → **ADR-0143**
-
-- **Rec (MEDIUM): server-rendered dagre/Mermaid SVG, regenerated at build.** Auto-topology from
-  `*/railway.toml` + health-probe liveness (+ optional `graphify` structure) → SVG at build time, with a
-  versioned in-repo annotation/legend layer for intent the topology can't express (the ADR-0138 hybrid).
-- **Alt:** client-side interactive (React Flow) — richer, heavier bundle, more code for a single-operator
-  read surface. Rec stays server-SVG unless you want pan/zoom/click-through.
-- **Evidence:** recon `build-state-adr-board`; ADR-0138 §4 (hybrid mandate).
+Both divergences from the SPEC recommendation (14d retention · React Flow) are the operator's calls and
+are recorded verbatim in the ADRs.
 
 ## ADR plan
 

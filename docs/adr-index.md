@@ -10,7 +10,7 @@ conflict, the ADR file and the board win over this index.
   never edits the prior file. So most rows below are **partial** supersessions (one clause),
   not a wholesale replacement.
 - 113 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 113). Numbering is **not**
-  contiguous: present are **0001-0024** and **0040-0138**; **0025-0039 are an unused gap**
+  contiguous: present are **0001-0024** and **0040-0143**; **0025-0039 are an unused gap**
   (no files). The 0040 jump was a deliberate block reservation for the brand/positioning set.
   **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit);
   **0094-0096** = the 2026-06-29 GTM-report locks (open-core Base / GTM offer / services-docs);
@@ -396,6 +396,21 @@ observability; implementation is post-Stage-1, spec-gated.
 | #                                                                                      | Title                                                                        | Domain            | Status   | Relations                                                                 |
 | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ----------------- | -------- | ------------------------------------------------------------------------- |
 | [0138](../knowledge/decisions/ADR-0138-admin-control-plane-and-fleet-observability.md) | admin.caisson.sh operator control-plane + full-fleet observability (charter) | Ops/Observability | accepted | executes 0117; builds on 0114/0115; absorbs 0099-0104 studio; reuses 0107 |
+
+---
+
+### Stage-2 Stream A detail-fork locks (0140-0143, 2026-06-30) - status `accepted` (initiative SPEC)
+
+The four ADR-0138 detail forks, locked at the Stream A initiative SPEC (operator picker). Build is
+local-only on `stream/obs-admin`; deploy is the separate integration session. `0139` reserved for the
+deploy's own Railway topology ADR; `0144-0149` reserved for Stream A spillover.
+
+| #                                                                           | Title                                                      | Domain            | Status   | Relations                            |
+| --------------------------------------------------------------------------- | ---------------------------------------------------------- | ----------------- | -------- | ------------------------------------ |
+| [0140](../knowledge/decisions/ADR-0140-admin-auth-cf-access.md)             | admin.caisson.sh auth: CF-Access alone                     | Auth/Security     | accepted | opens 0138 fork; reuses 0107         |
+| [0141](../knowledge/decisions/ADR-0141-business-admin-read-only-cockpit.md) | business-admin: read-only cockpit + admin-read RLS role    | Auth/Security     | accepted | opens 0138 fork; builds on 0005/0115 |
+| [0142](../knowledge/decisions/ADR-0142-signoz-sizing-retention-sampling.md) | SigNoz self-host: single-node, 14-day retention, 100% head | Ops/Observability | accepted | opens 0138 fork; executes 0117       |
+| [0143](../knowledge/decisions/ADR-0143-architecture-diagram-react-flow.md)  | live architecture diagram: interactive React Flow          | Ops/Observability | accepted | implements 0138 §4                   |
 
 ---
 
