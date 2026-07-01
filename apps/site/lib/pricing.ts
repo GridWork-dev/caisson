@@ -1,16 +1,19 @@
-// Committed pricing (ADR-0106 LOCKED numbers — supersedes the ADR-0082/ADR-0012-range point
-// values this file shipped with pre-P6). Shown as the prices — NO "subject to change" hedge. The
-// operator may still adjust a final number before checkout goes live, but the site no longer
-// says so. Amounts are integer USD (money is never a float, ADR-0007). All four editions are
-// commercial (ADR-0083 made Local-first commercial — no free/AGPL tier). Single source — pages,
-// SKU grid, cart, and JSON-LD Offers all read from here so a number never drifts between
-// surfaces.
+// Committed pricing — the Q4 below-sum lock (supersedes the ADR-0129 edition numbers this file
+// briefly shipped, which themselves superseded the ADR-0106/ADR-0082 sheet). Shown as the prices —
+// NO "subject to change" hedge. The operator may still adjust a final number before checkout goes
+// live, but the site no longer says so. Amounts are integer USD (money is never a float,
+// ADR-0007). All four editions are commercial (ADR-0083 made Local-first commercial — no free/AGPL
+// tier). Single source — pages, SKU grid, cart, and JSON-LD Offers all read from here so a number
+// never drifts between surfaces.
 //
-// Storefront-rework pass (STORE-FE track): Local-first AI and the Everything bundle are
-// REPRICED ($399, was $499; $2,999, was $3,499) and every edition is now a real buyable product —
-// Agentic-Dev's "roadmap" framing is retired (the site shows the full catalog as-if-built, subject
-// to change, per the operator's go-live posture lock). The per-module offering is now a REAL
-// catalog (`MODULE_PRICES`) instead of a single "from $49" placeholder line.
+// Honesty floor (ADR-0130): the site was NEVER live at any earlier number, so a struck-through
+// "was $X now $Y" per-edition or per-module anchor would imply a price no customer ever paid — a
+// fabricated discount the guardrails module itself forbids (FTC 4Ps). There is therefore NO
+// per-anchor compare/"was" price on this sheet. The ONE truthful comparison kept is the Everything
+// bundle's "Save $N vs buying the four editions separately" badge (`bundleSavings()`), a real
+// saving against the live à-la-carte subtotal — not an invented price history. Every edition is a
+// real buyable product (no "roadmap" gating), and the per-module offering is a REAL catalog
+// (`MODULE_PRICES`), not a single "from $49" placeholder line.
 
 export interface PriceAnchor {
   /** Stable id (also the JSON-LD Offer key). */
@@ -25,9 +28,6 @@ export interface PriceAnchor {
   from: boolean;
   /** One-line position note. */
   note: string;
-  /** Previous display price, when this anchor was just repriced — a UI can render it struck
-   *  through next to `amount` as a "was $X" compare price. `undefined`/`null` = no change to show. */
-  wasAmount?: number | null;
 }
 
 /** The four editions, in display order. Every edition is commercial (ADR-0083) and buyable — none
@@ -49,7 +49,7 @@ export const EDITION_PRICES: readonly PriceAnchor[] = [
   {
     id: "compliance",
     label: "Compliance",
-    amount: 2499,
+    amount: 749,
     unit: "once",
     from: true,
     note: "Own the source. Fail-closed RLS, WORM, audit chain, evidence packs.",
@@ -65,7 +65,7 @@ export const EDITION_PRICES: readonly PriceAnchor[] = [
   {
     id: "agentic-dev",
     label: "Agentic-Dev",
-    amount: 499,
+    amount: 249,
     unit: "once",
     from: true,
     note: "The governed-agent kernel — typed agent/skill/rule schema, a guarded lifecycle, and a hooks dispatcher.",
@@ -73,11 +73,10 @@ export const EDITION_PRICES: readonly PriceAnchor[] = [
   {
     id: "local-first",
     label: "Local-first AI",
-    amount: 399,
+    amount: 349,
     unit: "once",
     from: true,
     note: "Own the source. On-device inference, a privacy gate, and vector search — your data never leaves the device.",
-    wasAmount: 499,
   },
 ] as const;
 
@@ -228,11 +227,10 @@ export const PLAN_PRICES: readonly PriceAnchor[] = [
   {
     id: "bundle",
     label: "Everything bundle",
-    amount: 2999,
+    amount: 1499,
     unit: "once",
     from: false,
     note: "All four editions plus the base, one purchase.",
-    wasAmount: 3499,
   },
   {
     id: "module",

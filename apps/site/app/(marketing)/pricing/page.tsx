@@ -248,15 +248,15 @@ export default function PricingPage() {
           >
             {"edition."}
             <span className="cs-tok-accent">compliance</span>
-            {"        from $2,499   perpetual\nedition."}
+            {"        from $749     perpetual\nedition."}
             <span className="cs-tok-accent">ai-kit</span>
             {"             from $599     perpetual\nedition."}
             <span className="cs-tok-accent">local-first</span>
-            {"        from $399     perpetual\nedition."}
+            {"        from $349     perpetual\nedition."}
             <span className="cs-tok-accent">agentic-dev</span>
-            {"        from $499     perpetual\n"}
+            {"        from $249     perpetual\n"}
             <span className="cs-tok-success">bundle.everything</span>
-            {"         $2,999      all four + base"}
+            {"         $1,499      all four + base"}
           </Terminal>
         }
       />
@@ -366,18 +366,6 @@ export default function PricingPage() {
                 }}
               >
                 {bundle ? formatPrice(bundle) : "—"}
-                {bundle?.wasAmount ? (
-                  <span
-                    style={{
-                      marginLeft: "var(--cs-space-3)",
-                      fontSize: "var(--cs-text-base)",
-                      color: "var(--cs-fg-muted)",
-                      textDecoration: "line-through",
-                    }}
-                  >
-                    {formatUsd(bundle.wasAmount)}
-                  </span>
-                ) : null}
               </p>
               <p
                 className="cs-muted"
@@ -457,7 +445,7 @@ export default function PricingPage() {
                       </span>
                     </div>
 
-                    {/* Price (+ struck-through "was" when repriced) */}
+                    {/* Price — committed, no fabricated "was" compare (honesty floor, ADR-0130). */}
                     <p
                       className="cs-num"
                       style={{
@@ -468,18 +456,6 @@ export default function PricingPage() {
                       }}
                     >
                       {price ? formatPrice(price) : "—"}
-                      {price?.wasAmount ? (
-                        <span
-                          style={{
-                            marginLeft: "var(--cs-space-3)",
-                            fontSize: "var(--cs-text-base)",
-                            color: "var(--cs-fg-muted)",
-                            textDecoration: "line-through",
-                          }}
-                        >
-                          {formatUsd(price.wasAmount)}
-                        </span>
-                      ) : null}
                     </p>
 
                     {/* Includes list */}

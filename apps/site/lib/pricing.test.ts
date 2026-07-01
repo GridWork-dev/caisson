@@ -14,11 +14,12 @@ import {
   priceById,
 } from "./pricing";
 
-describe("EDITION_PRICES (operator's repriced sheet)", () => {
-  test("Local-first AI is repriced to $399 (was $499)", () => {
-    const p = priceById("local-first");
-    expect(p?.amount).toBe(399);
-    expect(p?.wasAmount).toBe(499);
+describe("EDITION_PRICES (Q4 below-sum lock)", () => {
+  test("editions carry the Q4 below-sum lock values", () => {
+    expect(priceById("compliance")?.amount).toBe(749);
+    expect(priceById("ai-kit")?.amount).toBe(599);
+    expect(priceById("local-first")?.amount).toBe(349);
+    expect(priceById("agentic-dev")?.amount).toBe(249);
   });
 
   test("every edition carries a positive integer amount and no roadmap gating", () => {
@@ -34,6 +35,15 @@ describe("EDITION_PRICES (operator's repriced sheet)", () => {
       [...EDITION_IDS].sort(),
     );
   });
+
+  // Honesty floor (ADR-0130): the site was never live at an earlier number, so no anchor may carry
+  // a fabricated struck-through "was" compare price. Guarded at runtime because the field was
+  // removed from the type — a re-introduction would be a fresh dark pattern.
+  test("no edition or plan anchor carries a fabricated 'was' compare price", () => {
+    for (const p of [...EDITION_PRICES, ...PLAN_PRICES]) {
+      expect("wasAmount" in p).toBe(false);
+    }
+  });
 });
 
 describe("isEditionId", () => {
@@ -48,18 +58,23 @@ describe("isEditionId", () => {
 });
 
 describe("the Everything bundle", () => {
-  test("is repriced to $2,999 (was $3,499)", () => {
+  test("carries the Q4 below-sum bundle price", () => {
     const bundle = priceById("bundle");
-    expect(bundle?.amount).toBe(2999);
-    expect(bundle?.wasAmount).toBe(3499);
+    expect(bundle?.amount).toBe(1499);
   });
 
   test("editionsSubtotal sums the four locked edition prices", () => {
-    expect(editionsSubtotal()).toBe(2499 + 599 + 499 + 399);
+    expect(editionsSubtotal()).toBe(749 + 599 + 249 + 349);
+  });
+
+  test("the bundle price is below the sum of the four editions (a real saving)", () => {
+    expect(priceById("bundle")?.amount).toBeLessThan(editionsSubtotal());
   });
 
   test("bundleSavings is the positive gap between the edition subtotal and the bundle price", () => {
-    expect(bundleSavings()).toBe(editionsSubtotal() - 2999);
+    expect(bundleSavings()).toBe(editionsSubtotal() - 1499);
+    // The one truthful comparison the site keeps: Save $447 vs à-la-carte (1946 - 1499).
+    expect(bundleSavings()).toBe(447);
     expect(bundleSavings()).toBeGreaterThan(0);
   });
 });
