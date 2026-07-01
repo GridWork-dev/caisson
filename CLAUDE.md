@@ -102,8 +102,8 @@ implementation**. The harvestable license kit is taken from PUBLIC `tessera`.
 _Closed since: **app framework** → Next.js App Router (ADR-0044); **hosting/site deploy mode** →
 one dynamic Next 16 `standalone` app (marketing + docs + buyer dashboard, Fumadocs MDX kept) on
 **Railway**, superseding the ADR-0084 static-export-to-Cloudflare-Pages mode (ADR-0114/0115,
-2026-06-30; built on the integration branch). **Currently still live on Cloudflare Pages** — the
-Railway provisioning + DNS cutover + Pages teardown are DEPLOY-class and not yet done._
+2026-06-30). **DEPLOYED 2026-07-01** — all services LIVE on Railway (caisson.sh/www/admin/license +
+docs + support-bot + SigNoz), DNS cut over to Railway, and the Cloudflare Pages project torn down._
 
 ## Commits
 
@@ -113,6 +113,21 @@ Conventional commits, atomic, one logical change each. Scopes: `scaffold` `specs
 `local-ai` `agent-dev` `cli` `support-bot` `license` `docs` `site` (the `apps/site` marketing+docs app)
 — plus the Stage-2 additions: `admin` (`apps/admin` control-plane) `alerting` `retention-runner`
 `tool-exec` `audit-harness` `observability` `platform-reads` `migrate` `pricebook`.
+
+## PR review gate (Greptile required)
+
+`Greptile Review` is a **required status check** on `main` (alongside `check`, `standards-gate`,
+`registry-index`) — no PR merges until it is green against the head commit. Config lives in
+`.greptile/`: `config.json` sets `statusCheck: true` + `triggerOnUpdates: true` (posts the check on
+every PR, re-reviews every push, no file-count skip); `rules.md` = the repo invariants Greptile
+enforces. TREX execution runs _under_ that one review (org-level toggle, $2/run) — not a separate check.
+
+**When Greptile skips a PR** (draft, excluded author/branch/label, oversized diff, still-indexing) the
+required check never posts and the PR is stuck at "waiting for status." Force it:
+`gh pr comment <PR> --body "@greptileai"` — a manual mention overrides the skip filters and posts the
+check. Never merge until `Greptile Review` is green against the head SHA; a green check reflects the
+confidence score only, so still resolve every inline P0/P1 finding first. Full agent workflow: the
+gridwork-core `/greptile` skill (rules 7–9).
 
 ## Relationship to gridwork-core
 

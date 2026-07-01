@@ -1,4 +1,6 @@
 {
+  "statusCheck": true,
+  "triggerOnUpdates": true,
   "strictness": 2,
   "commentTypes": ["logic", "syntax", "style"],
   "excludeAuthors": ["dependabot[bot]", "*-bot"],
