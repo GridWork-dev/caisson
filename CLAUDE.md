@@ -145,6 +145,19 @@ Caisson uses **Linear** (Business tier) for execution tracking + inbound triage 
 - **Delegate** a first-pass (scope/triage) to the built-in **Linear Agent**; the human stays owner and
   Claude Code does the real in-repo build. Don't mirror the whole fork board into Linear — only work items.
 
+## Subagent model routing (binding)
+
+Never default a subagent to Fable 5 — set `model` explicitly on every dispatch (Agent tool
+`model`, Workflow `agent()` `opts.model`). Route by work class:
+
+- **fable** — critical-path only: security implementation/verification, crypto/money/license
+  seams, the final adversarial verdict on a high-stakes finding.
+- **opus** — bulk reviewers, judge panels, repo-scale synthesis.
+- **sonnet** — bounded implementation (<~300 LOC), test writing, structured research/scan agents.
+- **haiku** — recon, grep/classify/triage, mechanical sweeps, doc scans.
+
+The main thread stays on the session model; this table governs dispatched agents only.
+
 ## Relationship to gridwork-core
 
 Global `~/CLAUDE.md` + the five auto-loaded gridwork rules apply. This file is additive.
