@@ -22,24 +22,35 @@ function deny(body = "forbidden"): NextResponse {
   });
 }
 
+/** Header carrying the verified CF-Access actor email to route handlers (ADR-0220). Server-set only. */
+const ACTOR_HEADER = "x-admin-actor";
+
 export async function middleware(req: NextRequest): Promise<NextResponse> {
   const cfg = accessConfig();
   if (cfg === null) {
     // Unconfigured. In production this is fail-closed: without CF_ACCESS_TEAM_DOMAIN + CF_ACCESS_AUD we
     // cannot tell an edge-routed request from a direct-origin one, so we deny (the operator MUST set
-    // both to activate the gate — see the ADR/runbook). Locally there is no CF Access edge, so allow.
+    // both to activate the gate — see the ADR/runbook). Locally there is no CF Access edge, so allow —
+    // but STILL strip any inbound x-admin-actor so a spoofed header can never be trusted (the mutation
+    // routes then 401 for lack of a verified actor until CF-Access is configured).
     if (process.env.NODE_ENV === "production") {
       return deny("admin access not configured");
     }
-    return NextResponse.next();
+    const headers = new Headers(req.headers);
+    headers.delete(ACTOR_HEADER);
+    return NextResponse.next({ request: { headers } });
   }
   const token = extractAccessToken(req);
   if (token === null) return deny();
   try {
-    await verifyAccessJwt(token, cfg);
-    return NextResponse.next();
+    const { email } = await verifyAccessJwt(token, cfg);
+    // Thread the VERIFIED actor to route handlers. `set` REPLACES any inbound x-admin-actor, so a
+    // client cannot spoof the audit actor — the only value a route ever sees is this verified one.
+    const headers = new Headers(req.headers);
+    headers.set(ACTOR_HEADER, email);
+    return NextResponse.next({ request: { headers } });
   } catch {
-    // Bad signature, wrong aud/iss, expired, or an unreachable JWKS — all fail closed to 403.
+    // Bad signature, wrong aud/iss, expired, missing email claim, or an unreachable JWKS — all deny.
     return deny();
   }
 }

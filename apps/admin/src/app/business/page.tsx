@@ -1,5 +1,9 @@
 import type { ReactNode } from "react";
 
+import {
+  readAdminActionLog,
+  type AdminActionLogRow,
+} from "@caisson/service-license";
 import { adminDbConfigured, readAdmin } from "@/lib/admin-db";
 import {
   readCredits,
@@ -11,11 +15,13 @@ import {
   type LicenseRow,
   type TenantRow,
 } from "@/lib/business-reads";
+import { AdminMutations } from "./mutations";
 
-// Business admin (ADR-0141): a READ-ONLY cross-tenant cockpit over the Railway PG. Reads run through
-// `readAdmin` (the read-only `admin` role); there are no mutations (deferred to a later ADR). When
-// `CAISSON_ADMIN_DB_URL` is unset the view renders a clean "not configured" state — the DB + the
-// `admin` role are provisioned at DEPLOY, never here.
+// Business admin (ADR-0141 read cockpit + ADR-0220 mutation surface): a cross-tenant view over the
+// Railway PG. Reads run through `readAdmin` (the read-only `admin` role); the four operator mutations
+// (grant · revoke · adjust · reissue) run through the CF-Access-gated `/api/admin/*` routes as the
+// separate `admin_write` role, each dual-logged (WORM + the `admin_action_log` browsed below). When
+// `CAISSON_ADMIN_DB_URL` is unset the view renders a clean "not configured" state.
 export const dynamic = "force-dynamic";
 
 const EMPTY = {
@@ -23,17 +29,21 @@ const EMPTY = {
   entitlements: [] as EntitlementRow[],
   credits: [] as CreditRow[],
   licenses: [] as LicenseRow[],
+  actions: [] as AdminActionLogRow[],
 };
 
 async function loadData(): Promise<typeof EMPTY> {
   if (!adminDbConfigured()) return EMPTY;
-  const [tenants, entitlements, credits, licenses] = await Promise.all([
-    readAdmin(readTenants),
-    readAdmin(readEntitlements),
-    readAdmin(readCredits),
-    readAdmin(readLicenses),
-  ]);
-  return { tenants, entitlements, credits, licenses };
+  const [tenants, entitlements, credits, licenses, actions] = await Promise.all(
+    [
+      readAdmin(readTenants),
+      readAdmin(readEntitlements),
+      readAdmin(readCredits),
+      readAdmin(readLicenses),
+      readAdmin((tx) => readAdminActionLog(tx, 50)),
+    ],
+  );
+  return { tenants, entitlements, credits, licenses, actions };
 }
 
 function fmtDate(iso: string | null): string {
@@ -43,7 +53,8 @@ function fmtDate(iso: string | null): string {
 
 export default async function BusinessPage() {
   const configured = adminDbConfigured();
-  const { tenants, entitlements, credits, licenses } = await loadData();
+  const { tenants, entitlements, credits, licenses, actions } =
+    await loadData();
 
   return (
     <div className="shell stack" style={{ gap: "var(--cs-space-10)" }}>
@@ -51,10 +62,12 @@ export default async function BusinessPage() {
         <p className="eyebrow">caisson · admin</p>
         <h1 className="page-title">Business admin</h1>
         <p className="lede">
-          A read-only cross-tenant view of tenants, purchases, entitlements, and
-          credits over the Railway Postgres. Reads run as the dedicated
-          read-only <span className="mono">admin</span> role (ADR-0141);
-          mutation is a later decision.
+          A cross-tenant view of tenants, purchases, entitlements, and credits
+          over the Railway Postgres. Reads run as the read-only{" "}
+          <span className="mono">admin</span> role (ADR-0141); the four operator
+          mutations run as the separate{" "}
+          <span className="mono">admin_write</span> role, dual-logged
+          (ADR-0220).
         </p>
       </section>
 
@@ -115,6 +128,29 @@ export default async function BusinessPage() {
             l.tier,
             fmtDate(l.expiry),
             fmtDate(l.issuedAt),
+          ])}
+        />
+      </Section>
+
+      <section className="stack" style={{ gap: "var(--cs-space-3)" }}>
+        <h2 className="section-title">Operator mutations (ADR-0220)</h2>
+        <p className="muted" style={{ fontSize: "0.85em" }}>
+          Each action is CF-Access-gated, bounded to one target account,
+          dual-logged (WORM + the action log below), and behind a
+          type-to-confirm gate. No raw SQL against production.
+        </p>
+        <AdminMutations />
+      </section>
+
+      <Section title={`Action log (${actions.length})`}>
+        <Table
+          head={["When", "Actor", "Action", "Account"]}
+          empty={configured ? "No operator actions yet." : "—"}
+          rows={actions.map((a) => [
+            a.createdAt.replace("T", " ").slice(0, 19),
+            a.actorEmail,
+            a.action,
+            a.targetAccountId,
           ])}
         />
       </Section>
