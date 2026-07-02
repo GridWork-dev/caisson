@@ -27,6 +27,7 @@
 // pointing a public name at a private IP) is fully blocked here. Upgrade path: a pinned dispatcher.
 import { lookup } from "node:dns/promises";
 import { ValidationError } from "./errors.ts";
+import { fetchWithTimeout } from "./fetch.ts";
 
 /**
  * True if `hostname` (as returned by `URL.hostname`, or a resolved A/AAAA literal) is a
@@ -113,6 +114,11 @@ export async function assertResolvedHostPublic(
     // Fail closed: a name we cannot resolve is not a name we send tenant/operator data to.
     throw new ValidationError("URL rejected: host did not resolve");
   }
+  if (addresses.length === 0) {
+    // Fail closed: a lookup that succeeds but returns nothing must NOT skip the loop and pass — an
+    // empty answer is unverifiable, not public.
+    throw new ValidationError("URL rejected: host did not resolve");
+  }
   for (const { address } of addresses) {
     if (isPrivateAddress(address)) {
       throw new ValidationError(
@@ -135,16 +141,19 @@ export async function assertSafePublicUrlResolved(raw: string): Promise<void> {
 
 /**
  * A `fetch`-shaped wrapper that runs the full async SSRF guard on the request URL before delegating to
- * the global `fetch`. This is the seam for a client whose outbound call we don't own (the Vercel AI SDK
- * adapters accept a custom `fetch`), so a config-supplied provider `baseUrl` gets the same resolve-time
- * re-check the alerting transports apply at their own fetch call. Typed to the AI SDK's `FetchFunction`
- * shape (a plain `(input, init) => Promise<Response>`), NOT `typeof fetch` — the latter also requires a
- * `preconnect` method a wrapper has no business implementing.
+ * {@link fetchWithTimeout} (the ADR-0002 outbound floor — never bare `fetch`). This is the seam for a
+ * client whose outbound call we don't own (the Vercel AI SDK adapters accept a custom `fetch`), so a
+ * config-supplied provider `baseUrl` gets the same resolve-time re-check the alerting transports apply at
+ * their own fetch call. Typed to the AI SDK's `FetchFunction` shape (a plain
+ * `(input, init) => Promise<Response>`), NOT `typeof fetch` — the latter also requires a `preconnect`
+ * method a wrapper has no business implementing.
  *
- * `redirect: "error"` is forced: only the ORIGINAL host is resolve-rechecked, so following a 3xx would
- * let a public host we cleared redirect the request to a private/metadata host AFTER the check — the
- * classic SSRF-guard bypass. Our sinks (webhooks / provider APIs) return 2xx and never legitimately
- * redirect, so refusing is safe and closes the vector entirely.
+ * The `fetchWithTimeout` guard bounds time-to-headers (its timer clears once `fetch()` resolves on header
+ * receipt), so a long-lived streaming LLM body is NOT truncated — only a hung/slow connect is; the
+ * caller's own signal is merged, not dropped. `redirect: "error"` is forced: only the ORIGINAL host is
+ * resolve-rechecked, so following a 3xx would let a public host we cleared redirect the request to a
+ * private/metadata host AFTER the check — the classic SSRF-guard bypass. Our sinks (webhooks / provider
+ * APIs) return 2xx and never legitimately redirect, so refusing is safe and closes the vector entirely.
  */
 export const ssrfGuardedFetch = async (
   input: string | URL | Request,
@@ -157,5 +166,5 @@ export const ssrfGuardedFetch = async (
         ? input.href
         : input.url;
   await assertSafePublicUrlResolved(target);
-  return fetch(input, { ...init, redirect: "error" });
+  return fetchWithTimeout(input, { ...init, redirect: "error" });
 };

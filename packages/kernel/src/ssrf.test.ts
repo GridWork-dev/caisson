@@ -116,6 +116,14 @@ describe("assertResolvedHostPublic (DNS re-check — the vuln-0004 fix)", () => 
     );
   });
 
+  test("fails closed when lookup succeeds but returns NO addresses", async () => {
+    // An empty answer would leave the for-loop a no-op and pass the host as public — must reject.
+    dns.addresses = [];
+    await expect(assertResolvedHostPublic("empty.example")).rejects.toThrow(
+      /did not resolve/,
+    );
+  });
+
   test("passes for a host that resolves only to public addresses", async () => {
     dns.addresses = [{ address: "93.184.216.34" }];
     await expect(
@@ -166,13 +174,18 @@ describe("ssrfGuardedFetch", () => {
     dns.addresses = [{ address: "93.184.216.34" }];
     const realFetch = globalThis.fetch;
     let seenRedirect: string | undefined;
+    let seenSignal: unknown;
     globalThis.fetch = (async (_input: unknown, init: RequestInit) => {
       seenRedirect = init.redirect;
+      seenSignal = init.signal;
       return new Response("{}");
     }) as unknown as typeof fetch;
     try {
       await ssrfGuardedFetch("https://public.example");
       expect(seenRedirect).toBe("error");
+      // Routed through fetchWithTimeout (ADR-0002 floor), so an AbortSignal is now wired — the old bare
+      // `fetch` delegate passed none.
+      expect(seenSignal).toBeInstanceOf(AbortSignal);
     } finally {
       globalThis.fetch = realFetch;
     }
