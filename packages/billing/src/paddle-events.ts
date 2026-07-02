@@ -179,11 +179,18 @@ function readLineItems(obj: Record<string, unknown>): {
 }
 
 /** Parse a PARTIAL adjustment's `data.items[]` into per-line refund entries (ADR-0218). Skips Paddle-
- * generated `tax`/`proration` items (not operator-initiated line refunds); each `full`/`partial` item
- * maps to `{itemId: item.item_id (txnitm_), amountRefunded: totals.total, fullyRefunded: type==='full'}`.
- * A malformed/idless item is skipped (best-effort enrichment — the whole-adjustment `amountRefunded`
- * still records the money movement). An absent `items` yields []. */
-function readAdjustmentItems(obj: Record<string, unknown>): {
+ * generated `tax`/`proration` items (not operator-initiated line refunds, so no `onWarn` — this is
+ * expected shape, not an anomaly); each `full`/`partial` item maps to `{itemId: item.item_id
+ * (txnitm_), amountRefunded: totals.total, fullyRefunded: type==='full'}`. A MALFORMED item (not an
+ * object, or missing its `item_id`) is still skipped (best-effort enrichment — the whole-adjustment
+ * `amountRefunded` still records the money movement) but now signals through the optional `onWarn`
+ * (CAISSON-7) so a malformed delivery is observable instead of a silent drop; `console.log` is banned
+ * in product code, so the caller wires this to its own telemetry/log surface. An absent `items` yields
+ * []. */
+function readAdjustmentItems(
+  obj: Record<string, unknown>,
+  onWarn?: (message: string) => void,
+): {
   itemId: string;
   amountRefunded: number;
   fullyRefunded: boolean;
@@ -196,12 +203,18 @@ function readAdjustmentItems(obj: Record<string, unknown>): {
     fullyRefunded: boolean;
   }[] = [];
   for (const raw of items) {
-    if (typeof raw !== "object" || raw === null) continue;
+    if (typeof raw !== "object" || raw === null) {
+      onWarn?.("Paddle adjustment item is not an object — skipped");
+      continue;
+    }
     const item = raw as Record<string, unknown>;
     const type = readString(item.type);
     if (type !== "full" && type !== "partial") continue; // skip tax/proration
     const itemId = readString(item.item_id);
-    if (itemId === "") continue;
+    if (itemId === "") {
+      onWarn?.("Paddle adjustment item is missing its item_id — skipped");
+      continue;
+    }
     const totals = item.totals;
     const amountRefunded =
       typeof totals === "object" && totals !== null
@@ -228,9 +241,12 @@ function readAdjustmentTotal(obj: Record<string, unknown>): number {
   return readMoneyMinorUnits((totals as Record<string, unknown>).total);
 }
 
-/** Map a verified Paddle event to a DomainBillingEvent, or null for events we don't act on. */
+/** Map a verified Paddle event to a DomainBillingEvent, or null for events we don't act on. `onWarn`
+ * (CAISSON-7) is an optional non-fatal-anomaly signal — currently fired only when a partial
+ * adjustment's `items[]` carries a malformed/idless entry (readAdjustmentItems); never `console.log`. */
 export function parsePaddleEvent(
   event: PaddleEvent,
+  onWarn?: (message: string) => void,
 ): DomainBillingEvent | null {
   const obj = event.data;
   const accountId = readAccountId(obj);
@@ -349,7 +365,7 @@ export function parsePaddleEvent(
         // a redelivery of this adjustment, distinct per adjustment so sequential partials both claw).
         adjustmentId: readString(obj.id),
         // Only a partial adjustment carries per-line items; a full one revokes/claws by transaction id.
-        items: fullyRefunded ? [] : readAdjustmentItems(obj),
+        items: fullyRefunded ? [] : readAdjustmentItems(obj, onWarn),
       };
     }
     default:
