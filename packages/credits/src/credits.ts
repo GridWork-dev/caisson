@@ -4,7 +4,12 @@
 // RETURNING` so a retried grant/debit is absorbed WITHOUT aborting the surrounding transaction
 // (a caught 23505 would poison it). Run inside `withTenant` so RLS scopes the ledger.
 import { randomUUID } from "node:crypto";
-import { InsufficientCreditsError, ValidationError } from "@caisson/kernel";
+import {
+  InsufficientCreditsError,
+  ValidationError,
+  type Credits,
+  type RoundedMoney,
+} from "@caisson/kernel";
 import { type FeatureTag, FeatureTagSchema } from "@caisson/registry-schema";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 
@@ -38,7 +43,14 @@ interface IdempotencySource {
 
 interface CreditInputBase extends IdempotencySource {
   accountId: string;
-  amount: number;
+  /** Integer credit units, branded (ADR-0206) — mint via `asCredits` where a raw number becomes money. */
+  amount: Credits;
+  /**
+   * Rounding provenance (ADR-0206): the `{raw, mode, result}` record from the rounding site that
+   * produced `amount` (ai-meter's ceil, `centsToCreditsProvenance`'s floor). Omitted → the row
+   * persists NULL/NULL — the correct shape for an EXACT table-integer amount (ADR-0089 §5).
+   */
+  rounding?: RoundedMoney<number, Credits>;
 }
 
 // Discriminated on `eventType` so a `feature` tag is REQUIRED with feature_grant/feature_debit and
@@ -152,13 +164,15 @@ async function insertEvent(
     feature: string | null;
     sourceEventId: string | null;
     idempotencyKey: string | null;
+    /** Rounding provenance (ADR-0206) — absent → NULL/NULL (the DB CHECK keeps the pair coherent). */
+    rounding?: RoundedMoney<number, Credits> | undefined;
   },
 ): Promise<boolean> {
   // ON CONFLICT DO NOTHING: a duplicate idempotency key returns zero rows instead of raising —
   // the transaction stays usable. `feature` is payload — NOT part of either idempotency index.
   const inserted = await tx.query<{ id: string }>(
-    `INSERT INTO credit_event (id, account_id, event_type, amount, feature, source_event_id, idempotency_key)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO credit_event (id, account_id, event_type, amount, feature, source_event_id, idempotency_key, rounding_raw, rounding_mode)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      ON CONFLICT DO NOTHING
      RETURNING id`,
     [
@@ -169,6 +183,8 @@ async function insertEvent(
       row.feature,
       row.sourceEventId,
       row.idempotencyKey,
+      row.rounding?.raw ?? null,
+      row.rounding?.mode ?? null,
     ],
   );
   return inserted.rows.length > 0;
@@ -187,6 +203,7 @@ export async function grant(
     eventType: input.eventType,
     amount: input.amount,
     feature,
+    rounding: input.rounding,
     ...idem,
   });
   if (!fresh)
@@ -218,6 +235,7 @@ export async function debit(
     eventType: input.eventType,
     amount: -input.amount,
     feature,
+    rounding: input.rounding,
     ...idem,
   });
   if (!fresh)

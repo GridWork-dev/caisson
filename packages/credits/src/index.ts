@@ -1,4 +1,4 @@
-export { CREDIT_SCHEMA_SQL } from "./schema.ts";
+export { CREDIT_SCHEMA_SQL, CREDIT_ROUNDING_MIGRATION_SQL } from "./schema.ts";
 export {
   grant,
   debit,

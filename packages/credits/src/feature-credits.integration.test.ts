@@ -4,9 +4,10 @@
 // PGlite + withTenant, same shape as credits.integration.test.ts.
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import { newTestPg, type TestPg } from "@caisson/testing";
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError, asCredits } from "@caisson/kernel";
 import { withTenant } from "@caisson/tenancy-rls";
 import {
+  CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
   type DebitInput,
   balance,
@@ -23,6 +24,7 @@ async function freshSchema(): Promise<void> {
     `DROP TABLE IF EXISTS credit_event; DROP TABLE IF EXISTS credit_wallet;`,
   );
   await tp.exec(CREDIT_SCHEMA_SQL);
+  await tp.exec(CREDIT_ROUNDING_MIGRATION_SQL);
 }
 
 beforeEach(async () => {
@@ -42,7 +44,7 @@ describe("ADR-0074 generic feature meter", () => {
     await inA((tx) =>
       grant(tx, {
         accountId: A,
-        amount: 100,
+        amount: asCredits(100),
         eventType: "purchase",
         sourceEventId: "evt_buy",
       }),
@@ -51,7 +53,7 @@ describe("ADR-0074 generic feature meter", () => {
     const first = await inA((tx) =>
       debit(tx, {
         accountId: A,
-        amount: 7,
+        amount: asCredits(7),
         eventType: "feature_debit",
         feature: "evidence_pack",
         idempotencyKey: "ev_1",
@@ -60,7 +62,7 @@ describe("ADR-0074 generic feature meter", () => {
     const retry = await inA((tx) =>
       debit(tx, {
         accountId: A,
-        amount: 7,
+        amount: asCredits(7),
         eventType: "feature_debit",
         feature: "evidence_pack",
         idempotencyKey: "ev_1",
@@ -82,7 +84,7 @@ describe("ADR-0074 generic feature meter", () => {
     const r = await inA((tx) =>
       grant(tx, {
         accountId: A,
-        amount: 40,
+        amount: asCredits(40),
         eventType: "feature_grant",
         feature: "inference_call",
         sourceEventId: "evt_promo",
@@ -98,7 +100,7 @@ describe("ADR-0074 generic feature meter", () => {
     await inA((tx) =>
       grant(tx, {
         accountId: A,
-        amount: 100,
+        amount: asCredits(100),
         eventType: "purchase",
         sourceEventId: "evt_g",
       }),
@@ -107,7 +109,7 @@ describe("ADR-0074 generic feature meter", () => {
       inA((tx) =>
         debit(tx, {
           accountId: A,
-          amount: 5,
+          amount: asCredits(5),
           eventType: "feature_debit",
           // @ts-expect-error — an unregistered tag is not a FeatureTag; the runtime fail-closed path is under test
           feature: "totally_made_up",
@@ -125,7 +127,7 @@ describe("ADR-0074 generic feature meter", () => {
     // type guard to prove featureColumn's RUNTIME defensive branch (feature === undefined) fails closed.
     const missingTag = {
       accountId: A,
-      amount: 5,
+      amount: asCredits(5),
       eventType: "feature_debit",
       idempotencyKey: "no_tag",
     } as unknown as DebitInput;
@@ -139,7 +141,7 @@ describe("ADR-0074 generic feature meter", () => {
     await inA((tx) =>
       grant(tx, {
         accountId: A,
-        amount: 50,
+        amount: asCredits(50),
         eventType: "purchase",
         sourceEventId: "evt_h",
       }),
@@ -148,7 +150,7 @@ describe("ADR-0074 generic feature meter", () => {
       inA((tx) =>
         debit(tx, {
           accountId: A,
-          amount: 5,
+          amount: asCredits(5),
           eventType: "codegen_debit",
           // @ts-expect-error — a legacy specific type must NOT carry a feature tag (feature?: never)
           feature: "codegen_run",
@@ -163,7 +165,7 @@ describe("ADR-0074 generic feature meter", () => {
     await inA((tx) =>
       grant(tx, {
         accountId: A,
-        amount: 100,
+        amount: asCredits(100),
         eventType: "purchase",
         sourceEventId: "evt_l",
       }),
@@ -171,7 +173,7 @@ describe("ADR-0074 generic feature meter", () => {
     await inA((tx) =>
       debit(tx, {
         accountId: A,
-        amount: 30,
+        amount: asCredits(30),
         eventType: "codegen_debit",
         idempotencyKey: "c1",
       }),
@@ -179,7 +181,7 @@ describe("ADR-0074 generic feature meter", () => {
     await inA((tx) =>
       debit(tx, {
         accountId: A,
-        amount: 10,
+        amount: asCredits(10),
         eventType: "ai_feature_debit",
         idempotencyKey: "a1",
       }),

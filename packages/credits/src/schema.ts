@@ -49,3 +49,29 @@ CREATE UNIQUE INDEX credit_event_idem_uniq
 ${buildTenantPolicySql("credit_wallet")}
 ${buildTenantPolicySql("credit_event")}
 `;
+
+/**
+ * Rounding provenance (ADR-0206): the pre-rounding raw value + the site's rounding direction that
+ * produced `amount`, persisted so a grant/debit is auditable after the fact. Both columns nullable —
+ * a row from a rounding site carries both; a row whose amount is an EXACT table integer (an
+ * apply-billing-event grant, ADR-0089 §5) carries NULL/NULL. The biconditional CHECK mirrors the
+ * `credit_event_feature_iff` idiom above; the mode CHECK closes the enum. ADR-0007 untouched:
+ * `amount` stays the stored integer — provenance only DESCRIBES the rounding.
+ *
+ * A SEPARATE migration, not an edit to CREDIT_SCHEMA_SQL: that string ships as the checksum-pinned
+ * `0002_credits.sql` platform migration (apps/site deploy-migrate) — editing it in place would fail
+ * the runner CLOSED on the live DB (ADR-0006 append-only). Apply this AFTER CREDIT_SCHEMA_SQL
+ * everywhere the table is bootstrapped (mirrors ENTITLEMENT_GRANT_MIGRATION_SQL's convention).
+ */
+export const CREDIT_ROUNDING_MIGRATION_SQL = `
+ALTER TABLE credit_event
+  ADD COLUMN rounding_raw integer,
+  ADD COLUMN rounding_mode text;
+ALTER TABLE credit_event
+  ADD CONSTRAINT credit_event_rounding_iff CHECK (
+    (rounding_raw IS NOT NULL) = (rounding_mode IS NOT NULL)
+  ),
+  ADD CONSTRAINT credit_event_rounding_mode CHECK (
+    rounding_mode IS NULL OR rounding_mode IN ('up', 'down')
+  );
+`;
