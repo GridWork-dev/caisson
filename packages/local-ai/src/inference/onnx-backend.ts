@@ -11,11 +11,13 @@
 //
 // Egress + integrity posture (the two threats this file carries):
 //   - TM-EGRESS — every byte the runtime fetches routes through ONE guarded chokepoint
-//     (`#guardedFetch` → kernel `fetchWithTimeout`; the native `AbortSignal.timeout` is forbidden on
-//     Bun). transformers.js's own `env.fetch` is overwritten with it, so the library cannot egress
-//     out-of-band. Any host other than the single sanctioned `modelHost` is HARD-BLOCKED, and any
-//     non-https scheme is rejected — fail-closed-to-offline, never a silent hosted fallback. (T14's
-//     privacy/egress guard later wraps this same chokepoint with the full allowlist policy.)
+//     (`#guardedFetch`). The host/scheme decision is UNIFIED onto the shared `EgressGuard` (T14,
+//     ADR-0221 F2=B) with the reserved `model-fetch` sink kind — the same fail-closed policy layer
+//     the rented lane (T20) enforces — then through the kernel `fetchWithTimeout` (the native
+//     `AbortSignal.timeout` is forbidden on Bun). transformers.js's own `env.fetch` is overwritten
+//     with it, so the library cannot egress out-of-band: any host but the single sanctioned
+//     `modelHost` is blocked, any non-https scheme is rejected, and the `model-fetch` sink kind is
+//     purpose-bound — fail-closed-to-offline, never a silent hosted fallback.
 //   - TM-MODEL — the model is FIRST-RUN-FETCHED + cached (NOT shipped in the tarball — see
 //     `.npmignore`) and every pinned file is SHA-256 hash-verified before it reaches the runtime;
 //     a mismatch fails closed. Air-gap buyers pre-seed the cache and run with `offline: true`
@@ -30,6 +32,11 @@ import {
   fetchWithTimeout,
   safeEqualFixed,
 } from "@caisson/kernel";
+import {
+  type EgressGuard,
+  createEgressGuard,
+} from "../privacy/egress-guard.ts";
+import { localOnlyPolicy } from "../privacy/policy.ts";
 import { EMBEDDING_DIM } from "./backend.ts";
 import type {
   CompletionRequest,
@@ -179,12 +186,21 @@ export class OnnxEmbeddingBackend implements InferenceBackend {
   readonly model: string;
   readonly dim: number;
   readonly #config: ResolvedConfig;
+  /** The shared egress guard, allowlisting ONLY `modelHost` as a `model-fetch` sink (T14, F2=B). */
+  readonly #guard: EgressGuard;
   #extractor: FeatureExtractor | null = null;
 
   constructor(config: OnnxBackendConfig) {
     this.#config = resolveConfig(config);
     this.model = `${this.#config.modelId}@${this.#config.revision}`;
     this.dim = this.#config.dim;
+    // F2=B (ADR-0221): host/scheme egress enforcement is unified onto the shared EgressGuard — the
+    // same fail-closed policy layer the rented lane (T20) uses — with the reserved `model-fetch`
+    // sink kind. Only the sanctioned modelHost is reachable; the SHA-256 hash-pin (TM-MODEL) below
+    // stays inline (the guard vouches for the host, not the bytes).
+    this.#guard = createEgressGuard(
+      localOnlyPolicy([{ host: this.#config.modelHost, kind: "model-fetch" }]),
+    );
   }
 
   /** Embed text into a unit-norm, fixed-`dim` vector via on-device ONNX mean-pooling. */
@@ -244,33 +260,24 @@ export class OnnxEmbeddingBackend implements InferenceBackend {
   }
 
   /**
-   * The guarded outbound chokepoint installed as transformers.js's `env.fetch`. Hard-blocks any host
-   * but the sanctioned `modelHost` and any non-https scheme (TM-EGRESS), routes the request through
-   * the kernel `fetchWithTimeout`, and SHA-256-verifies every pinned file before its bytes reach the
-   * runtime (TM-MODEL). The hash compare is constant-time (`safeEqualFixed`) by convention.
+   * The guarded outbound chokepoint installed as transformers.js's `env.fetch`. The host/scheme/
+   * sink-kind decision is delegated to the shared {@link EgressGuard} via `assertAllowedFor(url,
+   * "model-fetch")` — the same fail-closed policy layer the rented lane uses (T14, ADR-0221 F2=B):
+   * a non-https scheme, a host off the allowlist, or a wrong sink kind all block BEFORE any socket
+   * opens. It then routes through the kernel `fetchWithTimeout` and SHA-256-verifies every pinned
+   * file before its bytes reach the runtime (TM-MODEL); the hash compare is constant-time
+   * (`safeEqualFixed`). The guard vouches for the HOST; the hash-pin vouches for the BYTES.
    */
   readonly #guardedFetch: FetchFn = async (input, init) => {
-    const url =
+    const urlStr =
       typeof input === "string"
-        ? new URL(input)
+        ? input
         : input instanceof URL
-          ? input
-          : new URL(input.url);
-    if (url.protocol !== "https:") {
-      throw new InternalError("model fetch blocked: non-https scheme", {
-        host: url.host,
-        protocol: url.protocol,
-      });
-    }
-    if (url.hostname !== this.#config.modelHost) {
-      throw new InternalError(
-        "model fetch blocked: host not on the egress allowlist",
-        {
-          host: url.hostname,
-          allowed: this.#config.modelHost,
-        },
-      );
-    }
+          ? input.href
+          : input.url;
+    // Fail-closed at the shared-policy layer: throws AuthzError (host/scheme/kind) or ValidationError
+    // (malformed URL) before any network call — no silent hosted fallback.
+    const url = this.#guard.assertAllowedFor(urlStr, "model-fetch");
     const res = await fetchWithTimeout(url, init ?? {}, {
       timeoutMs: this.#config.timeoutMs,
     });

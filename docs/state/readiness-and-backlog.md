@@ -159,15 +159,24 @@ needs a real external account, infra, or deploy (DEPLOY-class, operator-gated).
 
 ### needs-external (real account / infra / deploy — DEPLOY-class)
 
-| Surface                                             | Needs                                                                   | ADR      |
-| --------------------------------------------------- | ----------------------------------------------------------------------- | -------- |
-| `audit-worm` S3 Object-Lock (court-admissible WORM) | AWS account + S3 bucket **created with Object-Lock** + IAM creds        | ADR-0054 |
-| `field-crypto` cloud KMS envelope                   | cloud KMS account + CMK + `awsKmsClient()` body + `@aws-sdk/client-kms` | ADR-0045 |
-| `ai-kit` live provider inference                    | a provider account + key in `lane.apiKeyEnv` (BYOK — buyer supplies)    | ADR-0059 |
-| `local-ai` ONNX on-device                           | install `onnxruntime` peer + one-time HF model download + SHA pins      | ADR-0064 |
-| `local-ai` rented/hosted inference                  | hosted endpoint + key + explicit privacy-policy allowlist entry         | ADR-0064 |
-| Edition reference apps (deployed)                   | a hosting target (none wired)                                           | ADR-0044 |
-| `compliance` OSCAL push                             | a real GRC platform OSCAL ingest endpoint                               | P7       |
+| Surface                                             | Needs                                                                | ADR      |
+| --------------------------------------------------- | -------------------------------------------------------------------- | -------- |
+| `audit-worm` S3 Object-Lock (court-admissible WORM) | AWS account + S3 bucket **created with Object-Lock** + IAM creds     | ADR-0054 |
+| `ai-kit` live provider inference                    | a provider account + key in `lane.apiKeyEnv` (BYOK — buyer supplies) | ADR-0059 |
+| `local-ai` rented/hosted inference                  | hosted endpoint + key + explicit privacy-policy allowlist entry      | ADR-0064 |
+| Edition reference apps (deployed)                   | a hosting target (none wired)                                        | ADR-0044 |
+| `compliance` OSCAL push                             | a real GRC platform OSCAL ingest endpoint                            | P7       |
+
+> **Proven live (2026-07-02, `ADR-0221`, extends `ADR-0201`) — moved OUT of this table:** the
+> `field-crypto` **cloud-KMS envelope** and `local-ai` **ONNX on-device** rows both now have green gated
+> `live/` proofs. KMS: real AWS KMS, throwaway per-run CMKs — envelope round-trip through a real wrapped
+> DEK, per-tenant CMK isolation, crypto-shred verified via an independent `DescribeKey`/PendingDeletion,
+> post-shred decrypt fail-closed (`packages/field-crypto/live/kms.live.test.ts`, 6/6; first live exercise
+> of the ADR-0197 blast-radius fix). ONNX: the repo's own backend on Bun 1.3.14 +
+> `@huggingface/transformers` 4.2.0 (linux x86_64) — tamper fail-closed, unit-norm `Float32Array(384)`,
+> egress-block now at the shared `EgressGuard` (F2=B) (`packages/local-ai/live/onnx.live.test.ts`, 4/4);
+> the transformers peer stays uninstalled (throwaway-only, G1=A). The persistent production default CMK
+> (`KMS_KEY_ID`, `Field KMS (alt)` below) stays deferred to first-customer time (KMS-2=B2).
 
 ## 2. Configuration & secrets checklist
 
@@ -368,8 +377,10 @@ just buried in act trails). All non-blocking; queue with the relevant edition's 
 
 ### Live-testing the by-design seams (needs external infra — DEPLOY-class)
 
-S3 Object-Lock WORM · ONNX on-device + hosted/rented inference · OSCAL push · cloud KMS. No code
-fork; operator sequences relative to commerce. See build-state honest-gaps #2/#3.
+**Proven live:** S3 Object-Lock WORM · `local-ai` rented/hosted inference (`ADR-0201`) · ONNX
+on-device · `field-crypto` cloud-KMS envelope (`ADR-0221`). **Still needs-external:** OSCAL push (real
+GRC ingest) · `ai-kit` BYOK provider inference (buyer supplies the key). No code fork; operator
+sequences relative to commerce. See build-state honest-gaps #2/#3.
 
 ### Roadmap (P7, not actionable)
 
