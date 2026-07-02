@@ -61,6 +61,7 @@
       },
       "dependencies": {
         "@caisson/agent-dev": "workspace:*",
+        "@caisson/agent-runner": "workspace:*",
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
@@ -226,6 +227,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@caisson/agent-kernel": "workspace:*",
+        "@caisson/agent-runner": "workspace:*",
         "@caisson/ai-config": "workspace:*",
         "@caisson/kernel": "workspace:*",
         "@caisson/local-store": "workspace:*",
@@ -241,6 +243,21 @@
     },
     "packages/agent-kernel": {
       "name": "@caisson/agent-kernel",
+      "version": "0.1.0",
+      "dependencies": {
+        "@caisson/kernel": "workspace:*",
+        "zod": "^3.23.8",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
+    },
+    "packages/agent-runner": {
+      "name": "@caisson/agent-runner",
       "version": "0.1.0",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
@@ -909,6 +926,7 @@
       },
       "dependencies": {
         "@caisson/registry-schema": "workspace:*",
+        "@caisson/tenancy-rls": "workspace:*",
         "zod": "^3.23.0",
       },
       "devDependencies": {
@@ -1043,6 +1061,8 @@
     "@caisson/agent-dev": ["@caisson/agent-dev@workspace:packages/agent-dev"],
 
     "@caisson/agent-kernel": ["@caisson/agent-kernel@workspace:packages/agent-kernel"],
+
+    "@caisson/agent-runner": ["@caisson/agent-runner@workspace:packages/agent-runner"],
 
     "@caisson/ai-config": ["@caisson/ai-config@workspace:packages/ai-config"],
 

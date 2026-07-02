@@ -13,7 +13,8 @@
     "test": "bun test ./src ./test"
   },
   "dependencies": {
-    "@caisson/agent-dev": "workspace:*"
+    "@caisson/agent-dev": "workspace:*",
+    "@caisson/agent-runner": "workspace:*"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
