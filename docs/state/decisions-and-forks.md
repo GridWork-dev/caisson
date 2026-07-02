@@ -237,6 +237,19 @@ SigNoz or SigNoz Cloud Teams ($49). PostHog error-tracking stays OFF (OTLP owns 
   the audit's own scoping error under the same lock.
 - **tool-exec members-fold gap → WIRE IT** (honor ADR-0178, do not de-scope) → **ADR-0199**.
 
+**Resolved 2026-07-01 (commerce-goes-live session — operator picker):**
+
+- **Buyer-purchase webhook mount → PADDLE ONLY** → **ADR-0200**. Recon found the mount already built
+  (PR #40 audit remediation: `services/license` `POST /webhook`, raw-body Paddle-Signature HMAC,
+  one-RLS-tx grant) — the ADR codifies it; the Stripe driver stays dormant per ADR-0116 (no platform
+  Stripe webhook route, no Stripe webhook secret).
+- **Purchase → Discord edition-role (the ADR-0109 deferral) → LINK + PUSH** → **ADR-0201**. `discord`
+  joins the env-gated better-auth social providers (dashboard Connect button); services/license
+  fire-and-forgets `POST /billing-grant` on the bot after a grant commits (never blocks the webhook
+  2xx); the site backfills on link for buy-then-link ordering; the BOT owns entitlement→role expansion
+  (canonical ids `local-ai`/`agent-dev`; `bundle` ⇒ all four; `Customer` umbrella always). Role removal
+  on refund/cancel stays manual (deliberate non-goal).
+
 ### Parked / deferred (non-blocking — revisit later, do NOT auto-decide)
 
 | Item                                                         | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |

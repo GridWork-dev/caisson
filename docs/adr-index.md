@@ -498,6 +498,17 @@ Audit-surfaced latent ceilings locked BUILD-NOW in the 2026-07-01 remediation pi
 | [0198](../knowledge/decisions/ADR-0198-byok-metering-allowlist.md)     | BYOK zero-cost is per-action allowlisted, default metered                | Commerce/Metering | accepted | refines 0182; extends 0007; surfaced by 0134 |
 | [0199](../knowledge/decisions/ADR-0199-agent-dev-tool-exec-wired.md)   | @caisson/tool-exec wired into the Agentic-Dev edition (members-fold gap) | Editions/Agentic  | accepted | honors 0178/0153; surfaced by 0134/0188      |
 
+### Commerce-goes-live session (0200-0201, 2026-07-01) - status `accepted`
+
+Two forks from the commerce-goes-live kickoff (Session A, revenue path), locked in an operator picker.
+Recon found the webhook mount + grant path already built by the PR #40 audit remediation; 0200 codifies
+it, 0201 closes the ADR-0109 Discord-role deferral (its "before a caller exists" condition expired).
+
+| #                                                                           | Title                                                                | Domain           | Status   | Relations                                            |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------- | -------- | ---------------------------------------------------- |
+| [0200](../knowledge/decisions/ADR-0200-paddle-sole-buyer-webhook-mount.md)  | Paddle is the sole mounted buyer-purchase webhook source             | Commerce/Billing | accepted | extends 0108/0116/0131; codifies the PR #40 mount    |
+| [0201](../knowledge/decisions/ADR-0201-discord-role-grant-link-and-push.md) | Purchase → Discord edition-role: better-auth link + license→bot push | Services/Support | accepted | implements the 0109 deferral; relates 0132/0176/0200 |
+
 ---
 
 ## Accepted is not the same as shipped
