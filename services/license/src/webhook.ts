@@ -11,6 +11,12 @@ import { applyBillingEvent } from "./apply-billing-event.ts";
 export interface BillingWebhookResult {
   /** The mapped domain event, or null for an event type we don't act on. */
   event: DomainBillingEvent | null;
+  /**
+   * The purchased entitlement ids this delivery granted (`[]` for a no-op/gated/revoke event) —
+   * computed by `applyBillingEvent` itself so the post-commit Discord push (ADR-0201) can never
+   * drift from the grant gate's own decision.
+   */
+  grantedEntitlements: string[];
 }
 
 /**
@@ -35,7 +41,7 @@ export async function handleBillingWebhook(
   signatureHeader: string,
 ): Promise<BillingWebhookResult> {
   const event = provider.verifyAndParse(rawBody, signatureHeader);
-  if (event === null) return { event };
+  if (event === null) return { event, grantedEntitlements: [] };
   if (event.accountId === "") {
     process.stderr.write(
       `[service-license] ALERT: verified ${event.type} (sourceEventId=${event.sourceEventId}) has no resolvable account_id — purchase unattributed, NOT granted\n`,
@@ -44,6 +50,8 @@ export async function handleBillingWebhook(
       "verified billing event has no resolvable account id",
     );
   }
-  await withTenant(pg, event.accountId, (tx) => applyBillingEvent(tx, event));
-  return { event };
+  const effect = await withTenant(pg, event.accountId, (tx) =>
+    applyBillingEvent(tx, event),
+  );
+  return { event, grantedEntitlements: effect.grantedEntitlements };
 }
