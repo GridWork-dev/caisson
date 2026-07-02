@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+// The /fetch subpath is the client-safe cut of the kernel: fetch.ts is pure (no server-only
+// imports), unlike the "." barrel, so the bundle boundary stays clean.
+import { fetchWithTimeout } from "@caisson/kernel/fetch";
 import { Button } from "@caisson/ui/components";
 
 import { authClient } from "@/lib/auth-client";
@@ -20,21 +23,8 @@ export function DiscordConnect({ linked }: { linked: boolean }) {
   async function backfill(): Promise<void> {
     setBusy(true);
     try {
-      // Same-origin authed POST; 10s guard (the fetchWithTimeout rule, inlined — importing the
-      // kernel helper into a client bundle would drag server-only modules across the boundary).
-      const controller = new AbortController();
-      const timer = setTimeout(() => {
-        controller.abort();
-      }, 10_000);
-      try {
-        await fetch("/api/discord/backfill", {
-          method: "POST",
-          signal: controller.signal,
-        });
-        setSynced(true);
-      } finally {
-        clearTimeout(timer);
-      }
+      await fetchWithTimeout("/api/discord/backfill", { method: "POST" });
+      setSynced(true);
     } catch {
       // Best-effort sync — the button stays available to retry.
     } finally {
