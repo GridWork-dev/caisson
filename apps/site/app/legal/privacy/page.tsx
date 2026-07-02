@@ -77,8 +77,9 @@ export default function PrivacyPage() {
           site, we collect your email address. That is the only piece of
           personally identifying information we ask for at the point of sign-up.
           Purchase checkout collects the additional information necessary to
-          process payment and deliver your license entitlement (handled by our
-          payment processor — we do not store raw payment card data).
+          process payment and deliver your license entitlement. Payment is
+          processed by Paddle, our merchant of record — we do not receive or
+          store your payment card details.
         </p>
 
         <h3 style={prose.h3}>Cloudflare infrastructure metadata</h3>
@@ -209,6 +210,24 @@ export default function PrivacyPage() {
 
       {/* Data location */}
       <Section eyebrow="Infrastructure" title="Where your data lives">
+        <h3 style={prose.h3}>Payment and order data — Paddle</h3>
+        <p style={prose.paragraph}>
+          Purchases are processed by Paddle, acting as merchant of record and
+          reseller. Paddle collects the billing and payment information
+          necessary to complete your order, calculate and remit applicable sales
+          tax and VAT, and issue your order receipt; we do not receive or store
+          your payment card details. Paddle&apos;s handling of this data —
+          including which Paddle entity processes your order — is governed by{" "}
+          <a
+            href="https://www.paddle.com/legal/privacy"
+            rel="noreferrer"
+            style={{ color: "var(--cs-accent)" }}
+          >
+            Paddle&apos;s own privacy policy
+          </a>
+          .
+        </p>
+
         <h3 style={prose.h3}>Email — Resend</h3>
         <p style={prose.paragraph}>
           Email addresses are stored and managed by{" "}
