@@ -16,6 +16,7 @@ import {
 const PROVIDER_LABEL: Record<OAuthProviderId, string> = {
   github: "Continue with GitHub",
   google: "Continue with Google",
+  discord: "Continue with Discord",
 };
 
 type Status = "idle" | "sending" | "sent" | "error";
