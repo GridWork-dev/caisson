@@ -20,9 +20,15 @@ import {
   test,
 } from "bun:test";
 import { type TestPg, newTestPg } from "@caisson/testing";
-import { InsufficientCreditsError } from "@caisson/kernel";
+import { InsufficientCreditsError, asCredits } from "@caisson/kernel";
 import { withTenant } from "@caisson/tenancy-rls";
-import { CREDIT_SCHEMA_SQL, balance, getLedger, grant } from "@caisson/credits";
+import {
+  CREDIT_ROUNDING_MIGRATION_SQL,
+  CREDIT_SCHEMA_SQL,
+  balance,
+  getLedger,
+  grant,
+} from "@caisson/credits";
 import { loadRegistryIndex } from "@caisson/registry-schema";
 import { GENERATION_SCHEMA_SQL } from "./generation-record.ts";
 import { runGeneration } from "./meter.ts";
@@ -76,6 +82,7 @@ beforeEach(async () => {
     `DROP TABLE IF EXISTS credit_event; DROP TABLE IF EXISTS credit_wallet; DROP TABLE IF EXISTS generation;`,
   );
   await tp.exec(CREDIT_SCHEMA_SQL);
+  await tp.exec(CREDIT_ROUNDING_MIGRATION_SQL);
   await tp.exec(GENERATION_SCHEMA_SQL);
   tmpBase = await mkdtemp(join(tmpdir(), "caisson-gen-"));
 });
@@ -101,7 +108,7 @@ const grantSome = (amount: number) =>
   withTenant(tp.pg, ACCOUNT, (tx) =>
     grant(tx, {
       accountId: ACCOUNT,
-      amount,
+      amount: asCredits(amount),
       eventType: "purchase",
       sourceEventId: "buy",
     }),
