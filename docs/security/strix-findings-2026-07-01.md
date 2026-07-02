@@ -9,6 +9,24 @@ white-box (source) + black-box (live site origin, `license.caisson.sh`, `docs-ap
 filing. These are runtime-security findings (a different class from PR#40's design/standards audit),
 so they are largely **net-new**, not duplicates.
 
+## Resolution (2026-07-02, `fix/security-billing-hardening` — ADR-0204)
+
+Each finding was reproduced against the code at HEAD and adversarially re-checked before any change.
+Full rationale + the four operator fork locks: **ADR-0204**.
+
+| #         | Verdict                     | Fix                                                                                                                                                                                                                                                   |
+| --------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| vuln-0004 | real                        | Shared `@caisson/kernel` SSRF guard: literal denylist at the schema boundary + async DNS resolve-recheck of every resolved IP at the fetch seam; ai-kit injects an SSRF-guarded `fetch` for custom baseUrls. Regression test (`kernel/ssrf.test.ts`). |
+| vuln-0006 | real                        | Owner-gate (`assertCanManageMembers`) on `POST /api/byok` + the compliance `attest`/`clear` actions (owner-only, the locked fork); compliance UI read-only for seats.                                                                                 |
+| vuln-0003 | accepted-posture → hardened | Fail-closed CF-Access-JWT middleware in `apps/admin` (JWKS verify, `aud` pinned to the admin app), supersedes ADR-0140's edge-alone posture. Regression test (`admin/cf-access.test.ts`).                                                             |
+| vuln-0002 | false-positive at HEAD      | Already fixed by the mapper allowlist (commit `5b57c78`); added a regression test locking `subscription_update` → non-granting.                                                                                                                       |
+| vuln-0005 | real                        | `purchase.completed` carries `lineItems: {priceId, quantity}[]`; the grant path fulfills every paid line (credits × quantity, unioned entitlements) keyed on the unchanged `paymentId`. Regression tests (mapper + integration).                      |
+| vuln-0001 | real                        | Rate-limiter (docs + license) keys on Railway's non-spoofable `X-Real-IP` (was the spoofable `x-envoy-external-address`) + a header-independent global cap. Regression tests.                                                                         |
+
+**Deferred (flagged, not auto-decided):** partial-refund of one line in a multi-item cart stays a
+full-refund-only no-op (ADR-0113) — a per-line-revoke posture is a future operator fork. Cloudflare
+in front of docs/license and an admin origin-lock are DEPLOY-class complements to vuln-0001/0003.
+
 ## Findings
 
 ### 🔴 CRITICAL — vuln-0004 · DNS-rebinding bypasses SSRF guards

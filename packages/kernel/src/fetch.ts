@@ -7,7 +7,7 @@ export interface FetchTimeoutOptions {
 }
 
 export async function fetchWithTimeout(
-  input: string | URL,
+  input: string | URL | Request,
   init: RequestInit = {},
   { timeoutMs = 10_000 }: FetchTimeoutOptions = {},
 ): Promise<Response> {
@@ -15,8 +15,15 @@ export async function fetchWithTimeout(
   const timer = setTimeout(() => {
     controller.abort();
   }, timeoutMs);
+  // Merge (not replace) any caller-supplied signal — e.g. the AI SDK's stream-cancellation signal —
+  // with the timeout, so caller-initiated abort still tears down the connection. AbortSignal.any is the
+  // combinator (only AbortSignal.timeout() is the Bun-forbidden helper, per the header).
+  const signal =
+    init.signal != null
+      ? AbortSignal.any([init.signal, controller.signal])
+      : controller.signal;
   try {
-    return await fetch(input, { ...init, signal: controller.signal });
+    return await fetch(input, { ...init, signal });
   } finally {
     clearTimeout(timer);
   }
