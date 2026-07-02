@@ -95,18 +95,19 @@ export class ConflictError extends CaissonError {
 }
 
 /**
- * A guardrail block (ADR-0063, amending the ADR-0019 hierarchy). HTTP 422 — the request reached a
- * valid endpoint and parsed, but a moderation / PII / injection / custom guard tripped at the
- * gateway's input or output leg (P3 AI Production Kit). **Metadata only**: `details` carries the
- * `stage` + `category` the dashboard charts by, NEVER the flagged content, matched text, or PII —
- * echoing them would defeat the redaction the guard exists to enforce (mirrors `guardrailBlockSchema`).
+ * A guardrail block (ADR-0063, amending the ADR-0019 hierarchy; `"secret"` added by ADR-0209). HTTP
+ * 422 — the request reached a valid endpoint and parsed, but a moderation / PII / injection / secret
+ * / custom guard tripped at the gateway's input or output leg (P3 AI Production Kit). **Metadata
+ * only**: `details` carries the `stage` + `category` the dashboard charts by, NEVER the flagged
+ * content, matched text, or secret span — echoing them would defeat the redaction the guard exists
+ * to enforce (mirrors `guardrailBlockSchema`).
  */
 export class GuardrailError extends CaissonError {
   readonly code = "guardrail_blocked";
   readonly httpStatus = 422;
   constructor(
     stage: "input" | "output",
-    category: "moderation" | "pii" | "injection" | "custom",
+    category: "moderation" | "pii" | "injection" | "secret" | "custom",
     message = "Request blocked by a guardrail",
   ) {
     super(message, { stage, category });
