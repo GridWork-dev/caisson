@@ -132,8 +132,15 @@ export function parseLemonSqueezyEvent(
         currency: readString(attrs.currency, "usd").toLowerCase(),
         // The first order item's variant — a one-entry wrap of the shared multi-line shape (Strix
         // vuln-0005), quantity 1. (Upgrade path if LS multi-item orders ever grant: map all items.)
+        // No per-line refund data (ADR-0218 D-1: Paddle-only), so the join fields are the empty
+        // sentinels; `chargedAmount` carries the order total for the single line.
         lineItems: [
-          { priceId: readFirstOrderItemVariantId(attrs), quantity: 1 },
+          {
+            priceId: readFirstOrderItemVariantId(attrs),
+            quantity: 1,
+            itemId: "",
+            chargedAmount: readMoneyMinorUnits(attrs.total),
+          },
         ],
         paymentId: orderId,
       };
@@ -183,6 +190,9 @@ export function parseLemonSqueezyEvent(
         // mirrors the Paddle driver's full-vs-partial refund discipline (ADR-0113: a partial refund must
         // never revoke all access or claw back the whole grant).
         fullyRefunded: attrs.refunded === true,
+        // No per-line refund data (ADR-0218 D-1 — Paddle-only population).
+        adjustmentId: "",
+        items: [],
       };
     default:
       return null;

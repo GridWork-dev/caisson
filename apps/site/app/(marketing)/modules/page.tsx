@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { Button, Hero, Section, StatusChip, Terminal } from "@/components";
 import { ModuleCatalog } from "@/components/module-catalog";
 import { breadcrumb, moduleItemList, serializeJsonLd } from "@/lib/jsonld";
@@ -7,7 +9,7 @@ import { MODULE_PRICES } from "@/lib/pricing";
 export const metadata = buildMetadata({
   title: "Modules",
   description:
-    "Browse all 14 Caisson modules à la carte. Filter by edition or price, take exactly the capability you need onto the shared base, or compose a full stack in the builder.",
+    "Browse all 15 Caisson modules à la carte. Filter by edition or price, take exactly the capability you need onto the shared base, or compose a full stack in the builder.",
   path: "/modules",
 });
 
@@ -34,7 +36,7 @@ export default function ModulesPage() {
       <Hero
         eyebrow="Modules"
         title="Every module, à la carte."
-        lede="Fourteen modules across the four editions. Take exactly the capability you need onto the shared base — field encryption, token metering, on-device search — or compose a whole stack in the builder."
+        lede="Fifteen modules across the four editions. Take exactly the capability you need onto the shared base — field encryption, token metering, on-device search — or compose a whole stack in the builder."
         ctas={
           <>
             <Button href="/build" variant="primary">
@@ -48,7 +50,7 @@ export default function ModulesPage() {
         artifact={
           <Terminal
             label="modules"
-            status={<StatusChip label="14 available" tone="success" dot />}
+            status={<StatusChip label="15 available" tone="success" dot />}
           >
             {"module."}
             <span className="cs-tok-accent">field-crypto</span>
@@ -70,6 +72,27 @@ export default function ModulesPage() {
       >
         <ModuleCatalog />
       </Section>
+
+      {/* ===== Licensing — what's open, what's on this catalog ===== */}
+      <Section
+        eyebrow="Licensing"
+        title="The base is free. The modules are the product."
+        lede={
+          <>
+            Every module here composes onto the base substrate — kernel, auth,
+            tenancy-rls, ui, billing, credits, jobs, email, ai-config,
+            mcp-server, registry-schema, observability, and the generator
+            tooling (cli, migrate, license-verify) — which is{" "}
+            <code className="mono">Apache-2.0</code>, free to use on its own.
+            What&rsquo;s priced above are the commercial modules and editions,
+            under the{" "}
+            <Link href="/legal/license" className="mono">
+              Commercial License
+            </Link>
+            .
+          </>
+        }
+      />
     </>
   );
 }

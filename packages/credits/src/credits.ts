@@ -51,6 +51,17 @@ interface CreditInputBase extends IdempotencySource {
    * persists NULL/NULL — the correct shape for an EXACT table-integer amount (ADR-0089 §5).
    */
   rounding?: RoundedMoney<number, Credits>;
+  /**
+   * Paddle per-line join key (ADR-0218): the `txnitm_…` transaction-item id that granted this row's
+   * credits. Set on a per-line one-time `purchase` grant so a later per-line adjustment refund can
+   * claw back only THAT line's credits. Omitted for every other grant/debit → NULL.
+   */
+  lineItemId?: string;
+  /**
+   * The line's charged minor units (ADR-0218): persisted alongside the per-line grant so a
+   * dollar-PARTIAL refund can claw a proportional credit amount. Omitted → NULL.
+   */
+  lineChargedAmount?: number;
 }
 
 // Discriminated on `eventType` so a `feature` tag is REQUIRED with feature_grant/feature_debit and
@@ -166,13 +177,24 @@ async function insertEvent(
     idempotencyKey: string | null;
     /** Rounding provenance (ADR-0212) — absent → NULL/NULL (the DB CHECK keeps the pair coherent). */
     rounding?: RoundedMoney<number, Credits> | undefined;
+    /** Paddle per-line join key (ADR-0218) — the `txnitm_…` that granted/refunded this row. */
+    lineItemId?: string | undefined;
+    /** The line's charged minor units (ADR-0218) — the proportional-refund divisor. */
+    lineChargedAmount?: number | undefined;
   },
 ): Promise<boolean> {
   // ON CONFLICT DO NOTHING: a duplicate idempotency key returns zero rows instead of raising —
   // the transaction stays usable. `feature` is payload — NOT part of either idempotency index.
+  //
+  // The per-line columns are referenced ONLY when a caller supplies them (the Paddle per-line
+  // purchase/refund path, ADR-0218). Every other grant/debit/clawback keeps the exact pre-0218 column
+  // list, so a credit DB bootstrapped without CREDIT_LINE_ITEM_MIGRATION_SQL (ai-meter/ai-kit/cli/base
+  // — they never touch a line item) is untouched: the column reference can't fail on a missing column.
+  const line =
+    row.lineItemId !== undefined || row.lineChargedAmount !== undefined;
   const inserted = await tx.query<{ id: string }>(
-    `INSERT INTO credit_event (id, account_id, event_type, amount, feature, source_event_id, idempotency_key, rounding_raw, rounding_mode)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `INSERT INTO credit_event (id, account_id, event_type, amount, feature, source_event_id, idempotency_key, rounding_raw, rounding_mode${line ? ", line_item_id, line_charged_amount" : ""})
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9${line ? ", $10, $11" : ""})
      ON CONFLICT DO NOTHING
      RETURNING id`,
     [
@@ -185,6 +207,7 @@ async function insertEvent(
       row.idempotencyKey,
       row.rounding?.raw ?? null,
       row.rounding?.mode ?? null,
+      ...(line ? [row.lineItemId ?? null, row.lineChargedAmount ?? null] : []),
     ],
   );
   return inserted.rows.length > 0;
@@ -204,6 +227,8 @@ export async function grant(
     amount: input.amount,
     feature,
     rounding: input.rounding,
+    lineItemId: input.lineItemId,
+    lineChargedAmount: input.lineChargedAmount,
     ...idem,
   });
   if (!fresh)
@@ -318,10 +343,65 @@ export async function creditsGrantedBySource(
   return r.rows[0]?.total ?? 0;
 }
 
+/**
+ * Per-line credit ledger for a Paddle transaction item (ADR-0218). `line_item_id` (`txnitm_…`) is
+ * globally unique per transaction line, so filtering on it alone yields exactly one purchase's one
+ * line: the `granted` positive `purchase` credits, the `clawed` sum of any prior per-line
+ * `refund_clawback` debits, and the `charged` minor units (the proportional divisor). A refund reads
+ * this to claw back at most the line's still-un-clawed grant — never spilling onto other lines'
+ * fungible balance. Run inside `withTenant` (RLS scopes the read to the account).
+ */
+export interface LineCreditLedger {
+  /** Positive credits this line granted at purchase time. */
+  granted: number;
+  /** Credits already clawed back from this line by prior per-line refunds (a non-negative integer). */
+  clawed: number;
+  /** The line's charged minor units — the divisor for a proportional partial-refund claw; 0 if unknown. */
+  charged: number;
+}
+
+export async function lineCreditLedger(
+  tx: TenantExecutor,
+  accountId: string,
+  lineItemId: string,
+): Promise<LineCreditLedger> {
+  const r = await tx.query<{
+    granted: number;
+    clawed: number;
+    charged: number;
+  }>(
+    `SELECT
+       COALESCE(SUM(amount) FILTER (WHERE amount > 0), 0)::int AS granted,
+       COALESCE(-SUM(amount) FILTER (WHERE amount < 0), 0)::int AS clawed,
+       COALESCE(MAX(line_charged_amount), 0)::int AS charged
+     FROM credit_event
+     WHERE account_id = $1 AND line_item_id = $2`,
+    [accountId, lineItemId],
+  );
+  const row = r.rows[0];
+  return {
+    granted: row?.granted ?? 0,
+    clawed: row?.clawed ?? 0,
+    charged: row?.charged ?? 0,
+  };
+}
+
 export interface ClawbackInput extends IdempotencySource {
   accountId: string;
   /** Credits originally granted by the refunded purchase (a positive integer). */
   amount: number;
+  /**
+   * Paddle per-line join key (ADR-0218): the `txnitm_…` this clawback reverses. Set on a per-line
+   * refund so `lineCreditLedger` can bound a later same-line claw; omitted on a whole-transaction
+   * refund (keyed by the payment id) → NULL.
+   */
+  lineItemId?: string;
+  /**
+   * Rounding provenance (ADR-0212) for a PROPORTIONAL dollar-partial claw: `{raw, mode:"down"}` —
+   * recorded so a floored `floor(granted * refunded / charged)` claw is auditable. Omitted on a
+   * full/exact claw → NULL/NULL.
+   */
+  rounding?: RoundedMoney<number, Credits>;
 }
 
 export interface ClawbackResult {
@@ -367,6 +447,8 @@ export async function clawback(
     eventType: "refund_clawback",
     amount: -actual,
     feature: null,
+    rounding: input.rounding,
+    lineItemId: input.lineItemId,
     ...idem,
   });
   if (!fresh) {

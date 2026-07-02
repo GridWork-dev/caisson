@@ -24,6 +24,13 @@ export const DomainBillingEventSchema = z.discriminatedUnion("type", [
         strictObject({
           priceId: z.string(),
           quantity: z.number().int().positive(),
+          // ADR-0218 per-line refund enrichment. `itemId` is the provider's transaction-LINE id
+          // (Paddle `txnitm_…`, from `details.line_items[].id`) — the join key a later per-line
+          // adjustment refund carries. `chargedAmount` is the line's charged minor units, kept so a
+          // dollar-partial refund can claw a PROPORTIONAL credit amount. Both are "" / 0 for a driver
+          // that emits no per-line data (Stripe wraps a single line); Paddle populates them (D-1).
+          itemId: z.string(),
+          chargedAmount: z.number().int().nonnegative(),
         }),
       )
       .min(1),
@@ -59,9 +66,27 @@ export const DomainBillingEventSchema = z.discriminatedUnion("type", [
     paymentId: z.string(),
     amountRefunded: z.number().int().nonnegative(),
     currency: z.string(),
-    // Whether the charge was FULLY refunded (Stripe `charge.refunded === true`). The mapper acts only
-    // on a full refund — a PARTIAL refund must not revoke all access or claw the whole grant (ADR-0113).
+    // Whether the WHOLE transaction was fully refunded (Stripe `charge.refunded === true` / Paddle
+    // adjustment `type: 'full'`). True → the mapper revokes every line + claws the whole grant, keyed
+    // by `paymentId` (the ADR-0113 scalar path, unchanged). False → a per-line adjustment: act per
+    // `items[]` below (ADR-0218).
     fullyRefunded: z.boolean(),
+    // ADR-0218: a stable per-refund id (Paddle adjustment `data.id`, `adj_…`) used with each item id
+    // as the per-line clawback idempotency key `${adjustmentId}:${itemId}` — stable across a
+    // redelivery of the SAME adjustment, distinct across two sequential partial adjustments on one
+    // line. "" for a driver with no adjustment concept (Stripe).
+    adjustmentId: z.string(),
+    // ADR-0218 per-line refund array (fork D-2 shape / D-1 population): one entry per refunded line of
+    // a PARTIAL adjustment. `fullyRefunded` here is per ITEM — item `type: 'full'` (revoke the line +
+    // claw its credits) vs `type: 'partial'` (proportional dollar claw, entitlement intact, fork A-1).
+    // Empty for a whole-transaction full refund and for drivers that emit no per-line data.
+    items: z.array(
+      strictObject({
+        itemId: z.string(),
+        amountRefunded: z.number().int().nonnegative(),
+        fullyRefunded: z.boolean(),
+      }),
+    ),
   }),
   strictObject({
     type: z.literal("invoice.paid"),
@@ -171,8 +196,16 @@ export function parseStripeEvent(
         // carries no webhook-readable line items without expansion). Stripe checkout here only ever
         // creates a single line (provider.ts `line_items[0]`), so this is a one-entry wrap of the
         // shared multi-line shape, quantity 1. The PaymentIntent id is the refund join key (ADR-0113).
+        // Single line, quantity 1 (Stripe checkout creates one line). No per-line refund data — Stripe
+        // keeps the scalar `fullyRefunded` path (ADR-0218 D-1), so `itemId`/`chargedAmount` are the
+        // empty sentinels; `chargedAmount` carries the session total for completeness (one line).
         lineItems: [
-          { priceId: readMetadataString(obj, "price_id"), quantity: 1 },
+          {
+            priceId: readMetadataString(obj, "price_id"),
+            quantity: 1,
+            itemId: "",
+            chargedAmount: readInt(obj.amount_total),
+          },
         ],
         paymentId: readString(obj.payment_intent),
       };
@@ -206,8 +239,12 @@ export function parseStripeEvent(
         amountRefunded: readInt(obj.amount_refunded),
         currency: readString(obj.currency, "usd"),
         // Stripe sets `refunded` true ONLY when the charge is fully refunded; a partial refund leaves
-        // it false. The mapper no-ops on a partial refund (never a full revoke/clawback) — ADR-0113.
+        // it false. Stripe emits no real per-line refund data (ADR-0218 D-1), so `adjustmentId` is ""
+        // and `items` is empty — a partial Stripe refund stays a scalar no-op (ADR-0113), only the
+        // Paddle driver drives per-line revoke/clawback.
         fullyRefunded: obj.refunded === true,
+        adjustmentId: "",
+        items: [],
       };
     case "invoice.paid":
       return {

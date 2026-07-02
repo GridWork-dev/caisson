@@ -25,7 +25,7 @@ import { planEntitlementsSchema } from "./plans.ts";
 const NO_CREDITS = asCredits(0);
 
 /** Append-only version stamp — a purchase-row change bumps this, never edits it in place (ADR-0006). */
-export const PURCHASE_BOOK_VERSION = "2026-06-30.3";
+export const PURCHASE_BOOK_VERSION = "2026-07-02.1";
 
 export const purchaseBookEntrySchema = strictObject({
   /** Stable internal purchase tag (NOT the Stripe id) — survives a price-id rotation. */
@@ -77,6 +77,15 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
   //   agent-dev   -> $249   (pri_01kwd76ck3w8myy4p4f1gj0dcy)
   //   bundle      -> $1,499 (pri_01kwd76bp60acq51mftvpgr42k)  — below the sum of its parts
   //
+  // The one REAL row below that grants CREDITS, not an entitlement — mirrors the
+  // `price_credit_pack_PLACEHOLDER` row at the top of this book (5000 credits, $49, no edition
+  // access). Not surfaced in `apps/site/lib/catalog.ts` (no marketplace/cart display) — this row
+  // exists purely so the webhook can resolve a direct Paddle credit-pack purchase.
+  pri_01kwj71ae0g946ztm4sej7bq76: {
+    purchaseTag: "credit_pack",
+    credits: asCredits(5000),
+    entitlements: [],
+  },
   // ENTITLEMENT-ID NOTE: `purchaseTag`/`entitlements` mirror the registry edition id `agent-dev`
   // (`packages/registry-schema/src/module-manifest.ts` EDITIONS); the marketing route/label
   // `/agentic-dev`/"Agentic-Dev" deliberately differ from the entitlement id.
@@ -108,17 +117,15 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
 
   // ---- Per-module à-la-carte PLACEHOLDER rows (P6-store track: sell every commercial module
   // individually, operator-locked — entitlement infra ADR-0071 already supports it). Same
-  // PLACEHOLDER posture as the rows above: `price_<slug>_module_PLACEHOLDER` fake keys, real Paddle
-  // one-time price ids land here at go-live wiring. Every row is a perpetual license-only buy
-  // (`credits: 0`). `entitlements` carries the BARE package slug (no `@caisson/` prefix) — the
-  // per-module entitlement-id convention `expandEntitlements` (@caisson/registry-schema
-  // entitlements.ts) resolves against the registry index alongside the long-supported full
-  // `@caisson/<slug>` module-id form and the edition/bundle sentinels above. 12 CURRENT modules
-  // (already published to the registry) + 2 FUTURE Compliance modules whose packages don't exist
-  // yet — `alerting` and `retention-runner` are RESERVED entitlement ids
-  // (`RESERVED_MODULE_ENTITLEMENT_IDS`): the row here lets a buyer purchase + hold the grant now,
-  // but expansion resolves to NOTHING until each package ships and is indexed (never a 500, never a
-  // substitute grant). `compliance`/`ai-kit`/`local-ai`/`agent-dev` reuse their EDITION entitlement
+  // PLACEHOLDER posture as the rows above: `price_<slug>_module_PLACEHOLDER` fake keys — these are
+  // KEPT as bound `purchases.test.ts` fixtures even now that the REAL module rows exist below.
+  // `entitlements` carries the BARE package slug (no `@caisson/` prefix) — the per-module
+  // entitlement-id convention `expandEntitlements` (@caisson/registry-schema entitlements.ts)
+  // resolves against the registry index alongside the long-supported full `@caisson/<slug>`
+  // module-id form and the edition/bundle sentinels above. All 14 modules — including `alerting`
+  // and `retention-runner`, shipped in Stage-2 (ADR-0150/0151) and registry-indexed — are CURRENT;
+  // the earlier "2 FUTURE, package not yet built" caveat no longer applies.
+  // `compliance`/`ai-kit`/`local-ai`/`agent-dev` reuse their EDITION entitlement
   // id (they name their own edition membership in the registry, ADR-0071) — buying the module row
   // below and buying the edition row above both resolve through the same edition expansion; this is
   // the one true "buy just this" price point for a buyer who does not want the rest of the edition.
@@ -182,17 +189,104 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
     credits: NO_CREDITS,
     entitlements: ["agent-dev"],
   },
-  // FUTURE — package not yet built; reserved entitlement id (expands to nothing until it ships).
+  // agent-runner postdates the rest of this section (harvest slice-2, ADR-0186) — added here to
+  // keep the PLACEHOLDER convention symmetric with its REAL row below.
+  price_agent_runner_module_PLACEHOLDER: {
+    purchaseTag: "agent-runner_module",
+    credits: NO_CREDITS,
+    entitlements: ["agent-runner"],
+  },
   price_alerting_module_PLACEHOLDER: {
     purchaseTag: "alerting_module",
     credits: NO_CREDITS,
     entitlements: ["alerting"],
   },
-  // FUTURE — package not yet built; reserved entitlement id (expands to nothing until it ships).
   price_retention_runner_module_PLACEHOLDER: {
     purchaseTag: "retention-runner_module",
     credits: NO_CREDITS,
     entitlements: ["retention-runner"],
+  },
+
+  // ---- REAL Paddle sandbox price ids — per-module à-la-carte (module-SKU wiring, 2026-07-02) ----
+  // The PLACEHOLDER rows above are kept in place (bound `purchases.test.ts` fixtures); these are the
+  // LIVE rows the module cart + webhook actually resolve against, mirroring the edition/bundle REAL
+  // section above. Every row is a perpetual license-only buy (`credits: 0`, no bundled credit pack);
+  // `entitlements` carries the bare package slug per the ENTITLEMENT-ID convention above. Dollar
+  // amounts live on the Paddle product + `apps/site/lib/pricing.ts` display sheet, not here.
+  pri_01kwj6m31fxw5vn532h5ft6780: {
+    purchaseTag: "compliance_module",
+    credits: NO_CREDITS,
+    entitlements: ["compliance"],
+  },
+  pri_01kwj6m3cwez98t45jzwsqb250: {
+    purchaseTag: "field-crypto_module",
+    credits: NO_CREDITS,
+    entitlements: ["field-crypto"],
+  },
+  pri_01kwj6m3mjq4rpv7918rhfhrhw: {
+    purchaseTag: "audit-worm_module",
+    credits: NO_CREDITS,
+    entitlements: ["audit-worm"],
+  },
+  pri_01kwj6m3x1cw1k54tcdhsc6pgj: {
+    purchaseTag: "retention-runner_module",
+    credits: NO_CREDITS,
+    entitlements: ["retention-runner"],
+  },
+  pri_01kwj6m45zeqyxgad3f32x1b30: {
+    purchaseTag: "ai-meter_module",
+    credits: NO_CREDITS,
+    entitlements: ["ai-meter"],
+  },
+  pri_01kwj6m4d3npk8sszerx7fek7w: {
+    purchaseTag: "ai-evals_module",
+    credits: NO_CREDITS,
+    entitlements: ["ai-evals"],
+  },
+  pri_01kwj6m4n105qe80fapw9sk5xc: {
+    purchaseTag: "guardrails_module",
+    credits: NO_CREDITS,
+    entitlements: ["guardrails"],
+  },
+  pri_01kwj6m4whyw1stbej2qk8q0bg: {
+    purchaseTag: "prompt-registry_module",
+    credits: NO_CREDITS,
+    entitlements: ["prompt-registry"],
+  },
+  pri_01kwj6m55yagz7188qer0pa0cd: {
+    purchaseTag: "ai-kit_module",
+    credits: NO_CREDITS,
+    entitlements: ["ai-kit"],
+  },
+  pri_01kwj6m5da9ay3z85b6qwtjcpe: {
+    purchaseTag: "alerting_module",
+    credits: NO_CREDITS,
+    entitlements: ["alerting"],
+  },
+  pri_01kwj6m5mzyn76b8jkknmjndb4: {
+    purchaseTag: "local-ai_module",
+    credits: NO_CREDITS,
+    entitlements: ["local-ai"],
+  },
+  pri_01kwj6m5w3s4fmvseap7zmp5yf: {
+    purchaseTag: "local-store_module",
+    credits: NO_CREDITS,
+    entitlements: ["local-store"],
+  },
+  pri_01kwj6m63qpt52489tq5a3v6q3: {
+    purchaseTag: "agent-kernel_module",
+    credits: NO_CREDITS,
+    entitlements: ["agent-kernel"],
+  },
+  pri_01kwj6m6cbtsh6n5b1bxtb2j0k: {
+    purchaseTag: "agent-dev_module",
+    credits: NO_CREDITS,
+    entitlements: ["agent-dev"],
+  },
+  pri_01kwj71a53hycbspsfv8pck5vc: {
+    purchaseTag: "agent-runner_module",
+    credits: NO_CREDITS,
+    entitlements: ["agent-runner"],
   },
 };
 

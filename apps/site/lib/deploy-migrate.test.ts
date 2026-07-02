@@ -41,11 +41,11 @@ afterAll(async () => {
 
 test("platform migrations apply in order then are idempotent", async () => {
   const first = await runPlatformMigrations(pgliteApplier(tp));
-  expect(first.applied).toEqual([1, 2, 3, 4, 5, 6, 7]);
+  expect(first.applied).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
 
   const second = await runPlatformMigrations(pgliteApplier(tp));
   expect(second.applied).toEqual([]);
-  expect(second.skipped).toEqual([1, 2, 3, 4, 5, 6, 7]);
+  expect(second.skipped).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
 });
 
 test("0007 adds the ADR-0212 rounding provenance columns to credit_event", async () => {
@@ -57,6 +57,23 @@ test("0007 adds the ADR-0212 rounding provenance columns to credit_event", async
   expect(cols).toEqual([
     { column_name: "rounding_mode", data_type: "text" },
     { column_name: "rounding_raw", data_type: "integer" },
+  ]);
+});
+
+test("0008/0009 add the ADR-0218 per-line join-key columns", async () => {
+  const ent = await tp.query<{ column_name: string }>(
+    `SELECT column_name FROM information_schema.columns
+     WHERE table_name = 'entitlement_grant' AND column_name = 'line_item_id'`,
+  );
+  expect(ent).toEqual([{ column_name: "line_item_id" }]);
+  const credit = await tp.query<{ column_name: string; data_type: string }>(
+    `SELECT column_name, data_type FROM information_schema.columns
+     WHERE table_name = 'credit_event' AND column_name IN ('line_item_id','line_charged_amount')
+     ORDER BY column_name`,
+  );
+  expect(credit).toEqual([
+    { column_name: "line_charged_amount", data_type: "integer" },
+    { column_name: "line_item_id", data_type: "text" },
   ]);
 });
 

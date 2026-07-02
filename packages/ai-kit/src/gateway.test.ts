@@ -9,6 +9,7 @@
 // instead of `doGenerate`, proving the reconcile-on-abandonment design (a normal drain trues up to
 // the provider's ACTUAL usage; an early-stopped/aborted stream still reconciles, to an ESTIMATE,
 // never leaking the up-front reservation).
+import { randomUUID } from "node:crypto";
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import { newTestPg, type TestPg } from "@caisson/testing";
 import {
@@ -910,5 +911,100 @@ describe("streaming infer — inferStream", () => {
       cachedInputTokens: 0,
     });
     expect(settled.reconciled.actualCredits).toBe(1);
+  });
+
+  test("an empty stream (zero chunks, finish reports zero usage) settles a full refund — no leaked reservation", async () => {
+    await seed(1000);
+    const s = sink();
+    const model = mockStreamModel([], {
+      inputTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+    });
+
+    const res = await inferStream(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), s),
+    );
+
+    const deltas: string[] = [];
+    for await (const delta of res.textStream) deltas.push(delta);
+    expect(deltas).toHaveLength(0);
+
+    const settled = await res.settled;
+    expect(settled.abandoned).toBe(false); // a finish part WAS reached — just over zero chunks
+    expect(settled.text).toBe("");
+    expect(settled.usage).toEqual({
+      inputTokens: 0,
+      outputTokens: 0,
+      cachedInputTokens: 0,
+    });
+    // Zero actual cost trues the WHOLE reservation back — a real refund, not the no-usage-reported
+    // settle-at-reserved path (the provider DID report usage here — it was just zero).
+    expect(settled.reconciled.actualCredits).toBe(0);
+    expect(settled.reconciled.refundedCredits).toBe(
+      res.reserved.reservedCredits,
+    );
+    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(1000);
+    const rows = await tp.query<{ credits: number }>(
+      `SELECT credits FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.credits).toBe(0);
+  });
+
+  test("a same-callId retry on inferStream settles the meter legs EXACTLY once (idempotent)", async () => {
+    await seed(1000);
+    const callId = randomUUID();
+    const s = sink();
+    const input = { messages: [{ role: "user", content: "ping" }] } as const;
+    const usage = { inputTokens: 10, outputTokens: 20, totalTokens: 30 };
+
+    const first = await inferStream(
+      "default",
+      input,
+      baseOpts(mockStreamModel(["Hi", " world"], usage), cleanPolicy(), s, {
+        callId,
+      }),
+    );
+    for await (const _d of first.textStream) {
+      // drain
+    }
+    const firstSettled = await first.settled;
+
+    const second = await inferStream(
+      "default",
+      input,
+      baseOpts(mockStreamModel(["Hi", " world"], usage), cleanPolicy(), s, {
+        callId,
+      }),
+    );
+    for await (const _d of second.textStream) {
+      // drain
+    }
+    const secondSettled = await second.settled;
+
+    expect(first.reserved.idempotent).toBe(false);
+    expect(firstSettled.reconciled.idempotent).toBe(false);
+    expect(second.reserved.idempotent).toBe(true);
+    expect(secondSettled.reconciled.idempotent).toBe(true);
+    // Token accounting on the completed drain matches what actually got reconciled.
+    expect(firstSettled.usage).toEqual({
+      inputTokens: 10,
+      outputTokens: 20,
+      cachedInputTokens: 0,
+    });
+    expect(firstSettled.reconciled.actualCredits).toBe(1);
+
+    // The provider was called on each attempt, but the spend settled ONCE.
+    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(999);
+    const rows = await tp.query<{ call_id: string }>(
+      `SELECT call_id FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.call_id).toBe(callId);
   });
 });
