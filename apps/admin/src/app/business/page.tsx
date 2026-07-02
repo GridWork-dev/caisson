@@ -32,18 +32,34 @@ const EMPTY = {
   actions: [] as AdminActionLogRow[],
 };
 
-async function loadData(): Promise<typeof EMPTY> {
-  if (!adminDbConfigured()) return EMPTY;
-  const [tenants, entitlements, credits, licenses, actions] = await Promise.all(
-    [
-      readAdmin(readTenants),
-      readAdmin(readEntitlements),
-      readAdmin(readCredits),
-      readAdmin(readLicenses),
-      readAdmin((tx) => readAdminActionLog(tx, 50)),
-    ],
-  );
-  return { tenants, entitlements, credits, licenses, actions };
+type LoadedData = typeof EMPTY & { actionLogMissing: boolean };
+
+async function loadData(): Promise<LoadedData> {
+  if (!adminDbConfigured()) return { ...EMPTY, actionLogMissing: false };
+  const [tenants, entitlements, credits, licenses] = await Promise.all([
+    readAdmin(readTenants),
+    readAdmin(readEntitlements),
+    readAdmin(readCredits),
+    readAdmin(readLicenses),
+  ]);
+  // The `admin_action_log` table ships in the ADR-0220 DEPLOY DDL. A routine fleet redeploy from
+  // main BEFORE that DDL runs must not crash the whole read cockpit — degrade THIS read alone to an
+  // empty log plus a provisioning hint. The other reads predate 0220, so they are not guarded here.
+  let actions: AdminActionLogRow[] = [];
+  let actionLogMissing = false;
+  try {
+    actions = await readAdmin((tx) => readAdminActionLog(tx, 50));
+  } catch {
+    actionLogMissing = true;
+  }
+  return {
+    tenants,
+    entitlements,
+    credits,
+    licenses,
+    actions,
+    actionLogMissing,
+  };
 }
 
 function fmtDate(iso: string | null): string {
@@ -53,8 +69,14 @@ function fmtDate(iso: string | null): string {
 
 export default async function BusinessPage() {
   const configured = adminDbConfigured();
-  const { tenants, entitlements, credits, licenses, actions } =
-    await loadData();
+  const {
+    tenants,
+    entitlements,
+    credits,
+    licenses,
+    actions,
+    actionLogMissing,
+  } = await loadData();
 
   return (
     <div className="shell stack" style={{ gap: "var(--cs-space-10)" }}>
@@ -143,16 +165,25 @@ export default async function BusinessPage() {
       </section>
 
       <Section title={`Action log (${actions.length})`}>
-        <Table
-          head={["When", "Actor", "Action", "Account"]}
-          empty={configured ? "No operator actions yet." : "—"}
-          rows={actions.map((a) => [
-            a.createdAt.replace("T", " ").slice(0, 19),
-            a.actorEmail,
-            a.action,
-            a.targetAccountId,
-          ])}
-        />
+        {actionLogMissing ? (
+          <p className="muted">
+            The <span className="mono">admin_action_log</span> table is not
+            provisioned yet — run the ADR-0220 DEPLOY DDL (the action-log schema
+            plus <span className="mono">ADMIN_MUTATION_PROVISION_SQL</span>).
+            Operator actions are still recorded in the per-tenant WORM chain.
+          </p>
+        ) : (
+          <Table
+            head={["When", "Actor", "Action", "Account"]}
+            empty={configured ? "No operator actions yet." : "—"}
+            rows={actions.map((a) => [
+              a.createdAt.replace("T", " ").slice(0, 19),
+              a.actorEmail,
+              a.action,
+              a.targetAccountId,
+            ])}
+          />
+        )}
       </Section>
     </div>
   );

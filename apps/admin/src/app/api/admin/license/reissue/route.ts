@@ -6,7 +6,12 @@ import {
   ReissueLicenseBody,
   reissueLicenseAdmin,
 } from "@caisson/service-license";
-import { actorEmail, json, parseBody } from "@/lib/admin-route";
+import {
+  actorEmail,
+  json,
+  mutationResponse,
+  parseBody,
+} from "@/lib/admin-route";
 import {
   getAdminMutationDeps,
   readLicenseForReissue,
@@ -40,7 +45,7 @@ export async function POST(req: Request): Promise<Response> {
       tier: existing.tier,
       expiry: existing.expiry,
     });
-    return json(result);
+    return mutationResponse(result);
   } catch {
     return json({ error: "reissue failed" }, 500);
   }

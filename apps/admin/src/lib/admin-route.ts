@@ -18,6 +18,30 @@ export function json(data: unknown, status = 200): Response {
   });
 }
 
+/**
+ * Shape the success response for a dual-logged mutation (ADR-0220). The state change and its
+ * queryable `admin_action_log` row commit atomically; the tamper-evident WORM anchor is appended
+ * AFTER that commit. When that post-commit append fails the mutation is ALREADY durable, so this
+ * must NOT read as a retryable `mutation failed` (a retry would double-apply the money/entitlement
+ * change). Return a DISTINCT do-not-retry body — still HTTP 200, because the action succeeded and is
+ * recorded — carrying `worm: "failed"` + an explicit message; the route's `catch` (a genuine
+ * PRE-commit failure, nothing applied) is the only path that 500s, and that one IS safe to retry.
+ */
+export function mutationResponse(result: { worm: "ok" | "failed" }): Response {
+  if (result.worm === "failed") {
+    return json(
+      {
+        ...result,
+        ok: true,
+        message:
+          "Mutation committed and recorded in the action log, but the tamper-evident WORM append failed. Do NOT retry (a retry would double-apply). Re-anchor the audit chain out of band.",
+      },
+      200,
+    );
+  }
+  return json(result);
+}
+
 /** The verified CF-Access actor email, or null when the request carries no verified actor. */
 export function actorEmail(req: Request): string | null {
   const actor = req.headers.get("x-admin-actor")?.trim() ?? "";

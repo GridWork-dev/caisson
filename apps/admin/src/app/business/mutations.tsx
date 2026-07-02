@@ -11,6 +11,9 @@ type Result =
   | { kind: "idle" }
   | { kind: "busy" }
   | { kind: "ok"; body: unknown }
+  // The mutation committed but the tamper-evident WORM append failed (ADR-0220): a DISTINCT,
+  // do-not-retry state — the action succeeded and is in the log; retrying would double-apply.
+  | { kind: "warn"; message: string; body: unknown }
   | { kind: "err"; message: string };
 
 async function callRoute(path: string, payload: unknown): Promise<Result> {
@@ -31,6 +34,21 @@ async function callRoute(path: string, payload: unknown): Promise<Result> {
           : `request failed (${String(res.status)})`;
       return { kind: "err", message };
     }
+    // A 200 that carries `worm: "failed"` is the committed-but-WORM-append-failed signal — surface
+    // it as a distinct do-not-retry warning, never as a plain success or a retryable error.
+    if (
+      body !== null &&
+      typeof body === "object" &&
+      "worm" in body &&
+      (body as { worm: unknown }).worm === "failed"
+    ) {
+      const message =
+        "message" in body &&
+        typeof (body as { message: unknown }).message === "string"
+          ? (body as { message: string }).message
+          : "Mutation committed; WORM audit append failed — do NOT retry.";
+      return { kind: "warn", message, body };
+    }
     return { kind: "ok", body };
   } catch (err) {
     return {
@@ -48,6 +66,27 @@ function ResultLine({ result }: { result: Result }) {
       <p style={{ color: "var(--cs-danger, crimson)" }}>
         Error: {result.message}
       </p>
+    );
+  if (result.kind === "warn")
+    return (
+      <div className="stack" style={{ gap: "var(--cs-space-2, 8px)" }}>
+        <p style={{ color: "var(--cs-warning, #b45309)", fontWeight: 600 }}>
+          Committed — do NOT retry. {result.message}
+        </p>
+        <pre
+          className="mono"
+          style={{
+            whiteSpace: "pre-wrap",
+            fontSize: "0.85em",
+            background: "var(--cs-surface-2, rgba(127,127,127,0.08))",
+            padding: "var(--cs-space-2, 8px)",
+            borderRadius: 6,
+            overflowX: "auto",
+          }}
+        >
+          {JSON.stringify(result.body, null, 2)}
+        </pre>
+      </div>
     );
   return (
     <pre
