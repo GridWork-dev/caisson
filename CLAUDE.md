@@ -20,7 +20,7 @@ edited — supersede with a later ADR).
 ## Source-of-truth hierarchy
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
-2. `knowledge/decisions/` — the ADRs themselves (**0001–0209**: 0001–0024 founding+substrate+pipeline · 0040–0044 brand+crypto+framework · 0045–0049 Wave-0 substrate · 0050–0077 Wave-1 editions · 0078–0083 design+go-live · 0084–0088 GTM+collision-fix · 0089–0093 picker-round locks · 0094–0098 GTM-report+W1/B1 (open-core/offer/docs-svc/registry-split/credit-home) · 0099–0104 design-system harden+brand-mark+hero · 0105 support-bot impl · 0106–0109 P6 operator-gates (pricing/CF-Access/Paddle-MoR/support-bot-member-mgmt) · 0110–0113 P6 code-track (license-issuer/publish-flip/MCP-rate-limit/entitlement-revoke) · 0114–0115 unified-Railway-app + Railway-PG · 0116–0118 billing-scope + observability-SigNoz + analytics-Plausible · 0119–0128 reserved/proposed-only (adapter-expansion Tier-3, not filed) · 0129–0135 pricing + store-rework + harvest grill locks · 0136–0137 store-rework build wave (license-keyed registry gating + tooling opened to Apache-2.0 · edition reprice below-sum) · 0138 admin.caisson.sh operator control-plane + full-fleet observability charter · **0140–0176 Stage-2 four-stream build** (0140–0143 obs-admin · 0150–0153 harvest-modules · 0160–0162 edition-hardening · 0170–0176 base adapters + org account_member) · **0177–0178 provider picker** (0177 Grafana-sole-OTLP/PostHog/Linear+Cookiy/Greptile-PR-gate · 0178 edition members-fold) · **0179–0185 edition seam-completion locks** (OSCAL v1.2.2/JSON+XML-converter/all-3-frameworks · BYOK free+`apps/site` edge · transports-deferred · Bun-OTel manual spans) · **0189–0196 site-marketplace rework** (accent-lock reaffirm · Editions nav panel · 3-route marketplace+`/build` · single buy-verb · drawer-vs-cart · WCAG 2.2 AA floor · Martian-mono codify · sitewide ⌘K; 0186–0188 = LIFT sellables + audit driver) · **0197–0199 audit-remediation locks** (per-tenant CMK crypto-shred · BYOK per-action allowlist · tool-exec wired into Agentic-Dev) · **0187 + 0201–0202 editions-go-live locks** (support-impersonation dual-audit folded into compliance · live-transports GO-LIVE, supersedes the 0184 defer: AWS S3 WORM + OpenRouter both lanes + availability-gated ONNX · WORM retention-escalation extend-only+chain-evidenced) · **0200 + 0203 commerce-goes-live locks** (Paddle sole buyer webhook mount, Stripe driver dormant · Discord role-grant link + push; 0186 still reserved for agent-runner) · **0204 strix-pentest-remediation lock** (SSRF resolve-and-recheck kernel guard · `X-Real-IP`-keyed rate-limit + header-independent global cap · admin CF-Access-JWT middleware, supersedes 0140's edge-alone posture · owner-gated BYOK/attestations · Paddle multi-item lineItems fulfillment) · **0205–0209 edition-tails-ops locks** (0205 compliance runtime-composes alerting+retention-runner, closing the 0178 manifest-vs-composition gap · 0206 support-bot escalations→Linear Triage sink · 0207 admin /ops cockpit rebuilt on the Grafana Cloud Tempo query API · 0208 ops-hardening bundle (BYOK/attestation owner-gate, 0.2.0 registry ledger/index republish, Terraform R2 use_lockfile note) · 0209 local-ai Azure OpenAI + AWS Bedrock RentedTransport drivers — drafted 0204–0208, renumbered to 0205–0209 at merge since the Strix ADR claimed 0204 on `main` first, ADR-0088 convention); append-only, all locked. **Ceiling 0209.**). Canonical ADR catalog: `docs/adr-index.md`
+2. `knowledge/decisions/` — the ADRs themselves (**0001–0209**: 0001–0024 founding+substrate+pipeline · 0040–0044 brand+crypto+framework · 0045–0049 Wave-0 substrate · 0050–0077 Wave-1 editions · 0078–0083 design+go-live · 0084–0088 GTM+collision-fix · 0089–0093 picker-round locks · 0094–0098 GTM-report+W1/B1 (open-core/offer/docs-svc/registry-split/credit-home) · 0099–0104 design-system harden+brand-mark+hero · 0105 support-bot impl · 0106–0109 P6 operator-gates (pricing/CF-Access/Paddle-MoR/support-bot-member-mgmt) · 0110–0113 P6 code-track (license-issuer/publish-flip/MCP-rate-limit/entitlement-revoke) · 0114–0115 unified-Railway-app + Railway-PG · 0116–0118 billing-scope + observability-SigNoz + analytics-Plausible · 0119–0128 reserved/proposed-only (adapter-expansion Tier-3, not filed) · 0129–0135 pricing + store-rework + harvest grill locks · 0136–0137 store-rework build wave (license-keyed registry gating + tooling opened to Apache-2.0 · edition reprice below-sum) · 0138 admin.caisson.sh operator control-plane + full-fleet observability charter · **0140–0176 Stage-2 four-stream build** (0140–0143 obs-admin · 0150–0153 harvest-modules · 0160–0162 edition-hardening · 0170–0176 base adapters + org account_member) · **0177–0178 provider picker** (0177 Grafana-sole-OTLP/PostHog/Linear+Cookiy/Greptile-PR-gate · 0178 edition members-fold) · **0179–0185 edition seam-completion locks** (OSCAL v1.2.2/JSON+XML-converter/all-3-frameworks · BYOK free+`apps/site` edge · transports-deferred · Bun-OTel manual spans) · **0189–0196 site-marketplace rework** (accent-lock reaffirm · Editions nav panel · 3-route marketplace+`/build` · single buy-verb · drawer-vs-cart · WCAG 2.2 AA floor · Martian-mono codify · sitewide ⌘K; 0186–0188 = LIFT sellables + audit driver) · **0197–0199 audit-remediation locks** (per-tenant CMK crypto-shred · BYOK per-action allowlist · tool-exec wired into Agentic-Dev) · **0187 + 0201–0202 editions-go-live locks** (support-impersonation dual-audit folded into compliance · live-transports GO-LIVE, supersedes the 0184 defer: AWS S3 WORM + OpenRouter both lanes + availability-gated ONNX · WORM retention-escalation extend-only+chain-evidenced) · **0200 + 0203 commerce-goes-live locks** (Paddle sole buyer webhook mount, Stripe driver dormant · Discord role-grant link + push; 0186 still reserved for agent-runner) · **0204 strix-pentest-remediation lock** (SSRF resolve-and-recheck kernel guard · `X-Real-IP`-keyed rate-limit + header-independent global cap · admin CF-Access-JWT middleware, supersedes 0140's edge-alone posture · owner-gated BYOK/attestations · Paddle multi-item lineItems fulfillment) · **0205–0209 edition-tails-ops locks** (0205 compliance runtime-composes alerting+retention-runner, closing the 0178 manifest-vs-composition gap · 0206 support-bot escalations→Linear Triage sink · 0207 admin /ops cockpit rebuilt on the Grafana Cloud Tempo query API · 0208 ops-hardening bundle (BYOK/attestation owner-gate, 0.2.0 registry ledger/index republish, Terraform R2 use_lockfile note) · 0209 local-ai Azure OpenAI + AWS Bedrock RentedTransport drivers — drafted 0204–0208, renumbered to 0205–0209 at merge since the Strix ADR claimed 0204 on `main` first, ADR-0088 convention) · **0186 + 0210–0217 lift-harvest slice-2 wave** (0186 agent-runner sandboxed+governed, filed from its reservation · 0210 reconcile + wave lock · 0211 jobs consumer-side · 0212 kernel branded-money/rounding-provenance · 0213 ai-kit metered embeddings · 0214 ai-evals eval-science depth · 0215 guardrails egress-gate+FTC-4Ps · 0216 mcp-server manifest retirement ledger · 0217 ai-meter dedup-before-meter — drafted 0204–0211, renumbered at merge per ADR-0088); append-only, all locked. **Ceiling 0217.**). Canonical ADR catalog: `docs/adr-index.md`
 3. `specs/` — locked concept docs; `specs/00-product-spec.md` is the founding spec
 4. `plan.md` / `SUMMARY.md` — build plan + consolidated summary
 5. `outputs/` — session artifacts (kickoffs, research, syntheses)
@@ -52,13 +52,19 @@ seam-completion, LIFT slice-1, and the editions/commerce go-live locks landed, a
 keying, admin CF-Access-JWT middleware, owner-gated BYOK/attestations, Paddle multi-item
 fulfillment; ADR-0204) and **PR #46 edition-tails-ops** (Azure/Bedrock RentedTransport drivers,
 compliance runtime composition, support-bot Linear Triage sink, admin `/ops` Grafana rebuild,
-registry ledger republish to 0.2.0; ADR-0205–0209) both merged to `main`. **ADR ceiling is now 0209.**
+registry ledger republish to 0.2.0; ADR-0205–0209) both merged to `main`.
 The same-day deploy wave then **EXECUTED** (operator-approved): the 5 Railway services redeployed
 from merged `main` (4/5 verified live; `caisson-support-bot` recovering from a transient Discord
 CF-1015 egress-IP ban at first boot), the registry Worker redeployed (0.2.0 index verified, zero
 drift), `caisson-admin`'s CF-Access + Grafana env and `caisson-support-bot`'s Linear env set, and
-the 3 orphaned SigNoz volumes deleted (Railway soft-delete, purge 2026-07-04). Live per-package
-truth: `docs/build-state.md`.
+the 3 orphaned SigNoz volumes deleted (Railway soft-delete, purge 2026-07-04). **PR #47
+lift-harvest slice-2** then merged same-day — the harvest program driven to **terminal state**
+(`docs/state/harvest-program.md`): net-new `@caisson/agent-runner` (ADR-0186), a 10-package
+hardening wave, and kernel branded-money (ADR-0210–0217, drafted 0204–0211 and renumbered at merge
+per ADR-0088). **ADR ceiling is now 0217.** **PR #51** also landed the CI/credit rework: Greptile
+auto-review replaced by the path-scoped `greptile-gate` required check (see the PR review gate
+section) and the fleet jobs re-pointed to the `caisson-amd64` runscaler scale set. Live
+per-package truth: `docs/build-state.md`.
 
 ## Engineering invariants (locked, ADR-0002 — apply to all product code)
 
@@ -122,20 +128,21 @@ Conventional commits, atomic, one logical change each. Scopes: `scaffold` `specs
 — plus the Stage-2 additions: `admin` (`apps/admin` control-plane) `alerting` `retention-runner`
 `tool-exec` `audit-harness` `observability` `platform-reads` `migrate` `pricebook`.
 
-## PR review gate (Greptile required)
+## PR review gate (greptile-gate, path-scoped — PR #51, 2026-07-02)
 
-`Greptile Review` is a **required status check** on `main` (alongside `check`, `standards-gate`,
-`registry-index`) — no PR merges until it is green against the head commit. Config lives in
-`.greptile/`: `config.json` sets `statusCheck: true` + `triggerOnUpdates: true` (posts the check on
-every PR, re-reviews every push, no file-count skip); `rules.md` = the repo invariants Greptile
-enforces. TREX execution runs _under_ that one review (org-level toggle, $2/run) — not a separate check.
-
-**When Greptile skips a PR** (draft, excluded author/branch/label, oversized diff, still-indexing) the
-required check never posts and the PR is stuck at "waiting for status." Force it:
-`gh pr comment <PR> --body "@greptileai"` — a manual mention overrides the skip filters and posts the
-check. Never merge until `Greptile Review` is green against the head SHA; a green check reflects the
-confidence score only, so still resolve every inline P0/P1 finding first. Full agent workflow: the
-gridwork-core `/greptile` skill (rules 7–9).
+**`greptile-gate` is the required status check** on `main` (alongside `check`, `standards-gate`,
+`registry-index`, `oscal-conformance`); the old blanket `Greptile Review` requirement is retired.
+Greptile auto-review is OFF (`.greptile/config.json` → `skipReview: AUTOMATIC`,
+`triggerOnUpdates: false`) — reviews run **only when the gate @-mentions `@greptileai`**, and it
+does that only for PRs whose diff touches a **security-critical path** (auth · tenancy-rls ·
+field-crypto · audit-worm · billing · credits · ai-meter · license · tool-exec · the CI/review
+config itself; the glob set lives in `.github/workflows/greptile-gate.yml`, keep in sync with
+`.greptile/rules.md`). Non-critical PRs (docs, site copy, tests) merge on the ordinary required
+checks alone — the gate passes without burning a review. On a critical PR the gate requires a
+completed review, re-triggers once if critical paths changed since the last-reviewed commit, and
+fails (never silently passes) on timeout. A green gate reflects the confidence score only — still
+resolve every inline P0/P1 finding first. On-demand local review: the gridwork-core `/greptile`
+skill; manual trigger: `gh pr comment <PR> --body "@greptileai"`.
 
 ## Issue tracking (Linear)
 
