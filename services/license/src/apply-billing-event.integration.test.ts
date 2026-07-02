@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { ConfigError, asCredits } from "@caisson/kernel";
 import { type TestPg, newTestPg } from "@caisson/testing";
 import {
+  CREDIT_LINE_ITEM_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
   balance,
@@ -17,6 +18,7 @@ import { withTenant } from "@caisson/tenancy-rls";
 import { type DomainBillingEvent, parseStripeEvent } from "@caisson/billing";
 import { applyBillingEvent } from "./apply-billing-event.ts";
 import {
+  ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   readEntitlements,
 } from "./entitlement-store.ts";
@@ -42,16 +44,25 @@ function purchaseCompleted(
     accountId,
     amountTotal: 499900,
     currency: "usd",
-    lineItems: [{ priceId, quantity: 1 }],
+    lineItems: [{ priceId, quantity: 1, itemId: "", chargedAmount: 0 }],
     paymentId,
   };
 }
 
-/** A multi-line one-time purchase (a cart, Strix vuln-0005) — one grant per paid line. */
+type CartLine = {
+  priceId: string;
+  quantity: number;
+  itemId?: string;
+  chargedAmount?: number;
+};
+
+/** A multi-line one-time purchase (a cart, Strix vuln-0005) — one grant per paid line. `itemId` +
+ * `chargedAmount` default to the empty sentinels so pre-0218 callers are unchanged; a per-line refund
+ * test passes real `txnitm_` ids + charged amounts. */
 function purchaseCompletedMulti(
   accountId: string,
   paymentId: string,
-  lineItems: { priceId: string; quantity: number }[],
+  lineItems: CartLine[],
 ): DomainBillingEvent {
   return {
     type: "purchase.completed",
@@ -59,7 +70,12 @@ function purchaseCompletedMulti(
     accountId,
     amountTotal: 499900,
     currency: "usd",
-    lineItems,
+    lineItems: lineItems.map((l) => ({
+      priceId: l.priceId,
+      quantity: l.quantity,
+      itemId: l.itemId ?? "",
+      chargedAmount: l.chargedAmount ?? 0,
+    })),
     paymentId,
   };
 }
@@ -77,6 +93,29 @@ function refundCompleted(
     amountRefunded: 499900,
     currency: "usd",
     fullyRefunded,
+    adjustmentId: "",
+    items: [],
+  };
+}
+
+/** A per-line partial adjustment refund (ADR-0218): whole-transaction `fullyRefunded:false`, acting
+ * per `items[]`. `adjustmentId` is the per-line clawback idempotency anchor. */
+function refundPerLine(
+  accountId: string,
+  paymentId: string,
+  adjustmentId: string,
+  items: { itemId: string; amountRefunded: number; fullyRefunded: boolean }[],
+): DomainBillingEvent {
+  return {
+    type: "refund.completed",
+    sourceEventId: `evt_refund_${adjustmentId}`,
+    accountId,
+    paymentId,
+    amountRefunded: items.reduce((s, i) => s + i.amountRefunded, 0),
+    currency: "usd",
+    fullyRefunded: false,
+    adjustmentId,
+    items,
   };
 }
 
@@ -86,7 +125,9 @@ beforeAll(async () => {
   tp = await newTestPg();
   await tp.exec(CREDIT_SCHEMA_SQL);
   await tp.exec(CREDIT_ROUNDING_MIGRATION_SQL);
+  await tp.exec(CREDIT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
+  await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
 });
 
 afterAll(async () => {
@@ -664,5 +705,294 @@ describe("applyBillingEvent — entitlement grant on cycle (ADR-0071)", () => {
       readEntitlements(tx, acct),
     );
     expect(ents).toEqual([]); // gated out before the grant, same as the credit path
+  });
+});
+
+describe("applyBillingEvent — Paddle per-line partial refund (ADR-0218)", () => {
+  test("a per-line FULL refund of ONE cart line revokes only that line's grant + claws only its credits", async () => {
+    const acct = "acct_pl_full";
+    // A cart: a compliance edition line (0 credits) + a credit-pack line (5000 credits).
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompletedMulti(acct, "txn_plf", [
+          {
+            priceId: ONETIME_EDITION_ID,
+            quantity: 1,
+            itemId: "txnitm_ed",
+            chargedAmount: 74900,
+          },
+          {
+            priceId: CREDIT_PACK_ID,
+            quantity: 1,
+            itemId: "txnitm_pack",
+            chargedAmount: 5000,
+          },
+        ]),
+      ),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]);
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(
+      PACK_CREDITS,
+    );
+    // Refund ONLY the pack line, in full.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        refundPerLine(acct, "txn_plf", "adj_plf", [
+          { itemId: "txnitm_pack", amountRefunded: 5000, fullyRefunded: true },
+        ]),
+      ),
+    );
+    // The pack's credits are clawed; the edition line keeps its entitlement.
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(0);
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]);
+  });
+
+  test("a two-line-backed edition survives until BOTH lines are refunded (fork B-1 refcount)", async () => {
+    const acct = "acct_pl_refcount";
+    // Two cart lines BOTH grant `compliance` (distinct txnitm_ ids → two junction rows, fork B-1).
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompletedMulti(acct, "txn_rc", [
+          {
+            priceId: ONETIME_EDITION_ID,
+            quantity: 1,
+            itemId: "txnitm_a",
+            chargedAmount: 74900,
+          },
+          {
+            priceId: ONETIME_EDITION_ID,
+            quantity: 1,
+            itemId: "txnitm_b",
+            chargedAmount: 74900,
+          },
+        ]),
+      ),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]);
+    // Refund line A only — line B still backs the entitlement (refcount > 0).
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        refundPerLine(acct, "txn_rc", "adj_a", [
+          { itemId: "txnitm_a", amountRefunded: 74900, fullyRefunded: true },
+        ]),
+      ),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]);
+    // Refund line B too — refcount hits 0, the edition is lost.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        refundPerLine(acct, "txn_rc", "adj_b", [
+          { itemId: "txnitm_b", amountRefunded: 74900, fullyRefunded: true },
+        ]),
+      ),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual([]);
+  });
+
+  test("a dollar-PARTIAL refund claws PROPORTIONAL credits (floor) with provenance; entitlement intact (fork A-1)", async () => {
+    const acct = "acct_pl_partial";
+    // A pack line: 5000 credits, charged 3000 minor units — and an edition line (0 credits).
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompletedMulti(acct, "txn_pp", [
+          {
+            priceId: CREDIT_PACK_ID,
+            quantity: 1,
+            itemId: "txnitm_pack",
+            chargedAmount: 3000,
+          },
+          {
+            priceId: ONETIME_EDITION_ID,
+            quantity: 1,
+            itemId: "txnitm_ed",
+            chargedAmount: 74900,
+          },
+        ]),
+      ),
+    );
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(
+      PACK_CREDITS,
+    );
+    // Refund 1000 of the pack's 3000 charged → floor(5000 * 1000 / 3000) = floor(1666.6…) = 1666.
+    // Also a dollar-partial on the edition line — a partial NEVER revokes an entitlement (fork A-1).
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        refundPerLine(acct, "txn_pp", "adj_pp", [
+          { itemId: "txnitm_pack", amountRefunded: 1000, fullyRefunded: false },
+          { itemId: "txnitm_ed", amountRefunded: 10000, fullyRefunded: false },
+        ]),
+      ),
+    );
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(
+      PACK_CREDITS - 1666,
+    );
+    // The edition entitlement is untouched by the dollar-partial (fork A-1).
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]);
+    // ADR-0212: the proportional claw persists round-DOWN provenance keyed on the refunded amount.
+    const prov = await tp.query<{
+      amount: number;
+      rounding_raw: number | null;
+      rounding_mode: string | null;
+    }>(
+      `SELECT amount, rounding_raw, rounding_mode FROM credit_event WHERE account_id = $1 AND event_type = 'refund_clawback'`,
+      [acct],
+    );
+    expect(prov).toEqual([
+      { amount: -1666, rounding_raw: 1000, rounding_mode: "down" },
+    ]);
+  });
+
+  test("per-line clawback is idempotent per (adjustment, item); two sequential partials both claw", async () => {
+    const acct = "acct_pl_idem";
+    // A pack line: 5000 credits, charged 10000 minor units.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompletedMulti(acct, "txn_idem", [
+          {
+            priceId: CREDIT_PACK_ID,
+            quantity: 1,
+            itemId: "txnitm_pack",
+            chargedAmount: 10000,
+          },
+        ]),
+      ),
+    );
+    // Adjustment A: refund 2000/10000 → floor(5000 * 2000 / 10000) = 1000 clawed.
+    const adjA = refundPerLine(acct, "txn_idem", "adj_A", [
+      { itemId: "txnitm_pack", amountRefunded: 2000, fullyRefunded: false },
+    ]);
+    await withTenant(tp.pg, acct, (tx) => applyBillingEvent(tx, adjA));
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(4000);
+    // A redelivery of adjustment A writes NO second clawback (per-delivery key dedups).
+    await withTenant(tp.pg, acct, (tx) => applyBillingEvent(tx, adjA));
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(4000);
+    // A DISTINCT adjustment B on the same line still claws (sequential partials up to the total).
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        refundPerLine(acct, "txn_idem", "adj_B", [
+          { itemId: "txnitm_pack", amountRefunded: 3000, fullyRefunded: false },
+        ]),
+      ),
+    );
+    // floor(5000 * 3000 / 10000) = 1500 more clawed → 4000 - 1500 = 2500.
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(2500);
+  });
+
+  test("a partial then a FULL on the same line reclaims exactly the line's grant, never over-claws", async () => {
+    const acct = "acct_pl_pf";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompletedMulti(acct, "txn_pf", [
+          {
+            priceId: CREDIT_PACK_ID,
+            quantity: 1,
+            itemId: "txnitm_pack",
+            chargedAmount: 5000,
+          },
+        ]),
+      ),
+    );
+    // Partial refund 2000/5000 → floor(5000 * 2000 / 5000) = 2000 clawed → balance 3000.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        refundPerLine(acct, "txn_pf", "adj_1", [
+          { itemId: "txnitm_pack", amountRefunded: 2000, fullyRefunded: false },
+        ]),
+      ),
+    );
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(3000);
+    // Now a FULL-item refund of the SAME line: claws only the remaining 3000 (granted 5000 − clawed
+    // 2000), never the whole 5000 again — the wallet lands at 0, not negative.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        refundPerLine(acct, "txn_pf", "adj_2", [
+          { itemId: "txnitm_pack", amountRefunded: 3000, fullyRefunded: true },
+        ]),
+      ),
+    );
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(0);
+  });
+
+  test("a per-line FULL refund claws only the UNSPENT remainder, never negative", async () => {
+    const acct = "acct_pl_spent";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompletedMulti(acct, "txn_sp", [
+          {
+            priceId: CREDIT_PACK_ID,
+            quantity: 1,
+            itemId: "txnitm_pack",
+            chargedAmount: 5000,
+          },
+        ]),
+      ),
+    );
+    // Spend 4000 of the 5000.
+    await withTenant(tp.pg, acct, (tx) =>
+      debit(tx, {
+        eventType: "codegen_debit",
+        accountId: acct,
+        amount: asCredits(4000),
+        idempotencyKey: "spend_pl",
+      }),
+    );
+    // Full-line refund: line granted 5000 but only 1000 is unspent — claw is bounded to the balance.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        refundPerLine(acct, "txn_sp", "adj_sp", [
+          { itemId: "txnitm_pack", amountRefunded: 5000, fullyRefunded: true },
+        ]),
+      ),
+    );
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(0);
+  });
+
+  test("a Stripe-style partial (fullyRefunded=false, no items[]) stays a no-op (ADR-0218 D-1)", async () => {
+    const acct = "acct_pl_noitems";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, purchaseCompleted(acct, "pi_ni", CREDIT_PACK_ID)),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pi_ni", ONETIME_EDITION_ID),
+      ),
+    );
+    // A partial refund with no per-line data (Stripe / itemless) must not revoke or claw.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, refundCompleted(acct, "pi_ni", false)),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]);
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(
+      PACK_CREDITS,
+    );
   });
 });

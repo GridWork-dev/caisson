@@ -78,7 +78,14 @@ describe("event mapping", () => {
       accountId: "acct_a",
       amountTotal: 89900,
       currency: "usd",
-      lineItems: [{ priceId: "price_pack_PLACEHOLDER", quantity: 1 }],
+      lineItems: [
+        {
+          priceId: "price_pack_PLACEHOLDER",
+          quantity: 1,
+          itemId: "",
+          chargedAmount: 89900,
+        },
+      ],
       paymentId: "pi_123",
     });
   });
@@ -121,6 +128,8 @@ describe("event mapping", () => {
       amountRefunded: 89900,
       currency: "usd",
       fullyRefunded: true,
+      adjustmentId: "",
+      items: [],
     });
   });
 

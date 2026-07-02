@@ -170,8 +170,12 @@ export function parsePolarEvent(event: PolarEvent): DomainBillingEvent | null {
           amountTotal,
           currency,
           // Polar order webhooks carry a single product per order here — a one-entry wrap of the
-          // shared multi-line shape (Strix vuln-0005), quantity 1.
-          lineItems: [{ priceId, quantity: 1 }],
+          // shared multi-line shape (Strix vuln-0005), quantity 1. No per-line refund data (ADR-0218
+          // D-1: Paddle-only population), so the join fields are the empty sentinels; `chargedAmount`
+          // carries the order total for the single line.
+          lineItems: [
+            { priceId, quantity: 1, itemId: "", chargedAmount: amountTotal },
+          ],
           paymentId: orderId,
         };
       }
@@ -213,6 +217,10 @@ export function parsePolarEvent(event: PolarEvent): DomainBillingEvent | null {
         // signal (unlike LemonSqueezy's order-level boolean), mirrors the Paddle driver's full-vs-
         // partial refund discipline (ADR-0113: a partial refund must never revoke all access).
         fullyRefunded: readString(event.data.status) === "refunded",
+        // No per-line refund data (ADR-0218 D-1 — Paddle-only); a partial Polar refund stays a
+        // scalar no-op downstream, same as the Stripe driver.
+        adjustmentId: "",
+        items: [],
       };
     default:
       return null;

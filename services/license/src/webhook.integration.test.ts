@@ -7,13 +7,17 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { AuthnError, InternalError } from "@caisson/kernel";
 import { type TestPg, newTestPg } from "@caisson/testing";
 import {
+  CREDIT_LINE_ITEM_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
   balance,
 } from "@caisson/credits";
 import { withTenant } from "@caisson/tenancy-rls";
 import type { BillingProvider, DomainBillingEvent } from "@caisson/billing";
-import { ENTITLEMENT_SCHEMA_SQL } from "./entitlement-store.ts";
+import {
+  ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
+  ENTITLEMENT_SCHEMA_SQL,
+} from "./entitlement-store.ts";
 import { handleBillingWebhook } from "./webhook.ts";
 
 let tp: TestPg;
@@ -22,9 +26,11 @@ beforeAll(async () => {
   tp = await newTestPg();
   await tp.exec(CREDIT_SCHEMA_SQL);
   await tp.exec(CREDIT_ROUNDING_MIGRATION_SQL);
+  await tp.exec(CREDIT_LINE_ITEM_MIGRATION_SQL);
   // The handler grants credits AND entitlements in one tx (ADR-0071), so the account_entitlement
   // table must exist or a future entitlement-bearing event would fail mid-transaction.
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
+  await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
 });
 
 afterAll(async () => {

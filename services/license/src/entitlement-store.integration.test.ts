@@ -8,10 +8,12 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { withTenant } from "@caisson/tenancy-rls";
 import {
+  ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   grantEntitlements,
   readEntitlements,
   revokePurchaseGrants,
+  revokePurchaseLineGrants,
   revokeSubscriptionGrants,
 } from "./entitlement-store.ts";
 
@@ -20,6 +22,7 @@ let tp: TestPg;
 beforeAll(async () => {
   tp = await newTestPg();
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
+  await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
 });
 
 afterAll(async () => {
@@ -182,6 +185,87 @@ describe("entitlement_grant junction (ADR-0113, RLS)", () => {
     expect(
       await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
     ).toEqual([]);
+  });
+
+  test("two cart lines granting the SAME id are two rows; per-line revoke keeps refcount (ADR-0218 B-1)", async () => {
+    const acct = "acct_perline";
+    // Same one-time purchase, same entitlement, TWO distinct line items → two grant rows.
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "txn_1",
+        source: onetime("txn_1"),
+        lineItemId: "txnitm_a",
+      }),
+    );
+    const secondRow = await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "txn_1",
+        source: onetime("txn_1"),
+        lineItemId: "txnitm_b",
+      }),
+    );
+    expect(secondRow).toBe(1); // a DISTINCT line item → a second row, not an ON CONFLICT no-op
+    // Revoke line A only — line B still backs `compliance` (fork B-1 refcount).
+    const revA = await withTenant(tp.pg, acct, (tx) =>
+      revokePurchaseLineGrants(tx, {
+        accountId: acct,
+        purchaseId: "txn_1",
+        lineItemId: "txnitm_a",
+      }),
+    );
+    expect(revA).toBe(1);
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]);
+    // Revoke line B — refcount 0, gone. A re-revoke of A is an idempotent no-op.
+    const revB = await withTenant(tp.pg, acct, (tx) =>
+      revokePurchaseLineGrants(tx, {
+        accountId: acct,
+        purchaseId: "txn_1",
+        lineItemId: "txnitm_b",
+      }),
+    );
+    expect(revB).toBe(1);
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual([]);
+    const reRevA = await withTenant(tp.pg, acct, (tx) =>
+      revokePurchaseLineGrants(tx, {
+        accountId: acct,
+        purchaseId: "txn_1",
+        lineItemId: "txnitm_a",
+      }),
+    );
+    expect(reRevA).toBe(0);
+  });
+
+  test("a subscription renewal with no line item still collapses to one row (COALESCE index)", async () => {
+    const acct = "acct_sub_noline";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["ai-kit"],
+        sourceEventId: "in_1",
+        source: sub("sub_nl"),
+      }),
+    );
+    // A renewal (fresh source event, same subscription, NULL line item) must not create a second row.
+    const renew = await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["ai-kit"],
+        sourceEventId: "in_2",
+        source: sub("sub_nl"),
+      }),
+    );
+    expect(renew).toBe(0);
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["ai-kit"]);
   });
 
   test("RLS isolates accounts — B never sees A's entitlements", async () => {

@@ -73,19 +73,50 @@ function readQuantity(item: Record<string, unknown>): number {
   return typeof q === "number" && Number.isInteger(q) && q > 0 ? q : 1;
 }
 
+/** The transaction's `details.line_items[]` — the array carrying each line's `txnitm_…` id and its
+ * per-line `totals` (the request-echo `items[]` carries neither). Read best-effort and correlated BY
+ * ORDER with `items[]` (Paddle emits the two arrays in the same order): a missing/short array yields
+ * the empty sentinels, never a throw — the itemId/chargedAmount are ADR-0218 refund enrichment, not
+ * the load-bearing grant fields (those stay `items[]`, which fails closed below). */
+function readDetailLine(
+  obj: Record<string, unknown>,
+  index: number,
+): { itemId: string; chargedAmount: number } {
+  const details = obj.details;
+  if (typeof details !== "object" || details === null)
+    return { itemId: "", chargedAmount: 0 };
+  const lines = (details as Record<string, unknown>).line_items;
+  if (!Array.isArray(lines) || index >= lines.length)
+    return { itemId: "", chargedAmount: 0 };
+  const line: unknown = lines[index];
+  if (typeof line !== "object" || line === null)
+    return { itemId: "", chargedAmount: 0 };
+  const rec = line as Record<string, unknown>;
+  const totals = rec.totals;
+  const chargedAmount =
+    typeof totals === "object" && totals !== null
+      ? readMoneyMinorUnits((totals as Record<string, unknown>).total)
+      : 0;
+  return { itemId: readString(rec.id), chargedAmount };
+}
+
 /** EVERY line of a one-time transaction: `items[].price.id` + `items[].quantity` (Strix vuln-0005 —
  * a multi-item cart is ONE transaction carrying N lines; fulfilling only `items[0]` under-grants a
- * cart the buyer paid for in full). FAILS CLOSED on any unreadable line in a non-empty `items` (money
- * path): throwing makes `verifyAndParse` return a non-2xx so Paddle RETRIES, versus silently skipping
- * the line — which would ack the delivery and under-grant a buyer who paid for it, permanently (Greptile
- * P1). An absent / empty `items` returns [] (the caller maps that to null: nothing to grant — a
- * genuinely itemless event, NOT a dropped paid line). */
-function readLineItems(
-  obj: Record<string, unknown>,
-): { priceId: string; quantity: number }[] {
+ * cart the buyer paid for in full), enriched per line with its `details.line_items[].id` (`txnitm_…`)
+ * join key + charged total for ADR-0218 per-line refunds. FAILS CLOSED on any unreadable line in a
+ * non-empty `items` (money path): throwing makes `verifyAndParse` return a non-2xx so Paddle RETRIES,
+ * versus silently skipping the line — which would ack the delivery and under-grant a buyer who paid for
+ * it, permanently (Greptile P1). An absent / empty `items` returns [] (the caller maps that to null:
+ * nothing to grant — a genuinely itemless event, NOT a dropped paid line). */
+function readLineItems(obj: Record<string, unknown>): {
+  priceId: string;
+  quantity: number;
+  itemId: string;
+  chargedAmount: number;
+}[] {
   const items = obj.items;
   if (!Array.isArray(items)) return [];
-  return items.map((raw): { priceId: string; quantity: number } => {
+  return items.map((raw, index) => {
     if (typeof raw !== "object" || raw === null) {
       throw new ValidationError("Paddle line item is not an object");
     }
@@ -98,8 +129,48 @@ function readLineItems(
     if (priceId === "") {
       throw new ValidationError("Paddle line item is missing its price id");
     }
-    return { priceId, quantity: readQuantity(item) };
+    const detail = readDetailLine(obj, index);
+    return {
+      priceId,
+      quantity: readQuantity(item),
+      itemId: detail.itemId,
+      chargedAmount: detail.chargedAmount,
+    };
   });
+}
+
+/** Parse a PARTIAL adjustment's `data.items[]` into per-line refund entries (ADR-0218). Skips Paddle-
+ * generated `tax`/`proration` items (not operator-initiated line refunds); each `full`/`partial` item
+ * maps to `{itemId: item.item_id (txnitm_), amountRefunded: totals.total, fullyRefunded: type==='full'}`.
+ * A malformed/idless item is skipped (best-effort enrichment — the whole-adjustment `amountRefunded`
+ * still records the money movement). An absent `items` yields []. */
+function readAdjustmentItems(obj: Record<string, unknown>): {
+  itemId: string;
+  amountRefunded: number;
+  fullyRefunded: boolean;
+}[] {
+  const items = obj.items;
+  if (!Array.isArray(items)) return [];
+  const out: {
+    itemId: string;
+    amountRefunded: number;
+    fullyRefunded: boolean;
+  }[] = [];
+  for (const raw of items) {
+    if (typeof raw !== "object" || raw === null) continue;
+    const item = raw as Record<string, unknown>;
+    const type = readString(item.type);
+    if (type !== "full" && type !== "partial") continue; // skip tax/proration
+    const itemId = readString(item.item_id);
+    if (itemId === "") continue;
+    const totals = item.totals;
+    const amountRefunded =
+      typeof totals === "object" && totals !== null
+        ? readMoneyMinorUnits((totals as Record<string, unknown>).total)
+        : 0;
+    out.push({ itemId, amountRefunded, fullyRefunded: type === "full" });
+  }
+  return out;
 }
 
 /** `details.totals.grand_total` — the transaction's charged total, minor units. */
@@ -222,6 +293,7 @@ export function parsePaddleEvent(
       // adjustment is a no-op (mirrors the Stripe driver's full-vs-partial refund discipline).
       if (readString(obj.action) !== "refund") return null;
       if (readString(obj.status) !== "approved") return null;
+      const fullyRefunded = readString(obj.type) === "full";
       return {
         type: "refund.completed",
         sourceEventId: event.event_id,
@@ -231,9 +303,14 @@ export function parsePaddleEvent(
         paymentId: readString(obj.transaction_id),
         amountRefunded: readAdjustmentTotal(obj),
         currency: readString(obj.currency_code, "usd"),
-        // `type: "full"` adjusts the transaction's grand total; "partial" must not revoke all access or
-        // claw back the whole grant (mirrors the Stripe driver's `refunded` guard, ADR-0113).
-        fullyRefunded: readString(obj.type) === "full",
+        // `type: "full"` adjusts the transaction's grand total → whole-transaction revoke + claw (the
+        // ADR-0113 scalar path). `type: "partial"` carries `data.items[]` → per-line effect (ADR-0218).
+        fullyRefunded,
+        // The adjustment's own id (`adj_…`) — the per-line clawback idempotency anchor (stable across
+        // a redelivery of this adjustment, distinct per adjustment so sequential partials both claw).
+        adjustmentId: readString(obj.id),
+        // Only a partial adjustment carries per-line items; a full one revokes/claws by transaction id.
+        items: fullyRefunded ? [] : readAdjustmentItems(obj),
       };
     }
     default:
