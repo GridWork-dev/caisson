@@ -19,8 +19,9 @@ const WRAP_AAD = Buffer.from("kms-conformance-fake-aws-wrap");
 /**
  * A STATEFUL fake AWS KMS backend — genuinely AEAD-wraps/unwraps (not canned responses), so the
  * conformance loop exercises `createAwsKmsClient`'s command mapping against real crypto, the same
- * way `LocalKmsClient` is real crypto. One CMK (matches `kms-aws.ts`'s single-CMK-per-config
- * ceiling); `scheduleKeyDeletion` destroys it.
+ * way `LocalKmsClient` is real crypto. It ignores the per-call `KeyId`/`EncryptionContext` (a test
+ * double, not a real per-tenant CMK router — that routing is asserted in `kms-aws.test.ts`) and wraps
+ * under one process KEK; `scheduleKeyDeletion` destroys it.
  */
 function fakeAwsBackend(): KmsSendable {
   const kek = randomBytes(32);
@@ -96,6 +97,11 @@ for (const { name, client } of drivers) {
       await kms.scheduleKeyDeletion("acct_a");
       await expect(kms.decryptDataKey("acct_a", wrappedKey)).rejects.toThrow();
       await expect(kms.generateDataKey("acct_a")).rejects.toThrow();
+    });
+
+    test("scheduleKeyDeletion refuses an empty keyId (no default-scope crypto-shred, ADR-0197)", async () => {
+      const kms = client();
+      await expect(kms.scheduleKeyDeletion("")).rejects.toThrow();
     });
   });
 }

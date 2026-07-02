@@ -34,7 +34,7 @@ describe("defaultProviders — every configured backend builds a ProviderV2 (ADR
         provider: "local",
         model: "m",
         apiKeyEnv: "X",
-        baseUrl: "http://host:1/v1",
+        baseUrl: "https://host:1/v1",
       },
     },
     {
@@ -43,7 +43,7 @@ describe("defaultProviders — every configured backend builds a ProviderV2 (ADR
         provider: "ollama",
         model: "llama3",
         apiKeyEnv: "X",
-        baseUrl: "http://host:11434/v1",
+        baseUrl: "https://host:11434/v1",
       },
     },
     {
@@ -97,7 +97,7 @@ describe("defaultProviders — every configured backend builds a ProviderV2 (ADR
           provider: "ollama",
           model: "llama3",
           apiKeyEnv: "X",
-          baseUrl: "http://host:11434/v1",
+          baseUrl: "https://host:11434/v1",
         },
       },
     };
@@ -133,5 +133,67 @@ describe("parseAiSettings — the ADR-0160 config fields (region / apiVersion / 
         },
       }),
     ).toThrow();
+  });
+});
+
+describe("providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2)", () => {
+  const openaiLane = (baseUrl: string): AiSettings["lanes"][string] => ({
+    provider: "openai",
+    model: "m",
+    apiKeyEnv: "X",
+    baseUrl,
+  });
+
+  const rejected: Array<{ name: string; baseUrl: string }> = [
+    { name: "non-https scheme", baseUrl: "http://api.example.com" },
+    { name: "file: scheme", baseUrl: "file:///etc/passwd" },
+    {
+      name: "credentials in URL",
+      baseUrl: "https://user:pass@api.example.com",
+    },
+    { name: "cloud metadata IP", baseUrl: "https://169.254.169.254/latest" },
+    { name: "decimal-encoded metadata IP", baseUrl: "https://2852039166/" },
+    { name: "octal-encoded loopback", baseUrl: "https://0177.0.0.1/" },
+    { name: "loopback 127/8", baseUrl: "https://127.0.0.1/" },
+    { name: "private 10/8", baseUrl: "https://10.1.2.3/" },
+    { name: "private 172.16/12", baseUrl: "https://172.16.9.9/" },
+    { name: "private 192.168/16", baseUrl: "https://192.168.1.5/" },
+    { name: "0.0.0.0", baseUrl: "https://0.0.0.0/" },
+    { name: "localhost", baseUrl: "https://localhost/" },
+    { name: ".local mDNS host", baseUrl: "https://printer.local/" },
+    { name: "IPv6 loopback", baseUrl: "https://[::1]/" },
+    { name: "IPv6 link-local fe80::/10", baseUrl: "https://[fe80::1]/" },
+    { name: "IPv6 unique-local fc00::/7", baseUrl: "https://[fc00::1]/" },
+    { name: "malformed URL", baseUrl: "not-a-url" },
+  ];
+
+  for (const { name, baseUrl } of rejected) {
+    test(`rejects ${name}`, () => {
+      expect(() =>
+        defaultProviders(laneSettings(openaiLane(baseUrl))),
+      ).toThrow();
+    });
+  }
+
+  const accepted: Array<{ name: string; baseUrl: string }> = [
+    { name: "public https provider", baseUrl: "https://api.example.com/v1" },
+    {
+      name: "self-hosted public https gateway",
+      baseUrl: "https://gw.example.com:8443/v1",
+    },
+  ];
+
+  for (const { name, baseUrl } of accepted) {
+    test(`accepts ${name}`, () => {
+      const providers = defaultProviders(laneSettings(openaiLane(baseUrl)));
+      expect(typeof providers.openai?.languageModel).toBe("function");
+    });
+  }
+
+  test("a lane with no baseUrl still builds (openrouter's https default is safe)", () => {
+    const providers = defaultProviders(
+      laneSettings({ provider: "openrouter", model: "x/y", apiKeyEnv: "X" }),
+    );
+    expect(typeof providers.openrouter?.languageModel).toBe("function");
   });
 });

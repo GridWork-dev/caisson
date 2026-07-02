@@ -10,7 +10,7 @@
 // eval-gate-gaming defense (SPEC TM9).
 import { z } from "zod";
 import type { ZodTypeAny } from "zod";
-import type { Judge } from "./judge.ts";
+import { judgeVerdictSchema, type Judge } from "./judge.ts";
 
 /** Everything a grader sees for one case. `expected` is the case's grader-specific expectation. */
 export interface GraderArgs {
@@ -155,15 +155,21 @@ export function injectionGrader(): Grader {
  */
 export function judgeGrader(judge: Judge, criteria?: string): Grader {
   return async ({ eval: evalName, scorer, caseId, input, output }) => {
-    const verdict = await judge.evaluate({
-      model: judge.model,
-      eval: evalName,
-      scorer,
-      caseId,
-      input,
-      output,
-      criteria,
-    });
+    // Fail-closed: a LIVE judge's verdict is untrusted (a real judge JSON.parses an LLM reply and
+    // casts to JudgeVerdict — an unbounded/NaN score would sail into aggregation and silently PASS
+    // a failing case). Re-validate through the SAME schema the cassette path enforces; an invalid
+    // verdict THROWS and aborts the run rather than passing (round 3, e1b26983).
+    const verdict = judgeVerdictSchema.parse(
+      await judge.evaluate({
+        model: judge.model,
+        eval: evalName,
+        scorer,
+        caseId,
+        input,
+        output,
+        criteria,
+      }),
+    );
     return {
       score: verdict.score,
       pass: verdict.verdict === "pass",

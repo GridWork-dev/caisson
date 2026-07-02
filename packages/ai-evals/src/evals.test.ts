@@ -22,7 +22,8 @@ import {
   regexGrader,
   schemaGrader,
 } from "./graders.ts";
-import { cassetteJudge, parseCassette } from "./judge.ts";
+import { cassetteJudge, judgeRequestSchema, parseCassette } from "./judge.ts";
+import type { Judge } from "./judge.ts";
 
 const FIXTURES = join(import.meta.dir, "..");
 const readJson = (rel: string): unknown =>
@@ -143,6 +144,67 @@ describe("cassette judge (replay, fail-closed)", () => {
         output: "x",
       }),
     ).rejects.toThrow(/cassette miss/);
+  });
+});
+
+describe("judgeGrader validates a LIVE verdict (fail-closed — e1b26983)", () => {
+  // A fake LIVE judge that returns whatever score it is handed (mimics a real judge JSON.parsing
+  // an LLM reply and casting to JudgeVerdict without bounds).
+  const fakeJudge = (score: number): Judge => ({
+    model: "fake",
+    evaluate: () => Promise.resolve({ verdict: "pass", score, rationale: "f" }),
+  });
+
+  test("an out-of-range score (999) is rejected, never a silent pass", () => {
+    expect(
+      judgeGrader(fakeJudge(999))(args("out", undefined)),
+    ).rejects.toThrow();
+  });
+
+  test("a NaN score is rejected", () => {
+    expect(
+      judgeGrader(fakeJudge(NaN))(args("out", undefined)),
+    ).rejects.toThrow();
+  });
+
+  test("a valid 0..1 score flows through unchanged", async () => {
+    const r = await judgeGrader(fakeJudge(0.7))(args("out", undefined));
+    expect(r.score).toBe(0.7);
+    expect(r.pass).toBe(true);
+  });
+
+  test("a bad verdict FAILS the whole eval run (no silent PASS of a failing case)", () => {
+    expect(
+      defineEval({
+        name: "t",
+        promptVersionId: complianceDataset.promptVersionId,
+        threshold: 0.8,
+        cases: [{ id: "c1", input: {}, output: "some answer" }],
+        scorers: { faithfulness: judgeGrader(fakeJudge(999)) },
+      }),
+    ).rejects.toThrow();
+  });
+});
+
+describe("judgeRequestSchema output bound (98a14a41)", () => {
+  const base = {
+    model: "m",
+    eval: "e",
+    scorer: "s",
+    caseId: "c",
+    input: {},
+  };
+
+  test("an output over the cap is rejected at the schema boundary", () => {
+    expect(() =>
+      judgeRequestSchema.parse({ ...base, output: "x".repeat(100_001) }),
+    ).toThrow();
+  });
+
+  test("an output within the cap is accepted", () => {
+    expect(() =>
+      judgeRequestSchema.parse({ ...base, output: "x".repeat(100_000) }),
+    ).not.toThrow();
   });
 });
 

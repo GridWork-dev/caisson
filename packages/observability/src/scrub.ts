@@ -26,6 +26,45 @@ export const SENSITIVE_ATTRIBUTE_KEY =
 const BEARER_VALUE = /^bearer\s+\S+/i;
 
 const REDACTED = "[REDACTED]";
+const PATH_ID_PLACEHOLDER = ":id";
+
+const UUID_SEGMENT =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const EMAIL_SEGMENT = /^[^\s@/]+@[^\s@/]+\.[^\s@/]+$/;
+const NUMERIC_SEGMENT = /^\d+$/;
+/** Long opaque hex/base64-ish token — a bare id/secret, never a route template segment. */
+const TOKEN_SEGMENT = /^[A-Za-z0-9+/_-]{16,}=*$/;
+
+/**
+ * True for a path segment that is a dynamic/sensitive value rather than part of a static route
+ * template: a UUID, an email, a pure-numeric id, or a long hex/base64-ish token.
+ */
+function isSensitiveSegment(segment: string): boolean {
+  if (segment === "") return false;
+  if (UUID_SEGMENT.test(segment)) return true;
+  if (EMAIL_SEGMENT.test(segment)) return true;
+  if (NUMERIC_SEGMENT.test(segment)) return true;
+  // ponytail: require a digit so a long static English route word (e.g. "responsibilities") isn't
+  // mistaken for an opaque token; a pure-letter token of 16+ chars would slip through — tighten with
+  // an entropy check if that ever surfaces in practice.
+  return TOKEN_SEGMENT.test(segment) && /\d/.test(segment);
+}
+
+/**
+ * Redact a URL pathname's dynamic segments (UUIDs, emails, numeric ids, long hex/base64-ish
+ * tokens) with `:id`, leaving static route segments untouched. Pure and side-effect-free — used
+ * to keep a request span's name and `http.route` attribute low-cardinality and free of raw
+ * client-controlled path data (PII, secrets, arbitrary values) when no route template is known
+ * at the call site.
+ */
+export function scrubPath(path: string): string {
+  return path
+    .split("/")
+    .map((segment) =>
+      isSensitiveSegment(segment) ? PATH_ID_PLACEHOLDER : segment,
+    )
+    .join("/");
+}
 
 /**
  * Redact `attributes` IN PLACE: any key matching `SENSITIVE_ATTRIBUTE_KEY`, or any string value

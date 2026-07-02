@@ -193,8 +193,15 @@ export function buildRegistryResolver(
   };
 }
 
-/** Normalize the AI-SDK usage shape into the meter's integer `Usage` (cached ≤ input, never a float). */
-function mapUsage(u: LanguageModelUsage): Usage {
+/**
+ * Normalize the AI-SDK usage shape into the meter's integer `Usage` (cached ≤ input, never a float).
+ * Returns `null` when the provider reported NO usage (both token counts undefined) — a legitimate
+ * outcome on a successful call for some lanes (e.g. local/ollama). The caller must keep that distinct
+ * from "0 tokens": reconcile settles an unreported call at the reservation estimate, never trueing a
+ * real completed call down to a full refund (`@caisson/ai-meter`, ADR-0182 fail-closed-for-revenue).
+ */
+function mapUsage(u: LanguageModelUsage): Usage | null {
+  if (u.inputTokens === undefined && u.outputTokens === undefined) return null;
   const inputTokens = u.inputTokens ?? 0;
   const outputTokens = u.outputTokens ?? 0;
   const cachedInputTokens = Math.min(u.cachedInputTokens ?? 0, inputTokens);
@@ -270,12 +277,19 @@ export async function infer(
       ...(opts.maxOutputTokens !== undefined
         ? { maxOutputTokens: opts.maxOutputTokens }
         : {}),
+      ...(cfg.keySource !== undefined ? { keySource: cfg.keySource } : {}),
       ...(opts.meter !== undefined ? { config: opts.meter } : {}),
     }),
   );
 
   // Settle to a given usage in its own transaction; idempotent on `callId` (a retry settles once).
-  const settle = (usage: Usage): Promise<ReconcileResult> =>
+  // `windowKey` is threaded from the reserve leg so a boundary-straddling call trues into the same
+  // bucket; `keySource` carries the BYOK $0 signal; `usageReported` distinguishes a provider that
+  // reported no usage (settle at reserved) from a genuine zero (a failed call → full refund).
+  const settle = (
+    usage: Usage,
+    usageReported = true,
+  ): Promise<ReconcileResult> =>
     withTenant(tx, accountId, (t) =>
       reconcile(t, {
         accountId,
@@ -285,6 +299,9 @@ export async function infer(
         lane,
         reservedCredits: reserved.reservedCredits,
         usage,
+        usageReported,
+        windowKey: reserved.windowKey,
+        ...(cfg.keySource !== undefined ? { keySource: cfg.keySource } : {}),
         promptVersionId,
         ...(opts.meter !== undefined ? { config: opts.meter } : {}),
       }),
@@ -314,8 +331,11 @@ export async function infer(
     throw err;
   }
 
-  // 5. record usage.
-  const usage = mapUsage(rawUsage);
+  // 5. record usage. A provider may complete a call yet report NO usage — settle that at the
+  //    reservation estimate (over the actual output text) rather than trueing it down to a refund.
+  const reported = mapUsage(rawUsage);
+  const usage = reported ?? estimateConsumedUsage(guarded, text);
+  const usageReported = reported !== null;
 
   // 6. output-guard (+ PII restore) then 7. reconcile. A blocked output still reconciles the actual
   //    spend (the tokens were already consumed) before the 422 propagates.
@@ -324,10 +344,10 @@ export async function infer(
     await guardOutput(text, policy, runtime);
     outText = tokens.length > 0 ? restorePii(text, tokens, policy) : text;
   } catch (err) {
-    await settle(usage);
+    await settle(usage, usageReported);
     throw err;
   }
-  const reconciled = await settle(usage);
+  const reconciled = await settle(usage, usageReported);
 
   return {
     callId,
@@ -451,12 +471,18 @@ export async function inferStream(
       ...(opts.maxOutputTokens !== undefined
         ? { maxOutputTokens: opts.maxOutputTokens }
         : {}),
+      ...(cfg.keySource !== undefined ? { keySource: cfg.keySource } : {}),
       ...(opts.meter !== undefined ? { config: opts.meter } : {}),
     }),
   );
 
   // Settle to a given usage in its own transaction; idempotent on `callId` (a retry settles once).
-  const settle = (usage: Usage): Promise<ReconcileResult> =>
+  // Threads the reserve bucket + BYOK signal; `usageReported=false` settles at reserved (a clean
+  // finish that carried no usage), not a refund — see settleOnce for the abandonment distinction.
+  const settle = (
+    usage: Usage,
+    usageReported = true,
+  ): Promise<ReconcileResult> =>
     withTenant(tx, accountId, (t) =>
       reconcile(t, {
         accountId,
@@ -466,6 +492,9 @@ export async function inferStream(
         lane,
         reservedCredits: reserved.reservedCredits,
         usage,
+        usageReported,
+        windowKey: reserved.windowKey,
+        ...(cfg.keySource !== undefined ? { keySource: cfg.keySource } : {}),
         promptVersionId,
         ...(opts.meter !== undefined ? { config: opts.meter } : {}),
       }),
@@ -485,12 +514,18 @@ export async function inferStream(
 
   const settleOnce = async (
     consumedText: string,
-    finishUsage: Usage | null,
+    reportedUsage: Usage | null,
+    abandoned: boolean,
   ): Promise<void> => {
     if (settledOnce) return;
     settledOnce = true;
-    const abandoned = finishUsage === null;
-    const usage = finishUsage ?? estimateConsumedUsage(guarded, consumedText);
+    // Two independent axes: `abandoned` (no finish part → estimate over consumed text, skip output
+    // guards) and whether the provider REPORTED usage. An abandoned stream still settles at the
+    // consumed estimate (refunding the unused hold), but a clean finish that carried NO usage settles
+    // at the reservation (no refund of a real completed call) — so `usageReported` is false only for
+    // the latter.
+    const usageReported = abandoned || reportedUsage !== null;
+    const usage = reportedUsage ?? estimateConsumedUsage(guarded, consumedText);
     try {
       let outText = consumedText;
       if (!abandoned) {
@@ -503,13 +538,14 @@ export async function inferStream(
               ? restorePii(consumedText, tokens, policy)
               : consumedText;
         } catch (guardErr) {
-          await settle(usage);
+          await settle(usage, usageReported);
           settled.reject(guardErr);
           return;
         }
       }
-      // 7. reconcile — actual usage on a normal finish, an ESTIMATE on abandonment (see above).
-      const reconciled = await settle(usage);
+      // 7. reconcile — actual usage on a reported finish, an ESTIMATE on abandonment, the reservation
+      //    on a finish that reported no usage (see above).
+      const reconciled = await settle(usage, usageReported);
       settled.resolve({ text: outText, usage, reconciled, abandoned });
     } catch (err) {
       settled.reject(err);
@@ -518,7 +554,8 @@ export async function inferStream(
 
   async function* driveTextStream(): AsyncGenerator<string, void, void> {
     let consumedText = "";
-    let finishUsage: Usage | null = null;
+    let reportedUsage: Usage | null = null;
+    let sawFinish = false;
     let streamErr: unknown;
     try {
       const result = streamText({
@@ -536,7 +573,10 @@ export async function inferStream(
           consumedText += part.text;
           yield part.text;
         } else if (part.type === "finish") {
-          finishUsage = mapUsage(part.totalUsage);
+          // A finish part means the provider completed — even when it carries no usage numbers
+          // (`mapUsage` → null). That is NOT abandonment: output guards still run below.
+          sawFinish = true;
+          reportedUsage = mapUsage(part.totalUsage);
         } else if (part.type === "error") {
           streamErr = part.error;
           break;
@@ -549,7 +589,7 @@ export async function inferStream(
     } finally {
       // Runs on a natural drain, an early consumer break (the for-await loop's implicit
       // generator.return()), OR a thrown error — the reservation is reconciled on every exit path.
-      await settleOnce(consumedText, finishUsage);
+      await settleOnce(consumedText, reportedUsage, !sawFinish);
     }
   }
 

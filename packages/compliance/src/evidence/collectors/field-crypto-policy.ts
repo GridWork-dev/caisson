@@ -98,15 +98,20 @@ export function fieldCryptoPolicyCollector(
         );
       }
 
-      const plaintextFields: string[] = [];
-      const unsampledFields: string[] = [];
+      const plaintextFieldsRaw: string[] = [];
+      const unsampledFieldsRaw: string[] = [];
       for (const f of fact.fields) {
         if (f.storedValue === null) {
-          unsampledFields.push(f.field);
+          unsampledFieldsRaw.push(f.field);
         } else if (!isEncryptedAtRest(f.storedValue)) {
-          plaintextFields.push(f.field);
+          plaintextFieldsRaw.push(f.field);
         }
       }
+      // Deterministic: sort field names so input order never changes the evidence bytes.
+      const sortFields = (a: string, b: string): number =>
+        a < b ? -1 : a > b ? 1 : 0;
+      const plaintextFields = plaintextFieldsRaw.sort(sortFields);
+      const unsampledFields = unsampledFieldsRaw.sort(sortFields);
       const encryptedCount =
         fieldCount - plaintextFields.length - unsampledFields.length;
       const facts = {

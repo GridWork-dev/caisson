@@ -4,6 +4,10 @@ on:
     branches: [main]
   pull_request:
 
+# Least-privilege by default: no job here pushes or writes back to the repo.
+permissions:
+  contents: read
+
 # Trimmed buyer-repo CI (ADR-0072): build · lint · unit · golden-file for the installed modules.
 # Caisson's internal release machinery and authoring checks are not part of a buyer repo and are
 # intentionally absent from this workflow — this is yours to extend.
@@ -12,6 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - run: bun run build
@@ -20,6 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - run: bun run lint
@@ -28,6 +36,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - run: bun test ./src
@@ -36,6 +46,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       # Golden-file regression with BLESS unset — any drift in a committed baseline fails here.

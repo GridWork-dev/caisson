@@ -25,6 +25,11 @@ ENV NODE_ENV=production \
 COPY --from=build /app/apps/admin/.next/standalone ./
 COPY --from=build /app/apps/admin/.next/static ./apps/admin/.next/static
 
+# Non-root: the standalone server never writes to disk at runtime (no ISR/revalidate — see
+# next.config.ts), so the root-owned, world-readable copies above need no chown. `bun` (uid/gid
+# 1000) is the oven/bun base image's baked-in non-root user.
+USER bun
+
 EXPOSE 3020
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s \
   CMD bun -e "fetch('http://127.0.0.1:'+(process.env.PORT||3020)+'/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"

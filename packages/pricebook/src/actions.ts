@@ -19,11 +19,24 @@ export const ACTION_BOOK: ActionBook = {
 export type ActionTag = keyof ActionBook;
 
 /**
+ * The BYOK-covered allowlist (ADR-0198): the subset of actions whose credit cost IS the model
+ * inference a tenant's own key now pays for directly. ONLY these zero out under a `"tenant"`
+ * keySource; every other action — evidence packs, compliance exports, registry ops, any non-inference
+ * platform action — stays metered regardless of key source. Per-action DATA, not a runtime heuristic:
+ * a new action is absent by default → metered (fail-metered), and must be added here deliberately to
+ * ever go BYOK-free.
+ */
+export const BYOK_COVERED_ACTIONS: ReadonlySet<ActionTag> = new Set<ActionTag>([
+  // A hosted codegen run's cost is the tenant's own provider inference under BYOK (ADR-0182).
+  "codegenRunCredits",
+]);
+
+/**
  * Where the resolved provider key for this action's lane came from (ADR-0162 discriminator; mirrors
  * `@caisson/ai-config`'s `ProviderConfig.keySource`). `"env"` is the operator's platform key (cost
- * unchanged); `"tenant"` is a per-tenant BYOK key — ADR-0182 makes the action FREE, since the platform
- * is already billed via the edition/subscription fee, not per-action credits, when the tenant brings
- * their own key.
+ * unchanged); `"tenant"` is a per-tenant BYOK key — under ADR-0182/0198 it makes the action FREE only
+ * when the action is BYOK-covered (its cost IS the model inference the tenant's key now pays for);
+ * platform actions stay metered.
  */
 export type ActionKeySource = "env" | "tenant";
 
@@ -33,10 +46,12 @@ export function parseActionBook(input: unknown): ActionBook {
 }
 
 /**
- * The integer credit cost of an action (closed union — a bad tag is a compile error). ADR-0182: a
- * `"tenant"` (BYOK) `keySource` zeroes the debit — internal metering (the spend-cap/abuse signal)
- * stays orthogonal and keeps running wherever it's wired; this only zeroes the credit-ledger charge.
- * An unknown action tag still throws regardless of `keySource` (fail-closed, not silently free).
+ * The integer credit cost of an action (closed union — a bad tag is a compile error). ADR-0182/0198: a
+ * `"tenant"` (BYOK) `keySource` zeroes the debit ONLY for a `BYOK_COVERED_ACTIONS` inference action —
+ * every other action stays metered even on a tenant key, so a platform action can't silently go free.
+ * Internal metering (the spend-cap/abuse signal) stays orthogonal and keeps running wherever it's
+ * wired; this only zeroes the credit-ledger charge. An unknown action tag still throws regardless of
+ * `keySource` (fail-closed, not silently free).
  */
 export function resolveActionCost(
   action: ActionTag,
@@ -49,5 +64,8 @@ export function resolveActionCost(
   if (cost === undefined) {
     throw new ConfigError(`no action-book entry for ${action}`);
   }
-  return keySource === "tenant" ? 0 : cost;
+  // BYOK zeroes the debit ONLY for an allowlisted inference action (ADR-0198); every other action
+  // stays metered even on a tenant key, so a future platform action can't silently bypass the ledger.
+  const byokFree = keySource === "tenant" && BYOK_COVERED_ACTIONS.has(action);
+  return byokFree ? 0 : cost;
 }

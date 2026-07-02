@@ -109,6 +109,12 @@ async function moderate(
 ): Promise<void> {
   if (policy.cheapDeny !== undefined) {
     for (const re of policy.cheapDeny) {
+      // Stateless per call: a cheapDeny pattern authored with `g`/`y` carries a sticky
+      // lastIndex, so after its first `.test()` match later requests search from that
+      // offset and silently stop blocking the phrase (fail-open bypass, ADR-0063).
+      // GuardPolicy is a plain caller-built interface with no compile seam to strip the
+      // flags once, so reset the cursor before each test.
+      re.lastIndex = 0;
       if (re.test(text)) block(stage, "moderation", false, policy, rt);
     }
   }

@@ -21,6 +21,9 @@ export {
   createWebhookChannel,
   createSlackChannel,
   createTelegramChannel,
+  WebhookConfigSchema,
+  SlackConfigSchema,
+  TelegramConfigSchema,
 } from "./channels.ts";
 export type {
   DeliveryResult,

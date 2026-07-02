@@ -212,15 +212,15 @@ export default function PricingPage() {
           >
             {"edition."}
             <span className="cs-tok-accent">compliance</span>
-            {"    $749     perpetual\nedition."}
+            {`    ${editionPrice("compliance")}     perpetual\nedition.`}
             <span className="cs-tok-accent">ai-kit</span>
-            {"        $599     perpetual\nedition."}
+            {`        ${editionPrice("ai-kit")}     perpetual\nedition.`}
             <span className="cs-tok-accent">local-first</span>
-            {"   $349     perpetual\nedition."}
+            {`   ${editionPrice("local-first")}     perpetual\nedition.`}
             <span className="cs-tok-accent">agentic-dev</span>
-            {"   $249     perpetual\n"}
+            {`   ${editionPrice("agentic-dev")}     perpetual\n`}
             <span className="cs-tok-success">bundle.everything</span>
-            {"     $1,499   all four + base"}
+            {`     ${bundle ? formatPrice(bundle) : "—"}   all four + base`}
           </Terminal>
         }
       />

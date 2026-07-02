@@ -143,7 +143,16 @@ export interface McpServer {
   ): Promise<unknown>;
 }
 
-const describeArgs = strictObject({ name: z.string().min(1) });
+// The `modules` array ceiling (b719aff8). Enforced TWICE: an O(1) raw-length pre-guard in the
+// `generate` handler runs BEFORE `parseStrict`, and the Zod `.max()` below re-asserts the shape
+// contract. Both are needed because Zod's `.array(elem).max(N)` parses EVERY element before the
+// `.max` check fires (verified on zod 3.25.x) — so `.max` alone cannot stop an oversized array from
+// running the element parse O(N) times and blocking the shared event loop. Far above the ~32-module
+// registry (the CLI also dedups ids at Selection.parse); raise if the catalog grows past it.
+const MAX_MODULES = 100;
+
+// `.max(128)` = the repo module-id bound (PurchasedIds in registry-schema); `name` is a module slug.
+const describeArgs = strictObject({ name: z.string().min(1).max(128) });
 const generateArgs = strictObject({
   // A strict lowercase slug — it becomes the buyer's project directory at write time (no traversal),
   // and re-parses cleanly through the CLI `Selection` schema in `runGeneration`.
@@ -156,10 +165,19 @@ const generateArgs = strictObject({
   // per-module against the expanded set, not on this field.
   edition: z.enum(EDITIONS).optional(),
   // `{id, version}` modules (converged with the CLI generator) — never bare strings. `assertKnownModule`
-  // re-asserts the slug regex as defense-in-depth, so a loose string here is gated downstream.
+  // re-asserts the slug regex as defense-in-depth, so a loose string here is gated downstream. Each
+  // string is bounded HERE (`id` = the repo module-id bound, 128; `version` covers semver + tags). The
+  // `.max(MAX_MODULES)` bounds the SHAPE but is NOT the DoS guard — Zod parses every element before the
+  // cap fires, so the array LENGTH is guarded O(1) in the handler BEFORE `parseStrict` runs (b719aff8).
   modules: z
-    .array(strictObject({ id: z.string().min(1), version: z.string().min(1) }))
-    .min(1),
+    .array(
+      strictObject({
+        id: z.string().min(1).max(128),
+        version: z.string().min(1).max(64),
+      }),
+    )
+    .min(1)
+    .max(MAX_MODULES),
   // Caller-supplied idempotency key (a true retry reuses it → debit-once). Minted when omitted.
   idempotencyKey: z.string().uuid().optional(),
 });
@@ -266,6 +284,20 @@ export function createMcpServer(options: McpServerOptions): McpServer {
     name: "generate",
     requiredEntitlement: null,
     handler: async ({ session, args }) => {
+      // DoS pre-guard (b719aff8): Zod's `.array().max(MAX_MODULES)` parses EVERY element before the
+      // cap check fires, so an oversized `modules` array would run the element parse O(N) times and
+      // block the shared event loop inside `parseStrict`. Reject on the RAW array length first —
+      // O(1), no per-element parse — so an over-cap request is a flat-cost 400. Runs for every
+      // transport (stdio + HTTP), since all `generate` calls route through this handler.
+      const rawModules =
+        typeof args === "object" && args !== null
+          ? (args as { modules?: unknown }).modules
+          : undefined;
+      if (Array.isArray(rawModules) && rawModules.length > MAX_MODULES) {
+        throw new ValidationError("Too many modules requested", {
+          max: MAX_MODULES,
+        });
+      }
       const input = parseStrict(generateArgs, args);
       // 1) Registry allowlist (ADR-0021/0004): every `{id, version}` must resolve in the BUILT index —
       //    id AND version, the same gate the CLI generator runs (closes the divergent flat-allowlist
