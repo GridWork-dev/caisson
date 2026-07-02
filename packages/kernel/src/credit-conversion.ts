@@ -9,11 +9,23 @@
 // (ADR-0003).
 import { z } from "zod";
 import { ValidationError } from "./errors.ts";
+import {
+  asMicroUsdPerCredit,
+  type Cents,
+  type Credits,
+  type MicroUsdPerCredit,
+  type RoundedMoney,
+} from "./money.ts";
 import { parseStrict, strictObject } from "./schema.ts";
 
-/** Integer micro-USD per credit — the credit denomination (ADR-0007). */
+/** Integer micro-USD per credit — the credit denomination (ADR-0007). Branded (ADR-0206): the
+ *  transform mints `MicroUsdPerCredit` AFTER the int/positive validation — same runtime value. */
 export const creditConversionSchema = strictObject({
-  microUsdPerCredit: z.number().int().positive(),
+  microUsdPerCredit: z
+    .number()
+    .int()
+    .positive()
+    .transform((n) => n as MicroUsdPerCredit),
 });
 export type CreditConversion = z.infer<typeof creditConversionSchema>;
 
@@ -22,7 +34,9 @@ export type CreditConversion = z.infer<typeof creditConversionSchema>;
  * account shared by the cost book (ai-meter) and the commerce book (pricebook). Changing this value
  * re-prices the entire ledger — it is intentionally one constant, in one place.
  */
-export const CREDIT_CONVERSION: CreditConversion = { microUsdPerCredit: 1000 };
+export const CREDIT_CONVERSION: CreditConversion = {
+  microUsdPerCredit: asMicroUsdPerCredit(1000),
+};
 
 /** Micro-USD in one US cent — the bridge from a raw USD figure (Stripe `amount`) to the denomination. */
 const MICRO_USD_PER_CENT = 10_000n;
@@ -43,14 +57,29 @@ export function parseCreditConversion(input: unknown): CreditConversion {
 export function centsToCredits(
   cents: number,
   conversion: CreditConversion = CREDIT_CONVERSION,
-): number {
+): Credits {
   if (!Number.isInteger(cents) || cents < 0) {
     throw new ValidationError("cents must be a non-negative integer", {
       field: "cents",
     });
   }
   // BigInt division truncates toward zero; with non-negative operands that is floor (round-down).
+  // The result of a floor over non-negative integers is a non-negative integer — mint the brand.
   return Number(
     (BigInt(cents) * MICRO_USD_PER_CENT) / BigInt(conversion.microUsdPerCredit),
-  );
+  ) as Credits;
+}
+
+/**
+ * `centsToCredits` with rounding provenance (ADR-0206): the same round-DOWN conversion, returning
+ * the auditable `{raw, mode, result}` record a ledger write can persist alongside the integer
+ * amount. `raw` is the pre-conversion cents figure; `mode` is this site's fixed direction ("down",
+ * ADR-0089 — never over-grant), recorded even when the division was exact.
+ */
+export function centsToCreditsProvenance(
+  cents: number,
+  conversion: CreditConversion = CREDIT_CONVERSION,
+): RoundedMoney<Cents, Credits> {
+  const result = centsToCredits(cents, conversion); // validates `cents` first
+  return { raw: cents as Cents, mode: "down", result };
 }
