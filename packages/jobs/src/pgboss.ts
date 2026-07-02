@@ -1,6 +1,6 @@
-// pg-boss production driver for the `JobQueue` port (ADR-0173). A thin wrapper over pg-boss's
-// Postgres-backed queue — `enqueue(name, payload)` validates against the same task registry the
-// in-memory + Trigger.dev drivers use, then maps to `boss.send(name, payload)`.
+// pg-boss production driver for the `JobQueue` port (ADR-0173, ADR-0205). A thin wrapper over
+// pg-boss's Postgres-backed queue — `enqueue(name, payload)` validates against the same task
+// registry the in-memory + Trigger.dev drivers use, then maps to `boss.send(name, payload)`.
 //
 // Env-gated: `connectionString` (e.g. `DATABASE_URL`) is read by the CALLER and injected via
 // `config` — never a module-level constant. Calling `createPgBossJobQueue` without a
@@ -10,19 +10,58 @@
 //
 // Lazy-start: pg-boss requires an async `start()` before it accepts jobs, but this factory is
 // synchronous (matching the other two drivers' shape). The real boss instance is started lazily on
-// the first `enqueue` call and cached for the lifetime of the returned `JobQueue`.
+// the first `enqueue`/`work`/`getQueueState` call and cached for the lifetime of the returned
+// `JobQueue`.
+//
+// Idempotent enqueue (ADR-0205): NOT `singletonKey`. pg-boss's uniqueness indexes are gated
+// `AND policy = '<policy>'` (`plans.js` insertJobs' partial unique indexes), and our default
+// `standard`-policy queue enforces none of them — forcing `policy: 'exclusive'` would also block
+// concurrent *unkeyed* jobs on the same queue name, which is not a trade this port makes for every
+// caller. Instead, `enqueueIdempotent` derives a deterministic `id` from
+// `sha256(name + "\0" + idempotencyKey)` reshaped into a UUID string (`node:crypto`, no new dep)
+// and passes it as `SendOptions.id`. `insertJobs`' SQL is `INSERT ... ON CONFLICT DO NOTHING
+// RETURNING id` — unconditional on the primary key regardless of policy — so a repeat id is
+// atomically a no-op: `send()` returns `null` and this driver swallows it.
 import { PgBoss } from "pg-boss";
+import { createHash } from "node:crypto";
 import { ConfigError, NotFoundError, parseStrict } from "@caisson/kernel";
-import type { JobQueue, TaskDefinition } from "./queue.ts";
+import type {
+  EnqueueOptions,
+  JobConsumer,
+  JobLedger,
+  JobQueue,
+  QueueState,
+  TaskDefinition,
+  WorkHandle,
+} from "./queue.ts";
+
+/** The shape of a claimed job as pg-boss's `work()` callback delivers it. */
+export interface PgBossJob {
+  readonly id: string;
+  readonly data: unknown;
+}
 
 /**
  * The minimal surface of the pg-boss SDK this driver depends on. Real usage is backed by an actual
- * `PgBoss` instance; tests inject a fake/mock implementation here so `enqueue` never hits Postgres.
+ * `PgBoss` instance; tests inject a fake/mock implementation here so this driver never hits
+ * Postgres.
  */
 export interface PgBossClient {
   start(): Promise<unknown>;
   createQueue(name: string): Promise<void>;
-  send(name: string, payload: object | null): Promise<string | null>;
+  send(
+    name: string,
+    payload: object | null,
+    options?: { id?: string },
+  ): Promise<string | null>;
+  /** Native SKIP LOCKED claim — never hand-written SQL. Delivers a batch (default size 1). */
+  work(
+    name: string,
+    handler: (jobs: readonly PgBossJob[]) => Promise<void>,
+  ): Promise<string>;
+  offWork(name: string): Promise<void>;
+  /** `null` when the queue has never been created — mapped to all-zero, not an error. */
+  getQueue(name: string): Promise<QueueState | null>;
 }
 
 export interface PgBossJobQueueConfig {
@@ -30,9 +69,32 @@ export interface PgBossJobQueueConfig {
   connectionString?: string;
   /**
    * Override the underlying pg-boss client. Tests inject a fake/mock here instead of
-   * `connectionString` so `enqueue` runs fully offline.
+   * `connectionString` so this driver runs fully offline.
    */
   client?: PgBossClient;
+}
+
+/**
+ * Deterministic pg-boss job id for idempotent enqueue (ADR-0205) — `sha256(name + "\0" +
+ * idempotencyKey)` reshaped into UUID-string form (8-4-4-4-12 hex). The NUL separator prevents
+ * `(name="ab", key="c")` from colliding with `(name="a", key="bc")`. Version/variant bits are left
+ * as raw hash bytes: Postgres's `uuid` column accepts any 32 hex digits in that shape, and this id
+ * is never parsed as an RFC 4122 UUID by anything else.
+ */
+export function deriveIdempotentJobId(
+  name: string,
+  idempotencyKey: string,
+): string {
+  const digest = createHash("sha256")
+    .update(`${name}\0${idempotencyKey}`)
+    .digest("hex");
+  return [
+    digest.slice(0, 8),
+    digest.slice(8, 12),
+    digest.slice(12, 16),
+    digest.slice(16, 20),
+    digest.slice(20, 32),
+  ].join("-");
 }
 
 /**
@@ -45,7 +107,7 @@ export interface PgBossJobQueueConfig {
 export function createPgBossJobQueue(
   tasks: readonly TaskDefinition<unknown>[],
   config: PgBossJobQueueConfig,
-): JobQueue {
+): JobQueue & JobConsumer & JobLedger {
   const registry = new Map<string, TaskDefinition<unknown>>(
     tasks.map((task) => [task.name, task]),
   );
@@ -73,8 +135,22 @@ export function createPgBossJobQueue(
     return clientPromise;
   }
 
+  async function ensureQueue(
+    client: PgBossClient,
+    name: string,
+  ): Promise<void> {
+    if (!knownQueues.has(name)) {
+      await client.createQueue(name);
+      knownQueues.add(name);
+    }
+  }
+
   return {
-    async enqueue(name: string, payload: unknown): Promise<void> {
+    async enqueue(
+      name: string,
+      payload: unknown,
+      options?: EnqueueOptions,
+    ): Promise<void> {
       const task = registry.get(name);
       if (task === undefined) {
         throw new NotFoundError(`No task registered for "${name}"`, {
@@ -84,11 +160,53 @@ export function createPgBossJobQueue(
       const validated = parseStrict(task.schema, payload);
 
       const client = await getClient();
-      if (!knownQueues.has(name)) {
-        await client.createQueue(name);
-        knownQueues.add(name);
+      await ensureQueue(client, name);
+      const sendOptions =
+        options?.idempotencyKey !== undefined
+          ? { id: deriveIdempotentJobId(name, options.idempotencyKey) }
+          : undefined;
+      // A conflicting deterministic id makes `send` resolve `null` — the repeat is atomically a
+      // no-op at the database level, so there's nothing further to do with the return value.
+      await client.send(
+        name,
+        (validated as object | null) ?? null,
+        sendOptions,
+      );
+    },
+
+    async work(name: string): Promise<WorkHandle> {
+      const task = registry.get(name);
+      if (task === undefined) {
+        throw new NotFoundError(`No task registered for "${name}"`, {
+          task: name,
+        });
       }
-      await client.send(name, (validated as object | null) ?? null);
+      const client = await getClient();
+      await ensureQueue(client, name);
+      await client.work(name, async (jobs) => {
+        for (const job of jobs) {
+          const validated = parseStrict(task.schema, job.data);
+          await task.handler(validated);
+        }
+      });
+      return {
+        async stop(): Promise<void> {
+          await client.offWork(name);
+        },
+      };
+    },
+
+    async getQueueState(name: string): Promise<QueueState> {
+      const client = await getClient();
+      const queue = await client.getQueue(name);
+      if (queue === null) {
+        return { queuedCount: 0, activeCount: 0, failedCount: 0 };
+      }
+      return {
+        queuedCount: queue.queuedCount,
+        activeCount: queue.activeCount,
+        failedCount: queue.failedCount,
+      };
     },
   };
 }
