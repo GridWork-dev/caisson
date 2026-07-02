@@ -285,6 +285,9 @@ async function evaluateCaps(
  * when the breaker is open and `InsufficientCreditsError` (402) when the wallet is short — in either
  * case nothing is written (the surrounding `withTenant` transaction rolls back). Run inside
  * `withTenant(accountId)`.
+ *
+ * A caller wanting to catch near-duplicate prompts (not just literal `callId` retries) should call
+ * `checkDedupGate()` from `./dedup.ts` BEFORE this — it detects, it does not enforce (ADR-0211).
  */
 export async function reserve(
   tx: TenantExecutor,
