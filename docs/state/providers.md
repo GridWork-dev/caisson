@@ -35,7 +35,10 @@ current volume ($0).
 ## Live URLs
 
 - `caisson.sh` / `www.caisson.sh` → Railway `caisson-site` (proxied, **pre-launch CF-Access gate** on, removed at go-live)
-- `admin.caisson.sh` → Railway `caisson-admin` (proxied, **permanent** operator CF-Access gate, ADR-0140)
+- `admin.caisson.sh` → Railway `caisson-admin` (proxied, **permanent** operator CF-Access gate at the
+  edge, ADR-0140 — now paired with a fail-closed in-app JWT check, ADR-0204, closing the direct-grey-origin
+  bypass; **ACTIVE 2026-07-02** — `CF_ACCESS_TEAM_DOMAIN`+`CF_ACCESS_AUD` set on `caisson-admin` +
+  redeployed, edge 302→Access login verified)
 - `license.caisson.sh` → Railway `caisson-license` (grey/DNS-only, Paddle webhook; cert issued)
 - `docs-api.caisson.sh` → Railway `caisson-docs`
 - Registry Worker → `caisson-registry.broken-wood-97a9.workers.dev` (license-keyed entitlement filtering, 32-module index)
@@ -124,7 +127,7 @@ OpenRouter / Plausible / SigNoz / Exa / Discord have **no standalone CLI** — d
 - **OpenRouter** — `OPENROUTER_API_KEY` (SET), no CLI. **State: ✅** support-bot RAG live.
 - **GitHub Packages** — `gh` + `GITHUB_PERSONAL_ACCESS_TOKEN` (SET); `.npmrc` scope. **State: ✅**.
 - **Plausible** — script tag on marketing pages; `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` on `caisson-site` (SET). Config in the Plausible dashboard. **State: ✅** confirmed active on the $9 Starter plan and collecting (2026-07-01).
-- **SigNoz** (self-host) — was a 5-svc Railway stack. **State: ✅ REMOVED** (2026-07-01) — the Grafana OTLP cutover completed + verified, all 5 Railway services deleted; replaced by Grafana Cloud as the sole OTLP sink. `SIGNOZ_API_KEY` no longer needed. 3 detached volumes (`signoz-*-volume`) are cleanup-pending, negligible cost.
+- **SigNoz** (self-host) — was a 5-svc Railway stack. **State: ✅ REMOVED** (2026-07-01) — the Grafana OTLP cutover completed + verified, all 5 Railway services deleted; replaced by Grafana Cloud as the sole OTLP sink. `SIGNOZ_API_KEY` no longer needed. The 3 detached volumes (`signoz-*-volume`) were **deleted 2026-07-02** (Railway soft-delete; purge 2026-07-04). The `apps/admin` `/ops` cockpit — orphaned by the removal (its client queried the now-dead SigNoz v5 API) — is rebuilt onto Grafana Cloud's Tempo query API (`ADR-0207`, 2026-07-02) and **deployed with env set** (see the Grafana Cloud row below).
 - **Greptile + TREX** — `.greptile/config.json` (`statusCheck`+`triggerOnUpdates`) + `rules.md`; org TREX toggle; `GREPTILE_API_KEY` (SET). **State: ✅ PR required check only** — the advisory pre-push hook was **removed 07-01** (pushes no longer run Greptile); `/greptile` skill stays for on-demand local review of large/important uncommitted work; re-trigger a skipped PR check with `gh pr comment <PR> --body "@greptileai"`.
 - **Discord** — `infra/discord/provision.ts` (idempotent REST); bot tokens on `caisson-support-bot` Railway svc. Buyer OAuth sign-in: `DISCORD_CLIENT_ID`/`DISCORD_CLIENT_SECRET` on `caisson-site`. Entitlement role push (ADR-0203, env-gated): `BILLING_GRANT_TOKEN` on `caisson-support-bot`; `SUPPORT_BOT_URL`+`SUPPORT_BOT_GRANT_TOKEN` on `caisson-license` (post-grant push) and `caisson-site` (`/api/discord/backfill`). **State: ✅** guild built, bot online; role-push env set at deploy.
 - **Exa / crawl4ai** — gridwork-core MCPs; `EXA_API_KEY` / `CRAWL4AI_API_TOKEN` (SET). **State: ✅**.
@@ -132,9 +135,9 @@ OpenRouter / Plausible / SigNoz / Exa / Discord have **no standalone CLI** — d
 **Agent tooling / MCP providers** (gridwork-core manifests → `link-mcps.ts` → `~/.claude.json`; **connected 2026-07-01**)
 
 - **PostHog** — _two_ keys: **(site)** `NEXT_PUBLIC_POSTHOG_KEY` (`phc_…`, client ingest) — **SET on `caisson-site` + redeployed 2026-07-01**; value pulled from the connected PostHog MCP (project `caisson-prod` id 493539), no separate fetch needed. **(MCP)** `POSTHOG_MCP_API_KEY` (`phx_…`, connected). US Cloud. **State: ✅ both live**.
-- **Linear** — MCP `LINEAR_API_KEY` (`lin_api_…`, connected). **State: ✅ connected + full MCP surface** (issues/projects/cycles/docs). **Business plan** ($16/mo, the agent-automations tier) is an operator billing action in Linear → Settings → Plans; the MCP works today on any plan for issue/project CRUD.
+- **Linear** — MCP `LINEAR_API_KEY` (`lin_api_…`, connected). **State: ✅ connected + full MCP surface** (issues/projects/cycles/docs). **Business plan** ($16/mo, the agent-automations tier) is an operator billing action in Linear → Settings → Plans; the MCP works today on any plan for issue/project CRUD. Separate from this operator MCP credential: `caisson-support-bot` now posts inbound escalations to Linear Triage as a third best-effort sink (`ADR-0206`, CAISSON-3) via its own `LINEAR_API_KEY`/`LINEAR_TEAM_ID`/`LINEAR_TRIAGE_STATE_ID`. **State: ACTIVE 2026-07-02** — all three vars set on `caisson-support-bot` + redeployed (bot recovering from a transient Discord CF-1015 egress-IP ban at first boot; the sink itself is env-live). Detail: `docs/state/linear-integration.md`.
 - **Cookiy** — MCP `COOKIY_API_KEY` (`cky_…`, connected; headless Bearer, not OAuth). Scope: positioning research, **no customer PII**. **State: ✅ connected**.
-- **Grafana Cloud** — `caisson.grafana.net`, US-West `prod-us-west-0`. `grafanactl` **connected** (Grafana 13.2, dashboard/stack mgmt via `GRAFANA_SERVER`+`GRAFANA_TOKEN`). **State: ✅ live, sole OTLP sink** — a `glc_` Cloud Access Policy token was obtained (the `glsa_` service-account token only manages the instance, can't auth the OTLP gateway); all 5 services redeployed with the OTLP env, pipeline verified receiving data, SigNoz retired.
+- **Grafana Cloud** — `caisson.grafana.net`, US-West `prod-us-west-0`. `grafanactl` **connected** (Grafana 13.2, dashboard/stack mgmt via `GRAFANA_SERVER`+`GRAFANA_TOKEN`). **State: ✅ live, sole OTLP sink** — a `glc_` Cloud Access Policy token was obtained (the `glsa_` service-account token only manages the instance, can't auth the OTLP gateway); all 5 services redeployed with the OTLP env, pipeline verified receiving data, SigNoz retired. **New (2026-07-02, `ADR-0207`):** `apps/admin`'s `/ops` cockpit reads Grafana Cloud's Tempo query API (TraceQL via datasource-proxy) in place of the deleted SigNoz client. **State: ACTIVE 2026-07-02** — `GRAFANA_URL`+`GRAFANA_QUERY_TOKEN`+`GRAFANA_TEMPO_DATASOURCE_UID` set on `caisson-admin` (existing `glsa_` token reused per the operator lock; Tempo datasource uid `grafanacloud-traces`) + redeployed.
 
 ## Config audit — closeout (2026-07-01)
 

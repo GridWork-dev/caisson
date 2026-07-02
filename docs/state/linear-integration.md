@@ -79,15 +79,15 @@ correlation is a nice-to-have, not v1 scope). The whole surface is **env-gated o
 in the ADR; rotating to a dedicated bot actor later is a pure env-var swap).
 The code shipped in `services/support-bot` (`linear_client.py` + the `IssueTracker` port in
 `escalation.py`, wired all-or-nothing off the bot's pooled httpx client; both API gotchas — bare
-`Authorization` header, HTTP-200-with-`errors` — pinned in tests). **The sink stays dormant until
-the operator sets the three env vars on the `caisson-support-bot` Railway service** (team id
-`82e9704b-8665-4418-a175-8b886a149d50`, Triage state id `2717723f-cdc2-4d75-b292-032caf937810`).
-Linear Asks (email/web) remains the no-code alternative if wanted later.
+`Authorization` header, HTTP-200-with-`errors` — pinned in tests). **The sink went env-live
+2026-07-02** — all three vars set on the `caisson-support-bot` Railway service (team id
+`82e9704b-8665-4418-a175-8b886a149d50`, Triage state id `2717723f-cdc2-4d75-b292-032caf937810`)
+and the service redeployed. Linear Asks (email/web) remains the no-code alternative if wanted later.
 
 ## Setup checklist
 
 **Done (this session, via MCP):** team `Caisson` · 4 area projects · seed issues CAISSON-1/2/3.
 **Operator (UI / billing):** activate **Business** ($16/mo) · triage rules · agent guidance · GitHub Code
 Intelligence · enable cycles · create the `Launch` initiative.
-**Code (DONE 2026-07-02, ADR-0206):** support-bot → Triage wiring (CAISSON-3) — awaiting the
-three env vars above to go live.
+**Code (DONE 2026-07-02, ADR-0206):** support-bot → Triage wiring (CAISSON-3) — merged in PR #46,
+env vars set + service redeployed the same day (live).
