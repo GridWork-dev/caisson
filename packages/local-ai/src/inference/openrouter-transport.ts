@@ -1,0 +1,177 @@
+// src/inference/openrouter-transport.ts — the OpenRouter RENTED transport (ADR-0201 §2, mapping the
+// ADR-0064 T20 `RentedTransport` port — threat TM-RENT). `createLiveRentedTransport` speaks a
+// first-party wire (`/embed`, `/complete`); THIS transport speaks OpenRouter's OpenAI-compatible
+// wire (`/embeddings`, `/chat/completions`) so the hosted (non-BYOK, fully-metered) lane runs on the
+// one org OPENROUTER_API_KEY without a bespoke daemon or provider SDK (ADR-0044: framework-free).
+//
+// The same two disciplines as the live transport:
+//   1. EGRESS — every request routes through `guard.fetch`, the single audited chokepoint (→ kernel
+//      `fetchWithTimeout`; the native `AbortSignal.timeout` is forbidden on Bun). A non-allowlisted
+//      host is blocked BEFORE any socket opens; there is no way to reach OpenRouter without the
+//      deployer allowlisting `openrouter.ai` as a `rented-backend` sanctioned sink (TM-RENT).
+//   2. ERROR HYGIENE — a non-2xx throws with the STATUS ONLY, never the response body: some proxies
+//      echo request headers back in error bodies, so surfacing the body could leak the Bearer key.
+//
+// Wire-parse posture (the services/docs openrouter-embedder precedent): the remote body is
+// third-party JSON we don't version, so the WIRE schemas are deliberately LENIENT (plain `z.object`,
+// unknown provider fields pass) — a benign provider addition must not break the edition. The lenient
+// parse is then MAPPED into the strict `RentedEmbedResponse`/`RentedCompleteResponse` shapes, which
+// `RentedInferenceBackend` re-validates `.strict()` on every call (fail-closed both ways). Usage maps
+// to integer token units (`Math.floor`, ADR-0007) so the metered sink only ever sees integers.
+import { InternalError, ValidationError } from "@caisson/kernel";
+import type { FetchTimeoutOptions } from "@caisson/kernel";
+import { z } from "zod";
+import { EMBEDDING_DIM } from "./backend.ts";
+import type { RentedTransport } from "./rented-backend.ts";
+import type { EgressGuard } from "../privacy/egress-guard.ts";
+
+/** The hosted OpenRouter API root (overridable for a self-hosted OpenAI-compatible gateway). */
+const DEFAULT_BASE_URL = "https://openrouter.ai/api/v1";
+
+// ── Lenient wire schemas (untrusted third-party JSON — unknown fields pass, see the file header) ──
+
+const wireUsageSchema = z
+  .object({
+    total_tokens: z.number().optional(),
+    prompt_tokens: z.number().optional(),
+  })
+  .optional();
+
+const embedWireSchema = z.object({
+  data: z.array(z.object({ embedding: z.array(z.number()) })).min(1),
+  usage: wireUsageSchema,
+});
+
+const completeWireSchema = z.object({
+  choices: z
+    .array(z.object({ message: z.object({ content: z.string() }) }))
+    .min(1),
+  model: z.string().optional(),
+  usage: wireUsageSchema,
+});
+
+/** Provider-reported tokens → integer units (ADR-0007). Missing usage meters as 0, never NaN. */
+function tokenQuantity(usage: z.infer<typeof wireUsageSchema>): number {
+  return Math.floor(usage?.total_tokens ?? 0);
+}
+
+/** Config for the OpenRouter rented transport (ADR-0201). */
+export interface OpenRouterRentedTransportConfig {
+  /** The egress guard — every request routes through `guard.fetch`, re-gating the host per call. */
+  guard: EgressGuard;
+  /** The OpenRouter API key, sent as a Bearer header. Never logged, never echoed in errors. */
+  apiKey: string;
+  /** Model slug for `complete` (`/chat/completions`), e.g. `openai/gpt-4o-mini`. */
+  completionModel: string;
+  /** Model slug for `embed` (`/embeddings`), e.g. `qwen/qwen3-embedding-8b`. */
+  embeddingModel: string;
+  /**
+   * Embedding width, forwarded as the OpenAI-compatible Matryoshka `dimensions` param — MUST equal
+   * the local-store vec0 `dim`. Defaults to {@link EMBEDDING_DIM}.
+   */
+  dimensions?: number;
+  /** API root (default {@link DEFAULT_BASE_URL}). Its host must be an allowlisted `rented-backend` sink. */
+  baseUrl?: string;
+  /** Per-call deadline (ms) for the guarded chokepoint. */
+  timeoutMs?: number;
+}
+
+/**
+ * Build a {@link RentedTransport} over OpenRouter's OpenAI-compatible API (ADR-0201). Drops into
+ * `RentedInferenceBackend` wherever the first-party live transport would — same guard gate, same
+ * strict re-validation, same integer metering; only the wire dialect differs.
+ */
+export function createOpenRouterRentedTransport(
+  config: OpenRouterRentedTransportConfig,
+): RentedTransport {
+  const fail = (field: string): never => {
+    throw new ValidationError(
+      `openrouter rented transport requires a non-empty ${field}`,
+      { field },
+    );
+  };
+  if (config.apiKey.trim() === "") fail("apiKey");
+  if (config.completionModel.trim() === "") fail("completionModel");
+  if (config.embeddingModel.trim() === "") fail("embeddingModel");
+  const dimensions = config.dimensions ?? EMBEDDING_DIM;
+  if (!Number.isInteger(dimensions) || dimensions <= 0) {
+    throw new ValidationError(
+      "openrouter rented transport dimensions must be a positive integer",
+      { received: dimensions },
+    );
+  }
+  const baseUrl = (config.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+    authorization: `Bearer ${config.apiKey}`,
+  };
+  const options: FetchTimeoutOptions | undefined =
+    config.timeoutMs !== undefined
+      ? { timeoutMs: config.timeoutMs }
+      : undefined;
+
+  const post = async (path: string, body: unknown): Promise<unknown> => {
+    // `guard.fetch` is the chokepoint: the allowlist gate fires BEFORE any socket opens.
+    const res = await config.guard.fetch(
+      `${baseUrl}${path}`,
+      { method: "POST", headers, body: JSON.stringify(body) },
+      options,
+    );
+    if (!res.ok) {
+      // Status only — never the body (a proxy error body can echo the Bearer key back).
+      throw new InternalError("openrouter rented call failed", {
+        status: res.status,
+        path,
+      });
+    }
+    return res.json();
+  };
+
+  return {
+    async embed(input) {
+      const wire = embedWireSchema.parse(
+        await post("/embeddings", {
+          model: config.embeddingModel,
+          input: input.text,
+          dimensions,
+        }),
+      );
+      const first = wire.data[0];
+      if (first === undefined) {
+        // Unreachable past `.min(1)`; kept for noUncheckedIndexedAccess + fail-closed clarity.
+        throw new InternalError("openrouter embeddings returned no data", {});
+      }
+      return {
+        vector: first.embedding,
+        usage: { unit: "token", quantity: tokenQuantity(wire.usage) },
+      };
+    },
+    async complete(input) {
+      const wire = completeWireSchema.parse(
+        await post("/chat/completions", {
+          model: config.completionModel,
+          messages: [{ role: "user", content: input.prompt }],
+          ...(input.maxTokens !== undefined
+            ? { max_tokens: input.maxTokens }
+            : {}),
+        }),
+      );
+      const first = wire.choices[0];
+      if (first === undefined) {
+        throw new InternalError(
+          "openrouter completion returned no choices",
+          {},
+        );
+      }
+      return {
+        text: first.message.content,
+        // The strict shape requires a non-empty model label; fall back to the configured slug.
+        model:
+          wire.model !== undefined && wire.model !== ""
+            ? wire.model
+            : config.completionModel,
+        usage: { unit: "token", quantity: tokenQuantity(wire.usage) },
+      };
+    },
+  };
+}
