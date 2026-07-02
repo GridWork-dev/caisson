@@ -4,22 +4,29 @@ status: "draft - operator lock required"
 item: registry-npm-delivery
 tags: [infra, external-system, security, billing, secrets]
 class: EXECUTE (Worker npm routes + CI pack/upload pipeline + generator .npmrc) then DEPLOY (R2 bucket + registry DNS + Worker route + publish-gate flip — operator-gated, not the autonomous cycle)
-supersedes: ADR-0069 + ADR-0021 registry-host row for the BUYER channel only (internal-use posture may remain)
-new-adr: ADR-0223 (option-A lock, this SPEC is its build plan) + ADR-0222 (caisson-oss npmjs mirror); ceiling is 0221 → file ≥ 0222 on lock
+supersedes: IF option A is locked — ADR-0069 + ADR-0021 registry-host row, for the BUYER channel only (internal-use posture may remain). NOT yet superseded — the board still reads GitHub Packages (`decisions-and-forks.md:33`).
+new-adr: ONE new lock ADR (option-A self-hosted registry, this SPEC is its build plan). NUMBER NOT SETTLED — `main` ceiling is 0221, but **ADR-0222 is already claimed** by the in-flight `docs/adr-0222-distribution` branch (accepted; `@caisson-sh` public distribution — the "npmjs mirror" this SPEC references, NOT a number this SPEC reserves). File at the next free number after checking OPEN ADR branches, not just `main`; expect an ADR-0088 renumber-at-merge (likely 0223 once 0222 merges).
 ---
 
 # SPEC — Self-hosted npm-protocol registry for commercial package delivery
 
-**Status: DRAFT — the DIRECTION is LOCKED, the SUB-FORKS need operator lock.** The operator
-locked **option A** (2026-07-02): Caisson serves its **commercial** `@caisson/*` packages from a
-**self-hosted npm-protocol registry at `registry.caisson.sh`** — buyer `.npmrc` points the
-`@caisson` scope at it, installs authenticate with the buyer **license token**, tarballs live in
-**Cloudflare R2**, and the **already-live** Ed25519 offline entitlement gate
-(`registry/worker/entitlement-filter.ts`) decides per-package access. That direction does NOT
-need re-deciding. This SPEC is the build plan for the ADR that will record it (**ADR-0223**); it
-resolves the direction into a concrete design and **tables the eight sub-forks that option A
-leaves open** — each waits for the operator lock (the new ADR), none is auto-decided. No product
-code lands before the ADR + sub-fork picks are locked (the Caisson cadence rule).
+**Status: DRAFT — operator lock required, at BOTH levels.** This SPEC **RECOMMENDS option A**
+(confidence **HIGH**, evidence below) — it does not narrate it as already decided: Caisson serves
+its **commercial** `@caisson/*` packages from a **self-hosted npm-protocol registry at
+`registry.caisson.sh`** — buyer `.npmrc` points the `@caisson` scope at it, installs authenticate
+with the buyer **license token**, tarballs live in **Cloudflare R2**, and the **already-live**
+Ed25519 offline entitlement gate (`registry/worker/entitlement-filter.ts`) decides per-package
+access. **This top-level direction is itself an open fork (Fork 0 below), not yet locked.** The
+decisions board — CLAUDE.md source-of-truth #1, ranked **above** specs — still reads `Private
+registry host = GitHub Packages` unchanged (`decisions-and-forks.md:33`); there is no open-fork
+entry and no session artifact/kickoff anywhere in the repo recording an operator decision to
+self-host an npm-protocol registry; and this SPEC's own "ADR interactions" flags that very board row
+as one it _would_ SUPERSEDE — i.e. nothing has been decided yet. Per the one-operator rule the SPEC
+states option A as a labeled recommendation with evidence, then waits; it does not presume the lock.
+This SPEC is the build plan the option-A lock ADR would draw on; it resolves the recommended
+direction into a concrete design and **tables the eight sub-forks option A would leave open** (plus
+Fork 0, the direction itself) — each waits for the operator lock, none is auto-decided. No product
+code lands before the direction + ADR + sub-fork picks are locked (the Caisson cadence rule).
 
 **Structure note (deliberate deviation).** This SPEC follows the deferred-respec house template
 (Goal → Why now → Non-goals → Current state → Design → Open forks → Tasks → Verify → Risks → ADR
@@ -53,15 +60,17 @@ the existing offline Ed25519 license entitlement, so that:
   licensed buyer sees base + their editions, an unentitled commercial package is invisible.
 
 The 15 open Apache-2.0 base packages (ADR-0094) publish **publicly to npmjs as `@caisson-sh/*`**
-from the `caisson-oss` mirror (**ADR-0222**, a separate track named here for the boundary but not
-built by this SPEC). Whether the self-hosted registry **also** serves the base — so one `.npmrc`
-line covers a buyer repo — is **Fork B**.
+from the public-mirror repo — the **already-accepted, in-flight `ADR-0222` on the
+`docs/adr-0222-distribution` branch** (caisson-sh GitHub org + `@caisson-sh` npm scope + catalog
+completion), a separate track referenced here for the boundary but not built by this SPEC. Whether
+the self-hosted registry **also** serves the base — so one `.npmrc` line covers a buyer repo — is
+**Fork B**.
 
 ## Why now / trigger
 
 - **The channel is provably dead, not merely un-flipped.** `npm.pkg.github.com` can never serve
   `@caisson/*` from an org we don't control; flipping `CAISSON_PUBLISH_DRY_RUN` to `"false"`
-  would fail, not ship. The operator locked option A as the replacement.
+  would fail, not ship. Option A is the recommended replacement (Fork 0; pending operator lock).
 - **The gate already runs at the edge.** `registry/worker/entitlement-filter.ts:19-29` +
   `handler.ts:58-72` + the offline `verifyLicense` (`verify.ts:71-76`, `nodejs_compat` at the
   edge, workerd `node:crypto`) are **live** on `caisson-registry.broken-wood-97a9.workers.dev`
@@ -73,8 +82,9 @@ line covers a buyer repo — is **Fork B**.
 
 ## Non-goals
 
-- **Not building the `caisson-oss` → npmjs `@caisson-sh/*` publish** (ADR-0222). Named for the
-  boundary (Fork B decides overlap); the public-mirror publish is its own track.
+- **Not building the public-mirror → npmjs `@caisson-sh/*` publish** (the in-flight ADR-0222 on
+  `docs/adr-0222-distribution`, already operator-locked there). Named for the boundary (Fork B
+  decides overlap); the public-mirror publish is its own track.
 - **Not implementing npm WRITE endpoints** (`PUT /{package}`, dist-tag PUT/DELETE, `npm login`).
   CI uploads straight to R2; `npm publish`/`npm version`/`npm deprecate` 404/501 cleanly against a
   read-only registry as long as no write route is advertised (research §6). No special-casing.
@@ -107,8 +117,9 @@ line covers a buyer repo — is **Fork B**.
   surface option A reuses.**
 - **The license token is a bearer-anonymous, offline-verifiable string, shown as plaintext.**
   Wire format `PREFIX-TIER-base64url(payload‖64-byte-sig)` (`token.ts`, `SIGNATURE_BYTES=64`);
-  `verify.ts:71-76` is 100% offline against the baked key (`verify.ts:34-35`, fingerprint
-  `0ae7d2abb886ca3d`), **fail-safe-to-community, never throws**. Delivered to the buyer only as a
+  `verify.ts:71-76` is 100% offline against the baked key (the SPKI constant at `verify.ts:34-35`;
+  fingerprint `0ae7d2abb886ca3d` is in the key doc-comment at `verify.ts:27`),
+  **fail-safe-to-community, never throws**. Delivered to the buyer only as a
   copy-to-clipboard `<code>` block (`apps/site/components/license-token-card.tsx`), documented as
   **"not a secret"** (already returned at `/issue`, independently offline-verifiable).
 - **The open schema carries no tarball field.**
@@ -117,12 +128,24 @@ publishedAt, gateAttestation}` — Apache-2.0, and the CI-committed `registry/in
   **public unauthenticated read**. Adding a tarball field here ripples into open + public surfaces
   (Fork H).
 - **The publish pipeline commits index metadata, produces no tarball.**
-  `.github/workflows/publish.yml`: `changeset publish` (line 79, dead GH-Packages leg, dry-run
-  only) → `ci-publish-step.ts` scans `packages/*/manifest.ts`, appends new `(id,version)` to
+  `.github/workflows/publish.yml`: `changeset version` + `changeset publish` (lines 78-79, both
+  guarded by `CAISSON_PUBLISH_DRY_RUN`; the `publish` leg is the dead GH-Packages one, dry-run only)
+  → `ci-publish-step.ts` scans `packages/*/manifest.ts`, appends new `(id,version)` to
   `registry/ledger.jsonl`, rebuilds `index.json` (`runPublishStep`, `ci-publish-step.ts:119-209`)
   → commits **only** `ledger.jsonl` + `index.json` back to main (lines 94-105). **No `npm pack`,
   no artifact store.** `--dry-run` gates the ledger write; the ledger entry has **no tarball
   field**. Private packages excluded (`isPrivatePackage`, `ci-publish-step.ts:66-77`).
+- **Latent version-commit gap in the publish leg (real, but never exercised — dry-run only).**
+  `changeset version` (`publish.yml:78`) bumps every changed `packages/*/package.json`, writes
+  `CHANGELOG.md`, and **consumes (deletes)** the `.changeset/*.md` files in the runner tree — but
+  `.changeset/config.json` is `"commit": false` and there is no `changesets/action` wiring, and the
+  commit step (`publish.yml:94-105`) stages **only** `registry/ledger.jsonl` + `registry/index.json`.
+  Nothing persists the version bumps / changelogs / changeset deletions to `main`. Because the
+  `version`+`publish` block is skipped in dry-run, the gap is invisible today; the moment
+  `CAISSON_PUBLISH_DRY_RUN` flips to `"false"`, `npm pack` (the new step) packs a bump that is never
+  committed, the next CI run re-reads the same un-bumped `package.json`, re-processes the same
+  never-deleted changesets, and the ledger/R2 tarball version diverges from git. Design §3 closes
+  this in the same change rather than inheriting it.
 - **Zero R2 anywhere.** No `[[r2_buckets]]`, no R2 client, no `CLOUDFLARE_R2_*`. The only
   object-storage code is `infra/worm/provision.ts` (**AWS S3** Object-Lock for audit-worm — a
   different account/credential, but the closest "provision-a-bucket-idempotently" pattern).
@@ -136,8 +159,8 @@ true`), `license` (`proxied = false`, grey — Paddle webhook), `admin` (`proxie
 
 ## Design
 
-The direction is locked; this is HOW. Five surfaces change; the entitlement gate and license
-verify are **reused, not rebuilt** (the auth is already live at the edge).
+Assuming option A (Fork 0) is locked, this is HOW. Five surfaces change; the entitlement gate and
+license verify are **reused, not rebuilt** (the auth is already live at the edge).
 
 ### 1. Worker: npm-protocol routes, additive (reuse the gate)
 
@@ -197,6 +220,17 @@ lives). Remove the `~/.npmrc` GH-Packages `_authToken` write (`publish.yml:70`).
 logs the pack/hash/key plan without uploading; `"false"` uploads. The ledger-append +
 index-rebuild step (`ci-publish-step.ts`) is unchanged except for the added tarball metadata.
 
+**Close the inherited version-commit gap in the same change (do NOT carry it forward).** Because
+this leg now KEEPS `changeset version` running for real (it stops being dry-run-only once the
+R2-upload gate opens), the commit step (`publish.yml:94-105`) must **also** stage what `changeset
+version` produced — the bumped `packages/*/package.json`, the written `CHANGELOG.md`, and the
+consumed `.changeset/*.md` deletions — in the same `git add`/`commit`, alongside `ledger.jsonl` +
+`index.json`. Otherwise the bump never lands on `main`, the next run re-reads the un-bumped
+`package.json` and re-processes the same changesets, and the ledger/R2 tarball version diverges
+from git (see Current state). `.changeset/config.json` is `"commit": false` and there is no
+`changesets/action`, so this commit step is the ONLY place the bumps can land. This is a real
+pre-existing latent bug the SPEC surfaces + fixes, not new scope.
+
 ### 4. Buyer `.npmrc`: generator + templates
 
 Flip `packages/cli/templates/base/.npmrc` (and the legacy literal `generate.ts:71-74`, and the
@@ -227,18 +261,37 @@ Whether a second scope line for the public `@caisson-sh/*` base is also emitted 
 4. **Generator (EXECUTE):** flip `.npmrc` template + README (Forks B/C).
 5. **Publish + deploy (DEPLOY):** run the pipeline with the R2-upload gate open to populate R2;
    `registry/worker/deploy.sh` to push the new Worker; verify a real `bun install` end-to-end.
-6. **Public mirror (separate track, ADR-0222):** `caisson-oss` → npmjs `@caisson-sh/*`.
-7. **File ADR-0223** (option-A lock, this SPEC) **+ ADR-0222** at merge (confirm ceiling on `main`
-   first — currently 0221).
+6. **Public mirror (separate track — the in-flight ADR-0222 on `docs/adr-0222-distribution`):**
+   public-mirror repo → npmjs `@caisson-sh/*`. Not filed by this SPEC (already accepted there).
+7. **File the option-A lock ADR** (this SPEC) at merge — at the next free number after confirming
+   the ceiling against BOTH `main` (currently 0221) **and open ADR branches**
+   (`docs/adr-0222-distribution` already claims 0222); likely 0223, expect an ADR-0088 renumber if a
+   sibling merges first.
 
-## Open forks (operator-owned — do NOT auto-decide; lock in ADR-0223 ≥ 0222)
+## Open forks (operator-owned — do NOT auto-decide; lock in the option-A ADR)
+
+### Fork 0 — the top-level direction: self-host (option A) vs stay on GitHub Packages vs a third-party registry
+
+This is the headline decision the board has **not** recorded (`decisions-and-forks.md:33` still
+reads `Private registry host = GitHub Packages`, ADR-0021). Sub-forks A–H below only apply once
+Fork 0 = self-host. Do not presume it.
+
+| Option                                                                                                                   | Tradeoff                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **0.1 — self-hosted npm-protocol registry at `registry.caisson.sh`, R2 tarballs, license-gated (option A, Recommended)** | The only design that works with the live offline-Ed25519 gate at the edge **and** the `@caisson` scope Caisson controls — GitHub Packages cannot serve `@caisson/*` from an org Caisson does not own (see "Why this channel exists"). Reuses the deployed gate; closes the fulfillment gap. Cost: net-new R2 credential + DNS record + Worker route, and Caisson owns the registry's uptime. |
+| 0.2 — keep GitHub Packages (the current board row, ADR-0021)                                                             | Zero new infra — but provably dead for the buyer channel: `@caisson/*` cannot publish to an org Caisson does not control. Retained only to name what the board still says; not a real buyer-delivery option.                                                                                                                                                                                 |
+| 0.3 — a third-party private registry (npmjs Teams, Cloudsmith, hosted Verdaccio, …)                                      | Off-the-shelf npm protocol, someone else's uptime. Cost: re-implements the entitlement gate off the edge where it already runs, a new vendor + credential, and per-buyer license gating is not native to any of them.                                                                                                                                                                        |
+
+**Recommendation: 0.1 (option A)** — confidence **HIGH**, on the "Why this channel exists" + "Why
+now" evidence. But it is an operator lock the board has not yet recorded; the option-A ADR records
+it alongside the sub-forks. The remaining forks (A–H) presuppose 0.1.
 
 ### Fork A — tarball delivery: same-origin Worker proxy vs R2 pre-signed 302
 
-| Option                                                                                                          | Tradeoff                                                                                                                                                                                                                                                                                                                                                                                                   |
-| --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **A1 — Worker proxies the tarball same-origin, R2 binding + Bearer entitlement check on the GET (Recommended)** | One host, one auth surface; the buyer's `_authToken` travels correctly (research §3) and the Worker re-checks entitlement on the tarball GET. Sidesteps bun's cross-host/cross-path auth regressions and the leaked-URL problem entirely. Cost: Worker request duration + R2→Worker egress (free same-account on CF); tarballs are small.                                                                  |
-| A2 — Worker 302-redirects to a short-TTL pre-signed R2 URL                                                      | The tarball bytes never transit the Worker. But the client **strips `Authorization` on the cross-host redirect** (RFC 9110, bun#31347), so the pre-signed URL must carry ALL auth in its query params — and it becomes a bearer capability leaked into the buyer's lockfile/cache (short-TTL only). **Never mix a query-signature with a header** on one hop (research §2/§3, claude-code#51618). Fragile. |
+| Option                                                                                                          | Tradeoff                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A1 — Worker proxies the tarball same-origin, R2 binding + Bearer entitlement check on the GET (Recommended)** | One host, one auth surface; the buyer's `_authToken` travels correctly (research §3) and the Worker re-checks entitlement on the tarball GET. Sidesteps bun's cross-host/cross-path auth regressions and the leaked-URL problem entirely. Cost: Worker request duration + R2→Worker egress (free same-account on CF); tarballs are small.                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| A2 — Worker 302-redirects to a short-TTL pre-signed R2 URL                                                      | The tarball bytes never transit the Worker. A standards-compliant client **strips `Authorization` on the cross-host redirect** (RFC 9110), so the pre-signed URL must carry ALL auth in its query params — a bearer capability leaked into the buyer's lockfile/cache (short-TTL only). Worse, the strip is not guaranteed: **Bun 1.3.11/1.3.13 FORWARDS the scope's `Authorization` across the redirect** (claude-code#51618 — curl/npm strip it and succeed, Bun does not), so under Bun the raw bearer license token would reach the third-party R2 host as a header, and the query-token + forwarded-header combination is exactly what trips a 503 in a sandboxed egress proxy. Two independent leak/failure modes for no benefit at Caisson's tarball sizes. Fragile. |
 
 **Recommendation: A1** — confidence **HIGH**. The research's load-bearing recommendation is
 same-origin proxy for a license-gated registry; A2's auth is more fragile for no meaningful benefit
@@ -322,7 +375,7 @@ a parallel server for a read path CF already serves.
 commercial registry own commercial tarball metadata. Integrity fields (both `shasum` + `integrity`,
 research §4) live in the sidecar, computed at CI `npm pack` time.
 
-## Tasks (atomic — run only after ADR-0223 lock + Fork A–H picks)
+## Tasks (atomic — run only after the option-A lock (Fork 0) + Fork A–H picks)
 
 1. **DEPLOY prereqs (operator-gated).** Provision the R2 bucket (idempotent, `infra/worm/provision.ts`
    pattern, R2-native per Fork G1); add the `registry.caisson.sh` DNS record + Worker custom route
@@ -338,12 +391,16 @@ research §4) live in the sidecar, computed at CI `npm pack` time.
    `Accept: application/vnd.npm.install-v1+json` returns 200 (never 406); an unentitled commercial
    module returns the Fork-D status; a tarball GET re-checks entitlement; the index routes
    (`GET /`, `/index.json`, `/modules/:id`) are byte-identical to pre-change.
-3. **CI pack → R2 → provenance (EXECUTE).** In `publish.yml`, replace `changeset publish` with
-   per-non-private-package `npm pack` → compute shasum + sha512 integrity → PutObject to R2 →
-   record tarball metadata (Fork H sink); remove the GH-Packages `_authToken` write; repurpose
-   `CAISSON_PUBLISH_DRY_RUN` as the R2-upload gate. Verify: a dry-run run logs the planned
-   pack/hash/key set + writes nothing to R2; a live run (staging bucket) uploads and the recorded
-   integrity matches `ssri` over the fetched object.
+3. **CI pack → R2 → provenance + close the version-commit gap (EXECUTE).** In `publish.yml`, replace
+   `changeset publish` with per-non-private-package `npm pack` → compute shasum + sha512 integrity →
+   PutObject to R2 → record tarball metadata (Fork H sink); remove the GH-Packages `_authToken`
+   write; repurpose `CAISSON_PUBLISH_DRY_RUN` as the R2-upload gate; **and extend the commit step
+   (lines 94-105) to also stage the `changeset version` output** — bumped `packages/*/package.json`,
+   `CHANGELOG.md`, and the consumed `.changeset/*.md` deletions — so the bump is persisted to `main`
+   (Design §3). Verify: a dry-run run logs the planned pack/hash/key set + writes nothing to R2; a
+   live run (staging bucket) uploads, the recorded integrity matches `ssri` over the fetched object,
+   and the resulting commit contains the bumped package.json + CHANGELOG + the changeset deletions
+   (not just `ledger.jsonl` + `index.json`).
 4. **Generator `.npmrc` + README (EXECUTE).** Flip `templates/base/.npmrc` (+ `generate.ts:71-74`
    legacy literal + `templates/base/README.md:9`) to `registry.caisson.sh` + the env-var auth line
    (Forks B/C). Verify: the generator's composition/golden test shows the new `.npmrc` content; a
@@ -353,12 +410,15 @@ research §4) live in the sidecar, computed at CI `npm pack` time.
    the tarball integrity verifies; `bun install @caisson/<not-entitled>` returns the Fork-D
    status; base packages install per Fork B. Verify: transcript recorded in the SHIP/DEPLOY note
    (use the no-`-L` gate-probe convention for status reads).
-6. **File ADR-0223 + ADR-0222; update state (SHIP).** Write ADR-0223 (option-A lock + the Fork
-   A–H resolutions) and ADR-0222 (caisson-oss npmjs mirror); confirm the ceiling on `main` first
-   (0221 → file ≥ 0222, ADR-0088 collision rule). Update `docs/state/decisions-and-forks.md`
-   (registry-host row: GitHub Packages → self-hosted `registry.caisson.sh`), `docs/state/providers.md`
-   (new registry surface + R2), `docs/adr-index.md`. Verify: `gw verify docs` passes; the ADR-index
-   lists 0222 + 0223.
+6. **File the option-A lock ADR; update state (SHIP).** Write ONE new ADR — the option-A lock (the
+   Fork 0 resolution + the Fork A–H resolutions). Do NOT re-file the `@caisson-sh` npmjs mirror: it
+   is the **already-accepted in-flight ADR-0222** on `docs/adr-0222-distribution` (reference it).
+   Confirm the free number against BOTH `main` (currently 0221) **and** open ADR branches — 0222 is
+   taken, so file ≥ 0223, expecting an ADR-0088 renumber-at-merge if a sibling lands first. Update
+   `docs/state/decisions-and-forks.md` (registry-host row: GitHub Packages → self-hosted
+   `registry.caisson.sh`), `docs/state/providers.md` (new registry surface + R2), `docs/adr-index.md`.
+   Verify: `gw verify docs` passes; the ADR-index lists the new lock ADR (and 0222 once it has
+   merged).
 
 ## Verification (goal-backward)
 
@@ -381,8 +441,9 @@ license token, gated by the live entitlement math, with the dead GH-Packages leg
   **unchanged** (byte-identical `handler.ts` core; `handler.test.ts` still green).
 - A generated repo's `.npmrc` points at `registry.caisson.sh` with an **env-var** auth line and
   **no committed token**.
-- ADR-0223 (+ ADR-0222) exist; the decisions board + providers doc + ADR-index reflect the new
-  channel.
+- The option-A lock ADR exists (next free number ≥ 0223; the in-flight ADR-0222 mirror is
+  referenced, not re-filed); the decisions board `registry-host` row, providers doc, and ADR-index
+  reflect the new channel.
 
 ## Risks
 
@@ -398,10 +459,15 @@ license token, gated by the live entitlement math, with the dead GH-Packages leg
    `application/vnd.npm.install-v1+json` (the old-Artifactory bug) fails `bun install` before
    anything downloads. Mitigation: content-negotiation returns abbreviated on that header, never
    406; Task-2 test asserts 200.
-4. **Cross-host redirect strips `Authorization` (research §2/§3, RFC 9110).** If Fork A2 is chosen,
-   a pre-signed R2 URL must self-carry all auth and never also carry a header (claude-code#51618) —
-   and it leaks a bearer capability into the lockfile. Mitigation: Fork A1 (same-origin proxy)
-   avoids this entirely.
+4. **Cross-host redirect auth is unreliable across clients (research §2/§3, RFC 9110).** A
+   standards-compliant client strips `Authorization` on a cross-host redirect, so an A2 pre-signed
+   R2 URL must self-carry all auth in its query string — leaking a bearer capability into the
+   lockfile/cache. But the strip is NOT guaranteed: **Bun 1.3.11/1.3.13 forwards the scope
+   `Authorization` across the redirect where curl/npm strip it** (claude-code#51618) — so under Bun
+   the raw bearer license token reaches the third-party R2 host as a header (a worse leak), and the
+   forwarded-header + query-token combination itself trips a 503 in a sandboxed egress proxy.
+   Mitigation: Fork A1 (same-origin proxy) sidesteps both — no cross-host hop, no query-string
+   capability; the Worker re-checks entitlement on the tarball GET.
 5. **Public index.json vs commercial tarball locations.** `registry/index.json` is a public
    unauthenticated read; putting commercial tarball URLs/hashes in it (Fork H2) exposes the
    commercial catalog's storage layout. Mitigation: Fork H1 (commercial sidecar) keeps the public
@@ -421,18 +487,36 @@ license token, gated by the live entitlement math, with the dead GH-Packages leg
 9. **Dual-publish coherence (Fork B1).** If the base is served both self-hosted (`@caisson/*`) and
    on npmjs (`@caisson-sh/*`), the two must not drift. Mitigation: single CI source (the ledger)
    drives both; or Fork B2 avoids the overlap.
+10. **Live ADR-0222 number collision (process).** ADR-0222 is NOT free: the in-flight
+    `docs/adr-0222-distribution` branch (6 commits ahead of `main`, same day) already carries an
+    accepted `ADR-0222-public-distribution-and-catalog-completion.md` and states `ceiling 0222` in
+    its own `adr-index`. Whichever of the two branches merges second collides and needs the
+    ADR-0088 renumber-at-merge (already exercised six times this week). Confirming only `main`'s
+    ceiling (0221) is insufficient. Mitigation: this SPEC files just ONE new ADR (the option-A
+    lock, ≥ 0223), references — never re-files — the mirror 0222, and checks OPEN ADR branches at
+    filing time, expecting a renumber.
+11. **Version-commit gap must actually close (regression).** `changeset version` bumps
+    `package.json`/`CHANGELOG.md` and consumes `.changeset/*.md` that the current commit step never
+    stages (`.changeset/config.json` `"commit": false`; Current state). Design §3 / Task 3 stage
+    those in the same commit. Mitigation: a Task-3 assertion that a live (staging) run's commit
+    contains the bump + changelog + changeset deletions, not just `ledger.jsonl` + `index.json` —
+    otherwise the ledger/R2 version silently diverges from git on the second run.
 
 ## ADR interactions
 
-- **ADR-0223 (option-A self-hosted registry) — this SPEC is its BUILD PLAN.** File at merge
-  (ceiling 0221 → ≥ 0222, confirm on `main`, ADR-0088 rule); it records the locked direction + the
-  Fork A–H resolutions.
-- **ADR-0222 (caisson-oss npmjs mirror) — NAMED / adjacent.** The 15 Apache base packages publish
-  publicly as `@caisson-sh/*`; Fork B decides whether the self-hosted registry overlaps it. Filed
-  alongside 0223 (its own track; not built by this SPEC).
-- **ADR-0069 (publish-flow credential backfill) — SUPERSEDED for the BUYER channel.** The ephemeral
-  `GITHUB_TOKEN` → `npm.pkg.github.com` publish leg is retired for buyer delivery; any internal-use
-  publish posture may remain, recorded as such in ADR-0223.
+- **The option-A lock ADR (self-hosted registry) — this SPEC is its BUILD PLAN.** File at merge at
+  the next free number after checking BOTH `main` (ceiling 0221) **and open ADR branches** —
+  **ADR-0222 is already taken** by the in-flight `docs/adr-0222-distribution` (accepted), so file
+  ≥ 0223 and expect an ADR-0088 renumber if a sibling merges first (see the collision risk). It
+  records the Fork 0 direction + the Fork A–H resolutions.
+- **ADR-0222 (public distribution: caisson-sh org + `@caisson-sh` npm scope + catalog completion) —
+  ALREADY ACCEPTED, in-flight on `docs/adr-0222-distribution`; NOT filed by this SPEC.** It IS the
+  "npmjs mirror" this SPEC references — the 15 Apache base packages publish publicly as
+  `@caisson-sh/*` there. Fork B decides whether the self-hosted registry overlaps it. This SPEC must
+  not re-file 0222.
+- **ADR-0069 (publish-flow credential backfill) — SUPERSEDED for the BUYER channel** (if option A is
+  locked). The ephemeral `GITHUB_TOKEN` → `npm.pkg.github.com` publish leg is retired for buyer
+  delivery; any internal-use publish posture may remain, recorded as such in the option-A lock ADR.
 - **ADR-0021 / decisions-board "Private registry host = GitHub Packages" (`decisions-and-forks.md:33`)
   — SUPERSEDED.** The registry host becomes self-hosted `registry.caisson.sh`; update the board row.
 - **ADR-0111 (publish-readiness flip) — BECOMES this pipeline.** The private→public flip's real
@@ -455,8 +539,55 @@ license token, gated by the live entitlement math, with the dead GH-Packages leg
 
 Effort: **L** (~2–3 days across EXECUTE + operator-gated DEPLOY steps: Worker npm routes + R2
 binding, CI pack/upload/provenance, generator flip, R2/DNS/token provisioning, end-to-end install
-proof), gated on ADR-0223 + the eight fork picks. Most of the auth machinery is **reused, not
+proof), gated on the option-A lock (Fork 0) + the eight fork picks. Most of the auth machinery is **reused, not
 built** — the cost is the npm-protocol surface + the storage/CI plumbing, not a new gate. Value:
 **HIGH** — it is the **only** working buyer delivery channel for the commercial packages the store
 already sells; without it, a purchased edition has a license token and no installable code. The
 dead GH-Packages leg is retired in the same change.
+
+## Revision provenance (2026-07-02 adversarial-critique pass)
+
+Five critique findings, each verified against this worktree before acting. **All five CONFIRMED;
+all fixed.** One sub-reference inside a finding was refuted (noted below).
+
+1. **DEFECT 1 (Critical — unverified top-level operator lock) — CONFIRMED, fixed.** The prior draft
+   asserted "The operator locked option A (2026-07-02)" and "the DIRECTION is LOCKED" while the SoT
+   board `docs/state/decisions-and-forks.md:33` still reads `Private registry host = GitHub Packages`
+   (ADR-0021), unchanged on both `main` and this worktree, with no open-fork entry and no
+   session/kickoff artifact recording a self-hosting decision (grep of `docs/state` + `outputs/`
+   returns only this SPEC and the adjacent rate-limit SPEC's passing mention). The status line even
+   says "draft - operator lock required." Fix: demoted the direction to a **labeled recommendation
+   (option A, confidence HIGH)** consistent with the one-operator rule; added **Fork 0** (self-host
+   vs GitHub Packages vs third-party) as the explicit unresolved headline fork; the status
+   paragraph, frontmatter `supersedes`/`new-adr`, and "ADR interactions" now state the board is NOT
+   yet superseded. No fork auto-decided.
+2. **DEFECT 2 (High — live ADR-0222 collision) — CONFIRMED, fixed.** `git log main..docs/adr-0222-distribution`
+   = 6 commits (ace3d26, 2026-07-02); that branch carries an **accepted**
+   `ADR-0222-public-distribution-and-catalog-completion.md` (caisson-sh org + `@caisson-sh` scope +
+   catalog completion) and its `docs/adr-index.md` states `ceiling 0222`. The prior draft reserved
+   0222 for its own "caisson-oss npmjs mirror" and safeguarded only by "confirm the ceiling on
+   `main`." Fix: this SPEC now files **one** ADR (the option-A lock, ≥ 0223), **references** the
+   in-flight 0222 as the mirror rather than re-filing it, instructs checking OPEN ADR branches (not
+   just `main`), and adds **Risk 10** flagging the ADR-0088 renumber-at-merge.
+3. **DEFECT 3 (Medium — version-commit gap inherited) — CONFIRMED, fixed.** `publish.yml:94-105`
+   stages only `registry/ledger.jsonl` + `registry/index.json`; `.changeset/config.json` is
+   `"commit": false` and no `changesets/action` exists, so the `changeset version` bumps
+   (`package.json`, `CHANGELOG.md`, consumed `.changeset/*.md`) are never persisted. Real latent bug,
+   un-exercised because the leg is dry-run only. Fix: surfaced in **Current state**, and Design §3 /
+   Task 3 now extend the commit step to stage the version-bump artifacts in the same commit, with a
+   Task-3 assertion + **Risk 11**.
+4. **DEFECT 4 (Low — citation precision) — CONFIRMED, fixed** (with one sub-reference refuted). The
+   fingerprint `0ae7d2abb886ca3d` is in the doc-comment at `verify.ts:27`, not the SPKI constant at
+   `verify.ts:34-35`. Fix: the sole citation (Design "Current state", formerly line ~110) now cites
+   `verify.ts:27` for the fingerprint and `verify.ts:34-35` for the baked key. **Refuted
+   sub-reference:** the critique also cited "SPEC line 413" as carrying the same mis-citation — it
+   does not; line 413 (Risk 7) cites `claims.ts:37-43` + `license-token-card.tsx`, never
+   `verify.ts:34-35`. Only the one citation existed and is fixed.
+5. **DEFECT 5 (Low/Medium — mischaracterized upstream issue) — CONFIRMED, fixed.** Verified against
+   `github.com/anthropics/claude-code/issues/51618`: the issue documents **Bun 1.3.11/1.3.13
+   FORWARDING** the `Authorization` header across a cross-origin redirect (curl/npm strip it and
+   succeed); the forwarded header + SAS query token trips a 503 in the sandbox egress proxy — the
+   opposite of the prior draft's "the client strips Authorization." Fix: Fork A2 tradeoff + Risk 4
+   rewritten — standard RFC-9110 clients strip (so A2's query-string capability leaks into the
+   lockfile), AND Bun unpredictably forwards (so the raw bearer license token reaches the R2 host as
+   a header) — two independent leak/failure modes, reinforcing the A1 (same-origin) recommendation.
