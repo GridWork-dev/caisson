@@ -27,16 +27,21 @@ export default defineModule({
     "@caisson/local-store",
     "@caisson/tool-exec",
   ],
-  // Frozen member pin map (ADR-0077): edition self + every bundled dependency, exact-version.
+  // Frozen member pin map (ADR-0077): edition self + every bundled dependency, exact-version. Each pin
+  // is the member's CURRENT published version in registry/index.json. No code rewrites these pins
+  // (there is no publish-time rewrite step) — they are hand-maintained: the members-fold republish
+  // snapshots this map into registry/ledger.jsonl → registry/index.json (byte-identical CI rebuild),
+  // and the full-tree-index guard test asserts every pin resolves to a real published ledger version
+  // (never the "0.0.0" dev sentinel).
   members: {
-    "@caisson/agent-dev": "0.0.0",
-    "@caisson/agent-kernel": "0.0.0",
-    "@caisson/ai-config": "0.0.0",
-    "@caisson/kernel": "0.0.0",
-    "@caisson/local-store": "0.0.0",
-    // Stage-2 harvest primitive folded into the Agentic-Dev bundle (ADR-0178). Dev-pinned "0.0.0";
-    // the gated publish rewrites to the real version snapshot in the ledger.
-    "@caisson/tool-exec": "0.0.0",
+    "@caisson/agent-dev": "0.1.0",
+    "@caisson/agent-kernel": "0.1.0",
+    "@caisson/ai-config": "0.1.0",
+    "@caisson/kernel": "0.1.0",
+    "@caisson/local-store": "0.1.0",
+    // Stage-2 harvest primitive folded into the Agentic-Dev bundle (ADR-0178/0199 — wired live in
+    // src/index.ts's createAgentDevEdition).
+    "@caisson/tool-exec": "0.1.0",
   },
   golden: "src/__golden__",
   description:
