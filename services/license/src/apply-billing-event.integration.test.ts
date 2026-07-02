@@ -4,9 +4,15 @@
 // proration (subscription_update) grants nothing; an unknown price id fails closed (throws, no row);
 // cancel never claws back. Each test uses its own account id so no cross-test cleanup is needed.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { ConfigError } from "@caisson/kernel";
+import { ConfigError, asCredits } from "@caisson/kernel";
 import { type TestPg, newTestPg } from "@caisson/testing";
-import { CREDIT_SCHEMA_SQL, balance, debit, getLedger } from "@caisson/credits";
+import {
+  CREDIT_ROUNDING_MIGRATION_SQL,
+  CREDIT_SCHEMA_SQL,
+  balance,
+  debit,
+  getLedger,
+} from "@caisson/credits";
 import { withTenant } from "@caisson/tenancy-rls";
 import { type DomainBillingEvent, parseStripeEvent } from "@caisson/billing";
 import { applyBillingEvent } from "./apply-billing-event.ts";
@@ -62,6 +68,7 @@ let tp: TestPg;
 beforeAll(async () => {
   tp = await newTestPg();
   await tp.exec(CREDIT_SCHEMA_SQL);
+  await tp.exec(CREDIT_ROUNDING_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
 });
 
@@ -103,6 +110,16 @@ describe("applyBillingEvent — subscription cycle -> grant (ADR-0089)", () => {
     expect(ledger[0]?.event_type).toBe("sub_allotment");
     expect(ledger[0]?.amount).toBe(CREDITS);
     expect(ledger[0]?.source_event_id).toBe("in_1");
+    // ADR-0206/ADR-0089 §5: the cycle grant is the EXACT plan-table integer — no rounding site in
+    // the path, so the row correctly persists NULL/NULL provenance.
+    const prov = await tp.query<{
+      rounding_raw: number | null;
+      rounding_mode: string | null;
+    }>(
+      `SELECT rounding_raw, rounding_mode FROM credit_event WHERE account_id = $1`,
+      [acct],
+    );
+    expect(prov).toEqual([{ rounding_raw: null, rounding_mode: null }]);
   });
 
   test("a webhook retry on the same invoice id is idempotent — one row", async () => {
@@ -379,7 +396,7 @@ describe("applyBillingEvent — refund: revoke + claw unspent credits (ADR-0113)
       debit(tx, {
         eventType: "codegen_debit",
         accountId: acct,
-        amount: 4000,
+        amount: asCredits(4000),
         idempotencyKey: "spend_sp",
       }),
     );
@@ -402,7 +419,7 @@ describe("applyBillingEvent — refund: revoke + claw unspent credits (ADR-0113)
       debit(tx, {
         eventType: "codegen_debit",
         accountId: acct,
-        amount: PACK_CREDITS,
+        amount: asCredits(PACK_CREDITS),
         idempotencyKey: "spend_z",
       }),
     );
