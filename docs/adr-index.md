@@ -597,12 +597,13 @@ Two picks override the spec recommendations (PF-1 → C-b columns; AM-2 → dedi
 role) and one adds scope (ONNX F2-B EgressGuard unification, security tag). The other 6 specs stay
 draft.
 
-| #                                                                                 | Title                                                                        | Domain         | Status   | Relations                                                          |
-| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------- | -------- | ------------------------------------------------------------------ |
-| [0218](../knowledge/decisions/ADR-0218-billing-paddle-per-line-partial-refund.md) | Paddle per-line partial refund: revoke + clawback (C-b/A-1/B-1/D-2)          | Base/Billing   | accepted | supersedes 0113 full-refund clause + §1 index; realizes 0204 defer |
-| [0219](../knowledge/decisions/ADR-0219-infra-cloudflare-front-rate-limit.md)      | Cloudflare front rate-limit + WAF: docs-api proxied, Free tier, DEPLOY-gated | Infra/Edge     | accepted | realizes 0204 edge defer; app limiters stay                        |
-| [0220](../knowledge/decisions/ADR-0220-admin-mutation-surface-v1.md)              | Admin mutation surface v1: 4 actions, admin_write role, dual-logged          | Admin/Security | accepted | supersedes 0141 mutation defer; relates 0204/0074/0152             |
-| [0221](../knowledge/decisions/ADR-0221-live-seams-kms-onnx-completion.md)         | Live seams: KMS envelope proof + ONNX disposition (G1 carve-out, F2 unify)   | Security/AI    | accepted | extends 0201; relates 0045/0171/0215                               |
+| #                                                                                     | Title                                                                        | Domain           | Status   | Relations                                                          |
+| ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ---------------- | -------- | ------------------------------------------------------------------ |
+| [0218](../knowledge/decisions/ADR-0218-billing-paddle-per-line-partial-refund.md)     | Paddle per-line partial refund: revoke + clawback (C-b/A-1/B-1/D-2)          | Base/Billing     | accepted | supersedes 0113 full-refund clause + §1 index; realizes 0204 defer |
+| [0219](../knowledge/decisions/ADR-0219-infra-cloudflare-front-rate-limit.md)          | Cloudflare front rate-limit + WAF: docs-api proxied, Free tier, DEPLOY-gated | Infra/Edge       | accepted | realizes 0204 edge defer; app limiters stay                        |
+| [0220](../knowledge/decisions/ADR-0220-admin-mutation-surface-v1.md)                  | Admin mutation surface v1: 4 actions, admin_write role, dual-logged          | Admin/Security   | accepted | supersedes 0141 mutation defer; relates 0204/0074/0152             |
+| [0221](../knowledge/decisions/ADR-0221-live-seams-kms-onnx-completion.md)             | Live seams: KMS envelope proof + ONNX disposition (G1 carve-out, F2 unify)   | Security/AI      | accepted | extends 0201; relates 0045/0171/0215                               |
+| [0222](../knowledge/decisions/ADR-0222-public-distribution-and-catalog-completion.md) | Distribution: caisson-sh org, @caisson-sh npm scope, catalog completion      | GTM/Distribution | accepted | distributes 0094/0097/0136; exercises 0106 pricing                 |
 
 ---
 
