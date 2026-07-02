@@ -29,7 +29,7 @@ const COLS: { heading: string; links: { href: string; label: string }[] }[] = [
       { href: "/procurement", label: "Security & procurement" },
       { href: "/llms.txt", label: "llms.txt" },
       {
-        href: "https://github.com/GridWork-dev/caisson",
+        href: "https://github.com/caisson-sh/caisson",
         label: "GitHub",
       },
     ],

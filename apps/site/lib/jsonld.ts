@@ -26,7 +26,7 @@ export const rootGraph = {
       url: SITE_URL,
       description:
         "Compliance-grade infrastructure for regulated SaaS — fail-closed Postgres RLS, S3 Object-Lock WORM, and an append-only audit chain.",
-      sameAs: ["https://github.com/GridWork-dev/caisson"],
+      sameAs: ["https://github.com/caisson-sh/caisson"],
     },
     {
       "@type": "WebSite",

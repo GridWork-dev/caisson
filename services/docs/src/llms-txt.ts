@@ -6,7 +6,7 @@ import type { Corpus } from "./corpus.ts";
 import type { DocChunk, DocPage } from "./types.ts";
 
 const DEFAULT_ORIGIN = "https://caisson.sh";
-const GITHUB_BLOB = "https://github.com/GridWork-dev/caisson/blob/main";
+const GITHUB_BLOB = "https://github.com/caisson-sh/caisson/blob/main";
 const FALLBACK_SUMMARY =
   "Compliance-grade infrastructure for regulated SaaS — a composable base substrate plus premium " +
   "editions, a create-caisson generator, and a support service. This is the machine-readable docs " +
