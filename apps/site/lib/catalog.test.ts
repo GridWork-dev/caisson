@@ -58,26 +58,31 @@ describe("catalog coverage", () => {
     }
   });
 
-  test("every one of the 14 modules has a catalog item", () => {
+  test("every one of the 15 modules has a catalog item", () => {
     for (const m of MODULE_PRICES) {
       expect(moduleCatalogItem(m.id)).toBeDefined();
     }
-    expect(MODULE_CATALOG.length).toBe(14);
+    expect(MODULE_CATALOG.length).toBe(15);
   });
 
-  test("module price ids are placeholders pending pricebook rows", () => {
+  test("every module has a catalog item carrying a real Paddle price id", () => {
     for (const c of MODULE_CATALOG) {
-      expect(c.priceId).toContain("PLACEHOLDER");
+      expect(c.priceId.startsWith("pri_")).toBe(true);
     }
   });
 
-  test("every module price id resolves in the pricebook PURCHASE_BOOK (cart→webhook grant path)", () => {
+  test("every module price id resolves in the pricebook PURCHASE_BOOK to its own entitlement (cart→webhook grant path)", () => {
     // The cart passes catalog.priceId to Paddle.Checkout; the webhook resolves that SAME id in the
     // pricebook to grant the entitlement. A key-convention mismatch (the bug this guards) fails
-    // resolvePurchase closed → the module purchase grants nothing. Holds for placeholders today and
-    // for the real `pri_…` ids after go-live (both must land matched in catalog + pricebook).
+    // resolvePurchase closed → the module purchase grants nothing. The invariant that matters is not
+    // just "the id resolves" but "it resolves to THIS module's slug, license-only" — a purchase must
+    // grant exactly the entitlement the buyer paid for.
     for (const c of MODULE_CATALOG) {
       expect(Object.hasOwn(PURCHASE_BOOK, c.priceId)).toBe(true);
+      const slug = c.id.replace(/^module:/, "");
+      const entry = PURCHASE_BOOK[c.priceId];
+      expect(entry?.entitlements).toEqual([slug]);
+      expect(entry?.credits).toBe(0);
     }
   });
 

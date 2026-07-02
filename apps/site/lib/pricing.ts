@@ -211,6 +211,14 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     blurb:
       "The hooks dispatcher and local hybrid memory that wire a governed agent into your existing dev loop.",
   },
+  {
+    id: "agent-runner",
+    label: "Agent runner",
+    amount: 49,
+    edition: "agentic-dev",
+    blurb:
+      "Sandboxed, governed agent execution — spawn a headless coding agent in an isolated worktree, stream an auditable transcript, zero secret leak by construction.",
+  },
 ] as const;
 
 /** Every module belonging to `edition`, in catalog order. */
@@ -238,7 +246,7 @@ export const PLAN_PRICES: readonly PriceAnchor[] = [
     amount: MODULE_MIN_AMOUNT,
     unit: "once",
     from: true,
-    note: "Take a single module à la carte — 14 modules across the four editions.",
+    note: "Take a single module à la carte — 15 modules across the four editions.",
   },
   {
     id: "compliance-updates",
