@@ -179,6 +179,9 @@ needs a real external account, infra, or deploy (DEPLOY-class, operator-gated).
 | License issuer      | Ed25519 signing **keypair** — ✅ **provisioned** (`CAISSON_LICENSE_SIGNING_KEY` in env; public → `infra/license-issuer/`) | P6/B4 done; code-track bakes the public key + builds the issuer sign path |
 | Waitlist function   | `RESEND_API_KEY` + `RESEND_SEGMENT_ID` (+ Turnstile, KV RL)                                                               | legacy/secondary seam post-ADR-0082 self-serve flip                       |
 | Lighthouse CI       | `LHCI_GITHUB_APP_TOKEN`                                                                                                   | optional — audit runs without it (no GitHub status post)                  |
+| Discord OAuth link  | `DISCORD_CLIENT_ID` + `DISCORD_CLIENT_SECRET` (`caisson-site`)                                                            | ADR-0201 — unset ⇒ Discord drops out of the better-auth provider list     |
+| Discord role push   | `SUPPORT_BOT_URL` + `SUPPORT_BOT_GRANT_TOKEN` (`caisson-license` **and** `caisson-site`)                                  | ADR-0201 — unset ⇒ the post-grant push and `/api/discord/backfill` no-op  |
+| Discord role push   | `BILLING_GRANT_TOKEN` (`caisson-support-bot`)                                                                             | ADR-0201 — unset ⇒ bot serves only `/health`, `POST /billing-grant` off   |
 
 ### Ops hygiene (non-blocking)
 
