@@ -1,6 +1,6 @@
 {
   "name": "@caisson/compliance",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
   "publishConfig": {
@@ -21,10 +21,12 @@
     "test": "bun test ./src"
   },
   "dependencies": {
+    "@caisson/alerting": "workspace:*",
     "@caisson/audit-worm": "workspace:*",
     "@caisson/field-crypto": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/migrate": "workspace:*",
+    "@caisson/retention-runner": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",
     "@noble/ed25519": "^3.1.0",
     "zod": "^3.23.8"

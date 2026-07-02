@@ -23,10 +23,14 @@ export default defineModule({
   license: pkg.license,
   // Must mirror package.json's @caisson/* deps exactly (the gate fails on drift). @caisson/migrate is
   // the base migration assembler/runner the edition COMPOSES at build/test time (ADR-0090).
+  // @caisson/alerting + @caisson/retention-runner are the Stage-2 primitives folded into the bundle
+  // (ADR-0178) and composed at runtime via `createComplianceEdition` (src/edition.ts, ADR-0199 shape).
   dependencies: [
+    "@caisson/alerting",
     "@caisson/audit-worm",
     "@caisson/field-crypto",
     "@caisson/migrate",
+    "@caisson/retention-runner",
     "@caisson/tenancy-rls",
     "@caisson/kernel",
   ],
@@ -35,16 +39,20 @@ export default defineModule({
   // via npm when the edition installs), not a buyer top-level module — folding it would force migrate
   // to be published before the edition could generate (members pins fail closed if absent from the
   // index, meter.ts resolveEditionMembers). It stays a dependency, not a frozen member pin.
+  // Each pin is the member's CURRENT published version in registry/index.json. No code rewrites these
+  // pins (there is no publish-time rewrite step) — they are hand-maintained: the members-fold republish
+  // snapshots this map into registry/ledger.jsonl → registry/index.json (byte-identical CI rebuild),
+  // and the full-tree-index guard test asserts every pin resolves to a real published ledger version
+  // (never the "0.0.0" dev sentinel).
   members: {
-    "@caisson/compliance": "0.0.0",
-    "@caisson/audit-worm": "0.0.0",
-    "@caisson/field-crypto": "0.0.0",
-    "@caisson/tenancy-rls": "0.0.0",
-    "@caisson/kernel": "0.0.0",
-    // Stage-2 harvest primitives folded into the Compliance bundle (ADR-0178). Dev-pinned "0.0.0";
-    // the gated publish rewrites to the real version snapshot in the ledger.
-    "@caisson/alerting": "0.0.0",
-    "@caisson/retention-runner": "0.0.0",
+    "@caisson/compliance": "0.2.0",
+    "@caisson/audit-worm": "0.2.0",
+    "@caisson/field-crypto": "0.2.0",
+    "@caisson/tenancy-rls": "0.2.0",
+    "@caisson/kernel": "0.2.0",
+    // Stage-2 harvest primitives folded into the Compliance bundle (ADR-0178).
+    "@caisson/alerting": "0.1.1",
+    "@caisson/retention-runner": "0.1.1",
   },
   golden: "src/__golden__",
   description:

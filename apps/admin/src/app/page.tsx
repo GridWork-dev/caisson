@@ -24,7 +24,7 @@ const SECTIONS: Section[] = [
   },
   {
     title: "Ops & observability",
-    desc: "Fleet health + SigNoz-backed telemetry widgets, with deep-links to the full traces.",
+    desc: "Fleet health + Grafana-backed telemetry widgets, with deep-links to the full traces.",
     state: "soon",
   },
   {

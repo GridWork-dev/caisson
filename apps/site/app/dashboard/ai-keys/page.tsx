@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { DataTable, StatusChip } from "@caisson/ui/components";
 import { ByokForm } from "@/components/byok-form";
 import { type ByokKeyStatus, readKeyStatuses } from "@/lib/byok";
-import { requireDashboardSession } from "@/lib/auth";
+import { isOwner, requireDashboardSession } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "AI keys" };
 
@@ -67,18 +67,26 @@ export default async function DashboardAiKeysPage() {
         empty={<span className="cs-muted">No provider keys stored yet.</span>}
       />
 
-      <div>
-        <h2
-          className="cs-card-title"
-          style={{
-            fontSize: "var(--cs-text-lg)",
-            marginBottom: "var(--cs-space-4)",
-          }}
-        >
-          Add or rotate a key
-        </h2>
-        <ByokForm />
-      </div>
+      {/* Key writes are owner-only (vuln-0006, ADR-0208 #1) — POST /api/byok enforces the 403;
+          this just mirrors the members-page seat view. The masked table above stays seat-visible. */}
+      {isOwner(session) ? (
+        <div>
+          <h2
+            className="cs-card-title"
+            style={{
+              fontSize: "var(--cs-text-lg)",
+              marginBottom: "var(--cs-space-4)",
+            }}
+          >
+            Add or rotate a key
+          </h2>
+          <ByokForm />
+        </div>
+      ) : (
+        <p className="cs-muted">
+          Only the account owner can add or rotate provider keys.
+        </p>
+      )}
     </div>
   );
 }
