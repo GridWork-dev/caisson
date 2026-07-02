@@ -8,6 +8,7 @@
 // emit is an inherently headless flow. An optional Next.js inspector over the audited record is
 // deferred (SPEC out-of-scope). See `apps/agent-dev/README.md`.
 export * from "./demo.ts";
+export * from "./runner-demo.ts";
 
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";

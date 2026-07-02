@@ -9,6 +9,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { z } from "zod";
 import type { EvalRun } from "./define-eval.ts";
+import { wilsonLowerBound } from "./wilson.ts";
 
 /** Identical BLESS semantics to `@caisson/testing` `golden.ts` — the one sanctioned rewrite gate. */
 function blessEnabled(): boolean {
@@ -50,7 +51,8 @@ export type RegressionKind =
   | "score-regression"
   | "scorer-regression"
   | "missing-baseline"
-  | "fewer-cases";
+  | "fewer-cases"
+  | "wilson-below-floor";
 
 export interface RegressionFinding {
   readonly kind: RegressionKind;
@@ -133,6 +135,28 @@ export function compareToBaseline(
       baseline: prior.cases,
       detail: `dataset shrank from ${prior.cases} to ${run.cases} cases`,
     });
+  }
+
+  // Wilson-CI gate augmentation (ADR-0214), opt-in and additive: unset `wilsonFloor` → zero behavior
+  // change (skips this block entirely). Per-scorer successes come from `scoredCases[].passes[scorer]`
+  // over `run.cases` — a confidence floor distinct from `threshold` (which gates the mean), looser,
+  // to catch a lucky-draw small sample rather than a genuinely low score.
+  if (run.wilsonFloor !== undefined) {
+    for (const scorer of Object.keys(run.scorers)) {
+      const successes = run.scoredCases.filter(
+        (sc) => sc.passes[scorer] === true,
+      ).length;
+      const lowerBound = wilsonLowerBound(successes, run.cases);
+      if (lowerBound < run.wilsonFloor - EPS) {
+        findings.push({
+          kind: "wilson-below-floor",
+          scorer,
+          actual: lowerBound,
+          baseline: run.wilsonFloor,
+          detail: `scorer "${scorer}" Wilson lower bound ${lowerBound} (successes=${successes}/${run.cases}) below floor ${run.wilsonFloor}`,
+        });
+      }
+    }
   }
 
   return {

@@ -95,6 +95,11 @@ describe("stdio transport binding (T5.3)", () => {
       "generate",
       "list_modules",
     ]);
+    // ADR-0216: every listed tool carries a non-empty description over this transport.
+    for (const t of tools.tools) {
+      expect(typeof t.description).toBe("string");
+      expect((t.description ?? "").length).toBeGreaterThan(0);
+    }
 
     const result = await client.callTool({
       name: "list_modules",

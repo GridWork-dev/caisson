@@ -4,6 +4,7 @@
 export {
   CREDIT_CONVERSION,
   centsToCredits,
+  centsToCreditsProvenance,
   creditConversionSchema,
   parseCreditConversion,
 } from "@caisson/kernel";

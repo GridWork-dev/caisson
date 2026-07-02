@@ -20,5 +20,5 @@ export default defineModule({
   dependencies: [],
   golden: "__evals__",
   description:
-    "Eval harness (defineEval over the matchGolden BLESS discipline) + grader taxonomy (exact / regex / json-shape / schema / model-graded via a Judge port + a fail-closed injection class that can't be loosened) + a regression-vs-committed-baseline gate. Offline + deterministic — cassette-replayed judge, live driver injected locally (ADR-0062).",
+    "Eval harness (defineEval over the matchGolden BLESS discipline) + grader taxonomy (exact / regex / json-shape / schema / model-graded via a Judge port + a fail-closed injection class that can't be loosened) + a regression-vs-committed-baseline gate, deepened with eval-science primitives (ADR-0214): an exit-reason classifier, an opt-in Wilson-CI confidence-floor gate augmentation, a budget-isolated eval-spend ledger, a production judge/human reflexivity queue, and Fleiss-kappa ensemble agreement + counterfactual stability scoring. Offline + deterministic — cassette-replayed judge, live driver injected locally (ADR-0062).",
 });

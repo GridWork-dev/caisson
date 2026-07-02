@@ -41,11 +41,23 @@ afterAll(async () => {
 
 test("platform migrations apply in order then are idempotent", async () => {
   const first = await runPlatformMigrations(pgliteApplier(tp));
-  expect(first.applied).toEqual([1, 2, 3, 4, 5, 6]);
+  expect(first.applied).toEqual([1, 2, 3, 4, 5, 6, 7]);
 
   const second = await runPlatformMigrations(pgliteApplier(tp));
   expect(second.applied).toEqual([]);
-  expect(second.skipped).toEqual([1, 2, 3, 4, 5, 6]);
+  expect(second.skipped).toEqual([1, 2, 3, 4, 5, 6, 7]);
+});
+
+test("0007 adds the ADR-0212 rounding provenance columns to credit_event", async () => {
+  const cols = await tp.query<{ column_name: string; data_type: string }>(
+    `SELECT column_name, data_type FROM information_schema.columns
+     WHERE table_name = 'credit_event' AND column_name IN ('rounding_raw','rounding_mode')
+     ORDER BY column_name`,
+  );
+  expect(cols).toEqual([
+    { column_name: "rounding_mode", data_type: "text" },
+    { column_name: "rounding_raw", data_type: "integer" },
+  ]);
 });
 
 test("every composed tenant table ships FORCE row-level security", async () => {

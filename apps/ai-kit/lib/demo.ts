@@ -16,6 +16,8 @@ import {
   GuardrailError,
   InMemoryEventSink,
   InsufficientCreditsError,
+  asCredits,
+  asMicroUsdPerCredit,
 } from "@caisson/kernel";
 import { SPEND_POLICY_TABLE, SpendCapError } from "@caisson/ai-meter";
 import type { MeterConfig } from "@caisson/ai-meter";
@@ -52,7 +54,7 @@ const METER: MeterConfig = {
       outputPerMTok: 2_000_000,
     },
   },
-  conversion: { microUsdPerCredit: 100 },
+  conversion: { microUsdPerCredit: asMicroUsdPerCredit(100) },
   now: new Date("2026-06-27T12:00:00Z"),
 };
 
@@ -86,7 +88,7 @@ function seed(tx: Transactor, amount: number): Promise<unknown> {
   return withTenant(tx, ACCOUNT, (t) =>
     grant(t, {
       accountId: ACCOUNT,
-      amount,
+      amount: asCredits(amount),
       eventType: "purchase",
       sourceEventId: `seed:${randomUUID()}`,
     }),

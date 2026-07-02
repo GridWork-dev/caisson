@@ -91,11 +91,18 @@ describe("publish-readiness flip (ADR-0111)", () => {
       "@caisson/tool-exec",
       "@caisson/platform-reads",
     ]);
+    // First publishes AFTER the republish enter at their own initial version (mirrors the
+    // FIRST_PUBLISH map in registry/scripts/full-tree-index.test.ts).
+    const FIRST_PUBLISH: Record<string, string> = {
+      // Slice-2 harvest (ADR-0186): published 0.1.0 the same day, after the 0.2.0 wave.
+      "@caisson/agent-runner": "0.1.0",
+    };
     const off = published
       .filter(
         (p) =>
           p.pj.version !==
-          (PATCH_ONLY.has(p.pj.name ?? "") ? "0.1.1" : "0.2.0"),
+          (FIRST_PUBLISH[p.pj.name ?? ""] ??
+            (PATCH_ONLY.has(p.pj.name ?? "") ? "0.1.1" : "0.2.0")),
       )
       .map((p) => `${p.pj.name}@${p.pj.version}`);
     expect(off).toEqual([]);

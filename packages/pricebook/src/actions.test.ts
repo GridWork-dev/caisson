@@ -21,9 +21,9 @@ describe("action-book", () => {
     );
   });
   test("ADR-0182: a tenant (BYOK) keySource zeroes the debit", () => {
-    expect(resolveActionCost("codegenRunCredits", ACTION_BOOK, "tenant")).toBe(
-      0,
-    );
+    expect<number>(
+      resolveActionCost("codegenRunCredits", ACTION_BOOK, "tenant"),
+    ).toBe(0);
   });
   test("an unknown action still throws under a tenant keySource (fail-closed)", () => {
     expect(() =>
@@ -38,8 +38,8 @@ describe("action-book", () => {
       evidencePackCredits: 50,
     } as unknown as ActionBook;
     const tag = "evidencePackCredits" as unknown as ActionTag;
-    expect(resolveActionCost(tag, book, "tenant")).toBe(50);
-    expect(resolveActionCost(tag, book, "env")).toBe(50);
+    expect<number>(resolveActionCost(tag, book, "tenant")).toBe(50);
+    expect<number>(resolveActionCost(tag, book, "env")).toBe(50);
   });
   test("BYOK_COVERED_ACTIONS is the explicit allowlist (new actions default to metered)", () => {
     expect(BYOK_COVERED_ACTIONS.has("codegenRunCredits")).toBe(true);

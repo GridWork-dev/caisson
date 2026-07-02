@@ -20,11 +20,55 @@ export interface TaskDefinition<T> {
 }
 
 /**
- * The queue port. Every driver (in-memory, Trigger.dev) implements this one method; the credit /
- * billing path depends only on this contract, so the side-effect stays decoupled + swappable.
+ * Options for `enqueue` (ADR-0211). `idempotencyKey` makes a retried call a no-op: the same key
+ * on the same task name produces at most one job — see each driver for its dedupe mechanism
+ * (pg-boss: a deterministic PK id; Trigger.dev: native `idempotencyKey`; in-memory: a keyed Set).
+ */
+export interface EnqueueOptions {
+  idempotencyKey?: string;
+}
+
+/**
+ * The queue port. Every driver (in-memory, Trigger.dev, pg-boss) implements this one method; the
+ * credit / billing path depends only on this contract, so the side-effect stays decoupled +
+ * swappable. `options` is optional — every existing 2-arg caller keeps compiling.
  */
 export interface JobQueue {
-  enqueue(name: string, payload: unknown): Promise<void>;
+  enqueue(
+    name: string,
+    payload: unknown,
+    options?: EnqueueOptions,
+  ): Promise<void>;
+}
+
+/** A running consumer's handle. `stop()` releases whatever `work()` claimed/subscribed. */
+export interface WorkHandle {
+  stop(): Promise<void>;
+}
+
+/**
+ * The claim/worker port (ADR-0211). `work(name)` resolves against the SAME `TaskDefinition`
+ * registry `enqueue` uses — no second handler, no drift — and 404s (`NotFoundError`) on an
+ * unregistered name. pg-boss consumes for real (native SKIP LOCKED); in-memory and Trigger.dev
+ * are honest no-ops (see each driver for why).
+ */
+export interface JobConsumer {
+  work(name: string): Promise<WorkHandle>;
+}
+
+/** The smallest honest visibility read: driver-reported job counts for one queue name. */
+export interface QueueState {
+  queuedCount: number;
+  activeCount: number;
+  failedCount: number;
+}
+
+/**
+ * The visibility-ledger port (ADR-0211). Not every driver can answer it truthfully — Trigger.dev
+ * has no local read, so it does not implement this port at all (see `trigger-driver.ts`).
+ */
+export interface JobLedger {
+  getQueueState(name: string): Promise<QueueState>;
 }
 
 /**
@@ -49,15 +93,26 @@ export function defineTask<T>(
  * The in-memory/synchronous driver. `enqueue` finds the task by name (404 if unregistered),
  * validates the payload against its `.strict()` schema (`ValidationError` on a bad payload), then
  * awaits the handler — synchronous execution is what makes side-effects assertable in a unit test.
+ *
+ * `idempotencyKey` dedupe is a `Set<"name\0key">` on the closure: a repeat key is a no-op (the
+ * handler is not re-invoked, no error). A handler that throws increments a per-name failure
+ * counter, read back via `getQueueState`.
  */
 export function createInMemoryQueue(
   tasks: readonly TaskDefinition<unknown>[],
-): JobQueue {
+): JobQueue & JobConsumer & JobLedger {
   const registry = new Map<string, TaskDefinition<unknown>>(
     tasks.map((task) => [task.name, task]),
   );
+  const seenIdempotencyKeys = new Set<string>();
+  const failureCounts = new Map<string, number>();
+
   return {
-    async enqueue(name: string, payload: unknown): Promise<void> {
+    async enqueue(
+      name: string,
+      payload: unknown,
+      options?: EnqueueOptions,
+    ): Promise<void> {
       const task = registry.get(name);
       if (task === undefined) {
         throw new NotFoundError(`No task registered for "${name}"`, {
@@ -65,7 +120,42 @@ export function createInMemoryQueue(
         });
       }
       const validated = parseStrict(task.schema, payload);
-      await task.handler(validated);
+
+      if (options?.idempotencyKey !== undefined) {
+        const dedupeKey = `${name}\0${options.idempotencyKey}`;
+        if (seenIdempotencyKeys.has(dedupeKey)) {
+          return;
+        }
+        seenIdempotencyKeys.add(dedupeKey);
+      }
+
+      try {
+        await task.handler(validated);
+      } catch (error) {
+        failureCounts.set(name, (failureCounts.get(name) ?? 0) + 1);
+        throw error;
+      }
+    },
+
+    async work(name: string): Promise<WorkHandle> {
+      if (!registry.has(name)) {
+        throw new NotFoundError(`No task registered for "${name}"`, {
+          task: name,
+        });
+      }
+      // ponytail: no backlog to poll — work() exists for port symmetry
+      return {
+        async stop(): Promise<void> {},
+      };
+    },
+
+    async getQueueState(name: string): Promise<QueueState> {
+      // ponytail: honest zero, not a fake pending-count
+      return {
+        queuedCount: 0,
+        activeCount: 0,
+        failedCount: failureCounts.get(name) ?? 0,
+      };
     },
   };
 }

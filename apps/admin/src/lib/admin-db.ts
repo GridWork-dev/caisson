@@ -11,7 +11,10 @@
 // empty tables. In prod the tables + the `admin` role + its policies are provisioned on the Railway
 // PG at DEPLOY (buildAdminReadPolicySql output, ADR-0141) — never by this app.
 import { PGlite } from "@electric-sql/pglite";
-import { CREDIT_SCHEMA_SQL } from "@caisson/credits";
+import {
+  CREDIT_ROUNDING_MIGRATION_SQL,
+  CREDIT_SCHEMA_SQL,
+} from "@caisson/credits";
 import {
   ENTITLEMENT_SCHEMA_SQL,
   LICENSE_GRANT_SCHEMA_SQL,
@@ -93,6 +96,7 @@ async function bootstrapPglite(): Promise<PGlite> {
   await pg.exec(ADMIN_ROLE_BOOTSTRAP_SQL);
   // Real schema DDL (tenant policies + GRANT app included), then the additive admin-read policies.
   await pg.exec(CREDIT_SCHEMA_SQL);
+  await pg.exec(CREDIT_ROUNDING_MIGRATION_SQL);
   await pg.exec(ENTITLEMENT_SCHEMA_SQL);
   await pg.exec(LICENSE_GRANT_SCHEMA_SQL);
   for (const table of ADMIN_READ_TABLES) {
