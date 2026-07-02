@@ -271,6 +271,148 @@ describe("regression gate vs committed baseline (BLESS unset)", () => {
   });
 });
 
+describe("Wilson-CI gate augmentation (ADR-0208, opt-in additive)", () => {
+  test("wilsonFloor unset: the committed evals gate is unaffected (no wilson-below-floor finding)", async () => {
+    const compliance = await runCompliance();
+    expect(compliance.wilsonFloor).toBeUndefined();
+    const baseline = loadBaseline(BASELINE_FILE);
+    const cmp = compareToBaseline(compliance, baseline);
+    expect(cmp.passed).toBe(true);
+    expect(cmp.findings.map((f) => f.kind)).not.toContain("wilson-below-floor");
+  });
+
+  test("defineEval threads wilsonFloor onto the returned EvalRun", async () => {
+    const run = await defineEval({
+      name: "t",
+      promptVersionId: complianceDataset.promptVersionId,
+      threshold: 0.5,
+      wilsonFloor: 0.3,
+      cases: [
+        { id: "c1", input: {}, output: "hello", expected: { equals: "hello" } },
+      ],
+      scorers: { exact: exactGrader() },
+    });
+    expect(run.wilsonFloor).toBe(0.3);
+  });
+
+  test("a small 100%-pass sample clears a low wilsonFloor", () => {
+    const baseline = loadBaseline(BASELINE_FILE);
+    const run: EvalRun = {
+      name: "compliance-answer",
+      promptVersionId: complianceDataset.promptVersionId,
+      threshold: 0.5,
+      cases: 3,
+      score: 1,
+      scorers: { "cites-control": 1 },
+      passed: true,
+      scoredCases: [
+        {
+          caseId: "a",
+          scores: { "cites-control": 1 },
+          passes: { "cites-control": true },
+          score: 1,
+        },
+        {
+          caseId: "b",
+          scores: { "cites-control": 1 },
+          passes: { "cites-control": true },
+          score: 1,
+        },
+        {
+          caseId: "c",
+          scores: { "cites-control": 1 },
+          passes: { "cites-control": true },
+          score: 1,
+        },
+      ],
+      wilsonFloor: 0.3,
+    };
+    const cmp = compareToBaseline(run, baseline);
+    expect(cmp.findings.map((f) => f.kind)).not.toContain("wilson-below-floor");
+  });
+
+  test("a small 100%-pass sample MISSES a high wilsonFloor (lucky-draw catch)", () => {
+    const baseline = loadBaseline(BASELINE_FILE);
+    const run: EvalRun = {
+      name: "compliance-answer",
+      promptVersionId: complianceDataset.promptVersionId,
+      threshold: 0.5,
+      cases: 3,
+      score: 1,
+      scorers: { "cites-control": 1 },
+      passed: true,
+      scoredCases: [
+        {
+          caseId: "a",
+          scores: { "cites-control": 1 },
+          passes: { "cites-control": true },
+          score: 1,
+        },
+        {
+          caseId: "b",
+          scores: { "cites-control": 1 },
+          passes: { "cites-control": true },
+          score: 1,
+        },
+        {
+          caseId: "c",
+          scores: { "cites-control": 1 },
+          passes: { "cites-control": true },
+          score: 1,
+        },
+      ],
+      wilsonFloor: 0.9,
+    };
+    const cmp = compareToBaseline(run, baseline);
+    expect(cmp.passed).toBe(false);
+    const finding = cmp.findings.find((f) => f.kind === "wilson-below-floor");
+    expect(finding).toBeDefined();
+    expect(finding?.scorer).toBe("cites-control");
+  });
+
+  test("a partially-failing scorer lowers the bound enough to miss a moderate floor", () => {
+    const baseline = loadBaseline(BASELINE_FILE);
+    const run: EvalRun = {
+      name: "compliance-answer",
+      promptVersionId: complianceDataset.promptVersionId,
+      threshold: 0.5,
+      cases: 4,
+      score: 0.75,
+      scorers: { "cites-control": 0.75 },
+      passed: true,
+      scoredCases: [
+        {
+          caseId: "a",
+          scores: { "cites-control": 1 },
+          passes: { "cites-control": true },
+          score: 1,
+        },
+        {
+          caseId: "b",
+          scores: { "cites-control": 1 },
+          passes: { "cites-control": true },
+          score: 1,
+        },
+        {
+          caseId: "c",
+          scores: { "cites-control": 1 },
+          passes: { "cites-control": true },
+          score: 1,
+        },
+        {
+          caseId: "d",
+          scores: { "cites-control": 0 },
+          passes: { "cites-control": false },
+          score: 0,
+        },
+      ],
+      wilsonFloor: 0.6,
+    };
+    const cmp = compareToBaseline(run, baseline);
+    expect(cmp.findings.map((f) => f.kind)).toContain("wilson-below-floor");
+  });
+});
+
 describe("dataset boundary", () => {
   test("parseDataset rejects an unknown field (.strict)", () => {
     expect(() =>
