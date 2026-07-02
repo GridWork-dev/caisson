@@ -3,6 +3,7 @@
 // grants credits (billing → credits), and a buyer MCP query. The app framework per edition
 // (Next/TanStack/Hono) is a deferred fork — the HTTP binding here is plain Bun.serve (server.ts).
 import { withTenant, type Transactor } from "@caisson/tenancy-rls";
+import { asCredits } from "@caisson/kernel";
 import { balance, debit, grant, type CreditResult } from "@caisson/credits";
 import type { SessionContext } from "@caisson/auth";
 import {
@@ -67,7 +68,8 @@ export function createBaseApp(deps: BaseAppDeps): BaseApp {
       return withTenant(deps.db, session.accountId, (tx) =>
         debit(tx, {
           accountId: session.accountId,
-          amount: input.amount,
+          // Mint the brand at this boundary (ADR-0206) — SpendInput.amount stays a plain integer.
+          amount: asCredits(input.amount),
           eventType: "ai_feature_debit",
           idempotencyKey: input.idempotencyKey,
         }),
@@ -83,7 +85,7 @@ export function createBaseApp(deps: BaseAppDeps): BaseApp {
     async handleStripeWebhook(rawBody, signature) {
       const event = deps.billing.verifyAndParse(rawBody, signature);
       if (event?.type === "purchase.completed") {
-        const credits = Math.floor(event.amountTotal / 100); // cents → credits
+        const credits = asCredits(Math.floor(event.amountTotal / 100)); // cents → credits
         await withTenant(deps.db, event.accountId, (tx) =>
           grant(tx, {
             accountId: event.accountId,

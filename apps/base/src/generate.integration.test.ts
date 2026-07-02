@@ -13,7 +13,12 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { withTenant } from "@caisson/tenancy-rls";
-import { CREDIT_SCHEMA_SQL, balance, grant } from "@caisson/credits";
+import {
+  CREDIT_ROUNDING_MIGRATION_SQL,
+  CREDIT_SCHEMA_SQL,
+  balance,
+  grant,
+} from "@caisson/credits";
 import { loadRegistryIndex } from "@caisson/registry";
 import {
   GENERATION_SCHEMA_SQL,
@@ -21,7 +26,7 @@ import {
   runGeneration,
 } from "@caisson/cli";
 import { createMcpServer, type GenerateContext } from "@caisson/mcp-server";
-import { InsufficientCreditsError } from "@caisson/kernel";
+import { InsufficientCreditsError, asCredits } from "@caisson/kernel";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -93,12 +98,13 @@ beforeAll(async () => {
     `DROP TABLE IF EXISTS credit_event; DROP TABLE IF EXISTS credit_wallet; DROP TABLE IF EXISTS generation;`,
   );
   await tp.exec(CREDIT_SCHEMA_SQL);
+  await tp.exec(CREDIT_ROUNDING_MIGRATION_SQL);
   await tp.exec(GENERATION_SCHEMA_SQL);
   // Grant credits only to the buyer; the broke account intentionally stays at zero balance.
   await withTenant(tp.pg, BUYER_ACCOUNT, (tx) =>
     grant(tx, {
       accountId: BUYER_ACCOUNT,
-      amount: INITIAL_CREDITS,
+      amount: asCredits(INITIAL_CREDITS),
       eventType: "purchase",
       sourceEventId: "buy-gen-composition-0",
     }),

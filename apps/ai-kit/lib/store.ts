@@ -6,7 +6,10 @@
 //
 // This keeps the demo zero-dependency-on-a-running-DB: no Docker, no network, deterministic.
 import { PGlite } from "@electric-sql/pglite";
-import { CREDIT_SCHEMA_SQL } from "@caisson/credits";
+import {
+  CREDIT_ROUNDING_MIGRATION_SQL,
+  CREDIT_SCHEMA_SQL,
+} from "@caisson/credits";
 import { AI_METER_SCHEMA_SQL } from "@caisson/ai-meter";
 import { PROMPT_REGISTRY_SCHEMA_SQL } from "@caisson/prompt-registry";
 
@@ -25,6 +28,7 @@ export async function createEmbeddedStore(): Promise<PGlite> {
      END $$;`,
   );
   await pg.exec(CREDIT_SCHEMA_SQL);
+  await pg.exec(CREDIT_ROUNDING_MIGRATION_SQL);
   await pg.exec(AI_METER_SCHEMA_SQL);
   await pg.exec(PROMPT_REGISTRY_SCHEMA_SQL);
   return pg;
