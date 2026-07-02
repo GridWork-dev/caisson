@@ -12,6 +12,7 @@
 import type { DomainBillingEvent } from "@caisson/billing";
 import {
   clawback,
+  creditsClawedForSource,
   creditsGrantedBySource,
   grant,
   lineCreditLedger,
@@ -174,10 +175,22 @@ export async function applyBillingEvent(
           ev.accountId,
           ev.paymentId,
         );
-        if (granted > 0) {
+        // Bound to granted-minus-already-clawed-per-line (CAISSON-5): if any of this purchase's lines
+        // were already partially/fully clawed via the ADR-0218 per-line path, clawing the full
+        // ORIGINAL `granted` amount here again would over-claw — and since the wallet is a fungible
+        // pool, `clawback`'s own current-balance bound would silently drain OTHER purchases' credits
+        // to cover it. Netting out the prior per-line claws keeps this claw scoped to exactly what
+        // THIS purchase still has outstanding.
+        const alreadyClawed = await creditsClawedForSource(
+          tx,
+          ev.accountId,
+          ev.paymentId,
+        );
+        const remaining = Math.max(0, granted - alreadyClawed);
+        if (remaining > 0) {
           await clawback(tx, {
             accountId: ev.accountId,
-            amount: granted,
+            amount: remaining,
             sourceEventId: ev.paymentId,
           });
         }

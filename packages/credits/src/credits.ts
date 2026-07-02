@@ -344,6 +344,37 @@ export async function creditsGrantedBySource(
 }
 
 /**
+ * Sum the credits already CLAWED BACK (negative amounts) against a purchase's PER-LINE grants, for an
+ * account (CAISSON-5). A whole-transaction `type:'full'` adjustment (ADR-0113) revokes/claws by the
+ * transaction's OWN `paymentId`, but any PRIOR per-line partial claws (ADR-0218) were recorded under a
+ * DIFFERENT source key (`${adjustmentId}:${itemId}`) — so `creditsGrantedBySource(paymentId)` alone
+ * cannot see them, and clawing the full original `granted` amount a second time would over-claw,
+ * spilling onto the account's OTHER purchases' fungible wallet balance. This sums clawbacks scoped to
+ * exactly the line-item ids this purchase itself granted (a `txnitm_…` id is globally unique per
+ * transaction line, so the scoping cannot cross into another purchase's lines). Returns 0 when the
+ * purchase granted no per-line-keyed rows (pre-ADR-0218 / single-SKU-no-details shape) — the
+ * pre-existing scalar whole-refund behavior for that case is unchanged. Run inside `withTenant`.
+ */
+export async function creditsClawedForSource(
+  tx: TenantExecutor,
+  accountId: string,
+  sourceEventId: string,
+): Promise<number> {
+  const r = await tx.query<{ clawed: number }>(
+    `SELECT COALESCE(-SUM(amount), 0)::int AS clawed
+     FROM credit_event
+     WHERE account_id = $1 AND amount < 0
+       AND line_item_id IN (
+         SELECT DISTINCT line_item_id FROM credit_event
+         WHERE account_id = $1 AND source_event_id = $2 AND amount > 0
+           AND line_item_id IS NOT NULL AND line_item_id <> ''
+       )`,
+    [accountId, sourceEventId],
+  );
+  return r.rows[0]?.clawed ?? 0;
+}
+
+/**
  * Per-line credit ledger for a Paddle transaction item (ADR-0218). `line_item_id` (`txnitm_…`) is
  * globally unique per transaction line, so filtering on it alone yields exactly one purchase's one
  * line: the `granted` positive `purchase` credits, the `clawed` sum of any prior per-line
