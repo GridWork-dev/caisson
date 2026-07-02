@@ -1,5 +1,5 @@
 // Bridges the marketing PRICE DISPLAY (`lib/pricing.ts`) to a cart/checkout-ready catalog: every
-// sellable one-time item (the 4 editions, the bundle, and the 14 à-la-carte modules) carries the
+// sellable one-time item (the 4 editions, the bundle, and the 15 à-la-carte modules) carries the
 // Paddle price id the cart's multi-item checkout passes to `Paddle.Checkout.open()`.
 //
 // CART IDS ARE KIND-NAMESPACED (`edition:<slug>` / `module:<slug>` / `bundle`). Two catalog
@@ -13,13 +13,12 @@
 // Editions + the bundle map to the REAL Paddle sandbox price ids `@caisson/pricebook`'s
 // PURCHASE_BOOK already carries (ADR-0106/0116) — note the pricebook's entitlement ids for
 // Local-first AI and Agentic-Dev are `local-ai`/`agent-dev` (the registry edition ids), distinct
-// from this site's marketing slugs/labels (see `purchases.ts`'s ENTITLEMENT-ID NOTE). The 14
-// modules have no pricebook rows yet — the pricebook only prices whole editions today — so each
-// carries a clearly-marked `..._PLACEHOLDER` id in the SAME naming convention `@caisson/pricebook`
-// itself uses for its own placeholder rows. `resolvePurchase` throws fail-closed on an unresolved
-// id (ADR-0089 §6 / ADR-0113), so a placeholder id reaching production grants nothing rather than
-// silently succeeding. The pricebook track owns adding the real per-module rows when those products
-// are created in Paddle; this file is display + cart wiring only, not a source of commerce truth.
+// from this site's marketing slugs/labels (see `purchases.ts`'s ENTITLEMENT-ID NOTE). The 15
+// modules now ALSO carry REAL Paddle sandbox price ids (module-SKU wiring, 2026-07-02) —
+// `MODULE_PRICE_IDS` below, matched one-for-one against the module rows `@caisson/pricebook`'s
+// PURCHASE_BOOK added in the same wave. `resolvePurchase` throws fail-closed on an unresolved id
+// (ADR-0089 §6 / ADR-0113), so a mismatched id reaching production grants nothing rather than
+// silently succeeding. This file is display + cart wiring only, not a source of commerce truth.
 import type { CartItem } from "./cart";
 import {
   type EditionId,
@@ -40,8 +39,8 @@ export interface CatalogItem {
   label: string;
   /** Integer display USD. */
   amount: number;
-  /** A real Paddle price id where the pricebook already carries one; a `..._PLACEHOLDER` id
-   *  otherwise (see the file header). */
+  /** The real Paddle sandbox price id the pricebook's PURCHASE_BOOK resolves this item against
+   *  (see the file header). */
   priceId: string;
   blurb: string;
 }
@@ -59,6 +58,33 @@ const EDITION_PRICE_IDS: Record<EditionId, string> = {
 
 const BUNDLE_PRICE_ID = "pri_01kwd76bp60acq51mftvpgr42k";
 
+/** À-la-carte module slug -> the pricebook's REAL Paddle price id (`purchases.ts`'s per-module REAL
+ *  section, module-SKU wiring 2026-07-02). MUST match the same slug's row there EXACTLY — the cart
+ *  passes this `priceId` to Paddle, and the webhook resolves that same id in PURCHASE_BOOK to grant
+ *  the entitlement (ADR-0071/0113); a mismatch fails resolvePurchase closed and a module purchase
+ *  grants NOTHING. Keyed by every id `pricing.ts`'s MODULE_PRICES carries; `moduleRealPriceId` below
+ *  throws if a future module is added there without a matching row here — the runtime mirror of the
+ *  `EDITION_PRICE_IDS` `Record<EditionId, string>` compile-time guard above (module ids aren't a
+ *  closed union, so the check runs at catalog build time instead of at `tsc`). (catalog.test.ts pins
+ *  the cross-package invariant against PURCHASE_BOOK.) */
+const MODULE_PRICE_IDS: Record<string, string> = {
+  compliance: "pri_01kwj6m31fxw5vn532h5ft6780",
+  "field-crypto": "pri_01kwj6m3cwez98t45jzwsqb250",
+  "audit-worm": "pri_01kwj6m3mjq4rpv7918rhfhrhw",
+  "retention-runner": "pri_01kwj6m3x1cw1k54tcdhsc6pgj",
+  "ai-meter": "pri_01kwj6m45zeqyxgad3f32x1b30",
+  "ai-evals": "pri_01kwj6m4d3npk8sszerx7fek7w",
+  guardrails: "pri_01kwj6m4n105qe80fapw9sk5xc",
+  "prompt-registry": "pri_01kwj6m4whyw1stbej2qk8q0bg",
+  "ai-kit": "pri_01kwj6m55yagz7188qer0pa0cd",
+  alerting: "pri_01kwj6m5da9ay3z85b6qwtjcpe",
+  "local-ai": "pri_01kwj6m5mzyn76b8jkknmjndb4",
+  "local-store": "pri_01kwj6m5w3s4fmvseap7zmp5yf",
+  "agent-kernel": "pri_01kwj6m63qpt52489tq5a3v6q3",
+  "agent-dev": "pri_01kwj6m6cbtsh6n5b1bxtb2j0k",
+  "agent-runner": "pri_01kwj71a53hycbspsfv8pck5vc",
+};
+
 function editionCartId(slug: string): string {
   return `edition:${slug}`;
 }
@@ -67,14 +93,14 @@ function moduleCartId(slug: string): string {
   return `module:${slug}`;
 }
 
-function modulePlaceholderId(moduleId: string): string {
-  // MUST match @caisson/pricebook's PURCHASE_BOOK key convention EXACTLY
-  // (`price_<slug>_module_PLACEHOLDER`) — the cart passes this priceId to Paddle, and the webhook
-  // resolves that same id in PURCHASE_BOOK to grant the entitlement (ADR-0071/0113). A convention
-  // mismatch fails resolvePurchase closed → a module purchase would grant NOTHING. At go-live the
-  // real Paddle `pri_…` ids replace BOTH this and the pricebook key (a matched, manual 14-id fill).
-  // (catalog.test.ts pins the cross-package invariant against PURCHASE_BOOK.)
-  return `price_${moduleId.replace(/-/g, "_")}_module_PLACEHOLDER`;
+function moduleRealPriceId(moduleId: string): string {
+  const priceId = MODULE_PRICE_IDS[moduleId];
+  if (!priceId) {
+    throw new Error(
+      `catalog.ts: no Paddle price id wired in MODULE_PRICE_IDS for module "${moduleId}"`,
+    );
+  }
+  return priceId;
 }
 
 function hasAmount(p: PriceAnchor): p is PriceAnchor & { amount: number } {
@@ -113,15 +139,15 @@ export const BUNDLE_CATALOG_ITEM: CatalogItem | undefined = (() => {
   };
 })();
 
-/** Every à-la-carte module as a cart-ready catalog item, each carrying a placeholder Paddle price
- *  id (see the file header — no real per-module pricebook rows exist pre-go-live). */
+/** Every à-la-carte module as a cart-ready catalog item, each carrying its real Paddle price id
+ *  (see the file header). */
 export const MODULE_CATALOG: readonly CatalogItem[] = MODULE_PRICES.map(
   (m) => ({
     id: moduleCartId(m.id),
     kind: "module",
     label: m.label,
     amount: m.amount,
-    priceId: modulePlaceholderId(m.id),
+    priceId: moduleRealPriceId(m.id),
     blurb: m.blurb,
   }),
 );
