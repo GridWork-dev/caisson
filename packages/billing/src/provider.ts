@@ -6,8 +6,8 @@ import { fetchWithTimeout, InternalError, parseStrict } from "@caisson/kernel";
 import { verifyStripeWebhook, type VerifyOptions } from "./webhook.ts";
 import {
   parseStripeEvent,
+  StripeEventSchema,
   type DomainBillingEvent,
-  type StripeEvent,
 } from "./events.ts";
 import { verifyPaddleWebhook } from "./paddle-webhook.ts";
 import { parsePaddleEvent, PaddleEventSchema } from "./paddle-events.ts";
@@ -39,7 +39,11 @@ export function createStripeBilling(config: StripeConfig): BillingProvider {
   return {
     verifyAndParse(rawBody, signatureHeader, opts) {
       verifyStripeWebhook(rawBody, signatureHeader, config.webhookSecret, opts);
-      const event = JSON.parse(rawBody) as StripeEvent;
+      // Zod `.strict()` at the boundary (ADR-0204, mirrors the Paddle driver): reject an envelope
+      // with a missing/wrong-typed id/type or any unknown top-level field BEFORE it reaches the
+      // mapper — a signature check alone does not guarantee the payload SHAPE. parseStrict throws a
+      // redaction-safe ValidationError, which the route layer maps to a non-2xx.
+      const event = parseStrict(StripeEventSchema, JSON.parse(rawBody));
       return parseStripeEvent(event);
     },
 
