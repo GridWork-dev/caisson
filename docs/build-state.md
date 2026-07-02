@@ -97,8 +97,38 @@
 > `impersonation_session` migration (RLS + column-scoped GRANT), and an impersonation evidence collector
 > cited by both the SOC2 and HIPAA plans.
 
+> **STRIX PENTEST REMEDIATION (2026-07-02 — ceiling `0204`):** branch
+> `fix/security-billing-hardening` (PR#45, merged `2dc44cc`) closed the first Strix pentest's six
+> findings (1 critical, 2 high, 3 medium) per the `ADR-0204` picker locks. BUILT: one shared **SSRF
+> resolve-and-recheck guard** in `@caisson/kernel` (`ssrf.ts` — a literal denylist at the schema
+> boundary, https-only/no-creds/private-loopback-link-local-metadata, plus an async DNS re-check of
+> every resolved A/AAAA against the same ranges immediately before the outbound `fetch`), wired into
+> both the alerting transports and an SSRF-guarded `fetch` injected into the ai-kit custom-baseUrl
+> provider adapters (connect-time IP-pinning was rejected — Bun's `fetch` has no custom-lookup hook to
+> pin a socket while keeping TLS SNI, oven-sh/bun#27890); the `services/docs` + `services/license`
+> per-IP rate-limiters now key on `X-Real-IP` only (Railway's edge-set header, unspoofable off-edge —
+> the client-appendable `X-Forwarded-For` and the deprecated `x-envoy-external-address` are no longer
+> trusted), plus a header-independent service-wide `checkGlobal` cap (default 50x the per-IP burst) as
+> defense-in-depth; `apps/admin` gains a fail-closed **CF-Access-JWT `middleware.ts`** (JWKS-verified
+> via `jose`, `aud` pinned to the admin Access app + `iss` to the team domain, deny-closed on any
+> failure or unreachable JWKS — supersedes `ADR-0140`'s edge-alone posture; activates only once both
+> `CF_ACCESS_TEAM_DOMAIN` + `CF_ACCESS_AUD` are set, unconfigured fails closed in production); the
+> vuln-0006 seat-authz gap was closed on two independent paths reconciled at merge into one owner-only
+> semantics — `POST /api/byok` and the compliance `attest`/`clear` server actions now call
+> `assertCanManageMembers(session.role)` (`packages/auth`, fail-closed for a seat) on the write side,
+> while UI render-gating uses the separately-tested `isOwner(session)` helper
+> (`apps/site/lib/auth.ts`); and the shared `purchase.completed` domain event now carries
+> `lineItems: {priceId, quantity}[]` (was a scalar `priceId`) so the Paddle mapper fulfills every paid
+> line — quantity-honored, still keyed on one Paddle transaction id for refund/clawback idempotency. A
+> regression test locks `subscription_update` as non-granting (already correct at HEAD, was a
+> false-positive finding). **New env (operator, not yet set):** `CF_ACCESS_TEAM_DOMAIN` +
+> `CF_ACCESS_AUD` on `caisson-admin` to activate the admin gate. **Deferred (flagged, not
+> auto-decided):** partial-refund of one line in a multi-item cart stays full-refund-only (`ADR-0113`
+> policy unchanged); Cloudflare-in-front for the docs/license grey origins and an admin network-layer
+> origin-lock are DEPLOY-class complements, not taken here.
+
 > **EDITION TAILS & OPS HARDENING (2026-07-02, latest — ceiling `0209`):** branch
-> `chore/edition-tails-ops` closed the post-go-live triage backlog per the `ADR-0205`–`0209` picker
+> `chore/edition-tails-ops` (PR#46, merged `8e5eb4d`) closed the post-go-live triage backlog per the `ADR-0205`–`0209` picker
 > locks (drafted 0204–0208; the transports ADR renumbered 0204→0209 at merge — the Strix remediation
 > ADR claimed 0204 on main first, ADR-0088). BUILT: `local-ai` **Azure OpenAI + AWS Bedrock
 > RentedTransport drivers** (`ADR-0209` —

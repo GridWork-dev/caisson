@@ -9,7 +9,7 @@ white-box (source) + black-box (live site origin, `license.caisson.sh`, `docs-ap
 filing. These are runtime-security findings (a different class from PR#40's design/standards audit),
 so they are largely **net-new**, not duplicates.
 
-## Resolution (2026-07-02, `fix/security-billing-hardening` — ADR-0204)
+## Resolution (2026-07-02, PR #45 `fix/security-billing-hardening` — ADR-0204, merged to main)
 
 Each finding was reproduced against the code at HEAD and adversarially re-checked before any change.
 Full rationale + the four operator fork locks: **ADR-0204**.
