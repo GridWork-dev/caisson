@@ -13,7 +13,7 @@ import {
   clearSlot,
   listAttestations,
 } from "@/lib/attestations";
-import { requireDashboardSession } from "@/lib/auth";
+import { isOwner, requireDashboardSession } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Compliance" };
 
@@ -22,6 +22,11 @@ const PATH = "/dashboard/compliance";
 async function attestAction(formData: FormData): Promise<void> {
   "use server";
   const session = await requireDashboardSession(PATH);
+  // Owner-only write (vuln-0006, ADR-0208 #1): attestations feed the SAR/POA&M export — a seat
+  // must not rewrite them. Same role-failure-throws pattern as the members page (addAccountMember).
+  if (!isOwner(session)) {
+    throw new Error("owner role required");
+  }
   const parsed = AttestationInput.safeParse({
     framework: formData.get("framework"),
     slotId: formData.get("slotId"),
@@ -35,6 +40,10 @@ async function attestAction(formData: FormData): Promise<void> {
 async function clearAction(formData: FormData): Promise<void> {
   "use server";
   const session = await requireDashboardSession(PATH);
+  // Owner-only write (vuln-0006, ADR-0208 #1) — same gate as attestAction.
+  if (!isOwner(session)) {
+    throw new Error("owner role required");
+  }
   const parsed = AttestationInput.pick({
     framework: true,
     slotId: true,
@@ -59,6 +68,8 @@ const inputStyle: React.CSSProperties = {
 
 export default async function DashboardCompliancePage() {
   const session = await requireDashboardSession(PATH);
+  // Writes are owner-only (vuln-0006); a seat still sees the attestation state, read-only.
+  const owner = isOwner(session);
 
   // One tenant-scoped read per framework (three frameworks, ADR-0181).
   const filledByFramework = new Map<string, Map<string, string>>();
@@ -124,6 +135,7 @@ export default async function DashboardCompliancePage() {
 
             {fw.slots.map((slot) => {
               const isFilled = filled.has(slot.id);
+              const note = filled.get(slot.id) ?? "";
               return (
                 <div
                   key={slot.id}
@@ -151,44 +163,54 @@ export default async function DashboardCompliancePage() {
                     <span style={{ fontWeight: 500 }}>{slot.label}</span>
                   </div>
 
-                  <form
-                    action={attestAction}
-                    style={{
-                      display: "flex",
-                      gap: "var(--cs-space-3)",
-                      alignItems: "flex-end",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <input type="hidden" name="framework" value={fw.id} />
-                    <input type="hidden" name="slotId" value={slot.id} />
-                    <label
+                  {owner ? (
+                    <form
+                      action={attestAction}
                       style={{
-                        display: "grid",
-                        gap: "var(--cs-space-2)",
-                        flex: 1,
+                        display: "flex",
+                        gap: "var(--cs-space-3)",
+                        alignItems: "flex-end",
+                        flexWrap: "wrap",
                       }}
                     >
-                      <span
-                        className="cs-muted"
-                        style={{ fontSize: "var(--cs-text-xs)" }}
+                      <input type="hidden" name="framework" value={fw.id} />
+                      <input type="hidden" name="slotId" value={slot.id} />
+                      <label
+                        style={{
+                          display: "grid",
+                          gap: "var(--cs-space-2)",
+                          flex: 1,
+                        }}
                       >
-                        Attestation note / artifact reference
-                      </span>
-                      <input
-                        name="note"
-                        defaultValue={filled.get(slot.id) ?? ""}
-                        maxLength={2000}
-                        placeholder="e.g. link to the signed policy PDF, ticket, or reviewer + date"
-                        style={inputStyle}
-                      />
-                    </label>
-                    <Button type="submit" variant="primary">
-                      {isFilled ? "Update" : "Attest"}
-                    </Button>
-                  </form>
+                        <span
+                          className="cs-muted"
+                          style={{ fontSize: "var(--cs-text-xs)" }}
+                        >
+                          Attestation note / artifact reference
+                        </span>
+                        <input
+                          name="note"
+                          defaultValue={note}
+                          maxLength={2000}
+                          placeholder="e.g. link to the signed policy PDF, ticket, or reviewer + date"
+                          style={inputStyle}
+                        />
+                      </label>
+                      <Button type="submit" variant="primary">
+                        {isFilled ? "Update" : "Attest"}
+                      </Button>
+                    </form>
+                  ) : (
+                    <p className="cs-muted" style={{ margin: 0 }}>
+                      {isFilled
+                        ? note === ""
+                          ? "Attested."
+                          : note
+                        : "Only the account owner can attest."}
+                    </p>
+                  )}
 
-                  {isFilled && (
+                  {owner && isFilled && (
                     <form action={clearAction}>
                       <input type="hidden" name="framework" value={fw.id} />
                       <input type="hidden" name="slotId" value={slot.id} />

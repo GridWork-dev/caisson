@@ -5,7 +5,7 @@
 //   - atomic rotation: encrypted key + display metadata written in one tenant transaction.
 // BYOK is FREE (ADR-0182) — no credit debit, no cost preview.
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getSession, isOwner } from "@/lib/auth";
 import { ByokSubmitBody, readKeyStatuses, submitTenantKey } from "@/lib/byok";
 
 // Authed + tenant-scoped — never statically cached.
@@ -24,6 +24,11 @@ export async function POST(request: Request): Promise<NextResponse> {
   const session = await getSession();
   if (session === null) {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+  }
+  // Owner-only write (vuln-0006, ADR-0208 #1): a seat must not rotate the org's provider keys.
+  // GET (masked metadata) stays seat-visible.
+  if (!isOwner(session)) {
+    return NextResponse.json({ error: "owner role required" }, { status: 403 });
   }
 
   // Parse JSON defensively — a malformed body is a 400, never a 500.
