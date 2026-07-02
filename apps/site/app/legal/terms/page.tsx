@@ -187,14 +187,89 @@ export default function TermsPage() {
         </p>
       </Section>
 
-      {/* Third-party services */}
-      <Section eyebrow="Third parties" title="Third-party services">
+      {/* Payment processing, MoR, refunds, third-party services */}
+      <Section
+        eyebrow="Payments"
+        title="Payment processing and third-party services"
+      >
+        <h3 style={prose.h3}>
+          Payment processing — Paddle (Merchant of Record)
+        </h3>
         <p style={prose.paragraph}>
-          The site uses third-party infrastructure services including Cloudflare
-          (CDN and edge delivery), Resend (transactional email), and Plausible
-          Analytics (cookieless, PII-free analytics). Your use of this site
-          involves processing governed by those providers&apos; terms to the
-          extent described in our{" "}
+          Our order process is conducted by our online reseller Paddle.com.
+          Paddle.com is the Merchant of Record for all our orders. Paddle
+          provides all customer service inquiries and handles returns.
+        </p>
+        <p style={prose.paragraph}>
+          You purchase a Caisson license from Paddle, and Paddle collects
+          payment, calculates and remits applicable sales tax and VAT, and
+          issues your order receipt. The Caisson software itself remains
+          licensed to you by GridWork Digital LLC under the{" "}
+          <a href="/legal/eula" style={{ color: "var(--cs-accent)" }}>
+            Commercial License Agreement
+          </a>
+          . Paddle&apos;s own buyer terms — including which Paddle entity is the
+          seller for your order — are available at{" "}
+          <a
+            href="https://www.paddle.com/legal/buyer-terms"
+            rel="noreferrer"
+            style={{ color: "var(--cs-accent)" }}
+          >
+            paddle.com/legal/buyer-terms
+          </a>{" "}
+          and are presented to you as part of checkout.
+        </p>
+
+        <h3 style={prose.h3}>Refund policy</h3>
+        <p style={prose.paragraph}>
+          Refund requests for a Caisson purchase are reviewed by Paddle on a
+          case-by-case basis, consistent with Paddle&apos;s buyer terms. To
+          request a refund, contact us at{" "}
+          <a
+            href="mailto:<email>"
+            style={{ color: "var(--cs-accent)" }}
+          >
+            <email>
+          </a>{" "}
+          with your order number, or contact Paddle directly through{" "}
+          <a
+            href="https://paddle.net"
+            rel="noreferrer"
+            style={{ color: "var(--cs-accent)" }}
+          >
+            paddle.net
+          </a>
+          .
+        </p>
+        <p style={prose.paragraph}>
+          An approved refund revokes the license entitlement granted by the
+          refunded purchase and returns any unused credits it granted; access
+          already exercised and credits already spent are not affected. If a
+          single order covered more than one edition or module, tell us which
+          item you are refunding so we can apply it correctly.
+        </p>
+
+        <h3 style={prose.h3}>Buyer support</h3>
+        <p style={prose.paragraph}>
+          For questions about your order, license, or a refund request that
+          Paddle&apos;s own support cannot resolve, contact GridWork Digital LLC
+          at{" "}
+          <a
+            href="mailto:<email>"
+            style={{ color: "var(--cs-accent)" }}
+          >
+            <email>
+          </a>
+          .
+        </p>
+
+        <h3 style={prose.h3}>Other third-party services</h3>
+        <p style={prose.paragraph}>
+          The site also uses third-party infrastructure services including
+          Cloudflare (CDN and edge delivery), Resend (transactional email), and
+          Plausible Analytics (cookieless, PII-free analytics). Your use of this
+          site involves processing governed by those providers&apos; terms to
+          the extent described in our{" "}
           <a href="/legal/privacy" style={{ color: "var(--cs-accent)" }}>
             Privacy Policy
           </a>
