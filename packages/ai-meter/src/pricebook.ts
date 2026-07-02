@@ -12,10 +12,14 @@ import { z } from "zod";
 import {
   ConfigError,
   CREDIT_CONVERSION,
+  asCredits,
   type CreditConversion,
+  type Credits,
   creditConversionSchema,
+  type MicroUsd,
   parseCreditConversion,
   parseStrict,
+  type RoundedMoney,
   strictObject,
 } from "@caisson/kernel";
 
@@ -54,14 +58,21 @@ export const usageSchema = strictObject({
 export type Usage = z.infer<typeof usageSchema>;
 
 export interface CostBreakdown {
-  /** Integer micro-USD the provider price book normalized to. */
-  costMicroUsd: number;
-  /** Integer credit units charged (ceil of cost ÷ conversion). */
-  credits: number;
+  /** Integer micro-USD the provider price book normalized to (branded, ADR-0206). */
+  costMicroUsd: MicroUsd;
+  /** Integer credit units charged (ceil of cost ÷ conversion; branded, ADR-0206). */
+  credits: Credits;
+  /**
+   * Rounding provenance (ADR-0206) for the micro-USD → credits leg: `raw` is the pre-rounding
+   * integer micro-USD cost, `mode` is this book's fixed direction ("up", ADR-0060 — never
+   * under-bill), `result` equals `credits`. Thread it into the credit-ledger write so the charge
+   * is auditable after the fact.
+   */
+  roundingCredits: RoundedMoney<MicroUsd, Credits>;
 }
 
 /** The bundled price book version stamp (append-only: a new price set bumps this). */
-export const PRICE_BOOK_VERSION = "2026-06-27";
+export const PRICE_BOOK_VERSION = "2026-07-02";
 
 /** Bundled default rates (micro-USD per million tokens). `forge.config`-overridable. */
 export const BUNDLED_PRICE_BOOK: PriceBook = {
@@ -79,6 +90,17 @@ export const BUNDLED_PRICE_BOOK: PriceBook = {
     inputPerMTok: 75_000,
     cachedInputPerMTok: 18_750,
     outputPerMTok: 300_000,
+  },
+  // The metered-embeddings gateway's default model (ADR-0207): an embedding model is just another
+  // price-book ROW — config, not a schema change. `outputPerMTok: 0` because an embedding call has
+  // no output tokens (ai-kit's embed() reconciles with outputTokens: 0 and the reserve-time phantom
+  // output leg refunds in full). `cachedInputPerMTok` mirrors the input rate: embeddings have no
+  // cache-read discount, so a caller reporting cached tokens is billed the full input rate — never
+  // an accidental discount to $0.
+  "openai/text-embedding-3-small": {
+    inputPerMTok: 20_000, // $0.02 per 1M tokens, in integer micro-USD
+    cachedInputPerMTok: 20_000,
+    outputPerMTok: 0,
   },
 };
 
@@ -101,11 +123,12 @@ function legMicroUsd(tokens: number, perMTok: number): number {
 export function creditsForMicroUsd(
   costMicroUsd: number,
   conversion: CreditConversion,
-): number {
-  if (costMicroUsd === 0) return 0;
+): Credits {
+  if (costMicroUsd === 0) return asCredits(0);
+  // Ceil over non-negative integers yields a non-negative integer — mint the brand directly.
   return Number(
     ceilDiv(BigInt(costMicroUsd), BigInt(conversion.microUsdPerCredit)),
-  );
+  ) as Credits;
 }
 
 /** Look up a model's rates, fail-closed: an unknown model throws rather than metering at zero. */
@@ -131,13 +154,17 @@ export function computeCost(
 ): CostBreakdown {
   const parsed = parseStrict(usageSchema, usage);
   const nonCachedInput = parsed.inputTokens - parsed.cachedInputTokens;
-  const costMicroUsd =
-    legMicroUsd(nonCachedInput, entry.inputPerMTok) +
+  // A sum of per-leg ceilings over non-negative integers is a non-negative integer — mint the brand.
+  const costMicroUsd = (legMicroUsd(nonCachedInput, entry.inputPerMTok) +
     legMicroUsd(parsed.cachedInputTokens, entry.cachedInputPerMTok) +
-    legMicroUsd(parsed.outputTokens, entry.outputPerMTok);
+    legMicroUsd(parsed.outputTokens, entry.outputPerMTok)) as MicroUsd;
+  const credits = creditsForMicroUsd(costMicroUsd, conversion);
   return {
     costMicroUsd,
-    credits: creditsForMicroUsd(costMicroUsd, conversion),
+    credits,
+    // ADR-0206: this book's fixed direction is UP (ADR-0060, never under-bill) — recorded even when
+    // the division was exact.
+    roundingCredits: { raw: costMicroUsd, mode: "up", result: credits },
   };
 }
 
