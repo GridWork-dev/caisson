@@ -63,7 +63,7 @@ describe("REAL Paddle one-time price ids round-trip (parsePaddleEvent -> resolve
       expect(ev.priceId).toBe(priceId);
       const entry = resolvePurchase(ev.priceId);
       expect(entry.entitlements).toEqual(entitlements);
-      expect(entry.credits).toBe(0);
+      expect<number>(entry.credits).toBe(0);
     });
   }
 });
@@ -128,7 +128,7 @@ describe("per-module à-la-carte PLACEHOLDER ids round-trip (parsePaddleEvent ->
       expect(ev.priceId).toBe(priceId);
       const entry = resolvePurchase(ev.priceId);
       expect(entry.entitlements).toEqual([entitlement]);
-      expect(entry.credits).toBe(0);
+      expect<number>(entry.credits).toBe(0);
     });
   }
 });
@@ -164,7 +164,7 @@ describe("REAL Paddle subscription price ids round-trip (parsePaddleEvent -> res
       expect(ev.billingReason).toBe("subscription_cycle");
       const entry = resolvePlan(ev.priceId);
       expect(entry.entitlements).toEqual(entitlements);
-      expect(entry.creditsPerCycle).toBe(creditsPerCycle);
+      expect<number>(entry.creditsPerCycle).toBe(creditsPerCycle);
       expect(entry.cadence).toBe("year");
     });
   }
