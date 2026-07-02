@@ -105,6 +105,7 @@ beforeAll(async () => {
     db: tp.pg,
     provider: null,
     limiter: new TokenBucketLimiter(loadRateLimitConfig()),
+    discordNotify: null,
   });
 });
 afterAll(async () => {

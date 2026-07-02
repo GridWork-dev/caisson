@@ -33,7 +33,9 @@ function subscriptionTransactionCompleted(
     data: {
       id: `txn_${priceId}`,
       subscription_id: "sub_roundtrip",
-      origin: "subscription_charge",
+      // A renewal-cycle charge (verified 2026-07-01 origin semantics: web/api = first charge,
+      // subscription_recurring = renewal, subscription_charge = mid-cycle one-time — non-granting).
+      origin: "subscription_recurring",
       currency_code: "usd",
       items: [{ price: { id: priceId } }],
       details: { totals: { grand_total: "149900" } },
@@ -157,7 +159,9 @@ describe("REAL Paddle subscription price ids round-trip (parsePaddleEvent -> res
       expect(ev.type).toBe("invoice.paid");
       if (ev.type !== "invoice.paid") throw new Error("unreachable");
       expect(ev.priceId).toBe(priceId);
-      expect(ev.billingReason).toBe("subscription_create");
+      // origin "subscription_recurring" (a renewal) → the cycle reason (2026-07-01 verified
+      // origin semantics); both create + cycle sit in the grant gate's GRANTING_REASONS.
+      expect(ev.billingReason).toBe("subscription_cycle");
       const entry = resolvePlan(ev.priceId);
       expect(entry.entitlements).toEqual(entitlements);
       expect(entry.creditsPerCycle).toBe(creditsPerCycle);
