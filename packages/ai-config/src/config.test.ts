@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { NotFoundError, ValidationError } from "@caisson/kernel";
 import { parseAiSettings, resolveProvider } from "./index.ts";
-import type { AiSettings } from "./index.ts";
+import type { AiSettings, ProviderConfig } from "./index.ts";
 
 const chatLane = {
   provider: "anthropic",
@@ -49,5 +49,137 @@ describe("ai-config resolver", () => {
     // for one lane, openrouter for another, with no provider literal at all.
     expect(resolveProvider(settings, "chat").provider).toBe("anthropic");
     expect(resolveProvider(settings, "cheap").provider).toBe("openrouter");
+  });
+
+  test("bedrock lane with only region parses clean (ADR-0160 default credential chain)", () => {
+    const bedrockLane: ProviderConfig = {
+      provider: "bedrock",
+      model: "anthropic.claude-3-sonnet",
+      region: "us-east-1",
+    };
+    expect(
+      parseAiSettings({
+        defaultLane: "chat",
+        lanes: { chat: bedrockLane },
+      }),
+    ).toEqual({ defaultLane: "chat", lanes: { chat: bedrockLane } });
+  });
+
+  test("a non-bedrock env lane missing apiKeyEnv still rejects (regression guard)", () => {
+    expect(() =>
+      parseAiSettings({
+        defaultLane: "chat",
+        lanes: { chat: { provider: "openai", model: "gpt-5" } },
+      }),
+    ).toThrow(ValidationError);
+  });
+
+  test("bedrock lane with an explicit two-part credential parses clean", () => {
+    const bedrockLane: ProviderConfig = {
+      provider: "bedrock",
+      model: "anthropic.claude-3-sonnet",
+      region: "us-east-1",
+      apiKeyEnv: "AWS_ACCESS_KEY_ID",
+      apiSecretEnv: "AWS_SECRET_ACCESS_KEY",
+    };
+    expect(
+      parseAiSettings({
+        defaultLane: "chat",
+        lanes: { chat: bedrockLane },
+      }),
+    ).toEqual({ defaultLane: "chat", lanes: { chat: bedrockLane } });
+  });
+
+  test("azure-openai lane with apiVersion + baseUrl parses clean", () => {
+    const azureLane: ProviderConfig = {
+      provider: "azure-openai",
+      model: "gpt-5-deployment",
+      apiVersion: "2026-01-01-preview",
+      baseUrl: "https://example.openai.azure.com",
+      apiKeyEnv: "AZURE_OPENAI_API_KEY",
+    };
+    expect(
+      parseAiSettings({
+        defaultLane: "chat",
+        lanes: { chat: azureLane },
+      }),
+    ).toEqual({ defaultLane: "chat", lanes: { chat: azureLane } });
+  });
+
+  test("azure-openai lane missing apiVersion rejects", () => {
+    expect(() =>
+      parseAiSettings({
+        defaultLane: "chat",
+        lanes: {
+          chat: {
+            provider: "azure-openai",
+            model: "gpt-5-deployment",
+            baseUrl: "https://example.openai.azure.com",
+            apiKeyEnv: "AZURE_OPENAI_API_KEY",
+          },
+        },
+      }),
+    ).toThrow(ValidationError);
+  });
+
+  test("azure-openai lane missing baseUrl rejects", () => {
+    expect(() =>
+      parseAiSettings({
+        defaultLane: "chat",
+        lanes: {
+          chat: {
+            provider: "azure-openai",
+            model: "gpt-5-deployment",
+            apiVersion: "2026-01-01-preview",
+            apiKeyEnv: "AZURE_OPENAI_API_KEY",
+          },
+        },
+      }),
+    ).toThrow(ValidationError);
+  });
+
+  test("ollama lane round-trips (mirrors local, no new fields)", () => {
+    const ollamaLane: ProviderConfig = {
+      provider: "ollama",
+      model: "llama3",
+      apiKeyEnv: "OLLAMA_API_KEY",
+      baseUrl: "https://ollama.example.internal",
+    };
+    expect(
+      parseAiSettings({
+        defaultLane: "chat",
+        lanes: { chat: ollamaLane },
+      }),
+    ).toEqual({ defaultLane: "chat", lanes: { chat: ollamaLane } });
+  });
+
+  test("keySource: tenant round-trips with no apiKeyEnv", () => {
+    const tenantLane: ProviderConfig = {
+      provider: "openai",
+      model: "gpt-5",
+      keySource: "tenant",
+    };
+    expect(
+      parseAiSettings({
+        defaultLane: "chat",
+        lanes: { chat: tenantLane },
+      }),
+    ).toEqual({ defaultLane: "chat", lanes: { chat: tenantLane } });
+  });
+
+  test("keySource: tenant with a named apiKeyEnv rejects", () => {
+    expect(() =>
+      parseAiSettings({
+        defaultLane: "chat",
+        lanes: {
+          chat: {
+            provider: "openai",
+            model: "gpt-5",
+            keySource: "tenant",
+            apiKeyEnv: "OPENAI_API_KEY",
+          },
+        },
+      }),
+    ).toThrow(ValidationError);
   });
 });
