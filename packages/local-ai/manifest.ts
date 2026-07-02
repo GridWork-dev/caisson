@@ -28,11 +28,11 @@ export default defineModule({
   ],
   // Frozen member pin map (ADR-0077): edition self + every bundled dependency, exact-version.
   members: {
-    "@caisson/local-ai": "0.0.0",
-    "@caisson/kernel": "0.0.0",
-    "@caisson/local-store": "0.0.0",
-    "@caisson/license-verify": "0.0.0",
-    "@caisson/field-crypto": "0.0.0",
+    "@caisson/local-ai": "0.2.0",
+    "@caisson/kernel": "0.2.0",
+    "@caisson/local-store": "0.2.0",
+    "@caisson/license-verify": "0.2.0",
+    "@caisson/field-crypto": "0.2.0",
   },
   golden: "src/sync/__golden__",
   description:
