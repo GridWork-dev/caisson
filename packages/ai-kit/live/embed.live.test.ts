@@ -10,7 +10,12 @@
 // live-test convention.
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import { newTestPg, type TestPg } from "@caisson/testing";
-import { CREDIT_SCHEMA_SQL, grant } from "@caisson/credits";
+import {
+  CREDIT_ROUNDING_MIGRATION_SQL,
+  CREDIT_SCHEMA_SQL,
+  grant,
+} from "@caisson/credits";
+import { asCredits, asMicroUsdPerCredit } from "@caisson/kernel";
 import {
   AI_METER_SCHEMA_SQL,
   SPEND_POLICY_TABLE,
@@ -46,7 +51,7 @@ const METER: MeterConfig = {
       outputPerMTok: 2_000_000,
     },
   },
-  conversion: { microUsdPerCredit: 100 },
+  conversion: { microUsdPerCredit: asMicroUsdPerCredit(100) },
 };
 
 const SETTINGS: AiSettings = {
@@ -93,11 +98,12 @@ beforeEach(async () => {
       .join("\n"),
   );
   await tp.exec(CREDIT_SCHEMA_SQL);
+  await tp.exec(CREDIT_ROUNDING_MIGRATION_SQL);
   await tp.exec(AI_METER_SCHEMA_SQL);
   await withTenant(tp.pg, A, (tx) =>
     grant(tx, {
       accountId: A,
-      amount: 1000,
+      amount: asCredits(1000),
       eventType: "purchase",
       sourceEventId: "seed",
     }),
