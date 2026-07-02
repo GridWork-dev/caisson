@@ -589,3 +589,19 @@ rather than a standalone phase, and copy/SEO passes last.
 "lift" phase's claim on 0186-0188 — the live shipped ceiling at authoring time is **0178**. If the lift
 phase lands 0186-0188 first, this whole block renumbers by-meaning at merge (the repo's standard pattern
 for concurrent-track ADR collisions, per the 0108→0110/0109→0113 P6 precedent).
+
+## Closed by the 2026-07-02 lift-harvest slice-2 picker (operator-locked)
+
+Kickoff B (LIFT harvest buildout, `outputs/kickoffs/lift-harvest-buildout.md`). Act 0 ran a 20-agent
+built-vs-remaining reconcile of the full ADR-0133/0134/0135 program (workflow `wf_22d4f058-b01`); the
+result: 12 targets already terminal-done (cited in ADR-0204), 10 packages with named hardening gaps,
+agent-runner not started. The three open program forks were then operator-locked in one picker; the
+per-package decisions filed as ADR-0205–0211 and ADR-0186 filed from its "files at build" reservation.
+
+| Fork                                      | Decision                                                                                                                                                     | ADR               |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------- |
+| **H-1 — ai-evals/guardrails asymmetry**   | HARDEN IN PLACE — new capabilities land inside the existing base packages; edition membership unchanged (AI Production Kit keeps both).                      | **ADR-0204 §1**   |
+| **H-2 — slice-2 wave scope**              | FULL remaining program (incl. the M/L tail: jobs consumer-side, rounding provenance, MinHash dedup) — only auth #9 deferred.                                 | **ADR-0204 §2**   |
+| **H-3 — explicit defers**                 | auth lift-sweep #9 hash-at-rest session tokens DEFERRED (fights better-auth, ADR-0015); wave-6 residual candidates PARKED per program ordering.              | **ADR-0204 §3–4** |
+| **agent-runner (F1/F2/F5, locked 07-01)** | Proceeds — not re-asked; ADR-0186 FILED at build start per the reservation.                                                                                  | **ADR-0186**      |
+| **Per-package build decisions**           | jobs consumer-side · branded-money/rounding-provenance · ai-kit embeddings · ai-evals depth · guardrails · mcp-server manifest/ledger · ai-meter dedup gate. | **ADR-0205–0211** |
