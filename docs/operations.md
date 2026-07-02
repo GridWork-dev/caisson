@@ -179,13 +179,18 @@ S3+DynamoDB), triggered by a second operator or a CI-driven apply. Detail:
 Three workflows under [`.github/workflows/`](../.github/workflows/). All Bun + Turbo,
 `--frozen-lockfile`, bun pinned to `1.3.14` (the `packageManager` line — no `latest` floats).
 
-### Self-hosted runner fleet (2026-06-29)
+### Self-hosted runner fleet (2026-06-29; runscaler scale sets 2026-07-02)
 
-The pure-compute gate jobs run on the **GridWork-dev self-hosted runner fleet** — the same
-per-repo, JIT, one-job-then-reset machinery as gridwork-core. **The canonical fleet machinery
-(supervisor, systemd/launchd units, runner image) + its SPEC live in
-`gridwork-core/system/ci/` + `gridwork-core/outputs/specs/selfhosted-runner-fleet/`** — caisson
-does not duplicate it; it consumes the fleet by targeting the runner labels below.
+> **Update 2026-07-02 (PR#51):** the fleet moved to **runscaler scale sets** — caisson's jobs now
+> target the set by BARE NAME (`runs-on: caisson-amd64`; scale-set runners are label-LESS, any
+> extra label incl. `self-hosted` prevents the match). Canonical config:
+> `gridwork-core/system/ci/runscaler.toml`. Runners are ephemeral (nothing persists on-box between
+> jobs; caches are network-backed `actions/cache`, never local-disk). The `gw-linux-amd64` /
+> `[self-hosted, …]` labels in the prose + table below are the pre-runscaler names — read them as
+> `caisson-amd64`. The same PR also split the workflows (`ci.yml` = the required checks only;
+> `quality.yml` = eval/native-ext/token-drift; `publish.yml`, `deploy-railway.yml`) and swapped the
+> Greptile posture to the path-scoped **`greptile-gate`** required check (see root `CLAUDE.md`
+> §PR review gate).
 
 - **Enrollment: DONE.** Caisson has **3 runners registered + ONLINE** (verify:
   `gh api repos/GridWork-dev/caisson/actions/runners`): `gw-linux-amd64` (the gw-ms-a2 box, the
@@ -208,7 +213,8 @@ Required-check intent: build · lint · test(unit) · test(integration) · stand
 golden-file (ADR-0016). PGlite makes integration + golden-file hermetic, so they fold into the
 `check` job rather than separate jobs. A `concurrency` group cancels superseded in-flight runs so
 the limited fleet is not tied up on stale commits. Required status checks on `main` (CODEOWNERS):
-`check`, `standards-gate`, `registry-index`.
+`check`, `standards-gate`, `registry-index`, `oscal-conformance`, `greptile-gate` (the last two
+added 2026-07-02 — ADR-0208 + PR#51).
 
 | Job                 | Runner (timeout)                                                                                        | Does                                                                                                                                                                                                                                                                                                                                                         |
 | ------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
