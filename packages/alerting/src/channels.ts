@@ -9,9 +9,10 @@
 // BOTH seams — the Zod config schema and the fetch call — mirroring the ai-kit provider baseUrl guard.
 import { createHmac } from "node:crypto";
 import {
+  assertSafePublicUrl,
+  assertSafePublicUrlResolved,
   fetchWithTimeout,
   InternalError,
-  ValidationError,
   strictObject,
 } from "@caisson/kernel";
 import { z } from "zod";
@@ -98,82 +99,13 @@ export function createEmailChannel(emailer: Emailer): AlertChannel {
   };
 }
 
-/**
- * SSRF guard for a buyer-supplied destination URL (webhook/Slack/Telegram config). The value flows
- * straight into an outbound `fetchWithTimeout`, so an unguarded `http://169.254.169.254` (cloud
- * metadata), a loopback/private host, or a `file:`/`data:` scheme would let a misconfigured or
- * hostile config reach internal services. Mirrors the ai-kit provider `baseUrl` guard's floor —
- * https-only, no credentials-in-URL, a private/loopback/link-local/metadata DENYLIST (not a host
- * allowlist: buyers may point a webhook at any PUBLIC https host).
- *
- * @throws ValidationError on a malformed URL, a non-https scheme, credentials in the URL, or a
- *   private-range / localhost / `.local` host.
- */
-function assertSafeUrl(raw: string): void {
-  let url: URL;
-  try {
-    url = new URL(raw);
-  } catch {
-    throw new ValidationError("alert destination URL rejected: malformed URL");
-  }
-  if (url.protocol !== "https:") {
-    // https only — blocks http:, and data:/file:/javascript: smuggling. Never auto-prepend a scheme.
-    throw new ValidationError(
-      "alert destination URL rejected: non-https scheme",
-      { scheme: url.protocol },
-    );
-  }
-  if (url.username !== "" || url.password !== "") {
-    throw new ValidationError(
-      "alert destination URL rejected: credentials in URL",
-    );
-  }
-  if (isPrivateHost(url.hostname)) {
-    // The WHATWG parser canonicalizes decimal/octal/hex/short-form IPv4 to dotted-quad before this
-    // check, so those encodings are covered for free.
-    // ponytail: literal-host denylist — a PUBLIC hostname that RESOLVES to a private IP (DNS
-    // rebinding) is not caught here; add resolve-time pinning only if a deployment needs it.
-    throw new ValidationError(
-      "alert destination URL rejected: private/loopback host",
-      { host: url.hostname },
-    );
-  }
-}
-
-/** True if `hostname` (as returned by `URL.hostname`) is a loopback/private/link-local/metadata literal. */
-function isPrivateHost(hostname: string): boolean {
-  const host = hostname.toLowerCase();
-  if (host === "localhost" || host.endsWith(".local")) return true;
-  if (host.startsWith("[") && host.endsWith("]")) {
-    const v6 = host.slice(1, -1);
-    return (
-      v6 === "::1" || // loopback
-      v6 === "::" || // unspecified
-      /^f[cd]/.test(v6) || // fc00::/7 unique-local
-      /^fe[89ab]/.test(v6) || // fe80::/10 link-local
-      v6.startsWith("::ffff:") // IPv4-mapped — never a real destination host, reject wholesale
-    );
-  }
-  const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
-  if (m === null) return false;
-  const a = Number(m[1]);
-  const b = Number(m[2]);
-  return (
-    a === 0 || // 0.0.0.0/8 (incl. 0.0.0.0)
-    a === 127 || // 127/8 loopback
-    a === 10 || // 10/8 private
-    (a === 172 && b >= 16 && b <= 31) || // 172.16/12 private
-    (a === 192 && b === 168) || // 192.168/16 private
-    (a === 169 && b === 254) // 169.254/16 link-local (incl. cloud metadata 169.254.169.254)
-  );
-}
-
 /** An https URL to a public host — the SSRF-guarded string type used for every buyer-supplied
- * destination. Runs {@link assertSafeUrl} so the schema boundary and the fetch-time guard share one
- * policy source. */
+ * destination. Runs the kernel {@link assertSafePublicUrl} LITERAL guard at the schema boundary (sync,
+ * no DNS); the resolve-time re-check (DNS-rebinding defense, Strix vuln-0004) runs at each fetch seam
+ * via {@link assertSafePublicUrlResolved} — one shared policy source (@caisson/kernel/ssrf). */
 const safeHttpsUrl = z.string().superRefine((value, ctx) => {
   try {
-    assertSafeUrl(value);
+    assertSafePublicUrl(value);
   } catch (err) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -194,8 +126,10 @@ export function createWebhookChannel(config: WebhookConfig): AlertChannel {
     name: "webhook",
     async deliver(event: AlertEvent): Promise<DeliveryResult> {
       try {
-        // Guard at the fetch seam too — a config object can be built without parsing the schema.
-        assertSafeUrl(config.url);
+        // Guard at the fetch seam too — a config object can be built without parsing the schema —
+        // and RESOLVE the host here (DNS-rebinding defense, Strix vuln-0004): a public name pointing
+        // at a private/loopback/metadata address is caught before the POST leaves.
+        await assertSafePublicUrlResolved(config.url);
         const body = JSON.stringify(event);
         const headers: Record<string, string> = {
           "content-type": "application/json",
@@ -212,6 +146,9 @@ export function createWebhookChannel(config: WebhookConfig): AlertChannel {
           method: "POST",
           headers,
           body,
+          // Refuse redirects: only `config.url`'s host was SSRF-rechecked, so a 3xx to a private host
+          // would bypass the guard (Strix vuln-0004). A real webhook returns 2xx, never redirects.
+          redirect: "error",
         });
         if (!res.ok) {
           // Do NOT include the response body — it can echo recipient/secret fragments.
@@ -235,13 +172,14 @@ export function createSlackChannel(config: SlackConfig): AlertChannel {
     name: "slack",
     async deliver(event: AlertEvent): Promise<DeliveryResult> {
       try {
-        assertSafeUrl(config.webhookUrl);
+        await assertSafePublicUrlResolved(config.webhookUrl);
         const res = await fetchWithTimeout(config.webhookUrl, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
             text: `[${event.severity}] ${event.title}\n${event.body}`,
           }),
+          redirect: "error", // see the webhook seam — no redirect past the SSRF-checked host (vuln-0004)
         });
         if (!res.ok) {
           throw new InternalError("slack alert delivery failed");
@@ -266,8 +204,8 @@ export function createTelegramChannel(config: TelegramConfig): AlertChannel {
     async deliver(event: AlertEvent): Promise<DeliveryResult> {
       try {
         // `botApiUrl` is buyer-supplied config (not a constant api.telegram.org base), so it needs
-        // the same SSRF guard; guard the base before composing the sendMessage path.
-        assertSafeUrl(config.botApiUrl);
+        // the same SSRF guard; resolve-check the base before composing the sendMessage path.
+        await assertSafePublicUrlResolved(config.botApiUrl);
         const url = `${config.botApiUrl.replace(/\/+$/, "")}/sendMessage`;
         const res = await fetchWithTimeout(url, {
           method: "POST",
@@ -276,6 +214,7 @@ export function createTelegramChannel(config: TelegramConfig): AlertChannel {
             chat_id: config.chatId,
             text: `[${event.severity}] ${event.title}\n${event.body}`,
           }),
+          redirect: "error", // see the webhook seam — no redirect past the SSRF-checked host (vuln-0004)
         });
         if (!res.ok) {
           throw new InternalError("telegram alert delivery failed");
