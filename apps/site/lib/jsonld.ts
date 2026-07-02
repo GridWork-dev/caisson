@@ -83,7 +83,7 @@ export function softwareApplication(opts: {
 
 /**
  * ItemList of the à-la-carte modules for the /modules catalog (ADR-0191). The editions carry their
- * own SoftwareApplication nodes on /pricing; the 14 modules had none. Each element is a
+ * own SoftwareApplication nodes on /pricing; the 15 modules had none. Each element is a
  * SoftwareApplication with its committed Offer (ADR-0082 — live self-serve, InStock), reflecting the
  * cards visible on the page. `url` points at the catalog (modules have no per-module page).
  */
