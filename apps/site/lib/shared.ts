@@ -2,7 +2,7 @@
 export const docsRoute = "/docs";
 export const docsContentRoute = "/llms.mdx/docs";
 export const gitConfig = {
-  user: "GridWork-dev",
+  user: "caisson-sh",
   repo: "caisson",
   branch: "main",
 } as const;

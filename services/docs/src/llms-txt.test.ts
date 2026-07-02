@@ -60,7 +60,7 @@ describe("renderLlmsTxt", () => {
       "- [Billing](https://caisson.sh/docs/base/billing): Stripe webhooks behind a port.",
     );
     expect(out).toContain(
-      "- [@caisson/kernel](https://github.com/GridWork-dev/caisson/blob/main/packages/kernel/README.md): Typed config and the error model.",
+      "- [@caisson/kernel](https://github.com/caisson-sh/caisson/blob/main/packages/kernel/README.md): Typed config and the error model.",
     );
   });
 
