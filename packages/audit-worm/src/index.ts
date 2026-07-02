@@ -43,6 +43,14 @@ export {
   retainUntilFrom,
 } from "./retain.ts";
 
+// ADR-0202 — chain-evidenced, strictly-monotonic retention escalation.
+export {
+  type ComplianceEscalator,
+  type EscalateRetentionInput,
+  type EscalateRetentionResult,
+  escalateRetention,
+} from "./retention-escalation.ts";
+
 // T3 — append-only audit chain + WORM anchor.
 export {
   type AuditChainStoreOptions,

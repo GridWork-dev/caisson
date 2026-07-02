@@ -106,6 +106,88 @@ describe("defaultProviders — every configured backend builds a ProviderV2 (ADR
   });
 });
 
+describe("openai-compatible backends resolve the CHAT path (ADR-0201)", () => {
+  // The live-only defect ADR-0201 fixes: `createOpenAI().languageModel()` defaults to the v5
+  // Responses API (`{baseURL}/responses` — beta on OpenRouter, absent on Ollama). The compatible
+  // adapter's `languageModel()` IS its chat model — observable as the model instance's
+  // `provider === "<name>.chat"` — so these three cases can never regress back to /responses
+  // without failing here.
+  const cases: Array<{ name: string; lane: AiSettings["lanes"][string] }> = [
+    {
+      name: "openrouter",
+      lane: {
+        provider: "openrouter",
+        model: "openai/gpt-4o-mini",
+        apiKeyEnv: "X",
+      },
+    },
+    {
+      name: "local",
+      lane: {
+        provider: "local",
+        model: "m",
+        apiKeyEnv: "X",
+        baseUrl: "https://host:1/v1",
+      },
+    },
+    {
+      name: "ollama",
+      lane: {
+        provider: "ollama",
+        model: "llama3",
+        apiKeyEnv: "X",
+        baseUrl: "https://host:11434/v1",
+      },
+    },
+  ];
+
+  for (const { name, lane } of cases) {
+    test(`${name} → languageModel is the chat model ("${name}.chat")`, () => {
+      const providers = defaultProviders(laneSettings(lane));
+      const model = providers[lane.provider]?.languageModel(lane.model);
+      expect(model?.provider).toBe(`${name}.chat`);
+      expect(model?.modelId).toBe(lane.model);
+    });
+  }
+
+  test("a local/ollama lane without baseUrl fails closed (no api.openai.com / localhost fallback)", () => {
+    // createOpenAI used to silently default a baseUrl-less self-hosted lane to api.openai.com —
+    // a misdirected live call. The compatible path requires the buyer's host (ADR-0201).
+    for (const provider of ["local", "ollama"] as const) {
+      expect(() =>
+        defaultProviders(
+          laneSettings({ provider, model: "m", apiKeyEnv: "X" }),
+        ),
+      ).toThrow();
+    }
+  });
+
+  test("the SSRF guard is unchanged on the compatible path (round-4/5 remediation)", () => {
+    for (const provider of ["openrouter", "local", "ollama"] as const) {
+      expect(() =>
+        defaultProviders(
+          laneSettings({
+            provider,
+            model: "m",
+            apiKeyEnv: "X",
+            baseUrl: "https://169.254.169.254/v1",
+          }),
+        ),
+      ).toThrow();
+      expect(() =>
+        defaultProviders(
+          laneSettings({
+            provider,
+            model: "m",
+            apiKeyEnv: "X",
+            baseUrl: "http://api.example.com/v1",
+          }),
+        ),
+      ).toThrow();
+    }
+  });
+});
+
 describe("parseAiSettings — the ADR-0160 config fields (region / apiVersion / apiSecretEnv)", () => {
   test("accepts the new optional fields", () => {
     const parsed = parseAiSettings({

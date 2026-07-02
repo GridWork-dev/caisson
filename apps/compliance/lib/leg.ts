@@ -5,6 +5,9 @@
 //   1. SEED + ENCRYPT  — write a SEC/HIPAA field under `withTenantCrypto` (T16): crypto nested
 //      INSIDE the RLS tenant scope (boundary == boundary, ADR-0005). Prove it round-trips and that a
 //      cross-row relocate fails AEAD authentication (row-bound AAD, ADR-0055 / TM-E).
+//   1b. IMPERSONATE     — run a full support-impersonation session (ADR-0187): begin (reason-required,
+//      TTL-bounded) → one RLS-gated write probe under `withImpersonation` → recorded action → end,
+//      each step appending its dual (operator + tenant) pair to the target's audit chain.
 //   2. LOCK → WORM      — append an `artifact.locked` event to the append-only audit chain, minting a
 //      length-keyed write-once WORM anchor (T3, ADR-0052), record an append-only locked version
 //      (T4, ADR-0053), and store the artifact bytes under a tenant-scoped WORM key with a 7-yr
@@ -36,22 +39,29 @@ import {
 import {
   currentFieldCryptoContext,
   decryptField,
+  derivedContext,
   encryptField,
   parseEnvelope,
 } from "@caisson/field-crypto";
 import {
   Ed25519Signer,
   EvidencePackBlockedError,
+  beginImpersonation,
   chainVerifyCollector,
   emitEvidenceGenerated,
+  endImpersonation,
+  findDualRecordSeqs,
   generateEvidencePack,
   hipaaSecurity,
+  impersonationCollector,
   parseEvidencePackManifest,
+  recordImpersonatedAction,
   rlsForceCollector,
   signEvidencePack,
   soc2Tsc,
   toOscalBundle,
   verifyEvidenceSignature,
+  withImpersonation,
   withTenantCrypto,
   wormRetentionCollector,
   type CollectorResult,
@@ -59,8 +69,11 @@ import {
   type EvidencePackChainAnchor,
   type EvidencePackFramework,
   type EvidencePackManifest,
+  type EvidenceStatus,
   type Framework,
   type GenerateEvidencePackInput,
+  type ImpersonationDeps,
+  type ImpersonationDualTrailFact,
   type OscalExportBundle,
   type RlsTableFact,
 } from "@caisson/compliance";
@@ -84,6 +97,16 @@ const ARTIFACT_BODY = JSON.stringify({
   artifactId: ARTIFACT_ID,
   version: 1,
 });
+
+/** Fixed support-impersonation inputs (ADR-0187). The session id + probe row id are INJECTED, never
+ *  minted — the session id enters the chain payloads (→ the anchor tip → the manifest), so a random
+ *  id would break the golden byte-stability the leg is pinned on. */
+const IMPERSONATION_SESSION_ID = "1f2e3d4c-5b6a-4798-8899-aabbccddeeff";
+const IMPERSONATION_PROBE_ROW_ID = "7c8d9e0f-1a2b-4c3d-8e5f-607182930a4b";
+const IMPERSONATION_OPERATOR = "support-operator-7";
+const IMPERSONATION_REASON =
+  "Investigate a buyer-reported evidence-pack generation failure (support ticket CS-1042).";
+const IMPERSONATION_TTL_MS = 15 * 60 * 1000;
 
 // --- Result shape (the four exit checks, surfaced for the app route + the integration test) -------
 
@@ -135,10 +158,22 @@ export interface BlockedCheck {
   readonly noPartialPack: boolean;
 }
 
+export interface ImpersonationCheck {
+  readonly sessionId: string;
+  /** The chain seq of the operator-identity begin record (the "who acted" side, ADR-0187). */
+  readonly operatorRecordSeq: number | null;
+  /** The chain seq of the acting-as-tenant begin record (the "whose data" side). */
+  readonly tenantRecordSeq: number | null;
+  /** The dual-trail evidence collector's verdict over the session + verified chain. */
+  readonly dualTrailStatus: EvidenceStatus;
+}
+
 export interface LegResult {
   readonly tenantId: string;
   readonly encryptedField: EncryptedFieldCheck;
   readonly wormLock: WormLockCheck;
+  /** The support-impersonation dual-trail check (ADR-0187). */
+  readonly impersonation: ImpersonationCheck;
   /** The SOC2-TSC evidence pack (framework `soc2-tsc`). */
   readonly evidence: EvidenceCheck;
   /** The HIPAA-Security evidence pack (framework `hipaa-security`) — the SAME 3 collector results,
@@ -312,6 +347,53 @@ export async function runComplianceLeg(
     crossRowRelocateRejected = true;
   }
 
+  // 1b — SUPPORT IMPERSONATION (ADR-0187): begin a reason-required, TTL-bounded session, run ONE
+  // RLS-gated write probe under `withImpersonation` (scope, never role — the probe row lands only
+  // because the TARGET tenant's own RLS scope admits it), record the action, end the session. Each
+  // step appends the dual (operator + tenant) pair to the target's chain — the `artifact.locked`
+  // append in step 2 is then the LAST append, so its anchor commits the FULL chain and the single
+  // step-2 `verify` covers the dual trail too.
+  const impersonationDeps: ImpersonationDeps = {
+    db,
+    chain: chainStore,
+    now: () => now,
+    newId: () => IMPERSONATION_SESSION_ID,
+  };
+  const impersonationSession = await beginImpersonation(impersonationDeps, {
+    operatorId: IMPERSONATION_OPERATOR,
+    operatorEmail: "support@caisson.sh",
+    targetAccountId: tenantId,
+    reason: IMPERSONATION_REASON,
+    ttlMs: IMPERSONATION_TTL_MS,
+  });
+  await withImpersonation(
+    impersonationDeps,
+    impersonationSession,
+    async (tx) => {
+      // The probe reuses the PHI table the leg already writes; the field stays sealed (the crypto
+      // context is built explicitly — `withImpersonation` grants tenant SCOPE, not a crypto ambient).
+      const sealed = encryptField(
+        derivedContext(provider, tenantId),
+        PHI_COLUMN,
+        IMPERSONATION_PROBE_ROW_ID,
+        DEMO_SSN,
+      );
+      await tx.query(
+        `INSERT INTO ${PHI_TABLE} (id, account_id, ssn) VALUES ($1, $2, $3)`,
+        [IMPERSONATION_PROBE_ROW_ID, tenantId, sealed],
+      );
+    },
+  );
+  await recordImpersonatedAction(
+    impersonationDeps,
+    impersonationSession,
+    `write:${PHI_TABLE}`,
+  );
+  const endedImpersonation = await endImpersonation(
+    impersonationDeps,
+    impersonationSession,
+  );
+
   // 2 — LOCK an append-only versioned artifact into WORM with a SHA-256 chain anchor.
   const artifactBytes = new TextEncoder().encode(ARTIFACT_BODY);
   const artifactSha256 = createHash("sha256")
@@ -378,10 +460,33 @@ export async function runComplianceLeg(
     tables: await readRlsPosture(harness, TENANT_TABLES),
   });
 
+  // The impersonation dual-trail fact (ADR-0187): the ended session + its begin-pair seqs located
+  // in the loaded chain + the step-2 verification verdict (whose anchor commits the full chain).
+  const impersonationFact: ImpersonationDualTrailFact = {
+    sessions: [
+      {
+        id: endedImpersonation.id,
+        operatorId: endedImpersonation.operatorId,
+        reason: endedImpersonation.reason,
+        startedAt: endedImpersonation.startedAt.toISOString(),
+        expiresAt: endedImpersonation.expiresAt.toISOString(),
+        endedAt: endedImpersonation.endedAt.toISOString(),
+        ...findDualRecordSeqs(chainEntries, endedImpersonation.id),
+      },
+    ],
+    chainValid: chainVerification.valid,
+  };
+  const impersonationResult =
+    impersonationCollector().collect(impersonationFact);
+
   const controls = [
     controlPlan(soc2Tsc, "AUDIT.IMMUTABLE-LOG", [chainResult]),
     controlPlan(soc2Tsc, "DATA-PROTECTION.DISPOSAL", [wormResult]),
-    controlPlan(soc2Tsc, "ACCESS-CONTROL.LOGICAL", [rlsResult]),
+    // Dual evidence for the logical-access control: tenant isolation AND the impersonation trail.
+    controlPlan(soc2Tsc, "ACCESS-CONTROL.LOGICAL", [
+      rlsResult,
+      impersonationResult,
+    ]),
   ];
   const generateInput: GenerateEvidencePackInput = {
     tenantId,
@@ -448,7 +553,12 @@ export async function runComplianceLeg(
   const hipaaControls = [
     controlPlan(hipaaSecurity, "AUDIT.CONTROLS", [chainResult]),
     controlPlan(hipaaSecurity, "GOVERNANCE.DOCUMENTATION", [wormResult]),
-    controlPlan(hipaaSecurity, "ACCESS-CONTROL.WORKFORCE", [rlsResult]),
+    // The SAME dual-citation pattern: HIPAA's workforce access-control cites the same isolation +
+    // impersonation results the SOC2 logical-access control does (ADR-0187 / F3b).
+    controlPlan(hipaaSecurity, "ACCESS-CONTROL.WORKFORCE", [
+      rlsResult,
+      impersonationResult,
+    ]),
   ];
   const hipaaGenerateInput: GenerateEvidencePackInput = {
     tenantId,
@@ -563,10 +673,21 @@ export async function runComplianceLeg(
   };
   const emittedEvents = sink.events.map((e) => e.name);
 
+  const impersonationSessionFact = impersonationFact.sessions[0];
+  const impersonation: ImpersonationCheck = {
+    sessionId: endedImpersonation.id,
+    operatorRecordSeq: impersonationSessionFact?.operatorRecordSeq ?? null,
+    tenantRecordSeq: impersonationSessionFact?.tenantRecordSeq ?? null,
+    dualTrailStatus: impersonationResult.status,
+  };
+
   const allChecksPassed =
     encryptedField.storedIsEnvelope &&
     encryptedField.roundTrips &&
     encryptedField.crossRowRelocateRejected &&
+    impersonation.operatorRecordSeq !== null &&
+    impersonation.tenantRecordSeq !== null &&
+    impersonation.dualTrailStatus === "pass" &&
     wormLock.chainVerified &&
     wormLock.meetsRetentionFloor &&
     wormLock.lockedVersionId.length > 0 &&
@@ -586,6 +707,7 @@ export async function runComplianceLeg(
     tenantId,
     encryptedField,
     wormLock,
+    impersonation,
     evidence,
     hipaaEvidence,
     blocked: { blocked, unresolvedCount, noPartialPack },

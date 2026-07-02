@@ -33,6 +33,8 @@ const PACKAGES_ROOT = join(
  *   field-crypto  (field_key_version + field_wrapped_dek)   ── the crypto KEY infrastructure
  *        ↓ ordering predecessor
  *   audit-worm    (audit_chain_entry + locked_version)      ── commits PII as field-crypto CIPHERTEXT
+ *        ↓ ordering predecessor
+ *   compliance    (impersonation_session, ADR-0187)         ── its dual trail APPENDS to that chain
  *
  * `dependsOn` here is the migration-LAYERING DAG fed to the kernel merge — NOT the code-import graph
  * (dependency-cruiser owns that, and stays 0-violation). audit-worm names field-crypto as an ordering
@@ -40,12 +42,15 @@ const PACKAGES_ROOT = join(
  * though audit-worm does NOT import field-crypto (the two trees are code-disjoint). Without this edge
  * the kernel's deterministic slug tie-break would order `audit-worm` first (it sorts ahead of
  * `field-crypto`), inverting the key→ciphertext layering. Each `dir` points at the package's `src`
- * dir, whose `migrations/NNNN_*.sql` the shared `readPackageMigrations` reads.
+ * dir, whose `migrations/NNNN_*.sql` the shared `readPackageMigrations` reads (ADR-0070: the loader
+ * appends `/migrations` — the dir is the package src root, never the migrations dir itself).
  *
  * @caisson/{kernel,tenancy-rls} contribute NO migration files of their own — their RLS helpers are
- * emitted INTO each migration (`buildTenantPolicySql`), and the compliance edition itself records
- * evidence in the WORM artifact store + the audit chain, not a dedicated table — so it adds no
- * migration here either. The assembler picks up any package that later grows a `migrations/` dir.
+ * emitted INTO each migration (`buildTenantPolicySql`). The compliance edition records EVIDENCE in
+ * the WORM artifact store + the audit chain, not a dedicated table — but since ADR-0187 it owns its
+ * first migration: `impersonation_session`, the fail-closed session row the support-impersonation
+ * kernel gates on. It layers AFTER audit-worm because its dual audit trail appends to the
+ * `audit_chain_entry` table that migration creates.
  */
 const CONTRIBUTING: readonly SelectedPackage[] = [
   {
@@ -57,6 +62,11 @@ const CONTRIBUTING: readonly SelectedPackage[] = [
     slug: "@caisson/audit-worm",
     dir: join(PACKAGES_ROOT, "audit-worm", "src"),
     dependsOn: ["@caisson/field-crypto"],
+  },
+  {
+    slug: "@caisson/compliance",
+    dir: join(PACKAGES_ROOT, "compliance", "src"),
+    dependsOn: ["@caisson/audit-worm"],
   },
 ];
 

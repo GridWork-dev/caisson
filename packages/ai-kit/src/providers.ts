@@ -6,13 +6,17 @@
 // `LanguageModelV2` and never reaches a real adapter, so no provider key, model call, or network
 // request happens in the gate (the SPEC's zero-live-call invariant). A buyer's BYOK key is read from
 // the env var the lane NAMES (`apiKeyEnv`, ADR-0011) — ai-config never reads the key itself; the SDK
-// adapter does, here, at the edge. `openrouter` + `local` are OpenAI-API-compatible, so they reach
-// through the OpenAI adapter with an explicit `baseURL` (no extra SDK).
+// adapter does, here, at the edge. `openrouter`/`local`/`ollama` are OpenAI-API-compatible, so they
+// ride `@ai-sdk/openai-compatible` (ADR-0201) — NOT `createOpenAI`: since AI SDK v5 the OpenAI
+// adapter defaults `languageModel()` to the RESPONSES API, so a registry-resolved live call would
+// POST `{baseURL}/responses` (beta on OpenRouter, absent on Ollama) instead of `/chat/completions`.
+// A live-only defect — every CI path injects a mock model, which is exactly why it survived.
 import { createAmazonBedrock } from "@ai-sdk/amazon-bedrock";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createAzure } from "@ai-sdk/azure";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import type { ProviderV2 } from "@ai-sdk/provider";
 import { ValidationError } from "@caisson/kernel";
 import type { AiSettings, ProviderConfig } from "@caisson/ai-config";
@@ -116,16 +120,37 @@ export function providerFor(
       return createAnthropic({ ...key, ...base });
     case "google":
       return createGoogleGenerativeAI({ ...key, ...base });
+    // The three OpenAI-COMPATIBLE (not OpenAI) backends ride `createOpenAICompatible` (ADR-0201):
+    // its `languageModel()` IS the chat model, pinning live calls to `/chat/completions` — where
+    // `createOpenAI` would default to the v5 Responses API (see the file header). `includeUsage`
+    // opts STREAMING responses into usage reporting (`stream_options.include_usage`) so the meter's
+    // reconcile leg trues to the provider's actuals instead of the chars/4 estimate.
     case "openrouter":
-      return createOpenAI({
+      return createOpenAICompatible({
+        name: "openrouter",
         ...key,
         baseURL: cfg.baseUrl ?? OPENROUTER_BASE_URL,
+        includeUsage: true,
       });
     // `ollama` serves an OpenAI-compatible endpoint, so it rides the same adapter as `local` — the
     // buyer names the `baseUrl` of their host (no localhost default, per the security floor).
     case "local":
     case "ollama":
-      return createOpenAI({ apiKey: apiKey ?? "local", ...base });
+      if (cfg.baseUrl === undefined) {
+        // Fail closed (ADR-0201): `createOpenAI` used to silently fall back to api.openai.com for a
+        // baseUrl-less self-hosted lane — a misdirected live call, never the buyer's host. The
+        // compatible adapter REQUIRES a baseURL, and the security floor forbids a localhost default.
+        throw new ValidationError(
+          "provider baseUrl required for a local/ollama lane",
+          { provider: cfg.provider },
+        );
+      }
+      return createOpenAICompatible({
+        name: cfg.provider,
+        apiKey: apiKey ?? "local",
+        baseURL: cfg.baseUrl,
+        includeUsage: true,
+      });
     // AWS Bedrock (ADR-0160): SigV4, a two-part credential + region. `apiKeyEnv` names the
     // access-key-id env var, `apiSecretEnv` the secret-access-key env var; omit both to fall back to
     // the AWS SDK's default credential chain. `region` defaults to `AWS_REGION` when unset.
