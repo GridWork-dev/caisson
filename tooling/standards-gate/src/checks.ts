@@ -24,8 +24,9 @@ import { createHash } from "node:crypto";
 import ts from "typescript";
 import type { Pkg } from "./workspace";
 import { isAgpl } from "./workspace";
-// The REAL generator (SPEC-tenancy-rls task 3): gate and generator can't independently drift.
-import { buildTenantPolicySql } from "@caisson/tenancy-rls";
+// Type-only — erased at transpile, so it cannot break the pre-install fs-only pass (see
+// checkRlsEquivalence's lazy VALUE import below for the runtime seam).
+import type { buildTenantPolicySql as BuildTenantPolicySqlFn } from "@caisson/tenancy-rls";
 
 /** The four editions (by package name) — the down-only direction is keyed on these until manifests land. */
 const EDITION_NAMES = new Set([
@@ -613,7 +614,34 @@ function extractRlsBlock(sql: string, table: string): RlsBlock | null {
   };
 }
 
-export function checkRlsEquivalence(pkgs: Pkg[], root: string): Finding[] {
+export async function checkRlsEquivalence(
+  pkgs: Pkg[],
+  root: string,
+): Promise<Finding[]> {
+  // The REAL generator (SPEC-tenancy-rls task 3): gate and generator can't independently drift.
+  // Lazily imported — a STATIC workspace import would break the CLI's pre-install fs-only pass
+  // (CI layer 1a runs before `bun install`; @caisson/tenancy-rls itself imports @caisson/kernel).
+  // Mirrors checkManifestAgreement's convention: a resolution failure is a non-blocking warn (the
+  // post-install layer-1b run executes the check for real); any other load failure fails closed.
+  let buildTenantPolicySql: typeof BuildTenantPolicySqlFn;
+  try {
+    ({ buildTenantPolicySql } = await import("@caisson/tenancy-rls"));
+  } catch (e) {
+    const msg = (e as Error).message ?? String(e);
+    const isResolutionFailure =
+      (e as { code?: string }).code === "ERR_MODULE_NOT_FOUND" ||
+      /cannot find (module|package)|failed to resolve/i.test(msg);
+    return [
+      {
+        severity: isResolutionFailure ? "warn" : "error",
+        rule: "rls-equivalence",
+        pkg: "@caisson/tenancy-rls",
+        message: isResolutionFailure
+          ? `could not RESOLVE @caisson/tenancy-rls (${msg}) — RLS equivalence check skipped; CI must run post-install.`
+          : `@caisson/tenancy-rls failed to load (${msg}) — the RLS generator is broken (ADR-0005).`,
+      },
+    ];
+  }
   const overrides = loadRlsOverrides(root);
   const findings: Finding[] = [];
 
