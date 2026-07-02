@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .turbo/
+mirror-out/
 .next/
 *.tsbuildinfo
 
