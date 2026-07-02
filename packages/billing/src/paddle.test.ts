@@ -93,14 +93,16 @@ describe("event mapping", () => {
   test("a subscription-linked transaction.completed never maps to purchase.completed (ADR-0108 guard)", () => {
     // Paddle fires the SAME event for the subscription's first charge and every renewal — unlike
     // Stripe's separate checkout.session.completed/invoice.paid split. Mirrors the Stripe driver's
-    // subscription-mode guard: this must never become a one-time purchase.completed.
+    // subscription-mode guard: this must never become a one-time purchase.completed. The first
+    // charge from a Paddle.js checkout carries origin "web" (verified 2026-07-01: no origin value
+    // means "first subscription charge" — subscription_charge is a MID-CYCLE one-time charge).
     const event = {
-      event_id: "evt_sub_charge",
+      event_id: "evt_sub_first",
       event_type: "transaction.completed",
       data: {
         id: "txn_sub1",
         subscription_id: "sub_01gks14ge726w50ch2tmaw2a1x",
-        origin: "subscription_charge",
+        origin: "web",
         currency_code: "usd",
         custom_data: { account_id: "acct_a" },
         items: [
@@ -113,7 +115,7 @@ describe("event mapping", () => {
     expect(parsed?.type).not.toBe("purchase.completed");
     expect(parsed).toEqual({
       type: "invoice.paid",
-      sourceEventId: "evt_sub_charge",
+      sourceEventId: "evt_sub_first",
       accountId: "acct_a",
       amountTotal: 1290000,
       currency: "usd",
@@ -122,6 +124,32 @@ describe("event mapping", () => {
       billingReason: "subscription_create",
       invoiceId: "txn_sub1",
     });
+  });
+
+  test("a mid-cycle subscription_charge transaction stays NON-granting (no cycle allotment)", () => {
+    // origin "subscription_charge" = a one-time charge FOR a subscription (addon/topup), NOT the
+    // first charge (verified 2026-07-01). It must pass through as a reason outside the grant gate's
+    // GRANTING_REASONS — mapping it to subscription_create would over-grant a full cycle allotment.
+    const event = {
+      event_id: "evt_sub_midcycle",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_sub_mid",
+        subscription_id: "sub_x",
+        origin: "subscription_charge",
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        items: [
+          { price: { id: "price_compliance_updates_annual_PLACEHOLDER" } },
+        ],
+        details: { totals: { grand_total: "5000" } },
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    const parsed = parsePaddleEvent(event);
+    expect(parsed?.type).toBe("invoice.paid");
+    expect(parsed?.type === "invoice.paid" ? parsed.billingReason : "").toBe(
+      "subscription_charge",
+    );
   });
 
   test("a subscription renewal transaction.completed maps billingReason=subscription_cycle", () => {
