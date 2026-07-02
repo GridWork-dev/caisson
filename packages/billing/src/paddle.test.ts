@@ -119,6 +119,28 @@ describe("event mapping", () => {
     ]);
   });
 
+  test("a multi-item transaction with one MALFORMED line fails closed, not a partial grant (Greptile P1)", () => {
+    // One line is unreadable (no price id). Silently skipping it would ack the webhook and grant the
+    // buyer only the valid line — a permanent under-grant with no Paddle retry. The mapper must THROW so
+    // verifyAndParse returns a non-2xx and Paddle redelivers.
+    const event = {
+      event_id: "evt_cart_bad",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_cart_bad",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        items: [
+          { price: { id: "price_compliance_PLACEHOLDER" }, quantity: 1 },
+          { price: {} }, // malformed: no price id
+        ],
+        details: { totals: { grand_total: "20000" } },
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    expect(() => parsePaddleEvent(event)).toThrow(/price id/);
+  });
+
   test("a subscription-linked transaction.completed never maps to purchase.completed (ADR-0108 guard)", () => {
     // Paddle fires the SAME event for the subscription's first charge and every renewal — unlike
     // Stripe's separate checkout.session.completed/invoice.paid split. Mirrors the Stripe driver's

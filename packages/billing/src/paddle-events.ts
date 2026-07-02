@@ -26,7 +26,7 @@
 // the `read*` helpers below are ALREADY the defensive/fail-closed-to-safe-default layer for it; this
 // schema only closes the envelope-level gap, it does not re-validate every event type's inner fields.
 import { z } from "zod";
-import { strictObject } from "@caisson/kernel";
+import { strictObject, ValidationError } from "@caisson/kernel";
 import type { DomainBillingEvent } from "./events.ts";
 
 export const PaddleEventSchema = strictObject({
@@ -75,23 +75,31 @@ function readQuantity(item: Record<string, unknown>): number {
 
 /** EVERY line of a one-time transaction: `items[].price.id` + `items[].quantity` (Strix vuln-0005 —
  * a multi-item cart is ONE transaction carrying N lines; fulfilling only `items[0]` under-grants a
- * cart the buyer paid for in full). Malformed entries (no object / no price id) are skipped. */
+ * cart the buyer paid for in full). FAILS CLOSED on any unreadable line in a non-empty `items` (money
+ * path): throwing makes `verifyAndParse` return a non-2xx so Paddle RETRIES, versus silently skipping
+ * the line — which would ack the delivery and under-grant a buyer who paid for it, permanently (Greptile
+ * P1). An absent / empty `items` returns [] (the caller maps that to null: nothing to grant — a
+ * genuinely itemless event, NOT a dropped paid line). */
 function readLineItems(
   obj: Record<string, unknown>,
 ): { priceId: string; quantity: number }[] {
   const items = obj.items;
   if (!Array.isArray(items)) return [];
-  const lines: { priceId: string; quantity: number }[] = [];
-  for (const raw of items) {
-    if (typeof raw !== "object" || raw === null) continue;
+  return items.map((raw): { priceId: string; quantity: number } => {
+    if (typeof raw !== "object" || raw === null) {
+      throw new ValidationError("Paddle line item is not an object");
+    }
     const item = raw as Record<string, unknown>;
     const price = item.price;
-    if (typeof price !== "object" || price === null) continue;
+    if (typeof price !== "object" || price === null) {
+      throw new ValidationError("Paddle line item is missing its price object");
+    }
     const priceId = readString((price as Record<string, unknown>).id);
-    if (priceId === "") continue;
-    lines.push({ priceId, quantity: readQuantity(item) });
-  }
-  return lines;
+    if (priceId === "") {
+      throw new ValidationError("Paddle line item is missing its price id");
+    }
+    return { priceId, quantity: readQuantity(item) };
+  });
 }
 
 /** `details.totals.grand_total` — the transaction's charged total, minor units. */
