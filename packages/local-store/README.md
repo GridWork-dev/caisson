@@ -1,5 +1,10 @@
 # @caisson/local-store
 
+> **macOS CI note (2026-07-02):** the `native-ext` macOS leg runs on the fleet's Mac mini runner
+> (`[self-hosted, gw-macos-arm64]`). The extension-capable Homebrew SQLite it needs is provisioned
+> host-wide at `/opt/homebrew/opt/sqlite` (the first `setCustomSQLite` candidate in `src/store.ts`);
+> the CI step is check-first and only `brew install`s when the dylib is missing (hosted runners).
+
 The shared **local hybrid-retrieval** base — sqlite-vec (`vec0`) for vectors, FTS5 for keyword, and a
 Reciprocal-Rank-Fusion merge over the two — that both local editions compose down-only. ADR-0067 (base
 placement) · ADR-0073 (file-per-tenant isolation) · ADR-0022 (down-only) · ADR-0003 (composable, never a
@@ -65,3 +70,5 @@ id is rejected before any open and two tenants resolve to distinct files. Golden
 
 > Rebuilt clean from the PUBLIC gridwork-core `memory-vec.ts` `hybridSearch` pattern (RRF_K=60, vec0 +
 > FTS5 + degrade). No pro-private `media-pipeline` code — patterns only.
+
+**macOS CI note (2026-07-02):** the `native-ext` macOS leg runs on the fleets

@@ -109,12 +109,14 @@ jobs:
   # ubuntu only, so the macOS native binary path would otherwise ship unexercised. This matrix runs
   # the local-store suite (vec0 + FTS5 + RRF hybrid retrieval) on BOTH runners; a missing/broken
   # platform extension fails CI here. `fail-fast: false` so a break on one OS never masks the other.
-  # Linux leg → the fleet's amd64 lane (exercises the sqlite-vec `.so`). macOS leg → STAYS
-  # GitHub-hosted `macos-latest` for now: the fleet's native macOS lane (gw-macos-arm64) dispatches
-  # fine (checkout + bun install are green on it), but its runner user has no Homebrew
-  # extension-capable SQLite, so the `brew install sqlite` step fails there. Moving the macOS leg to
-  # the fleet is a follow-up gated on provisioning Homebrew + extension-capable SQLite on the Mac
-  # mini's runner user (docs/operations.md §7); until then this keeps the leg green.
+  # Linux leg → the fleet's amd64 scale set (exercises the sqlite-vec `.so`). macOS leg → the
+  # fleet's LEGACY LABELED runner `[self-hosted, gw-macos-arm64]` on the Mac mini (2026-07-02 —
+  # closes the docs/operations.md §7 follow-up): Homebrew's extension-capable SQLite is present
+  # host-wide at /opt/homebrew/opt/sqlite (verified readable by the runner user), and the sqlite
+  # step below is check-first so it never needs brew write access on the fleet box. NOTE the macOS
+  # lane is NOT a runscaler scale set yet (the mini still runs the legacy launchd runners) — this
+  # leg uses the LABEL ARRAY form, unlike the bare-name scale-set jobs. Manual fallback if the mini
+  # is down: flip back to `runs-on: macos-latest` (one line).
   #
   # NOT a required check → safe to path-skip on packages/local-store/** changes.
   native-ext:
@@ -127,7 +129,7 @@ jobs:
           - platform: linux
             runs-on: caisson-amd64
           - platform: macos
-            runs-on: macos-latest
+            runs-on: [self-hosted, gw-macos-arm64]
     runs-on: ${{ matrix.runs-on }}
     timeout-minutes: 20
     steps:
@@ -148,9 +150,12 @@ jobs:
       - run: bun install --frozen-lockfile
       # macOS ships a system SQLite with extension loading DISABLED (Apple build). store.ts points
       # bun:sqlite at Homebrew's extension-capable SQLite via Database.setCustomSQLite; ensure it is
-      # installed so that path exists on the runner. No-op effect on Linux (step is macOS-gated).
+      # installed so that path exists on the runner. Check-first: on the fleet runner the dylib is
+      # already provisioned host-wide and the runner user has no brew write access, so only install
+      # when actually missing (hosted runners). No-op effect on Linux (step is macOS-gated).
       - name: ensure extension-capable SQLite (macOS)
         if: runner.os == 'macOS'
-        run: brew install sqlite
+        run: |
+          [ -f "$(brew --prefix 2>/dev/null)/opt/sqlite/lib/libsqlite3.dylib" ] || brew install sqlite
       - name: local-store native sqlite-vec ext (vec0 + FTS5 + RRF) on ${{ matrix.platform }}
         run: bun test packages/local-store/src

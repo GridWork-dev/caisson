@@ -233,11 +233,11 @@ needs a real external account, infra, or deploy (DEPLOY-class, operator-gated).
   settings, tracked on the fork board).
 - **`CAISSON_PUBLISH_DRY_RUN`** — the `publish-and-index` job is wired + active but dry-run by default;
   set `=false` to actually publish (moot until editions are GA + the publishability flip lands).
-- **Move the macOS `native-ext` CI leg onto the fleet** — provision Homebrew + extension-capable
-  SQLite for the Mac mini's runner user, then flip that leg `runs-on: macos-latest` → `runs-on:
-[self-hosted, gw-macos-arm64]` (saves the ~10×-cost hosted macOS minutes). The fleet macOS lane
-  already dispatches (checkout + `bun install` green on PR#22); only the `brew install sqlite` prereq
-  is missing. `docs/operations.md` §7.
+- ~~**Move the macOS `native-ext` CI leg onto the fleet**~~ **DONE (2026-07-02)** — the leg runs
+  `[self-hosted, gw-macos-arm64]` (the mini's legacy labeled runner; the macOS lane is not a
+  runscaler scale set yet). Homebrew's extension-capable SQLite is provisioned host-wide at
+  `/opt/homebrew/opt/sqlite` and the workflow sqlite step is check-first (no brew write access
+  needed on the fleet box). Fallback: flip back to `macos-latest`. `docs/operations.md` §7.
 - **Single amd64 runner serializes fleet CI** — the gate jobs run one-at-a-time on the one
   `gw-linux-amd64` runner (vs parallel on GitHub-hosted), so PR wall-clock is the serial sum. Fine for
   a solo repo; add a second amd64 lane if wall-clock becomes a constraint.
