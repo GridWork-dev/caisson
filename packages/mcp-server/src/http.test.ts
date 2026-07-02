@@ -218,6 +218,11 @@ describe("HTTP transport binding (ADR-0161)", () => {
       "generate",
       "list_modules",
     ]);
+    // ADR-0210: every listed tool carries a non-empty description over this transport too.
+    for (const t of tools.tools) {
+      expect(typeof t.description).toBe("string");
+      expect((t.description ?? "").length).toBeGreaterThan(0);
+    }
 
     const result = await client.callTool({
       name: "list_modules",

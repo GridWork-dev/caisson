@@ -73,6 +73,9 @@ describe("ADR-0112 rate-limit hook (mcp-server seam)", () => {
     server.registerTool({
       name: "probe",
       requiredEntitlement: null,
+      description: "Rate-limit probe fixture.",
+      version: "1.0.0",
+      audit: { logArgs: true },
       handler: async () => {
         handlerRuns += 1;
         return { ok: true };
@@ -94,6 +97,9 @@ describe("ADR-0112 rate-limit hook (mcp-server seam)", () => {
     server.registerTool({
       name: "edition_tool",
       requiredEntitlement: "@caisson/auth",
+      description: "Rate-limit edition-tool fixture.",
+      version: "1.0.0",
+      audit: { logArgs: true },
       handler: async () => ({ ok: true }),
     });
     const session = server.authenticate(TOKEN);
