@@ -7,9 +7,9 @@
     "version": "2024.1"
   },
   "chainAnchor": {
-    "length": 1,
-    "tipHash": "cd61b3f1612b3c972f75b5ff2ff1d9fbaf02be08d18bcbaaa552adb054e9a19a",
-    "genesisHash": "cd61b3f1612b3c972f75b5ff2ff1d9fbaf02be08d18bcbaaa552adb054e9a19a"
+    "length": 7,
+    "tipHash": "dbcbb692d139c5da8e7ac0f9ba6ea0d1da961ef93de4d6b8b841eb9818ca168b",
+    "genesisHash": "78bf3e20bd47e53ca2d5842ee4a47cfd4446d55ff1c92861c4156c4a77dfa8d9"
   },
   "controls": [
     {
@@ -29,13 +29,47 @@
       ],
       "evidence": [
         {
-          "collectorId": "substrate.tenant-isolation-force-rls",
-          "title": "Tenant isolation enforced by FORCE row-level security",
-          "summary": "all 5 tenant tables enforce FORCE row-level security",
+          "collectorId": "substrate.impersonation-dual-trail",
+          "title": "Support impersonation carries a chain-verified dual audit trail",
+          "summary": "1 impersonation session(s) fully dual-recorded on a verified chain",
           "status": "pass",
           "facts": {
-            "tableCount": 5,
-            "forcedCount": 5,
+            "sessionCount": 1,
+            "chainValid": true,
+            "sessions": [
+              {
+                "id": "1f2e3d4c-5b6a-4798-8899-aabbccddeeff",
+                "operatorId": "support-operator-7",
+                "reason": "Investigate a buyer-reported evidence-pack generation failure (support ticket CS-1042).",
+                "startedAt": "2026-06-27T12:00:00.000Z",
+                "expiresAt": "2026-06-27T12:15:00.000Z",
+                "endedAt": "2026-06-27T12:00:00.000Z",
+                "operatorRecordSeq": 0,
+                "tenantRecordSeq": 1,
+                "endOperatorRecordSeq": 4,
+                "endTenantRecordSeq": 5,
+                "operatorRecordCount": 3,
+                "tenantRecordCount": 3
+              }
+            ]
+          },
+          "manualSlots": [
+            {
+              "id": "support-access-policy",
+              "label": "Written support-access / impersonation policy document",
+              "required": false,
+              "filled": false
+            }
+          ]
+        },
+        {
+          "collectorId": "substrate.tenant-isolation-force-rls",
+          "title": "Tenant isolation enforced by FORCE row-level security",
+          "summary": "all 6 tenant tables enforce FORCE row-level security",
+          "status": "pass",
+          "facts": {
+            "tableCount": 6,
+            "forcedCount": 6,
             "deficientTables": []
           },
           "manualSlots": [
@@ -70,12 +104,12 @@
         {
           "collectorId": "substrate.audit-chain-integrity",
           "title": "Append-only audit chain integrity (WORM-anchored)",
-          "summary": "audit chain verified against its anchor (1 entries)",
+          "summary": "audit chain verified against its anchor (7 entries)",
           "status": "pass",
           "facts": {
-            "entryCount": 1,
+            "entryCount": 7,
             "anchorPresent": true,
-            "anchorLength": 1,
+            "anchorLength": 7,
             "valid": true,
             "brokenAt": null
           },
@@ -131,7 +165,7 @@
     "totalControls": 3,
     "controlsReady": 3,
     "controlsWithGaps": 0,
-    "totalEvidenceItems": 3,
+    "totalEvidenceItems": 4,
     "posture": "3 of 3 controls evidence-ready; no gaps recorded."
   }
 }

@@ -34,11 +34,11 @@
 //
 // NO NETWORK IN CI (ADR-0064): the wire call is a `RentedTransport` PORT. CI injects a deterministic
 // double; the LIVE transport (`createLiveRentedTransport`) routes every byte through the egress
-// guard (→ kernel `fetchWithTimeout`; the native `AbortSignal.timeout` is forbidden on Bun) and is
-// THE single un-exercised path. The file is framework-free (ADR-0044): it opens no socket at load
-// and imports no provider SDK.
+// guard (→ kernel `fetchWithTimeout`; the native `AbortSignal.timeout` is forbidden on Bun),
+// purpose-bound to the `rented-backend` sink kind, and runs only in the gated live proof
+// (ADR-0201). The file is framework-free (ADR-0044): it opens no socket at load and imports no
+// provider SDK.
 import {
-  AuthzError,
   InternalError,
   ValidationError,
   parseStrict,
@@ -159,17 +159,14 @@ export class RentedInferenceBackend implements InferenceBackend {
     assertNonEmpty(config.feature, "feature");
     assertNonEmpty(config.model, "model");
 
-    // OFF BY DEFAULT (TM-RENT). `assertAllowed` throws unless the endpoint is HTTPS and the host is
-    // on the privacy allowlist — a zero-egress (default) policy makes this fail closed. We then
-    // require the sanctioned-sink KIND to be `rented-backend` specifically, so a host allowlisted
-    // only for the model fetch (T13) can never double as a hosted-inference egress.
-    const url = config.guard.assertAllowed(config.endpoint);
-    if (config.guard.sinkKindFor(url.hostname) !== "rented-backend") {
-      throw new AuthzError(
-        "rented backend blocked: endpoint host is not allowlisted as a `rented-backend` sanctioned sink",
-        { host: url.hostname },
-      );
-    }
+    // OFF BY DEFAULT (TM-RENT). `assertAllowedFor` throws unless the endpoint is HTTPS, the host
+    // is on the privacy allowlist (a zero-egress default policy fails closed), AND the sanctioned
+    // sink KIND is `rented-backend` specifically — a host allowlisted only for the model fetch
+    // (T13) can never double as a hosted-inference egress.
+    const url = config.guard.assertAllowedFor(
+      config.endpoint,
+      "rented-backend",
+    );
 
     this.dim = dim;
     this.model = config.model;
@@ -184,7 +181,7 @@ export class RentedInferenceBackend implements InferenceBackend {
   /** Embed text via the hosted provider; emit one metered record; return a locked-`dim` vector. */
   async embed(text: string): Promise<Float32Array> {
     // Re-assert the egress gate per call — the policy is the authority, not a construction-time snapshot.
-    this.#guard.assertAllowed(this.#endpoint);
+    this.#guard.assertAllowedFor(this.#endpoint, "rented-backend");
     const res = parseStrict(
       rentedEmbedResponseSchema,
       await this.#transport.embed({ text }),
@@ -203,7 +200,7 @@ export class RentedInferenceBackend implements InferenceBackend {
 
   /** Generate a completion via the hosted provider; emit one metered record; return the text. */
   async complete(req: CompletionRequest): Promise<CompletionResult> {
-    this.#guard.assertAllowed(this.#endpoint);
+    this.#guard.assertAllowedFor(this.#endpoint, "rented-backend");
     // `exactOptionalPropertyTypes`: only pass `maxTokens` when the caller actually set it.
     const input =
       req.maxTokens !== undefined
@@ -236,7 +233,7 @@ export class RentedInferenceBackend implements InferenceBackend {
   }
 }
 
-/** Config for the LIVE rented transport — the single un-exercised path in CI (ADR-0064). */
+/** Config for the LIVE rented transport (never in the default suite; proven via ADR-0201). */
 export interface LiveRentedTransportConfig {
   /** Base HTTPS endpoint; `/embed` and `/complete` are resolved against it. */
   endpoint: string;
@@ -249,14 +246,18 @@ export interface LiveRentedTransportConfig {
 }
 
 /**
- * The LIVE rented transport — THE single un-exercised path in CI (no network in tests, ADR-0064).
- * Every byte routes through the egress guard's `fetch` (→ kernel `fetchWithTimeout`; the native
- * `AbortSignal.timeout` is forbidden on Bun), so it cannot egress to a non-allowlisted host, and
- * every response is re-validated against the wire schema before it reaches the backend.
+ * The LIVE rented transport (proven live per ADR-0201; no network in the default suite, ADR-0064).
+ * Every byte routes through the egress guard's `fetchAs` (→ kernel `fetchWithTimeout`; the native
+ * `AbortSignal.timeout` is forbidden on Bun), PURPOSE-BOUND to the `rented-backend` sink kind — a
+ * host allowlisted for a different purpose (e.g. the T13 model fetch) can never receive the Bearer
+ * header. Every response is re-validated against the wire schema before it reaches the backend.
  */
 export function createLiveRentedTransport(
   config: LiveRentedTransportConfig,
 ): RentedTransport {
+  // Fail at composition, not first call: the endpoint must already be sanctioned as a
+  // `rented-backend` sink (mirrors the RentedInferenceBackend construction gate).
+  config.guard.assertAllowedFor(config.endpoint, "rented-backend");
   const headers: Record<string, string> = {
     "content-type": "application/json",
   };
@@ -270,7 +271,8 @@ export function createLiveRentedTransport(
 
   const post = async (path: string, body: unknown): Promise<unknown> => {
     const url = new URL(path, config.endpoint);
-    const res = await config.guard.fetch(
+    const res = await config.guard.fetchAs(
+      "rented-backend",
       url,
       { method: "POST", headers, body: JSON.stringify(body) },
       options,

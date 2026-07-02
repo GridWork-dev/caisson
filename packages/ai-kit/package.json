@@ -18,7 +18,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src",
-    "test": "bun test ./src"
+    "test": "bun test ./src",
+    "test:live": "bun test ./live"
   },
   "dependencies": {
     "@ai-sdk/amazon-bedrock": "^3.0.99",
@@ -26,6 +27,7 @@
     "@ai-sdk/azure": "^2.0.114",
     "@ai-sdk/google": "^2.0.76",
     "@ai-sdk/openai": "^2.0.109",
+    "@ai-sdk/openai-compatible": "^1.0.0",
     "@ai-sdk/provider": "^2.0.3",
     "@caisson/ai-config": "workspace:*",
     "@caisson/ai-meter": "workspace:*",

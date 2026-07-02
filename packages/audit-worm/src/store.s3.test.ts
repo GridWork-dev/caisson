@@ -7,12 +7,16 @@
 import { describe, expect, test } from "bun:test";
 import {
   GetObjectCommand,
+  GetObjectRetentionCommand,
   HeadObjectCommand,
   PutObjectCommand,
+  PutObjectRetentionCommand,
   S3ServiceException,
   type GetObjectCommandInput,
+  type GetObjectRetentionCommandInput,
   type HeadObjectCommandInput,
   type PutObjectCommandInput,
+  type PutObjectRetentionCommandInput,
 } from "@aws-sdk/client-s3";
 import { ConfigError, NotFoundError, ValidationError } from "@caisson/kernel";
 import { ArtifactExistsError, buildArtifactKey } from "./store.ts";
@@ -32,6 +36,8 @@ interface S3StubBehavior {
   put?: (input: PutObjectCommandInput) => void;
   get?: (input: GetObjectCommandInput) => unknown;
   head?: (input: HeadObjectCommandInput) => unknown;
+  getRetention?: (input: GetObjectRetentionCommandInput) => unknown;
+  putRetention?: (input: PutObjectRetentionCommandInput) => void;
 }
 
 interface S3Stub {
@@ -40,6 +46,8 @@ interface S3Stub {
     put: PutObjectCommandInput[];
     get: GetObjectCommandInput[];
     head: HeadObjectCommandInput[];
+    getRetention: GetObjectRetentionCommandInput[];
+    putRetention: PutObjectRetentionCommandInput[];
   };
   total: () => number;
 }
@@ -47,7 +55,13 @@ interface S3Stub {
 /** A `Pick<S3Client,"send">` test double — inspects the command, records the input, and runs the
  *  per-command behaviour. Never touches the network (TM-G). */
 function makeS3Stub(behavior: S3StubBehavior = {}): S3Stub {
-  const calls: S3Stub["calls"] = { put: [], get: [], head: [] };
+  const calls: S3Stub["calls"] = {
+    put: [],
+    get: [],
+    head: [],
+    getRetention: [],
+    putRetention: [],
+  };
   const client: S3Sendable = {
     async send(command: unknown): Promise<unknown> {
       if (command instanceof PutObjectCommand) {
@@ -63,13 +77,29 @@ function makeS3Stub(behavior: S3StubBehavior = {}): S3Stub {
         calls.head.push(command.input);
         return behavior.head ? behavior.head(command.input) : {};
       }
+      if (command instanceof GetObjectRetentionCommand) {
+        calls.getRetention.push(command.input);
+        return behavior.getRetention
+          ? behavior.getRetention(command.input)
+          : {};
+      }
+      if (command instanceof PutObjectRetentionCommand) {
+        calls.putRetention.push(command.input);
+        behavior.putRetention?.(command.input);
+        return {};
+      }
       throw new Error("unexpected S3 command in stub");
     },
   };
   return {
     client,
     calls,
-    total: () => calls.put.length + calls.get.length + calls.head.length,
+    total: () =>
+      calls.put.length +
+      calls.get.length +
+      calls.head.length +
+      calls.getRetention.length +
+      calls.putRetention.length,
   };
 }
 
@@ -364,5 +394,193 @@ describe("GOVERNANCE / COMPLIANCE mode guard (TM-A)", () => {
       if (prev === undefined) delete process.env.NODE_ENV;
       else process.env.NODE_ENV = prev;
     }
+  });
+});
+
+// --- ADR-0202: strictly-monotonic retention escalation ---
+
+const CURRENT = new Date(Date.UTC(2033, 0, 1));
+const LATER = new Date(Date.UTC(2034, 0, 1));
+const EARLIER = new Date(Date.UTC(2032, 0, 1));
+
+/** Stub behaviour for an object currently locked GOVERNANCE until {@link CURRENT}. */
+function lockedGovernance(): S3StubBehavior {
+  return {
+    getRetention: () => ({
+      Retention: { Mode: "GOVERNANCE", RetainUntilDate: CURRENT },
+    }),
+    head: () => ({ ContentLength: 3, ObjectLockRetainUntilDate: LATER }),
+  };
+}
+
+/** Run `fn` with NODE_ENV=production (the only env the COMPLIANCE gate opens in), restoring after. */
+async function inProduction(fn: () => Promise<void>): Promise<void> {
+  const prev = process.env.NODE_ENV;
+  process.env.NODE_ENV = "production";
+  try {
+    await fn();
+  } finally {
+    if (prev === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = prev;
+  }
+}
+
+describe("S3ArtifactStore.extendRetention (ADR-0202 — extend-only, mode-preserving)", () => {
+  const key = buildArtifactKey(ACCOUNT_A, "evidence", "pack.bin");
+
+  test("a strictly-later date issues PutObjectRetention preserving the store's mode", async () => {
+    const stub = makeS3Stub(lockedGovernance());
+    const store = new S3ArtifactStore({ client: stub.client, bucket: BUCKET });
+
+    const meta = await store.extendRetention(key, LATER);
+    // The returned date is the one S3 just accepted — the caller's `retain_until` row value.
+    expect(meta.retainUntil).toBe(LATER);
+    expect(meta.size).toBe(3);
+
+    expect(stub.calls.getRetention).toHaveLength(1);
+    expect(stub.calls.putRetention).toHaveLength(1);
+    const input = stub.calls.putRetention[0]!;
+    expect(input.Bucket).toBe(BUCKET);
+    expect(input.Key).toBe(key);
+    expect(input.Retention?.Mode).toBe("GOVERNANCE"); // mode preserved, never escalated here
+    expect(input.Retention?.RetainUntilDate).toBe(LATER);
+  });
+
+  test.each([
+    ["an equal", CURRENT],
+    ["an earlier", EARLIER],
+  ])(
+    "%s date is refused fail-closed BEFORE any write (never shortens, never clamps)",
+    async (_label, requested) => {
+      const stub = makeS3Stub(lockedGovernance());
+      const store = new S3ArtifactStore({
+        client: stub.client,
+        bucket: BUCKET,
+      });
+      await expect(
+        store.extendRetention(key, requested),
+      ).rejects.toBeInstanceOf(ValidationError);
+      expect(stub.calls.putRetention).toHaveLength(0);
+    },
+  );
+
+  test("an object with NO current retention gains one — extend-from-nothing strengthens", async () => {
+    const stub = makeS3Stub({
+      getRetention: () => {
+        throw s3Error(404, "NoSuchObjectLockConfiguration");
+      },
+      head: () => ({ ContentLength: 1 }),
+    });
+    const store = new S3ArtifactStore({ client: stub.client, bucket: BUCKET });
+    const meta = await store.extendRetention(key, LATER);
+    expect(meta.retainUntil).toBe(LATER);
+    expect(stub.calls.putRetention[0]!.Retention?.Mode).toBe("GOVERNANCE");
+  });
+
+  test("a missing object (404) is NotFoundError — mirrors get()", async () => {
+    const stub = makeS3Stub({
+      getRetention: () => {
+        throw s3Error(404, "NoSuchKey");
+      },
+    });
+    const store = new S3ArtifactStore({ client: stub.client, bucket: BUCKET });
+    await expect(store.extendRetention(key, LATER)).rejects.toBeInstanceOf(
+      NotFoundError,
+    );
+    expect(stub.calls.putRetention).toHaveLength(0);
+  });
+
+  test("an unsafe key or an invalid date is rejected before any S3 call", async () => {
+    const stub = makeS3Stub();
+    const store = new S3ArtifactStore({ client: stub.client, bucket: BUCKET });
+    await expect(
+      store.extendRetention(`${ACCOUNT_A}/../escape.bin`, LATER),
+    ).rejects.toBeInstanceOf(ValidationError);
+    await expect(
+      store.extendRetention(key, new Date(Number.NaN)),
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(stub.total()).toBe(0);
+  });
+});
+
+describe("S3ArtifactStore.escalateToCompliance (ADR-0202 riding the ADR-0051 three-belt gate)", () => {
+  const key = buildArtifactKey(ACCOUNT_A, "evidence", "pack.bin");
+  const validOptIn = (): ReturnType<typeof irreversibleComplianceOptIn> =>
+    irreversibleComplianceOptIn({
+      bucket: BUCKET,
+      acknowledgement: COMPLIANCE_ACKNOWLEDGEMENT,
+      deployment: "production",
+    });
+
+  test("refused under a test runner even with a valid opt-in — belt 1, before any S3 I/O", async () => {
+    const stub = makeS3Stub(lockedGovernance());
+    const store = new S3ArtifactStore({ client: stub.client, bucket: BUCKET });
+    // NODE_ENV === "test" under `bun test` — the escalation gate is the SAME as construction-time.
+    await expect(
+      store.escalateToCompliance(key, LATER, validOptIn()),
+    ).rejects.toThrow(/test runner/);
+    expect(stub.total()).toBe(0);
+  });
+
+  test("gate order: under the test runner a MISSING opt-in still reports belt 1 (test-runner) first", async () => {
+    const stub = makeS3Stub();
+    const store = new S3ArtifactStore({ client: stub.client, bucket: BUCKET });
+    await expect(
+      store.escalateToCompliance(
+        key,
+        LATER,
+        undefined as unknown as ReturnType<typeof irreversibleComplianceOptIn>,
+      ),
+    ).rejects.toThrow(/test runner/);
+    expect(stub.total()).toBe(0);
+  });
+
+  test("in production a missing opt-in is refused (belt 3), still before any S3 I/O", async () => {
+    await inProduction(async () => {
+      const stub = makeS3Stub();
+      const store = new S3ArtifactStore({
+        client: stub.client,
+        bucket: BUCKET,
+      });
+      await expect(
+        store.escalateToCompliance(
+          key,
+          LATER,
+          undefined as unknown as ReturnType<
+            typeof irreversibleComplianceOptIn
+          >,
+        ),
+      ).rejects.toBeInstanceOf(ConfigError);
+      expect(stub.total()).toBe(0);
+    });
+  });
+
+  test("in production with the opt-in an EQUAL date is allowed — mode hardens without date change", async () => {
+    await inProduction(async () => {
+      const stub = makeS3Stub(lockedGovernance());
+      const store = new S3ArtifactStore({
+        client: stub.client,
+        bucket: BUCKET,
+      });
+      const meta = await store.escalateToCompliance(key, CURRENT, validOptIn());
+      expect(meta.retainUntil).toBe(CURRENT);
+      const input = stub.calls.putRetention[0]!;
+      expect(input.Retention?.Mode).toBe("COMPLIANCE");
+      expect(input.Retention?.RetainUntilDate).toBe(CURRENT);
+    });
+  });
+
+  test("in production an EARLIER date is refused — escalation never shortens (monotonicity floor)", async () => {
+    await inProduction(async () => {
+      const stub = makeS3Stub(lockedGovernance());
+      const store = new S3ArtifactStore({
+        client: stub.client,
+        bucket: BUCKET,
+      });
+      await expect(
+        store.escalateToCompliance(key, EARLIER, validOptIn()),
+      ).rejects.toBeInstanceOf(ValidationError);
+      expect(stub.calls.putRetention).toHaveLength(0);
+    });
   });
 });
