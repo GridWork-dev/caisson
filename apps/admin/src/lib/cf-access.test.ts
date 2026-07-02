@@ -22,10 +22,17 @@ const attacker = await generateKeyPair("RS256");
 
 async function sign(
   key: CryptoKey,
-  claims: { aud?: string; iss?: string; expSecondsFromNow?: number } = {},
+  claims: {
+    aud?: string;
+    iss?: string;
+    expSecondsFromNow?: number;
+    email?: string | null;
+  } = {},
 ): Promise<string> {
   const now = 1_800_000_000; // fixed epoch — no Date.now (deterministic)
-  return new SignJWT({ email: "<email>" })
+  const payload =
+    claims.email === null ? {} : { email: claims.email ?? "<email>" };
+  return new SignJWT(payload)
     .setProtectedHeader({ alg: "RS256" })
     .setIssuedAt(now)
     .setIssuer(claims.iss ?? `https://${CFG.teamDomain}`)
@@ -75,14 +82,23 @@ describe("extractAccessToken", () => {
 });
 
 describe("verifyAccessJwt", () => {
-  test("accepts a validly-signed token with the correct aud + iss", async () => {
+  test("accepts a validly-signed token and returns the verified email actor (ADR-0220)", async () => {
     const token = await sign(privateKey);
     // A fixed clock inside the token's validity window (setExpirationTime above is absolute).
     await expect(
       verifyAccessJwt(token, CFG, publicKey, {
         currentDate: new Date(1_800_000_100 * 1000),
       }),
-    ).resolves.toBeUndefined();
+    ).resolves.toEqual({ email: "<email>" });
+  });
+
+  test("REJECTS a validly-signed token with NO email claim (fail-closed — no anonymous actor)", async () => {
+    const noEmail = await sign(privateKey, { email: null });
+    await expect(
+      verifyAccessJwt(noEmail, CFG, publicKey, {
+        currentDate: new Date(1_800_000_100 * 1000),
+      }),
+    ).rejects.toThrow();
   });
 
   test("REJECTS a validly-signed token with the WRONG aud (a site JWT must not open admin)", async () => {

@@ -10,7 +10,13 @@ import {
 describe("registered feature tags (ADR-0074)", () => {
   test("the documented edition tags are registered", () => {
     const tags: readonly string[] = REGISTERED_FEATURE_TAGS;
-    for (const tag of ["evidence_pack", "inference_call", "codegen_run"]) {
+    for (const tag of [
+      "evidence_pack",
+      "inference_call",
+      "codegen_run",
+      // ADR-0220: the operator credit-adjust tag rides the same feature envelope.
+      "admin_adjust",
+    ]) {
       expect(tags).toContain(tag);
     }
   });

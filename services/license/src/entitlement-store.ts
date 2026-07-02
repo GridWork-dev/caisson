@@ -38,11 +38,12 @@ CREATE TABLE entitlement_grant (
   status text NOT NULL DEFAULT 'active',
   granted_at timestamptz NOT NULL DEFAULT now(),
   revoked_at timestamptz,
-  CONSTRAINT entitlement_grant_source_kind CHECK (source_kind IN ('subscription', 'one_time')),
+  CONSTRAINT entitlement_grant_source_kind CHECK (source_kind IN ('subscription', 'one_time', 'admin_comp')),
   CONSTRAINT entitlement_grant_status CHECK (status IN ('active', 'revoked')),
   CONSTRAINT entitlement_grant_source_ref CHECK (
     (source_kind = 'subscription' AND subscription_id IS NOT NULL AND purchase_id IS NULL)
     OR (source_kind = 'one_time' AND purchase_id IS NOT NULL AND subscription_id IS NULL)
+    OR (source_kind = 'admin_comp' AND subscription_id IS NULL AND purchase_id IS NULL)
   ),
   CONSTRAINT entitlement_grant_revoked_iff CHECK (
     (status = 'revoked') = (revoked_at IS NOT NULL)
@@ -53,6 +54,27 @@ CREATE UNIQUE INDEX entitlement_grant_uniq
   ON entitlement_grant (account_id, entitlement_id, source_kind, COALESCE(subscription_id, purchase_id));
 
 ${buildTenantPolicySql("entitlement_grant")}
+`;
+
+// ADR-0220 (Fork AM-3/AM-2). The forward migration for an environment that already created the
+// junction under the pre-admin_comp CHECKs (ADR-0113): widen `source_kind` + `source_ref` to admit
+// a third `admin_comp` source (an operator comp/revoke — no subscription_id, no purchase_id, so it
+// NEVER reference-counts against a real purchase, ADR-0113 intact). The cross-tenant `admin_write`
+// POLICY for this table is applied SEPARATELY via `ADMIN_MUTATION_PROVISION_SQL` (admin-mutations.ts)
+// alongside the base credit tables' policies, so it lands once the `admin_write` role exists —
+// never embedded in a schema constant every buyer-path test applies. Applied to the Railway PG at
+// DEPLOY via the numbered-migrate path (ADR-0014); the unit-test DDL above already builds the CHECKs
+// fresh, and the mutation-surface tests apply `ADMIN_MUTATION_PROVISION_SQL` for the policy.
+export const ENTITLEMENT_ADMIN_COMP_MIGRATION_SQL = `
+ALTER TABLE entitlement_grant DROP CONSTRAINT IF EXISTS entitlement_grant_source_kind;
+ALTER TABLE entitlement_grant ADD CONSTRAINT entitlement_grant_source_kind
+  CHECK (source_kind IN ('subscription', 'one_time', 'admin_comp'));
+ALTER TABLE entitlement_grant DROP CONSTRAINT IF EXISTS entitlement_grant_source_ref;
+ALTER TABLE entitlement_grant ADD CONSTRAINT entitlement_grant_source_ref CHECK (
+  (source_kind = 'subscription' AND subscription_id IS NOT NULL AND purchase_id IS NULL)
+  OR (source_kind = 'one_time' AND purchase_id IS NOT NULL AND subscription_id IS NULL)
+  OR (source_kind = 'admin_comp' AND subscription_id IS NULL AND purchase_id IS NULL)
+);
 `;
 
 // Forward migration from the prior flat `account_entitlement` shape (ADR-0071) → the junction
@@ -280,6 +302,87 @@ export async function revokePurchaseLineGrants(
        AND status = 'active'
      RETURNING id`,
     [input.accountId, input.purchaseId, input.lineItemId],
+  );
+  return r.rows.length;
+}
+
+// --- Operator comp grants (ADR-0220) ----------------------------------------------------------
+//
+// The admin mutation surface's grant/revoke run as the cross-tenant `admin_write` role
+// (`withAdminWrite`, @caisson/tenancy-rls), NOT `withTenant`/`app` — DB-level separation of
+// operator-write from buyer-runtime (Fork AM-2 = B). Both filter by an explicit `account_id`, so a
+// single call is bounded to exactly one target account (the RLS cross-tenant policy is `WITH CHECK
+// (true)`; the bound is the caller passing one id). `source_kind = 'admin_comp'` keeps a comp
+// distinct from every real purchase, so `revokePurchaseGrants` can never sweep it and it never
+// reference-counts a real subscription/one-time buy (ADR-0113 refcount semantics intact).
+
+export interface GrantAdminCompInput {
+  /** The target account — the operator-chosen tenant (NOT a session, per the sanctioned exception). */
+  accountId: string;
+  /** Purchased ids to comp (editions/bundle/modules). An empty array is a no-op. */
+  entitlementIds: readonly string[];
+  /** The admin action's provenance id (a UUID minted per operator action) — audit trail. */
+  sourceEventId: string;
+}
+
+/**
+ * Comp a set of entitlements to an account as the operator (source_kind `admin_comp`). Each id is a
+ * fresh grant row (both source ids NULL). Returns the number of grants created. Must run inside
+ * `withAdminWrite(db, …)` (the cross-tenant operator-write role) — the writer filters on
+ * `input.accountId`, so the write is bounded to that single account.
+ *
+ * // ponytail: a re-submitted comp for the same id makes a second `admin_comp` grant (the source_ref
+ * // for admin_comp is NULL/NULL, so the per-source unique index does not dedupe it). Operator
+ * // actions are deliberate, low-volume, and dual-logged, so this is benign; add a source_event_id
+ * // unique index only if double-submit dedup is ever needed.
+ */
+export async function grantAdminComp(
+  tx: TenantExecutor,
+  input: GrantAdminCompInput,
+): Promise<number> {
+  let granted = 0;
+  for (const entitlementId of input.entitlementIds) {
+    const inserted = await tx.query<{ id: string }>(
+      `INSERT INTO entitlement_grant
+         (id, account_id, entitlement_id, source_kind, subscription_id, purchase_id, source_event_id)
+       VALUES ($1, $2, $3, 'admin_comp', NULL, NULL, $4)
+       RETURNING id`,
+      [randomUUID(), input.accountId, entitlementId, input.sourceEventId],
+    );
+    if (inserted.rows.length > 0) granted += 1;
+  }
+  return granted;
+}
+
+export interface RevokeAdminCompInput {
+  accountId: string;
+  entitlementId: string;
+}
+
+/**
+ * Soft-revoke (status='revoked' + revoked_at) an account's ACTIVE `admin_comp` grants for one
+ * entitlement — undoing an operator comp. Only touches `admin_comp` rows: a real subscription/
+ * one-time grant backing the same entitlement is never swept by the operator surface (refcount
+ * against real purchases is preserved; revoking a paid entitlement stays the webhook path).
+ * Idempotent (already-revoked rows are skipped). Returns the number revoked. Run inside
+ * `withAdminWrite`.
+ *
+ * // ponytail: v1 operator revoke is comp-only. Revoking a real purchase/subscription entitlement
+ * // is a deliberate follow-up (it must decide the refund/refcount interaction) — out of scope here.
+ */
+export async function revokeAdminComp(
+  tx: TenantExecutor,
+  input: RevokeAdminCompInput,
+): Promise<number> {
+  const r = await tx.query<{ id: string }>(
+    `UPDATE entitlement_grant
+       SET status = 'revoked', revoked_at = now()
+     WHERE account_id = $1
+       AND entitlement_id = $2
+       AND source_kind = 'admin_comp'
+       AND status = 'active'
+     RETURNING id`,
+    [input.accountId, input.entitlementId],
   );
   return r.rows.length;
 }
