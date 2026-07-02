@@ -11,6 +11,7 @@
     "test": "bun test ./src"
   },
   "dependencies": {
+    "@caisson/audit-worm": "workspace:*",
     "@caisson/credits": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/observability": "workspace:*",

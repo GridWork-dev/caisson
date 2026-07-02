@@ -339,6 +339,106 @@ describe("POST /issue (ADR-0110)", () => {
   });
 });
 
+// ADR-0220 Fork AM-5: the distinct admin-scoped issue credential. A second app instance is wired
+// with an `adminToken` alongside the primary `token`; the reissue proxy authenticates with THAT
+// credential (never LICENSE_ISSUE_TOKEN). Asserts: the admin token authorizes /issue, it re-serves
+// the SAME persisted token (idempotent reissue), it does not weaken the primary-token gate, and a
+// request with no bearer still 401s. The compare is the same SHA-256 → timingSafeEqual path as the
+// primary token (app.ts `tokenMatches`).
+describe("POST /issue admin-scoped credential (ADR-0220)", () => {
+  const ADMIN_TOKEN = "admin-scoped-issue-token-distinct-9876";
+  let adminApp: (req: Request) => Promise<Response>;
+
+  beforeAll(() => {
+    adminApp = createApp({
+      token: TOKEN,
+      adminToken: ADMIN_TOKEN,
+      signer,
+      index,
+      db: tp.pg,
+      provider: null,
+      limiter: new TokenBucketLimiter(loadRateLimitConfig()),
+      discordNotify: null,
+    });
+  });
+
+  test("the admin token authorizes /issue and reissue re-serves the SAME stored token", async () => {
+    const acct = "acct_admin_reissue";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "in_admin",
+        source: { kind: "subscription", subscriptionId: "sub_admin" },
+      }),
+    );
+    const body = JSON.stringify({
+      accountId: acct,
+      tier: "pro",
+      major: 1,
+      expiry: null,
+    });
+    // First issue under the admin token mints + persists.
+    const first = await adminApp(post(body, `Bearer ${ADMIN_TOKEN}`));
+    expect(first.status).toBe(200);
+    const firstJson = (await first.json()) as {
+      token: string;
+      licenseId: string;
+    };
+    // Reissue under the admin token re-serves byte-identically (idempotent), never a re-mint.
+    const second = await adminApp(post(body, `Bearer ${ADMIN_TOKEN}`));
+    expect(second.status).toBe(200);
+    const secondJson = (await second.json()) as {
+      token: string;
+      licenseId: string;
+    };
+    expect(secondJson.token).toBe(firstJson.token);
+    expect(secondJson.licenseId).toBe(firstJson.licenseId);
+  });
+
+  test("the primary token still works on the admin-configured app", async () => {
+    const res = await adminApp(
+      post(
+        JSON.stringify({
+          accountId: "acct_admin_primary",
+          tier: "pro",
+          major: 1,
+          expiry: null,
+        }),
+        `Bearer ${TOKEN}`,
+      ),
+    );
+    expect(res.status).toBe(200);
+  });
+
+  test("no bearer → 401, and a wrong bearer → 401 (credential gating)", async () => {
+    const noBearer = await adminApp(
+      post(
+        JSON.stringify({ accountId: "a", tier: "pro", major: 1, expiry: null }),
+      ),
+    );
+    expect(noBearer.status).toBe(401);
+    const wrong = await adminApp(
+      post(
+        JSON.stringify({ accountId: "a", tier: "pro", major: 1, expiry: null }),
+        "Bearer neither-token",
+      ),
+    );
+    expect(wrong.status).toBe(401);
+  });
+
+  test("an app WITHOUT an admin token rejects the admin credential (no accidental widening)", async () => {
+    // `app` (the default suite instance) has no adminToken → the admin credential is just a wrong bearer.
+    const res = await app(
+      post(
+        JSON.stringify({ accountId: "a", tier: "pro", major: 1, expiry: null }),
+        `Bearer ${ADMIN_TOKEN}`,
+      ),
+    );
+    expect(res.status).toBe(401);
+  });
+});
+
 describe("issuer non-issue routes", () => {
   test("GET /health → 200 + security headers (public)", async () => {
     const res = await app(new Request("http://license.test/health"));

@@ -16,10 +16,16 @@ import {
   CREDIT_SCHEMA_SQL,
 } from "@caisson/credits";
 import {
+  ADMIN_ACTION_LOG_SCHEMA_SQL,
+  ADMIN_MUTATION_PROVISION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   LICENSE_GRANT_SCHEMA_SQL,
 } from "@caisson/service-license";
-import type { TenantExecutor, Transactor } from "@caisson/tenancy-rls";
+import {
+  ADMIN_WRITE_ROLE_BOOTSTRAP_SQL,
+  type TenantExecutor,
+  type Transactor,
+} from "@caisson/tenancy-rls";
 import { Pool, type PoolClient } from "pg";
 
 import {
@@ -27,6 +33,29 @@ import {
   buildAdminReadPolicySql,
   withAdminRead,
 } from "./admin-read.ts";
+
+// The audit-chain table (ADR-0052) the WORM dual-log half appends to, byte-mirrored from
+// @caisson/audit-worm's `migrations/0001_audit_chain.sql` for the DEV DOUBLE ONLY (append-only by
+// withheld UPDATE/DELETE grant). Prod provisions the real migration on the Railway PG at DEPLOY.
+const AUDIT_CHAIN_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS audit_chain_entry (
+  id uuid PRIMARY KEY,
+  account_id text NOT NULL,
+  seq integer NOT NULL,
+  prev_hash text,
+  payload jsonb NOT NULL,
+  hash text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT audit_chain_entry_account_seq_uniq UNIQUE (account_id, seq),
+  CONSTRAINT audit_chain_entry_genesis_prev_null CHECK ((seq = 0) = (prev_hash IS NULL))
+);
+ALTER TABLE audit_chain_entry ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_chain_entry FORCE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT ON audit_chain_entry TO app;
+CREATE POLICY audit_chain_entry_tenant_isolation ON audit_chain_entry
+  USING (account_id = current_setting('app.current_account', true))
+  WITH CHECK (account_id = current_setting('app.current_account', true));
+`;
 
 export type { TenantExecutor, Transactor };
 export { withAdminRead };
@@ -94,6 +123,7 @@ async function bootstrapPglite(): Promise<PGlite> {
   const pg = new PGlite();
   await pg.exec(APP_ROLE_BOOTSTRAP_SQL);
   await pg.exec(ADMIN_ROLE_BOOTSTRAP_SQL);
+  await pg.exec(ADMIN_WRITE_ROLE_BOOTSTRAP_SQL);
   // Real schema DDL (tenant policies + GRANT app included), then the additive admin-read policies.
   await pg.exec(CREDIT_SCHEMA_SQL);
   await pg.exec(CREDIT_ROUNDING_MIGRATION_SQL);
@@ -102,6 +132,11 @@ async function bootstrapPglite(): Promise<PGlite> {
   for (const table of ADMIN_READ_TABLES) {
     await pg.exec(buildAdminReadPolicySql(table));
   }
+  // ADR-0220 mutation surface: the operator action log + the WORM chain table + the cross-tenant
+  // admin_write policies (applied AFTER the admin_write role exists), so dev mutations work end-to-end.
+  await pg.exec(ADMIN_ACTION_LOG_SCHEMA_SQL);
+  await pg.exec(AUDIT_CHAIN_SCHEMA_SQL);
+  await pg.exec(ADMIN_MUTATION_PROVISION_SQL);
   globalDb.caissonAdminPglite = pg;
   return pg;
 }

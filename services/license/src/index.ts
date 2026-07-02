@@ -15,17 +15,58 @@ export type { BillingWebhookResult } from "./webhook.ts";
 export {
   ENTITLEMENT_SCHEMA_SQL,
   ENTITLEMENT_GRANT_MIGRATION_SQL,
+  ENTITLEMENT_ADMIN_COMP_MIGRATION_SQL,
   grantEntitlements,
   readEntitlements,
   revokeSubscriptionGrants,
   revokePurchaseGrants,
+  grantAdminComp,
+  revokeAdminComp,
 } from "./entitlement-store.ts";
 export type {
   GrantEntitlementsInput,
   GrantSource,
   RevokeSubscriptionInput,
   RevokePurchaseInput,
+  GrantAdminCompInput,
+  RevokeAdminCompInput,
 } from "./entitlement-store.ts";
+
+// ADR-0220 — the operator mutation surface (four locked actions) + its queryable audit-log half.
+export {
+  ADMIN_ACTION_LOG_SCHEMA_SQL,
+  ADMIN_ACTIONS,
+  AdminActionSchema,
+  insertAdminActionLog,
+  readAdminActionLog,
+} from "./admin-audit-log.ts";
+export type {
+  AdminAction,
+  AdminActionLogInput,
+  AdminActionLogRow,
+} from "./admin-audit-log.ts";
+export {
+  ADMIN_MUTATION_PROVISION_SQL,
+  GrantEntitlementBody,
+  RevokeEntitlementBody,
+  AdjustCreditsBody,
+  ReissueLicenseBody,
+  grantEntitlementAdmin,
+  revokeEntitlementAdmin,
+  adjustCreditsAdmin,
+  reissueLicenseAdmin,
+} from "./admin-mutations.ts";
+export type {
+  AdminMutationDeps,
+  ReissueProxyResult,
+  GrantEntitlementInput,
+  RevokeEntitlementInput,
+  AdjustCreditsInput,
+  ReissueLicenseInput,
+  EntitlementMutationResult,
+  CreditAdjustResult,
+  ReissueResult,
+} from "./admin-mutations.ts";
 export { resolveAccountEntitlements } from "./resolve-entitlements.ts";
 export {
   LICENSE_GRANT_SCHEMA_SQL,

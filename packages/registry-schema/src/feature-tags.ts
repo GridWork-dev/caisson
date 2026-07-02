@@ -28,6 +28,8 @@ export const REGISTERED_FEATURE_TAGS = [
   "eval_run",
   "audit_scan",
   "gpu_minute",
+  // ADR-0220 (Fork AM-3 = A) — operator credit correction rides the feature envelope under this tag.
+  "admin_adjust",
 ] as const;
 
 export type FeatureTag = (typeof REGISTERED_FEATURE_TAGS)[number];

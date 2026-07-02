@@ -54,6 +54,10 @@ export function startServer(
       "LICENSE_ISSUE_TOKEN is required (POST /issue is fail-closed) — refusing to start.",
     );
   }
+  // The distinct admin-scoped issue credential (ADR-0220 Fork AM-5): when set, the apps/admin
+  // reissue proxy may authorize POST /issue with it WITHOUT holding LICENSE_ISSUE_TOKEN. Optional —
+  // unset ⇒ no admin path (a normal issuer deploy). Never defaults to the primary token.
+  const adminToken = process.env.ADMIN_ISSUE_TOKEN ?? "";
   // Throws ConfigError if CAISSON_LICENSE_SIGNING_KEY is missing/malformed/non-Ed25519 (never echoes it).
   const signer = Ed25519Signer.fromEnv();
   const index = loadRegistryIndexFromFile(
@@ -104,6 +108,7 @@ export function startServer(
   const port = Number(process.env.PORT || DEFAULT_PORT);
   const handler = createApp({
     token,
+    adminToken,
     signer,
     index,
     db,
