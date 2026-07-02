@@ -65,6 +65,28 @@ smoke-test of the deployed Worker, and `bun run check` (125/125 + kernel gate) o
 > **No DEPLOY-class fast-follows remain open.** Next: the whole-repo multi-model audit (READY,
 > `outputs/specs/lift-phase/AUDIT-RUNBOOK.md`) then the two LIFT sellables (ADR-0186/0187).
 
+> **Post-go-live security + ops hardening (2026-07-02 — supersedes the `0188` ceiling above):**
+> **ADR ceiling is now `0209`.** PR#45 (`fix/security-billing-hardening` — Strix pentest remediation,
+> `ADR-0204`) and PR#46 (`chore/edition-tails-ops`, `ADR-0205`–`0209`) both merged to `main`; both
+> branches + worktrees are deleted. Closes **C5 local-ai `RentedTransport` drivers** (Azure + Bedrock
+> hand-rolled SigV4, `ADR-0209` — see §3) and ships the CAISSON-3 support-bot→Linear-Triage sink
+> (`ADR-0206`; detail: `docs/state/linear-integration.md`). `ADR-0208` also locks five ops-hardening
+> items: BYOK/attestation writes are now owner-only (fixes Strix vuln-0006), `oscal-conformance` joins
+> the required branch-protection checks, the Terraform-remote-backend migration stays deferred with a
+> documented reason (see §2 Ops hygiene), OSCAL `rlink` hosting is won't-fix, and the first-ever
+> changeset consume republished the registry ledger/index at **0.2.0** (ledger/index-only;
+> `CAISSON_PUBLISH_DRY_RUN` stays `true`). The admin `/ops` cockpit is rebuilt off the deleted SigNoz
+> API onto Grafana Cloud's Tempo query API (`ADR-0207`), and the admin CF-Access gate gains a
+> fail-closed in-app JWT check (`ADR-0204`, supersedes the `ADR-0140` edge-alone posture). **The
+> deploy wave EXECUTED 2026-07-02** — the 5-service Railway redeploy (4/5 verified live;
+> `caisson-support-bot` recovering from a transient Discord CF-1015 egress-IP ban at first boot),
+> the registry Worker redeploy (0.2.0 index verified), the `caisson-admin`/`caisson-support-bot`
+> env-var sets (`CF_ACCESS_TEAM_DOMAIN`/`CF_ACCESS_AUD`, `GRAFANA_URL`/`GRAFANA_QUERY_TOKEN`/
+> `GRAFANA_TEMPO_DATASOURCE_UID`, `LINEAR_API_KEY`/`LINEAR_TEAM_ID`/`LINEAR_TRIAGE_STATE_ID`),
+> and the 3 SigNoz volume deletions (purge 2026-07-04) all ran. One item
+> remains genuinely in-flight elsewhere: `feat/lift-harvest` (`ADR-0211` reserved), owned by a separate
+> session.
+
 ## 0. Live verification done this session
 
 - **Registry Worker — LIVE + smoke-tested GREEN.** `https://caisson-registry.broken-wood-97a9.workers.dev`:
@@ -185,8 +207,12 @@ needs a real external account, infra, or deploy (DEPLOY-class, operator-gated).
 
 ### Ops hygiene (non-blocking)
 
-- **Terraform state is LOCAL + gitignored.** Move to a remote backend (R2 + lock) before a second
-  operator or CI-driven apply. Single-operator OK today.
+- **Terraform state is LOCAL + gitignored.** **Investigated + deferred with a documented reason**
+  (`ADR-0208`, 2026-07-02): R2 silently ignores S3 conditional-write headers, so Terraform's
+  `use_lockfile` is a no-op on R2 — "R2 + lock" isn't achievable with the stock S3 backend.
+  Single-operator, zero CI applies ⇒ no active trigger; the locking-gap + real options (accept-no-lock
+  on R2 / a Worker-DO lock backend / AWS S3+DynamoDB) are recorded in `infra/terraform/README.md` +
+  `docs/operations.md` for a future migration.
 - **Registry tamper-prevention** — `CODEOWNERS` present + `registry-index` job detects hand-edits;
   PREVENTION needs `registry-index` marked a required check + branch protection (operator GitHub
   settings, tracked on the fork board).
@@ -228,15 +254,15 @@ go-live (operator/DEPLOY-class, including the registry Worker redeploy) or P7 ro
 
 Bucketed by wave + class. Non-blocking; the streams themselves are BUILT + integrated.
 
-| Item                                      | Class                         | Note                                                                                                                                                                                                                                           |
-| ----------------------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ~~**Edition members-fold**~~              | **LOCKED — `ADR-0178`**       | fold `alerting`/`retention-runner` into the Compliance edition bundle + `tool-exec` into Agentic-Dev, vs keep them à-la-carte add-ons. **Decided 2026-07-01: FOLD into bundles** (PR#34); realized at the next gated edition republish. See §4 |
-| **D8(a) tail** (site UI)                  | mechanical                    | migrate 3 more FAQ pages to `<Faq>` + broaden `<FeatureGrid>` adoption. Primitives shipped in Stream D                                                                                                                                         |
-| **C2 streaming test hygiene**             | build (small)                 | ~80 LOC of streaming-path coverage on the ai-kit inference lane                                                                                                                                                                                |
-| **C5 local-ai `RentedTransport` drivers** | build                         | wire the Stream-C new-provider drivers (Bedrock/Azure/Ollama) through `local-ai`'s rented/hosted transport                                                                                                                                     |
-| ~~**C7 write-half BYOK**~~                | **BUILT** (`ADR-0182`/`0183`) | buyer key-submission UI (`apps/site` `/dashboard/ai-keys`) + the FREE credit-vs-BYOK pricebook policy (tenant-key actions debit 0 credits), edition seam-completion 2026-07-01 (read-half BYOK shipped Stream C, `ADR-0162`)                   |
-| **D6 harvest** (`ADR-0133`)               | build (spec-gated)            | 11 gridwork-core + 6 Wardfile lifts — **wave-3, lowest priority**, per-package spec-gated (`docs/state/harvest-program.md`)                                                                                                                    |
-| **`apps/admin` provisioning**             | **DEPLOY-class**              | Railway apps + `admin.caisson.sh` DNS/CF-Access + the `admin` PG role + `OTEL` env (Grafana Cloud sole sink, `ADR-0177` — SigNoz removed, no longer part of this item). Later DEPLOY wave (`ADR-0138`/`0140`–`0143`)                           |
+| Item                                          | Class                         | Note                                                                                                                                                                                                                                           |
+| --------------------------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ~~**Edition members-fold**~~                  | **LOCKED — `ADR-0178`**       | fold `alerting`/`retention-runner` into the Compliance edition bundle + `tool-exec` into Agentic-Dev, vs keep them à-la-carte add-ons. **Decided 2026-07-01: FOLD into bundles** (PR#34); realized at the next gated edition republish. See §4 |
+| **D8(a) tail** (site UI)                      | mechanical                    | migrate 3 more FAQ pages to `<Faq>` + broaden `<FeatureGrid>` adoption. Primitives shipped in Stream D                                                                                                                                         |
+| **C2 streaming test hygiene**                 | build (small)                 | ~80 LOC of streaming-path coverage on the ai-kit inference lane                                                                                                                                                                                |
+| ~~**C5 local-ai `RentedTransport` drivers**~~ | **BUILT** (`ADR-0209`)        | wired Azure + Bedrock rented transports (hand-rolled vector-pinned SigV4, no AWS SDK per Gate-2); edition-tails-ops session 2026-07-02                                                                                                         |
+| ~~**C7 write-half BYOK**~~                    | **BUILT** (`ADR-0182`/`0183`) | buyer key-submission UI (`apps/site` `/dashboard/ai-keys`) + the FREE credit-vs-BYOK pricebook policy (tenant-key actions debit 0 credits), edition seam-completion 2026-07-01 (read-half BYOK shipped Stream C, `ADR-0162`)                   |
+| **D6 harvest** (`ADR-0133`)                   | build (spec-gated)            | 11 gridwork-core + 6 Wardfile lifts — **wave-3, lowest priority**, per-package spec-gated (`docs/state/harvest-program.md`)                                                                                                                    |
+| **`apps/admin` provisioning**                 | **DEPLOY-class**              | Railway apps + `admin.caisson.sh` DNS/CF-Access + the `admin` PG role + `OTEL` env (Grafana Cloud sole sink, `ADR-0177` — SigNoz removed, no longer part of this item). Later DEPLOY wave (`ADR-0138`/`0140`–`0143`)                           |
 
 ### Fast-follow (locked, no fork, ready NOW, not exit-gate-blocking)
 
