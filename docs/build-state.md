@@ -97,6 +97,26 @@
 > `impersonation_session` migration (RLS + column-scoped GRANT), and an impersonation evidence collector
 > cited by both the SOC2 and HIPAA plans.
 
+> **EDITION TAILS & OPS HARDENING (2026-07-02, latest — ceiling `0208`):** branch
+> `chore/edition-tails-ops` closed the post-go-live triage backlog per the `ADR-0204`–`0208` picker
+> locks. BUILT: `local-ai` **Azure OpenAI + AWS Bedrock RentedTransport drivers** (`ADR-0204` —
+> hand-rolled vector-pinned SigV4 on `node:crypto`, egress-guarded, self-skipping live probes; Ollama
+> out of the rented seam by design); `compliance` **runtime composition** of `alerting` +
+> `retention-runner` (`ADR-0205`, closing the `ADR-0178` manifest-vs-composition gap); `support-bot`
+> **escalations → Linear Triage** as a third best-effort sink (`ADR-0206`, env-gated off via
+> `LINEAR_API_KEY`/`LINEAR_TEAM_ID`/`LINEAR_TRIAGE_STATE_ID`); the `apps/admin` **/ops cockpit rebuilt
+> on the Grafana Cloud Tempo query API** (`ADR-0207` — `GRAFANA_URL`/`GRAFANA_QUERY_TOKEN`/
+> `GRAFANA_TEMPO_DATASOURCE_UID`, dormant until set; zero live SigNoz references remain); **owner-only
+> BYOK + attestation writes** (Strix vuln-0006, `ADR-0208` #1); 7 ai-kit streaming-gateway tests; and
+> the D8(a) FAQ/FeatureGrid kit migration. **The `ADR-0178` members-fold republish EXECUTED
+> ledger/index-only** (`ADR-0208` #5): all pending changesets consumed — editions + base to **0.2.0**,
+> the four Stage-2 primitives to **0.1.1** — 32 entries appended (ledger 64 lines), `index.json`
+> rebuilt, edition member maps hand-pinned (the ai-kit/local-ai `0.0.0` sentinels are gone);
+> `CAISSON_PUBLISH_DRY_RUN` stays `true` (npm publish flip = its own operator act). **The registry
+> Worker's inlined index is now one release stale** — the standing operator-gated redeploy carries
+> 0.2.0. Also: branch protection on `main` gained `oscal-conformance` + `enforce_admins` + `strict`;
+> Terraform state defer documented with the R2 `use_lockfile` no-op finding (`ADR-0208` #3).
+
 Live build status for the Caisson monorepo. **This file OWNS the synthesized build-status
 view** - `plan.md` (the P0-P7 plan) and `SUMMARY.md` (the consolidated job rollup) route here
 for "what is actually built right now". Canonical _decisions_ stay in `knowledge/decisions/`

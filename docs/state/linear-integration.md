@@ -65,7 +65,7 @@ These need the **Business plan active** and are configured in the Linear UI:
 
 ## Inbound wiring (CAISSON-3)
 
-**Design LOCKED (ADR-0206, edition-tails-ops picker round):** the Discord **support-bot**
+**BUILT (ADR-0206, edition-tails-ops session, 2026-07-02):** the Discord **support-bot**
 (ADR-0105) posts escalations (`support_ticket.ai_brief`) as Linear issues in **Triage**, as a
 third best-effort sink alongside the existing Discord-thread + Postgres sinks in
 `Escalator.escalate()`. An `IssueTracker` Protocol + concrete `LinearIssueTracker` POST the
@@ -77,12 +77,17 @@ correlation is a nice-to-have, not v1 scope). The whole surface is **env-gated o
 `LINEAR_API_KEY` / `LINEAR_TEAM_ID` / `LINEAR_TRIAGE_STATE_ID` unset ⇒ no Linear code path runs
 — using the operator's existing `lin_api_` personal key (credential-reuse trade-off acknowledged
 in the ADR; rotating to a dedicated bot actor later is a pure env-var swap).
-Until the code lands, issues are still created by Claude Code (MCP) or manually; Linear Asks
-(email/web) is the no-code alternative if wanted later.
+The code shipped in `services/support-bot` (`linear_client.py` + the `IssueTracker` port in
+`escalation.py`, wired all-or-nothing off the bot's pooled httpx client; both API gotchas — bare
+`Authorization` header, HTTP-200-with-`errors` — pinned in tests). **The sink stays dormant until
+the operator sets the three env vars on the `caisson-support-bot` Railway service** (team id
+`82e9704b-8665-4418-a175-8b886a149d50`, Triage state id `2717723f-cdc2-4d75-b292-032caf937810`).
+Linear Asks (email/web) remains the no-code alternative if wanted later.
 
 ## Setup checklist
 
 **Done (this session, via MCP):** team `Caisson` · 4 area projects · seed issues CAISSON-1/2/3.
 **Operator (UI / billing):** activate **Business** ($16/mo) · triage rules · agent guidance · GitHub Code
 Intelligence · enable cycles · create the `Launch` initiative.
-**Code (fast-follow, design locked ADR-0206):** support-bot → Triage wiring (CAISSON-3).
+**Code (DONE 2026-07-02, ADR-0206):** support-bot → Triage wiring (CAISSON-3) — awaiting the
+three env vars above to go live.
