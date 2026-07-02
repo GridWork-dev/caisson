@@ -13,7 +13,13 @@
 // locked amounts when checkout goes live — the same pre-launch-placeholder posture @caisson/cli and
 // @caisson/migrate use for `priceCents`. resolvePlan throws on any real provider id until then.
 import { z } from "zod";
-import { ConfigError, parseStrict, strictObject } from "@caisson/kernel";
+import {
+  ConfigError,
+  asCredits,
+  parseStrict,
+  strictObject,
+  type Credits,
+} from "@caisson/kernel";
 
 /** Append-only version stamp — a plan-row change bumps this, never edits it in place (ADR-0006). */
 export const PRICEBOOK_VERSION = "2026-06-30.3";
@@ -36,8 +42,13 @@ export const planEntitlementsSchema = z.array(
 export const planBookEntrySchema = strictObject({
   /** Stable internal plan tag (NOT the Stripe id) — survives a price-id rotation. */
   planTag: z.string().min(1),
-  /** EXACT integer credits granted each cycle — never derived from the charged amount (ADR-0089 §5). */
-  creditsPerCycle: z.number().int().positive(),
+  /** EXACT integer credits granted each cycle — never derived from the charged amount (ADR-0089 §5).
+   *  Branded `Credits` (ADR-0206): the transform mints the brand AFTER validation, same runtime value. */
+  creditsPerCycle: z
+    .number()
+    .int()
+    .positive()
+    .transform((n) => n as Credits),
   cadence: planCadenceSchema,
   /** Purchased ids this plan entitles the buyer to (editions/bundle/modules) — `[]` for credits-only. */
   entitlements: planEntitlementsSchema,
@@ -52,13 +63,13 @@ export type PlanBookEntry = z.infer<typeof planBookEntrySchema>;
 export const PLAN_BOOK: Record<string, PlanBookEntry> = {
   price_developer_monthly_PLACEHOLDER: {
     planTag: "developer",
-    creditsPerCycle: 1000,
+    creditsPerCycle: asCredits(1000),
     cadence: "month",
     entitlements: [], // a credits-only dev plan — grants credits, no edition access
   },
   price_compliance_updates_annual_PLACEHOLDER: {
     planTag: "compliance_updates",
-    creditsPerCycle: 12000,
+    creditsPerCycle: asCredits(12000),
     cadence: "year",
     entitlements: ["compliance"], // the compliance edition (expanded to member slugs by the index)
   },
@@ -70,13 +81,13 @@ export const PLAN_BOOK: Record<string, PlanBookEntry> = {
   // are still not final; only the price id + cadence are live).
   pri_01kwd76d64rz2ecm090pt4nq5q: {
     planTag: "developer",
-    creditsPerCycle: 1000, // carried over from the monthly placeholder — NOT a rescale (SD-6)
+    creditsPerCycle: asCredits(1000), // carried over from the monthly placeholder — NOT a rescale (SD-6)
     cadence: "year", // ADR-0106: Developer plan is $499/yr
     entitlements: [],
   },
   pri_01kwd76cwytyyy4yhd9ch0m935: {
     planTag: "compliance_updates",
-    creditsPerCycle: 12000, // carried over unchanged (SD-6)
+    creditsPerCycle: asCredits(12000), // carried over unchanged (SD-6)
     cadence: "year", // ADR-0106: Compliance Updates is $1,499/yr
     entitlements: ["compliance"],
   },
