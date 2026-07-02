@@ -15,8 +15,8 @@ Scope (ADR-0109 extends ADR-0105 — same bot, not a second process):
     the bot) to outrank the target and the target to not be the guild owner. A central ``tree.error``
     handler answers a denied check ephemerally.
   • **Purchase → edition role** — ``/grant-role`` (admin) maps an edition to its role + the ``Customer``
-    umbrella. The billing-webhook HTTP variant is DEFERRED to the Paddle phase (no new authed inbound
-    surface before a caller exists).
+    umbrella. The billing-push HTTP variant lives in ``billing_grant.py`` (ADR-0201 — the ADR-0109
+    deferral closed once services/license became a real caller); both paths share the pure helpers here.
 
 Design rule (mirrors ``bot.py``): the gateway callbacks are thin adapters over PURE async helpers
 (``assign_default_role`` / ``toggle_role`` / ``grant_edition`` / ``welcome_member``) that take
@@ -41,14 +41,36 @@ from discord.ext import commands
 
 from .config import Settings
 
-# Edition slug → the Settings attribute holding that edition's role id. The slugs are the public
-# `/grant-role` choices; keep them aligned with the site/pricebook edition keys.
+# Edition slug → the Settings attribute holding that edition's role id. The slugs are the CANONICAL
+# entitlement ids (`packages/registry-schema` EDITIONS / the pricebook `entitlements` values) — the
+# billing push (ADR-0201) sends purchased ids verbatim, so this map must speak the same vocabulary.
+# They are also the public `/grant-role` choices. The Settings attribute names keep their original
+# spelling (`role_local_first_id` / `role_agentic_id`) so deployed env vars stay valid.
 _EDITION_ROLE_ATTR: dict[str, str] = {
     "compliance": "role_compliance_id",
     "ai-kit": "role_ai_kit_id",
-    "local-first": "role_local_first_id",
-    "agentic-dev": "role_agentic_id",
+    "local-ai": "role_local_first_id",
+    "agent-dev": "role_agentic_id",
 }
+
+# The bundle sentinel purchased id (pricebook PURCHASE_BOOK) — entitles every edition (ADR-0071).
+BUNDLE_ENTITLEMENT_ID = "bundle"
+
+
+def editions_for_entitlements(entitlements: list[str]) -> list[str]:
+    """Map purchased entitlement ids (sent verbatim by the billing push) to edition slugs with a role.
+
+    ``bundle`` expands to every edition; ids with no role mapping (à-la-carte module slugs, credit
+    packs) drop out — the caller still adds the ``Customer`` umbrella for any successful purchase.
+    Order-preserving and de-duplicated so the grant reason stays stable.
+    """
+    out: list[str] = []
+    for eid in entitlements:
+        expanded = list(_EDITION_ROLE_ATTR) if eid == BUNDLE_ENTITLEMENT_ID else [eid]
+        for edition in expanded:
+            if edition in _EDITION_ROLE_ATTR and edition not in out:
+                out.append(edition)
+    return out
 
 
 # --------------------------------------------------------------------------------------------------

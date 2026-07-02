@@ -83,6 +83,14 @@ class Settings(BaseSettings):
         description="Self-assignable roles for /post-roles buttons; JSON list of {role_id,label}.",
     )
 
+    # --- optional billing-grant inbound (ADR-0201; closes the ADR-0109 deferral) ---
+    billing_grant_token: str | None = Field(
+        default=None,
+        description="Bearer expected on POST /billing-grant (pushed by services/license after a "
+        "purchase grant and by apps/site after a Discord link). The route is NOT served when unset "
+        "(fail-closed) — the bot runs unaffected.",
+    )
+
     # --- optional persistence ---
     database_url: str | None = Field(
         default=None,
