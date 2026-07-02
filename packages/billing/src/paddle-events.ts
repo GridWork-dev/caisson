@@ -76,8 +76,10 @@ function readQuantity(item: Record<string, unknown>): number {
 /** The transaction's `details.line_items[]` — the array carrying each line's `txnitm_…` id and its
  * per-line `totals` (the request-echo `items[]` carries neither). Read best-effort and correlated BY
  * ORDER with `items[]` (Paddle emits the two arrays in the same order): a missing/short array yields
- * the empty sentinels, never a throw — the itemId/chargedAmount are ADR-0218 refund enrichment, not
- * the load-bearing grant fields (those stay `items[]`, which fails closed below). */
+ * the empty sentinels, never a throw HERE. On a MULTI-line transaction the "" itemId sentinel is NOT
+ * benign — it collides on the credit ledger's per-line uniqueness key and silently under-grants — so
+ * `readLineItems` fails the whole event closed when it sees one across 2+ lines (see there). On a
+ * single-line transaction the sentinel cannot collide, so it stays a permitted best-effort default. */
 function readDetailLine(
   obj: Record<string, unknown>,
   index: number,
@@ -116,7 +118,7 @@ function readLineItems(obj: Record<string, unknown>): {
 }[] {
   const items = obj.items;
   if (!Array.isArray(items)) return [];
-  return items.map((raw, index) => {
+  const lines = items.map((raw, index) => {
     if (typeof raw !== "object" || raw === null) {
       throw new ValidationError("Paddle line item is not an object");
     }
@@ -137,6 +139,20 @@ function readLineItems(obj: Record<string, unknown>): {
       chargedAmount: detail.chargedAmount,
     };
   });
+  // Fail closed on a MULTI-line transaction whose per-line join id is missing (details.line_items
+  // absent/short/idless → the "" sentinel). Two credit-bearing lines with itemId "" collide on the
+  // credit ledger's (source_event_id, event_type, COALESCE(line_item_id,'')) uniqueness key, so every
+  // credit-bearing line past the first hits ON CONFLICT DO NOTHING and is SILENTLY dropped while the
+  // webhook acks 200 — the buyer pays for the whole cart and receives only the first line's credits.
+  // Throwing returns a non-2xx so Paddle redelivers (same fail-closed money-path contract as the
+  // missing-price-id throw above). A single-line transaction with the "" sentinel cannot collide, so
+  // it stays allowed — the common no-details.line_items case for a one-SKU buy.
+  if (lines.length > 1 && lines.some((line) => line.itemId === "")) {
+    throw new ValidationError(
+      "Paddle multi-line transaction is missing a per-line join id (details.line_items)",
+    );
+  }
+  return lines;
 }
 
 /** Parse a PARTIAL adjustment's `data.items[]` into per-line refund entries (ADR-0218). Skips Paddle-
