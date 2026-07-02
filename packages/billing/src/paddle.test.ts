@@ -101,7 +101,9 @@ describe("event mapping", () => {
   test("a multi-item one-time transaction fulfills EVERY line, with quantity (Strix vuln-0005)", () => {
     // The on-site cart opens ONE multi-line Paddle checkout, so Paddle fires ONE transaction.completed
     // carrying every line in data.items. The pre-fix mapper read only items[0] — the buyer paid for
-    // the whole cart and received just the first SKU. All lines (and their quantities) must map.
+    // the whole cart and received just the first SKU. All lines (and their quantities) must map, each
+    // carrying its own details.line_items join id (a multi-line transaction without per-line ids fails
+    // closed — see the credit-uniqueness-collision test below).
     const event = {
       event_id: "evt_cart",
       event_type: "transaction.completed",
@@ -114,7 +116,13 @@ describe("event mapping", () => {
           { price: { id: "price_compliance_PLACEHOLDER" }, quantity: 1 },
           { price: { id: "price_credit_pack_PLACEHOLDER" }, quantity: 3 },
         ],
-        details: { totals: { grand_total: "20000" } },
+        details: {
+          totals: { grand_total: "20000" },
+          line_items: [
+            { id: "txnitm_compliance", totals: { total: "15000" } },
+            { id: "txnitm_pack", totals: { total: "5000" } },
+          ],
+        },
       },
     } as Parameters<typeof parsePaddleEvent>[0];
     const parsed = parsePaddleEvent(event);
@@ -125,16 +133,54 @@ describe("event mapping", () => {
       {
         priceId: "price_compliance_PLACEHOLDER",
         quantity: 1,
-        itemId: "",
-        chargedAmount: 0,
+        itemId: "txnitm_compliance",
+        chargedAmount: 15000,
       },
       {
         priceId: "price_credit_pack_PLACEHOLDER",
         quantity: 3,
-        itemId: "",
-        chargedAmount: 0,
+        itemId: "txnitm_pack",
+        chargedAmount: 5000,
       },
     ]);
+  });
+
+  test("a multi-line transaction missing per-line join ids fails closed, not a silent under-grant (credit uniqueness collision)", () => {
+    // Two credit-bearing lines with no details.line_items both read the "" itemId sentinel. Granting
+    // them would collide on the credit ledger's (source_event_id, event_type, COALESCE(line_item_id,''))
+    // uniqueness key — the second line hits ON CONFLICT DO NOTHING and is silently dropped while the
+    // webhook acks 200, permanently under-granting a cart the buyer paid for in full. The mapper must
+    // THROW so verifyAndParse returns a non-2xx and Paddle redelivers.
+    const event = {
+      event_id: "evt_cart_no_details",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_cart_no_details",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        items: [
+          { price: { id: "price_credit_pack_PLACEHOLDER" }, quantity: 1 },
+          { price: { id: "price_credit_pack_PLACEHOLDER" }, quantity: 2 },
+        ],
+        // No details.line_items → both lines correlate to the "" join-id sentinel.
+        details: { totals: { grand_total: "15000" } },
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    expect(() => parsePaddleEvent(event)).toThrow(/per-line join id/);
+  });
+
+  test("a SINGLE-line transaction with the empty join-id sentinel still grants (no collision possible)", () => {
+    // One line cannot collide on the per-line uniqueness key, so the "" sentinel stays allowed — the
+    // common no-details.line_items one-SKU buy maps to a normal purchase.completed, never failing closed.
+    const event = JSON.parse(oneTimeTxnBody) as Parameters<
+      typeof parsePaddleEvent
+    >[0];
+    const parsed = parsePaddleEvent(event);
+    expect(parsed?.type).toBe("purchase.completed");
+    expect(
+      parsed?.type === "purchase.completed" ? parsed.lineItems[0]?.itemId : "x",
+    ).toBe("");
   });
 
   test("a multi-item transaction with one MALFORMED line fails closed, not a partial grant (Greptile P1)", () => {
