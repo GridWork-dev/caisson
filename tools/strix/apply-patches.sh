@@ -99,9 +99,32 @@ else:
     fs.write_text(s.replace(old, new, 1))
     print("patch2 read-only apply_patch strip: applied")
 
+# ---- Patch 3: tolerate null token usage from OpenAI-compat bridges ----
+# chatgpt-bridge (ChatGPT-sub) returns a usage object with null token counts;
+# the Agents SDK builds Usage(input_tokens=...) and pydantic rejects None.
+cc = sp / "agents/models/openai_chatcompletions.py"
+s = cc.read_text()
+if "tolerate null usage" in s:
+    print("patch3 null-usage tolerance: already applied")
+else:
+    old = """                    requests=1,
+                    input_tokens=response.usage.prompt_tokens,
+                    output_tokens=response.usage.completion_tokens,
+                    total_tokens=response.usage.total_tokens,"""
+    new = """                    requests=1,
+                    # strix-agent local patch: tolerate null usage from OpenAI-compat
+                    # bridges (e.g. chatgpt-bridge) that omit token counts.
+                    input_tokens=response.usage.prompt_tokens or 0,
+                    output_tokens=response.usage.completion_tokens or 0,
+                    total_tokens=response.usage.total_tokens or 0,"""
+    if old not in s:
+        print("patch3 null-usage: FAILED — anchor not found (agents SDK drift?)", file=sys.stderr); sys.exit(1)
+    cc.write_text(s.replace(old, new, 1))
+    print("patch3 null-usage tolerance: applied")
+
 # compile check
 import py_compile
-for f in (ws, fs):
+for f in (ws, fs, cc):
     py_compile.compile(str(f), doraise=True)
-print("both files compile OK")
+print("all patched files compile OK")
 PY

@@ -46,7 +46,7 @@ flaws. Do NOT attempt to fix or patch code — validate and report only."
 # Caller passes any extra strix flags through ("$@"). Default scan-mode is deep.
 run_strix() {
   local tree; tree="$(build_clean_tree)"
-  trap 'rm -rf "$tree"' EXIT
+  trap 'rm -rf "${tree:-}"' EXIT
   cd "$OUT_DIR"
   strix \
     -t "$tree" \
