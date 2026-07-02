@@ -1,4 +1,4 @@
-// src/inference/azure-openai-transport.ts — the Azure OpenAI RENTED transport (ADR-0204, mapping
+// src/inference/azure-openai-transport.ts — the Azure OpenAI RENTED transport (ADR-0209, mapping
 // the ADR-0064 T20 `RentedTransport` port — threat TM-RENT). Same discipline as the OpenRouter
 // template (ADR-0201), different auth + routing dialect: Azure authenticates with an `api-key`
 // header (not a Bearer), and routes per-deployment —
@@ -6,7 +6,7 @@
 //   {endpoint}/openai/deployments/{deployment}/chat/completions?api-version=…
 // The response BODY is the same OpenAI-compatible wire OpenRouter speaks, so the lenient wire
 // schemas are shared from openrouter-transport.ts (one dialect, two transports). No Azure SDK —
-// the Gate-2 SDK-import boundary confines vendor SDKs to ai-config/ai-kit (ADR-0204).
+// the Gate-2 SDK-import boundary confines vendor SDKs to ai-config/ai-kit (ADR-0209).
 //
 // The same two disciplines as every rented transport:
 //   1. EGRESS — every request routes through `guard.fetchAs("rented-backend", …)` (→ kernel
@@ -36,7 +36,7 @@ import type { EgressGuard } from "../privacy/egress-guard.ts";
 /** The default data-plane `api-version` (the 2024-10-21 GA inference version; overridable). */
 const DEFAULT_API_VERSION = "2024-10-21";
 
-/** Config for the Azure OpenAI rented transport (ADR-0204). Explicit options only — no env reads. */
+/** Config for the Azure OpenAI rented transport (ADR-0209). Explicit options only — no env reads. */
 export interface AzureOpenAIRentedTransportConfig {
   /** The egress guard — every request routes through `guard.fetchAs("rented-backend", …)`,
    *  re-gating the host AND its sanctioned sink kind per call. */
@@ -62,7 +62,7 @@ export interface AzureOpenAIRentedTransportConfig {
 }
 
 /**
- * Build a {@link RentedTransport} over an Azure OpenAI resource (ADR-0204). Drops into
+ * Build a {@link RentedTransport} over an Azure OpenAI resource (ADR-0209). Drops into
  * `RentedInferenceBackend` wherever the OpenRouter transport would — same guard gate, same strict
  * re-validation, same integer metering; only auth (`api-key`) and routing (per-deployment +
  * `api-version`) differ.

@@ -1,4 +1,4 @@
-# ADR-0204 — local-ai RentedTransport drivers: Azure OpenAI + Bedrock ship, Ollama is out of scope
+# ADR-0209 — local-ai RentedTransport drivers: Azure OpenAI + Bedrock ship, Ollama is out of scope
 
 **Status:** accepted · 2026-07-02 (edition-tails-ops kickoff — operator lock, picker round 2026-07-02).
 **Relates:** ADR-0160 (ai inference driver expansion — deferred exactly this as Surface B), ADR-0201

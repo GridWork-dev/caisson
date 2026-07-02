@@ -1,4 +1,4 @@
-// Unit tests for the hand-rolled SigV4 signer (ADR-0204). The derivation is pinned against the
+// Unit tests for the hand-rolled SigV4 signer (ADR-0209). The derivation is pinned against the
 // DOCUMENTED AWS test vectors — the worked IAM ListUsers example (fixed date 20150830T123600Z,
 // region us-east-1, service iam, credentials AKIDEXAMPLE / wJalrXUtnFEMI/K7MDENG+bPx…) and the
 // signing-key derivation example (20120215/us-east-1/iam) — so signature correctness is proven

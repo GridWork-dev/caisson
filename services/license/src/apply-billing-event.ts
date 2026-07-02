@@ -80,22 +80,36 @@ export async function applyBillingEvent(
       if (ev.paymentId === "") {
         throw new ConfigError("purchase.completed is missing a payment id");
       }
-      const purchase = resolvePurchase(ev.priceId); // fail-closed on an unknown price id
-      if (purchase.credits > 0) {
+      // Fulfill EVERY paid line (Strix vuln-0005: a multi-item cart is ONE transaction with N lines —
+      // fulfilling only the first under-grants a cart the buyer paid for in full). resolvePurchase is
+      // fail-closed per line: an unknown price id throws and rolls back the whole withTenant tx, so a
+      // partial grant across items is impossible. Credits sum across lines and scale with quantity;
+      // entitlements union (an entitlement is binary — owning it twice is still owning it once).
+      let totalCredits = 0;
+      const entitlements = new Set<string>();
+      for (const line of ev.lineItems) {
+        const purchase = resolvePurchase(line.priceId); // fail-closed on an unknown price id
+        totalCredits += purchase.credits * line.quantity;
+        for (const e of purchase.entitlements) entitlements.add(e);
+      }
+      const entitlementIds = [...entitlements];
+      if (totalCredits > 0) {
         await grant(tx, {
           eventType: "purchase",
           accountId: ev.accountId,
-          amount: purchase.credits,
+          amount: totalCredits,
           sourceEventId: ev.paymentId, // the refund clawback looks the granted amount up by this id
         });
       }
+      // ONE entitlement grant keyed on the payment id (unchanged) — the refund path revokes by
+      // purchase_id alone, so merging N lines' entitlements under one purchaseId keeps refund correct.
       await grantEntitlements(tx, {
         accountId: ev.accountId,
-        entitlementIds: purchase.entitlements,
+        entitlementIds,
         sourceEventId: ev.paymentId,
         source: { kind: "one_time", purchaseId: ev.paymentId },
       });
-      return { grantedEntitlements: [...purchase.entitlements] };
+      return { grantedEntitlements: entitlementIds };
     }
     case "subscription.canceled":
       // IMMEDIATE revoke (ADR-0113): soft-revoke every grant backed by this subscription. An entitlement

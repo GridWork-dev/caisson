@@ -130,7 +130,11 @@ export function parseLemonSqueezyEvent(
         accountId,
         amountTotal: readMoneyMinorUnits(attrs.total),
         currency: readString(attrs.currency, "usd").toLowerCase(),
-        priceId: readFirstOrderItemVariantId(attrs),
+        // The first order item's variant — a one-entry wrap of the shared multi-line shape (Strix
+        // vuln-0005), quantity 1. (Upgrade path if LS multi-item orders ever grant: map all items.)
+        lineItems: [
+          { priceId: readFirstOrderItemVariantId(attrs), quantity: 1 },
+        ],
         paymentId: orderId,
       };
     }

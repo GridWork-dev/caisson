@@ -5,6 +5,7 @@
 // evidence leg from these filled slots; this page owns the human-fill half of that seam.
 import type { Metadata } from "next";
 import { revalidatePath } from "next/cache";
+import { assertCanManageMembers } from "@caisson/auth";
 import { Button, StatusChip } from "@caisson/ui/components";
 import {
   AttestationInput,
@@ -22,11 +23,10 @@ const PATH = "/dashboard/compliance";
 async function attestAction(formData: FormData): Promise<void> {
   "use server";
   const session = await requireDashboardSession(PATH);
-  // Owner-only write (vuln-0006, ADR-0208 #1): attestations feed the SAR/POA&M export — a seat
-  // must not rewrite them. Same role-failure-throws pattern as the members page (addAccountMember).
-  if (!isOwner(session)) {
-    throw new Error("owner role required");
-  }
+  // Owner-only (Strix vuln-0006): compliance attestations are org-governance evidence that feeds the
+  // customer-facing OSCAL SAR/POA&M export — a `seat` must not fabricate or overwrite them. Throws
+  // AuthzError (fail-closed) if a seat crafts the POST directly; the UI hides the form from seats.
+  assertCanManageMembers(session.role);
   const parsed = AttestationInput.safeParse({
     framework: formData.get("framework"),
     slotId: formData.get("slotId"),
@@ -40,10 +40,8 @@ async function attestAction(formData: FormData): Promise<void> {
 async function clearAction(formData: FormData): Promise<void> {
   "use server";
   const session = await requireDashboardSession(PATH);
-  // Owner-only write (vuln-0006, ADR-0208 #1) — same gate as attestAction.
-  if (!isOwner(session)) {
-    throw new Error("owner role required");
-  }
+  // Owner-only (Strix vuln-0006): clearing an attestation is the destructive, evidence-tampering half.
+  assertCanManageMembers(session.role);
   const parsed = AttestationInput.pick({
     framework: true,
     slotId: true,
@@ -68,7 +66,8 @@ const inputStyle: React.CSSProperties = {
 
 export default async function DashboardCompliancePage() {
   const session = await requireDashboardSession(PATH);
-  // Writes are owner-only (vuln-0006); a seat still sees the attestation state, read-only.
+  // Owner-only management (Strix vuln-0006, ADR-0176): seats see attestation state read-only; only an
+  // owner gets the attest/clear forms. The server actions enforce the same gate (defense-in-depth).
   const owner = isOwner(session);
 
   // One tenant-scoped read per framework (three frameworks, ADR-0181).
@@ -201,6 +200,7 @@ export default async function DashboardCompliancePage() {
                       </Button>
                     </form>
                   ) : (
+                    // Seats (ADR-0176) see the attested note read-only — owner-only management.
                     <p className="cs-muted" style={{ margin: 0 }}>
                       {isFilled
                         ? note === ""
