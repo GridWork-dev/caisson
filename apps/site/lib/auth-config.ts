@@ -28,7 +28,7 @@ const PROVIDER_ENV: Record<
 > = {
   github: { id: "GITHUB_CLIENT_ID", secret: "GITHUB_CLIENT_SECRET" },
   google: { id: "GOOGLE_CLIENT_ID", secret: "GOOGLE_CLIENT_SECRET" },
-  // ADR-0201: Discord doubles as sign-in AND the buyer↔Discord identity link the purchase→role
+  // ADR-0203: Discord doubles as sign-in AND the buyer↔Discord identity link the purchase→role
   // push resolves through (the dashboard's Connect-Discord button uses linkSocial on this provider).
   discord: { id: "DISCORD_CLIENT_ID", secret: "DISCORD_CLIENT_SECRET" },
 };

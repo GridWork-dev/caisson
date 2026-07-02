@@ -1,4 +1,4 @@
-# ADR-0201 — Purchase → Discord edition-role: better-auth Discord link + license→bot push with backfill
+# ADR-0203 — Purchase → Discord edition-role: better-auth Discord link + license→bot push with backfill
 
 **Status:** accepted · 2026-07-01 (commerce-goes-live session — operator lock via AskUserQuestion).
 **Relates:** ADR-0109 (support-bot member management; deferred the billing-grant webhook variant "to the

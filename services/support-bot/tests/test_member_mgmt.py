@@ -63,8 +63,8 @@ def test_edition_role_id_maps_and_handles_unknown() -> None:
     )
     assert edition_role_id(settings, "compliance") == 111
     assert edition_role_id(settings, "ai-kit") == 222
-    assert edition_role_id(settings, "local-ai") is None  # configured None (canonical id, ADR-0201)
-    assert edition_role_id(settings, "local-first") is None  # pre-ADR-0201 slug — no longer mapped
+    assert edition_role_id(settings, "local-ai") is None  # configured None (canonical id, ADR-0203)
+    assert edition_role_id(settings, "local-first") is None  # pre-ADR-0203 slug — no longer mapped
     assert edition_role_id(settings, "nope") is None  # unknown slug
 
 

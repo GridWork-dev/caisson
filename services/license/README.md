@@ -16,7 +16,7 @@ Merchant-of-Record billing webhook + idempotent credit grants (P6). Commercial s
   clawback (append-only).
 - `handleBillingWebhook(pg, provider, rawBody, sig)` — verify+parse via the injected `BillingProvider`
   port (no Stripe type escapes `@caisson/billing`), then run the mapper inside `withTenant` (RLS-scoped).
-- `notifyDiscordGrant` (`src/discord-notify.ts`, ADR-0201) — post-grant Discord role push. After a
+- `notifyDiscordGrant` (`src/discord-notify.ts`, ADR-0203) — post-grant Discord role push. After a
   granting webhook commits, resolves the buyer account's linked Discord user(s) (`account_member` →
   personal-account fallback → better-auth's `account` provider-link table) and fire-and-forgets
   `POST /billing-grant` on the support bot; never fails the webhook. Enabled only when both

@@ -50,7 +50,7 @@ export interface IssueAppDeps {
    */
   limiter: RateLimiter;
   /**
-   * The post-grant Discord role push (ADR-0201). `null` when SUPPORT_BOT_URL /
+   * The post-grant Discord role push (ADR-0203). `null` when SUPPORT_BOT_URL /
    * SUPPORT_BOT_GRANT_TOKEN are unset — the push is simply skipped. Fired DETACHED after the grant
    * commits; it must never delay or fail the webhook response (the injected implementation —
    * `notifyDiscordGrant` — never throws).
@@ -293,7 +293,7 @@ export function createApp(
         process.stderr.write("[service-license] webhook processing failed\n");
         return json({ error: "webhook processing failed" }, 500);
       }
-      // Post-commit Discord role push (ADR-0201): DETACHED, fired only after the grant durably
+      // Post-commit Discord role push (ADR-0203): DETACHED, fired only after the grant durably
       // landed, and OUTSIDE the grant's try/catch — a misbehaving notifier (even one throwing
       // synchronously) must never convert a committed grant into a 500 (which would trigger a
       // pointless Paddle re-delivery). `notifyDiscordGrant` itself never throws; the guards here

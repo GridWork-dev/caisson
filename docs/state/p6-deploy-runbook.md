@@ -26,7 +26,7 @@ the commerce backend follow the same posture.
 >   (`/ask /ban /grant-role /kick /post-roles /role-add /role-remove /timeout`). Safe channel/role ids
 >   wired into the Railway env. The bot's aiohttp server serves `GET /health` always plus
 >   `POST /billing-grant` (Bearer, SHA-256 + `compare_digest`) once `BILLING_GRANT_TOKEN` is set — the
->   post-grant Discord push (ADR-0201) needs it reachable from `caisson-license`/`caisson-site` at
+>   post-grant Discord push (ADR-0203) needs it reachable from `caisson-license`/`caisson-site` at
 >   `SUPPORT_BOT_URL` (Railway private or public domain).
 > - **Discord server BUILT** via `infra/discord/provision.ts` (idempotent bot-token REST): 7 roles, 6
 >   categories, 20 channels with permission overwrites, icon + name "Caisson" + verification MEDIUM.
@@ -92,7 +92,7 @@ the commerce backend follow the same posture.
    `services/support-bot/railway.toml`** (the Dockerfile is self-contained).
 3. **Env:** `DISCORD_TOKEN`, `OPENROUTER_API_KEY`, `DOCS_SERVICE_URL` (B3's URL), `DOCS_SERVICE_TOKEN`
    (must match B3), optional `DATABASE_URL` (Postgres escalation), optional `SUPPORT_CHANNEL_ID` /
-   `SUPPORT_HUMAN_ROLE_ID` / `OPENROUTER_MODEL`, optional `BILLING_GRANT_TOKEN` (ADR-0201 — Bearer for
+   `SUPPORT_HUMAN_ROLE_ID` / `OPENROUTER_MODEL`, optional `BILLING_GRANT_TOKEN` (ADR-0203 — Bearer for
    `POST /billing-grant`; unset ⇒ the route isn't served; must equal `SUPPORT_BOT_GRANT_TOKEN` on
    `caisson-license` + `caisson-site`), optional `GUILD_ID` (pins billing grants to the Caisson guild;
    sole-guild fallback when unset, refuses when ambiguous).

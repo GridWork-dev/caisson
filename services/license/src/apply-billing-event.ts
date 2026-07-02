@@ -29,7 +29,7 @@ export interface AppliedBillingEffect {
   /**
    * The purchased entitlement ids THIS event application granted (`[]` when nothing granted —
    * a gated/no-op event, a revoke, or a refund). Feeds the post-commit Discord role push
-   * (ADR-0201); computed HERE so the push can never drift from the grant gate's own decision.
+   * (ADR-0203); computed HERE so the push can never drift from the grant gate's own decision.
    */
   grantedEntitlements: string[];
 }

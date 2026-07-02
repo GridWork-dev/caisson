@@ -1,4 +1,4 @@
-// POST /api/discord/backfill — the link-time Discord role sync (ADR-0201). Called by the dashboard
+// POST /api/discord/backfill — the link-time Discord role sync (ADR-0203). Called by the dashboard
 // after a buyer links Discord (or clicks "Sync roles"): resolves the SIGNED-IN user's linked
 // Discord id from better-auth's own account list (never a request param — a caller cannot sync
 // roles onto an arbitrary Discord user), reads the account's ACTIVE entitlements tenant-scoped,

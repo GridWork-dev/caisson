@@ -85,7 +85,7 @@ export function startServer(
   // than serving with a silently-wrong budget.
   const limiter = new TokenBucketLimiter(loadRateLimitConfig());
 
-  // Post-grant Discord role push (ADR-0201): wired only when SUPPORT_BOT_URL +
+  // Post-grant Discord role push (ADR-0203): wired only when SUPPORT_BOT_URL +
   // SUPPORT_BOT_GRANT_TOKEN are both set; otherwise the webhook grants exactly as before and the
   // push is skipped (config-gated, never a startup failure — Discord is not on the money path).
   const notifyConfig = loadDiscordNotifyConfig();

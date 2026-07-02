@@ -281,7 +281,7 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
     expect(second.headers.get("Retry-After")).not.toBeNull();
   });
 
-  test("a granting purchase fires the DETACHED discord push with the granted entitlements (ADR-0201)", async () => {
+  test("a granting purchase fires the DETACHED discord push with the granted entitlements (ADR-0203)", async () => {
     const pushes: Array<{ accountId: string; entitlements: string[] }> = [];
     const app = makeApp(provider, loadRateLimitConfig(), async (push) => {
       pushes.push(push); // records synchronously before its first await — visible right after app()

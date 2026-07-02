@@ -15,9 +15,9 @@
 #   PORT + HEALTH_PORT  (both pinned to 8080 so Railway's /health probe matches the bot's health server)
 #   DATABASE_URL        (optional; Postgres support_ticket escalation store)
 #   SUPPORT_CHANNEL_ID / SUPPORT_HUMAN_ROLE_ID / OPENROUTER_MODEL  (optional; degrade gracefully)
-#   BILLING_GRANT_TOKEN (optional; ADR-0201 — Bearer for POST /billing-grant. Unset ⇒ the route is
+#   BILLING_GRANT_TOKEN (optional; ADR-0203 — Bearer for POST /billing-grant. Unset ⇒ the route is
 #                        not served; must match SUPPORT_BOT_GRANT_TOKEN on caisson-license + caisson-site)
-#   GUILD_ID            (optional; ADR-0201 — pins billing grants to the Caisson guild, same id the
+#   GUILD_ID            (optional; ADR-0203 — pins billing grants to the Caisson guild, same id the
 #                        provisioner uses. Unset ⇒ the bot's sole guild; several guilds + no id ⇒ refuse)
 #   MEMBER_ROLE_ID / WELCOME_CHANNEL_ID / CUSTOMER_ROLE_ID / ROLE_*_ID  (optional; ADR-0109 member mgmt)
 #   RAILWAY_DOCKERFILE_PATH=services/support-bot/Dockerfile  (mandatory — forces the Dockerfile builder)

@@ -52,7 +52,7 @@ async def _run(settings: Settings) -> None:
             await store.ensure_schema()
 
         bot = make_bot(settings=settings, pipeline=pipeline, store=store)
-        # One inbound app: /health (liveness, always) + /billing-grant (ADR-0201, only when its
+        # One inbound app: /health (liveness, always) + /billing-grant (ADR-0203, only when its
         # token is configured — the config-gated never-crash rule).
         http_runner = await serve_http(bot=bot, settings=settings, port=settings.health_port)
         try:

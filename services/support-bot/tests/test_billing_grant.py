@@ -1,4 +1,4 @@
-"""The inbound billing-grant surface (ADR-0201) — aiohttp TestClient over a mocked gateway."""
+"""The inbound billing-grant surface (ADR-0203) — aiohttp TestClient over a mocked gateway."""
 
 from __future__ import annotations
 
