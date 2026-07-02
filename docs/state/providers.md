@@ -24,7 +24,7 @@ _Last swept 2026-07-01 (Stage-2 deploy). Pricing verified against vendor pages b
 | **Grafana Cloud**          | Observability — **sole OTLP sink** (traces/metrics/logs), US-West · cutover DONE                           | **Free tier ($0)** — 50GB logs + 50GB traces, 14-day | 0177 (0117 super.) |
 | ~~**SigNoz** (self-host)~~ | Observability — **REMOVED 2026-07-01** (5 services deleted; replaced by Grafana Cloud)                     | ~~$45-70/mo~~ → **$0**                               | 0117 → 0177        |
 | **Greptile + TREX**        | AI code review — **PR required check only** (pre-push hook removed 07-01; `/greptile` for local on-demand) | Free Starter (solo); TREX $2/run since 2026-06-30    | — (not ADR-locked) |
-| **Discord**                | Community + support-bot channel                                                                            | Free                                                 | 0105 / 0109        |
+| **Discord**                | Community + support-bot channel + buyer OAuth sign-in + entitlement role push                              | Free                                                 | 0105 / 0109 / 0203 |
 | **Exa** (MCP)              | Semantic web search / AI contents (internal research)                                                      | Free 20k req/mo                                      | (gridwork-core)    |
 | **crawl4ai** (MCP)         | $0 local scrape / crawl / extract (loopback daemon)                                                        | Free (self-hosted, no egress)                        | (gridwork-core)    |
 
@@ -126,7 +126,7 @@ OpenRouter / Plausible / SigNoz / Exa / Discord have **no standalone CLI** — d
 - **Plausible** — script tag on marketing pages; `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` on `caisson-site` (SET). Config in the Plausible dashboard. **State: ✅** confirmed active on the $9 Starter plan and collecting (2026-07-01).
 - **SigNoz** (self-host) — was a 5-svc Railway stack. **State: ✅ REMOVED** (2026-07-01) — the Grafana OTLP cutover completed + verified, all 5 Railway services deleted; replaced by Grafana Cloud as the sole OTLP sink. `SIGNOZ_API_KEY` no longer needed. 3 detached volumes (`signoz-*-volume`) are cleanup-pending, negligible cost.
 - **Greptile + TREX** — `.greptile/config.json` (`statusCheck`+`triggerOnUpdates`) + `rules.md`; org TREX toggle; `GREPTILE_API_KEY` (SET). **State: ✅ PR required check only** — the advisory pre-push hook was **removed 07-01** (pushes no longer run Greptile); `/greptile` skill stays for on-demand local review of large/important uncommitted work; re-trigger a skipped PR check with `gh pr comment <PR> --body "@greptileai"`.
-- **Discord** — `infra/discord/provision.ts` (idempotent REST); bot tokens on `caisson-support-bot` Railway svc. **State: ✅** guild built, bot online.
+- **Discord** — `infra/discord/provision.ts` (idempotent REST); bot tokens on `caisson-support-bot` Railway svc. Buyer OAuth sign-in: `DISCORD_CLIENT_ID`/`DISCORD_CLIENT_SECRET` on `caisson-site`. Entitlement role push (ADR-0203, env-gated): `BILLING_GRANT_TOKEN` on `caisson-support-bot`; `SUPPORT_BOT_URL`+`SUPPORT_BOT_GRANT_TOKEN` on `caisson-license` (post-grant push) and `caisson-site` (`/api/discord/backfill`). **State: ✅** guild built, bot online; role-push env set at deploy.
 - **Exa / crawl4ai** — gridwork-core MCPs; `EXA_API_KEY` / `CRAWL4AI_API_TOKEN` (SET). **State: ✅**.
 
 **Agent tooling / MCP providers** (gridwork-core manifests → `link-mcps.ts` → `~/.claude.json`; **connected 2026-07-01**)

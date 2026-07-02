@@ -16,6 +16,11 @@ import { initObservability } from "@caisson/observability";
 import { loadRegistryIndexFromFile } from "@caisson/registry-schema";
 import type { Transactor } from "@caisson/tenancy-rls";
 import { createApp } from "./app.ts";
+import {
+  type DiscordGrantPush,
+  loadDiscordNotifyConfig,
+  notifyDiscordGrant,
+} from "./discord-notify.ts";
 import { loadRateLimitConfig, TokenBucketLimiter } from "./rate-limit.ts";
 
 const DEFAULT_PORT = 8789;
@@ -80,9 +85,32 @@ export function startServer(
   // than serving with a silently-wrong budget.
   const limiter = new TokenBucketLimiter(loadRateLimitConfig());
 
+  // Post-grant Discord role push (ADR-0203): wired only when SUPPORT_BOT_URL +
+  // SUPPORT_BOT_GRANT_TOKEN are both set; otherwise the webhook grants exactly as before and the
+  // push is skipped (config-gated, never a startup failure — Discord is not on the money path).
+  const notifyConfig = loadDiscordNotifyConfig();
+  const discordNotify =
+    notifyConfig === null
+      ? null
+      : (push: DiscordGrantPush): Promise<void> =>
+          notifyDiscordGrant(db, notifyConfig, push);
+  if (notifyConfig === null) {
+    process.stderr.write(
+      "[service-license] SUPPORT_BOT_URL/SUPPORT_BOT_GRANT_TOKEN unset — discord role push disabled\n",
+    );
+  }
+
   // `||` not `??`: a blank PORT="" must fall back to the default, not coerce to Number("")=0 (ephemeral).
   const port = Number(process.env.PORT || DEFAULT_PORT);
-  const handler = createApp({ token, signer, index, db, provider, limiter });
+  const handler = createApp({
+    token,
+    signer,
+    index,
+    db,
+    provider,
+    limiter,
+    discordNotify,
+  });
   const server = Bun.serve({ port, fetch: handler });
   process.stderr.write(
     `[service-license] issuer serving on :${String(server.port)}\n`,

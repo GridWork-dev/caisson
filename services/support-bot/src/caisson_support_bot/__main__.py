@@ -16,11 +16,11 @@ import asyncpg
 import httpx
 from pydantic import ValidationError
 
+from .billing_grant import serve_http
 from .bot import make_bot
 from .config import Settings
 from .docs_client import DocsClient
 from .escalation import PostgresTicketStore
-from .health import serve_health
 from .inference import OpenRouterInference
 from .rag import RagPipeline
 from .telemetry import init_telemetry
@@ -52,12 +52,13 @@ async def _run(settings: Settings) -> None:
             await store.ensure_schema()
 
         bot = make_bot(settings=settings, pipeline=pipeline, store=store)
-        health = await serve_health(port=settings.health_port, is_ready=bot.is_ready)
+        # One inbound app: /health (liveness, always) + /billing-grant (ADR-0203, only when its
+        # token is configured — the config-gated never-crash rule).
+        http_runner = await serve_http(bot=bot, settings=settings, port=settings.health_port)
         try:
             await bot.start(settings.discord_token)
         finally:
-            health.close()
-            await health.wait_closed()
+            await http_runner.cleanup()
             if pool is not None:
                 await pool.close()
 

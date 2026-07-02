@@ -17,7 +17,7 @@ import {
 } from "@caisson/registry-schema";
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { withTenant } from "@caisson/tenancy-rls";
-import { createApp } from "./app.ts";
+import { createApp, type IssueAppDeps } from "./app.ts";
 import {
   ENTITLEMENT_SCHEMA_SQL,
   readEntitlements,
@@ -73,6 +73,7 @@ afterAll(async () => {
 function makeApp(
   p: BillingProvider | null,
   limiterConfig: RateLimitConfig = loadRateLimitConfig(),
+  discordNotify: IssueAppDeps["discordNotify"] = null,
 ): (req: Request) => Promise<Response> {
   return createApp({
     token: "unused-issue-token",
@@ -81,6 +82,7 @@ function makeApp(
     db: tp.pg,
     provider: p,
     limiter: new TokenBucketLimiter(limiterConfig),
+    discordNotify,
   });
 }
 
@@ -182,7 +184,8 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
       data: {
         id: "txn_sub_1",
         subscription_id: "sub_route_1",
-        origin: "subscription_charge",
+        // First-charge origin ("web"); subscription_charge is mid-cycle and non-granting (2026-07-01).
+        origin: "web",
         currency_code: "usd",
         custom_data: { account_id: acct },
         items: [{ price: { id: PRICE_DEVELOPER_SUB } }],
@@ -276,6 +279,75 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
     const second = await app(webhookReq(body, sig, "9.9.9.9"));
     expect(second.status).toBe(429);
     expect(second.headers.get("Retry-After")).not.toBeNull();
+  });
+
+  test("a granting purchase fires the DETACHED discord push with the granted entitlements (ADR-0203)", async () => {
+    const pushes: Array<{ accountId: string; entitlements: string[] }> = [];
+    const app = makeApp(provider, loadRateLimitConfig(), async (push) => {
+      pushes.push(push); // records synchronously before its first await — visible right after app()
+    });
+    const acct = "acct_txn_push_1";
+    const t = Math.floor(Date.now() / 1000);
+    const body = JSON.stringify({
+      event_id: "evt_push_1",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_push_1",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: acct },
+        items: [{ price: { id: PRICE_COMPLIANCE_ONETIME } }],
+        details: { totals: { grand_total: "74900" } },
+      },
+    });
+    const res = await app(webhookReq(body, signed(body, t)));
+    expect(res.status).toBe(200);
+    expect(pushes).toEqual([{ accountId: acct, entitlements: ["compliance"] }]);
+  });
+
+  test("a THROWING discord notifier never fails the webhook 2xx (money path independent of Discord)", async () => {
+    const app = makeApp(provider, loadRateLimitConfig(), () => {
+      throw new Error("bot exploded synchronously");
+    });
+    const acct = "acct_txn_push_2";
+    const t = Math.floor(Date.now() / 1000);
+    const body = JSON.stringify({
+      event_id: "evt_push_2",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_push_2",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: acct },
+        items: [{ price: { id: PRICE_COMPLIANCE_ONETIME } }],
+        details: { totals: { grand_total: "74900" } },
+      },
+    });
+    const res = await app(webhookReq(body, signed(body, t)));
+    expect(res.status).toBe(200); // the grant committed; Discord failure is log-and-drop
+    const entitlements = await withTenant(tp.pg, acct, (tx) =>
+      readEntitlements(tx, acct),
+    );
+    expect(entitlements).toEqual(["compliance"]);
+  });
+
+  test("a non-granting event (subscription.canceled) fires NO discord push", async () => {
+    const pushes: Array<{ accountId: string; entitlements: string[] }> = [];
+    const app = makeApp(provider, loadRateLimitConfig(), async (push) => {
+      pushes.push(push);
+    });
+    const t = Math.floor(Date.now() / 1000);
+    const body = JSON.stringify({
+      event_id: "evt_push_cancel",
+      event_type: "subscription.canceled",
+      data: {
+        id: "sub_push_cancel",
+        custom_data: { account_id: "acct_txn_push_1" },
+      },
+    });
+    const res = await app(webhookReq(body, signed(body, t)));
+    expect(res.status).toBe(200);
+    expect(pushes).toEqual([]);
   });
 
   test("a per-IP flood on /issue is capped with 429 (limiter runs before the bearer check)", async () => {

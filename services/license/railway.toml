@@ -11,6 +11,8 @@
 #   PADDLE_WEBHOOK_SECRET        (required for POST /webhook; unset ⇒ provider null ⇒ 401)
 #   PADDLE_API_KEY               (optional — only the unexercised checkout path uses it)
 #   PADDLE_ENV                   ("sandbox" | "production"; defaults to production)
+#   SUPPORT_BOT_URL              (optional — ADR-0203 post-grant Discord role push; unset ⇒ push disabled)
+#   SUPPORT_BOT_GRANT_TOKEN      (optional — must match the bot's BILLING_GRANT_TOKEN; unset ⇒ push disabled)
 #   PORT                         (Railway injects; server binds it)
 [build]
 builder = "DOCKERFILE"

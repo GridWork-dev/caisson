@@ -10,15 +10,24 @@ const GOOG = {
   GOOGLE_CLIENT_ID: "goog-id",
   GOOGLE_CLIENT_SECRET: "goog-secret",
 };
+const DISC = {
+  DISCORD_CLIENT_ID: "disc-id",
+  DISCORD_CLIENT_SECRET: "disc-secret",
+};
 
 describe("provider gating (env-gated OAuth)", () => {
-  test("both providers configured → both offered, in display order", () => {
-    const env = { ...GH, ...GOOG };
-    expect(configuredProviderIds(env)).toEqual(["github", "google"]);
+  test("all providers configured → all offered, in display order", () => {
+    const env = { ...GH, ...GOOG, ...DISC };
+    expect(configuredProviderIds(env)).toEqual(["github", "google", "discord"]);
     expect(resolveSocialProviders(env)).toEqual({
       github: { clientId: "gh-id", clientSecret: "gh-secret" },
       google: { clientId: "goog-id", clientSecret: "goog-secret" },
+      discord: { clientId: "disc-id", clientSecret: "disc-secret" },
     });
+  });
+
+  test("discord alone configured → only discord offered (ADR-0203 link seam)", () => {
+    expect(configuredProviderIds(DISC)).toEqual(["discord"]);
   });
 
   test("only github configured → only github offered, google absent", () => {

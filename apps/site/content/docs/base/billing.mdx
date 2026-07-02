@@ -1,27 +1,48 @@
 ---
 title: Billing
-description: Stripe + Stripe Tax behind a BillingProvider port, with HMAC raw-body webhook verification.
+description: Stripe and Paddle behind a BillingProvider port, with HMAC raw-body webhook verification.
 ---
 
-`@caisson/billing` wires Stripe and Stripe Tax, with the operator as the merchant of record — Stripe
-Tax computes and collects tax on the sale. Stripe sits behind a `BillingProvider` port, so the rest
-of the base depends on the port, not the vendor.
+`@caisson/billing` wires Stripe and Paddle behind the same `BillingProvider` port, so the rest of
+the base depends on the port, not the vendor. Stripe pairs with Stripe Tax, with the operator as the
+merchant of record. Paddle is Merchant of Record itself — it computes, collects, and remits tax on
+the sale, and is the provider Caisson's own store runs on; Stripe stays a buyer-selectable driver
+for products composed on the base.
 
 ## The contract
 
 Webhooks are verified against the **raw request body** with a timing-safe HMAC compare. A body that
-has been parsed and re-serialized fails verification — the signature is over the exact bytes Stripe
-sent, not the JSON your framework reconstructed.
+has been parsed and re-serialized fails verification — the signature is over the exact bytes the
+provider sent, not the JSON your framework reconstructed.
 
 ```ts
-import { verifyWebhook } from "@caisson/billing";
+import { verifyStripeWebhook } from "@caisson/billing";
 
 // Raw body — never the parsed JSON. HMAC compared with timingSafeEqual.
-const event = verifyWebhook(rawBody, req.headers["stripe-signature"]);
+const event = verifyStripeWebhook(rawBody, req.headers["stripe-signature"]);
 ```
 
-Because billing rides a port, a test driver stands in for Stripe under the standards gate — suites
-assert on charge and webhook behavior without a network call.
+Paddle's `Paddle-Signature` header carries a `ts=` timestamp and one or more `h1=` HMAC values; the
+signed payload is `${ts}:${rawBody}` (colon-joined, unlike Stripe's period-joined scheme). The
+default timestamp tolerance is **5 seconds** — Paddle's own documented SDK default, and a delivery
+rejected for skew is retried with a fresh signature, so the tight window costs nothing durable.
+
+```ts
+import { verifyPaddleWebhook } from "@caisson/billing";
+
+// Raw body, timing-safe HMAC compare, 5s timestamp tolerance by default.
+verifyPaddleWebhook(rawBody, req.headers["paddle-signature"], secret);
+```
+
+Paddle fires one event, `transaction.completed`, for both a one-time purchase and every subscription
+charge — the `origin` field tells them apart: `web`/`api` is the subscription's first charge
+(`subscription_create`, grants), `subscription_recurring` is a renewal (`subscription_cycle`,
+grants), and `subscription_charge` is a mid-cycle one-time charge that must not re-grant the cycle
+allotment (non-granting). Idempotency anchors on the Paddle **transaction id** (`txn_…`) — stable
+across redeliveries — rather than `invoice_id`, which Paddle documents as deprecated.
+
+Because billing rides a port, a test driver stands in for either provider under the standards gate —
+suites assert on charge and webhook behavior without a network call.
 
 ## Related
 
@@ -38,6 +59,6 @@ assert on charge and webhook behavior without a network call.
 
 <Callout type="info">
   This page covers the essentials. The full `@caisson/billing` API reference —
-  the `BillingProvider` port, the Stripe driver, and the webhook event map — is
-  still expanding.
+  the `BillingProvider` port, the Stripe and Paddle drivers, and the webhook
+  event map — is still expanding.
 </Callout>
