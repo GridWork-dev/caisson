@@ -163,6 +163,18 @@ function readLineItems(obj: Record<string, unknown>): {
       "Paddle multi-line transaction is missing a per-line join id (details.line_items)",
     );
   }
+  // Fail closed on a duplicate NON-empty per-line join id (CAISSON-8) — the same collision as the ""
+  // sentinel case above, just with a real txnitm_ id repeated across 2+ lines (a malformed/duplicated
+  // details.line_items delivery). Two lines sharing one itemId collide on the same credit-ledger
+  // uniqueness key, so the second silently no-ops while the webhook still acks 200.
+  const nonEmptyIds = lines
+    .map((line) => line.itemId)
+    .filter((itemId) => itemId !== "");
+  if (new Set(nonEmptyIds).size !== nonEmptyIds.length) {
+    throw new ValidationError(
+      "Paddle multi-line transaction has duplicate per-line join ids (details.line_items)",
+    );
+  }
   return lines;
 }
 
