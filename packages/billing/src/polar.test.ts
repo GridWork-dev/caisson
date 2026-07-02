@@ -92,7 +92,9 @@ describe("event mapping", () => {
       accountId: "acct_a",
       amountTotal: 5000,
       currency: "usd",
-      lineItems: [{ priceId: "prod_x", quantity: 1 }],
+      lineItems: [
+        { priceId: "prod_x", quantity: 1, itemId: "", chargedAmount: 5000 },
+      ],
       paymentId: "order_1",
     });
   });
@@ -202,6 +204,8 @@ describe("event mapping", () => {
       amountRefunded: 5000,
       currency: "usd",
       fullyRefunded: true,
+      adjustmentId: "",
+      items: [],
     });
   });
 

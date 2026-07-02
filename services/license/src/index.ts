@@ -15,11 +15,13 @@ export type { BillingWebhookResult } from "./webhook.ts";
 export {
   ENTITLEMENT_SCHEMA_SQL,
   ENTITLEMENT_GRANT_MIGRATION_SQL,
+  ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_ADMIN_COMP_MIGRATION_SQL,
   grantEntitlements,
   readEntitlements,
   revokeSubscriptionGrants,
   revokePurchaseGrants,
+  revokePurchaseLineGrants,
   grantAdminComp,
   revokeAdminComp,
 } from "./entitlement-store.ts";
@@ -28,6 +30,7 @@ export type {
   GrantSource,
   RevokeSubscriptionInput,
   RevokePurchaseInput,
+  RevokePurchaseLineInput,
   GrantAdminCompInput,
   RevokeAdminCompInput,
 } from "./entitlement-store.ts";

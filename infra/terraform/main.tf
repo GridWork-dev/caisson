@@ -54,9 +54,16 @@ resource "cloudflare_dns_record" "www_railway_verify" {
   comment = "Railway custom-domain ownership (www) — managed by Terraform"
 }
 
-# --- license.caisson.sh → caisson-license on Railway (DNS-only / grey, like docs-api) ---
+# --- license.caisson.sh → caisson-license on Railway (DNS-only / grey — UNCHANGED by ADR-0219) ---
 # NOT proxied + NOT Access-gated: the Paddle Merchant-of-Record webhook endpoint Paddle's servers
-# must reach directly. DNS-only lets Railway issue + serve its own cert (docs-api.caisson.sh pattern).
+# must reach directly. DNS-only lets Railway issue + serve its own cert (docs-api.caisson.sh's OLD
+# pattern, before ADR-0219 flipped docs-api to proxied above — license intentionally keeps it).
+# ASSERTION (ADR-0219 Fork A(a), hard constraint): `proxied` stays `false` here. Because this
+# record never routes through Cloudflare's edge, NO ruleset in waf.tf — WAF managed rules or the
+# rate-limit rule — can ever evaluate against a request to this host, regardless of what any rule
+# expression matches. This is the mechanism (not a path-expression promise) that keeps Paddle's
+# webhook un-rate-limited and un-challenged. Do not flip this to `true` without a new superseding
+# ADR (see SPEC-cloudflare-front-rate-limit.md Fork A(b)) and a first-priority Paddle IP skip rule.
 resource "cloudflare_dns_record" "license" {
   zone_id = var.cloudflare_zone_id
   name    = "license.${var.zone_name}"
@@ -97,4 +104,36 @@ resource "cloudflare_dns_record" "admin_railway_verify" {
   content = "railway-verify=23f1ec9133c0dfe19383db6c6e90d6f55faf1eaed7c46075eba08a1ebe299f58"
   ttl     = 1
   comment = "Railway custom-domain ownership (admin) — managed by Terraform"
+}
+
+# --- docs-api.caisson.sh → caisson-docs on Railway (PROXIED — ADR-0219 CF-1, Fork A(a)) ---
+# Flipped from grey/DNS-only to proxied so the WAF Free Managed Ruleset + the expensive-path
+# rate-limit rule (waf.tf) front /query. This is the ONLY host this SPEC flips: license.caisson.sh
+# stays grey below, deliberately untouched — its grey/DNS-only posture is what keeps Paddle's
+# webhook out of CF's path entirely (no rule expression can ever see traffic that never reaches
+# the edge). Do not add proxied/Access/ruleset config for license as part of this change.
+#
+# This record previously lived outside tracked terraform (see README.md "Current state" /
+# ADR-0219 §Current state) — before `apply`, either `terraform import` the existing record:
+#   terraform import cloudflare_dns_record.docs_api '<zone_id>/<existing-record-id>'
+# (record ID from the Cloudflare dashboard → DNS → docs-api CNAME, or the DNS records list API)
+# or delete the existing record first. Skipping this makes `apply` try to CREATE a record that
+# already exists and it will conflict on the duplicate CNAME name.
+resource "cloudflare_dns_record" "docs_api" {
+  zone_id = var.cloudflare_zone_id
+  name    = "docs-api.${var.zone_name}"
+  type    = "CNAME"
+  content = var.docs_api_railway_target
+  proxied = true
+  ttl     = 1
+  comment = "Caisson docs API (docs-api → Railway caisson-docs) — managed by Terraform (ADR-0219: flipped to proxied)"
+}
+
+resource "cloudflare_dns_record" "docs_api_railway_verify" {
+  zone_id = var.cloudflare_zone_id
+  name    = "_railway-verify.docs-api"
+  type    = "TXT"
+  content = var.docs_api_railway_verify_txt
+  ttl     = 1
+  comment = "Railway custom-domain ownership (docs-api) — managed by Terraform"
 }

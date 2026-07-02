@@ -1,6 +1,7 @@
 import {
   Button,
   Card,
+  FeatureGrid,
   Hero,
   Icon,
   Reveal,
@@ -9,6 +10,8 @@ import {
   StatusChip,
   Terminal,
 } from "@/components";
+import Link from "next/link";
+
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { CheckoutCta } from "@/components/checkout-cta";
 import { UpdatesForm } from "@/components/waitlist-form";
@@ -231,10 +234,7 @@ export default function PricingPage() {
         title="Start small, or take it all."
         lede="Every module stands alone. Compose your own stack à la carte, step up to a full edition, or take the whole library in one bundle."
       >
-        <div
-          className="cs-grid cs-grid--3"
-          style={{ marginTop: "var(--cs-space-8)" }}
-        >
+        <FeatureGrid cols={3}>
           {/* Good — a single module */}
           <Reveal>
             <Card>
@@ -257,7 +257,7 @@ export default function PricingPage() {
                 }}
               >
                 Take exactly the capability you need — field encryption, token
-                metering, on-device search — onto your own base. 14 modules,
+                metering, on-device search — onto your own base. 15 modules,
                 priced for what each one does.
               </p>
               <div style={{ marginTop: "var(--cs-space-6)" }}>
@@ -359,7 +359,7 @@ export default function PricingPage() {
               )}
             </Card>
           </Reveal>
-        </div>
+        </FeatureGrid>
       </Section>
 
       {/* ===== Edition cards — all four buyable ===== */}
@@ -369,10 +369,7 @@ export default function PricingPage() {
         title="Four editions, one audited base."
         lede="Each edition is a composition of the same substrate — never a fork. Compliance is the front door; every edition is available today."
       >
-        <div
-          className="cs-grid cs-grid--2"
-          style={{ marginTop: "var(--cs-space-8)" }}
-        >
+        <FeatureGrid cols={2}>
           {EDITION_META.map((ed, i) => {
             const price = priceById(ed.id);
             const cartItem = editionCartItem(ed.id);
@@ -465,7 +462,7 @@ export default function PricingPage() {
               </Reveal>
             );
           })}
-        </div>
+        </FeatureGrid>
       </Section>
 
       {/* ===== À-la-carte marketplace pointer — the catalog now lives on /modules, the
@@ -520,10 +517,7 @@ export default function PricingPage() {
         lede="Regulations don&rsquo;t hold still. The codebase is yours either way — subscriptions deliver the parts that move: framework maps, evidence-pack refreshes, and developer credits."
         band="tint"
       >
-        <div
-          className="cs-grid cs-grid--2"
-          style={{ marginTop: "var(--cs-space-8)" }}
-        >
+        <FeatureGrid cols={2}>
           {SUB_META.map((sub, i) => {
             const plan = PLAN_PRICES.find((p) => p.id === sub.id);
             return (
@@ -605,7 +599,7 @@ export default function PricingPage() {
               </Reveal>
             );
           })}
-        </div>
+        </FeatureGrid>
 
         {/* Enterprise — custom procurement, no fixed price (ADR-0106: "Contact us"). */}
         {enterprise && (
@@ -656,6 +650,30 @@ export default function PricingPage() {
           </Reveal>
         )}
       </Section>
+
+      {/* ===== Licensing — what's open, what you're paying for ===== */}
+      <Reveal>
+        <Section
+          id="licensing"
+          eyebrow="Licensing"
+          title="What's open, what you're paying for."
+          lede={
+            <>
+              The base substrate — kernel, auth, tenancy-rls, ui, billing,
+              credits, jobs, email, ai-config, mcp-server, registry-schema,
+              observability, and the generator tooling (cli, migrate,
+              license-verify) — is <code className="mono">Apache-2.0</code>,
+              free to use. What you buy above is the four editions, the
+              compliance primitives (field-crypto, audit-worm), the registry
+              service, and Compliance Updates — under the{" "}
+              <Link href="/legal/license" className="mono">
+                Commercial License
+              </Link>
+              .
+            </>
+          }
+        />
+      </Reveal>
 
       {/* ===== Get started ===== */}
       <Reveal>

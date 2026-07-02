@@ -100,6 +100,23 @@ BEGIN
 END $$;
 `;
 
+// Per-line refund support (ADR-0218, fork C-b: a column, not a side-table). Adds `line_item_id` (the
+// Paddle `txnitm_…` that granted the row) and folds it into the uniqueness index via
+// `COALESCE(line_item_id, '')` — so two lines of ONE cart granting the SAME edition become TWO grant
+// rows (a true per-line refcount, fork B-1: the edition stays entitled until EVERY backing line is
+// refunded) while a subscription/single-source grant (line_item_id NULL → '') keeps its prior
+// uniqueness exactly. SEPARATE migration, not an edit to ENTITLEMENT_SCHEMA_SQL: that ships as the
+// checksum-pinned `0003_entitlement_grant.sql` platform migration (ADR-0006 append-only) — editing it
+// in place would fail the runner closed on the live DB. Apply AFTER ENTITLEMENT_SCHEMA_SQL everywhere
+// the junction is bootstrapped. Pre-launch there is no live grant data (ADR-0113 §1), so the index
+// swap is clean; this supersedes ADR-0113 §1's locked uniqueness index to incorporate the new column.
+export const ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL = `
+ALTER TABLE entitlement_grant ADD COLUMN line_item_id text;
+DROP INDEX entitlement_grant_uniq;
+CREATE UNIQUE INDEX entitlement_grant_uniq
+  ON entitlement_grant (account_id, entitlement_id, source_kind, COALESCE(subscription_id, purchase_id), COALESCE(line_item_id, ''));
+`;
+
 /** The provenance of a grant: a recurring subscription, or a one-time (non-subscription) purchase. */
 export type GrantSource =
   | { kind: "subscription"; subscriptionId: string }
@@ -114,6 +131,13 @@ export interface GrantEntitlementsInput {
   sourceEventId: string;
   /** WHICH source backs this grant — the refcount key + the revoke filter. */
   source: GrantSource;
+  /**
+   * Paddle per-line join key (ADR-0218): the `txnitm_…` line that granted these ids. Set on a
+   * one-time per-line grant so a later per-line adjustment refund revokes only THAT line's row
+   * (fork B-1 refcount). Omitted for a subscription grant / a driver with no per-line data → NULL,
+   * which the `COALESCE(line_item_id, '')` index treats as the pre-0218 single-slot uniqueness.
+   */
+  lineItemId?: string;
 }
 
 function sourceColumns(source: GrantSource): {
@@ -142,13 +166,17 @@ export async function grantEntitlements(
   input: GrantEntitlementsInput,
 ): Promise<number> {
   const cols = sourceColumns(input.source);
+  // NULL (not "") for the omitted-line-item case: the index's COALESCE(line_item_id, '') maps NULL to
+  // the same single slot the pre-0218 uniqueness used, so subscription renewals + no-line drivers keep
+  // collapsing to one row while distinct `txnitm_` ids give one row per cart line (fork B-1).
+  const lineItemId = input.lineItemId ?? null;
   let granted = 0;
   for (const entitlementId of input.entitlementIds) {
     const inserted = await tx.query<{ id: string }>(
       `INSERT INTO entitlement_grant
-         (id, account_id, entitlement_id, source_kind, subscription_id, purchase_id, source_event_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       ON CONFLICT (account_id, entitlement_id, source_kind, COALESCE(subscription_id, purchase_id))
+         (id, account_id, entitlement_id, source_kind, subscription_id, purchase_id, source_event_id, line_item_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ON CONFLICT (account_id, entitlement_id, source_kind, COALESCE(subscription_id, purchase_id), COALESCE(line_item_id, ''))
        DO NOTHING
        RETURNING id`,
       [
@@ -159,6 +187,7 @@ export async function grantEntitlements(
         cols.subscriptionId,
         cols.purchaseId,
         input.sourceEventId,
+        lineItemId,
       ],
     );
     if (inserted.rows.length > 0) granted += 1;
@@ -239,6 +268,40 @@ export async function revokePurchaseGrants(
        AND status = 'active'
      RETURNING id`,
     [input.accountId, input.purchaseId],
+  );
+  return r.rows.length;
+}
+
+export interface RevokePurchaseLineInput {
+  accountId: string;
+  /** The one-time purchase id (the PaymentIntent / Paddle transaction id). */
+  purchaseId: string;
+  /** The Paddle `txnitm_…` line whose grant this refund revokes. */
+  lineItemId: string;
+}
+
+/**
+ * Soft-revoke every ACTIVE grant backed by ONE line of a one-time purchase — the per-line refund path
+ * (ADR-0218, fork A-1 full-item / fork B-1 refcount). Revokes only the `(purchase_id, line_item_id)`
+ * rows, so an entitlement ALSO granted by another still-active line of the same cart keeps its
+ * refcount > 0 and stays in `readEntitlements` — the edition is lost only when EVERY backing line is
+ * refunded. Already-revoked rows are skipped → idempotent across adjustment redeliveries. Returns the
+ * number revoked. Run inside `withTenant`.
+ */
+export async function revokePurchaseLineGrants(
+  tx: TenantExecutor,
+  input: RevokePurchaseLineInput,
+): Promise<number> {
+  const r = await tx.query<{ id: string }>(
+    `UPDATE entitlement_grant
+       SET status = 'revoked', revoked_at = now()
+     WHERE account_id = $1
+       AND source_kind = 'one_time'
+       AND purchase_id = $2
+       AND line_item_id = $3
+       AND status = 'active'
+     RETURNING id`,
+    [input.accountId, input.purchaseId, input.lineItemId],
   );
   return r.rows.length;
 }

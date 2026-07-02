@@ -22,12 +22,14 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, test } from "bun:test";
-import { InternalError } from "@caisson/kernel";
+import { AuthzError, InternalError } from "@caisson/kernel";
 import {
   DEFAULT_ONNX_MODEL,
   EMBEDDING_DIM,
   OnnxEmbeddingBackend,
+  createEgressGuard,
   fetchWithTimeout,
+  localOnlyPolicy,
 } from "../src/index.ts";
 
 // Non-literal specifier ⇒ tsc never resolves the (deliberately uninstalled) optional peer.
@@ -72,11 +74,11 @@ afterAll(async () => {
   );
 });
 
-/** Walk `err` + its `cause` chain for the backend's InternalError (transformers may wrap throws). */
-function findInternalError(err: unknown): InternalError | null {
+/** Walk `err` + its `cause` chain for an error of `ctor` (transformers may wrap throws). */
+function findError<T>(err: unknown, ctor: new (...a: never[]) => T): T | null {
   let current: unknown = err;
   for (let depth = 0; depth < 8 && current != null; depth++) {
-    if (current instanceof InternalError) return current;
+    if (current instanceof ctor) return current;
     current = (current as { cause?: unknown }).cause;
   }
   return null;
@@ -105,7 +107,7 @@ describe("OnnxEmbeddingBackend — LIVE (skips without @huggingface/transformers
       // A resolve here means the fetched model file matched NO wrong-pinned candidate — the
       // integrity gate never ran, which is itself a finding (extend ONNX_CANDIDATES).
       expect(caught).not.toBeNull();
-      const ie = findInternalError(caught);
+      const ie = findError(caught, InternalError);
       expect(ie).not.toBeNull();
       if (!ie) throw new Error("expected the integrity-mismatch InternalError");
       expect(ie.message).toContain("integrity");
@@ -149,7 +151,7 @@ describe("OnnxEmbeddingBackend — LIVE (skips without @huggingface/transformers
   );
 
   test.skipIf(!LIVE)(
-    "(c) egress block: a backend sanctioned only for example.com rejects the huggingface fetch",
+    "(c) egress block: a backend sanctioned only for example.com is blocked at the SHARED guard",
     async () => {
       const backend = new OnnxEmbeddingBackend({
         ...DEFAULT_ONNX_MODEL,
@@ -165,13 +167,50 @@ describe("OnnxEmbeddingBackend — LIVE (skips without @huggingface/transformers
         caught = err;
       }
       expect(caught).not.toBeNull();
-      const ie = findInternalError(caught);
-      expect(ie).not.toBeNull();
-      if (!ie)
-        throw new Error("expected the host-not-allowlisted InternalError");
-      expect(ie.message).toContain("blocked");
-      expect(ie.details?.allowed).toBe("example.com");
+      // F2=B: the block is now the shared EgressGuard's fail-closed AuthzError (host-not-allowlisted
+      // at the model-fetch sink), NOT the old backend-inline InternalError — the unification proof.
+      const ae = findError(caught, AuthzError);
+      expect(ae).not.toBeNull();
+      if (!ae) throw new Error("expected the shared-guard AuthzError block");
+      expect(ae.message).toContain("blocked");
+      expect(ae.details?.host).toBe(DEFAULT_ONNX_MODEL.modelHost);
     },
     DOWNLOAD_TIMEOUT_MS,
   );
+
+  // (d) SHARED-GUARD leg (F2=B, ADR-0221) — mirrors rented.live.test.ts's `liveGuard()`: build the
+  // exact guard the backend now constructs internally (modelHost allowlisted ONLY as a `model-fetch`
+  // sink) and prove the fail-closed, purpose-bound decision at the shared-policy layer. Pure (no
+  // network, no transformers), so it runs even without the peer install — the CI-free unification
+  // proof the backend inherits.
+  test("(d) shared guard: model-fetch sink is purpose-bound and fails closed off-allowlist", () => {
+    const guard = createEgressGuard(
+      localOnlyPolicy([
+        { host: DEFAULT_ONNX_MODEL.modelHost, kind: "model-fetch" },
+      ]),
+    );
+    const modelUrl = `https://${DEFAULT_ONNX_MODEL.modelHost}/${DEFAULT_ONNX_MODEL.modelId}/resolve/${DEFAULT_ONNX_MODEL.revision}/onnx/model.onnx`;
+
+    // The sanctioned model-fetch request passes.
+    expect(guard.assertAllowedFor(modelUrl, "model-fetch").hostname).toBe(
+      DEFAULT_ONNX_MODEL.modelHost,
+    );
+
+    // Purpose-binding: the model host may NOT serve a rented-backend request (a Bearer never crosses).
+    try {
+      guard.assertAllowedFor(modelUrl, "rented-backend");
+      throw new Error("expected a purpose-binding AuthzError");
+    } catch (err) {
+      expect(err).toBeInstanceOf(AuthzError);
+      const details: Record<string, unknown> =
+        (err as AuthzError).details ?? {};
+      expect(details.required).toBe("rented-backend");
+      expect(details.actual).toBe("model-fetch");
+    }
+
+    // A non-allowlisted host is refused (fail-closed-to-offline, no silent fallback).
+    expect(() =>
+      guard.assertAllowedFor("https://evil.example.com/x", "model-fetch"),
+    ).toThrow(AuthzError);
+  });
 });

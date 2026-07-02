@@ -78,6 +78,20 @@ belong to zone"). The canonical surface is the gated, proxied `caisson.sh`; the 
 stays reachable + unlisted. To also seal pages.dev, enable the Pages project's native Access
 integration in the Zero Trust dashboard.
 
+## Edge WAF + rate limiting (ADR-0219, `waf.tf`)
+
+`waf.tf` adds a Free Managed Ruleset + one Free-tier rate-limit rule (zone-level
+`cloudflare_ruleset`s) fronting the proxied hosts, and `main.tf` flips `docs-api.caisson.sh` to
+proxied (`license.caisson.sh` stays grey — deliberately out of scope, see its comment in
+`main.tf`). **Before running `apply`:** the token behind `CLOUDFLARE_API_TOKEN` needs **Zone →
+WAF → Edit** added in the Cloudflare dashboard — the scope today is DNS + Pages only (see
+`versions.tf`), and `cloudflare_ruleset` 403s without it. `docs-api`'s DNS record and the zone's
+WAF entry-point ruleset may already exist outside Terraform's state (dashboard-created / CF's
+Free-plan default) — `terraform import` them first (commands in the resource comments in
+`main.tf` / `waf.tf`) or `plan` will try to create a duplicate. `terraform apply` for this change,
+like the DNS proxy flip itself, is a DEPLOY-class operator act — never run inside the autonomous
+cycle.
+
 ## Deploy (the site app — `apps/site`)
 
 The Pages project is **direct-upload** and the site is a Next.js **static export**
