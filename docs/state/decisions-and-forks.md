@@ -474,8 +474,10 @@ store-rework BUILD wave then added **0136** (license-keyed registry gating + too
 **2026-07-01 edition seam-completion picker** used **0179–0185** (OSCAL export · BYOK buyer · live-transports
 defer · Bun-OTel — resolved below). `0139`/`0144–0149`/`0154–0159`/`0163–0169` stay reserved for per-stream
 spillover; **note ADR-0179 had been advisory-reserved for D6 harvest / Stream-D spillover — the operator
-reassigned it to the OSCAL version fork.** **Ceiling now 0188** (the 2026-07-01 LIFT slice-1 picker added
-0186/0187/0188 — see the LIFT section below). The board's own interim "ADR-0119" placeholder (Railway provisioning topology, recorded above) and
+reassigned it to the OSCAL version fork.** The 2026-07-01 LIFT slice-1 picker added 0186/0187/0188 (see
+the LIFT section below); the site-marketplace-rework session then filed **0189–0196**, the whole-repo-audit
+remediation **0197–0199**, and the editions-go-live session **0187 (from its reservation) + 0201–0202**
+(**0200 reserved for the concurrent commerce session**) — **ceiling now 0202**. The board's own interim "ADR-0119" placeholder (Railway provisioning topology, recorded above) and
 `adapter-expansion.md`'s proposed 0119-0128 range remain unresolved against each other (flagged there
 already) — this session's numbers do not touch that range and do not resolve that pre-existing flag.
 
@@ -501,7 +503,9 @@ live-transports SPEC is DEFERRED (no build); ADR-0185 is a small shared-server o
 frameworks (`packages/compliance`, golden fixtures under `__golden__/`), the free-BYOK billing policy +
 buyer key form (`packages/{ai-kit,pricebook}` + `apps/site` `/dashboard/{ai-keys,compliance}`), and the
 `withRequestSpan` Bun manual-span helper (`packages/observability`, wired into `services/docs`+`services/license`).
-ADR-0184 (live-transports) stays deferred by design, no build.
+ADR-0184 (live-transports) was deferred by design, no build — **superseded 2026-07-01 by ADR-0201**
+(editions-go-live session): all three transports proven against real infra (see the editions-go-live
+section below).
 
 ## Closed by the 2026-07-01 LIFT slice-1 picker (operator-locked)
 
@@ -510,14 +514,33 @@ SPECs `SPEC-agent-runner.md` / `SPEC-support-impersonation.md` / `SPEC-audit-har
 operator-locked 2026-07-01 to the recommendation column. Build order: **ADR-0188 (audit-harness) first**
 → whole-repo multi-model audit → then ADR-0186/0187 (the two new sellables).
 
-| Fork                                                 | Decision                                                                                                                                                                                                                                                                                               | Record                         |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
-| **F1/F2/F5 — agent-runner boundary/config/pricing**  | New commercial `@caisson/agent-runner` (Agentic-Dev member, separate from agent-dev); provider-agnostic `{binary, baseUrlEnv, authEnv, model}` config; folded into the Agentic-Dev edition price, no standalone SKU (ADR-0137 below-sum).                                                              | **ADR-0186** (files at build)  |
-| **F3 — support-impersonation boundary + coverage**   | Fold into `@caisson/compliance` (needs audit-chain/collectors/withTenant — a separate pkg would depend "up", ADR-0003); ship SOC2 **and** HIPAA access-control collectors.                                                                                                                             | **ADR-0187** (files at build)  |
-| **F4 — audit-harness reconcile scope + driver home** | `reconcile(previous, current, scope)` — explicit required `--domains` (fail-loud); out-of-scope previous findings pass through unchanged (fixes the silent cross-domain false-close). Dispatcher + Challenger driver **outside** the package in a Caisson-local skill (ADR-0134 / AGENTS.md boundary). | **ADR-0188** (FILED, building) |
+| Fork                                                 | Decision                                                                                                                                                                                                                                                                                               | Record                                                    |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| **F1/F2/F5 — agent-runner boundary/config/pricing**  | New commercial `@caisson/agent-runner` (Agentic-Dev member, separate from agent-dev); provider-agnostic `{binary, baseUrlEnv, authEnv, model}` config; folded into the Agentic-Dev edition price, no standalone SKU (ADR-0137 below-sum).                                                              | **ADR-0186** (files at build)                             |
+| **F3 — support-impersonation boundary + coverage**   | Fold into `@caisson/compliance` (needs audit-chain/collectors/withTenant — a separate pkg would depend "up", ADR-0003); ship SOC2 **and** HIPAA access-control collectors.                                                                                                                             | **ADR-0187** (FILED 2026-07-01, editions-go-live session) |
+| **F4 — audit-harness reconcile scope + driver home** | `reconcile(previous, current, scope)` — explicit required `--domains` (fail-loud); out-of-scope previous findings pass through unchanged (fixes the silent cross-domain false-close). Dispatcher + Challenger driver **outside** the package in a Caisson-local skill (ADR-0134 / AGENTS.md boundary). | **ADR-0188** (FILED, building)                            |
 
-**Ceiling now 0188** (0186/0187 reserved + decision-locked, file at their build; 0188 filed this session).
-Slice-2 hardening tail (Wardfile B-series + convergent lift-sweep ranks) stays queued, unnumbered.
+**Numbering (reconciled 2026-07-01, editions-go-live session):** 0186 stays reserved + decision-locked,
+files at its build; **0187 is now FILED** (editions-go-live). The site-marketplace-rework session filed
+**0189–0196** and the whole-repo-audit remediation filed **0197–0199**, so the shipped ceiling is no
+longer 0188 — it is **0202** (this session filed **0201** live-transports-go-live + **0202**
+retention-escalation; **0200 is reserved for the concurrent commerce session** — renumber-by-meaning at
+merge on any collision, per the ADR-0088 convention). Slice-2 hardening tail (Wardfile B-series +
+convergent lift-sweep ranks) stays queued, unnumbered — EXCEPT **B2 retention-escalation, pulled
+forward and locked as ADR-0202** (SPEC: `outputs/specs/lift-phase/SPEC-retention-escalation.md`).
+
+## Closed by the 2026-07-01 editions-go-live picker (operator-locked)
+
+Four forks surfaced by the **editions-go-live** session (kickoff: un-stub the deferred live transports +
+ship the Compliance impersonation sellable), all operator-locked 2026-07-01. ADR bodies:
+`knowledge/decisions/ADR-0201`/`ADR-0202` (+ `ADR-0187` filed from its LIFT reservation).
+
+| Fork                                     | Decision                                                                                                                                                                                                                                                               | Record       |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| **ADR-0184 revisit — un-stub scope**     | **Prove ALL THREE transports live** (diverges from the kickoff's lean S3-only rec): S3 WORM + hosted inference + availability-gated ONNX; live tests in per-package `live/` dirs outside the default suite; includes the ai-kit Responses-API fix.                     | **ADR-0201** |
+| **S3 WORM provider + provisioning**      | **AWS S3, provisioned THIS session** (DEPLOY-class act explicitly authorized): bucket `caisson-worm` us-east-1, Object Lock at creation, GOVERNANCE-mode live proof, scoped prover IAM documented; R2/B2/Wasabi/MinIO all fail an adapter invariant today.             | **ADR-0201** |
+| **Hosted (non-BYOK) inference endpoint** | **OpenRouter, both lanes** — ai-kit platform lane via `@ai-sdk/openai-compatible` (fixes the AI-SDK-v5 Responses-API default on openrouter/local/ollama) + local-ai `createOpenRouterRentedTransport` (/embeddings + /chat/completions → the metered RentedTransport). | **ADR-0201** |
+| **Wardfile B2 retention-escalation**     | **Build now, own ADR** (pulled forward from slice-2): extend-only `extendRetention` + gated GOVERNANCE→COMPLIANCE escalation, chain-evidenced, row==object invariant preserved.                                                                                        | **ADR-0202** |
 
 ## Flagged for the Compliance session (P2 pre-work — do NOT build in the foundations track)
 

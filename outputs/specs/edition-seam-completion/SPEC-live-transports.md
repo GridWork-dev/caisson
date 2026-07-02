@@ -1,12 +1,14 @@
 # SPEC — Edition Seam-Completion · live transports
 
-> **DEFERRED per ADR-0184 (2026-07-01) — NO BUILD.** The operator elected to **leave all three transports
-> stubbed** (S3 WORM Object-Lock · hosted/rented inference · on-device ONNX). No infra provisioning, no creds
-> wiring, no integration tests in this initiative. The code for all three is already fully implemented; the
-> only gap is creds + infra + one integration test each, deferred for every transport. They remain
-> honestly-documented, un-exercised-by-design seams. This SPEC is retained as the future un-stub playbook —
-> nothing below builds now; un-stub any one later by provisioning its infra + adding a single env-gated
-> integration test.
+> **SUPERSEDED — executed per ADR-0201 (2026-07-01, editions-go-live session).** The ADR-0184 defer
+> was revisited the same day and the operator elected to **prove all three transports** (S3 WORM on a
+> real AWS Object-Lock bucket · hosted inference via OpenRouter on both lanes · on-device ONNX behind
+> an availability-gated proof). The un-stub playbook below was followed with two amendments locked in
+> ADR-0201: live tests live in per-package `live/` dirs OUTSIDE the default suite (not `src/*.integration`
+> env flags), and the S3 proof runs GOVERNANCE-mode (COMPLIANCE stays never-live-tested by design).
+>
+> _Historical annotation (2026-07-01, pre-supersession): DEFERRED per ADR-0184 — no build; all three
+> stayed honestly-documented un-exercised-by-design seams._
 
 Act 1 (SPEC) for the **live transports** seam of EDITION SEAM-COMPLETION. Recon verdict (read-only,
 repo-wide grep): all three transports are **fully implemented already** — the gap is creds/infra +
