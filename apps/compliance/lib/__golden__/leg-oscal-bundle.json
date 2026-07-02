@@ -1,7 +1,7 @@
 {
   "assessmentResults": {
     "assessment-results": {
-      "uuid": "00000000-0000-4000-8000-000000000009",
+      "uuid": "00000000-0000-4000-8000-000000000010",
       "metadata": {
         "title": "Security Assessment Results — SOC 2 — Trust Services Criteria",
         "last-modified": "2026-06-27T12:00:00.000Z",
@@ -16,14 +16,14 @@
           {
             "name": "caisson-evidence-pack-sha256",
             "ns": "https://caisson.sh/ns/oscal",
-            "value": "7074dcb83776c5e087aa57f6f5226a08f144be052fd1f1fb890100858d6bb6fa"
+            "value": "b8303f5247b11f6ff184ffb102a1023ec975637edb2ee2732a727228dc266938"
           }
         ],
         "links": [
           {
-            "href": "urn:caisson:audit-chain:cd61b3f1612b3c972f75b5ff2ff1d9fbaf02be08d18bcbaaa552adb054e9a19a",
+            "href": "urn:caisson:audit-chain:dbcbb692d139c5da8e7ac0f9ba6ea0d1da961ef93de4d6b8b841eb9818ca168b",
             "rel": "caisson-audit-chain-anchor",
-            "text": "Audit-chain anchor (length 1)"
+            "text": "Audit-chain anchor (length 7)"
           }
         ]
       },
@@ -32,7 +32,7 @@
       },
       "results": [
         {
-          "uuid": "00000000-0000-4000-8000-000000000008",
+          "uuid": "00000000-0000-4000-8000-000000000009",
           "title": "Control evidence assessment — SOC 2 — Trust Services Criteria",
           "description": "3 of 3 controls evidence-ready; no gaps recorded.",
           "start": "2026-06-27T12:00:00.000Z",
@@ -53,24 +53,33 @@
           "observations": [
             {
               "uuid": "00000000-0000-4000-8000-000000000002",
+              "title": "ACCESS-CONTROL.LOGICAL / substrate.impersonation-dual-trail",
+              "description": "1 impersonation session(s) fully dual-recorded on a verified chain",
+              "methods": [
+                "EXAMINE"
+              ],
+              "collected": "2026-06-27T12:00:00.000Z"
+            },
+            {
+              "uuid": "00000000-0000-4000-8000-000000000003",
               "title": "ACCESS-CONTROL.LOGICAL / substrate.tenant-isolation-force-rls",
-              "description": "all 5 tenant tables enforce FORCE row-level security",
+              "description": "all 6 tenant tables enforce FORCE row-level security",
               "methods": [
                 "EXAMINE"
               ],
               "collected": "2026-06-27T12:00:00.000Z"
             },
             {
-              "uuid": "00000000-0000-4000-8000-000000000004",
+              "uuid": "00000000-0000-4000-8000-000000000005",
               "title": "AUDIT.IMMUTABLE-LOG / substrate.audit-chain-integrity",
-              "description": "audit chain verified against its anchor (1 entries)",
+              "description": "audit chain verified against its anchor (7 entries)",
               "methods": [
                 "EXAMINE"
               ],
               "collected": "2026-06-27T12:00:00.000Z"
             },
             {
-              "uuid": "00000000-0000-4000-8000-000000000006",
+              "uuid": "00000000-0000-4000-8000-000000000007",
               "title": "DATA-PROTECTION.DISPOSAL / substrate.worm-retention-floor",
               "description": "WORM retention until 2033-06-27T12:00:00.000Z meets the floor (2032-06-27T12:00:00.000Z)",
               "methods": [
@@ -81,7 +90,7 @@
           ],
           "findings": [
             {
-              "uuid": "00000000-0000-4000-8000-000000000003",
+              "uuid": "00000000-0000-4000-8000-000000000004",
               "title": "ACCESS-CONTROL.LOGICAL — Logical access provisioning and least privilege",
               "description": "Logical access to systems and tenant data is granted through an authorized request, provisioned on the principle of least privilege, and recertified periodically; access rights are matched to a documented role rather than granted ad hoc.",
               "target": {
@@ -94,11 +103,14 @@
               "related-observations": [
                 {
                   "observation-uuid": "00000000-0000-4000-8000-000000000002"
+                },
+                {
+                  "observation-uuid": "00000000-0000-4000-8000-000000000003"
                 }
               ]
             },
             {
-              "uuid": "00000000-0000-4000-8000-000000000005",
+              "uuid": "00000000-0000-4000-8000-000000000006",
               "title": "AUDIT.IMMUTABLE-LOG — Immutable, hash-chained audit log",
               "description": "Security-relevant events are written to an append-only, hash-chained log that cannot be altered or deleted after the fact; integrity is verifiable against a trusted anchor so tampering, truncation, or rewriting is detectable.",
               "target": {
@@ -110,12 +122,12 @@
               },
               "related-observations": [
                 {
-                  "observation-uuid": "00000000-0000-4000-8000-000000000004"
+                  "observation-uuid": "00000000-0000-4000-8000-000000000005"
                 }
               ]
             },
             {
-              "uuid": "00000000-0000-4000-8000-000000000007",
+              "uuid": "00000000-0000-4000-8000-000000000008",
               "title": "DATA-PROTECTION.DISPOSAL — Secure retention and disposal of confidential data",
               "description": "Confidential data is retained only as long as required and then disposed of so that it is rendered unrecoverable; for encrypted data, destruction of the governing key (crypto-shred) is an accepted disposal mechanism.",
               "target": {
@@ -127,7 +139,7 @@
               },
               "related-observations": [
                 {
-                  "observation-uuid": "00000000-0000-4000-8000-000000000006"
+                  "observation-uuid": "00000000-0000-4000-8000-000000000007"
                 }
               ]
             }
@@ -159,7 +171,7 @@
   },
   "planOfActionAndMilestones": {
     "plan-of-action-and-milestones": {
-      "uuid": "00000000-0000-4000-8000-000000000014",
+      "uuid": "00000000-0000-4000-8000-000000000016",
       "metadata": {
         "title": "Plan of Action and Milestones — SOC 2 — Trust Services Criteria",
         "last-modified": "2026-06-27T12:00:00.000Z",
@@ -174,14 +186,14 @@
           {
             "name": "caisson-evidence-pack-sha256",
             "ns": "https://caisson.sh/ns/oscal",
-            "value": "7074dcb83776c5e087aa57f6f5226a08f144be052fd1f1fb890100858d6bb6fa"
+            "value": "b8303f5247b11f6ff184ffb102a1023ec975637edb2ee2732a727228dc266938"
           }
         ],
         "links": [
           {
-            "href": "urn:caisson:audit-chain:cd61b3f1612b3c972f75b5ff2ff1d9fbaf02be08d18bcbaaa552adb054e9a19a",
+            "href": "urn:caisson:audit-chain:dbcbb692d139c5da8e7ac0f9ba6ea0d1da961ef93de4d6b8b841eb9818ca168b",
             "rel": "caisson-audit-chain-anchor",
-            "text": "Audit-chain anchor (length 1)"
+            "text": "Audit-chain anchor (length 7)"
           }
         ]
       },
@@ -191,18 +203,9 @@
       },
       "observations": [
         {
-          "uuid": "00000000-0000-4000-8000-000000000010",
-          "title": "ACCESS-CONTROL.LOGICAL / substrate.tenant-isolation-force-rls",
-          "description": "all 5 tenant tables enforce FORCE row-level security",
-          "methods": [
-            "EXAMINE"
-          ],
-          "collected": "2026-06-27T12:00:00.000Z"
-        },
-        {
           "uuid": "00000000-0000-4000-8000-000000000011",
-          "title": "AUDIT.IMMUTABLE-LOG / substrate.audit-chain-integrity",
-          "description": "audit chain verified against its anchor (1 entries)",
+          "title": "ACCESS-CONTROL.LOGICAL / substrate.impersonation-dual-trail",
+          "description": "1 impersonation session(s) fully dual-recorded on a verified chain",
           "methods": [
             "EXAMINE"
           ],
@@ -210,6 +213,24 @@
         },
         {
           "uuid": "00000000-0000-4000-8000-000000000012",
+          "title": "ACCESS-CONTROL.LOGICAL / substrate.tenant-isolation-force-rls",
+          "description": "all 6 tenant tables enforce FORCE row-level security",
+          "methods": [
+            "EXAMINE"
+          ],
+          "collected": "2026-06-27T12:00:00.000Z"
+        },
+        {
+          "uuid": "00000000-0000-4000-8000-000000000013",
+          "title": "AUDIT.IMMUTABLE-LOG / substrate.audit-chain-integrity",
+          "description": "audit chain verified against its anchor (7 entries)",
+          "methods": [
+            "EXAMINE"
+          ],
+          "collected": "2026-06-27T12:00:00.000Z"
+        },
+        {
+          "uuid": "00000000-0000-4000-8000-000000000014",
           "title": "DATA-PROTECTION.DISPOSAL / substrate.worm-retention-floor",
           "description": "WORM retention until 2033-06-27T12:00:00.000Z meets the floor (2032-06-27T12:00:00.000Z)",
           "methods": [
@@ -220,7 +241,7 @@
       ],
       "poam-items": [
         {
-          "uuid": "00000000-0000-4000-8000-000000000013",
+          "uuid": "00000000-0000-4000-8000-000000000015",
           "title": "No open remediation items",
           "description": "All controls are evidence-ready; no gaps recorded. 3 of 3 controls evidence-ready; no gaps recorded.",
           "related-observations": []

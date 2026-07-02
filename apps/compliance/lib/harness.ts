@@ -32,6 +32,7 @@ export const TENANT_TABLES = [
   "field_wrapped_dek",
   "audit_chain_entry",
   "locked_version",
+  "impersonation_session",
   PHI_TABLE,
 ] as const;
 

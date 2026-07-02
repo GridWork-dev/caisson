@@ -132,4 +132,56 @@ describe("LocalArtifactStore (ADR-0054 dev/test backend)", () => {
       }),
     ).rejects.toBeInstanceOf(ValidationError);
   });
+
+  // ADR-0202: the dev backend mirrors the extend-only CONTRACT (strictly-later or throw) so the
+  // seam is exercised identically — but per ADR-0054 it only RECORDS the date, never enforces it.
+  describe("extendRetention (records, never enforces)", () => {
+    const LATER = new Date(Date.UTC(2034, 0, 1));
+    const EARLIER = new Date(Date.UTC(2032, 0, 1));
+
+    test("a strictly-later date updates the recorded retainUntil (round-trips through head)", async () => {
+      const key = buildArtifactKey(ACCOUNT_A, "evidence", "extend.bin");
+      await store.put(key, new Uint8Array([1]), { retainUntil: RETAIN });
+      const meta = await store.extendRetention(key, LATER);
+      expect(meta.retainUntil?.toISOString()).toBe(LATER.toISOString());
+      const head = await store.head(key);
+      expect(head?.retainUntil?.toISOString()).toBe(LATER.toISOString());
+    });
+
+    test("equal and earlier dates are refused fail-closed; the recorded date survives", async () => {
+      const key = buildArtifactKey(ACCOUNT_A, "evidence", "no-shorten.bin");
+      await store.put(key, new Uint8Array([1]), { retainUntil: RETAIN });
+      await expect(store.extendRetention(key, RETAIN)).rejects.toBeInstanceOf(
+        ValidationError,
+      );
+      await expect(store.extendRetention(key, EARLIER)).rejects.toBeInstanceOf(
+        ValidationError,
+      );
+      const head = await store.head(key);
+      expect(head?.retainUntil?.toISOString()).toBe(RETAIN.toISOString());
+    });
+
+    test("a missing key is NotFoundError — mirrors get()", async () => {
+      await expect(
+        store.extendRetention(buildArtifactKey(ACCOUNT_A, "absent.bin"), LATER),
+      ).rejects.toBeInstanceOf(NotFoundError);
+    });
+
+    test("an artifact whose sidecar is gone gains a retention (extend from nothing)", async () => {
+      const key = buildArtifactKey(ACCOUNT_A, "evidence", "no-sidecar.bin");
+      await store.put(key, new Uint8Array([1, 2]), { retainUntil: RETAIN });
+      await rm(join(root, ".meta", `${key}.json`));
+      const meta = await store.extendRetention(key, EARLIER); // no current lock → any date extends
+      expect(meta.retainUntil?.toISOString()).toBe(EARLIER.toISOString());
+      expect(meta.size).toBe(2);
+    });
+
+    test("an invalid date is refused", async () => {
+      const key = buildArtifactKey(ACCOUNT_A, "evidence", "nan.bin");
+      await store.put(key, new Uint8Array([1]), { retainUntil: RETAIN });
+      await expect(
+        store.extendRetention(key, new Date(Number.NaN)),
+      ).rejects.toBeInstanceOf(ValidationError);
+    });
+  });
 });

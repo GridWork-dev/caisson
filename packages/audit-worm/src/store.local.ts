@@ -11,6 +11,7 @@ import { NotFoundError, ValidationError } from "@caisson/kernel";
 import {
   ArtifactExistsError,
   assertSafeKey,
+  assertValidRetainUntil,
   type ArtifactMeta,
   type ArtifactObject,
   type ArtifactStore,
@@ -98,6 +99,46 @@ export class LocalArtifactStore implements ArtifactStore {
       throw err;
     }
     return this.readMeta(key, size);
+  }
+
+  /**
+   * Extend the RECORDED retention with the same strictly-later guard as the prod backend
+   * (ADR-0202), so the dev seam exercises the identical contract — but, per ADR-0054, this backend
+   * never ENFORCES the lock: the sidecar date is bookkeeping, not immutability, and local artifacts
+   * stay court-inadmissible by design. Only the S3 Object-Lock backend makes the date binding.
+   */
+  async extendRetention(
+    key: string,
+    newRetainUntil: Date,
+  ): Promise<ArtifactMeta> {
+    assertSafeKey(key);
+    assertValidRetainUntil(newRetainUntil);
+    const meta = await this.head(key);
+    if (meta === null) throw new NotFoundError("artifact not found", { key });
+    if (
+      meta.retainUntil !== undefined &&
+      newRetainUntil.getTime() <= meta.retainUntil.getTime()
+    ) {
+      throw new ValidationError(
+        "audit-worm: retention can only be EXTENDED — the new date must be strictly later than the current lock (ADR-0202)",
+        {
+          key,
+          currentRetainUntil: meta.retainUntil.toISOString(),
+          requested: newRetainUntil.toISOString(),
+        },
+      );
+    }
+    // Rewrite the sidecar in its existing format (a missing/corrupt sidecar = extend-from-nothing,
+    // mirroring the S3 backend's unlocked-object case).
+    const sidecar: SidecarMeta = {
+      size: meta.size,
+      retainUntil: newRetainUntil.toISOString(),
+    };
+    if (meta.contentType !== undefined) sidecar.contentType = meta.contentType;
+    const metaPath = this.metaPath(key);
+    await mkdir(dirname(metaPath), { recursive: true });
+    await writeFile(metaPath, JSON.stringify(sidecar));
+    return { ...meta, retainUntil: newRetainUntil };
   }
 
   // --- internal ---

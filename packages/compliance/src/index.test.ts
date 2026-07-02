@@ -29,6 +29,13 @@ import {
   withTenantCrypto,
   assembleComplianceMigrations,
   complianceMigrationPackages,
+  // Support impersonation (ADR-0187).
+  beginImpersonation,
+  recordImpersonatedAction,
+  endImpersonation,
+  withImpersonation,
+  findDualRecordSeqs,
+  impersonationCollector,
   // Operational telemetry (T18).
   emitEvidenceGenerated,
   emitErasureCryptoShred,
@@ -66,6 +73,15 @@ describe("@caisson/compliance barrel", () => {
     expect(typeof withTenantCrypto).toBe("function");
     expect(typeof assembleComplianceMigrations).toBe("function");
     expect(typeof complianceMigrationPackages).toBe("function");
+  });
+
+  test("re-exports the support-impersonation kernel + collector (ADR-0187)", () => {
+    expect(typeof beginImpersonation).toBe("function");
+    expect(typeof recordImpersonatedAction).toBe("function");
+    expect(typeof endImpersonation).toBe("function");
+    expect(typeof withImpersonation).toBe("function");
+    expect(typeof findDualRecordSeqs).toBe("function");
+    expect(typeof impersonationCollector).toBe("function");
   });
 
   test("re-exports operational telemetry (T18)", () => {
