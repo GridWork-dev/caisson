@@ -623,6 +623,43 @@ describe("event mapping", () => {
     }
   });
 
+  test("a multi-line transaction with a DUPLICATE non-empty join id fails closed (CAISSON-8)", () => {
+    // Two lines sharing the SAME real txnitm_ id collide on the credit ledger's per-line uniqueness
+    // key exactly like the "" sentinel collision above — the second line silently no-ops while the
+    // webhook still acks 200. The mapper must throw so verifyAndParse returns a non-2xx and Paddle
+    // redelivers.
+    const event = {
+      event_id: "evt_dup_join",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_dup_join",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        items: [
+          { price: { id: "price_compliance_PLACEHOLDER" }, quantity: 1 },
+          { price: { id: "price_credit_pack_PLACEHOLDER" }, quantity: 1 },
+        ],
+        details: {
+          totals: { grand_total: "20000" },
+          line_items: [
+            {
+              id: "txnitm_dup",
+              price_id: "price_compliance_PLACEHOLDER",
+              totals: { total: "15000" },
+            },
+            {
+              id: "txnitm_dup", // same join id as the line above — malformed delivery
+              price_id: "price_credit_pack_PLACEHOLDER",
+              totals: { total: "5000" },
+            },
+          ],
+        },
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    expect(() => parsePaddleEvent(event)).toThrow(/duplicate per-line join id/);
+  });
+
   test("a pending_approval refund is a no-op (not yet settled)", () => {
     const event = {
       event_id: "evt_pending",
