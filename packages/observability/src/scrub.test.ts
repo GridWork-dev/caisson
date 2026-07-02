@@ -5,7 +5,7 @@ import type {
   Span,
   SpanProcessor,
 } from "@opentelemetry/sdk-trace-base";
-import { ScrubbingSpanProcessor, scrubAttributes } from "./scrub.ts";
+import { ScrubbingSpanProcessor, scrubAttributes, scrubPath } from "./scrub.ts";
 
 describe("scrubAttributes", () => {
   test("redacts secret/auth/cookie/token/key-shaped keys", () => {
@@ -52,6 +52,32 @@ describe("scrubAttributes", () => {
     const attrs: Record<string, unknown> = { "retry.count": 3, ok: true };
     scrubAttributes(attrs);
     expect(attrs).toEqual({ "retry.count": 3, ok: true });
+  });
+});
+
+describe("scrubPath", () => {
+  test("redacts a UUID segment", () => {
+    expect(scrubPath("/users/3fa85f64-5717-4562-b3fc-2c963f66afa6")).toBe(
+      "/users/:id",
+    );
+  });
+
+  test("redacts an email segment", () => {
+    expect(scrubPath("/accounts/liam@example.com/profile")).toBe(
+      "/accounts/:id/profile",
+    );
+  });
+
+  test("redacts a long hex/base64-ish token segment", () => {
+    expect(scrubPath("/verify/a1b2c3d4e5f6a7b8c9d0")).toBe("/verify/:id");
+  });
+
+  test("redacts a pure-numeric id segment", () => {
+    expect(scrubPath("/orders/48291")).toBe("/orders/:id");
+  });
+
+  test("leaves a clean static path unchanged", () => {
+    expect(scrubPath("/api/users/list")).toBe("/api/users/list");
   });
 });
 

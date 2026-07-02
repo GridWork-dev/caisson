@@ -36,7 +36,7 @@ import {
   type CallToolResult,
 } from "@modelcontextprotocol/sdk/types.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
-import { ConfigError, toErrorResponse } from "@caisson/kernel";
+import { ConfigError, ValidationError, toErrorResponse } from "@caisson/kernel";
 import {
   createMcpServer,
   type McpServerOptions,
@@ -70,7 +70,58 @@ export type HttpMcpHandler = (
   res: ServerResponse,
 ) => Promise<void>;
 
+// b719aff8: the SDK's StreamableHTTP transport reads the POST body with NO size cap (an uncapped
+// `await req.json()`), so an authenticated caller's giant body would be fully buffered + JSON.parsed
+// on the shared event loop before any handler runs. We read POST bodies ourselves under this hard
+// byte ceiling and hand the SDK the already-parsed value, so its own uncapped read never fires. 256
+// KiB is ~10x the largest legitimate `generate` call (MAX_MODULES × {id≤128, version≤64} ≈ 25 KiB);
+// raise it in lockstep if MAX_MODULES grows.
+const MAX_BODY_BYTES = 256 * 1024;
+
 const BEARER_PATTERN = /^Bearer +(.+)$/;
+
+/**
+ * Read a POST body under a hard byte ceiling and JSON-parse it, so the SDK's own uncapped
+ * `await req.json()` (b719aff8) never runs. Accumulation stops the instant the total exceeds
+ * `maxBytes` — a giant body is rejected without being fully buffered or parsed, capping the
+ * event-loop cost at O(maxBytes). Throws `ValidationError` (client 400) on overflow or invalid JSON.
+ */
+function readJsonBody(
+  req: IncomingMessage,
+  maxBytes: number,
+): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    let total = 0;
+    let done = false;
+    const onData = (chunk: Buffer): void => {
+      if (done) return;
+      total += chunk.length;
+      if (total > maxBytes) {
+        done = true;
+        req.off("data", onData);
+        reject(new ValidationError("Request body too large", { maxBytes }));
+        return;
+      }
+      chunks.push(chunk);
+    };
+    req.on("data", onData);
+    req.once("end", () => {
+      if (done) return;
+      done = true;
+      try {
+        resolve(JSON.parse(Buffer.concat(chunks).toString("utf8")));
+      } catch {
+        reject(new ValidationError("Invalid JSON body"));
+      }
+    });
+    req.once("error", (err: Error) => {
+      if (done) return;
+      done = true;
+      reject(err);
+    });
+  });
+}
 
 /** Extracts the raw bearer token from `Authorization: Bearer <token>`, or `""` when absent/
  *  malformed — an empty string never matches a real (non-empty) token in `mcp.authenticate`'s
@@ -153,11 +204,18 @@ export function createHttpMcpHandler(deps: HttpServerDeps): HttpMcpHandler {
 
   return async function handleHttpMcpRequest(req, res): Promise<void> {
     let session: McpSession;
+    let parsedBody: unknown;
     try {
       // Fail-closed BEFORE any transport exists — an unauthenticated caller cannot reach
       // list_tools OR tools/call, mirroring stdio's authenticate-before-transport per request
       // instead of per connection (this listener has no 1:1 connection-to-buyer binding).
       session = mcp.authenticate(extractBearer(req));
+      // Read POST bodies under the byte ceiling ourselves (b719aff8) and hand the parsed value to
+      // `handleRequest` below, so the SDK skips its own uncapped `req.json()`. GET (SSE) / DELETE
+      // carry no body — left as `undefined`, which the SDK treats as "no pre-parsed body".
+      if (req.method === "POST") {
+        parsedBody = await readJsonBody(req, MAX_BODY_BYTES);
+      }
     } catch (err) {
       const { status, body } = toErrorResponse(err);
       res.writeHead(status, { "content-type": "application/json" });
@@ -191,7 +249,7 @@ export function createHttpMcpHandler(deps: HttpServerDeps): HttpMcpHandler {
     // that only surfaces under `exactOptionalPropertyTypes`. `StdioServerTransport` doesn't hit
     // this because it declares plain fields instead of accessors.
     await server.connect(transport as unknown as Transport);
-    await transport.handleRequest(req, res);
+    await transport.handleRequest(req, res, parsedBody);
   };
 }
 

@@ -74,17 +74,22 @@ export default function LicensePage() {
       {/* Overview */}
       <Section eyebrow="Overview" title="The licensing model">
         <p style={prose.paragraph}>
-          Caisson is a fully commercial developer library. Every module —
-          including the{" "}
+          Caisson ships two tracks. The <strong>Base substrate</strong> —
+          kernel, auth, tenancy-rls, ui, billing, credits, jobs, email,
+          ai-config, mcp-server, registry-schema, observability, and the
+          generator tooling (cli, migrate, license-verify) — is{" "}
+          <code className="mono">Apache-2.0</code>, open source, free to use.
+          Every edition, including the{" "}
           <a href="/local-first" style={{ color: "var(--cs-accent)" }}>
             Local-first AI edition
-          </a>{" "}
-          — ships under a single proprietary Commercial License (
-          <code className="mono">LicenseRef-Caisson-Commercial</code>). There is
-          no AGPL, free, or permissive tier.
+          </a>
+          , plus the compliance/commercial primitives (field-crypto,
+          audit-worm), the registry service, and Compliance Updates ship under a
+          single proprietary Commercial License (
+          <code className="mono">LicenseRef-Caisson-Commercial</code>).
         </p>
         <p style={prose.paragraph}>
-          The model is the commercial kit pattern: you purchase, you build, you
+          The commercial track is the kit pattern: you purchase, you build, you
           ship your own products without per-seat or per-project fees — but you
           do not redistribute or resell the kit itself.
         </p>
@@ -192,9 +197,9 @@ export default function LicensePage() {
       {/* Per-module clarity */}
       <Section eyebrow="Per module" title="Which license applies where">
         <p style={prose.paragraph}>
-          One license, the whole library. Every package under the{" "}
-          <code className="mono">@caisson</code> scope — the base, every module,
-          and all four editions — ships under the same commercial license.
+          Two licenses, split by package. The Base substrate is Apache-2.0, open
+          source; editions and the commercial primitives ship under the Caisson
+          Commercial License.
         </p>
         <div
           style={{
@@ -219,9 +224,42 @@ export default function LicensePage() {
                   fontSize: "var(--cs-text-sm)",
                 }}
               >
-                @caisson/base · @caisson/auth · @caisson/tenancy-rls ·
-                @caisson/audit-worm · @caisson/field-crypto · @caisson/billing ·
-                @caisson/ai-config · @caisson/local-ai · and the four editions
+                @caisson/kernel · @caisson/auth · @caisson/tenancy-rls ·
+                @caisson/ui · @caisson/billing · @caisson/credits ·
+                @caisson/jobs · @caisson/email · @caisson/ai-config ·
+                @caisson/mcp-server · @caisson/registry-schema ·
+                @caisson/observability · @caisson/cli · @caisson/migrate ·
+                @caisson/license-verify
+              </span>
+              <StatusChip label="Apache-2.0" tone="muted" />
+            </div>
+            <p
+              className="cs-footnote"
+              style={{ marginTop: "var(--cs-space-2)" }}
+            >
+              The open Base substrate — free to use, modify, and redistribute
+              under the Apache-2.0 terms.
+            </p>
+          </Card>
+          <Card>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "var(--cs-space-3)",
+              }}
+            >
+              <span
+                style={{
+                  fontWeight: "var(--cs-weight-medium)",
+                  fontFamily: "var(--cs-font-mono)",
+                  fontSize: "var(--cs-text-sm)",
+                }}
+              >
+                @caisson/field-crypto · @caisson/audit-worm · the registry
+                service · Compliance Updates · and the four editions
+                (Compliance, AI Production Kit, Local-first AI, Agentic-Dev)
               </span>
               <StatusChip label="Commercial" tone="muted" />
             </div>

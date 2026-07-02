@@ -1,7 +1,13 @@
 // action-book unit tests (ADR-0089): the flat per-action credit cost + a strict boundary parser.
 import { describe, expect, test } from "bun:test";
 import { ValidationError } from "@caisson/kernel";
-import { ACTION_BOOK, parseActionBook, resolveActionCost } from "./actions.ts";
+import {
+  ACTION_BOOK,
+  BYOK_COVERED_ACTIONS,
+  parseActionBook,
+  resolveActionCost,
+} from "./actions.ts";
+import type { ActionBook, ActionTag } from "./actions.ts";
 
 describe("action-book", () => {
   test("resolveActionCost returns the codegen run cost", () => {
@@ -23,6 +29,21 @@ describe("action-book", () => {
     expect(() =>
       resolveActionCost("notARealAction" as never, ACTION_BOOK, "tenant"),
     ).toThrow(/no action-book entry/);
+  });
+  test("ADR-0198: a non-BYOK-covered action stays metered under a tenant key", () => {
+    // Simulate a future platform action (e.g. an evidence-pack export) absent from the allowlist:
+    // a tenant key must NOT zero its debit — the regression the allowlist guards against.
+    const book = {
+      ...ACTION_BOOK,
+      evidencePackCredits: 50,
+    } as unknown as ActionBook;
+    const tag = "evidencePackCredits" as unknown as ActionTag;
+    expect(resolveActionCost(tag, book, "tenant")).toBe(50);
+    expect(resolveActionCost(tag, book, "env")).toBe(50);
+  });
+  test("BYOK_COVERED_ACTIONS is the explicit allowlist (new actions default to metered)", () => {
+    expect(BYOK_COVERED_ACTIONS.has("codegenRunCredits")).toBe(true);
+    expect([...BYOK_COVERED_ACTIONS]).toEqual(["codegenRunCredits"]);
   });
   test("parseActionBook rejects a non-integer cost", () => {
     expect(() => parseActionBook({ codegenRunCredits: 1.5 })).toThrow(

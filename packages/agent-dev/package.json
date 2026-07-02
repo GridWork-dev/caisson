@@ -24,7 +24,8 @@
     "@caisson/agent-kernel": "workspace:*",
     "@caisson/ai-config": "workspace:*",
     "@caisson/kernel": "workspace:*",
-    "@caisson/local-store": "workspace:*"
+    "@caisson/local-store": "workspace:*",
+    "@caisson/tool-exec": "workspace:*"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",

@@ -64,8 +64,8 @@ const SITE_POSTURE: ReadonlyArray<{
 }> = [
   {
     icon: "server",
-    title: "Static export, no runtime",
-    body: "The site is a static export — no application server, no database, no runtime data fetch. The contact-forms endpoint is the only dynamic surface, and it holds no secrets in the client bundle.",
+    title: "Dynamic app, minimal surface",
+    body: "caisson.sh runs as a Next.js standalone Node server on Railway, backed by Postgres for the buyer dashboard, billing, and checkout. Marketing and docs pages still render statically at build time; only the dashboard, checkout, and forms are dynamic, and every authed route runs the same fail-closed tenant isolation the product ships — no secrets in the client bundle.",
   },
   {
     icon: "shield",
@@ -75,7 +75,7 @@ const SITE_POSTURE: ReadonlyArray<{
   {
     icon: "gauge",
     title: "Cookieless analytics",
-    body: "Analytics run through Plausible — no cookies, no cross-site identifiers, no consent banner because there is nothing to consent to. Plausible is the one external script and beacon origin the CSP allows.",
+    body: "Analytics run through Plausible — no cookies, no cross-site identifiers, no consent banner because there is nothing to consent to. The CSP's script-src allows exactly two third-party origins: Plausible for analytics, and Paddle for checkout (see the CSP section below).",
   },
   {
     icon: "lock",
@@ -222,7 +222,7 @@ content-security-policy: default-src 'self'; …`}
         <Section
           eyebrow="This site"
           title="How caisson.sh itself is secured."
-          lede="A static marketing site has a small attack surface — we keep it small on purpose and document exactly what ships."
+          lede="A dynamic app widens the attack surface — we keep it deliberately scoped and document exactly what ships."
         >
           <div
             className="cs-grid cs-grid--3"

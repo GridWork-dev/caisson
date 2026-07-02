@@ -3,6 +3,12 @@ import {
   createCaptureChannel,
   deliverAll,
   createEmailChannel,
+  createWebhookChannel,
+  createSlackChannel,
+  createTelegramChannel,
+  WebhookConfigSchema,
+  SlackConfigSchema,
+  TelegramConfigSchema,
 } from "./index.ts";
 import type { AlertChannel, AlertEvent } from "./index.ts";
 import { createCaptureEmailer } from "@caisson/email";
@@ -46,6 +52,76 @@ describe("createEmailChannel", () => {
       },
     ]);
   });
+});
+
+// SSRF: buyer-supplied destination URLs must be https to a public host, guarded at BOTH the Zod
+// schema boundary and the fetch seam (a config object can be built without parsing the schema).
+const UNSAFE_URLS = [
+  "http://hooks.slack.com/services/x", // non-https
+  "http://169.254.169.254/", // cloud metadata
+  "http://10.0.0.1/", // private
+  "http://localhost/", // loopback name
+  "file:///etc/passwd", // non-http scheme
+  "https://user:pass@hooks.slack.com/x", // credentials in URL
+  "https://169.254.169.254/", // metadata on https too
+  "https://[::1]/", // IPv6 loopback
+];
+const SAFE_URL = "https://hooks.slack.com/services/T000/B000/xxx";
+
+describe("SSRF guard — schema boundary", () => {
+  for (const url of UNSAFE_URLS) {
+    test(`WebhookConfigSchema rejects ${url}`, () => {
+      expect(WebhookConfigSchema.safeParse({ url }).success).toBe(false);
+    });
+    test(`SlackConfigSchema rejects ${url}`, () => {
+      expect(SlackConfigSchema.safeParse({ webhookUrl: url }).success).toBe(
+        false,
+      );
+    });
+    test(`TelegramConfigSchema rejects ${url}`, () => {
+      expect(
+        TelegramConfigSchema.safeParse({ botApiUrl: url, chatId: "1" }).success,
+      ).toBe(false);
+    });
+  }
+
+  test("accepts a normal https destination", () => {
+    expect(WebhookConfigSchema.safeParse({ url: SAFE_URL }).success).toBe(true);
+    expect(SlackConfigSchema.safeParse({ webhookUrl: SAFE_URL }).success).toBe(
+      true,
+    );
+    expect(
+      TelegramConfigSchema.safeParse({ botApiUrl: SAFE_URL, chatId: "1" })
+        .success,
+    ).toBe(true);
+  });
+});
+
+describe("SSRF guard — fetch seam", () => {
+  // The guard throws before any fetch, so an unsafe destination yields a failed DeliveryResult and
+  // never touches the network (no mock needed — a real egress here would be the bug).
+  for (const url of UNSAFE_URLS) {
+    test(`webhook rejects ${url}`, async () => {
+      const result = await createWebhookChannel({ url }).deliver(event);
+      expect(result.ok).toBe(false);
+      expect(result.channel).toBe("webhook");
+    });
+    test(`slack rejects ${url}`, async () => {
+      const result = await createSlackChannel({ webhookUrl: url }).deliver(
+        event,
+      );
+      expect(result.ok).toBe(false);
+      expect(result.channel).toBe("slack");
+    });
+    test(`telegram rejects ${url}`, async () => {
+      const result = await createTelegramChannel({
+        botApiUrl: url,
+        chatId: "1",
+      }).deliver(event);
+      expect(result.ok).toBe(false);
+      expect(result.channel).toBe("telegram");
+    });
+  }
 });
 
 describe("deliverAll", () => {

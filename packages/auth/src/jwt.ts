@@ -65,7 +65,7 @@ export function verifyAccountJwt(
   { now = Math.floor(Date.now() / 1000) }: { now?: number } = {},
 ): SessionContext {
   const parts = token.split(".");
-  if (parts.length !== 3) throw new AuthnError("Malformed token");
+  if (parts.length !== 3) throw new AuthnError("Invalid token");
   const [headerSeg, payloadSeg, signatureSeg] = parts as [
     string,
     string,
@@ -84,7 +84,7 @@ export function verifyAccountJwt(
   } catch {
     valid = false;
   }
-  if (!valid) throw new AuthnError("Invalid token signature");
+  if (!valid) throw new AuthnError("Invalid token");
 
   let claims: Record<string, unknown>;
   try {
@@ -92,11 +92,11 @@ export function verifyAccountJwt(
       Buffer.from(payloadSeg, "base64url").toString("utf8"),
     ) as Record<string, unknown>;
   } catch {
-    throw new AuthnError("Malformed token payload");
+    throw new AuthnError("Invalid token");
   }
 
   if (typeof claims.exp !== "number" || claims.exp < now) {
-    throw new AuthnError("Token expired");
+    throw new AuthnError("Invalid token");
   }
   const { sub, account_id: accountId, role } = claims;
   if (
@@ -104,7 +104,7 @@ export function verifyAccountJwt(
     typeof accountId !== "string" ||
     (role !== "owner" && role !== "seat")
   ) {
-    throw new AuthnError("Invalid token claims");
+    throw new AuthnError("Invalid token");
   }
   return { userId: sub, accountId, role };
 }

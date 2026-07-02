@@ -21,6 +21,9 @@ export interface KmsClient {
    * Schedule irreversible deletion of `keyId`'s key material — the crypto-shred primitive. After this
    * the wrapped DEKs under `keyId` can never be unwrapped, so the field ciphertext they protect is
    * unrecoverable WITHOUT mutating any append-only store (ADR-0055). Irreversible by design.
+   *
+   * Requires an EXPLICIT, non-empty `keyId` (ADR-0197): every driver MUST throw rather than fall back
+   * to a shared/default scope, because shredding a shared key would destroy every tenant's material.
    */
   scheduleKeyDeletion(keyId: string): Promise<void>;
 }

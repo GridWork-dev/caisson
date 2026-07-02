@@ -2,8 +2,9 @@
 // id/version/license/dependencies. `kind: "edition"` (ADR-0066) — the Agentic-Dev edition is a
 // COMPOSITION, never a primitive: it consumes the shipped base seams DOWN-ONLY (ADR-0003/0022 Gate-3)
 // — the governed engine-neutral agent kernel (`@caisson/agent-kernel`), local hybrid memory
-// (`@caisson/local-store`), the embedder-lane seam (`@caisson/ai-config`), and the kernel compliance
-// substrate (`@caisson/kernel`) the audited lifecycle records into. It NEVER imports another edition.
+// (`@caisson/local-store`), the embedder-lane seam (`@caisson/ai-config`), the governed sandboxed
+// tool-exec gate (`@caisson/tool-exec`, ADR-0178), and the kernel compliance substrate
+// (`@caisson/kernel`) the audited lifecycle records into. It NEVER imports another edition.
 // `editions: ["agent-dev"]` names its own membership (required for `kind: "edition"`). Paid +
 // LicenseRef-Caisson-Commercial (ADR-0050; the AGPL flank is retired). `priceCents` is the established
 // pre-launch placeholder anchor (4900) — final pricing is the open "Pricing numbers" board fork, out
@@ -24,6 +25,7 @@ export default defineModule({
     "@caisson/ai-config",
     "@caisson/kernel",
     "@caisson/local-store",
+    "@caisson/tool-exec",
   ],
   // Frozen member pin map (ADR-0077): edition self + every bundled dependency, exact-version.
   members: {

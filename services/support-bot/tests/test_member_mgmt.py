@@ -14,6 +14,7 @@ from caisson_support_bot.member_mgmt import (
     build_role_view,
     edition_role_id,
     grant_edition,
+    may_moderate,
     member_can_manage_role,
     role_outranks_bot,
     toggle_role,
@@ -92,6 +93,44 @@ def test_member_can_manage_role_blocks_escalation() -> None:
     assert member_can_manage_role(mod, _role(6)) is False  # above ⇒ blocked
 
 
+def _moderator(*, top: int, member_id: int = 1) -> discord.Member:
+    return cast(discord.Member, SimpleNamespace(id=member_id, top_role=_role(top)))
+
+
+def test_may_moderate_allows_when_actor_and_bot_outrank_target() -> None:
+    actor = _moderator(top=10, member_id=1)
+    target = _moderator(top=5, member_id=2)
+    assert may_moderate(actor, target, guild_owner_id=999, bot_top_role=_role(10)) is True
+
+
+def test_may_moderate_denies_lower_ranked_caller_targeting_higher_ranked_member() -> None:
+    # A low-ranked mod holding the permission FLAG must not be able to action a higher-ranked
+    # member through the bot — `has_permissions` alone says nothing about rank (the WARN finding).
+    actor = _moderator(top=3, member_id=1)
+    target = _moderator(top=5, member_id=2)
+    assert may_moderate(actor, target, guild_owner_id=999, bot_top_role=_role(10)) is False
+
+
+def test_may_moderate_denies_equal_rank() -> None:
+    actor = _moderator(top=5, member_id=1)
+    target = _moderator(top=5, member_id=2)
+    assert may_moderate(actor, target, guild_owner_id=999, bot_top_role=_role(10)) is False
+
+
+def test_may_moderate_denies_when_bot_does_not_outrank_target() -> None:
+    # Even if the actor outranks the target, Discord will refuse the bot's own API call unless the
+    # bot's role also outranks the target — surface that as a denial up front, not a raw Forbidden.
+    actor = _moderator(top=10, member_id=1)
+    target = _moderator(top=8, member_id=2)
+    assert may_moderate(actor, target, guild_owner_id=999, bot_top_role=_role(8)) is False
+
+
+def test_may_moderate_denies_guild_owner_target() -> None:
+    actor = _moderator(top=99, member_id=1)
+    target = _moderator(top=1, member_id=2)
+    assert may_moderate(actor, target, guild_owner_id=2, bot_top_role=_role(99)) is False
+
+
 async def test_assign_default_role_success() -> None:
     member = MagicMock()
     member.add_roles = AsyncMock()
@@ -145,7 +184,12 @@ async def test_welcome_member_sends_channel_and_dm() -> None:
     channel = MagicMock()
     channel.send = AsyncMock()
     await welcome_member(member, channel=channel, channel_text="hi", dm_text="dm")
-    channel.send.assert_awaited_once_with("hi")
+    channel.send.assert_awaited_once()
+    args, kwargs = channel.send.call_args
+    assert args == ("hi",)
+    # channel_text embeds member.mention (the join ping is the point) — scoped to exactly this
+    # member, never a stray @everyone/other mention the bot-wide AllowedMentions.none() would block.
+    assert kwargs["allowed_mentions"].users == [member]
     member.send.assert_awaited_once_with("dm")
 
 

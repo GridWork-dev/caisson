@@ -258,6 +258,13 @@ export class LocalKmsClient implements KmsClient {
   }
 
   async scheduleKeyDeletion(keyId: string): Promise<void> {
+    // Refuse an empty scope — the port contract requires an explicit keyId for the crypto-shred, so a
+    // missing scope can never fall through to a broader deletion (mirrors the AWS driver, ADR-0197).
+    if (keyId.length === 0) {
+      throw new ValidationError(
+        "field-crypto: scheduleKeyDeletion requires an explicit keyId",
+      );
+    }
     // Destroy the scope's KEK. Immediate in the local double (a real KMS schedules a pending-deletion
     // window); the effect is identical — every DEK wrapped under `keyId` is now permanently inert.
     this.shredded.add(keyId);

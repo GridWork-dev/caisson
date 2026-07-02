@@ -83,8 +83,8 @@ export default function PrivacyPage() {
 
         <h3 style={prose.h3}>Cloudflare infrastructure metadata</h3>
         <p style={prose.paragraph}>
-          Caisson.sh is served through Cloudflare Pages and Cloudflare&apos;s
-          global CDN. Cloudflare processes standard HTTP request metadata
+          Caisson.sh is served by Railway, with Cloudflare in front as DNS and
+          reverse proxy. Cloudflare processes standard HTTP request metadata
           (originating IP address, user-agent, referring URL) for the purposes
           of routing, security filtering, and DDoS protection. This processing
           is governed by{" "}
@@ -225,12 +225,12 @@ export default function PrivacyPage() {
           if you require a DPA.
         </p>
 
-        <h3 style={prose.h3}>Site — Cloudflare</h3>
+        <h3 style={prose.h3}>Site — Railway + Cloudflare</h3>
         <p style={prose.paragraph}>
-          Caisson.sh is served from Cloudflare Pages across Cloudflare&apos;s
-          global edge network. Cloudflare is certified under the EU-US Data
-          Privacy Framework. Their data processing terms apply to request
-          metadata processed at the edge.
+          Caisson.sh is served by Railway. Cloudflare remains in front as DNS
+          and reverse proxy across Cloudflare&apos;s global edge network.
+          Cloudflare is certified under the EU-US Data Privacy Framework. Their
+          data processing terms apply to request metadata processed at the edge.
         </p>
 
         <h3 style={prose.h3}>Analytics — Plausible</h3>

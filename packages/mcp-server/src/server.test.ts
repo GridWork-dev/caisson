@@ -251,6 +251,41 @@ describe("buyer MCP server", () => {
     ).rejects.toBeInstanceOf(ValidationError);
   });
 
+  test("generate rejects an over-cap modules array O(1) BEFORE parsing any element (DoS b719aff8)", async () => {
+    const before = calls.length;
+    // 200k entries, each shaped so Zod's element schema would ALSO reject it (empty id/version).
+    // The raw-length pre-guard runs first, so the failure carries the guard's own `details.max`,
+    // NOT `parseStrict`'s per-element `{ issues }` — proving the O(N) element parse (which would
+    // block the shared event loop, ~168ms at 500k) never runs. `.max()` alone does not short-circuit:
+    // zod parses every element before the cap check fires, so the O(1) guard is what closes the DoS.
+    let err: unknown;
+    try {
+      await server.handleToolCall(session, "generate", {
+        projectName: "my-app",
+        modules: Array.from({ length: 200_000 }, () => ({
+          id: "",
+          version: "",
+        })),
+      });
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeInstanceOf(ValidationError);
+    expect((err as ValidationError).details).toEqual({ max: 100 });
+    expect(calls.length).toBe(before); // no host call reached
+  });
+
+  test("generate rejects an over-length module id at the boundary BEFORE any host/registry work", async () => {
+    const before = calls.length;
+    await expect(
+      server.handleToolCall(session, "generate", {
+        projectName: "my-app",
+        modules: [{ id: `@caisson/${"a".repeat(200)}`, version: "0.1.0" }],
+      }),
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(calls.length).toBe(before);
+  });
+
   test("an unknown tool is a 404", async () => {
     await expect(
       server.handleToolCall(session, "rm_rf", {}),

@@ -67,9 +67,48 @@ export class EmitSecurityError extends Error {
 // ── Pure render helpers (each datum rendered once per harness; shared inputs guarantee the bytes agree
 // across harnesses and the output round-trips the agent-kernel schema). ─────────────────────────────
 
+/**
+ * Render a free-text value as a YAML scalar that CANNOT break out of its mapping value. A value that
+ * is already a safe plain scalar renders verbatim (keeps the golden bytes byte-stable); anything that
+ * could alter frontmatter structure — a newline, a `---`/`tools:` injection, a `": "`, a leading
+ * indicator, or a control char — renders as a double-quoted scalar with backslash/quote/control
+ * escaping. This is what makes the emitted `tools:` allowlist UN-SUPPRESSIBLE by authored field
+ * content (round-3 SECURITY): no description or list item can truncate the frontmatter and erase it.
+ * `name`/`trigger`/`severity` are schema-bounded (slug / enum) so they always render plain; free text
+ * is not, so the emitter must never trust it into a bare interpolation.
+ */
+function yamlScalar(value: string): string {
+  const hasControlChar = [...value].some((ch) => {
+    const code = ch.charCodeAt(0);
+    return code < 0x20 || code === 0x7f;
+  });
+  const safePlain =
+    value.length > 0 &&
+    value === value.trim() &&
+    !hasControlChar &&
+    !/^[-?:,[\]{}#&*!|>'"%@`]/.test(value) &&
+    !value.includes(": ") &&
+    !value.endsWith(":") &&
+    !value.includes(" #");
+  if (safePlain) return value;
+  let escaped = "";
+  for (const ch of value) {
+    const code = ch.charCodeAt(0);
+    if (ch === "\\") escaped += "\\\\";
+    else if (ch === '"') escaped += '\\"';
+    else if (ch === "\n") escaped += "\\n";
+    else if (ch === "\r") escaped += "\\r";
+    else if (ch === "\t") escaped += "\\t";
+    else if (code < 0x20 || code === 0x7f)
+      escaped += `\\x${code.toString(16).padStart(2, "0")}`;
+    else escaped += ch;
+  }
+  return `"${escaped}"`;
+}
+
 /** YAML block-sequence: each item on its own `  - <item>` line (no trailing newline). */
 function yamlList(items: readonly string[]): string {
-  return items.map((item) => `  - ${item}`).join("\n");
+  return items.map((item) => `  - ${yamlScalar(item)}`).join("\n");
 }
 
 /** Ordered list `1. … 2. … 3. …` (no trailing newline). */
@@ -82,7 +121,7 @@ function numberedSteps(steps: readonly string[]): string {
 function claudeAgent(a: AgentArtifact): string {
   return `---
 name: ${a.name}
-description: ${a.description}
+description: ${yamlScalar(a.description)}
 capabilities:
 ${yamlList(a.capabilities)}
 tools:
@@ -98,7 +137,7 @@ When to invoke: ${a.whenToInvoke}
 function claudeSkill(s: SkillArtifact): string {
   return `---
 name: ${s.name}
-description: ${s.description}
+description: ${yamlScalar(s.description)}
 trigger: ${s.trigger}
 ---
 
@@ -112,7 +151,7 @@ ${numberedSteps(s.steps)}
 function claudeRule(r: RuleArtifact): string {
   return `---
 name: ${r.name}
-description: ${r.description}
+description: ${yamlScalar(r.description)}
 severity: ${r.severity}
 ---
 
@@ -165,7 +204,7 @@ function codexAgents(
 
 function cursorAgent(a: AgentArtifact): string {
   return `---
-description: ${a.description}
+description: ${yamlScalar(a.description)}
 alwaysApply: false
 ---
 
@@ -181,7 +220,7 @@ ${a.description}
 
 function cursorSkill(s: SkillArtifact): string {
   return `---
-description: ${s.description}
+description: ${yamlScalar(s.description)}
 alwaysApply: false
 ---
 
@@ -195,7 +234,7 @@ ${numberedSteps(s.steps)}
 
 function cursorRule(r: RuleArtifact): string {
   return `---
-description: ${r.description}
+description: ${yamlScalar(r.description)}
 alwaysApply: true
 ---
 

@@ -76,6 +76,12 @@ const SETTINGS: AiSettings = {
       model: "model",
       apiKeyEnv: "OPENAI_API_KEY",
     },
+    // A per-tenant BYOK lane (ADR-0182) — same price key, but a metered action debits $0.
+    byok: {
+      provider: "openai",
+      model: "model",
+      keySource: "tenant",
+    },
   },
 };
 
@@ -85,6 +91,22 @@ function mockModel(text = "ok"): MockLanguageModelV2 {
     doGenerate: async () => ({
       finishReason: "stop",
       usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
+      content: [{ type: "text", text }],
+      warnings: [],
+    }),
+  });
+}
+
+/** A mock model that completes successfully but reports NO usage (both counts undefined). */
+function mockModelNoUsage(text = "ok"): MockLanguageModelV2 {
+  return new MockLanguageModelV2({
+    doGenerate: async () => ({
+      finishReason: "stop",
+      usage: {
+        inputTokens: undefined,
+        outputTokens: undefined,
+        totalTokens: undefined,
+      },
       content: [{ type: "text", text }],
       warnings: [],
     }),
@@ -388,6 +410,81 @@ describe("createProviderRegistry resolver", () => {
 
     expect(res.text).toBe("from-registry");
     expect(model.doGenerateCalls).toHaveLength(1);
+  });
+});
+
+describe("BYOK lane — $0 wallet end-to-end (ADR-0182)", () => {
+  test("a metered infer() on a BYOK lane records usage but never moves the wallet", async () => {
+    await seed(1000);
+    const s = sink();
+    const model = mockModel("byok-ok"); // usage 10 in / 20 out → 1 credit actual
+
+    const res = await infer(
+      "byok",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), s),
+    );
+
+    expect(res.text).toBe("byok-ok");
+    expect(model.doGenerateCalls).toHaveLength(1);
+    // Wallet untouched across reserve + reconcile — a BYOK action debits $0.
+    expect(res.reserved.balance).toBe(1000);
+    expect(res.reconciled.chargedCredits).toBe(0);
+    expect(res.reconciled.refundedCredits).toBe(0);
+    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(1000);
+    // But the usage_event IS recorded with the real actual credits (internal metering still runs).
+    const rows = await tp.query<{ credits: number }>(
+      `SELECT credits FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.credits).toBe(1);
+    // No wallet ledger movement for the BYOK call — neither a debit nor a grant.
+    const ledger = await tp.query(
+      `SELECT 1 FROM credit_event
+         WHERE account_id = $1 AND event_type IN ('feature_debit', 'feature_grant')`,
+      [A],
+    );
+    expect(ledger).toHaveLength(0);
+  });
+});
+
+describe("provider reports no usage — settle at reserved (no silent refund)", () => {
+  test("a completed call with undefined token counts settles at the reservation, never grants a refund", async () => {
+    await seed(1000);
+    const s = sink();
+    const model = mockModelNoUsage("done");
+
+    const res = await infer(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), s),
+    );
+
+    expect(res.text).toBe("done");
+    expect(model.doGenerateCalls).toHaveLength(1);
+    // Settled at the reserved estimate — a real completed call is NEVER trued down to a full refund.
+    expect(res.reserved.reservedCredits).toBeGreaterThan(0);
+    expect(res.reconciled.deltaCredits).toBe(0);
+    expect(res.reconciled.refundedCredits).toBe(0);
+    expect(res.reconciled.actualCredits).toBe(res.reserved.reservedCredits);
+    // The wallet holds the reservation (not refunded back to the full balance).
+    expect(await withTenant(tp.pg, A, (tx) => balance(tx, A))).toBe(
+      1000 - res.reserved.reservedCredits,
+    );
+    // The append-only usage_event carries the reserved (non-zero) credits — not a silent 0.
+    const rows = await tp.query<{ credits: number }>(
+      `SELECT credits FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.credits).toBe(res.reserved.reservedCredits);
+    // No feature_grant was written (the bug refunded the full reservation on unreported usage).
+    const grants = await tp.query(
+      `SELECT 1 FROM credit_event WHERE account_id = $1 AND event_type = 'feature_grant'`,
+      [A],
+    );
+    expect(grants).toHaveLength(0);
   });
 });
 

@@ -20,11 +20,18 @@ import { parseStrict, ValidationError } from "@caisson/kernel";
 export const PROMPT_ROLES = ["system", "user", "assistant"] as const;
 export type PromptRole = (typeof PROMPT_ROLES)[number];
 
+/**
+ * The content cap (ADR-0061 render boundary): shared by every template message AND every
+ * string `rawVars` value, so one oversized variable can never defeat the template's own cap
+ * by inflating the rendered output past it.
+ */
+export const MAX_CONTENT_LENGTH = 100_000;
+
 /** One message in a prompt template; `content` may carry `{{name}}` placeholders. */
 export const promptMessageSchema = z
   .object({
     role: z.enum(PROMPT_ROLES),
-    content: z.string().max(100_000),
+    content: z.string().max(MAX_CONTENT_LENGTH),
   })
   .strict();
 export type PromptMessage = z.infer<typeof promptMessageSchema>;
@@ -58,7 +65,9 @@ const PLACEHOLDER_RE = /\{\{([A-Za-z_][A-Za-z0-9_]*)\}\}/g;
 function zodForType(t: VarType): z.ZodTypeAny {
   switch (t) {
     case "string":
-      return z.string();
+      // Bound each string var value to the same cap as template content — otherwise one
+      // oversized value defeats the template's own content cap at interpolation time.
+      return z.string().max(MAX_CONTENT_LENGTH);
     case "number":
       return z.number();
     case "boolean":
@@ -94,7 +103,7 @@ function escapeValue(value: string): string {
 
 /** Resolve every `{{name}}` in a template string against already-validated string vars (fail-closed). */
 function renderContent(template: string, vars: Record<string, string>): string {
-  return template.replace(PLACEHOLDER_RE, (_match, name: string) => {
+  const rendered = template.replace(PLACEHOLDER_RE, (_match, name: string) => {
     const value = vars[name];
     if (value === undefined) {
       // A placeholder with no bound variable is a template/schema mismatch — never emit it raw.
@@ -102,6 +111,18 @@ function renderContent(template: string, vars: Record<string, string>): string {
     }
     return escapeValue(value);
   });
+  // Escaping can inflate a value (every `{`/`}` doubles), and several per-cap-bounded values can
+  // still sum past the cap in one template — re-check the rendered total, not just each input.
+  if (rendered.length > MAX_CONTENT_LENGTH) {
+    throw new ValidationError(
+      "Rendered prompt content exceeds the content cap",
+      {
+        length: rendered.length,
+        max: MAX_CONTENT_LENGTH,
+      },
+    );
+  }
+  return rendered;
 }
 
 /**

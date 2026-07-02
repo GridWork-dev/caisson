@@ -10,7 +10,10 @@ Scope (ADR-0109 extends ADR-0105 — same bot, not a second process):
     ``setup_hook``. Needs no privileged intent (a click is an interaction).
   • **Moderation slash commands** — ``/kick`` ``/ban`` ``/timeout`` ``/role-add`` ``/role-remove``,
     DOUBLE-gated: ``default_permissions`` hides them in the client UI, ``checks.has_permissions`` is the
-    runtime guarantee. A central ``tree.error`` handler answers a denied check ephemerally.
+    runtime guarantee. ``/kick``/``/ban``/``/timeout`` add a THIRD gate, ``may_moderate`` — the
+    permission flag alone says nothing about caller-vs-target rank, so it also requires the caller (and
+    the bot) to outrank the target and the target to not be the guild owner. A central ``tree.error``
+    handler answers a denied check ephemerally.
   • **Purchase → edition role** — ``/grant-role`` (admin) maps an edition to its role + the ``Customer``
     umbrella. The billing-webhook HTTP variant is DEFERRED to the Paddle phase (no new authed inbound
     surface before a caller exists).
@@ -21,8 +24,11 @@ Design rule (mirrors ``bot.py``): the gateway callbacks are thin adapters over P
 
 Permission/hierarchy floor (``identity/security.md`` analogue): the bot's own role must sit ABOVE every
 role it manages — Discord raises ``discord.Forbidden`` otherwise. ``role_outranks_bot`` gives a clean
-ephemeral error instead of a raw 403. The mod-command secret here is Discord's own permission system,
-not a token compare, so there is no timing-safe surface (unlike the deferred webhook).
+ephemeral error instead of a raw 403. For ``/kick``/``/ban``/``/timeout``, Discord enforces hierarchy
+against the BOT's role only, never the invoking moderator's — ``may_moderate`` closes that gap so a
+low-ranked mod can't action a same-or-higher-ranked member (or the owner) through the bot. The mod-command
+secret here is Discord's own permission system, not a token compare, so there is no timing-safe surface
+(unlike the deferred webhook).
 """
 
 from __future__ import annotations
@@ -80,6 +86,27 @@ def member_can_manage_role(member: discord.Member, role: discord.Role) -> bool:
     return role < member.top_role
 
 
+def may_moderate(
+    actor: discord.Member,
+    target: discord.Member,
+    *,
+    guild_owner_id: int | None,
+    bot_top_role: discord.Role,
+) -> bool:
+    """``True`` when ``actor`` (acting through the bot) may kick/ban/timeout ``target``.
+
+    ``app_commands.checks.has_permissions`` only verifies the actor holds the permission FLAG (e.g.
+    ``kick_members``) — it says nothing about ``actor`` outranking THIS ``target``. Without this check a
+    low-ranked mod holding the flag could kick/ban/timeout a same-or-higher-ranked member (another mod,
+    staff, or the owner) the bot would otherwise refuse via Discord's own hierarchy — which is enforced
+    against the BOT's top role, never the invoking moderator's. Mirrors Discord's native rule: the target
+    must not be the guild owner, and must sit strictly BELOW both the actor's and the bot's top role.
+    """
+    if target.id == guild_owner_id:
+        return False
+    return actor.top_role > target.top_role and bot_top_role > target.top_role
+
+
 async def assign_default_role(member: discord.Member, role: discord.Role, *, reason: str) -> bool:
     """Add ``role`` to ``member``; return ``False`` (never raise) on a permission/hierarchy failure."""
     try:
@@ -125,7 +152,11 @@ async def welcome_member(
     """
     if channel is not None:
         try:
-            await channel.send(channel_text)
+            # channel_text embeds member.mention (the join ping is the point); scope the bot-wide
+            # AllowedMentions.none() re-allow to exactly this member, never any other stray mention.
+            await channel.send(
+                channel_text, allowed_mentions=discord.AllowedMentions(users=[member])
+            )
         except discord.HTTPException:
             pass
     if dm_text is not None:
@@ -243,6 +274,19 @@ def register_member_commands(bot: commands.Bot, settings: Settings) -> None:
     async def kick(  # pyright: ignore[reportUnusedFunction]
         interaction: discord.Interaction, member: discord.Member, reason: str | None = None
     ) -> None:
+        guild, invoker = interaction.guild, interaction.user
+        if (
+            guild is None
+            or not isinstance(invoker, discord.Member)
+            or not may_moderate(
+                invoker, member, guild_owner_id=guild.owner_id, bot_top_role=guild.me.top_role
+            )
+        ):
+            await interaction.response.send_message(
+                "You can't kick them — they're the server owner, or their role is at/above yours (or mine).",
+                ephemeral=True,
+            )
+            return
         try:
             await member.kick(reason=reason)
             await interaction.response.send_message(f"Kicked {member}.", ephemeral=True)
@@ -260,6 +304,19 @@ def register_member_commands(bot: commands.Bot, settings: Settings) -> None:
     async def ban(  # pyright: ignore[reportUnusedFunction]
         interaction: discord.Interaction, member: discord.Member, reason: str | None = None
     ) -> None:
+        guild, invoker = interaction.guild, interaction.user
+        if (
+            guild is None
+            or not isinstance(invoker, discord.Member)
+            or not may_moderate(
+                invoker, member, guild_owner_id=guild.owner_id, bot_top_role=guild.me.top_role
+            )
+        ):
+            await interaction.response.send_message(
+                "You can't ban them — they're the server owner, or their role is at/above yours (or mine).",
+                ephemeral=True,
+            )
+            return
         try:
             await member.ban(reason=reason, delete_message_days=0)
             await interaction.response.send_message(f"Banned {member}.", ephemeral=True)
@@ -280,6 +337,20 @@ def register_member_commands(bot: commands.Bot, settings: Settings) -> None:
         minutes: app_commands.Range[int, 1, 40320],
         reason: str | None = None,
     ) -> None:
+        guild, invoker = interaction.guild, interaction.user
+        if (
+            guild is None
+            or not isinstance(invoker, discord.Member)
+            or not may_moderate(
+                invoker, member, guild_owner_id=guild.owner_id, bot_top_role=guild.me.top_role
+            )
+        ):
+            await interaction.response.send_message(
+                "You can't time them out — they're the server owner, or their role is at/above yours "
+                "(or mine).",
+                ephemeral=True,
+            )
+            return
         try:
             await member.timeout(datetime.timedelta(minutes=minutes), reason=reason)
             await interaction.response.send_message(

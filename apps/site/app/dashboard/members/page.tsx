@@ -122,7 +122,7 @@ export default async function DashboardMembersPage() {
                 padding: "var(--cs-space-2) var(--cs-space-3)",
                 border: "1px solid var(--cs-border)",
                 borderRadius: "var(--cs-radius-md)",
-                background: "var(--cs-surface1)",
+                background: "var(--cs-surface-1)",
                 color: "var(--cs-fg)",
                 minWidth: "22ch",
               }}
