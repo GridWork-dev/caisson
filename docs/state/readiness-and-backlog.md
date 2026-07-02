@@ -77,11 +77,13 @@ smoke-test of the deployed Worker, and `bun run check` (125/125 + kernel gate) o
 > changeset consume republished the registry ledger/index at **0.2.0** (ledger/index-only;
 > `CAISSON_PUBLISH_DRY_RUN` stays `true`). The admin `/ops` cockpit is rebuilt off the deleted SigNoz
 > API onto Grafana Cloud's Tempo query API (`ADR-0207`), and the admin CF-Access gate gains a
-> fail-closed in-app JWT check (`ADR-0204`, supersedes the `ADR-0140` edge-alone posture). **All of the
-> above is code-complete but DEPLOY-pending** — the 5-service Railway redeploy + registry Worker
-> redeploy + the `caisson-admin`/`caisson-support-bot` env-var sets (`CF_ACCESS_TEAM_DOMAIN`/
-> `CF_ACCESS_AUD`, `GRAFANA_URL`/`GRAFANA_QUERY_TOKEN`/`GRAFANA_TEMPO_DATASOURCE_UID`,
-> `LINEAR_API_KEY`/`LINEAR_TEAM_ID`/`LINEAR_TRIAGE_STATE_ID`) have not run yet this session. One item
+> fail-closed in-app JWT check (`ADR-0204`, supersedes the `ADR-0140` edge-alone posture). **The
+> deploy wave EXECUTED 2026-07-02** — the 5-service Railway redeploy (4/5 verified live;
+> `caisson-support-bot` recovering from a transient Discord CF-1015 egress-IP ban at first boot),
+> the registry Worker redeploy (0.2.0 index verified), the `caisson-admin`/`caisson-support-bot`
+> env-var sets (`CF_ACCESS_TEAM_DOMAIN`/`CF_ACCESS_AUD`, `GRAFANA_URL`/`GRAFANA_QUERY_TOKEN`/
+> `GRAFANA_TEMPO_DATASOURCE_UID`, `LINEAR_API_KEY`/`LINEAR_TEAM_ID`/`LINEAR_TRIAGE_STATE_ID`),
+> and the 3 SigNoz volume deletions (purge 2026-07-04) all ran. One item
 > remains genuinely in-flight elsewhere: `feat/lift-harvest` (`ADR-0211` reserved), owned by a separate
 > session.
 

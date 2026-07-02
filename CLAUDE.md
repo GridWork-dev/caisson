@@ -52,10 +52,13 @@ seam-completion, LIFT slice-1, and the editions/commerce go-live locks landed, a
 keying, admin CF-Access-JWT middleware, owner-gated BYOK/attestations, Paddle multi-item
 fulfillment; ADR-0204) and **PR #46 edition-tails-ops** (Azure/Bedrock RentedTransport drivers,
 compliance runtime composition, support-bot Linear Triage sink, admin `/ops` Grafana rebuild,
-registry ledger republish to 0.2.0; ADR-0205–0209) both merged to `main`. **ADR ceiling is now 0209.** Remaining is DEPLOY-class, operator-approved and pending execution this session:
-redeploy the 5 Railway services from merged `main`, redeploy the registry Worker (carries the
-0.2.0 index), wire `caisson-admin`'s CF-Access + Grafana env and `caisson-support-bot`'s Linear
-env, and delete 3 orphaned SigNoz volumes. Live per-package truth: `docs/build-state.md`.
+registry ledger republish to 0.2.0; ADR-0205–0209) both merged to `main`. **ADR ceiling is now 0209.**
+The same-day deploy wave then **EXECUTED** (operator-approved): the 5 Railway services redeployed
+from merged `main` (4/5 verified live; `caisson-support-bot` recovering from a transient Discord
+CF-1015 egress-IP ban at first boot), the registry Worker redeployed (0.2.0 index verified, zero
+drift), `caisson-admin`'s CF-Access + Grafana env and `caisson-support-bot`'s Linear env set, and
+the 3 orphaned SigNoz volumes deleted (Railway soft-delete, purge 2026-07-04). Live per-package
+truth: `docs/build-state.md`.
 
 ## Engineering invariants (locked, ADR-0002 — apply to all product code)
 
