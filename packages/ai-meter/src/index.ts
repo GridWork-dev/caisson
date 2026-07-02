@@ -69,3 +69,20 @@ export type {
   ReconcileInput,
   ReconcileResult,
 } from "./meter.ts";
+
+// Pre-call MinHash/LSH dedup-before-meter gate (ADR-0217).
+export {
+  normalizePrompt,
+  shingle,
+  computeMinHashSignature,
+  lshBands,
+  jaccardEstimate,
+  createInMemoryDedupStore,
+  checkDedupGate,
+} from "./dedup.ts";
+export type {
+  DedupEntry,
+  DedupStore,
+  DedupGateConfig,
+  DedupGateResult,
+} from "./dedup.ts";

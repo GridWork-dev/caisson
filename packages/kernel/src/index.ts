@@ -20,6 +20,7 @@ export {
 export type { ErrorEnvelope } from "./errors.ts";
 
 export { safeEqualFixed, safeEqualVariable } from "./crypto.ts";
+export { scrubForEgress, looksLikeSecret } from "./secret-scrub.ts";
 export { fetchWithTimeout } from "./fetch.ts";
 export type { FetchTimeoutOptions } from "./fetch.ts";
 export {
@@ -96,5 +97,26 @@ export {
   creditConversionSchema,
   parseCreditConversion,
   centsToCredits,
+  centsToCreditsProvenance,
 } from "./credit-conversion.ts";
 export type { CreditConversion } from "./credit-conversion.ts";
+
+export {
+  asCents,
+  asCredits,
+  asMicroUsd,
+  asMicroUsdPerCredit,
+  // The brand key itself — exported so a dependent package's declaration emit can NAME the branded
+  // types through this public entry (TS2742 otherwise). Never used at runtime on money values.
+  brandTag,
+  unwrapMoney,
+} from "./money.ts";
+export type {
+  Cents,
+  Credits,
+  MicroUsd,
+  MicroUsdPerCredit,
+  MoneyBrand,
+  RoundedMoney,
+  RoundingMode,
+} from "./money.ts";

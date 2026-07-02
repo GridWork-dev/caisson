@@ -6,6 +6,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
+import { asMicroUsdPerCredit } from "@caisson/kernel";
 import { computeCost, priceKey } from "./pricebook.ts";
 
 const entrySchema = z.object({
@@ -42,15 +43,29 @@ const golden = goldenSchema.parse(
   ),
 );
 
+// Mint the branded denomination (ADR-0212) from the golden's plain integer — same runtime value.
+const conversion = {
+  microUsdPerCredit: asMicroUsdPerCredit(
+    golden.creditConversion.microUsdPerCredit,
+  ),
+};
+
 describe("T6 price-book cost golden (BLESS unset)", () => {
   for (const c of golden.cases) {
     test(c.name, () => {
       const entry = golden.priceBook[priceKey(c.provider, c.model)];
       expect(entry).toBeDefined();
       if (entry === undefined) return;
-      const cost = computeCost(c.usage, entry, golden.creditConversion);
-      expect(cost.costMicroUsd).toBe(c.expected.costMicroUsd);
-      expect(cost.credits).toBe(c.expected.credits);
+      const cost = computeCost(c.usage, entry, conversion);
+      expect<number>(cost.costMicroUsd).toBe(c.expected.costMicroUsd);
+      expect<number>(cost.credits).toBe(c.expected.credits);
+      // ADR-0212: the rounding record mirrors the pinned pair — raw is the micro-USD cost, the
+      // direction is this book's fixed "up", the result is the pinned credit charge.
+      expect<unknown>(cost.roundingCredits).toEqual({
+        raw: c.expected.costMicroUsd,
+        mode: "up",
+        result: c.expected.credits,
+      });
     });
   }
 });

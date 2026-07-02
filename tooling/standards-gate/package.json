@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@caisson/registry-schema": "workspace:*",
+    "@caisson/tenancy-rls": "workspace:*",
     "zod": "^3.23.0"
   },
   "devDependencies": {

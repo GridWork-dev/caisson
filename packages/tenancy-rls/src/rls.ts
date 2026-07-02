@@ -33,6 +33,46 @@ export interface Transactor {
 }
 
 /**
+ * One-time, fail-closed role pre-flight (ADR-0005 hardening): `withTenant`/`withUser` trust the
+ * role they `SET LOCAL ROLE` into is genuinely unprivileged. A SUPERUSER or BYPASSRLS role
+ * silently no-ops `FORCE ROW LEVEL SECURITY`, reopening the cross-tenant leak with zero runtime
+ * signal — this throws before that role is ever assumed. Never warns; a missing role is
+ * refused too (fail-closed, not fail-open on a typo).
+ */
+async function assertRoleNotPrivileged(
+  tx: TenantExecutor,
+  role: string,
+): Promise<void> {
+  const { rows } = await tx.query<{
+    rolsuper: boolean;
+    rolbypassrls: boolean;
+  }>(`SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = $1`, [role]);
+  const row = rows[0];
+  if (!row || row.rolsuper || row.rolbypassrls) {
+    throw new TenancyError(
+      `Refusing to use role "${role}" for tenant isolation: it must exist and be neither SUPERUSER nor BYPASSRLS`,
+    );
+  }
+}
+
+/**
+ * Runs once per distinct `Transactor` (a `db` instance, not a transaction) — the guard costs one
+ * extra catalog query per `Transactor`, not per call. A failed check is never cached: fixing the
+ * misconfig un-wedges the very next call with no restart.
+ */
+const roleGuardChecked = new WeakSet<Transactor>();
+
+async function ensureRoleGuard(
+  db: Transactor,
+  tx: TenantExecutor,
+  role: string,
+): Promise<void> {
+  if (roleGuardChecked.has(db)) return;
+  await assertRoleNotPrivileged(tx, role);
+  roleGuardChecked.add(db);
+}
+
+/**
  * Run `fn` inside a transaction scoped to `accountId`: `SET LOCAL ROLE app` +
  * `set_config('app.current_account', accountId, true)`. The account id must come from a verified
  * session/JWT (ADR-0015) — never from request params. An empty id is refused outright (never run
@@ -51,6 +91,7 @@ export async function withTenant<T>(
   return db.transaction(async (tx) => {
     // Bind the GUC first (as the privileged role), then drop to `app` for the actual work.
     await tx.query(`SELECT set_config($1, $2, true)`, [TENANT_GUC, accountId]);
+    await ensureRoleGuard(db, tx, "app");
     await tx.exec(`SET LOCAL ROLE app`);
     return fn(tx);
   });
@@ -76,6 +117,7 @@ export async function withUser<T>(
   }
   return db.transaction(async (tx) => {
     await tx.query(`SELECT set_config($1, $2, true)`, [USER_GUC, userId]);
+    await ensureRoleGuard(db, tx, "app");
     await tx.exec(`SET LOCAL ROLE app`);
     return fn(tx);
   });

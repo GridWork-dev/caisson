@@ -81,8 +81,8 @@ describe("setup coach — wiring + entitlement gating (ADR-0076)", () => {
   const entitled = server.authenticate("tok_acct_b_111111111111");
 
   test("coach tools are registered through the seam and visible to an ai-kit buyer", () => {
-    const tools = server.listTools(entitled);
-    expect(tools).toEqual(
+    const names = server.listTools(entitled).map((reg) => reg.name);
+    expect(names).toEqual(
       expect.arrayContaining([
         "inspect_env",
         "propose_ai_config",
@@ -93,9 +93,9 @@ describe("setup coach — wiring + entitlement gating (ADR-0076)", () => {
   });
 
   test("coach tools are invisible (404, not 403) to a non-entitled buyer", async () => {
-    const tools = server.listTools(nonEntitled);
-    expect(tools).not.toContain("inspect_env");
-    expect(tools).not.toContain("write_forge_config");
+    const names = server.listTools(nonEntitled).map((reg) => reg.name);
+    expect(names).not.toContain("inspect_env");
+    expect(names).not.toContain("write_forge_config");
     await expect(
       server.handleToolCall(nonEntitled, "inspect_env", {
         names: ["ANTHROPIC_API_KEY"],
@@ -110,7 +110,9 @@ describe("setup coach — wiring + entitlement gating (ADR-0076)", () => {
       onGenerate: async () => ({ generationId: "g" }),
     });
     const s = bare.authenticate("tok_acct_b_111111111111");
-    expect(bare.listTools(s)).not.toContain("inspect_env");
+    expect(bare.listTools(s).map((reg) => reg.name)).not.toContain(
+      "inspect_env",
+    );
     await expect(
       bare.handleToolCall(s, "propose_ai_config", PROPOSE),
     ).rejects.toBeInstanceOf(NotFoundError);
@@ -135,7 +137,9 @@ describe("setup coach — wiring + entitlement gating (ADR-0076)", () => {
       },
     });
     const session = s.authenticate("tok_acct_c_222222222222");
-    expect(s.listTools(session)).toContain("inspect_env");
+    expect(s.listTools(session).map((reg) => reg.name)).toContain(
+      "inspect_env",
+    );
   });
 });
 

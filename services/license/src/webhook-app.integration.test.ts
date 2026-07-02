@@ -9,7 +9,11 @@ import { createHash, createHmac, createPrivateKey } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import type { BillingProvider } from "@caisson/billing";
 import { createPaddleBilling } from "@caisson/billing";
-import { CREDIT_SCHEMA_SQL, balance } from "@caisson/credits";
+import {
+  CREDIT_ROUNDING_MIGRATION_SQL,
+  CREDIT_SCHEMA_SQL,
+  balance,
+} from "@caisson/credits";
 import { Ed25519Signer } from "@caisson/license-issue";
 import {
   type RegistryIndex,
@@ -63,6 +67,7 @@ let provider: BillingProvider;
 beforeAll(async () => {
   tp = await newTestPg();
   await tp.exec(CREDIT_SCHEMA_SQL);
+  await tp.exec(CREDIT_ROUNDING_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   provider = createPaddleBilling({ webhookSecret: SECRET, apiKey: "pdl_test" });
 });

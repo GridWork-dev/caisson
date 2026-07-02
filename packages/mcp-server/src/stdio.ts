@@ -69,8 +69,9 @@ export function createStdioMcpServer(deps: StdioServerDeps): Server {
   );
 
   server.setRequestHandler(ListToolsRequestSchema, () => ({
-    tools: mcp.listTools(session).map((name) => ({
-      name,
+    tools: mcp.listTools(session).map((reg) => ({
+      name: reg.name,
+      description: reg.description,
       inputSchema: PERMISSIVE_INPUT_SCHEMA,
     })),
   }));

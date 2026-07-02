@@ -16,7 +16,7 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { balance, debit, grant } from "@caisson/credits";
-import { parseStrict, strictObject } from "@caisson/kernel";
+import { asCredits, parseStrict, strictObject } from "@caisson/kernel";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 import { estimateCost, estimateMessageSchema } from "./estimate.ts";
 import type { EstimateMessage } from "./estimate.ts";
@@ -285,6 +285,9 @@ async function evaluateCaps(
  * when the breaker is open and `InsufficientCreditsError` (402) when the wallet is short — in either
  * case nothing is written (the surrounding `withTenant` transaction rolls back). Run inside
  * `withTenant(accountId)`.
+ *
+ * A caller wanting to catch near-duplicate prompts (not just literal `callId` retries) should call
+ * `checkDedupGate()` from `./dedup.ts` BEFORE this — it detects, it does not enforce (ADR-0217).
  */
 export async function reserve(
   tx: TenantExecutor,
@@ -325,13 +328,15 @@ export async function reserve(
   let walletBalance: number;
   let idempotent: boolean;
   if (billable && reservedCredits > 0) {
-    // Debit-before-spend (ADR-0007): a short wallet throws 402 and rolls everything back.
+    // Debit-before-spend (ADR-0007): a short wallet throws 402 and rolls everything back. The
+    // estimate's rounding provenance (ADR-0212: raw micro-USD, mode "up") persists on the ledger row.
     const res = await debit(tx, {
       accountId: core.accountId,
       amount: reservedCredits,
       eventType: "feature_debit",
       feature: INFERENCE_FEATURE,
       idempotencyKey: `${core.callId}:reserve`,
+      rounding: est.roundingCredits,
     });
     walletBalance = res.balance;
     idempotent = res.idempotent;
@@ -472,23 +477,27 @@ export async function reconcile(
   let walletBalance = await balance(tx, core.accountId);
   let refundedCredits = 0;
   let chargedCredits = 0;
+  // Either settlement row carries the ACTUAL cost's rounding provenance (ADR-0212): the row's amount
+  // is the signed delta, while {raw, mode, result} document the ceil that produced the actual charge.
   if (billable && delta > 0) {
     const res = await debit(tx, {
       accountId: core.accountId,
-      amount: delta,
+      amount: asCredits(delta),
       eventType: "feature_debit",
       feature: INFERENCE_FEATURE,
       idempotencyKey: `${core.callId}:reconcile`,
+      rounding: actual.roundingCredits,
     });
     walletBalance = res.balance;
     chargedCredits = delta;
   } else if (billable && delta < 0) {
     const res = await grant(tx, {
       accountId: core.accountId,
-      amount: -delta,
+      amount: asCredits(-delta),
       eventType: "feature_grant",
       feature: INFERENCE_FEATURE,
       idempotencyKey: `${core.callId}:reconcile`,
+      rounding: actual.roundingCredits,
     });
     walletBalance = res.balance;
     refundedCredits = -delta;

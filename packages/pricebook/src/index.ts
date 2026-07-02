@@ -33,6 +33,7 @@ export type { ActionBook, ActionKeySource, ActionTag } from "./actions.ts";
 export {
   CREDIT_CONVERSION,
   centsToCredits,
+  centsToCreditsProvenance,
   creditConversionSchema,
   parseCreditConversion,
 } from "./conversion.ts";

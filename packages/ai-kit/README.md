@@ -23,3 +23,12 @@ The backing model is **injected** (`opts.resolveModel`) — production wires a `
 over the ai-config lanes (`buildRegistryResolver` + `defaultProviders`); CI injects a mock
 `LanguageModelV2`, so no live model/network call happens in the gate. See `AGENTS.md` for the usage
 contract + invariants.
+
+## Metered embeddings (ADR-0213)
+
+`embed()`/`embedMany()` join `infer()`/`inferStream()` through the SAME reserve-before/
+reconcile-after chokepoint — a shorter pipeline (`resolve → reserve → provider call → record usage →
+reconcile`, no prompt-registry render, no guardrails) for a buyer-facing RAG/semantic-search surface.
+Every live provider factory also binds its outbound `fetch` to a `timeoutMs` deadline
+(`fetchWithTimeout`, default 60s), and `infer()` forwards an `abortSignal` to `generateText` — closing
+the repo-wide fetch-deadline floor on the live provider transport. See `AGENTS.md` for usage.
