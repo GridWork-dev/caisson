@@ -45,6 +45,7 @@ export SUPPORT_HUMAN_ROLE_ID=...    # role to tag on escalation
 export DATABASE_URL=postgres://...  # support_ticket persistence (omit ⇒ thread-only escalation)
 export OPENROUTER_MODEL=anthropic/claude-3.5-sonnet
 export BILLING_GRANT_TOKEN=...      # Bearer for POST /billing-grant (entitlement→role push); route not served when unset
+export GUILD_ID=...                 # pins billing grants to the Caisson guild (sole-guild fallback when unset)
 uv run python -m caisson_support_bot
 ```
 

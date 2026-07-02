@@ -90,6 +90,12 @@ class Settings(BaseSettings):
         "purchase grant and by apps/site after a Discord link). The route is NOT served when unset "
         "(fail-closed) — the bot runs unaffected.",
     )
+    guild_id: int | None = Field(
+        default=None,
+        description="The Caisson guild billing grants apply to (same GUILD_ID the provisioner "
+        "uses). Unset falls back to the bot's sole guild; with several guilds and no id the grant "
+        "refuses rather than guessing a server.",
+    )
 
     # --- optional persistence ---
     database_url: str | None = Field(

@@ -61,22 +61,34 @@ def bearer_ok(header: str | None, expected: str) -> bool:
     )
 
 
-async def find_member(bot: commands.Bot, user_id: int) -> discord.Member | None:
-    """Resolve a member across the bot's guilds — cache first, then a single REST fetch per guild.
+def grant_guild(bot: commands.Bot, settings: Settings) -> discord.Guild | None:
+    """The ONE guild billing grants apply to — never "whichever guild matched first".
+
+    ``guild_id`` set → that guild or nothing. Unset → the bot's sole guild, and ``None`` when the
+    bot sits in several (ambiguous — the configured role ids belong to exactly one server, so
+    granting in "the first guild that knows the user" could target the wrong server). Fail-closed.
+    """
+    if settings.guild_id is not None:
+        return bot.get_guild(settings.guild_id)
+    if len(bot.guilds) == 1:
+        return bot.guilds[0]
+    return None
+
+
+async def find_member(guild: discord.Guild, user_id: int) -> discord.Member | None:
+    """Resolve a member in the grant guild — cache first, then a single REST fetch.
 
     ``fetch_member`` needs no privileged intent (it is a targeted REST call, unlike bulk member
-    enumeration). NotFound/Forbidden in one guild just means "try the next"; ``None`` means the user
-    shares no guild with the bot — the caller answers 404 so the push's log shows the miss.
+    enumeration). ``None`` means the user is not in the guild — the caller answers 404 so the
+    push's log shows the miss.
     """
-    for guild in bot.guilds:
-        member = guild.get_member(user_id)
-        if member is not None:
-            return member
-        try:
-            return await guild.fetch_member(user_id)
-        except discord.HTTPException:
-            continue
-    return None
+    member = guild.get_member(user_id)
+    if member is not None:
+        return member
+    try:
+        return await guild.fetch_member(user_id)
+    except discord.HTTPException:
+        return None
 
 
 @dataclass(frozen=True)
@@ -111,10 +123,14 @@ async def _handle_billing_grant(request: web.Request) -> web.Response:
         # Never echo the rejected body back (redaction-safe, the parseStrict convention).
         return web.json_response({"ok": False, "error": "invalid body"}, status=400)
 
-    member = await find_member(deps.bot, int(payload.discord_user_id))
+    guild = grant_guild(deps.bot, deps.settings)
+    if guild is None:
+        # No unambiguous grant target (GUILD_ID unset while the bot sits in several guilds, or the
+        # bot is not in the configured guild) — refuse rather than guess a server.
+        return web.json_response({"ok": False, "error": "grant guild unresolved"}, status=503)
+    member = await find_member(guild, int(payload.discord_user_id))
     if member is None:
         return web.json_response({"ok": False, "error": "member not found"}, status=404)
-    guild = member.guild
 
     # Editions with a configured role, plus the Customer umbrella (any successful purchase). Roles the
     # bot cannot manage (at/above its top role) are skipped rather than failing the whole grant.
