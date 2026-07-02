@@ -8,3 +8,13 @@ cloudflare_zone_id    = "your-caisson.sh-zone-id"
 # pages_project_name       = "caisson-site"
 # production_branch        = "main"
 # site_access_email_domain = "gridwork.dev"   # email domain allowed through the pre-launch Access gate
+
+# ADR-0219 (CF front rate-limit + WAF) — required, no default. Read the current values from the
+# Cloudflare dashboard (DNS tab) or `railway domain` on caisson-docs before filling these in;
+# terraform import the existing docs_api DNS record first (see main.tf comment).
+docs_api_railway_target     = "your-docs-api-railway-target.up.railway.app"
+docs_api_railway_verify_txt = "railway-verify=your-docs-api-ownership-token"
+
+# Optional overrides (defaults in variables.tf):
+# rate_limit_requests_per_period        = 60
+# rate_limit_mitigation_timeout_seconds = 60
