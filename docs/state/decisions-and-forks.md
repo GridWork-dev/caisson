@@ -650,3 +650,17 @@ per-package decisions filed as ADR-0211–0217 (drafted 0205–0211, renumbered 
 | **H-3 — explicit defers**                 | auth lift-sweep #9 hash-at-rest session tokens DEFERRED (fights better-auth, ADR-0015); wave-6 residual candidates PARKED per program ordering.              | **ADR-0210 §3–4** |
 | **agent-runner (F1/F2/F5, locked 07-01)** | Proceeds — not re-asked; ADR-0186 FILED at build start per the reservation.                                                                                  | **ADR-0186**      |
 | **Per-package build decisions**           | jobs consumer-side · branded-money/rounding-provenance · ai-kit embeddings · ai-evals depth · guardrails · mcp-server manifest/ledger · ai-meter dedup gate. | **ADR-0211–0217** |
+
+## Closed by the 2026-07-02 deferred-respec picker round (operator-locked)
+
+The 11 deferred-by-decision items were researched into SPEC drafts (`outputs/specs/deferred-respec/`,
+PR #55). The operator selected 5 for build-now and locked all 16 tabled forks in one picker round —
+two picks override the spec recommendations (PF-1, AM-2) and one adds scope (ONNX F2). The remaining
+6 specs stay `draft — operator lock required` (members-fold in revision re-run; the rest TBD).
+
+| Fork                                      | Decision                                                                                                                                                                                                                | ADR          |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| **PF-1..4 — Paddle partial refund**       | C-b `line_item_id` columns (OVERRIDE of C-a side-table rec) · A-1 item-type semantics · B-1 per-line refcount · D-2 shape/D-1 population.                                                                               | **ADR-0218** |
+| **CF-1..2 — CF front rate-limit**         | Flip docs-api proxied, license stays grey · Free-tier rules now, Pro evaluated at real traffic. Apply + DNS flip = DEPLOY-class.                                                                                        | **ADR-0219** |
+| **AM-1..5 — admin mutation surface**      | 4 actions v1 (buyer-lookup dropped) · dedicated `admin_write` role (OVERRIDE of reuse-withTenant rec) · `admin_adjust` tag · WORM day 1 · new admin-scoped reissue credential. Supersedes ADR-0141's mutation deferral. | **ADR-0220** |
+| **KMS-1..2 + ONNX G1/F1/F2 — live seams** | Shared prover principal · print-only provisioner (CMK deferred) · G1-A throwaway-install sign-off · F1-A doc-flip-only on green · F2-B EgressGuard unification in-slice (OVERRIDE of defer rec, security tag).          | **ADR-0221** |
