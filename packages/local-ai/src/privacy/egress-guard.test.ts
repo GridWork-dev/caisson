@@ -252,3 +252,60 @@ describe("createEgressGuard + defensive re-parse (fail-closed)", () => {
     expect(() => createEgressGuard(smuggled)).toThrow(ValidationError);
   });
 });
+
+describe("EgressGuard.assertAllowedFor / fetchAs (purpose-bound egress)", () => {
+  test("the matching sink kind passes; a mismatched kind is refused naming required + actual", () => {
+    const guard = guardWithBothSinks();
+    expect(
+      guard.assertAllowedFor(
+        `https://${RENTED_HOST}/v1/embed`,
+        "rented-backend",
+      ).hostname,
+    ).toBe(RENTED_HOST);
+
+    try {
+      guard.assertAllowedFor(
+        `https://${MODEL_HOST}/v1/embed`,
+        "rented-backend",
+      );
+      throw new Error("expected AuthzError");
+    } catch (err) {
+      expect(err).toBeInstanceOf(AuthzError);
+      const details: Record<string, unknown> =
+        (err as AuthzError).details ?? {};
+      expect(details.required).toBe("rented-backend");
+      expect(details.actual).toBe("model-fetch");
+      expect(details.host).toBe(MODEL_HOST);
+    }
+  });
+
+  test("a non-allowlisted host is still refused first (assertAllowed runs before the kind gate)", () => {
+    const guard = guardWithBothSinks();
+    expect(() =>
+      guard.assertAllowedFor(
+        "https://evil.example.com/embed",
+        "rented-backend",
+      ),
+    ).toThrow(AuthzError);
+  });
+
+  test("fetchAs blocks a wrong-kind host BEFORE any network call (the Bearer never leaves)", async () => {
+    const calls = stubFetch();
+    const guard = guardWithBothSinks();
+    await expect(
+      guard.fetchAs("rented-backend", `https://${MODEL_HOST}/v1/embed`),
+    ).rejects.toThrow(AuthzError);
+    expect(calls).toHaveLength(0);
+  });
+
+  test("fetchAs routes a matching-kind host through the one fetch seam", async () => {
+    const calls = stubFetch(200);
+    const guard = guardWithBothSinks();
+    const res = await guard.fetchAs(
+      "rented-backend",
+      `https://${RENTED_HOST}/v1/embed`,
+    );
+    expect(res.status).toBe(200);
+    expect(calls).toEqual([`https://${RENTED_HOST}/v1/embed`]);
+  });
+});
