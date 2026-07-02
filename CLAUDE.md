@@ -156,15 +156,10 @@ Caisson uses **Linear** (Business tier) for execution tracking + inbound triage 
 ## Subagent model routing (binding)
 
 Never default a subagent to Fable 5 — set `model` explicitly on every dispatch (Agent tool
-`model`, Workflow `agent()` `opts.model`). Route by work class:
-
-- **fable** — critical-path only: security implementation/verification, crypto/money/license
-  seams, the final adversarial verdict on a high-stakes finding.
-- **opus** — bulk reviewers, judge panels, repo-scale synthesis.
-- **sonnet** — bounded implementation (<~300 LOC), test writing, structured research/scan agents.
-- **haiku** — recon, grep/classify/triage, mechanical sweeps, doc scans.
-
-The main thread stays on the session model; this table governs dispatched agents only.
+`model`, Workflow `agent()` `opts.model`). The full lane table is canonical in gridwork-core
+`identity/doctrine.md` (Model-routing lanes — promoted from this file 2026-07-02; gw agents
+now also carry a harness-read `model:` frontmatter baseline). Caisson-specific note: fable
+is for the crypto/money/license seams this repo is full of — never for fan-out.
 
 ## Relationship to gridwork-core
 

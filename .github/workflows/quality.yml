@@ -21,7 +21,7 @@ jobs:
   # list via the GitHub REST API); for push it falls back to git against the pre-push commit, which
   # works against the default shallow checkout below (the action fetches additional history itself).
   changes:
-    runs-on: [self-hosted, <host>]
+    runs-on: caisson-amd64
     timeout-minutes: 5
     permissions:
       contents: read
@@ -58,7 +58,7 @@ jobs:
   eval:
     needs: changes
     if: needs.changes.outputs.eval == 'true'
-    runs-on: [self-hosted, <host>]
+    runs-on: caisson-amd64
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
@@ -84,7 +84,7 @@ jobs:
   token-drift:
     needs: changes
     if: needs.changes.outputs.ui == 'true'
-    runs-on: [self-hosted, <host>]
+    runs-on: caisson-amd64
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
@@ -125,7 +125,7 @@ jobs:
       matrix:
         include:
           - platform: linux
-            runs-on: [self-hosted, <host>]
+            runs-on: caisson-amd64
           - platform: macos
             runs-on: macos-latest
     runs-on: ${{ matrix.runs-on }}
