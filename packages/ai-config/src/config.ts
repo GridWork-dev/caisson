@@ -58,12 +58,35 @@ const ProviderConfigSchema = strictObject({
         "a per-tenant (BYOK) lane must not name apiKeyEnv — the key is stored encrypted per tenant",
     });
   }
-  if (cfg.keySource !== "tenant" && cfg.apiKeyEnv === undefined) {
+  if (
+    cfg.keySource !== "tenant" &&
+    cfg.apiKeyEnv === undefined &&
+    cfg.provider !== "bedrock"
+  ) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: ["apiKeyEnv"],
       message: "an env-pointer lane requires apiKeyEnv",
     });
+  }
+  // Azure OpenAI (ADR-0160 decision 3): `model` addresses a deployment, not a model name, so the
+  // resource endpoint (`baseUrl`) and the per-call API version (`apiVersion`) are both required —
+  // enforced here instead of failing downstream at SDK construction in ai-kit/providers.ts.
+  if (cfg.provider === "azure-openai") {
+    if (cfg.apiVersion === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["apiVersion"],
+        message: "azure-openai requires apiVersion",
+      });
+    }
+    if (cfg.baseUrl === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["baseUrl"],
+        message: "azure-openai requires baseUrl",
+      });
+    }
   }
 });
 
