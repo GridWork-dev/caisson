@@ -1,8 +1,9 @@
 {
   "statusCheck": true,
-  "triggerOnUpdates": true,
+  "triggerOnUpdates": false,
+  "skipReview": "AUTOMATIC",
   "strictness": 2,
-  "commentTypes": ["logic", "syntax", "style"],
+  "commentTypes": ["logic", "syntax"],
   "excludeAuthors": ["dependabot[bot]", "*-bot"],
   "excludeBranches": ["dependabot/**"],
   "ignorePatterns": "bun.lock\n**/dist/**\n**/*.d.ts\n**/__golden__/**\n**/*.snap\n**/migrations-bundle/**\n**/.next/**\n**/coverage/**\nregistry/index.json"
