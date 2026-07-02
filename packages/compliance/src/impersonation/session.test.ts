@@ -101,7 +101,7 @@ describe("beginImpersonation — validation precedes all I/O", () => {
   });
 });
 
-describe("findDualRecordSeqs — pure begin-pair scan", () => {
+describe("findDualRecordSeqs — pure whole-lifecycle dual-trail scan", () => {
   const sid = "1f2e3d4c-5b6a-4798-8899-aabbccddeeff";
   const entries = [
     {
@@ -132,17 +132,80 @@ describe("findDualRecordSeqs — pure begin-pair scan", () => {
     },
   ];
 
-  test("locates both sides of the dual pair by sessionId", () => {
+  test("locates both sides of the begin pair by sessionId (no end pair yet, counts 1/1)", () => {
     expect(findDualRecordSeqs(entries, sid)).toEqual({
       operatorRecordSeq: 1,
       tenantRecordSeq: 2,
+      endOperatorRecordSeq: null,
+      endTenantRecordSeq: null,
+      operatorRecordCount: 1,
+      tenantRecordCount: 1,
     });
   });
 
-  test("returns nulls for an unknown session (the collector flags them)", () => {
+  test("returns nulls and zero counts for an unknown session (the collector flags them)", () => {
     expect(findDualRecordSeqs(entries, "other-session")).toEqual({
       operatorRecordSeq: null,
       tenantRecordSeq: null,
+      endOperatorRecordSeq: null,
+      endTenantRecordSeq: null,
+      operatorRecordCount: 0,
+      tenantRecordCount: 0,
     });
+  });
+
+  test("locates the session.end pair and counts each side across the whole lifecycle", () => {
+    const withEnd = [
+      ...entries,
+      {
+        seq: 3,
+        prevHash: "h2",
+        payload: {
+          kind: "impersonation.operator",
+          sessionId: sid,
+          action: "session.end",
+        },
+        hash: "h3",
+      },
+      {
+        seq: 4,
+        prevHash: "h3",
+        payload: {
+          kind: "impersonation.tenant",
+          sessionId: sid,
+          action: "session.end",
+        },
+        hash: "h4",
+      },
+    ];
+    expect(findDualRecordSeqs(withEnd, sid)).toEqual({
+      operatorRecordSeq: 1,
+      tenantRecordSeq: 2,
+      endOperatorRecordSeq: 3,
+      endTenantRecordSeq: 4,
+      operatorRecordCount: 2,
+      tenantRecordCount: 2,
+    });
+  });
+
+  test("a torn end (operator side only) leaves the tenant end seq null and the counts unequal", () => {
+    const torn = [
+      ...entries,
+      {
+        seq: 3,
+        prevHash: "h2",
+        payload: {
+          kind: "impersonation.operator",
+          sessionId: sid,
+          action: "session.end",
+        },
+        hash: "h3",
+      },
+    ];
+    const scan = findDualRecordSeqs(torn, sid);
+    expect(scan.endOperatorRecordSeq).toBe(3);
+    expect(scan.endTenantRecordSeq).toBeNull();
+    expect(scan.operatorRecordCount).toBe(2);
+    expect(scan.tenantRecordCount).toBe(1);
   });
 });

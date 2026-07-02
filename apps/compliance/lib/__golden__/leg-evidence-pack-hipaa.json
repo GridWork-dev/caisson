@@ -45,7 +45,11 @@
                 "expiresAt": "2026-06-27T12:15:00.000Z",
                 "endedAt": "2026-06-27T12:00:00.000Z",
                 "operatorRecordSeq": 0,
-                "tenantRecordSeq": 1
+                "tenantRecordSeq": 1,
+                "endOperatorRecordSeq": 4,
+                "endTenantRecordSeq": 5,
+                "operatorRecordCount": 3,
+                "tenantRecordCount": 3
               }
             ]
           },

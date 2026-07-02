@@ -1,15 +1,20 @@
 // src/evidence/collectors/impersonation.ts — support-impersonation dual-trail evidence (ADR-0187,
 // ADR-0058).
 //
-// Evidences that every support-impersonation session is fully accounted for: the target tenant's
-// audit chain verifies, every session carries BOTH sides of its dual pair (the operator-identity
-// record AND the acting-as-tenant record, ADR-0187), a non-empty justification, and a bounded
-// lifetime (expiresAt strictly after startedAt). The fact is gathered at the edge (the session
-// rows / `endImpersonation` results + `AuditChainStore.load`/`verify` + `findDualRecordSeqs`),
-// keeping this collector pure of any DB/chain import. An EMPTY session set with a valid chain is a
-// truthful pass — "no support access occurred" is exactly what an auditor wants evidenced.
+// Evidences that every support-impersonation session is fully accounted for ACROSS ITS WHOLE
+// LIFECYCLE: the target tenant's audit chain verifies; every session carries BOTH sides of its
+// begin dual pair (the operator-identity record AND the acting-as-tenant record, ADR-0187); an
+// ENDED session (`endedAt` set) carries both sides of its `session.end` pair (a set `ended_at`
+// with no end records is a torn end — the retention change landed but the evidence did not); the
+// per-side record COUNTS match (every lifecycle step appends exactly one record per side, so an
+// inequality is a torn dual append at begin/action/end); plus a non-empty justification and a
+// bounded lifetime (expiresAt strictly after startedAt). The fact is gathered at the edge (the
+// session rows / `endImpersonation` results + `AuditChainStore.load`/`verify` +
+// `findDualRecordSeqs`), keeping this collector pure of any DB/chain import. An EMPTY session set
+// with a valid chain is a truthful pass — "no support access occurred" is exactly what an auditor
+// wants evidenced; a still-OPEN session (`endedAt: null`) legitimately has no end pair yet.
 // Flag-never-guess: an unverifiable chain (`chainValid: null`) → `unresolved`; a failed
-// verification, a missing dual record, an empty reason, or an unbounded lifetime → `flagged`.
+// verification, a missing/torn dual record, an empty reason, or an unbounded lifetime → `flagged`.
 import type { JsonValue } from "@caisson/kernel";
 import {
   flaggedResult,
@@ -33,6 +38,16 @@ export interface ImpersonationSessionFact {
   readonly operatorRecordSeq: number | null;
   /** The chain seq of the acting-as-tenant begin record, or `null` when missing from the chain. */
   readonly tenantRecordSeq: number | null;
+  /** The `session.end` operator-identity record's seq; `null` = missing. Required once `endedAt`
+   *  is set — an ended row with no end record is a torn end (flagged). */
+  readonly endOperatorRecordSeq: number | null;
+  /** The `session.end` acting-as-tenant record's seq; `null` = missing (as above). */
+  readonly endTenantRecordSeq: number | null;
+  /** Total operator-identity records on the chain for this session. Every lifecycle step appends
+   *  exactly one record per side, so this must EQUAL `tenantRecordCount` (else: torn append). */
+  readonly operatorRecordCount: number;
+  /** Total acting-as-tenant records on the chain for this session. */
+  readonly tenantRecordCount: number;
 }
 
 /** The base fact: the tenant's sessions + the chain-verification verdict over their dual records. */
@@ -65,6 +80,21 @@ function sessionDeficiencies(s: ImpersonationSessionFact): string[] {
       `session ${s.id}: acting-as-tenant record missing from the audit chain`,
     );
   }
+  if (s.endedAt !== null && s.endOperatorRecordSeq === null) {
+    problems.push(
+      `session ${s.id}: ended but the operator-identity session.end record is missing from the audit chain`,
+    );
+  }
+  if (s.endedAt !== null && s.endTenantRecordSeq === null) {
+    problems.push(
+      `session ${s.id}: ended but the acting-as-tenant session.end record is missing from the audit chain`,
+    );
+  }
+  if (s.operatorRecordCount !== s.tenantRecordCount) {
+    problems.push(
+      `session ${s.id}: dual-trail asymmetry, ${String(s.operatorRecordCount)} operator-identity vs ${String(s.tenantRecordCount)} acting-as-tenant record(s) (a torn dual append)`,
+    );
+  }
   if (s.reason.trim().length === 0) {
     problems.push(`session ${s.id}: no recorded justification`);
   }
@@ -88,6 +118,10 @@ function sessionsAsJson(
     endedAt: s.endedAt,
     operatorRecordSeq: s.operatorRecordSeq,
     tenantRecordSeq: s.tenantRecordSeq,
+    endOperatorRecordSeq: s.endOperatorRecordSeq,
+    endTenantRecordSeq: s.endTenantRecordSeq,
+    operatorRecordCount: s.operatorRecordCount,
+    tenantRecordCount: s.tenantRecordCount,
   }));
 }
 
