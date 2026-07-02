@@ -154,7 +154,9 @@ async def welcome_member(
         try:
             # channel_text embeds member.mention (the join ping is the point); scope the bot-wide
             # AllowedMentions.none() re-allow to exactly this member, never any other stray mention.
-            await channel.send(channel_text, allowed_mentions=discord.AllowedMentions(users=[member]))
+            await channel.send(
+                channel_text, allowed_mentions=discord.AllowedMentions(users=[member])
+            )
         except discord.HTTPException:
             pass
     if dm_text is not None:

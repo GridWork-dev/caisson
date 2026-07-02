@@ -86,7 +86,9 @@ class _DiscordThreadOpener:
     role/user a question might contain.
     """
 
-    def __init__(self, channel: discord.abc.Messageable, *, mention_role_id: int | None = None) -> None:
+    def __init__(
+        self, channel: discord.abc.Messageable, *, mention_role_id: int | None = None
+    ) -> None:
         self._channel = channel
         self._allowed_mentions = discord.AllowedMentions(
             roles=[discord.Object(id=mention_role_id)] if mention_role_id is not None else False
@@ -104,7 +106,9 @@ class _DiscordThreadOpener:
             return thread.id
         # Forbidden subclasses HTTPException, so this also covers permission errors.
         except discord.HTTPException:
-            await self._channel.send(body, allowed_mentions=self._allowed_mentions)  # fall back inline.
+            await self._channel.send(
+                body, allowed_mentions=self._allowed_mentions
+            )  # fall back inline.
             return None
 
 
