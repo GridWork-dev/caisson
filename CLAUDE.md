@@ -168,6 +168,40 @@ Never default a subagent to Fable 5 — set `model` explicitly on every dispatch
 now also carry a harness-read `model:` frontmatter baseline). Caisson-specific note: fable
 is for the crypto/money/license seams this repo is full of — never for fan-out.
 
+## Agents, skills, tools — the caisson lens (2026-07-02)
+
+The agent roster, skills, and MCPs are GLOBAL (owned by gridwork-core, linked via `~/.claude`)
+— this section is the caisson-relevant subset + bindings, NOT a second registry. Canonical:
+roster `gridwork-core claude/agents/INDEX.md` · skills = `/<name>` slash commands
+(`claude/playbooks/user-triggered/`) · MCP pick-table `identity/mcps.md` · everything else
+routes via `identity/index.md`.
+
+**Agents that carry caisson's recurring jobs** (dispatch with explicit `model`; all sonnet lane):
+
+| Agent                    | Cadence / trigger                | Job                                                                                                           |
+| ------------------------ | -------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `gw-product-insights`    | per-release / monthly            | PostHog (caisson-prod, id 493539) + Cookiy + GitHub issues + Linear → ranked priorities + draft Linear issues |
+| `gw-aeo-strategist`      | per-launch + quarterly           | do LLMs cite caisson; llms.txt / robots / schema.org fixes                                                    |
+| `gw-pricing-analyst`     | quarterly + per-edition          | competitor scrape + checkout funnel + WTP memo; never sets a price                                            |
+| `gw-persona-walkthrough` | before landing/checkout ships    | per-scroll conversion-psych critique → hands to gw-frontend-designer                                          |
+| `gw-devrel-writer`       | per-release                      | launch post / changelog / tutorial drafts, diff-grounded; operator publishes                                  |
+| `gw-market-intel`        | monthly + competitor events      | category/competitor watch → cited briefing + draft Linear tickets                                             |
+| `gw-gtm-copywriter`      | per comparison page / case study | claims scraped + dated, PAL-challenged; stops at a committed branch                                           |
+
+Engineering lanes (`gw-typescript-pro`, `gw-code-reviewer`, `gw-security-auditor`,
+`gw-test-automator`, …) route per `identity/doctrine.md` — nothing caisson-specific.
+
+**Caisson-specific tool bindings:**
+
+- **PostHog MCP** → project `caisson-prod` (US Cloud) — state it per dispatch, never assume carry-over.
+- **Linear MCP** → work items only (Linear owns WORK, git owns DECISIONS — §Issue tracking above).
+- **Cookiy MCP** → screeners / synthetic-persona tests / survey research; positioning research only, no PII.
+- **CI** → `runs-on: caisson-amd64` (runscaler scale set on <host>; bare name, no extra labels).
+  `oscal-conformance` (Maven) + `deploy-railway` (prod token) stay hosted. Review gate = `greptile-gate`
+  (path-scoped, §PR review gate above).
+- **GLM engine lane** (`gw engine glm "<task>"`) → bounded mechanical work on the z.ai subscription;
+  sandboxed throwaway worktree, no secrets/MCPs, returns a diff — main thread owns git/PR.
+
 ## Relationship to gridwork-core
 
 Global `~/CLAUDE.md` + the five auto-loaded gridwork rules apply. This file is additive.
