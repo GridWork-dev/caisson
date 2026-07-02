@@ -44,6 +44,7 @@ export SUPPORT_CHANNEL_ID=...       # the #ask-ai channel id (listener)
 export SUPPORT_HUMAN_ROLE_ID=...    # role to tag on escalation
 export DATABASE_URL=postgres://...  # support_ticket persistence (omit ⇒ thread-only escalation)
 export OPENROUTER_MODEL=anthropic/claude-3.5-sonnet
+export BILLING_GRANT_TOKEN=...      # Bearer for POST /billing-grant (entitlement→role push); route not served when unset
 uv run python -m caisson_support_bot
 ```
 
@@ -58,5 +59,7 @@ uv run pytest
 ## Deploy (operator-gated)
 
 Build the `Dockerfile` and push to Railway (recommended) or Fly.io. The gateway connection is outbound;
-the only inbound surface is `/health` for the runner's liveness probe. Set the env above as the
-platform's secrets.
+inbound is one aiohttp app on `health_port` — `GET /health` (always, the runner's liveness probe) plus
+`POST /billing-grant` (ADR-0201 — token-gated entitlement→Discord-role push, called by `services/license`
+and `apps/site`; not served when `BILLING_GRANT_TOKEN` is unset). Set the env above as the platform's
+secrets.

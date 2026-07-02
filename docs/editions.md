@@ -69,18 +69,18 @@ modules also sell a-la-carte. Spec: [`specs/00-product-spec.md`](../specs/00-pro
 
 **Composition (genuinely built):**
 
-| Package                                                 | What                                                                                           | src LOC / tests |
-| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | --------------- |
-| [`packages/kernel`](../packages/kernel)                 | error model, gate (402/license), audit-chain, event-sink, migration-assembly, fetchWithTimeout | 1363 / 9        |
-| [`packages/tenancy-rls`](../packages/tenancy-rls)       | fail-closed Postgres RLS (`withTenant`), ADR-0005                                              | 75 / 1          |
-| [`packages/field-crypto`](../packages/field-crypto)     | per-tenant AEAD field encryption, envelope, crypto-shred, AAD (ADR-0043/0045/0046/0055)        | 1319 / 9        |
-| [`packages/auth`](../packages/auth)                     | JWT + session/RLS seam (ADR-0015)                                                              | 143 / 1         |
-| [`packages/billing`](../packages/billing)               | Stripe Merchant-of-Record provider + webhook (ADR-0017)                                        | 249 / 1         |
-| [`packages/credits`](../packages/credits)               | integer credit ledger, idempotent debit (ADR-0007/0024/0074)                                   | 328 / 2         |
-| [`packages/cli`](../packages/cli)                       | **`create-caisson`** generator + meter + migrate-assemble (ADR-0048/0049)                      | 488 / 3         |
-| [`packages/mcp-server`](../packages/mcp-server)         | buyer MCP server + auth + tool-registration seam (ADR-0008/0076)                               | 514 / 2         |
-| [`packages/license-verify`](../packages/license-verify) | Ed25519 offline license verify (ADR-0010)                                                      | 272 / 2         |
-| [`packages/ui`](../packages/ui)                         | design-floor token contract (ADR-0042/0078)                                                    | 381 / 1         |
+| Package                                                 | What                                                                                                        | src LOC / tests |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------- |
+| [`packages/kernel`](../packages/kernel)                 | error model, gate (402/license), audit-chain, event-sink, migration-assembly, fetchWithTimeout              | 1363 / 9        |
+| [`packages/tenancy-rls`](../packages/tenancy-rls)       | fail-closed Postgres RLS (`withTenant`), ADR-0005                                                           | 75 / 1          |
+| [`packages/field-crypto`](../packages/field-crypto)     | per-tenant AEAD field encryption, envelope, crypto-shred, AAD (ADR-0043/0045/0046/0055)                     | 1319 / 9        |
+| [`packages/auth`](../packages/auth)                     | JWT + session/RLS seam (ADR-0015)                                                                           | 143 / 1         |
+| [`packages/billing`](../packages/billing)               | billing provider port — Paddle MoR webhook (sole mounted, ADR-0200) + dormant Stripe driver (ADR-0017/0116) | 249 / 1         |
+| [`packages/credits`](../packages/credits)               | integer credit ledger, idempotent debit (ADR-0007/0024/0074)                                                | 328 / 2         |
+| [`packages/cli`](../packages/cli)                       | **`create-caisson`** generator + meter + migrate-assemble (ADR-0048/0049)                                   | 488 / 3         |
+| [`packages/mcp-server`](../packages/mcp-server)         | buyer MCP server + auth + tool-registration seam (ADR-0008/0076)                                            | 514 / 2         |
+| [`packages/license-verify`](../packages/license-verify) | Ed25519 offline license verify (ADR-0010)                                                                   | 272 / 2         |
+| [`packages/ui`](../packages/ui)                         | design-floor token contract (ADR-0042/0078)                                                                 | 381 / 1         |
 
 - **License:** commercial · **Price:** no standalone edition anchor; per-module from $49, bundled into editions.
 - **Build:** **BUILT (alpha).** This is the genuine, operator-acknowledged core. Reference app [`apps/base`](../apps/base) = plain-TS consumer (4 `.ts` src, no `.tsx`/`app/` pages; the real-HTTP 402->grant->200->MCP loop).
