@@ -9,7 +9,7 @@ import { MODULE_PRICES } from "@/lib/pricing";
 export const metadata = buildMetadata({
   title: "Modules",
   description:
-    "Browse all 14 Caisson modules à la carte. Filter by edition or price, take exactly the capability you need onto the shared base, or compose a full stack in the builder.",
+    "Browse all 15 Caisson modules à la carte. Filter by edition or price, take exactly the capability you need onto the shared base, or compose a full stack in the builder.",
   path: "/modules",
 });
 
@@ -36,7 +36,7 @@ export default function ModulesPage() {
       <Hero
         eyebrow="Modules"
         title="Every module, à la carte."
-        lede="Fourteen modules across the four editions. Take exactly the capability you need onto the shared base — field encryption, token metering, on-device search — or compose a whole stack in the builder."
+        lede="Fifteen modules across the four editions. Take exactly the capability you need onto the shared base — field encryption, token metering, on-device search — or compose a whole stack in the builder."
         ctas={
           <>
             <Button href="/build" variant="primary">
@@ -50,7 +50,7 @@ export default function ModulesPage() {
         artifact={
           <Terminal
             label="modules"
-            status={<StatusChip label="14 available" tone="success" dot />}
+            status={<StatusChip label="15 available" tone="success" dot />}
           >
             {"module."}
             <span className="cs-tok-accent">field-crypto</span>
