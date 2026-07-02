@@ -99,6 +99,12 @@ export interface InferOptions {
   readonly meter?: MeterConfig;
   /** Output-token budget — sizes the reservation and caps the provider call. */
   readonly maxOutputTokens?: number;
+  /**
+   * Abort the in-flight provider call (a caller timeout, a hung-up request, …). A hang still hits
+   * the existing failure path — `catch → settle(ZERO_USAGE)` — so an abort never leaks the up-front
+   * reservation (ADR-0213: closes the fetchWithTimeout-floor gap on `infer()`'s bare `generateText`).
+   */
+  readonly abortSignal?: AbortSignal;
 }
 
 export interface InferResult {
@@ -322,6 +328,9 @@ export async function infer(
       messages: toModelMessages(guarded),
       ...(opts.maxOutputTokens !== undefined
         ? { maxOutputTokens: opts.maxOutputTokens }
+        : {}),
+      ...(opts.abortSignal !== undefined
+        ? { abortSignal: opts.abortSignal }
         : {}),
     });
     text = result.text;

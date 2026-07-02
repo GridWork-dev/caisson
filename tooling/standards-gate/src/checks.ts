@@ -24,6 +24,9 @@ import { createHash } from "node:crypto";
 import ts from "typescript";
 import type { Pkg } from "./workspace";
 import { isAgpl } from "./workspace";
+// Type-only — erased at transpile, so it cannot break the pre-install fs-only pass (see
+// checkRlsEquivalence's lazy VALUE import below for the runtime seam).
+import type { buildTenantPolicySql as BuildTenantPolicySqlFn } from "@caisson/tenancy-rls";
 
 /** The four editions (by package name) — the down-only direction is keyed on these until manifests land. */
 const EDITION_NAMES = new Set([
@@ -478,5 +481,257 @@ export function checkOpenCommercialBoundary(pkgs: Pkg[]): Finding[] {
       });
     }
   }
+  return findings;
+}
+
+/**
+ * RLS migration-equivalence harness (ADR-0210 hardening #2 / ADR-0005). `buildTenantPolicySql`
+ * (@caisson/tenancy-rls) is the canonical RLS-SQL generator; nothing previously checked hand-written
+ * migration RLS against it — a table can LOOK tenant-isolated but ship undocumented drift
+ * (`retention_audit`/`alert_audit_log` already shipped narrower GRANTs than the generator would).
+ *
+ * Per package with `src/migrations/*.sql`: concatenate files in filename order, find every
+ * tenant-table candidate (a `CREATE TABLE` with an `account_id`/`tenant_id` NOT NULL column), and
+ * verify its hand-written RLS block against the generator's rendered output for that table.
+ */
+interface RlsOverride {
+  table: string;
+  package: string;
+  reason: string;
+}
+
+function loadRlsOverrides(root: string): RlsOverride[] {
+  const p = join(root, "tooling/standards-gate/rls-equivalence-overrides.json");
+  if (!existsSync(p)) return [];
+  try {
+    return JSON.parse(readFileSync(p, "utf8")) as RlsOverride[];
+  } catch {
+    return [];
+  }
+}
+
+interface TenantTableCandidate {
+  table: string;
+  column: string;
+}
+
+/** A `CREATE TABLE` whose body carries an `account_id`/`tenant_id` NOT NULL column. */
+function findTenantTableCandidates(sql: string): TenantTableCandidate[] {
+  const out: TenantTableCandidate[] = [];
+  const createRe =
+    /CREATE TABLE(?:\s+IF NOT EXISTS)?\s+(\w+)\s*\(([\s\S]*?)\n\);/g;
+  let m: RegExpExecArray | null;
+  while ((m = createRe.exec(sql))) {
+    const table = m[1];
+    const body = m[2] ?? "";
+    const col = /\b(account_id|tenant_id)\b[^,\n]*\bNOT NULL\b/.exec(body);
+    if (table && col) out.push({ table, column: col[1] as string });
+  }
+  return out;
+}
+
+function normWhitespace(s: string): string {
+  return s.replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Strips SQL line comments (`-- … ` to end of line) before any block-extraction regex runs. Real
+ * migrations narrate design rationale in comments that themselves mention keywords like "GRANT" (e.g.
+ * "the RLS block below is byte-identical to buildTenantPolicySql(...) minus its `GRANT … UPDATE,
+ * DELETE`") — left in, a naive single-match regex anchors on that stray mention and its lazy
+ * `[\s\S]+?` then spans forward across unrelated CREATE TABLE/comment text to the first real
+ * `ON <table> TO <role>;` it can find, capturing garbage as the "grant clause". Comments carry no RLS
+ * semantics, so dropping them before parsing is correct, not lossy.
+ */
+function stripLineComments(sql: string): string {
+  return sql
+    .split("\n")
+    .map((line) => line.replace(/--.*$/, ""))
+    .join("\n");
+}
+
+interface RlsBlock {
+  enable: string;
+  force: string;
+  grantVerbs: string[];
+  grantRole: string;
+  using: string;
+  withCheck: string;
+}
+
+/**
+ * Regex-extracts a table's RLS wiring (ENABLE, FORCE, GRANT verb-set+role, USING/WITH-CHECK) from
+ * `sql`. Returns `null` if any piece is absent — the block was never found (`rls-missing`). GRANT
+ * and CREATE POLICY are matched independently (not required to be textually adjacent), so a REVOKE
+ * statement sitting between them (the append-only tables' belt-and-suspenders pattern) never breaks
+ * the match. Run on both the hand-written migration SQL and the generator's own rendered output, so
+ * the two sides compare on identically-parsed fields.
+ *
+ * `sql` is a whole (possibly multi-table, multi-migration-file) concatenation — a package's
+ * migrations commonly wire RLS for several tenant tables one after another. The GRANT search is
+ * therefore bounded to the span between THIS table's own ENABLE line and its own CREATE POLICY block:
+ * unbounded, a lazy `GRANT\s+([\s\S]+?)\s+ON\s+${table}\s+TO…` would latch onto an EARLIER table's
+ * real GRANT statement (or a REVOKE) and span forward across unrelated SQL to reach this table's
+ * `ON <table> TO <role>;`, silently attributing the wrong privilege set to this table.
+ */
+function extractRlsBlock(sql: string, table: string): RlsBlock | null {
+  const enableM = new RegExp(
+    String.raw`ALTER TABLE\s+${table}\s+ENABLE ROW LEVEL SECURITY\s*;`,
+  ).exec(sql);
+  const forceM = new RegExp(
+    String.raw`ALTER TABLE\s+${table}\s+FORCE ROW LEVEL SECURITY\s*;`,
+  ).exec(sql);
+  const policyM = new RegExp(
+    String.raw`CREATE POLICY\s+${table}_tenant_isolation\s+ON\s+${table}\s*` +
+      String.raw`USING\s*\(([\s\S]*?)\)\s*WITH CHECK\s*\(([\s\S]*?)\)\s*;`,
+  ).exec(sql);
+  if (!enableM || !forceM || !policyM) return null;
+
+  const windowStart = Math.min(enableM.index, forceM.index);
+  const window = sql.slice(windowStart, policyM.index);
+  const grantM = new RegExp(
+    String.raw`GRANT\s+([\s\S]+?)\s+ON\s+${table}\s+TO\s+(\w+)\s*;`,
+  ).exec(window);
+  if (!grantM) return null;
+
+  const grantVerbs = (grantM[1] ?? "")
+    .split(",")
+    .map((v) =>
+      v
+        .trim()
+        .replace(/\s*\([^)]*\)\s*$/, "")
+        .toUpperCase(),
+    )
+    .filter((v) => v.length > 0);
+
+  return {
+    enable: normWhitespace(enableM[0]),
+    force: normWhitespace(forceM[0]),
+    grantVerbs,
+    grantRole: grantM[2] ?? "",
+    using: normWhitespace(policyM[1] ?? ""),
+    withCheck: normWhitespace(policyM[2] ?? ""),
+  };
+}
+
+export async function checkRlsEquivalence(
+  pkgs: Pkg[],
+  root: string,
+): Promise<Finding[]> {
+  // The REAL generator (SPEC-tenancy-rls task 3): gate and generator can't independently drift.
+  // Lazily imported — a STATIC workspace import would break the CLI's pre-install fs-only pass
+  // (CI layer 1a runs before `bun install`; @caisson/tenancy-rls itself imports @caisson/kernel).
+  // Mirrors checkManifestAgreement's convention: a resolution failure is a non-blocking warn (the
+  // post-install layer-1b run executes the check for real); any other load failure fails closed.
+  let buildTenantPolicySql: typeof BuildTenantPolicySqlFn;
+  try {
+    ({ buildTenantPolicySql } = await import("@caisson/tenancy-rls"));
+  } catch (e) {
+    const msg = (e as Error).message ?? String(e);
+    const isResolutionFailure =
+      (e as { code?: string }).code === "ERR_MODULE_NOT_FOUND" ||
+      /cannot find (module|package)|failed to resolve/i.test(msg);
+    return [
+      {
+        severity: isResolutionFailure ? "warn" : "error",
+        rule: "rls-equivalence",
+        pkg: "@caisson/tenancy-rls",
+        message: isResolutionFailure
+          ? `could not RESOLVE @caisson/tenancy-rls (${msg}) — RLS equivalence check skipped; CI must run post-install.`
+          : `@caisson/tenancy-rls failed to load (${msg}) — the RLS generator is broken (ADR-0005).`,
+      },
+    ];
+  }
+  const overrides = loadRlsOverrides(root);
+  const findings: Finding[] = [];
+
+  for (const p of pkgs) {
+    const migrationsDir = join(p.dir, "src", "migrations");
+    if (!existsSync(migrationsDir)) continue;
+    const files = readdirSync(migrationsDir)
+      .filter((f) => f.endsWith(".sql"))
+      .sort();
+    if (files.length === 0) continue;
+    const sql = stripLineComments(
+      files.map((f) => readFileSync(join(migrationsDir, f), "utf8")).join("\n"),
+    );
+
+    for (const { table, column } of findTenantTableCandidates(sql)) {
+      const actual = extractRlsBlock(sql, table);
+      if (!actual) {
+        findings.push({
+          severity: "error",
+          rule: "rls-missing",
+          pkg: p.name,
+          message: `tenant table "${table}" (${column}) has no hand-written RLS block (ENABLE + FORCE ROW LEVEL SECURITY, a GRANT, and a CREATE POLICY ${table}_tenant_isolation) in ${p.name}'s migrations — every tenant table must ship fail-closed RLS (ADR-0005).`,
+        });
+        continue;
+      }
+
+      // The generator's own output, parsed by the SAME extractor — ties this gate to the real
+      // template so the two can never independently drift (a change to buildTenantPolicySql's
+      // shape changes what "clean" means here automatically).
+      const generated = extractRlsBlock(
+        buildTenantPolicySql(table, { column, role: "app" }),
+        table,
+      );
+      if (!generated) {
+        throw new Error(
+          `internal: buildTenantPolicySql("${table}") output didn't match this gate's own RLS-block parser — regex/generator drift, fix extractRlsBlock.`,
+        );
+      }
+
+      const structuralMismatches: string[] = [];
+      if (actual.enable !== generated.enable)
+        structuralMismatches.push("ENABLE");
+      if (actual.force !== generated.force) structuralMismatches.push("FORCE");
+      if (actual.using !== generated.using) structuralMismatches.push("USING");
+      if (actual.withCheck !== generated.withCheck)
+        structuralMismatches.push("WITH CHECK");
+      if (actual.grantRole !== generated.grantRole)
+        structuralMismatches.push(`GRANT role (got "${actual.grantRole}")`);
+
+      if (structuralMismatches.length > 0) {
+        findings.push({
+          severity: "error",
+          rule: "rls-equivalence",
+          pkg: p.name,
+          message: `tenant table "${table}" RLS diverges from buildTenantPolicySql("${table}", { column: "${column}" }): ${structuralMismatches.join(", ")} don't whitespace-normalize-match the generated form (ADR-0005).`,
+        });
+        continue;
+      }
+
+      const fullCrud = generated.grantVerbs;
+      const actualSet = new Set(actual.grantVerbs);
+      const isExactMatch =
+        actual.grantVerbs.length === fullCrud.length &&
+        fullCrud.every((v) => actualSet.has(v));
+      if (isExactMatch) continue;
+
+      const isSubset = actual.grantVerbs.every((v) => fullCrud.includes(v));
+      if (!isSubset) {
+        findings.push({
+          severity: "error",
+          rule: "rls-equivalence",
+          pkg: p.name,
+          message: `tenant table "${table}" GRANTs an unexpected privilege set (${actual.grantVerbs.join(", ")}) — expected a subset of the generated full-CRUD set (${fullCrud.join(", ")}) (ADR-0005).`,
+        });
+        continue;
+      }
+
+      const isOverridden = overrides.some(
+        (o) => o.table === table && o.package === p.name,
+      );
+      if (!isOverridden) {
+        findings.push({
+          severity: "error",
+          rule: "rls-equivalence",
+          pkg: p.name,
+          message: `tenant table "${table}" GRANTs a narrower-than-generated privilege set (${actual.grantVerbs.join(", ")} vs ${fullCrud.join(", ")}) with no listed reason — add {table: "${table}", package: "${p.name}", reason} to tooling/standards-gate/rls-equivalence-overrides.json if intentional (ADR-0005).`,
+        });
+      }
+    }
+  }
+
   return findings;
 }

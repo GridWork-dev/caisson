@@ -634,3 +634,19 @@ HEAD (vuln-0002). Single ADR body: **ADR-0204** (supersedes ADR-0140's admin-aut
 
 **Deferred (flagged, not auto-decided):** partial-refund of one line in a multi-item cart stays a
 full-refund-only no-op (ADR-0113) — a per-line-revoke posture is a future operator fork.
+
+## Closed by the 2026-07-02 lift-harvest slice-2 picker (operator-locked)
+
+Kickoff B (LIFT harvest buildout, `outputs/kickoffs/lift-harvest-buildout.md`). Act 0 ran a 20-agent
+built-vs-remaining reconcile of the full ADR-0133/0134/0135 program (workflow `wf_22d4f058-b01`); the
+result: 12 targets already terminal-done (cited in ADR-0210), 10 packages with named hardening gaps,
+agent-runner not started. The three open program forks were then operator-locked in one picker; the
+per-package decisions filed as ADR-0211–0217 (drafted 0205–0211, renumbered at merge per ADR-0088 — strix/edition-tails claimed 0204–0209 on main first) and ADR-0186 filed from its "files at build" reservation.
+
+| Fork                                      | Decision                                                                                                                                                     | ADR               |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------- |
+| **H-1 — ai-evals/guardrails asymmetry**   | HARDEN IN PLACE — new capabilities land inside the existing base packages; edition membership unchanged (AI Production Kit keeps both).                      | **ADR-0210 §1**   |
+| **H-2 — slice-2 wave scope**              | FULL remaining program (incl. the M/L tail: jobs consumer-side, rounding provenance, MinHash dedup) — only auth #9 deferred.                                 | **ADR-0210 §2**   |
+| **H-3 — explicit defers**                 | auth lift-sweep #9 hash-at-rest session tokens DEFERRED (fights better-auth, ADR-0015); wave-6 residual candidates PARKED per program ordering.              | **ADR-0210 §3–4** |
+| **agent-runner (F1/F2/F5, locked 07-01)** | Proceeds — not re-asked; ADR-0186 FILED at build start per the reservation.                                                                                  | **ADR-0186**      |
+| **Per-package build decisions**           | jobs consumer-side · branded-money/rounding-provenance · ai-kit embeddings · ai-evals depth · guardrails · mcp-server manifest/ledger · ai-meter dedup gate. | **ADR-0211–0217** |

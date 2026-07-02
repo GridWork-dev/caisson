@@ -5,8 +5,17 @@
 // reserve 402s. The live provider transport stays the only un-exercised path.
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import { newTestPg, type TestPg } from "@caisson/testing";
-import { CREDIT_SCHEMA_SQL, balance, grant } from "@caisson/credits";
-import { InsufficientCreditsError } from "@caisson/kernel";
+import {
+  CREDIT_ROUNDING_MIGRATION_SQL,
+  CREDIT_SCHEMA_SQL,
+  balance,
+  grant,
+} from "@caisson/credits";
+import {
+  InsufficientCreditsError,
+  asCredits,
+  asMicroUsdPerCredit,
+} from "@caisson/kernel";
 import { withTenant } from "@caisson/tenancy-rls";
 import {
   AI_METER_SCHEMA_SQL,
@@ -33,7 +42,7 @@ const CFG: MeterConfig = {
       outputPerMTok: 2_000_000,
     },
   },
-  conversion: { microUsdPerCredit: 100 },
+  conversion: { microUsdPerCredit: asMicroUsdPerCredit(100) },
   now: new Date("2026-06-27T12:00:00Z"),
 };
 // content length 800 → ceil(800/4) = 200 input tokens; maxOutputTokens 100.
@@ -60,6 +69,7 @@ async function freshSchema(): Promise<void> {
       .join("\n"),
   );
   await tp.exec(CREDIT_SCHEMA_SQL);
+  await tp.exec(CREDIT_ROUNDING_MIGRATION_SQL);
   await tp.exec(AI_METER_SCHEMA_SQL);
 }
 
@@ -109,7 +119,7 @@ async function seed(amount: number): Promise<void> {
   await inA((tx) =>
     grant(tx, {
       accountId: A,
-      amount,
+      amount: asCredits(amount),
       eventType: "purchase",
       sourceEventId: "seed",
     }),
@@ -155,6 +165,34 @@ describe("reserve → reconcile money path", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]?.credits).toBe(8);
     expect(rows[0]?.cost_micro_usd).toBe(800);
+
+    // ADR-0212: both meter ledger rows persist rounding provenance — the reserve debit carries the
+    // ESTIMATE's ceil (400 micro-USD → 4 credits), the reconcile shortfall carries the ACTUAL's
+    // (800 micro-USD → 8 credits). Both record this book's fixed direction, "up".
+    const ledger = await tp.query<{
+      idempotency_key: string;
+      amount: number;
+      rounding_raw: number | null;
+      rounding_mode: string | null;
+    }>(
+      `SELECT idempotency_key, amount, rounding_raw, rounding_mode FROM credit_event
+       WHERE account_id = $1 AND idempotency_key IS NOT NULL ORDER BY idempotency_key`,
+      [A],
+    );
+    expect(ledger).toEqual([
+      {
+        idempotency_key: "call_1:reconcile",
+        amount: -4,
+        rounding_raw: 800,
+        rounding_mode: "up",
+      },
+      {
+        idempotency_key: "call_1:reserve",
+        amount: -4,
+        rounding_raw: 400,
+        rounding_mode: "up",
+      },
+    ]);
   });
 
   test("reconcile refunds an over-reservation via feature_grant", async () => {

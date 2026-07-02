@@ -11,7 +11,7 @@
 // grants key per-source; the refund latches on the active->revoked transition so a re-delivery is inert.
 import type { DomainBillingEvent } from "@caisson/billing";
 import { clawback, creditsGrantedBySource, grant } from "@caisson/credits";
-import { ConfigError } from "@caisson/kernel";
+import { ConfigError, asCredits } from "@caisson/kernel";
 import { resolvePlan, resolvePurchase } from "@caisson/pricebook";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 import {
@@ -97,7 +97,9 @@ export async function applyBillingEvent(
         await grant(tx, {
           eventType: "purchase",
           accountId: ev.accountId,
-          amount: totalCredits,
+          // Mint at the boundary (ADR-0212): the per-line sum is a plain number; the grant is the
+          // exact table-integer total, NULL rounding provenance (ADR-0089 s5 - no rounding site here).
+          amount: asCredits(totalCredits),
           sourceEventId: ev.paymentId, // the refund clawback looks the granted amount up by this id
         });
       }

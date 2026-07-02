@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@caisson/agent-kernel": "workspace:*",
+    "@caisson/agent-runner": "workspace:*",
     "@caisson/ai-config": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/local-store": "workspace:*",

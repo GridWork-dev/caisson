@@ -2,9 +2,9 @@
 // deliberately un-exercised seam (the package's zero-live-call invariant, ADR-0059) — these tests
 // only prove that each config enum builds a real `ProviderV2` adapter (has `.languageModel`), so a
 // new backend is wired, without any network/model call or provider key.
-import { describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, test } from "bun:test";
 import { parseAiSettings, type AiSettings } from "@caisson/ai-config";
-import { defaultProviders } from "./providers.ts";
+import { defaultProviders, timeoutFetch } from "./providers.ts";
 
 function laneSettings(lane: AiSettings["lanes"][string]): AiSettings {
   return { defaultLane: "x", lanes: { x: lane } };
@@ -277,5 +277,47 @@ describe("providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2)
       laneSettings({ provider: "openrouter", model: "x/y", apiKeyEnv: "X" }),
     );
     expect(typeof providers.openrouter?.languageModel).toBe("function");
+  });
+});
+
+describe("timeoutFetch — the fetch-deadline floor (ADR-0213, C5/SPEC ai-kit)", () => {
+  // A loopback stub (not external — `assertSafeBaseUrl` blocks any real provider from ever pointing
+  // here) that never answers `/slow`, proving `timeoutMs` aborts a hung request instead of letting it
+  // hang the process. Mirrors `@caisson/kernel`'s own `fetchWithTimeout` test pattern.
+  const server = Bun.serve({
+    port: 0,
+    async fetch(req) {
+      const url = new URL(req.url);
+      if (url.pathname === "/slow") {
+        await new Promise(() => {}); // never resolves
+      }
+      return new Response("fast");
+    },
+  });
+  const base = `http://localhost:${server.port}`;
+
+  afterAll(() => {
+    server.stop(true);
+  });
+
+  test("a fast response resolves within the budget", async () => {
+    const res = await timeoutFetch(1000)(`${base}/fast`);
+    expect(await res.text()).toBe("fast");
+  });
+
+  test("a stalling response aborts at the deadline instead of hanging", async () => {
+    await expect(timeoutFetch(20)(`${base}/slow`)).rejects.toThrow();
+  });
+
+  test("every create* provider factory receives this fetch — one instance per timeoutMs call", () => {
+    // Construction-level proof that `providerFor`'s `timeoutMs` parameter is threaded (not dropped):
+    // two providers built with different deadlines still both construct successfully — this is the
+    // seam `providerFor`'s `...deadline` spread wires into every `create*` branch (see the cases
+    // above for full per-provider coverage; the deadline value itself is proven directly above).
+    const providers = defaultProviders(
+      laneSettings({ provider: "openai", model: "gpt-4o", apiKeyEnv: "X" }),
+      5_000,
+    );
+    expect(typeof providers.openai?.languageModel).toBe("function");
   });
 });

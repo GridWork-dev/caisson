@@ -1,4 +1,4 @@
-export { createMcpServer } from "./server.ts";
+export { createMcpServer, RetiredToolError } from "./server.ts";
 export type {
   BuyerToken,
   McpSession,
@@ -9,6 +9,7 @@ export type {
   ToolHandlerContext,
   ToolRegistration,
   RateLimitHook,
+  RetiredTool,
 } from "./server.ts";
 export { registerCoachTools, presenceEnvPort } from "./coach.ts";
 export type {

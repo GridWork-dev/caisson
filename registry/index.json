@@ -130,6 +130,35 @@
       ]
     },
     {
+      "id": "@caisson/agent-runner",
+      "latest": "0.1.0",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "manifest": {
+            "id": "@caisson/agent-runner",
+            "version": "0.1.0",
+            "kind": "primitive",
+            "editions": [],
+            "tier": "paid",
+            "priceCents": 4900,
+            "license": "LicenseRef-Caisson-Commercial",
+            "dependencies": [
+              "@caisson/kernel"
+            ],
+            "members": {},
+            "entry": "src/index.ts",
+            "agents": "AGENTS.md",
+            "golden": null,
+            "stability": "alpha",
+            "description": "Sandboxed governed agent runner: spawn a headless agent CLI (provider-agnostic {binary, baseUrlEnv, authEnv, model}) in an isolated worktree with a from-scratch scrubbed env — never spreads process.env — streaming an auditable .jsonl transcript parsed into a structured run report."
+          },
+          "publishedAt": "2026-07-02T16:22:12Z",
+          "gateAttestation": "local-lift-harvest@59ff2b1bcd96adff76aa03851f37624f23e6d10d"
+        }
+      ]
+    },
+    {
       "id": "@caisson/ai-config",
       "latest": "0.2.0",
       "versions": [

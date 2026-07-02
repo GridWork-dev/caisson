@@ -2,9 +2,14 @@
 // 402; the ledger is append-only; the wallet is tenant-isolated. Composes withTenant + credits.
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import { newTestPg, type TestPg } from "@caisson/testing";
-import { InsufficientCreditsError, ValidationError } from "@caisson/kernel";
+import {
+  InsufficientCreditsError,
+  ValidationError,
+  asCredits,
+} from "@caisson/kernel";
 import { withTenant } from "@caisson/tenancy-rls";
 import {
+  CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
   balance,
   debit,
@@ -21,6 +26,7 @@ async function freshSchema(): Promise<void> {
     `DROP TABLE IF EXISTS credit_event; DROP TABLE IF EXISTS credit_wallet;`,
   );
   await tp.exec(CREDIT_SCHEMA_SQL);
+  await tp.exec(CREDIT_ROUNDING_MIGRATION_SQL);
 }
 
 beforeEach(async () => {
@@ -42,7 +48,7 @@ describe("credit wallet", () => {
         await inA((tx) =>
           grant(tx, {
             accountId: A,
-            amount: 100,
+            amount: asCredits(100),
             eventType: "purchase",
             sourceEventId: "evt_buy",
           }),
@@ -54,7 +60,7 @@ describe("credit wallet", () => {
         await inA((tx) =>
           debit(tx, {
             accountId: A,
-            amount: 30,
+            amount: asCredits(30),
             eventType: "codegen_debit",
             idempotencyKey: "gen_1",
           }),
@@ -68,7 +74,7 @@ describe("credit wallet", () => {
     await inA((tx) =>
       grant(tx, {
         accountId: A,
-        amount: 70,
+        amount: asCredits(70),
         eventType: "topup",
         sourceEventId: "evt_top",
       }),
@@ -77,7 +83,7 @@ describe("credit wallet", () => {
       inA((tx) =>
         debit(tx, {
           accountId: A,
-          amount: 100,
+          amount: asCredits(100),
           eventType: "ai_feature_debit",
           idempotencyKey: "spend_x",
         }),
@@ -91,7 +97,7 @@ describe("credit wallet", () => {
     const first = await inA((tx) =>
       grant(tx, {
         accountId: A,
-        amount: 50,
+        amount: asCredits(50),
         eventType: "purchase",
         sourceEventId: "evt_dup",
       }),
@@ -99,7 +105,7 @@ describe("credit wallet", () => {
     const retry = await inA((tx) =>
       grant(tx, {
         accountId: A,
-        amount: 50,
+        amount: asCredits(50),
         eventType: "purchase",
         sourceEventId: "evt_dup",
       }),
@@ -114,7 +120,7 @@ describe("credit wallet", () => {
     await inA((tx) =>
       grant(tx, {
         accountId: A,
-        amount: 100,
+        amount: asCredits(100),
         eventType: "purchase",
         sourceEventId: "evt_g",
       }),
@@ -122,7 +128,7 @@ describe("credit wallet", () => {
     const first = await inA((tx) =>
       debit(tx, {
         accountId: A,
-        amount: 40,
+        amount: asCredits(40),
         eventType: "codegen_debit",
         idempotencyKey: "k1",
       }),
@@ -130,7 +136,7 @@ describe("credit wallet", () => {
     const retry = await inA((tx) =>
       debit(tx, {
         accountId: A,
-        amount: 40,
+        amount: asCredits(40),
         eventType: "codegen_debit",
         idempotencyKey: "k1",
       }),
@@ -143,7 +149,7 @@ describe("credit wallet", () => {
     await inA((tx) =>
       grant(tx, {
         accountId: A,
-        amount: 100,
+        amount: asCredits(100),
         eventType: "purchase",
         sourceEventId: "g1",
       }),
@@ -151,7 +157,7 @@ describe("credit wallet", () => {
     await inA((tx) =>
       debit(tx, {
         accountId: A,
-        amount: 25,
+        amount: asCredits(25),
         eventType: "codegen_debit",
         idempotencyKey: "d1",
       }),
@@ -159,7 +165,7 @@ describe("credit wallet", () => {
     await inA((tx) =>
       debit(tx, {
         accountId: A,
-        amount: 15,
+        amount: asCredits(15),
         eventType: "ai_feature_debit",
         idempotencyKey: "d2",
       }),
@@ -175,7 +181,7 @@ describe("credit wallet", () => {
     await inA((tx) =>
       grant(tx, {
         accountId: A,
-        amount: 100,
+        amount: asCredits(100),
         eventType: "purchase",
         sourceEventId: "x",
       }),
@@ -189,7 +195,7 @@ describe("credit wallet", () => {
       inA((tx) =>
         grant(tx, {
           accountId: A,
-          amount: 0,
+          amount: asCredits(0),
           eventType: "purchase",
           sourceEventId: "z1",
         }),
@@ -199,7 +205,7 @@ describe("credit wallet", () => {
       inA((tx) =>
         grant(tx, {
           accountId: A,
-          amount: 1.5,
+          amount: asCredits(1.5),
           eventType: "purchase",
           sourceEventId: "z2",
         }),
@@ -208,7 +214,11 @@ describe("credit wallet", () => {
     // neither idempotency source
     await expect(
       inA((tx) =>
-        grant(tx, { accountId: A, amount: 10, eventType: "purchase" }),
+        grant(tx, {
+          accountId: A,
+          amount: asCredits(10),
+          eventType: "purchase",
+        }),
       ),
     ).rejects.toBeInstanceOf(ValidationError);
     // both idempotency sources
@@ -216,12 +226,93 @@ describe("credit wallet", () => {
       inA((tx) =>
         grant(tx, {
           accountId: A,
-          amount: 10,
+          amount: asCredits(10),
           eventType: "purchase",
           sourceEventId: "s",
           idempotencyKey: "k",
         }),
       ),
     ).rejects.toBeInstanceOf(ValidationError);
+  });
+});
+
+describe("rounding provenance (ADR-0212)", () => {
+  type ProvenanceRow = {
+    amount: number;
+    rounding_raw: number | null;
+    rounding_mode: string | null;
+  };
+  const rowsFor = (idem: string) =>
+    tp.query<ProvenanceRow>(
+      `SELECT amount, rounding_raw, rounding_mode FROM credit_event
+       WHERE account_id = $1 AND idempotency_key = $2`,
+      [A, idem],
+    );
+
+  test("a debit with a rounding record persists {raw, mode} beside the integer amount", async () => {
+    await inA((tx) =>
+      grant(tx, {
+        accountId: A,
+        amount: asCredits(100),
+        eventType: "purchase",
+        sourceEventId: "prov_seed",
+      }),
+    );
+    await inA((tx) =>
+      debit(tx, {
+        accountId: A,
+        amount: asCredits(8),
+        eventType: "ai_feature_debit",
+        idempotencyKey: "prov_d1",
+        rounding: { raw: 750, mode: "up", result: asCredits(8) },
+      }),
+    );
+    const rows = await rowsFor("prov_d1");
+    expect(rows).toEqual([
+      { amount: -8, rounding_raw: 750, rounding_mode: "up" },
+    ]);
+  });
+
+  test("a grant with a round-down record persists it; one without persists NULL/NULL", async () => {
+    await inA((tx) =>
+      grant(tx, {
+        accountId: A,
+        amount: asCredits(3),
+        eventType: "topup",
+        idempotencyKey: "prov_g1",
+        rounding: { raw: 1, mode: "down", result: asCredits(3) },
+      }),
+    );
+    await inA((tx) =>
+      grant(tx, {
+        accountId: A,
+        amount: asCredits(50),
+        eventType: "purchase",
+        idempotencyKey: "prov_g2", // no rounding — an exact table integer (ADR-0089 §5)
+      }),
+    );
+    expect(await rowsFor("prov_g1")).toEqual([
+      { amount: 3, rounding_raw: 1, rounding_mode: "down" },
+    ]);
+    expect(await rowsFor("prov_g2")).toEqual([
+      { amount: 50, rounding_raw: null, rounding_mode: null },
+    ]);
+  });
+
+  test("the DB CHECKs reject a half-set pair and an unknown mode", async () => {
+    // raw without mode → biconditional CHECK fails.
+    await expect(
+      tp.exec(
+        `INSERT INTO credit_event (id, account_id, event_type, amount, source_event_id, rounding_raw)
+         VALUES ('chk1', '${A}', 'topup', 1, 'chk_src_1', 5)`,
+      ),
+    ).rejects.toThrow(/credit_event_rounding_iff/);
+    // an unknown mode → enum CHECK fails.
+    await expect(
+      tp.exec(
+        `INSERT INTO credit_event (id, account_id, event_type, amount, source_event_id, rounding_raw, rounding_mode)
+         VALUES ('chk2', '${A}', 'topup', 1, 'chk_src_2', 5, 'sideways')`,
+      ),
+    ).rejects.toThrow(/credit_event_rounding_mode/);
   });
 });

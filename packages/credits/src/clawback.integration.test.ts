@@ -5,9 +5,10 @@
 // reads the original grant amount; RLS isolation holds.
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import { type TestPg, newTestPg } from "@caisson/testing";
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError, asCredits } from "@caisson/kernel";
 import { withTenant } from "@caisson/tenancy-rls";
 import {
+  CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
   balance,
   clawback,
@@ -24,6 +25,7 @@ async function freshSchema(): Promise<void> {
     `DROP TABLE IF EXISTS credit_event; DROP TABLE IF EXISTS credit_wallet;`,
   );
   await tp.exec(CREDIT_SCHEMA_SQL);
+  await tp.exec(CREDIT_ROUNDING_MIGRATION_SQL);
 }
 
 beforeEach(async () => {
@@ -45,7 +47,7 @@ async function purchaseGrant(
     grant(tx, {
       eventType: "purchase",
       accountId: acct,
-      amount,
+      amount: asCredits(amount),
       sourceEventId: paymentId,
     }),
   );
@@ -77,7 +79,7 @@ describe("clawback — unspent-only, never-negative (ADR-0113)", () => {
       debit(tx, {
         eventType: "codegen_debit",
         accountId: acct,
-        amount: 3000,
+        amount: asCredits(3000),
         idempotencyKey: "spend_1",
       }),
     );
@@ -100,7 +102,7 @@ describe("clawback — unspent-only, never-negative (ADR-0113)", () => {
       debit(tx, {
         eventType: "codegen_debit",
         accountId: acct,
-        amount: 5000,
+        amount: asCredits(5000),
         idempotencyKey: "spend_all",
       }),
     );

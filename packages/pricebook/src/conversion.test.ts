@@ -7,7 +7,11 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import { ValidationError } from "@caisson/kernel";
-import { CREDIT_CONVERSION, centsToCredits } from "./conversion.ts";
+import {
+  CREDIT_CONVERSION,
+  centsToCredits,
+  centsToCreditsProvenance,
+} from "./conversion.ts";
 import { PLAN_BOOK, PRICEBOOK_VERSION, resolvePlan } from "./plans.ts";
 
 const goldenSchema = z.object({
@@ -40,26 +44,35 @@ const golden = goldenSchema.parse(
 
 describe("pricebook conversion + plan golden (BLESS unset)", () => {
   test("the denomination matches the pinned unit", () => {
-    expect(CREDIT_CONVERSION).toEqual(golden.creditConversion);
+    expect<unknown>(CREDIT_CONVERSION).toEqual(golden.creditConversion);
   });
   test("PRICEBOOK_VERSION matches the pinned stamp", () => {
     expect(PRICEBOOK_VERSION).toBe(golden.pricebookVersion);
   });
   test("the plan-book matches the pinned rows", () => {
-    expect(PLAN_BOOK).toEqual(golden.plans);
+    expect<unknown>(PLAN_BOOK).toEqual(golden.plans);
   });
   for (const c of golden.centsToCredits) {
     test(`centsToCredits(${c.cents}) = ${c.credits} (round-down grant)`, () => {
-      expect(centsToCredits(c.cents)).toBe(c.credits);
+      expect<number>(centsToCredits(c.cents)).toBe(c.credits);
     });
   }
   test("resolvePlan returns the pinned entry for each plan id", () => {
     for (const [priceId, entry] of Object.entries(golden.plans)) {
-      expect(resolvePlan(priceId)).toEqual(entry);
+      expect<unknown>(resolvePlan(priceId)).toEqual(entry);
     }
   });
   test("centsToCredits rejects a fractional or negative amount", () => {
     expect(() => centsToCredits(1.5)).toThrow(ValidationError);
     expect(() => centsToCredits(-1)).toThrow(ValidationError);
+  });
+  test("centsToCreditsProvenance re-exports the kernel record (ADR-0212, round-down)", () => {
+    for (const c of golden.centsToCredits) {
+      expect<unknown>(centsToCreditsProvenance(c.cents)).toEqual({
+        raw: c.cents,
+        mode: "down",
+        result: c.credits,
+      });
+    }
   });
 });
