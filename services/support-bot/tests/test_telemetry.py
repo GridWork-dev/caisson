@@ -2,7 +2,7 @@
 
 Asserts the env-gated contract without a live collector: no real SDK TracerProvider is installed
 globally, so no OTLP exporter is constructed and nothing is patched. The active path is the
-operator-gated deploy seam (a real endpoint + a live SigNoz) and is not exercised here.
+operator-gated deploy seam (a real endpoint + a live OTLP sink, Grafana Cloud) and is not exercised here.
 """
 
 from __future__ import annotations

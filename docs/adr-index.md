@@ -10,7 +10,7 @@ conflict, the ADR file and the board win over this index.
   never edits the prior file. So most rows below are **partial** supersessions (one clause),
   not a wholesale replacement.
 - Numbering is **not**
-  contiguous: present are **0001-0024** and **0040-0143** + **0150-0153** (Stage-2 Stream B) + **0160-0162** + **0170-0185** (Stage-2 Streams A/C/D · the 2026-07-01 provider picker · the 2026-07-01 edition seam-completion picker 0179-0185) + **0187-0199** (LIFT/site-rework/audit-remediation; 0186 filed 2026-07-02 at agent-runner build start per its "files at build" reservation) + **0200-0203** (commerce-goes-live 0200/0203 + editions-go-live 0201-0202; the Discord ADR was drafted 0201 and renumbered to 0203 at merge — editions claimed 0201 first, ADR-0088 second-merger-renumbers) + **0204-0209** (the 2026-07-02 strix-remediation lock 0204 + the edition-tails-ops picker 0205-0209; the transports ADR was drafted 0204 and renumbered to 0209 at merge — strix claimed 0204 first, ADR-0088 second-merger-renumbers) + **0210-0217** (the 2026-07-02 lift-harvest slice-2 wave, drafted 0204-0211 and renumbered at merge per ADR-0088 — strix/edition-tails claimed 0204-0209 first: reconcile + wave lock 0210 · jobs consumer-side 0211 · branded-money/rounding-provenance 0212 · ai-kit embeddings 0213 · ai-evals depth 0214 · guardrails 0215 · mcp-server manifest/ledger 0216 · ai-meter dedup gate 0217; 0186 filed 2026-07-02 at agent-runner build start per its "files at build" reservation) + **0218-0221** (the 2026-07-02 deferred-respec picker round: Paddle per-line partial refund 0218 · CF front rate-limit 0219 · admin mutation surface v1 0220 · live seams KMS/ONNX 0221) + **0222** (the 2026-07-02 distribution picker: caisson-sh GitHub org + @caisson-sh npm scope + credit-pack/agent-runner catalog completion) — **ceiling 0222**; **0025-0039 are an unused gap**
+  contiguous: present are **0001-0024** and **0040-0143** + **0150-0153** (Stage-2 Stream B) + **0160-0162** + **0170-0185** (Stage-2 Streams A/C/D · the 2026-07-01 provider picker · the 2026-07-01 edition seam-completion picker 0179-0185) + **0187-0199** (LIFT/site-rework/audit-remediation; 0186 filed 2026-07-02 at agent-runner build start per its "files at build" reservation) + **0200-0203** (commerce-goes-live 0200/0203 + editions-go-live 0201-0202; the Discord ADR was drafted 0201 and renumbered to 0203 at merge — editions claimed 0201 first, ADR-0088 second-merger-renumbers) + **0204-0209** (the 2026-07-02 strix-remediation lock 0204 + the edition-tails-ops picker 0205-0209; the transports ADR was drafted 0204 and renumbered to 0209 at merge — strix claimed 0204 first, ADR-0088 second-merger-renumbers) + **0210-0217** (the 2026-07-02 lift-harvest slice-2 wave, drafted 0204-0211 and renumbered at merge per ADR-0088 — strix/edition-tails claimed 0204-0209 first: reconcile + wave lock 0210 · jobs consumer-side 0211 · branded-money/rounding-provenance 0212 · ai-kit embeddings 0213 · ai-evals depth 0214 · guardrails 0215 · mcp-server manifest/ledger 0216 · ai-meter dedup gate 0217; 0186 filed 2026-07-02 at agent-runner build start per its "files at build" reservation) + **0218-0221** (the 2026-07-02 deferred-respec picker round: Paddle per-line partial refund 0218 · CF front rate-limit 0219 · admin mutation surface v1 0220 · live seams KMS/ONNX 0221) + **0222** (the 2026-07-02 distribution picker: caisson-sh GitHub org + @caisson-sh npm scope + credit-pack/agent-runner catalog completion) + **0223** (the same-day registry self-hosted npm delivery lock: `registry.caisson.sh` serves the npm install protocol, option-A + 8 sub-forks) + **0224** (the same-day live-verification harness fork locks: F1–F6 seam proofs) — **ceiling 0224**; **0025-0039 are an unused gap**
   (no files). The 0040 jump was a deliberate block reservation for the brand/positioning set.
   **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit);
   **0094-0096** = the 2026-06-29 GTM-report locks (open-core Base / GTM offer / services-docs);
@@ -604,6 +604,33 @@ draft.
 | [0220](../knowledge/decisions/ADR-0220-admin-mutation-surface-v1.md)                  | Admin mutation surface v1: 4 actions, admin_write role, dual-logged          | Admin/Security   | accepted | supersedes 0141 mutation defer; relates 0204/0074/0152             |
 | [0221](../knowledge/decisions/ADR-0221-live-seams-kms-onnx-completion.md)             | Live seams: KMS envelope proof + ONNX disposition (G1 carve-out, F2 unify)   | Security/AI      | accepted | extends 0201; relates 0045/0171/0215                               |
 | [0222](../knowledge/decisions/ADR-0222-public-distribution-and-catalog-completion.md) | Distribution: caisson-sh org, @caisson-sh npm scope, catalog completion      | GTM/Distribution | accepted | distributes 0094/0097/0136; exercises 0106 pricing                 |
+
+### Registry self-hosted npm delivery (0223, 2026-07-02) - status `accepted`
+
+The same-day sequel to ADR-0222: the operator locked **option A** (make `registry.caisson.sh` a
+real npm registry — packuments + tarballs — authenticated by the license token buyers hold) plus
+all eight sub-forks in one picker round (SPEC `outputs/specs/deferred-respec/SPEC-registry-npm-delivery.md`).
+Supersedes the structurally-dead GitHub-Packages buyer channel baked into `packages/cli/src/generate.ts`
+
+- `packages/cli/templates/base/.npmrc`; the generator flip + docs flip land in the build that
+  implements the SPEC (not yet built). ADR-0222's `@caisson-sh/*` npmjs mirror stays the public
+  discovery surface; this ADR owns the COMMERCIAL delivery track.
+
+| #                                                                            | Title                                                                       | Domain             | Status   | Relations                                                                                     |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------ | -------- | --------------------------------------------------------------------------------------------- |
+| [0223](../knowledge/decisions/ADR-0223-registry-self-hosted-npm-delivery.md) | Registry self-hosted npm delivery: `registry.caisson.sh` (option A + A1–H1) | Registry/Licensing | accepted | supersedes the GH-Packages buyer channel; extends 0136/0047; relates 0222/0097/0110/0113/0076 |
+
+### Live-verification harness fork locks (0224, 2026-07-02) - status `accepted`
+
+The same-day live-harness picker: six operator forks (F1–F6) gating a verification harness that
+proves each of the five production-wired external seams against its real remote (SPEC
+`outputs/specs/deferred-respec/SPEC-live-harness-production-seams.md`). Test files + `test:live`
+scripts only, no product code; extends the ADR-0201 `live/` + `skipIf` convention to service-level
+seams. Two picks override the spec recommendation (F1 → BOTH; F3 → FULL grant + teardown).
+
+| #                                                                  | Title                                                                                            | Domain              | Status   | Relations                                                |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ | ------------------- | -------- | -------------------------------------------------------- |
+| [0224](../knowledge/decisions/ADR-0224-live-harness-fork-locks.md) | Live harness fork locks: F1 BOTH · F2 fleet · F3 full · F4 grep · F5 local · F6 gridwork-env SOT | Testing/Live-verify | accepted | extends 0201; relates 0223/0108/0200/0203/0206/0207/0118 |
 
 ---
 

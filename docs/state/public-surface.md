@@ -5,8 +5,8 @@ Dated **2026-07-02**. This file OWNS the **npm-distribution-reality** view: for 
 code actually land today versus where the plan says it lands. `docs/state/package-catalog.md`
 owns the license/price/sold-as catalog and `docs/state/public-surface-minimization.md` owns the
 registry-Worker free-floor leak analysis (ADR-0136) — this file cites both, it does not restate
-their tables. What is new here and lives nowhere else: the public-npm-scope open fork and the
-public-mirror-repo plan (§3–4).
+their tables. What is new here and lives nowhere else: the npm-scope + public-mirror-repo
+distribution reality (§3–4, forks CLOSED by ADR-0222/0223 on 2026-07-02).
 
 **Method:** every `packages/*/package.json` `license`/`private`/`publishConfig` field read
 directly off disk, cross-checked against `tooling/standards-gate/src/checks.ts`
@@ -104,65 +104,51 @@ carry a real (GH-Packages-restricted) `publishConfig` and are gated by entitleme
 
 ---
 
-## 3. Distribution reality vs plan
+## 3. Distribution reality vs plan (RESOLVED 2026-07-02 — ADR-0222 + ADR-0223)
 
-Verified 2026-07-02, operator session — cited as such, not re-derived:
+The two open forks this section tracked are now **CLOSED**. Verified 2026-07-02 operator session,
+then locked:
 
-- **Nothing is published on public npmjs.** No `@caisson/*` package exists on
-  `registry.npmjs.org` today.
-- **The box has no npm login.** No local npm publish credential exists on this machine.
-- **`.github/workflows/publish.yml` publishes to GitHub Packages (`npm.pkg.github.com`) with the
-  ephemeral `GITHUB_TOKEN`** (ADR-0069) — zero stored PAT, workflow-scoped, expires with the job.
-  `CAISSON_PUBLISH_DRY_RUN` defaults to `"true"`; going live is an explicit operator flip of that
-  env var, not a code change.
-- **The bare npm package name `caisson` is TAKEN** by a third party (v0.1.3, unrelated project).
-- **The operator holds an npm org named `caisson-sh`.**
-- **Whether the `@caisson` npm scope/org name itself is free is UNVERIFIED** — resolving it
-  needs an actual `npm login` + scope lookup, not done this session.
+- **npm scope — LOCKED `@caisson-sh` (ADR-0222).** The bare npm name `caisson` is
+  third-party-taken (v0.1.3, unrelated), the operator owns npm org **`caisson-sh`**, and nothing
+  open is on public npmjs. So the PUBLIC mirror publishes under **`@caisson-sh/*`** — renamed at
+  export by `scripts/export-public-mirror.ts` (`@caisson/` → `@caisson-sh/`); in-repo package names
+  stay `@caisson/*`, and registry product/entitlement ids never rename. The "which scope" fork is
+  closed — no per-package `name` rename in the monorepo.
+- **npmjs credential — SET.** `NPM_TOKEN` is now configured (in the `caisson-sh/caisson-oss` mirror
+  repo's secrets), closing the CI-credential gap this section previously flagged. The monorepo's own
+  `.github/workflows/publish.yml` still targets GitHub Packages with the ephemeral `GITHUB_TOKEN`
+  (ADR-0069) and stays `CAISSON_PUBLISH_DRY_RUN="true"` — **npmjs publishing belongs to the public
+  mirror repo, not the monorepo** (ADR-0222). So the earlier "every open `publishConfig` points at
+  npmjs but no npmjs auth exists in CI" gap is resolved by moving npmjs publishing off the monorepo
+  entirely; the packages' `publishConfig.registry` fields are consumed by the mirror's publish job,
+  not the monorepo's.
+- **Commercial buyer channel — `registry.caisson.sh` (ADR-0223, build pending).** The
+  `@caisson-sh/*` npmjs mirror is the PUBLIC-DISCOVERY surface only. Buyers install COMMERCIAL
+  modules from **`registry.caisson.sh`** — a real npm registry (packuments + tarballs, authenticated
+  by the license token they hold) — which **supersedes** the structurally-dead GitHub-Packages buyer
+  channel baked into `packages/cli/src/generate.ts` (the `npm.pkg.github.com` emit) +
+  `packages/cli/templates/base/.npmrc`. That generator + docs flip lands in the build that
+  implements the ADR-0223 SPEC — **not yet built**; the generator's `npm.pkg.github.com` emit
+  correctly stays un-flipped until then.
 
-**Gap found this session, worth flagging alongside the above:** every one of the 15 open
-packages' own `publishConfig.registry` points at `https://registry.npmjs.org/` (the ADR-0111
-plan — open Base → public npm, commercial remainder → GH Packages restricted), but
-`publish.yml` only ever writes an `~/.npmrc` auth line for `npm.pkg.github.com`. There is no
-`NPM_TOKEN`/npmjs credential anywhere in `.github/workflows/`. So even with
-`CAISSON_PUBLISH_DRY_RUN=false`, `changeset publish` would attempt to push the 15 open packages
-to `registry.npmjs.org` and fail for lack of auth — the ADR-0111 split is wired into every
-package's `publishConfig`, but the CI credential half of that split was never finished. This sits
-on top of, not in place of, the open npm-scope fork below.
+**Still true:** nothing is published on public npmjs yet. The pipelines are armed (see §4) but
+publishing is gated on a manual dispatch — armed, not auto-firing.
 
-### OPEN OPERATOR FORK — which npm scope to publish the open set under
+## 4. Public mirror repo — CREATED (2026-07-02)
 
-Not decided here; recorded for the operator to pick when the npmjs credential gap above gets
-closed:
+The plan this section previously flagged as "not yet executed" is now **executed**:
 
-- **Option `@caisson`** — matches the in-repo package names (`@caisson/kernel`, …) exactly, zero
-  rename tax. Blocked on verifying the scope is actually available on npmjs (unverified, see
-  above) — if `@caisson` is taken or reserved, every open package's `name` field, every
-  generated-repo import, `create-caisson`'s templates, and the docs site's install snippets would
-  need a rename.
-- **Option `@caisson-sh`** — the operator already owns this npm org today, zero registration risk.
-  Costs a rename across the same surface (package names, generated-repo imports, `cli` templates,
-  docs) whether or not `@caisson` turns out to be free, since it diverges from the org name either
-  way.
-
-Recommendation is deliberately withheld — this is exactly the class of decision
-`docs/state/decisions-and-forks.md` exists for. The next action is mechanical (`npm login` +
-`npm access` scope check on `@caisson`), not a design call, so resolving it doesn't need to wait
-for a full picker round.
-
-## 4. Planned public mirror repo
-
-Plan on record (not yet executed): mirror the 15 Apache-2.0 packages into a **public** GitHub
-repo, separate from the private `GridWork-dev/caisson` monorepo, as an acquisition/GTM surface
-(discoverable OSS trust layer, per the ADR-0094 open-core rationale) independent of whether the
-npm-publish gap above is closed.
-
-- **The `caisson-sh` GitHub org does not exist yet** — creating it is an operator action, not
-  something this session did or could verify.
-- Until that org exists, the interim home for a public mirror is a repo under the existing
-  `GridWork-dev` GitHub org. A GitHub repo transfer preserves stars/issues/watchers and
-  auto-redirects the old URL, so starting under `GridWork-dev` and transferring to `caisson-sh`
-  later is not a one-way door — no reason to block the mirror on the org existing first.
-- Scope, sync mechanism (git subtree vs a CI job vs a one-shot snapshot), and cadence are all
-  undecided — out of scope for this doc; flagging the plan's existence and its one hard
-  dependency (the org) is as far as ground truth extends today.
+- **The `caisson-sh` GitHub org EXISTS**, and the private monorepo was **transferred into it** — the
+  repo home is now **`caisson-sh/caisson`** (the old `GridWork-dev/caisson` URL auto-redirects,
+  preserving stars/issues/watchers).
+- **The public mirror repo `caisson-sh/caisson-oss` is CREATED** — PRIVATE for now (pre-launch),
+  **flips PUBLIC at launch**. The first **416-file mirror snapshot** has been pushed.
+- **The mirror sync + npm publish pipelines are ARMED:** `MIRROR_PUSH_TOKEN` (mirror push) +
+  `NPM_TOKEN` (npmjs publish) are both set. Publishing stays **gated on a manual `confirm=publish`
+  workflow dispatch** — armed, not auto-firing. The exporter is `scripts/export-public-mirror.ts`
+  (Apache-set only, `@caisson-sh/*` scope rename, provenance `MIRROR-MANIFEST.json` whose
+  `sourceRepo` is `caisson-sh/caisson`).
+- **Scope:** the 15 Apache-2.0 packages (§1) only; the commercial set never mirrors (ADR-0094
+  open-core boundary). Sync cadence + git-subtree-vs-snapshot mechanics live with the mirror
+  pipeline (PR #64), not this doc.

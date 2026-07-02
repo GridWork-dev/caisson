@@ -1,7 +1,7 @@
 # @caisson/observability — agent usage note
 
 Vendor-neutral OpenTelemetry bootstrap for the platform's Node surfaces (ADR-0117). The
-instrumentation is the asset; the backend (self-hosted SigNoz, swappable to Axiom/HyperDX/Grafana)
+instrumentation is the asset; the backend (Grafana Cloud since ADR-0177, swappable to any OTLP sink)
 is a config swap behind `OTEL_EXPORTER_OTLP_ENDPOINT`.
 
 ## Key surface

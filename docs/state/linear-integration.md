@@ -58,7 +58,7 @@ These need the **Business plan active** and are configured in the Linear UI:
 - [ ] **Triage rules** (Settings → Team → Triage) — route inbound by label/team; optionally delegate to the
       Linear Agent on entry. Chosen automation depth: _triage rules + Agent first-pass_.
 - [ ] **Agent guidance** (Settings → Agents) — standing instructions agents receive: reference issues in
-      commits/PRs, which repo (`GridWork-dev/caisson`), the review process. Workspace + per-team.
+      commits/PRs, which repo (`caisson-sh/caisson`), the review process. Workspace + per-team.
 - [ ] **Code Intelligence** (Business) — connect the GitHub integration so branch/PR/deploy status syncs to
       issues. Linear already emits `gitBranchName` per issue (e.g. `admin/caisson-1-…`).
 - [ ] **Cycles** — enable weekly cycles on the Caisson team.

@@ -27,7 +27,7 @@ export interface InitObservabilityOptions {
   endpoint?: string;
   /** Resource `service.name`; defaults to `OTEL_SERVICE_NAME`, falling back to `"caisson"`. */
   serviceName?: string;
-  /** Extra OTLP export headers (e.g. a SigNoz ingestion key). Never logged. */
+  /** Extra OTLP export headers (e.g. a Grafana Cloud ingestion token). Never logged. */
   headers?: Record<string, string>;
   /** Per-export timeout (ms). Default 10s. */
   timeoutMs?: number;

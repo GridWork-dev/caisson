@@ -103,6 +103,12 @@ changeset -> version bump -> STANDARDS GATE -> publish (CI-only) -> index rebuil
   Zero new stored secret, workflow-scoped, expires with the run. No PAT, no `NODE_AUTH_TOKEN`,
   no laptop publish past the gate. Matches `@caisson:registry=npm.pkg.github.com` +
   `access: restricted` in generated repos.
+  - **Buyer-channel supersession (ADR-0223, PENDING BUILD):** the `@caisson:registry=npm.pkg.github.com`
+    line above is the ORIGINAL buyer install channel — **superseded by ADR-0223** (buyers install
+    commercial modules from `registry.caisson.sh`, a real npm registry authed by the license token).
+    The generator's `npm.pkg.github.com` emit (`packages/cli/src/generate.ts`) + the template `.npmrc`
+    correctly **stay un-flipped** until the ADR-0223 registry build lands — the flip is part of that
+    build, not done yet. Public discovery goes to the `@caisson-sh/*` npmjs mirror (ADR-0222).
 - **Index is BUILT, never hand-appended.** `registry/index.json` is a byte-identical rebuild
   from `registry/ledger.jsonl`; CI is the sole writer. `.github/CODEOWNERS` (present) +
   branch protection gate hand-edits. `gateAttestation` (`"<ci-run-id>@<commit-sha>"`) records
@@ -193,10 +199,13 @@ Three workflows under [`.github/workflows/`](../.github/workflows/). All Bun + T
 > §PR review gate).
 
 - **Enrollment: DONE.** Caisson has **3 runners registered + ONLINE** (verify:
-  `gh api repos/GridWork-dev/caisson/actions/runners`): `gw-linux-amd64` (the gw-ms-a2 box, the
-  primary lane), `gw-linux-arm64` + `gw-macos-arm64` (the Mac mini). GridWork-dev is a personal
-  account (no org runner groups), so the fleet registers **per-repo** — caisson's runners are its
-  own, not an org pool.
+  `gh api repos/caisson-sh/caisson/actions/runners`): `gw-linux-amd64` (the gw-ms-a2 box, the
+  primary lane), `gw-linux-arm64` + `gw-macos-arm64` (the Mac mini). **Repo home moved to the
+  `caisson-sh` GitHub org 2026-07-02** — so the old "GridWork-dev is a personal account, no org
+  runner groups, register per-repo" framing no longer holds: `caisson-sh` IS an org, and org-level
+  runner groups / scale sets are now available. In practice the fleet moved to **runscaler scale
+  sets** (see the update note above); the org transfer forced a delete + recreate of the stale scale
+  set (it kept pointing at the old repo URL and registered zero runners until recreated).
 - **Isolation.** The amd64 lane runs each job in a throwaway `docker run --rm` container with no
   host mounts, so operator secrets on the box are unreachable from job code (proven by
   gridwork-core's `runner-isolation-probe.yml`). The macOS lane runs native (it tests macOS) under

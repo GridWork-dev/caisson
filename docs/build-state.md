@@ -1,5 +1,33 @@
 # Build state & roadmap
 
+> **DEFERRED-RESPEC WAVE MERGED + LIVE-PROOF GREEN (2026-07-02-PM):** **ADR ceiling is now `0224`.**
+> The four build-now deferred-respec items shipped + **MERGED to `main`** (PRs #66–69): **ADR-0218**
+> Paddle per-line partial refund (revoke + clawback, `line_item_id` columns) · **ADR-0219** Cloudflare
+> front rate-limit + WAF (docs-api proxied, Free tier, DEPLOY-gated) · **ADR-0220** admin mutation
+> surface v1 (4 actions, dedicated `admin_write` role, WORM dual-logged) · **ADR-0221** live-seams KMS
+> envelope proof + ONNX disposition (F2-B EgressGuard unification in-slice). Same-day sequels locked
+> (specs merged, build pending): **ADR-0222** distribution (caisson-sh org + `@caisson-sh` scope),
+> **ADR-0223** registry self-hosted npm delivery, **ADR-0224** live-verification harness fork locks.
+> KMS/ONNX were already partially flipped by the ADR-0201 seams stream; the ADR-0221 proof closes them
+> — this doc + `readiness-and-backlog.md` are the F1-A "flip on green" targets, now consistent.
+>
+> **Live-proof surface (verified tonight):** As of tonight (2026-07-02, `main` checkout, git clean),
+> the caisson live-proof surface is green end-to-end except the two known infra gaps. **PROVEN LIVE
+> against real cloud endpoints:** (1) WORM S3 audit retention against the real `caisson-worm` bucket
+> (5/5); (2) AWS KMS per-tenant CMK crypto in field-crypto — throwaway CMKs minted, tagged, and
+> scheduled for deletion (6/6); (3) the ai-kit OpenRouter gateway (4/4); (4) the local-ai OpenRouter
+> rented transport (4 pass) plus the ONNX on-device embedding backend via the G1-A throwaway recipe —
+> tamper/self-pin/egress-block legs all green (4/4). The **two known infra gaps** are DEPLOY-class
+> launch items, not code regressions: the persistent production default CMK is deferred to
+> first-customer time (ADR-0221 KMS-2 print-only provisioner), and Paddle is still on the SANDBOX
+> catalog pending the production-account swap (`docs/state/launch-runbook.md` §1 P1/P3; §7 the
+> post-merge DEPLOY block). **Gates:** all local gates green. Live per-package truth unchanged below.
+>
+> **Repo home moved to `github.com/caisson-sh/caisson`** (org transfer; runner scale sets recreated,
+> Greptile app reinstalled). `caisson-sh/caisson-oss` created PRIVATE with the first 416-file mirror
+> snapshot pushed; `MIRROR_PUSH_TOKEN` + `NPM_TOKEN` set (publish pipelines armed, gated on a manual
+> `confirm=publish` dispatch). Deferred review findings tracked as Linear CAISSON-5..19.
+
 > **LIFT-HARVEST SLICE-2 (2026-07-02):** the full remaining harvest program (ADR-0133/0134/0135)
 > built spec-first on `feat/lift-harvest` — **ADR ceiling is now `0217`** (0186 agent-runner +
 > 0210–0217 wave locks, drafted 0204–0211 and renumbered at merge per ADR-0088 — strix/edition-tails

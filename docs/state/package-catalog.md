@@ -129,7 +129,7 @@ open Base substrate (§1's first table). Remaining bundle-only commercial rows:
 | Path              | License            | Sold as                                                             | Build status                                                                       | Owns                                              |
 | ----------------- | ------------------ | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------- |
 | `apps/site`       | (unset, `private`) | app — the marketing site + docs + buyer dashboard/storefront itself | shipped (static, CF Pages) · unified Railway dashboard app **built, not deployed** | the delivery vehicle, not a product SKU           |
-| `apps/studio`     | (unset, `private`) | app — internal design decision-surface                              | shipped                                                                            | not distributed to buyers                         |
+| `apps/admin`      | (unset, `private`) | app — operator control-plane (absorbed `apps/studio`, ADR-0140)     | shipped (live at admin.caisson.sh)                                                 | not distributed to buyers                         |
 | `apps/base`       | (unset, `private`) | app — P1 reference wiring                                           | shipped                                                                            | reference/demo, not part of the buyer deliverable |
 | `apps/compliance` | (unset, `private`) | app — P2 reference app                                              | partial                                                                            | reference/demo                                    |
 | `apps/ai-kit`     | (unset, `private`) | app — P3 reference app                                              | partial                                                                            | reference/demo                                    |
@@ -244,8 +244,9 @@ protect).
 - **`tooling/*`** — never sold, never even licensed for external use (all 5 are `private` with no
   `license` field). Build-time/dev-time infra only (eslint config, tsconfig, test harness, the
   standards-gate itself, the design-quality critic); none of it ships into a buyer's generated repo.
-- **`apps/*`** — never sold. `apps/site` is the storefront/delivery vehicle, not a product; `apps/studio`
-  is an internal design tool; the 5 edition reference apps (`apps/{base,compliance,ai-kit,local-ai,
+- **`apps/*`** — never sold. `apps/site` is the storefront/delivery vehicle, not a product; `apps/admin`
+  is the internal operator control-plane (absorbed the `apps/studio` design tool, ADR-0140); the 5
+  edition reference apps (`apps/{base,compliance,ai-kit,local-ai,
 agent-dev}`) demonstrate wiring for VERIFY/SWEEP evidence, not buyer deliverables.
 - **`registry/`, `services/*`** — infrastructure the operator runs to fulfill every sale (the Worker
   serves the index, `services/license` processes payment/entitlement, `services/docs` +

@@ -102,6 +102,25 @@ smoke-test of the deployed Worker, and `bun run check` (125/125 + kernel gate) o
 > deployed from these merges (library/CI surface only — no Railway service redeploy needed until
 > the next deploy wave).
 
+> **Deferred-respec wave merged + live-proof green (2026-07-02-PM, latest — supersedes the `0217`
+> ceiling above): ADR ceiling is now `0224`.** The four build-now deferred-respec items merged to
+> `main` (PRs #66–69): `ADR-0218` Paddle per-line partial refund · `ADR-0219` CF front rate-limit +
+> WAF · `ADR-0220` admin mutation surface v1 · `ADR-0221` live-seams KMS/ONNX completion. Three
+> same-day sequels locked spec-only (build pending): `ADR-0222` distribution (caisson-sh org +
+> `@caisson-sh` scope), `ADR-0223` registry self-hosted npm delivery, `ADR-0224` live-verification
+> harness fork locks. **Live-proof surface is green end-to-end** except the two known infra gaps
+> (deferred production CMK per ADR-0221 KMS-2; Paddle still SANDBOX pending the production-account
+> swap) — WORM S3 (5/5), AWS KMS per-tenant CMK (6/6), ai-kit OpenRouter gateway (4/4), local-ai
+> rented transport + ONNX G1-A recipe (4/4) all PROVEN LIVE against real endpoints; all local gates
+> green. **This unblocks two DEPLOY-class waves, both operator-gated:** (a) the ADR-0218–0221
+> post-merge deploy block — migrations `0008`/`0009` before the license redeploy, admin provisioning
+> (`admin_write` role + `ADMIN_ISSUE_TOKEN` + `CAISSON_LICENSE_ISSUE_URL`), WORM S3 Object-Lock swap,
+> CF rate-limit terraform apply + 429 probe (`docs/state/launch-runbook.md` §7; Linear
+> CAISSON-15/16/17/18); (b) the registry npm-delivery + live-harness builds (specs locked, ADR-0223/
+> 0224). **Repo home is now `caisson-sh/caisson`** (scale sets recreated, Greptile reinstalled);
+> `caisson-sh/caisson-oss` PRIVATE mirror pushed (416 files), publish pipelines armed but gated on a
+> manual `confirm=publish` dispatch. Deferred review findings → Linear CAISSON-5..19.
+
 ## 0. Live verification done this session
 
 - **Registry Worker — LIVE + smoke-tested GREEN.** `https://caisson-registry.broken-wood-97a9.workers.dev`:

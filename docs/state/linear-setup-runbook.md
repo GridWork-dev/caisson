@@ -35,7 +35,7 @@ The chosen automation depth is **triage rules + Agent first-pass**.
 automatically when they work an issue:
 
 ```
-Repo: GridWork-dev/caisson (Bun monorepo). Reference the issue id in the branch name (use the issue's
+Repo: caisson-sh/caisson (Bun monorepo). Reference the issue id in the branch name (use the issue's
 gitBranchName) and PR title. Never lock a decision in Linear — decisions are ADRs in knowledge/decisions/
 and docs/state/decisions-and-forks.md. Follow CLAUDE.md + the gridwork-core security floor. Open a PR;
 never push to main; the Greptile check is required. Give a short plan before large changes.
@@ -45,7 +45,7 @@ Team-specific guidance overrides workspace guidance where both apply.
 
 ## 4. Code Intelligence (issue ↔ PR/branch/deploy)
 
-`Settings → Integrations → GitHub` → **Connect** (OAuth) → authorize the `GridWork-dev` org → select the
+`Settings → Integrations → GitHub` → **Connect** (OAuth) → authorize the `caisson-sh` org → select the
 `caisson` repo. Then `Settings → Team → Code Intelligence` → enable. After this, an issue's
 `gitBranchName` (e.g. `admin/caisson-1-…`) auto-links its PR and syncs branch/PR/deploy status onto the
 issue. Business feature.

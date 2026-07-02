@@ -42,5 +42,5 @@ Operationalizes **ADR-0099**. Every primitive in `src/components/` is built the 
   - `@caisson/ui/styles/tokens.css`. Raw `.tsx`, no bundler/dist.
 - Consumers set `transpilePackages: ["@caisson/ui"]` in `next.config` and import the tokens CSS once at
   the root layout. `react` / `react-dom` / `lucide-react` are **peer** deps.
-- `apps/studio` consumes the **same** components (gallery == product → no drift). New reusable UI lands
+- `apps/admin` (its `/design` gallery — absorbed `apps/studio`, ADR-0140) consumes the **same** components (gallery == product → no drift). New reusable UI lands
   here, never inlined on a screen. Build order: tokens → primitives → domain.
