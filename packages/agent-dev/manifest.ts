@@ -34,14 +34,14 @@ export default defineModule({
   // and the full-tree-index guard test asserts every pin resolves to a real published ledger version
   // (never the "0.0.0" dev sentinel).
   members: {
-    "@caisson/agent-dev": "0.1.0",
-    "@caisson/agent-kernel": "0.1.0",
-    "@caisson/ai-config": "0.1.0",
-    "@caisson/kernel": "0.1.0",
-    "@caisson/local-store": "0.1.0",
+    "@caisson/agent-dev": "0.2.0",
+    "@caisson/agent-kernel": "0.2.0",
+    "@caisson/ai-config": "0.2.0",
+    "@caisson/kernel": "0.2.0",
+    "@caisson/local-store": "0.2.0",
     // Stage-2 harvest primitive folded into the Agentic-Dev bundle (ADR-0178/0199 — wired live in
     // src/index.ts's createAgentDevEdition).
-    "@caisson/tool-exec": "0.1.0",
+    "@caisson/tool-exec": "0.1.1",
   },
   golden: "src/__golden__",
   description:

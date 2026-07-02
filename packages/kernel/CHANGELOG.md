@@ -1,0 +1,11 @@
+# @caisson/kernel
+
+## 0.2.0
+
+### Minor Changes
+
+- 9483a36: Initial public release (0.1.0) — publish-readiness flip (ADR-0111). The open Base substrate (Apache-2.0, tier `oss`) publishes to public npm; the commercial editions/primitives/generator (tier `paid`) publish to GitHub Packages restricted. Versions were aligned to 0.1.0 in lockstep with the registry ledger; this changeset records the 0.1.0 release and seeds the changeset-presence gate (ADR-0021).
+
+### Patch Changes
+
+- 69817a1: Expose `fetchWithTimeout` via a client-safe `@caisson/kernel/fetch` subpath export so browser bundles can honor the fetchWithTimeout rule without pulling the server-only barrel.

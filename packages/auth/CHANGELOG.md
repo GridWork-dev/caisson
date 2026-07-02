@@ -1,0 +1,33 @@
+# @caisson/auth
+
+## 0.2.0
+
+### Minor Changes
+
+- 9483a36: Initial public release (0.1.0) — publish-readiness flip (ADR-0111). The open Base substrate (Apache-2.0, tier `oss`) publishes to public npm; the commercial editions/primitives/generator (tier `paid`) publish to GitHub Packages restricted. Versions were aligned to 0.1.0 in lockstep with the registry ledger; this changeset records the 0.1.0 release and seeds the changeset-presence gate (ADR-0021).
+
+### Patch Changes
+
+- 22077d1: Whole-repo audit round-3 remediation (ledger 2026-07-01): emitted buyer CI templates get
+  least-privilege `permissions:` + `persist-credentials: false`; verifyAccountJwt failure
+  messages collapse to one generic reason (oracle closed); judgeGrader validates live judge
+  verdicts fail-closed and judge output is bounded; MCP `generate` modules array + id/version
+  strings are bounded with an O(1) pre-parse guard; the agent-dev emitter YAML-escapes all
+  free-text frontmatter so the `tools:` allowlist is un-suppressible, and `@caisson/tool-exec`
+  is wired into the Agentic-Dev edition (ADR-0199, honoring ADR-0178); guardrails cheapDeny is
+  stateless across calls (global-regex lastIndex bypass closed); prompt-registry bounds rawVars
+  values and total rendered content. Plus the round-4/5 audit domains (admin-plane,
+  metering-byok, destructive-jobs, composition-roots, worm-integrity) added to AUDIT_DOMAINS.
+- a07feb0: Fold the Stage-2 harvest primitives into the edition member pin maps (ADR-0178): Compliance now bundles
+  `@caisson/alerting` + `@caisson/retention-runner`, and Agentic-Dev bundles `@caisson/tool-exec`, so buyers
+  get them at the edition price (matches the ADR-0137 below-module-sum reprice).
+
+  Also resolves standards-gate debt with no API change: `@caisson/auth`'s manifest now declares its real
+  `@caisson/tenancy-rls` dependency (it imports it in `schema.ts`/`membership.ts`), and `@caisson/field-crypto`
+  extracts the `KmsClient` port to a leaf `kms-port.ts` to break the `kms.ts` ↔ `kms-aws.ts` type cycle
+  (dependency-cruiser `no-circular`). `KmsClient` is still re-exported from `kms.ts` for back-compat.
+
+- Updated dependencies [69817a1]
+- Updated dependencies [9483a36]
+  - @caisson/kernel@0.2.0
+  - @caisson/tenancy-rls@0.2.0
