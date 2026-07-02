@@ -16,6 +16,7 @@
 import { AI_METER_SCHEMA_SQL } from "@caisson/ai-meter";
 import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
 import {
+  CREDIT_LINE_ITEM_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
 } from "@caisson/credits";
@@ -28,6 +29,7 @@ import {
 } from "@caisson/migrate";
 import { pgMigrationApplier } from "@caisson/migrate/pg";
 import {
+  ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   LICENSE_GRANT_SCHEMA_SQL,
@@ -79,6 +81,18 @@ function platformPackage(): PackageMigrations {
       // 0002_credits.sql is checksum-pinned on the live DB, so the columns must never be folded
       // into CREDIT_SCHEMA_SQL in place (the runner would fail closed on drift).
       { name: "0007_credit_rounding.sql", sql: CREDIT_ROUNDING_MIGRATION_SQL },
+      // ADR-0218: per-line join-key columns for Paddle per-line partial refunds. Both appended as new
+      // migrations for the same checksum-pinning reason — 0003/0002 are frozen on the live DB. Each
+      // swaps its table's uniqueness index to fold in COALESCE(line_item_id, ''); pre-launch there is
+      // no live grant data (ADR-0113 §1), so the swap is clean and forward-only.
+      {
+        name: "0008_entitlement_line_item.sql",
+        sql: ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
+      },
+      {
+        name: "0009_credit_line_item.sql",
+        sql: CREDIT_LINE_ITEM_MIGRATION_SQL,
+      },
     ],
   };
 }
