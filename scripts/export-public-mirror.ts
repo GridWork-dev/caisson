@@ -464,12 +464,17 @@ function main(): void {
     ].join("\n"),
   );
 
-  // GTM assets (README / CONTRIBUTING / mirror CI), authored under scripts/mirror-assets/.
+  // GTM assets (README / CONTRIBUTING / mirror CI / mirror publish), authored under
+  // scripts/mirror-assets/.
   const assets = join(repoRoot, "scripts/mirror-assets");
   cpSync(join(assets, "README.md"), join(outDir, "README.md"));
   cpSync(join(assets, "CONTRIBUTING.md"), join(outDir, "CONTRIBUTING.md"));
   mkdirSync(join(outDir, ".github/workflows"), { recursive: true });
   cpSync(join(assets, "ci.yml"), join(outDir, ".github/workflows/ci.yml"));
+  cpSync(
+    join(assets, "publish.yml"),
+    join(outDir, ".github/workflows/publish.yml"),
+  );
 
   // MIRROR-MANIFEST.json — provenance for the generated repo.
   const sourceCommit = execFileSync("git", ["rev-parse", "HEAD"], {

@@ -72,6 +72,13 @@ and more).
 - Editions and pricing: [caisson.sh/pricing](https://caisson.sh/pricing)
 - Documentation: [caisson.sh/docs](https://caisson.sh/docs)
 
+## Release pipeline
+
+This repository's contents are synced from the private Caisson monorepo (see
+`MIRROR-MANIFEST.json` for the source commit) and published to npm as `@caisson-sh/*` from
+this repo via `.github/workflows/publish.yml` — a manual, deliberate step, not automatic on
+every sync.
+
 ## Support
 
 - Docs and self-serve purchase: [caisson.sh](https://caisson.sh)
