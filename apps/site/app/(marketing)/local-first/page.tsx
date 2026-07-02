@@ -1,6 +1,7 @@
 import {
   Button,
   Card,
+  FeatureGrid,
   Hero,
   Icon,
   Reveal,
@@ -140,10 +141,7 @@ export default function LocalFirstPage() {
           title="Four pieces. All on the device."
           lede="Each piece does its job without a network. Compose them, or take a single module — the data path never widens past the disk."
         >
-          <div
-            className="cs-grid cs-grid--2"
-            style={{ marginTop: "var(--cs-space-8)" }}
-          >
+          <FeatureGrid cols={2}>
             {PIECES.map((p) => (
               <Card key={p.label}>
                 <div
@@ -167,7 +165,7 @@ export default function LocalFirstPage() {
                 <p className="cs-muted">{p.body}</p>
               </Card>
             ))}
-          </div>
+          </FeatureGrid>
         </Section>
       </Reveal>
 
