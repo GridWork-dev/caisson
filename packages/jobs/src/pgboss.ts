@@ -59,7 +59,8 @@ export interface PgBossClient {
     name: string,
     handler: (jobs: readonly PgBossJob[]) => Promise<void>,
   ): Promise<string>;
-  offWork(name: string): Promise<void>;
+  /** `id` scopes the stop to ONE worker — bare `offWork(name)` stops every worker on the queue. */
+  offWork(name: string, options?: { id?: string }): Promise<void>;
   /** `null` when the queue has never been created — mapped to all-zero, not an error. */
   getQueue(name: string): Promise<QueueState | null>;
 }
@@ -183,7 +184,7 @@ export function createPgBossJobQueue(
       }
       const client = await getClient();
       await ensureQueue(client, name);
-      await client.work(name, async (jobs) => {
+      const workerId = await client.work(name, async (jobs) => {
         for (const job of jobs) {
           const validated = parseStrict(task.schema, job.data);
           await task.handler(validated);
@@ -191,7 +192,9 @@ export function createPgBossJobQueue(
       });
       return {
         async stop(): Promise<void> {
-          await client.offWork(name);
+          // Scoped to THIS worker's id — a bare offWork(name) stops every worker on the
+          // queue in this process, silently killing sibling consumers.
+          await client.offWork(name, { id: workerId });
         },
       };
     },

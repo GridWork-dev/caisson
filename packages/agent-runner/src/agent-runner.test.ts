@@ -143,6 +143,32 @@ describe("fail-closed boundaries", () => {
     ).toThrow(ValidationError);
   });
 
+  test("a nonexistent binary lands as status error, never a false alive 'running'", async () => {
+    // Spawn failures (ENOENT) surface ASYNC via the child "error" event — after spawn() already
+    // returned and the meta recorded "running". The listener must rewrite the meta fail-closed,
+    // and pidAlive must never probe the failed spawn's pid of -1 (process.kill(-1, 0) probes the
+    // whole process group and "succeeds", reporting the never-started run alive forever).
+    const r = createAgentRunner({ runsRoot: tmp("agent-runner-runs-") });
+    const { runId, pid } = r.spawn({
+      provider: {
+        binary: join(tmpdir(), "no-such-cli-" + crypto.randomUUID()),
+        baseUrlEnv: "STUB_BASE_URL",
+        authEnv: "STUB_API_KEY",
+        model: "stub-model-1",
+        args: ["{task}"],
+      },
+      task: "x",
+      worktree: tmp("agent-runner-wt-"),
+      ...SPAWN_BASE,
+    });
+    expect(pid).toBe(-1);
+    const st = await waitForExit(r, runId);
+    expect(st.status).toBe("error");
+    expect(st.alive).toBe(false);
+    // The synthetic transcript line gives finalReport something to cite.
+    expect(r.finalReport(runId).result).toContain("spawn failed");
+  });
+
   test("a tampered meta file (unknown field) fails status() closed", async () => {
     const runsRoot = tmp("agent-runner-runs-");
     const r = createAgentRunner({ runsRoot });

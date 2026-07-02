@@ -15,6 +15,7 @@
 // NAMES, and the model are all config — nothing here is bound to one vendor.
 import { spawn as spawnChild } from "node:child_process";
 import {
+  appendFileSync,
   closeSync,
   existsSync,
   mkdirSync,
@@ -218,6 +219,10 @@ function writeMeta(dir: string, meta: RunMeta): void {
 }
 
 function pidAlive(pid: number): boolean {
+  // A sentinel/invalid pid is never alive. Without this, a failed spawn's pid of -1 would reach
+  // process.kill(-1, 0) — which on POSIX probes the caller's ENTIRE process group and "succeeds",
+  // so a run that never started would report alive forever.
+  if (pid <= 0) return false;
   try {
     process.kill(pid, 0);
     return true;
@@ -424,8 +429,9 @@ export function createAgentRunner(config: AgentRunnerConfig): AgentRunner {
       // (no babysitter process pumping pipes). The child is detached + unref'd.
       const outFd = openSync(jsonlPath, "a");
       let pid: number;
+      let child: ReturnType<typeof spawnChild>;
       try {
-        const child = spawnChild(opts.provider.binary, argv, {
+        child = spawnChild(opts.provider.binary, argv, {
           cwd: worktree,
           detached: true,
           stdio: ["ignore", outFd, outFd],
@@ -449,6 +455,29 @@ export function createAgentRunner(config: AgentRunnerConfig): AgentRunner {
         status: "running",
       };
       writeMeta(dir, meta);
+      // A spawn failure (ENOENT binary, EACCES) surfaces ASYNC via the "error" event — after the
+      // sync block above already recorded "running". Without this listener the event would also
+      // crash the launcher (unhandled "error" on an EventEmitter). Rewrite the meta fail-closed so
+      // status()/list() report the run as errored, never as a false "running" they can't kill.
+      // Attached in the same tick as spawn, so it always beats the event; the transcript gets one
+      // synthetic line so finalReport has something to cite.
+      // ponytail: structural cast — bun-types' node:child_process shim omits the EventEmitter
+      // surface ChildProcess has at runtime (same Bun-type gap as ai-kit's `preconnect` casts).
+      (
+        child as unknown as {
+          on(event: "error", listener: (err: Error) => void): void;
+        }
+      ).on("error", (err) => {
+        writeMeta(dir, { ...meta, status: "error" });
+        try {
+          appendFileSync(
+            jsonlPath,
+            `${JSON.stringify({ type: "result", result: `spawn failed: ${err.message}` })}\n`,
+          );
+        } catch {
+          // transcript dir gone (run already cleaned up) — the meta rewrite above is the record
+        }
+      });
       return { runId, pid, jsonlPath };
     },
 

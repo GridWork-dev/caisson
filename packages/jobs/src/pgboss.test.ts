@@ -29,7 +29,10 @@ function createFakeClient(): PgBossClient & {
   }>;
   readonly createQueueCalls: readonly string[];
   readonly workCalls: readonly string[];
-  readonly offWorkCalls: readonly string[];
+  readonly offWorkCalls: ReadonlyArray<{
+    name: string;
+    id: string | undefined;
+  }>;
   queueState: QueueState | null;
   /** Set to make the next `work()` immediately deliver this batch to its handler. */
   nextWorkBatch: readonly PgBossJob[];
@@ -41,7 +44,7 @@ function createFakeClient(): PgBossClient & {
   }> = [];
   const createQueueCalls: string[] = [];
   const workCalls: string[] = [];
-  const offWorkCalls: string[] = [];
+  const offWorkCalls: Array<{ name: string; id: string | undefined }> = [];
   let queueState: QueueState | null = null;
   let nextWorkBatch: readonly PgBossJob[] = [];
   return {
@@ -60,8 +63,8 @@ function createFakeClient(): PgBossClient & {
       await handler(nextWorkBatch);
       return "worker_fake";
     },
-    async offWork(name) {
-      offWorkCalls.push(name);
+    async offWork(name, options) {
+      offWorkCalls.push({ name, id: options?.id });
     },
     async getQueue() {
       return queueState;
@@ -246,7 +249,11 @@ describe("pg-boss work() (ADR-0211)", () => {
     expect(received).toEqual([{ accountId: "acct_a", amount: 5 }]);
 
     await handle.stop();
-    expect(client.offWorkCalls).toEqual(["grant-credits"]);
+    // The stop is scoped to THIS worker's id — a bare offWork(name) would stop every
+    // worker on the queue in-process (sibling consumers included).
+    expect(client.offWorkCalls).toEqual([
+      { name: "grant-credits", id: "worker_fake" },
+    ]);
   });
 
   test("rejects an unregistered task name before touching pg-boss", async () => {
