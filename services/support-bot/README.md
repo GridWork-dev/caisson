@@ -61,6 +61,6 @@ uv run pytest
 
 Build the `Dockerfile` and push to Railway (recommended) or Fly.io. The gateway connection is outbound;
 inbound is one aiohttp app on `health_port` — `GET /health` (always, the runner's liveness probe) plus
-`POST /billing-grant` (ADR-0201 — token-gated entitlement→Discord-role push, called by `services/license`
+`POST /billing-grant` (ADR-0203 — token-gated entitlement→Discord-role push, called by `services/license`
 and `apps/site`; not served when `BILLING_GRANT_TOKEN` is unset). Set the env above as the platform's
 secrets.

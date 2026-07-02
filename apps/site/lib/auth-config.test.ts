@@ -26,7 +26,7 @@ describe("provider gating (env-gated OAuth)", () => {
     });
   });
 
-  test("discord alone configured → only discord offered (ADR-0201 link seam)", () => {
+  test("discord alone configured → only discord offered (ADR-0203 link seam)", () => {
     expect(configuredProviderIds(DISC)).toEqual(["discord"]);
   });
 

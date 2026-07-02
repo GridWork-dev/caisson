@@ -1,4 +1,4 @@
-// The link-time Discord backfill push (ADR-0201): config gating + payload shape + never-throws.
+// The link-time Discord backfill push (ADR-0203): config gating + payload shape + never-throws.
 import { describe, expect, test } from "bun:test";
 import type { fetchWithTimeout } from "@caisson/kernel";
 import { loadDiscordGrantConfig, pushDiscordGrant } from "./discord-grant.ts";

@@ -83,7 +83,7 @@ class Settings(BaseSettings):
         description="Self-assignable roles for /post-roles buttons; JSON list of {role_id,label}.",
     )
 
-    # --- optional billing-grant inbound (ADR-0201; closes the ADR-0109 deferral) ---
+    # --- optional billing-grant inbound (ADR-0203; closes the ADR-0109 deferral) ---
     billing_grant_token: str | None = Field(
         default=None,
         description="Bearer expected on POST /billing-grant (pushed by services/license after a "

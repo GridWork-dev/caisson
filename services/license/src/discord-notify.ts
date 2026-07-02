@@ -1,4 +1,4 @@
-// The post-grant Discord role push (ADR-0201, closes the ADR-0109 deferral). After a webhook grant
+// The post-grant Discord role push (ADR-0203, closes the ADR-0109 deferral). After a webhook grant
 // COMMITS, this resolves the buyer account's linked Discord user(s) and fire-and-forgets
 // `POST /billing-grant` on the support-bot. Two binding properties:
 //   • NEVER throws — the money path (Paddle's 2xx) must not depend on Discord availability; every
@@ -36,7 +36,7 @@ export function loadDiscordNotifyConfig(
 
 /**
  * The buyer account's linked Discord user ids (possibly none, possibly several — every org member
- * who linked Discord gets the purchased roles, the ADR-0201 org perk). Throws on DB errors — the
+ * who linked Discord gets the purchased roles, the ADR-0203 org perk). Throws on DB errors — the
  * caller (`notifyDiscordGrant`) owns the never-throw boundary.
  */
 export async function findDiscordUserIds(

@@ -1,4 +1,4 @@
-// The post-grant Discord push (ADR-0201): identity resolution over the REAL account_member DDL
+// The post-grant Discord push (ADR-0203): identity resolution over the REAL account_member DDL
 // (dual-GUC RLS, ADR-0176) + a better-auth-shaped `account` provider-link table, and the
 // never-throws push contract. The `account` DDL here is a TEST DOUBLE of better-auth's own
 // migrator output (camelCase quoted columns — its documented core schema); the deploy migrator
@@ -51,7 +51,7 @@ afterAll(async () => {
   await tp.close();
 });
 
-describe("findDiscordUserIds (ADR-0201 identity resolution)", () => {
+describe("findDiscordUserIds (ADR-0203 identity resolution)", () => {
   test("resolves an org account's members to their linked discord ids only", async () => {
     expect(await findDiscordUserIds(tp.pg, "acct_org")).toEqual([
       "discord_111",

@@ -1,4 +1,4 @@
-// The link-time Discord role backfill push (ADR-0201). services/license pushes at GRANT time; this
+// The link-time Discord role backfill push (ADR-0203). services/license pushes at GRANT time; this
 // covers the other ordering — a buyer who purchases FIRST and links Discord later. The site
 // (server-side only) sends the account's current active entitlement ids, verbatim, to the
 // support-bot's authed POST /billing-grant; the BOT owns the entitlement→role expansion so the two

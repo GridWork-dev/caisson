@@ -15,7 +15,7 @@ Scope (ADR-0109 extends ADR-0105 — same bot, not a second process):
     the bot) to outrank the target and the target to not be the guild owner. A central ``tree.error``
     handler answers a denied check ephemerally.
   • **Purchase → edition role** — ``/grant-role`` (admin) maps an edition to its role + the ``Customer``
-    umbrella. The billing-push HTTP variant lives in ``billing_grant.py`` (ADR-0201 — the ADR-0109
+    umbrella. The billing-push HTTP variant lives in ``billing_grant.py`` (ADR-0203 — the ADR-0109
     deferral closed once services/license became a real caller); both paths share the pure helpers here.
 
 Design rule (mirrors ``bot.py``): the gateway callbacks are thin adapters over PURE async helpers
@@ -43,7 +43,7 @@ from .config import Settings
 
 # Edition slug → the Settings attribute holding that edition's role id. The slugs are the CANONICAL
 # entitlement ids (`packages/registry-schema` EDITIONS / the pricebook `entitlements` values) — the
-# billing push (ADR-0201) sends purchased ids verbatim, so this map must speak the same vocabulary.
+# billing push (ADR-0203) sends purchased ids verbatim, so this map must speak the same vocabulary.
 # They are also the public `/grant-role` choices. The Settings attribute names keep their original
 # spelling (`role_local_first_id` / `role_agentic_id`) so deployed env vars stay valid.
 _EDITION_ROLE_ATTR: dict[str, str] = {

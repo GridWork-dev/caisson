@@ -13,7 +13,7 @@ export interface BillingWebhookResult {
   event: DomainBillingEvent | null;
   /**
    * The purchased entitlement ids this delivery granted (`[]` for a no-op/gated/revoke event) —
-   * computed by `applyBillingEvent` itself so the post-commit Discord push (ADR-0201) can never
+   * computed by `applyBillingEvent` itself so the post-commit Discord push (ADR-0203) can never
    * drift from the grant gate's own decision.
    */
   grantedEntitlements: string[];

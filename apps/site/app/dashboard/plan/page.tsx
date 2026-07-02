@@ -36,7 +36,7 @@ export default async function DashboardPlanPage() {
     grants.filter((g) => g.status === "active").map((g) => g.entitlementId),
   );
 
-  // Discord seam (ADR-0201): rendered only when the provider is env-configured. Linked status
+  // Discord seam (ADR-0203): rendered only when the provider is env-configured. Linked status
   // comes from better-auth's own account list for the SIGNED-IN user (never a request param).
   const discordConfigured = configuredProviderIds(process.env).includes(
     "discord",

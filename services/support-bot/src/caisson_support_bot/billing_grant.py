@@ -1,4 +1,4 @@
-"""The bot's inbound HTTP surface: liveness + the authed billing-grant push (ADR-0201).
+"""The bot's inbound HTTP surface: liveness + the authed billing-grant push (ADR-0203).
 
 One aiohttp application serves the container's single inbound port. ``GET /health`` keeps the
 ADR-0105 liveness contract (unauthenticated, readiness-keyed status). ``POST /billing-grant`` is the

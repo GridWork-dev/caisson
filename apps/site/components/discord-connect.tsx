@@ -9,7 +9,7 @@ import { Button } from "@caisson/ui/components";
 import { authClient } from "@/lib/auth-client";
 
 /**
- * The dashboard's Discord seam (ADR-0201). Unlinked: a Connect button → better-auth `linkSocial`
+ * The dashboard's Discord seam (ADR-0203). Unlinked: a Connect button → better-auth `linkSocial`
  * (OAuth redirect; the callback returns to the plan page with `?discord=linked`). Linked: a
  * "Sync roles" button POSTing `/api/discord/backfill` — the same call the `?discord=linked`
  * return fires automatically, so buy-then-link converges without a manual step. Rendered only
