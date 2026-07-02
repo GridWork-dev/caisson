@@ -6,9 +6,9 @@
 #
 # Prereqs (one-time):
 #   1. `codex login`  → writes ~/.codex/auth.json  (browser OAuth to ChatGPT)
-#   2. Start a bridge daemon that reads ~/.codex/auth.json and exposes OpenAI-compat on a port:
-#        npx @l0z4n0-a1/chatgpt-bridge          # default 127.0.0.1:10531
-#        # or: 0oAstro/codex-openai-proxy (Rust, OAuth PKCE) on your chosen port
+#   2. Start the bridge daemon (reads ~/.codex/auth.json, OpenAI-compat on 127.0.0.1:10531).
+#      NOTE: it needs the `serve` subcommand — bare `npx chatgpt-bridge` just prints help:
+#        npx -y chatgpt-bridge serve --port 10531 --host 127.0.0.1 &
 #   3. ./apply-patches.sh run once (read-only + Exa web_search)
 #
 # Usage:  ./run-strix-chatgpt.sh
@@ -25,7 +25,7 @@ export LLM_API_KEY="not-needed"   # auth handled by the bridge via ~/.codex/auth
 # Preflight: bridge reachable?
 curl -sf -m 5 "http://127.0.0.1:${BRIDGE_PORT}/health" >/dev/null 2>&1 || {
   echo "ChatGPT bridge not reachable on 127.0.0.1:${BRIDGE_PORT}." >&2
-  echo "Start it first: npx @l0z4n0-a1/chatgpt-bridge  (see the header of this script)." >&2
+  echo "Start it first: npx -y chatgpt-bridge serve --port ${BRIDGE_PORT} --host 127.0.0.1 &" >&2
   exit 1
 }
 
