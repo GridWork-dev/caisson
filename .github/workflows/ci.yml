@@ -81,9 +81,18 @@ jobs:
       # when there are changed packages but no new changeset (changesets `checking-for-changesets`).
       # SKIPPED on the main branch: main has no base to diff against and is the merge target, not a
       # release-gated PR — the actual ledger append/publish lives in publish-and-index (main-only).
+      # ALSO skipped on release PRs (ADR-0208 republish): `changeset version` consumes the pending
+      # changeset files by design, so a PR that DELETES changesets relative to origin/main is a
+      # release PR — its package.json bumps are the consume output, not uncovered package changes.
+      # A deletion is loud in review (and Greptile-gated), so this cannot be gamed silently.
       - name: changeset presence (PR only — every package change needs a changeset)
         if: github.ref != 'refs/heads/main'
-        run: bunx changeset status --since=origin/main
+        run: |
+          if git diff --name-only --diff-filter=D origin/main...HEAD -- '.changeset/*.md' | grep -q .; then
+            echo "release PR (changesets consumed since origin/main) — presence gate skipped"
+            exit 0
+          fi
+          bunx changeset status --since=origin/main
 
   check:
     runs-on: [self-hosted, gw-linux-amd64]

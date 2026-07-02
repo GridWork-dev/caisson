@@ -27,7 +27,6 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (session === null) {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
   }
-
   // Owner-only: the org's BYOK provider key is a single shared, org-wide credential — a `seat`
   // rotating it could DoS the org's inference or route it through an attacker-controlled key
   // (Strix vuln-0006). Same owner-gate ADR-0176 mandates for shared/billing org resources and the

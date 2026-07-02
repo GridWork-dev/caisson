@@ -76,6 +76,18 @@ async function resolveActiveAccount(
 }
 
 /**
+ * Owner-only gate for org-mutating writes (Strix vuln-0006, CWE-863 — ADR-0208 decision 1).
+ * BYOK provider-key rotation and compliance-attestation writes require the account OWNER role:
+ * a seat member must not rotate the org's provider keys or rewrite the attestations that feed
+ * the SAR/POA&M export. Reads (masked key metadata, attestation state) stay seat-visible — gate
+ * only the writes. Roles are `owner | seat` (`account_member`, ADR-0176); the role comes from
+ * the verified session, never a request param. Mirrors the members-page owner gate.
+ */
+export function isOwner(session: SessionContext): boolean {
+  return session.role === "owner";
+}
+
+/**
  * Require a session for an authed dashboard route; redirects to `/login?next=<pathname>` when
  * absent (never throws a 401 into a page render). `pathname` is the route requiring auth, used
  * only to return the buyer to where they started after sign-in.

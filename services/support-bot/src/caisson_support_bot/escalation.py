@@ -5,10 +5,15 @@ a community-native Discord thread tagging a human, AND a durable ``support_ticke
 ``ai_brief`` carrier). Both sit behind ports so the orchestration is testable without Discord or
 Postgres: ``ThreadOpener`` (bot.py supplies a discord-backed impl; tests a fake) and ``TicketStore``
 (``InMemoryTicketStore`` for tests, ``PostgresTicketStore`` via asyncpg for deploy).
+
+A third, best-effort sink files a Linear Triage issue for the same brief (ADR-0206):
+``IssueTracker`` (``linear_client.LinearIssueTracker`` for deploy; tests a fake). v1 is log-only for
+the created issue URL — no ``support_ticket`` column carries it yet.
 """
 
 from __future__ import annotations
 
+import sys
 import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
@@ -47,6 +52,17 @@ class TicketStore(Protocol):
     """Persist a support ticket; returns the stored row (id + created_at populated)."""
 
     async def create(self, ticket: Ticket) -> Ticket: ...
+
+
+@runtime_checkable
+class IssueTracker(Protocol):
+    """File a Linear Triage issue for an escalation; returns its URL, or None on failure.
+
+    Best-effort like ``ThreadOpener``: a concrete impl owns catching its own failures — Linear
+    being down must never break escalation (ADR-0206).
+    """
+
+    async def create_issue(self, *, title: str, description: str) -> str | None: ...
 
 
 class InMemoryTicketStore:
@@ -103,10 +119,11 @@ class PostgresTicketStore:
 
 
 class Escalator:
-    """Orchestrates a single escalation: open a thread, then persist the ticket.
+    """Orchestrates a single escalation: open a thread, file a Linear issue, then persist the ticket.
 
-    The thread is best-effort (a Discord failure must not lose the ticket); the store is the source of
-    truth for ``ai_brief``. Either port may be None (thread-only or store-only deployments degrade).
+    The thread and the Linear issue are both best-effort (neither failure may lose the ticket); the
+    store is the source of truth for ``ai_brief``. Any port may be None (deployments degrade per
+    whichever sinks are configured).
     """
 
     def __init__(
@@ -114,10 +131,12 @@ class Escalator:
         *,
         store: TicketStore | None = None,
         thread_opener: ThreadOpener | None = None,
+        issue_tracker: IssueTracker | None = None,
         human_mention: str | None = None,
     ) -> None:
         self._store = store
         self._opener = thread_opener
+        self._issue_tracker = issue_tracker
         self._human_mention = human_mention
 
     async def escalate(self, brief: Brief) -> Ticket:
@@ -129,6 +148,23 @@ class Escalator:
         if self._opener is not None:
             title = f"Support: {brief.question[:80]}"
             thread_id = await self._opener.open_thread(title=title, body=body)
+
+        if self._issue_tracker is not None:
+            # Best-effort (ADR-0206): v1 is log-only for the created issue URL — no support_ticket
+            # column carries it yet, so a Linear outage never blocks the thread/store sinks above.
+            # LinearIssueTracker already never raises on its own; this guard is defense-in-depth so
+            # ANY IssueTracker impl (including a future/misbehaving one) can never sink escalate().
+            try:
+                issue_url = await self._issue_tracker.create_issue(
+                    title=f"Support escalation: {brief.question[:80]}", description=body
+                )
+            except (
+                Exception
+            ) as exc:  # best-effort sink: any failure here must never lose the ticket.
+                sys.stderr.write(f"[linear] triage issue creation raised unexpectedly: {exc}\n")
+            else:
+                if issue_url:
+                    sys.stderr.write(f"[linear] triage issue created: {issue_url}\n")
 
         ticket = Ticket(
             id=uuid.uuid4().hex,

@@ -103,6 +103,18 @@ class Settings(BaseSettings):
         description="Postgres DSN for support_ticket persistence; escalation is thread-only when unset.",
     )
 
+    # --- optional Linear triage sink (ADR-0206; all three must be set together or the sink stays off) ---
+    linear_api_key: str | None = Field(
+        default=None,
+        description="Linear personal API key; the Linear escalation sink never runs when unset.",
+    )
+    linear_team_id: str | None = Field(
+        default=None, description="The Linear team id issueCreate files the Triage issue under."
+    )
+    linear_triage_state_id: str | None = Field(
+        default=None, description="Explicit Triage workflow state id passed on every issueCreate."
+    )
+
     # --- liveness ---
     health_port: int = Field(default=8080, ge=1, le=65535)
 

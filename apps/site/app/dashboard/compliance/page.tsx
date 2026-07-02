@@ -14,7 +14,7 @@ import {
   clearSlot,
   listAttestations,
 } from "@/lib/attestations";
-import { requireDashboardSession } from "@/lib/auth";
+import { isOwner, requireDashboardSession } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Compliance" };
 
@@ -66,9 +66,9 @@ const inputStyle: React.CSSProperties = {
 
 export default async function DashboardCompliancePage() {
   const session = await requireDashboardSession(PATH);
-  // Owner-only management (Strix vuln-0006, ADR-0176): seats see attestation STATUS read-only; only an
+  // Owner-only management (Strix vuln-0006, ADR-0176): seats see attestation state read-only; only an
   // owner gets the attest/clear forms. The server actions enforce the same gate (defense-in-depth).
-  const isOwner = session.role === "owner";
+  const owner = isOwner(session);
 
   // One tenant-scoped read per framework (three frameworks, ADR-0181).
   const filledByFramework = new Map<string, Map<string, string>>();
@@ -134,6 +134,7 @@ export default async function DashboardCompliancePage() {
 
             {fw.slots.map((slot) => {
               const isFilled = filled.has(slot.id);
+              const note = filled.get(slot.id) ?? "";
               return (
                 <div
                   key={slot.id}
@@ -161,7 +162,7 @@ export default async function DashboardCompliancePage() {
                     <span style={{ fontWeight: 500 }}>{slot.label}</span>
                   </div>
 
-                  {isOwner ? (
+                  {owner ? (
                     <form
                       action={attestAction}
                       style={{
@@ -188,7 +189,7 @@ export default async function DashboardCompliancePage() {
                         </span>
                         <input
                           name="note"
-                          defaultValue={filled.get(slot.id) ?? ""}
+                          defaultValue={note}
                           maxLength={2000}
                           placeholder="e.g. link to the signed policy PDF, ticket, or reviewer + date"
                           style={inputStyle}
@@ -200,17 +201,16 @@ export default async function DashboardCompliancePage() {
                     </form>
                   ) : (
                     // Seats (ADR-0176) see the attested note read-only — owner-only management.
-                    isFilled && (
-                      <p
-                        className="cs-muted"
-                        style={{ fontSize: "var(--cs-text-sm)" }}
-                      >
-                        {filled.get(slot.id) || "Attested"}
-                      </p>
-                    )
+                    <p className="cs-muted" style={{ margin: 0 }}>
+                      {isFilled
+                        ? note === ""
+                          ? "Attested."
+                          : note
+                        : "Only the account owner can attest."}
+                    </p>
                   )}
 
-                  {isOwner && isFilled && (
+                  {owner && isFilled && (
                     <form action={clearAction}>
                       <input type="hidden" name="framework" value={fw.id} />
                       <input type="hidden" name="slotId" value={slot.id} />

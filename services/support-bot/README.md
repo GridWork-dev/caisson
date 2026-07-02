@@ -23,7 +23,8 @@ Discord (/ask slash + #ask-ai listener)
    resolved? ──yes──▶ reply with answer + source citations
         │
         └──no──▶ Escalator: build AI brief ─▶ open thread + tag @support
-                                            └▶ TicketStore (Postgres support_ticket.ai_brief)
+                                            ├▶ TicketStore (Postgres support_ticket.ai_brief)
+                                            └▶ IssueTracker (Linear Triage issue, best-effort)
 ```
 
 The pipeline, clients, and stores sit behind ports (`Inference`, `TicketStore`) so CI runs hermetic:
@@ -46,6 +47,9 @@ export DATABASE_URL=postgres://...  # support_ticket persistence (omit ⇒ threa
 export OPENROUTER_MODEL=anthropic/claude-3.5-sonnet
 export BILLING_GRANT_TOKEN=...      # Bearer for POST /billing-grant (entitlement→role push); route not served when unset
 export GUILD_ID=...                 # pins billing grants to the Caisson guild (sole-guild fallback when unset)
+export LINEAR_API_KEY=...           # Linear personal API key; all 3 LINEAR_* must be set together or the sink stays off
+export LINEAR_TEAM_ID=...           # the CAISSON team issueCreate files the Triage issue under
+export LINEAR_TRIAGE_STATE_ID=...   # explicit Triage workflow state id passed on every issueCreate
 uv run python -m caisson_support_bot
 ```
 

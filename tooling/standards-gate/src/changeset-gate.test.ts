@@ -5,7 +5,7 @@
 // an accidental removal of the step — or the main-skip, or the fetch-depth needed to resolve
 // origin/main — is caught. Text-level assertions over the committed CI + changeset config.
 import { describe, expect, test } from "bun:test";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const ROOT = join(import.meta.dir, "..", "..", "..");
@@ -35,12 +35,19 @@ describe("changeset-presence gate (ADR-0021/0111)", () => {
     expect(cfg.updateInternalDependencies).toBe("patch");
   });
 
-  test("an initial release changeset is present to seed the gate", () => {
-    const dir = join(ROOT, ".changeset");
-    const seeds = readdirSync(dir).filter(
-      (f) => f.endsWith(".md") && f.toLowerCase() !== "readme.md",
+  test("the changeset config the gate runs against is present", () => {
+    // The original seed-changeset assertion expired at the first release: `changeset version`
+    // consumes every pending .md by design (ADR-0208 republish), so an empty .changeset/ dir is
+    // the normal post-release state. What must never disappear is the config the gate runs with.
+    expect(existsSync(join(ROOT, ".changeset", "config.json"))).toBe(true);
+  });
+
+  test("the gate skips release PRs (changesets consumed since origin/main)", () => {
+    // ADR-0208: a PR that deletes changeset files IS the release PR — its package.json bumps are
+    // the consume output, not uncovered package changes. Pin the diff-filter guard so the
+    // exemption is not accidentally dropped from the CI step.
+    expect(CI).toContain(
+      "--diff-filter=D origin/main...HEAD -- '.changeset/*.md'",
     );
-    expect(seeds.length).toBeGreaterThanOrEqual(1);
-    expect(existsSync(dir)).toBe(true);
   });
 });

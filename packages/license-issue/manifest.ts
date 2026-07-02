@@ -6,11 +6,12 @@
 // `paid` + `LicenseRef-Caisson-Commercial` (ADR-0094/0097 open-core split — issuer is commercial, NOT
 // open Base). `priceCents` mirrors @caisson/license-verify's pre-launch placeholder anchor (4900);
 // final pricing is the open "Pricing numbers" board fork. ADR-0110.
+import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
 export default defineModule({
   id: "@caisson/license-issue",
-  version: "0.0.0",
+  version: pkg.version,
   kind: "primitive",
   tier: "paid",
   priceCents: 4900,

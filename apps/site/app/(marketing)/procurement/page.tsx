@@ -1,4 +1,4 @@
-import { Button, Section, Card, Icon, Reveal } from "@/components";
+import { Button, Section, Card, Faq, Icon, Reveal } from "@/components";
 import { buildMetadata } from "@/lib/metadata";
 import { serializeJsonLd, breadcrumb, faqPage } from "@/lib/jsonld";
 
@@ -250,31 +250,7 @@ export default function ProcurementPage() {
 
       {/* ===== FAQ ===== */}
       <Section eyebrow="Procurement FAQ" title="Common questions.">
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--cs-space-6)",
-            marginTop: "var(--cs-space-8)",
-          }}
-        >
-          {FAQ_ITEMS.map((item, i) => (
-            <Reveal key={item.question} delay={i * 40}>
-              <div>
-                <h3
-                  style={{
-                    fontSize: "var(--cs-text-base)",
-                    fontWeight: "var(--cs-weight-medium)",
-                    marginBottom: "var(--cs-space-2)",
-                  }}
-                >
-                  {item.question}
-                </h3>
-                <p className="cs-muted">{item.answer}</p>
-              </div>
-            </Reveal>
-          ))}
-        </div>
+        <Faq items={FAQ_ITEMS} style={{ marginTop: "var(--cs-space-8)" }} />
       </Section>
 
       {/* ===== Contact nudge ===== */}
