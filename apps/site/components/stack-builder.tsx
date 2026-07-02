@@ -22,7 +22,7 @@ import { EDITION_ICON, editionLabel } from "./marketplace";
 import styles from "./marketplace.module.css";
 
 /**
- * Flagship stack configurator (ADR-0191). Left = the 14 modules as toggle rows grouped by edition;
+ * Flagship stack configurator (ADR-0191). Left = the 15 modules as toggle rows grouped by edition;
  * right = a `position: sticky` running-total rail that itemises the selection, shows the live total,
  * and surfaces the cheapest covering upgrade (`buildStackSummary().upgrade`). Under 768px the rail
  * stops being a side column and the total + primary CTA move to a fixed bottom bar. The total is
