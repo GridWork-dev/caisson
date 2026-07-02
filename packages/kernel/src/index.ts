@@ -20,6 +20,7 @@ export {
 export type { ErrorEnvelope } from "./errors.ts";
 
 export { safeEqualFixed, safeEqualVariable } from "./crypto.ts";
+export { scrubForEgress, looksLikeSecret } from "./secret-scrub.ts";
 export { fetchWithTimeout } from "./fetch.ts";
 export type { FetchTimeoutOptions } from "./fetch.ts";
 export { strictObject, parseStrict } from "./schema.ts";

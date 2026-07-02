@@ -62,13 +62,15 @@ export const evalResultSchema = strictObject({
 
 /**
  * Guardrail-block (P3 AI Production Kit). One block raised by the guardrails layer (ADR-0063) when
- * a `Moderator`/PII/custom check trips at the gateway's input or output point — the dashboard reads
- * it to chart block rate by stage and category. **Metadata only**: the flagged content, matched
- * text, and any PII are NEVER carried here — emitting them would defeat the very redaction the guard
- * exists to enforce. `failClosed` marks a block produced by the fail-closed default (a moderator
- * timeout/outage or a custom hook that threw) rather than an explicit policy hit, so an operator can
- * distinguish "the moderator was unavailable so we blocked" from "the content actually violated
- * policy". `policy` is the `forge.config` policy name that produced the block, never its content.
+ * a `Moderator`/PII/secret/custom check trips at the gateway's input or output point — the dashboard
+ * reads it to chart block rate by stage and category. **Metadata only**: the flagged content,
+ * matched text, and any PII/secret span are NEVER carried here — emitting them would defeat the very
+ * redaction the guard exists to enforce. `failClosed` marks a block produced by the fail-closed
+ * default (a moderator timeout/outage or a custom hook that threw) rather than an explicit policy
+ * hit, so an operator can distinguish "the moderator was unavailable so we blocked" from "the content
+ * actually violated policy". `policy` is the `forge.config` policy name that produced the block,
+ * never its content. `"secret"` (ADR-0209) is the unconditional credential-shape pre-screen — it has
+ * no `failOpen` opt-out, so it always reports `failClosed: false`.
  */
 export const guardrailBlockSchema = strictObject({
   blockId: z.string().uuid(),
@@ -76,7 +78,7 @@ export const guardrailBlockSchema = strictObject({
   /** Where the block fired: the input-moderate leg or the output-moderate leg. */
   stage: z.enum(["input", "output"]),
   /** The violation class. An edition selects from this fixed set — it never coins its own. */
-  category: z.enum(["moderation", "pii", "injection", "custom"]),
+  category: z.enum(["moderation", "pii", "injection", "secret", "custom"]),
   policy: z.string().min(1).max(200),
   failClosed: z.boolean(),
   occurredAt: z.string().datetime(),
