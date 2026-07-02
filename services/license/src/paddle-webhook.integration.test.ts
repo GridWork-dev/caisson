@@ -7,6 +7,7 @@ import { createHmac } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { type TestPg, newTestPg } from "@caisson/testing";
 import {
+  CREDIT_LINE_ITEM_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
   balance,
@@ -14,6 +15,7 @@ import {
 import { withTenant } from "@caisson/tenancy-rls";
 import { createPaddleBilling } from "@caisson/billing";
 import {
+  ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   readEntitlements,
 } from "./entitlement-store.ts";
@@ -32,7 +34,9 @@ beforeAll(async () => {
   tp = await newTestPg();
   await tp.exec(CREDIT_SCHEMA_SQL);
   await tp.exec(CREDIT_ROUNDING_MIGRATION_SQL);
+  await tp.exec(CREDIT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
+  await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
 });
 
 afterAll(async () => {

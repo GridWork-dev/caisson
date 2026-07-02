@@ -15,16 +15,19 @@ export type { BillingWebhookResult } from "./webhook.ts";
 export {
   ENTITLEMENT_SCHEMA_SQL,
   ENTITLEMENT_GRANT_MIGRATION_SQL,
+  ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   grantEntitlements,
   readEntitlements,
   revokeSubscriptionGrants,
   revokePurchaseGrants,
+  revokePurchaseLineGrants,
 } from "./entitlement-store.ts";
 export type {
   GrantEntitlementsInput,
   GrantSource,
   RevokeSubscriptionInput,
   RevokePurchaseInput,
+  RevokePurchaseLineInput,
 } from "./entitlement-store.ts";
 export { resolveAccountEntitlements } from "./resolve-entitlements.ts";
 export {

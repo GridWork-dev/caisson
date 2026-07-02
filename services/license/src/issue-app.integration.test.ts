@@ -25,6 +25,7 @@ import { type TestPg, newTestPg } from "@caisson/testing";
 import { withTenant } from "@caisson/tenancy-rls";
 import { createApp } from "./app.ts";
 import {
+  ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   grantEntitlements,
 } from "./entitlement-store.ts";
@@ -94,6 +95,7 @@ let app: (req: Request) => Promise<Response>;
 beforeAll(async () => {
   tp = await newTestPg();
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
+  await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(LICENSE_GRANT_SCHEMA_SQL);
   // provider: null — these tests exercise POST /issue only; /webhook is covered in
   // webhook-app.integration.test.ts. A null provider makes /webhook fail closed (401), not these routes.
