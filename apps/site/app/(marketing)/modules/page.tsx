@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { Button, Hero, Section, StatusChip, Terminal } from "@/components";
 import { ModuleCatalog } from "@/components/module-catalog";
 import { breadcrumb, moduleItemList, serializeJsonLd } from "@/lib/jsonld";
@@ -70,6 +72,27 @@ export default function ModulesPage() {
       >
         <ModuleCatalog />
       </Section>
+
+      {/* ===== Licensing — what's open, what's on this catalog ===== */}
+      <Section
+        eyebrow="Licensing"
+        title="The base is free. The modules are the product."
+        lede={
+          <>
+            Every module here composes onto the base substrate — kernel, auth,
+            tenancy-rls, ui, billing, credits, jobs, email, ai-config,
+            mcp-server, registry-schema, observability, and the generator
+            tooling (cli, migrate, license-verify) — which is{" "}
+            <code className="mono">Apache-2.0</code>, free to use on its own.
+            What&rsquo;s priced above are the commercial modules and editions,
+            under the{" "}
+            <Link href="/legal/license" className="mono">
+              Commercial License
+            </Link>
+            .
+          </>
+        }
+      />
     </>
   );
 }
