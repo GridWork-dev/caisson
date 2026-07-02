@@ -105,6 +105,25 @@ export class EgressGuard {
   }
 
   /**
+   * {@link assertAllowed} PLUS a sanctioned-sink KIND requirement: the host must be allowlisted
+   * for `kind` SPECIFICALLY. Purpose-binding is the point — each sink kind exists for exactly one
+   * credentialed surface (`policy.ts`), so a host sanctioned for the model fetch (T13) must never
+   * receive a rented-backend Bearer request (T20), and vice versa. Fail-closed `AuthzError` naming
+   * the required and actual kinds (never the full URL).
+   */
+  assertAllowedFor(input: string | URL, kind: SanctionedSinkKind): URL {
+    const url = this.assertAllowed(input);
+    const actual = this.#allow.get(url.hostname.toLowerCase());
+    if (actual !== kind) {
+      throw new AuthzError(
+        "egress blocked: host is not allowlisted for this sanctioned sink kind",
+        { host: url.hostname, required: kind, actual: actual ?? null },
+      );
+    }
+    return url;
+  }
+
+  /**
    * Guarded outbound fetch: assert the host is allowlisted, THEN route through the kernel
    * `fetchWithTimeout`. The policy check runs first, so a blocked request never reaches the network.
    */
@@ -115,6 +134,24 @@ export class EgressGuard {
   ): Promise<Response> {
     const url = this.assertAllowed(input);
     return fetchWithTimeout(url, init, options);
+  }
+
+  /**
+   * {@link fetch}, but purpose-bound: the host must be allowlisted for `kind` specifically
+   * ({@link assertAllowedFor}) before any socket opens. The credentialed transports (T20 rented,
+   * both the first-party and OpenRouter wires) route every request here so a Bearer header can
+   * never reach a host sanctioned for a different purpose. Delegates to {@link fetch} after the
+   * kind gate, so `fetch` stays the ONE outbound seam (tests double it; the re-run of
+   * `assertAllowed` inside is an O(1) lookup).
+   */
+  async fetchAs(
+    kind: SanctionedSinkKind,
+    input: string | URL,
+    init: RequestInit = {},
+    options?: FetchTimeoutOptions,
+  ): Promise<Response> {
+    const url = this.assertAllowedFor(input, kind);
+    return this.fetch(url, init, options);
   }
 
   /**

@@ -2,15 +2,18 @@
 // TM-RENT). SHAPE ONLY, NO NETWORK: the wire call is a deterministic `RentedTransport` double and
 // the meter sink captures the emitted `UsageMetering` records. These tests pin the two safety
 // invariants — OFF BY DEFAULT (the privacy guard gates construction) and METERED (every call emits
-// one integer + idempotent record) — without ever opening a socket. The live transport stays the
-// single un-exercised path.
+// one integer + idempotent record) — without ever opening a socket. The live transport's wire runs
+// only in the gated live proof (ADR-0201); its construction gate is pinned here.
 import { describe, expect, test } from "bun:test";
 import { AuthzError, InternalError, ValidationError } from "@caisson/kernel";
 import type { UsageMetering } from "@caisson/kernel";
 import { createEgressGuard } from "../privacy/egress-guard.ts";
 import { ZERO_EGRESS_POLICY, localOnlyPolicy } from "../privacy/policy.ts";
 import { EMBEDDING_DIM } from "./backend.ts";
-import { RentedInferenceBackend } from "./rented-backend.ts";
+import {
+  RentedInferenceBackend,
+  createLiveRentedTransport,
+} from "./rented-backend.ts";
 import type { MeterSink, RentedTransport } from "./rented-backend.ts";
 
 const HOST = "inference.example.com";
@@ -233,5 +236,32 @@ describe("RentedInferenceBackend — fail-closed boundaries", () => {
       },
     });
     await expect(backend.embed("x")).rejects.toThrow("ledger unavailable");
+  });
+});
+
+describe("createLiveRentedTransport — purpose-bound construction gate (ADR-0201)", () => {
+  test("an endpoint sanctioned for a DIFFERENT kind (model-fetch) is refused before any call", () => {
+    const guard = createEgressGuard(
+      localOnlyPolicy([{ host: HOST, kind: "model-fetch" }]),
+    );
+    expect(() =>
+      createLiveRentedTransport({ endpoint: ENDPOINT, guard }),
+    ).toThrow(AuthzError);
+  });
+
+  test("a zero-egress policy refuses construction outright (fail-closed-to-offline)", () => {
+    const guard = createEgressGuard(ZERO_EGRESS_POLICY);
+    expect(() =>
+      createLiveRentedTransport({ endpoint: ENDPOINT, guard }),
+    ).toThrow(AuthzError);
+  });
+
+  test("a rented-backend-sanctioned endpoint constructs (the wire itself stays live-only)", () => {
+    const transport = createLiveRentedTransport({
+      endpoint: ENDPOINT,
+      guard: rentedGuard(),
+    });
+    expect(typeof transport.embed).toBe("function");
+    expect(typeof transport.complete).toBe("function");
   });
 });

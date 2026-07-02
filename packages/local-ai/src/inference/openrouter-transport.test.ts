@@ -113,6 +113,23 @@ function makeTransport(
 }
 
 describe("createOpenRouterRentedTransport — construction (fail-closed config)", () => {
+  test("a host allowlisted as the WRONG kind (model-fetch) is refused at construction — the Bearer never leaves", () => {
+    const guard = new RecordingGuard(
+      localOnlyPolicy([{ host: HOST, kind: "model-fetch" }]),
+      () => jsonResponse({}),
+    );
+    expect(() => makeTransport(guard)).toThrow(AuthzError);
+    expect(guard.calls).toHaveLength(0);
+  });
+
+  test("a zero-egress (default) policy refuses construction outright", () => {
+    const guard = new RecordingGuard(localOnlyPolicy([]), () =>
+      jsonResponse({}),
+    );
+    expect(() => makeTransport(guard)).toThrow(AuthzError);
+    expect(guard.calls).toHaveLength(0);
+  });
+
   test("an empty apiKey fails closed (a blank Bearer would just 401 later)", () => {
     const guard = new RecordingGuard(openrouterPolicy(), () =>
       jsonResponse({}),
@@ -281,18 +298,15 @@ describe("createOpenRouterRentedTransport — fail-closed boundaries", () => {
     expect(JSON.stringify(ie.details ?? {})).not.toContain(leakMarker);
   });
 
-  test("a non-allowlisted host is blocked by the guard BEFORE any request is built", async () => {
-    // The policy allowlists only openrouter.ai; pointing baseUrl elsewhere must fail closed.
+  test("a non-allowlisted host is blocked by the guard AT CONSTRUCTION — no transport, no request", () => {
+    // The policy allowlists only openrouter.ai; pointing baseUrl elsewhere must fail closed
+    // immediately (the purpose-bound gate runs at composition, before any Bearer request exists).
     const guard = new RecordingGuard(openrouterPolicy(), () =>
       jsonResponse(embedPayload([0.1])),
     );
-    const transport = makeTransport(guard, {
-      baseUrl: "https://evil.example.com/api/v1",
-    });
-    await expect(transport.embed({ text: "x" })).rejects.toThrow(AuthzError);
-    await expect(transport.complete({ prompt: "x" })).rejects.toThrow(
-      AuthzError,
-    );
+    expect(() =>
+      makeTransport(guard, { baseUrl: "https://evil.example.com/api/v1" }),
+    ).toThrow(AuthzError);
     expect(guard.calls).toHaveLength(0); // the block fired pre-network
   });
 });

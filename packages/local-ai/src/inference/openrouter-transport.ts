@@ -5,10 +5,14 @@
 // one org OPENROUTER_API_KEY without a bespoke daemon or provider SDK (ADR-0044: framework-free).
 //
 // The same two disciplines as the live transport:
-//   1. EGRESS — every request routes through `guard.fetch`, the single audited chokepoint (→ kernel
-//      `fetchWithTimeout`; the native `AbortSignal.timeout` is forbidden on Bun). A non-allowlisted
-//      host is blocked BEFORE any socket opens; there is no way to reach OpenRouter without the
-//      deployer allowlisting `openrouter.ai` as a `rented-backend` sanctioned sink (TM-RENT).
+//   1. EGRESS — every request routes through `guard.fetchAs("rented-backend", …)`, the single
+//      audited chokepoint (→ kernel `fetchWithTimeout`; the native `AbortSignal.timeout` is
+//      forbidden on Bun), PURPOSE-BOUND to the `rented-backend` sink KIND: a non-allowlisted host
+//      is blocked BEFORE any socket opens, and so is a host allowlisted for a DIFFERENT sanctioned
+//      purpose (a T13 `model-fetch` host must never receive this Bearer request). There is no way
+//      to reach OpenRouter without the deployer allowlisting `openrouter.ai` as a `rented-backend`
+//      sanctioned sink (TM-RENT); the same gate runs at construction so a mis-sanctioned endpoint
+//      fails at composition, not first call.
 //   2. ERROR HYGIENE — a non-2xx throws with the STATUS ONLY, never the response body: some proxies
 //      echo request headers back in error bodies, so surfacing the body could leak the Bearer key.
 //
@@ -57,7 +61,8 @@ function tokenQuantity(usage: z.infer<typeof wireUsageSchema>): number {
 
 /** Config for the OpenRouter rented transport (ADR-0201). */
 export interface OpenRouterRentedTransportConfig {
-  /** The egress guard — every request routes through `guard.fetch`, re-gating the host per call. */
+  /** The egress guard — every request routes through `guard.fetchAs("rented-backend", …)`,
+   *  re-gating the host AND its sanctioned sink kind per call. */
   guard: EgressGuard;
   /** The OpenRouter API key, sent as a Bearer header. Never logged, never echoed in errors. */
   apiKey: string;
@@ -101,6 +106,9 @@ export function createOpenRouterRentedTransport(
     );
   }
   const baseUrl = (config.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
+  // Fail at composition, not first call: the endpoint must be sanctioned as a `rented-backend`
+  // sink SPECIFICALLY (mirrors the RentedInferenceBackend construction gate — see the file header).
+  config.guard.assertAllowedFor(baseUrl, "rented-backend");
   const headers: Record<string, string> = {
     "content-type": "application/json",
     authorization: `Bearer ${config.apiKey}`,
@@ -111,8 +119,10 @@ export function createOpenRouterRentedTransport(
       : undefined;
 
   const post = async (path: string, body: unknown): Promise<unknown> => {
-    // `guard.fetch` is the chokepoint: the allowlist gate fires BEFORE any socket opens.
-    const res = await config.guard.fetch(
+    // `guard.fetchAs` is the chokepoint: the allowlist AND sink-kind gates fire BEFORE any socket
+    // opens, so this Bearer request can only ever reach a `rented-backend`-sanctioned host.
+    const res = await config.guard.fetchAs(
+      "rented-backend",
       `${baseUrl}${path}`,
       { method: "POST", headers, body: JSON.stringify(body) },
       options,
