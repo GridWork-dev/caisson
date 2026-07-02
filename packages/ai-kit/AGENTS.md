@@ -52,8 +52,50 @@ defaultProviders(settings))` (a `createProviderRegistry` over the ai-config lane
 - Cost normalizes through `@caisson/ai-meter`'s versioned price book into **integer credits** (never a
   float). `opts.meter` overrides the price book / denomination / scope / clock.
 
+## Metered embeddings (ADR-0207)
+
+```ts
+import { embed, embedMany } from "@caisson/ai-kit";
+
+const one = await embed("embeddings", "some text", {
+  tx,
+  accountId,
+  settings,
+  resolveModel,
+  meter,
+});
+// one: { callId, embedding, usage, reserved, reconciled }
+
+const many = await embedMany("embeddings", ["a", "b"], {
+  tx,
+  accountId,
+  settings,
+  resolveModel,
+  meter,
+});
+// many: { callId, embeddings, usage, reserved, reconciled }
+```
+
+Same chokepoint contract as `infer()` — reserve BEFORE the call, reconcile to actual, BYOK zeroes the
+wallet — over a SHORTER pipeline: `resolve → reserve → provider call → record usage → reconcile`. No
+prompt-registry render and no guardrails (an embed input feeds a vector index, not a moderated chat
+turn — guardrails-on-embed is explicitly out of scope). `opts.resolveModel` is an
+`EmbeddingModelResolver`; production wires `buildEmbeddingRegistryResolver(settings,
+defaultProviders(settings))`. The reservation carries no `maxOutputTokens` — the resulting phantom
+output-token estimate always refunds in full at reconcile, so a buyer is billed for input tokens only.
+
+## Fetch deadline (ADR-0207)
+
+Every live provider factory (`providerFor`/`defaultProviders`) binds its outbound `fetch` to a
+`timeoutMs` deadline (default 60s) via `fetchWithTimeout` — a hung live call aborts instead of
+blocking the process. Override per call: `providerFor(cfg, keyOverride, timeoutMs)`,
+`defaultProviders(settings, timeoutMs)`, or `buildByokResolver({ …, timeoutMs })`. `infer()` also
+forwards `opts.abortSignal` to `generateText` (parity with `inferStream`'s `streamText` wiring) — an
+aborted call still settles via the existing refund path, never leaking the reservation.
+
 ## Out of scope
 
-No per-tenant encrypted BYOK (ai-config keeps the env-pointer contract); no live provider/model/network
-call in CI (the model is a port — test-doubled). Streaming ships request/response first; the signature
-is async-iterable-ready.
+No per-tenant encrypted BYOK for embeddings pricing (the embed price-book row / a flat bulk-embed SKU
+is cross-package money, deferred — see ADR-0207's open question); no input/output guardrails on embed
+values; no live provider/model/network call in CI (the model is a port — test-doubled, `live/`
+excepted). Streaming ships request/response first; the signature is async-iterable-ready.
