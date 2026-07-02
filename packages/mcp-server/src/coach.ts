@@ -51,6 +51,10 @@ export interface CoachToolRegistrar {
   registerTool(registration: {
     name: string;
     requiredEntitlement: string | null;
+    /** Declarative manifest fields (ADR-0210) — validated by the real seam at registration time. */
+    description: string;
+    version: string;
+    audit: { logArgs: boolean };
     handler: (ctx: { args: unknown }) => Promise<unknown>;
   }): void;
 }
@@ -184,6 +188,10 @@ export function registerCoachTools(
   server.registerTool({
     name: "inspect_env",
     requiredEntitlement,
+    description:
+      "Report which provider-key env-var NAMES are set (presence only, never values).",
+    version: "1.0.0",
+    audit: { logArgs: false },
     handler: async ({ args }) => {
       const { names } = parseStrict(inspectArgs, args);
       const vars = names.map((name) => ({
@@ -198,6 +206,10 @@ export function registerCoachTools(
   server.registerTool({
     name: "propose_ai_config",
     requiredEntitlement,
+    description:
+      "Turn desired AI lanes into a validated forge.config plus the required env-var key NAMES.",
+    version: "1.0.0",
+    audit: { logArgs: false },
     handler: async ({ args }) => {
       const input = parseStrict(proposeArgs, args);
       const lanes: Record<string, unknown> = {};
@@ -227,6 +239,10 @@ export function registerCoachTools(
   server.registerTool({
     name: "write_forge_config",
     requiredEntitlement,
+    description:
+      "Persist an approved forge.config + .env.example (NAMES only). Fail-closed without approve:true.",
+    version: "1.0.0",
+    audit: { logArgs: false },
     handler: async ({ args }): Promise<CoachWriteResult> => {
       const input = parseStrict(writeArgs, args);
       const settings = parseAiSettings(input.settings);
@@ -244,6 +260,10 @@ export function registerCoachTools(
   server.registerTool({
     name: "validate_setup",
     requiredEntitlement,
+    description:
+      "Verify a forge.config parses and every referenced key NAME is present in the environment.",
+    version: "1.0.0",
+    audit: { logArgs: false },
     handler: async ({ args }) => {
       const { settings } = parseStrict(validateArgs, args);
       const parsed = parseAiSettings(settings);

@@ -291,6 +291,70 @@ describe("buyer MCP server", () => {
       server.handleToolCall(session, "rm_rf", {}),
     ).rejects.toBeInstanceOf(NotFoundError);
   });
+
+  test("listTools entries carry a non-empty description (ADR-0210)", () => {
+    const tools = server.listTools(session);
+    expect(tools.length).toBeGreaterThan(0);
+    for (const reg of tools) {
+      expect(reg.description.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("ADR-0210 tool manifest validation (registerTool)", () => {
+  function freshServer() {
+    return createMcpServer({
+      tokens: [
+        {
+          token: "tok_manifest_x00000000000000",
+          accountId: "a",
+          entitlements: [],
+        },
+      ],
+      index,
+      onGenerate: async () => ({ generationId: "gen_manifest" }),
+    });
+  }
+
+  test("a manifest with an empty description is rejected at registration time", () => {
+    expect(() =>
+      freshServer().registerTool({
+        name: "bad_tool",
+        requiredEntitlement: null,
+        description: "",
+        version: "1.0.0",
+        audit: { logArgs: true },
+        handler: async () => ({}),
+      }),
+    ).toThrow(ValidationError);
+  });
+
+  test("a manifest with a non-semver version is rejected at registration time", () => {
+    expect(() =>
+      freshServer().registerTool({
+        name: "bad_tool",
+        requiredEntitlement: null,
+        description: "A tool.",
+        version: "v1",
+        audit: { logArgs: true },
+        handler: async () => ({}),
+      }),
+    ).toThrow(ValidationError);
+  });
+
+  test("a manifest with an unknown audit field is rejected (strict)", () => {
+    expect(() =>
+      freshServer().registerTool({
+        name: "bad_tool",
+        requiredEntitlement: null,
+        description: "A tool.",
+        version: "1.0.0",
+        // @ts-expect-error — smuggled extra key, proving the strict schema rejects it at runtime.
+        audit: { logArgs: true, extra: true },
+        handler: async () => ({}),
+      }),
+    ).toThrow(ValidationError);
+  });
 });
 
 describe("ADR-0076 tool-registration seam (per-tool entitlement gating)", () => {
@@ -318,6 +382,9 @@ describe("ADR-0076 tool-registration seam (per-tool entitlement gating)", () => 
   ed.registerTool({
     name: "run_eval",
     requiredEntitlement: "ai-kit",
+    description: "Run an eval suite (fixture tool).",
+    version: "1.0.0",
+    audit: { logArgs: true },
     handler: async ({ session: s }) => {
       evalCalls.push(s);
       return { ran: true };
@@ -332,15 +399,18 @@ describe("ADR-0076 tool-registration seam (per-tool entitlement gating)", () => 
       ed.registerTool({
         name: "list_modules",
         requiredEntitlement: null,
+        description: "Duplicate fixture.",
+        version: "1.0.0",
+        audit: { logArgs: true },
         handler: async () => ({}),
       }),
     ).toThrow(ValidationError);
   });
 
   test("edition tool is hidden from a non-entitled caller's tool list", () => {
-    const tools = ed.listTools(nonEntitled);
-    expect(tools).toEqual(["describe_module", "generate", "list_modules"]);
-    expect(tools).not.toContain("run_eval");
+    const names = ed.listTools(nonEntitled).map((reg) => reg.name);
+    expect(names).toEqual(["describe_module", "generate", "list_modules"]);
+    expect(names).not.toContain("run_eval");
   });
 
   test("edition tool is invisible (404, not 403) to a non-entitled caller", async () => {
@@ -351,7 +421,7 @@ describe("ADR-0076 tool-registration seam (per-tool entitlement gating)", () => 
   });
 
   test("edition tool is visible + callable for an entitled caller", async () => {
-    expect(ed.listTools(entitled)).toContain("run_eval");
+    expect(ed.listTools(entitled).map((reg) => reg.name)).toContain("run_eval");
     expect(await ed.handleToolCall(entitled, "run_eval", {})).toEqual({
       ran: true,
     });
