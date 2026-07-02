@@ -233,10 +233,14 @@ jobs run one at a time rather than in parallel like GitHub-hosted; `eval` passed
 has **no Homebrew extension-capable SQLite**, so `brew install sqlite` fails there — hence the macOS
 `native-ext` leg was kept on GitHub-hosted `macos-latest` for now (green).
 
-**Open follow-up — move the macOS `native-ext` leg onto the fleet:** provision Homebrew +
-extension-capable SQLite for the Mac mini's runner user, then flip `native-ext`'s macos leg
-`runs-on: macos-latest` → `runs-on: [self-hosted, gw-macos-arm64]` (saves the ~10×-cost hosted macOS
-minutes). Tracked in `docs/state/readiness-and-backlog.md`.
+**~~Open follow-up — move the macOS `native-ext` leg onto the fleet~~ DONE (2026-07-02):** the
+macos leg now runs `[self-hosted, gw-macos-arm64]` (the mini's legacy labeled runner — the macOS
+lane is not a runscaler scale set yet, so the label-array form is correct there, unlike the
+bare-name amd64 scale-set jobs). Homebrew's extension-capable SQLite is provisioned host-wide at
+`/opt/homebrew/opt/sqlite` (verified readable by the runner user), and the workflow's sqlite step
+is check-first so it never needs brew write access on the fleet box. Saves the ~10×-cost hosted
+macOS minutes. Manual fallback if the mini is down: flip the leg back to `runs-on: macos-latest`
+(one line).
 
 ### `deploy-site.yml` (DEPLOY -- operator-gated)
 
