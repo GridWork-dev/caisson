@@ -664,3 +664,18 @@ two picks override the spec recommendations (PF-1, AM-2) and one adds scope (ONN
 | **CF-1..2 — CF front rate-limit**         | Flip docs-api proxied, license stays grey · Free-tier rules now, Pro evaluated at real traffic. Apply + DNS flip = DEPLOY-class.                                                                                        | **ADR-0219** |
 | **AM-1..5 — admin mutation surface**      | 4 actions v1 (buyer-lookup dropped) · dedicated `admin_write` role (OVERRIDE of reuse-withTenant rec) · `admin_adjust` tag · WORM day 1 · new admin-scoped reissue credential. Supersedes ADR-0141's mutation deferral. | **ADR-0220** |
 | **KMS-1..2 + ONNX G1/F1/F2 — live seams** | Shared prover principal · print-only provisioner (CMK deferred) · G1-A throwaway-install sign-off · F1-A doc-flip-only on green · F2-B EgressGuard unification in-slice (OVERRIDE of defer rec, security tag).          | **ADR-0221** |
+
+## Closed by the 2026-07-02 distribution picker (operator-locked)
+
+npm-login-verified facts drove this round: the npm name `caisson` is third-party-taken (bare
+`caisson@0.1.3`), the operator owns npm org `caisson-sh`, and nothing open is on public npmjs
+(publish.yml is GitHub-Packages-only, no npmjs credential). Same day the operator created the
+GitHub org `caisson-sh` and transferred the monorepo to `caisson-sh/caisson`.
+
+| Fork                              | Decision                                                                                                      | ADR          |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------ |
+| **Public npm scope**              | `@caisson-sh/*` locked now (mirror renames at export; in-repo stays `@caisson/*`; registry ids never rename). | **ADR-0222** |
+| **npmjs publish path**            | The public mirror repo owns npmjs publishing; monorepo publish.yml stays GH-Packages (ADR-0069).              | **ADR-0222** |
+| **Credit pack price**             | $49 for 5,000 credits — sandbox SKU created, pricebook row wired.                                             | **ADR-0222** |
+| **agent-runner marketplace**      | Listed as the 15th module at $49 (matches registry 4900¢); members-map lag stays with members-fold republish. | **ADR-0222** |
+| **greptile-gate latency + globs** | Wait 15→35 min; `tooling/` glob narrowed to `tooling/standards-gate/src/` (PR #60).                           | CI, no ADR   |
