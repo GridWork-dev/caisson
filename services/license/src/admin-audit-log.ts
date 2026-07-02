@@ -1,0 +1,116 @@
+// The operator-facing half of the ADR-0220 dual audit log. Every admin mutation writes BOTH a
+// per-tenant WORM chain entry (tamper-evident evidence, @caisson/audit-worm) AND one row here — a
+// queryable, cross-tenant "who did what" list the operator browses from apps/admin. This table is
+// NOT tenant-scoped (it spans every tenant by design), so it carries no RLS tenant policy; access
+// is role-gated instead: `admin_write` may INSERT (written in the SAME transaction as the mutation,
+// so a rolled-back mutation writes no log row), the read-only `admin` role may SELECT (the cockpit
+// reads it through ADR-0141's `withAdminRead`), and the buyer `app` role is granted nothing — it
+// can never see the operator log.
+import { randomUUID } from "node:crypto";
+import { z } from "zod";
+import type { TenantExecutor } from "@caisson/tenancy-rls";
+
+/** The four locked operator actions (ADR-0220, Fork AM-1 = A). The buyer-lookup 5th is dropped. */
+export const ADMIN_ACTIONS = [
+  "entitlement_grant",
+  "entitlement_revoke",
+  "credit_adjust",
+  "license_reissue",
+] as const;
+export type AdminAction = (typeof ADMIN_ACTIONS)[number];
+
+/** Closed schema for the action discriminator — an unregistered action can never be logged. */
+export const AdminActionSchema = z.enum(ADMIN_ACTIONS);
+
+export const ADMIN_ACTION_LOG_SCHEMA_SQL = `
+CREATE TABLE admin_action_log (
+  id text PRIMARY KEY,
+  actor_email text NOT NULL,
+  target_account_id text NOT NULL,
+  action text NOT NULL,
+  payload_before jsonb,
+  payload_after jsonb,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT admin_action_log_action CHECK (action IN ('entitlement_grant', 'entitlement_revoke', 'credit_adjust', 'license_reissue'))
+);
+GRANT INSERT ON admin_action_log TO admin_write;
+GRANT SELECT ON admin_action_log TO admin;
+`;
+
+export interface AdminActionLogInput {
+  actorEmail: string;
+  targetAccountId: string;
+  action: AdminAction;
+  /** State snapshot before the mutation (JSON-serializable) — null when there is no prior state. */
+  before: unknown;
+  /** State snapshot after the mutation (JSON-serializable). */
+  after: unknown;
+}
+
+/**
+ * Insert one operator-action row. Runs inside the SAME `withAdminWrite` transaction as the mutation
+ * it records, so the two are atomic: a mutation that throws rolls this back too (neither logged).
+ */
+export async function insertAdminActionLog(
+  tx: TenantExecutor,
+  input: AdminActionLogInput,
+): Promise<string> {
+  const id = randomUUID();
+  await tx.query(
+    `INSERT INTO admin_action_log
+       (id, actor_email, target_account_id, action, payload_before, payload_after)
+     VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb)`,
+    [
+      id,
+      input.actorEmail,
+      input.targetAccountId,
+      input.action,
+      JSON.stringify(input.before ?? null),
+      JSON.stringify(input.after ?? null),
+    ],
+  );
+  return id;
+}
+
+export interface AdminActionLogRow {
+  id: string;
+  actorEmail: string;
+  targetAccountId: string;
+  action: string;
+  createdAt: string;
+}
+
+/**
+ * Read the most-recent operator actions, newest first — the cockpit's audit browser. Runs through
+ * ADR-0141's `withAdminRead` (the SELECT-only `admin` role). Payloads are omitted from the list
+ * view (a before/after snapshot can be large); the id + who/what/when is the browse surface.
+ */
+export async function readAdminActionLog(
+  tx: TenantExecutor,
+  limit = 100,
+): Promise<AdminActionLogRow[]> {
+  const bounded = Math.min(Math.max(Math.trunc(limit), 1), 500);
+  const r = await tx.query<{
+    id: string;
+    actor_email: string;
+    target_account_id: string;
+    action: string;
+    created_at: unknown;
+  }>(
+    `SELECT id, actor_email, target_account_id, action, created_at
+       FROM admin_action_log
+      ORDER BY created_at DESC, id DESC
+      LIMIT $1`,
+    [bounded],
+  );
+  return r.rows.map((row) => ({
+    id: row.id,
+    actorEmail: row.actor_email,
+    targetAccountId: row.target_account_id,
+    action: row.action,
+    createdAt:
+      row.created_at instanceof Date
+        ? row.created_at.toISOString()
+        : String(row.created_at),
+  }));
+}

@@ -31,6 +31,14 @@ import { type BillingWebhookResult, handleBillingWebhook } from "./webhook.ts";
 export interface IssueAppDeps {
   /** Bearer secret for POST /issue. Must be non-empty — server.ts fails closed if it is unset. */
   token: string;
+  /**
+   * A SECOND, admin-scoped Bearer that also authorizes POST /issue (ADR-0220 Fork AM-5). Distinct
+   * from `token` (`LICENSE_ISSUE_TOKEN`) so the apps/admin reissue proxy authenticates WITHOUT ever
+   * holding the primary issue secret — routing a CF-Access session through the shared token would
+   * let any CF-Access identity mint licenses for any account. Empty/unset ⇒ no admin path (the
+   * default; a normal license service never sets it). Compared timing-safe like `token`.
+   */
+  adminToken?: string;
   /** The signing identity (default Ed25519Signer over a PKCS8 env key; KMS is an un-wired seam). */
   signer: Signer;
   /** The built registry index — membership truth for entitlement expansion (ADR-0071). */
@@ -111,13 +119,25 @@ const text = (
  * before `timingSafeEqual` — avoiding the equal-length guard that would leak the token's byte length to a
  * remote timing oracle. Normalization is identical on both sides (raw bytes), so only the value compares.
  */
-function authorized(req: Request, token: string): boolean {
+function tokenMatches(presented: string, token: string): boolean {
   if (token.length === 0) return false; // unconfigured ⇒ fail closed
-  const header = req.headers.get("authorization") ?? "";
-  const presented = header.startsWith("Bearer ") ? header.slice(7) : "";
   const a = createHash("sha256").update(presented).digest();
   const b = createHash("sha256").update(token).digest();
   return timingSafeEqual(a, b);
+}
+
+/**
+ * Timing-safe Bearer check against the primary issue token AND (if configured) the distinct
+ * admin-scoped token (ADR-0220). BOTH digests are always computed before either compares, so the
+ * presence of the admin token never changes the timing profile of a primary-token request. An
+ * empty presented bearer matches neither (both configured secrets are non-empty by construction).
+ */
+function authorized(req: Request, token: string, adminToken: string): boolean {
+  const header = req.headers.get("authorization") ?? "";
+  const presented = header.startsWith("Bearer ") ? header.slice(7) : "";
+  const primary = tokenMatches(presented, token);
+  const admin = tokenMatches(presented, adminToken);
+  return primary || admin;
 }
 
 /** Build the request handler. Async because /issue awaits the tenant read + the signer. */
@@ -173,7 +193,7 @@ export function createApp(
       // Rate-gate BEFORE the bearer check (defense-in-depth) so an unauthenticated flood is capped too.
       const limited = rateLimited("issue", req);
       if (limited !== null) return limited;
-      if (!authorized(req, deps.token))
+      if (!authorized(req, deps.token, deps.adminToken ?? ""))
         return json({ error: "unauthorized" }, 401);
 
       let raw: unknown;

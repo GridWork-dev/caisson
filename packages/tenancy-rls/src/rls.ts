@@ -56,20 +56,27 @@ async function assertRoleNotPrivileged(
 }
 
 /**
- * Runs once per distinct `Transactor` (a `db` instance, not a transaction) — the guard costs one
- * extra catalog query per `Transactor`, not per call. A failed check is never cached: fixing the
- * misconfig un-wedges the very next call with no restart.
+ * Runs once per distinct `(Transactor, role)` pair — the guard costs one extra catalog query per
+ * role per `Transactor`, not per call. Keyed per-ROLE (not just per-db) so `withAdminWrite`'s
+ * `admin_write` guard is never skipped just because `withTenant` already vetted `app` on the same
+ * `db` (a shared-db bug that a plain WeakSet<Transactor> would hide). A failed check is never
+ * cached: fixing the misconfig un-wedges the very next call with no restart.
  */
-const roleGuardChecked = new WeakSet<Transactor>();
+const roleGuardChecked = new WeakMap<Transactor, Set<string>>();
 
 async function ensureRoleGuard(
   db: Transactor,
   tx: TenantExecutor,
   role: string,
 ): Promise<void> {
-  if (roleGuardChecked.has(db)) return;
+  const seen = roleGuardChecked.get(db);
+  if (seen?.has(role) === true) return;
   await assertRoleNotPrivileged(tx, role);
-  roleGuardChecked.add(db);
+  if (seen === undefined) {
+    roleGuardChecked.set(db, new Set([role]));
+  } else {
+    seen.add(role);
+  }
 }
 
 /**
@@ -147,4 +154,82 @@ export function buildTenantPolicySql(
     `  USING (${column} = current_setting('${TENANT_GUC}', true))`,
     `  WITH CHECK (${column} = current_setting('${TENANT_GUC}', true));`,
   ].join("\n");
+}
+
+// --- Admin WRITE seam (ADR-0220, Fork AM-2 = B) -----------------------------------------------
+//
+// The operator mutation surface must CHANGE state across tenants (comp a grant, correct a wallet)
+// — the exact inverse of the buyer `app` role's fail-closed tenant isolation. ADR-0141 put READS
+// behind a dedicated SELECT-only `admin` role (apps/admin's `admin-read.ts`, untouched here); this
+// is its WRITE twin, DB-separated on purpose: admin writes NEVER run as the buyer `app` role, so a
+// bug in the buyer runtime can never reach cross-tenant write privilege and vice-versa. RLS stays
+// the single mechanism — a second, ROLE-SCOPED permissive policy (`TO admin_write USING/CHECK
+// (true)`) lets only this role write any tenant's row; `app`'s `TO app` isolation is unchanged
+// (a `TO admin_write` policy never matches the `app` role). The one-account-per-call bound is the
+// APP layer (each mutation takes exactly one target account id + the writer filters on it) plus the
+// CF-Access gate + the dual audit log — not a GUC, because the locked cross-tenant policy is
+// `WITH CHECK (true)`. The `admin_write` role, like `app`, must be neither SUPERUSER nor BYPASSRLS
+// (the shared `ensureRoleGuard`, keyed per-role, refuses a privileged one — fail-closed).
+
+/** The write-capable, cross-tenant Postgres role the operator mutation surface writes as. Never a superuser. */
+export const ADMIN_WRITE_ROLE = "admin_write";
+
+/** Idempotent `CREATE ROLE admin_write` — for the PGlite dev/test double; prod provisions it at DEPLOY. */
+export const ADMIN_WRITE_ROLE_BOOTSTRAP_SQL = `
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '${ADMIN_WRITE_ROLE}') THEN
+    CREATE ROLE ${ADMIN_WRITE_ROLE} NOLOGIN;
+  END IF;
+END $$;
+`;
+
+export interface AdminWritePolicyOptions {
+  /** The write role the cross-tenant policy is scoped to. Default `admin_write`. */
+  role?: string;
+}
+
+/**
+ * SQL that lets the `admin_write` role INSERT/UPDATE/SELECT every row of `table` cross-tenant,
+ * WITHOUT widening what any other role sees. Emitted ALONGSIDE the table's existing
+ * `buildTenantPolicySql` output (which stays the `app` tenant-isolation floor): a
+ * `GRANT SELECT, INSERT, UPDATE ... TO admin_write` (no DELETE — the mutation surface soft-revokes,
+ * never hard-deletes) plus a `TO admin_write USING (true) WITH CHECK (true)` policy. RLS
+ * OR-combines permissive policies, but each is role-scoped, so `admin_write` sees/writes every
+ * tenant while `app` never matches this policy and stays isolated. Applied to the Railway PG at
+ * DEPLOY (ADR-0220), mirroring `buildAdminReadPolicySql`.
+ */
+export function buildAdminWritePolicySql(
+  table: string,
+  { role = ADMIN_WRITE_ROLE }: AdminWritePolicyOptions = {},
+): string {
+  return [
+    // Idempotent so re-running DEPLOY provisioning never errors: GRANT is a no-op when already held,
+    // and DROP POLICY IF EXISTS clears any prior policy before CREATE (Postgres has no
+    // CREATE POLICY IF NOT EXISTS). The policy body is fixed, so drop-then-create is safe to repeat.
+    `GRANT SELECT, INSERT, UPDATE ON ${table} TO ${role};`,
+    `DROP POLICY IF EXISTS ${table}_admin_write ON ${table};`,
+    `CREATE POLICY ${table}_admin_write ON ${table}`,
+    `  TO ${role}`,
+    `  USING (true)`,
+    `  WITH CHECK (true);`,
+  ].join("\n");
+}
+
+/**
+ * Run `fn` cross-tenant as the `admin_write` role: opens a transaction and `SET LOCAL ROLE
+ * admin_write` for its life. No account GUC is bound — the `TO admin_write USING/CHECK (true)`
+ * policy admits every tenant's rows, so the one-account bound is the caller's responsibility (pass
+ * exactly one target account id; the writer filters on it). Mirrors `withAdminRead`, but for
+ * WRITES, and — like `withTenant` — refuses a SUPERUSER/BYPASSRLS role via the shared role guard
+ * (fail-closed). The one seam every operator mutation writes through; never the pool directly.
+ */
+export async function withAdminWrite<T>(
+  db: Transactor,
+  fn: (tx: TenantExecutor) => Promise<T>,
+): Promise<T> {
+  return db.transaction(async (tx) => {
+    await ensureRoleGuard(db, tx, ADMIN_WRITE_ROLE);
+    await tx.exec(`SET LOCAL ROLE ${ADMIN_WRITE_ROLE}`);
+    return fn(tx);
+  });
 }

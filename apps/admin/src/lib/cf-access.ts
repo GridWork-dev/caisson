@@ -70,10 +70,17 @@ function jwksFor(teamDomain: string): KeyResolver {
   return jwks;
 }
 
+/** The verified Cloudflare Access identity — the `email` claim is the operator audit actor (ADR-0220). */
+export interface AccessIdentity {
+  readonly email: string;
+}
+
 /**
- * Verify a Cloudflare Access JWT against the team's JWKS, pinning issuer + audience and requiring RS256.
+ * Verify a Cloudflare Access JWT against the team's JWKS, pinning issuer + audience and requiring RS256,
+ * and RETURN the verified `email` claim (ADR-0220 — the audit actor; ADR-0204's verify was actor-blind).
  * `keyResolver` defaults to the cached remote JWKS; tests inject a local key. Throws on ANY failure —
- * bad signature, wrong `aud`/`iss`, expired — so the caller fails closed to a 403. A JWKS fetch error
+ * bad signature, wrong `aud`/`iss`, expired, OR a missing/blank `email` claim — so the caller fails
+ * closed to a 403 (an unattributable admin session must never reach a write). A JWKS fetch error
  * likewise throws (the request is denied, never allowed through on an unreachable JWKS).
  */
 export async function verifyAccessJwt(
@@ -81,14 +88,21 @@ export async function verifyAccessJwt(
   cfg: AccessConfig,
   keyResolver: KeyResolver = jwksFor(cfg.teamDomain),
   options: Parameters<typeof jwtVerify>[2] = {},
-): Promise<void> {
+): Promise<AccessIdentity> {
   // `options` is spread FIRST so the security-critical pins (issuer / audience / RS256) can never be
   // overridden by a caller — it only supplies extras like `currentDate` (used by tests for a
   // deterministic clock) or `clockTolerance`.
-  await jwtVerify(token, keyResolver, {
+  const { payload } = await jwtVerify(token, keyResolver, {
     ...options,
     issuer: `https://${cfg.teamDomain}`,
     audience: cfg.aud,
     algorithms: ["RS256"],
   });
+  const email = typeof payload.email === "string" ? payload.email.trim() : "";
+  if (email === "") {
+    // Fail closed: the CF-Access identity carries no email (misconfigured IdP claim mapping) — a
+    // write with no attributable actor defeats the audit trail, so deny rather than log "unknown".
+    throw new Error("CF Access token is missing the email identity claim");
+  }
+  return { email };
 }
