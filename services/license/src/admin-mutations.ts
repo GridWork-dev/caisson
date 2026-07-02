@@ -15,7 +15,13 @@
 // rejected fail-closed at the edge. The account id comes from operator input (the sanctioned
 // `withTenant`-contract exception, ADR-0220): the guardrails are CF-Access + this allowlist of
 // exactly four RPCs + the one-account bound + the dual log, not session-derived scoping.
-import { randomUUID } from "node:crypto";
+//
+// Id-space note: a real Caisson platform account id is a 32-char [A-Za-z0-9] better-auth id (and
+// `accountId == userId` for the personal account, ADR-0176) — NOT a UUID. `@caisson/audit-worm`'s
+// `buildArtifactKey`/`assertSafeKey` enforce a UUID first key segment, so the WORM anchor tenant
+// segment is DERIVED from the account id via `wormAnchorAccount` below (audit-worm stays unchanged);
+// the RAW account id is preserved inside the logged WORM payload, so auditability is not lost.
+import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { AuditChainStore } from "@caisson/audit-worm";
 import { balance, debit, grant } from "@caisson/credits";
@@ -71,7 +77,47 @@ export interface AdminMutationDeps {
   }) => Promise<ReissueProxyResult>;
 }
 
-const accountId = z.string().trim().min(1).max(256);
+// The real platform account-id shape (better-auth 32-char [A-Za-z0-9], ADR-0176) — NOT a UUID.
+// Trimmed, bounded 1..256, and no whitespace/control chars (a WORM key segment must be clean). We
+// validate the REAL id shape here, not a pretend UUID; the UUID is derived downstream.
+const accountId = z
+  .string()
+  .trim()
+  .min(1)
+  .max(256)
+  .refine(
+    // eslint-disable-next-line no-control-regex -- reject C0/C1 control chars + any whitespace (hyphens stay legal, so UUIDs pass).
+    (s) => !/[\u0000-\u001f\u007f-\u009f\s]/.test(s),
+    "account id has whitespace or control characters",
+  );
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Map an operator-supplied account id onto the UUID-shaped tenant segment the WORM artifact-key
+ * contract requires (`@caisson/audit-worm` `buildArtifactKey`/`assertSafeKey` enforce `UUID_RE` on
+ * the first key segment, ADR-0054) — WITHOUT changing that package. Real account ids are 32-char
+ * better-auth ids (ADR-0176), not UUIDs, so we deterministically derive a stable RFC-4122-shaped
+ * UUID: SHA-256 of the id, first 16 bytes, with the version nibble set to 8 (RFC-9562 v8, custom /
+ * hash-derived) and the RFC-4122 variant nibble set. An id that is ALREADY a UUID passes through
+ * unchanged (back-compat). The mapping is 1:1 in practice (SHA-256 collision-resistant); the RAW
+ * account id is always stored inside the logged WORM payload (`targetAccountId`), so remapping the
+ * KEY loses no auditability. Deterministic + pure, so the same account always anchors the same chain.
+ */
+export function wormAnchorAccount(id: string): string {
+  if (UUID_RE.test(id)) return id.toLowerCase();
+  const hex = createHash("sha256").update(id).digest("hex");
+  // Force RFC-4122 well-formedness on two nibbles (UUID_RE would accept the raw hex either way):
+  // hex[12] := version 8; hex[16] := variant (top two bits 10 → one of 8/9/a/b).
+  const variant = (
+    (Number.parseInt(hex.slice(16, 17), 16) & 0x3) |
+    0x8
+  ).toString(16);
+  const raw =
+    hex.slice(0, 12) + "8" + hex.slice(13, 16) + variant + hex.slice(17, 32);
+  return `${raw.slice(0, 8)}-${raw.slice(8, 12)}-${raw.slice(12, 16)}-${raw.slice(16, 20)}-${raw.slice(20, 32)}`;
+}
 
 export const GrantEntitlementBody = z
   .object({
@@ -91,9 +137,13 @@ export const AdjustCreditsBody = z
   .object({
     targetAccountId: accountId,
     // Integer credit units (ADR-0007), non-zero, bounded — a comp or a correction, never a float.
+    // Bounded to ±1e8 so it can never overflow the int4 `amount` column (int4 tops out ~2.1e9); the
+    // positive branch passes the delta straight to `grant`, so an unbounded value would 500 late.
     deltaCredits: z
       .number()
       .int()
+      .min(-100_000_000)
+      .max(100_000_000)
       .refine((n) => n !== 0, "deltaCredits must be non-zero"),
     reason: z.string().trim().min(1).max(500),
   })
@@ -122,8 +172,21 @@ export type ReissueLicenseInput = z.infer<typeof ReissueLicenseBody> & {
   expiry: string | null;
 };
 
+/**
+ * The tamper-evident WORM half's outcome. `"ok"` = anchored; `"failed"` = the mutation + the
+ * queryable `admin_action_log` row already COMMITTED (an earlier, separate tx) but the post-commit
+ * WORM append threw. That distinction is load-bearing: the caller must surface `"failed"` as a
+ * DO-NOT-RETRY result, never a generic mutation failure — a retry would double-apply the money /
+ * entitlement change. The action is still queryable in `admin_action_log`; re-anchor out of band.
+ */
+export type WormStatus = "ok" | "failed";
+
 /** Append the tamper-evident WORM half AFTER the mutation+log tx commits (both are separate roles).
- *  A mutation that throws never reaches here → neither half is written (Fork AM-4 atomicity). */
+ *  A mutation that throws never reaches here → neither half is written (Fork AM-4 atomicity). The
+ *  anchor's tenant segment is the DERIVED UUID (`wormAnchorAccount`) — the audit-worm key contract
+ *  requires a UUID and real account ids are not — while the RAW `targetAccountId` rides the payload.
+ *  A post-commit failure is CAUGHT and returned as `"failed"`, never rethrown: the state change is
+ *  already durable, so throwing here would read as a retryable mutation failure (the double-apply). */
 async function appendWorm(
   deps: AdminMutationDeps,
   targetAccountId: string,
@@ -131,16 +194,21 @@ async function appendWorm(
   actorEmail: string,
   before: JsonValue,
   after: JsonValue,
-): Promise<void> {
-  await deps.worm.append(targetAccountId, {
-    source: "admin_action",
-    action,
-    actorEmail,
-    targetAccountId,
-    before,
-    after,
-    at: new Date().toISOString(),
-  });
+): Promise<WormStatus> {
+  try {
+    await deps.worm.append(wormAnchorAccount(targetAccountId), {
+      source: "admin_action",
+      action,
+      actorEmail,
+      targetAccountId,
+      before,
+      after,
+      at: new Date().toISOString(),
+    });
+    return "ok";
+  } catch {
+    return "failed";
+  }
 }
 
 export interface EntitlementMutationResult {
@@ -148,6 +216,8 @@ export interface EntitlementMutationResult {
   before: string[];
   after: string[];
   changed: number;
+  /** WORM audit half's outcome — `"failed"` means DO-NOT-RETRY (the mutation already committed). */
+  worm: WormStatus;
 }
 
 /** Action 1 — comp a set of entitlements to one account (source_kind `admin_comp`). */
@@ -172,7 +242,7 @@ export async function grantEntitlementAdmin(
     });
     return { before, after, changed };
   });
-  await appendWorm(
+  const worm = await appendWorm(
     deps,
     input.targetAccountId,
     "entitlement_grant",
@@ -180,7 +250,7 @@ export async function grantEntitlementAdmin(
     { entitlements: result.before },
     { entitlements: result.after },
   );
-  return { targetAccountId: input.targetAccountId, ...result };
+  return { targetAccountId: input.targetAccountId, ...result, worm };
 }
 
 /** Action 2 — revoke an operator comp entitlement for one account (admin_comp grants only). */
@@ -204,7 +274,7 @@ export async function revokeEntitlementAdmin(
     });
     return { before, after, changed };
   });
-  await appendWorm(
+  const worm = await appendWorm(
     deps,
     input.targetAccountId,
     "entitlement_revoke",
@@ -212,7 +282,7 @@ export async function revokeEntitlementAdmin(
     { entitlements: result.before },
     { entitlements: result.after },
   );
-  return { targetAccountId: input.targetAccountId, ...result };
+  return { targetAccountId: input.targetAccountId, ...result, worm };
 }
 
 export interface CreditAdjustResult {
@@ -221,6 +291,8 @@ export interface CreditAdjustResult {
   balanceAfter: number;
   /** Credits actually applied — for a negative adjust this is clamped to the prior balance. */
   applied: number;
+  /** WORM audit half's outcome — `"failed"` means DO-NOT-RETRY (the wallet change already committed). */
+  worm: WormStatus;
 }
 
 /**
@@ -282,7 +354,7 @@ export async function adjustCreditsAdmin(
     });
     return { balanceBefore, balanceAfter, applied };
   });
-  await appendWorm(
+  const worm = await appendWorm(
     deps,
     input.targetAccountId,
     "credit_adjust",
@@ -294,7 +366,7 @@ export async function adjustCreditsAdmin(
       reason: input.reason,
     },
   );
-  return { targetAccountId: input.targetAccountId, ...result };
+  return { targetAccountId: input.targetAccountId, ...result, worm };
 }
 
 export interface ReissueResult {
@@ -302,6 +374,8 @@ export interface ReissueResult {
   major: number;
   licenseId: string;
   token: string;
+  /** WORM audit half's outcome — `"failed"` means DO-NOT-RETRY (the reissue + log already committed). */
+  worm: WormStatus;
 }
 
 /**
@@ -330,7 +404,7 @@ export async function reissueLicenseAdmin(
       after: { major: input.major, licenseId: reissued.licenseId },
     }),
   );
-  await appendWorm(
+  const worm = await appendWorm(
     deps,
     input.targetAccountId,
     "license_reissue",
@@ -343,5 +417,6 @@ export async function reissueLicenseAdmin(
     major: input.major,
     licenseId: reissued.licenseId,
     token: reissued.token,
+    worm,
   };
 }

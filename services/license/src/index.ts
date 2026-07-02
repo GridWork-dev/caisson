@@ -55,6 +55,7 @@ export {
   revokeEntitlementAdmin,
   adjustCreditsAdmin,
   reissueLicenseAdmin,
+  wormAnchorAccount,
 } from "./admin-mutations.ts";
 export type {
   AdminMutationDeps,
@@ -66,6 +67,7 @@ export type {
   EntitlementMutationResult,
   CreditAdjustResult,
   ReissueResult,
+  WormStatus,
 } from "./admin-mutations.ts";
 export { resolveAccountEntitlements } from "./resolve-entitlements.ts";
 export {

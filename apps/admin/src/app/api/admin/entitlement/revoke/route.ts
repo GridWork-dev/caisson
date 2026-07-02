@@ -4,7 +4,12 @@ import {
   RevokeEntitlementBody,
   revokeEntitlementAdmin,
 } from "@caisson/service-license";
-import { actorEmail, json, parseBody } from "@/lib/admin-route";
+import {
+  actorEmail,
+  json,
+  mutationResponse,
+  parseBody,
+} from "@/lib/admin-route";
 import { getAdminMutationDeps } from "@/lib/admin-mutations-runtime";
 
 export const runtime = "nodejs";
@@ -21,7 +26,7 @@ export async function POST(req: Request): Promise<Response> {
       actorEmail: actor,
       ...parsed.value,
     });
-    return json(result);
+    return mutationResponse(result);
   } catch {
     return json({ error: "mutation failed" }, 500);
   }

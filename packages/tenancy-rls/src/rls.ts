@@ -203,7 +203,11 @@ export function buildAdminWritePolicySql(
   { role = ADMIN_WRITE_ROLE }: AdminWritePolicyOptions = {},
 ): string {
   return [
+    // Idempotent so re-running DEPLOY provisioning never errors: GRANT is a no-op when already held,
+    // and DROP POLICY IF EXISTS clears any prior policy before CREATE (Postgres has no
+    // CREATE POLICY IF NOT EXISTS). The policy body is fixed, so drop-then-create is safe to repeat.
     `GRANT SELECT, INSERT, UPDATE ON ${table} TO ${role};`,
+    `DROP POLICY IF EXISTS ${table}_admin_write ON ${table};`,
     `CREATE POLICY ${table}_admin_write ON ${table}`,
     `  TO ${role}`,
     `  USING (true)`,
