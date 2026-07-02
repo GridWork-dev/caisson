@@ -236,28 +236,28 @@ describe("checkRlsEquivalence (ADR-0210/0005)", () => {
     );
   }
 
-  test("a tenant table with no RLS block at all is rls-missing", () => {
+  test("a tenant table with no RLS block at all is rls-missing", async () => {
     const p = widgetPkg("");
-    const f = checkRlsEquivalence([p], root);
+    const f = await checkRlsEquivalence([p], root);
     expect(f).toHaveLength(1);
     expect(f[0]?.rule).toBe("rls-missing");
   });
 
-  test("an RLS block matching buildTenantPolicySql's output exactly is clean", () => {
+  test("an RLS block matching buildTenantPolicySql's output exactly is clean", async () => {
     const p = widgetPkg(
       buildTenantPolicySql("widget", { column: "account_id", role: "app" }),
     );
-    expect(checkRlsEquivalence([p], root)).toEqual([]);
+    expect(await checkRlsEquivalence([p], root)).toEqual([]);
   });
 
-  test("an unlisted narrower-than-generated GRANT is rls-equivalence", () => {
+  test("an unlisted narrower-than-generated GRANT is rls-equivalence", async () => {
     const p = widgetPkg(narrowGrantSql());
-    const f = checkRlsEquivalence([p], root);
+    const f = await checkRlsEquivalence([p], root);
     expect(f).toHaveLength(1);
     expect(f[0]?.rule).toBe("rls-equivalence");
   });
 
-  test("a narrower GRANT listed in the overrides file is clean", () => {
+  test("a narrower GRANT listed in the overrides file is clean", async () => {
     const p = widgetPkg(narrowGrantSql());
     const overridesDir = join(root, "tooling", "standards-gate");
     mkdirSync(overridesDir, { recursive: true });
@@ -267,6 +267,6 @@ describe("checkRlsEquivalence (ADR-0210/0005)", () => {
         { table: "widget", package: p.name, reason: "test fixture" },
       ]),
     );
-    expect(checkRlsEquivalence([p], root)).toEqual([]);
+    expect(await checkRlsEquivalence([p], root)).toEqual([]);
   });
 });

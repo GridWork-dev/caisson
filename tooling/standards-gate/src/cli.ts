@@ -42,7 +42,7 @@ async function main(): Promise<number> {
     ...checkDeclarations(pkgs),
     ...(await checkManifestAgreement(pkgs)),
     ...checkCopyPaste(root), // ADR-0101 gate #4: cross-package copy-paste
-    ...checkRlsEquivalence(pkgs, root), // ADR-0210/0005: hand-written RLS vs the generator
+    ...(await checkRlsEquivalence(pkgs, root)), // ADR-0210/0005: hand-written RLS vs the generator
   ];
 
   const errors = findings.filter((f) => f.severity === "error");
