@@ -63,16 +63,26 @@ These need the **Business plan active** and are configured in the Linear UI:
       issues. Linear already emits `gitBranchName` per issue (e.g. `admin/caisson-1-…`).
 - [ ] **Cycles** — enable weekly cycles on the Caisson team.
 
-## Inbound wiring (fast-follow — CAISSON-3)
+## Inbound wiring (CAISSON-3)
 
-The chosen inbound path: the Discord **support-bot** (ADR-0105) posts escalations
-(`support_ticket.ai_brief`) as Linear issues in **Triage** via the API on escalation. Needs a small spec +
-the API call in the bot. Tracked as **CAISSON-3**. Until then, issues are created by Claude Code (MCP) or
-manually; Linear Asks (email/web) is the no-code alternative if wanted later.
+**Design LOCKED (ADR-0206, edition-tails-ops picker round):** the Discord **support-bot**
+(ADR-0105) posts escalations (`support_ticket.ai_brief`) as Linear issues in **Triage**, as a
+third best-effort sink alongside the existing Discord-thread + Postgres sinks in
+`Escalator.escalate()`. An `IssueTracker` Protocol + concrete `LinearIssueTracker` POST the
+`issueCreate` GraphQL mutation to `api.linear.app`; the port owns its own failures (an escalation
+must still succeed with Linear down). The Triage `stateId` is passed explicitly on create — no
+dependency on Business-tier triage automations. **v1 is log-only**: the created issue URL is
+logged, not persisted onto `support_ticket` (no ALTER TABLE migration path exists yet;
+correlation is a nice-to-have, not v1 scope). The whole surface is **env-gated off** —
+`LINEAR_API_KEY` / `LINEAR_TEAM_ID` / `LINEAR_TRIAGE_STATE_ID` unset ⇒ no Linear code path runs
+— using the operator's existing `lin_api_` personal key (credential-reuse trade-off acknowledged
+in the ADR; rotating to a dedicated bot actor later is a pure env-var swap).
+Until the code lands, issues are still created by Claude Code (MCP) or manually; Linear Asks
+(email/web) is the no-code alternative if wanted later.
 
 ## Setup checklist
 
 **Done (this session, via MCP):** team `Caisson` · 4 area projects · seed issues CAISSON-1/2/3.
 **Operator (UI / billing):** activate **Business** ($16/mo) · triage rules · agent guidance · GitHub Code
 Intelligence · enable cycles · create the `Launch` initiative.
-**Code (fast-follow):** support-bot → Triage wiring (CAISSON-3).
+**Code (fast-follow, design locked ADR-0206):** support-bot → Triage wiring (CAISSON-3).

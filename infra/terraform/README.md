@@ -29,6 +29,30 @@ terraform apply
 State is local + gitignored (`*.tfstate`). Move it to a remote backend (R2 + a lock) before more
 than one operator touches it.
 
+## State (deferred, ADR-0208 #3)
+
+Staying **local** is a deliberate posture, not an oversight: single operator, zero CI-driven
+`apply`s today (`ADR-0107`'s go-live checklist step 8 already names this exact migration and
+gates it on "if a second operator or CI ever runs apply"). No CI workflow invokes `terraform`.
+
+**Locking-gap finding:** Cloudflare R2 silently ignores S3 conditional-write headers
+(`If-None-Match`/`If-Match`), so Terraform ≥1.10's `use_lockfile = true` on the stock `s3`
+backend is a **no-op** on R2 — the state upload works, the lock does not. "R2 + a lock" (as
+phrased above and in `docs/operations.md`) is not achievable with that backend as-is; there is
+also no DynamoDB-equivalent on Cloudflare for the legacy `dynamodb_table` locking path.
+
+**Migration trigger:** a second operator or a CI-driven `apply` shows up. **Real options at that
+point** (pick one consciously — don't assume `use_lockfile` protects you on R2):
+
+- **Accept no real locking on R2** — fine for low-apply-frequency, one-writer-at-a-time
+  workflows; matches this repo's usage pattern if it stays small.
+- **A Worker/Durable-Object HTTP lock backend** — genuine atomic locking, but real infra to
+  build and maintain for what is otherwise a P2 backlog item.
+- **AWS S3 + DynamoDB instead of R2** — genuine conditional-write + DynamoDB locking today, at
+  the cost of a second cloud vendor for this one surface (though AWS creds already exist in this
+  repo's ops surface via `infra/worm/provision.ts`'s WORM bucket, so it isn't a net-new vendor
+  for the project as a whole).
+
 ## What it creates
 
 - `cloudflare_pages_project.site` — the Pages project (`caisson-site`, production branch `main`).
