@@ -39,3 +39,15 @@ export * from "./impersonation/session.ts";
 
 // --- Operational telemetry (T18) — the EventSink ops mirror (evidentiary record stays in WORM).
 export * from "./observe.ts";
+
+// --- Bundled operational-compliance primitives (ADR-0178) — the folded members, composed + surfaced.
+// The Compliance bundle includes SOC2 CC7.2 alerting + CCPA/GDPR erasure; re-export both surfaces from
+// this one edition import home and wire them via `createComplianceEdition` (./edition.ts).
+export * from "@caisson/alerting";
+export * from "@caisson/retention-runner";
+// Both primitives export a `CaptureAuditSink` audit-sink type — an ambiguous `export *` name (TS2308).
+// Bind the bare name explicitly to alerting's (resolving the ambiguity) and surface retention-runner's
+// under a disambiguated alias.
+export type { CaptureAuditSink } from "@caisson/alerting";
+export type { CaptureAuditSink as RetentionCaptureAuditSink } from "@caisson/retention-runner";
+export * from "./edition.ts";
