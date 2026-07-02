@@ -73,33 +73,38 @@ function readQuantity(item: Record<string, unknown>): number {
   return typeof q === "number" && Number.isInteger(q) && q > 0 ? q : 1;
 }
 
-/** The transaction's `details.line_items[]` — the array carrying each line's `txnitm_…` id and its
- * per-line `totals` (the request-echo `items[]` carries neither). Read best-effort and correlated BY
- * ORDER with `items[]` (Paddle emits the two arrays in the same order): a missing/short array yields
- * the empty sentinels, never a throw HERE. On a MULTI-line transaction the "" itemId sentinel is NOT
- * benign — it collides on the credit ledger's per-line uniqueness key and silently under-grants — so
- * `readLineItems` fails the whole event closed when it sees one across 2+ lines (see there). On a
- * single-line transaction the sentinel cannot collide, so it stays a permitted best-effort default. */
-function readDetailLine(
+/** The transaction's `details.line_items[]` — the array carrying each line's `txnitm_…` id, its own
+ * `price_id`, and its per-line `totals` (the request-echo `items[]` carries neither). Grouped into
+ * FIFO queues keyed by `price_id` (CAISSON-6): Paddle does not guarantee `items[]` and
+ * `details.line_items[]` share an index order, only that each line item echoes the `price_id` it was
+ * priced from — correlating by that key (rather than by array position) is correct regardless of
+ * ordering. Two lines sharing a `price_id` (the same SKU bought twice) still correlate correctly: each
+ * is queued in the order it appears in `details.line_items[]` and consumed in that same order by
+ * `readLineItems`, so if the two arrays are BOTH in Paddle's natural order the pairing is identical to
+ * the old positional read — this only fixes the case where they diverge. Read best-effort — a
+ * missing/malformed `details`/`line_items` yields an empty map, never a throw HERE. */
+function readLineItemQueues(
   obj: Record<string, unknown>,
-  index: number,
-): { itemId: string; chargedAmount: number } {
+): Map<string, { itemId: string; chargedAmount: number }[]> {
+  const queues = new Map<string, { itemId: string; chargedAmount: number }[]>();
   const details = obj.details;
-  if (typeof details !== "object" || details === null)
-    return { itemId: "", chargedAmount: 0 };
+  if (typeof details !== "object" || details === null) return queues;
   const lines = (details as Record<string, unknown>).line_items;
-  if (!Array.isArray(lines) || index >= lines.length)
-    return { itemId: "", chargedAmount: 0 };
-  const line: unknown = lines[index];
-  if (typeof line !== "object" || line === null)
-    return { itemId: "", chargedAmount: 0 };
-  const rec = line as Record<string, unknown>;
-  const totals = rec.totals;
-  const chargedAmount =
-    typeof totals === "object" && totals !== null
-      ? readMoneyMinorUnits((totals as Record<string, unknown>).total)
-      : 0;
-  return { itemId: readString(rec.id), chargedAmount };
+  if (!Array.isArray(lines)) return queues;
+  for (const raw of lines) {
+    if (typeof raw !== "object" || raw === null) continue;
+    const rec = raw as Record<string, unknown>;
+    const priceId = readString(rec.price_id);
+    const totals = rec.totals;
+    const chargedAmount =
+      typeof totals === "object" && totals !== null
+        ? readMoneyMinorUnits((totals as Record<string, unknown>).total)
+        : 0;
+    const queue = queues.get(priceId) ?? [];
+    queue.push({ itemId: readString(rec.id), chargedAmount });
+    queues.set(priceId, queue);
+  }
+  return queues;
 }
 
 /** EVERY line of a one-time transaction: `items[].price.id` + `items[].quantity` (Strix vuln-0005 —
@@ -118,7 +123,8 @@ function readLineItems(obj: Record<string, unknown>): {
 }[] {
   const items = obj.items;
   if (!Array.isArray(items)) return [];
-  const lines = items.map((raw, index) => {
+  const queues = readLineItemQueues(obj);
+  const lines = items.map((raw) => {
     if (typeof raw !== "object" || raw === null) {
       throw new ValidationError("Paddle line item is not an object");
     }
@@ -131,7 +137,12 @@ function readLineItems(obj: Record<string, unknown>): {
     if (priceId === "") {
       throw new ValidationError("Paddle line item is missing its price id");
     }
-    const detail = readDetailLine(obj, index);
+    // Dequeue this price id's next FIFO-ordered details.line_items entry (CAISSON-6 keyed join); an
+    // exhausted/absent queue for this price id falls back to the empty sentinels, same as before.
+    const detail = queues.get(priceId)?.shift() ?? {
+      itemId: "",
+      chargedAmount: 0,
+    };
     return {
       priceId,
       quantity: readQuantity(item),
