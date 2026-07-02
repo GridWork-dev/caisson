@@ -23,8 +23,9 @@ product
   load-bearing parts a boilerplate skips. They are a peer engineer, not a "customer to be wowed."
 - **Buyer's app end-users (shipped `ui` package):** operators of regulated SaaS dashboards — dense,
   data-heavy, keyboard-driven workflows (credit ledgers, audit trails, entitlements).
-- **Internal (the studio):** the operator, using `apps/studio` to pick, document, and lock the
-  design system — the same A/B/C decision-surface pattern proven in Wardfile.
+- **Internal (the design gallery):** the operator, using the `apps/admin` design gallery (absorbed
+  `apps/studio`, ADR-0140) to pick, document, and lock the design system — the same A/B/C
+  decision-surface pattern proven in Wardfile.
 
 ## Product Purpose
 

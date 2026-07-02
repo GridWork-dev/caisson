@@ -1,6 +1,6 @@
 # @caisson/observability
 
-Vendor-neutral OpenTelemetry bootstrap (instrumentation only) + a self-hosted SigNoz backend.
+Vendor-neutral OpenTelemetry bootstrap (instrumentation only); the fleet backend is Grafana Cloud (ADR-0177).
 
 - **Layer:** base
 - **Seeds (rebuild-clean):** new for the P6-tail

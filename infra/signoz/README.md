@@ -1,4 +1,9 @@
-# infra/signoz — self-hosted SigNoz (ADR-0142)
+# infra/signoz — self-hosted SigNoz (ADR-0142) — SUPERSEDED
+
+> **SUPERSEDED 2026-07-01 — never went live as the fleet backend.** The Railway SigNoz stack
+> was torn down and the fleet's sole OTLP sink is now **Grafana Cloud** (ADR-0177; admin `/ops`
+> rebuilt on the Grafana Tempo query API, ADR-0207 — see `docs/state/providers.md`). This tree
+> is retained as reference IaC only; nothing points at it and the DEPLOY session must not apply it.
 
 Checked-in IaC for the Caisson fleet's observability backend: a **single-node SigNoz** stack
 (traces + logs + metrics over OpenTelemetry) the operator's admin control-plane

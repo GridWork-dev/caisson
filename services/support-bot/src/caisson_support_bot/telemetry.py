@@ -1,11 +1,11 @@
-"""OTLP telemetry init (ADR-0117/0142): env-gated OpenTelemetry export to SigNoz.
+"""OTLP telemetry init (ADR-0117/0142): env-gated OpenTelemetry export to the fleet OTLP sink (Grafana Cloud since ADR-0177).
 
 Mirrors the Node observability port's env-gated-driver contract
 (packages/observability/src/observability.ts): no ``OTEL_EXPORTER_OTLP_ENDPOINT`` (or an empty one)
 → start NOTHING and return — a dormant no-op that configures no provider, no exporter, no
 instrumentation. An endpoint present boots a ``TracerProvider`` with an OTLP/HTTP
 ``BatchSpanProcessor`` and patches httpx + asyncpg so the bot's outbound calls (docs-service,
-OpenRouter, Postgres) become spans. Secrets (OTLP headers, e.g. a SigNoz ingestion key) are read
+OpenRouter, Postgres) become spans. Secrets (OTLP headers, e.g. a Grafana Cloud ingestion token) are read
 straight from the environment by the exporter and never logged.
 """
 

@@ -21,31 +21,33 @@ compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 
 # Cloudflare Workers observability (native Workers Logs) — invocation logs + sampling in the CF
-# dashboard, no external collector. Distinct from the app-side OTel→SigNoz stack (ADR-0117). Enabled
-# so the license-gating redeploy (ADR-0136) is observable at the edge.
+# dashboard, no external collector. Distinct from the app-side OTel stack (ADR-0117; fleet sink is
+# Grafana Cloud since ADR-0177). Enabled so the license-gating redeploy (ADR-0136) is observable at
+# the edge.
 [observability]
 enabled = true
 head_sampling_rate = 1
 
-# SigNoz bridge (ADR-0142): CF-native OpenTelemetry export — the sanctioned way to get the edge
-# Worker's spans/logs into the same SigNoz stack as the Node services (ADR-0117), instead of a
-# hand-rolled tail worker. Cloudflare's OTel export is in open beta; the wrangler syntax below is the
-# documented form (developers.cloudflare.com/workers/observability/exporting-opentelemetry-data).
+# OTLP bridge (ADR-0142, repointed by ADR-0177/0207): CF-native OpenTelemetry export — the
+# sanctioned way to get the edge Worker's spans/logs into the same Grafana Cloud stack as the Node
+# services, instead of a hand-rolled tail worker. Cloudflare's OTel export is in open beta; the
+# wrangler syntax below is the documented form
+# (developers.cloudflare.com/workers/observability/exporting-opentelemetry-data).
 #
 # INERT UNTIL DEPLOY — committing these blocks does NOT open any surface:
 #   1. `destinations` names must match typed destinations REGISTERED IN THE CF DASHBOARD at deploy
 #      time (Workers Observability → Add destination → one Traces + one Logs, each pointing at the
-#      SigNoz OTLP endpoint with the ingestion-key header). Until then there is nothing to export to.
+#      Grafana Cloud OTLP endpoint with its auth header). Until then there is nothing to export to.
 #   2. Export requires a Workers Paid subscription; the account is on the free plan pre-cutover.
 #   3. `deploy.sh`/`bunx wrangler deploy` is operator-gated + separate from SHIP.
 # The blocks keep wrangler parsing valid regardless; `persist` is left at its default (true) so the
-# existing CF-dashboard leg above is unchanged and SigNoz gets a copy.
+# existing CF-dashboard leg above is unchanged and Grafana Cloud gets a copy.
 [observability.traces]
 enabled = true
 head_sampling_rate = 1
-destinations = ["signoz-otlp-traces"]
+destinations = ["grafana-otlp-traces"]
 
 [observability.logs]
 enabled = true
 head_sampling_rate = 1
-destinations = ["signoz-otlp-logs"]
+destinations = ["grafana-otlp-logs"]

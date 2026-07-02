@@ -21,13 +21,13 @@ conflict the spec/ADR wins (CLAUDE.md source-of-truth hierarchy).
 Full annotated tree: [`specs/01-architecture.md` §1](../specs/01-architecture.md). One line
 per layer:
 
-| Layer          | Path              | Owns                                                                                                                    | Decides                                                                                                                                         |
-| -------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Standards gate | `tooling/`        | the ONE eslint/tsconfig/test/lint-gate source; nothing ships except through it                                          | [ADR-0001](../knowledge/decisions/ADR-0001-monorepo-tooling.md), [ADR-0002](../knowledge/decisions/ADR-0002-engineering-invariants.md)          |
-| Packages       | `packages/*` (24) | independently-sellable capability units; framework-free                                                                 | [ADR-0003](../knowledge/decisions/ADR-0003-composable-package-base-split.md)                                                                    |
-| Registry       | `registry/`       | versioned module sources + derived index; the single publish ingress + the one allowlist                                | [ADR-0004](../knowledge/decisions/ADR-0004-generator-registry-codegen-credits.md)                                                               |
-| Apps           | `apps/*` (7)      | one runnable reference template per edition + the GTM site + the design studio; the ONLY layer that imports a framework | [ADR-0003](../knowledge/decisions/ADR-0003-composable-package-base-split.md)                                                                    |
-| Services       | `services/*` (3)  | seller-platform side-cars: license issuer, docs, support-bot                                                            | [ADR-0008](../knowledge/decisions/ADR-0008-buyer-mcp-server-auth.md), [ADR-0009](../knowledge/decisions/ADR-0009-custom-support-bot-service.md) |
+| Layer          | Path              | Owns                                                                                                                                                                 | Decides                                                                                                                                         |
+| -------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Standards gate | `tooling/`        | the ONE eslint/tsconfig/test/lint-gate source; nothing ships except through it                                                                                       | [ADR-0001](../knowledge/decisions/ADR-0001-monorepo-tooling.md), [ADR-0002](../knowledge/decisions/ADR-0002-engineering-invariants.md)          |
+| Packages       | `packages/*` (24) | independently-sellable capability units; framework-free                                                                                                              | [ADR-0003](../knowledge/decisions/ADR-0003-composable-package-base-split.md)                                                                    |
+| Registry       | `registry/`       | versioned module sources + derived index; the single publish ingress + the one allowlist                                                                             | [ADR-0004](../knowledge/decisions/ADR-0004-generator-registry-codegen-credits.md)                                                               |
+| Apps           | `apps/*` (7)      | one runnable reference template per edition + the GTM site + the admin control-plane (absorbed the design studio, ADR-0140); the ONLY layer that imports a framework | [ADR-0003](../knowledge/decisions/ADR-0003-composable-package-base-split.md)                                                                    |
+| Services       | `services/*` (3)  | seller-platform side-cars: license issuer, docs, support-bot                                                                                                         | [ADR-0008](../knowledge/decisions/ADR-0008-buyer-mcp-server-auth.md), [ADR-0009](../knowledge/decisions/ADR-0009-custom-support-bot-service.md) |
 
 Runtime/PM: Bun + TypeScript strict everywhere except `services/support-bot` (Python,
 operator choice; NOT a Bun workspace member). Build orchestration: Turborepo
@@ -53,8 +53,8 @@ The package set splits into 20 **base/primitive** packages and **4 edition** pac
 
 ```
                 framework boundary (only apps cross it)
-   apps/site  apps/studio  apps/compliance  apps/ai-kit  apps/local-ai  apps/base  apps/agent-dev
-   (Next 16)  (Next 15)    (Next 16)        (Next 15)    (Next 16)      (plain TS) (plain TS)
+   apps/site  apps/admin   apps/compliance  apps/ai-kit  apps/local-ai  apps/base  apps/agent-dev
+   (Next 16)  (Next 16)    (Next 16)        (Next 15)    (Next 16)      (plain TS) (plain TS)
         |          |            |               |             |             |           |
         v          v            v               v             v             v           v
    +-----------------------------------------------------------------------------------------+
@@ -91,7 +91,7 @@ This keeps every package independently sellable and composable into any host.
 **Verification (2026-06-28):** no file under any `packages/*/src` imports `next` or
 `react` (grep clean). The `ui` package currently ships **design tokens only** (`src/index.ts`
 is 32B + `tokens/`); it has no React components yet, so even the UI layer holds the line.
-Of the 7 apps, 5 carry a Next dependency (`site`, `studio`, `compliance`, `ai-kit`,
+Of the 7 apps, 5 carry a Next dependency (`site`, `admin`, `compliance`, `ai-kit`,
 `local-ai`); `apps/base` and `apps/agent-dev` are plain-TS reference consumers with no
 framework at all.
 
