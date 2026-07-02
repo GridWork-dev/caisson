@@ -2,7 +2,8 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 
 import { buildMetadata } from "@/lib/metadata";
-import { Card, Section, StatusChip } from "@/components";
+import { Card, Faq, Section, StatusChip } from "@/components";
+import { faqPage, serializeJsonLd } from "@/lib/jsonld";
 
 export const metadata = buildMetadata({
   title: "License",
@@ -10,6 +11,35 @@ export const metadata = buildMetadata({
     "Caisson commercial license summary — what you may build with the kit and what you may not redistribute. One perpetual license across the whole library.",
   path: "/legal/license",
 });
+
+// FAQ items — answer-first; also rendered as faqPage JSON-LD (only visible questions are emitted).
+const FAQ_ITEMS = [
+  {
+    question: "Can I use Caisson to build a SaaS product I sell to customers?",
+    answer:
+      "Yes. Building and operating your own commercial product — including a product you sell to paying customers — is the primary intended use. Your customers use your product; they do not receive the Caisson kit source.",
+  },
+  {
+    question: "Can I include Caisson in an open-source project I publish?",
+    answer:
+      "No. Open-sourcing the Caisson kit source (or a project that is substantially the kit) would make it freely redistributable, which the Commercial License prohibits. You can still build and ship your own product on Caisson — your customers use your product, not the kit source.",
+  },
+  {
+    question: "What happens when I modify the source?",
+    answer:
+      "Modifications you make are yours to use in your own products. The Commercial License terms still govern the underlying Caisson code in any derivative work — you cannot strip the license and redistribute.",
+  },
+  {
+    question: "Is the license perpetual?",
+    answer:
+      "Yes. The Commercial License is perpetual for the version you purchased. Compliance Updates is an optional subscription that delivers new versions with updated control mappings; it is not required to continue using the version you bought.",
+  },
+  {
+    question: "Does Caisson claim to be SOC 2 certified or HIPAA certified?",
+    answer:
+      "No. Caisson ships the technical controls that SOC 2, HIPAA, and other frameworks require — fail-closed RLS, WORM storage, an append-only audit chain, field encryption, and an evidence-pack generator. The audit itself, the organizational controls (HR, vendor management, incident response), and the certification decision remain yours. Your auditor certifies your organization; Caisson provides the code that makes the technical evidence.",
+  },
+];
 
 const prose = {
   paragraph: {
@@ -36,8 +66,15 @@ const prose = {
 };
 
 export default function LicensePage() {
+  const ldFaq = faqPage(FAQ_ITEMS);
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(ldFaq) }}
+      />
+
       {/* Page header */}
       <Section eyebrow="Legal" title="License" flush as="h1">
         <p className="cs-lede" style={{ marginTop: "var(--cs-space-3)" }}>
@@ -274,56 +311,9 @@ export default function LicensePage() {
         </div>
       </Section>
 
-      {/* FAQ */}
+      {/* FAQ (visible + JSON-LD) */}
       <Section eyebrow="Questions" title="Common questions" band="tint">
-        <h3 style={prose.h3}>
-          Can I use Caisson to build a SaaS product I sell to customers?
-        </h3>
-        <p style={prose.paragraph}>
-          Yes. Building and operating your own commercial product — including a
-          product you sell to paying customers — is the primary intended use.
-          Your customers use your product; they do not receive the Caisson kit
-          source.
-        </p>
-
-        <h3 style={prose.h3}>
-          Can I include Caisson in an open-source project I publish?
-        </h3>
-        <p style={prose.paragraph}>
-          No. Open-sourcing the Caisson kit source (or a project that is
-          substantially the kit) would make it freely redistributable, which the
-          Commercial License prohibits. You can still build and ship your own
-          product on Caisson — your customers use your product, not the kit
-          source.
-        </p>
-
-        <h3 style={prose.h3}>What happens when I modify the source?</h3>
-        <p style={prose.paragraph}>
-          Modifications you make are yours to use in your own products. The
-          Commercial License terms still govern the underlying Caisson code in
-          any derivative work — you cannot strip the license and redistribute.
-        </p>
-
-        <h3 style={prose.h3}>Is the license perpetual?</h3>
-        <p style={prose.paragraph}>
-          Yes. The Commercial License is perpetual for the version you
-          purchased. Compliance Updates is an optional subscription that
-          delivers new versions with updated control mappings; it is not
-          required to continue using the version you bought.
-        </p>
-
-        <h3 style={prose.h3}>
-          Does Caisson claim to be SOC 2 certified or HIPAA certified?
-        </h3>
-        <p style={prose.paragraph}>
-          No. Caisson ships the technical controls that SOC 2, HIPAA, and other
-          frameworks require — fail-closed RLS, WORM storage, an append-only
-          audit chain, field encryption, and an evidence-pack generator. The
-          audit itself, the organizational controls (HR, vendor management,
-          incident response), and the certification decision remain yours. Your
-          auditor certifies your organization; Caisson provides the code that
-          makes the technical evidence.
-        </p>
+        <Faq items={FAQ_ITEMS} style={{ marginTop: "var(--cs-space-6)" }} />
       </Section>
 
       {/* Contact */}
