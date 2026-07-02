@@ -37,7 +37,8 @@ describe("ADR_TRAIL (baked from the real repo at build time)", () => {
   test("is non-empty, sorted ascending, and carries the known ADR-0140 lock", () => {
     expect(ADR_TRAIL.length).toBeGreaterThan(0);
     for (let i = 1; i < ADR_TRAIL.length; i++) {
-      expect(ADR_TRAIL[i].number).toBeGreaterThan(ADR_TRAIL[i - 1].number);
+      // Non-null assertions: i is bounded by length, but noUncheckedIndexedAccess can't see it.
+      expect(ADR_TRAIL[i]!.number).toBeGreaterThan(ADR_TRAIL[i - 1]!.number);
     }
     const adr140 = ADR_TRAIL.find((e) => e.number === 140);
     expect(adr140?.title).toBe("admin.caisson.sh auth: CF-Access alone");
