@@ -36,7 +36,24 @@ function purchaseCompleted(
     accountId,
     amountTotal: 499900,
     currency: "usd",
-    priceId,
+    lineItems: [{ priceId, quantity: 1 }],
+    paymentId,
+  };
+}
+
+/** A multi-line one-time purchase (a cart, Strix vuln-0005) — one grant per paid line. */
+function purchaseCompletedMulti(
+  accountId: string,
+  paymentId: string,
+  lineItems: { priceId: string; quantity: number }[],
+): DomainBillingEvent {
+  return {
+    type: "purchase.completed",
+    sourceEventId: `evt_${paymentId}`,
+    accountId,
+    amountTotal: 499900,
+    currency: "usd",
+    lineItems,
     paymentId,
   };
 }
@@ -277,6 +294,43 @@ describe("applyBillingEvent — one-time purchase grant (ADR-0113)", () => {
     expect(ents).toEqual(["compliance"]);
     const bal = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
     expect(bal).toBe(0); // 0-credit license-only buy grants no credits
+  });
+
+  test("a multi-item cart grants EVERY line: edition entitlement AND pack credits (Strix vuln-0005)", async () => {
+    // The pre-fix mapper fulfilled only items[0]: a cart of {compliance edition, credit pack} granted
+    // just ["compliance"] and 0 credits. One applyBillingEvent must now land BOTH the entitlement and
+    // the pack's credits from the single transaction.
+    const acct = "acct_cart";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompletedMulti(acct, "pi_cart", [
+          { priceId: ONETIME_EDITION_ID, quantity: 1 },
+          { priceId: CREDIT_PACK_ID, quantity: 1 },
+        ]),
+      ),
+    );
+    const ents = await withTenant(tp.pg, acct, (tx) =>
+      readEntitlements(tx, acct),
+    );
+    expect(ents).toEqual(["compliance"]);
+    const bal = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
+    expect(bal).toBe(PACK_CREDITS); // the pack line's credits landed, not just the first line
+  });
+
+  test("a quantity>1 line multiplies the credits granted (Strix vuln-0005)", async () => {
+    // A buyer who bumps a credit-pack line to quantity 3 pays 3× and must be granted 3× the credits.
+    const acct = "acct_cart_qty";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompletedMulti(acct, "pi_cart_qty", [
+          { priceId: CREDIT_PACK_ID, quantity: 3 },
+        ]),
+      ),
+    );
+    const bal = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
+    expect(bal).toBe(PACK_CREDITS * 3);
   });
 
   test("a one-time grant SURVIVES a subscription cancel for the same edition (refcount)", async () => {

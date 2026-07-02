@@ -169,7 +169,9 @@ export function parsePolarEvent(event: PolarEvent): DomainBillingEvent | null {
           accountId,
           amountTotal,
           currency,
-          priceId,
+          // Polar order webhooks carry a single product per order here — a one-entry wrap of the
+          // shared multi-line shape (Strix vuln-0005), quantity 1.
+          lineItems: [{ priceId, quantity: 1 }],
           paymentId: orderId,
         };
       }

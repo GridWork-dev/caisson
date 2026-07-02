@@ -55,7 +55,8 @@ function readAccountId(obj: Record<string, unknown>): string {
   return readString((customData as Record<string, unknown>).account_id);
 }
 
-/** The transaction's first line item's price id, from `items[0].price.id`. */
+/** The transaction's first line item's price id, from `items[0].price.id`. Used only for the
+ * subscription (invoice.paid) path — a subscription transaction is single-line by design. */
 function readItemPriceId(obj: Record<string, unknown>): string {
   const items = obj.items;
   if (!Array.isArray(items) || items.length === 0) return "";
@@ -64,6 +65,33 @@ function readItemPriceId(obj: Record<string, unknown>): string {
   const price = (first as Record<string, unknown>).price;
   if (typeof price !== "object" || price === null) return "";
   return readString((price as Record<string, unknown>).id);
+}
+
+/** Read a positive integer `quantity` from a Paddle line item, defaulting to 1 when absent/invalid. */
+function readQuantity(item: Record<string, unknown>): number {
+  const q = item.quantity;
+  return typeof q === "number" && Number.isInteger(q) && q > 0 ? q : 1;
+}
+
+/** EVERY line of a one-time transaction: `items[].price.id` + `items[].quantity` (Strix vuln-0005 —
+ * a multi-item cart is ONE transaction carrying N lines; fulfilling only `items[0]` under-grants a
+ * cart the buyer paid for in full). Malformed entries (no object / no price id) are skipped. */
+function readLineItems(
+  obj: Record<string, unknown>,
+): { priceId: string; quantity: number }[] {
+  const items = obj.items;
+  if (!Array.isArray(items)) return [];
+  const lines: { priceId: string; quantity: number }[] = [];
+  for (const raw of items) {
+    if (typeof raw !== "object" || raw === null) continue;
+    const item = raw as Record<string, unknown>;
+    const price = item.price;
+    if (typeof price !== "object" || price === null) continue;
+    const priceId = readString((price as Record<string, unknown>).id);
+    if (priceId === "") continue;
+    lines.push({ priceId, quantity: readQuantity(item) });
+  }
+  return lines;
 }
 
 /** `details.totals.grand_total` — the transaction's charged total, minor units. */
@@ -98,13 +126,17 @@ export function parsePaddleEvent(
         // degenerate event missing it has nothing to anchor a grant's idempotency key on — never a
         // guessed grant.
         if (txnId === "") return null;
+        // Fulfill EVERY paid line, not just items[0] (Strix vuln-0005). A degenerate transaction with
+        // no readable line item has nothing to grant — null rather than a guessed/empty grant.
+        const lineItems = readLineItems(obj);
+        if (lineItems.length === 0) return null;
         return {
           type: "purchase.completed",
           sourceEventId: event.event_id,
           accountId,
           amountTotal: readGrandTotal(obj),
           currency: readString(obj.currency_code, "usd"),
-          priceId: readItemPriceId(obj),
+          lineItems,
           paymentId: txnId,
         };
       }
