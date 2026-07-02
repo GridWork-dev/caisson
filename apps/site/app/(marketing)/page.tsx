@@ -4,6 +4,7 @@ import {
   CodeBlock,
   CredentialStrip,
   EditionCard,
+  FeatureGrid,
   Hero,
   Icon,
   Reveal,
@@ -149,10 +150,7 @@ export default function HomePage() {
           title="Prevention at the application layer — with the receipts."
           lede="Each control ships with a live artifact you can read, run, and hand to an auditor. No diagrams standing in for behaviour."
         >
-          <div
-            className="cs-grid cs-grid--3"
-            style={{ marginTop: "var(--cs-space-8)" }}
-          >
+          <FeatureGrid cols={3}>
             {EVIDENCE.map((e) => (
               <Card key={e.label}>
                 <div className="cs-status">
@@ -187,7 +185,7 @@ export default function HomePage() {
                 </p>
               </Card>
             ))}
-          </div>
+          </FeatureGrid>
         </Section>
       </Reveal>
 
