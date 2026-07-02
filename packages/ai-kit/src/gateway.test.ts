@@ -37,9 +37,11 @@ import { DerivedKeyProvider, derivedContext } from "@caisson/field-crypto";
 import type { AiSettings } from "@caisson/ai-config";
 import { withTenant } from "@caisson/tenancy-rls";
 import { simulateReadableStream } from "ai";
+import type { LanguageModelMiddleware } from "ai";
 import { MockLanguageModelV2 } from "ai/test";
 import type {
   LanguageModelV2,
+  LanguageModelV2FinishReason,
   LanguageModelV2StreamPart,
   ProviderV2,
 } from "@ai-sdk/provider";
@@ -123,6 +125,7 @@ function mockStreamModel(
   chunks: string[],
   usage: { inputTokens: number; outputTokens: number; totalTokens: number },
   chunkDelayInMs: number | null = null,
+  finishReason: LanguageModelV2FinishReason = "stop",
 ): MockLanguageModelV2 {
   const parts: LanguageModelV2StreamPart[] = [
     { type: "stream-start", warnings: [] },
@@ -133,11 +136,61 @@ function mockStreamModel(
       delta,
     })),
     { type: "text-end", id: "1" },
-    { type: "finish", finishReason: "stop", usage },
+    { type: "finish", finishReason, usage },
   ];
   return new MockLanguageModelV2({
     doStream: async () => ({
       stream: simulateReadableStream({ chunks: parts, chunkDelayInMs }),
+    }),
+  });
+}
+
+/** A stream that finishes normally but reports NO usage — streaming twin of `mockModelNoUsage`. */
+function mockStreamModelNoUsage(chunks: string[]): MockLanguageModelV2 {
+  const parts: LanguageModelV2StreamPart[] = [
+    { type: "stream-start", warnings: [] },
+    { type: "text-start", id: "1" },
+    ...chunks.map((delta): LanguageModelV2StreamPart => ({
+      type: "text-delta",
+      id: "1",
+      delta,
+    })),
+    { type: "text-end", id: "1" },
+    {
+      type: "finish",
+      finishReason: "stop",
+      usage: {
+        inputTokens: undefined,
+        outputTokens: undefined,
+        totalTokens: undefined,
+      },
+    },
+  ];
+  return new MockLanguageModelV2({
+    doStream: async () => ({
+      stream: simulateReadableStream({ chunks: parts }),
+    }),
+  });
+}
+
+/** A stream that yields `chunks` then an `error` part — never reaches `finish`. */
+function mockStreamModelError(
+  chunks: string[],
+  error: unknown,
+): MockLanguageModelV2 {
+  const parts: LanguageModelV2StreamPart[] = [
+    { type: "stream-start", warnings: [] },
+    { type: "text-start", id: "1" },
+    ...chunks.map((delta): LanguageModelV2StreamPart => ({
+      type: "text-delta",
+      id: "1",
+      delta,
+    })),
+    { type: "error", error },
+  ];
+  return new MockLanguageModelV2({
+    doStream: async () => ({
+      stream: simulateReadableStream({ chunks: parts }),
     }),
   });
 }
@@ -653,5 +706,201 @@ describe("streaming infer — inferStream", () => {
       ),
     ).rejects.toBeInstanceOf(SpendCapError);
     expect(blocked.doStreamCalls).toHaveLength(0);
+  });
+
+  test("a stream error part propagates to the consumer and still reconciles — no leaked reservation", async () => {
+    await seed(1000);
+    const s = sink();
+    const boom = new Error("boom");
+    const model = mockStreamModelError(["partial"], boom);
+
+    const res = await inferStream(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), s),
+    );
+
+    const drain = async (): Promise<string[]> => {
+      const deltas: string[] = [];
+      for await (const delta of res.textStream) deltas.push(delta);
+      return deltas;
+    };
+    await expect(drain()).rejects.toBe(boom);
+
+    const settled = await res.settled;
+    expect(settled.abandoned).toBe(true); // no `finish` part was ever reached
+    const rows = await tp.query(
+      `SELECT 1 FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(rows).toHaveLength(1); // reconciled exactly once despite the stream error
+  });
+
+  test("a normal finish with no reported usage settles at the reservation, never a silent refund", async () => {
+    await seed(1000);
+    const s = sink();
+    const model = mockStreamModelNoUsage(["done"]);
+
+    const res = await inferStream(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), s),
+    );
+
+    const deltas: string[] = [];
+    for await (const delta of res.textStream) deltas.push(delta);
+    expect(deltas.join("")).toBe("done");
+
+    const settled = await res.settled;
+    expect(settled.abandoned).toBe(false); // a finish part was reached — just no usage on it
+    expect(settled.reconciled.deltaCredits).toBe(0);
+    expect(settled.reconciled.refundedCredits).toBe(0);
+    expect(settled.reconciled.actualCredits).toBe(res.reserved.reservedCredits);
+  });
+
+  test("an output-guard block on normal finish still reconciles the actual spend before rejecting", async () => {
+    await seed(1000);
+    const s = sink();
+    const policy = cleanPolicy({ moderator: localModerator(["forbidden"]) });
+    const model = mockStreamModel(["this is ", "forbidden"], {
+      inputTokens: 10,
+      outputTokens: 20,
+      totalTokens: 30,
+    });
+
+    const res = await inferStream(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, policy, s),
+    );
+
+    const deltas: string[] = [];
+    for await (const delta of res.textStream) deltas.push(delta);
+    expect(deltas.join("")).toBe("this is forbidden"); // the raw stream is never guarded mid-flight
+
+    await expect(res.settled).rejects.toBeInstanceOf(GuardrailError);
+
+    // Tokens were already consumed before the block — settle the ACTUAL usage, not a refund.
+    const rows = await tp.query<{ credits: number }>(
+      `SELECT credits FROM ${USAGE_EVENT_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.credits).toBe(1);
+  });
+
+  test("PII tokenized on input is restored on the settled text, but never per-delta on the raw stream", async () => {
+    await seed(1000);
+    const ctx = derivedContext(
+      new DerivedKeyProvider(Buffer.alloc(32, 0x11), Buffer.alloc(32, 0x22)),
+      A,
+    );
+    const s = sink();
+    const model = mockStreamModel(["I'll email ", "[[PII:email:0]]", " now."], {
+      inputTokens: 10,
+      outputTokens: 20,
+      totalTokens: 30,
+    });
+    const policy = cleanPolicy({ pii: { mode: "tokenize", ctx } });
+
+    const res = await inferStream(
+      "default",
+      { messages: [{ role: "user", content: "write to jane@example.com" }] },
+      baseOpts(model, policy, s),
+    );
+
+    const deltas: string[] = [];
+    for await (const delta of res.textStream) deltas.push(delta);
+    // Per-delta text still carries the opaque placeholder — restoration is a whole-text operation.
+    expect(deltas.join("")).toContain("[[PII:email:0]]");
+
+    const settled = await res.settled;
+    expect(settled.text).toBe("I'll email jane@example.com now.");
+  });
+
+  test("a large multi-chunk stream accumulates every delta in order on both textStream and settled.text", async () => {
+    await seed(1000);
+    const s = sink();
+    const chunks = Array.from({ length: 50 }, (_, i) => `c${i} `);
+    const model = mockStreamModel(chunks, {
+      inputTokens: 10,
+      outputTokens: 20,
+      totalTokens: 30,
+    });
+
+    const res = await inferStream(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), s),
+    );
+
+    const deltas: string[] = [];
+    for await (const delta of res.textStream) deltas.push(delta);
+    expect(deltas).toHaveLength(50);
+
+    const settled = await res.settled;
+    expect(settled.text).toBe(chunks.join(""));
+    expect(settled.abandoned).toBe(false);
+  });
+
+  test("opts.middleware wraps the streamed provider call via wrapLanguageModel", async () => {
+    await seed(1000);
+    const s = sink();
+    const model = mockStreamModel(["wrapped"], {
+      inputTokens: 10,
+      outputTokens: 20,
+      totalTokens: 30,
+    });
+    let wrapCalls = 0;
+    const middleware: LanguageModelMiddleware = {
+      wrapStream: async ({ doStream }) => {
+        wrapCalls++;
+        return doStream();
+      },
+    };
+
+    const res = await inferStream(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), s, { middleware }),
+    );
+
+    const deltas: string[] = [];
+    for await (const delta of res.textStream) deltas.push(delta);
+    expect(deltas.join("")).toBe("wrapped");
+    expect(wrapCalls).toBe(1);
+    expect((await res.settled).abandoned).toBe(false);
+  });
+
+  test("a finish with finishReason 'length' (maxOutputTokens truncation) still reconciles to the provider's ACTUAL usage", async () => {
+    await seed(1000);
+    const s = sink();
+    const model = mockStreamModel(
+      ["truncated output"],
+      { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
+      null,
+      "length",
+    );
+
+    const res = await inferStream(
+      "default",
+      { messages: [{ role: "user", content: "ping" }] },
+      baseOpts(model, cleanPolicy(), s, { maxOutputTokens: 5 }),
+    );
+
+    const deltas: string[] = [];
+    for await (const delta of res.textStream) deltas.push(delta);
+    expect(deltas.join("")).toBe("truncated output");
+
+    // A finish part is a finish part regardless of finishReason — "length" still trues up to the
+    // provider's reported usage, never falling back to the abandoned-stream estimate.
+    const settled = await res.settled;
+    expect(settled.abandoned).toBe(false);
+    expect(settled.usage).toEqual({
+      inputTokens: 10,
+      outputTokens: 20,
+      cachedInputTokens: 0,
+    });
+    expect(settled.reconciled.actualCredits).toBe(1);
   });
 });
