@@ -4,6 +4,8 @@ import {
   Button,
   Card,
   CredentialStrip,
+  Faq,
+  FeatureGrid,
   Hero,
   Icon,
   Reveal,
@@ -224,10 +226,7 @@ content-security-policy: default-src 'self'; …`}
           title="How caisson.sh itself is secured."
           lede="A dynamic app widens the attack surface — we keep it deliberately scoped and document exactly what ships."
         >
-          <div
-            className="cs-grid cs-grid--3"
-            style={{ marginTop: "var(--cs-space-8)" }}
-          >
+          <FeatureGrid cols={3}>
             {SITE_POSTURE.map((p) => (
               <Reveal as="article" key={p.title}>
                 <Card>
@@ -244,7 +243,7 @@ content-security-policy: default-src 'self'; …`}
                 </Card>
               </Reveal>
             ))}
-          </div>
+          </FeatureGrid>
         </Section>
 
         {/* ===== The shipped CSP, with the honest residual ===== */}
@@ -333,24 +332,9 @@ content-security-policy: default-src 'self'; …`}
           eyebrow="Straight answers"
           title="The questions procurement asks first."
         >
-          <div
-            className="cs-grid"
-            style={{ marginTop: "var(--cs-space-8)", gap: "var(--cs-space-5)" }}
-          >
-            {FAQ.map((item) => (
-              <Reveal as="article" key={item.question}>
-                <Card>
-                  <h3 className="cs-card-title">{item.question}</h3>
-                  <p
-                    className="cs-muted"
-                    style={{ marginTop: "var(--cs-space-3)", maxWidth: "74ch" }}
-                  >
-                    {item.answer}
-                  </p>
-                </Card>
-              </Reveal>
-            ))}
-          </div>
+          {/* Bare <Faq>, matching ai-kit/compliance — a Card wrapper here double-borders the
+           * accordion rows (Faq draws its own per-row surface). D8(a) vetoable call. */}
+          <Faq items={FAQ} style={{ marginTop: "var(--cs-space-8)" }} />
         </Section>
 
         {/* ===== Disclosure CTA ===== */}
