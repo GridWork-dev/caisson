@@ -51,6 +51,32 @@ const gate = gateAgainstBaseline("__evals__/baseline.json", [run]); // BLESS=1 t
 if (!gate.passed) throw new Error("eval regression");
 ```
 
+## Eval-science depth (ADR-0208)
+
+Four dependency-free additions harden the gate's rigor without adding a `package.json` dep or
+importing an edition (down-only, ADR-0003):
+
+- **Exit classifier** (`classifyExit`) — WHY a run exited (`success`/`error`/`timeout`/`refusal`/
+  `budget-exhausted`/`empty-output`/`unknown`), a grader annotation orthogonal to pass/fail. Pure
+  priority chain over a caller-supplied `ExitSignal` — never infers from prose.
+- **Wilson-CI gate augmentation** (`wilsonLowerBound`, `wilsonFloor` on `DefineEvalConfig`/`EvalRun`)
+  — opt-in and purely additive: unset `wilsonFloor` is zero behavior change. Set, it computes the
+  Wilson score lower bound per scorer from `scoredCases[].passes[scorer]` and adds a
+  `"wilson-below-floor"` regression finding when the bound sits below the floor — catching a
+  lucky-draw small golden set that a flat mean/`threshold` check alone would pass.
+- **Eval ledger** (`recordEvalSpend`, `InMemoryEvalLedgerSink`) — eval spend on an injected
+  `EvalLedgerSink` port, integer `costCents` (ADR-0007). **Isolation by construction**: this module
+  NEVER imports `@caisson/ai-meter` (production budget) or a Postgres dependency.
+- **Reflexivity queue** (`captureDisagreement`, `consolidateReflexivityQueue`) — accumulates
+  production judge/human verdict disagreements behind an injected `ReflexivityQueueStore` port.
+  Consolidation dedups by `caseId` (latest wins) and caps, returning candidates for OPERATOR REVIEW
+  only — it never auto-produces an `EvalCase` or writes to a committed dataset (the rubric stays
+  scorer-owned, ADR-0061; a human merges).
+- **Agreement** (`fleissKappa`, `ensembleAgreement`, `counterfactualStability`) — multi-rater
+  agreement over N judge verdicts and a perturbation-stability score. This package only SCORES
+  agreement over already-produced variant verdicts; it never generates the counterfactual variants
+  themselves (that's an ai-kit/agent-dev concern).
+
 ## Out of scope (this primitive)
 
 No provider call, no token metering (`@caisson/ai-meter`), no prompt storage/addressing
