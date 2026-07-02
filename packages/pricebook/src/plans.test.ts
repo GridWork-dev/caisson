@@ -1,7 +1,7 @@
 // plan-book unit tests (ADR-0089): resolvePlan is fail-closed (unknown id throws, never a guessed
 // grant) and parsePlanBook rejects malformed rows at the boundary. Pure, no DB.
 import { describe, expect, test } from "bun:test";
-import { ConfigError, ValidationError } from "@caisson/kernel";
+import { ConfigError, ValidationError, asCredits } from "@caisson/kernel";
 import { type PlanBookEntry, parsePlanBook, resolvePlan } from "./plans.ts";
 
 describe("resolvePlan — fail-closed (ADR-0089 §6)", () => {
@@ -11,7 +11,7 @@ describe("resolvePlan — fail-closed (ADR-0089 §6)", () => {
   test("a known placeholder id returns its exact entry", () => {
     const entry = resolvePlan("price_developer_monthly_PLACEHOLDER");
     expect(entry.planTag).toBe("developer");
-    expect(entry.creditsPerCycle).toBe(1000);
+    expect<number>(entry.creditsPerCycle).toBe(1000);
     expect(entry.cadence).toBe("month");
     expect(entry.entitlements).toEqual([]); // credits-only plan grants no edition
   });
@@ -26,12 +26,12 @@ describe("resolvePlan — fail-closed (ADR-0089 §6)", () => {
     const book: Record<string, PlanBookEntry> = {
       price_x: {
         planTag: "x",
-        creditsPerCycle: 5,
+        creditsPerCycle: asCredits(5),
         cadence: "year",
         entitlements: [],
       },
     };
-    expect(resolvePlan("price_x", book).creditsPerCycle).toBe(5);
+    expect<number>(resolvePlan("price_x", book).creditsPerCycle).toBe(5);
     expect(() =>
       resolvePlan("price_developer_monthly_PLACEHOLDER", book),
     ).toThrow(ConfigError);

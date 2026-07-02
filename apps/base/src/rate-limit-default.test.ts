@@ -48,6 +48,9 @@ function fakeStore(mode: StoreMode, onTransaction?: () => void): Transactor {
             rows = mode === "allow" ? [{ tokens: 119 }] : [];
           } else if (sql.includes("SELECT last_refill_ms")) {
             rows = [{ last_refill_ms: 0, refill_interval_ms: 60_000 }];
+          } else if (sql.includes("FROM pg_roles")) {
+            // The withTenant role pre-flight (fail-closed): answer as an unprivileged role.
+            rows = [{ rolsuper: false, rolbypassrls: false }];
           }
           return { rows: rows as R[] };
         },

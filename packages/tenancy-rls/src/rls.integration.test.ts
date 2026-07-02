@@ -83,3 +83,27 @@ describe("withTenant + fail-closed RLS", () => {
     ).rejects.toBeInstanceOf(TenancyError);
   });
 });
+
+describe("role pre-flight guard (ADR-0005 hardening)", () => {
+  // Each test gets its OWN TestPg — the guard's WeakSet cache is keyed per-Transactor
+  // instance, so a fresh instance guarantees the check actually runs (never masked by an
+  // earlier test's cached "app is safe" result on the shared `tp` above).
+
+  test("a SUPERUSER app role is rejected before it ever touches data", async () => {
+    const misconfigured = await newTestPg();
+    await misconfigured.exec(`ALTER ROLE app SUPERUSER`);
+    await expect(
+      withTenant(misconfigured.pg, "acct_a", async () => undefined),
+    ).rejects.toBeInstanceOf(TenancyError);
+    await misconfigured.close();
+  });
+
+  test("a BYPASSRLS app role is rejected before it ever touches data", async () => {
+    const misconfigured = await newTestPg();
+    await misconfigured.exec(`ALTER ROLE app BYPASSRLS`);
+    await expect(
+      withTenant(misconfigured.pg, "acct_a", async () => undefined),
+    ).rejects.toBeInstanceOf(TenancyError);
+    await misconfigured.close();
+  });
+});

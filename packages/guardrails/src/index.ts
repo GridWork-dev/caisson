@@ -1,8 +1,10 @@
 // @caisson/guardrails — the gateway content-safety primitive (ADR-0063): a swappable `Moderator`
 // port + a TS-native PII engine (mask / hash / reversible-tokenize via field-crypto) behind a
 // fail-closed input/output guard that throws `GuardrailError` 422 and emits a metadata-only
-// `guardrail.blocked` event to the kernel `EventSink`. A base primitive the AI Production Kit
-// gateway composes; it never imports an edition (ADR-0003).
+// `guardrail.blocked` event to the kernel `EventSink`. `guard.ts` also runs an unconditional
+// credential-shape gate (ADR-0215, category `"secret"`) before either leg reaches the moderator; a
+// standalone FTC "4 Ps" dark-pattern evaluator scores marketing/UI copy separately (`ftc4p.ts`). A
+// base primitive the AI Production Kit gateway composes; it never imports an edition (ADR-0003).
 
 // Moderator port + drivers + the forge.config policy block.
 export {
@@ -45,3 +47,14 @@ export type {
   GuardOutcome,
   PiiPolicy,
 } from "./guard.ts";
+
+// FTC "4 Ps" dark-pattern presentation guardrail (ADR-0215) — scores static marketing/UI copy;
+// optionally wrappable as a Moderator via `ftc4pModerator`, but not wired into `guard.ts` itself.
+export {
+  FTC_4P_DIMENSIONS,
+  evaluateFtc4P,
+  ftc4pModerator,
+  ftc4pFindingSchema,
+  ftc4pResultSchema,
+} from "./ftc4p.ts";
+export type { Ftc4PDimension, Ftc4PFinding, Ftc4PResult } from "./ftc4p.ts";

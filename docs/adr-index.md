@@ -10,7 +10,7 @@ conflict, the ADR file and the board win over this index.
   never edits the prior file. So most rows below are **partial** supersessions (one clause),
   not a wholesale replacement.
 - Numbering is **not**
-  contiguous: present are **0001-0024** and **0040-0143** + **0150-0153** (Stage-2 Stream B) + **0160-0162** + **0170-0185** (Stage-2 Streams A/C/D · the 2026-07-01 provider picker · the 2026-07-01 edition seam-completion picker 0179-0185) + **0187-0199** (LIFT/site-rework/audit-remediation; 0186 reserved-unfiled for agent-runner) + **0200-0203** (commerce-goes-live 0200/0203 + editions-go-live 0201-0202; the Discord ADR was drafted 0201 and renumbered to 0203 at merge — editions claimed 0201 first, ADR-0088 second-merger-renumbers) + **0204-0209** (the 2026-07-02 strix-remediation lock 0204 + the edition-tails-ops picker 0205-0209; the transports ADR was drafted 0204 and renumbered to 0209 at merge — strix claimed 0204 first, ADR-0088 second-merger-renumbers) — **ceiling 0209**; **0025-0039 are an unused gap**
+  contiguous: present are **0001-0024** and **0040-0143** + **0150-0153** (Stage-2 Stream B) + **0160-0162** + **0170-0185** (Stage-2 Streams A/C/D · the 2026-07-01 provider picker · the 2026-07-01 edition seam-completion picker 0179-0185) + **0187-0199** (LIFT/site-rework/audit-remediation; 0186 filed 2026-07-02 at agent-runner build start per its "files at build" reservation) + **0200-0203** (commerce-goes-live 0200/0203 + editions-go-live 0201-0202; the Discord ADR was drafted 0201 and renumbered to 0203 at merge — editions claimed 0201 first, ADR-0088 second-merger-renumbers) + **0204-0209** (the 2026-07-02 strix-remediation lock 0204 + the edition-tails-ops picker 0205-0209; the transports ADR was drafted 0204 and renumbered to 0209 at merge — strix claimed 0204 first, ADR-0088 second-merger-renumbers) + **0210-0217** (the 2026-07-02 lift-harvest slice-2 wave, drafted 0204-0211 and renumbered at merge per ADR-0088 — strix/edition-tails claimed 0204-0209 first: reconcile + wave lock 0210 · jobs consumer-side 0211 · branded-money/rounding-provenance 0212 · ai-kit embeddings 0213 · ai-evals depth 0214 · guardrails 0215 · mcp-server manifest/ledger 0216 · ai-meter dedup gate 0217; 0186 filed 2026-07-02 at agent-runner build start per its "files at build" reservation) — **ceiling 0217**; **0025-0039 are an unused gap**
   (no files). The 0040 jump was a deliberate block reservation for the brand/positioning set.
   **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit);
   **0094-0096** = the 2026-06-29 GTM-report locks (open-core Base / GTM offer / services-docs);
@@ -565,6 +565,29 @@ The transports ADR was drafted 0204 and renumbered to 0209 at merge (strix claim
 | [0207](../knowledge/decisions/ADR-0207-admin-ops-grafana-query-rebuild.md)   | Admin /ops cockpit rebuilds on the Grafana Cloud query API                   | Admin/Obs        | accepted | consequence of 0177 teardown; per the 0140 charter                  |
 | [0208](../knowledge/decisions/ADR-0208-ops-hardening-locks.md)               | Ops-hardening locks: owner-only tenant writes · branch-protection · TF defer | Security/Ops     | accepted | fixes Strix vuln-0006; extends 0107 §8; scopes the 0178 republish   |
 | [0209](../knowledge/decisions/ADR-0209-local-ai-rented-transport-drivers.md) | local-ai RentedTransport drivers: Azure + Bedrock ship, Ollama out of scope  | Local-AI/Infra   | accepted | closes the 0160 deferred bullet; pattern from 0201; drafted as 0204 |
+
+### Lift-harvest slice-2 wave (0186 + 0210–0217, 2026-07-02) - status `accepted`
+
+The lift-harvest session ran the Act-0 built-vs-remaining reconcile of the full ADR-0133/0134/0135
+harvest program (20-agent fan-out), then an operator picker locked the three open program forks:
+the ai-evals/guardrails asymmetry → harden in place; scope → the full remaining program; the auth
+hash-at-rest lift → deferred (fights better-auth, ADR-0015). ADR-0186 files here from its LIFT
+slice-1 reservation (F1/F2/F5, "files at build"). 0210 records the reconcile terminal states +
+wave lock; 0211–0217 are the per-package decisions of the build wave. The wave was drafted
+0204–0211 and renumbered to 0210–0217 at merge — strix/edition-tails claimed 0204–0209 first
+(ADR-0088 second-merger-renumbers).
+
+| #                                                                                   | Title                                                                      | Domain           | Status   | Relations                                                    |
+| ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ---------------- | -------- | ------------------------------------------------------------ |
+| [0186](../knowledge/decisions/ADR-0186-agent-runner-sandboxed-governed.md)          | @caisson/agent-runner: sandboxed governed agent runner (Agentic-Dev)       | Editions/Agentic | accepted | implements LIFT F1/F2/F5; relates 0133/0137/0153/0199        |
+| [0210](../knowledge/decisions/ADR-0210-harvest-slice2-wave-lock.md)                 | Harvest slice-2 wave lock: reconcile terminals, asymmetry, scope, defers   | Program/Harvest  | accepted | executes 0133/0134/0135; resolves the 0133 flagged asymmetry |
+| [0211](../knowledge/decisions/ADR-0211-jobs-consumer-side.md)                       | @caisson/jobs consumer side: idempotent enqueue + claim API + visibility   | Base/Jobs        | accepted | extends 0018/0173; Wardfile B1 + lift-sweep #14              |
+| [0212](../knowledge/decisions/ADR-0212-kernel-branded-money-rounding-provenance.md) | Branded money types + rounding provenance (Wardfile B3)                    | Base/Money       | accepted | extends 0007/0089/0060/0098                                  |
+| [0213](../knowledge/decisions/ADR-0213-ai-kit-metered-embeddings.md)                | ai-kit metered embeddings surface + fetch-deadline floor fix               | Editions/AI-Kit  | accepted | extends 0059/0182/0198/0201                                  |
+| [0214](../knowledge/decisions/ADR-0214-ai-evals-eval-science-depth.md)              | ai-evals depth: exit-classifier, Wilson-CI gate, reflexivity, Fleiss-kappa | Editions/AI-Kit  | accepted | extends 0062/0013; lift-sweep #5/#11/#15                     |
+| [0215](../knowledge/decisions/ADR-0215-guardrails-egress-gate-ftc4ps.md)            | guardrails: egress secret-gate wiring + FTC-4Ps presentation guardrail     | Editions/AI-Kit  | accepted | extends 0063/0067; lift-sweep #13                            |
+| [0216](../knowledge/decisions/ADR-0216-mcp-server-manifest-retirement-ledger.md)    | mcp-server: declarative tool manifest + retired-tool ledger                | Base/MCP         | accepted | extends 0133 clean-lift; leaves 0112 untouched               |
+| [0217](../knowledge/decisions/ADR-0217-ai-meter-dedup-before-meter.md)              | ai-meter: pre-call MinHash/LSH dedup-before-meter gate                     | Base/Metering    | accepted | extends 0060; lift-sweep #12                                 |
 
 ---
 

@@ -27,7 +27,7 @@
 // pointing a public name at a private IP) is fully blocked here. Upgrade path: a pinned dispatcher.
 import { lookup } from "node:dns/promises";
 import { ValidationError } from "./errors.ts";
-import { fetchWithTimeout } from "./fetch.ts";
+import { fetchWithTimeout, type FetchTimeoutOptions } from "./fetch.ts";
 
 /**
  * True if `hostname` (as returned by `URL.hostname`, or a resolved A/AAAA literal) is a
@@ -158,6 +158,10 @@ export async function assertSafePublicUrlResolved(raw: string): Promise<void> {
 export const ssrfGuardedFetch = async (
   input: string | URL | Request,
   init?: RequestInit,
+  // Optional deadline override: a caller that owns a configured timeout (the ai-kit provider
+  // transport's 60s floor) threads it here; omitted → fetchWithTimeout's 10s default. A third
+  // optional param stays assignable to the AI SDK's two-arg `FetchFunction` shape.
+  timeout?: FetchTimeoutOptions,
 ): Promise<Response> => {
   const target =
     typeof input === "string"
@@ -166,5 +170,5 @@ export const ssrfGuardedFetch = async (
         ? input.href
         : input.url;
   await assertSafePublicUrlResolved(target);
-  return fetchWithTimeout(input, { ...init, redirect: "error" });
+  return fetchWithTimeout(input, { ...init, redirect: "error" }, timeout);
 };

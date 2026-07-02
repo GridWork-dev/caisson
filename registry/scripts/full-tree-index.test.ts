@@ -45,8 +45,15 @@ describe("full-tree registry backfill (ADR-0021/0111)", () => {
       "@caisson/tool-exec",
       "@caisson/platform-reads",
     ]);
+    // First publishes AFTER the republish enter at their own initial version, not the wave's.
+    const FIRST_PUBLISH: Record<string, string> = {
+      // Slice-2 harvest (ADR-0186): published 0.1.0 the same day, after the 0.2.0 wave.
+      "@caisson/agent-runner": "0.1.0",
+    };
     for (const m of index.modules) {
-      expect(m.latest).toBe(PATCH_ONLY.has(m.id) ? "0.1.1" : "0.2.0");
+      expect(m.latest).toBe(
+        FIRST_PUBLISH[m.id] ?? (PATCH_ONLY.has(m.id) ? "0.1.1" : "0.2.0"),
+      );
     }
   });
 

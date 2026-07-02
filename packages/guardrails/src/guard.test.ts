@@ -167,6 +167,68 @@ describe("cheap pre-screen", () => {
   });
 });
 
+describe("secret gate (ADR-0215)", () => {
+  test("an AWS-key-shaped input blocks category 'secret' BEFORE the moderator runs", async () => {
+    const { rt, sink } = runtime();
+    let called = false;
+    const spy: Moderator = {
+      moderate() {
+        called = true;
+        return { flagged: false, category: "moderation" };
+      },
+    };
+    const p = policy({ moderator: spy });
+    let err: unknown;
+    try {
+      await guardInput("Rotate AKIAIOSFODNN7EXAMPLE before the audit.", p, rt);
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeInstanceOf(GuardrailError);
+    expect((err as GuardrailError).details).toEqual({
+      stage: "input",
+      category: "secret",
+    });
+    expect(called).toBe(false);
+    // The event carries only the block metadata — never the matched secret span.
+    expect(sink.events).toHaveLength(1);
+    expect(sink.events[0]?.attributes).toEqual({
+      blockId: "00000000-0000-4000-8000-000000000000",
+      stage: "input",
+      category: "secret",
+      policy: "default",
+      failClosed: false,
+    });
+    expect(JSON.stringify(sink.events[0]?.attributes)).not.toContain("AKIA");
+  });
+
+  test("clean text (no secret shape) passes and the moderator still runs", async () => {
+    const { rt, sink } = runtime();
+    let called = false;
+    const spy: Moderator = {
+      moderate() {
+        called = true;
+        return { flagged: false, category: "moderation" };
+      },
+    };
+    const out = await guardInput(
+      "ordinary text with no credentials",
+      policy({ moderator: spy }),
+      rt,
+    );
+    expect(out.text).toBe("ordinary text with no credentials");
+    expect(called).toBe(true);
+    expect(sink.events).toHaveLength(0);
+  });
+
+  test("a secret-shaped OUTPUT blocks at the output stage", async () => {
+    const { rt } = runtime();
+    await expect(
+      guardOutput("token: ghp_0123456789ABCDEFabcdef0123", policy(), rt),
+    ).rejects.toBeInstanceOf(GuardrailError);
+  });
+});
+
 describe("guardOutput", () => {
   test("a flagged output blocks at the output stage", async () => {
     const { rt, sink } = runtime();

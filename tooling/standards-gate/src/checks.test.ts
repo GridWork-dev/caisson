@@ -1,12 +1,18 @@
 // Open-core gate checks (ADR-0094/0097). These lock the license SPLIT (open Base = Apache-2.0, else
 // commercial) and the open↔commercial no-depend-up BOUNDARY. Synthetic Pkg[] inputs — no workspace IO.
-import { describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   checkOpenCoreLicensing,
   checkOpenCommercialBoundary,
   checkManifestAgreement,
+  checkRlsEquivalence,
 } from "./checks";
+// Same relative import checks.ts itself uses (SPEC-tenancy-rls task 3: no workspace specifier —
+// this build session cannot `bun install` a new dependency edge).
+import { buildTenantPolicySql } from "../../../packages/tenancy-rls/src/rls.ts";
 import type { Pkg } from "./workspace";
 
 const APACHE = "Apache-2.0";
@@ -189,5 +195,78 @@ describe("checkManifestAgreement fail-closed (ADR-0094/0097)", () => {
     ]);
     expect(f).toHaveLength(1);
     expect(f[0]?.severity).toBe("warn");
+  });
+});
+
+describe("checkRlsEquivalence (ADR-0210/0005)", () => {
+  // Real temp dir — checkRlsEquivalence reads `<pkg.dir>/src/migrations/*.sql` and
+  // `<root>/tooling/standards-gate/rls-equivalence-overrides.json` off disk (same real-fs pattern
+  // as checkExternalAgpl's fixtures above; never a checked-in fixture for a generated tree).
+  let root: string;
+
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), "standards-gate-rls-"));
+  });
+
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  const TABLE_SQL =
+    "CREATE TABLE widget (\n  id uuid PRIMARY KEY,\n  account_id text NOT NULL\n);\n";
+
+  /** Writes one migration file for a fixture package and returns its Pkg. */
+  function widgetPkg(rlsSql: string): Pkg {
+    const dir = join(root, "packages", "fixture-widget");
+    mkdirSync(join(dir, "src", "migrations"), { recursive: true });
+    writeFileSync(
+      join(dir, "src", "migrations", "0001_widget.sql"),
+      TABLE_SQL + rlsSql,
+    );
+    return pkg({ name: "@caisson/fixture-widget", license: APACHE, dir });
+  }
+
+  function narrowGrantSql(): string {
+    return buildTenantPolicySql("widget", {
+      column: "account_id",
+      role: "app",
+    }).replace(
+      "GRANT SELECT, INSERT, UPDATE, DELETE ON widget TO app;",
+      "GRANT SELECT, INSERT ON widget TO app;",
+    );
+  }
+
+  test("a tenant table with no RLS block at all is rls-missing", async () => {
+    const p = widgetPkg("");
+    const f = await checkRlsEquivalence([p], root);
+    expect(f).toHaveLength(1);
+    expect(f[0]?.rule).toBe("rls-missing");
+  });
+
+  test("an RLS block matching buildTenantPolicySql's output exactly is clean", async () => {
+    const p = widgetPkg(
+      buildTenantPolicySql("widget", { column: "account_id", role: "app" }),
+    );
+    expect(await checkRlsEquivalence([p], root)).toEqual([]);
+  });
+
+  test("an unlisted narrower-than-generated GRANT is rls-equivalence", async () => {
+    const p = widgetPkg(narrowGrantSql());
+    const f = await checkRlsEquivalence([p], root);
+    expect(f).toHaveLength(1);
+    expect(f[0]?.rule).toBe("rls-equivalence");
+  });
+
+  test("a narrower GRANT listed in the overrides file is clean", async () => {
+    const p = widgetPkg(narrowGrantSql());
+    const overridesDir = join(root, "tooling", "standards-gate");
+    mkdirSync(overridesDir, { recursive: true });
+    writeFileSync(
+      join(overridesDir, "rls-equivalence-overrides.json"),
+      JSON.stringify([
+        { table: "widget", package: p.name, reason: "test fixture" },
+      ]),
+    );
+    expect(await checkRlsEquivalence([p], root)).toEqual([]);
   });
 });

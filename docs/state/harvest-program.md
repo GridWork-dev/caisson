@@ -171,6 +171,65 @@ per-package SPEC before code lands (ADR-0133 §4).
    existing packages" list, and the "skip/doc-note only" items) — lowest priority, revisit after
    waves 1-5 land.
 
+## Terminal states — slice-2 close-out (2026-07-02, ADR-0210)
+
+Every ranked item above is now terminal: **existing** (already covered pre-session, cited),
+**built** (this session, spec-gated per `outputs/specs/harvest-slice2/` + ADR-0210–0211), or
+**deferred/parked** (with reason, ADR-0210). The Act-0 reconcile evidence is workflow
+`wf_22d4f058-b01` (20-agent per-target sweep at `main`@go-live).
+
+### Source A — the 11 packages
+
+| Package           | Terminal state                                                                                                                                                 |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `agent-kernel`    | **existing** — shipped Stage-2 (`packages/agent-kernel`, ADR-0170s)                                                                                            |
+| `agent-dev`       | **existing** edition; **extended** this session with the `@caisson/agent-runner` members-fold (ADR-0186)                                                       |
+| `ai-config`       | **built** — lane-schema hardening (bedrock guard, azure-openai branch; ADR-0210 §2)                                                                            |
+| `ai-evals`        | **built, harden-in-place** (ADR-0210 §1) — Wilson-CI gate, Fleiss kappa + counterfactual stability, eval ledger, exit classifier, reflexivity queue (ADR-0214) |
+| `guardrails`      | **built, harden-in-place** (ADR-0210 §1) — unconditional secret egress gate (kernel `secret-scrub` seam) + FTC-4Ps evaluator (ADR-0215)                        |
+| `observability`   | **existing** — Stage-2 Stream A (ADR-0140–0143)                                                                                                                |
+| `ai-kit`          | **built** — metered `embed()`/`embedMany()` through the ai-meter chokepoint + fetch-deadline floor (ADR-0213)                                                  |
+| `ai-meter`        | **built** — MinHash/LSH dedup-before-meter gate (ADR-0217); core confirmed strictly ahead, not downgraded                                                      |
+| `prompt-registry` | **existing** — Caisson's own registry surface covers it (reconcile)                                                                                            |
+| `local-ai`        | **existing** — superseded by `@caisson/local-store` (reconcile)                                                                                                |
+| `mcp-server`      | **built** — declarative tool manifest + retired-tool ledger (ADR-0216)                                                                                         |
+
+Plus the net-new sellable: **`@caisson/agent-runner` built** (ADR-0186) — sandboxed governed runner,
+leak-guard ship gate, Agentic-Dev edition fold, registry ledger entry 33.
+
+### Source B — Wardfile top-6 (+ harness)
+
+| Lift                        | Terminal state                                                                                                     |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `jobs` typed-queue          | **built** — idempotency keys (deterministic job ids) + consumer-side `work()`/SKIP LOCKED (ADR-0211)               |
+| `artifact` WORM             | **existing** — audit-worm B2 + live S3 WORM transport (ADR-0201/0202)                                              |
+| Units branded-money         | **built** — kernel `Cents`/`Credits` brands + rounding provenance persisted in `credit_event` (ADR-0212, wave-2)   |
+| `billing` verify-then-parse | **built/verified** — Stripe envelope schema + round-trip seam tests (largely pre-existing; ADR-0210 §2)            |
+| field-crypto envelope       | **existing** — reconcile-cited (`field_key_version`/`field_wrapped_dek`)                                           |
+| `withTenant` SET LOCAL ROLE | **built** — fail-closed `pg_roles` pre-flight guard, WeakSet-cached (ADR-0210 §2)                                  |
+| Audit-harness pattern       | **existing** — `packages/audit-harness` (ADR-0153) + the ADR-0134 driver, exercised by the whole-repo audit rounds |
+
+### Source C — top-15 + NEW-PKGs
+
+#1 alerting / #3 retention-runner **existing** (ADR-0135, Stage-2 Stream B) · #2 impersonation
+**existing** (ADR-0187) · #4 governed agent-run → **built** as agent-runner (ADR-0186) · #5 Wilson-CI
+eval + #11 reflexivity queue + #15 Fleiss/counterfactual → **built** (ADR-0214) · #6 webhook
+signature toolkit → **built/verified** (billing) · #7 RLS codegen-equivalence harness → **built**
+(`checkRlsEquivalence` in standards-gate + 7-table overrides ledger) · #8 GUC + role pre-flight →
+**built** (tenancy-rls) · **#9 hash-at-rest session tokens → DEFERRED** (fights the ADR-0015
+better-auth lock; two of three sub-claims already satisfied; revisit on a better-auth token-hashing
+seam or a compliance demand — ADR-0210 §3) · #10 shell allowlist → **existing** (tool-exec,
+ADR-0153/0199) · #12 MinHash dedup → **built** (ADR-0217) · #13 FTC-4Ps → **built** (ADR-0215) ·
+#14 idempotent job-queue → **built** (ADR-0211).
+
+### Residuals
+
+- **The 8 decoupling seams → closed-by-rebuild** (ADR-0210 §5; rebuild-clean means the seams exist as
+  shipped package boundaries, not as porting work).
+- **Wave-6 sub-top-15 candidates (~22) → PARKED** per the program's own ordering (ADR-0210 §4) — the
+  bucket is dispositioned, not silently dropped; no per-package SPEC pending.
+- **ADR-0134 cross-domain harness → existing/in use** (whole-repo audit rounds 1–5, PR#40).
+
 ## Binding
 
 This page is the single ranked, deduped harvest tracking doc across all three sources. It does not

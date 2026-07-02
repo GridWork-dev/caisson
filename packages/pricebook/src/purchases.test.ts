@@ -12,13 +12,13 @@ import {
 describe("resolvePurchase (ADR-0113, fail-closed)", () => {
   test("resolves a credit-pack placeholder (credits, no entitlement)", () => {
     const entry = resolvePurchase("price_credit_pack_PLACEHOLDER");
-    expect(entry.credits).toBe(5000);
+    expect<number>(entry.credits).toBe(5000);
     expect(entry.entitlements).toEqual([]);
   });
 
   test("resolves a one-time edition placeholder (entitlement, no credit pack)", () => {
     const entry = resolvePurchase("price_compliance_onetime_PLACEHOLDER");
-    expect(entry.credits).toBe(0);
+    expect<number>(entry.credits).toBe(0);
     expect(entry.entitlements).toEqual(["compliance"]);
   });
 
@@ -73,7 +73,7 @@ describe("per-module à-la-carte PLACEHOLDER rows (P6-store track)", () => {
     test(`price_${slug}_module_PLACEHOLDER resolves to credits:0, entitlements:[${slug}]`, () => {
       const priceId = `price_${slug.replaceAll("-", "_")}_module_PLACEHOLDER`;
       const entry = resolvePurchase(priceId);
-      expect(entry.credits).toBe(0);
+      expect<number>(entry.credits).toBe(0);
       expect(entry.entitlements).toEqual([slug]);
     });
   }
@@ -82,7 +82,7 @@ describe("per-module à-la-carte PLACEHOLDER rows (P6-store track)", () => {
     test(`price_${slug}_module_PLACEHOLDER (future/reserved) still resolves a purchase-book row`, () => {
       const priceId = `price_${slug.replaceAll("-", "_")}_module_PLACEHOLDER`;
       const entry = resolvePurchase(priceId);
-      expect(entry.credits).toBe(0);
+      expect<number>(entry.credits).toBe(0);
       expect(entry.entitlements).toEqual([slug]);
     });
   }

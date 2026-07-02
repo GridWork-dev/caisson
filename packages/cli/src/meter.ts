@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { CreditResult } from "@caisson/credits";
 import { debit } from "@caisson/credits";
+import { asCredits } from "@caisson/kernel";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 import {
   type ModuleManifest,
@@ -46,7 +47,8 @@ export function meterGeneration(
 ): Promise<CreditResult> {
   return debit(tx, {
     accountId: input.accountId,
-    amount: input.amount ?? 1,
+    // Mint the brand at this boundary (ADR-0212) — MeterInput.amount stays a plain integer input.
+    amount: asCredits(input.amount ?? 1),
     eventType: "codegen_debit",
     idempotencyKey: input.idempotencyKey,
   });

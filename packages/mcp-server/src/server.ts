@@ -18,6 +18,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
   AuthnError,
+  CaissonError,
   EntitlementError,
   NotFoundError,
   ValidationError,
@@ -84,14 +85,44 @@ export interface ToolHandlerContext {
 export type RateLimitHook = (accountId: string) => Promise<void>;
 
 /**
- * One registered buyer-MCP tool (ADR-0076). `requiredEntitlement` is the edition slug a caller
- * must own to *see* and *invoke* this tool; `null` marks a base tool visible to every
+ * One registered buyer-MCP tool (ADR-0076/0216). `requiredEntitlement` is the edition slug a
+ * caller must own to *see* and *invoke* this tool; `null` marks a base tool visible to every
  * authenticated buyer. The entitlement is re-validated timing-safe on every call (ADR-0008/0010).
+ * `description`/`version`/`audit` are the declarative manifest fields (ADR-0216): validated by
+ * `toolManifestSchema` at registration time, not call time. `audit.logArgs` marks whether a call
+ * to this tool is safe to log its arguments verbatim (`false` for every coach tool — secrets-safe
+ * by construction, `coach.ts`; `true` for the 3 base tools, which take no secret-shaped args).
  */
 export interface ToolRegistration {
   readonly name: string;
   readonly requiredEntitlement: string | null;
+  readonly description: string;
+  readonly version: string;
+  readonly audit: { readonly logArgs: boolean };
   readonly handler: (ctx: ToolHandlerContext) => Promise<unknown>;
+}
+
+/**
+ * A deliberately-deprecated tool (ADR-0216). Distinct from "never existed": a retired name answers
+ * `RetiredToolError` (410) with `reason`/`retiredAt`, so a buyer integration gets an actionable
+ * signal instead of the same 404 an unknown tool gets.
+ */
+export interface RetiredTool {
+  readonly name: string;
+  readonly reason: string;
+  readonly retiredAt: string;
+}
+
+/** Thrown by `handleToolCall` for a name on the retired-tools ledger (ADR-0216). */
+export class RetiredToolError extends CaissonError {
+  readonly code = "tool_retired";
+  readonly httpStatus = 410;
+  constructor(entry: RetiredTool) {
+    super(`Tool retired: ${entry.name}`, {
+      reason: entry.reason,
+      retiredAt: entry.retiredAt,
+    });
+  }
 }
 
 export interface McpServerOptions {
@@ -130,12 +161,19 @@ export interface McpServerOptions {
 export interface McpServer {
   authenticate(bearer: string): McpSession;
   /**
-   * Register an additional (edition) tool. Throws on a duplicate name (fail-closed) so an edition
-   * can never silently shadow a base or peer tool.
+   * Register an additional (edition) tool. Validates the declarative manifest fields
+   * (`description`/`version`/`audit`, ADR-0216) BEFORE the duplicate-name guard, then throws on a
+   * duplicate name (fail-closed) so an edition can never silently shadow a base or peer tool.
    */
   registerTool(registration: ToolRegistration): void;
+  /**
+   * Append-only: retire a currently-registered tool name (ADR-0216). Throws `ValidationError` if
+   * the name is already retired OR still active in the registry (never both — a name is exactly
+   * one of active/retired/unknown). No `unretireTool` — retirement is a one-way lifecycle fact.
+   */
+  retireTool(entry: RetiredTool): void;
   /** The tools VISIBLE to this caller: base tools + only the edition tools they're entitled to. */
-  listTools(session: McpSession): readonly string[];
+  listTools(session: McpSession): readonly ToolRegistration[];
   handleToolCall(
     session: McpSession,
     tool: string,
@@ -150,6 +188,16 @@ export interface McpServer {
 // running the element parse O(N) times and blocking the shared event loop. Far above the ~32-module
 // registry (the CLI also dedups ids at Selection.parse); raise if the catalog grows past it.
 const MAX_MODULES = 100;
+
+// The declarative per-tool manifest (ADR-0216): validated in `registerTool()` before the
+// duplicate-name guard, so a bad manifest is a registration-time `ValidationError`, never a
+// call-time surprise. `version` is bare semver (no leading `v`, no pre-release/build metadata —
+// this is a manifest label, not a published package version).
+const toolManifestSchema = strictObject({
+  description: z.string().min(1).max(280),
+  version: z.string().regex(/^\d+\.\d+\.\d+$/, "must be a semver x.y.z"),
+  audit: strictObject({ logArgs: z.boolean() }),
+});
 
 // `.max(128)` = the repo module-id bound (PurchasedIds in registry-schema); `name` is a module slug.
 const describeArgs = strictObject({ name: z.string().min(1).max(128) });
@@ -184,6 +232,9 @@ const generateArgs = strictObject({
 
 export function createMcpServer(options: McpServerOptions): McpServer {
   const registry = new Map<string, ToolRegistration>();
+  // Append-only retirement ledger (ADR-0216): per-server-instance, same seeding pattern as
+  // `registry` — no new persistence surface. A name is exactly one of active/retired/unknown.
+  const retiredTools = new Map<string, RetiredTool>();
 
   /**
    * Constant-time entitlement gate. A base tool (`required === null`) is always entitled; an
@@ -200,6 +251,13 @@ export function createMcpServer(options: McpServerOptions): McpServer {
   }
 
   function registerTool(registration: ToolRegistration): void {
+    // Manifest validation (ADR-0216) runs BEFORE the duplicate-name guard, so a malformed manifest
+    // is a registration-time `ValidationError` regardless of whether the name collides.
+    parseStrict(toolManifestSchema, {
+      description: registration.description,
+      version: registration.version,
+      audit: registration.audit,
+    });
     if (registry.has(registration.name)) {
       throw new ValidationError(
         `Tool already registered: ${registration.name}`,
@@ -209,6 +267,23 @@ export function createMcpServer(options: McpServerOptions): McpServer {
       );
     }
     registry.set(registration.name, registration);
+  }
+
+  function retireTool(entry: RetiredTool): void {
+    // Fail-closed, mirrors `registerTool`'s shape: a name is exactly one of active/retired/unknown
+    // — never both active and retired, never retired twice (no `unretireTool`, append-only).
+    if (retiredTools.has(entry.name)) {
+      throw new ValidationError(`Tool already retired: ${entry.name}`, {
+        tool: entry.name,
+      });
+    }
+    if (registry.has(entry.name)) {
+      throw new ValidationError(
+        `Cannot retire a currently-active tool: ${entry.name}`,
+        { tool: entry.name },
+      );
+    }
+    retiredTools.set(entry.name, entry);
   }
 
   function authenticate(bearer: string): McpSession {
@@ -224,11 +299,10 @@ export function createMcpServer(options: McpServerOptions): McpServer {
     };
   }
 
-  function listTools(session: McpSession): readonly string[] {
+  function listTools(session: McpSession): readonly ToolRegistration[] {
     return [...registry.values()]
       .filter((reg) => isEntitled(session, reg.requiredEntitlement))
-      .map((reg) => reg.name)
-      .sort();
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 
   async function handleToolCall(
@@ -238,11 +312,15 @@ export function createMcpServer(options: McpServerOptions): McpServer {
   ): Promise<unknown> {
     const registration = registry.get(tool);
     // An unregistered tool — and a tool the caller is not entitled to — are both 404: the edition
-    // tool is invisible, never leaking that it exists to a non-entitled caller.
+    // tool is invisible, never leaking that it exists to a non-entitled caller. A RETIRED name is
+    // checked first (ADR-0216): distinct from "never existed" so a buyer integration gets a
+    // reason, not the same bare 404 an unknown tool gets.
     if (
       registration === undefined ||
       !isEntitled(session, registration.requiredEntitlement)
     ) {
+      const retired = retiredTools.get(tool);
+      if (retired !== undefined) throw new RetiredToolError(retired);
       throw new NotFoundError(`Unknown tool: ${tool}`);
     }
     // Abuse-throttle gate (ADR-0112): awaited before dispatching ANY tool — base or edition. A
@@ -260,6 +338,9 @@ export function createMcpServer(options: McpServerOptions): McpServer {
   registerTool({
     name: "list_modules",
     requiredEntitlement: null,
+    description: "List the module/edition slugs this buyer is entitled to.",
+    version: "1.0.0",
+    audit: { logArgs: true },
     handler: async ({ session }) => ({
       modules: [...session.entitlements].sort(),
     }),
@@ -268,6 +349,9 @@ export function createMcpServer(options: McpServerOptions): McpServer {
   registerTool({
     name: "describe_module",
     requiredEntitlement: null,
+    description: "Describe a single entitled module by slug.",
+    version: "1.0.0",
+    audit: { logArgs: true },
     handler: async ({ session, args }) => {
       const { name } = parseStrict(describeArgs, args);
       if (!session.entitlements.has(name)) {
@@ -283,6 +367,10 @@ export function createMcpServer(options: McpServerOptions): McpServer {
   registerTool({
     name: "generate",
     requiredEntitlement: null,
+    description:
+      "Generate a project from a registry-allowlisted, entitlement-gated module selection.",
+    version: "1.0.0",
+    audit: { logArgs: true },
     handler: async ({ session, args }) => {
       // DoS pre-guard (b719aff8): Zod's `.array().max(MAX_MODULES)` parses EVERY element before the
       // cap check fires, so an oversized `modules` array would run the element parse O(N) times and
@@ -352,6 +440,7 @@ export function createMcpServer(options: McpServerOptions): McpServer {
   const server: McpServer = {
     authenticate,
     registerTool,
+    retireTool,
     listTools,
     handleToolCall,
   };

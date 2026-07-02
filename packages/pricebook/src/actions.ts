@@ -3,17 +3,28 @@
 // by @caisson/ai-meter (ADR-0060). Integer-only; the numbers are operator-owned PLACEHOLDERS
 // (SD-6/ADR-0012) until checkout. Append-only/versioned with the plan-book (PRICEBOOK_VERSION).
 import { z } from "zod";
-import { ConfigError, parseStrict, strictObject } from "@caisson/kernel";
+import {
+  ConfigError,
+  asCredits,
+  parseStrict,
+  strictObject,
+  type Credits,
+} from "@caisson/kernel";
 
 export const actionBookSchema = strictObject({
-  /** Credits a single create-caisson generation debits on the HOSTED path (ADR-0049; local = free, ADR-0093). */
-  codegenRunCredits: z.number().int().positive(),
+  /** Credits a single create-caisson generation debits on the HOSTED path (ADR-0049; local = free,
+   *  ADR-0093). Branded `Credits` (ADR-0212): the transform mints the brand AFTER validation. */
+  codegenRunCredits: z
+    .number()
+    .int()
+    .positive()
+    .transform((n) => n as Credits),
 });
 export type ActionBook = z.infer<typeof actionBookSchema>;
 
 /** PLACEHOLDER action costs — NON-FINAL, operator-owned (SD-6/ADR-0012). */
 export const ACTION_BOOK: ActionBook = {
-  codegenRunCredits: 100,
+  codegenRunCredits: asCredits(100),
 };
 
 export type ActionTag = keyof ActionBook;
@@ -57,7 +68,7 @@ export function resolveActionCost(
   action: ActionTag,
   book: ActionBook = ACTION_BOOK,
   keySource: ActionKeySource = "env",
-): number {
+): Credits {
   // Own-property check mirrors resolvePlan's prototype-safe, fail-closed lookup — defends against a
   // runtime cast bypass even though ActionTag is a compile-time closed union.
   const cost = Object.hasOwn(book, action) ? book[action] : undefined;
@@ -67,5 +78,5 @@ export function resolveActionCost(
   // BYOK zeroes the debit ONLY for an allowlisted inference action (ADR-0198); every other action
   // stays metered even on a tenant key, so a future platform action can't silently bypass the ledger.
   const byokFree = keySource === "tenant" && BYOK_COVERED_ACTIONS.has(action);
-  return byokFree ? 0 : cost;
+  return byokFree ? asCredits(0) : cost;
 }

@@ -22,6 +22,7 @@ export default defineModule({
   license: pkg.license,
   dependencies: [
     "@caisson/agent-kernel",
+    "@caisson/agent-runner",
     "@caisson/ai-config",
     "@caisson/kernel",
     "@caisson/local-store",
@@ -36,6 +37,9 @@ export default defineModule({
   members: {
     "@caisson/agent-dev": "0.2.0",
     "@caisson/agent-kernel": "0.2.0",
+    // Slice-2 harvest primitive folded into the Agentic-Dev bundle (ADR-0186 F1/F5, edition-only
+    // SKU) — same fold as tool-exec below, pinned to its published ledger version.
+    "@caisson/agent-runner": "0.1.0",
     "@caisson/ai-config": "0.2.0",
     "@caisson/kernel": "0.2.0",
     "@caisson/local-store": "0.2.0",

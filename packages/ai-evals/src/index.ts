@@ -63,3 +63,49 @@ export type {
   RegressionFinding,
   RegressionKind,
 } from "./baseline.ts";
+
+// Exit classifier (ADR-0214) — WHY a run exited, not whether it scored well.
+export {
+  classifyExit,
+  EXIT_CLASSES,
+  exitSignalSchema,
+} from "./exit-classifier.ts";
+export type { ExitClass, ExitSignal } from "./exit-classifier.ts";
+
+// Wilson-CI (ADR-0214) — closed-form confidence-interval statistic, threaded opt-in into the gate.
+export { wilsonLowerBound } from "./wilson.ts";
+
+// Budget-isolated eval-spend ledger (ADR-0214) — never touches @caisson/ai-meter or Postgres.
+export {
+  evalSpendEntrySchema,
+  InMemoryEvalLedgerSink,
+  recordEvalSpend,
+} from "./eval-ledger.ts";
+export type {
+  EvalLedgerSink,
+  EvalSpendEntry,
+  RecordEvalSpendArgs,
+} from "./eval-ledger.ts";
+
+// Reflexivity queue (ADR-0214) — production judge/human disagreements, queued for operator review.
+export {
+  captureDisagreement,
+  consolidateReflexivityQueue,
+  flagsDisagreement,
+  InMemoryReflexivityQueueStore,
+  reflexivityCandidateSchema,
+} from "./reflexivity-queue.ts";
+export type {
+  CaptureDisagreementArgs,
+  ConsolidateOptions,
+  ReflexivityCandidate,
+  ReflexivityQueueStore,
+} from "./reflexivity-queue.ts";
+
+// Fleiss-kappa ensemble agreement + counterfactual stability (ADR-0214).
+export {
+  counterfactualStability,
+  ensembleAgreement,
+  fleissKappa,
+} from "./agreement.ts";
+export type { StabilityResult } from "./agreement.ts";

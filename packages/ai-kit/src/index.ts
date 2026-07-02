@@ -20,7 +20,21 @@ export type {
 } from "./gateway.ts";
 
 // The live provider transport (the real `@ai-sdk/*` adapters; the one path not exercised in CI).
-export { defaultProviders, providerFor } from "./providers.ts";
+export {
+  DEFAULT_PROVIDER_TIMEOUT_MS,
+  defaultProviders,
+  providerFor,
+} from "./providers.ts";
+
+// Metered embeddings (ADR-0213): the same reserve-before/reconcile-after chokepoint as infer(), for
+// a buyer-facing RAG/semantic-search embeddings surface.
+export { buildEmbeddingRegistryResolver, embed, embedMany } from "./embed.ts";
+export type {
+  EmbeddingModelResolver,
+  EmbedManyResult,
+  EmbedOptions,
+  EmbedResult,
+} from "./embed.ts";
 
 // Per-tenant encrypted BYOK (ADR-0162): the encrypted key store + the BYOK-aware resolver.
 export {

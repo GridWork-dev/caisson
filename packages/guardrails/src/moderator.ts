@@ -7,8 +7,13 @@
 import { z } from "zod";
 import { strictObject, ValidationError } from "@caisson/kernel";
 
-/** The violation class a block is charted by. Mirrors `kernel/observability` `guardrailBlockSchema`. */
-export type GuardCategory = "moderation" | "pii" | "injection" | "custom";
+/**
+ * The violation class a block is charted by. Mirrors `kernel/observability`
+ * `guardrailBlockSchema`. `"secret"` (ADR-0215) is the unconditional credential-shape pre-screen in
+ * `guard.ts` — it never comes from a `Moderator` verdict.
+ */
+export type GuardCategory =
+  "moderation" | "pii" | "injection" | "secret" | "custom";
 
 /**
  * A moderation verdict. **Metadata only** — `category` is the class the dashboard charts by, never
