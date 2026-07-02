@@ -17,17 +17,18 @@ on:
 # its own workflow file (quality.yml / publish.yml / deploy-railway.yml) where path-filtering and
 # main-only gating are safe because those jobs are not required checks.
 #
-# SELF-HOSTED FLEET (2026-06-29): the pure-compute gate jobs run on the GridWork-dev ephemeral
-# runner fleet (the same per-repo, JIT, one-job-then-reset machinery as gridwork-core — canonical
-# SPEC + supervisor live in gridwork-core/system/ci/; caisson posture doc: docs/operations.md). The
-# amd64 lane (<host>) runs each job in a throwaway `docker run --rm` container, so operator
-# secrets are unreachable (proven by gridwork-core's runner-isolation-probe). Caisson's 3 runners
-# (<host> · <host> · <host>) are registered + ONLINE. Nothing persists
-# on-box between jobs, so any cache below is network-backed (actions/cache), never local-disk.
+# SELF-HOSTED FLEET (2026-07-02, runscaler scale sets): the pure-compute gate jobs run on the
+# GridWork-dev ephemeral runner fleet via runscaler (canonical config: gridwork-core
+# system/ci/runscaler.toml; caisson posture doc: docs/operations.md). Scale-set runners are
+# label-LESS — a job targets the set by BARE NAME (`runs-on: caisson-amd64`; any extra label,
+# incl. `self-hosted`, prevents the match). The amd64 lane (<host>) runs each job in a
+# throwaway container, so operator secrets are unreachable (proven by gridwork-core's
+# runner-isolation-probe). Nothing persists on-box between jobs, so any cache below is
+# network-backed (actions/cache), never local-disk.
 #
 # Posture = DEDICATED LANES, no auto-fallback: GitHub has no self-hosted-first preference, so a
 # DOWN host QUEUES the job (it does NOT fall back to hosted). MANUAL fallback if a fleet host is
-# down for maintenance: flip the affected job's `runs-on: [self-hosted, <host>]` back to
+# down for maintenance: flip the affected job's `runs-on: caisson-amd64` back to
 # `runs-on: ubuntu-latest` (one line).
 
 concurrency:
@@ -42,7 +43,7 @@ permissions:
 jobs:
   # The standards gate (ADR-0021/0022) — the only registry ingress. Three layers, all block merge.
   standards-gate:
-    runs-on: [self-hosted, <host>]
+    runs-on: caisson-amd64
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
@@ -95,7 +96,7 @@ jobs:
           bunx changeset status --since=origin/main
 
   check:
-    runs-on: [self-hosted, <host>]
+    runs-on: caisson-amd64
     # The heaviest job (38-pkg turbo tree incl. 5 Next.js builds + many in-process PGlite instances);
     # generous ceiling so a hung PGlite hook frees the runner rather than holding it to the 6h default.
     timeout-minutes: 30
@@ -142,7 +143,7 @@ jobs:
   # (blocking the merge) needs this job marked a required check + CODEOWNERS on a real handle +
   # branch protection (operator GitHub settings; forks board). The ledger APPEND step is publish.yml.
   registry-index:
-    runs-on: [self-hosted, <host>]
+    runs-on: caisson-amd64
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
