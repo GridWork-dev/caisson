@@ -119,8 +119,16 @@ describe("event mapping", () => {
         details: {
           totals: { grand_total: "20000" },
           line_items: [
-            { id: "txnitm_compliance", totals: { total: "15000" } },
-            { id: "txnitm_pack", totals: { total: "5000" } },
+            {
+              id: "txnitm_compliance",
+              price_id: "price_compliance_PLACEHOLDER",
+              totals: { total: "15000" },
+            },
+            {
+              id: "txnitm_pack",
+              price_id: "price_credit_pack_PLACEHOLDER",
+              totals: { total: "5000" },
+            },
           ],
         },
       },
@@ -134,6 +142,62 @@ describe("event mapping", () => {
         priceId: "price_compliance_PLACEHOLDER",
         quantity: 1,
         itemId: "txnitm_compliance",
+        chargedAmount: 15000,
+      },
+      {
+        priceId: "price_credit_pack_PLACEHOLDER",
+        quantity: 3,
+        itemId: "txnitm_pack",
+        chargedAmount: 5000,
+      },
+    ]);
+  });
+
+  test("a shuffled details.line_items order still correlates correctly by price_id key (CAISSON-6)", () => {
+    // Paddle does not guarantee items[] and details.line_items[] share an index order — only that each
+    // line item echoes the price_id it was priced from. The pre-fix positional read would have paired
+    // items[0] (compliance) with line_items[0] (the PACK's txnitm_/total, listed here FIRST) — a wrong,
+    // silent mis-join. The keyed-by-price_id read must pair each item with the line_items entry that
+    // actually carries its own price_id, regardless of array order.
+    const event = {
+      event_id: "evt_shuffled",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_shuffled",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        items: [
+          { price: { id: "price_compliance_PLACEHOLDER" }, quantity: 1 },
+          { price: { id: "price_credit_pack_PLACEHOLDER" }, quantity: 3 },
+        ],
+        details: {
+          totals: { grand_total: "20000" },
+          // Reversed relative to items[] above.
+          line_items: [
+            {
+              id: "txnitm_pack",
+              price_id: "price_credit_pack_PLACEHOLDER",
+              totals: { total: "5000" },
+            },
+            {
+              id: "txnitm_compliance",
+              price_id: "price_compliance_PLACEHOLDER",
+              totals: { total: "15000" },
+            },
+          ],
+        },
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    const parsed = parsePaddleEvent(event);
+    expect(parsed?.type).toBe("purchase.completed");
+    expect(
+      parsed?.type === "purchase.completed" ? parsed.lineItems : [],
+    ).toEqual([
+      {
+        priceId: "price_compliance_PLACEHOLDER",
+        quantity: 1,
+        itemId: "txnitm_compliance", // correctly paired despite line_items[] being reversed
         chargedAmount: 15000,
       },
       {
@@ -401,8 +465,9 @@ describe("event mapping", () => {
 
   test("a one-time transaction captures each line's txnitm_ id + charged total from details.line_items (ADR-0218)", () => {
     // The `txnitm_…` join key + per-line charged total live on `details.line_items[]`, NOT the
-    // request-echo `items[]`. The mapper correlates the two arrays by order so a later per-line
-    // adjustment refund can join back on the item id and proportion against the charged amount.
+    // request-echo `items[]`. The mapper correlates the two arrays by their shared `price_id`
+    // (CAISSON-6) so a later per-line adjustment refund can join back on the item id and proportion
+    // against the charged amount.
     const event = {
       event_id: "evt_join",
       event_type: "transaction.completed",
@@ -418,8 +483,16 @@ describe("event mapping", () => {
         details: {
           totals: { grand_total: "20000" },
           line_items: [
-            { id: "txnitm_compliance", totals: { total: "15000" } },
-            { id: "txnitm_pack", totals: { total: "5000" } },
+            {
+              id: "txnitm_compliance",
+              price_id: "price_compliance_PLACEHOLDER",
+              totals: { total: "15000" },
+            },
+            {
+              id: "txnitm_pack",
+              price_id: "price_credit_pack_PLACEHOLDER",
+              totals: { total: "5000" },
+            },
           ],
         },
       },
@@ -460,7 +533,13 @@ describe("event mapping", () => {
         ],
         details: {
           totals: { grand_total: "5000" },
-          line_items: [{ id: "txnitm_pack", totals: { total: "5000" } }],
+          line_items: [
+            {
+              id: "txnitm_pack",
+              price_id: "price_credit_pack_PLACEHOLDER",
+              totals: { total: "5000" },
+            },
+          ],
         },
       },
     } as Parameters<typeof parsePaddleEvent>[0]);
