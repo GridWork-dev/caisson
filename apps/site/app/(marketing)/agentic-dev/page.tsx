@@ -1,6 +1,8 @@
 import {
   Button,
   Card,
+  Faq,
+  FeatureGrid,
   Hero,
   Icon,
   Reveal,
@@ -159,10 +161,7 @@ export default function AgenticDevPage() {
           lede="No part is a black box. Each is a file you can read, diff, and gate in review before an agent ever runs."
           band="tint"
         >
-          <div
-            className="cs-grid cs-grid--2"
-            style={{ marginTop: "var(--cs-space-8)" }}
-          >
+          <FeatureGrid cols={2}>
             {PIECES.map((p) => (
               <Card key={p.label}>
                 <div
@@ -179,7 +178,7 @@ export default function AgenticDevPage() {
                 <p className="cs-muted">{p.body}</p>
               </Card>
             ))}
-          </div>
+          </FeatureGrid>
         </Section>
       </Reveal>
 
@@ -225,10 +224,7 @@ export default function AgenticDevPage() {
           lede="The kernel does not make agents smarter. It makes them accountable: every dispatch declares its lane and its boundary, the kernel holds the credentials, and the lifecycle owns the path to ship."
           band="surface"
         >
-          <div
-            className="cs-grid cs-grid--3"
-            style={{ marginTop: "var(--cs-space-8)" }}
-          >
+          <FeatureGrid cols={3}>
             {(
               [
                 {
@@ -263,7 +259,7 @@ export default function AgenticDevPage() {
                 <p className="cs-muted">{item.body}</p>
               </Card>
             ))}
-          </div>
+          </FeatureGrid>
         </Section>
       </Reveal>
 
@@ -274,10 +270,7 @@ export default function AgenticDevPage() {
           title="A composition of the same base."
           lede="Agentic-Dev is an edition, not a fork — built on the audited Caisson base every other edition shares. Buy it outright, take the kernel à la carte, or subscribe for credits and updates."
         >
-          <div
-            className="cs-grid cs-grid--3"
-            style={{ marginTop: "var(--cs-space-8)" }}
-          >
+          <FeatureGrid cols={3}>
             {(
               [
                 {
@@ -304,34 +297,14 @@ export default function AgenticDevPage() {
                 </p>
               </Card>
             ))}
-          </div>
+          </FeatureGrid>
         </Section>
       </Reveal>
 
       {/* ===== FAQ ===== */}
       <Reveal>
         <Section eyebrow="Questions" title="Common questions." band="tint">
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "var(--cs-space-6)",
-              marginTop: "var(--cs-space-8)",
-              maxWidth: "72ch",
-            }}
-          >
-            {FAQS.map((faq) => (
-              <div key={faq.question}>
-                <p
-                  className="cs-card-title"
-                  style={{ marginBottom: "var(--cs-space-2)" }}
-                >
-                  {faq.question}
-                </p>
-                <p className="cs-muted">{faq.answer}</p>
-              </div>
-            ))}
-          </div>
+          <Faq items={FAQS} style={{ marginTop: "var(--cs-space-8)" }} />
         </Section>
       </Reveal>
 

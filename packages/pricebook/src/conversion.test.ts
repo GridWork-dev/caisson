@@ -66,7 +66,7 @@ describe("pricebook conversion + plan golden (BLESS unset)", () => {
     expect(() => centsToCredits(1.5)).toThrow(ValidationError);
     expect(() => centsToCredits(-1)).toThrow(ValidationError);
   });
-  test("centsToCreditsProvenance re-exports the kernel record (ADR-0206, round-down)", () => {
+  test("centsToCreditsProvenance re-exports the kernel record (ADR-0212, round-down)", () => {
     for (const c of golden.centsToCredits) {
       expect<unknown>(centsToCreditsProvenance(c.cents)).toEqual({
         raw: c.cents,

@@ -51,7 +51,7 @@ const gate = gateAgainstBaseline("__evals__/baseline.json", [run]); // BLESS=1 t
 if (!gate.passed) throw new Error("eval regression");
 ```
 
-## Eval-science depth (ADR-0208)
+## Eval-science depth (ADR-0214)
 
 Four dependency-free additions harden the gate's rigor without adding a `package.json` dep or
 importing an edition (down-only, ADR-0003):

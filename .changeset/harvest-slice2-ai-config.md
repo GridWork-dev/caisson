@@ -2,7 +2,7 @@
 "@caisson/ai-config": patch
 ---
 
-Provider-lane validation hardening (ADR-0204): `superRefine` now matches ADR-0160's
+Provider-lane validation hardening (ADR-0210): `superRefine` now matches ADR-0160's
 provider set — a `bedrock` lane may omit `apiKeyEnv`/`apiSecretEnv` to let the AWS SDK's
 default credential chain resolve creds, and an `azure-openai` lane rejects at parse time
 when `apiVersion` or `baseUrl` is missing instead of failing three layers downstream at

@@ -43,7 +43,7 @@ const golden = goldenSchema.parse(
   ),
 );
 
-// Mint the branded denomination (ADR-0206) from the golden's plain integer — same runtime value.
+// Mint the branded denomination (ADR-0212) from the golden's plain integer — same runtime value.
 const conversion = {
   microUsdPerCredit: asMicroUsdPerCredit(
     golden.creditConversion.microUsdPerCredit,
@@ -59,7 +59,7 @@ describe("T6 price-book cost golden (BLESS unset)", () => {
       const cost = computeCost(c.usage, entry, conversion);
       expect<number>(cost.costMicroUsd).toBe(c.expected.costMicroUsd);
       expect<number>(cost.credits).toBe(c.expected.credits);
-      // ADR-0206: the rounding record mirrors the pinned pair — raw is the micro-USD cost, the
+      // ADR-0212: the rounding record mirrors the pinned pair — raw is the micro-USD cost, the
       // direction is this book's fixed "up", the result is the pinned credit charge.
       expect<unknown>(cost.roundingCredits).toEqual({
         raw: c.expected.costMicroUsd,

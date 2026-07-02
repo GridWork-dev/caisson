@@ -1,4 +1,4 @@
-// The metered-embeddings gateway (ADR-0207) — `embed()`/`embedMany()` join `infer()`/`inferStream()`
+// The metered-embeddings gateway (ADR-0213) — `embed()`/`embedMany()` join `infer()`/`inferStream()`
 // through the SAME ai-meter chokepoint (reserve-before/reconcile-after), provider-agnostic via the
 // ai-config lane, BYOK-routed exactly like the language-model gateway. Mirrors `gateway.ts`'s
 // pipeline minus prompt-registry render and guardrails: an embed input feeds a vector index, not a
@@ -14,7 +14,7 @@
 // rate for the model — a buyer is billed for input tokens only, exactly what an embedding call
 // consumes. Price key stays `provider/model`: an embedding model is just another `PriceBook` row: no
 // `PriceBookEntry` schema change (a dedicated embedding SKU is a cross-package money question,
-// deferred — see ADR-0207's open question).
+// deferred — see ADR-0213's open question).
 import { randomUUID } from "node:crypto";
 import {
   createProviderRegistry,

@@ -75,7 +75,7 @@ function platformPackage(): PackageMigrations {
       // because its GRANT targets `app`. Additive/forward-only; existing single-user tenants keep
       // working (getSession fail-safes to the personal account when a user has no membership row).
       { name: "0006_account_member.sql", sql: ACCOUNT_MEMBER_SCHEMA_SQL },
-      // ADR-0206: rounding provenance columns on credit_event. APPENDED as a new migration —
+      // ADR-0212: rounding provenance columns on credit_event. APPENDED as a new migration —
       // 0002_credits.sql is checksum-pinned on the live DB, so the columns must never be folded
       // into CREDIT_SCHEMA_SQL in place (the runner would fail closed on drift).
       { name: "0007_credit_rounding.sql", sql: CREDIT_ROUNDING_MIGRATION_SQL },

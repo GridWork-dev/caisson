@@ -44,9 +44,9 @@ describe("topology discovery", () => {
     });
   });
 
-  test("adds SigNoz + Postgres infra constants", () => {
+  test("adds Grafana Cloud + Postgres infra constants", () => {
     expect(byId.get("postgres")?.kind).toBe("datastore");
-    expect(byId.get("signoz")?.kind).toBe("observability");
+    expect(byId.get("grafana")?.kind).toBe("observability");
   });
 
   test("discovers the license service now it carries a deploy manifest (Stage-2)", () => {
@@ -73,8 +73,8 @@ describe("buildGraph merge", () => {
     expect(g.edges.some((e) => e.source === "license")).toBe(true);
   });
 
-  test("keeps live telemetry edges into SigNoz", () => {
-    expect(g.edges.some((e) => e.target === "signoz")).toBe(true);
+  test("keeps live telemetry edges into Grafana Cloud", () => {
+    expect(g.edges.some((e) => e.target === "grafana")).toBe(true);
   });
 
   test("boundaries list only present, non-empty members", () => {

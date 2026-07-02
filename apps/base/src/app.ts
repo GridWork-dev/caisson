@@ -68,7 +68,7 @@ export function createBaseApp(deps: BaseAppDeps): BaseApp {
       return withTenant(deps.db, session.accountId, (tx) =>
         debit(tx, {
           accountId: session.accountId,
-          // Mint the brand at this boundary (ADR-0206) — SpendInput.amount stays a plain integer.
+          // Mint the brand at this boundary (ADR-0212) — SpendInput.amount stays a plain integer.
           amount: asCredits(input.amount),
           eventType: "ai_feature_debit",
           idempotencyKey: input.idempotencyKey,

@@ -12,7 +12,7 @@
 // POST `{baseURL}/responses` (beta on OpenRouter, absent on Ollama) instead of `/chat/completions`.
 // A live-only defect — every CI path injects a mock model, which is exactly why it survived.
 //
-// Fetch deadline (ADR-0207): every factory below receives a `fetch` bound to `timeoutMs` instead of
+// Fetch deadline (ADR-0213): every factory below receives a `fetch` bound to `timeoutMs` instead of
 // the ambient global fetch — without it a hung live call blocks the process unbounded, violating the
 // repo-wide fetchWithTimeout floor (`identity/security.md`).
 import { createAmazonBedrock } from "@ai-sdk/amazon-bedrock";
@@ -22,7 +22,12 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import type { ProviderV2 } from "@ai-sdk/provider";
-import { fetchWithTimeout, ValidationError } from "@caisson/kernel";
+import {
+  assertSafePublicUrl,
+  fetchWithTimeout,
+  ssrfGuardedFetch,
+  ValidationError,
+} from "@caisson/kernel";
 import type { AiSettings, ProviderConfig } from "@caisson/ai-config";
 
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
@@ -55,78 +60,6 @@ export function timeoutFetch(timeoutMs: number): typeof fetch {
 }
 
 /**
- * SSRF guard for a buyer-supplied provider `baseUrl` (a lane config / per-tenant BYOK value). The
- * value flows straight into the SDK adapter's outbound fetch, so an unguarded `http://169.254.169.254`
- * (cloud metadata), a loopback/private host, or a `file:`/`data:` scheme would let a misconfigured or
- * hostile lane reach internal services. Mirrors the local-ai egress guard's floor — https-only, no
- * credentials-in-URL — but keeps a DENYLIST, not a host allowlist: buyers may self-host a gateway on
- * any PUBLIC https host; they just cannot point a lane at a private/loopback/link-local/metadata
- * address. Applied once per {@link providerFor}, so every provider path (incl. openrouter's default)
- * inherits it.
- *
- * @throws ValidationError on a malformed URL, a non-https scheme, credentials in the URL, or a
- *   private-range / localhost / `.local` host.
- */
-function assertSafeBaseUrl(baseUrl: string): void {
-  let url: URL;
-  try {
-    url = new URL(baseUrl);
-  } catch {
-    throw new ValidationError("provider baseUrl rejected: malformed URL");
-  }
-  if (url.protocol !== "https:") {
-    // https only — blocks http:, and data:/file:/javascript: smuggling. Never auto-prepend a scheme.
-    throw new ValidationError("provider baseUrl rejected: non-https scheme", {
-      scheme: url.protocol,
-    });
-  }
-  if (url.username !== "" || url.password !== "") {
-    throw new ValidationError("provider baseUrl rejected: credentials in URL");
-  }
-  if (isPrivateHost(url.hostname)) {
-    // The WHATWG parser canonicalizes decimal/octal/hex/short-form IPv4 to dotted-quad before this
-    // check, so those encodings are covered for free.
-    // ponytail: literal-host denylist — a PUBLIC hostname that RESOLVES to a private IP (DNS
-    // rebinding) is not caught here; add resolve-time pinning only if a deployment's threat model
-    // needs it.
-    throw new ValidationError(
-      "provider baseUrl rejected: private/loopback host",
-      {
-        host: url.hostname,
-      },
-    );
-  }
-}
-
-/** True if `hostname` (as returned by `URL.hostname`) is a loopback/private/link-local/metadata literal. */
-function isPrivateHost(hostname: string): boolean {
-  const host = hostname.toLowerCase();
-  if (host === "localhost" || host.endsWith(".local")) return true;
-  if (host.startsWith("[") && host.endsWith("]")) {
-    const v6 = host.slice(1, -1);
-    return (
-      v6 === "::1" || // loopback
-      v6 === "::" || // unspecified
-      /^f[cd]/.test(v6) || // fc00::/7 unique-local
-      /^fe[89ab]/.test(v6) || // fe80::/10 link-local
-      v6.startsWith("::ffff:") // IPv4-mapped — never a real provider host, reject wholesale
-    );
-  }
-  const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
-  if (m === null) return false;
-  const a = Number(m[1]);
-  const b = Number(m[2]);
-  return (
-    a === 0 || // 0.0.0.0/8 (incl. 0.0.0.0)
-    a === 127 || // 127/8 loopback
-    a === 10 || // 10/8 private
-    (a === 172 && b >= 16 && b <= 31) || // 172.16/12 private
-    (a === 192 && b === 168) || // 192.168/16 private
-    (a === 169 && b === 254) // 169.254/16 link-local (incl. cloud metadata 169.254.169.254)
-  );
-}
-
-/**
  * Build the real provider instance for one lane config. The key is `keyOverride` when supplied (the
  * per-tenant BYOK path, ADR-0162: a decrypted tenant key) else read from the env var the lane names
  * (`apiKeyEnv`, ADR-0011). This package still never persists a key — it only reaches for the value at
@@ -143,17 +76,35 @@ export function providerFor(
     (cfg.apiKeyEnv !== undefined ? process.env[cfg.apiKeyEnv] : undefined);
   const key = apiKey !== undefined ? { apiKey } : {};
   // SSRF guard once, before the switch, so every provider path (incl. openrouter's `cfg.baseUrl ??`
-  // default and the `local`/`ollama` self-hosted hosts) inherits it.
-  if (cfg.baseUrl !== undefined) assertSafeBaseUrl(cfg.baseUrl);
+  // default and the `local`/`ollama` self-hosted hosts) inherits it. The kernel guard is the shared
+  // policy source (@caisson/kernel/ssrf) — https-only, no-creds, private/loopback DENYLIST.
+  if (cfg.baseUrl !== undefined) assertSafePublicUrl(cfg.baseUrl);
   const base = cfg.baseUrl !== undefined ? { baseURL: cfg.baseUrl } : {};
+  // ONE transport fetch per instance — the deadline floor and the SSRF re-check must COMPOSE, never
+  // compete as two `fetch` spreads (the later spread would silently clobber the earlier guard).
+  // A CUSTOM (config-supplied) baseUrl gets the kernel `ssrfGuardedFetch` — the resolve-time DNS
+  // re-check (DNS-rebinding defense, Strix vuln-0004) + forced `redirect: "error"` — bounded to this
+  // instance's `timeoutMs`. Default provider hosts are trusted constants that skip the per-call DNS
+  // lookup; they get the plain deadline fetch. Bedrock is AWS-SigV4 and keeps the sync literal guard
+  // above plus the deadline only (`...deadline` at its site).
+  // The SDK's `fetch` option is typed `typeof globalThis.fetch` (which includes Bun's `preconnect`
+  // static); both wrappers are plain per-request fetches the adapter never `.preconnect`s — the cast
+  // is inert (same rationale as `timeoutFetch`'s own cast).
   const deadline = { fetch: timeoutFetch(timeoutMs) };
+  const transport =
+    cfg.baseUrl !== undefined
+      ? {
+          fetch: ((input: string | URL | Request, init?: RequestInit) =>
+            ssrfGuardedFetch(input, init, { timeoutMs })) as typeof fetch,
+        }
+      : deadline;
   switch (cfg.provider) {
     case "openai":
-      return createOpenAI({ ...key, ...base, ...deadline });
+      return createOpenAI({ ...key, ...base, ...transport });
     case "anthropic":
-      return createAnthropic({ ...key, ...base, ...deadline });
+      return createAnthropic({ ...key, ...base, ...transport });
     case "google":
-      return createGoogleGenerativeAI({ ...key, ...base, ...deadline });
+      return createGoogleGenerativeAI({ ...key, ...base, ...transport });
     // The three OpenAI-COMPATIBLE (not OpenAI) backends ride `createOpenAICompatible` (ADR-0201):
     // its `languageModel()` IS the chat model, pinning live calls to `/chat/completions` — where
     // `createOpenAI` would default to the v5 Responses API (see the file header). `includeUsage`
@@ -165,7 +116,7 @@ export function providerFor(
         ...key,
         baseURL: cfg.baseUrl ?? OPENROUTER_BASE_URL,
         includeUsage: true,
-        ...deadline,
+        ...transport,
       });
     // `ollama` serves an OpenAI-compatible endpoint, so it rides the same adapter as `local` — the
     // buyer names the `baseUrl` of their host (no localhost default, per the security floor).
@@ -185,7 +136,7 @@ export function providerFor(
         apiKey: apiKey ?? "local",
         baseURL: cfg.baseUrl,
         includeUsage: true,
-        ...deadline,
+        ...transport,
       });
     // AWS Bedrock (ADR-0160): SigV4, a two-part credential + region. `apiKeyEnv` names the
     // access-key-id env var, `apiSecretEnv` the secret-access-key env var; omit both to fall back to
@@ -210,7 +161,7 @@ export function providerFor(
         ...key,
         ...base,
         ...(cfg.apiVersion !== undefined ? { apiVersion: cfg.apiVersion } : {}),
-        ...deadline,
+        ...transport,
       });
   }
 }

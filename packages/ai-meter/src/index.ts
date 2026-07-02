@@ -70,7 +70,7 @@ export type {
   ReconcileResult,
 } from "./meter.ts";
 
-// Pre-call MinHash/LSH dedup-before-meter gate (ADR-0211).
+// Pre-call MinHash/LSH dedup-before-meter gate (ADR-0217).
 export {
   normalizePrompt,
   shingle,

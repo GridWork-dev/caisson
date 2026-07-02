@@ -1,4 +1,4 @@
-// ADR-0210: the retired-tool ledger distinguishes "we killed it" from "it never existed". A hit on
+// ADR-0216: the retired-tool ledger distinguishes "we killed it" from "it never existed". A hit on
 // `retireTool`'s ledger answers `RetiredToolError` (410, {reason, retiredAt}) from `handleToolCall`
 // — a truly-unknown name still answers the ordinary `NotFoundError` (404). `retireTool` itself is
 // fail-closed and append-only: a name is exactly one of active/retired/unknown, never two at once,
@@ -50,7 +50,7 @@ function makeServer() {
   });
 }
 
-describe("retired-tool ledger (ADR-0210)", () => {
+describe("retired-tool ledger (ADR-0216)", () => {
   test("a retired tool answers 410 tool_retired with reason + retiredAt", async () => {
     const server = makeServer();
     server.retireTool({

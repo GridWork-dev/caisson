@@ -141,6 +141,11 @@ jobs:
           path: ~/.bun/install/cache
           key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
           restore-keys: ${{ runner.os }}-bun-
+      # Workspace deps (@caisson/kernel, @caisson/testing) must be linked before bun test resolves
+      # them. This step was missing since the job landed: the self-hosted linux leg masked it with a
+      # persistent workspace's stale node_modules, and the hosted macOS leg had simply never fired
+      # (path-filtered) until the ADR-0208 consume touched packages/local-store/package.json.
+      - run: bun install --frozen-lockfile
       # macOS ships a system SQLite with extension loading DISABLED (Apple build). store.ts points
       # bun:sqlite at Homebrew's extension-capable SQLite via Database.setCustomSQLite; ensure it is
       # installed so that path exists on the runner. No-op effect on Linux (step is macOS-gated).

@@ -10,7 +10,7 @@
  *
  * This Bun script is the SPDX/license authority: AGPL boundary (workspace + external tree),
  * down-only direction, declarations, manifest↔package.json agreement, and hand-written-migration-
- * RLS-vs-generator equivalence (ADR-0204/0005). Run ALONGSIDE in CI
+ * RLS-vs-generator equivalence (ADR-0210/0005). Run ALONGSIDE in CI
  * (ADR-0022, all three layers): ESLint `no-restricted-imports` (fast static source signal) +
  * dependency-cruiser (the real module graph — dynamic import()/require + transitive provider-SDK
  * reachability) + the golden-file regression (ADR-0013 harness). A green run of all layers stamps
@@ -42,7 +42,7 @@ async function main(): Promise<number> {
     ...checkDeclarations(pkgs),
     ...(await checkManifestAgreement(pkgs)),
     ...checkCopyPaste(root), // ADR-0101 gate #4: cross-package copy-paste
-    ...checkRlsEquivalence(pkgs, root), // ADR-0204/0005: hand-written RLS vs the generator
+    ...checkRlsEquivalence(pkgs, root), // ADR-0210/0005: hand-written RLS vs the generator
   ];
 
   const errors = findings.filter((f) => f.severity === "error");

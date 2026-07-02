@@ -100,7 +100,7 @@ function webhookReq(
     method: "POST",
     headers: {
       "content-type": "application/json",
-      "x-forwarded-for": ip,
+      "x-real-ip": ip, // the Railway edge-set, non-spoofable client IP the limiter keys on (vuln-0001)
       ...(signature !== null ? { "paddle-signature": signature } : {}),
     },
     body: rawBody,
@@ -261,6 +261,8 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
     const app = makeApp(provider, {
       webhook: { capacity: 1, windowMs: 60_000 },
       issue: { capacity: 1, windowMs: 60_000 },
+      globalWebhook: { capacity: 100_000, windowMs: 60_000 },
+      globalIssue: { capacity: 100_000, windowMs: 60_000 },
       maxEntries: 100,
     });
     const acct = "acct_rl_webhook";
@@ -359,6 +361,8 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
     const app = makeApp(provider, {
       webhook: { capacity: 1, windowMs: 60_000 },
       issue: { capacity: 1, windowMs: 60_000 },
+      globalWebhook: { capacity: 100_000, windowMs: 60_000 },
+      globalIssue: { capacity: 100_000, windowMs: 60_000 },
       maxEntries: 100,
     });
     const issueReq = (): Request =>
@@ -366,7 +370,7 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "x-forwarded-for": "8.8.8.8",
+          "x-real-ip": "8.8.8.8",
         },
         body: JSON.stringify({
           accountId: "a",
@@ -383,22 +387,23 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
     expect(second.status).toBe(429);
   });
 
-  test("a spoofed leftmost x-forwarded-for hop does not mint a fresh /issue bucket", async () => {
-    // Same flood as above, but each request rotates a fake LEFTMOST hop (attacker-controlled) while
-    // the edge-appended rightmost hop stays fixed — the exact spoof the HIGH finding described. With
-    // clientIp reading the rightmost hop, all three requests must still collapse onto one bucket.
+  test("rotating x-envoy-external-address does not mint a fresh /issue bucket (Strix vuln-0001)", async () => {
+    // The exact pentest bypass: rotate the spoofable header on every request (no trusted X-Real-IP
+    // present). clientIp no longer trusts x-envoy-external-address / x-forwarded-for, so all requests
+    // collapse onto the shared "unknown" bucket and the second is throttled.
     const app = makeApp(provider, {
       webhook: { capacity: 1, windowMs: 60_000 },
       issue: { capacity: 1, windowMs: 60_000 },
+      globalWebhook: { capacity: 100_000, windowMs: 60_000 },
+      globalIssue: { capacity: 100_000, windowMs: 60_000 },
       maxEntries: 100,
     });
-    const realIp = "8.8.8.8";
-    const issueReq = (fakeLeftHop: string): Request =>
+    const issueReq = (fakeIp: string): Request =>
       new Request("http://license.test/issue", {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "x-forwarded-for": `${fakeLeftHop}, ${realIp}`,
+          "x-envoy-external-address": fakeIp,
         },
         body: JSON.stringify({
           accountId: "a",
@@ -410,6 +415,6 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
     const first = await app(issueReq("1.1.1.1"));
     expect(first.status).toBe(401); // passed the limiter, failed the bearer check
     const second = await app(issueReq("2.2.2.2"));
-    expect(second.status).toBe(429); // same rightmost hop → same bucket → throttled
+    expect(second.status).toBe(429); // spoofable header ignored → same "unknown" bucket → throttled
   });
 });

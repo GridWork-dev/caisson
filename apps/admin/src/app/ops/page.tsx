@@ -1,31 +1,31 @@
 import { EmptyState, Icon, MetricStat } from "@caisson/ui/components";
-import type { MetricStatTone } from "@caisson/ui/components";
+import type { IconName } from "@caisson/ui/components";
 
-import { fetchFleetSummary, signozUiUrl, type ServiceStat } from "@/lib/signoz";
+import {
+  fetchOpsSnapshot,
+  grafanaExploreUrl,
+  type OpsSnapshot,
+  type TraceRow,
+} from "@/lib/grafana";
 
-// Live per-request telemetry — never cache. SigNoz is provisioned at deploy (ADR-0142), so
-// in a local build `fetchFleetSummary()` short-circuits to the empty-state below.
+// Live per-request telemetry — never cache. Grafana Cloud is the fleet's OTLP sink (ADR-0177/0207),
+// provisioned at deploy, so in a local build `fetchOpsSnapshot()` short-circuits to the empty state.
 export const dynamic = "force-dynamic";
 
-const fmtCount = (n: number | null): string =>
-  n === null ? "—" : Math.round(n).toLocaleString();
-const fmtMs = (n: number | null): string =>
-  n === null ? "—" : `${Math.round(n).toLocaleString()} ms`;
+const ERROR_TRACEQL = "{ status = error }";
+const RECENT_TRACEQL = "{}";
 
-function errorRateTone(rate: number): MetricStatTone {
-  if (rate > 0.05) return "critical";
-  if (rate > 0.01) return "warning";
-  return "positive";
-}
-function p90Tone(ms: number): MetricStatTone {
-  if (ms > 2000) return "critical";
-  if (ms > 500) return "warning";
-  return "default";
+const fmtMs = (n: number): string => `${Math.round(n).toLocaleString()} ms`;
+
+function fmtAge(startMs: number, nowMs: number): string {
+  if (startMs <= 0) return "—";
+  const s = Math.max(0, Math.round((nowMs - startMs) / 1000));
+  if (s < 60) return `${s}s ago`;
+  return `${Math.round(s / 60)}m ago`;
 }
 
 export default async function OpsPage() {
-  const summary = await fetchFleetSummary();
-  const deepLink = signozUiUrl();
+  const snapshot = await fetchOpsSnapshot();
 
   return (
     <div className="shell stack" style={{ gap: "var(--cs-space-12)" }}>
@@ -35,58 +35,49 @@ export default async function OpsPage() {
           Fleet telemetry, at a glance.
         </h1>
         <p className="lede">
-          Request rate, error rate, and tail latency per service over the last
-          30 minutes — read from the self-hosted SigNoz query API, with a
-          deep-link to the full traces when you need to go deeper.
+          The active services, the most recent traces, and the error traces over
+          the last 30 minutes — read from Grafana Cloud (Tempo) over TraceQL,
+          with deep-links into Grafana Explore when you need to go deeper.
         </p>
       </section>
 
-      {!summary.configured ? (
+      {!snapshot.configured ? (
         <section className="stack" style={{ gap: "var(--cs-space-4)" }}>
           <h2 className="section-title">Observability</h2>
           <div className="panel">
             <EmptyState
               icon="gauge"
               title="Observability backend not configured"
-              description="Set SIGNOZ_QUERY_URL / SIGNOZ_API_KEY to light up the fleet widgets. SigNoz is provisioned at deploy (ADR-0142) — this surface stays dormant until then."
+              description="Set GRAFANA_URL / GRAFANA_QUERY_TOKEN / GRAFANA_TEMPO_DATASOURCE_UID to light up the fleet widgets. Grafana Cloud is the fleet's OTLP sink (ADR-0177/0207) — this surface stays dormant until those query envs are set at deploy."
             />
           </div>
         </section>
       ) : (
-        <ConfiguredOps services={summary.services} deepLink={deepLink} />
+        <ConfiguredOps snapshot={snapshot} />
       )}
     </div>
   );
 }
 
-function ConfiguredOps({
-  services,
-  deepLink,
-}: {
-  services: ServiceStat[];
-  deepLink: string | null;
-}) {
-  const totalRequests = services.reduce((a, s) => a + (s.requests ?? 0), 0);
-  const totalErrors = services.reduce((a, s) => a + (s.errors ?? 0), 0);
-  const errorRate = totalRequests > 0 ? totalErrors / totalRequests : 0;
-  const worstP90 = services.reduce<number | null>(
-    (a, s) => (s.p90Ms === null ? a : Math.max(a ?? 0, s.p90Ms)),
-    null,
-  );
+function ConfiguredOps({ snapshot }: { snapshot: OpsSnapshot }) {
+  const { services, recent, errors } = snapshot;
+  const nowMs = snapshot.window.toMs;
+  const openAll = grafanaExploreUrl(RECENT_TRACEQL);
+  const openErrors = grafanaExploreUrl(ERROR_TRACEQL);
 
   return (
     <>
       <section className="stack" style={{ gap: "var(--cs-space-4)" }}>
         <div className="row" style={{ justifyContent: "space-between" }}>
           <h2 className="section-title">Last 30 minutes</h2>
-          {deepLink ? (
+          {openAll ? (
             <a
               className="btn"
-              href={deepLink}
+              href={openAll}
               target="_blank"
               rel="noreferrer noopener"
             >
-              <Icon name="arrow" /> Open in SigNoz
+              <Icon name="arrow" /> Open in Grafana
             </a>
           ) : null}
         </div>
@@ -95,59 +86,195 @@ function ConfiguredOps({
           style={{ gap: "var(--cs-space-4)", flexWrap: "wrap" }}
         >
           <MetricStat
-            label="Requests"
-            value={fmtCount(totalRequests)}
-            hint="across the fleet"
+            label="Active services"
+            value={services.length.toLocaleString()}
+            hint="emitting traces"
+            icon="server"
+          />
+          <MetricStat
+            label="Recent traces"
+            value={recent.length.toLocaleString()}
+            hint={`sampled, latest ${recent.length}`}
             icon="gauge"
           />
           <MetricStat
-            label="Error rate"
-            value={`${(errorRate * 100).toFixed(2)}%`}
-            hint={`${fmtCount(totalErrors)} errors`}
+            label="Error traces"
+            value={errors.length.toLocaleString()}
+            hint="status = error"
             icon="alert-triangle"
-            tone={errorRateTone(errorRate)}
-          />
-          <MetricStat
-            label="p90 latency"
-            value={fmtMs(worstP90)}
-            hint="worst service"
-            icon="server"
-            tone={worstP90 === null ? "default" : p90Tone(worstP90)}
+            tone={errors.length > 0 ? "critical" : "positive"}
           />
         </div>
       </section>
 
       <section className="stack" style={{ gap: "var(--cs-space-4)" }}>
-        <h2 className="section-title">By service</h2>
+        <h2 className="section-title">Services</h2>
         {services.length === 0 ? (
           <div className="panel">
             <EmptyState
               icon="inbox"
-              title="No telemetry in the window"
-              description="The backend is configured but reported no spans in the last 30 minutes. Traffic will populate this as services emit traces."
+              title="No services in the window"
+              description="Grafana is configured but no service.name tag values were reported in the last 30 minutes. Traffic will populate this as services emit traces."
             />
           </div>
         ) : (
           <ul className="board">
-            {services.map((s) => (
-              <li key={s.service} className="board-row">
-                <div className="board-link is-static">
-                  <span className="board-glyph" data-state="ready">
-                    <Icon name="server" />
-                  </span>
-                  <span className="board-main">
-                    <span className="board-title mono">{s.service}</span>
-                    <span className="board-desc muted">
-                      {fmtCount(s.requests)} req · {fmtCount(s.errors)} err ·{" "}
-                      {fmtMs(s.p90Ms)} p90
-                    </span>
-                  </span>
-                </div>
-              </li>
-            ))}
+            {services.map((svc) => {
+              const link = grafanaExploreUrl(
+                `{ resource.service.name = "${svc}" }`,
+              );
+              return (
+                <li key={svc} className="board-row">
+                  <ServiceRow service={svc} href={link} />
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
+
+      <TraceSection
+        title="Recent traces"
+        traces={recent}
+        nowMs={nowMs}
+        emptyTitle="No traces in the window"
+        emptyDescription="The backend is configured but reported no traces in the last 30 minutes. Traffic will populate this as services emit spans."
+      />
+
+      <TraceSection
+        title="Error traces"
+        traces={errors}
+        nowMs={nowMs}
+        deepLink={openErrors}
+        emptyTitle="No error traces"
+        emptyDescription="No spans with status = error in the last 30 minutes."
+        emptyIcon="check"
+      />
     </>
+  );
+}
+
+function ServiceRow({
+  service,
+  href,
+}: {
+  service: string;
+  href: string | null;
+}) {
+  const inner = (
+    <>
+      <span className="board-glyph" data-state="ready">
+        <Icon name="server" />
+      </span>
+      <span className="board-main">
+        <span className="board-title mono">{service}</span>
+      </span>
+      {href ? (
+        <span className="board-arrow">
+          <Icon name="arrow" />
+        </span>
+      ) : null}
+    </>
+  );
+  return href ? (
+    <a
+      className="board-link"
+      href={href}
+      target="_blank"
+      rel="noreferrer noopener"
+    >
+      {inner}
+    </a>
+  ) : (
+    <div className="board-link is-static">{inner}</div>
+  );
+}
+
+function TraceSection({
+  title,
+  traces,
+  nowMs,
+  deepLink,
+  emptyTitle,
+  emptyDescription,
+  emptyIcon = "inbox",
+}: {
+  title: string;
+  traces: TraceRow[];
+  nowMs: number;
+  deepLink?: string | null;
+  emptyTitle: string;
+  emptyDescription: string;
+  emptyIcon?: IconName;
+}) {
+  return (
+    <section className="stack" style={{ gap: "var(--cs-space-4)" }}>
+      <div className="row" style={{ justifyContent: "space-between" }}>
+        <h2 className="section-title">{title}</h2>
+        {deepLink ? (
+          <a
+            className="btn"
+            href={deepLink}
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            <Icon name="arrow" /> View in Grafana
+          </a>
+        ) : null}
+      </div>
+      {traces.length === 0 ? (
+        <div className="panel">
+          <EmptyState
+            icon={emptyIcon}
+            title={emptyTitle}
+            description={emptyDescription}
+          />
+        </div>
+      ) : (
+        <ul className="board">
+          {traces.map((t) => {
+            const link = grafanaExploreUrl(t.traceId);
+            const inner = (
+              <>
+                <span className="board-glyph" data-state="ready">
+                  <Icon name="gauge" />
+                </span>
+                <span className="board-main">
+                  <span className="board-title mono">
+                    {t.service}
+                    {t.name ? ` · ${t.name}` : ""}
+                  </span>
+                  <span className="board-desc muted">
+                    {fmtMs(t.durationMs)} · {fmtAge(t.startMs, nowMs)} ·{" "}
+                    <span className="mono">{t.traceId.slice(0, 12)}</span>
+                  </span>
+                </span>
+                {link ? (
+                  <span className="board-arrow">
+                    <Icon name="arrow" />
+                  </span>
+                ) : null}
+              </>
+            );
+            return (
+              <li key={t.traceId} className="board-row">
+                {link ? (
+                  <a
+                    className="board-link"
+                    href={link}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                  >
+                    {inner}
+                  </a>
+                ) : (
+                  <div className="board-link is-static">{inner}</div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }

@@ -1,4 +1,4 @@
-// Branded money constructors (ADR-0206): mint on a valid integer, throw ValidationError on a
+// Branded money constructors (ADR-0212): mint on a valid integer, throw ValidationError on a
 // fractional/negative/zero-where-positive input, and stay runtime-invisible (the branded value IS
 // the number). Pure, no DB.
 import { describe, expect, test } from "bun:test";

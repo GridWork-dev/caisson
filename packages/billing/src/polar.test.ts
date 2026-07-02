@@ -92,7 +92,7 @@ describe("event mapping", () => {
       accountId: "acct_a",
       amountTotal: 5000,
       currency: "usd",
-      priceId: "prod_x",
+      lineItems: [{ priceId: "prod_x", quantity: 1 }],
       paymentId: "order_1",
     });
   });

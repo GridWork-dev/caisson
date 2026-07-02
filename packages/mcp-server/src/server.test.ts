@@ -292,7 +292,7 @@ describe("buyer MCP server", () => {
     ).rejects.toBeInstanceOf(NotFoundError);
   });
 
-  test("listTools entries carry a non-empty description (ADR-0210)", () => {
+  test("listTools entries carry a non-empty description (ADR-0216)", () => {
     const tools = server.listTools(session);
     expect(tools.length).toBeGreaterThan(0);
     for (const reg of tools) {
@@ -301,7 +301,7 @@ describe("buyer MCP server", () => {
   });
 });
 
-describe("ADR-0210 tool manifest validation (registerTool)", () => {
+describe("ADR-0216 tool manifest validation (registerTool)", () => {
   function freshServer() {
     return createMcpServer({
       tokens: [

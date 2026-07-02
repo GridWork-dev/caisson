@@ -37,7 +37,7 @@ describe("in-memory job queue", () => {
   });
 });
 
-describe("in-memory job queue — idempotent enqueue (ADR-0205)", () => {
+describe("in-memory job queue — idempotent enqueue (ADR-0211)", () => {
   test("a repeated enqueue with the same idempotencyKey runs the handler once", async () => {
     const received: Array<{ accountId: string; amount: number }> = [];
     const queue = createInMemoryQueue([
@@ -98,7 +98,7 @@ describe("in-memory job queue — idempotent enqueue (ADR-0205)", () => {
   });
 });
 
-describe("in-memory job queue — work() (ADR-0205)", () => {
+describe("in-memory job queue — work() (ADR-0211)", () => {
   test("returns a stoppable no-op WorkHandle for a registered task", async () => {
     const queue = createInMemoryQueue([
       defineTask("grant-credits", grantSchema, async () => {}),
@@ -115,7 +115,7 @@ describe("in-memory job queue — work() (ADR-0205)", () => {
   });
 });
 
-describe("in-memory job queue — getQueueState() (ADR-0205)", () => {
+describe("in-memory job queue — getQueueState() (ADR-0211)", () => {
   test("an unenqueued task reports all-zero counts", async () => {
     const queue = createInMemoryQueue([
       defineTask("grant-credits", grantSchema, async () => {}),

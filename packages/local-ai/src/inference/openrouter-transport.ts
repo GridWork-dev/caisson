@@ -33,20 +33,22 @@ import type { EgressGuard } from "../privacy/egress-guard.ts";
 const DEFAULT_BASE_URL = "https://openrouter.ai/api/v1";
 
 // ── Lenient wire schemas (untrusted third-party JSON — unknown fields pass, see the file header) ──
+// Exported (file-level, not via the barrel): this is the OpenAI-compatible dialect, and the Azure
+// OpenAI rented transport (ADR-0209) speaks the exact same wire — one schema set, two transports.
 
-const wireUsageSchema = z
+export const wireUsageSchema = z
   .object({
     total_tokens: z.number().optional(),
     prompt_tokens: z.number().optional(),
   })
   .optional();
 
-const embedWireSchema = z.object({
+export const embedWireSchema = z.object({
   data: z.array(z.object({ embedding: z.array(z.number()) })).min(1),
   usage: wireUsageSchema,
 });
 
-const completeWireSchema = z.object({
+export const completeWireSchema = z.object({
   choices: z
     .array(z.object({ message: z.object({ content: z.string() }) }))
     .min(1),
@@ -55,7 +57,7 @@ const completeWireSchema = z.object({
 });
 
 /** Provider-reported tokens → integer units (ADR-0007). Missing usage meters as 0, never NaN. */
-function tokenQuantity(usage: z.infer<typeof wireUsageSchema>): number {
+export function tokenQuantity(usage: z.infer<typeof wireUsageSchema>): number {
   return Math.floor(usage?.total_tokens ?? 0);
 }
 

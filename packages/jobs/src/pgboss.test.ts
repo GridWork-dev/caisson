@@ -159,7 +159,7 @@ describe("pg-boss job queue", () => {
   });
 });
 
-describe("pg-boss idempotent enqueue (ADR-0205)", () => {
+describe("pg-boss idempotent enqueue (ADR-0211)", () => {
   test("passes a deterministic id derived from name + idempotencyKey", async () => {
     const client = createFakeClient();
     const queue = createPgBossJobQueue(grantCreditsTasks, { client });
@@ -223,7 +223,7 @@ describe("pg-boss idempotent enqueue (ADR-0205)", () => {
   });
 });
 
-describe("pg-boss work() (ADR-0205)", () => {
+describe("pg-boss work() (ADR-0211)", () => {
   test("ensures the queue, then claims via client.work and runs the handler with the parsed payload", async () => {
     const received: Array<{ accountId: string; amount: number }> = [];
     const client = createFakeClient();
@@ -267,7 +267,7 @@ describe("pg-boss work() (ADR-0205)", () => {
   });
 });
 
-describe("pg-boss getQueueState() (ADR-0205)", () => {
+describe("pg-boss getQueueState() (ADR-0211)", () => {
   test("maps client.getQueue's counts", async () => {
     const client = createFakeClient();
     client.queueState = { queuedCount: 3, activeCount: 1, failedCount: 2 };

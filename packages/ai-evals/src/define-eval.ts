@@ -60,7 +60,7 @@ export interface DefineEvalConfig {
   /** scorer name → grader. Keys SHOULD match the dataset's declared `scorers`. */
   readonly scorers: Readonly<Record<string, Grader>>;
   /**
-   * Opt-in Wilson-CI confidence floor (ADR-0208), threaded into `compareToBaseline`. Unset → zero
+   * Opt-in Wilson-CI confidence floor (ADR-0214), threaded into `compareToBaseline`. Unset → zero
    * behavior change. A confidence floor is distinct from `threshold` (which gates the mean): it's
    * looser, to catch a lucky-draw small sample rather than a genuinely low score.
    */
@@ -87,7 +87,7 @@ export interface EvalRun {
   readonly scorers: Readonly<Record<string, number>>;
   readonly passed: boolean;
   readonly scoredCases: readonly ScoredCase[];
-  /** Carried through from `DefineEvalConfig.wilsonFloor` (ADR-0208) — unset by default. */
+  /** Carried through from `DefineEvalConfig.wilsonFloor` (ADR-0214) — unset by default. */
   readonly wilsonFloor?: number;
 }
 

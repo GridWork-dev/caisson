@@ -13,7 +13,7 @@ import {
 
 export const actionBookSchema = strictObject({
   /** Credits a single create-caisson generation debits on the HOSTED path (ADR-0049; local = free,
-   *  ADR-0093). Branded `Credits` (ADR-0206): the transform mints the brand AFTER validation. */
+   *  ADR-0093). Branded `Credits` (ADR-0212): the transform mints the brand AFTER validation. */
   codegenRunCredits: z
     .number()
     .int()

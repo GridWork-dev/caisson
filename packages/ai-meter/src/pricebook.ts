@@ -58,12 +58,12 @@ export const usageSchema = strictObject({
 export type Usage = z.infer<typeof usageSchema>;
 
 export interface CostBreakdown {
-  /** Integer micro-USD the provider price book normalized to (branded, ADR-0206). */
+  /** Integer micro-USD the provider price book normalized to (branded, ADR-0212). */
   costMicroUsd: MicroUsd;
-  /** Integer credit units charged (ceil of cost ÷ conversion; branded, ADR-0206). */
+  /** Integer credit units charged (ceil of cost ÷ conversion; branded, ADR-0212). */
   credits: Credits;
   /**
-   * Rounding provenance (ADR-0206) for the micro-USD → credits leg: `raw` is the pre-rounding
+   * Rounding provenance (ADR-0212) for the micro-USD → credits leg: `raw` is the pre-rounding
    * integer micro-USD cost, `mode` is this book's fixed direction ("up", ADR-0060 — never
    * under-bill), `result` equals `credits`. Thread it into the credit-ledger write so the charge
    * is auditable after the fact.
@@ -91,7 +91,7 @@ export const BUNDLED_PRICE_BOOK: PriceBook = {
     cachedInputPerMTok: 18_750,
     outputPerMTok: 300_000,
   },
-  // The metered-embeddings gateway's default model (ADR-0207): an embedding model is just another
+  // The metered-embeddings gateway's default model (ADR-0213): an embedding model is just another
   // price-book ROW — config, not a schema change. `outputPerMTok: 0` because an embedding call has
   // no output tokens (ai-kit's embed() reconciles with outputTokens: 0 and the reserve-time phantom
   // output leg refunds in full). `cachedInputPerMTok` mirrors the input rate: embeddings have no
@@ -162,7 +162,7 @@ export function computeCost(
   return {
     costMicroUsd,
     credits,
-    // ADR-0206: this book's fixed direction is UP (ADR-0060, never under-bill) — recorded even when
+    // ADR-0212: this book's fixed direction is UP (ADR-0060, never under-bill) — recorded even when
     // the division was exact.
     roundingCredits: { raw: costMicroUsd, mode: "up", result: credits },
   };

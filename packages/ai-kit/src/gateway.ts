@@ -102,7 +102,7 @@ export interface InferOptions {
   /**
    * Abort the in-flight provider call (a caller timeout, a hung-up request, …). A hang still hits
    * the existing failure path — `catch → settle(ZERO_USAGE)` — so an abort never leaks the up-front
-   * reservation (ADR-0207: closes the fetchWithTimeout-floor gap on `infer()`'s bare `generateText`).
+   * reservation (ADR-0213: closes the fetchWithTimeout-floor gap on `infer()`'s bare `generateText`).
    */
   readonly abortSignal?: AbortSignal;
 }

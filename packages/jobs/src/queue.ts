@@ -20,7 +20,7 @@ export interface TaskDefinition<T> {
 }
 
 /**
- * Options for `enqueue` (ADR-0205). `idempotencyKey` makes a retried call a no-op: the same key
+ * Options for `enqueue` (ADR-0211). `idempotencyKey` makes a retried call a no-op: the same key
  * on the same task name produces at most one job — see each driver for its dedupe mechanism
  * (pg-boss: a deterministic PK id; Trigger.dev: native `idempotencyKey`; in-memory: a keyed Set).
  */
@@ -47,7 +47,7 @@ export interface WorkHandle {
 }
 
 /**
- * The claim/worker port (ADR-0205). `work(name)` resolves against the SAME `TaskDefinition`
+ * The claim/worker port (ADR-0211). `work(name)` resolves against the SAME `TaskDefinition`
  * registry `enqueue` uses — no second handler, no drift — and 404s (`NotFoundError`) on an
  * unregistered name. pg-boss consumes for real (native SKIP LOCKED); in-memory and Trigger.dev
  * are honest no-ops (see each driver for why).
@@ -64,7 +64,7 @@ export interface QueueState {
 }
 
 /**
- * The visibility-ledger port (ADR-0205). Not every driver can answer it truthfully — Trigger.dev
+ * The visibility-ledger port (ADR-0211). Not every driver can answer it truthfully — Trigger.dev
  * has no local read, so it does not implement this port at all (see `trigger-driver.ts`).
  */
 export interface JobLedger {

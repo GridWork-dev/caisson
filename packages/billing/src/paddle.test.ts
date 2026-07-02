@@ -85,9 +85,60 @@ describe("event mapping", () => {
       accountId: "acct_a",
       amountTotal: 5000,
       currency: "usd",
-      priceId: "price_credit_pack_PLACEHOLDER",
+      lineItems: [{ priceId: "price_credit_pack_PLACEHOLDER", quantity: 1 }],
       paymentId: "txn_01hvcc93znj3mpqt1tenkjb04y",
     });
+  });
+
+  test("a multi-item one-time transaction fulfills EVERY line, with quantity (Strix vuln-0005)", () => {
+    // The on-site cart opens ONE multi-line Paddle checkout, so Paddle fires ONE transaction.completed
+    // carrying every line in data.items. The pre-fix mapper read only items[0] — the buyer paid for
+    // the whole cart and received just the first SKU. All lines (and their quantities) must map.
+    const event = {
+      event_id: "evt_cart",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_cart",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        items: [
+          { price: { id: "price_compliance_PLACEHOLDER" }, quantity: 1 },
+          { price: { id: "price_credit_pack_PLACEHOLDER" }, quantity: 3 },
+        ],
+        details: { totals: { grand_total: "20000" } },
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    const parsed = parsePaddleEvent(event);
+    expect(parsed?.type).toBe("purchase.completed");
+    expect(
+      parsed?.type === "purchase.completed" ? parsed.lineItems : [],
+    ).toEqual([
+      { priceId: "price_compliance_PLACEHOLDER", quantity: 1 },
+      { priceId: "price_credit_pack_PLACEHOLDER", quantity: 3 },
+    ]);
+  });
+
+  test("a multi-item transaction with one MALFORMED line fails closed, not a partial grant (Greptile P1)", () => {
+    // One line is unreadable (no price id). Silently skipping it would ack the webhook and grant the
+    // buyer only the valid line — a permanent under-grant with no Paddle retry. The mapper must THROW so
+    // verifyAndParse returns a non-2xx and Paddle redelivers.
+    const event = {
+      event_id: "evt_cart_bad",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_cart_bad",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        items: [
+          { price: { id: "price_compliance_PLACEHOLDER" }, quantity: 1 },
+          { price: {} }, // malformed: no price id
+        ],
+        details: { totals: { grand_total: "20000" } },
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    expect(() => parsePaddleEvent(event)).toThrow(/price id/);
   });
 
   test("a subscription-linked transaction.completed never maps to purchase.completed (ADR-0108 guard)", () => {
@@ -149,6 +200,35 @@ describe("event mapping", () => {
     expect(parsed?.type).toBe("invoice.paid");
     expect(parsed?.type === "invoice.paid" ? parsed.billingReason : "").toBe(
       "subscription_charge",
+    );
+  });
+
+  test("a subscription_update (proration) transaction stays NON-granting (Strix vuln-0002)", () => {
+    // origin "subscription_update" = a proration/plan-change transaction, NOT a chargeable renewal.
+    // It must pass through as its raw origin (outside GRANTING_REASONS) so no cycle allotment grants
+    // until the next real renewal invoice (ADR-0089 SD-1). The pre-fix mapper's inverted allowlist
+    // ("everything except subscription_charge → subscription_cycle") granted a full cycle here — the
+    // exact bug Strix vuln-0002's PoC hit (a signed subscription_update credited 1000). This locks the
+    // corrected allowlist mapping so a regression back to a default-granting else-branch fails here.
+    const event = {
+      event_id: "evt_sub_update",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_sub_upd",
+        subscription_id: "sub_x",
+        origin: "subscription_update",
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        items: [
+          { price: { id: "price_compliance_updates_annual_PLACEHOLDER" } },
+        ],
+        details: { totals: { grand_total: "1290000" } },
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    const parsed = parsePaddleEvent(event);
+    expect(parsed?.type).toBe("invoice.paid");
+    expect(parsed?.type === "invoice.paid" ? parsed.billingReason : "").toBe(
+      "subscription_update",
     );
   });
 

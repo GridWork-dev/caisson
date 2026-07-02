@@ -1,4 +1,4 @@
-// Branded money types + rounding provenance (ADR-0206). TS-native nominal brands over `number` —
+// Branded money types + rounding provenance (ADR-0212). TS-native nominal brands over `number` —
 // compile-time-only, ZERO runtime cost: no wrapper class, no Zod parse per computation, and a branded
 // value widens back to `number` for free at a DB boundary (a SQL param or BigInt() needs no unwrap).
 // A cents value can no longer pass silently where credits are expected; explicit construction is
@@ -70,7 +70,7 @@ export function unwrapMoney(
 export type RoundingMode = "up" | "down";
 
 /**
- * The auditable record a rounding site returns (ADR-0206): the pre-rounding raw value, the site's
+ * The auditable record a rounding site returns (ADR-0212): the pre-rounding raw value, the site's
  * fixed direction, and the rounded integer result. `mode` names the SITE's documented direction —
  * it is recorded even when the division happened to be exact. Persisting `{raw, mode}` alongside the
  * ledger amount makes a grant/debit auditable after the fact; the STORED amount stays an integer

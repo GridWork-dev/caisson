@@ -23,6 +23,13 @@ export { safeEqualFixed, safeEqualVariable } from "./crypto.ts";
 export { scrubForEgress, looksLikeSecret } from "./secret-scrub.ts";
 export { fetchWithTimeout } from "./fetch.ts";
 export type { FetchTimeoutOptions } from "./fetch.ts";
+export {
+  assertResolvedHostPublic,
+  assertSafePublicUrl,
+  assertSafePublicUrlResolved,
+  isPrivateAddress,
+  ssrfGuardedFetch,
+} from "./ssrf.ts";
 export { strictObject, parseStrict } from "./schema.ts";
 export { loadConfig } from "./config.ts";
 export type { EnvSource } from "./config.ts";

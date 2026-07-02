@@ -2,7 +2,7 @@
 "@caisson/ai-kit": patch
 ---
 
-Fetch-deadline floor fix + metered embeddings (ADR-0207, harden-in-place ADR-0204): every live
+Fetch-deadline floor fix + metered embeddings (ADR-0213, harden-in-place ADR-0210): every live
 `@ai-sdk/*` provider factory now binds its outbound `fetch` to a configurable `timeoutMs` (default
 60s, via `fetchWithTimeout`) instead of the ambient global fetch, closing a hang/DoS-adjacent gap on
 every provider path; `infer()`'s `generateText` now forwards `opts.abortSignal`, mirroring
@@ -12,4 +12,4 @@ BYOK-routed — a metered, buyer-facing embeddings surface for RAG/semantic-sear
 registry-resolver/reserve/reconcile machinery, no guardrails or prompt-registry render (an embed input
 feeds a vector index, not a moderated chat turn). Zero diff in `@caisson/ai-config`,
 `@caisson/ai-meter`, or `@caisson/pricebook` — a bundled embedding price-book row / bulk-embed SKU is
-cross-package money, deferred to the ADR-0206 serialized wave.
+cross-package money, deferred to the ADR-0212 serialized wave.

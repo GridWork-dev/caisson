@@ -60,5 +60,24 @@ class FakeThreadOpener:
         return self._id
 
 
+class FakeIssueTracker:
+    """IssueTracker double: records create_issue calls, returns a fixed url (or None, or raises)."""
+
+    def __init__(
+        self,
+        url: str | None = "https://linear.app/caisson/issue/CAI-1",
+        error: Exception | None = None,
+    ) -> None:
+        self._url = url
+        self._error = error
+        self.created: list[tuple[str, str]] = []
+
+    async def create_issue(self, *, title: str, description: str) -> str | None:
+        self.created.append((title, description))
+        if self._error is not None:
+            raise self._error
+        return self._url
+
+
 def sample_brief() -> Brief:
     return Brief(question="how do credits work?", summary="no match", sources_considered=["a.md"])

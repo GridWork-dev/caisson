@@ -236,7 +236,7 @@ describe("credit wallet", () => {
   });
 });
 
-describe("rounding provenance (ADR-0206)", () => {
+describe("rounding provenance (ADR-0212)", () => {
   type ProvenanceRow = {
     amount: number;
     rounding_raw: number | null;

@@ -167,7 +167,7 @@ describe("cheap pre-screen", () => {
   });
 });
 
-describe("secret gate (ADR-0209)", () => {
+describe("secret gate (ADR-0215)", () => {
   test("an AWS-key-shaped input blocks category 'secret' BEFORE the moderator runs", async () => {
     const { rt, sink } = runtime();
     let called = false;

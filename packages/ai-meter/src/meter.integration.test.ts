@@ -166,7 +166,7 @@ describe("reserve → reconcile money path", () => {
     expect(rows[0]?.credits).toBe(8);
     expect(rows[0]?.cost_micro_usd).toBe(800);
 
-    // ADR-0206: both meter ledger rows persist rounding provenance — the reserve debit carries the
+    // ADR-0212: both meter ledger rows persist rounding provenance — the reserve debit carries the
     // ESTIMATE's ceil (400 micro-USD → 4 credits), the reconcile shortfall carries the ACTUAL's
     // (800 micro-USD → 8 credits). Both record this book's fixed direction, "up".
     const ledger = await tp.query<{

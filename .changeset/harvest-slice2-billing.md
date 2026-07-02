@@ -2,7 +2,7 @@
 "@caisson/billing": patch
 ---
 
-Stripe webhook envelope hardening (ADR-0204): `provider.ts`'s Stripe driver used to trust
+Stripe webhook envelope hardening (ADR-0210): `provider.ts`'s Stripe driver used to trust
 the raw webhook body via a bare `JSON.parse(rawBody) as StripeEvent` cast — a type-level
 assertion with no runtime shape check. Signature verification already ran first, but a
 validly-signed, malformed-envelope delivery (missing/wrong-typed `id`, or an unexpected

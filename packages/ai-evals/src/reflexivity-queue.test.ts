@@ -1,4 +1,4 @@
-// Reflexivity-queue tests (ADR-0208). Agreement → no enqueue; disagreement → enqueued; consolidation
+// Reflexivity-queue tests (ADR-0214). Agreement → no enqueue; disagreement → enqueued; consolidation
 // dedups by caseId (latest wins) and caps — and never produces an `EvalCase` (only a candidate list).
 import { describe, expect, test } from "bun:test";
 import {

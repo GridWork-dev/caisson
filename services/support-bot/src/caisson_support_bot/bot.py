@@ -11,12 +11,14 @@ from __future__ import annotations
 from collections.abc import Callable
 
 import discord
+import httpx
 from discord import app_commands
 from discord.ext import commands
 
 from .config import Settings
 from .contracts import AnswerResult
-from .escalation import Escalator, ThreadOpener, TicketStore
+from .escalation import Escalator, IssueTracker, ThreadOpener, TicketStore
+from .linear_client import LinearIssueTracker
 from .member_mgmt import add_persistent_views, register_member_commands
 from .rag import RagPipeline
 
@@ -112,10 +114,33 @@ class _DiscordThreadOpener:
             return None
 
 
+def _linear_issue_tracker(
+    settings: Settings, http_client: httpx.AsyncClient | None
+) -> IssueTracker | None:
+    """Build the Linear sink iff all three settings + an httpx client are present (ADR-0206).
+
+    Any of the four missing means the Linear code path never runs — no partial configuration.
+    """
+    if (
+        http_client is None
+        or not settings.linear_api_key
+        or not settings.linear_team_id
+        or not settings.linear_triage_state_id
+    ):
+        return None
+    return LinearIssueTracker(
+        api_key=settings.linear_api_key,
+        team_id=settings.linear_team_id,
+        state_id=settings.linear_triage_state_id,
+        client=http_client,
+    )
+
+
 def _escalator_factory(
     settings: Settings,
     store: TicketStore | None,
     channel: discord.abc.Messageable,
+    issue_tracker: IssueTracker | None = None,
 ) -> Callable[[], Escalator]:
     mention = f"<@&{settings.support_human_role_id}>" if settings.support_human_role_id else None
 
@@ -123,7 +148,9 @@ def _escalator_factory(
         opener: ThreadOpener = _DiscordThreadOpener(
             channel, mention_role_id=settings.support_human_role_id
         )
-        return Escalator(store=store, thread_opener=opener, human_mention=mention)
+        return Escalator(
+            store=store, thread_opener=opener, issue_tracker=issue_tracker, human_mention=mention
+        )
 
     return make
 
@@ -133,8 +160,15 @@ def make_bot(
     settings: Settings,
     pipeline: RagPipeline,
     store: TicketStore | None = None,
+    http_client: httpx.AsyncClient | None = None,
 ) -> commands.Bot:
-    """Construct the discord.py bot. The listener intent is only requested if a channel is configured."""
+    """Construct the discord.py bot. The listener intent is only requested if a channel is configured.
+
+    ``http_client`` is the bot's already-pooled outbound client (see ``__main__.py``); passing it
+    enables the Linear triage sink when its three settings are also configured (ADR-0206). Tests
+    that omit it simply never construct the Linear sink.
+    """
+    issue_tracker = _linear_issue_tracker(settings, http_client)
     intents = discord.Intents.default()
     if settings.support_channel_id is not None:
         intents.message_content = True  # required to read #ask-ai messages.
@@ -166,7 +200,12 @@ def make_bot(
         reply = await handle_question(
             question=question,
             pipeline=pipeline,
-            escalator_factory=_escalator_factory(settings, store, interaction.channel),  # type: ignore[arg-type]
+            escalator_factory=_escalator_factory(
+                settings,
+                store,
+                interaction.channel,  # type: ignore[arg-type]
+                issue_tracker,
+            ),
             max_chars=settings.max_question_chars,
         )
         await interaction.followup.send(reply)
@@ -181,7 +220,9 @@ def make_bot(
             reply = await handle_question(
                 question=message.content,
                 pipeline=pipeline,
-                escalator_factory=_escalator_factory(settings, store, message.channel),
+                escalator_factory=_escalator_factory(
+                    settings, store, message.channel, issue_tracker
+                ),
                 max_chars=settings.max_question_chars,
             )
         await message.reply(reply)

@@ -137,7 +137,7 @@ export function compareToBaseline(
     });
   }
 
-  // Wilson-CI gate augmentation (ADR-0208), opt-in and additive: unset `wilsonFloor` → zero behavior
+  // Wilson-CI gate augmentation (ADR-0214), opt-in and additive: unset `wilsonFloor` → zero behavior
   // change (skips this block entirely). Per-scorer successes come from `scoredCases[].passes[scorer]`
   // over `run.cases` — a confidence floor distinct from `threshold` (which gates the mean), looser,
   // to catch a lucky-draw small sample rather than a genuinely low score.

@@ -1,4 +1,4 @@
-// Eval-ledger tests (ADR-0208). Round-trip through the in-memory sink; non-integer/negative money
+// Eval-ledger tests (ADR-0214). Round-trip through the in-memory sink; non-integer/negative money
 // rejected at the schema boundary; the isolation-by-construction invariant (never imports
 // `@caisson/ai-meter`) is asserted by a source grep, mirroring the kernel event-sink self-check.
 import { describe, expect, test } from "bun:test";
@@ -88,7 +88,7 @@ describe("evalSpendEntrySchema boundary", () => {
   });
 });
 
-describe("budget isolation by construction (ADR-0208)", () => {
+describe("budget isolation by construction (ADR-0214)", () => {
   test("the eval-ledger module has no import edge to @caisson/ai-meter", () => {
     const src = readFileSync(join(import.meta.dir, "eval-ledger.ts"), "utf8");
     // No `import ... from "@caisson/ai-meter"` and no `require("@caisson/ai-meter")` — prose

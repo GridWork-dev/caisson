@@ -43,7 +43,7 @@ export const planBookEntrySchema = strictObject({
   /** Stable internal plan tag (NOT the Stripe id) — survives a price-id rotation. */
   planTag: z.string().min(1),
   /** EXACT integer credits granted each cycle — never derived from the charged amount (ADR-0089 §5).
-   *  Branded `Credits` (ADR-0206): the transform mints the brand AFTER validation, same runtime value. */
+   *  Branded `Credits` (ADR-0212): the transform mints the brand AFTER validation, same runtime value. */
   creditsPerCycle: z
     .number()
     .int()

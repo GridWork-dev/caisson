@@ -1,4 +1,4 @@
-// Exit classifier tests (ADR-0208). One fixture per taxonomy class, plus priority ties — the chain
+// Exit classifier tests (ADR-0214). One fixture per taxonomy class, plus priority ties — the chain
 // order (error → timeout → budget-exhausted → refusal → empty-output → success → unknown) is the
 // load-bearing behavior.
 import { describe, expect, test } from "bun:test";

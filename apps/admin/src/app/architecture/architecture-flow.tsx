@@ -196,19 +196,19 @@ function layout(graph: ArchitectureGraph): { nodes: Node[]; edges: Edge[] } {
   });
 
   const edges: Edge[] = graph.edges.map((e) => {
-    const toSignoz = e.target === "signoz";
+    const toObservability = e.target === "grafana";
     return {
       id: e.id,
       source: e.source,
       target: e.target,
       label: `${e.label} · ${e.protocol}`,
-      animated: toSignoz,
+      animated: toObservability,
       markerEnd: { type: MarkerType.ArrowClosed },
       ...(e.bidirectional
         ? { markerStart: { type: MarkerType.ArrowClosed } }
         : {}),
       style: {
-        stroke: toSignoz ? "var(--cs-accent)" : "var(--cs-fg-muted)",
+        stroke: toObservability ? "var(--cs-accent)" : "var(--cs-fg-muted)",
         strokeWidth: 1.4,
       },
       labelStyle: { fontSize: 11, fill: "var(--cs-fg)" },

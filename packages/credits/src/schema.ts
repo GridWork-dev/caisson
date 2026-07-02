@@ -51,7 +51,7 @@ ${buildTenantPolicySql("credit_event")}
 `;
 
 /**
- * Rounding provenance (ADR-0206): the pre-rounding raw value + the site's rounding direction that
+ * Rounding provenance (ADR-0212): the pre-rounding raw value + the site's rounding direction that
  * produced `amount`, persisted so a grant/debit is auditable after the fact. Both columns nullable —
  * a row from a rounding site carries both; a row whose amount is an EXACT table integer (an
  * apply-billing-event grant, ADR-0089 §5) carries NULL/NULL. The biconditional CHECK mirrors the

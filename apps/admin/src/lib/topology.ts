@@ -125,18 +125,14 @@ function workerNode(): ServiceNode | null {
   return { id: "registry-worker", label: name, kind: "worker" };
 }
 
-// ponytail: SigNoz + Railway Postgres are architectural CONSTANTS (locked ADR-0117/0142 · ADR-0115),
-// not manifest-discovered — neither has a railway.toml in this repo. Gating SigNoz on infra/signoz/
-// existing would drop the observability backbone (and every OTLP edge) until the A2 infra stream
-// lands, so the node is unconditional. Upgrade path: read infra/signoz/ for collector detail if the
-// diagram ever needs it. `existsSync` here is informational (surfaced in reports), not a gate.
-export const SIGNOZ_CONFIG_PRESENT =
-  repoRoot !== null && existsSync(join(repoRoot, "infra", "signoz"));
-
+// ponytail: Grafana Cloud + Railway Postgres are architectural CONSTANTS (locked ADR-0177 · ADR-0115),
+// not manifest-discovered — Grafana Cloud is a hosted OTLP sink (no in-repo manifest/dir after the
+// ADR-0177 SigNoz teardown), Postgres has no railway.toml. Both are unconditional so the observability
+// backbone (and every OTLP edge) always renders.
 function infraNodes(): ServiceNode[] {
   return [
     { id: "postgres", label: "Railway Postgres", kind: "datastore" },
-    { id: "signoz", label: "SigNoz", kind: "observability" },
+    { id: "grafana", label: "Grafana Cloud", kind: "observability" },
   ];
 }
 

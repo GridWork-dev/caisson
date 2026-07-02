@@ -1,4 +1,4 @@
-// pg-boss production driver for the `JobQueue` port (ADR-0173, ADR-0205). A thin wrapper over
+// pg-boss production driver for the `JobQueue` port (ADR-0173, ADR-0211). A thin wrapper over
 // pg-boss's Postgres-backed queue — `enqueue(name, payload)` validates against the same task
 // registry the in-memory + Trigger.dev drivers use, then maps to `boss.send(name, payload)`.
 //
@@ -13,7 +13,7 @@
 // the first `enqueue`/`work`/`getQueueState` call and cached for the lifetime of the returned
 // `JobQueue`.
 //
-// Idempotent enqueue (ADR-0205): NOT `singletonKey`. pg-boss's uniqueness indexes are gated
+// Idempotent enqueue (ADR-0211): NOT `singletonKey`. pg-boss's uniqueness indexes are gated
 // `AND policy = '<policy>'` (`plans.js` insertJobs' partial unique indexes), and our default
 // `standard`-policy queue enforces none of them — forcing `policy: 'exclusive'` would also block
 // concurrent *unkeyed* jobs on the same queue name, which is not a trade this port makes for every
@@ -75,7 +75,7 @@ export interface PgBossJobQueueConfig {
 }
 
 /**
- * Deterministic pg-boss job id for idempotent enqueue (ADR-0205) — `sha256(name + "\0" +
+ * Deterministic pg-boss job id for idempotent enqueue (ADR-0211) — `sha256(name + "\0" +
  * idempotencyKey)` reshaped into UUID-string form (8-4-4-4-12 hex). The NUL separator prevents
  * `(name="ab", key="c")` from colliding with `(name="a", key="bc")`. Version/variant bits are left
  * as raw hash bytes: Postgres's `uuid` column accepts any 32 hex digits in that shape, and this id
