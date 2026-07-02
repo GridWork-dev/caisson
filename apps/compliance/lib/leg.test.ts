@@ -36,10 +36,21 @@ describe("compliance reference app — the full leg end to end", () => {
     expect(result.encryptedField.crossRowRelocateRejected).toBe(true);
   });
 
+  test("1b — a support-impersonation session leaves a chain-verified dual trail (ADR-0187)", () => {
+    // Three lifecycle steps (begin / recorded action / end) × 2 records precede the artifact lock:
+    // the begin pair sits at seqs 0/1, operator-identity record strictly before the tenant record.
+    expect(result.impersonation.operatorRecordSeq).toBe(0);
+    expect(result.impersonation.tenantRecordSeq).toBe(1);
+    expect(result.impersonation.dualTrailStatus).toBe("pass");
+    expect(result.impersonation.sessionId.length).toBeGreaterThan(0);
+  });
+
   test("2 — an append-only versioned artifact locks into WORM with a verified chain anchor", () => {
     expect(result.wormLock.lockedVersionId.length).toBeGreaterThan(0);
     expect(result.wormLock.chainVerified).toBe(true);
-    expect(result.wormLock.chainAnchor.length).toBe(1);
+    // 6 impersonation dual-trail records (ADR-0187) + the artifact.locked event = a 7-entry chain;
+    // the artifact append is LAST, so its anchor commits the full chain including the dual trail.
+    expect(result.wormLock.chainAnchor.length).toBe(7);
     expect(result.wormLock.chainAnchor.tipHash).toMatch(/^[0-9a-f]{64}$/);
     expect(result.wormLock.meetsRetentionFloor).toBe(true);
     expect(result.wormLock.artifactKey.startsWith(`${DEMO_TENANT_ID}/`)).toBe(

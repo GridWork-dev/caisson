@@ -6,6 +6,9 @@
 //      ADR-0052/TM-H). No overwrite path exists.
 //   2. Retention lock — every object carries `ObjectLockMode` + `ObjectLockRetainUntilDate`, with
 //      the date == the caller's `retainUntil` so the S3 lock date provably equals the DB row date.
+//   3. Monotonic escalation (ADR-0202) — `extendRetention` moves a lock strictly LATER preserving
+//      the mode; `escalateToCompliance` hardens GOVERNANCE→COMPLIANCE behind the SAME three-belt
+//      gate as write-time COMPLIANCE. No path shortens a date or weakens a mode.
 //
 // The S3 TRANSPORT is injected as `S3Sendable = Pick<S3Client, "send">` (ADR-0054). CI binds a stub
 // `send`, so NO live cloud call runs in tests — a real `S3Client` (the live transport) is the only
@@ -14,8 +17,10 @@
 // bucket can never be irreversibly bricked (ADR-0051/TM-A).
 import {
   GetObjectCommand,
+  GetObjectRetentionCommand,
   HeadObjectCommand,
   PutObjectCommand,
+  PutObjectRetentionCommand,
   type S3Client,
 } from "@aws-sdk/client-s3";
 import {
@@ -27,6 +32,7 @@ import {
 import {
   ArtifactExistsError,
   assertSafeKey,
+  assertValidRetainUntil,
   type ArtifactMeta,
   type ArtifactObject,
   type ArtifactStore,
@@ -118,6 +124,14 @@ export interface S3ArtifactStoreConfig {
    * key — the per-tenant cryptographic boundary that backs key-prefix isolation (ADR-0054/TM-C).
    */
   sseKmsKeyId?: string;
+}
+
+function errorNameOf(err: unknown): string | undefined {
+  if (typeof err !== "object" || err === null || !("name" in err)) {
+    return undefined;
+  }
+  const name = (err as { name?: unknown }).name;
+  return typeof name === "string" ? name : undefined;
 }
 
 function httpStatusOf(err: unknown): number | undefined {
@@ -268,6 +282,128 @@ export class S3ArtifactStore implements ArtifactStore {
       if (httpStatusOf(err) === 404) return null;
       throw err;
     }
+  }
+
+  /**
+   * Extend the object's retention to a STRICTLY later date, preserving this store's mode
+   * (ADR-0202). Reads the current lock via `GetObjectRetention` (the authoritative retention read —
+   * `HeadObject` silently OMITS lock fields when the caller lacks `s3:GetObjectRetention`, which
+   * would fail OPEN), refuses anything not strictly later (`ValidationError`, never clamps), then
+   * issues `PutObjectRetention`. An object with NO current retention gains one — an
+   * extend-from-nothing strengthens the lock, so it is allowed. 404 → `NotFoundError` (mirrors
+   * `get`). Extending never needs a governance bypass: S3 always permits a LATER date.
+   */
+  async extendRetention(
+    key: string,
+    newRetainUntil: Date,
+  ): Promise<ArtifactMeta> {
+    assertSafeKey(key);
+    assertValidRetainUntil(newRetainUntil);
+    const current = await this.currentRetainUntil(key);
+    if (
+      current !== undefined &&
+      newRetainUntil.getTime() <= current.getTime()
+    ) {
+      throw new ValidationError(
+        "audit-worm: retention can only be EXTENDED — the new date must be strictly later than the current lock (ADR-0202)",
+        {
+          key,
+          currentRetainUntil: current.toISOString(),
+          requested: newRetainUntil.toISOString(),
+        },
+      );
+    }
+    await this.putRetention(key, this.mode, newRetainUntil);
+    // Read the object back for size/content-type, but return the date S3 just ACCEPTED — the
+    // authoritative value for the caller's `retain_until` row (row==object, ADR-0006/0051).
+    const meta = await this.headOrThrow(key);
+    return { ...meta, retainUntil: newRetainUntil };
+  }
+
+  /**
+   * Escalate an EXISTING object's lock GOVERNANCE→COMPLIANCE (ADR-0202, riding the ADR-0051 gate).
+   * The escalation is exactly as guarded as a write-time COMPLIANCE store: the SAME three belts
+   * (`assertComplianceAllowed`) — never under a test runner, never outside a production deployment,
+   * only with a typed irreversible opt-in naming THIS bucket — run BEFORE any I/O.
+   *
+   * Date rule: strictly-later-OR-EQUAL to the current retention. EQUAL is deliberate — a mode
+   * escalation is orthogonal to a date extension: hardening GOVERNANCE→COMPLIANCE at the SAME
+   * retain-until strengthens the lock without touching its length, and refusing equal would force
+   * callers to artificially inflate the date just to harden the mode. EARLIER stays refused (that
+   * would shorten — the ADR-0202 monotonicity floor). No de-escalation path exists anywhere: this
+   * method only ever writes `Mode: COMPLIANCE`, and S3 itself refuses COMPLIANCE→anything.
+   */
+  async escalateToCompliance(
+    key: string,
+    retainUntil: Date,
+    optIn: IrreversibleComplianceOptIn,
+  ): Promise<ArtifactMeta> {
+    assertSafeKey(key);
+    assertValidRetainUntil(retainUntil);
+    this.assertComplianceAllowed(optIn);
+    const current = await this.currentRetainUntil(key);
+    if (current !== undefined && retainUntil.getTime() < current.getTime()) {
+      throw new ValidationError(
+        "audit-worm: COMPLIANCE escalation cannot shorten retention — the date must be at or later than the current lock (ADR-0202)",
+        {
+          key,
+          currentRetainUntil: current.toISOString(),
+          requested: retainUntil.toISOString(),
+        },
+      );
+    }
+    await this.putRetention(key, "COMPLIANCE", retainUntil);
+    const meta = await this.headOrThrow(key);
+    return { ...meta, retainUntil };
+  }
+
+  /**
+   * The object's current `RetainUntilDate` via `GetObjectRetention`. `undefined` means the object
+   * EXISTS but carries no retention (S3 answers `NoSuchObjectLockConfiguration` — extend-from-nothing
+   * territory, not an error); any other 404 is a missing object → `NotFoundError`.
+   */
+  private async currentRetainUntil(key: string): Promise<Date | undefined> {
+    try {
+      const output = await this.client.send(
+        new GetObjectRetentionCommand({ Bucket: this.bucket, Key: key }),
+      );
+      return output.Retention?.RetainUntilDate;
+    } catch (err) {
+      if (errorNameOf(err) === "NoSuchObjectLockConfiguration") {
+        return undefined;
+      }
+      if (httpStatusOf(err) === 404) {
+        throw new NotFoundError("artifact not found", { key });
+      }
+      throw err;
+    }
+  }
+
+  private async putRetention(
+    key: string,
+    mode: RetentionMode,
+    retainUntil: Date,
+  ): Promise<void> {
+    try {
+      await this.client.send(
+        new PutObjectRetentionCommand({
+          Bucket: this.bucket,
+          Key: key,
+          Retention: { Mode: mode, RetainUntilDate: retainUntil },
+        }),
+      );
+    } catch (err) {
+      if (httpStatusOf(err) === 404) {
+        throw new NotFoundError("artifact not found", { key });
+      }
+      throw err;
+    }
+  }
+
+  private async headOrThrow(key: string): Promise<ArtifactMeta> {
+    const meta = await this.head(key);
+    if (meta === null) throw new NotFoundError("artifact not found", { key });
+    return meta;
   }
 
   /** Project an S3 get/head response into the port's `ArtifactMeta` (retention + content-type). */

@@ -1,10 +1,13 @@
-// src/store.ts — the WORM `ArtifactStore` port (ADR-0054). A minimal put/get/head object-store
-// contract every backend binds: prod `S3ArtifactStore` (Object-Lock, T2) and dev `LocalArtifactStore`
-// (fs, store.local.ts). Two invariants live HERE, at the port, so no backend can skip them:
+// src/store.ts — the WORM `ArtifactStore` port (ADR-0054, extended by ADR-0202). A minimal
+// put/get/head/extendRetention object-store contract every backend binds: prod `S3ArtifactStore`
+// (Object-Lock, T2) and dev `LocalArtifactStore` (fs, store.local.ts). Invariants live HERE, at the
+// port, so no backend can skip them:
 //   1. Tenant scoping — every key is `{account_id}/…` and traversal-safe via `assertSafeKey`, so no
 //      key can reach another tenant's prefix or escape the store root (ADR-0054, TM-C).
 //   2. Write-once — a key, once written, is immutable; a second `put` to an existing key is an
 //      `ArtifactExistsError`, never an overwrite (the WORM essence; chain anchors rely on it, ADR-0052).
+//   3. Monotonic retention — `extendRetention` only ever moves a lock LATER (strictly), never
+//      shortens or clamps; no de-escalation path exists in the port (ADR-0202).
 import { CaissonError, ValidationError } from "@caisson/kernel";
 
 /** Metadata for an artifact — never the body. `retainUntil` is the WORM lock expiry (ADR-0054). */
@@ -36,6 +39,26 @@ export interface ArtifactStore {
   put(key: string, body: Uint8Array, opts: PutOptions): Promise<ArtifactMeta>;
   get(key: string): Promise<ArtifactObject>;
   head(key: string): Promise<ArtifactMeta | null>;
+  /**
+   * Extend an existing artifact's retention (ADR-0202). STRICTLY monotonic: `newRetainUntil` must be
+   * strictly LATER than the artifact's current retention or the store THROWS a `ValidationError` —
+   * never shortens, never silently clamps. An artifact with NO current retention gains one (an
+   * extend-from-nothing strengthens the lock, so it is allowed). Absent key → `NotFoundError`
+   * (mirrors `get`). Returns the updated metadata — the authoritative new date for the caller's DB
+   * `retain_until` row update (the ADR-0006/0051 row==object invariant).
+   */
+  extendRetention(key: string, newRetainUntil: Date): Promise<ArtifactMeta>;
+}
+
+/**
+ * Guard a retention date before any I/O: an invalid `Date` must never reach a lock API — S3 would
+ * either reject it late or, worse, a NaN-comparison would silently pass a monotonicity check
+ * (`NaN <= x` is false), turning a garbage date into an accepted "extension". Fail-closed here.
+ */
+export function assertValidRetainUntil(d: Date): void {
+  if (!(d instanceof Date) || Number.isNaN(d.getTime())) {
+    throw new ValidationError("retention date is not a valid Date");
+  }
 }
 
 /** A write to a key that already holds an immutable artifact (a WORM violation). HTTP 409. */

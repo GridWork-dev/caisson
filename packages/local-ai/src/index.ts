@@ -90,6 +90,13 @@ export {
   type MeterSink,
   type LiveRentedTransportConfig,
 } from "./inference/rented-backend.ts";
+// The OpenRouter rented transport (ADR-0201): the proven-live `RentedTransport` wire — OpenRouter's
+// OpenAI-compatible `/embeddings` + `/chat/completions` through the same egress-guard chokepoint,
+// usage mapped to integer token units for the metered sink (ADR-0007).
+export {
+  createOpenRouterRentedTransport,
+  type OpenRouterRentedTransportConfig,
+} from "./inference/openrouter-transport.ts";
 
 // The runtime privacy / egress gate (ADR-0064, TM-EGRESS). Zero-egress-by-default, fail-closed-to-
 // offline: the guard wraps the kernel `fetchWithTimeout` chokepoint and blocks every non-allowlisted

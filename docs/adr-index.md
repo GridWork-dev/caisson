@@ -9,8 +9,8 @@ conflict, the ADR file and the board win over this index.
 - ADRs are append-only and immutable (ADR-0006). A later ADR _supersedes_ a clause; it
   never edits the prior file. So most rows below are **partial** supersessions (one clause),
   not a wholesale replacement.
-- 140 ADR files on disk (`ls knowledge/decisions/ | wc -l` = 140). Numbering is **not**
-  contiguous: present are **0001-0024** and **0040-0143** + **0160-0162** + **0170-0185** (Stage-2 Streams A/C/D · the 2026-07-01 provider picker · the 2026-07-01 edition seam-completion picker 0179-0185); **0025-0039 are an unused gap**
+- Numbering is **not**
+  contiguous: present are **0001-0024** and **0040-0143** + **0160-0162** + **0170-0185** (Stage-2 Streams A/C/D · the 2026-07-01 provider picker · the 2026-07-01 edition seam-completion picker 0179-0185) + **0187-0199** (LIFT/site-rework/audit-remediation; 0186 reserved-unfiled for agent-runner) + **0201-0202** (editions-go-live; **0200 reserved for the concurrent commerce session**); **0025-0039 are an unused gap**
   (no files). The 0040 jump was a deliberate block reservation for the brand/positioning set.
   **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit);
   **0094-0096** = the 2026-06-29 GTM-report locks (open-core Base / GTM offer / services-docs);
@@ -498,16 +498,33 @@ Audit-surfaced latent ceilings locked BUILD-NOW in the 2026-07-01 remediation pi
 | [0198](../knowledge/decisions/ADR-0198-byok-metering-allowlist.md)     | BYOK zero-cost is per-action allowlisted, default metered                | Commerce/Metering | accepted | refines 0182; extends 0007; surfaced by 0134 |
 | [0199](../knowledge/decisions/ADR-0199-agent-dev-tool-exec-wired.md)   | @caisson/tool-exec wired into the Agentic-Dev edition (members-fold gap) | Editions/Agentic  | accepted | honors 0178/0153; surfaced by 0134/0188      |
 
-### Commerce-goes-live session (0200-0201, 2026-07-01) - status `accepted`
+### Editions-go-live session (0187 + 0201–0202, 2026-07-01) - status `accepted`
+
+The editions-go-live operator picker (4 questions, one round): revisit the same-day ADR-0184
+transports defer, provision the WORM bucket, lock the hosted-inference endpoint, and pull the
+Wardfile-B2 retention-escalation forward from LIFT slice-2. ADR-0187 files here from its LIFT
+slice-1 reservation (F3, "files at build"). The concurrent commerce session (0200 + 0203) merged
+alongside; its Discord ADR was renumbered 0201 → 0203 at merge (ADR-0088 second-merger-renumbers).
+0186 stays reserved for agent-runner.
+
+| #                                                                           | Title                                                                      | Domain          | Status   | Relations                                                      |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------- | --------------- | -------- | -------------------------------------------------------------- |
+| [0187](../knowledge/decisions/ADR-0187-support-impersonation-dual-audit.md) | Support-impersonation kernel + dual audit trail (folds into compliance)    | Compliance/Auth | accepted | implements LIFT F3; composes 0052/0054/0057/0058; ADR-0003     |
+| [0201](../knowledge/decisions/ADR-0201-live-transports-go-live.md)          | Live transports go live: prove all three (S3 WORM · OpenRouter · ONNX)     | Infra/AI        | accepted | supersedes 0184 defer clause; relates 0054/0051/0064/0059/0160 |
+| [0202](../knowledge/decisions/ADR-0202-worm-retention-escalation.md)        | WORM retention escalation: extend-only + gated COMPLIANCE, chain-evidenced | Compliance/WORM | accepted | extends 0051/0054; composes 0052; Wardfile B2 pulled forward   |
+
+### Commerce-goes-live session (0200 + 0203, 2026-07-01) - status `accepted`
 
 Two forks from the commerce-goes-live kickoff (Session A, revenue path), locked in an operator picker.
 Recon found the webhook mount + grant path already built by the PR #40 audit remediation; 0200 codifies
-it, 0201 closes the ADR-0109 Discord-role deferral (its "before a caller exists" condition expired).
+it, 0203 closes the ADR-0109 Discord-role deferral (its "before a caller exists" condition expired). The
+Discord ADR was drafted as 0201 and renumbered to 0203 at merge, the editions session having taken 0201
+first (ADR-0088 second-merger-renumbers convention).
 
 | #                                                                           | Title                                                                | Domain           | Status   | Relations                                            |
 | --------------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------- | -------- | ---------------------------------------------------- |
 | [0200](../knowledge/decisions/ADR-0200-paddle-sole-buyer-webhook-mount.md)  | Paddle is the sole mounted buyer-purchase webhook source             | Commerce/Billing | accepted | extends 0108/0116/0131; codifies the PR #40 mount    |
-| [0201](../knowledge/decisions/ADR-0201-discord-role-grant-link-and-push.md) | Purchase → Discord edition-role: better-auth link + license→bot push | Services/Support | accepted | implements the 0109 deferral; relates 0132/0176/0200 |
+| [0203](../knowledge/decisions/ADR-0203-discord-role-grant-link-and-push.md) | Purchase → Discord edition-role: better-auth link + license→bot push | Services/Support | accepted | implements the 0109 deferral; relates 0132/0176/0200 |
 
 ---
 

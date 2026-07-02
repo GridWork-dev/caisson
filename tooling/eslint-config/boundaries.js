@@ -41,6 +41,7 @@ export const PROVIDER_SDKS = [
   // gateway so the backing SDK stays swappable.
   "ai",
   "@ai-sdk/openai",
+  "@ai-sdk/openai-compatible",
   "@ai-sdk/anthropic",
   "@ai-sdk/google",
   "@ai-sdk/openrouter",
