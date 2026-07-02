@@ -43,10 +43,10 @@ interface IdempotencySource {
 
 interface CreditInputBase extends IdempotencySource {
   accountId: string;
-  /** Integer credit units, branded (ADR-0206) — mint via `asCredits` where a raw number becomes money. */
+  /** Integer credit units, branded (ADR-0212) — mint via `asCredits` where a raw number becomes money. */
   amount: Credits;
   /**
-   * Rounding provenance (ADR-0206): the `{raw, mode, result}` record from the rounding site that
+   * Rounding provenance (ADR-0212): the `{raw, mode, result}` record from the rounding site that
    * produced `amount` (ai-meter's ceil, `centsToCreditsProvenance`'s floor). Omitted → the row
    * persists NULL/NULL — the correct shape for an EXACT table-integer amount (ADR-0089 §5).
    */
@@ -164,7 +164,7 @@ async function insertEvent(
     feature: string | null;
     sourceEventId: string | null;
     idempotencyKey: string | null;
-    /** Rounding provenance (ADR-0206) — absent → NULL/NULL (the DB CHECK keeps the pair coherent). */
+    /** Rounding provenance (ADR-0212) — absent → NULL/NULL (the DB CHECK keeps the pair coherent). */
     rounding?: RoundedMoney<number, Credits> | undefined;
   },
 ): Promise<boolean> {

@@ -1,6 +1,6 @@
 # SPEC — `@caisson/billing` Stripe envelope hardening (harvest slice-2)
 
-**Status: LOCKED — ADR-0204, harvest slice-2 wave, 2026-07-02 operator picker.**
+**Status: LOCKED — ADR-0210, harvest slice-2 wave, 2026-07-02 operator picker.**
 
 - **Package:** `packages/billing` (Apache-2.0, `kind: "base"`, `tier: "oss"`).
 - **Type:** HARDEN IN PLACE. No new package, no membership change, no new dependency.

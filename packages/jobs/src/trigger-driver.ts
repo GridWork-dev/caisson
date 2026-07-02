@@ -1,4 +1,4 @@
-// Trigger.dev production driver for the `JobQueue` port (ADR-0018, ADR-0205). Two mappings, one
+// Trigger.dev production driver for the `JobQueue` port (ADR-0018, ADR-0211). Two mappings, one
 // factory:
 //
 //   defineTask(name, schema, handler) -> a real Trigger.dev `task()` (the deploy-side worker —
@@ -19,7 +19,7 @@
 // not at the first `enqueue`). Tests inject a fake `client` via `config.client`, so this driver
 // never touches the network in `bun test`.
 //
-// Visibility-ledger gap (ADR-0205): this driver does NOT implement `JobLedger` — its return type
+// Visibility-ledger gap (ADR-0211): this driver does NOT implement `JobLedger` — its return type
 // carries no `getQueueState`. Trigger.dev exposes no local job-state read; the answer is the
 // hosted Runs dashboard, or `runs.retrieve()` against a specific run id from the SDK's `runs`
 // module (a new SDK surface beyond this slice's scope).

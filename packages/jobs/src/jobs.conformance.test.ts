@@ -84,10 +84,10 @@ describe("JobQueue port conformance", () => {
   }
 });
 
-// ADR-0205: weak smoke only — an `idempotencyKey` is accepted without throwing on every driver.
+// ADR-0211: weak smoke only — an `idempotencyKey` is accepted without throwing on every driver.
 // The strong "a repeat key produces exactly one job" assertion is per-driver (each driver's own
 // dedupe mechanism differs), per this file's "no driver-specific assertions here" rule.
-describe("JobQueue port conformance — idempotent enqueue (ADR-0205)", () => {
+describe("JobQueue port conformance — idempotent enqueue (ADR-0211)", () => {
   for (const { name, queue } of drivers) {
     test(`${name} driver accepts an idempotencyKey option`, async () => {
       await expect(
@@ -97,9 +97,9 @@ describe("JobQueue port conformance — idempotent enqueue (ADR-0205)", () => {
   }
 });
 
-// ADR-0205: `work(name)` resolves to a stoppable `WorkHandle` on every driver — pg-boss consumes
+// ADR-0211: `work(name)` resolves to a stoppable `WorkHandle` on every driver — pg-boss consumes
 // for real, in-memory/Trigger.dev are honest no-ops (see each driver's own test file).
-describe("JobQueue port conformance — work() (ADR-0205)", () => {
+describe("JobQueue port conformance — work() (ADR-0211)", () => {
   for (const { name, queue } of drivers) {
     test(`${name} driver's work() resolves a WorkHandle whose stop() is callable`, async () => {
       const handle = await queue.work(taskName);

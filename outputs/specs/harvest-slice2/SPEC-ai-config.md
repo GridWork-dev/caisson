@@ -1,7 +1,7 @@
 # SPEC — `@caisson/ai-config` (provider-lane validation hardening)
 
-**Status: LOCKED — ADR-0204, harvest slice-2 wave, 2026-07-02 operator picker.** Hardening
-within the existing ADR-0160/0162 scope; carries no new decision beyond ADR-0204's lock.
+**Status: LOCKED — ADR-0210, harvest slice-2 wave, 2026-07-02 operator picker.** Hardening
+within the existing ADR-0160/0162 scope; carries no new decision beyond ADR-0210's lock.
 
 - **Package:** `packages/ai-config` (`kind: base`, `tier: oss`, Apache-2.0). No edition/license
   change; no new package.

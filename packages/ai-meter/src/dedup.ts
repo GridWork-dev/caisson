@@ -1,4 +1,4 @@
-// Pre-call MinHash/LSH dedup-before-meter gate (ADR-0211). `reserve()`'s idempotency
+// Pre-call MinHash/LSH dedup-before-meter gate (ADR-0217). `reserve()`'s idempotency
 // (`usage_event (account, call_id)` UNIQUE) catches only a literal retry of the SAME call — it
 // misses two DIFFERENT calls whose prompts are near-identical (an agent loop rewording a retry, a
 // user re-asking the same question), each paying a fresh reservation + provider call.

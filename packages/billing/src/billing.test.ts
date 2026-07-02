@@ -78,7 +78,7 @@ describe("event mapping", () => {
       accountId: "acct_a",
       amountTotal: 89900,
       currency: "usd",
-      priceId: "price_pack_PLACEHOLDER",
+      lineItems: [{ priceId: "price_pack_PLACEHOLDER", quantity: 1 }],
       paymentId: "pi_123",
     });
   });
@@ -243,7 +243,7 @@ describe("event mapping", () => {
   });
 });
 
-describe("StripeEventSchema (envelope boundary validation, ADR-0204)", () => {
+describe("StripeEventSchema (envelope boundary validation, ADR-0210)", () => {
   test("accepts a well-formed envelope", () => {
     const result = StripeEventSchema.safeParse({
       id: "evt_x",

@@ -60,8 +60,8 @@ describe("REAL Paddle one-time price ids round-trip (parsePaddleEvent -> resolve
       ) as DomainBillingEvent;
       expect(ev.type).toBe("purchase.completed");
       if (ev.type !== "purchase.completed") throw new Error("unreachable");
-      expect(ev.priceId).toBe(priceId);
-      const entry = resolvePurchase(ev.priceId);
+      expect(ev.lineItems).toEqual([{ priceId, quantity: 1 }]);
+      const entry = resolvePurchase(priceId);
       expect(entry.entitlements).toEqual(entitlements);
       expect<number>(entry.credits).toBe(0);
     });
@@ -125,8 +125,8 @@ describe("per-module à-la-carte PLACEHOLDER ids round-trip (parsePaddleEvent ->
       ) as DomainBillingEvent;
       expect(ev.type).toBe("purchase.completed");
       if (ev.type !== "purchase.completed") throw new Error("unreachable");
-      expect(ev.priceId).toBe(priceId);
-      const entry = resolvePurchase(ev.priceId);
+      expect(ev.lineItems).toEqual([{ priceId, quantity: 1 }]);
+      const entry = resolvePurchase(priceId);
       expect(entry.entitlements).toEqual([entitlement]);
       expect<number>(entry.credits).toBe(0);
     });

@@ -117,47 +117,47 @@ const EDGES: readonly AnnotationEdge[] = [
     protocol: "HTTPS",
   },
 
-  // Observability — every Node/Python service + admin export OTLP to the SigNoz collector; the CF
-  // Worker ships edge logs via CF-native destinations; admin also reads back over the query API.
+  // Observability — every Node/Python service + admin export OTLP to Grafana Cloud (ADR-0177 sink); the
+  // CF Worker ships edge logs via CF-native destinations; admin also reads back over the query API.
   {
     id: "site-otlp",
     source: "site",
-    target: "signoz",
+    target: "grafana",
     label: "traces",
     protocol: "OTLP",
   },
   {
     id: "docs-otlp",
     source: "docs",
-    target: "signoz",
+    target: "grafana",
     label: "traces",
     protocol: "OTLP",
   },
   {
     id: "bot-otlp",
     source: "support-bot",
-    target: "signoz",
+    target: "grafana",
     label: "traces",
     protocol: "OTLP",
   },
   {
     id: "license-otlp",
     source: "license",
-    target: "signoz",
+    target: "grafana",
     label: "traces",
     protocol: "OTLP",
   },
   {
     id: "worker-otlp",
     source: "registry-worker",
-    target: "signoz",
+    target: "grafana",
     label: "edge logs",
     protocol: "CF-native",
   },
   {
-    id: "admin-signoz",
+    id: "admin-grafana",
     source: "admin",
-    target: "signoz",
+    target: "grafana",
     label: "traces + query API",
     protocol: "OTLP / HTTPS",
     bidirectional: true,
@@ -184,7 +184,7 @@ const BOUNDARIES: readonly TrustBoundary[] = [
     label: "Data & billing substrate",
     intent:
       "Postgres, the entitlement/billing brain, the external MoR, and the telemetry backbone.",
-    members: ["postgres", "license", "paddle", "signoz"],
+    members: ["postgres", "license", "paddle", "grafana"],
   },
 ];
 

@@ -32,7 +32,7 @@ export interface ByokResolverOptions {
   /** Per-tenant built-client cache TTL in ms (default 5 min); a rotation takes effect within it. */
   readonly cacheTtlMs?: number;
   /**
-   * The outbound-fetch deadline (ADR-0207) threaded to every provider this resolver builds — the
+   * The outbound-fetch deadline (ADR-0213) threaded to every provider this resolver builds — the
    * default env registry (when `providers` is omitted) and every per-tenant BYOK provider alike.
    * Defaults to `providerFor`/`defaultProviders`' own `DEFAULT_PROVIDER_TIMEOUT_MS`.
    */

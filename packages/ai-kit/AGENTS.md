@@ -52,7 +52,7 @@ defaultProviders(settings))` (a `createProviderRegistry` over the ai-config lane
 - Cost normalizes through `@caisson/ai-meter`'s versioned price book into **integer credits** (never a
   float). `opts.meter` overrides the price book / denomination / scope / clock.
 
-## Metered embeddings (ADR-0207)
+## Metered embeddings (ADR-0213)
 
 ```ts
 import { embed, embedMany } from "@caisson/ai-kit";
@@ -84,7 +84,7 @@ turn — guardrails-on-embed is explicitly out of scope). `opts.resolveModel` is
 defaultProviders(settings))`. The reservation carries no `maxOutputTokens` — the resulting phantom
 output-token estimate always refunds in full at reconcile, so a buyer is billed for input tokens only.
 
-## Fetch deadline (ADR-0207)
+## Fetch deadline (ADR-0213)
 
 Every live provider factory (`providerFor`/`defaultProviders`) binds its outbound `fetch` to a
 `timeoutMs` deadline (default 60s) via `fetchWithTimeout` — a hung live call aborts instead of
@@ -96,6 +96,6 @@ aborted call still settles via the existing refund path, never leaking the reser
 ## Out of scope
 
 No per-tenant encrypted BYOK for embeddings pricing (the embed price-book row / a flat bulk-embed SKU
-is cross-package money, deferred — see ADR-0207's open question); no input/output guardrails on embed
+is cross-package money, deferred — see ADR-0213's open question); no input/output guardrails on embed
 values; no live provider/model/network call in CI (the model is a port — test-doubled, `live/`
 excepted). Streaming ships request/response first; the signature is async-iterable-ready.

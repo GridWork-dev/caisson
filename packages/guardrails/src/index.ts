@@ -2,7 +2,7 @@
 // port + a TS-native PII engine (mask / hash / reversible-tokenize via field-crypto) behind a
 // fail-closed input/output guard that throws `GuardrailError` 422 and emits a metadata-only
 // `guardrail.blocked` event to the kernel `EventSink`. `guard.ts` also runs an unconditional
-// credential-shape gate (ADR-0209, category `"secret"`) before either leg reaches the moderator; a
+// credential-shape gate (ADR-0215, category `"secret"`) before either leg reaches the moderator; a
 // standalone FTC "4 Ps" dark-pattern evaluator scores marketing/UI copy separately (`ftc4p.ts`). A
 // base primitive the AI Production Kit gateway composes; it never imports an edition (ADR-0003).
 
@@ -48,7 +48,7 @@ export type {
   PiiPolicy,
 } from "./guard.ts";
 
-// FTC "4 Ps" dark-pattern presentation guardrail (ADR-0209) — scores static marketing/UI copy;
+// FTC "4 Ps" dark-pattern presentation guardrail (ADR-0215) — scores static marketing/UI copy;
 // optionally wrappable as a Moderator via `ftc4pModerator`, but not wired into `guard.ts` itself.
 export {
   FTC_4P_DIMENSIONS,

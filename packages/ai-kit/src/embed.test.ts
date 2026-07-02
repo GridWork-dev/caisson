@@ -1,4 +1,4 @@
-// SPEC ai-kit / ADR-0207 exit-gate proof for the metered embeddings gateway: `embed()`/`embedMany()`
+// SPEC ai-kit / ADR-0213 exit-gate proof for the metered embeddings gateway: `embed()`/`embedMany()`
 // reserve BEFORE the provider call, reconcile to the provider's actual usage (or the chars/4 fallback
 // on an unreported one), zero-debit a BYOK lane, and refund a failed provider call — over PGlite + a
 // mock `EmbeddingModelV2` (zero network). Mirrors `gateway.test.ts`'s fixtures/shape for the

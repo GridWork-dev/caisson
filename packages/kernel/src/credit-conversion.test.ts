@@ -40,7 +40,7 @@ describe("centsToCredits (round-down grant)", () => {
   });
 });
 
-describe("centsToCreditsProvenance (ADR-0206 rounding record)", () => {
+describe("centsToCreditsProvenance (ADR-0212 rounding record)", () => {
   test("returns {raw, mode: down, result} matching centsToCredits", () => {
     expect<RoundedMoney>(centsToCreditsProvenance(12900)).toEqual({
       raw: 12900,

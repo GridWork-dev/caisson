@@ -44,6 +44,11 @@ const CAISSON_OSCAL_NS = "https://caisson.sh/ns/oscal";
  * The canonical Caisson-hosted per-framework Assessment-Plan (AP) artifact URL (ADR-0179). Instead of a
  * bare, dangling `#local-fragment`, `import-ap` resolves to a back-matter resource whose `rlink` points
  * at this stable per-framework AP — so the exported SAR is complete + importable without buyer wiring.
+ *
+ * **Won't-fix (ADR-0208 #4): this URL is not served.** No route exists (or will be built) under
+ * `apps/site` for `/oscal/assessment-plan/*`. External href resolution is explicitly outside the
+ * conformance gate (`--disable-constraint-validation`, see `oscal-export-xml.ts`'s `buildValidateArgs`
+ * doc) — a dead citation link does not justify a route.
  */
 export function caissonAssessmentPlanUrl(frameworkId: string): string {
   return `https://caisson.sh/oscal/assessment-plan/${frameworkId}.json`;

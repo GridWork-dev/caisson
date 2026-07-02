@@ -9,7 +9,7 @@
 // `apiKey`, or the rejected value; (3) a live cloud call sneaking into CI — the transport defaults to
 // `fetchWithTimeout` but is an injectable seam tests replace with a double.
 //
-// `scrubForEgress`/`looksLikeSecret` moved to `@caisson/kernel` (`secret-scrub.ts`, ADR-0209) —
+// `scrubForEgress`/`looksLikeSecret` moved to `@caisson/kernel` (`secret-scrub.ts`, ADR-0215) —
 // kernel is the lowest-license, zero-dep home both this package and `guardrails` already depend on,
 // so the scrub predicate has exactly ONE implementation. Re-exported here so this module's public
 // surface (and every existing import of it) stays unchanged. The scrub contract itself is still golden-pinned

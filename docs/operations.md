@@ -165,7 +165,12 @@ terraform init && terraform plan && terraform apply
 
 Creates: `cloudflare_pages_project.site` (`caisson-site`, prod branch `main`),
 `cloudflare_pages_domain.{apex,www}`, `cloudflare_dns_record.{apex,www}` (proxied CNAMEs ->
-`<project>.pages.dev`). State is local + gitignored; move to R2 + a lock before a second operator.
+`<project>.pages.dev`). State is local + gitignored — deliberate today (single operator, zero CI
+applies, `ADR-0107`). **Locking gap (ADR-0208 #3):** R2 silently ignores S3 conditional-write
+headers, so Terraform's `use_lockfile` is a no-op there; "R2 + a lock" needs a locking posture
+picked consciously at migration time (accept-no-lock on R2 · a Worker/DO lock backend · AWS
+S3+DynamoDB), triggered by a second operator or a CI-driven apply. Detail:
+[`infra/terraform/README.md`](../infra/terraform/README.md#state-deferred-adr-0208-3).
 
 ---
 

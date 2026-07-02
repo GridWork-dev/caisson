@@ -1,12 +1,12 @@
 # SPEC — `@caisson/ai-meter` pre-call MinHash/LSH dedup-before-meter gate
 
-**Status: LOCKED — ADR-0211, harvest slice-2 wave, 2026-07-02 operator picker.**
+**Status: LOCKED — ADR-0217, harvest slice-2 wave, 2026-07-02 operator picker.**
 
 - **Package:** `packages/ai-meter` (`LicenseRef-Caisson-Commercial`, `paid` tier, `kind: primitive`
   base — never an edition, ADR-0003).
 - **Source (throughframe lift-sweep #12, rebuild-clean — patterns only):** MinHash/LSH
   near-duplicate detection is a standard technique (Broder et al.); no source file to port.
-- **Type:** NEW CAPABILITY, additive-only (ADR-0204 lock 2, ADR-0211) — lands inside this existing
+- **Type:** NEW CAPABILITY, additive-only (ADR-0210 lock 2, ADR-0217) — lands inside this existing
   package; `manifest.ts` deps/license/tier/edition-membership unchanged. **Tags:** `ai`.
 
 ## Goal (WHAT + WHY)
@@ -33,7 +33,7 @@ edition coupling.
 
 New `src/dedup.ts` only — zero edits to `meter.ts`/`schema.ts`/`breaker.ts`/`pricebook.ts`. Reuses
 `EstimateMessage` from `estimate.ts` (the same array a caller passes to `reserve()`). Pure hashing
-core (~50 LOC, no dependency, ADR-0211): `normalizePrompt(messages: EstimateMessage[]): string`
+core (~50 LOC, no dependency, ADR-0217): `normalizePrompt(messages: EstimateMessage[]): string`
 (lowercase + whitespace-collapsed joined `content`); `shingle(text, k = 3): string[]` (k-word
 sliding shingles); `computeMinHashSignature(shingles, numHashes = 32): Uint32Array` (`numHashes`
 independent `(a·h(x)+b) mod p` permutations over one FNV-1a hash, signature = per-function min);

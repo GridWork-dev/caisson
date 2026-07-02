@@ -11,7 +11,7 @@ from caisson_support_bot.escalation import (
     format_brief,
 )
 
-from .conftest import FakeThreadOpener, sample_brief
+from .conftest import FakeIssueTracker, FakeThreadOpener, sample_brief
 
 
 def test_format_brief_contains_question_summary_and_sources() -> None:
@@ -103,3 +103,51 @@ async def test_postgres_store_uses_parameterized_sql() -> None:
 def test_schema_is_idempotent_create() -> None:
     assert "CREATE TABLE IF NOT EXISTS support_ticket" in SUPPORT_TICKET_SCHEMA
     assert "ai_brief" in SUPPORT_TICKET_SCHEMA
+
+
+async def test_escalator_files_a_linear_issue_alongside_thread_and_ticket() -> None:
+    store = InMemoryTicketStore()
+    tracker = FakeIssueTracker()
+    esc = Escalator(store=store, thread_opener=FakeThreadOpener(), issue_tracker=tracker)
+
+    ticket = await esc.escalate(sample_brief())
+
+    assert ticket.id  # thread + store sinks still ran normally.
+    assert len(tracker.created) == 1
+    title, description = tracker.created[0]
+    assert "how do credits work?" in title
+    assert "how do credits work?" in description
+
+
+async def test_escalator_without_issue_tracker_is_unaffected() -> None:
+    store = InMemoryTicketStore()
+    esc = Escalator(store=store, thread_opener=FakeThreadOpener(), issue_tracker=None)
+    ticket = await esc.escalate(sample_brief())
+    assert ticket.id
+    assert len(store.tickets) == 1
+
+
+async def test_escalator_survives_a_raising_issue_tracker() -> None:
+    # Best-effort (ADR-0206): a Linear outage must never lose the thread/ticket sinks. This proves it
+    # even against an IssueTracker impl that misbehaves and raises, not just one that returns None.
+    store = InMemoryTicketStore()
+    opener = FakeThreadOpener()
+    tracker = FakeIssueTracker(error=RuntimeError("linear is down"))
+    esc = Escalator(store=store, thread_opener=opener, issue_tracker=tracker)
+
+    ticket = await esc.escalate(sample_brief())
+
+    assert ticket.id
+    assert len(store.tickets) == 1
+    assert len(opener.opened) == 1
+    assert len(tracker.created) == 1  # it was called, and its failure was swallowed.
+
+
+async def test_escalator_tolerates_issue_tracker_returning_none() -> None:
+    # LinearIssueTracker itself never raises — its failure path returns None (see test_linear_client).
+    store = InMemoryTicketStore()
+    tracker = FakeIssueTracker(url=None)
+    esc = Escalator(store=store, thread_opener=FakeThreadOpener(), issue_tracker=tracker)
+    ticket = await esc.escalate(sample_brief())
+    assert ticket.id
+    assert len(tracker.created) == 1

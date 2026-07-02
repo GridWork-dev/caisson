@@ -2,7 +2,7 @@
 "@caisson/ai-meter": minor
 ---
 
-Pre-call MinHash/LSH dedup-before-meter gate (ADR-0211): new `src/dedup.ts` (`normalizePrompt`,
+Pre-call MinHash/LSH dedup-before-meter gate (ADR-0217): new `src/dedup.ts` (`normalizePrompt`,
 `shingle`, `computeMinHashSignature`, `lshBands`, `jaccardEstimate`, `createInMemoryDedupStore`,
 `checkDedupGate`), all exported from `index.ts`. `reserve()`'s idempotency only catches a literal
 `callId` retry — this detects a near-identical prompt (an agent loop rewording a retry, a re-asked

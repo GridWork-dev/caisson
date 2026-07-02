@@ -69,7 +69,7 @@ export const evalResultSchema = strictObject({
  * default (a moderator timeout/outage or a custom hook that threw) rather than an explicit policy
  * hit, so an operator can distinguish "the moderator was unavailable so we blocked" from "the content
  * actually violated policy". `policy` is the `forge.config` policy name that produced the block,
- * never its content. `"secret"` (ADR-0209) is the unconditional credential-shape pre-screen — it has
+ * never its content. `"secret"` (ADR-0215) is the unconditional credential-shape pre-screen — it has
  * no `failOpen` opt-out, so it always reports `failClosed: false`.
  */
 export const guardrailBlockSchema = strictObject({

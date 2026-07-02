@@ -1,4 +1,4 @@
-// Unit tests for the shared credential-shape scrub predicate (ADR-0209). Moved here from
+// Unit tests for the shared credential-shape scrub predicate (ADR-0215). Moved here from
 // `local-store/src/egress-guard.test.ts` (T8, ADR-0067) — this is now the canonical home; the
 // local-store suite keeps its own describe blocks green via the re-export (import path unchanged).
 import { describe, expect, test } from "bun:test";

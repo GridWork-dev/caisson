@@ -1,11 +1,11 @@
 # SPEC — `@caisson/mcp-server` tool manifest + retirement ledger
 
-**Status: LOCKED — ADR-0210, harvest slice-2 wave, 2026-07-02 operator picker.**
+**Status: LOCKED — ADR-0216, harvest slice-2 wave, 2026-07-02 operator picker.**
 
 - **Package:** `packages/mcp-server` (Apache-2.0, `oss` tier, base — never an edition, ADR-0003).
 - **Source (pattern, not port):** gridwork-core's `McpManifestSchema` governance shape, role
   inverted — Caisson **exposes** tools to buyers, gridwork-core's manifest governs consumed ones.
-- **Type:** HARDEN IN PLACE (ADR-0204 lock 1) — lands inside this base package; edition membership
+- **Type:** HARDEN IN PLACE (ADR-0210 lock 1) — lands inside this base package; edition membership
   and `manifest.ts` deps/license/tier are unchanged. **Tags:** none (no auth/secrets/external-system
   logic touched — ADR-0112 rate-limit + `isEntitled` untouched).
 

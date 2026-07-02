@@ -1,6 +1,6 @@
 // The guard (ADR-0063) — the enforced input/output chokepoint the AI Production Kit gateway calls
 // around a provider call. Order: a cheap regex pre-screen (free) → the unconditional secret-shape
-// gate (ADR-0209) → the configured `Moderator` under a deadline → PII redaction (input leg only).
+// gate (ADR-0215) → the configured `Moderator` under a deadline → PII redaction (input leg only).
 // FAIL-CLOSED is the default: a moderator outage or timeout BLOCKS unless the policy explicitly sets
 // `failOpen`. A block throws `GuardrailError` (422) and emits a metadata-only `guardrail.blocked`
 // event to the kernel `EventSink` on a typed bus — no up-import of any edition (the Compliance WORM
@@ -120,7 +120,7 @@ async function moderate(
       if (re.test(text)) block(stage, "moderation", false, policy, rt);
     }
   }
-  // Unconditional credential-shape gate (ADR-0209) — runs BEFORE the (possibly outaged/provider)
+  // Unconditional credential-shape gate (ADR-0215) — runs BEFORE the (possibly outaged/provider)
   // moderator, reusing the ONE `looksLikeSecret` predicate (kernel). No policy field, no opt-out: a
   // raw credential in either leg never reaches a moderator call, live or not.
   if (looksLikeSecret(text)) block(stage, "secret", false, policy, rt);

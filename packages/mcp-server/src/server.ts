@@ -85,10 +85,10 @@ export interface ToolHandlerContext {
 export type RateLimitHook = (accountId: string) => Promise<void>;
 
 /**
- * One registered buyer-MCP tool (ADR-0076/0210). `requiredEntitlement` is the edition slug a
+ * One registered buyer-MCP tool (ADR-0076/0216). `requiredEntitlement` is the edition slug a
  * caller must own to *see* and *invoke* this tool; `null` marks a base tool visible to every
  * authenticated buyer. The entitlement is re-validated timing-safe on every call (ADR-0008/0010).
- * `description`/`version`/`audit` are the declarative manifest fields (ADR-0210): validated by
+ * `description`/`version`/`audit` are the declarative manifest fields (ADR-0216): validated by
  * `toolManifestSchema` at registration time, not call time. `audit.logArgs` marks whether a call
  * to this tool is safe to log its arguments verbatim (`false` for every coach tool — secrets-safe
  * by construction, `coach.ts`; `true` for the 3 base tools, which take no secret-shaped args).
@@ -103,7 +103,7 @@ export interface ToolRegistration {
 }
 
 /**
- * A deliberately-deprecated tool (ADR-0210). Distinct from "never existed": a retired name answers
+ * A deliberately-deprecated tool (ADR-0216). Distinct from "never existed": a retired name answers
  * `RetiredToolError` (410) with `reason`/`retiredAt`, so a buyer integration gets an actionable
  * signal instead of the same 404 an unknown tool gets.
  */
@@ -113,7 +113,7 @@ export interface RetiredTool {
   readonly retiredAt: string;
 }
 
-/** Thrown by `handleToolCall` for a name on the retired-tools ledger (ADR-0210). */
+/** Thrown by `handleToolCall` for a name on the retired-tools ledger (ADR-0216). */
 export class RetiredToolError extends CaissonError {
   readonly code = "tool_retired";
   readonly httpStatus = 410;
@@ -162,12 +162,12 @@ export interface McpServer {
   authenticate(bearer: string): McpSession;
   /**
    * Register an additional (edition) tool. Validates the declarative manifest fields
-   * (`description`/`version`/`audit`, ADR-0210) BEFORE the duplicate-name guard, then throws on a
+   * (`description`/`version`/`audit`, ADR-0216) BEFORE the duplicate-name guard, then throws on a
    * duplicate name (fail-closed) so an edition can never silently shadow a base or peer tool.
    */
   registerTool(registration: ToolRegistration): void;
   /**
-   * Append-only: retire a currently-registered tool name (ADR-0210). Throws `ValidationError` if
+   * Append-only: retire a currently-registered tool name (ADR-0216). Throws `ValidationError` if
    * the name is already retired OR still active in the registry (never both — a name is exactly
    * one of active/retired/unknown). No `unretireTool` — retirement is a one-way lifecycle fact.
    */
@@ -189,7 +189,7 @@ export interface McpServer {
 // registry (the CLI also dedups ids at Selection.parse); raise if the catalog grows past it.
 const MAX_MODULES = 100;
 
-// The declarative per-tool manifest (ADR-0210): validated in `registerTool()` before the
+// The declarative per-tool manifest (ADR-0216): validated in `registerTool()` before the
 // duplicate-name guard, so a bad manifest is a registration-time `ValidationError`, never a
 // call-time surprise. `version` is bare semver (no leading `v`, no pre-release/build metadata —
 // this is a manifest label, not a published package version).
@@ -232,7 +232,7 @@ const generateArgs = strictObject({
 
 export function createMcpServer(options: McpServerOptions): McpServer {
   const registry = new Map<string, ToolRegistration>();
-  // Append-only retirement ledger (ADR-0210): per-server-instance, same seeding pattern as
+  // Append-only retirement ledger (ADR-0216): per-server-instance, same seeding pattern as
   // `registry` — no new persistence surface. A name is exactly one of active/retired/unknown.
   const retiredTools = new Map<string, RetiredTool>();
 
@@ -251,7 +251,7 @@ export function createMcpServer(options: McpServerOptions): McpServer {
   }
 
   function registerTool(registration: ToolRegistration): void {
-    // Manifest validation (ADR-0210) runs BEFORE the duplicate-name guard, so a malformed manifest
+    // Manifest validation (ADR-0216) runs BEFORE the duplicate-name guard, so a malformed manifest
     // is a registration-time `ValidationError` regardless of whether the name collides.
     parseStrict(toolManifestSchema, {
       description: registration.description,
@@ -313,7 +313,7 @@ export function createMcpServer(options: McpServerOptions): McpServer {
     const registration = registry.get(tool);
     // An unregistered tool — and a tool the caller is not entitled to — are both 404: the edition
     // tool is invisible, never leaking that it exists to a non-entitled caller. A RETIRED name is
-    // checked first (ADR-0210): distinct from "never existed" so a buyer integration gets a
+    // checked first (ADR-0216): distinct from "never existed" so a buyer integration gets a
     // reason, not the same bare 404 an unknown tool gets.
     if (
       registration === undefined ||

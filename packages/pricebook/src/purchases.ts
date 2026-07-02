@@ -21,7 +21,7 @@ import {
 } from "@caisson/kernel";
 import { planEntitlementsSchema } from "./plans.ts";
 
-// Branded zero (ADR-0206) for the many license-only rows below — one mint, not 17 casts.
+// Branded zero (ADR-0212) for the many license-only rows below — one mint, not 17 casts.
 const NO_CREDITS = asCredits(0);
 
 /** Append-only version stamp — a purchase-row change bumps this, never edits it in place (ADR-0006). */
@@ -31,7 +31,7 @@ export const purchaseBookEntrySchema = strictObject({
   /** Stable internal purchase tag (NOT the Stripe id) — survives a price-id rotation. */
   purchaseTag: z.string().min(1),
   /** EXACT integer credits granted once on purchase — 0 for a license-only (no credit pack) buy.
-   *  Branded `Credits` (ADR-0206): the transform mints the brand AFTER validation, same runtime value. */
+   *  Branded `Credits` (ADR-0212): the transform mints the brand AFTER validation, same runtime value. */
   credits: z
     .number()
     .int()

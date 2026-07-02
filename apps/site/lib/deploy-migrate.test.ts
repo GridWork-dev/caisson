@@ -48,7 +48,7 @@ test("platform migrations apply in order then are idempotent", async () => {
   expect(second.skipped).toEqual([1, 2, 3, 4, 5, 6, 7]);
 });
 
-test("0007 adds the ADR-0206 rounding provenance columns to credit_event", async () => {
+test("0007 adds the ADR-0212 rounding provenance columns to credit_event", async () => {
   const cols = await tp.query<{ column_name: string; data_type: string }>(
     `SELECT column_name, data_type FROM information_schema.columns
      WHERE table_name = 'credit_event' AND column_name IN ('rounding_raw','rounding_mode')

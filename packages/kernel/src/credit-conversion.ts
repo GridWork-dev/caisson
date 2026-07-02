@@ -18,7 +18,7 @@ import {
 } from "./money.ts";
 import { parseStrict, strictObject } from "./schema.ts";
 
-/** Integer micro-USD per credit — the credit denomination (ADR-0007). Branded (ADR-0206): the
+/** Integer micro-USD per credit — the credit denomination (ADR-0007). Branded (ADR-0212): the
  *  transform mints `MicroUsdPerCredit` AFTER the int/positive validation — same runtime value. */
 export const creditConversionSchema = strictObject({
   microUsdPerCredit: z
@@ -71,7 +71,7 @@ export function centsToCredits(
 }
 
 /**
- * `centsToCredits` with rounding provenance (ADR-0206): the same round-DOWN conversion, returning
+ * `centsToCredits` with rounding provenance (ADR-0212): the same round-DOWN conversion, returning
  * the auditable `{raw, mode, result}` record a ledger write can persist alongside the integer
  * amount. `raw` is the pre-conversion cents figure; `mode` is this site's fixed direction ("down",
  * ADR-0089 — never over-grant), recorded even when the division was exact.

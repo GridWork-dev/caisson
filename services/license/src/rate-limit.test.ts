@@ -12,6 +12,9 @@ describe("loadRateLimitConfig", () => {
     const c = loadRateLimitConfig({});
     expect(c.webhook).toEqual({ capacity: 120, windowMs: 60_000 });
     expect(c.issue).toEqual({ capacity: 60, windowMs: 60_000 });
+    // global ceilings = per-IP burst × the default factor (50).
+    expect(c.globalWebhook.capacity).toBe(120 * 50);
+    expect(c.globalIssue.capacity).toBe(60 * 50);
     expect(c.maxEntries).toBe(10_000);
   });
 
@@ -19,9 +22,11 @@ describe("loadRateLimitConfig", () => {
     const c = loadRateLimitConfig({
       LICENSE_RL_WEBHOOK_BURST: "  ",
       LICENSE_RL_ISSUE_BURST: "5",
+      LICENSE_RL_GLOBAL_FACTOR: "10",
     });
     expect(c.webhook.capacity).toBe(120);
     expect(c.issue.capacity).toBe(5);
+    expect(c.globalIssue.capacity).toBe(5 * 10);
   });
 
   test("a present-but-invalid var fails closed (throws)", () => {
@@ -38,12 +43,25 @@ describe("loadRateLimitConfig", () => {
 });
 
 describe("TokenBucketLimiter", () => {
+  const cfg = (over: {
+    webhook?: { capacity: number; windowMs: number };
+    issue?: { capacity: number; windowMs: number };
+    globalWebhook?: { capacity: number; windowMs: number };
+    globalIssue?: { capacity: number; windowMs: number };
+  }) => ({
+    webhook: over.webhook ?? { capacity: 2, windowMs: 60_000 },
+    issue: over.issue ?? { capacity: 1, windowMs: 60_000 },
+    // Generous globals so per-IP tests exercise the per-IP budget.
+    globalWebhook: over.globalWebhook ?? {
+      capacity: 100_000,
+      windowMs: 60_000,
+    },
+    globalIssue: over.globalIssue ?? { capacity: 100_000, windowMs: 60_000 },
+    maxEntries: 100,
+  });
+
   test("allows up to capacity then 429s, with a positive retryAfter", () => {
-    const limiter = new TokenBucketLimiter({
-      webhook: { capacity: 2, windowMs: 60_000 },
-      issue: { capacity: 1, windowMs: 60_000 },
-      maxEntries: 100,
-    });
+    const limiter = new TokenBucketLimiter(cfg({}));
     expect(limiter.check("webhook", "ip").allowed).toBe(true);
     expect(limiter.check("webhook", "ip").allowed).toBe(true);
     const denied = limiter.check("webhook", "ip");
@@ -56,11 +74,10 @@ describe("TokenBucketLimiter", () => {
   test("the bucket refills at the window boundary (injected clock)", () => {
     let now = 1_000;
     const limiter = new TokenBucketLimiter(
-      {
+      cfg({
         webhook: { capacity: 1, windowMs: 1_000 },
         issue: { capacity: 1, windowMs: 1_000 },
-        maxEntries: 100,
-      },
+      }),
       () => now,
     );
     expect(limiter.check("issue", "ip").allowed).toBe(true);
@@ -68,32 +85,46 @@ describe("TokenBucketLimiter", () => {
     now += 1_000; // advance past the window
     expect(limiter.check("issue", "ip").allowed).toBe(true);
   });
+
+  test("checkGlobal bounds aggregate throughput across distinct IPs (Strix vuln-0001)", () => {
+    const limiter = new TokenBucketLimiter(
+      cfg({ globalIssue: { capacity: 3, windowMs: 60_000 } }),
+      () => 0,
+    );
+    for (let i = 0; i < 3; i += 1) {
+      expect(limiter.check("issue", `10.0.0.${i}`).allowed).toBe(true);
+      expect(limiter.checkGlobal("issue").allowed).toBe(true);
+    }
+    // A new IP's per-IP bucket is fresh, but the global ceiling is spent.
+    expect(limiter.check("issue", "10.0.0.99").allowed).toBe(true);
+    expect(limiter.checkGlobal("issue").allowed).toBe(false);
+  });
 });
 
 describe("clientIp", () => {
-  test("reads the RIGHTMOST x-forwarded-for hop, never the leftmost", () => {
+  test("trusts X-Real-IP (Railway edge-set, non-spoofable)", () => {
     const req = new Request("http://x.test/", {
-      headers: { "x-forwarded-for": "203.0.113.7, 10.0.0.1" },
+      headers: { "x-real-ip": "203.0.113.7" },
     });
-    expect(clientIp(req)).toBe("10.0.0.1");
+    expect(clientIp(req)).toBe("203.0.113.7");
   });
 
-  test("a client-spoofed leftmost hop does not change the derived IP", () => {
+  test("IGNORES x-envoy-external-address and x-forwarded-for (Strix vuln-0001)", () => {
     const spoofed = new Request("http://x.test/", {
-      headers: { "x-forwarded-for": "9.9.9.9, 203.0.113.7" },
+      headers: {
+        "x-envoy-external-address": "6.6.6.6",
+        "x-forwarded-for": "9.9.9.9, 8.8.8.8",
+      },
     });
-    const unspoofed = new Request("http://x.test/", {
-      headers: { "x-forwarded-for": "203.0.113.7" },
-    });
-    expect(clientIp(spoofed)).toBe(clientIp(unspoofed));
-    expect(clientIp(spoofed)).toBe("203.0.113.7");
+    expect(clientIp(spoofed)).toBe("unknown");
   });
 
-  test("X-Envoy-External-Address, when present, wins over x-forwarded-for entirely", () => {
+  test("X-Real-IP wins even if spoofable headers are also present", () => {
     const req = new Request("http://x.test/", {
       headers: {
-        "x-envoy-external-address": "198.51.100.1",
-        "x-forwarded-for": "9.9.9.9, 8.8.8.8",
+        "x-real-ip": "198.51.100.1",
+        "x-envoy-external-address": "6.6.6.6",
+        "x-forwarded-for": "9.9.9.9",
       },
     });
     expect(clientIp(req)).toBe("198.51.100.1");

@@ -1,4 +1,4 @@
-// Unit tests for the FTC "4 Ps" dark-pattern presentation guardrail (ADR-0209). Pure + deterministic
+// Unit tests for the FTC "4 Ps" dark-pattern presentation guardrail (ADR-0215). Pure + deterministic
 // — every fixture is a synthetic copy snippet, no network/LLM call. One scareware fixture per rule
 // (proves the right dimension + rule id fires), one clean-copy pass, and one fixture where the
 // disclosure sits correctly nearby (proving the window check suppresses the finding, not just fires

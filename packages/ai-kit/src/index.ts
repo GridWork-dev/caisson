@@ -26,7 +26,7 @@ export {
   providerFor,
 } from "./providers.ts";
 
-// Metered embeddings (ADR-0207): the same reserve-before/reconcile-after chokepoint as infer(), for
+// Metered embeddings (ADR-0213): the same reserve-before/reconcile-after chokepoint as infer(), for
 // a buyer-facing RAG/semantic-search embeddings surface.
 export { buildEmbeddingRegistryResolver, embed, embedMany } from "./embed.ts";
 export type {

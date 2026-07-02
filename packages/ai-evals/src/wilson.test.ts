@@ -1,4 +1,4 @@
-// Wilson-CI tests (ADR-0208). Closed-form, no deps: CI tightens with sample size at the same 100%
+// Wilson-CI tests (ADR-0214). Closed-form, no deps: CI tightens with sample size at the same 100%
 // observed pass rate.
 import { describe, expect, test } from "bun:test";
 import { wilsonLowerBound } from "./wilson.ts";

@@ -271,7 +271,7 @@ describe("regression gate vs committed baseline (BLESS unset)", () => {
   });
 });
 
-describe("Wilson-CI gate augmentation (ADR-0208, opt-in additive)", () => {
+describe("Wilson-CI gate augmentation (ADR-0214, opt-in additive)", () => {
   test("wilsonFloor unset: the committed evals gate is unaffected (no wilson-below-floor finding)", async () => {
     const compliance = await runCompliance();
     expect(compliance.wilsonFloor).toBeUndefined();

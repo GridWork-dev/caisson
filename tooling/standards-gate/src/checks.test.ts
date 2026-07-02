@@ -198,7 +198,7 @@ describe("checkManifestAgreement fail-closed (ADR-0094/0097)", () => {
   });
 });
 
-describe("checkRlsEquivalence (ADR-0204/0005)", () => {
+describe("checkRlsEquivalence (ADR-0210/0005)", () => {
   // Real temp dir — checkRlsEquivalence reads `<pkg.dir>/src/migrations/*.sql` and
   // `<root>/tooling/standards-gate/rls-equivalence-overrides.json` off disk (same real-fs pattern
   // as checkExternalAgpl's fixtures above; never a checked-in fixture for a generated tree).

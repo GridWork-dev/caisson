@@ -1,4 +1,4 @@
-// Agreement tests (ADR-0208). Perfect-agreement → kappa 1; a hand-computed partial fixture pins the
+// Agreement tests (ADR-0214). Perfect-agreement → kappa 1; a hand-computed partial fixture pins the
 // formula; a stability-score fixture pins `counterfactualStability`.
 import { describe, expect, test } from "bun:test";
 import {

@@ -1,4 +1,4 @@
-// Pre-call MinHash/LSH dedup-before-meter gate (ADR-0211). Pure hashing core + in-memory store +
+// Pre-call MinHash/LSH dedup-before-meter gate (ADR-0217). Pure hashing core + in-memory store +
 // checkDedupGate — no DB, no network, no wallet movement.
 import { describe, expect, test } from "bun:test";
 import type { EstimateMessage } from "./estimate.ts";

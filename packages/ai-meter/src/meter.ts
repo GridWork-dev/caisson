@@ -287,7 +287,7 @@ async function evaluateCaps(
  * `withTenant(accountId)`.
  *
  * A caller wanting to catch near-duplicate prompts (not just literal `callId` retries) should call
- * `checkDedupGate()` from `./dedup.ts` BEFORE this — it detects, it does not enforce (ADR-0211).
+ * `checkDedupGate()` from `./dedup.ts` BEFORE this — it detects, it does not enforce (ADR-0217).
  */
 export async function reserve(
   tx: TenantExecutor,
@@ -329,7 +329,7 @@ export async function reserve(
   let idempotent: boolean;
   if (billable && reservedCredits > 0) {
     // Debit-before-spend (ADR-0007): a short wallet throws 402 and rolls everything back. The
-    // estimate's rounding provenance (ADR-0206: raw micro-USD, mode "up") persists on the ledger row.
+    // estimate's rounding provenance (ADR-0212: raw micro-USD, mode "up") persists on the ledger row.
     const res = await debit(tx, {
       accountId: core.accountId,
       amount: reservedCredits,
@@ -477,7 +477,7 @@ export async function reconcile(
   let walletBalance = await balance(tx, core.accountId);
   let refundedCredits = 0;
   let chargedCredits = 0;
-  // Either settlement row carries the ACTUAL cost's rounding provenance (ADR-0206): the row's amount
+  // Either settlement row carries the ACTUAL cost's rounding provenance (ADR-0212): the row's amount
   // is the signed delta, while {raw, mode, result} document the ceil that produced the actual charge.
   if (billable && delta > 0) {
     const res = await debit(tx, {

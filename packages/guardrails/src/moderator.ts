@@ -9,7 +9,7 @@ import { strictObject, ValidationError } from "@caisson/kernel";
 
 /**
  * The violation class a block is charted by. Mirrors `kernel/observability`
- * `guardrailBlockSchema`. `"secret"` (ADR-0209) is the unconditional credential-shape pre-screen in
+ * `guardrailBlockSchema`. `"secret"` (ADR-0215) is the unconditional credential-shape pre-screen in
  * `guard.ts` — it never comes from a `Moderator` verdict.
  */
 export type GuardCategory =

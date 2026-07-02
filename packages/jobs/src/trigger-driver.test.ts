@@ -103,7 +103,7 @@ describe("trigger.dev job queue", () => {
   });
 });
 
-describe("trigger.dev idempotent enqueue (ADR-0205)", () => {
+describe("trigger.dev idempotent enqueue (ADR-0211)", () => {
   test("passes idempotencyKey straight through as trigger()'s native option", async () => {
     const client = createFakeClient();
     const queue = createTriggerJobQueue(
@@ -127,7 +127,7 @@ describe("trigger.dev idempotent enqueue (ADR-0205)", () => {
   });
 });
 
-describe("trigger.dev work() (ADR-0205)", () => {
+describe("trigger.dev work() (ADR-0211)", () => {
   test("resolves a no-op WorkHandle for a registered task — Trigger.dev's real consumer is the deploy-side task", async () => {
     const client = createFakeClient();
     const queue = createTriggerJobQueue(

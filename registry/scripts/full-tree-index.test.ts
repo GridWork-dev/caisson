@@ -32,14 +32,21 @@ describe("full-tree registry backfill (ADR-0021/0111)", () => {
     expect(dups).toEqual([]);
   });
 
-  test("the index spans the full publishable set, not just the 7-module seed", () => {
+  test("the index spans the full publishable set at the ADR-0208 republish versions", () => {
     const index = JSON.parse(readFileSync(INDEX_PATH, "utf8")) as {
       modules: { id: string; latest: string }[];
     };
     expect(index.modules.length).toBeGreaterThanOrEqual(20);
-    // Every module advertises 0.1.0 as a published version after the flip.
+    // The 2026-07-02 republish (ADR-0208 #5): every module took its pending minor to 0.2.0
+    // except the four Stage-2 primitives, whose changesets were patch-only.
+    const PATCH_ONLY = new Set([
+      "@caisson/alerting",
+      "@caisson/retention-runner",
+      "@caisson/tool-exec",
+      "@caisson/platform-reads",
+    ]);
     for (const m of index.modules) {
-      expect(m.latest).toBe("0.1.0");
+      expect(m.latest).toBe(PATCH_ONLY.has(m.id) ? "0.1.1" : "0.2.0");
     }
   });
 
@@ -53,17 +60,19 @@ describe("full-tree registry backfill (ADR-0021/0111)", () => {
 
   test("edition member versions pin to real published versions (never the 0.0.0 sentinel)", () => {
     const entries = parseLedger(readFileSync(LEDGER_PATH, "utf8"));
-    // The latest published version per module — the truth a `members` snapshot must agree with.
-    const published = new Map(entries.map((e) => [e.id, e.version]));
+    // Every (id, version) pair ever published — the truth a `members` snapshot must agree with.
+    // Set-membership rather than latest-only: once the ledger carries more than one release
+    // (ADR-0208 republish), an OLDER edition entry legitimately pins the member versions that
+    // were current at ITS publish. What can never appear is a pair that was never published —
+    // which still catches the "0.0.0" sentinel and unpublished-version drift (the gap that let
+    // three editions ship 0.0.0 member pins through CI — ADR-0111/0077).
+    const publishedPairs = new Set(entries.map((e) => `${e.id}@${e.version}`));
     const stale: string[] = [];
     for (const e of entries) {
       const members = e.manifest?.members;
       if (!members) continue;
       for (const [memberId, version] of Object.entries(members)) {
-        // A member must resolve to a real ledger entry at that exact version — catches the
-        // never-published "0.0.0" sentinel and any drift from a member's published version (the
-        // gap that let three editions ship 0.0.0 member pins through CI — ADR-0111/0077).
-        if (published.get(memberId) !== version) {
+        if (!publishedPairs.has(`${memberId}@${version}`)) {
           stale.push(`${e.id} → ${memberId}@${version}`);
         }
       }

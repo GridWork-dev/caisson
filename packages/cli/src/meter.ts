@@ -47,7 +47,7 @@ export function meterGeneration(
 ): Promise<CreditResult> {
   return debit(tx, {
     accountId: input.accountId,
-    // Mint the brand at this boundary (ADR-0206) — MeterInput.amount stays a plain integer input.
+    // Mint the brand at this boundary (ADR-0212) — MeterInput.amount stays a plain integer input.
     amount: asCredits(input.amount ?? 1),
     eventType: "codegen_debit",
     idempotencyKey: input.idempotencyKey,

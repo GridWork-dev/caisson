@@ -81,9 +81,22 @@ describe("publish-readiness flip (ADR-0111)", () => {
     expect(leaked).toEqual([]);
   });
 
-  test("every published package is at version 0.1.0", () => {
+  test("every published package is at its ADR-0208 republish version", () => {
+    // The 2026-07-02 consume (ADR-0208 #5): every published package took its pending minor to
+    // 0.2.0 except the four Stage-2 primitives, whose changesets were patch-only. Mirrors the
+    // divergence map in registry/scripts/full-tree-index.test.ts.
+    const PATCH_ONLY = new Set([
+      "@caisson/alerting",
+      "@caisson/retention-runner",
+      "@caisson/tool-exec",
+      "@caisson/platform-reads",
+    ]);
     const off = published
-      .filter((p) => p.pj.version !== "0.1.0")
+      .filter(
+        (p) =>
+          p.pj.version !==
+          (PATCH_ONLY.has(p.pj.name ?? "") ? "0.1.1" : "0.2.0"),
+      )
       .map((p) => `${p.pj.name}@${p.pj.version}`);
     expect(off).toEqual([]);
   });

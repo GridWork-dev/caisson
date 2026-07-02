@@ -13,11 +13,20 @@ export const DomainBillingEventSchema = z.discriminatedUnion("type", [
     accountId: z.string(),
     amountTotal: z.number().int().nonnegative(),
     currency: z.string(),
-    // ADR-0113 one-time enrichment: the Stripe price id (from the session's `metadata.price_id`,
-    // stamped at checkout) the one-time PURCHASE_BOOK resolves to {credits, entitlements}, and the
-    // PaymentIntent id (`payment_intent`) — the STABLE join key a later `charge.refunded` carries, so a
-    // refund can revoke this purchase's entitlement grant + claw back its credits. "" when absent.
-    priceId: z.string(),
+    // ADR-0113 one-time enrichment. `lineItems` is EVERY paid line of the purchase (Strix vuln-0005: a
+    // multi-item cart is ONE provider transaction carrying N lines — the mapper must fulfill all of
+    // them, not just `items[0]`). Each line's `priceId` the one-time PURCHASE_BOOK resolves to
+    // {credits, entitlements}; `quantity` scales the credits (an entitlement is binary). `paymentId`
+    // (`payment_intent`) is the STABLE join key a later `charge.refunded` carries, keying the whole
+    // transaction's grants, so a refund still revokes every line's grants + claws back its credits.
+    lineItems: z
+      .array(
+        strictObject({
+          priceId: z.string(),
+          quantity: z.number().int().positive(),
+        }),
+      )
+      .min(1),
     paymentId: z.string(),
   }),
   strictObject({
@@ -73,7 +82,7 @@ export const DomainBillingEventSchema = z.discriminatedUnion("type", [
 
 export type DomainBillingEvent = z.infer<typeof DomainBillingEventSchema>;
 
-// The envelope (id/type/data.object) is Zod-`.strict()`-validated at the boundary (ADR-0204,
+// The envelope (id/type/data.object) is Zod-`.strict()`-validated at the boundary (ADR-0210,
 // mirrors PaddleEventSchema/services-hardening MED finding): the raw webhook body used to be
 // trusted via a bare `JSON.parse(rawBody) as StripeEvent` cast — a type-level assertion with no
 // runtime check, so a validly-signed but malformed/field-injected delivery would flow straight
@@ -159,9 +168,12 @@ export function parseStripeEvent(
         amountTotal: readInt(obj.amount_total),
         currency: readString(obj.currency, "usd"),
         // The one-time PURCHASE_BOOK key — stamped at checkout on `metadata.price_id` (a session
-        // carries no webhook-readable line items without expansion). The PaymentIntent id is the
-        // refund join key (ADR-0113).
-        priceId: readMetadataString(obj, "price_id"),
+        // carries no webhook-readable line items without expansion). Stripe checkout here only ever
+        // creates a single line (provider.ts `line_items[0]`), so this is a one-entry wrap of the
+        // shared multi-line shape, quantity 1. The PaymentIntent id is the refund join key (ADR-0113).
+        lineItems: [
+          { priceId: readMetadataString(obj, "price_id"), quantity: 1 },
+        ],
         paymentId: readString(obj.payment_intent),
       };
     case "customer.subscription.created":

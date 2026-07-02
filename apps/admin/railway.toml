@@ -8,9 +8,11 @@
 #
 # Service env vars (set in the Railway service — NEVER committed; every surface no-ops when unset):
 #   CAISSON_ADMIN_DB_URL          (the read-only `admin` Postgres role DSN — ADR-0141; cross-tenant reads)
-#   OTEL_EXPORTER_OTLP_ENDPOINT   (the SigNoz collector — ADR-0117/0142; observability no-ops without it)
-#   SIGNOZ_QUERY_URL              (the SigNoz query-service base URL — ADR-0142; ops widgets empty without it)
-#   SIGNOZ_API_KEY                (SigNoz service-account key for the query API — ADR-0142)
+#   OTEL_EXPORTER_OTLP_ENDPOINT   (the Grafana Cloud OTLP gateway — ADR-0177; observability no-ops without it)
+#   OTEL_EXPORTER_OTLP_HEADERS    (Basic auth for the OTLP gateway — ADR-0177)
+#   GRAFANA_URL                   (Grafana Cloud stack base URL for the ops query proxy — ADR-0207; ops widgets empty without it)
+#   GRAFANA_QUERY_TOKEN           (glsa_ service-account token, Bearer, for the datasource query proxy — ADR-0207)
+#   GRAFANA_TEMPO_DATASOURCE_UID  (Tempo datasource UID the /ops widgets query via TraceQL — ADR-0207)
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "apps/admin/Dockerfile"

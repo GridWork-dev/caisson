@@ -95,7 +95,7 @@ export class ConflictError extends CaissonError {
 }
 
 /**
- * A guardrail block (ADR-0063, amending the ADR-0019 hierarchy; `"secret"` added by ADR-0209). HTTP
+ * A guardrail block (ADR-0063, amending the ADR-0019 hierarchy; `"secret"` added by ADR-0215). HTTP
  * 422 — the request reached a valid endpoint and parsed, but a moderation / PII / injection / secret
  * / custom guard tripped at the gateway's input or output leg (P3 AI Production Kit). **Metadata
  * only**: `details` carries the `stage` + `category` the dashboard charts by, NEVER the flagged

@@ -1,4 +1,4 @@
-// LIVE embeddings proof (ADR-0207) — the one path CI never exercises, run against the REAL
+// LIVE embeddings proof (ADR-0213) — the one path CI never exercises, run against the REAL
 // OpenRouter embeddings endpoint through the FULL production pipeline: ai-config lane → registry
 // resolver over `defaultProviders` (the same `@ai-sdk/openai-compatible` transport ADR-0201 wired for
 // chat) → reserve → live provider call → reconcile, with PGlite backing the meter legs. Mirrors
@@ -114,7 +114,7 @@ afterAll(async () => {
   if (tp) await tp.close();
 });
 
-describe("live OpenRouter embeddings (ADR-0207)", () => {
+describe("live OpenRouter embeddings (ADR-0213)", () => {
   test.skipIf(!HAVE_KEY)(
     "embed() completes against the real endpoint with REAL reported usage and a settled debit",
     async () => {

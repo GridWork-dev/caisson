@@ -39,7 +39,7 @@ export function createStripeBilling(config: StripeConfig): BillingProvider {
   return {
     verifyAndParse(rawBody, signatureHeader, opts) {
       verifyStripeWebhook(rawBody, signatureHeader, config.webhookSecret, opts);
-      // Zod `.strict()` at the boundary (ADR-0204, mirrors the Paddle driver): reject an envelope
+      // Zod `.strict()` at the boundary (ADR-0210, mirrors the Paddle driver): reject an envelope
       // with a missing/wrong-typed id/type or any unknown top-level field BEFORE it reaches the
       // mapper — a signature check alone does not guarantee the payload SHAPE. parseStrict throws a
       // redaction-safe ValidationError, which the route layer maps to a non-2xx.

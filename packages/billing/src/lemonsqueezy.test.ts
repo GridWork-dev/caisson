@@ -75,7 +75,7 @@ describe("event mapping", () => {
       accountId: "acct_a",
       amountTotal: 5000,
       currency: "usd",
-      priceId: "42",
+      lineItems: [{ priceId: "42", quantity: 1 }],
       paymentId: "1",
     });
   });

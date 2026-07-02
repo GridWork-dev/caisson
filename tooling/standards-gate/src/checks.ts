@@ -484,7 +484,7 @@ export function checkOpenCommercialBoundary(pkgs: Pkg[]): Finding[] {
 }
 
 /**
- * RLS migration-equivalence harness (ADR-0204 hardening #2 / ADR-0005). `buildTenantPolicySql`
+ * RLS migration-equivalence harness (ADR-0210 hardening #2 / ADR-0005). `buildTenantPolicySql`
  * (@caisson/tenancy-rls) is the canonical RLS-SQL generator; nothing previously checked hand-written
  * migration RLS against it — a table can LOOK tenant-isolated but ship undocumented drift
  * (`retention_audit`/`alert_audit_log` already shipped narrower GRANTs than the generator would).

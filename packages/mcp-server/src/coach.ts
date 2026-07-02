@@ -51,7 +51,7 @@ export interface CoachToolRegistrar {
   registerTool(registration: {
     name: string;
     requiredEntitlement: string | null;
-    /** Declarative manifest fields (ADR-0210) — validated by the real seam at registration time. */
+    /** Declarative manifest fields (ADR-0216) — validated by the real seam at registration time. */
     description: string;
     version: string;
     audit: { logArgs: boolean };

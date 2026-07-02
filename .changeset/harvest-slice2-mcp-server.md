@@ -2,7 +2,7 @@
 "@caisson/mcp-server": patch
 ---
 
-ADR-0210: `ToolRegistration` gains a Zod-validated declarative manifest
+ADR-0216: `ToolRegistration` gains a Zod-validated declarative manifest
 (`description`/`version`/`audit.logArgs`) checked in `registerTool()` before the
 duplicate-name guard, so a malformed manifest is a registration-time `ValidationError`,
 never a call-time surprise; all 7 existing registrations (3 base + 4 coach) are

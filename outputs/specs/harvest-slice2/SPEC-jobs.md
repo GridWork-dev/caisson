@@ -1,6 +1,6 @@
 # SPEC — `@caisson/jobs` consumer-side (claim + visibility + idempotent enqueue)
 
-**Status: LOCKED — ADR-0205, harvest slice-2 wave, 2026-07-02 operator picker.**
+**Status: LOCKED — ADR-0211, harvest slice-2 wave, 2026-07-02 operator picker.**
 
 - **Package:** `packages/jobs` (Apache-2.0 base, `tier: oss`, `kind: base`). No dependency-tier
   change — `pg-boss` + `@trigger.dev/sdk` already deps; no new packages.

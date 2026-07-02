@@ -1,11 +1,11 @@
 # SPEC — `@caisson/guardrails` (egress secret-gate + FTC-4Ps presentation guardrail)
 
-**Status: LOCKED — ADR-0209 (egress secret-gate + FTC-4Ps), harvest slice-2 wave,
-2026-07-02 operator picker; hardens in place per ADR-0204 lock 1.**
+**Status: LOCKED — ADR-0215 (egress secret-gate + FTC-4Ps), harvest slice-2 wave,
+2026-07-02 operator picker; hardens in place per ADR-0210 lock 1.**
 
 - **Package:** `packages/guardrails` (`kind: primitive`, `tier: paid`,
   `LicenseRef-Caisson-Commercial`, AI Production Kit). No edition/license/tier change —
-  resolves the flagged asymmetry by hardening the existing module (ADR-0204 lock 1).
+  resolves the flagged asymmetry by hardening the existing module (ADR-0210 lock 1).
 - **Type:** HARDEN IN PLACE — a new `GuardCategory` in the existing `guard.ts` pipeline
   (gridwork-core clean-lift) + a new standalone evaluator (tm-watch lift-sweep rank #13,
   rebuild-clean, pattern only).

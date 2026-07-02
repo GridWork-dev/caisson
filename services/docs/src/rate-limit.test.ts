@@ -10,9 +10,12 @@ import {
 } from "./rate-limit.ts";
 import type { DocChunk } from "./types.ts";
 
+// Generous global ceilings so the per-IP tests below exercise the per-IP budget, not the global cap.
 const CONFIG: RateLimitConfig = {
   query: { capacity: 3, windowMs: 60_000 },
   static: { capacity: 5, windowMs: 60_000 },
+  globalQuery: { capacity: 100_000, windowMs: 60_000 },
+  globalStatic: { capacity: 100_000, windowMs: 60_000 },
   maxEntries: 1000,
 };
 
@@ -54,6 +57,22 @@ describe("TokenBucketLimiter", () => {
     expect(limiter.check("query", "10.0.0.2").allowed).toBe(true);
   });
 
+  test("checkGlobal bounds aggregate throughput across distinct IPs (Strix vuln-0001)", () => {
+    // The service-wide ceiling holds even when every request carries a DISTINCT client IP — the
+    // per-IP bucket is fresh each time, but the global bucket drains and eventually denies.
+    const limiter = new TokenBucketLimiter(
+      { ...CONFIG, globalQuery: { capacity: 4, windowMs: 60_000 } },
+      () => 0,
+    );
+    for (let i = 0; i < 4; i += 1) {
+      expect(limiter.check("query", `203.0.113.${i}`).allowed).toBe(true);
+      expect(limiter.checkGlobal("query").allowed).toBe(true);
+    }
+    // Per-IP is still fresh for a new IP, but the global bucket is now exhausted.
+    expect(limiter.check("query", "203.0.113.99").allowed).toBe(true);
+    expect(limiter.checkGlobal("query").allowed).toBe(false);
+  });
+
   test("map stays bounded under a spray of distinct IPs", () => {
     const limiter = new TokenBucketLimiter(
       { ...CONFIG, maxEntries: 10 },
@@ -66,31 +85,32 @@ describe("TokenBucketLimiter", () => {
 });
 
 describe("clientIp", () => {
-  test("takes the RIGHTMOST x-forwarded-for hop, never the leftmost", () => {
+  test("trusts X-Real-IP (Railway edge-set, non-spoofable)", () => {
     const req = new Request("http://docs.test/llms.txt", {
-      headers: { "x-forwarded-for": "203.0.113.5, 70.1.2.3, 10.0.0.9" },
+      headers: { "x-real-ip": "203.0.113.5" },
     });
-    expect(clientIp(req)).toBe("10.0.0.9");
+    expect(clientIp(req)).toBe("203.0.113.5");
   });
 
-  test("a client-spoofed leftmost hop does not change the derived IP", () => {
-    // The client controls every hop except the one the edge proxy itself appends last. Prepending
-    // an attacker-chosen leftmost value must have zero effect on the derived identity.
+  test("IGNORES x-envoy-external-address and x-forwarded-for (Strix vuln-0001)", () => {
+    // The pentest bypassed the limiter by rotating x-envoy-external-address; both it and XFF are
+    // client-appendable, so neither is trusted. With no X-Real-IP, the derived id is the shared
+    // "unknown" sentinel regardless of what the client puts in those headers.
     const spoofed = new Request("http://docs.test/llms.txt", {
-      headers: { "x-forwarded-for": "1.2.3.4, 203.0.113.5" },
+      headers: {
+        "x-envoy-external-address": "6.6.6.6",
+        "x-forwarded-for": "1.2.3.4, 5.6.7.8",
+      },
     });
-    const unspoofed = new Request("http://docs.test/llms.txt", {
-      headers: { "x-forwarded-for": "203.0.113.5" },
-    });
-    expect(clientIp(spoofed)).toBe(clientIp(unspoofed));
-    expect(clientIp(spoofed)).toBe("203.0.113.5");
+    expect(clientIp(spoofed)).toBe("unknown");
   });
 
-  test("X-Envoy-External-Address, when present, wins over x-forwarded-for entirely", () => {
+  test("X-Real-IP wins even if spoofable headers are also present", () => {
     const req = new Request("http://docs.test/llms.txt", {
       headers: {
-        "x-envoy-external-address": "198.51.100.1",
-        "x-forwarded-for": "9.9.9.9, 8.8.8.8",
+        "x-real-ip": "198.51.100.1",
+        "x-envoy-external-address": "6.6.6.6",
+        "x-forwarded-for": "9.9.9.9",
       },
     });
     expect(clientIp(req)).toBe("198.51.100.1");
@@ -107,6 +127,9 @@ describe("loadRateLimitConfig", () => {
     expect(c.query.capacity).toBe(20);
     expect(c.static.capacity).toBe(120);
     expect(c.query.windowMs).toBe(60_000);
+    // global ceilings = per-IP burst × the default factor (50).
+    expect(c.globalQuery.capacity).toBe(20 * 50);
+    expect(c.globalStatic.capacity).toBe(120 * 50);
     expect(c.maxEntries).toBe(10_000);
   });
 
@@ -114,9 +137,11 @@ describe("loadRateLimitConfig", () => {
     const c = loadRateLimitConfig({
       DOCS_RL_QUERY_BURST: "5",
       DOCS_RL_QUERY_WINDOW_SEC: "30",
+      DOCS_RL_GLOBAL_FACTOR: "10",
     });
     expect(c.query.capacity).toBe(5);
     expect(c.query.windowMs).toBe(30_000);
+    expect(c.globalQuery.capacity).toBe(5 * 10);
   });
 
   test("present-but-invalid value fails closed (throws)", () => {
@@ -143,8 +168,20 @@ describe("createApp rate limiting", () => {
 
   const reqLlms = (ip: string): Request =>
     new Request("http://docs.test/llms.txt", {
-      headers: { "x-forwarded-for": ip },
+      headers: { "x-real-ip": ip },
     });
+
+  // A per-IP config with global ceilings high enough not to trip in per-IP-focused tests.
+  const perIpConfig = (
+    query: { capacity: number; windowMs: number },
+    staticCfg: { capacity: number; windowMs: number },
+  ): RateLimitConfig => ({
+    query,
+    static: staticCfg,
+    globalQuery: { capacity: 100_000, windowMs: 60_000 },
+    globalStatic: { capacity: 100_000, windowMs: 60_000 },
+    maxEntries: 100,
+  });
 
   test("static /llms.txt burst over budget → 429 with Retry-After, then 200 after refill", async () => {
     const index = await DocsIndex.build(CHUNKS, new FakeEmbedder());
@@ -155,11 +192,10 @@ describe("createApp rate limiting", () => {
       llmsFull: "# Full\n",
       token: TOKEN,
       limiter: new TokenBucketLimiter(
-        {
-          query: { capacity: 1, windowMs: 60_000 },
-          static: { capacity: 2, windowMs: 60_000 },
-          maxEntries: 100,
-        },
+        perIpConfig(
+          { capacity: 1, windowMs: 60_000 },
+          { capacity: 2, windowMs: 60_000 },
+        ),
         () => now,
       ),
     });
@@ -175,11 +211,38 @@ describe("createApp rate limiting", () => {
     index.close();
   });
 
-  test("a spoofed leftmost x-forwarded-for hop does not mint a fresh bucket", async () => {
-    // The attacker rotates the LEFTMOST hop on every request while the edge-appended rightmost hop
-    // (the real, unforgeable identity) stays fixed. If clientIp still trusted the leftmost entry,
-    // each request below would land in its OWN bucket and never be throttled — the exact bypass the
-    // HIGH finding described. With the rightmost-hop fix, all three collapse onto one bucket.
+  test("rotating x-envoy-external-address does NOT mint a fresh bucket (Strix vuln-0001)", async () => {
+    // The exact pentest bypass: rotate the spoofable header on every request. Since clientIp no
+    // longer trusts it (no X-Real-IP present), all requests collapse onto the shared "unknown"
+    // bucket and are throttled — 25 rotated-header requests must not all pass.
+    const index = await DocsIndex.build(CHUNKS, new FakeEmbedder());
+    const app = createApp({
+      index,
+      llmsTxt: "# Caisson\n",
+      llmsFull: "# Full\n",
+      token: TOKEN,
+      limiter: new TokenBucketLimiter(
+        perIpConfig(
+          { capacity: 1, windowMs: 60_000 },
+          { capacity: 2, windowMs: 60_000 },
+        ),
+        () => 0,
+      ),
+    });
+    const rotated = (fakeIp: string): Request =>
+      new Request("http://docs.test/llms.txt", {
+        headers: { "x-envoy-external-address": fakeIp },
+      });
+    expect((await app(rotated("1.1.1.1"))).status).toBe(200);
+    expect((await app(rotated("2.2.2.2"))).status).toBe(200);
+    const third = await app(rotated("3.3.3.3"));
+    expect(third.status).toBe(429);
+    index.close();
+  });
+
+  test("the global ceiling throttles a distributed flood of distinct X-Real-IPs (Strix vuln-0001)", async () => {
+    // Even with a legitimate, distinct X-Real-IP per request (so every per-IP bucket is fresh), the
+    // header-independent global cap bounds aggregate throughput.
     const index = await DocsIndex.build(CHUNKS, new FakeEmbedder());
     const app = createApp({
       index,
@@ -188,22 +251,51 @@ describe("createApp rate limiting", () => {
       token: TOKEN,
       limiter: new TokenBucketLimiter(
         {
-          query: { capacity: 1, windowMs: 60_000 },
-          static: { capacity: 2, windowMs: 60_000 },
+          query: { capacity: 10, windowMs: 60_000 },
+          static: { capacity: 10, windowMs: 60_000 },
+          globalQuery: { capacity: 10, windowMs: 60_000 },
+          globalStatic: { capacity: 2, windowMs: 60_000 },
           maxEntries: 100,
         },
         () => 0,
       ),
     });
-    const realIp = "203.0.113.51";
-    const spoofedReq = (fakeLeftHop: string): Request =>
-      new Request("http://docs.test/llms.txt", {
-        headers: { "x-forwarded-for": `${fakeLeftHop}, ${realIp}` },
-      });
-    expect((await app(spoofedReq("1.1.1.1"))).status).toBe(200);
-    expect((await app(spoofedReq("2.2.2.2"))).status).toBe(200);
-    const third = await app(spoofedReq("3.3.3.3"));
-    expect(third.status).toBe(429);
+    expect((await app(reqLlms("203.0.113.1"))).status).toBe(200);
+    expect((await app(reqLlms("203.0.113.2"))).status).toBe(200);
+    // Third distinct IP: per-IP bucket is fresh, but the global static ceiling (2) is spent.
+    expect((await app(reqLlms("203.0.113.3"))).status).toBe(429);
+    index.close();
+  });
+
+  test("one throttled IP does NOT drain the global bucket for others (Strix vuln-0001 amplification)", async () => {
+    // Per-IP static=2, global static=5. A single IP floods 6 requests: 2 pass (per-IP), 4 are per-IP
+    // 429s that must NOT consume a global token. A different IP is then still served — the global cap
+    // only counts per-IP-ALLOWED traffic, so one abuser can't 429 everyone else.
+    const index = await DocsIndex.build(CHUNKS, new FakeEmbedder());
+    const app = createApp({
+      index,
+      llmsTxt: "# Caisson\n",
+      llmsFull: "# Full\n",
+      token: TOKEN,
+      limiter: new TokenBucketLimiter(
+        {
+          query: { capacity: 10, windowMs: 60_000 },
+          static: { capacity: 2, windowMs: 60_000 },
+          globalQuery: { capacity: 100_000, windowMs: 60_000 },
+          globalStatic: { capacity: 5, windowMs: 60_000 },
+          maxEntries: 100,
+        },
+        () => 0,
+      ),
+    });
+    const abuser = "203.0.113.7";
+    let passed = 0;
+    for (let i = 0; i < 6; i += 1) {
+      if ((await app(reqLlms(abuser))).status === 200) passed += 1;
+    }
+    expect(passed).toBe(2); // bounded by the abuser's own per-IP bucket
+    // A different client is still served — the abuser's 4 rejected requests never touched the global.
+    expect((await app(reqLlms("203.0.113.8"))).status).toBe(200);
     index.close();
   });
 
@@ -215,11 +307,10 @@ describe("createApp rate limiting", () => {
       llmsFull: "y",
       token: TOKEN,
       limiter: new TokenBucketLimiter(
-        {
-          query: { capacity: 1, windowMs: 60_000 },
-          static: { capacity: 1, windowMs: 60_000 },
-          maxEntries: 100,
-        },
+        perIpConfig(
+          { capacity: 1, windowMs: 60_000 },
+          { capacity: 1, windowMs: 60_000 },
+        ),
         () => 0,
       ),
     });
@@ -240,6 +331,9 @@ describe("createApp rate limiting", () => {
       token: TOKEN,
       limiter: {
         check() {
+          throw new Error("simulated limiter fault");
+        },
+        checkGlobal() {
           throw new Error("simulated limiter fault");
         },
       },

@@ -24,7 +24,7 @@ over the ai-config lanes (`buildRegistryResolver` + `defaultProviders`); CI inje
 `LanguageModelV2`, so no live model/network call happens in the gate. See `AGENTS.md` for the usage
 contract + invariants.
 
-## Metered embeddings (ADR-0207)
+## Metered embeddings (ADR-0213)
 
 `embed()`/`embedMany()` join `infer()`/`inferStream()` through the SAME reserve-before/
 reconcile-after chokepoint — a shorter pipeline (`resolve → reserve → provider call → record usage →

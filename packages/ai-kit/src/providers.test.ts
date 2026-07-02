@@ -280,7 +280,7 @@ describe("providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2)
   });
 });
 
-describe("timeoutFetch — the fetch-deadline floor (ADR-0207, C5/SPEC ai-kit)", () => {
+describe("timeoutFetch — the fetch-deadline floor (ADR-0213, C5/SPEC ai-kit)", () => {
   // A loopback stub (not external — `assertSafeBaseUrl` blocks any real provider from ever pointing
   // here) that never answers `/slow`, proving `timeoutMs` aborts a hung request instead of letting it
   // hang the process. Mirrors `@caisson/kernel`'s own `fetchWithTimeout` test pattern.

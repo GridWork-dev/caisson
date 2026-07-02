@@ -26,7 +26,7 @@
 // the `read*` helpers below are ALREADY the defensive/fail-closed-to-safe-default layer for it; this
 // schema only closes the envelope-level gap, it does not re-validate every event type's inner fields.
 import { z } from "zod";
-import { strictObject } from "@caisson/kernel";
+import { strictObject, ValidationError } from "@caisson/kernel";
 import type { DomainBillingEvent } from "./events.ts";
 
 export const PaddleEventSchema = strictObject({
@@ -55,7 +55,8 @@ function readAccountId(obj: Record<string, unknown>): string {
   return readString((customData as Record<string, unknown>).account_id);
 }
 
-/** The transaction's first line item's price id, from `items[0].price.id`. */
+/** The transaction's first line item's price id, from `items[0].price.id`. Used only for the
+ * subscription (invoice.paid) path — a subscription transaction is single-line by design. */
 function readItemPriceId(obj: Record<string, unknown>): string {
   const items = obj.items;
   if (!Array.isArray(items) || items.length === 0) return "";
@@ -64,6 +65,41 @@ function readItemPriceId(obj: Record<string, unknown>): string {
   const price = (first as Record<string, unknown>).price;
   if (typeof price !== "object" || price === null) return "";
   return readString((price as Record<string, unknown>).id);
+}
+
+/** Read a positive integer `quantity` from a Paddle line item, defaulting to 1 when absent/invalid. */
+function readQuantity(item: Record<string, unknown>): number {
+  const q = item.quantity;
+  return typeof q === "number" && Number.isInteger(q) && q > 0 ? q : 1;
+}
+
+/** EVERY line of a one-time transaction: `items[].price.id` + `items[].quantity` (Strix vuln-0005 —
+ * a multi-item cart is ONE transaction carrying N lines; fulfilling only `items[0]` under-grants a
+ * cart the buyer paid for in full). FAILS CLOSED on any unreadable line in a non-empty `items` (money
+ * path): throwing makes `verifyAndParse` return a non-2xx so Paddle RETRIES, versus silently skipping
+ * the line — which would ack the delivery and under-grant a buyer who paid for it, permanently (Greptile
+ * P1). An absent / empty `items` returns [] (the caller maps that to null: nothing to grant — a
+ * genuinely itemless event, NOT a dropped paid line). */
+function readLineItems(
+  obj: Record<string, unknown>,
+): { priceId: string; quantity: number }[] {
+  const items = obj.items;
+  if (!Array.isArray(items)) return [];
+  return items.map((raw): { priceId: string; quantity: number } => {
+    if (typeof raw !== "object" || raw === null) {
+      throw new ValidationError("Paddle line item is not an object");
+    }
+    const item = raw as Record<string, unknown>;
+    const price = item.price;
+    if (typeof price !== "object" || price === null) {
+      throw new ValidationError("Paddle line item is missing its price object");
+    }
+    const priceId = readString((price as Record<string, unknown>).id);
+    if (priceId === "") {
+      throw new ValidationError("Paddle line item is missing its price id");
+    }
+    return { priceId, quantity: readQuantity(item) };
+  });
 }
 
 /** `details.totals.grand_total` — the transaction's charged total, minor units. */
@@ -98,13 +134,17 @@ export function parsePaddleEvent(
         // degenerate event missing it has nothing to anchor a grant's idempotency key on — never a
         // guessed grant.
         if (txnId === "") return null;
+        // Fulfill EVERY paid line, not just items[0] (Strix vuln-0005). A degenerate transaction with
+        // no readable line item has nothing to grant — null rather than a guessed/empty grant.
+        const lineItems = readLineItems(obj);
+        if (lineItems.length === 0) return null;
         return {
           type: "purchase.completed",
           sourceEventId: event.event_id,
           accountId,
           amountTotal: readGrandTotal(obj),
           currency: readString(obj.currency_code, "usd"),
-          priceId: readItemPriceId(obj),
+          lineItems,
           paymentId: txnId,
         };
       }
