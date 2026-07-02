@@ -1,26 +1,41 @@
-// Trigger.dev production driver for the `JobQueue` port (ADR-0018). Two mappings, one factory:
+// Trigger.dev production driver for the `JobQueue` port (ADR-0018, ADR-0205). Two mappings, one
+// factory:
 //
 //   defineTask(name, schema, handler) -> a real Trigger.dev `task()` (the deploy-side worker —
 //     when this module is bundled into a Trigger.dev deploy, `name` becomes the task `id` and
 //     `handler` becomes its `run`, payload-validated against the SAME `.strict()` schema the
-//     in-memory driver uses).
+//     in-memory driver uses). This IS the real consumer — Trigger.dev's hosted platform runs it;
+//     there is no separate local "start consuming" call in the SDK.
 //
-//   enqueue(name, payload) -> `tasks.trigger()` (the app-side call — validates locally first so a
-//     bad payload throws `ValidationError` before it ever leaves the process, then triggers the
-//     run on Trigger.dev's platform).
+//   enqueue(name, payload, options) -> `tasks.trigger()` (the app-side call — validates locally
+//     first so a bad payload throws `ValidationError` before it ever leaves the process, then
+//     triggers the run on Trigger.dev's platform). `options.idempotencyKey` passes straight
+//     through as `trigger()`'s native 3rd-arg option — no derived-id trick needed here, unlike
+//     pg-boss (see `pgboss.ts`).
 //
 // Env-gated: `TRIGGER_SECRET_KEY` / `TRIGGER_API_URL` are read by the CALLER and injected via
 // `config` — never a module-level constant. Calling `createTriggerJobQueue` without a `secretKey`
 // and without an injected `client` throws `ConfigError` immediately (fail closed at construction,
 // not at the first `enqueue`). Tests inject a fake `client` via `config.client`, so this driver
 // never touches the network in `bun test`.
+//
+// Visibility-ledger gap (ADR-0205): this driver does NOT implement `JobLedger` — its return type
+// carries no `getQueueState`. Trigger.dev exposes no local job-state read; the answer is the
+// hosted Runs dashboard, or `runs.retrieve()` against a specific run id from the SDK's `runs`
+// module (a new SDK surface beyond this slice's scope).
 import {
   configure,
   task as defineTriggerTask,
   tasks as triggerTasks,
 } from "@trigger.dev/sdk";
 import { ConfigError, NotFoundError, parseStrict } from "@caisson/kernel";
-import type { JobQueue, TaskDefinition } from "./queue.ts";
+import type {
+  EnqueueOptions,
+  JobConsumer,
+  JobQueue,
+  TaskDefinition,
+  WorkHandle,
+} from "./queue.ts";
 
 /**
  * The minimal surface of the Trigger.dev SDK this driver depends on for the enqueue leg. Real
@@ -28,7 +43,11 @@ import type { JobQueue, TaskDefinition } from "./queue.ts";
  * never hits the network.
  */
 export interface TriggerClient {
-  trigger(taskId: string, payload: unknown): Promise<unknown>;
+  trigger(
+    taskId: string,
+    payload: unknown,
+    options?: { idempotencyKey?: string },
+  ): Promise<unknown>;
 }
 
 export interface TriggerJobQueueConfig {
@@ -45,14 +64,14 @@ export interface TriggerJobQueueConfig {
 
 /**
  * The Trigger.dev `JobQueue` driver. Registers every `task` as a real Trigger.dev task (the
- * deploy-side mapping) and returns a `JobQueue` whose `enqueue` validates against the same
- * registry before triggering a run (the app-side mapping). Matches `createInMemoryQueue`'s
- * factory shape so the two drivers are interchangeable behind the port.
+ * deploy-side mapping) and returns a `JobQueue & JobConsumer` whose `enqueue` validates against
+ * the same registry before triggering a run (the app-side mapping). Matches
+ * `createInMemoryQueue`'s factory shape so the two drivers are interchangeable behind the port.
  */
 export function createTriggerJobQueue(
   tasks: readonly TaskDefinition<unknown>[],
   config: TriggerJobQueueConfig,
-): JobQueue {
+): JobQueue & JobConsumer {
   const registry = new Map<string, TaskDefinition<unknown>>(
     tasks.map((task) => [task.name, task]),
   );
@@ -69,7 +88,11 @@ export function createTriggerJobQueue(
   const client = config.client ?? createSdkClient(config);
 
   return {
-    async enqueue(name: string, payload: unknown): Promise<void> {
+    async enqueue(
+      name: string,
+      payload: unknown,
+      options?: EnqueueOptions,
+    ): Promise<void> {
       const task = registry.get(name);
       if (task === undefined) {
         throw new NotFoundError(`No task registered for "${name}"`, {
@@ -77,7 +100,25 @@ export function createTriggerJobQueue(
         });
       }
       const validated = parseStrict(task.schema, payload);
-      await client.trigger(name, validated);
+      const triggerOptions =
+        options?.idempotencyKey !== undefined
+          ? { idempotencyKey: options.idempotencyKey }
+          : undefined;
+      await client.trigger(name, validated, triggerOptions);
+    },
+
+    async work(name: string): Promise<WorkHandle> {
+      if (!registry.has(name)) {
+        throw new NotFoundError(`No task registered for "${name}"`, {
+          task: name,
+        });
+      }
+      // ponytail: Trigger.dev's real consumer is `defineTriggerTask` above, registered at
+      // construction — there's no local "start consuming" call in the SDK, so work() is a
+      // no-op here for port symmetry only.
+      return {
+        async stop(): Promise<void> {},
+      };
     },
   };
 }

@@ -16,12 +16,20 @@ const grantSchema = strictObject({
 
 /** A fake `TriggerClient` that records every call instead of touching the network. */
 function createFakeClient(): TriggerClient & {
-  readonly calls: ReadonlyArray<{ taskId: string; payload: unknown }>;
+  readonly calls: ReadonlyArray<{
+    taskId: string;
+    payload: unknown;
+    options: { idempotencyKey?: string } | undefined;
+  }>;
 } {
-  const calls: Array<{ taskId: string; payload: unknown }> = [];
+  const calls: Array<{
+    taskId: string;
+    payload: unknown;
+    options: { idempotencyKey?: string } | undefined;
+  }> = [];
   return {
-    async trigger(taskId, payload) {
-      calls.push({ taskId, payload });
+    async trigger(taskId, payload, options) {
+      calls.push({ taskId, payload, options });
       return { id: "run_fake" };
     },
     get calls() {
@@ -44,6 +52,7 @@ describe("trigger.dev job queue", () => {
       {
         taskId: "grant-credits",
         payload: { accountId: "acct_a", amount: 100 },
+        options: undefined,
       },
     ]);
   });
@@ -91,5 +100,50 @@ describe("trigger.dev job queue", () => {
     );
 
     expect(typeof queue.enqueue).toBe("function");
+  });
+});
+
+describe("trigger.dev idempotent enqueue (ADR-0205)", () => {
+  test("passes idempotencyKey straight through as trigger()'s native option", async () => {
+    const client = createFakeClient();
+    const queue = createTriggerJobQueue(
+      [defineTask("grant-credits", grantSchema, async () => {})],
+      { client },
+    );
+
+    await queue.enqueue(
+      "grant-credits",
+      { accountId: "acct_a", amount: 1 },
+      { idempotencyKey: "retry-1" },
+    );
+
+    expect(client.calls).toEqual([
+      {
+        taskId: "grant-credits",
+        payload: { accountId: "acct_a", amount: 1 },
+        options: { idempotencyKey: "retry-1" },
+      },
+    ]);
+  });
+});
+
+describe("trigger.dev work() (ADR-0205)", () => {
+  test("resolves a no-op WorkHandle for a registered task — Trigger.dev's real consumer is the deploy-side task", async () => {
+    const client = createFakeClient();
+    const queue = createTriggerJobQueue(
+      [defineTask("grant-credits", grantSchema, async () => {})],
+      { client },
+    );
+
+    const handle = await queue.work("grant-credits");
+    expect(typeof handle.stop).toBe("function");
+    await expect(handle.stop()).resolves.toBeUndefined();
+  });
+
+  test("rejects an unregistered task name with NotFoundError", async () => {
+    const client = createFakeClient();
+    const queue = createTriggerJobQueue([], { client });
+
+    await expect(queue.work("missing")).rejects.toThrow(NotFoundError);
   });
 });
