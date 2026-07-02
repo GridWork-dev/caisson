@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/agent-dev",
+  "name": "@caisson/agent-runner",
   "version": "0.1.0",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
@@ -7,7 +7,7 @@
     "access": "restricted",
     "registry": "https://npm.pkg.github.com"
   },
-  "description": "Agentic-Dev edition: the composition of the governed engine-neutral agent kernel + local hybrid memory + a thin multi-harness emitter (ADR-0065/0066/0067). Composes base seams down-only — no vendor SDK, no LLM call, no harness substrate.",
+  "description": "Sandboxed governed agent runner for Agentic-Dev: spawn a headless agent CLI in an isolated worktree with a from-scratch scrubbed env (never spreads process.env), stream the transcript to a durable .jsonl, and parse it into a structured run report. ADR-0186.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -21,12 +21,8 @@
     "test": "bun test ./src"
   },
   "dependencies": {
-    "@caisson/agent-kernel": "workspace:*",
-    "@caisson/agent-runner": "workspace:*",
-    "@caisson/ai-config": "workspace:*",
     "@caisson/kernel": "workspace:*",
-    "@caisson/local-store": "workspace:*",
-    "@caisson/tool-exec": "workspace:*"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
