@@ -18,82 +18,14 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import type { ProviderV2 } from "@ai-sdk/provider";
-import { ValidationError } from "@caisson/kernel";
+import {
+  assertSafePublicUrl,
+  ssrfGuardedFetch,
+  ValidationError,
+} from "@caisson/kernel";
 import type { AiSettings, ProviderConfig } from "@caisson/ai-config";
 
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
-
-/**
- * SSRF guard for a buyer-supplied provider `baseUrl` (a lane config / per-tenant BYOK value). The
- * value flows straight into the SDK adapter's outbound fetch, so an unguarded `http://169.254.169.254`
- * (cloud metadata), a loopback/private host, or a `file:`/`data:` scheme would let a misconfigured or
- * hostile lane reach internal services. Mirrors the local-ai egress guard's floor — https-only, no
- * credentials-in-URL — but keeps a DENYLIST, not a host allowlist: buyers may self-host a gateway on
- * any PUBLIC https host; they just cannot point a lane at a private/loopback/link-local/metadata
- * address. Applied once per {@link providerFor}, so every provider path (incl. openrouter's default)
- * inherits it.
- *
- * @throws ValidationError on a malformed URL, a non-https scheme, credentials in the URL, or a
- *   private-range / localhost / `.local` host.
- */
-function assertSafeBaseUrl(baseUrl: string): void {
-  let url: URL;
-  try {
-    url = new URL(baseUrl);
-  } catch {
-    throw new ValidationError("provider baseUrl rejected: malformed URL");
-  }
-  if (url.protocol !== "https:") {
-    // https only — blocks http:, and data:/file:/javascript: smuggling. Never auto-prepend a scheme.
-    throw new ValidationError("provider baseUrl rejected: non-https scheme", {
-      scheme: url.protocol,
-    });
-  }
-  if (url.username !== "" || url.password !== "") {
-    throw new ValidationError("provider baseUrl rejected: credentials in URL");
-  }
-  if (isPrivateHost(url.hostname)) {
-    // The WHATWG parser canonicalizes decimal/octal/hex/short-form IPv4 to dotted-quad before this
-    // check, so those encodings are covered for free.
-    // ponytail: literal-host denylist — a PUBLIC hostname that RESOLVES to a private IP (DNS
-    // rebinding) is not caught here; add resolve-time pinning only if a deployment's threat model
-    // needs it.
-    throw new ValidationError(
-      "provider baseUrl rejected: private/loopback host",
-      {
-        host: url.hostname,
-      },
-    );
-  }
-}
-
-/** True if `hostname` (as returned by `URL.hostname`) is a loopback/private/link-local/metadata literal. */
-function isPrivateHost(hostname: string): boolean {
-  const host = hostname.toLowerCase();
-  if (host === "localhost" || host.endsWith(".local")) return true;
-  if (host.startsWith("[") && host.endsWith("]")) {
-    const v6 = host.slice(1, -1);
-    return (
-      v6 === "::1" || // loopback
-      v6 === "::" || // unspecified
-      /^f[cd]/.test(v6) || // fc00::/7 unique-local
-      /^fe[89ab]/.test(v6) || // fe80::/10 link-local
-      v6.startsWith("::ffff:") // IPv4-mapped — never a real provider host, reject wholesale
-    );
-  }
-  const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
-  if (m === null) return false;
-  const a = Number(m[1]);
-  const b = Number(m[2]);
-  return (
-    a === 0 || // 0.0.0.0/8 (incl. 0.0.0.0)
-    a === 127 || // 127/8 loopback
-    a === 10 || // 10/8 private
-    (a === 172 && b >= 16 && b <= 31) || // 172.16/12 private
-    (a === 192 && b === 168) || // 192.168/16 private
-    (a === 169 && b === 254) // 169.254/16 link-local (incl. cloud metadata 169.254.169.254)
-  );
-}
 
 /**
  * Build the real provider instance for one lane config. The key is `keyOverride` when supplied (the
@@ -110,16 +42,29 @@ export function providerFor(
     (cfg.apiKeyEnv !== undefined ? process.env[cfg.apiKeyEnv] : undefined);
   const key = apiKey !== undefined ? { apiKey } : {};
   // SSRF guard once, before the switch, so every provider path (incl. openrouter's `cfg.baseUrl ??`
-  // default and the `local`/`ollama` self-hosted hosts) inherits it.
-  if (cfg.baseUrl !== undefined) assertSafeBaseUrl(cfg.baseUrl);
+  // default and the `local`/`ollama` self-hosted hosts) inherits it. The kernel guard is the shared
+  // policy source (@caisson/kernel/ssrf) — https-only, no-creds, private/loopback DENYLIST.
+  if (cfg.baseUrl !== undefined) assertSafePublicUrl(cfg.baseUrl);
   const base = cfg.baseUrl !== undefined ? { baseURL: cfg.baseUrl } : {};
+  // For a CUSTOM (config-supplied) baseUrl, wrap the adapter's outbound fetch with the resolve-time
+  // SSRF re-check (DNS-rebinding defense, Strix vuln-0004) — the SDK owns the fetch, so this is the
+  // only seam to resolve the host at call time. Default provider hosts are trusted constants and skip
+  // the per-call DNS lookup (empty spread). Bedrock is AWS-SigV4 (not a fetch-configurable adapter),
+  // so it keeps the sync literal guard above only.
+  // The SDK's `fetch` option is typed `typeof globalThis.fetch` (which includes the `preconnect`
+  // static); the kernel guard is a plain fetch wrapper without it (kernel stays SDK-type-agnostic —
+  // Gate-2). The cast is safe: a custom `fetch` the adapter calls per-request, never `.preconnect`.
+  const guarded =
+    cfg.baseUrl !== undefined
+      ? { fetch: ssrfGuardedFetch as typeof fetch }
+      : {};
   switch (cfg.provider) {
     case "openai":
-      return createOpenAI({ ...key, ...base });
+      return createOpenAI({ ...key, ...base, ...guarded });
     case "anthropic":
-      return createAnthropic({ ...key, ...base });
+      return createAnthropic({ ...key, ...base, ...guarded });
     case "google":
-      return createGoogleGenerativeAI({ ...key, ...base });
+      return createGoogleGenerativeAI({ ...key, ...base, ...guarded });
     // The three OpenAI-COMPATIBLE (not OpenAI) backends ride `createOpenAICompatible` (ADR-0201):
     // its `languageModel()` IS the chat model, pinning live calls to `/chat/completions` — where
     // `createOpenAI` would default to the v5 Responses API (see the file header). `includeUsage`
@@ -129,6 +74,7 @@ export function providerFor(
       return createOpenAICompatible({
         name: "openrouter",
         ...key,
+        ...guarded,
         baseURL: cfg.baseUrl ?? OPENROUTER_BASE_URL,
         includeUsage: true,
       });
@@ -148,6 +94,7 @@ export function providerFor(
       return createOpenAICompatible({
         name: cfg.provider,
         apiKey: apiKey ?? "local",
+        ...guarded,
         baseURL: cfg.baseUrl,
         includeUsage: true,
       });
@@ -172,6 +119,7 @@ export function providerFor(
       return createAzure({
         ...key,
         ...base,
+        ...guarded,
         ...(cfg.apiVersion !== undefined ? { apiVersion: cfg.apiVersion } : {}),
       });
   }

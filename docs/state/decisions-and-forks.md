@@ -252,12 +252,14 @@ SigNoz or SigNoz Cloud Teams ($49). PostHog error-tracking stays OFF (OTLP owns 
   (canonical ids `local-ai`/`agent-dev`; `bundle` ⇒ all four; `Customer` umbrella always). Role removal
   on refund/cancel stays manual (deliberate non-goal).
 
-**Resolved 2026-07-02 (edition-tails-ops picker — LOCKED as ADR-0204–0208):**
+**Resolved 2026-07-02 (edition-tails-ops picker — LOCKED as ADR-0205–0209; the transports ADR
+was drafted 0204 and renumbered to 0209 at merge, the Strix remediation ADR having claimed 0204
+on main first — ADR-0088 second-merger-renumbers):**
 
 - **C5 local-ai RentedTransport drivers → BUILD BOTH Azure + Bedrock now** (over the Azure-first rec);
   Bedrock SigV4 hand-rolled on `node:crypto` (no `@aws-sdk`/`@smithy` dep — Gate-2 boundary); **Ollama
   declared out-of-scope for the rented seam** (self-hosted ≠ rented; ai-kit's `ollama` case owns it) →
-  **ADR-0204**. Closes ADR-0160's deferred Surface-B bullet.
+  **ADR-0209**. Closes ADR-0160's deferred Surface-B bullet.
 - **Compliance edition runtime composition → COMPOSE like ADR-0199** (over the manifest-only rec):
   `@caisson/alerting` + `@caisson/retention-runner` become real deps, re-exported + factory-composed
   through `packages/compliance/src/index.ts` → **ADR-0205**.
@@ -615,3 +617,20 @@ rather than a standalone phase, and copy/SEO passes last.
 "lift" phase's claim on 0186-0188 — the live shipped ceiling at authoring time is **0178**. If the lift
 phase lands 0186-0188 first, this whole block renumbers by-meaning at merge (the repo's standard pattern
 for concurrent-track ADR collisions, per the 0108→0110/0109→0113 P6 precedent).
+
+## Closed by the 2026-07-02 security-billing-hardening (Strix) picker round (operator-locked)
+
+Four forks surfaced verifying the six Strix pentest findings (`docs/security/strix-findings-2026-07-01.md`)
+against the code, all operator-locked 2026-07-02 via AskUserQuestion. Two findings were clear real bugs
+with no fork (vuln-0005 multi-item fulfillment, vuln-0006 BYOK owner-gate); one was a false-positive at
+HEAD (vuln-0002). Single ADR body: **ADR-0204** (supersedes ADR-0140's admin-auth posture). **Ceiling → 0204.**
+
+| Fork                                   | Decision                                                                                                                                                                | ADR          |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| **vuln-0004 — SSRF fix strategy**      | **Resolve + recheck IPs** (not connect-time pinning — Bun fetch can't pin; not an allowlist — breaks the any-public-host promise). One shared kernel guard, both sinks. | **ADR-0204** |
+| **vuln-0001 — rate-limit trusted IP**  | **Trust `X-Real-IP` + a header-independent global cap** (drop the spoofable `x-envoy-external-address`); Cloudflare-in-front deferred as DEPLOY-class.                  | **ADR-0204** |
+| **vuln-0003 — admin auth disposition** | **Add a fail-closed CF-Access-JWT middleware** (aud pinned to the admin app) — supersedes ADR-0140's edge-alone posture; closes the grey-origin bypass in code.         | **ADR-0204** |
+| **vuln-0006 — compliance attestation** | **Owner-only** (attest + clear) — attestations feed the customer OSCAL export, so seats can't fabricate/clear them; seats see status read-only.                         | **ADR-0204** |
+
+**Deferred (flagged, not auto-decided):** partial-refund of one line in a multi-item cart stays a
+full-refund-only no-op (ADR-0113) — a per-line-revoke posture is a future operator fork.

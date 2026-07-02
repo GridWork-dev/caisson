@@ -1,4 +1,4 @@
-// src/inference/sigv4.ts — hand-rolled AWS Signature Version 4 on node:crypto (ADR-0204). The
+// src/inference/sigv4.ts — hand-rolled AWS Signature Version 4 on node:crypto (ADR-0209). The
 // Gate-2 SDK-import boundary confines vendor SDKs to ai-config/ai-kit, so the Bedrock rented
 // transport signs its own requests: the deterministic HMAC-SHA256 chain (kDate → kRegion →
 // kService → kSigning) over a canonical request, exactly as the AWS SigV4 spec defines it. The

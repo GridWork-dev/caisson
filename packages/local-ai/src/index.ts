@@ -97,11 +97,11 @@ export {
   createOpenRouterRentedTransport,
   type OpenRouterRentedTransportConfig,
 } from "./inference/openrouter-transport.ts";
-// The enterprise rented drivers (ADR-0204, closing the ADR-0160 Surface-B defer): Azure OpenAI
+// The enterprise rented drivers (ADR-0209, closing the ADR-0160 Surface-B defer): Azure OpenAI
 // (api-key auth, per-deployment routes + api-version) and AWS Bedrock (hand-rolled SigV4 on
 // node:crypto — vector-pinned, no @aws-sdk; InvokeModel embed + Converse complete). Same
 // egress-guard chokepoint, strict re-validation, and integer metering as the OpenRouter template.
-// Ollama stays OUT of the rented seam per ADR-0204 (self-hosted, unmetered — not "rented").
+// Ollama stays OUT of the rented seam per ADR-0209 (self-hosted, unmetered — not "rented").
 export {
   createAzureOpenAIRentedTransport,
   type AzureOpenAIRentedTransportConfig,

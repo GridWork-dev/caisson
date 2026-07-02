@@ -34,7 +34,7 @@ const DEFAULT_BASE_URL = "https://openrouter.ai/api/v1";
 
 // ── Lenient wire schemas (untrusted third-party JSON — unknown fields pass, see the file header) ──
 // Exported (file-level, not via the barrel): this is the OpenAI-compatible dialect, and the Azure
-// OpenAI rented transport (ADR-0204) speaks the exact same wire — one schema set, two transports.
+// OpenAI rented transport (ADR-0209) speaks the exact same wire — one schema set, two transports.
 
 export const wireUsageSchema = z
   .object({

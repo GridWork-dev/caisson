@@ -23,7 +23,7 @@
     on the target tenant's WORM-anchored chain; `impersonation_session` migration (RLS + column-scoped
     GRANT); the impersonation evidence collector cited by both the SOC2 and HIPAA plans.
 
-- Azure OpenAI and AWS Bedrock RentedTransport drivers beside OpenRouter (ADR-0204): Bedrock signs invoke/converse with a hand-rolled, vector-pinned SigV4 on node:crypto (no AWS SDK — Gate-2); Azure uses api-key auth on the GA deployments surface. Both run through the egress-guard chokepoint with strict-mapped wire schemas and optional self-skipping live probes. Ollama stays out of the rented seam by design.
+- Azure OpenAI and AWS Bedrock RentedTransport drivers beside OpenRouter (ADR-0209): Bedrock signs invoke/converse with a hand-rolled, vector-pinned SigV4 on node:crypto (no AWS SDK — Gate-2); Azure uses api-key auth on the GA deployments surface. Both run through the egress-guard chokepoint with strict-mapped wire schemas and optional self-skipping live probes. Ollama stays out of the rented seam by design.
 - 9483a36: Initial public release (0.1.0) — publish-readiness flip (ADR-0111). The open Base substrate (Apache-2.0, tier `oss`) publishes to public npm; the commercial editions/primitives/generator (tier `paid`) publish to GitHub Packages restricted. Versions were aligned to 0.1.0 in lockstep with the registry ledger; this changeset records the 0.1.0 release and seeds the changeset-presence gate (ADR-0021).
 
 ### Patch Changes

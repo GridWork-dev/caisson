@@ -1,10 +1,10 @@
-// src/inference/bedrock-transport.ts — the AWS Bedrock RENTED transport (ADR-0204, mapping the
+// src/inference/bedrock-transport.ts — the AWS Bedrock RENTED transport (ADR-0209, mapping the
 // ADR-0064 T20 `RentedTransport` port — threat TM-RENT). Same discipline as the OpenRouter
 // template (ADR-0201), but AWS-native on both axes:
 //
 //   AUTH  — SigV4, hand-rolled on node:crypto (`sigv4.ts`, pinned against the documented AWS test
 //           vectors). No @aws-sdk/@smithy dependency: the Gate-2 SDK-import boundary confines
-//           vendor SDKs to ai-config/ai-kit (ADR-0204). Signed headers per request:
+//           vendor SDKs to ai-config/ai-kit (ADR-0209). Signed headers per request:
 //           content-type;host;x-amz-content-sha256;x-amz-date (+ x-amz-security-token for STS).
 //   WIRE  — bedrock-runtime's two model-agnostic-enough routes:
 //             embed    → POST /model/{embeddingModelId}/invoke   (Titan-style body:
@@ -56,7 +56,7 @@ const converseWireSchema = z.object({
   usage: z.object({ totalTokens: z.number().optional() }).optional(),
 });
 
-/** Config for the Bedrock rented transport (ADR-0204). Explicit options only — no env reads. */
+/** Config for the Bedrock rented transport (ADR-0209). Explicit options only — no env reads. */
 export interface BedrockRentedTransportConfig {
   /** The egress guard — every request routes through `guard.fetchAs("rented-backend", …)`,
    *  re-gating the host AND its sanctioned sink kind per call. */
@@ -85,7 +85,7 @@ export interface BedrockRentedTransportConfig {
 }
 
 /**
- * Build a {@link RentedTransport} over AWS Bedrock (ADR-0204). Drops into
+ * Build a {@link RentedTransport} over AWS Bedrock (ADR-0209). Drops into
  * `RentedInferenceBackend` wherever the OpenRouter transport would — same guard gate, same strict
  * re-validation, same integer metering; only auth (SigV4) and wire dialect (InvokeModel/Converse)
  * differ.

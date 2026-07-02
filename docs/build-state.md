@@ -97,9 +97,11 @@
 > `impersonation_session` migration (RLS + column-scoped GRANT), and an impersonation evidence collector
 > cited by both the SOC2 and HIPAA plans.
 
-> **EDITION TAILS & OPS HARDENING (2026-07-02, latest — ceiling `0208`):** branch
-> `chore/edition-tails-ops` closed the post-go-live triage backlog per the `ADR-0204`–`0208` picker
-> locks. BUILT: `local-ai` **Azure OpenAI + AWS Bedrock RentedTransport drivers** (`ADR-0204` —
+> **EDITION TAILS & OPS HARDENING (2026-07-02, latest — ceiling `0209`):** branch
+> `chore/edition-tails-ops` closed the post-go-live triage backlog per the `ADR-0205`–`0209` picker
+> locks (drafted 0204–0208; the transports ADR renumbered 0204→0209 at merge — the Strix remediation
+> ADR claimed 0204 on main first, ADR-0088). BUILT: `local-ai` **Azure OpenAI + AWS Bedrock
+> RentedTransport drivers** (`ADR-0209` —
 > hand-rolled vector-pinned SigV4 on `node:crypto`, egress-guarded, self-skipping live probes; Ollama
 > out of the rented seam by design); `compliance` **runtime composition** of `alerting` +
 > `retention-runner` (`ADR-0205`, closing the `ADR-0178` manifest-vs-composition gap); `support-bot`

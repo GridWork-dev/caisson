@@ -21,10 +21,16 @@ export interface BucketConfig {
   readonly windowMs: number;
 }
 
-/** Validated limiter config. `query` is the expensive ($/hit) surface and gets the stricter budget. */
+/** Validated limiter config. `query` is the expensive ($/hit) surface and gets the stricter budget.
+ * `globalQuery`/`globalStatic` are the header-INDEPENDENT service-wide ceilings (Strix vuln-0001
+ * defense-in-depth): a per-IP key is only as trustworthy as the IP signal, so a second bucket bounds
+ * total throughput regardless of the derived IP — set generously (a multiple of the per-IP burst) so
+ * it trips only under a genuine flood, never legitimate multi-client traffic. */
 export interface RateLimitConfig {
   readonly query: BucketConfig;
   readonly static: BucketConfig;
+  readonly globalQuery: BucketConfig;
+  readonly globalStatic: BucketConfig;
   /** Hard cap on distinct (bucket,ip) entries held in memory before prune evicts. */
   readonly maxEntries: number;
 }
@@ -39,7 +45,11 @@ export interface RateDecision {
 }
 
 export interface RateLimiter {
+  /** Charge the per-client (derived-IP) bucket. */
   check(bucket: RateBucket, ip: string): RateDecision;
+  /** Charge the header-independent service-wide bucket — the flood ceiling that holds even when the
+   * per-IP identity is spoofed or collapses to the shared "unknown" key (Strix vuln-0001). */
+  checkGlobal(bucket: RateBucket): RateDecision;
 }
 
 /**
@@ -56,6 +66,9 @@ const EnvSchema = z
     queryWindowSec: PosInt.default(60),
     staticBurst: PosInt.default(120),
     staticWindowSec: PosInt.default(60),
+    // The service-wide ceiling = per-IP burst × this factor (default 50). Trips only under a flood
+    // (distributed or IP-spoofed); a legitimate single client is bounded by the per-IP budget first.
+    globalFactor: PosInt.default(50),
     maxEntries: PosInt.default(10_000),
   })
   .strict();
@@ -74,6 +87,7 @@ export function loadRateLimitConfig(
     queryWindowSec: "DOCS_RL_QUERY_WINDOW_SEC",
     staticBurst: "DOCS_RL_STATIC_BURST",
     staticWindowSec: "DOCS_RL_STATIC_WINDOW_SEC",
+    globalFactor: "DOCS_RL_GLOBAL_FACTOR",
     maxEntries: "DOCS_RL_MAX_ENTRIES",
   };
   for (const [key, envName] of Object.entries(map)) {
@@ -84,6 +98,14 @@ export function loadRateLimitConfig(
   return {
     query: { capacity: c.queryBurst, windowMs: c.queryWindowSec * 1000 },
     static: { capacity: c.staticBurst, windowMs: c.staticWindowSec * 1000 },
+    globalQuery: {
+      capacity: c.queryBurst * c.globalFactor,
+      windowMs: c.queryWindowSec * 1000,
+    },
+    globalStatic: {
+      capacity: c.staticBurst * c.globalFactor,
+      windowMs: c.staticWindowSec * 1000,
+    },
     maxEntries: c.maxEntries,
   };
 }
@@ -101,6 +123,8 @@ interface Entry {
 export class TokenBucketLimiter implements RateLimiter {
   readonly #query: BucketConfig;
   readonly #static: BucketConfig;
+  readonly #globalQuery: BucketConfig;
+  readonly #globalStatic: BucketConfig;
   readonly #maxEntries: number;
   readonly #now: () => number;
   readonly #entries = new Map<string, Entry>();
@@ -108,14 +132,26 @@ export class TokenBucketLimiter implements RateLimiter {
   constructor(config: RateLimitConfig, now: () => number = Date.now) {
     this.#query = config.query;
     this.#static = config.static;
+    this.#globalQuery = config.globalQuery;
+    this.#globalStatic = config.globalStatic;
     this.#maxEntries = config.maxEntries;
     this.#now = now;
   }
 
   check(bucket: RateBucket, ip: string): RateDecision {
     const cfg = bucket === "query" ? this.#query : this.#static;
+    return this.#charge(`${bucket}|${ip}`, cfg);
+  }
+
+  checkGlobal(bucket: RateBucket): RateDecision {
+    const cfg = bucket === "query" ? this.#globalQuery : this.#globalStatic;
+    // A single fixed key per bucket — every request shares it, so it bounds aggregate throughput
+    // regardless of the derived client IP (Strix vuln-0001 defense-in-depth).
+    return this.#charge(`global|${bucket}`, cfg);
+  }
+
+  #charge(key: string, cfg: BucketConfig): RateDecision {
     const now = this.#now();
-    const key = `${bucket}|${ip}`;
     let entry = this.#entries.get(key);
     if (entry === undefined || now >= entry.resetAt) {
       entry = { tokens: cfg.capacity, resetAt: now + cfg.windowMs };
@@ -149,26 +185,18 @@ export class TokenBucketLimiter implements RateLimiter {
 }
 
 /**
- * Derive the client IP. TRUST MODEL (corrected — the leftmost-XFF read this replaces was
- * client-spoofable): `X-Forwarded-For` is a comma-appended list a CLIENT can seed with arbitrary
- * leftmost entries of its own choosing before the request ever reaches Railway's edge — an
- * attacker rotates a fake leftmost hop on every request to mint a fresh rate-limit bucket per
- * request, defeating the limiter entirely. Prefer Railway's own `X-Envoy-External-Address`
- * (single-value, edge-set, not attacker-appendable) when present. Otherwise fall back to the
- * RIGHTMOST `X-Forwarded-For` hop — the entry the edge proxy itself appended for the connection it
- * directly observed, never a client-supplied one — and NEVER the leftmost. If neither is present,
- * all such requests collapse onto one shared "unknown" bucket — conservative (collectively
- * throttled) rather than fail-open per request.
+ * Derive the client IP for the rate-limit bucket key. TRUST MODEL (Strix vuln-0001): the ONLY
+ * client-IP header Railway's edge OVERWRITES and the client cannot spoof is `X-Real-IP` — Railway's
+ * proxy always sets it to the true connecting IP, and the container cannot be reached off-edge to
+ * inject one (Railway proxy contract). `X-Envoy-External-Address` and `X-Forwarded-For` are
+ * client-appendable — the previous code trusted `X-Envoy-External-Address` first, and the pentest
+ * bypassed the limiter by rotating that header to mint a fresh bucket per request (25 rotated-header
+ * requests, none 429). Neither is trusted here anymore. If `X-Real-IP` is absent, all such requests
+ * collapse onto one shared "unknown" bucket — conservative (collectively throttled), never fail-open
+ * per request; the header-independent `checkGlobal` ceiling backstops the collapse.
  */
 export function clientIp(req: Request): string {
-  const envoy = req.headers.get("x-envoy-external-address")?.trim();
-  if (envoy !== undefined && envoy.length > 0) return envoy;
-  const xff = req.headers.get("x-forwarded-for");
-  if (xff === null) return "unknown";
-  const hops = xff
-    .split(",")
-    .map((hop) => hop.trim())
-    .filter((hop) => hop.length > 0);
-  const last = hops[hops.length - 1];
-  return last !== undefined ? last : "unknown";
+  const realIp = req.headers.get("x-real-ip")?.trim();
+  if (realIp !== undefined && realIp.length > 0) return realIp;
+  return "unknown";
 }

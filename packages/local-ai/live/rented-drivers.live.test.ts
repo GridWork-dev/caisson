@@ -1,5 +1,5 @@
 // live/rented-drivers.live.test.ts — LIVE proofs of the Azure OpenAI + Bedrock rented transports
-// (ADR-0204, over the ADR-0064 T20 seam — threat TM-RENT). Lives OUTSIDE ./src so the default
+// (ADR-0209, over the ADR-0064 T20 seam — threat TM-RENT). Lives OUTSIDE ./src so the default
 // suite (`bun test ./src`) and CI's secret-free runners never run it; runs only via
 // `bun run test:live` AND each suite self-skips without its provider credentials (the ADR-0201
 // live-test convention, mirroring live/rented.live.test.ts).

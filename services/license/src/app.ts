@@ -131,11 +131,23 @@ export function createApp(
    */
   const rateLimited = (bucket: RateBucket, req: Request): Response | null => {
     try {
+      // Per-IP FIRST, so per-IP abuse stays isolated to the abuser's own bucket. Only a per-IP-ALLOWED
+      // request then charges the header-independent service-wide ceiling (Strix vuln-0001 defense-in-
+      // depth) — charging global first would let one throttled IP drain it and 429 everyone else
+      // (self-DoS amplification). Deny if EITHER trips.
       const decision = deps.limiter.check(bucket, clientIp(req));
-      if (decision.allowed) return null;
-      return text("rate limit exceeded", 429, {
-        "Retry-After": String(decision.retryAfterSec),
-      });
+      if (!decision.allowed) {
+        return text("rate limit exceeded", 429, {
+          "Retry-After": String(decision.retryAfterSec),
+        });
+      }
+      const global = deps.limiter.checkGlobal(bucket);
+      if (!global.allowed) {
+        return text("rate limit exceeded", 429, {
+          "Retry-After": String(global.retryAfterSec),
+        });
+      }
+      return null;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       process.stderr.write(
