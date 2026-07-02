@@ -5,6 +5,8 @@
 //   - atomic rotation: encrypted key + display metadata written in one tenant transaction.
 // BYOK is FREE (ADR-0182) — no credit debit, no cost preview.
 import { NextResponse } from "next/server";
+import { assertCanManageMembers } from "@caisson/auth";
+import { AuthzError } from "@caisson/kernel";
 import { getSession } from "@/lib/auth";
 import { ByokSubmitBody, readKeyStatuses, submitTenantKey } from "@/lib/byok";
 
@@ -24,6 +26,19 @@ export async function POST(request: Request): Promise<NextResponse> {
   const session = await getSession();
   if (session === null) {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+  }
+
+  // Owner-only: the org's BYOK provider key is a single shared, org-wide credential — a `seat`
+  // rotating it could DoS the org's inference or route it through an attacker-controlled key
+  // (Strix vuln-0006). Same owner-gate ADR-0176 mandates for shared/billing org resources and the
+  // members path already uses. GET stays open — it returns masked metadata only, never the key.
+  try {
+    assertCanManageMembers(session.role);
+  } catch (err) {
+    if (err instanceof AuthzError) {
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
+    throw err;
   }
 
   // Parse JSON defensively — a malformed body is a 400, never a 500.
