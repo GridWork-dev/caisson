@@ -5,8 +5,17 @@
 // embeddings surface (no prompt-registry, no guardrails — out of this SPEC's scope).
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import { newTestPg, type TestPg } from "@caisson/testing";
-import { CREDIT_SCHEMA_SQL, balance, grant } from "@caisson/credits";
-import { InsufficientCreditsError } from "@caisson/kernel";
+import {
+  CREDIT_ROUNDING_MIGRATION_SQL,
+  CREDIT_SCHEMA_SQL,
+  balance,
+  grant,
+} from "@caisson/credits";
+import {
+  InsufficientCreditsError,
+  asCredits,
+  asMicroUsdPerCredit,
+} from "@caisson/kernel";
 import {
   AI_METER_SCHEMA_SQL,
   SPEND_POLICY_TABLE,
@@ -32,7 +41,7 @@ const METER: MeterConfig = {
       outputPerMTok: 2_000_000,
     },
   },
-  conversion: { microUsdPerCredit: 100 },
+  conversion: { microUsdPerCredit: asMicroUsdPerCredit(100) },
   now: new Date("2026-07-02T12:00:00Z"),
 };
 
@@ -106,6 +115,7 @@ async function freshSchema(): Promise<void> {
       .join("\n"),
   );
   await tp.exec(CREDIT_SCHEMA_SQL);
+  await tp.exec(CREDIT_ROUNDING_MIGRATION_SQL);
   await tp.exec(AI_METER_SCHEMA_SQL);
 }
 
@@ -113,7 +123,7 @@ async function seed(amount: number): Promise<void> {
   await withTenant(tp.pg, A, (tx) =>
     grant(tx, {
       accountId: A,
-      amount,
+      amount: asCredits(amount),
       eventType: "purchase",
       sourceEventId: "seed",
     }),
