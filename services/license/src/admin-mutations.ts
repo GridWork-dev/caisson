@@ -25,10 +25,11 @@ import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { AuditChainStore } from "@caisson/audit-worm";
 import { balance, debit, grant } from "@caisson/credits";
-import { asCredits, type JsonValue } from "@caisson/kernel";
+import { asCredits, NotFoundError, type JsonValue } from "@caisson/kernel";
 import {
   buildAdminWritePolicySql,
   withAdminWrite,
+  type TenantExecutor,
   type Transactor,
 } from "@caisson/tenancy-rls";
 import { insertAdminActionLog, type AdminAction } from "./admin-audit-log.ts";
@@ -49,6 +50,10 @@ export const ADMIN_MUTATION_PROVISION_SQL = [
   buildAdminWritePolicySql("entitlement_grant"),
   buildAdminWritePolicySql("credit_wallet"),
   buildAdminWritePolicySql("credit_event"),
+  // Read-only existence check (CAISSON-9): `account_member` is the base @caisson/auth table, always
+  // carrying at least one row per real account (`ensurePersonalAccount` on first sign-in, ADR-0176) —
+  // admin_write needs cross-tenant SELECT on it to reject a comp/adjust to a nonexistent id.
+  buildAdminWritePolicySql("account_member"),
 ].join("\n");
 
 /** The re-served token an injected `/issue` proxy returns (Fork AM-5); never carries the bearer. */
@@ -211,6 +216,28 @@ async function appendWorm(
   }
 }
 
+/**
+ * Fail closed on a nonexistent target account (CAISSON-9). `account_member` always carries at least
+ * one row for a real account (the personal `account_id == user_id` row `ensurePersonalAccount` writes
+ * at first sign-in, ADR-0176) — an id with no row is a typo or an account that never signed up. Runs
+ * INSIDE the caller's `withAdminWrite` transaction, so the thrown `NotFoundError` rolls back the WHOLE
+ * mutation before any entitlement/credit row is written — never a ghost grant to nobody.
+ */
+async function assertAccountExists(
+  tx: TenantExecutor,
+  accountId: string,
+): Promise<void> {
+  const r = await tx.query<{ exists: boolean }>(
+    `SELECT EXISTS(SELECT 1 FROM account_member WHERE account_id = $1) AS exists`,
+    [accountId],
+  );
+  if (r.rows[0]?.exists !== true) {
+    throw new NotFoundError("target account does not exist", {
+      targetAccountId: accountId,
+    });
+  }
+}
+
 export interface EntitlementMutationResult {
   targetAccountId: string;
   before: string[];
@@ -226,6 +253,7 @@ export async function grantEntitlementAdmin(
   input: GrantEntitlementInput,
 ): Promise<EntitlementMutationResult> {
   const result = await withAdminWrite(deps.db, async (tx) => {
+    await assertAccountExists(tx, input.targetAccountId);
     const before = await readEntitlements(tx, input.targetAccountId);
     const changed = await grantAdminComp(tx, {
       accountId: input.targetAccountId,
@@ -308,6 +336,7 @@ export async function adjustCreditsAdmin(
   input: AdjustCreditsInput,
 ): Promise<CreditAdjustResult> {
   const result = await withAdminWrite(deps.db, async (tx) => {
+    await assertAccountExists(tx, input.targetAccountId);
     const balanceBefore = await balance(tx, input.targetAccountId);
     const idempotencyKey = randomUUID();
     let balanceAfter = balanceBefore;
