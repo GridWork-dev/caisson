@@ -257,7 +257,7 @@ export default function PricingPage() {
                 }}
               >
                 Take exactly the capability you need — field encryption, token
-                metering, on-device search — onto your own base. 14 modules,
+                metering, on-device search — onto your own base. 15 modules,
                 priced for what each one does.
               </p>
               <div style={{ marginTop: "var(--cs-space-6)" }}>

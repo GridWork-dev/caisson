@@ -81,8 +81,8 @@ describe("the Everything bundle", () => {
 });
 
 describe("MODULE_PRICES", () => {
-  test("lists exactly 14 modules", () => {
-    expect(MODULE_PRICES.length).toBe(14);
+  test("lists exactly 15 modules", () => {
+    expect(MODULE_PRICES.length).toBe(15);
   });
 
   test("module ids are unique", () => {
