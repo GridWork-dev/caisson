@@ -19,6 +19,9 @@ const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 // roadmap edition). POSTs to the Pages Function (Resend Segments, server-side). Fires Plausible.
 export function UpdatesForm({ source = "site" }: { source?: string }) {
   const [email, setEmail] = useState("");
+  // Affirmative consent (security audit LOW follow-up, P1 queue) — an unchecked box blocks
+  // submission; the checkbox is the opt-in, the footnote below just restates it in prose.
+  const [consent, setConsent] = useState(false);
   // Honeypot: humans leave this blank; bots fill it. Silently no-ops on submit if non-empty.
   const [honeyPot, setHoneyPot] = useState("");
   const [state, setState] = useState<State>("idle");
@@ -61,6 +64,9 @@ export function UpdatesForm({ source = "site" }: { source?: string }) {
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (state === "loading") return;
+    // Affirmative consent required — the browser's native `required` on the checkbox already
+    // blocks this, this is the JS-submit-path backstop.
+    if (!consent) return;
     // Honeypot triggered — silently discard without surfacing an error.
     if (honeyPot) {
       setState("ok");
@@ -180,11 +186,34 @@ export function UpdatesForm({ source = "site" }: { source?: string }) {
           />
         </>
       )}
+      <label
+        style={{
+          flexBasis: "100%",
+          display: "flex",
+          alignItems: "flex-start",
+          gap: "var(--cs-space-2)",
+          fontSize: "var(--cs-text-xs)",
+        }}
+      >
+        <input
+          type="checkbox"
+          required
+          checked={consent}
+          onChange={(e) => setConsent(e.target.checked)}
+          disabled={state === "loading"}
+          style={{ marginTop: "2px" }}
+        />
+        <span className="cs-muted">
+          I agree to receive product update emails.{" "}
+          <Link href="/legal/privacy">Privacy policy</Link>
+        </span>
+      </label>
       <Button
         type="submit"
         variant="ghost"
         disabled={
           state === "loading" ||
+          !consent ||
           (Boolean(TURNSTILE_SITE_KEY) && !turnstileToken)
         }
       >
@@ -198,8 +227,7 @@ export function UpdatesForm({ source = "site" }: { source?: string }) {
           marginTop: "var(--cs-space-1)",
         }}
       >
-        Occasional product updates. Unsubscribe anytime.{" "}
-        <Link href="/legal/privacy">Privacy policy</Link>
+        Occasional product updates. Unsubscribe anytime.
       </p>
       {state === "error" && (
         <p
