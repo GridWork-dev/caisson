@@ -25,6 +25,17 @@ import {
 // the new plan's full allotment, avoiding a double-grant. Any other reason (manual, etc.) grants nothing.
 const GRANTING_REASONS = new Set(["subscription_create", "subscription_cycle"]);
 
+export interface AppliedBillingEffect {
+  /**
+   * The purchased entitlement ids THIS event application granted (`[]` when nothing granted —
+   * a gated/no-op event, a revoke, or a refund). Feeds the post-commit Discord role push
+   * (ADR-0203); computed HERE so the push can never drift from the grant gate's own decision.
+   */
+  grantedEntitlements: string[];
+}
+
+const NO_EFFECT: AppliedBillingEffect = { grantedEntitlements: [] };
+
 /**
  * Apply a verified domain billing event (ADR-0089/0071/0109). See the file header for the per-type
  * effect map. Every effect runs inside the caller's `withTenant` transaction, so the credit move and
@@ -33,10 +44,10 @@ const GRANTING_REASONS = new Set(["subscription_create", "subscription_cycle"]);
 export async function applyBillingEvent(
   tx: TenantExecutor,
   ev: DomainBillingEvent,
-): Promise<void> {
+): Promise<AppliedBillingEffect> {
   switch (ev.type) {
     case "invoice.paid": {
-      if (!GRANTING_REASONS.has(ev.billingReason)) return;
+      if (!GRANTING_REASONS.has(ev.billingReason)) return NO_EFFECT;
       if (ev.invoiceId === "") {
         // The invoice id IS the idempotency anchor (ADR-0089 §4); an empty one would let two cycles
         // collide on ("", "sub_allotment") and silently under-grant. Fail closed — never grant on a
@@ -60,7 +71,7 @@ export async function applyBillingEvent(
         sourceEventId: ev.invoiceId,
         source: { kind: "subscription", subscriptionId: ev.subscriptionId },
       });
-      return;
+      return { grantedEntitlements: [...plan.entitlements] };
     }
     case "purchase.completed": {
       // A one-time (non-subscription) edition/module/credit-pack buy (ADR-0113). The PaymentIntent id
@@ -84,7 +95,7 @@ export async function applyBillingEvent(
         sourceEventId: ev.paymentId,
         source: { kind: "one_time", purchaseId: ev.paymentId },
       });
-      return;
+      return { grantedEntitlements: [...purchase.entitlements] };
     }
     case "subscription.canceled":
       // IMMEDIATE revoke (ADR-0113): soft-revoke every grant backed by this subscription. An entitlement
@@ -93,11 +104,11 @@ export async function applyBillingEvent(
         accountId: ev.accountId,
         subscriptionId: ev.subscriptionId,
       });
-      return;
+      return NO_EFFECT;
     case "refund.completed": {
       // Refund of a one-time purchase (ADR-0113, operator-locked money policy). Act ONLY on a FULL
       // refund — a partial `charge.refunded` must not revoke all access or claw the whole grant.
-      if (!ev.fullyRefunded) return;
+      if (!ev.fullyRefunded) return NO_EFFECT;
       // (a) Soft-revoke the purchase's entitlement grants (idempotent — only active rows flip; a
       // re-delivery finds none). A credits-only purchase has zero grants — that is fine.
       await revokePurchaseGrants(tx, {
@@ -121,11 +132,11 @@ export async function applyBillingEvent(
           sourceEventId: ev.paymentId,
         });
       }
-      return;
+      return NO_EFFECT;
     }
     case "subscription.created": // signup only — granting here would never renew (the X-2 trap)
     case "subscription.updated": // plan change recorded; proration grant is the deferred SD-1
-      return;
+      return NO_EFFECT;
     default: {
       // Exhaustiveness guard: a future DomainBillingEvent member forces an explicit decision here
       // rather than silently no-op'ing (the silent-miss class this mapper exists to prevent).

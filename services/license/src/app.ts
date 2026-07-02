@@ -22,10 +22,11 @@ import { licenseTierSchema } from "@caisson/license-verify";
 import { withRequestSpan } from "@caisson/observability";
 import type { RegistryIndex } from "@caisson/registry-schema";
 import { type Transactor, withTenant } from "@caisson/tenancy-rls";
+import type { DiscordGrantPush } from "./discord-notify.ts";
 import { readLicenseGrant, storeLicenseGrant } from "./license-grant-store.ts";
 import { clientIp, type RateBucket, type RateLimiter } from "./rate-limit.ts";
 import { resolveAccountEntitlements } from "./resolve-entitlements.ts";
-import { handleBillingWebhook } from "./webhook.ts";
+import { type BillingWebhookResult, handleBillingWebhook } from "./webhook.ts";
 
 export interface IssueAppDeps {
   /** Bearer secret for POST /issue. Must be non-empty — server.ts fails closed if it is unset. */
@@ -48,6 +49,13 @@ export interface IssueAppDeps {
    * primary auth — this only caps an abusive flood. server.ts injects it.
    */
   limiter: RateLimiter;
+  /**
+   * The post-grant Discord role push (ADR-0203). `null` when SUPPORT_BOT_URL /
+   * SUPPORT_BOT_GRANT_TOKEN are unset — the push is simply skipped. Fired DETACHED after the grant
+   * commits; it must never delay or fail the webhook response (the injected implementation —
+   * `notifyDiscordGrant` — never throws).
+   */
+  discordNotify: ((push: DiscordGrantPush) => Promise<void>) | null;
 }
 
 /**
@@ -260,6 +268,7 @@ export function createApp(
       // Verify against the RAW request body — a parsed + re-serialized payload would not match Paddle's
       // `ts:rawBody` HMAC. `req.text()` reads the bytes exactly as delivered.
       const rawBody = await req.text();
+      let result: BillingWebhookResult;
       try {
         // handleBillingWebhook verifies the Paddle signature (throws AuthnError on a missing/invalid one
         // BEFORE any DB work) then applies the domain event inside `withTenant`: a one-time
@@ -268,7 +277,12 @@ export function createApp(
         // 0089/0113). The grant stores are idempotent on their natural keys (payment/invoice id), so a
         // Paddle retry of the same event_id re-applies as a no-op (ADR-0113) — no separate event-dedupe
         // table needed.
-        await handleBillingWebhook(deps.db, deps.provider, rawBody, signature);
+        result = await handleBillingWebhook(
+          deps.db,
+          deps.provider,
+          rawBody,
+          signature,
+        );
       } catch (err) {
         if (err instanceof AuthnError) {
           // Missing/invalid signature — fail closed, never provision (no secret or body echoed back).
@@ -278,6 +292,32 @@ export function createApp(
         // so Paddle RETRIES the delivery — a 2xx here would silently drop a real, paid purchase.
         process.stderr.write("[service-license] webhook processing failed\n");
         return json({ error: "webhook processing failed" }, 500);
+      }
+      // Post-commit Discord role push (ADR-0203): DETACHED, fired only after the grant durably
+      // landed, and OUTSIDE the grant's try/catch — a misbehaving notifier (even one throwing
+      // synchronously) must never convert a committed grant into a 500 (which would trigger a
+      // pointless Paddle re-delivery). `notifyDiscordGrant` itself never throws; the guards here
+      // are belt-and-braces for injected doubles. Paddle's 2xx never waits on Discord.
+      if (
+        deps.discordNotify !== null &&
+        result.event !== null &&
+        result.grantedEntitlements.length > 0
+      ) {
+        const push: DiscordGrantPush = {
+          accountId: result.event.accountId,
+          entitlements: result.grantedEntitlements,
+        };
+        try {
+          void deps.discordNotify(push).catch(() => {
+            process.stderr.write(
+              "[service-license] discord notify rejected (ignored)\n",
+            );
+          });
+        } catch {
+          process.stderr.write(
+            "[service-license] discord notify threw (ignored)\n",
+          );
+        }
       }
       // 2xx ONLY after the grant commits, so Paddle stops retrying only on a durable success.
       return json({ ok: true });

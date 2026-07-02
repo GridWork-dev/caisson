@@ -39,6 +39,15 @@ export type {
 export { createApp, type IssueAppDeps } from "./app.ts";
 export { startServer, type StartServerOptions } from "./server.ts";
 export {
+  findDiscordUserIds,
+  loadDiscordNotifyConfig,
+  notifyDiscordGrant,
+} from "./discord-notify.ts";
+export type {
+  DiscordGrantPush,
+  DiscordNotifyConfig,
+} from "./discord-notify.ts";
+export {
   RATE_LIMIT_SCHEMA_SQL,
   DEFAULT_RATE_LIMIT,
   checkRateLimit,

@@ -83,6 +83,20 @@ class Settings(BaseSettings):
         description="Self-assignable roles for /post-roles buttons; JSON list of {role_id,label}.",
     )
 
+    # --- optional billing-grant inbound (ADR-0203; closes the ADR-0109 deferral) ---
+    billing_grant_token: str | None = Field(
+        default=None,
+        description="Bearer expected on POST /billing-grant (pushed by services/license after a "
+        "purchase grant and by apps/site after a Discord link). The route is NOT served when unset "
+        "(fail-closed) — the bot runs unaffected.",
+    )
+    guild_id: int | None = Field(
+        default=None,
+        description="The Caisson guild billing grants apply to (same GUILD_ID the provisioner "
+        "uses). Unset falls back to the bot's sole guild; with several guilds and no id the grant "
+        "refuses rather than guessing a server.",
+    )
+
     # --- optional persistence ---
     database_url: str | None = Field(
         default=None,

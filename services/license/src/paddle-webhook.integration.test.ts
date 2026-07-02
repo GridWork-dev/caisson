@@ -100,7 +100,9 @@ describe("Paddle parsePaddleEvent -> applyBillingEvent (round trip, ADR-0108)", 
       data: {
         id: "txn_round_trip_3",
         subscription_id: "sub_round_trip",
-        origin: "subscription_charge",
+        // "web" = the subscription's FIRST charge from a Paddle.js checkout (verified 2026-07-01;
+        // "subscription_charge" is a mid-cycle one-time charge and no longer grants).
+        origin: "web",
         currency_code: "usd",
         custom_data: { account_id: acct },
         items: [{ price: { id: "price_developer_monthly_PLACEHOLDER" } }],

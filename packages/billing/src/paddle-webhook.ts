@@ -30,15 +30,21 @@ function parsePaddleSignatureHeader(header: string): {
   return { timestamp, h1 };
 }
 
-/** Throws `AuthnError` unless `signatureHeader` is a valid, in-tolerance Paddle signature. */
+/**
+ * Throws `AuthnError` unless `signatureHeader` is a valid, in-tolerance Paddle signature.
+ *
+ * The default tolerance is Paddle's OWN documented SDK default — five SECONDS ("Our SDKs have a
+ * default tolerance of five seconds between the timestamp and the current time",
+ * developer.paddle.com/webhooks/signature-verification; verified 2026-07-01). The earlier 300s
+ * default here silently inherited Stripe's window and left a 5-minute replay envelope. A delivery
+ * rejected for skew is retried by Paddle with a FRESH signature (60 attempts over 3 days on live),
+ * so the tight window costs nothing durable.
+ */
 export function verifyPaddleWebhook(
   rawBody: string,
   signatureHeader: string,
   secret: string,
-  {
-    toleranceSec = 300,
-    now = Math.floor(Date.now() / 1000),
-  }: VerifyOptions = {},
+  { toleranceSec = 5, now = Math.floor(Date.now() / 1000) }: VerifyOptions = {},
 ): void {
   const { timestamp, h1 } = parsePaddleSignatureHeader(signatureHeader);
   if (!Number.isFinite(timestamp) || h1.length === 0) {

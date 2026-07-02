@@ -123,18 +123,37 @@ export function parsePaddleEvent(
         currency: readString(obj.currency_code, "usd"),
         subscriptionId,
         priceId: readItemPriceId(obj),
-        // Paddle's `origin` distinguishes the subscription's first automatic charge
-        // ("subscription_charge") from a renewal ("subscription_recurring"/other subscription-context
-        // origins); mapped onto the SAME billingReason vocabulary the cycle->grant gate
-        // (services/license GRANTING_REASONS) already recognizes, so that gate is unchanged by this
-        // provider swap.
-        billingReason:
-          readString(obj.origin) === "subscription_charge"
-            ? "subscription_create"
-            : "subscription_cycle",
-        // Paddle only stamps `invoice_id` on manually-collected (invoiced) transactions; this product
-        // is automatically-collected, so fall back to the transaction id as the idempotency anchor.
-        invoiceId: readString(obj.invoice_id) || txnId,
+        // Paddle's `origin` says HOW the charge arose (verified against developer.paddle.com's
+        // transaction.completed reference + the subscription-created/renewed simulator scenarios,
+        // 2026-07-01), mapped onto the billingReason vocabulary the cycle->grant gate
+        // (services/license GRANTING_REASONS) recognizes:
+        //   web | api                → the subscription's FIRST charge (Paddle.js checkout / an
+        //                              API-created transaction, e.g. provider.ts createCheckout)
+        //                              → "subscription_create" (grants)
+        //   subscription_recurring   → a renewal cycle → "subscription_cycle" (grants)
+        //   subscription_charge      → a MID-CYCLE one-time charge FOR the subscription
+        //                              (addon/topup) — NOT the first charge (the earlier reading);
+        //                              granting the plan's cycle allotment here would OVER-grant,
+        //                              so it passes through as its own non-granting reason
+        //   subscription_update / subscription_payment_method_change → proration / $0
+        //                              method-change transactions — non-granting (the SD-1
+        //                              next-cycle rule)
+        // An absent origin passes through as "" — not in GRANTING_REASONS, so it grants nothing
+        // (fail-closed; Paddle documents `origin` as always present on a transaction).
+        billingReason: ((): string => {
+          const origin = readString(obj.origin);
+          if (origin === "subscription_recurring") return "subscription_cycle";
+          if (origin === "web" || origin === "api")
+            return "subscription_create";
+          return origin;
+        })(),
+        // The idempotency anchor is the transaction id: unique per charge (each renewal is its own
+        // transaction) and stable across event redeliveries. `invoice_id` — the earlier anchor —
+        // IS populated on automatically-collected transactions at completion, but Paddle documents
+        // it DEPRECATED (Invoice API compat, scheduled for removal in the next API version);
+        // anchoring idempotency on a field the provider plans to drop would silently re-key
+        // mid-life (corrected + verified 2026-07-01).
+        invoiceId: txnId,
       };
     }
     case "subscription.created":
