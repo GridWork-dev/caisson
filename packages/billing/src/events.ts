@@ -73,11 +73,22 @@ export const DomainBillingEventSchema = z.discriminatedUnion("type", [
 
 export type DomainBillingEvent = z.infer<typeof DomainBillingEventSchema>;
 
-export interface StripeEvent {
-  id: string;
-  type: string;
-  data: { object: Record<string, unknown> };
-}
+// The envelope (id/type/data.object) is Zod-`.strict()`-validated at the boundary (ADR-0204,
+// mirrors PaddleEventSchema/services-hardening MED finding): the raw webhook body used to be
+// trusted via a bare `JSON.parse(rawBody) as StripeEvent` cast — a type-level assertion with no
+// runtime check, so a validly-signed but malformed/field-injected delivery would flow straight
+// into parseStripeEvent below. `provider.ts`'s verifyAndParse parses through this schema
+// (`parseStrict`, throwing a ValidationError) BEFORE the mapper ever sees the event. `data.object`
+// itself stays a loose `Record<string, unknown>` — this file's `read*` helpers are already the
+// defensive/fail-closed-to-safe-default layer for it; this schema only closes the envelope-level
+// gap, it does not re-validate every event type's inner fields.
+export const StripeEventSchema = strictObject({
+  id: z.string(),
+  type: z.string(),
+  data: strictObject({ object: z.record(z.string(), z.unknown()) }),
+});
+
+export type StripeEvent = z.infer<typeof StripeEventSchema>;
 
 function readString(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;

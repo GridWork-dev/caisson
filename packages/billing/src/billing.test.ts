@@ -2,11 +2,12 @@
 // The verified event carries everything the credit grant needs (sourceEventId → idempotency).
 import { createHmac } from "node:crypto";
 import { afterEach, describe, expect, test } from "bun:test";
-import { AuthnError } from "@caisson/kernel";
+import { AuthnError, ValidationError } from "@caisson/kernel";
 import {
   createStripeBilling,
   parseStripeEvent,
   verifyStripeWebhook,
+  StripeEventSchema,
 } from "./index.ts";
 
 const SECRET = "whsec_test_secret";
@@ -239,6 +240,74 @@ describe("event mapping", () => {
       type: "purchase.completed",
       accountId: "acct_a",
     });
+  });
+});
+
+describe("StripeEventSchema (envelope boundary validation, ADR-0204)", () => {
+  test("accepts a well-formed envelope", () => {
+    const result = StripeEventSchema.safeParse({
+      id: "evt_x",
+      type: "checkout.session.completed",
+      data: { object: {} },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("rejects an envelope with an unexpected extra top-level field", () => {
+    const result = StripeEventSchema.safeParse({
+      id: "evt_x",
+      type: "checkout.session.completed",
+      data: { object: {} },
+      livemode: true, // not a declared envelope field
+    });
+    expect(result.success).toBe(false);
+  });
+
+  test("rejects an envelope missing id or with the wrong shape", () => {
+    expect(
+      StripeEventSchema.safeParse({
+        type: "x",
+        data: { object: {} },
+      }).success,
+    ).toBe(false);
+    expect(
+      StripeEventSchema.safeParse({
+        id: 123,
+        type: "x",
+        data: { object: {} },
+      }).success,
+    ).toBe(false);
+  });
+
+  test("verifyAndParse rejects a signed body carrying an unexpected extra top-level field", () => {
+    // The signature is valid (verifyStripeWebhook passes) — this proves the NEW schema boundary
+    // rejects a malformed envelope even when authenticity already checked out; a signature alone
+    // never guaranteed the payload shape.
+    const extraFieldBody = JSON.stringify({
+      id: "evt_extra",
+      type: "checkout.session.completed",
+      livemode: true,
+      data: {
+        object: {
+          amount_total: 5000,
+          currency: "usd",
+          payment_intent: "pi_extra",
+          metadata: {
+            account_id: "acct_a",
+            price_id: "price_credit_pack_PLACEHOLDER",
+          },
+        },
+      },
+    });
+    const billing = createStripeBilling({
+      webhookSecret: SECRET,
+      apiKey: "sk_test",
+    });
+    expect(() =>
+      billing.verifyAndParse(extraFieldBody, signed(extraFieldBody), {
+        now: T,
+      }),
+    ).toThrow(ValidationError);
   });
 });
 
