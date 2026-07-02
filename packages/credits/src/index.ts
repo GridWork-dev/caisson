@@ -9,6 +9,7 @@ export {
   balance,
   getLedger,
   creditsGrantedBySource,
+  creditsClawedForSource,
   lineCreditLedger,
   clawback,
   GRANT_EVENT_TYPES,
