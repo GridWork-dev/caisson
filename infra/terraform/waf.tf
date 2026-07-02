@@ -61,7 +61,7 @@ resource "cloudflare_ruleset" "rate_limit" {
   rules = [{
     ref         = "rl_expensive_paths"
     description = "Rate limit /query (docs embedding spend) and /api/auth/* (site login) by source IP"
-    expression  = "(http.request.uri.path eq \"/query\") or (http.request.uri.path matches \"^/api/auth/\")"
+    expression  = "(http.request.uri.path eq \"/query\") or (http.request.uri.path wildcard \"/api/auth/*\")"
     action      = "block"
     ratelimit = {
       characteristics = ["cf.colo.id", "ip.src"]
@@ -69,7 +69,9 @@ resource "cloudflare_ruleset" "rate_limit" {
       # tunable; do not turn this into a variable until Fork B upgrades the plan.
       period              = 10
       requests_per_period = var.rate_limit_requests_per_period
-      mitigation_timeout  = var.rate_limit_mitigation_timeout_seconds
+      # Free plan also fixes the mitigation timeout at 10s (same plan-tier table row as
+      # period above) — not tunable; do not turn this into a variable until Fork B upgrades.
+      mitigation_timeout = 10
     }
   }]
 }

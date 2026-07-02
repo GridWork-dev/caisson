@@ -48,9 +48,3 @@ variable "rate_limit_requests_per_period" {
   default     = 60
   description = "Requests allowed per counting window before the expensive-path rate-limit rule blocks (Free tier: window is fixed at 10s, see waf.tf)."
 }
-
-variable "rate_limit_mitigation_timeout_seconds" {
-  type        = number
-  default     = 60
-  description = "How long (seconds) a source stays blocked after exceeding the expensive-path rate-limit threshold."
-}

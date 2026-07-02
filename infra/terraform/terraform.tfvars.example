@@ -16,5 +16,4 @@ docs_api_railway_target     = "your-docs-api-railway-target.up.railway.app"
 docs_api_railway_verify_txt = "railway-verify=your-docs-api-ownership-token"
 
 # Optional overrides (defaults in variables.tf):
-# rate_limit_requests_per_period        = 60
-# rate_limit_mitigation_timeout_seconds = 60
+# rate_limit_requests_per_period = 60
