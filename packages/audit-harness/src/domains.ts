@@ -39,7 +39,7 @@ export const AUDIT_DOMAINS: readonly AuditDomain[] = [
     id: "design-ui",
     description:
       "Design-system + marketing/UI surfaces (ADR-0101): tokens, components, the six deterministic gates.",
-    globs: ["packages/ui/**", "apps/site/**", "apps/studio/**"],
+    globs: ["packages/ui/**", "apps/site/**", "apps/admin/src/app/design/**"],
     checkers: ["tooling/design-critic"],
   },
   {
@@ -178,7 +178,7 @@ export const AUDIT_DOMAINS: readonly AuditDomain[] = [
   {
     id: "admin-plane",
     description:
-      "apps/admin operator control-plane (live at admin.caisson.sh) + platform-reads: Cloudflare-Access-sole-gate posture (ADR-0107/0140), the RLS-exempt admin DB role (code is the only tenant boundary), SIGNOZ_API_KEY handling, mutating command endpoints.",
+      "apps/admin operator control-plane (live at admin.caisson.sh) + platform-reads: Cloudflare-Access-sole-gate posture (ADR-0107/0140), the RLS-exempt admin DB role (code is the only tenant boundary), Grafana Cloud credential handling (GRAFANA_TOKEN, ADR-0207), mutating command endpoints.",
     globs: [
       "apps/admin/src/**",
       "apps/admin/app/**",
