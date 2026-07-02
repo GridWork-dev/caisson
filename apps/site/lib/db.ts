@@ -18,6 +18,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { AI_METER_SCHEMA_SQL } from "@caisson/ai-meter";
 import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
 import {
+  CREDIT_LINE_ITEM_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
 } from "@caisson/credits";
@@ -36,6 +37,7 @@ import { TENANT_AI_CREDENTIAL_SCHEMA_SQL } from "@caisson/ai-kit";
 // the same schema drifting out of sync with the other two (services/license, its integration
 // tests).
 import {
+  ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   LICENSE_GRANT_SCHEMA_SQL,
 } from "@caisson/service-license";
@@ -145,7 +147,9 @@ async function bootstrapPglite(): Promise<PGlite> {
   await pg.exec(ACCOUNT_MEMBER_SCHEMA_SQL);
   await pg.exec(CREDIT_SCHEMA_SQL);
   await pg.exec(CREDIT_ROUNDING_MIGRATION_SQL);
+  await pg.exec(CREDIT_LINE_ITEM_MIGRATION_SQL);
   await pg.exec(ENTITLEMENT_SCHEMA_SQL);
+  await pg.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await pg.exec(LICENSE_GRANT_SCHEMA_SQL);
   await pg.exec(AI_METER_SCHEMA_SQL);
   await pg.exec(TENANT_AI_CREDENTIAL_SCHEMA_SQL);

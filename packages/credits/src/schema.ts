@@ -75,3 +75,33 @@ ALTER TABLE credit_event
     rounding_mode IS NULL OR rounding_mode IN ('up', 'down')
   );
 `;
+
+/**
+ * Per-line grant provenance for Paddle per-line partial refunds (ADR-0218, fork C-b: columns, not a
+ * side-table). `line_item_id` is the Paddle transaction-item id (`txnitm_…`) that granted this row's
+ * credits — the join key a later per-line adjustment refund reads to claw back only THAT line's
+ * credits. `line_charged_amount` is the line's charged minor units (from the transaction's
+ * `details.line_items[].totals.total`), persisted so a dollar-PARTIAL adjustment can claw a
+ * PROPORTIONAL credit amount (`floor(granted * refunded / charged)`) without re-deriving from a
+ * possibly-changed pricebook. Both nullable: a subscription/single-source grant carries neither.
+ *
+ * The `credit_event_source_uniq` index gains `COALESCE(line_item_id, '')` so the N per-line `purchase`
+ * rows of one multi-item cart — all sharing the transaction id as `source_event_id` — stay DISTINCT
+ * instead of collapsing to one via `ON CONFLICT DO NOTHING` (which would silently under-grant every
+ * line past the first). A row without a line item (`line_item_id` NULL → '') keeps its prior
+ * uniqueness exactly, so all existing grant/debit/clawback idempotency is byte-identical.
+ *
+ * SEPARATE migration, not an edit to CREDIT_SCHEMA_SQL / CREDIT_ROUNDING_MIGRATION_SQL: both ship as
+ * checksum-pinned platform migrations (apps/site deploy-migrate) — editing either in place would fail
+ * the runner CLOSED on the live DB (ADR-0006 append-only). Apply AFTER both, everywhere the table is
+ * bootstrapped that grants a one-time purchase or claws a per-line refund.
+ */
+export const CREDIT_LINE_ITEM_MIGRATION_SQL = `
+ALTER TABLE credit_event
+  ADD COLUMN line_item_id text,
+  ADD COLUMN line_charged_amount integer;
+DROP INDEX credit_event_source_uniq;
+CREATE UNIQUE INDEX credit_event_source_uniq
+  ON credit_event (source_event_id, event_type, COALESCE(line_item_id, ''))
+  WHERE source_event_id IS NOT NULL;
+`;

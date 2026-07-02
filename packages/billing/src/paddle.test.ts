@@ -85,7 +85,15 @@ describe("event mapping", () => {
       accountId: "acct_a",
       amountTotal: 5000,
       currency: "usd",
-      lineItems: [{ priceId: "price_credit_pack_PLACEHOLDER", quantity: 1 }],
+      // No `details.line_items` in this fixture → the per-line join fields are the empty sentinels.
+      lineItems: [
+        {
+          priceId: "price_credit_pack_PLACEHOLDER",
+          quantity: 1,
+          itemId: "",
+          chargedAmount: 0,
+        },
+      ],
       paymentId: "txn_01hvcc93znj3mpqt1tenkjb04y",
     });
   });
@@ -114,8 +122,18 @@ describe("event mapping", () => {
     expect(
       parsed?.type === "purchase.completed" ? parsed.lineItems : [],
     ).toEqual([
-      { priceId: "price_compliance_PLACEHOLDER", quantity: 1 },
-      { priceId: "price_credit_pack_PLACEHOLDER", quantity: 3 },
+      {
+        priceId: "price_compliance_PLACEHOLDER",
+        quantity: 1,
+        itemId: "",
+        chargedAmount: 0,
+      },
+      {
+        priceId: "price_credit_pack_PLACEHOLDER",
+        quantity: 3,
+        itemId: "",
+        chargedAmount: 0,
+      },
     ]);
   });
 
@@ -307,6 +325,10 @@ describe("event mapping", () => {
       amountRefunded: 5000,
       currency: "usd",
       fullyRefunded: true,
+      // No adjustment `id` in this fixture → ""; a whole-transaction full refund carries no per-line
+      // items (it revokes/claws by transaction id).
+      adjustmentId: "",
+      items: [],
     });
   });
 
@@ -329,6 +351,151 @@ describe("event mapping", () => {
     expect(parsed && "fullyRefunded" in parsed && parsed.fullyRefunded).toBe(
       false,
     );
+  });
+
+  test("a one-time transaction captures each line's txnitm_ id + charged total from details.line_items (ADR-0218)", () => {
+    // The `txnitm_…` join key + per-line charged total live on `details.line_items[]`, NOT the
+    // request-echo `items[]`. The mapper correlates the two arrays by order so a later per-line
+    // adjustment refund can join back on the item id and proportion against the charged amount.
+    const event = {
+      event_id: "evt_join",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_join",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        items: [
+          { price: { id: "price_compliance_PLACEHOLDER" }, quantity: 1 },
+          { price: { id: "price_credit_pack_PLACEHOLDER" }, quantity: 1 },
+        ],
+        details: {
+          totals: { grand_total: "20000" },
+          line_items: [
+            { id: "txnitm_compliance", totals: { total: "15000" } },
+            { id: "txnitm_pack", totals: { total: "5000" } },
+          ],
+        },
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    const parsed = parsePaddleEvent(event);
+    expect(
+      parsed?.type === "purchase.completed" ? parsed.lineItems : [],
+    ).toEqual([
+      {
+        priceId: "price_compliance_PLACEHOLDER",
+        quantity: 1,
+        itemId: "txnitm_compliance",
+        chargedAmount: 15000,
+      },
+      {
+        priceId: "price_credit_pack_PLACEHOLDER",
+        quantity: 1,
+        itemId: "txnitm_pack",
+        chargedAmount: 5000,
+      },
+    ]);
+  });
+
+  test("a captured txnitm_ id equals the item_id a later per-line adjustment refunds (ADR-0218 round-trip)", () => {
+    // The mitigation for the `item_id` source-correctness risk: the id captured at grant time
+    // (`details.line_items[].id`) must be the SAME id a refund adjustment carries (`data.items[].item_id`)
+    // — else the join never resolves and a per-line refund silently claws nothing.
+    const purchase = parsePaddleEvent({
+      event_id: "evt_p",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_rt",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        items: [
+          { price: { id: "price_credit_pack_PLACEHOLDER" }, quantity: 1 },
+        ],
+        details: {
+          totals: { grand_total: "5000" },
+          line_items: [{ id: "txnitm_pack", totals: { total: "5000" } }],
+        },
+      },
+    } as Parameters<typeof parsePaddleEvent>[0]);
+    const capturedId =
+      purchase?.type === "purchase.completed"
+        ? purchase.lineItems[0]?.itemId
+        : "";
+    const refund = parsePaddleEvent({
+      event_id: "evt_r",
+      event_type: "adjustment.updated",
+      data: {
+        id: "adj_rt",
+        action: "refund",
+        status: "approved",
+        type: "partial",
+        transaction_id: "txn_rt",
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        totals: { total: "5000" },
+        items: [
+          {
+            id: "adjitm_1",
+            item_id: "txnitm_pack",
+            type: "full",
+            totals: { total: "5000" },
+          },
+        ],
+      },
+    } as Parameters<typeof parsePaddleEvent>[0]);
+    const refundedId =
+      refund?.type === "refund.completed" ? refund.items[0]?.itemId : "";
+    expect(capturedId).toBe("txnitm_pack");
+    expect(refundedId).toBe(capturedId);
+  });
+
+  test("a partial adjustment parses per-line items, skipping tax/proration (ADR-0218)", () => {
+    const event = {
+      event_id: "evt_partial_items",
+      event_type: "adjustment.updated",
+      data: {
+        id: "adj_1",
+        action: "refund",
+        status: "approved",
+        type: "partial",
+        transaction_id: "txn_x",
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        totals: { total: "5000" },
+        items: [
+          {
+            id: "adjitm_1",
+            item_id: "txnitm_a",
+            type: "full",
+            totals: { total: "3000" },
+          },
+          {
+            id: "adjitm_2",
+            item_id: "txnitm_b",
+            type: "partial",
+            totals: { total: "2000" },
+          },
+          // Paddle-generated tax item — NOT an operator-initiated line refund; must be skipped.
+          {
+            id: "adjitm_3",
+            item_id: "txnitm_tax",
+            type: "tax",
+            totals: { total: "500" },
+          },
+        ],
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    const parsed = parsePaddleEvent(event);
+    expect(parsed?.type).toBe("refund.completed");
+    if (parsed?.type === "refund.completed") {
+      expect(parsed.fullyRefunded).toBe(false);
+      expect(parsed.adjustmentId).toBe("adj_1");
+      expect(parsed.items).toEqual([
+        { itemId: "txnitm_a", amountRefunded: 3000, fullyRefunded: true },
+        { itemId: "txnitm_b", amountRefunded: 2000, fullyRefunded: false },
+      ]);
+    }
   });
 
   test("a pending_approval refund is a no-op (not yet settled)", () => {

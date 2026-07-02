@@ -10,15 +10,45 @@
 // provider retries) — never a guessed grant. Idempotent: the credit ledger keys on the source id; entitlement
 // grants key per-source; the refund latches on the active->revoked transition so a re-delivery is inert.
 import type { DomainBillingEvent } from "@caisson/billing";
-import { clawback, creditsGrantedBySource, grant } from "@caisson/credits";
-import { ConfigError, asCredits } from "@caisson/kernel";
+import {
+  clawback,
+  creditsGrantedBySource,
+  grant,
+  lineCreditLedger,
+} from "@caisson/credits";
+import { ConfigError, asCredits, type Credits } from "@caisson/kernel";
 import { resolvePlan, resolvePurchase } from "@caisson/pricebook";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 import {
   grantEntitlements,
   revokePurchaseGrants,
+  revokePurchaseLineGrants,
   revokeSubscriptionGrants,
 } from "./entitlement-store.ts";
+
+/**
+ * Integer proportional credit claw for a dollar-PARTIAL line refund (ADR-0218 fork A-1 / ADR-0007 /
+ * ADR-0212): `floor(granted * refunded / charged)`, rounded DOWN so a rounding remainder favors the
+ * buyer (never over-claw), mirroring the pricebook's round-down grant ethos. BigInt throughout — no
+ * float ever materializes. Returns the branded credits + the `{raw, mode}` provenance the clawback
+ * ledger row persists (`raw` = the refunded minor units that drove this claw). Caller guarantees
+ * `charged > 0`.
+ */
+function proportionalClaw(
+  granted: number,
+  refunded: number,
+  charged: number,
+): {
+  credits: Credits;
+  rounding: { raw: number; mode: "down"; result: Credits };
+} {
+  const result = Number((BigInt(granted) * BigInt(refunded)) / BigInt(charged));
+  const credits = asCredits(result);
+  return {
+    credits,
+    rounding: { raw: refunded, mode: "down", result: credits },
+  };
+}
 
 // Only these two billing reasons grant: the first charge and each renewal. `subscription_update`
 // (proration on upgrade) grants nothing by default (ADR-0089 §6, SD-1) — the next cycle invoice grants
@@ -83,35 +113,41 @@ export async function applyBillingEvent(
       // Fulfill EVERY paid line (Strix vuln-0005: a multi-item cart is ONE transaction with N lines —
       // fulfilling only the first under-grants a cart the buyer paid for in full). resolvePurchase is
       // fail-closed per line: an unknown price id throws and rolls back the whole withTenant tx, so a
-      // partial grant across items is impossible. Credits sum across lines and scale with quantity;
-      // entitlements union (an entitlement is binary — owning it twice is still owning it once).
-      let totalCredits = 0;
-      const entitlements = new Set<string>();
+      // partial grant across items is impossible.
+      //
+      // Grants are now PER LINE (ADR-0218), each stamped with its `itemId` join key + charged amount:
+      //   - credits: one `purchase` row per credit-bearing line (all keyed `paymentId`, disambiguated
+      //     by `line_item_id` in the index) → a later per-line refund claws only that line's credits;
+      //     the whole-transaction refund still sums them all by `paymentId` (creditsGrantedBySource).
+      //   - entitlements: one grant row per (line, entitlement) → the same edition granted by two cart
+      //     lines is two rows (fork B-1 refcount: survives until BOTH lines are refunded).
+      // `grantedEntitlements` returns the DISTINCT union for the Discord push (an entitlement is binary).
+      const grantedEntitlements = new Set<string>();
       for (const line of ev.lineItems) {
         const purchase = resolvePurchase(line.priceId); // fail-closed on an unknown price id
-        totalCredits += purchase.credits * line.quantity;
-        for (const e of purchase.entitlements) entitlements.add(e);
-      }
-      const entitlementIds = [...entitlements];
-      if (totalCredits > 0) {
-        await grant(tx, {
-          eventType: "purchase",
+        const lineCredits = purchase.credits * line.quantity;
+        if (lineCredits > 0) {
+          await grant(tx, {
+            eventType: "purchase",
+            accountId: ev.accountId,
+            // Mint at the boundary (ADR-0212): exact table-integer per-line credits, NULL rounding
+            // provenance (ADR-0089 §5 — no rounding site on the grant path).
+            amount: asCredits(lineCredits),
+            sourceEventId: ev.paymentId, // whole-transaction refund sums all lines under this id
+            lineItemId: line.itemId, // per-line refund claws just this line's credits
+            lineChargedAmount: line.chargedAmount, // the proportional divisor for a dollar-partial claw
+          });
+        }
+        await grantEntitlements(tx, {
           accountId: ev.accountId,
-          // Mint at the boundary (ADR-0212): the per-line sum is a plain number; the grant is the
-          // exact table-integer total, NULL rounding provenance (ADR-0089 s5 - no rounding site here).
-          amount: asCredits(totalCredits),
-          sourceEventId: ev.paymentId, // the refund clawback looks the granted amount up by this id
+          entitlementIds: purchase.entitlements,
+          sourceEventId: ev.paymentId,
+          source: { kind: "one_time", purchaseId: ev.paymentId },
+          lineItemId: line.itemId,
         });
+        for (const e of purchase.entitlements) grantedEntitlements.add(e);
       }
-      // ONE entitlement grant keyed on the payment id (unchanged) — the refund path revokes by
-      // purchase_id alone, so merging N lines' entitlements under one purchaseId keeps refund correct.
-      await grantEntitlements(tx, {
-        accountId: ev.accountId,
-        entitlementIds,
-        sourceEventId: ev.paymentId,
-        source: { kind: "one_time", purchaseId: ev.paymentId },
-      });
-      return { grantedEntitlements: entitlementIds };
+      return { grantedEntitlements: [...grantedEntitlements] };
     }
     case "subscription.canceled":
       // IMMEDIATE revoke (ADR-0113): soft-revoke every grant backed by this subscription. An entitlement
@@ -122,31 +158,87 @@ export async function applyBillingEvent(
       });
       return NO_EFFECT;
     case "refund.completed": {
-      // Refund of a one-time purchase (ADR-0113, operator-locked money policy). Act ONLY on a FULL
-      // refund — a partial `charge.refunded` must not revoke all access or claw the whole grant.
-      if (!ev.fullyRefunded) return NO_EFFECT;
-      // (a) Soft-revoke the purchase's entitlement grants (idempotent — only active rows flip; a
-      // re-delivery finds none). A credits-only purchase has zero grants — that is fine.
-      await revokePurchaseGrants(tx, {
-        accountId: ev.accountId,
-        purchaseId: ev.paymentId,
-      });
-      // (b) Claw back ONLY the UNSPENT credits this purchase granted, bounded to the current balance
-      // (never negative). This runs whether or not an entitlement was revoked, so a credits-only pack
-      // refund still reclaims credits (the entitlement-revoke count is NOT the latch). Idempotency is
-      // the compensating debit's own (paymentId, refund_clawback) unique key — a re-delivered refund
-      // writes no second debit (ADR-0113).
-      const granted = await creditsGrantedBySource(
-        tx,
-        ev.accountId,
-        ev.paymentId,
-      );
-      if (granted > 0) {
-        await clawback(tx, {
+      // Refund of a one-time purchase (ADR-0113 whole-transaction / ADR-0218 per-line).
+      if (ev.fullyRefunded) {
+        // WHOLE-transaction full refund (Paddle `type:'full'` / Stripe `refunded:true`) — the locked
+        // ADR-0113 scalar path, unchanged. (a) Soft-revoke ALL the purchase's entitlement grants
+        // (idempotent — only active rows flip; a re-delivery finds none). (b) Claw ONLY the UNSPENT
+        // credits it granted, bounded to the balance (never negative), summed across every line by the
+        // payment id. Idempotent on the compensating debit's (paymentId, refund_clawback) unique key.
+        await revokePurchaseGrants(tx, {
           accountId: ev.accountId,
-          amount: granted,
-          sourceEventId: ev.paymentId,
+          purchaseId: ev.paymentId,
         });
+        const granted = await creditsGrantedBySource(
+          tx,
+          ev.accountId,
+          ev.paymentId,
+        );
+        if (granted > 0) {
+          await clawback(tx, {
+            accountId: ev.accountId,
+            amount: granted,
+            sourceEventId: ev.paymentId,
+          });
+        }
+        return NO_EFFECT;
+      }
+      // PER-LINE partial adjustment (ADR-0218). For each refunded line, act by ITEM type:
+      //   - full  → revoke that line's entitlement (fork B-1: the edition survives if another line
+      //             still backs it) + claw its still-un-clawed credits;
+      //   - partial (dollar) → claw a PROPORTIONAL credit amount (fork A-1), entitlement untouched.
+      // The clawback amount is always bounded to the line's remaining (granted − alreadyClawed) so a
+      // partial-then-full sequence never spills onto other lines' fungible credits, and clawback()
+      // further bounds it to the wallet balance (never negative). Idempotency is the per-delivery key
+      // `${adjustmentId}:${itemId}` — a redelivery of the same adjustment writes no second debit, while
+      // two sequential partial adjustments on one line (distinct adjustment ids) both claw.
+      // A Stripe partial refund arrives here with `items: []` → a no-op (ADR-0218 D-1), preserving the
+      // ADR-0113 scalar-partial semantics for drivers without per-line data.
+      for (const item of ev.items) {
+        const ledger = await lineCreditLedger(tx, ev.accountId, item.itemId);
+        const remaining = ledger.granted - ledger.clawed;
+        const key = `${ev.adjustmentId}:${item.itemId}`;
+        if (item.fullyRefunded) {
+          await revokePurchaseLineGrants(tx, {
+            accountId: ev.accountId,
+            purchaseId: ev.paymentId,
+            lineItemId: item.itemId,
+          });
+          if (remaining > 0) {
+            await clawback(tx, {
+              accountId: ev.accountId,
+              amount: remaining,
+              sourceEventId: key,
+              lineItemId: item.itemId,
+            });
+          }
+          continue;
+        }
+        // Dollar-partial: proportional claw, entitlement left intact (fork A-1). Skip when the line
+        // granted no credits, its charged amount is unknown (can't proportion), the refund is zero, or
+        // the line is already fully clawed.
+        if (
+          ledger.granted > 0 &&
+          ledger.charged > 0 &&
+          item.amountRefunded > 0 &&
+          remaining > 0
+        ) {
+          const prop = proportionalClaw(
+            ledger.granted,
+            item.amountRefunded,
+            ledger.charged,
+          );
+          const amount = Math.min(prop.credits, remaining);
+          if (amount > 0) {
+            await clawback(tx, {
+              accountId: ev.accountId,
+              amount,
+              sourceEventId: key,
+              lineItemId: item.itemId,
+              rounding: prop.rounding,
+            });
+          }
+        }
       }
       return NO_EFFECT;
     }
