@@ -316,7 +316,10 @@ export async function reserve(
   );
   const reservedCredits = est.credits;
   // BYOK (ADR-0182): the caller brought their own provider key, so a metered action debits $0.
-  // Internal metering (the spend window + caps below) still runs — it is just not the billing signal.
+  // Internal metering (the spend window + caps) still runs — but for BYOK it accrues at RECONCILE (to
+  // the actual), not here: a BYOK reserve has no wallet-debit to anchor idempotency on, so pre-counting
+  // it would double-count the window on a same-callId retry. Keeping it out until reconcile makes the
+  // reserve a no-op (retry-safe) while the usage_event UNIQUE keeps the reconcile accrual idempotent.
   const billable = core.keySource !== "tenant";
 
   let walletBalance: number;
@@ -334,9 +337,6 @@ export async function reserve(
     idempotent = res.idempotent;
   } else {
     // Nothing to hold: a BYOK lane bills $0, and a zero-credit estimate holds nothing either way.
-    // ponytail: a BYOK reserve has no wallet debit to anchor idempotency on, so a same-callId reserve
-    // RETRY re-bumps the window (the reconcile leg stays idempotent via the usage_event UNIQUE). Add a
-    // reservation-marker row if BYOK reserve retries ever become a real path.
     walletBalance = await balance(tx, core.accountId);
     idempotent = false;
   }
@@ -347,8 +347,13 @@ export async function reserve(
     cfg.now,
   );
 
-  // Only a FRESH reservation moves the spend window — a replay must not double-count.
-  if (idempotent || reservedCredits === 0) {
+  // Only a FRESH billable reservation pre-counts its estimate into the window (reserving headroom so
+  // concurrent calls can't all slip under the cap). A replay, a zero estimate, or a BYOK lane moves
+  // nothing here — BYOK accrues the full actual at reconcile instead.
+  // ponytail: BYOK caps therefore settle post-call; a concurrent BYOK burst can momentarily exceed the
+  // cap before the first reconcile trips the breaker — acceptable (no wallet at risk). Pre-count BYOK
+  // only if a reservation-marker table is added to anchor its reserve idempotency.
+  if (idempotent || reservedCredits === 0 || !billable) {
     return {
       reservedCredits,
       balance: walletBalance,
@@ -490,10 +495,13 @@ export async function reconcile(
   }
   // delta === 0 (or a BYOK lane): no credit row moves — the wallet stays put.
 
-  // Move the window by the delta so it reflects ACTUAL spend (reserve already counted the estimate).
+  // Move the window to reflect ACTUAL spend. A billable reserve already pre-counted the estimate, so
+  // reconcile applies just the delta; a BYOK reserve counted nothing, so reconcile accrues the FULL
+  // actual here. Either way the usage_event UNIQUE above makes this move idempotent on retry.
+  const windowMove = billable ? delta : settledCredits;
   const spent =
-    delta !== 0
-      ? await bumpSpend(tx, core.accountId, cfg.scope, key, delta)
+    windowMove !== 0
+      ? await bumpSpend(tx, core.accountId, cfg.scope, key, windowMove)
       : await readSpend(tx, core.accountId, cfg.scope, key);
   const caps = await evaluateCaps(tx, core.accountId, cfg.scope, spent, policy);
 

@@ -333,7 +333,7 @@ describe("BYOK lane — $0 wallet, metering still runs (ADR-0182)", () => {
     );
     expect(r.reservedCredits).toBe(4);
     expect(r.balance).toBe(1000); // BYOK: wallet untouched at reserve
-    expect(r.spent).toBe(4); // window still advanced (internal metering runs)
+    expect(r.spent).toBe(0); // BYOK does not pre-count at reserve — it accrues at reconcile
     expect(await inA((tx) => balance(tx, A))).toBe(1000);
 
     const rc = await inA((tx) =>
@@ -367,6 +367,38 @@ describe("BYOK lane — $0 wallet, metering still runs (ADR-0182)", () => {
       [A],
     );
     expect(ledger).toHaveLength(0);
+  });
+
+  test("a same-callId BYOK reserve retry does not double-count the spend window", async () => {
+    await seed(1000);
+    // Hard cap 4: a double-counted BYOK reserve (4 + 4 = 8) would falsely trip it; a correct one never does.
+    await inA((tx) =>
+      tx.query(
+        `INSERT INTO ${SPEND_POLICY_TABLE}
+           (account_id, scope, unit, window_granularity, soft_limit, hard_limit)
+         VALUES ($1, 'account', 'credits', 'day', NULL, 4)`,
+        [A],
+      ),
+    );
+
+    const first = await inA((tx) =>
+      reserve(tx, { ...reserveInput("byok_retry"), keySource: "tenant" }),
+    );
+    const second = await inA((tx) =>
+      reserve(tx, { ...reserveInput("byok_retry"), keySource: "tenant" }),
+    );
+
+    // BYOK moves nothing at reserve, so a retried callId cannot bump the window or trip the cap.
+    expect(first.spent).toBe(0);
+    expect(second.spent).toBe(0);
+    expect(second.breakerTripped).toBe(false);
+    expect(await inA((tx) => balance(tx, A))).toBe(1000); // wallet untouched by either reserve
+
+    const win = await tp.query<{ spent: number }>(
+      `SELECT spent FROM ${TENANT_SPEND_WINDOW_TABLE} WHERE account_id = $1`,
+      [A],
+    );
+    expect(win[0]?.spent ?? 0).toBe(0);
   });
 });
 
