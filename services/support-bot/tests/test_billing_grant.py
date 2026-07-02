@@ -54,7 +54,9 @@ def _role(role_id: int, name: str, position: int = 1) -> _FakeRole:
     return _FakeRole(role_id, name, position)
 
 
-def _guild_with_member(member_found: bool = True) -> tuple[SimpleNamespace, SimpleNamespace]:
+def _guild_with_member(
+    member_found: bool = True, guild_id: int = 1
+) -> tuple[SimpleNamespace, SimpleNamespace]:
     """A guild whose role/member lookups behave like the live gateway cache."""
     roles = {
         111: _role(111, "Compliance"),
@@ -65,6 +67,7 @@ def _guild_with_member(member_found: bool = True) -> tuple[SimpleNamespace, Simp
     }
     member = SimpleNamespace(add_roles=AsyncMock(), guild=None)
     guild = SimpleNamespace(
+        id=guild_id,
         get_role=lambda rid: roles.get(rid),
         get_member=lambda uid: member if member_found else None,
         fetch_member=AsyncMock(side_effect=discord.HTTPException(MagicMock(status=404), "nf")),
@@ -74,9 +77,11 @@ def _guild_with_member(member_found: bool = True) -> tuple[SimpleNamespace, Simp
     return guild, member
 
 
-def _bot(guild: SimpleNamespace | None, ready: bool = True) -> commands.Bot:
+def _bot(guild: SimpleNamespace | list[SimpleNamespace] | None, ready: bool = True) -> commands.Bot:
+    guilds = guild if isinstance(guild, list) else [guild] if guild is not None else []
     bot = SimpleNamespace(
-        guilds=[guild] if guild is not None else [],
+        guilds=guilds,
+        get_guild=lambda gid: next((g for g in guilds if g.id == gid), None),
         is_ready=lambda: ready,
     )
     return cast(commands.Bot, bot)
@@ -210,6 +215,58 @@ async def test_credit_pack_grants_customer_only() -> None:
         assert (await res.json())["granted"] == ["Customer"]
         granted_ids = [r.id for r in member.add_roles.await_args.args]
         assert granted_ids == [555]
+    finally:
+        await client.close()
+
+
+async def test_multi_guild_without_guild_id_refuses() -> None:
+    # Two guilds, no GUILD_ID: the grant target is ambiguous — refuse, never guess a server.
+    g1, stranger = _guild_with_member(guild_id=1)
+    g2, member = _guild_with_member(guild_id=2)
+    client = await _client(_bot([g1, g2]), _settings())
+    try:
+        res = await client.post(
+            "/billing-grant",
+            json={"discord_user_id": "42", "entitlements": ["compliance"]},
+            headers={"Authorization": f"Bearer {TOKEN}"},
+        )
+        assert res.status == 503
+        stranger.add_roles.assert_not_awaited()
+        member.add_roles.assert_not_awaited()
+    finally:
+        await client.close()
+
+
+async def test_guild_id_pins_the_grant_guild() -> None:
+    # The buyer also shares an EARLIER foreign guild with the bot — the old first-match lookup
+    # would have granted there; GUILD_ID pins the grant to the Caisson guild.
+    g1, foreign_member = _guild_with_member(guild_id=1)
+    g2, member = _guild_with_member(guild_id=2)
+    client = await _client(_bot([g1, g2]), _settings(guild_id=2))
+    try:
+        res = await client.post(
+            "/billing-grant",
+            json={"discord_user_id": "42", "entitlements": ["compliance"]},
+            headers={"Authorization": f"Bearer {TOKEN}"},
+        )
+        assert res.status == 200
+        member.add_roles.assert_awaited_once()
+        foreign_member.add_roles.assert_not_awaited()
+    finally:
+        await client.close()
+
+
+async def test_guild_id_not_joined_refuses() -> None:
+    g1, member = _guild_with_member(guild_id=1)
+    client = await _client(_bot(g1), _settings(guild_id=99))
+    try:
+        res = await client.post(
+            "/billing-grant",
+            json={"discord_user_id": "42", "entitlements": ["compliance"]},
+            headers={"Authorization": f"Bearer {TOKEN}"},
+        )
+        assert res.status == 503
+        member.add_roles.assert_not_awaited()
     finally:
         await client.close()
 

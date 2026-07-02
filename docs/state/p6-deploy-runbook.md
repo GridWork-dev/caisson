@@ -94,7 +94,8 @@ the commerce backend follow the same posture.
    (must match B3), optional `DATABASE_URL` (Postgres escalation), optional `SUPPORT_CHANNEL_ID` /
    `SUPPORT_HUMAN_ROLE_ID` / `OPENROUTER_MODEL`, optional `BILLING_GRANT_TOKEN` (ADR-0201 — Bearer for
    `POST /billing-grant`; unset ⇒ the route isn't served; must equal `SUPPORT_BOT_GRANT_TOKEN` on
-   `caisson-license` + `caisson-site`).
+   `caisson-license` + `caisson-site`), optional `GUILD_ID` (pins billing grants to the Caisson guild;
+   sole-guild fallback when unset, refuses when ambiguous).
 4. **Deploy:** `railway up`. Smoke `/ask` end-to-end in Discord against the live docs `/query`; confirm
    an unanswerable question opens a thread + persists a `support_ticket` row (if `DATABASE_URL` set).
 
