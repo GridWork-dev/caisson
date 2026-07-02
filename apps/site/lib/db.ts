@@ -17,7 +17,10 @@
 import { PGlite } from "@electric-sql/pglite";
 import { AI_METER_SCHEMA_SQL } from "@caisson/ai-meter";
 import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
-import { CREDIT_SCHEMA_SQL } from "@caisson/credits";
+import {
+  CREDIT_ROUNDING_MIGRATION_SQL,
+  CREDIT_SCHEMA_SQL,
+} from "@caisson/credits";
 import {
   type TenantExecutor,
   type Transactor,
@@ -141,6 +144,7 @@ async function bootstrapPglite(): Promise<PGlite> {
   await pg.exec(APP_ROLE_BOOTSTRAP_SQL);
   await pg.exec(ACCOUNT_MEMBER_SCHEMA_SQL);
   await pg.exec(CREDIT_SCHEMA_SQL);
+  await pg.exec(CREDIT_ROUNDING_MIGRATION_SQL);
   await pg.exec(ENTITLEMENT_SCHEMA_SQL);
   await pg.exec(LICENSE_GRANT_SCHEMA_SQL);
   await pg.exec(AI_METER_SCHEMA_SQL);
