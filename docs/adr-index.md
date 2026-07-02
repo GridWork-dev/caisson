@@ -10,7 +10,7 @@ conflict, the ADR file and the board win over this index.
   never edits the prior file. So most rows below are **partial** supersessions (one clause),
   not a wholesale replacement.
 - Numbering is **not**
-  contiguous: present are **0001-0024** and **0040-0143** + **0160-0162** + **0170-0185** (Stage-2 Streams A/C/D · the 2026-07-01 provider picker · the 2026-07-01 edition seam-completion picker 0179-0185) + **0187-0199** (LIFT/site-rework/audit-remediation; 0186 reserved-unfiled for agent-runner) + **0201-0202** (editions-go-live; **0200 reserved for the concurrent commerce session**); **0025-0039 are an unused gap**
+  contiguous: present are **0001-0024** and **0040-0143** + **0150-0153** (Stage-2 Stream B) + **0160-0162** + **0170-0185** (Stage-2 Streams A/C/D · the 2026-07-01 provider picker · the 2026-07-01 edition seam-completion picker 0179-0185) + **0187-0199** (LIFT/site-rework/audit-remediation; 0186 reserved-unfiled for agent-runner) + **0200-0203** (commerce-goes-live 0200/0203 + editions-go-live 0201-0202; the Discord ADR was drafted 0201 and renumbered to 0203 at merge — editions claimed 0201 first, ADR-0088 second-merger-renumbers) — **ceiling 0203**; **0025-0039 are an unused gap**
   (no files). The 0040 jump was a deliberate block reservation for the brand/positioning set.
   **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit);
   **0094-0096** = the 2026-06-29 GTM-report locks (open-core Base / GTM offer / services-docs);
@@ -412,6 +412,18 @@ deploy's own Railway topology ADR; `0144-0149` reserved for Stream A spillover.
 | [0142](../knowledge/decisions/ADR-0142-signoz-sizing-retention-sampling.md) | SigNoz self-host: single-node, 14-day retention, 100% head | Ops/Observability | accepted | opens 0138 fork; executes 0117       |
 | [0143](../knowledge/decisions/ADR-0143-architecture-diagram-react-flow.md)  | live architecture diagram: interactive React Flow          | Ops/Observability | accepted | implements 0138 §4                   |
 
+### Stage-2 Stream B — harvest-modules parallel build (0150-0153, 2026-07-01) - status `accepted`
+
+Four greenfield commercial packages built in parallel on `stream/harvest-modules`; board/index
+cross-stream reconcile is integration-owned. `0154-0159` reserved for Stream B spillover.
+
+| #                                                                           | Title                                                                  | Domain               | Status   | Relations                                           |
+| --------------------------------------------------------------------------- | ---------------------------------------------------------------------- | -------------------- | -------- | --------------------------------------------------- |
+| [0150](../knowledge/decisions/ADR-0150-stream-b-parallel-build.md)          | Stream B build: parallel independent build of four greenfield packages | Architecture/Process | accepted | executes 0134/0135; branch stream/harvest-modules   |
+| [0151](../knowledge/decisions/ADR-0151-alerting-multi-channel-transport.md) | @caisson/alerting: four channels behind one AlertChannel port          | Compliance/Alerting  | accepted | implements 0135; builds under 0150                  |
+| [0152](../knowledge/decisions/ADR-0152-retention-runner-scheduling.md)      | @caisson/retention-runner: @caisson/jobs port + in-memory dev driver   | Compliance/Retention | accepted | implements 0135; builds under 0150                  |
+| [0153](../knowledge/decisions/ADR-0153-tool-exec-governed-tool-call.md)     | @caisson/tool-exec: governed tool-call / sandboxed-exec primitive      | Editions/Agentic     | accepted | new Agentic-Dev substrate under 0133; wired by 0199 |
+
 ### Stage-2 Stream C — edition + AI hardening & drivers (0160-0162, 2026-07-01) - status `accepted`
 
 Adapter/transport/BYOK expansion behind already-locked ports (reserved range 0160-0169; SPEC
@@ -487,16 +499,17 @@ shipped ceiling at authoring time: 0178) — renumbers by-meaning at merge if li
 | [0195](../knowledge/decisions/ADR-0195-design-system-martian-mono-codify.md)                | Design-system codify: Martian-only mono + de-dup + button lock (D-7)       | Design/Tokens       | accepted | extends 0042/0099/0100; co-locks button variants with 0192 |
 | [0196](../knowledge/decisions/ADR-0196-extend-cmdk-search-sitewide.md)                      | Extend ⌘K search sitewide (D-9)                                            | Design/IA           | accepted | extends 0096; sequenced after nav 0190                     |
 
-### Whole-repo-audit remediation session (0197-0199, 2026-07-01) - status `accepted`
+### Whole-repo-audit remediation session (0188 + 0197-0199, 2026-07-01) - status `accepted`
 
 Audit-surfaced latent ceilings locked BUILD-NOW in the 2026-07-01 remediation pickers
 (ledger findings `1665248bff049c36` + `3991eccd659c6dc4` + `b090309f83aff1a3`; ADR-0134/0188 harness).
 
-| #                                                                      | Title                                                                    | Domain            | Status   | Relations                                    |
-| ---------------------------------------------------------------------- | ------------------------------------------------------------------------ | ----------------- | -------- | -------------------------------------------- |
-| [0197](../knowledge/decisions/ADR-0197-field-crypto-per-tenant-cmk.md) | field-crypto AWS KMS honors per-tenant CMKs; shred refuses without keyId | Security/Crypto   | accepted | extends 0057/0171; surfaced by 0134/0188     |
-| [0198](../knowledge/decisions/ADR-0198-byok-metering-allowlist.md)     | BYOK zero-cost is per-action allowlisted, default metered                | Commerce/Metering | accepted | refines 0182; extends 0007; surfaced by 0134 |
-| [0199](../knowledge/decisions/ADR-0199-agent-dev-tool-exec-wired.md)   | @caisson/tool-exec wired into the Agentic-Dev edition (members-fold gap) | Editions/Agentic  | accepted | honors 0178/0153; surfaced by 0134/0188      |
+| #                                                                            | Title                                                                       | Domain            | Status   | Relations                                                                   |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ----------------- | -------- | --------------------------------------------------------------------------- |
+| [0197](../knowledge/decisions/ADR-0197-field-crypto-per-tenant-cmk.md)       | field-crypto AWS KMS honors per-tenant CMKs; shred refuses without keyId    | Security/Crypto   | accepted | extends 0057/0171; surfaced by 0134/0188                                    |
+| [0198](../knowledge/decisions/ADR-0198-byok-metering-allowlist.md)           | BYOK zero-cost is per-action allowlisted, default metered                   | Commerce/Metering | accepted | refines 0182; extends 0007; surfaced by 0134                                |
+| [0199](../knowledge/decisions/ADR-0199-agent-dev-tool-exec-wired.md)         | @caisson/tool-exec wired into the Agentic-Dev edition (members-fold gap)    | Editions/Agentic  | accepted | honors 0178/0153; surfaced by 0134/0188                                     |
+| [0188](../knowledge/decisions/ADR-0188-audit-harness-pipeline-completion.md) | audit-harness pipeline completion: scoped reconcile + external audit driver | Tooling/CI        | accepted | amends 0134; the harness this session's findings ran under; LIFT slice-1 F4 |
 
 ### Editions-go-live session (0187 + 0201–0202, 2026-07-01) - status `accepted`
 
