@@ -12,8 +12,17 @@
 // them with real Paddle price ids + the final locked numbers (ADR-0106/0012) when checkout goes live;
 // resolvePurchase throws on any real provider id until then.
 import { z } from "zod";
-import { ConfigError, parseStrict, strictObject } from "@caisson/kernel";
+import {
+  ConfigError,
+  asCredits,
+  parseStrict,
+  strictObject,
+  type Credits,
+} from "@caisson/kernel";
 import { planEntitlementsSchema } from "./plans.ts";
+
+// Branded zero (ADR-0206) for the many license-only rows below — one mint, not 17 casts.
+const NO_CREDITS = asCredits(0);
 
 /** Append-only version stamp — a purchase-row change bumps this, never edits it in place (ADR-0006). */
 export const PURCHASE_BOOK_VERSION = "2026-06-30.3";
@@ -21,8 +30,13 @@ export const PURCHASE_BOOK_VERSION = "2026-06-30.3";
 export const purchaseBookEntrySchema = strictObject({
   /** Stable internal purchase tag (NOT the Stripe id) — survives a price-id rotation. */
   purchaseTag: z.string().min(1),
-  /** EXACT integer credits granted once on purchase — 0 for a license-only (no credit pack) buy. */
-  credits: z.number().int().nonnegative(),
+  /** EXACT integer credits granted once on purchase — 0 for a license-only (no credit pack) buy.
+   *  Branded `Credits` (ADR-0206): the transform mints the brand AFTER validation, same runtime value. */
+  credits: z
+    .number()
+    .int()
+    .nonnegative()
+    .transform((n) => n as Credits),
   /** Purchased ids this one-time buy entitles the buyer to (editions/bundle/modules) — `[]` for a credits-only pack. */
   entitlements: planEntitlementsSchema,
 });
@@ -37,12 +51,12 @@ export type PurchaseBookEntry = z.infer<typeof purchaseBookEntrySchema>;
 export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
   price_credit_pack_PLACEHOLDER: {
     purchaseTag: "credit_pack",
-    credits: 5000,
+    credits: asCredits(5000),
     entitlements: [], // a one-off credit pack — grants credits, no edition access
   },
   price_compliance_onetime_PLACEHOLDER: {
     purchaseTag: "compliance_onetime",
-    credits: 0, // a perpetual license-only buy — grants access, no credit pack
+    credits: NO_CREDITS, // a perpetual license-only buy — grants access, no credit pack
     entitlements: ["compliance"], // the compliance edition (expanded to member slugs by the index)
   },
   // ---- REAL Paddle sandbox price ids (ADR-0106/0116 go-live wiring) ----
@@ -68,27 +82,27 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
   // `/agentic-dev`/"Agentic-Dev" deliberately differ from the entitlement id.
   pri_01kwd76be2eq96kff5nqw236c0: {
     purchaseTag: "compliance",
-    credits: 0,
+    credits: NO_CREDITS,
     entitlements: ["compliance"],
   },
   pri_01kwd76bp60acq51mftvpgr42k: {
     purchaseTag: "bundle",
-    credits: 0,
+    credits: NO_CREDITS,
     entitlements: ["bundle"], // the BUNDLE_ID sentinel — base ∪ every edition (entitlements.ts)
   },
   pri_01kwd76c1pgs2csxcj2n0y7vv0: {
     purchaseTag: "ai-kit",
-    credits: 0,
+    credits: NO_CREDITS,
     entitlements: ["ai-kit"],
   },
   pri_01kwd76cahy825m14334aqf209: {
     purchaseTag: "local-ai",
-    credits: 0,
+    credits: NO_CREDITS,
     entitlements: ["local-ai"],
   },
   pri_01kwd76ck3w8myy4p4f1gj0dcy: {
     purchaseTag: "agent-dev",
-    credits: 0,
+    credits: NO_CREDITS,
     entitlements: ["agent-dev"], // see the ENTITLEMENT-ID NOTE above
   },
 
@@ -110,74 +124,74 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
   // the one true "buy just this" price point for a buyer who does not want the rest of the edition.
   price_compliance_module_PLACEHOLDER: {
     purchaseTag: "compliance_module",
-    credits: 0,
+    credits: NO_CREDITS,
     entitlements: ["compliance"],
   },
   price_field_crypto_module_PLACEHOLDER: {
     purchaseTag: "field-crypto_module",
-    credits: 0,
+    credits: NO_CREDITS,
     entitlements: ["field-crypto"],
   },
   price_audit_worm_module_PLACEHOLDER: {
     purchaseTag: "audit-worm_module",
-    credits: 0,
+    credits: NO_CREDITS,
     entitlements: ["audit-worm"],
   },
   price_ai_meter_module_PLACEHOLDER: {
     purchaseTag: "ai-meter_module",
-    credits: 0,
+    credits: NO_CREDITS,
     entitlements: ["ai-meter"],
   },
   price_ai_evals_module_PLACEHOLDER: {
     purchaseTag: "ai-evals_module",
-    credits: 0,
+    credits: NO_CREDITS,
     entitlements: ["ai-evals"],
   },
   price_guardrails_module_PLACEHOLDER: {
     purchaseTag: "guardrails_module",
-    credits: 0,
+    credits: NO_CREDITS,
     entitlements: ["guardrails"],
   },
   price_prompt_registry_module_PLACEHOLDER: {
     purchaseTag: "prompt-registry_module",
-    credits: 0,
+    credits: NO_CREDITS,
     entitlements: ["prompt-registry"],
   },
   price_ai_kit_module_PLACEHOLDER: {
     purchaseTag: "ai-kit_module",
-    credits: 0,
+    credits: NO_CREDITS,
     entitlements: ["ai-kit"],
   },
   price_local_ai_module_PLACEHOLDER: {
     purchaseTag: "local-ai_module",
-    credits: 0,
+    credits: NO_CREDITS,
     entitlements: ["local-ai"],
   },
   price_local_store_module_PLACEHOLDER: {
     purchaseTag: "local-store_module",
-    credits: 0,
+    credits: NO_CREDITS,
     entitlements: ["local-store"],
   },
   price_agent_kernel_module_PLACEHOLDER: {
     purchaseTag: "agent-kernel_module",
-    credits: 0,
+    credits: NO_CREDITS,
     entitlements: ["agent-kernel"],
   },
   price_agent_dev_module_PLACEHOLDER: {
     purchaseTag: "agent-dev_module",
-    credits: 0,
+    credits: NO_CREDITS,
     entitlements: ["agent-dev"],
   },
   // FUTURE — package not yet built; reserved entitlement id (expands to nothing until it ships).
   price_alerting_module_PLACEHOLDER: {
     purchaseTag: "alerting_module",
-    credits: 0,
+    credits: NO_CREDITS,
     entitlements: ["alerting"],
   },
   // FUTURE — package not yet built; reserved entitlement id (expands to nothing until it ships).
   price_retention_runner_module_PLACEHOLDER: {
     purchaseTag: "retention-runner_module",
-    credits: 0,
+    credits: NO_CREDITS,
     entitlements: ["retention-runner"],
   },
 };
