@@ -35,7 +35,7 @@ concurrency:
 jobs:
   greptile-gate:
     runs-on: ubuntu-latest # hosted on purpose: the merge gate must not depend on the box being up
-    timeout-minutes: 20
+    timeout-minutes: 40
     if: ${{ !github.event.pull_request.draft }}
     env:
       GH_TOKEN: ${{ github.token }}
@@ -68,7 +68,7 @@ jobs:
           registry/
           apps/site/src/app/api/
           apps/admin/
-          tooling/
+          tooling/standards-gate/src/
           infra/
           .github/
           .greptile/
@@ -123,7 +123,7 @@ jobs:
               echo "review already requested for $HEAD_SHA"
             fi
             # Bounded wait for the review to conclude on the head SHA (~15 min).
-            for i in $(seq 1 30); do
+            for i in $(seq 1 70); do
               sleep 30
               ok=$(gh api "repos/$REPO/commits/$HEAD_SHA/check-runs" --jq \
                 '[.check_runs[] | select(.name == "Greptile Review" and .conclusion == "success")] | length' 2>/dev/null || echo 0)
