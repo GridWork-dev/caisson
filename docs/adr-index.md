@@ -10,7 +10,7 @@ conflict, the ADR file and the board win over this index.
   never edits the prior file. So most rows below are **partial** supersessions (one clause),
   not a wholesale replacement.
 - Numbering is **not**
-  contiguous: present are **0001-0024** and **0040-0143** + **0150-0153** (Stage-2 Stream B) + **0160-0162** + **0170-0185** (Stage-2 Streams A/C/D · the 2026-07-01 provider picker · the 2026-07-01 edition seam-completion picker 0179-0185) + **0187-0199** (LIFT/site-rework/audit-remediation; 0186 reserved-unfiled for agent-runner) + **0200-0203** (commerce-goes-live 0200/0203 + editions-go-live 0201-0202; the Discord ADR was drafted 0201 and renumbered to 0203 at merge — editions claimed 0201 first, ADR-0088 second-merger-renumbers) — **ceiling 0203**; **0025-0039 are an unused gap**
+  contiguous: present are **0001-0024** and **0040-0143** + **0150-0153** (Stage-2 Stream B) + **0160-0162** + **0170-0185** (Stage-2 Streams A/C/D · the 2026-07-01 provider picker · the 2026-07-01 edition seam-completion picker 0179-0185) + **0187-0199** (LIFT/site-rework/audit-remediation; 0186 reserved-unfiled for agent-runner) + **0200-0203** (commerce-goes-live 0200/0203 + editions-go-live 0201-0202; the Discord ADR was drafted 0201 and renumbered to 0203 at merge — editions claimed 0201 first, ADR-0088 second-merger-renumbers) + **0204-0208** (the 2026-07-02 edition-tails-ops picker) — **ceiling 0208**; **0025-0039 are an unused gap**
   (no files). The 0040 jump was a deliberate block reservation for the brand/positioning set.
   **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit);
   **0094-0096** = the 2026-06-29 GTM-report locks (open-core Base / GTM offer / services-docs);
@@ -538,6 +538,20 @@ first (ADR-0088 second-merger-renumbers convention).
 | --------------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------- | -------- | ---------------------------------------------------- |
 | [0200](../knowledge/decisions/ADR-0200-paddle-sole-buyer-webhook-mount.md)  | Paddle is the sole mounted buyer-purchase webhook source             | Commerce/Billing | accepted | extends 0108/0116/0131; codifies the PR #40 mount    |
 | [0203](../knowledge/decisions/ADR-0203-discord-role-grant-link-and-push.md) | Purchase → Discord edition-role: better-auth link + license→bot push | Services/Support | accepted | implements the 0109 deferral; relates 0132/0176/0200 |
+
+### Edition-tails-ops session (0204–0208, 2026-07-02) - status `accepted`
+
+The post-go-live edition-tails + ops-hardening kickoff: one operator picker (8 forks, two rounds)
+over recon-confirmed state. Recon found CAISSON-1 (Grafana cutover) and the registry-index required
+check already done; the picker locked the genuinely open forks. 0186 stays reserved for agent-runner.
+
+| #                                                                            | Title                                                                        | Domain           | Status   | Relations                                                         |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ---------------- | -------- | ----------------------------------------------------------------- |
+| [0204](../knowledge/decisions/ADR-0204-local-ai-rented-transport-drivers.md) | local-ai RentedTransport drivers: Azure + Bedrock ship, Ollama out of scope  | Local-AI/Infra   | accepted | closes the 0160 deferred bullet; pattern from 0201                |
+| [0205](../knowledge/decisions/ADR-0205-compliance-runtime-composition.md)    | Compliance composes @caisson/alerting + retention-runner at runtime          | Compliance       | accepted | mirrors 0199; delivers 0178 members; relates 0150/0151            |
+| [0206](../knowledge/decisions/ADR-0206-support-bot-linear-triage-sink.md)    | Support-bot escalations post to Linear Triage (third best-effort sink)       | Services/Support | accepted | implements the linear-integration fast-follow; extends 0105       |
+| [0207](../knowledge/decisions/ADR-0207-admin-ops-grafana-query-rebuild.md)   | Admin /ops cockpit rebuilds on the Grafana Cloud query API                   | Admin/Obs        | accepted | consequence of 0177 teardown; per the 0140 charter                |
+| [0208](../knowledge/decisions/ADR-0208-ops-hardening-locks.md)               | Ops-hardening locks: owner-only tenant writes · branch-protection · TF defer | Security/Ops     | accepted | fixes Strix vuln-0006; extends 0107 §8; scopes the 0178 republish |
 
 ---
 
