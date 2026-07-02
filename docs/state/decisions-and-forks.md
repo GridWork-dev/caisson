@@ -655,8 +655,11 @@ per-package decisions filed as ADR-0211–0217 (drafted 0205–0211, renumbered 
 
 The 11 deferred-by-decision items were researched into SPEC drafts (`outputs/specs/deferred-respec/`,
 PR #55). The operator selected 5 for build-now and locked all 16 tabled forks in one picker round —
-two picks override the spec recommendations (PF-1, AM-2) and one adds scope (ONNX F2). The remaining
-6 specs stay `draft — operator lock required` (members-fold in revision re-run; the rest TBD).
+two picks override the spec recommendations (PF-1, AM-2) and one adds scope (ONNX F2). Six specs
+stayed `draft — operator lock required` at that round; **three of the six were then locked the same
+day** (registry self-hosted npm delivery → ADR-0223 · live-verification harness → ADR-0224 ·
+edition members-fold republish → files at execution, see the three sections below). Three remain
+draft (TBD).
 
 | Fork                                      | Decision                                                                                                                                                                                                                | ADR          |
 | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
@@ -679,3 +682,59 @@ GitHub org `caisson-sh` and transferred the monorepo to `caisson-sh/caisson`.
 | **Credit pack price**             | $49 for 5,000 credits — sandbox SKU created, pricebook row wired.                                             | **ADR-0222** |
 | **agent-runner marketplace**      | Listed as the 15th module at $49 (matches registry 4900¢); members-map lag stays with members-fold republish. | **ADR-0222** |
 | **greptile-gate latency + globs** | Wait 15→35 min; `tooling/` glob narrowed to `tooling/standards-gate/src/` (PR #60).                           | CI, no ADR   |
+
+## Closed by the 2026-07-02 registry self-hosted npm delivery lock (operator-locked)
+
+The same-day sequel to the distribution picker: one of the six specs left `draft` above. The
+operator locked **option A** — `registry.caisson.sh` becomes a real npm registry (packuments +
+tarballs), authenticated by the license token buyers already hold — plus all eight sub-forks in one
+round (SPEC `outputs/specs/deferred-respec/SPEC-registry-npm-delivery.md`). Supersedes the
+structurally-dead GitHub-Packages buyer channel baked into `packages/cli/src/generate.ts` +
+`packages/cli/templates/base/.npmrc`; the generator + docs flip land in the build that implements
+the SPEC (**not yet built**). ADR-0222's `@caisson-sh/*` npmjs mirror stays the public-discovery
+surface, this ADR owns the commercial delivery track.
+
+| Fork                           | Decision                                                                                                                                                                    | ADR          |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| **A — tarball serving**        | A1 same-origin Worker proxy: the Worker serves tarball bytes through its R2 binding, re-checks the Bearer entitlement on every GET. No pre-signed URLs, one auth surface.   | **ADR-0223** |
+| **B — base packages here too** | B1 base served here too, unauthenticated; commercial modules license-gated, one scope, one `.npmrc` line reusing the live base-∪-entitled union.                            | **ADR-0223** |
+| **C — auth token**             | C1 raw license token IS the `_authToken` at launch (npm/bun send it as `Authorization: Bearer`); derived/rotatable tokens (C2) are the hardening follow-up.                 | **ADR-0223** |
+| **D — miss semantics**         | D3 401 bare / 404 with token: no token → 401 (auth retry); verifies-but-not-entitled → 404 (no-existence-leak, ADR-0076).                                                   | **ADR-0223** |
+| **E — dist-tag range**         | E1 latest only, mapped from the ledger; no prerelease channel until something produces prerelease tarballs.                                                                 | **ADR-0223** |
+| **F — revocation**             | F1 offline revocation: the offline Ed25519 contract holds; a refunded buyer installs until token expiry. Online per-install revocation (F2) pairs with C2 later.            | **ADR-0223** |
+| **G — hosting**                | G1 Cloudflare-native: extend the LIVE caisson-registry Worker (edge Ed25519 verify + native R2 binding + `registry.caisson.sh` route, same-account R2 egress free).         | **ADR-0223** |
+| **H — tarball metadata**       | H1 private commercial tarball sidecar maps `(id, version)` → `{R2 key, shasum, integrity, size}`; the Apache-2.0 `registry-schema` + world-readable `index.json` untouched. | **ADR-0223** |
+
+## Closed by the 2026-07-02 live-verification harness lock (operator-locked)
+
+The second of the six draft specs, locked the same day. Six operator forks (F1–F6) gate a
+verification harness that proves each of the five production-wired external seams (Paddle
+checkout→webhook→grant · Discord role-grant · Linear Triage sink · Grafana Cloud query ·
+`NEXT_PUBLIC_*` analytics) against its real remote, so the pre-launch key-rotation pass gets a
+single green/red proof that the rotated creds actually work end-to-end. Test files + `test:live`
+scripts only, no product code (SPEC `outputs/specs/deferred-respec/SPEC-live-harness-production-seams.md`);
+extends the ADR-0201 `live/` + `skipIf` convention to service-level seams. Two picks override the
+spec recommendation (F1, F3).
+
+| Fork                            | Decision                                                                                                                                                                                                                                                        | ADR          |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| **F1 — Paddle delivery method** | C — **BOTH** (OVERRIDE of the simulator-only rec): the simulator API is the routine headless webhook→grant proof; a rarely-run Playwright sandbox-checkout leg is the full-fidelity check.                                                                      | **ADR-0224** |
+| **F2 — proof target**           | A — the DEPLOYED Railway fleet, with a reserved proof tenant + per-run UUID isolation + a teardown leg per seam (seams 3–4 read-only either way).                                                                                                               | **ADR-0224** |
+| **F3 — Discord grant depth**    | B — **FULL grant + teardown** (OVERRIDE of the 404-only rec). Fixtures: the operator's main Discord account (guild owner) is the standing test member; throwaway role `caisson-proof` (id `1522364538790350980`, created 2026-07-02 via the Administrator bot). | **ADR-0224** |
+| **F4 — analytics proof depth**  | A — build-grep: `next build` `apps/site` with the `NEXT_PUBLIC_*` envs set, grep the client bundle for the inlined key/domain. Ingestion stays dashboard-verified.                                                                                              | **ADR-0224** |
+| **F5 — automation posture**     | A first — the local `bun run test:live:all` command the rotation runbook calls. A `workflow_dispatch` CI job is a later, separately-audited step (puts creds on a runner).                                                                                      | **ADR-0224** |
+| **F6 — launch credential SOT**  | A — `~/.gridwork/caisson.env` STAYS the launch credential SOT the harness reads + asserts parity against. A 1Password vault, if stood up, is a durable recovery store, NOT the SOT.                                                                             | **ADR-0224** |
+
+## Closed by the 2026-07-02 edition members-fold republish lock (operator-locked)
+
+The third of the six draft specs (the members-fold in revision re-run). Locks the mechanics of
+folding the Stage-2 primitives + `@caisson/agent-runner` into the edition `members` maps and
+republishing the registry ledger/index. The ADR is filed **during the republish run itself** (C1),
+not up front — consistent with the ADR-0178 ledger/index-only republish posture
+(`CAISSON_PUBLISH_DRY_RUN` stays `"true"`).
+
+| Fork                        | Decision                                                                                                             | ADR                         |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| **A — changeset scope**     | A1 consume-all: consume every pending changeset in the republish run, not a members-only subset.                     | files at execution (per C1) |
+| **B — edition member pins** | B1 repin-to-bumped: edition `members` maps repin to the freshly bumped member versions from the same run.            | files at execution (per C1) |
+| **C — ADR timing**          | C1 short ADR filed at execution: a small ADR lands during the republish run recording the final ledger/index deltas. | files at execution (per C1) |

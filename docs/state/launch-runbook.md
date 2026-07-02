@@ -456,3 +456,55 @@ Paddle traffic, since that endpoint was never behind Access in the first place (
   ```bash
   cd infra/terraform && git checkout -- access.tf && terraform apply
   ```
+
+---
+
+## 7. Post-merge DEPLOY block — the 2026-07-02 ADR-0218–0221 wave
+
+**DEPLOY-class, operator-executed. Separate from the launch flip above** — this is the ordered
+deploy of the four hardening items that merged to `main` today (PRs #66–69: ADR-0218 Paddle per-line
+refund · ADR-0219 CF front rate-limit · ADR-0220 admin mutation surface v1 · ADR-0221 live-seams
+KMS/ONNX). Merge ≠ deploy: the code is on `main`, none of it is live until these run. **Order is
+load-bearing — do them in sequence** (each Linear issue tracks its own runbook detail). Nothing here
+is inside the autonomous loop.
+
+1. **CAISSON-16 — DB migrations `0008`/`0009` BEFORE the license redeploy.** The Paddle per-line
+   refund (ADR-0218) adds nullable `line_item_id` columns to `entitlement_grant` + `credit_event`,
+   and the admin mutation surface (ADR-0220) adds its schema — both ship as new numbered migrations
+   `0008`/`0009`. Run them **first**, against the live Railway Postgres, so the new schema exists
+   before any new code reads it: `caisson-license`'s idempotent `preDeployCommand` migrate applies
+   the ledger, but confirm the two new files are in the assembled sequence and applied **before** you
+   `railway up` the new `caisson-license` image — a redeploy that boots the new code against the old
+   schema fails closed on the missing column.
+2. **CAISSON-17 — admin provisioning.** Provision the ADR-0220 mutation surface on `caisson-admin`:
+   the DDL for the dedicated **`admin_write`** role (distinct from the read-only `admin_app` role,
+   per AM-2 override — grant it only the four v1 mutation actions' tables), and set the two new env
+   vars the admin app reads — **`ADMIN_ISSUE_TOKEN`** (the admin-scoped reissue credential, AM-5 —
+   NOT the license `LICENSE_ISSUE_TOKEN`) and **`CAISSON_LICENSE_ISSUE_URL`** (the `services/license`
+   `/issue` endpoint the admin surface calls). WORM dual-logging is on day 1 (AM-4).
+3. **CAISSON-18 — WORM store swap to S3 Object-Lock.** Point the audit-worm store at the real
+   **`caisson-worm`** S3 bucket with Object-Lock (COMPLIANCE mode, extend-only retention per
+   ADR-0202) — the swap the ADR-0201/0221 live proof exercised (5/5 green tonight). Set the bucket +
+   AWS creds on the owning service; verify a write lands an immutable object and the retention floor
+   is enforced.
+4. **CAISSON-15 — Cloudflare front rate-limit (ADR-0219).** `terraform import` the existing CF
+   resources into state (they predate this module), `terraform plan` (**expect only the new
+   rate-limit + WAF rules to add — zero changes to `site_gate`/`admin_gate`/DNS**), `terraform
+apply`, then **probe for a `429`**: hammer the proxied docs-api path past the Free-tier threshold
+   and confirm Cloudflare returns `429` (the edge limiter is live). `license.caisson.sh` stays
+   grey-cloud/un-proxied — the rate-limit is docs-api-proxied only, the app-level limiters (ADR-0204)
+   stay in place underneath.
+
+### Transfer aftermath (repo moved to `caisson-sh/caisson`, 2026-07-02)
+
+The monorepo transferred into the **`caisson-sh`** GitHub org (repo home is now
+`github.com/caisson-sh/caisson`; the old `GridWork-dev/caisson` URL auto-redirects). One operational
+gotcha this move surfaced, worth memorizing:
+
+- **If CI jobs ever queue with ZERO runners after an org/repo move**, the runscaler **scale set must
+  be deleted and recreated** — a stale scale set keeps pointing at the old repo/org URL and silently
+  registers no runners. The fix: correct the scale-set URL, then **`systemctl stop` → `systemctl
+start`** the runscaler unit cleanly (not a hot reload), and **cancel + re-run** any jobs that were
+  queued against the dead set — they do not auto-recover onto the new runners. (This is exactly what
+  happened at the transfer: the old scale set had to be torn down and recreated on both the box and
+  the Mac mini, and the Greptile app was reinstalled on the new org.)

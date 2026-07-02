@@ -32,7 +32,7 @@ import { join, resolve } from "node:path";
 
 const APACHE = "Apache-2.0";
 const COMMERCIAL = "LicenseRef-Caisson-Commercial";
-const SOURCE_REPO = "GridWork-dev/caisson";
+const SOURCE_REPO = "caisson-sh/caisson";
 const OLD_SCOPE = "@caisson/";
 const NEW_SCOPE = "@caisson-sh/";
 
