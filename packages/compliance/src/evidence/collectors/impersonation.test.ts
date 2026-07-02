@@ -20,6 +20,10 @@ function session(
     endedAt: "2026-06-27T12:05:00.000Z",
     operatorRecordSeq: 1,
     tenantRecordSeq: 2,
+    endOperatorRecordSeq: 5,
+    endTenantRecordSeq: 6,
+    operatorRecordCount: 3,
+    tenantRecordCount: 3,
     ...overrides,
   };
 }
@@ -84,6 +88,56 @@ describe("impersonationCollector — verdict matrix (flag-never-guess)", () => {
     );
     expect(result.status).toBe("flagged");
     expect(result.reason).toMatch(/unbounded or invalid lifetime/);
+  });
+
+  test("flags an ENDED session whose session.end records are missing (torn end)", () => {
+    const result = impersonationCollector().collect(
+      fact({
+        sessions: [
+          session({
+            endOperatorRecordSeq: null,
+            endTenantRecordSeq: null,
+            operatorRecordCount: 1,
+            tenantRecordCount: 1,
+          }),
+        ],
+      }),
+    );
+    expect(result.status).toBe("flagged");
+    expect(result.reason).toMatch(
+      /ended but the operator-identity session.end record is missing/,
+    );
+    expect(result.reason).toMatch(
+      /ended but the acting-as-tenant session.end record is missing/,
+    );
+  });
+
+  test("a still-OPEN session without end records passes (no end pair is owed yet)", () => {
+    const result = impersonationCollector().collect(
+      fact({
+        sessions: [
+          session({
+            endedAt: null,
+            endOperatorRecordSeq: null,
+            endTenantRecordSeq: null,
+            operatorRecordCount: 1,
+            tenantRecordCount: 1,
+          }),
+        ],
+      }),
+    );
+    expect(result.status).toBe("pass");
+  });
+
+  test("flags unequal per-side record counts (a torn dual append mid-lifecycle)", () => {
+    const result = impersonationCollector().collect(
+      fact({
+        sessions: [session({ operatorRecordCount: 3, tenantRecordCount: 2 })],
+      }),
+    );
+    expect(result.status).toBe("flagged");
+    expect(result.reason).toMatch(/dual-trail asymmetry/);
+    expect(result.reason).toMatch(/torn dual append/);
   });
 
   test("flags a failed chain verification even when every session looks complete", () => {

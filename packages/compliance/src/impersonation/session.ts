@@ -293,30 +293,74 @@ function isDualRecord(
   return record["kind"] === kind && record["sessionId"] === sessionId;
 }
 
+/** One side's lifecycle scan: first (begin) seq, first `session.end` seq, and the total count. */
+interface DualSideScan {
+  first: number | null;
+  end: number | null;
+  count: number;
+}
+
+function scanDualSide(
+  entries: readonly AuditChainEntry[],
+  kind: string,
+  sessionId: string,
+): DualSideScan {
+  const side: DualSideScan = { first: null, end: null, count: 0 };
+  for (const entry of entries) {
+    if (!isDualRecord(entry.payload, kind, sessionId)) continue;
+    side.count += 1;
+    if (side.first === null) side.first = entry.seq;
+    const record = entry.payload as { readonly [key: string]: JsonValue };
+    if (side.end === null && record["action"] === "session.end") {
+      side.end = entry.seq;
+    }
+  }
+  return side;
+}
+
+/** The full dual-trail scan for one session (see {@link findDualRecordSeqs}). */
+export interface DualRecordScan {
+  /** Seq of the FIRST operator-identity record (the `session.begin` pair's "who acted" side). */
+  readonly operatorRecordSeq: number | null;
+  /** Seq of the FIRST acting-as-tenant record (the begin pair's "whose data" side). */
+  readonly tenantRecordSeq: number | null;
+  /** Seq of the `session.end` operator-identity record; `null` = that half of the end pair is
+   *  missing (for an ENDED session row, a torn end — the collector flags it). */
+  readonly endOperatorRecordSeq: number | null;
+  /** Seq of the `session.end` acting-as-tenant record; `null` = missing (as above). */
+  readonly endTenantRecordSeq: number | null;
+  /** Total operator-identity records for the session. Every lifecycle step appends exactly one
+   *  record per side, so the two counts must be EQUAL — an inequality is a torn dual append
+   *  (one side landed, the other did not) anywhere in begin/action/end. */
+  readonly operatorRecordCount: number;
+  /** Total acting-as-tenant records for the session (must equal the operator count). */
+  readonly tenantRecordCount: number;
+}
+
 /**
- * Pure edge helper: locate a session's BEGIN dual pair in a loaded chain — the first
- * operator-identity record and the first acting-as-tenant record carrying `sessionId`. `null` on
- * either side means that half of the dual trail is missing (the collector flags it).
+ * Pure edge helper: scan a loaded chain for one session's WHOLE dual trail — the begin pair's
+ * seqs, the `session.end` pair's seqs, and the per-side record counts. `null` begin seqs mean
+ * that half of the dual trail never landed; `null` end seqs on an ENDED session row mean a torn
+ * end; unequal counts mean a torn dual append at some lifecycle step. The impersonation evidence
+ * collector turns each of these into a flagged deficiency — a session is only attested when every
+ * lifecycle step it claims is provably on the chain.
  */
 export function findDualRecordSeqs(
   entries: readonly AuditChainEntry[],
   sessionId: string,
-): { operatorRecordSeq: number | null; tenantRecordSeq: number | null } {
-  let operatorRecordSeq: number | null = null;
-  let tenantRecordSeq: number | null = null;
-  for (const entry of entries) {
-    if (
-      operatorRecordSeq === null &&
-      isDualRecord(entry.payload, IMPERSONATION_OPERATOR_RECORD, sessionId)
-    ) {
-      operatorRecordSeq = entry.seq;
-    }
-    if (
-      tenantRecordSeq === null &&
-      isDualRecord(entry.payload, IMPERSONATION_TENANT_RECORD, sessionId)
-    ) {
-      tenantRecordSeq = entry.seq;
-    }
-  }
-  return { operatorRecordSeq, tenantRecordSeq };
+): DualRecordScan {
+  const operator = scanDualSide(
+    entries,
+    IMPERSONATION_OPERATOR_RECORD,
+    sessionId,
+  );
+  const tenant = scanDualSide(entries, IMPERSONATION_TENANT_RECORD, sessionId);
+  return {
+    operatorRecordSeq: operator.first,
+    tenantRecordSeq: tenant.first,
+    endOperatorRecordSeq: operator.end,
+    endTenantRecordSeq: tenant.end,
+    operatorRecordCount: operator.count,
+    tenantRecordCount: tenant.count,
+  };
 }

@@ -119,9 +119,14 @@ describe("dual audit trail (ADR-0187 — two chained records per step)", () => {
       );
     }
     expect(actionSeqs.operatorSeq).toBeLessThan(actionSeqs.tenantSeq);
+    // The whole-lifecycle scan: begin pair at 0/1, end pair at 4/5, 3 records per side.
     expect(findDualRecordSeqs(entries, session.id)).toEqual({
       operatorRecordSeq: 0,
       tenantRecordSeq: 1,
+      endOperatorRecordSeq: 4,
+      endTenantRecordSeq: 5,
+      operatorRecordCount: 3,
+      tenantRecordCount: 3,
     });
 
     // The whole trail verifies against the trusted WORM anchor — never a plain log.

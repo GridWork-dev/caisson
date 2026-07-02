@@ -16,7 +16,7 @@
           {
             "name": "caisson-evidence-pack-sha256",
             "ns": "https://caisson.sh/ns/oscal",
-            "value": "eb9c9b17e5d72d99b4ec4e6eaa78e3a26518efad6f1077703da77ee3acf0decd"
+            "value": "b8303f5247b11f6ff184ffb102a1023ec975637edb2ee2732a727228dc266938"
           }
         ],
         "links": [
@@ -186,7 +186,7 @@
           {
             "name": "caisson-evidence-pack-sha256",
             "ns": "https://caisson.sh/ns/oscal",
-            "value": "eb9c9b17e5d72d99b4ec4e6eaa78e3a26518efad6f1077703da77ee3acf0decd"
+            "value": "b8303f5247b11f6ff184ffb102a1023ec975637edb2ee2732a727228dc266938"
           }
         ],
         "links": [
