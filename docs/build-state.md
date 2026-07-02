@@ -1,5 +1,21 @@
 # Build state & roadmap
 
+> **LIFT-HARVEST SLICE-2 (2026-07-02):** the full remaining harvest program (ADR-0133/0134/0135)
+> built spec-first on `feat/lift-harvest` — **ADR ceiling is now `0211`** (0186 agent-runner +
+> 0204–0211 wave locks; SPECs under `outputs/specs/harvest-slice2/`). Net-new commercial
+> **`packages/agent-runner`** (sandboxed governed agent runner: from-scratch scrubbed env, ship-blocking
+> leak-guard, `.jsonl` transcript + structured `finalReport`; Agentic-Dev members-fold per the ADR-0178
+> form; registry ledger/index 32→33) plus hardening waves across `ai-config` (lane schema),
+> `ai-kit` (metered `embed()`/`embedMany()` + fetch-deadline floor), `ai-evals` (Wilson-CI gate,
+> Fleiss kappa, eval ledger, exit classifier, reflexivity queue), `guardrails` (secret egress gate on
+> the new kernel `secret-scrub` seam + FTC-4Ps evaluator), `jobs` (idempotency keys + consumer-side
+> `work()`), `mcp-server` (declarative tool manifest + retired-tool ledger), `billing` (envelope
+> verify-then-parse seam tests), `tenancy-rls` (fail-closed `pg_roles` role pre-flight; standards-gate
+> `checkRlsEquivalence` + 7-table overrides ledger), `ai-meter` (MinHash/LSH dedup-before-meter), and
+> kernel **branded money + rounding provenance** (ADR-0206, serialized wave-2). Deferred: lift-sweep
+> #9 hash-at-rest sessions (fights ADR-0015); wave-6 residuals parked. Item-by-item terminal states:
+> `docs/state/harvest-program.md`.
+
 > **STAGE-2 INTEGRATION + DEPLOY (2026-07-01):** the four parallel Stage-2 streams + the deploy-prep
 > branch are folded into **one branch, `integration/stage2`** (Streams A/B/C/D merged). **ADR ceiling
 > is now `0176`.** The live Railway services `caisson-site` (unified marketing + docs + buyer
