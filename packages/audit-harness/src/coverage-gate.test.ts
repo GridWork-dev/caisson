@@ -1,46 +1,76 @@
+import { execFileSync } from "node:child_process";
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
 
 import { deriveDomains, domainForPath } from "./domains.ts";
 
-// The mechanical coverage GATE (ADR-0233 / SPEC audit-harness-v2, task 1). Replaces the v1 hard-coded
-// 24-id `toEqual` in domains.test.ts. It proves two things the v1 "run again until a critic goes
-// quiet" loop could not: (1) `deriveDomains` succeeds — every tree unit is CLASSIFIABLE (a stray
-// packages/* dir with no package.json throws here, so you cannot start a run with an unclaimed dir),
-// and (2) every real file under the audited containers resolves to EXACTLY ONE domain (no unclaimed
-// = under-scan; no double-claim = the v1 overlap bug). Add a throwaway `packages/zzz-probe/` (no
-// package.json) → this test FAILS at `deriveDomains(REPO_ROOT)`; remove it → it passes.
+// The mechanical coverage GATE (ADR-0233 / SPEC audit-harness-v2, task 1). v1 scanned an
+// AUDITED_ROOTS ALLOW-list — a new top-level dir (tools/, a root doc) escaped it silently, and so
+// would any dir added tomorrow. v2 flips to a DENY-list scan: enumerate EVERY git-tracked file in
+// the repo (`git ls-files`), subtract the reviewed IGNORE set below, and require every remainder
+// to resolve to exactly one domain. Add a throwaway `packages/zzz-probe/` (no package.json) →
+// `deriveDomains(REPO_ROOT)` throws; add a new top-level dir with no IGNORE entry and no domain →
+// the second test below fails, naming the offender.
 
 const REPO_ROOT = join(import.meta.dir, "..", "..", "..");
 
-// The dirs whose whole subtree the derived domains must tile. Registry is enumerated at its three
-// service units (its loose index/ledger files are data, not an audit unit).
-const AUDITED_ROOTS = [
-  "packages/**",
-  "apps/**",
-  "services/**",
-  "tooling/**",
-  "infra/**",
-  "registry/worker/**",
-  "registry/scripts/**",
-  "registry/schema/**",
-  ".github/workflows/**",
+// Vendor / build output — never a git-tracked path in practice, kept as a defensive filter.
+const BUILD_OUTPUT = /(^|\/)(node_modules|dist|\.next|\.turbo|coverage)(\/|$)/;
+
+/**
+ * The reviewed IGNORE set (ADR-0233 fix). Every entry is process-exhaust, generated data, or
+ * build/lint config with no audit-relevant content — each justified below. This is the ONLY way a
+ * git-tracked path may skip domain classification; everything else must resolve via
+ * `domainForPath`, so an over-broad addition here is a visible diff and a review line-item (the
+ * same posture as `domains.ts`'s `IGNORE_UNIT`).
+ */
+const IGNORE_GLOBS: readonly string[] = [
+  // session process-exhaust (kickoffs/plans/audit reports) — never shipped or reviewed as product
+  "outputs/**",
+  // changesets pipeline scratch, consumed + deleted on release — no standing content
+  ".changeset/**",
+  // registry root loose files: README/CHANGELOG/SCHEMA shadow the already-covered
+  // registry/{worker,scripts,schema} service domains; index/ledger/tarballs are CI-generated data
+  // (the domain module's existing "loose index/ledger" carve-out, extended to its siblings); the
+  // rest is build config for the registry workspace root
+  "registry/*.md",
+  "registry/index.json",
+  "registry/ledger.jsonl",
+  "registry/tarballs.json",
+  "registry/package.json",
+  "registry/eslint.config.js",
+  "registry/tsconfig.json",
+  // root build/lint config + lockfile — no buyer- or audit-relevant content
+  "package.json",
+  "tsconfig.json",
+  "turbo.json",
+  "eslint.config.js",
+  "bunfig.toml",
+  ".dependency-cruiser.cjs",
+  "bun.lock",
+  // dotfiles — no audit value
+  ".gitignore",
+  ".dockerignore",
+  ".prettierignore",
+  // repo/CI meta-config — mechanical, no secrets, not a product surface
+  ".githooks/**",
+  ".gridwork/**",
+  ".greptile/**",
+  ".github/CODEOWNERS",
 ];
 
-const IGNORED = /(^|\/)(node_modules|dist|\.next|\.turbo|coverage)(\/|$)/;
+function isIgnored(path: string): boolean {
+  return IGNORE_GLOBS.some((g) => new Bun.Glob(g).match(path));
+}
 
-function auditedFiles(): string[] {
-  const out = new Set<string>();
-  for (const glob of AUDITED_ROOTS) {
-    for (const p of new Bun.Glob(glob).scanSync({
-      cwd: REPO_ROOT,
-      onlyFiles: true,
-      dot: true,
-    })) {
-      if (!IGNORED.test(p)) out.add(p);
-    }
-  }
-  return [...out];
+/** Every git-tracked file, repo-relative — the deny-list scan's universe (security floor:
+ * `execFileSync` with an arg array, never a shell string). */
+function trackedFiles(): string[] {
+  return execFileSync("git", ["ls-files"], { cwd: REPO_ROOT, encoding: "utf8" })
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .filter((p) => !BUILD_OUTPUT.test(p));
 }
 
 describe("coverage gate — complete, non-overlapping tree partition (ADR-0233)", () => {
@@ -51,12 +81,12 @@ describe("coverage gate — complete, non-overlapping tree partition (ADR-0233)"
 
   const domains = deriveDomains(REPO_ROOT);
 
-  test("every real file under the audited roots resolves to exactly one domain — none unclaimed", () => {
-    const unclaimed = auditedFiles().filter(
-      (f) => domainForPath(f, domains) === null,
+  test("every git-tracked file resolves to a domain or a reviewed IGNORE entry — none unclaimed", () => {
+    const offenders = trackedFiles().filter(
+      (f) => !isIgnored(f) && domainForPath(f, domains) === null,
     );
     // A non-empty list IS the under-scan: name the escaped files loudly.
-    expect(unclaimed).toEqual([]);
+    expect(offenders).toEqual([]);
   });
 
   test("no two domains share a root — no double-claim", () => {
@@ -72,8 +102,21 @@ describe("coverage gate — complete, non-overlapping tree partition (ADR-0233)"
       dot: true,
     });
     for (const f of templateFiles) {
-      if (IGNORED.test(f)) continue;
+      if (BUILD_OUTPUT.test(f)) continue;
       expect(domainForPath(f, domains)?.id).toBe("generator-templates");
     }
+  });
+
+  test("classifier spot-checks: the escaped tools/ + root-docs paths are now claimed; a genuinely new, un-ignored path stays unclaimed", () => {
+    // (a) tools/strix — the MUST-FIX escapee (shell scripts sourcing ~/.gridwork/env).
+    expect(domainForPath("tools/strix/_common.sh", domains)?.id).toBe(
+      "tools/strix",
+    );
+    // (b) a root doc.
+    expect(domainForPath("README.md", domains)?.id).toBe("root-docs");
+    // (c) a hypothetical new top-level dir with no IGNORE entry and no domain: this is exactly the
+    // shape the whole-repo scan test above fails loud on — unclaimed AND not ignored.
+    expect(domainForPath("newdir/x.ts", domains)).toBeNull();
+    expect(isIgnored("newdir/x.ts")).toBe(false);
   });
 });

@@ -69,7 +69,7 @@ export const DIMENSIONS: readonly Dimension[] = [
     slug: "hygiene-residue",
     hunts:
       "dead code + dead flags, orphaned dirs, dependency-hygiene/supply-chain, versioning + changelog coherence",
-    checker: "gw-code-reviewer",
+    checker: "haiku recon + standards-gate",
   },
 ];
 
@@ -87,11 +87,20 @@ export function dimension(id: DimensionId): Dimension {
  * SPEC "Applies to" column:
  *  - oss-source / sold-source  → all seven (buyers read the source; it is a package with a README).
  *  - buyer-runtime             → all but D5 (not a distributed package; D4 is output-only).
- *  - internal-only             → the mechanical + hygiene lenses (D1/D2/D5/D6/D7); no buyer-facing
+ *  - internal-only             → the mechanical + hygiene lenses (D1/D2/D6/D7); no buyer-facing
  *                                copy (D3) or internal-leak (D4) lens — there is no shipped surface.
+ *                                D5 (license-tier correctness — SPDX header/LICENSE/no-depend-up)
+ *                                only re-applies when the domain IS a package (`domainId` starts
+ *                                with "packages/", e.g. the four INTERNAL_COMMERCIAL_PKGS): a
+ *                                workflow yaml or a root doc has no license tier to be wrong about,
+ *                                so D5 stays a dead cell there (SPEC "Applies to: all packages +
+ *                                oss-mirror" — never a bare non-package internal-only domain).
  * Every class resolves to a NON-EMPTY set; oss-source ⊇ {D1..D7}.
  */
-export function applicableDimensions(cls: SurfaceClass): DimensionId[] {
+export function applicableDimensions(
+  cls: SurfaceClass,
+  domainId?: string,
+): DimensionId[] {
   switch (cls) {
     case "oss-source":
     case "sold-source":
@@ -99,6 +108,8 @@ export function applicableDimensions(cls: SurfaceClass): DimensionId[] {
     case "buyer-runtime":
       return ["D1", "D2", "D3", "D4", "D6", "D7"];
     case "internal-only":
-      return ["D1", "D2", "D5", "D6", "D7"];
+      return domainId?.startsWith("packages/")
+        ? ["D1", "D2", "D5", "D6", "D7"]
+        : ["D1", "D2", "D6", "D7"];
   }
 }

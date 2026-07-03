@@ -202,6 +202,11 @@ export function serializeFindings(ledger: Finding[]): string {
   return `${LEDGER_HEADER}\n${tables.join("\n")}`;
 }
 
+const isSeverity = (s: string): s is FindingSeverity =>
+  s === "info" || s === "warn" || s === "high";
+const isStatus = (s: string): s is FindingStatus =>
+  s === "open" || s === "accepted" || s === "fixed";
+
 export function parseFindings(toml: string): Finding[] {
   const out: Finding[] = [];
   let cur: Record<string, string> | null = null;
@@ -212,15 +217,19 @@ export function parseFindings(toml: string): Finding[] {
     const { id, domain, dimension, subject, title, severity, status } = c;
     // Truthy-narrow every required field (noUncheckedIndexedAccess → each is string | undefined).
     if (id && domain && dimension && subject && title && severity && status) {
-      out.push({
-        id,
-        domain,
-        dimension,
-        subject,
-        title,
-        severity: severity as FindingSeverity,
-        status: status as FindingStatus,
-      });
+      // Fail loud on a corrupt/hand-edited ledger row instead of silently casting an unknown enum
+      // value through — consistent with reconcile()'s fail-loud stance on the same ledger.
+      if (!isSeverity(severity)) {
+        throw new Error(
+          `parseFindings: finding "${id}" has unknown severity "${severity}" (expected info|warn|high).`,
+        );
+      }
+      if (!isStatus(status)) {
+        throw new Error(
+          `parseFindings: finding "${id}" has unknown status "${status}" (expected open|accepted|fixed).`,
+        );
+      }
+      out.push({ id, domain, dimension, subject, title, severity, status });
     }
   };
   for (const lineRaw of toml.split("\n")) {

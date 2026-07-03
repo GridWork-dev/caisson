@@ -166,4 +166,18 @@ describe("TOML round-trip — serialize ∘ parse is identity, across domain/dim
   test("an empty ledger serializes to just the header and parses back to []", () => {
     expect(parseFindings(serializeFindings([]))).toEqual([]);
   });
+
+  test("fail-loud: an unknown severity in a hand-edited row throws instead of casting through", () => {
+    const toml =
+      '[[finding]]\nid = "abc123"\ndomain = "packages/kernel"\ndimension = "D1"\n' +
+      'subject = "x.ts"\ntitle = "y"\nseverity = "critical"\nstatus = "open"\n';
+    expect(() => parseFindings(toml)).toThrow(/unknown severity/);
+  });
+
+  test("fail-loud: an unknown status in a hand-edited row throws instead of casting through", () => {
+    const toml =
+      '[[finding]]\nid = "abc123"\ndomain = "packages/kernel"\ndimension = "D1"\n' +
+      'subject = "x.ts"\ntitle = "y"\nseverity = "warn"\nstatus = "triaged"\n';
+    expect(() => parseFindings(toml)).toThrow(/unknown status/);
+  });
 });

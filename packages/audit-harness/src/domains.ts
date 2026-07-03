@@ -119,9 +119,10 @@ function unitDomain(
 
 /**
  * Derive the complete domain partition for the repo at `root`. One domain per tree unit —
- * `packages/*`, `apps/*`, `services/*`, `tooling/*`, `infra/*`, the three registry-service units,
- * the workflows dir, the generator's emitted templates, the docs-content prose aggregate, repo
- * scripts, and the synthetic oss-mirror export view. ≈65 domains, none hand-typed.
+ * `packages/*`, `apps/*`, `services/*`, `tooling/*`, `infra/*`, `tools/*`, the three
+ * registry-service units, the workflows dir, the generator's emitted templates, the docs-content
+ * prose aggregate, repo scripts, the root-docs aggregate, and the synthetic oss-mirror export
+ * view. ≈67 domains, none hand-typed.
  *
  * THROWS if any `packages/*` unit cannot be classified (no package.json) — the coverage gate.
  */
@@ -150,8 +151,10 @@ export function deriveDomains(root: string = REPO_ROOT): Domain[] {
     domains.push(unitDomain("services", name, "buyer-runtime"));
   }
 
-  // tooling/* + infra/* — internal-only by construction (never buyer-visible).
-  for (const container of ["tooling", "infra"] as const) {
+  // tooling/* + infra/* + tools/* — internal-only by construction (never buyer-visible). tools/
+  // is the operator's own engineering scripts (e.g. tools/strix, the pentest harness that sources
+  // ~/.gridwork/env) — a first-class domain, not a silent escape from the old allow-list scan.
+  for (const container of ["tooling", "infra", "tools"] as const) {
     for (const name of readDirs(join(root, container))) {
       domains.push(unitDomain(container, name, "internal-only"));
     }
@@ -192,6 +195,29 @@ export function deriveDomains(root: string = REPO_ROOT): Domain[] {
     id: "scripts",
     roots: ["scripts"],
     globs: ["scripts/**"],
+    class: "internal-only",
+  });
+
+  // Root-level product/process docs. The repo is private (the oss MIRROR ships its own README via
+  // the exporter, Fork D / the oss-mirror domain), so these are never buyer-visible — internal-only.
+  domains.push({
+    id: "root-docs",
+    roots: [
+      "README.md",
+      "PRODUCT.md",
+      "DESIGN.md",
+      "CLAUDE.md",
+      "SUMMARY.md",
+      "plan.md",
+    ],
+    globs: [
+      "README.md",
+      "PRODUCT.md",
+      "DESIGN.md",
+      "CLAUDE.md",
+      "SUMMARY.md",
+      "plan.md",
+    ],
     class: "internal-only",
   });
 
