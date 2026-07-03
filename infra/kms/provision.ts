@@ -57,17 +57,18 @@ function proverPolicyStatements(): readonly unknown[] {
       },
     },
     {
-      // CAISSON-14 fix: aliases are untaggable, so CreateAlias/DeleteAlias get their own statement
-      // scoped by alias-NAME prefix instead of kms:ResourceTag. The key leg of each call (the CMK
-      // the alias points at) is still narrowed by the existing ResourceTag/Purpose condition — AWS
-      // evaluates the condition per applicable resource, so the alias leg is bounded by its ARN
-      // pattern below and the key leg by the tag condition.
+      // CAISSON-14 fix: aliases are untaggable, so kms:ResourceTag/Purpose can never match an
+      // alias resource — gating CreateAlias on it (as KmsProofOps does for the other five
+      // actions) would silently deny every call. Scope CreateAlias by alias NAME instead, via
+      // the request-time kms:RequestAlias condition key, matching the PURPOSE-derived
+      // alias/caisson-field-crypto-live-proof-* naming the script already uses for its
+      // throwaway CMKs.
       Sid: "KmsProofAlias",
       Effect: "Allow",
-      Action: ["kms:CreateAlias", "kms:DeleteAlias"],
+      Action: "kms:CreateAlias",
       Resource: [`arn:aws:kms:*:*:alias/${PURPOSE}-*`, "arn:aws:kms:*:*:key/*"],
       Condition: {
-        StringEquals: { "kms:ResourceTag/Purpose": PURPOSE },
+        StringLike: { "kms:RequestAlias": `alias/${PURPOSE}-*` },
       },
     },
   ];
