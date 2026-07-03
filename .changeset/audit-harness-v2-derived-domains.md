@@ -2,7 +2,7 @@
 "@caisson/audit-harness": minor
 ---
 
-audit-harness v2 (ADR-0233): replace the hand-grown domain list with a mechanically derived,
+audit-harness v2: replace the hand-grown domain list with a mechanically derived,
 coverage-gated partition. `deriveDomains(root)` emits one domain per tree unit and
 `coverage-gate.test.ts` fails loud on any unclaimed or double-claimed unit, so a run can no longer
 grow its scope mid-flight. Adds the orthogonal DIMENSION axis (D1..D7 in `dimensions.ts`) with a

@@ -2,8 +2,7 @@
 "@caisson/compliance": minor
 ---
 
-OSCAL Assessment-Plan rlink: author the 3 per-framework AP documents + a signed evidence bundle
-(ADR-0231). New `toOscalAssessmentPlan(framework)` emits a minimal-but-valid OSCAL v1.2.2
+OSCAL Assessment-Plan rlink: author the 3 per-framework AP documents + a signed evidence bundle. New `toOscalAssessmentPlan(framework)` emits a minimal-but-valid OSCAL v1.2.2
 `assessment-plan` per framework (deterministic via the injected now/newId seam), and a new
 `assembleOscalEvidenceBundle()` lays out a sibling-directory bundle (`./assessment-plan/<fw>.json`,
 `./sar.json`, `./poam.json`, `./manifest.json`, `./manifest.sig`), rewriting the SAR back-matter
