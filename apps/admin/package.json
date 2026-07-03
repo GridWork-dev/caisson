@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start -p 3020",
     "lint": "eslint .",
-    "test": "bun test ./src"
+    "test": "bun test ./src",
+    "test:live": "bun test ./live"
   },
   "dependencies": {
     "@caisson/audit-worm": "workspace:*",
