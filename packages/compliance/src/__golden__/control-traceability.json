@@ -1,0 +1,6 @@
+{
+  "policyVersion": "ADR-0057",
+  "framework": "soc2-tsc",
+  "catalogVersion": "2024.1",
+  "control": "AUDIT.IMMUTABLE-LOG"
+}

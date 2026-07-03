@@ -13,7 +13,10 @@ import {
   balance,
 } from "@caisson/credits";
 import { withTenant } from "@caisson/tenancy-rls";
-import { createPaddleBilling } from "@caisson/billing";
+import {
+  createPaddleBilling,
+  PROCESSED_EVENT_SCHEMA_SQL,
+} from "@caisson/billing";
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
@@ -37,6 +40,7 @@ beforeAll(async () => {
   await tp.exec(CREDIT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
+  await tp.exec(PROCESSED_EVENT_SCHEMA_SQL);
 });
 
 afterAll(async () => {

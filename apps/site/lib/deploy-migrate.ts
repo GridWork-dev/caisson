@@ -15,6 +15,7 @@
 // (CREATE TABLE IF NOT EXISTS) on its own boot.
 import { AI_METER_SCHEMA_SQL } from "@caisson/ai-meter";
 import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
+import { PROCESSED_EVENT_SCHEMA_SQL } from "@caisson/billing";
 import {
   CREDIT_LINE_ITEM_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
@@ -92,6 +93,13 @@ function platformPackage(): PackageMigrations {
       {
         name: "0009_credit_line_item.sql",
         sql: CREDIT_LINE_ITEM_MIGRATION_SQL,
+      },
+      // ADR-0229 rows 50+51: the outer billing-webhook dedup table. Appended as a new checksum-pinned
+      // migration (the prior files are frozen on the live DB, ADR-0006). Tenant-owned FORCE-RLS, so it
+      // sits after the app role (0001). The claim runs inside the license webhook's withTenant tx.
+      {
+        name: "0010_billing_processed_event.sql",
+        sql: PROCESSED_EVENT_SCHEMA_SQL,
       },
     ],
   };

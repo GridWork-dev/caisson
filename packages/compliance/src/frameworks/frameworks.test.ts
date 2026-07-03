@@ -140,6 +140,21 @@ describe("eu-ai-act pack", () => {
   });
 });
 
+describe("control-to-code traceability (ADR-0229 row 9)", () => {
+  // The exemplar golden for the traceability idiom (docs/compliance/control-traceability.md): a
+  // control-logic fixture carrying `policyVersion` — the ADR/policy revision it was captured under.
+  // Derived from the real soc2Tsc pack (not fabricated), and a plain matchGolden compare (no
+  // .strict() re-parse), so it pins evidence provenance without touching the framework schema.
+  test("soc2-tsc traceability record pins its policyVersion", () => {
+    matchGolden(PKG_SRC_META, "control-traceability", {
+      policyVersion: "ADR-0057",
+      framework: soc2Tsc.id,
+      catalogVersion: soc2Tsc.version,
+      control: soc2Tsc.controls.find((c) => c.id === "AUDIT.IMMUTABLE-LOG")?.id,
+    });
+  });
+});
+
 describe("catalog goldens", () => {
   // Pins the validated wire shape T11 (collectors) and T18 (manifest) consume. Ships inline; the
   // gate runs with BLESS unset.

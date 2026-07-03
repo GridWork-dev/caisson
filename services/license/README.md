@@ -22,6 +22,9 @@ Merchant-of-Record billing webhook + idempotent credit grants (P6). Commercial s
   `POST /billing-grant` on the support bot; never fails the webhook. Enabled only when both
   `SUPPORT_BOT_URL` and `SUPPORT_BOT_GRANT_TOKEN` are set. Fed by `applyBillingEvent`'s
   `{ grantedEntitlements }` return so the push can never drift from the grant gate's own decision.
+  The push is **at-most-once by design** (ADR-0229 row 51's outer claim gates it): a crash after the
+  grant transaction commits but before the detached push fires loses that push permanently, with no
+  automatic retry — an accepted gap, not a bug, since the site's link-time backfill re-converges roles.
 
 **Follow-on Bucket-B slices:** the entitlement resolver (purchase → edition/bundle/module set,
 ADR-0071), the Ed25519 offline-license issuer (ADR-0010, harvested from PUBLIC tessera only — never

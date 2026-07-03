@@ -30,3 +30,9 @@ export {
   PolarEventSchema,
 } from "./polar.ts";
 export type { PolarConfig, PolarEvent } from "./polar.ts";
+export {
+  PROCESSED_EVENT_SCHEMA_SQL,
+  processEvent,
+  withIdempotentSideEffect,
+} from "./idempotency.ts";
+export type { ProcessResult } from "./idempotency.ts";

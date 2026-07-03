@@ -13,7 +13,11 @@ import {
   balance,
 } from "@caisson/credits";
 import { withTenant } from "@caisson/tenancy-rls";
-import type { BillingProvider, DomainBillingEvent } from "@caisson/billing";
+import {
+  type BillingProvider,
+  type DomainBillingEvent,
+  PROCESSED_EVENT_SCHEMA_SQL,
+} from "@caisson/billing";
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
@@ -31,6 +35,9 @@ beforeAll(async () => {
   // table must exist or a future entitlement-bearing event would fail mid-transaction.
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
+  // The outer webhook-event dedup table (ADR-0229 rows 50+51) — handleBillingWebhook now claims the
+  // event via processEvent before granting, so a re-delivery grants + pushes once.
+  await tp.exec(PROCESSED_EVENT_SCHEMA_SQL);
 });
 
 afterAll(async () => {
@@ -114,5 +121,61 @@ describe("handleBillingWebhook", () => {
     await expect(
       handleBillingWebhook(tp.pg, fakeProvider(null, true), "{}", "bad"),
     ).rejects.toThrow(AuthnError);
+  });
+
+  test("a re-delivered purchase.completed grants credits once AND pushes Discord once (ADR-0229 rows 50+51)", async () => {
+    // A multi-line cart: an edition line (entitlement, grantedEntitlements non-empty → the app.ts push
+    // fires) + a credit-pack line (5000 credits → the grant is observable in the balance). Delivered
+    // twice with the SAME sourceEventId, exactly as a Paddle re-delivery arrives.
+    const acct = "acct_redeliver";
+    const ev: DomainBillingEvent = {
+      type: "purchase.completed",
+      sourceEventId: "evt_redeliver",
+      accountId: acct,
+      amountTotal: 79800,
+      currency: "usd",
+      paymentId: "pi_redeliver",
+      lineItems: [
+        {
+          priceId: "price_compliance_onetime_PLACEHOLDER",
+          quantity: 1,
+          itemId: "itm_edition",
+          chargedAmount: 74900,
+        },
+        {
+          priceId: "price_credit_pack_PLACEHOLDER",
+          quantity: 1,
+          itemId: "itm_credits",
+          chargedAmount: 4900,
+        },
+      ],
+    };
+
+    // First delivery: grants credits + entitlements, so the (gated) Discord push would fire.
+    const first = await handleBillingWebhook(
+      tp.pg,
+      fakeProvider(ev),
+      "{}",
+      "s",
+    );
+    expect(first.grantedEntitlements.length).toBeGreaterThan(0);
+    const balAfterFirst = await withTenant(tp.pg, acct, (tx) =>
+      balance(tx, acct),
+    );
+    expect(balAfterFirst).toBe(5000);
+
+    // Re-delivery of the SAME event: the outer processEvent claim short-circuits the grant, so no
+    // entitlements are returned (the post-commit Discord push is gated out) and no credits are re-granted.
+    const second = await handleBillingWebhook(
+      tp.pg,
+      fakeProvider(ev),
+      "{}",
+      "s",
+    );
+    expect(second.grantedEntitlements).toEqual([]);
+    const balAfterSecond = await withTenant(tp.pg, acct, (tx) =>
+      balance(tx, acct),
+    );
+    expect(balAfterSecond).toBe(5000);
   });
 });
