@@ -11,13 +11,17 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import type { DomainBillingEvent } from "@caisson/billing";
 import { AuditChainStore, LocalArtifactStore } from "@caisson/audit-worm";
 import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
 import {
+  CREDIT_LINE_ITEM_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
+  debit,
+  grant,
 } from "@caisson/credits";
-import { NotFoundError } from "@caisson/kernel";
+import { asCredits, NotFoundError } from "@caisson/kernel";
 import {
   ADMIN_WRITE_ROLE_BOOTSTRAP_SQL,
   withTenant,
@@ -30,14 +34,30 @@ import {
   ADMIN_MUTATION_PROVISION_SQL,
   AdjustCreditsBody,
   GrantEntitlementBody,
+  RevokePurchaseBody,
   type AdminMutationDeps,
   adjustCreditsAdmin,
   grantEntitlementAdmin,
   reissueLicenseAdmin,
   revokeEntitlementAdmin,
+  revokePurchaseAdmin,
   wormAnchorAccount,
 } from "./admin-mutations.ts";
-import { ENTITLEMENT_SCHEMA_SQL } from "./entitlement-store.ts";
+import { applyBillingEvent } from "./apply-billing-event.ts";
+import {
+  ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
+  ENTITLEMENT_SCHEMA_SQL,
+  grantEntitlements,
+  readEntitlements,
+} from "./entitlement-store.ts";
+import {
+  LICENSE_GRANT_SCHEMA_SQL,
+  storeLicenseGrant,
+} from "./license-grant-store.ts";
+import {
+  LICENSE_REVOCATION_SCHEMA_SQL,
+  readDenySet,
+} from "./license-revocation-store.ts";
 
 let tp: TestPg;
 let db: Transactor;
@@ -111,9 +131,20 @@ beforeAll(async () => {
   await tp.exec(ACCOUNT_MEMBER_SCHEMA_SQL);
   await tp.exec(CREDIT_SCHEMA_SQL);
   await tp.exec(CREDIT_ROUNDING_MIGRATION_SQL);
+  // ADR-0218 per-line columns — the paid-revoke claw reads `creditsClawedForSource` (line_item_id).
+  await tp.exec(CREDIT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
-  const { ADMIN_ACTION_LOG_SCHEMA_SQL } = await import("./admin-audit-log.ts");
+  // ADR-0218 line_item_id on entitlement_grant — `grantEntitlements` (the paid-source seeder) needs it.
+  await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
+  // ADR-0225: the license index (read cross-tenant for the edge deny-set) + the deny-set truth table,
+  // created BEFORE ADMIN_MUTATION_PROVISION_SQL (its new license_grant SELECT policy references it).
+  await tp.exec(LICENSE_GRANT_SCHEMA_SQL);
+  await tp.exec(LICENSE_REVOCATION_SCHEMA_SQL);
+  const { ADMIN_ACTION_LOG_SCHEMA_SQL, ADMIN_ACTION_LOG_ACTION_MIGRATION_SQL } =
+    await import("./admin-audit-log.ts");
   await tp.exec(ADMIN_ACTION_LOG_SCHEMA_SQL);
+  // ADR-0225 action-enum migration — idempotent no-op on the fresh CHECK (which already lists all five).
+  await tp.exec(ADMIN_ACTION_LOG_ACTION_MIGRATION_SQL);
   await tp.exec(ADMIN_MUTATION_PROVISION_SQL);
   // Provisioning is idempotent (ADR-0220) — re-running the DEPLOY SQL must not error.
   await tp.exec(ADMIN_MUTATION_PROVISION_SQL);
@@ -522,6 +553,476 @@ describe("strict boundary bodies", () => {
         targetAccountId: "acct",
         deltaCredits: 5_000_000_000,
         reason: "too big",
+      }).success,
+    ).toBe(false);
+  });
+});
+
+// ============================================================================================
+// ADR-0225 — v2 paid-purchase revoke (Fork R-1/R-2/R-3/R-4/R-5 = A/A/A/B/A). The service core:
+// source-scoped one-time revoke + bounded claw + edge deny-set truth, one withAdminWrite tx.
+// ============================================================================================
+
+/** Seed a one-time purchase's entitlement grants (source_kind one_time) under the buyer app role. */
+async function seedOneTimeGrant(
+  acct: string,
+  purchaseId: string,
+  entitlementIds: string[],
+): Promise<void> {
+  await withTenant(db, acct, (tx) =>
+    grantEntitlements(tx, {
+      accountId: acct,
+      entitlementIds,
+      sourceEventId: purchaseId,
+      source: { kind: "one_time", purchaseId },
+    }),
+  );
+}
+
+/** Seed a subscription's entitlement grants (source_kind subscription) — the R-3 un-targetable source. */
+async function seedSubscriptionGrant(
+  acct: string,
+  subscriptionId: string,
+  entitlementIds: string[],
+): Promise<void> {
+  await withTenant(db, acct, (tx) =>
+    grantEntitlements(tx, {
+      accountId: acct,
+      entitlementIds,
+      sourceEventId: subscriptionId,
+      source: { kind: "subscription", subscriptionId },
+    }),
+  );
+}
+
+/** Grant a one-time purchase's credits (keyed on the payment id, exactly like apply-billing-event). */
+async function seedPurchaseCredits(
+  acct: string,
+  purchaseId: string,
+  amount: number,
+): Promise<void> {
+  await withTenant(db, acct, (tx) =>
+    grant(tx, {
+      eventType: "purchase",
+      accountId: acct,
+      amount: asCredits(amount),
+      sourceEventId: purchaseId,
+    }),
+  );
+}
+
+/** Spend credits (a codegen debit) so the wallet balance drops below the granted amount. */
+async function spendCredits(acct: string, amount: number): Promise<void> {
+  await withTenant(db, acct, (tx) =>
+    debit(tx, {
+      eventType: "codegen_debit",
+      accountId: acct,
+      amount: asCredits(amount),
+      idempotencyKey: randomUUID(),
+    }),
+  );
+}
+
+/** Apply a whole-transaction full-refund webhook for a one-time purchase (mutual-idempotency probe). */
+async function applyFullRefund(
+  acct: string,
+  purchaseId: string,
+  amountRefunded: number,
+): Promise<void> {
+  const ev: DomainBillingEvent = {
+    type: "refund.completed",
+    sourceEventId: randomUUID(),
+    accountId: acct,
+    paymentId: purchaseId,
+    amountRefunded,
+    currency: "usd",
+    fullyRefunded: true,
+    adjustmentId: "",
+    items: [],
+  };
+  await withTenant(db, acct, (tx) => applyBillingEvent(tx, ev));
+}
+
+async function walletBalance(acct: string): Promise<number> {
+  const r = await ground<{ balance: number }>(
+    `SELECT balance FROM credit_wallet WHERE account_id = $1`,
+    [acct],
+  );
+  return r[0]?.balance ?? 0;
+}
+
+describe("paid purchase revoke — R-2/R-3 source-scoped one-time revoke (ADR-0225)", () => {
+  test("revoke of a one-time purchase sticks; a sibling-source entitlement survives (refcount)", async () => {
+    const acct = await realAccount();
+    const purchaseId = `pay_${randomUUID()}`;
+    const subId = `sub_${randomUUID()}`;
+    // compliance is backed by BOTH the one-time purchase and a subscription; local-ai only by the buy.
+    await seedOneTimeGrant(acct, purchaseId, ["compliance", "local-ai"]);
+    await seedSubscriptionGrant(acct, subId, ["compliance"]);
+
+    const before = await withTenant(db, acct, (tx) =>
+      readEntitlements(tx, acct),
+    );
+    expect(before).toEqual(["compliance", "local-ai"]);
+
+    const r = await revokePurchaseAdmin(deps(), {
+      actorEmail: "op@gridwork.dev",
+      targetAccountId: acct,
+      purchaseId,
+      clawUnspentCredits: false,
+      revokeEdgeAccess: false,
+    });
+    expect(r.revoked).toBe(2); // both one-time grants flipped
+    // local-ai drops (refcount 0); compliance SURVIVES, still backed by the active subscription grant.
+    expect(r.after).toEqual(["compliance"]);
+    expect(r.worm).toBe("ok");
+
+    // Ground truth: the one-time rows are revoked; the subscription row stays active.
+    const rows = await ground<{ source_kind: string; status: string }>(
+      `SELECT source_kind, status FROM entitlement_grant WHERE account_id = $1`,
+      [acct],
+    );
+    expect(
+      rows
+        .filter((x) => x.source_kind === "subscription")
+        .every((x) => x.status === "active"),
+    ).toBe(true);
+    expect(
+      rows
+        .filter((x) => x.source_kind === "one_time")
+        .every((x) => x.status === "revoked"),
+    ).toBe(true);
+
+    // Dual log: exactly one purchase_revoke row + one WORM entry.
+    const logRows = await ground<{ action: string }>(
+      `SELECT action FROM admin_action_log WHERE target_account_id = $1`,
+      [acct],
+    );
+    expect(logRows).toEqual([{ action: "purchase_revoke" }]);
+    expect(await worm.load(wormAnchorAccount(acct))).toHaveLength(1);
+  });
+
+  test("a subscription-source target is REJECTED — v2 revokes one-time purchases ONLY (R-3=A)", async () => {
+    const acct = await realAccount();
+    const subId = `sub_${randomUUID()}`;
+    await seedSubscriptionGrant(acct, subId, ["compliance"]);
+
+    // The body only accepts a purchaseId; a subscription id there matches NO one_time grant, so a
+    // subscription is structurally un-strippable via v2 (the correct lever is cancel-in-Paddle).
+    const r = await revokePurchaseAdmin(deps(), {
+      actorEmail: "op@gridwork.dev",
+      targetAccountId: acct,
+      purchaseId: subId, // the subscription id — never matches source_kind='one_time'
+      clawUnspentCredits: true,
+      revokeEdgeAccess: false,
+    });
+    expect(r.revoked).toBe(0); // nothing revoked
+    expect(r.clawedBack).toBe(0); // subscription credits key on invoiceId, not this id
+    expect(r.after).toEqual(["compliance"]); // still entitled — the subscription grant is untouched
+
+    const rows = await ground<{ status: string }>(
+      `SELECT status FROM entitlement_grant WHERE account_id = $1`,
+      [acct],
+    );
+    expect(rows.every((x) => x.status === "active")).toBe(true);
+  });
+});
+
+describe("paid purchase revoke — R-1 bounded credit claw (ADR-0225)", () => {
+  test("claw is bounded to the wallet balance when the buyer already spent some", async () => {
+    const acct = await realAccount();
+    const purchaseId = `pay_${randomUUID()}`;
+    await seedOneTimeGrant(acct, purchaseId, ["compliance"]);
+    await seedPurchaseCredits(acct, purchaseId, 1000);
+    await spendCredits(acct, 700); // balance now 300
+
+    const r = await revokePurchaseAdmin(deps(), {
+      actorEmail: "op@gridwork.dev",
+      targetAccountId: acct,
+      purchaseId,
+      clawUnspentCredits: true,
+      revokeEdgeAccess: false,
+    });
+    expect(r.revoked).toBe(1);
+    expect(r.clawedBack).toBe(300); // granted 1000, but only 300 unspent → clawed 300, never negative
+    expect(r.balanceAfter).toBe(0);
+    expect(await walletBalance(acct)).toBe(0);
+  });
+
+  test("re-run claws 0; a later full-refund webhook claws 0 (mutual idempotency, granted−alreadyClawed)", async () => {
+    const acct = await realAccount();
+    const purchaseId = `pay_${randomUUID()}`;
+    await seedOneTimeGrant(acct, purchaseId, ["compliance"]);
+    await seedPurchaseCredits(acct, purchaseId, 1000); // no spend → balance 1000
+
+    const first = await revokePurchaseAdmin(deps(), {
+      actorEmail: "op@gridwork.dev",
+      targetAccountId: acct,
+      purchaseId,
+      clawUnspentCredits: true,
+      revokeEdgeAccess: false,
+    });
+    expect(first.revoked).toBe(1);
+    expect(first.clawedBack).toBe(1000);
+    expect(first.balanceAfter).toBe(0);
+
+    // Re-run: the grant is already revoked (0) and the purchase has nothing left to claw (0).
+    const second = await revokePurchaseAdmin(deps(), {
+      actorEmail: "op@gridwork.dev",
+      targetAccountId: acct,
+      purchaseId,
+      clawUnspentCredits: true,
+      revokeEdgeAccess: false,
+    });
+    expect(second.revoked).toBe(0);
+    expect(second.clawedBack).toBe(0);
+    expect(second.balanceAfter).toBe(0);
+
+    // A LATER Paddle full-refund of the SAME purchase reads alreadyClawed = 1000 → remaining 0 → 0.
+    await applyFullRefund(acct, purchaseId, 1000);
+    expect(await walletBalance(acct)).toBe(0); // the refund double-applies nothing
+  });
+});
+
+describe("paid purchase revoke — R-4 edge deny-set truth (ADR-0225)", () => {
+  test("revokeEdgeAccess writes one license_revocation row per held license, idempotently", async () => {
+    const acct = await realAccount();
+    const purchaseId = `pay_${randomUUID()}`;
+    const licA = `lic-${randomUUID()}`;
+    const licB = `lic-${randomUUID()}`;
+    await seedOneTimeGrant(acct, purchaseId, ["compliance"]);
+    // Two held licenses (majors 1 + 2) — each license_id is a signed-claim edge deny-set key.
+    await withTenant(db, acct, (tx) =>
+      storeLicenseGrant(tx, {
+        accountId: acct,
+        major: 1,
+        licenseId: licA,
+        tier: "pro",
+        expiry: null,
+        token: "TOK-A",
+      }),
+    );
+    await withTenant(db, acct, (tx) =>
+      storeLicenseGrant(tx, {
+        accountId: acct,
+        major: 2,
+        licenseId: licB,
+        tier: "pro",
+        expiry: null,
+        token: "TOK-B",
+      }),
+    );
+
+    const r = await revokePurchaseAdmin(deps(), {
+      actorEmail: "op@gridwork.dev",
+      targetAccountId: acct,
+      purchaseId,
+      clawUnspentCredits: false,
+      revokeEdgeAccess: true,
+      reason: "chargeback lost at bank",
+    });
+    expect([...r.deniedLicenseIds].sort()).toEqual([licA, licB].sort());
+
+    // The deny-set table has both, keyed on license_id, linked to THIS action, carrying the reason.
+    const rev = await ground<{
+      license_id: string;
+      account_id: string;
+      admin_action_id: string;
+      reason: string;
+    }>(
+      `SELECT license_id, account_id, admin_action_id, reason
+         FROM license_revocation WHERE account_id = $1 ORDER BY license_id`,
+      [acct],
+    );
+    expect(rev.map((x) => x.license_id).sort()).toEqual([licA, licB].sort());
+    expect(rev.every((x) => x.account_id === acct)).toBe(true);
+    expect(rev.every((x) => x.reason === "chargeback lost at bank")).toBe(true);
+    // FK-by-value: admin_action_id matches the purchase_revoke action-log row's id.
+    const log = await ground<{ id: string }>(
+      `SELECT id FROM admin_action_log
+        WHERE target_account_id = $1 AND action = 'purchase_revoke'`,
+      [acct],
+    );
+    expect(rev.every((x) => x.admin_action_id === log[0]?.id)).toBe(true);
+
+    // Re-run is idempotent (ON CONFLICT DO NOTHING) — still exactly two rows; the deny-set is stable.
+    const again = await revokePurchaseAdmin(deps(), {
+      actorEmail: "op@gridwork.dev",
+      targetAccountId: acct,
+      purchaseId,
+      clawUnspentCredits: false,
+      revokeEdgeAccess: true,
+    });
+    expect([...again.deniedLicenseIds].sort()).toEqual([licA, licB].sort());
+    const count = await ground<{ n: number }>(
+      `SELECT count(*)::int AS n FROM license_revocation WHERE account_id = $1`,
+      [acct],
+    );
+    expect(count[0]?.n).toBe(2);
+
+    // The full deny-set read (the downstream publish source) contains both license ids.
+    const denySet = await asAdmin((tx) => readDenySet(tx));
+    expect(denySet).toEqual(expect.arrayContaining([licA, licB]));
+  });
+
+  test("revokeEdgeAccess=false writes NO deny-set rows", async () => {
+    const acct = await realAccount();
+    const purchaseId = `pay_${randomUUID()}`;
+    await seedOneTimeGrant(acct, purchaseId, ["compliance"]);
+    await withTenant(db, acct, (tx) =>
+      storeLicenseGrant(tx, {
+        accountId: acct,
+        major: 1,
+        licenseId: `lic-${randomUUID()}`,
+        tier: "pro",
+        expiry: null,
+        token: "TOK-C",
+      }),
+    );
+
+    const r = await revokePurchaseAdmin(deps(), {
+      actorEmail: "op@gridwork.dev",
+      targetAccountId: acct,
+      purchaseId,
+      clawUnspentCredits: false,
+      revokeEdgeAccess: false,
+    });
+    expect(r.deniedLicenseIds).toEqual([]);
+    const count = await ground<{ n: number }>(
+      `SELECT count(*)::int AS n FROM license_revocation WHERE account_id = $1`,
+      [acct],
+    );
+    expect(count[0]?.n).toBe(0);
+  });
+});
+
+describe("paid purchase revoke — atomicity + audit enum (ADR-0225)", () => {
+  test("a revoke that throws mid-transaction writes NEITHER log, no deny-set, no grant flip", async () => {
+    const acct = await realAccount();
+    const purchaseId = `pay_${randomUUID()}`;
+    await seedOneTimeGrant(acct, purchaseId, ["compliance"]);
+    await withTenant(db, acct, (tx) =>
+      storeLicenseGrant(tx, {
+        accountId: acct,
+        major: 1,
+        licenseId: `lic-${randomUUID()}`,
+        tier: "pro",
+        expiry: null,
+        token: "TOK",
+      }),
+    );
+
+    // A Transactor that runs the mutation fully, then throws — forcing withAdminWrite to roll back
+    // after the revoke + claw + deny-set write + log all executed. NONE must persist.
+    const failing: Transactor = {
+      async transaction(fn) {
+        return db.transaction(async (tx) => {
+          await fn(tx);
+          throw new Error("boom after writes");
+        });
+      },
+    };
+    await expect(
+      revokePurchaseAdmin(deps({ db: failing }), {
+        actorEmail: "op@gridwork.dev",
+        targetAccountId: acct,
+        purchaseId,
+        clawUnspentCredits: true,
+        revokeEdgeAccess: true,
+      }),
+    ).rejects.toThrow();
+
+    const ent = await ground<{ status: string }>(
+      `SELECT status FROM entitlement_grant WHERE account_id = $1`,
+      [acct],
+    );
+    expect(ent.every((x) => x.status === "active")).toBe(true); // grant NOT flipped
+    const log = await ground<{ n: number }>(
+      `SELECT count(*)::int AS n FROM admin_action_log WHERE target_account_id = $1`,
+      [acct],
+    );
+    expect(log[0]?.n).toBe(0);
+    const rev = await ground<{ n: number }>(
+      `SELECT count(*)::int AS n FROM license_revocation WHERE account_id = $1`,
+      [acct],
+    );
+    expect(rev[0]?.n).toBe(0);
+    expect(await worm.load(wormAnchorAccount(acct))).toHaveLength(0);
+  });
+
+  test("the action-enum migration admits purchase_revoke; an unregistered action is CHECK-rejected", async () => {
+    // A purchase_revoke row is accepted by admin_action_log_action (the widened CHECK / migration)…
+    await expect(
+      ground(
+        `INSERT INTO admin_action_log (id, actor_email, target_account_id, action)
+         VALUES ($1, $2, $3, $4)`,
+        [randomUUID(), "op@gridwork.dev", "acct", "purchase_revoke"],
+      ),
+    ).resolves.toBeDefined();
+    // …while a bogus action value is rejected closed by the same CHECK.
+    await expect(
+      ground(
+        `INSERT INTO admin_action_log (id, actor_email, target_account_id, action)
+         VALUES ($1, $2, $3, $4)`,
+        [randomUUID(), "op@gridwork.dev", "acct", "totally_bogus_action"],
+      ),
+    ).rejects.toThrow();
+  });
+});
+
+describe("paid revoke strict boundary body (ADR-0225)", () => {
+  test("RevokePurchaseBody rejects unknown fields + requires the explicit flags", () => {
+    expect(
+      RevokePurchaseBody.safeParse({
+        targetAccountId: "acct",
+        purchaseId: "pay_1",
+        clawUnspentCredits: true,
+        revokeEdgeAccess: true,
+      }).success,
+    ).toBe(true);
+    // reason is optional
+    expect(
+      RevokePurchaseBody.safeParse({
+        targetAccountId: "acct",
+        purchaseId: "pay_1",
+        clawUnspentCredits: false,
+        revokeEdgeAccess: false,
+        reason: "fraud",
+      }).success,
+    ).toBe(true);
+    // unknown field rejected (.strict())
+    expect(
+      RevokePurchaseBody.safeParse({
+        targetAccountId: "acct",
+        purchaseId: "pay_1",
+        clawUnspentCredits: true,
+        revokeEdgeAccess: true,
+        rogue: 1,
+      }).success,
+    ).toBe(false);
+    // the two effect flags are a REQUIRED explicit operator choice, never defaulted at this boundary
+    expect(
+      RevokePurchaseBody.safeParse({
+        targetAccountId: "acct",
+        purchaseId: "pay_1",
+      }).success,
+    ).toBe(false);
+    // empty purchaseId rejected
+    expect(
+      RevokePurchaseBody.safeParse({
+        targetAccountId: "acct",
+        purchaseId: "",
+        clawUnspentCredits: true,
+        revokeEdgeAccess: true,
+      }).success,
+    ).toBe(false);
+    // whitespace/control account id rejected (real better-auth id shape)
+    expect(
+      RevokePurchaseBody.safeParse({
+        targetAccountId: "bad id",
+        purchaseId: "pay_1",
+        clawUnspentCredits: true,
+        revokeEdgeAccess: true,
       }).success,
     ).toBe(false);
   });
