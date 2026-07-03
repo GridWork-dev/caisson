@@ -6,16 +6,10 @@ import {
   selectValidateCandidates,
   summarize,
 } from "./surface.ts";
-import type { AuditDomain } from "./domains.ts";
 
 // Scan THIS package (deterministic, no dependency on the wider repo layout).
 const PKG_ROOT = join(import.meta.dir, "..");
-const selfDomain = (globs: string[]): AuditDomain => ({
-  id: "self",
-  description: "",
-  globs,
-  checkers: [],
-});
+const selfDomain = (globs: string[]): { globs: string[] } => ({ globs });
 
 describe("enumerateSurface", () => {
   test("resolves a domain's globs to real files, sorted + deduped", () => {
@@ -44,7 +38,8 @@ describe("selectValidateCandidates", () => {
     const led: Finding[] = [
       {
         ...withId({
-          domain: "security",
+          domain: "packages/auth",
+          dimension: "D1",
           subject: "a",
           title: "x",
           severity: "high",
@@ -53,7 +48,8 @@ describe("selectValidateCandidates", () => {
       },
       {
         ...withId({
-          domain: "security",
+          domain: "packages/auth",
+          dimension: "D1",
           subject: "b",
           title: "y",
           severity: "high",
@@ -62,7 +58,8 @@ describe("selectValidateCandidates", () => {
       },
       {
         ...withId({
-          domain: "security",
+          domain: "packages/auth",
+          dimension: "D1",
           subject: "c",
           title: "z",
           severity: "warn",
@@ -81,7 +78,8 @@ describe("summarize", () => {
     const led: Finding[] = [
       {
         ...withId({
-          domain: "security",
+          domain: "packages/auth",
+          dimension: "D1",
           subject: "a",
           title: "x",
           severity: "high",
@@ -90,7 +88,8 @@ describe("summarize", () => {
       },
       {
         ...withId({
-          domain: "design-ui",
+          domain: "apps/site",
+          dimension: "D6",
           subject: "b",
           title: "y",
           severity: "warn",
@@ -100,8 +99,8 @@ describe("summarize", () => {
     ];
     const s = summarize(led);
     expect(s.total).toBe(2);
-    expect(s.byDomain.security).toBe(1);
-    expect(s.byDomain["design-ui"]).toBe(1);
+    expect(s.byDomain["packages/auth"]).toBe(1);
+    expect(s.byDomain["apps/site"]).toBe(1);
     expect(s.bySeverity.high).toBe(1);
     expect(s.bySeverity.warn).toBe(1);
     expect(s.byStatus.open).toBe(1);

@@ -3,7 +3,7 @@
 // concrete file list and to make a reconciled ledger legible. The package still owns NO model call
 // and NO dispatch — those live in the skill (AGENTS.md / ADR-0134 boundary).
 import { join } from "node:path";
-import type { AuditDomain } from "./domains.ts";
+import type { Domain } from "./domains.ts";
 import type { Finding, FindingSeverity, FindingStatus } from "./findings.ts";
 
 /** Repo root — three levels up from packages/audit-harness/src. */
@@ -17,9 +17,10 @@ const IGNORED = /(^|\/)(node_modules|dist|\.next|\.turbo|coverage)(\/|$)/;
  * Resolve a domain's declared `globs` (./domains.ts) to a concrete, sorted, de-duplicated list of
  * repo-relative file paths that exist on disk. Uses `Bun.Glob` — the same matcher `scope-guard.ts`
  * already relies on. Overlapping globs collapse to one entry per file; vendor/build dirs are excluded.
+ * Takes any `{ globs }` (a `Domain` or a bare glob-bearing object) — it reads only `.globs`.
  */
 export function enumerateSurface(
-  domain: AuditDomain,
+  domain: Pick<Domain, "globs">,
   root: string = REPO_ROOT,
 ): string[] {
   const out = new Set<string>();
