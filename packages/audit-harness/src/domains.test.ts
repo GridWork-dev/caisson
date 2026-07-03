@@ -1,52 +1,83 @@
 import { describe, expect, test } from "bun:test";
+import { join } from "node:path";
 
-import { AUDIT_DOMAINS } from "./domains.ts";
+import { deriveDomains, domainForPath, domainIds } from "./domains.ts";
 
-describe("AUDIT_DOMAINS — the declared inventory (ADR-0134 §1)", () => {
-  test("covers the ADR-0134 domains plus the round-2/3/4/5 extensions, each with globs + checkers", () => {
-    const ids = AUDIT_DOMAINS.map((d) => d.id).sort();
-    expect(ids).toEqual(
-      [
-        // ADR-0134 founding six
-        "design-ui",
-        "evidence-compliance",
-        "licensing-spdx",
-        "rls-tenancy",
-        "security",
-        "standards-gate",
-        // round-2 (2026-07-01): surfaces the founding globs never reached
-        "ci-supply-chain",
-        "financial-integrity",
-        "iac-authz",
-        "python-services",
-        "registry-edge",
-        "telemetry-egress",
-        // round-3 (2026-07-01): completeness-critic gaps
-        "agent-governance",
-        "ai-evals-integrity",
-        "auth-boundary",
-        "email-egress",
-        "generator-templates",
-        "guardrails-prompts",
-        "mcp-transport",
-        // round-4/5 (2026-07-01): never-audited risk-bearing surfaces + the
-        // audit-worm name-collision correction (round-3 critic said audit-harness)
-        "admin-plane",
-        "composition-roots",
-        "destructive-jobs",
-        "metering-byok",
-        "worm-integrity",
-      ].sort(),
-    );
-    for (const d of AUDIT_DOMAINS) {
-      expect(d.globs.length).toBeGreaterThan(0);
-      expect(d.checkers.length).toBeGreaterThan(0);
-      expect(d.description.length).toBeGreaterThan(0);
+const REPO_ROOT = join(import.meta.dir, "..", "..", "..");
+
+describe("deriveDomains — the mechanical tree partition (ADR-0233, Fork A)", () => {
+  const domains = deriveDomains(REPO_ROOT);
+
+  test("derives one domain per tree unit — no hand-typed list, ≈65 domains", () => {
+    // Replaces the v1 hard-coded 24-id `toEqual`. The count is derived from the tree, so it moves as
+    // packages are added; the coverage gate (not a literal list) is what proves completeness.
+    expect(domains.length).toBeGreaterThanOrEqual(60);
+  });
+
+  test("every packages/* dir is a domain (one each)", () => {
+    const pkgDomains = domains.filter((d) => d.id.startsWith("packages/"));
+    // 35 packages minus none (generator-templates is a separate id, not a packages/* dir).
+    expect(pkgDomains.length).toBeGreaterThanOrEqual(30);
+    expect(domainIds(REPO_ROOT).has("packages/kernel")).toBe(true);
+    expect(domainIds(REPO_ROOT).has("packages/audit-worm")).toBe(true);
+  });
+
+  test("the synthetic + singleton domains are present", () => {
+    const ids = domainIds(REPO_ROOT);
+    for (const id of [
+      "workflows",
+      "generator-templates",
+      "docs-content",
+      "scripts",
+      "oss-mirror",
+      "registry/worker",
+      "registry/scripts",
+      "registry/schema",
+    ]) {
+      expect(ids.has(id)).toBe(true);
     }
   });
 
-  test("ids are unique", () => {
-    const ids = AUDIT_DOMAINS.map((d) => d.id);
+  test("surface classes are read from license/public-surface, never guessed", () => {
+    const byId = new Map(domains.map((d) => [d.id, d]));
+    expect(byId.get("packages/kernel")?.class).toBe("oss-source"); // Apache-2.0
+    expect(byId.get("packages/compliance")?.class).toBe("sold-source"); // edition, buyer reads it
+    expect(byId.get("packages/audit-harness")?.class).toBe("internal-only"); // never sold
+    expect(byId.get("apps/admin")?.class).toBe("internal-only");
+    expect(byId.get("apps/site")?.class).toBe("buyer-runtime");
+    expect(byId.get("oss-mirror")?.class).toBe("oss-source");
+    expect(byId.get("generator-templates")?.class).toBe("sold-source");
+  });
+
+  test("domain ids and roots are unique — no double-claim (the v1 overlap bug)", () => {
+    const ids = domains.map((d) => d.id);
     expect(new Set(ids).size).toBe(ids.length);
+    const roots = domains.flatMap((d) => d.roots);
+    expect(new Set(roots).size).toBe(roots.length);
+  });
+});
+
+describe("domainForPath — every path resolves to exactly one owner (longest-root)", () => {
+  const domains = deriveDomains(REPO_ROOT);
+
+  test("a normal package file resolves to its package domain", () => {
+    expect(domainForPath("packages/kernel/src/index.ts", domains)?.id).toBe(
+      "packages/kernel",
+    );
+  });
+
+  test("the generator-templates carve-out beats its parent cli domain", () => {
+    expect(
+      domainForPath("packages/cli/templates/base/package.json", domains)?.id,
+    ).toBe("generator-templates");
+    // cli's own source stays with cli — the carve is nested, resolved by longest root.
+    expect(domainForPath("packages/cli/src/generate.ts", domains)?.id).toBe(
+      "packages/cli",
+    );
+  });
+
+  test("a path claimed by no domain returns null", () => {
+    expect(domainForPath("bun.lock", domains)).toBeNull();
+    expect(domainForPath("turbo.json", domains)).toBeNull();
   });
 });
