@@ -49,7 +49,7 @@ export const EDITION_PRICES: readonly PriceAnchor[] = [
   {
     id: "compliance",
     label: "Compliance",
-    amount: 749,
+    amount: 799,
     unit: "once",
     from: false,
     note: "Own the source. Fail-closed RLS, WORM, audit chain, evidence packs.",

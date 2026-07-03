@@ -390,7 +390,7 @@ export default function CompliancePage() {
                   letterSpacing: "var(--cs-tracking-tight)",
                 }}
               >
-                {compliancePrice ? formatPrice(compliancePrice) : "from $749"}
+                {compliancePrice ? formatPrice(compliancePrice) : "from $799"}
               </span>
               <span className="cs-tag">One-time license · own the source</span>
             </div>
