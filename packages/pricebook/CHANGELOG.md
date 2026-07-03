@@ -1,5 +1,13 @@
 # @caisson/pricebook
 
+## 0.3.1
+
+### Patch Changes
+
+- 3a7a4fd: Drop the four edition-core a-la-carte purchase rows: compliance/ai-kit/local-ai/agent-dev module SKUs named their own edition entitlement id and expanded to the whole parent edition; no separable core artifact exists. Their PLACEHOLDER + REAL sandbox price-id rows are removed and resolvePurchase now fails closed on the retired ids. 11 standalone module rows remain.
+- Updated dependencies [fb8d966]
+  - @caisson/kernel@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes

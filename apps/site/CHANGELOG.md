@@ -1,5 +1,31 @@
 # @caisson/site
 
+## 0.1.2
+
+### Patch Changes
+
+- Updated dependencies [4fc006c]
+- Updated dependencies [3a7a4fd]
+- Updated dependencies [cc7cb8b]
+- Updated dependencies [bd9a005]
+- Updated dependencies [fb8d966]
+- Updated dependencies [fb8d966]
+  - @caisson/service-license@0.0.3
+  - @caisson/pricebook@0.3.1
+  - @caisson/billing@0.4.0
+  - @caisson/ui@0.3.0
+  - @caisson/kernel@0.4.0
+  - @caisson/platform-reads@0.1.3
+  - @caisson/ai-kit@0.2.2
+  - @caisson/ai-meter@0.3.1
+  - @caisson/auth@0.2.2
+  - @caisson/credits@0.3.1
+  - @caisson/email@0.2.2
+  - @caisson/field-crypto@0.2.2
+  - @caisson/migrate@0.2.2
+  - @caisson/observability@0.2.2
+  - @caisson/tenancy-rls@0.3.1
+
 ## 0.1.1
 
 ### Patch Changes

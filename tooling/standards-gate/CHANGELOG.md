@@ -1,5 +1,11 @@
 # @caisson/standards-gate
 
+## 0.0.3
+
+### Patch Changes
+
+- @caisson/tenancy-rls@0.3.1
+
 ## 0.0.2
 
 ### Patch Changes

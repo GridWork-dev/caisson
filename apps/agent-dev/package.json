@@ -1,6 +1,6 @@
 {
   "name": "@caisson/app-agent-dev",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": true,
   "type": "module",
   "description": "Agentic-Dev edition CLI reference app: drives one governed lifecycle end-to-end (audited, tamper-evident) + offline hybrid memory + a multi-harness emit, composing @caisson/agent-dev down-only. ADR-0044 CLI exception (a kernel demo is not a Next.js page).",

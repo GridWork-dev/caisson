@@ -1,5 +1,13 @@
 # @caisson/license-issue
 
+## 0.0.3
+
+### Patch Changes
+
+- Updated dependencies [fb8d966]
+  - @caisson/kernel@0.4.0
+  - @caisson/license-verify@0.2.2
+
 ## 0.0.2
 
 ### Patch Changes
