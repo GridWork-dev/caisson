@@ -55,13 +55,17 @@ def _proof_settings() -> Settings:
         docs_service_token="unused-in-billing-grant",
         billing_grant_token=GRANT_TOKEN,
         guild_id=int(GUILD_ID),
-        customer_role_id=int(PROOF_ROLE_ID),  # map the umbrella onto caisson-proof — the only role granted
+        customer_role_id=int(
+            PROOF_ROLE_ID
+        ),  # map the umbrella onto caisson-proof — the only role granted
     )  # type: ignore[arg-type]
 
 
 @requires_creds
 async def test_full_grant_lands_the_proof_role_then_removes_it() -> None:
-    intents = discord.Intents.default()  # no privileged members intent — fetch_member is a REST call
+    intents = (
+        discord.Intents.default()
+    )  # no privileged members intent — fetch_member is a REST call
     bot = commands.Bot(command_prefix="!caisson-proof!", intents=intents)
     gateway = asyncio.create_task(bot.start(DISCORD_TOKEN))
     try:

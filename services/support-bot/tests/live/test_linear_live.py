@@ -45,7 +45,9 @@ async def _archive_by_title(client: httpx.AsyncClient, title: str) -> None:
     resp = await client.post(
         _GRAPHQL_URL,
         json={"query": find, "variables": {"t": title}},
-        headers={"Authorization": API_KEY},  # bare key, no Bearer — same quirk as the product client
+        headers={
+            "Authorization": API_KEY
+        },  # bare key, no Bearer — same quirk as the product client
     )
     nodes = resp.json().get("data", {}).get("issues", {}).get("nodes", [])
     if not nodes:

@@ -199,7 +199,7 @@ describe("Paddle webhook verifier live proof (seam 1, ADR-0224 F1=C)", () => {
       // it before running this leg: `bun add -d @playwright/test`.
       // ponytail: the overlay is a THIRD-PARTY iframe — selectors + the sandbox test card are the
       // calibration knob; tune per the live Paddle.js version, they cannot be verified headless-free.
-      const pw = (await import("playwright")) as typeof import("playwright");
+      const pw = await import("playwright");
       const browser = await pw.chromium.launch({ headless: true });
       try {
         const page = await browser.newPage();
