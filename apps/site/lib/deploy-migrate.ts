@@ -60,8 +60,11 @@ GRANT USAGE ON SCHEMA public TO app;
  * The platform migration set in dependency order — app role FIRST because every tenant table's
  * embedded buildTenantPolicySql GRANTs to `app`. One in-memory package; the kernel sorts by
  * filename, so the `NNNN_` prefixes encode the order.
+ *
+ * Exported for read-only drift auditing (compare the assembled checksums against a live DB's
+ * `schema_version` rows before any bless/apply — the CAISSON-16 procedure).
  */
-function platformPackage(): PackageMigrations {
+export function platformPackage(): PackageMigrations {
   return {
     slug: "caisson-platform",
     dependsOn: [],
@@ -112,9 +115,59 @@ function platformPackage(): PackageMigrations {
       // as 0011. Anonymous by construction (no IP / user id / answer text); 90-day retention is a
       // hard DELETE swept on insert (question-log.ts), not a schema concern.
       { name: "0012_ask_ai_question.sql", sql: ASK_AI_QUESTION_SCHEMA_SQL },
+      // Wave-6b (ADR-0239 row #2): re-create every platform tenant-isolation policy with the
+      // empty-string GUC guard — NULLIF folds '' to NULL so a pooled connection whose custom GUC
+      // was reset to '' (pgbouncer transaction pooling) always DENIES instead of matching a row
+      // whose tenant column is ''. FROZEN LITERAL, deliberately NOT built via buildTenantPolicySql:
+      // the 0002–0010 constants above interpolate the builder at import time, so the builder's
+      // NULLIF change already drifted their pinned checksums on the live ledger (blessed at apply
+      // time, once) — a builder call HERE would re-drift this file on the next builder change.
+      // Future policy changes ship as a NEW re-create migration, never an edit here (ADR-0006).
+      { name: "0013_rls_empty_guc_guard.sql", sql: RLS_EMPTY_GUC_GUARD_SQL },
     ],
   };
 }
+
+/** The 10 standard-shape tenant tables (policy `<table>_tenant_isolation`, column account_id). */
+const NULLIF_GUARD_TABLES = [
+  "credit_wallet",
+  "credit_event",
+  "entitlement_grant",
+  "license_grant",
+  "usage_event",
+  "tenant_spend_window",
+  "spend_policy",
+  "spend_breaker",
+  "billing_processed_event",
+] as const;
+
+const RLS_EMPTY_GUC_GUARD_SQL = `
+${NULLIF_GUARD_TABLES.map(
+  (t) => `DROP POLICY IF EXISTS ${t}_tenant_isolation ON ${t};
+CREATE POLICY ${t}_tenant_isolation ON ${t}
+  USING (account_id = NULLIF(current_setting('app.current_account', true), ''))
+  WITH CHECK (account_id = NULLIF(current_setting('app.current_account', true), ''));`,
+).join("\n")}
+-- account_member keeps its dual-GUC shape (ADR-0176); both GUC reads gain the guard. The source
+-- constant in @caisson/auth is intentionally untouched (editing it would drift pinned 0006).
+DROP POLICY IF EXISTS account_member_isolation ON account_member;
+CREATE POLICY account_member_isolation ON account_member
+  USING (
+    account_id = NULLIF(current_setting('app.current_account', true), '')
+    OR user_id = NULLIF(current_setting('app.current_user', true), '')
+  )
+  WITH CHECK (account_id = NULLIF(current_setting('app.current_account', true), ''));
+-- rate_limit is boot-ensured by services/license (not ledger-created) — guard for absence so a
+-- fresh DB migrating before the service's first boot doesn't fail on a missing relation.
+DO $$ BEGIN
+  IF to_regclass('rate_limit') IS NOT NULL THEN
+    EXECUTE 'DROP POLICY IF EXISTS rate_limit_tenant_isolation ON rate_limit';
+    EXECUTE 'CREATE POLICY rate_limit_tenant_isolation ON rate_limit
+      USING (account_id = NULLIF(current_setting(''app.current_account'', true), ''''))
+      WITH CHECK (account_id = NULLIF(current_setting(''app.current_account'', true), ''''))';
+  END IF;
+END $$;
+`;
 
 /**
  * Apply the platform schema through an injected applier (node-postgres in prod, PGlite in the test).
