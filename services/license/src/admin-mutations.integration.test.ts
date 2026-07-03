@@ -894,6 +894,154 @@ describe("paid purchase revoke — R-4 edge deny-set truth (ADR-0225)", () => {
     );
     expect(count[0]?.n).toBe(0);
   });
+
+  // ADR-0225 R-4 = B publisher seam: the DB is the truth, but a paid revoke ALSO republishes the FULL
+  // cross-tenant deny-set to the artifact the registry Worker reads — post-commit + best-effort. Without
+  // this the DB records `deniedLicenseIds` while the edge (fail-open) never cuts access — the exact
+  // silent-enforcement gap the fraud/chargeback/ToS lever exists to close.
+  test("revokeEdgeAccess publishes the FULL cross-tenant deny-set post-commit (edgePublish ok)", async () => {
+    const acct = await realAccount();
+    const purchaseId = `pay_${randomUUID()}`;
+    const licX = `lic-${randomUUID()}`;
+    const licY = `lic-${randomUUID()}`;
+    await seedOneTimeGrant(acct, purchaseId, ["compliance"]);
+    for (const [major, licenseId, token] of [
+      [1, licX, "TOK-X"],
+      [2, licY, "TOK-Y"],
+    ] as const) {
+      await withTenant(db, acct, (tx) =>
+        storeLicenseGrant(tx, {
+          accountId: acct,
+          major,
+          licenseId,
+          tier: "pro",
+          expiry: null,
+          token,
+        }),
+      );
+    }
+
+    const published: string[][] = [];
+    const r = await revokePurchaseAdmin(
+      deps({
+        publishDenySet: async (ids) => {
+          published.push([...ids]);
+        },
+      }),
+      {
+        actorEmail: "op@gridwork.dev",
+        targetAccountId: acct,
+        purchaseId,
+        clawUnspentCredits: false,
+        revokeEdgeAccess: true,
+      },
+    );
+
+    expect(r.edgePublish).toBe("ok");
+    // Called EXACTLY once, post-commit, carrying the WHOLE cross-tenant set (== the committed DB read),
+    // not just this account's ids — publishing only the account's ids would wipe prior revokes' denials.
+    expect(published).toHaveLength(1);
+    const denySet = await asAdmin((tx) => readDenySet(tx));
+    expect([...(published[0] ?? [])].sort()).toEqual([...denySet].sort());
+    expect(published[0]).toEqual(expect.arrayContaining([licX, licY]));
+  });
+
+  test("revokeEdgeAccess=false skips the publish (edgePublish skipped, publisher untouched)", async () => {
+    const acct = await realAccount();
+    const purchaseId = `pay_${randomUUID()}`;
+    await seedOneTimeGrant(acct, purchaseId, ["compliance"]);
+    let calls = 0;
+    const r = await revokePurchaseAdmin(
+      deps({
+        publishDenySet: async () => {
+          calls += 1;
+        },
+      }),
+      {
+        actorEmail: "op@gridwork.dev",
+        targetAccountId: acct,
+        purchaseId,
+        clawUnspentCredits: false,
+        revokeEdgeAccess: false,
+      },
+    );
+    expect(r.edgePublish).toBe("skipped");
+    expect(calls).toBe(0);
+  });
+
+  test("no publisher provisioned → edgePublish skipped, yet the DB deny-set truth is still written", async () => {
+    const acct = await realAccount();
+    const purchaseId = `pay_${randomUUID()}`;
+    const lic = `lic-${randomUUID()}`;
+    await seedOneTimeGrant(acct, purchaseId, ["compliance"]);
+    await withTenant(db, acct, (tx) =>
+      storeLicenseGrant(tx, {
+        accountId: acct,
+        major: 1,
+        licenseId: lic,
+        tier: "pro",
+        expiry: null,
+        token: "TOK-N",
+      }),
+    );
+    // deps() has NO publishDenySet — the operator-gated edge publisher is unprovisioned.
+    const r = await revokePurchaseAdmin(deps(), {
+      actorEmail: "op@gridwork.dev",
+      targetAccountId: acct,
+      purchaseId,
+      clawUnspentCredits: false,
+      revokeEdgeAccess: true,
+    });
+    expect(r.edgePublish).toBe("skipped"); // fail-open edge; the DB stays the truth
+    expect(r.deniedLicenseIds).toEqual([lic]);
+    const count = await ground<{ n: number }>(
+      `SELECT count(*)::int AS n FROM license_revocation WHERE account_id = $1`,
+      [acct],
+    );
+    expect(count[0]?.n).toBe(1); // DB truth written regardless of the skipped publish
+  });
+
+  test("a publisher that throws surfaces edgePublish failed WITHOUT undoing the durable revoke", async () => {
+    const acct = await realAccount();
+    const purchaseId = `pay_${randomUUID()}`;
+    const lic = `lic-${randomUUID()}`;
+    await seedOneTimeGrant(acct, purchaseId, ["compliance"]);
+    await withTenant(db, acct, (tx) =>
+      storeLicenseGrant(tx, {
+        accountId: acct,
+        major: 1,
+        licenseId: lic,
+        tier: "pro",
+        expiry: null,
+        token: "TOK-F",
+      }),
+    );
+    const r = await revokePurchaseAdmin(
+      deps({
+        publishDenySet: async () => {
+          throw new Error("R2 down");
+        },
+      }),
+      {
+        actorEmail: "op@gridwork.dev",
+        targetAccountId: acct,
+        purchaseId,
+        clawUnspentCredits: false,
+        revokeEdgeAccess: true,
+      },
+    );
+    // Best-effort: the throw is CAUGHT + surfaced, never rethrown — the call resolved, not rejected.
+    expect(r.edgePublish).toBe("failed");
+    // The revoke + the DB deny-set are DURABLE despite the failed publish (the tx already committed).
+    expect(r.before).toContain("compliance");
+    expect(r.after).not.toContain("compliance");
+    expect(r.deniedLicenseIds).toEqual([lic]);
+    const rev = await ground<{ n: number }>(
+      `SELECT count(*)::int AS n FROM license_revocation WHERE account_id = $1`,
+      [acct],
+    );
+    expect(rev[0]?.n).toBe(1);
+  });
 });
 
 describe("paid purchase revoke — atomicity + audit enum (ADR-0225)", () => {

@@ -47,7 +47,10 @@ import {
   revokeAdminComp,
   revokePurchaseGrants,
 } from "./entitlement-store.ts";
-import { recordLicenseRevocations } from "./license-revocation-store.ts";
+import {
+  readDenySet,
+  recordLicenseRevocations,
+} from "./license-revocation-store.ts";
 
 // The `admin_write` cross-tenant policies for every table the mutation surface touches: WRITE
 // policies for the tables it actually mutates — `entitlement_grant` (service-owned) + the BASE
@@ -99,6 +102,18 @@ export interface AdminMutationDeps {
     major: number;
     expiry: string | null;
   }) => Promise<ReissueProxyResult>;
+  /**
+   * Publish the FULL current edge deny-set to the artifact the registry Worker reads (ADR-0225
+   * R-4 = B) — the WRITE side of `deploy-entry.ts`'s R2 read. Called POST-COMMIT + BEST-EFFORT by
+   * `revokePurchaseAdmin` after a `revokeEdgeAccess` revoke, with every revoked `license_id` across
+   * all tenants (republish-whole, not delta). Injected (prod: an R2-object writer; tests: a double),
+   * so this module holds no bucket credential. OPTIONAL — absent = the edge publisher is not yet
+   * provisioned (operator-gated DEPLOY): the publish is reported `"skipped"`, the DB
+   * `license_revocation` table stays the truth, and the Worker fails OPEN, so installs never break.
+   * The caller CATCHES a throw and surfaces it as `"failed"` — it NEVER rethrows, because the revoke
+   * + the DB deny-set already committed and a retry would double-apply the money/entitlement change.
+   */
+  publishDenySet?: ((revokedLicenseIds: string[]) => Promise<void>) | undefined;
 }
 
 // The real platform account-id shape (better-auth 32-char [A-Za-z0-9], ADR-0176) — NOT a UUID.
@@ -225,6 +240,17 @@ export type PurchaseRevokeInput = z.infer<typeof RevokePurchaseBody> & {
  * entitlement change. The action is still queryable in `admin_action_log`; re-anchor out of band.
  */
 export type WormStatus = "ok" | "failed";
+
+/**
+ * The edge deny-set publish outcome (ADR-0225 R-4 = B), decided POST-COMMIT + best-effort:
+ *   - `"skipped"` — no edge revoke was requested (`revokeEdgeAccess` off) OR no publisher is
+ *     provisioned yet (operator-gated DEPLOY). The DB `license_revocation` table is the sole truth
+ *     and the Worker fails OPEN (nothing denied at the edge) — safe, not broken.
+ *   - `"ok"` — the FULL deny-set was republished to the Worker's artifact.
+ *   - `"failed"` — the publisher threw. The revoke + DB deny-set are ALREADY durable, so this is a
+ *     DO-NOT-RETRY signal (re-publish the artifact out of band); it is NOT a mutation failure.
+ */
+export type EdgePublishStatus = "ok" | "failed" | "skipped";
 
 /** Append the tamper-evident WORM half AFTER the mutation+log tx commits (both are separate roles).
  *  A mutation that throws never reaches here → neither half is written (Fork AM-4 atomicity). The
@@ -504,9 +530,12 @@ export interface PurchaseRevokeResult {
   clawedBack: number;
   balanceBefore: number;
   balanceAfter: number;
-  /** The license ids written to the edge deny-set (ADR-0225 R-4); `[]` when `revokeEdgeAccess` was
-   *  off. The downstream publish path republishes the full deny-set from these — NOT this module. */
+  /** The license ids added to the edge deny-set for THIS account (ADR-0225 R-4); `[]` when
+   *  `revokeEdgeAccess` was off. The whole cross-tenant set — not just these — is what gets published. */
   deniedLicenseIds: string[];
+  /** Edge deny-set publish outcome (ADR-0225 R-4 = B) — see `EdgePublishStatus`. `"skipped"` when no
+   *  edge revoke was requested or the publisher is unprovisioned; the DB stays the truth either way. */
+  edgePublish: EdgePublishStatus;
   /** WORM audit half's outcome — `"failed"` means DO-NOT-RETRY (the revoke + log already committed). */
   worm: WormStatus;
 }
@@ -545,6 +574,9 @@ export async function revokePurchaseAdmin(
   deps: AdminMutationDeps,
   input: PurchaseRevokeInput,
 ): Promise<PurchaseRevokeResult> {
+  // The FULL cross-tenant deny-set as of THIS revoke's commit, captured inside the tx and published
+  // post-commit (below). Assigned from the closure so the atomic post-revoke truth escapes.
+  let fullDenySet: string[] = [];
   const result = await withAdminWrite(deps.db, async (tx) => {
     await assertAccountExists(tx, input.targetAccountId);
     const before = await readEntitlements(tx, input.targetAccountId);
@@ -584,6 +616,13 @@ export async function revokePurchaseAdmin(
     const adminActionId = randomUUID();
 
     // R-4 = B: write the edge deny-set truth in the SAME transaction (opt-in).
+    // ponytail: the edge deny is ACCOUNT-scoped (every held license_id) and runs whenever
+    // `revokeEdgeAccess` is on — even when this `purchaseId` matched 0 grants. A mistyped purchaseId
+    // against the RIGHT account therefore still denies that account's licenses at the edge. That is
+    // the deliberate R-4 = B posture (kill the fraud/ToS account's edge access, not one purchase's):
+    // gating on `revoked > 0` would instead break a legitimate idempotent re-run. The mandatory
+    // impact preview + type-to-confirm (Fork R-6) are the guard against a mis-targeted deny; the
+    // per-action checkbox keeps it an explicit choice.
     let deniedLicenseIds: string[] = [];
     if (input.revokeEdgeAccess) {
       deniedLicenseIds = await recordLicenseRevocations(tx, {
@@ -591,6 +630,9 @@ export async function revokePurchaseAdmin(
         adminActionId,
         reason: input.reason ?? null,
       });
+      // The whole cross-tenant set (not just this account's) — republish-whole is what the Worker's
+      // artifact carries, so publishing only `deniedLicenseIds` would wipe every prior revoke's denials.
+      fullDenySet = await readDenySet(tx);
     }
 
     const after = await readEntitlements(tx, input.targetAccountId);
@@ -637,10 +679,27 @@ export async function revokePurchaseAdmin(
       reason: input.reason ?? null,
     },
   );
+
+  // R-4 = B edge publish — POST-COMMIT + BEST-EFFORT. The revoke + the DB `license_revocation` truth
+  // already committed; republishing the FULL set to the Worker's artifact is what finally cuts a held
+  // offline token's edge access. `"skipped"` when no edge revoke was asked for OR no publisher is
+  // provisioned (operator-gated DEPLOY — the Worker fails open, so the absence is safe, not broken).
+  // A publisher throw is CAUGHT → `"failed"` (do-not-retry: the mutation is durable), never rethrown.
+  let edgePublish: EdgePublishStatus = "skipped";
+  if (input.revokeEdgeAccess && deps.publishDenySet !== undefined) {
+    try {
+      await deps.publishDenySet(fullDenySet);
+      edgePublish = "ok";
+    } catch {
+      edgePublish = "failed";
+    }
+  }
+
   return {
     targetAccountId: input.targetAccountId,
     purchaseId: input.purchaseId,
     ...result,
+    edgePublish,
     worm,
   };
 }

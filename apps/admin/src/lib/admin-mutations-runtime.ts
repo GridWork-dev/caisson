@@ -69,12 +69,51 @@ async function issueProxy(req: {
   return { token: body.token, licenseId: body.licenseId };
 }
 
+/**
+ * The edge deny-set publisher (ADR-0225 R-4 = B) — the WRITE side of the registry Worker's R2 read
+ * (`registry/worker/deploy-entry.ts` reads `revocations/deny-set.json`). Called post-commit + best-
+ * effort by `revokePurchaseAdmin` with the FULL cross-tenant set of revoked `license_id`s; it PUTs
+ * `{ revokedLicenseIds }` (the exact shape the Worker's `revocationArtifactSchema` validates).
+ *
+ * OPERATOR-GATED: returns `undefined` (→ the mutation reports `edgePublish: "skipped"`, the DB
+ * `license_revocation` table stays the truth, the Worker fails OPEN) until `CAISSON_REVOCATIONS_PUT_URL`
+ * is set on `caisson-admin` to an authorized PUT target for that object. The real R2 bucket/binding is
+ * provisioned at DEPLOY, not here (docs/state/launch-runbook.md §8).
+ *
+ * // ponytail: a `fetchWithTimeout` PUT to an operator-provided URL — a pre-signed R2 URL or a small
+ * // authed shim in front of the bucket. Keeps aws-sdk / SigV4 OUT of the admin blast radius; swap for
+ * // a direct R2 S3 PutObject if the operator prefers a long-lived credential over a managed URL.
+ */
+function denySetPublisher(): AdminMutationDeps["publishDenySet"] {
+  const url = process.env.CAISSON_REVOCATIONS_PUT_URL?.trim() ?? "";
+  if (url === "") return undefined;
+  const token = process.env.CAISSON_REVOCATIONS_PUT_TOKEN?.trim() ?? "";
+  return async (revokedLicenseIds: string[]): Promise<void> => {
+    const res = await fetchWithTimeout(
+      url,
+      {
+        method: "PUT",
+        headers: {
+          "content-type": "application/json",
+          ...(token === "" ? {} : { authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ revokedLicenseIds }),
+      },
+      { timeoutMs: 10_000 },
+    );
+    if (!res.ok) {
+      throw new Error(`deny-set publish returned ${String(res.status)}`);
+    }
+  };
+}
+
 export async function getAdminMutationDeps(): Promise<AdminMutationDeps> {
   const db = await getAdminDb();
   return {
     db,
     worm: new AuditChainStore({ db, store: wormStore() }),
     issue: issueProxy,
+    publishDenySet: denySetPublisher(),
   };
 }
 
