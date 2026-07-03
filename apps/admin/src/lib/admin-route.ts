@@ -5,6 +5,7 @@
 // misconfigured matcher) fails closed to 401 here.
 import { toErrorResponse } from "@caisson/kernel";
 import { ZodError } from "zod";
+import { toErrorResponse } from "@caisson/kernel";
 
 export function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -44,12 +45,10 @@ export function mutationResponse(result: { worm: "ok" | "failed" }): Response {
 }
 
 /**
- * Map a thrown value to its client-safe HTTP Response via the kernel `toErrorResponse` — a
- * `CaissonError` keeps its own status + code (e.g. a `NotFoundError` from the CAISSON-9 account
- * existence guard renders 404, not a generic 500), anything else collapses to an opaque 500 (the
- * original is the caller's to log server-side, never serialized). Use ONLY in a route's `catch`,
- * where the failure is PRE-commit (nothing applied) — the committed-but-WORM-failed case is
- * `mutationResponse`, never this. (Duplicated by a parallel micro-PR — merge reconciles.)
+ * Map a caught mutation error to its real HTTP shape (kernel's `toErrorResponse`, ADR-0019): a
+ * `CaissonError` (e.g. CAISSON-9's `NotFoundError` on a nonexistent target account) keeps its real
+ * `code`/`httpStatus`, instead of every thrown value collapsing to a generic 500. Routed through this
+ * module's own `json()` so the security headers stay on every response, not just the 200 path.
  */
 export function mutationErrorResponse(err: unknown): Response {
   const { status, body } = toErrorResponse(err);

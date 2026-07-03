@@ -17,7 +17,7 @@ const compliance: CartItem = {
   id: "compliance",
   priceId: "pri_01kwd76be2eq96kff5nqw236c0",
   label: "Compliance",
-  amount: 749,
+  amount: 799,
   kind: "edition",
 };
 
@@ -57,7 +57,7 @@ describe("cart item operations", () => {
   });
 
   test("cartSubtotal sums integer amounts", () => {
-    expect(cartSubtotal([compliance, fieldCrypto])).toBe(948);
+    expect(cartSubtotal([compliance, fieldCrypto])).toBe(998);
   });
 
   test("cartSubtotal of an empty cart is 0", () => {
@@ -142,29 +142,29 @@ describe("cartUpgrade (bundle nudge, ADR-0193)", () => {
   });
 
   test("suggests the bundle when the cart totals more than it, with the real saving", () => {
-    // 749 + 599 + 249 = 1597 > 1499 bundle → save 98.
+    // 799 + 599 + 249 = 1647 > 1499 bundle → save 148.
     const u = cartUpgrade(
       [
-        edition("compliance", 749),
+        edition("compliance", 799),
         edition("ai-kit", 599),
         edition("agentic-dev", 249),
       ],
       bundle,
     );
     expect(u?.bundle.kind).toBe("bundle");
-    expect(u?.saves).toBe(1597 - 1499);
+    expect(u?.saves).toBe(1647 - 1499);
   });
 
   test("no suggestion when the subtotal is at or below the bundle price", () => {
-    // 749 + 599 = 1348 < 1499 → the bundle would cost MORE, so no fabricated saving.
+    // 799 + 599 = 1398 < 1499 → the bundle would cost MORE, so no fabricated saving.
     expect(
-      cartUpgrade([edition("compliance", 749), edition("ai-kit", 599)], bundle),
+      cartUpgrade([edition("compliance", 799), edition("ai-kit", 599)], bundle),
     ).toBeUndefined();
   });
 
   test("no suggestion when a bundle is already in the cart", () => {
     expect(
-      cartUpgrade([bundle, edition("compliance", 749)], bundle),
+      cartUpgrade([bundle, edition("compliance", 799)], bundle),
     ).toBeUndefined();
   });
 
