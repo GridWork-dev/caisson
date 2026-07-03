@@ -98,9 +98,16 @@ Closest reusable pattern for idempotent bucket provisioning: `infra/worm/provisi
 
 ---
 
-## Open forks (residual implementation decisions the ADR did NOT pin — operator picks before Task 2/3)
+## Residual mechanism forks — LOCKED 2026-07-02 (third picker round, operator-locked)
 
-The 8 headline sub-forks are locked. Two mechanism-level decisions sit **under** H1/G1 that ADR-0223 leaves unspecified:
+The 8 headline sub-forks were already locked by ADR-0223. The two mechanism-level decisions that
+sat **under** H1/G1 were locked by the operator on 2026-07-02 (third picker round of the day) —
+**both on the Recommended option**: **Fork 1 = 1.1** (git-tracked tarball sidecar, inlined into the
+Worker bundle at build exactly like `index.json`) and **Fork 2 = 2.1** (scoped S3-compatible R2
+access keys as GH Actions repo secrets + the `registry.caisson.sh` route versioned in
+`wrangler.toml`). Implementation-level under ADR-0223 — **no new ADR**; recorded on the board
+(`docs/state/decisions-and-forks.md`, third-picker-round section) and here. The option analysis
+below is kept for the record:
 
 ### Fork 1 — where the tarball sidecar physically lives + how the Worker reads it (under H1)
 
@@ -117,7 +124,7 @@ ADR-0223 H1 locks "a private sidecar maps `(id, version)` → `{R2 key, shasum, 
 - **2.1 — S3-compatible R2 access keys as GH Actions repo secrets scoped to the one bucket, + a wrangler `routes`/custom-domain entry in `wrangler.toml` deployed by `deploy.sh` (Recommended, confidence MEDIUM-HIGH).** One new scoped credential surface (lands in `identity/security-surfaces.md` per Task 1); the route lives in versioned config next to the Worker.
 - 2.2 — CI uploads via `bunx wrangler r2 object put` using the existing `CLOUDFLARE_API_TOKEN` (widened in Task 1), route set in the CF dashboard. Fewer secrets, but the token is broader-scoped and the route is un-versioned (dashboard drift).
 
-Both forks are genuinely two-way but low-stakes; each has a clear recommended default so Task 2/3 are not blocked long.
+Both forks were genuinely two-way but low-stakes; both locked on the recommended default (1.1 / 2.1), so Task 2/3 are unblocked.
 
 ---
 
