@@ -128,6 +128,36 @@ function renderSection(section: PageSection, key: number): ReactNode {
       );
     }
 
+    case "media": {
+      // Placeholder media (ADR-0237 F2, simplified per operator directive): the mark at low
+      // opacity on a surface-2 field over a hairline grid. The aspect-ratio container is the one
+      // contract real media later drops into. Decorative — hidden from the a11y tree.
+      const { kind: _kind, icon, aspect, ...header } = section;
+      return (
+        <Section key={key} {...header}>
+          <div
+            aria-hidden="true"
+            style={{
+              aspectRatio: aspect ?? "16 / 9",
+              display: "grid",
+              placeItems: "center",
+              borderRadius: "var(--cs-radius-lg)",
+              border: "1px solid var(--cs-border)",
+              background:
+                "repeating-linear-gradient(0deg, transparent 0 31px, var(--cs-border) 31px 32px), repeating-linear-gradient(90deg, transparent 0 31px, var(--cs-border) 31px 32px), var(--cs-surface-2)",
+              overflow: "hidden",
+            }}
+          >
+            {icon && (
+              <span style={{ opacity: 0.18, transform: "scale(6)" }}>
+                <Icon name={icon} size="lg" />
+              </span>
+            )}
+          </div>
+        </Section>
+      );
+    }
+
     case "custom":
       return <Fragment key={key}>{section.node}</Fragment>;
 
