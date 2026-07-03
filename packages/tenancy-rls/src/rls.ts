@@ -221,7 +221,10 @@ export function buildAdminWritePolicySql(
  * surface only ever READS (e.g. an existence check on the base auth `account_member` table) — the
  * blast radius of a bug in that surface then stops at a cross-tenant read, never a cross-tenant
  * write, on a table it has no legitimate reason to mutate. Same idempotent
- * drop-then-create shape as the write variant.
+ * drop-then-create shape as the write variant — and it also DROPs the write-variant policy and
+ * REVOKEs INSERT/UPDATE, so re-provisioning a database that previously ran
+ * `buildAdminWritePolicySql` for the same table converges to SELECT-only instead of keeping the
+ * stale write grant.
  */
 export function buildAdminSelectPolicySql(
   table: string,
@@ -229,6 +232,8 @@ export function buildAdminSelectPolicySql(
 ): string {
   return [
     `GRANT SELECT ON ${table} TO ${role};`,
+    `REVOKE INSERT, UPDATE ON ${table} FROM ${role};`,
+    `DROP POLICY IF EXISTS ${table}_admin_write ON ${table};`,
     `DROP POLICY IF EXISTS ${table}_admin_select ON ${table};`,
     `CREATE POLICY ${table}_admin_select ON ${table}`,
     `  FOR SELECT`,
