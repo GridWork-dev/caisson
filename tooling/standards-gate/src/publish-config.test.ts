@@ -81,28 +81,45 @@ describe("publish-readiness flip (ADR-0111)", () => {
     expect(leaked).toEqual([]);
   });
 
-  test("every published package is at its ADR-0208 republish version", () => {
-    // The 2026-07-02 consume (ADR-0208 #5): every published package took its pending minor to
-    // 0.2.0 except the four Stage-2 primitives, whose changesets were patch-only. Mirrors the
+  test("every published package is at its second members-fold republish version", () => {
+    // The 2026-07-02 second-wave consume (members-fold republish, MF-A): every published package
+    // took at least a patch bump off the ADR-0208 first-wave baseline (0.2.0→0.2.1 / 0.1.1→0.1.2)
+    // via `updateInternalDependencies: "patch"` cascade; seven packages with a direct minor
+    // changeset (or a minor-bumped dependency) took 0.2.0/0.1.x straight to 0.3.0. Mirrors the
     // divergence map in registry/scripts/full-tree-index.test.ts.
+    const MINOR_BUMP = new Set([
+      "@caisson/ai-meter",
+      "@caisson/billing",
+      "@caisson/credits",
+      "@caisson/guardrails",
+      "@caisson/kernel",
+      "@caisson/pricebook",
+      "@caisson/tenancy-rls",
+    ]);
     const PATCH_ONLY = new Set([
       "@caisson/alerting",
       "@caisson/retention-runner",
       "@caisson/tool-exec",
       "@caisson/platform-reads",
     ]);
-    // First publishes AFTER the republish enter at their own initial version (mirrors the
-    // FIRST_PUBLISH map in registry/scripts/full-tree-index.test.ts).
+    // First publishes AFTER the first republish enter at their own initial version, then cascade
+    // like everything else on later waves (mirrors the FIRST_PUBLISH map in
+    // registry/scripts/full-tree-index.test.ts).
     const FIRST_PUBLISH: Record<string, string> = {
-      // Slice-2 harvest (ADR-0186): published 0.1.0 the same day, after the 0.2.0 wave.
-      "@caisson/agent-runner": "0.1.0",
+      // Slice-2 harvest (ADR-0186): published 0.1.0 after the first wave, cascaded to 0.1.1 here
+      // (depends on @caisson/kernel, which took this wave's minor bump).
+      "@caisson/agent-runner": "0.1.1",
     };
     const off = published
       .filter(
         (p) =>
           p.pj.version !==
           (FIRST_PUBLISH[p.pj.name ?? ""] ??
-            (PATCH_ONLY.has(p.pj.name ?? "") ? "0.1.1" : "0.2.0")),
+            (MINOR_BUMP.has(p.pj.name ?? "")
+              ? "0.3.0"
+              : PATCH_ONLY.has(p.pj.name ?? "")
+                ? "0.1.2"
+                : "0.2.1")),
       )
       .map((p) => `${p.pj.name}@${p.pj.version}`);
     expect(off).toEqual([]);

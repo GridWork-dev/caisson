@@ -1,0 +1,4 @@
+{
+  "$comment": "Tarball sidecar (ADR-0223 Fork 1.1). Maps '<@caisson/module>@<version>' -> {key,shasum,integrity,size}: the R2 object key plus npm's two integrity forms (shasum=SHA-1, integrity=sha512 SRI) and the byte size. Git-tracked and inlined into the Worker bundle at build time exactly like index.json; the Worker READS dist.{shasum,integrity} here and serves the bytes from R2 at 'key'. CI (publish.yml / registry/scripts/ci-publish-step.ts, Task 3) is the ONLY writer, populating 'tarballs' from `npm pack` in the same commit that writes ledger.jsonl + index.json. Empty until CI first uploads. Schema: registry/worker/npm-routes.ts (TarballSidecar).",
+  "tarballs": {}
+}

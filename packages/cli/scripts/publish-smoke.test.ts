@@ -13,12 +13,25 @@
 import { describe, expect, test } from "bun:test";
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { delimiter, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url)); // packages/cli/scripts
 const CLI_DIST = join(HERE, "..", "dist", "cli.js");
 const built = existsSync(CLI_DIST);
+
+// Under turbo, PATH is fronted by a bun-node shim dir whose `node` ignores `--check` and EXECUTES
+// the script (the CLI then exits 1 on missing args). Resolve the REAL node past any shim — the
+// whole point of this smoke is what genuine node does with the published artifact.
+function realNode(): string | null {
+  for (const dir of (process.env.PATH ?? "").split(delimiter)) {
+    if (dir.includes("bun-node") || dir === "") continue;
+    const candidate = join(dir, "node");
+    if (existsSync(candidate)) return candidate;
+  }
+  return null;
+}
+const nodeBin = realNode();
 
 describe("create-caisson npx bin smoke (ADR-0092/0111)", () => {
   test.skipIf(!built)("dist/cli.js carries the node shebang on line 1", () => {
@@ -26,12 +39,14 @@ describe("create-caisson npx bin smoke (ADR-0092/0111)", () => {
     expect(line1).toBe("#!/usr/bin/env node");
   });
 
-  test.skipIf(!built)(
+  test.skipIf(!built || nodeBin === null)(
     "dist/cli.js is valid ESM that node can load (node --check)",
     () => {
       // Throws (non-zero exit) if node cannot parse the file.
       expect(() =>
-        execFileSync("node", ["--check", CLI_DIST], { stdio: "pipe" }),
+        execFileSync(nodeBin as string, ["--check", CLI_DIST], {
+          stdio: "pipe",
+        }),
       ).not.toThrow();
     },
   );

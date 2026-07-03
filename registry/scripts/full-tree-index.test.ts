@@ -32,27 +32,47 @@ describe("full-tree registry backfill (ADR-0021/0111)", () => {
     expect(dups).toEqual([]);
   });
 
-  test("the index spans the full publishable set at the ADR-0208 republish versions", () => {
+  test("the index spans the full publishable set at the second members-fold republish versions", () => {
     const index = JSON.parse(readFileSync(INDEX_PATH, "utf8")) as {
       modules: { id: string; latest: string }[];
     };
     expect(index.modules.length).toBeGreaterThanOrEqual(20);
-    // The 2026-07-02 republish (ADR-0208 #5): every module took its pending minor to 0.2.0
-    // except the four Stage-2 primitives, whose changesets were patch-only.
+    // The 2026-07-02 second-wave consume (members-fold republish, MF-A): every published module
+    // took at least a patch bump off the ADR-0208 first-wave baseline (0.2.0→0.2.1 / 0.1.1→0.1.2)
+    // via `updateInternalDependencies: "patch"` cascade; seven packages with a direct minor
+    // changeset (or a minor-bumped dependency) took 0.2.0/0.1.x straight to 0.3.0. Mirrors the
+    // divergence map in tooling/standards-gate/src/publish-config.test.ts.
+    const MINOR_BUMP = new Set([
+      "@caisson/ai-meter",
+      "@caisson/billing",
+      "@caisson/credits",
+      "@caisson/guardrails",
+      "@caisson/kernel",
+      "@caisson/pricebook",
+      "@caisson/tenancy-rls",
+    ]);
     const PATCH_ONLY = new Set([
       "@caisson/alerting",
       "@caisson/retention-runner",
       "@caisson/tool-exec",
       "@caisson/platform-reads",
     ]);
-    // First publishes AFTER the republish enter at their own initial version, not the wave's.
+    // First publishes AFTER the first republish enter at their own initial version, then cascade
+    // like everything else on later waves (mirrors the FIRST_PUBLISH map in
+    // tooling/standards-gate/src/publish-config.test.ts).
     const FIRST_PUBLISH: Record<string, string> = {
-      // Slice-2 harvest (ADR-0186): published 0.1.0 the same day, after the 0.2.0 wave.
-      "@caisson/agent-runner": "0.1.0",
+      // Slice-2 harvest (ADR-0186): published 0.1.0 after the first wave, cascaded to 0.1.1 here
+      // (depends on @caisson/kernel, which took this wave's minor bump).
+      "@caisson/agent-runner": "0.1.1",
     };
     for (const m of index.modules) {
       expect(m.latest).toBe(
-        FIRST_PUBLISH[m.id] ?? (PATCH_ONLY.has(m.id) ? "0.1.1" : "0.2.0"),
+        FIRST_PUBLISH[m.id] ??
+          (MINOR_BUMP.has(m.id)
+            ? "0.3.0"
+            : PATCH_ONLY.has(m.id)
+              ? "0.1.2"
+              : "0.2.1"),
       );
     }
   });

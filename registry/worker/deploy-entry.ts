@@ -14,9 +14,16 @@
 // editions they bought; an unentitled module is 404. Until redeployed, the running Worker keeps its
 // current unfiltered behavior. The index itself stays the CI-built public source of truth (no secrets).
 import index from "../index.json";
+import tarballs from "../tarballs.json";
 import { loadRegistryIndex } from "../schema/registry-index";
 import { makeLicenseEntitlementResolver } from "./entitlement-filter";
 import { createIndexHandler } from "./handler";
+import {
+  type NpmEnv,
+  createNpmHandler,
+  isNpmPath,
+  loadTarballSidecar,
+} from "./npm-routes";
 import { makeRevocationDenySet } from "./revocation-list";
 
 // Edge revocation deny-set (ADR-0225 R-4=B). The operator revoke mutation republishes the full set of
@@ -32,6 +39,8 @@ interface R2BucketLike {
 }
 interface DeployEnv {
   REVOCATIONS?: R2BucketLike;
+  /** R2 tarball binding for the npm surface (ADR-0223); absent → npm tarball routes 503. */
+  TARBALLS?: NpmEnv["TARBALLS"];
 }
 interface ExecutionContextLike {
   waitUntil(promise: Promise<unknown>): void;
@@ -50,12 +59,24 @@ const denySet = makeRevocationDenySet(async (): Promise<unknown> => {
   return obj.json();
 }, REVOCATION_TTL_MS);
 
+// ONE deny-set-wired resolver gates BOTH surfaces — the npm install channel (ADR-0223) is exactly
+// what a revoked license must lose, so it cannot bypass the edge deny-set (ADR-0225 R-4=B).
+const licenseEntitlementResolver = makeLicenseEntitlementResolver(denySet.get);
+
 // Parse-or-throw at module load (cold start) over the bundled JSON: a tampered/malformed bundle fails
 // loudly rather than serving a half-typed object. createIndexHandler re-validates as defense in depth
 // (its own contract); the redundant parse over a handful of modules is negligible and intentional.
 const handler = createIndexHandler(loadRegistryIndex(index), {
-  resolveEntitlements: makeLicenseEntitlementResolver(denySet.get),
+  resolveEntitlements: licenseEntitlementResolver,
 });
+
+// npm-protocol surface (ADR-0223) — additive. The SAME injected license resolver gates it, over the
+// same inlined index + the git-tracked tarball sidecar (Fork 1.1, inlined like index.json).
+const npmHandler = createNpmHandler(
+  loadRegistryIndex(index),
+  loadTarballSidecar(tarballs),
+  { resolveEntitlements: licenseEntitlementResolver },
+);
 
 export default {
   fetch(
@@ -67,6 +88,16 @@ export default {
     // Stale-while-revalidate: kick a background refresh, NEVER await it before serving — a slow/failing
     // deny-set fetch must not add latency or block the response (fail-open).
     ctx?.waitUntil(denySet.maybeRefresh());
+    const { pathname } = new URL(request.url);
+    if (isNpmPath(pathname)) {
+      // The npm surface is async (R2 tarball reads); Cloudflare awaits a returned promise. The
+      // untouched deploy-entry.test.ts only exercises the sync index path below, which keeps the
+      // `: Response` contract — the npm branch hands back a Promise the workerd runtime awaits.
+      return npmHandler(
+        request,
+        env.TARBALLS === undefined ? undefined : { TARBALLS: env.TARBALLS },
+      ) as unknown as Response;
+    }
     return handler(request);
   },
 };

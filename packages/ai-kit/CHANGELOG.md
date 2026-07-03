@@ -1,5 +1,61 @@
 # @caisson/ai-kit
 
+## 0.2.1
+
+### Patch Changes
+
+- 5fd31fe: streaming-path test coverage
+- 44a6414: Fetch-deadline floor fix + metered embeddings (ADR-0213, harden-in-place ADR-0210): every live
+  `@ai-sdk/*` provider factory now binds its outbound `fetch` to a configurable `timeoutMs` (default
+  60s, via `fetchWithTimeout`) instead of the ambient global fetch, closing a hang/DoS-adjacent gap on
+  every provider path; `infer()`'s `generateText` now forwards `opts.abortSignal`, mirroring
+  `inferStream()`'s existing wiring. New `embed()`/`embedMany()` join the gateway through the SAME
+  ai-meter reserve-before/reconcile-after chokepoint, provider-agnostic via the ai-config lane and
+  BYOK-routed — a metered, buyer-facing embeddings surface for RAG/semantic-search built on the proved
+  registry-resolver/reserve/reconcile machinery, no guardrails or prompt-registry render (an embed input
+  feeds a vector index, not a moderated chat turn). Zero diff in `@caisson/ai-config`,
+  `@caisson/ai-meter`, or `@caisson/pricebook` — a bundled embedding price-book row / bulk-embed SKU is
+  cross-package money, deferred to the ADR-0212 serialized wave.
+- ccf8b10: Branded money types + rounding provenance (ADR-0212, harvest slice-2 serialized wave-2).
+  Kernel gains `src/money.ts`: TS-native nominal `Cents`/`Credits`/`MicroUsd`/`MicroUsdPerCredit`
+  brands (compile-time only, zero runtime cost), `asCents`/`asCredits`/`asMicroUsd`/
+  `asMicroUsdPerCredit` constructors (throw `ValidationError` on a non-integer/negative input),
+  the identity `unwrapMoney` DB-boundary marker, and the `RoundedMoney<TRaw,TResult>`
+  `{raw, mode, result}` record; `centsToCredits` now returns `Credits` and
+  `centsToCreditsProvenance` returns the round-DOWN provenance record. Credits: `GrantInput`/
+  `DebitInput.amount` are `Credits`, both accept optional `rounding`, and the new
+  `CREDIT_ROUNDING_MIGRATION_SQL` (appended as platform migration `0007_credit_rounding.sql` —
+  never an edit to the checksum-pinned `CREDIT_SCHEMA_SQL`) adds nullable
+  `rounding_raw`/`rounding_mode` to `credit_event` with a biconditional + mode-enum CHECK.
+  Pricebook: `creditsPerCycle`/`credits`/`codegenRunCredits` are branded; re-exports
+  `centsToCreditsProvenance`. ai-meter: `CostBreakdown` is branded and gains `roundingCredits`
+  (`mode: "up"`, ADR-0060) which `reserve()`/`reconcile()` persist onto their ledger rows;
+  `BUNDLED_PRICE_BOOK` gains the `openai/text-embedding-3-small` row (ADR-0213 —
+  embedding pricing is config, not code; `PRICE_BOOK_VERSION` bumped to 2026-07-02).
+  `apply-billing-event` grants stay exact table integers with NULL/NULL provenance
+  (ADR-0089 §5); ADR-0007 integer-at-rest is untouched. ai-kit/cli: boundary mints +
+  test fixture updates only.
+- 549dd4e: Strix pentest remediation (ADR-0204). kernel: new shared SSRF guard (`ssrf.ts`) — literal denylist + async DNS resolve-recheck of every resolved IP, the DNS-rebinding defense (vuln-0004). alerting + ai-kit: dedupe onto the kernel guard and resolve-recheck at the outbound-fetch seam (alerting per fetch; ai-kit via an injected guarded `fetch` for custom provider baseUrls). billing: `purchase.completed` carries `lineItems: {priceId, quantity}[]` so a multi-item cart fulfills every paid line, not just the first (vuln-0005), and a `subscription_update` regression test (vuln-0002).
+- Updated dependencies [b5915e0]
+- Updated dependencies [9558a46]
+- Updated dependencies [959e555]
+- Updated dependencies [e62c88d]
+- Updated dependencies [ccf8b10]
+- Updated dependencies [afa6070]
+- Updated dependencies [081a1d8]
+- Updated dependencies [95103b6]
+- Updated dependencies [aaff518]
+- Updated dependencies [f9d58c4]
+- Updated dependencies [549dd4e]
+  - @caisson/tenancy-rls@0.3.0
+  - @caisson/ai-config@0.2.1
+  - @caisson/ai-meter@0.3.0
+  - @caisson/guardrails@0.3.0
+  - @caisson/kernel@0.3.0
+  - @caisson/credits@0.3.0
+  - @caisson/field-crypto@0.2.1
+  - @caisson/prompt-registry@0.2.1
+
 ## 0.2.0
 
 ### Minor Changes
