@@ -15,18 +15,58 @@
 // current unfiltered behavior. The index itself stays the CI-built public source of truth (no secrets).
 import index from "../index.json";
 import { loadRegistryIndex } from "../schema/registry-index";
-import { licenseEntitlementResolver } from "./entitlement-filter";
+import { makeLicenseEntitlementResolver } from "./entitlement-filter";
 import { createIndexHandler } from "./handler";
+import { makeRevocationDenySet } from "./revocation-list";
+
+// Edge revocation deny-set (ADR-0225 R-4=B). The operator revoke mutation republishes the full set of
+// revoked license ids to a fixed R2 object; the Worker reads it on a short TTL and denies those license
+// ids at the edge. Structural (not @cloudflare/workers-types) so the worker keeps zero runtime deps. The
+// R2 binding is operator-gated at DEPLOY — absent here → the fetcher throws → the cache fails OPEN
+// (empty deny-set, nothing denied), so installs never break before the binding is provisioned.
+interface R2ObjectLike {
+  json(): Promise<unknown>;
+}
+interface R2BucketLike {
+  get(key: string): Promise<R2ObjectLike | null>;
+}
+interface DeployEnv {
+  REVOCATIONS?: R2BucketLike;
+}
+interface ExecutionContextLike {
+  waitUntil(promise: Promise<unknown>): void;
+}
+
+const REVOCATION_KEY = "revocations/deny-set.json";
+const REVOCATION_TTL_MS = 60_000;
+
+// ponytail: a per-isolate env ref. Workers bindings are constant for the life of an isolate, so this is
+// effectively assign-once — the deny-set fetcher needs env, which only arrives per-request.
+let boundEnv: DeployEnv = {};
+const denySet = makeRevocationDenySet(async (): Promise<unknown> => {
+  const obj = await boundEnv.REVOCATIONS?.get(REVOCATION_KEY);
+  if (obj === null || obj === undefined)
+    throw new Error("revocation deny-set unavailable"); // → cache fails open (empty set)
+  return obj.json();
+}, REVOCATION_TTL_MS);
 
 // Parse-or-throw at module load (cold start) over the bundled JSON: a tampered/malformed bundle fails
 // loudly rather than serving a half-typed object. createIndexHandler re-validates as defense in depth
 // (its own contract); the redundant parse over a handful of modules is negligible and intentional.
 const handler = createIndexHandler(loadRegistryIndex(index), {
-  resolveEntitlements: licenseEntitlementResolver,
+  resolveEntitlements: makeLicenseEntitlementResolver(denySet.get),
 });
 
 export default {
-  fetch(request: Request): Response {
+  fetch(
+    request: Request,
+    env: DeployEnv = {},
+    ctx?: ExecutionContextLike,
+  ): Response {
+    boundEnv = env;
+    // Stale-while-revalidate: kick a background refresh, NEVER await it before serving — a slow/failing
+    // deny-set fetch must not add latency or block the response (fail-open).
+    ctx?.waitUntil(denySet.maybeRefresh());
     return handler(request);
   },
 };
