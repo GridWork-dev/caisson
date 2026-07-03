@@ -101,14 +101,14 @@ changeset -> version bump -> STANDARDS GATE -> publish (CI-only) -> index rebuil
 
 - **Credential: the built-in `GITHUB_TOKEN` + `permissions: packages: write`** (ADR-0069).
   Zero new stored secret, workflow-scoped, expires with the run. No PAT, no `NODE_AUTH_TOKEN`,
-  no laptop publish past the gate. Matches `@caisson:registry=npm.pkg.github.com` +
-  `access: restricted` in generated repos.
-  - **Buyer-channel supersession (ADR-0223, PENDING BUILD):** the `@caisson:registry=npm.pkg.github.com`
-    line above is the ORIGINAL buyer install channel — **superseded by ADR-0223** (buyers install
-    commercial modules from `registry.caisson.sh`, a real npm registry authed by the license token).
-    The generator's `npm.pkg.github.com` emit (`packages/cli/src/generate.ts`) + the template `.npmrc`
-    correctly **stay un-flipped** until the ADR-0223 registry build lands — the flip is part of that
-    build, not done yet. Public discovery goes to the `@caisson-sh/*` npmjs mirror (ADR-0222).
+  no laptop publish past the gate. This is the internal CI publish credential only -- it no
+  longer describes the buyer install channel (see below).
+  - **Buyer-channel supersession (ADR-0223, DONE):** buyers install commercial modules from
+    `registry.caisson.sh`, a real npm registry authed by the license token, not
+    `npm.pkg.github.com`. The generator's emit (`packages/cli/src/generate.ts`) + the template
+    `.npmrc` (`packages/cli/templates/base/.npmrc`) are flipped to point `@caisson:registry` at
+    `registry.caisson.sh` with a `_authToken` line interpolating `CAISSON_LICENSE_TOKEN`. Public
+    discovery goes to the `@caisson-sh/*` npmjs mirror (ADR-0222).
 - **Index is BUILT, never hand-appended.** `registry/index.json` is a byte-identical rebuild
   from `registry/ledger.jsonl`; CI is the sole writer. `.github/CODEOWNERS` (present) +
   branch protection gate hand-edits. `gateAttestation` (`"<ci-run-id>@<commit-sha>"`) records
