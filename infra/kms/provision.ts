@@ -41,8 +41,10 @@ function proverPolicyStatements(): readonly unknown[] {
       Effect: "Allow",
       // Subsequent ops target existing keys — condition on the RESOURCE tag (AWS's documented
       // tag-authorization pattern). Scoped to keys the prover itself tagged with Purpose.
+      // CreateAlias/DeleteAlias are NOT here (CAISSON-14) — see KmsProofAlias below: aliases
+      // cannot carry tags, so kms:ResourceTag/Purpose can never match an alias resource and would
+      // silently deny every CreateAlias call the live proof makes.
       Action: [
-        "kms:CreateAlias",
         "kms:GenerateDataKey",
         "kms:Decrypt",
         "kms:DescribeKey",
@@ -50,6 +52,20 @@ function proverPolicyStatements(): readonly unknown[] {
         "kms:CancelKeyDeletion",
       ],
       Resource: "*",
+      Condition: {
+        StringEquals: { "kms:ResourceTag/Purpose": PURPOSE },
+      },
+    },
+    {
+      // CAISSON-14 fix: aliases are untaggable, so CreateAlias/DeleteAlias get their own statement
+      // scoped by alias-NAME prefix instead of kms:ResourceTag. The key leg of each call (the CMK
+      // the alias points at) is still narrowed by the existing ResourceTag/Purpose condition — AWS
+      // evaluates the condition per applicable resource, so the alias leg is bounded by its ARN
+      // pattern below and the key leg by the tag condition.
+      Sid: "KmsProofAlias",
+      Effect: "Allow",
+      Action: ["kms:CreateAlias", "kms:DeleteAlias"],
+      Resource: [`arn:aws:kms:*:*:alias/${PURPOSE}-*`, "arn:aws:kms:*:*:key/*"],
       Condition: {
         StringEquals: { "kms:ResourceTag/Purpose": PURPOSE },
       },
