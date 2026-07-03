@@ -16,9 +16,24 @@ compatibility_date = "2026-06-27"
 # index is inlined, not read from disk); the flag only makes the `node:fs` import resolve.
 compatibility_flags = ["nodejs_compat"]
 
-# Publish to the account's workers.dev subdomain. A custom route on caisson.sh is a fast-follow once
-# DNS is decided; infra/terraform owns the zone records, not this file.
+# Publish to the account's workers.dev subdomain. Kept as the fallback origin alongside the
+# custom domain below.
 workers_dev = true
+
+# Custom domain (ADR-0223 Fork 2.1): registry.caisson.sh fronts the Worker so a buyer's generated
+# .npmrc points at a stable host (`@caisson:registry=https://registry.caisson.sh`). INERT UNTIL
+# DEPLOY — the DNS record + zone binding are provisioned operator-side (Task 1/5); this entry only
+# tells wrangler to attach the custom domain at deploy time. Committing it opens no surface.
+routes = [
+  { pattern = "registry.caisson.sh", custom_domain = true }
+]
+
+# R2 tarball store (ADR-0223 H1/G1, Fork 2.1): tarball bytes served same-origin (A1) via env.TARBALLS.
+# INERT UNTIL DEPLOY — the bucket `caisson-registry-tarballs` is created operator-side (Task 1) and
+# populated by CI (Task 3, gated on CAISSON_PUBLISH_DRY_RUN=false); the binding is dormant until then.
+[[r2_buckets]]
+binding = "TARBALLS"
+bucket_name = "caisson-registry-tarballs"
 
 # Cloudflare Workers observability (native Workers Logs) — invocation logs + sampling in the CF
 # dashboard, no external collector. Distinct from the app-side OTel stack (ADR-0117; fleet sink is

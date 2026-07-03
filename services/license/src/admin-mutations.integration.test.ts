@@ -10,7 +10,18 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomBytes, randomUUID } from "node:crypto";
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+
+// PGlite bootstrap regularly exceeds the 5s default under CI runner load (uncached consume
+// runs) — the suite is fast once warm, so widen the ceiling rather than flake.
+setDefaultTimeout(30_000);
 import { AuditChainStore, LocalArtifactStore } from "@caisson/audit-worm";
 import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
 import {

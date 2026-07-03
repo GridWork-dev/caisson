@@ -31,3 +31,6 @@ docs/session-logs/
 /*.png
 /*.jpeg
 .playwright-mcp/
+
+# ADR-0223: CI-only tarball staging for R2 upload (never committed)
+registry/.tarball-staging/
