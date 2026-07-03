@@ -1,5 +1,29 @@
 # @caisson/mcp-server
 
+## 0.2.1
+
+### Patch Changes
+
+- c98d07b: ADR-0216: `ToolRegistration` gains a Zod-validated declarative manifest
+  (`description`/`version`/`audit.logArgs`) checked in `registerTool()` before the
+  duplicate-name guard, so a malformed manifest is a registration-time `ValidationError`,
+  never a call-time surprise; all 7 existing registrations (3 base + 4 coach) are
+  annotated (`logArgs: false` on every coach tool — unchanged secrets-safe posture).
+  `listTools` now returns `readonly ToolRegistration[]` (both callers already only read
+  `.name`); `stdio.ts`/`http.ts` surface `description` in `ListToolsRequestSchema`. New
+  append-only retired-tool ledger: `retireTool()` + a `RetiredToolError` (410,
+  `{reason, retiredAt}`) checked in `handleToolCall` before the existing `NotFoundError` —
+  a deliberately-retired tool now answers a distinct, actionable error instead of the same
+  404 an unknown tool gets. No auth/entitlement/rate-limit logic touched.
+- Updated dependencies [b5915e0]
+- Updated dependencies [9558a46]
+- Updated dependencies [e62c88d]
+- Updated dependencies [ccf8b10]
+- Updated dependencies [549dd4e]
+  - @caisson/registry-schema@0.2.1
+  - @caisson/ai-config@0.2.1
+  - @caisson/kernel@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes
