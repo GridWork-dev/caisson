@@ -23,7 +23,10 @@ export {
   safeEqualFixed,
   safeEqualVariable,
   verifyAllowlisted,
+  verifyBearer,
 } from "./crypto.ts";
+export { assertNotReadOnly } from "./read-only.ts";
+export type { SystemMode } from "./read-only.ts";
 export { scrubForEgress, looksLikeSecret } from "./secret-scrub.ts";
 export { scrubDeep, PHI_KEY } from "./scrub-deep.ts";
 export { fetchWithTimeout } from "./fetch.ts";
