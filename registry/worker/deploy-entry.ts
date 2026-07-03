@@ -14,9 +14,16 @@
 // editions they bought; an unentitled module is 404. Until redeployed, the running Worker keeps its
 // current unfiltered behavior. The index itself stays the CI-built public source of truth (no secrets).
 import index from "../index.json";
+import tarballs from "../tarballs.json";
 import { loadRegistryIndex } from "../schema/registry-index";
 import { licenseEntitlementResolver } from "./entitlement-filter";
 import { createIndexHandler } from "./handler";
+import {
+  type NpmEnv,
+  createNpmHandler,
+  isNpmPath,
+  loadTarballSidecar,
+} from "./npm-routes";
 
 // Parse-or-throw at module load (cold start) over the bundled JSON: a tampered/malformed bundle fails
 // loudly rather than serving a half-typed object. createIndexHandler re-validates as defense in depth
@@ -25,8 +32,23 @@ const handler = createIndexHandler(loadRegistryIndex(index), {
   resolveEntitlements: licenseEntitlementResolver,
 });
 
+// npm-protocol surface (ADR-0223) — additive. The SAME injected license resolver gates it, over the
+// same inlined index + the git-tracked tarball sidecar (Fork 1.1, inlined like index.json).
+const npmHandler = createNpmHandler(
+  loadRegistryIndex(index),
+  loadTarballSidecar(tarballs),
+  { resolveEntitlements: licenseEntitlementResolver },
+);
+
 export default {
-  fetch(request: Request): Response {
+  fetch(request: Request, env?: NpmEnv): Response {
+    const { pathname } = new URL(request.url);
+    if (isNpmPath(pathname)) {
+      // The npm surface is async (R2 tarball reads); Cloudflare awaits a returned promise. The
+      // untouched deploy-entry.test.ts only exercises the sync index path below, which keeps the
+      // `: Response` contract — the npm branch hands back a Promise the workerd runtime awaits.
+      return npmHandler(request, env) as unknown as Response;
+    }
     return handler(request);
   },
 };
