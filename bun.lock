@@ -23,6 +23,7 @@
       "name": "@caisson/admin",
       "version": "0.0.1",
       "dependencies": {
+        "@aws-sdk/client-s3": "^3.1075.0",
         "@caisson/audit-worm": "workspace:*",
         "@caisson/auth": "workspace:*",
         "@caisson/credits": "workspace:*",
