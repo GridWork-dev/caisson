@@ -11,6 +11,7 @@
 // empty tables. In prod the tables + the `admin` role + its policies are provisioned on the Railway
 // PG at DEPLOY (buildAdminReadPolicySql output, ADR-0141) — never by this app.
 import { PGlite } from "@electric-sql/pglite";
+import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
 import {
   CREDIT_LINE_ITEM_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
@@ -134,6 +135,9 @@ async function bootstrapPglite(): Promise<PGlite> {
   await pg.exec(CREDIT_ROUNDING_MIGRATION_SQL);
   await pg.exec(ENTITLEMENT_SCHEMA_SQL);
   await pg.exec(LICENSE_GRANT_SCHEMA_SQL);
+  // CAISSON-9: ADMIN_MUTATION_PROVISION_SQL below SELECT-polices account_member (the admin
+  // existence check), so the base auth membership table must exist in the double too.
+  await pg.exec(ACCOUNT_MEMBER_SCHEMA_SQL);
   await pg.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await pg.exec(CREDIT_LINE_ITEM_MIGRATION_SQL);
   for (const table of ADMIN_READ_TABLES) {
