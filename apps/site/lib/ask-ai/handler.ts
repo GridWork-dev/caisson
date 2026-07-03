@@ -72,6 +72,14 @@ export interface AskDeps {
   spend: SpendSeam;
   /** The two model lanes (F2). */
   models: { public: string; premium: string };
+  /** Question-text capture (ADR-0236, consent-noticed). Called once per admitted request with the
+   * terminal outcome; best-effort — a capture failure never reaches the response. Optional so the
+   * hermetic fixtures and any capture-less deployment stay valid. */
+  capture?: (
+    lane: Lane,
+    question: string,
+    outcome: "answered" | "escalated",
+  ) => Promise<void>;
 }
 
 const SECURITY_HEADERS: Record<string, string> = {
@@ -152,6 +160,9 @@ export async function handleAsk(
 
       let costUsd: number | undefined;
       let reserved = false;
+      // ADR-0236: every terminal path below is either a resolved answer or an escalation — the
+      // assignment to "answered" happens only after all guards pass.
+      let outcome: "answered" | "escalated" = "escalated";
       try {
         // 4a. hard per-lane spend cap (F2 rider, hardened + extended to both lanes) — reserve BEFORE
         // any paid work, atomically, so two concurrent requests near the cap can never both pass (closes
@@ -209,11 +220,19 @@ export async function handleAsk(
         }
 
         // 4e. resolved answer — stream it, then the deduped citations.
+        outcome = "answered";
         for (const piece of sliceAnswer(answer))
           emit("token", { delta: piece });
         const citations: Citation[] = toCitations(chunks);
         emit("citations", { citations });
       } finally {
+        // ADR-0236 capture — after the Turnstile gate by construction (this stream only exists for
+        // admitted requests). Best-effort: never turn a capture failure into a user-facing error.
+        try {
+          await deps.capture?.(lane, question, outcome);
+        } catch {
+          /* best-effort */
+        }
         // Settle the reservation with the real cost (0 when no generation happened at all — e.g.
         // retrieval failed after the reservation was granted, fully releasing it). Only when a
         // reservation was actually granted above (never after a spend_cap escalation, which reserved

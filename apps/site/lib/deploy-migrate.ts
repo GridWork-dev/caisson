@@ -38,6 +38,7 @@ import {
 import { getMigrations } from "better-auth/db/migration";
 import { Pool } from "pg";
 import { createAuth } from "./auth-server.ts";
+import { ASK_AI_QUESTION_SCHEMA_SQL } from "./ask-ai/question-log.ts";
 import { ASK_AI_SPEND_SCHEMA_SQL } from "./ask-ai/spend.ts";
 
 // The `app` RLS role — prod-augmented beyond lib/db.ts's PGlite bootstrap (which only CREATEs the
@@ -107,6 +108,10 @@ function platformPackage(): PackageMigrations {
       // migration claimed 0010 on main first (second-merger-renumbers, the migration-file analog of
       // ADR-0088).
       { name: "0011_ask_ai_spend.sql", sql: ASK_AI_SPEND_SCHEMA_SQL },
+      // ADR-0236: consent-noticed question-text capture. Global (non-tenant), no RLS — same posture
+      // as 0011. Anonymous by construction (no IP / user id / answer text); 90-day retention is a
+      // hard DELETE swept on insert (question-log.ts), not a schema concern.
+      { name: "0012_ask_ai_question.sql", sql: ASK_AI_QUESTION_SCHEMA_SQL },
     ],
   };
 }

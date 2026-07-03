@@ -295,3 +295,70 @@ test("premium lane AT its own cap fails CLOSED to escalation too, without retrie
   expect(retrieved).toBe(false);
   expect(streamed).toBe(false);
 });
+
+// --- ADR-0236 question capture ----------------------------------------------------------------------
+
+test("capture receives lane, question, and the terminal outcome on both paths", async () => {
+  const captured: Array<[string, string, string]> = [];
+  const capture = async (
+    lane: string,
+    question: string,
+    outcome: string,
+  ): Promise<void> => {
+    captured.push([lane, question, outcome]);
+  };
+
+  // Answered path (anonymous -> public lane).
+  await events(
+    await handleAsk(
+      ask({ question: "does compliance do HIPAA?" }),
+      deps({ capture }),
+    ),
+  );
+  // Escalated path (retrieval down), premium lane.
+  await events(
+    await handleAsk(
+      ask({ question: "how do I rotate keys?" }),
+      deps({
+        capture,
+        isAuthed: async () => true,
+        retrieve: async () => {
+          throw new Error("docs down");
+        },
+      }),
+    ),
+  );
+
+  expect(captured).toEqual([
+    ["public", "does compliance do HIPAA?", "answered"],
+    ["premium", "how do I rotate keys?", "escalated"],
+  ]);
+});
+
+test("a capture failure never reaches the response (best-effort), and no capture runs on a 403", async () => {
+  const evs = await events(
+    await handleAsk(
+      ask({ question: "does compliance do HIPAA?" }),
+      deps({
+        capture: async () => {
+          throw new Error("capture db down");
+        },
+      }),
+    ),
+  );
+  expect(evs.some((e) => e.event === "citations")).toBe(true);
+  expect(evs.at(-1)?.event).toBe("done");
+
+  let capturedOn403 = false;
+  const res = await handleAsk(
+    ask({ question: "q" }),
+    deps({
+      verifyTurnstile: async () => false,
+      capture: async () => {
+        capturedOn403 = true;
+      },
+    }),
+  );
+  expect(res.status).toBe(403);
+  expect(capturedOn403).toBe(false);
+});
