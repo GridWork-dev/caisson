@@ -36,8 +36,9 @@ class Settings(BaseSettings):
 
     # --- generation knobs ---
     openrouter_model: str = Field(
-        default="anthropic/claude-3.5-sonnet",
-        description="OpenRouter model slug; swappable without code change (ADR-0105 provider-agnostic).",
+        default="anthropic/claude-sonnet-4.6",
+        description="OpenRouter model slug; swappable without code change (ADR-0105 provider-agnostic). "
+        "Default is the ADR-0234 premium lane (bumped from the stale anthropic/claude-3.5-sonnet).",
     )
     openrouter_referer: str = Field(
         default="https://caisson.sh",

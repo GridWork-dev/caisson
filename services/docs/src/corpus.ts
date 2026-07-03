@@ -6,6 +6,8 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
 import { parseSource } from "./chunk.ts";
+import { generatePricingSources, PricingFactsSchema } from "./pricing-doc.ts";
+import type { PricingFacts } from "./pricing-doc.ts";
 import type { DocChunk, DocPage, DocsSource } from "./types.ts";
 
 const APACHE = "Apache-2.0";
@@ -19,6 +21,13 @@ const OPEN_DOC_FILES = new Set(["index.mdx", "getting-started.mdx"]);
 export interface BuildCorpusOptions {
   /** Repo root. Defaults to the resolved workspace root (the package.json declaring `workspaces`). */
   root?: string;
+  /**
+   * ADR-0234 F4 — pricing/edition/module facts, validated from the pricebook/catalog source of truth.
+   * When present, `generatePricingSources` renders deterministic `kind:"pricing"` docs and appends them
+   * to the corpus. Omitted ⇒ the docs-only corpus (byte-identical to every existing caller). Load the
+   * real facts off disk with `loadPricingFacts` (the one impure stage); tests inject fixtures directly.
+   */
+  pricingFacts?: PricingFacts;
 }
 
 export interface Corpus {
@@ -131,11 +140,40 @@ export function buildCorpus(opts: BuildCorpusOptions = {}): Corpus {
   const root = opts.root ?? findRepoRoot(process.cwd());
   const chunks: DocChunk[] = [];
   const pages: DocPage[] = [];
-  for (const src of gatherSources(root)) {
+  const sources = gatherSources(root);
+  // ADR-0234 F4: append the generated pricing docs (if facts were supplied) so they chunk through the
+  // exact same path as every filesystem source — pricing chunks are ordinary DocChunks, kind "pricing".
+  if (opts.pricingFacts !== undefined)
+    sources.push(...generatePricingSources(opts.pricingFacts));
+  for (const src of sources) {
     const { page, chunks: pageChunks } = parseSource(src);
     if (pageChunks.length === 0) continue; // skip an empty doc (no retrievable prose)
     pages.push(page);
     chunks.push(...pageChunks);
   }
   return { chunks, pages };
+}
+
+/**
+ * Load the live pricing facts from the display source of truth (`apps/site/lib/pricing.ts`) and
+ * validate them into `PricingFacts` (ADR-0234 F4). This is the ONE impure stage of pricing-doc
+ * generation: it reads the SOT's committed data structures — NOT scraped page text — so a pricebook
+ * change is reflected the next time the corpus is built (a stale cited price is impossible by
+ * construction). Returns `null` when the SOT file is absent (e.g. a docs-only deploy); a shape drift
+ * throws (the caller degrades to the docs-only corpus rather than crash-looping). The module path is
+ * resolved at runtime (dynamic import) both because it lives outside this package's `rootDir` and so a
+ * price edit needs no rebuild here — the container ships the whole repo and Bun runs the TS directly.
+ */
+export async function loadPricingFacts(
+  opts: BuildCorpusOptions = {},
+): Promise<PricingFacts | null> {
+  const root = opts.root ?? findRepoRoot(process.cwd());
+  const pricingPath = join(root, "apps/site/lib/pricing.ts");
+  if (!existsSync(pricingPath)) return null;
+  const mod = await import(pricingPath);
+  return PricingFactsSchema.parse({
+    editions: mod.EDITION_PRICES,
+    modules: mod.MODULE_PRICES,
+    plans: mod.PLAN_PRICES,
+  });
 }

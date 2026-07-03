@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from caisson_support_bot.contracts import (
     AnswerResult,
     Brief,
+    DocKind,
     DocsQueryResponse,
     ScoredChunk,
     Ticket,
@@ -21,6 +22,21 @@ def test_scored_chunk_parses_and_ignores_unknown_fields() -> None:
     )
     assert c.source == "a/b.md"
     assert c.text == "hi"
+
+
+def test_scored_chunk_accepts_the_pricing_kind() -> None:
+    # ADR-0234 F4: a `kind:"pricing"` chunk from the expanded corpus must parse (not a 500) — the enum
+    # value is a KNOWN member, unlike an unknown one which `extra="ignore"` would NOT save.
+    c = ScoredChunk.model_validate(
+        {
+            "id": "p",
+            "source": "pricing/editions",
+            "title": "Pricing",
+            "text": "$799",
+            "kind": "pricing",
+        }
+    )
+    assert c.kind is DocKind.pricing
 
 
 def test_scored_chunk_rejects_empty_source_and_text() -> None:

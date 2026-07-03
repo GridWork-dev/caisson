@@ -30,6 +30,7 @@ import {
   withTenant,
 } from "@caisson/tenancy-rls";
 import { TENANT_AI_CREDENTIAL_SCHEMA_SQL } from "@caisson/ai-kit";
+import { ASK_AI_SPEND_SCHEMA_SQL } from "./ask-ai/spend.ts";
 // Schema-only import — the DDL string constants, NOT services/license's query functions. apps/
 // site never calls into `@caisson/service-license`'s business logic; every dashboard read against
 // `entitlement_grant` / `license_grant` below is raw SQL written locally (the deliberately
@@ -157,6 +158,7 @@ async function bootstrapPglite(): Promise<PGlite> {
   await pg.exec(TENANT_AI_CREDENTIAL_SCHEMA_SQL);
   await pg.exec(BYOK_KEY_META_SCHEMA_SQL);
   await pg.exec(COMPLIANCE_ATTESTATION_SCHEMA_SQL);
+  await pg.exec(ASK_AI_SPEND_SCHEMA_SQL);
   globalDb.caissonPglite = pg;
   return pg;
 }

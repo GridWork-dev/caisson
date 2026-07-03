@@ -38,6 +38,7 @@ import {
 import { getMigrations } from "better-auth/db/migration";
 import { Pool } from "pg";
 import { createAuth } from "./auth-server.ts";
+import { ASK_AI_SPEND_SCHEMA_SQL } from "./ask-ai/spend.ts";
 
 // The `app` RLS role — prod-augmented beyond lib/db.ts's PGlite bootstrap (which only CREATEs the
 // role). On a fresh Railway Postgres the connecting role must be able to `SET LOCAL ROLE app` (a
@@ -101,6 +102,11 @@ function platformPackage(): PackageMigrations {
         name: "0010_billing_processed_event.sql",
         sql: PROCESSED_EVENT_SCHEMA_SQL,
       },
+      // ADR-0234: the Ask-AI per-lane (public + premium) daily spend counters. Global (non-tenant), no
+      // RLS — accessed outside withTenant. Renumbered 0010 -> 0011 at merge: wave-6a's billing dedup
+      // migration claimed 0010 on main first (second-merger-renumbers, the migration-file analog of
+      // ADR-0088).
+      { name: "0011_ask_ai_spend.sql", sql: ASK_AI_SPEND_SCHEMA_SQL },
     ],
   };
 }

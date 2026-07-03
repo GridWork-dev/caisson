@@ -10,7 +10,7 @@
 //     with no exact match returns [] rather than a confidently-wrong chunk.
 import { initObservability } from "@caisson/observability";
 import { createApp } from "./app.ts";
-import { buildCorpus } from "./corpus.ts";
+import { buildCorpus, loadPricingFacts } from "./corpus.ts";
 import { DocsIndex } from "./index-store.ts";
 import { renderLlmsFull, renderLlmsTxt } from "./llms-txt.ts";
 import { createOpenRouterEmbedder } from "./openrouter-embedder.ts";
@@ -69,7 +69,17 @@ export async function startServer(): Promise<{
   const port = Number(process.env.PORT || DEFAULT_PORT);
   const origin = process.env.DOCS_SITE_ORIGIN;
 
-  const corpus = buildCorpus();
+  // ADR-0234 F4: fold the pricing/edition/module facts into the corpus, rendered from the pricebook/
+  // catalog source of truth. Fail-soft — a missing/malformed SOT degrades to the docs-only corpus
+  // (a pricing gap is better than a crash-loop), matching the embedder-degrade posture below.
+  const pricingFacts = await loadPricingFacts().catch((err: unknown) => {
+    const msg = err instanceof Error ? err.message : String(err);
+    process.stderr.write(
+      `[service-docs] pricing facts unavailable — docs-only corpus: ${msg}\n`,
+    );
+    return null;
+  });
+  const corpus = buildCorpus(pricingFacts !== null ? { pricingFacts } : {});
   const index = await buildIndex(corpus.chunks);
   const llmsTxt = renderLlmsTxt(corpus, origin !== undefined ? { origin } : {});
   const llmsFull = renderLlmsFull(corpus);
