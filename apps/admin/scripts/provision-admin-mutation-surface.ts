@@ -49,8 +49,16 @@ async function main(): Promise<void> {
     );
   }
   // The role to grant admin/admin_write/app membership to — the CAISSON_ADMIN_DB_URL user. Defaults
-  // to the connecting user so a single-credential deploy stays correct.
+  // to the connecting user so a single-credential deploy stays correct. FOOTGUN (hit live
+  // 2026-07-03): running with the superuser DATABASE_URL and no arg grants to `postgres`, leaving
+  // the service's `admin_app` role unable to SET ROLE — pass the service role name explicitly.
   const grantee = process.argv[2]?.trim() || "CURRENT_USER";
+  if (grantee === "CURRENT_USER") {
+    process.stdout.write(
+      "[provision-admin] WARNING: no grantee arg — granting to the CONNECTING user. If this URL is\n" +
+        "[provision-admin] the superuser, the service role gets nothing; pass it explicitly (e.g. admin_app).\n",
+    );
+  }
   const pool = new Pool({ connectionString: url });
   const steps: Array<[string, string]> = [
     ["admin role bootstrap", ADMIN_ROLE_BOOTSTRAP_SQL],
@@ -77,9 +85,11 @@ async function main(): Promise<void> {
         await pool.query(sql);
         process.stdout.write(`[provision-admin] applied: ${label}\n`);
       } catch (err) {
-        // 42710 duplicate_object: the step (or its tail) was provisioned by an earlier deploy and
-        // its DDL has no IF-NOT-EXISTS guard — converged already, skip and continue.
-        if ((err as { code?: string }).code === "42710") {
+        // 42710 duplicate_object / 42P07 duplicate_table: the step (or its tail) was provisioned by
+        // an earlier deploy and its DDL has no IF-NOT-EXISTS guard — converged already, skip and
+        // continue (a rerun must still reach the role-grant step at the end).
+        const code = (err as { code?: string }).code;
+        if (code === "42710" || code === "42P07") {
           process.stdout.write(`[provision-admin] already present: ${label}\n`);
         } else {
           throw err;
