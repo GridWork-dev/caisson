@@ -121,6 +121,20 @@ smoke-test of the deployed Worker, and `bun run check` (125/125 + kernel gate) o
 > `caisson-sh/caisson-oss` PRIVATE mirror pushed (416 files), publish pipelines armed but gated on a
 > manual `confirm=publish` dispatch. Deferred review findings → Linear CAISSON-5..19.
 
+> **2026-07-03 close-out (latest — supersedes the `0224` ceiling above): ADR ceiling is now
+> `0238`.** The 2026-07-02-LATE execution wave (PRs #75–#84) and the same-day DEPLOY block are
+> covered in `docs/state/opportunity-backlog.md`'s snapshot. Since then: the fourth + fifth
+> picker rounds locked `ADR-0229`–`0236` (wave-6a subset · WORM posture · OSCAL rlink · SEO
+> renderer + glossary pre-commit · audit-harness v2 · ask-AI widget + Q-text capture), **glossary
+> batch 1 shipped** (ADR-0235, PR #99 — 12 of 32 terms), the **whole-repo audit v2 baseline**
+> landed (ADR-0233, PR #100 — 941-finding advisory ledger, remediation triaged into 4
+> operator-gated execution specs, PR #101), the four edition-core à-la-carte rows were **dropped**
+> (ADR-0238, PR #98 — 11-module standalone catalog), and the **site presentation rework is BUILT +
+> MERGED** (ADR-0237, PR #102 — unified `/marketplace` hub, module depth routes, nav rebuild,
+> bespoke icons, full copy rewrite, split analytics, FULL V1-live posture). All feature branches
+> merged + deleted; `main` is the only branch. Remaining launch residue: the 6 operator-gated
+> DEPLOY items in `outputs/specs/audit-v2-remediation/TRIAGE.md` §4.
+
 ## 0. Live verification done this session
 
 - **Registry Worker — LIVE + smoke-tested GREEN.** `https://caisson-registry.broken-wood-97a9.workers.dev`:

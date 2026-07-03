@@ -89,7 +89,8 @@ started · `ROADMAP` = post-v1, no code.
 > **STATUS: MERGED (Wave-1).** `local-ai` (~2.2k LOC, 9 tests), `local-store`, `license-verify`
 > (offline Ed25519), `agent-dev` + `agent-kernel`, and `apps/{local-ai,agent-dev}` landed +
 > tested in `main`. Local-first is now fully-commercial (AGPL flank killed, ADR-0050/0083).
-> Agentic-Dev is the most roadmap-grade surface of the four; none are runnable products yet.
+> Agentic-Dev is the thinnest surface of the four (per-package truth: `docs/build-state.md`;
+> the ADR-0082 §4 roadmap label was retired by ADR-0237 rider 2).
 
 - T4.1 `local-ai`: compute seam + privacy gate + sqlite-vec ANN + offline Ed25519 license
   (← tessera) · T4.2 local canonical store (← health-service) · T4.3 `agent-dev`: typed

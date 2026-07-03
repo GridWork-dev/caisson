@@ -192,7 +192,7 @@ feature-complete). Do not represent editions as shipped.
 
 **Edition packages - structure only per ADR-0082 section 3 (NOT feature-complete):**
 `compliance` (HERO), `audit-worm`, `local-ai` (commercial, ADR-0083), `ai-kit`, `agent-dev`
-(roadmap). They carry committed `src/` + tests (e.g. `compliance` ~16 src / 11 test,
+(the ADR-0082 §4 roadmap label retired by ADR-0237 rider 2). They carry committed `src/` + tests (e.g. `compliance` ~16 src / 11 test,
 `local-ai` ~14 / 9, `audit-worm` ~7 / 6) and pass the gate, but per the authoritative ADR
 they are scaffolding + stubs - e.g. `packages/local-ai/src/inference/stub.ts`. Treat
 edition feature-completeness as unverified beyond what the substrate provides.
