@@ -209,6 +209,61 @@ describe("event mapping", () => {
     ]);
   });
 
+  test("two cart lines sharing ONE price_id still pair FIFO, in queue order (CAISSON-6)", () => {
+    // The same SKU bought twice: both items[] entries key the SAME price_id, so they share one FIFO
+    // queue and must dequeue in the order details.line_items[] lists them — NOT re-paired by value or
+    // re-sorted. When both arrays are already in Paddle's natural (matching) order, this FIFO-by-key
+    // read is equivalent to the old positional index read: item[0] gets the queue's first entry,
+    // item[1] gets its second, exactly what a plain index pairing would also have produced.
+    const event = {
+      event_id: "evt_same_price",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_same_price",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        items: [
+          { price: { id: "price_credit_pack_PLACEHOLDER" }, quantity: 1 },
+          { price: { id: "price_credit_pack_PLACEHOLDER" }, quantity: 2 },
+        ],
+        details: {
+          totals: { grand_total: "8000" },
+          line_items: [
+            {
+              id: "txnitm_first",
+              price_id: "price_credit_pack_PLACEHOLDER",
+              totals: { total: "3000" },
+            },
+            {
+              id: "txnitm_second",
+              price_id: "price_credit_pack_PLACEHOLDER",
+              totals: { total: "5000" },
+            },
+          ],
+        },
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    const parsed = parsePaddleEvent(event);
+    expect(parsed?.type).toBe("purchase.completed");
+    expect(
+      parsed?.type === "purchase.completed" ? parsed.lineItems : [],
+    ).toEqual([
+      {
+        priceId: "price_credit_pack_PLACEHOLDER",
+        quantity: 1,
+        itemId: "txnitm_first", // FIFO: the queue's first same-price_id entry
+        chargedAmount: 3000,
+      },
+      {
+        priceId: "price_credit_pack_PLACEHOLDER",
+        quantity: 2,
+        itemId: "txnitm_second", // FIFO: the queue's second same-price_id entry
+        chargedAmount: 5000,
+      },
+    ]);
+  });
+
   test("a multi-line transaction missing per-line join ids fails closed, not a silent under-grant (credit uniqueness collision)", () => {
     // Two credit-bearing lines with no details.line_items both read the "" itemId sentinel. Granting
     // them would collide on the credit ledger's (source_event_id, event_type, COALESCE(line_item_id,''))
