@@ -116,7 +116,11 @@ describe("license→bot Discord grant-push live proof (seam 2, ADR-0224 F2=A)", 
       expect(seen.length).toBe(1);
       const req = seen[0];
       expect(req?.url).toBe(`${config.url}/billing-grant`);
-      expect(req?.auth).toBe(`Bearer ${GRANT_TOKEN}`);
+      // Assert the Bearer SHAPE without the value: a `toBe` failure prints its expected literal, so
+      // never put the live token there. `startsWith` + a length check prove the header carries the
+      // full `Bearer <token>` without any failure output ever containing the token itself.
+      expect(req?.auth?.startsWith("Bearer ")).toBe(true);
+      expect(req?.auth?.length).toBe(("Bearer " + GRANT_TOKEN).length);
       expect(req?.body).toEqual({
         discord_user_id: PROOF_DISCORD_ID,
         entitlements: ["field-crypto"],
