@@ -1,10 +1,11 @@
-// CAISSON-11 — columns-contract-style parity assertion (mirrors
-// packages/platform-reads/src/columns-contract.test.ts's shape + apps/site/lib/deploy-migrate.test.ts's
-// "0008/0009 add the ADR-0218 per-line join-key columns" assertion): proves the admin PGlite dev/test
-// bootstrap (bootstrapPglite, this module) ends up column-for-column equal to the deploy chain
-// (apps/site/lib/deploy-migrate.ts's platformPackage(), migrations 0001..0009) on the tables admin
-// reads. If a future migration is appended to the deploy chain but never wired here, this test is the
-// one that catches the drift — not a runtime column-not-found error in production.
+// CAISSON-11 — a spot-check, not a full parity gate. It confirms the two ADR-0218 line-item columns
+// (added by bootstrapPglite's CREDIT_LINE_ITEM_MIGRATION_SQL / ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL
+// calls, mirroring apps/site/lib/deploy-migrate.ts's platformPackage() migrations 0008/0009) actually
+// land on the admin PGlite dev/test bootstrap. It does NOT prove the bootstrap is column-for-column
+// equal to the full deploy chain, and it will NOT catch some future migration appended to
+// platformPackage() but never wired into bootstrapPglite: apps/admin cannot import platformPackage()
+// to build that real diff (apps are top-level consumers here, not packages, and platformPackage is not
+// exported through one) — that broader parity gate is left as a follow-up, not delivered by this test.
 import { expect, test } from "bun:test";
 import { getAdminDb } from "./admin-db.ts";
 
@@ -13,7 +14,7 @@ interface ColumnRow {
   data_type: string;
 }
 
-test("admin bootstrap carries the ADR-0218 line-item columns (deploy-migrate 0008/0009 parity)", async () => {
+test("admin bootstrap carries the ADR-0218 line-item columns (spot-check, not a full deploy-migrate parity gate)", async () => {
   // Queries information_schema directly on the bootstrap connection (NOT through readAdmin/the
   // `admin` role) — information_schema.columns only lists columns a role has some privilege on, and
   // `admin` is granted SELECT on entitlement_grant/license_grant/credit_wallet only, not credit_event.
