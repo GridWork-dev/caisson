@@ -58,6 +58,9 @@ const envWith = (revokedLicenseIds: string[]) => ({
     get: async (_key: string) => ({
       json: async () => ({ revokedLicenseIds }),
     }),
+    // The publisher shim (revocations-put.ts) puts the write half on the binding type; these
+    // read-path tests never PUT.
+    put: (_key: string, _value: string) => Promise.resolve(undefined),
   },
 });
 const drainCtx = () => {

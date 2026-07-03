@@ -25,6 +25,12 @@ import {
   loadTarballSidecar,
 } from "./npm-routes";
 import { makeRevocationDenySet } from "./revocation-list";
+import {
+  REVOCATION_OBJECT_KEY,
+  type R2PutBucketLike,
+  handleRevocationPut,
+  isRevocationPutRequest,
+} from "./revocations-put";
 
 // Edge revocation deny-set (ADR-0225 R-4=B). The operator revoke mutation republishes the full set of
 // revoked license ids to a fixed R2 object; the Worker reads it on a short TTL and denies those license
@@ -34,11 +40,13 @@ import { makeRevocationDenySet } from "./revocation-list";
 interface R2ObjectLike {
   json(): Promise<unknown>;
 }
-interface R2BucketLike {
+interface R2BucketLike extends R2PutBucketLike {
   get(key: string): Promise<R2ObjectLike | null>;
 }
 interface DeployEnv {
   REVOCATIONS?: R2BucketLike;
+  /** The publisher shim's bearer (worker secret, ADR-0225 R-4=B). Unset ⇒ the PUT route 404s. */
+  REVOCATIONS_PUT_TOKEN?: string;
   /** R2 tarball binding for the npm surface (ADR-0223); absent → npm tarball routes 503. */
   TARBALLS?: NpmEnv["TARBALLS"];
 }
@@ -46,7 +54,9 @@ interface ExecutionContextLike {
   waitUntil(promise: Promise<unknown>): void;
 }
 
-const REVOCATION_KEY = "revocations/deny-set.json";
+// Reader key derived from the writer's exported constant — ONE source (the reader fails open,
+// so a silent key drift would disable every revoke with no error signal; LOW-2 of the shim audit).
+const REVOCATION_KEY = REVOCATION_OBJECT_KEY;
 const REVOCATION_TTL_MS = 60_000;
 
 // ponytail: a per-isolate env ref. Workers bindings are constant for the life of an isolate, so this is
@@ -89,6 +99,12 @@ export default {
     // deny-set fetch must not add latency or block the response (fail-open).
     ctx?.waitUntil(denySet.maybeRefresh());
     const { pathname } = new URL(request.url);
+    // Deny-set publisher shim (ADR-0225 R-4=B): the ONE write surface on this Worker — exact
+    // path + PUT only, bearer-gated + Zod-strict inside, 404 until the secret + binding are
+    // provisioned. Everything else on this Worker stays read-only.
+    if (isRevocationPutRequest(request.method, pathname)) {
+      return handleRevocationPut(request, env) as unknown as Response;
+    }
     if (isNpmPath(pathname)) {
       // The npm surface is async (R2 tarball reads); Cloudflare awaits a returned promise. The
       // untouched deploy-entry.test.ts only exercises the sync index path below, which keeps the
