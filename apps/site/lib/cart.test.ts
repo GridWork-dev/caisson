@@ -9,9 +9,11 @@ import {
   type CartItem,
   isInCart,
   parseStoredCart,
+  pruneCart,
   removeCartItem,
   serializeCart,
 } from "./cart";
+import { LIVE_PRICE_IDS } from "./catalog";
 
 const compliance: CartItem = {
   id: "compliance",
@@ -105,6 +107,42 @@ describe("cart persistence (de)serialization", () => {
 
   test("parseStoredCart drops a non-array payload", () => {
     expect(parseStoredCart(JSON.stringify({ id: "compliance" }))).toEqual([]);
+  });
+});
+
+describe("pruneCart (stale persisted lines, ADR-0238)", () => {
+  test("drops a line whose price id is not in the allowlist, keeps valid lines", () => {
+    const retired: CartItem = {
+      id: "module:compliance",
+      priceId: "pri_01kwj6m31fxw5vn532h5ft6780", // retired edition-core row (ADR-0238)
+      label: "Compliance core",
+      amount: 299,
+      kind: "module",
+    };
+    const pruned = pruneCart(
+      [retired, compliance],
+      new Set([compliance.priceId]),
+    );
+    expect(pruned).toEqual([compliance]);
+  });
+
+  test("the four retired ADR-0238 edition-core price ids are NOT in the live allowlist", () => {
+    for (const priceId of [
+      "pri_01kwj6m31fxw5vn532h5ft6780",
+      "pri_01kwj6m55yagz7188qer0pa0cd",
+      "pri_01kwj6m5mzyn76b8jkknmjndb4",
+      "pri_01kwj6m6cbtsh6n5b1bxtb2j0k",
+    ]) {
+      expect(LIVE_PRICE_IDS.has(priceId)).toBe(false);
+    }
+  });
+
+  test("every live catalog price id survives pruning (no false positives)", () => {
+    const line: CartItem = {
+      ...fieldCrypto,
+      priceId: [...LIVE_PRICE_IDS][0] as string,
+    };
+    expect(pruneCart([line], LIVE_PRICE_IDS)).toEqual([line]);
   });
 });
 

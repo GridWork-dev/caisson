@@ -57,25 +57,39 @@ describe("resolvePurchase (ADR-0113, fail-closed)", () => {
 });
 
 describe("per-module à-la-carte PLACEHOLDER rows (P6-store track)", () => {
-  // The 13 current modules (ADR-0071 entitlement infra; operator locked: sell every commercial
-  // module individually). Entitlement id = bare package slug.
+  // The 11 standalone à-la-carte modules (ADR-0071 entitlement infra; ADR-0238 dropped the four
+  // edition-core rows — `compliance`/`ai-kit`/`local-ai`/`agent-dev` module SKUs named their own
+  // edition's entitlement id and expanded to the whole edition). Entitlement id = bare package slug.
   const CURRENT_MODULES: readonly string[] = [
-    "compliance",
     "field-crypto",
     "audit-worm",
     "ai-meter",
     "ai-evals",
     "guardrails",
     "prompt-registry",
-    "ai-kit",
-    "local-ai",
     "local-store",
     "agent-kernel",
-    "agent-dev",
     "agent-runner",
   ];
-  // 2 future Compliance modules — reserved entitlement ids, packages not yet built.
+  // Shipped in Stage-2 (ADR-0150/0151) — kept in their own list for the reserved-id history.
   const FUTURE_MODULES: readonly string[] = ["alerting", "retention-runner"];
+
+  test("no purchase-book module row's entitlement names an edition id (ADR-0238 lint)", () => {
+    // A module row granting an EDITION id would expand to the whole edition (the dropped-row bug).
+    const editionIds = new Set([
+      "compliance",
+      "ai-kit",
+      "local-ai",
+      "agent-dev",
+    ]);
+    const offenders = Object.entries(PURCHASE_BOOK)
+      .filter(([, row]) => row.purchaseTag.endsWith("_module"))
+      .filter(([, row]) =>
+        row.entitlements.some((slug) => editionIds.has(slug)),
+      )
+      .map(([priceId]) => priceId);
+    expect(offenders).toEqual([]);
+  });
 
   for (const slug of CURRENT_MODULES) {
     test(`price_${slug}_module_PLACEHOLDER resolves to credits:0, entitlements:[${slug}]`, () => {
@@ -110,13 +124,11 @@ describe("per-module à-la-carte PLACEHOLDER rows (P6-store track)", () => {
 });
 
 describe("per-module à-la-carte REAL rows (module-SKU wiring, 2026-07-02)", () => {
-  // The 15 real sandbox `pri_…` ids Paddle issued for the à-la-carte module SKUs — mirrors the
-  // edition/bundle REAL rows' pinning. `alerting`/`retention-runner` are no longer "future": both
-  // shipped in Stage-2 (ADR-0150/0151) and are registry-indexed, so the module row resolves the
-  // same way as every other current module. `agent-runner` (ADR-0186) postdates the other 14 and
-  // has no matching PLACEHOLDER-section history — its PLACEHOLDER row was added in the same change.
+  // The 11 real sandbox `pri_…` ids Paddle issued for the standalone à-la-carte module SKUs —
+  // mirrors the edition/bundle REAL rows' pinning. The four edition-core rows' price ids
+  // (pri_01kwj6m31f…, pri_01kwj6m55y…, pri_01kwj6m5mz…, pri_01kwj6m6cb…) were retired with their
+  // rows (ADR-0238) and now fail `resolvePurchase` closed — asserted below.
   const REAL_MODULE_PRICE_IDS: Readonly<Record<string, string>> = {
-    compliance: "pri_01kwj6m31fxw5vn532h5ft6780",
     "field-crypto": "pri_01kwj6m3cwez98t45jzwsqb250",
     "audit-worm": "pri_01kwj6m3mjq4rpv7918rhfhrhw",
     "retention-runner": "pri_01kwj6m3x1cw1k54tcdhsc6pgj",
@@ -124,14 +136,24 @@ describe("per-module à-la-carte REAL rows (module-SKU wiring, 2026-07-02)", () 
     "ai-evals": "pri_01kwj6m4d3npk8sszerx7fek7w",
     guardrails: "pri_01kwj6m4n105qe80fapw9sk5xc",
     "prompt-registry": "pri_01kwj6m4whyw1stbej2qk8q0bg",
-    "ai-kit": "pri_01kwj6m55yagz7188qer0pa0cd",
     alerting: "pri_01kwj6m5da9ay3z85b6qwtjcpe",
-    "local-ai": "pri_01kwj6m5mzyn76b8jkknmjndb4",
     "local-store": "pri_01kwj6m5w3s4fmvseap7zmp5yf",
     "agent-kernel": "pri_01kwj6m63qpt52489tq5a3v6q3",
-    "agent-dev": "pri_01kwj6m6cbtsh6n5b1bxtb2j0k",
     "agent-runner": "pri_01kwj71a53hycbspsfv8pck5vc",
   };
+
+  const RETIRED_CORE_ROW_PRICE_IDS: readonly string[] = [
+    "pri_01kwj6m31fxw5vn532h5ft6780", // compliance_module
+    "pri_01kwj6m55yagz7188qer0pa0cd", // ai-kit_module
+    "pri_01kwj6m5mzyn76b8jkknmjndb4", // local-ai_module
+    "pri_01kwj6m6cbtsh6n5b1bxtb2j0k", // agent-dev_module
+  ];
+
+  for (const priceId of RETIRED_CORE_ROW_PRICE_IDS) {
+    test(`retired edition-core price id ${priceId} fails resolvePurchase closed (ADR-0238)`, () => {
+      expect(() => resolvePurchase(priceId)).toThrow();
+    });
+  }
 
   for (const [slug, priceId] of Object.entries(REAL_MODULE_PRICE_IDS)) {
     test(`${priceId} resolves to credits:0, entitlements:[${slug}]`, () => {

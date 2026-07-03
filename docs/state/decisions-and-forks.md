@@ -824,3 +824,15 @@ sequenced after the glossary batch-1 merge (shared nav/routes/footer surface).
 | **F8 — analytics**            | Split by surface (extends 0118): Plausible cookieless funnel events on marketing; PostHog purchase/revenue server-side from the Paddle webhook; PostHog JS stays dashboard-only.                                                      | **ADR-0237** |
 | **Rider 1 — brand system**    | ADR-0078/0189 tweakable by the designer lane for this rework — explicit design-system changes in the build PRs, contrast/a11y gates binding; no silent drift.                                                                         | **ADR-0237** |
 | **Rider 2 — V1-live posture** | FULL launch posture: the site speaks as shipped V1 — no roadmap/"coming soon"/future framing anywhere; retires the ADR-0082 Agentic-Dev labeled-roadmap exception; true-to-built stays the floor.                                     | **ADR-0237** |
+
+## Closed during the ADR-0237 build (2026-07-03, site-rework session — operator-locked in-session)
+
+The F5 rename surfaced a product fork at build time (three picker rounds, evidence in the ADR):
+the four colliding à-la-carte rows granted their WHOLE parent edition (a $299 module purchase
+delivered the $799 edition + its Discord role), the operator's first pick ("grant the edition core
+package only, rename all four ids") proved uninstallable (edition meta-packages hard-depend on
+their commercial members — no separable core artifact exists), and the final lock was removal.
+
+| Fork                                     | Decision                                                                                                                                                                                                                                                                                                                                                                                   | ADR          |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------ |
+| **F5 grant semantics + collision scope** | **Drop the four edition-core à-la-carte rows** (`compliance` $299 · `ai-kit` $149 · `local-ai` $299 · `agent-dev` $99) → an 11-module standalone catalog; editions are how composition is bought. Collision resolved by removal, not rename; collision data-lints added; no price NUMBER changes; supersedes ADR-0227's 14-sellable-module clause; type chips (F5 second half) still ship. | **ADR-0238** |
