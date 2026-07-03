@@ -11,6 +11,10 @@
  *
  * This is strictly NON-BLOCKING (ADR-0134 Rejected #3): a finding here never gates a commit. Only a
  * `severity: "high"` finding is eligible for the `/validate` escalation in ./validate.ts.
+ *
+ * v2 (ADR-0233): the id gains the `dimension` axis (`sha256(domain ∷ dimension ∷ subject ∷
+ * normalized-title)`), and `reconcile()` fails loud on an id collision or an out-of-universe domain
+ * instead of silently dropping a finding — the two silent-loss classes v1's round-5 critic caught.
  */
 import { createHash } from "node:crypto";
 
@@ -20,8 +24,10 @@ export type FindingSeverity = "info" | "warn" | "high";
 export interface Finding {
   /** stable, derived — see stableId(). */
   id: string;
-  /** the declared audit domain (./domains.ts `AuditDomain.id`), e.g. "security", "design-ui". */
+  /** the declared audit domain (./domains.ts `Domain.id`), e.g. "packages/kernel", "apps/admin". */
   domain: string;
+  /** the audit lens (./dimensions.ts `Dimension.id`), e.g. "D1".."D7". Part of the stable id. */
+  dimension: string;
   /** the file/component/subject under audit (e.g. a path, a package name, a screen). */
   subject: string;
   /** human title; may be reworded run-to-run without forking the id. */
@@ -53,14 +59,17 @@ function normalizeTitle(title: string): string {
     .replace(/\s+/g, " ");
 }
 
-/** Stable ID = sha256(domain ∷ subject ∷ normalized-title)[:16]. */
+/** Stable ID = sha256(domain ∷ dimension ∷ subject ∷ normalized-title)[:16]. The `dimension` input
+ * (ADR-0233) keeps a security finding and a customer-facing finding on the SAME file+title from
+ * collapsing to one id. */
 export function stableId(
   domain: string,
+  dimension: string,
   subject: string,
   title: string,
 ): string {
   return createHash("sha256")
-    .update(`${domain}∷${subject}∷${normalizeTitle(title)}`)
+    .update(`${domain}∷${dimension}∷${subject}∷${normalizeTitle(title)}`)
     .digest("hex")
     .slice(0, 16);
 }
@@ -70,7 +79,7 @@ export function withId(f: RawFinding): Finding {
   return {
     ...f,
     status: f.status ?? "open",
-    id: stableId(f.domain, f.subject, f.title),
+    id: stableId(f.domain, f.dimension, f.subject, f.title),
   };
 }
 
@@ -91,13 +100,21 @@ export function withId(f: RawFinding): Finding {
  *  - absent this run, OUT of scope            → passed through unchanged (NOT closed)
  *  - absent this run, was already `fixed`     → carried forward, no class (stays closed)
  *
- * Fail-loud: a `current` finding whose domain ∉ `scope` throws — it's a caller inconsistency
- * (the domain produced a finding, so it WAS audited, so `scope` is wrong).
+ * Fail-loud (ADR-0233), three ways — a caller inconsistency aborts instead of silently losing a
+ * finding:
+ *  - a `current` finding whose domain ∉ `scope` throws (the domain produced a finding, so it WAS
+ *    audited, so `scope` is wrong);
+ *  - two distinct `current` findings that share an id throw (an id COLLISION — v1 kept one and
+ *    dropped the other silently; the round-5 name-collision class);
+ *  - when `validDomains` is supplied (the ./domains.ts `deriveDomains()` universe), a `current`
+ *    finding whose domain ∉ that universe throws (a mislabeled domain — e.g. "audit-harness" typed
+ *    for "audit-worm" — aborts the run instead of misattributing).
  */
 export function reconcile(
   previous: Finding[],
   current: RawFinding[],
   scope: readonly string[],
+  validDomains?: ReadonlySet<string>,
 ): ReconcileResult {
   const inScope = new Set(scope);
   const prev = new Map(previous.map((f) => [f.id, f]));
@@ -107,9 +124,19 @@ export function reconcile(
 
   for (const raw of current) {
     const f = withId(raw);
+    if (validDomains && !validDomains.has(f.domain)) {
+      throw new Error(
+        `reconcile: finding "${f.title}" is in domain "${f.domain}" which is not a derived domain (deriveDomains()) — a mislabeled domain, not an audited surface.`,
+      );
+    }
     if (!inScope.has(f.domain)) {
       throw new Error(
         `reconcile: finding "${f.title}" is in domain "${f.domain}" but that domain is not in the audited scope [${[...inScope].join(", ")}] — declare it in --domains.`,
+      );
+    }
+    if (seen.has(f.id)) {
+      throw new Error(
+        `reconcile: id collision on "${f.id}" — two distinct findings normalize to the same (domain ∷ dimension ∷ subject ∷ title) key (e.g. "${f.domain}"/"${f.dimension}"/"${f.subject}"). Refusing to silently drop one; disambiguate a title or split the subject.`,
       );
     }
     seen.add(f.id);
@@ -153,8 +180,8 @@ const esc = (s: string): string =>
 const unesc = (s: string): string =>
   s.replace(/\\"/g, '"').replace(/\\\\/g, "\\");
 
-const LEDGER_HEADER = `# audit-harness cross-domain findings ledger — ADR-0134 (ADVISORY, never blocks a merge).
-# Stable id = sha256(domain ∷ subject ∷ normalized-title)[:16]. status: open | accepted | fixed.
+const LEDGER_HEADER = `# audit-harness cross-domain findings ledger — ADR-0134/0233 (ADVISORY, never blocks a merge).
+# Stable id = sha256(domain ∷ dimension ∷ subject ∷ normalized-title)[:16]. status: open | accepted | fixed.
 # Regenerated by reconcile(); the operator hand-edits ONLY \`status\` (open→accepted to triage a finding).
 `;
 
@@ -166,6 +193,7 @@ export function serializeFindings(ledger: Finding[]): string {
         `[[finding]]\n` +
         `id = "${f.id}"\n` +
         `domain = "${esc(f.domain)}"\n` +
+        `dimension = "${esc(f.dimension)}"\n` +
         `subject = "${esc(f.subject)}"\n` +
         `title = "${esc(f.title)}"\n` +
         `severity = "${f.severity}"\n` +
@@ -181,12 +209,13 @@ export function parseFindings(toml: string): Finding[] {
     const c = cur;
     cur = null;
     if (!c) return;
-    const { id, domain, subject, title, severity, status } = c;
+    const { id, domain, dimension, subject, title, severity, status } = c;
     // Truthy-narrow every required field (noUncheckedIndexedAccess → each is string | undefined).
-    if (id && domain && subject && title && severity && status) {
+    if (id && domain && dimension && subject && title && severity && status) {
       out.push({
         id,
         domain,
+        dimension,
         subject,
         title,
         severity: severity as FindingSeverity,
