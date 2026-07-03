@@ -1,5 +1,27 @@
 # @caisson/field-crypto
 
+## 0.2.3
+
+### Patch Changes
+
+- cf66d65: Hardened row-level security on the key-version and wrapped-key tables: the tenant-isolation
+  check now discards an empty-string tenant identifier before comparing it against a row's
+  tenant column, instead of comparing against it directly. This closes a narrow gap where
+  certain connection-pooling configurations can leave a database session with an empty string
+  instead of a properly cleared value, which previously could coincide with a real row's tenant
+  column and let it be read. Shipped as a follow-up migration alongside the original table
+  migration, so existing installs pick up the hardening on their next migrate run without any
+  data loss or re-encryption.
+- cf66d65: Documented and test-hardened the key-rotation contract for encrypted fields: rotating a
+  tenant's key version never requires re-encrypting existing data. Every stored value already
+  carries the key version it was written under, so old rows keep decrypting under their original
+  key while new writes pick up the current one automatically. Added an explicit test proving the
+  rotated key is actually different key material (not just a different version label) and a
+  doc comment spelling out the no-remigration guarantee for anyone implementing a custom key
+  provider.
+- Updated dependencies [cf66d65]
+  - @caisson/kernel@0.4.1
+
 ## 0.2.2
 
 ### Patch Changes

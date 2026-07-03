@@ -1,5 +1,12 @@
 # @caisson/pricebook
 
+## 0.3.2
+
+### Patch Changes
+
+- Updated dependencies [cf66d65]
+  - @caisson/kernel@0.4.1
+
 ## 0.3.1
 
 ### Patch Changes

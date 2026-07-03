@@ -1,5 +1,40 @@
 # @caisson/compliance
 
+## 0.3.1
+
+### Patch Changes
+
+- cf66d65: Add a typed regulatory-exemption posture worksheet to the Compliance edition:
+  `defineExemptionWorksheet` maps a legal exemption's own test elements (e.g. an FTC
+  endorsement-disclosure requirement) to concrete, checkable rules an AI copy generator's
+  output must satisfy, each tagged with how it's enforced today (automated guardrail, human
+  review, or untracked) and an optional human sign-off once a reviewer has actually looked
+  at it. Every worksheet carries a fixed "not legal advice" disclaimer enforced by the
+  schema itself, not left to authoring discipline. Ships as a documentation convention and a
+  validated data shape — it defines no new enforcement gate on its own. A generic,
+  unsigned FTC endorsement-guide exemplar is included to show the shape filled in.
+- cf66d65: Hardened row-level security on the support-impersonation session table: the tenant-isolation
+  check now discards an empty-string tenant identifier before comparing it against a row's
+  tenant column, instead of comparing against it directly. This closes a narrow gap where
+  certain connection-pooling configurations can leave a database session with an empty string
+  instead of a properly cleared value, which previously could coincide with a real row's tenant
+  column and let it be read. Shipped as a follow-up migration alongside the original table
+  migration, so existing installs pick up the hardening on their next migrate run.
+- Updated dependencies [cf66d65]
+- Updated dependencies [cf66d65]
+- Updated dependencies [cf66d65]
+- Updated dependencies [cf66d65]
+- Updated dependencies [cf66d65]
+- Updated dependencies [cf66d65]
+- Updated dependencies [cf66d65]
+  - @caisson/alerting@0.1.4
+  - @caisson/audit-worm@0.2.3
+  - @caisson/field-crypto@0.2.3
+  - @caisson/kernel@0.4.1
+  - @caisson/retention-runner@0.1.4
+  - @caisson/tenancy-rls@0.3.2
+  - @caisson/migrate@0.2.3
+
 ## 0.3.0
 
 ### Minor Changes
