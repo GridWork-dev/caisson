@@ -67,10 +67,11 @@ export const defaultEngine: GeneratorEngine = {
     };
     const files: GeneratedFile[] = [
       { path: "package.json", content: `${JSON.stringify(pkg, null, 2)}\n` },
-      // Modules install from GitHub Packages under the @caisson scope (ADR-0047/0021 read path).
+      // Modules install from registry.caisson.sh under the @caisson scope (ADR-0223 read path).
       {
         path: ".npmrc",
-        content: "@caisson:registry=https://npm.pkg.github.com\n",
+        content:
+          "@caisson:registry=https://registry.caisson.sh\n//registry.caisson.sh/:_authToken=${CAISSON_LICENSE_TOKEN}\n",
       },
       {
         path: "README.md",
