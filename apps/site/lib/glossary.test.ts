@@ -6,8 +6,8 @@ import { GLOSSARY_TERMS, glossaryPageSpec } from "./glossary";
 // ADR-0235 Fork C); later batches append pure data records, so this asserts a floor, never the
 // eventual 32-term total.
 describe("GLOSSARY_TERMS — data lint", () => {
-  test("batch 1 ships at least the 11 committed terms", () => {
-    expect(GLOSSARY_TERMS.length).toBeGreaterThanOrEqual(11);
+  test("batch 1 ships at least the 12 committed terms", () => {
+    expect(GLOSSARY_TERMS.length).toBeGreaterThanOrEqual(12);
   });
 
   test("every slug is unique", () => {

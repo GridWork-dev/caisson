@@ -57,11 +57,77 @@ export interface GlossaryTerm {
   related?: readonly string[];
 }
 
-// The 11 batch-1 terms (renderer + hub + compliance cluster, ADR-0235 Fork C). Copy is
-// adversarially verified — do not rewrite; a typo fix is fine, a claim change is not. `related`
-// entries are scoped to slugs that resolve WITHIN this batch (later-batch cross-links land when
-// those terms ship, per the data-lint in glossary.test.ts).
+// The 12 batch-1 terms (renderer + hub + the full 10-term compliance cluster, ADR-0235 Fork C).
+// Copy is adversarially verified — do not rewrite; a typo fix is fine, a claim change is not.
+// `related` entries are scoped to slugs that resolve WITHIN this batch (later-batch cross-links
+// land when those terms ship, per the data-lint in glossary.test.ts).
 export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
+  {
+    slug: "worm-audit-log",
+    term: "WORM audit log",
+    cluster: "compliance",
+    definition:
+      "A WORM audit log is an audit trail stored write once, read many: entries can be appended but never altered or deleted, not even by an administrator. Caisson's audit-worm package hash-chains each entry, then writes a write-once anchor for the chain to WORM storage on every append, so tamper, truncation, and rewrite each surface on verify.",
+    artifact: {
+      label:
+        "AuditChainStore.append — mint the WORM anchor after every entry, write-once, fail-closed on collision",
+      lang: "ts",
+      code: 'const entries = await loadEntries(tx, accountId);\nconst anchor = anchorChain(entries);\n\n// The trusted commitment lands in WORM under a LENGTH-keyed, write-once key. A second anchor\n// for the same length (a truncate-then-re-append, a replay) hits the existing immutable object\n// → ArtifactExistsError → ConflictError: the original tip can never be overwritten (TM-H).\ntry {\n  await this.store.put(\n    anchorKey(accountId, anchor.length),\n    encodeAnchor(anchor),\n    {\n      retainUntil,\n      contentType: "application/json",\n    },\n  );\n} catch (err) {\n  if (err instanceof ArtifactExistsError) {\n    throw new ConflictError(\n      "audit chain anchor already exists for this length",\n      { accountId, length: anchor.length },\n    );\n  }\n  throw err;\n}\n\nreturn { entry, anchor };',
+    },
+    properties: [
+      {
+        title: "Two composable guarantees, one class",
+        body: "AuditChainStore composes the kernel's pure hash-chain algebra with a write-once WORM object store: the DB grant can't be rewritten (no UPDATE/DELETE privilege) and the anchor object can't be overwritten either (a write-once key) — no single control has to hold alone.",
+      },
+      {
+        title: "Every append mints a fresh anchor, in the same call",
+        body: "append() inserts the chain entry and, before returning, mints a length-keyed anchor over the resulting chain and writes it write-once to WORM storage — the anchor and the entry it commits to land together, never as a later batch job that could be skipped.",
+      },
+      {
+        title: "Re-anchoring a length collides, it never overwrites",
+        body: "A truncate-then-replay or a duplicate append for an already-anchored length hits the WORM store's existing immutable object and throws ConflictError — the original tip can never be silently replaced by a second write.",
+      },
+      {
+        title: "Tenant-scoped and serialized against forks",
+        body: "Every append runs inside withTenant behind a per-tenant advisory lock, so a forgotten tenant filter can't cross-write another tenant's chain and two concurrent appends can't mint two different tips for the same length.",
+      },
+    ],
+    faq: [
+      {
+        question: "What does 'WORM' mean in an audit log?",
+        answer:
+          "Write Once, Read Many — an object can be created but never modified or deleted once written, enforced by the storage layer itself, not by application convention. Caisson pairs a WORM object store with a hash-chained log so both the log and its integrity commitment are independently tamper-evident.",
+      },
+      {
+        question:
+          "How is a WORM audit log different from a plain append-only log?",
+        answer:
+          "An append-only log stops updates and deletes at the database-privilege level; a WORM audit log adds a second, independent guarantee by anchoring the chain's commitment in storage that itself refuses overwrite. A full database compromise still can't rewrite history without also defeating the separate WORM store.",
+      },
+      {
+        question: "Does a WORM audit log make us SOC 2 or HIPAA compliant?",
+        answer:
+          "No — it ships the technical control SOC 2 CC7.2 and HIPAA 164.312(b) check for (a tamper-evident, immutable record of activity) and generates the evidence an auditor examines; it does not itself constitute a compliance certification.",
+      },
+      {
+        question: "What happens if an attacker gets full database access?",
+        answer:
+          "They can append new rows, but the DB grant withholds UPDATE/DELETE so existing entries can't be altered from that access alone. Even a rewrite at the storage layer would leave the chain's tip hash no longer matching the write-once anchor already committed to WORM storage, and verify() reports the break.",
+      },
+    ],
+    sells: {
+      edition: "Compliance",
+      ctaLabel:
+        "See how the Compliance edition ships the WORM-anchored audit log",
+      ctaHref: "/compliance",
+    },
+    related: [
+      "append-only-audit-log",
+      "hash-chain-audit-trail",
+      "s3-object-lock",
+      "worm-retention-policy",
+    ],
+  },
   {
     slug: "append-only-audit-log",
     term: "Append-only audit log",
