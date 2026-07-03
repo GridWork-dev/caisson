@@ -76,8 +76,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // through, so the event can't fork per call site.
   useEffect(() => {
     if (drawerOpen) trackEvent("view_cart", { items: String(items.length) });
-    // items.length is a label, not a trigger — re-firing on cart mutation would double-count.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // items.length is a label, not a trigger — re-firing on cart mutation would double-count,
+    // so the deps are deliberately [drawerOpen] only.
   }, [drawerOpen]);
 
   const value = useMemo<CartContextValue>(
