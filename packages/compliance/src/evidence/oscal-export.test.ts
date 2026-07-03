@@ -183,9 +183,63 @@ describe("toOscalAssessmentResults — SAR mapping", () => {
     const resources = req(sar["back-matter"], "back-matter").resources;
     const apResource = req(resources[0], "ap resource");
     expect(`#${apResource.uuid}`).toBe(sar["import-ap"].href);
+    // LEGACY FALLBACK (no `assessmentPlan` supplied): the un-served canonical URL (ADR-0179). The real
+    // bundle path supplies a relative rlink + hashes[] instead (see the ADR-0231 test below / oscal-bundle).
     expect(apResource.rlinks[0]?.href).toBe(
       "https://caisson.sh/oscal/assessment-plan/soc2-tsc.json",
     );
+    expect(apResource.rlinks[0]?.hashes).toBeUndefined();
+  });
+
+  test("ADR-0231: an assessmentPlan option rewrites the rlink to a relative path + SHA-256 hashes[]", () => {
+    const sha = "cd".repeat(32);
+    const sar = toOscalAssessmentResults(
+      fixtureManifest(),
+      det({
+        assessmentPlan: {
+          rlinkHref: "./assessment-plan/soc2-tsc.json",
+          sha256: sha,
+        },
+      }),
+    )["assessment-results"];
+    // import-ap still resolves to the in-document back-matter resource fragment.
+    expect(sar["import-ap"].href).toMatch(/^#[0-9a-f-]{36}$/i);
+    const rlink = req(
+      req(req(sar["back-matter"], "back-matter").resources[0], "ap resource")
+        .rlinks[0],
+      "ap rlink",
+    );
+    expect(rlink.href).toBe("./assessment-plan/soc2-tsc.json");
+    expect(rlink.href).not.toMatch(/^https?:\/\//);
+    expect(rlink.hashes?.[0]).toEqual({ algorithm: "SHA-256", value: sha });
+  });
+
+  test("ADR-0231: omitting sha256 emits the relative rlink with no hashes[]", () => {
+    const sar = toOscalAssessmentResults(
+      fixtureManifest(),
+      det({ assessmentPlan: { rlinkHref: "./assessment-plan/soc2-tsc.json" } }),
+    )["assessment-results"];
+    const rlink = req(
+      req(req(sar["back-matter"], "back-matter").resources[0], "ap resource")
+        .rlinks[0],
+      "ap rlink",
+    );
+    expect(rlink.href).toBe("./assessment-plan/soc2-tsc.json");
+    expect(rlink.hashes).toBeUndefined();
+  });
+
+  test("ADR-0231: rejects a malformed assessmentPlan.sha256", () => {
+    expect(() =>
+      toOscalAssessmentResults(
+        fixtureManifest(),
+        det({
+          assessmentPlan: {
+            rlinkHref: "./assessment-plan/soc2-tsc.json",
+            sha256: "not-a-digest",
+          },
+        }),
+      ),
+    ).toThrow(ValidationError);
   });
 
   test("one finding per control with objective status derived from readiness", () => {

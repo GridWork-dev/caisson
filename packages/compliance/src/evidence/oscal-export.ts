@@ -38,17 +38,18 @@ import type { EvidencePackManifest, ManifestControl } from "./pack-format.ts";
 export const OSCAL_VERSION = "1.2.2" as const;
 
 /** The Caisson property/extension namespace stamped on OSCAL `prop`/`link` extensions. */
-const CAISSON_OSCAL_NS = "https://caisson.sh/ns/oscal";
+export const CAISSON_OSCAL_NS = "https://caisson.sh/ns/oscal";
 
 /**
- * The canonical Caisson-hosted per-framework Assessment-Plan (AP) artifact URL (ADR-0179). Instead of a
- * bare, dangling `#local-fragment`, `import-ap` resolves to a back-matter resource whose `rlink` points
- * at this stable per-framework AP — so the exported SAR is complete + importable without buyer wiring.
+ * The legacy Caisson-hosted per-framework Assessment-Plan (AP) artifact URL (ADR-0179). It was the
+ * default back-matter `rlink` target — but the AP it pointed at was never authored, so the link
+ * dangled (ADR-0208 §4 parked it won't-fix).
  *
- * **Won't-fix (ADR-0208 #4): this URL is not served.** No route exists (or will be built) under
- * `apps/site` for `/oscal/assessment-plan/*`. External href resolution is explicitly outside the
- * conformance gate (`--disable-constraint-validation`, see `oscal-export-xml.ts`'s `buildValidateArgs`
- * doc) — a dead citation link does not justify a route.
+ * **Superseded-as-default (ADR-0231).** The AP is now authored (`oscal-assessment-plan.ts`) and shipped
+ * in a signed evidence bundle (`oscal-bundle.ts`); the emitted back-matter `rlink` is a RELATIVE
+ * in-bundle path with a SHA-256 `hashes[]` integrity binding — supply `OscalExportOptions.assessmentPlan`.
+ * This URL survives ONLY as the bare-call fallback for a caller that supplies neither `assessmentPlan`
+ * nor `assessmentPlanHref`; it is still not served, and no real export path emits it.
  */
 export function caissonAssessmentPlanUrl(frameworkId: string): string {
   return `https://caisson.sh/oscal/assessment-plan/${frameworkId}.json`;
@@ -60,7 +61,7 @@ const SHA256_HEX = /^[0-9a-f]{64}$/;
 // Only the properties this adapter populates are modeled. OSCAL allows far more (props/links/roles/
 // parties/risks); a richer mapping extends these interfaces behind the same seam.
 
-interface OscalProp {
+export interface OscalProp {
   readonly name: string;
   readonly value: string;
   readonly ns?: string;
@@ -73,7 +74,7 @@ interface OscalLink {
   readonly text?: string;
 }
 
-interface OscalMetadata {
+export interface OscalMetadata {
   readonly title: string;
   readonly "last-modified": string;
   readonly version: string;
@@ -117,11 +118,11 @@ interface OscalFinding {
   readonly "related-observations": readonly OscalRelatedObservation[];
 }
 
-interface OscalControlSelection {
+export interface OscalControlSelection {
   readonly "include-all": Record<string, never>;
 }
 
-interface OscalReviewedControls {
+export interface OscalReviewedControls {
   readonly "control-selections": readonly OscalControlSelection[];
 }
 
@@ -140,10 +141,18 @@ interface OscalImportAp {
   readonly href: string;
 }
 
+/** An OSCAL hash on an rlink — the FedRAMP-recommended integrity binding to the referenced bytes. */
+export interface OscalHash {
+  readonly algorithm: string;
+  readonly value: string;
+}
+
 /** A remote link on a back-matter resource — the resolvable location of the referenced artifact. */
-interface OscalRlink {
+export interface OscalRlink {
   readonly href: string;
   readonly "media-type"?: string;
+  /** SHA-256 integrity binding to the referenced bytes (ADR-0231 bundle path). */
+  readonly hashes?: readonly OscalHash[];
 }
 
 /** One back-matter resource — a referenced artifact (here, the canonical per-framework AP; ADR-0179). */
@@ -221,6 +230,17 @@ export interface OscalExportOptions {
    * point at a buyer-hosted assessment plan instead — then no Caisson AP back-matter resource is emitted.
    */
   readonly assessmentPlanHref?: string;
+  /**
+   * The bundled Assessment-Plan reference (ADR-0231). When supplied (and no `assessmentPlanHref`
+   * override), the shipped back-matter AP resource rlinks this RELATIVE in-bundle path
+   * (e.g. `./assessment-plan/soc2-tsc.json`) with an optional SHA-256 `hashes[]` integrity binding —
+   * instead of the legacy `caissonAssessmentPlanUrl`. Set by the bundle assembler (`oscal-bundle.ts`).
+   */
+  readonly assessmentPlan?: {
+    readonly rlinkHref: string;
+    /** SHA-256 of the canonicalized bundled AP bytes (lowercase 64-char hex). Bound as `rlink.hashes[]`. */
+    readonly sha256?: string;
+  };
   /** Optional provenance: the T13 evidence-pack archive SHA-256 (recorded as a `prop`). Must be 64-hex. */
   readonly packSha256?: string;
 }
@@ -287,6 +307,41 @@ function resolveNow(options: OscalExportOptions): string {
 }
 
 /**
+ * The AP back-matter `rlink` for the SAR. ADR-0231 bundle path: when `assessmentPlan` is supplied, emit
+ * the caller's RELATIVE in-bundle href + a SHA-256 `hashes[]` binding. Otherwise fall back to the legacy
+ * (un-served, superseded-as-default) `caissonAssessmentPlanUrl`. Fails closed on a malformed digest.
+ */
+function buildApRlink(
+  frameworkId: string,
+  options: OscalExportOptions,
+): OscalRlink {
+  const plan = options.assessmentPlan;
+  if (plan === undefined) {
+    return {
+      href: caissonAssessmentPlanUrl(frameworkId),
+      "media-type": "application/oscal-assessment-plan+json",
+    };
+  }
+  if (plan.rlinkHref.trim().length === 0) {
+    throw new ValidationError(
+      "oscal export `assessmentPlan.rlinkHref` must be a non-empty relative path",
+    );
+  }
+  if (plan.sha256 !== undefined && !SHA256_HEX.test(plan.sha256)) {
+    throw new ValidationError(
+      "oscal export `assessmentPlan.sha256` must be a lowercase 64-char hex digest",
+    );
+  }
+  return {
+    href: plan.rlinkHref,
+    "media-type": "application/oscal-assessment-plan+json",
+    ...(plan.sha256 !== undefined
+      ? { hashes: [{ algorithm: "SHA-256", value: plan.sha256 }] }
+      : {}),
+  };
+}
+
+/**
  * Map an evidence-pack manifest to an OSCAL Security Assessment Results (SAR) document.
  *
  * One `finding` per control (objective status DERIVED from readiness: `ready`→`satisfied`,
@@ -301,9 +356,10 @@ export function toOscalAssessmentResults(
   const lastModified = resolveNow(options);
   const newId = options.newId ?? randomUUID;
 
-  // ADR-0179: resolve `import-ap` to a shipped, canonical per-framework AP fragment — a back-matter
-  // resource `#uuid` (resolvable in-document) whose rlink points at the stable Caisson AP artifact —
-  // rather than a bare, dangling local fragment. A buyer-supplied href overrides + ships no AP resource.
+  // ADR-0179/0231: resolve `import-ap` to a shipped per-framework AP fragment — a back-matter resource
+  // `#uuid` (resolvable in-document) whose rlink points at the AP. The ADR-0231 bundle path supplies a
+  // RELATIVE in-bundle href + SHA-256 `hashes[]` (`assessmentPlan`); a buyer-supplied `assessmentPlanHref`
+  // overrides + ships no AP resource; a bare call falls back to the legacy `caissonAssessmentPlanUrl`.
   let importApHref: string;
   let backMatter: OscalBackMatter | undefined;
   if (options.assessmentPlanHref !== undefined) {
@@ -319,12 +375,7 @@ export function toOscalAssessmentResults(
           props: [
             { name: "type", ns: CAISSON_OSCAL_NS, value: "assessment-plan" },
           ],
-          rlinks: [
-            {
-              href: caissonAssessmentPlanUrl(manifest.framework.id),
-              "media-type": "application/oscal-assessment-plan+json",
-            },
-          ],
+          rlinks: [buildApRlink(manifest.framework.id, options)],
         },
       ],
     };

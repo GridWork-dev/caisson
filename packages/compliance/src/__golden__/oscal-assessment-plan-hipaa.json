@@ -1,0 +1,28 @@
+{
+  "assessment-plan": {
+    "uuid": "00000000-0000-4000-8000-000000000001",
+    "metadata": {
+      "title": "Assessment Plan — HIPAA Security Rule",
+      "last-modified": "2026-06-28T00:00:00.000Z",
+      "version": "2024.1",
+      "oscal-version": "1.2.2",
+      "props": [
+        {
+          "name": "caisson-framework-id",
+          "ns": "https://caisson.sh/ns/oscal",
+          "value": "hipaa-security"
+        }
+      ]
+    },
+    "import-ssp": {
+      "href": "urn:caisson:oscal:assessment-plan:no-ssp"
+    },
+    "reviewed-controls": {
+      "control-selections": [
+        {
+          "include-all": {}
+        }
+      ]
+    }
+  }
+}

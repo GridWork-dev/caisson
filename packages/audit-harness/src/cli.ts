@@ -20,7 +20,8 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { AUDIT_DOMAINS } from "./domains.ts";
+import { coverageGrid, parseCoverage } from "./coverage.ts";
+import { deriveDomains, domainIds } from "./domains.ts";
 import {
   parseFindings,
   reconcile,
@@ -30,7 +31,11 @@ import {
 import { checkScope } from "./scope-guard.ts";
 import { summarize } from "./surface.ts";
 
-const LEDGER = join(import.meta.dir, "..", "audit-ledger.toml");
+// The persisted cross-run ledger + coverage ledger live at the audit home (outputs/audit/), the
+// committed source of truth the driver reconciles against — not inside this internal package.
+const AUDIT_DIR = join(import.meta.dir, "..", "..", "..", "outputs", "audit");
+const LEDGER = join(AUDIT_DIR, "ledger.toml");
+const COVERAGE = join(AUDIT_DIR, "coverage.toml");
 const args = process.argv.slice(2);
 const SUBCOMMANDS = new Set(["reconcile", "check-scope", "report"]);
 const sub = args[0] && SUBCOMMANDS.has(args[0]) ? args[0] : "reconcile";
@@ -44,9 +49,9 @@ function parseDomains(): string[] {
     .filter(Boolean);
 }
 
-/** The declared audit surface reduced to `{ id: globs }` (for scope-guard). */
+/** The derived audit surface reduced to `{ id: globs }` (for scope-guard). */
 function domainGlobs(): Record<string, string[]> {
-  return Object.fromEntries(AUDIT_DOMAINS.map((d) => [d.id, d.globs]));
+  return Object.fromEntries(deriveDomains().map((d) => [d.id, d.globs]));
 }
 
 async function readRaw(path: string | undefined): Promise<RawFinding[]> {
@@ -85,6 +90,9 @@ if (sub === "report") {
         .map(([k, n]) => `${k}=${String(n)}`)
         .join(" · ") || "(none)"
     }`;
+  const coverageRows = existsSync(COVERAGE)
+    ? parseCoverage(readFileSync(COVERAGE, "utf8"))
+    : [];
   process.stdout.write(
     `audit-harness report — ${String(s.total)} finding(s) in ledger\n` +
       `${line("by domain", s.byDomain)}\n` +
@@ -93,7 +101,9 @@ if (sub === "report") {
       `  open-high (validate candidates): ${String(s.openHigh.length)}\n` +
       s.openHigh
         .map((f) => `    · [${f.domain}] ${f.subject} — ${f.title}\n`)
-        .join(""),
+        .join("") +
+      `  coverage grid (${String(coverageRows.length)} cell-round(s)):\n` +
+      `${coverageGrid(coverageRows)}\n`,
   );
   process.exit(0);
 }
@@ -110,7 +120,13 @@ const positional = args.filter(
   (a) => !a.startsWith("--") && !SUBCOMMANDS.has(a),
 );
 const current = await readRaw(positional[0]);
-const { ledger, classes } = reconcile(loadLedger(), current, scope);
+// Pass the derived domain universe so a mislabeled domain aborts the run (fail-loud, ADR-0233).
+const { ledger, classes } = reconcile(
+  loadLedger(),
+  current,
+  scope,
+  domainIds(),
+);
 writeFileSync(LEDGER, serializeFindings(ledger));
 
 const tally = { new: 0, regressed: 0, closed: 0, unchanged: 0 };

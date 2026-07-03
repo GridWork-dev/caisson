@@ -9,7 +9,8 @@ import {
 } from "./validate.ts";
 
 const finding: Finding = withId({
-  domain: "security",
+  domain: "packages/auth",
+  dimension: "D1",
   subject: "packages/auth/src/session.ts",
   title: "Session token compared with ===",
   severity: "high",
