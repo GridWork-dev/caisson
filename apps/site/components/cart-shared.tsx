@@ -17,11 +17,11 @@ import styles from "./cart.module.css";
 // density="compact"; /cart passes density="comfortable".
 
 // Cart ids are kind-namespaced (`edition:<slug>` / `module:<slug>` / `bundle`, lib/catalog.ts).
-// Editions have a product page; modules resolve to the catalog; the bundle to pricing.
+// Editions have a product page; modules resolve to the catalog; the bundle to the marketplace hub.
 function itemHref(item: CartItem): string {
   if (item.kind === "edition") return `/${item.id.slice("edition:".length)}`;
-  if (item.kind === "module") return "/modules";
-  return "/pricing";
+  if (item.kind === "module") return "/marketplace/modules";
+  return "/marketplace";
 }
 
 /** One cart line — a linked label, its price, and a remove button. `comfortable` adds the kind

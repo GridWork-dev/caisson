@@ -2,6 +2,7 @@
 
 import { useSearchContext } from "fumadocs-ui/contexts/search";
 
+import { trackEvent } from "@/lib/analytics";
 import styles from "./nav-search-trigger.module.css";
 
 // Visible search affordance for the marketing shell (D-9, ADR-0196). The ⌘K hotkey is already
@@ -18,7 +19,12 @@ export function NavSearchTrigger() {
     <button
       type="button"
       className={styles.trigger}
-      onClick={() => setOpenSearch(true)}
+      onClick={() => {
+        setOpenSearch(true);
+        // Search engagement (ADR-0237 F8) — the visible trigger only; the global hotkey path
+        // stays untracked (it belongs to fumadocs, not this button).
+        trackEvent("search_open");
+      }}
       aria-label="Search the docs"
     >
       <svg

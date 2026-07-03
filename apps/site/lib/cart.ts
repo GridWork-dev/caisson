@@ -4,6 +4,8 @@
 // single-item flow (`/dashboard/plan`), not mixed into a multi-item cart.
 import { z } from "zod";
 
+import { MODULE_PRICES } from "./pricing";
+
 export const cartItemSchema = z
   .object({
     /** The catalog item id this line represents (`lib/catalog.ts` `CatalogItem.id`). */
@@ -95,11 +97,14 @@ export interface CartUpgrade {
 
 /**
  * A genuine bundle upsell for the current cart, or `undefined` when the bundle wouldn't help.
- * The Everything bundle is a strict superset (all four editions, hence every module), so switching
- * to it only ever ADDS coverage — it is honest to suggest it exactly when it also costs LESS than
- * what the cart already totals. Never suggested when a bundle is already in the cart, nor when the
- * subtotal is at or below the bundle price (that would cost more — a fabricated "saving", ADR-0130).
- * Pure: the bundle line is passed in (from the catalog) so this stays React- and pricing-free.
+ * The Everything bundle covers all four editions (base ∪ their members) — but NOT the
+ * standalone-only modules (ADR-0238: granted by no edition). A standalone-only line in the cart
+ * disqualifies the nudge entirely: the bundle can't cover it, so "switch to bundle" would silently
+ * drop a paid line and the "covers all four editions" framing would be false for that line
+ * (mirrors bestStackUpgrade in pricing.ts). Otherwise suggested exactly when the bundle costs
+ * strictly less than the cart subtotal. Never when a bundle is already in the cart, nor at/below
+ * the bundle price (a fabricated "saving", ADR-0130). Pure: the bundle line is passed in (the
+ * catalog), and the standalone-only set is derived from `MODULE_PRICES` at module load.
  */
 export function cartUpgrade(
   items: readonly CartItem[],
@@ -107,7 +112,17 @@ export function cartUpgrade(
 ): CartUpgrade | undefined {
   if (items.length === 0) return undefined;
   if (items.some((i) => i.kind === "bundle")) return undefined;
+  if (items.some((i) => isStandaloneOnlyModule(i.id))) return undefined;
   const saves = cartSubtotal(items) - bundle.amount;
   if (saves <= 0) return undefined;
   return { bundle, saves };
+}
+
+/** Cart ids are `module:<slug>` (lib/catalog.ts); true when that slug is a `standaloneOnly`
+ *  module (granted by no edition, hence not by the bundle). Computed once from `MODULE_PRICES`. */
+const STANDALONE_ONLY_MODULE_IDS: ReadonlySet<string> = new Set(
+  MODULE_PRICES.filter((m) => m.standaloneOnly).map((m) => `module:${m.id}`),
+);
+function isStandaloneOnlyModule(cartId: string): boolean {
+  return STANDALONE_ONLY_MODULE_IDS.has(cartId);
 }

@@ -7,7 +7,7 @@ import { UpdatesForm } from "@/components/waitlist-form";
 export const metadata = buildMetadata({
   title: "Changelog",
   description:
-    "Caisson changelog: new modules, control mappings, and SOC 2 / HIPAA framework coverage.",
+    "Caisson changelog: every base-substrate, kernel, and module release, dated and versioned, with the control clause cited where a change covers one.",
   path: "/changelog",
   type: "article",
 });
@@ -15,7 +15,8 @@ export const metadata = buildMetadata({
 export default function ChangelogPage() {
   const ldArticle = techArticle({
     headline: "Caisson changelog",
-    description: "New modules, control mappings, and framework coverage.",
+    description:
+      "The single-source record of every base-substrate, kernel, and module release, dated and versioned.",
     url: "https://caisson.sh/changelog",
   });
   const ldBreadcrumb = breadcrumb([
@@ -38,9 +39,9 @@ export default function ChangelogPage() {
       <Section
         flush
         as="h1"
-        eyebrow="Compliance Updates"
+        eyebrow="Release history"
         title="Changelog"
-        lede="New modules, control mappings, and framework coverage. The single-source feed for what ships and what changes."
+        lede="The single-source record of every base-substrate, kernel, and module release — dated, versioned, and tagged by what changed."
       >
         <div style={{ marginTop: "var(--cs-space-5)" }}>
           <Button
@@ -146,11 +147,11 @@ export default function ChangelogPage() {
       {/* ===== Subscribe nudge ===== */}
       <Section band="tint" eyebrow="Stay current">
         <p className="cs-muted" style={{ marginBottom: "var(--cs-space-5)" }}>
-          Subscribe via{" "}
+          Pull the{" "}
           <a href={FEED_RSS_URL} style={{ color: "var(--cs-link)" }}>
-            RSS
+            RSS feed
           </a>{" "}
-          to receive framework updates and control mapping changes as they ship.
+          into a reader, or leave your email below.
         </p>
         <UpdatesForm source="changelog" />
       </Section>

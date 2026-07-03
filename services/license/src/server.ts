@@ -21,6 +21,11 @@ import {
   loadDiscordNotifyConfig,
   notifyDiscordGrant,
 } from "./discord-notify.ts";
+import {
+  capturePostHogPurchase,
+  loadPostHogCaptureConfig,
+  type PurchaseCapture,
+} from "./posthog-capture.ts";
 import { loadRateLimitConfig, TokenBucketLimiter } from "./rate-limit.ts";
 
 const DEFAULT_PORT = 8789;
@@ -109,6 +114,21 @@ export function startServer(
     );
   }
 
+  // Server-side PostHog purchase capture (ADR-0237 F8): wired only when POSTHOG_CAPTURE_KEY is
+  // set; otherwise the webhook grants exactly as before and the capture is skipped (config-gated,
+  // never a startup failure — analytics is not on the money path).
+  const posthogConfig = loadPostHogCaptureConfig();
+  const posthogCapture =
+    posthogConfig === null
+      ? null
+      : (capture: PurchaseCapture): Promise<void> =>
+          capturePostHogPurchase(posthogConfig, capture);
+  if (posthogConfig === null) {
+    process.stderr.write(
+      "[service-license] POSTHOG_CAPTURE_KEY unset — posthog purchase capture disabled\n",
+    );
+  }
+
   // `||` not `??`: a blank PORT="" must fall back to the default, not coerce to Number("")=0 (ephemeral).
   const port = Number(process.env.PORT || DEFAULT_PORT);
   const handler = createApp({
@@ -120,6 +140,7 @@ export function startServer(
     provider,
     limiter,
     discordNotify,
+    posthogCapture,
   });
   const server = Bun.serve({ port, fetch: handler });
   process.stderr.write(

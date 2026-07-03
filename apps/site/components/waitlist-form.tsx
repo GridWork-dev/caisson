@@ -15,8 +15,9 @@ type State = "idle" | "loading" | "ok" | "error";
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
 // Low-key product-updates capture (ADR-0082 — the site is live self-serve; this is NOT the
-// conversion CTA, just a "get product updates" subscribe used in the footer / changelog / the
-// roadmap edition). POSTs to the Pages Function (Resend Segments, server-side). Fires Plausible.
+// conversion CTA, just a "get product updates" subscribe placed in the footer, the changelog,
+// the plans page, and the EU AI Act page). POSTs to the Pages Function (Resend Segments,
+// server-side). Fires Plausible.
 export function UpdatesForm({ source = "site" }: { source?: string }) {
   const [email, setEmail] = useState("");
   // Affirmative consent (security audit LOW follow-up, P1 queue) — an unchecked box blocks

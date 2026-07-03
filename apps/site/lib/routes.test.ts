@@ -2,7 +2,9 @@ import { test, expect, describe } from "bun:test";
 
 import {
   MARKETING_ROUTES,
+  MARKETPLACE_TAB_ROUTES,
   EDITION_ROUTES,
+  footerRoutes,
   NAV_ROUTES,
   LEGAL_ROUTES,
 } from "./routes";
@@ -37,11 +39,17 @@ describe("MARKETING_ROUTES registry", () => {
       expect(r.priority).toBeGreaterThan(0);
       expect(r.priority).toBeLessThanOrEqual(1.0);
     }
-    // Spot-check the values the original hand-authored sitemap shipped.
+    // Spot-check values (marketplace routes replaced /pricing per ADR-0237 F1).
     const byPath = (p: string) => MARKETING_ROUTES.find((r) => r.path === p);
-    expect(byPath("/pricing")?.priority).toBe(0.85);
+    expect(byPath("/marketplace")?.priority).toBe(0.9);
     expect(byPath("/legal/privacy")?.priority).toBe(0.4);
     expect(byPath("/frameworks/eu-ai-act")?.priority).toBe(0.75);
+  });
+
+  test("the three retired commerce paths are OUT of the registry (they 301 in next.config.ts)", () => {
+    for (const gone of ["/pricing", "/modules", "/build"]) {
+      expect(MARKETING_ROUTES.some((r) => r.path === gone)).toBe(false);
+    }
   });
 
   test("every route declares a changeFrequency", () => {
@@ -69,8 +77,32 @@ describe("derived route slices", () => {
       "/ai-kit",
       "/local-first",
       "/agentic-dev",
-      "/pricing",
+      "/marketplace",
     ]);
+  });
+
+  test("MARKETPLACE_TAB_ROUTES are the four hub tabs in display order (ADR-0237 F1)", () => {
+    expect(MARKETPLACE_TAB_ROUTES.map((r) => r.path)).toEqual([
+      "/marketplace",
+      "/marketplace/modules",
+      "/marketplace/build",
+      "/marketplace/plans",
+    ]);
+  });
+
+  test("footer derivation (ADR-0237): every column non-empty, security.txt page + glossary present", () => {
+    expect(footerRoutes("editions").map((r) => r.path)).toEqual(
+      EDITION_ROUTES.map((r) => r.path),
+    );
+    expect(footerRoutes("product").map((r) => r.path)).toEqual(
+      MARKETPLACE_TAB_ROUTES.map((r) => r.path),
+    );
+    const resources = footerRoutes("resources").map((r) => r.path);
+    expect(resources).toContain("/glossary");
+    expect(resources).toContain("/security");
+    expect(footerRoutes("legal").map((r) => r.path)).toEqual(
+      LEGAL_ROUTES.map((r) => r.path),
+    );
   });
 
   test("local-first carries a short navLabel distinct from its full label", () => {

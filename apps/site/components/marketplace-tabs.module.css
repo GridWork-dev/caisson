@@ -1,0 +1,40 @@
+/* Pill tab bar for the /marketplace hub (ADR-0237 F1; capsule grammar per the design brief).
+   Horizontal scroll below the breakpoint instead of wrapping — the row must never push content. */
+.tabs {
+  display: flex;
+  gap: var(--cs-space-2);
+  overflow-x: auto;
+  padding-bottom: var(--cs-space-1);
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-sm);
+  line-height: 1;
+  padding: var(--cs-space-2) var(--cs-space-4);
+  border: 1px solid var(--cs-border);
+  border-radius: 999px;
+  color: var(--cs-fg-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    color 120ms ease,
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+.tab:hover {
+  color: var(--cs-fg);
+  border-color: var(--cs-fg-muted);
+}
+
+.tab[aria-current="page"] {
+  color: var(--cs-fg);
+  background: var(--cs-surface-2);
+  border-color: var(--cs-accent);
+}

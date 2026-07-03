@@ -22,7 +22,7 @@ export function CartView() {
       <Card>
         <p className="cs-muted">Your cart is empty.</p>
         <div style={{ marginTop: "var(--cs-space-4)" }}>
-          <Button href="/pricing" variant="primary">
+          <Button href="/marketplace" variant="primary">
             Browse editions &amp; modules
           </Button>
         </div>

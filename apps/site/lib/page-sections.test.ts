@@ -44,7 +44,7 @@ describe("PageSection union — type-level", () => {
       {
         kind: "cta",
         title: "Ship it",
-        primary: { label: "Get Compliance", href: "/pricing" },
+        primary: { label: "Get Compliance", href: "/marketplace" },
       },
       { kind: "custom", node: null },
     ];

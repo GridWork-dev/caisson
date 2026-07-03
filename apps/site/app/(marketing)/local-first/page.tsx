@@ -1,6 +1,9 @@
+import Link from "next/link";
+
 import {
   Button,
   Card,
+  Faq,
   FeatureGrid,
   Hero,
   Icon,
@@ -8,22 +11,32 @@ import {
   Section,
   StatusChip,
   Terminal,
+  type IconName,
 } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
+import { MediaPlaceholder } from "@/components/media-placeholder";
 import { editionCatalogItem, toCartItem } from "@/lib/catalog";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
-import { breadcrumb, serializeJsonLd, softwareApplication } from "@/lib/jsonld";
-import { formatPrice, priceById } from "@/lib/pricing";
+import {
+  breadcrumb,
+  faqPage,
+  serializeJsonLd,
+  softwareApplication,
+} from "@/lib/jsonld";
+import { EDITION_MARKS, moduleMark } from "@/lib/marks";
+import { editionPrice, formatUsd, MODULE_PRICES } from "@/lib/pricing";
+import { TrackView } from "@/components/track-view";
+
+const LOCAL_FIRST_DESCRIPTION =
+  "Local-first AI composes on-device ONNX inference, a zero-egress privacy gate, and hybrid sqlite-vec + FTS5 search into one Caisson edition — $349 one-time, own the source.";
 
 export const metadata = buildMetadata({
   title: "Local-first AI",
-  description:
-    "Own the source. On-device inference behind a compute seam, a default-deny privacy gate, and on-device vector search with sqlite-vec — your data never leaves the device.",
+  description: LOCAL_FIRST_DESCRIPTION,
   path: "/local-first",
 });
 
 const PAGE_URL = `${SITE_URL}/local-first`;
-const localFirstPrice = priceById("local-first");
 
 // Cart-ready CatalogItem for the peak-intent buy CTAs below (ADR-0192 single add-to-cart buy-verb).
 const _catalogItem = editionCatalogItem("local-first");
@@ -31,8 +44,7 @@ const editionCartItem = _catalogItem ? toCartItem(_catalogItem) : undefined;
 
 const ldApp = softwareApplication({
   name: "Caisson Local-first AI",
-  description:
-    "Own the source: a composable compute seam over on-device and hosted inference, a default-deny privacy gate, and on-device vector search (sqlite-vec). Your data never leaves the device.",
+  description: LOCAL_FIRST_DESCRIPTION,
   url: PAGE_URL,
   priceId: "local-first",
 });
@@ -66,9 +78,121 @@ const PIECES = [
   },
 ] as const;
 
+// Base substrate predates the F6 sellable-module mark set — kernel and license-verify never got a
+// standalone SKU or bespoke mark, so they resolve through this local map (matches the compliance/
+// ai-kit/agentic-dev pages' same-shaped exception). Sellable members resolve via `moduleMark`.
+const BASE_MEMBER_ICON: Record<string, IconName> = {
+  kernel: "caisson",
+  "license-verify": "key",
+};
+
+// The edition's real composed packages (record: edition-local-ai.json memberModules — keyed by
+// `name` there, e.g. "@caisson/local-store"; the id is that name with the scope stripped). Priced
+// via a StatusChip when the package is also sold standalone (`MODULE_PRICES`), linking to its
+// module depth page; kernel and license-verify are Apache-2.0 base and render unpriced.
+const MEMBER_MODULES: readonly {
+  id: string;
+  name: string;
+  oneLiner: string;
+}[] = [
+  {
+    id: "local-store",
+    name: "@caisson/local-store",
+    oneLiner:
+      "Hybrid retrieval: sqlite-vec ANN plus FTS5, merged by Reciprocal-Rank-Fusion, with an FTS-only fallback if the vector leg fails.",
+  },
+  {
+    id: "license-verify",
+    name: "@caisson/license-verify",
+    oneLiner:
+      "Offline Ed25519 license verification — checks the signature on the device, fails safe to the community tier if it cannot verify.",
+  },
+  {
+    id: "field-crypto",
+    name: "@caisson/field-crypto",
+    oneLiner:
+      "Per-tenant field encryption: HKDF key derivation plus AES-256-GCM, sealed at rest under a key a different tenant's file cannot open.",
+  },
+  {
+    id: "kernel",
+    name: "@caisson/kernel",
+    oneLiner:
+      "The governance kernel underneath every edition — typed config, the shared error model, and security primitives.",
+  },
+];
+
+function MemberModuleCard({
+  id,
+  name,
+  oneLiner,
+}: {
+  id: string;
+  name: string;
+  oneLiner: string;
+}) {
+  const price = MODULE_PRICES.find((m) => m.id === id);
+  const icon = BASE_MEMBER_ICON[id] ?? moduleMark(id);
+  const card = (
+    <Card interactive={price !== undefined}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "var(--cs-space-3)",
+        }}
+      >
+        <Icon name={icon} size="lg" />
+        <span className="cs-card-title mono">{name}</span>
+      </div>
+      <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
+        {oneLiner}
+      </p>
+      {price && (
+        <div style={{ marginTop: "var(--cs-space-4)" }}>
+          <StatusChip label={formatUsd(price.amount)} tone="muted" />
+        </div>
+      )}
+    </Card>
+  );
+  return price ? (
+    <Link
+      href={`/marketplace/modules/${id}`}
+      style={{ textDecoration: "none", color: "inherit" }}
+    >
+      {card}
+    </Link>
+  ) : (
+    card
+  );
+}
+
+// Record: edition-local-ai.json faq.
+const FAQ_ITEMS = [
+  {
+    question: 'Does "own the source" rule out hosted inference?',
+    answer:
+      "No. The compute seam supports opt-in rented transports — OpenRouter, Azure OpenAI, and AWS Bedrock — behind the same InferenceBackend interface used on-device. They are off by default; the privacy policy's allowlist is the only way any of those hosts becomes reachable.",
+  },
+  {
+    question: "What does the on-device model need to run?",
+    answer:
+      "The ONNX backend runs a MiniLM-class model via transformers.js. The @huggingface/transformers runtime is an optional peer you install yourself — it is not bundled in the package — and the model weights are first-run-fetched and SHA-256 hash-verified before use. Air-gapped buyers pre-seed the cache and run fully offline.",
+  },
+  {
+    question: "Can I buy just the vector store instead of the whole edition?",
+    answer:
+      "Yes — @caisson/local-store is also sold standalone for $99. The full Local-first AI edition — all four composed packages plus the compute seam, privacy gate, sync engine, and offline license verify — is $349 one-time.",
+  },
+] as const;
+
+const ldFaq = faqPage(
+  FAQ_ITEMS.map((f) => ({ question: f.question, answer: f.answer })),
+);
+
 export default function LocalFirstPage() {
   return (
     <>
+      <TrackView item="edition:local-first" />
       {/* JSON-LD */}
       <script
         type="application/ld+json"
@@ -78,12 +202,16 @@ export default function LocalFirstPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(ldBreadcrumb) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(ldFaq) }}
+      />
 
       {/* ===== Hero ===== */}
       <Hero
         eyebrow="Local-first AI · Own the source"
         title="Your data never leaves the device."
-        lede="Inference, embeddings, and search that run on the machine in front of you. Sovereignty is the default — not a setting you harden in later. The egress is zero because there is no outbound call to make."
+        lede="The compute seam runs inference on-device by default; the privacy gate makes a hosted call an explicit opt-in, not a default you discover in a network trace. Vector search, sync, and license verification all run against local files — nothing round-trips to a vendor unless you allow it in writing."
         ctas={
           <>
             {editionCartItem && (
@@ -97,11 +225,7 @@ export default function LocalFirstPage() {
         credentials={
           <StatusChip
             tone="accent"
-            label={
-              localFirstPrice
-                ? `Own the source · ${formatPrice(localFirstPrice)}`
-                : "Own the source"
-            }
+            label={`Own the source · ${editionPrice("local-first")}`}
             dot
           />
         }
@@ -134,7 +258,35 @@ export default function LocalFirstPage() {
         }
       />
 
-      {/* ===== Four pieces ===== */}
+      {/* ===== The compute seam ===== */}
+      <Section
+        eyebrow="The compute seam"
+        title="On-device by default, hosted by opt-in."
+        lede="@caisson/local-ai composes local-store, license-verify, field-crypto, and kernel, then adds an InferenceBackend port on top. The default backend runs on-device: a MiniLM-class ONNX model via transformers.js, first-run-fetched and SHA-256 hash-verified before it touches your data. Want hosted inference sometimes? The same interface has opt-in rented transports for OpenRouter, Azure OpenAI, and AWS Bedrock — each metered and egress-guarded, each off until you turn it on."
+        band="tint"
+      />
+
+      {/* ===== Media slot (ADR-0237 F2) ===== */}
+      <Section>
+        <MediaPlaceholder icon={EDITION_MARKS["local-first"]} />
+      </Section>
+
+      {/* ===== Four composed packages ===== */}
+      <Reveal>
+        <Section
+          eyebrow="What ships in the box"
+          title="Four composed packages."
+          lede="Each member is a real workspace dependency. The two commercial ones also carry a standalone price; the Apache-2.0 base ships free with every edition."
+        >
+          <FeatureGrid cols={2}>
+            {MEMBER_MODULES.map((m) => (
+              <MemberModuleCard key={m.id} {...m} />
+            ))}
+          </FeatureGrid>
+        </Section>
+      </Reveal>
+
+      {/* ===== Four pieces (capability overview) ===== */}
       <Reveal>
         <Section
           eyebrow="What's in the edition"
@@ -169,42 +321,13 @@ export default function LocalFirstPage() {
         </Section>
       </Reveal>
 
-      {/* ===== On-device vector search (illustrative shape) ===== */}
+      {/* ===== Zero egress by default ===== */}
       <Reveal>
         <Section
-          eyebrow="On-device vector search"
-          title="Semantic recall that never round-trips."
-          lede="sqlite-vec holds the ANN index next to your rows. A query is a statement against a local file — no API key, no vector vendor, no embeddings shipped off the box to be indexed by someone else. The shape below is illustrative."
-          band="surface"
-        >
-          <Terminal
-            label="sqlite-vec ANN — illustrative shape"
-            status={<StatusChip tone="muted" label="on-disk index" />}
-          >
-            <span className="cs-tok-muted">
-              {
-                "-- ANN over the local store; the index lives next to your rows\n"
-              }
-            </span>
-            <span className="cs-tok-accent">{"SELECT"}</span>
-            {" id, distance\n"}
-            <span className="cs-tok-accent">{"FROM"}</span>
-            {"   cs_cards\n"}
-            <span className="cs-tok-accent">{"WHERE"}</span>
-            {"  embedding "}
-            <span className="cs-tok-accent">{"MATCH"}</span>
-            {" :query_vec\n"}
-            <span className="cs-tok-accent">{"ORDER"}</span>
-            {"  "}
-            <span className="cs-tok-accent">{"BY"}</span>
-            {" distance\n"}
-            <span className="cs-tok-accent">{"LIMIT"}</span>
-            {"  8;\n"}
-            <span className="cs-tok-muted">
-              {"-- index on disk · nothing shipped to a vector cloud"}
-            </span>
-          </Terminal>
-        </Section>
+          eyebrow="Zero egress by default"
+          title="The only mode is local-only."
+          lede="The privacy policy is a closed schema, not a toggle: the only mode is local-only, and there is no hosted mode to accidentally flip, because the enum does not have one — widening it takes an ADR and a schema change, not a config edit. An allowlist is the sole way a host becomes reachable, and only two sink kinds are sanctioned: the model-download host for first-run ONNX fetches, and the rented-backend host for the opt-in hosted lane. Leave the allowlist empty and egress is zero — the air-gap default."
+        />
       </Reveal>
 
       {/* ===== Fail-closed by construction — real built substrate ===== */}
@@ -239,14 +362,76 @@ export default function LocalFirstPage() {
         </Section>
       </Reveal>
 
-      {/* ===== Get started ===== */}
+      {/* ===== Search, sync, and licensing — all local ===== */}
       <Reveal>
         <Section
-          eyebrow="Get started"
-          title="Own the source. Run it on your machine."
-          lede="Local-first AI is a commercial edition — own the source, ship on-device inference behind the privacy gate, and keep your data on the box. Scaffold the base, then add the edition."
-          band="tint"
+          eyebrow="Search, sync, and licensing"
+          title="All local."
+          lede="@caisson/local-store gives you hybrid retrieval: sqlite-vec ANN and FTS5 merged by Reciprocal-Rank-Fusion, degrading to an FTS-only path if the vector leg fails — semantic search with nothing indexed by a vector cloud vendor. Isolation is file-per-tenant: the resolved file path is the tenant boundary. On top, the edition ships a built two-way sync engine (changesets, tombstones, a logical clock, and a reconcile pass with a convergence test) for when a device needs to catch up, plus offline Ed25519 license verification that checks the signature locally with no phone-home and no remote kill switch."
+          band="surface"
+        />
+      </Reveal>
+
+      {/* ===== On-device vector search (illustrative shape) ===== */}
+      <Reveal>
+        <Section
+          eyebrow="On-device vector search"
+          title="Semantic recall that never round-trips."
+          lede="sqlite-vec holds the ANN index next to your rows. A query is a statement against a local file — no API key, no vector vendor, no embeddings shipped off the box to be indexed by someone else. The shape below is illustrative."
         >
+          <Terminal
+            label="sqlite-vec ANN — illustrative shape"
+            status={<StatusChip tone="muted" label="on-disk index" />}
+          >
+            <span className="cs-tok-muted">
+              {
+                "-- ANN over the local store; the index lives next to your rows\n"
+              }
+            </span>
+            <span className="cs-tok-accent">{"SELECT"}</span>
+            {" id, distance\n"}
+            <span className="cs-tok-accent">{"FROM"}</span>
+            {"   cs_cards\n"}
+            <span className="cs-tok-accent">{"WHERE"}</span>
+            {"  embedding "}
+            <span className="cs-tok-accent">{"MATCH"}</span>
+            {" :query_vec\n"}
+            <span className="cs-tok-accent">{"ORDER"}</span>
+            {"  "}
+            <span className="cs-tok-accent">{"BY"}</span>
+            {" distance\n"}
+            <span className="cs-tok-accent">{"LIMIT"}</span>
+            {"  8;\n"}
+            <span className="cs-tok-muted">
+              {"-- index on disk · nothing shipped to a vector cloud"}
+            </span>
+          </Terminal>
+        </Section>
+      </Reveal>
+
+      {/* ===== Who it's for, and how it ships ===== */}
+      <Reveal>
+        <Section
+          eyebrow="Who it's for, and how it ships"
+          title="Own the source. Run it on your machine."
+          lede="This edition is for teams that cannot send data off the device — regulated data kept local, air-gapped deployments, embedded and edge tooling, or a product that should not need a network call to work at all. It ships the way every Caisson edition ships: npx create-caisson@latest scaffolds the base, then you add Local-first AI. Two of its four composed packages — kernel and license-verify — are Apache-2.0; local-store and field-crypto are the commercial layer the edition license covers."
+          band="tint"
+        />
+      </Reveal>
+
+      {/* ===== FAQ ===== */}
+      <Reveal>
+        <Section
+          eyebrow="Common questions"
+          title="Questions procurement asks first."
+        >
+          <Faq items={FAQ_ITEMS} style={{ marginTop: "var(--cs-space-8)" }} />
+        </Section>
+      </Reveal>
+
+      {/* ===== Get started ===== */}
+      <Reveal>
+        <Section eyebrow="Get started" title="Own the source." band="surface">
           <Terminal
             label="install"
             status={<StatusChip tone="muted" label="scaffold" />}

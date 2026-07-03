@@ -1,0 +1,36 @@
+/* Module depth page (ADR-0237 F2): single column below 900px; body + sticky buy rail above. */
+.grid {
+  display: grid;
+  gap: var(--cs-space-8);
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+
+  .rail {
+    position: sticky;
+    top: var(--cs-space-8);
+  }
+}
+
+.railCard {
+  display: grid;
+  gap: var(--cs-space-4);
+}
+
+.railPrice {
+  font-size: var(--cs-text-2xl);
+  font-weight: 600;
+}
+
+.railList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--cs-space-2);
+}

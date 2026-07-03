@@ -43,9 +43,9 @@ test("sourceToDocUrl maps docs-content paths and returns null for non-docs sourc
 });
 
 test("sourceToDocUrl maps every generated pricing source to the one /pricing page", () => {
-  expect(sourceToDocUrl("pricing/editions")).toBe("/pricing");
-  expect(sourceToDocUrl("pricing/modules")).toBe("/pricing");
-  expect(sourceToDocUrl("pricing/plans")).toBe("/pricing");
+  expect(sourceToDocUrl("pricing/editions")).toBe("/marketplace");
+  expect(sourceToDocUrl("pricing/modules")).toBe("/marketplace");
+  expect(sourceToDocUrl("pricing/plans")).toBe("/marketplace");
 });
 
 test("toCitations dedupes sources order-preserving and attaches URLs", () => {

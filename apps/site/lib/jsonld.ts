@@ -82,38 +82,57 @@ export function softwareApplication(opts: {
 }
 
 /**
- * ItemList of the à-la-carte modules for the /modules catalog (ADR-0191). The editions carry their
- * own SoftwareApplication nodes on /pricing; the à-la-carte modules had none. Each element is a
- * SoftwareApplication with its committed Offer (ADR-0082 — live self-serve, InStock), reflecting the
- * cards visible on the page. `url` points at the catalog (modules have no per-module page).
+ * A per-module SoftwareApplication node with its committed Offer (ADR-0082 — live self-serve,
+ * InStock). Emitted on the module's own depth page (ADR-0237 F2) and reused, one per element, by
+ * `moduleItemList` on the catalog tab so both surfaces describe the identical entity/URL.
+ */
+export function moduleSoftwareApplication(
+  m: { id: string; label: string; amount: number; blurb: string },
+  opts: { description?: string } = {},
+) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: m.label,
+    applicationCategory: "DeveloperApplication",
+    operatingSystem: "Any",
+    description: opts.description ?? m.blurb,
+    url: `${SITE_URL}/marketplace/modules/${m.id}`,
+    publisher: { "@id": ORG_ID },
+    offers: {
+      "@type": "Offer",
+      price: m.amount,
+      priceCurrency: "USD",
+      availability: "https://schema.org/InStock",
+    },
+  };
+}
+
+/**
+ * ItemList of the à-la-carte modules for the marketplace Modules tab (ADR-0237 F1). Each element
+ * is the module's own SoftwareApplication node, `url` pointing at its depth page.
  */
 export function moduleItemList(
-  modules: readonly { label: string; amount: number; blurb: string }[],
+  modules: readonly {
+    id: string;
+    label: string;
+    amount: number;
+    blurb: string;
+  }[],
 ) {
   return {
     "@context": "https://schema.org",
     "@type": "ItemList",
     name: "Caisson modules",
     numberOfItems: modules.length,
-    itemListElement: modules.map((m, i) => ({
-      "@type": "ListItem",
-      position: i + 1,
-      item: {
-        "@type": "SoftwareApplication",
-        name: m.label,
-        applicationCategory: "DeveloperApplication",
-        operatingSystem: "Any",
-        description: m.blurb,
-        url: `${SITE_URL}/modules`,
-        publisher: { "@id": ORG_ID },
-        offers: {
-          "@type": "Offer",
-          price: m.amount,
-          priceCurrency: "USD",
-          availability: "https://schema.org/InStock",
-        },
-      },
-    })),
+    itemListElement: modules.map((m, i) => {
+      const { "@context": _ctx, ...item } = moduleSoftwareApplication(m);
+      return {
+        "@type": "ListItem",
+        position: i + 1,
+        item,
+      };
+    }),
   };
 }
 

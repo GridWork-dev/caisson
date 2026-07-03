@@ -105,6 +105,23 @@ export interface CtaSection {
 }
 
 /**
+ * media — the reserved media slot (ADR-0237 F2). Ships as a deliberately-dumb placeholder — the
+ * page's mark scaled large at low opacity on a `--cs-surface-2` field over a hairline grid — and
+ * the ONLY contract real media must later honor is the `aspect` container (operator directive
+ * 2026-07-03: no generative art system, media is produced before launch).
+ */
+export interface MediaSection {
+  kind: "media";
+  /** The mark rendered as placeholder art (decorative; aria-hidden). */
+  icon?: IconName;
+  /** CSS aspect-ratio of the container, e.g. "16 / 9" (default). The one contract. */
+  aspect?: string;
+  eyebrow?: string;
+  title?: string;
+  lede?: ReactNode;
+}
+
+/**
  * custom — MANDATORY escape hatch (renderer SPEC §2). Every page eventually needs a hand-authored
  * artifact (a `cs-tok`-colorized Terminal, a bespoke layout) that doesn't reduce to flat data;
  * `<PageSections>` renders `node` verbatim, unflattened.
@@ -128,6 +145,7 @@ export type PageSection =
   | ComparisonSection
   | FaqSection
   | CtaSection
+  | MediaSection
   | CustomSection;
 
 /** A full page: typed SEO meta + the ordered sections a data file supplies. */

@@ -1,10 +1,12 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 
 import {
   Button,
   Card,
   CredentialStrip,
   Faq,
+  FeatureGrid,
   Hero,
   Icon,
   Reveal,
@@ -14,6 +16,7 @@ import {
   type IconName,
 } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
+import { MediaPlaceholder } from "@/components/media-placeholder";
 import { editionCatalogItem, toCartItem } from "@/lib/catalog";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import {
@@ -22,14 +25,121 @@ import {
   serializeJsonLd,
   softwareApplication,
 } from "@/lib/jsonld";
-import { formatPrice, priceById } from "@/lib/pricing";
+import { EDITION_MARKS, moduleMark } from "@/lib/marks";
+import { editionPrice, formatUsd, MODULE_PRICES } from "@/lib/pricing";
+import { TrackView } from "@/components/track-view";
 
 export const metadata = buildMetadata({
   title: "Compliance",
   description:
-    "Compliance-grade infrastructure for regulated SaaS: fail-closed Postgres RLS, S3 Object-Lock WORM, an append-only audit chain, per-tenant field encryption, and a SOC 2 / HIPAA evidence-pack generator — wired and tested before your first audit, not backfilled after it.",
+    "Fail-closed Postgres RLS, S3 Object-Lock WORM, an append-only audit chain, per-tenant field encryption, alerting, and a retention runner — composed into one edition and shipped with a SOC 2 / HIPAA evidence-pack generator. Caisson ships the technical controls and generates the evidence; the certification is your auditor's.",
   path: "/compliance",
 });
+
+// Base packages predate the F6 sellable-module mark set (`lib/marks.ts`) — a small local map fills
+// the icon for the three that never got a standalone SKU. Sellable members resolve via `moduleMark`.
+const BASE_MEMBER_ICON: Record<string, IconName> = {
+  kernel: "caisson",
+  "tenancy-rls": "rls",
+  migrate: "database",
+};
+
+// The edition's real composed packages (record: edition-compliance.json memberModules) — icon +
+// name + one-liner, priced via a StatusChip when the package is also sold standalone
+// (`MODULE_PRICES`), linking to its module depth page; base packages render unpriced.
+const MEMBER_MODULES: readonly {
+  id: string;
+  name: string;
+  oneLiner: string;
+}[] = [
+  {
+    id: "kernel",
+    name: "Kernel",
+    oneLiner:
+      "Typed config/schema, the SHA-256 chain primitive, and append-only versioning that the rest of the edition builds on.",
+  },
+  {
+    id: "tenancy-rls",
+    name: "Tenancy RLS",
+    oneLiner:
+      "Fail-closed row-level security — every tenant table enables AND forces RLS, so a query with no tenant context returns nothing.",
+  },
+  {
+    id: "field-crypto",
+    name: "Field encryption",
+    oneLiner:
+      "Per-tenant field encryption via HKDF-SHA256 + AES-256-GCM; a leaked tenant key exposes one tenant, never the table.",
+  },
+  {
+    id: "audit-worm",
+    name: "Audit chain + WORM",
+    oneLiner:
+      "Append-only SHA-256 audit chain plus an S3 Object-Lock WORM adapter — evidence storage tampering breaks the chain and is provable.",
+  },
+  {
+    id: "migrate",
+    name: "Migrate",
+    oneLiner:
+      "The one migration assembler and runner: forward-only, idempotent, and fails closed on checksum drift.",
+  },
+  {
+    id: "alerting",
+    name: "Alert pipeline",
+    oneLiner:
+      "Deduped, rate-capped alert delivery with quiet hours and an audit trail — the SOC 2 CC7.2 alerting control.",
+  },
+  {
+    id: "retention-runner",
+    name: "Retention runner",
+    oneLiner:
+      "Policy-driven data retention on a schedule — expiry and legal-hold, enforced automatically, not by a recurring calendar reminder.",
+  },
+];
+
+function MemberModuleCard({
+  id,
+  name,
+  oneLiner,
+}: {
+  id: string;
+  name: string;
+  oneLiner: string;
+}) {
+  const price = MODULE_PRICES.find((m) => m.id === id);
+  const icon = BASE_MEMBER_ICON[id] ?? moduleMark(id);
+  const card = (
+    <Card interactive={price !== undefined}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "var(--cs-space-3)",
+        }}
+      >
+        <Icon name={icon} size="lg" />
+        <span className="cs-card-title">{name}</span>
+      </div>
+      <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
+        {oneLiner}
+      </p>
+      {price && (
+        <div style={{ marginTop: "var(--cs-space-4)" }}>
+          <StatusChip label={formatUsd(price.amount)} tone="muted" />
+        </div>
+      )}
+    </Card>
+  );
+  return price ? (
+    <Link
+      href={`/marketplace/modules/${id}`}
+      style={{ textDecoration: "none", color: "inherit" }}
+    >
+      {card}
+    </Link>
+  ) : (
+    card
+  );
+}
 
 // Each control ships with a live, one-line artifact (the proof IS the claim — DESIGN.md §9) and the
 // framework clause it satisfies. Caisson generates this evidence; it never asserts certification.
@@ -78,37 +188,24 @@ const CONTROLS: readonly {
   },
 ];
 
-// Visible FAQ (rendered below) — the same items feed the FAQPage JSON-LD. Procurement-shaped
-// questions, answered honestly against the technical-vs-administrative boundary (ADR-0080 §3).
+// Visible FAQ (rendered below) — the same items feed the FAQPage JSON-LD (record: edition-compliance.json).
 const FAQ: readonly { question: string; answer: string }[] = [
   {
     question: "Does Caisson make us SOC 2 or HIPAA certified?",
     answer:
-      "No. Caisson ships the technical controls those frameworks require and generates the evidence to prove them. Certification comes from an auditor assessing your whole program — the organizational controls (HR, vendor, incident response) and the audit itself remain yours.",
+      "No. Caisson ships the technical controls those frameworks require and generates the evidence to prove them. Certification comes from an auditor assessing your whole program — the organizational controls and the audit itself remain yours.",
   },
   {
-    question: "Which controls does Caisson actually cover?",
+    question: "Which packages does the edition actually compose?",
     answer:
-      "The technical access and integrity controls: fail-closed RLS (SOC 2 CC6.1, HIPAA §164.312(a)(1)), WORM-retained evidence, an append-only audit chain, and per-tenant field encryption. It does not cover administrative, physical, or policy controls — those stay with you.",
-  },
-  {
-    question: "Can I retrofit this into an existing database?",
-    answer:
-      "You can, but it is the expensive path. Backfilling RLS, WORM, and an audit chain into a live multi-tenant database runs $80k and 6–9 months of migration with customer data on the line. Caisson wires them in on day one, before tenants ever share rows.",
-  },
-  {
-    question: "How does the evidence pack work?",
-    answer:
-      "One command collects the live RLS policies, the WORM retention config, and an audit-chain proof, maps them to named controls, and writes a dated bundle. The evidence is read out of the running system, not transcribed into a screenshot or a spreadsheet.",
+      "Seven real workspace dependencies, wired at runtime and re-exported through the edition's own entry point: kernel, tenancy-rls, field-crypto, audit-worm, migrate, alerting, and retention-runner. Nothing on this page is a manifest claim without composed code behind it.",
   },
   {
     question: "Do I own the source?",
     answer:
-      "Yes. The one-time Compliance license is perpetual — you own the source for the base, the four controls, and the evidence-pack generator. Compliance Updates is an optional subscription that tracks framework drift so the control mappings stay current.",
+      "Yes. The one-time Compliance license is perpetual — you own the source for the base, the composed packages, and the evidence-pack generator. An optional Compliance Updates subscription tracks framework drift so the control mappings stay current.",
   },
 ];
-
-const compliancePrice = priceById("compliance");
 
 // Cart-ready CatalogItem for the peak-intent buy CTAs below (ADR-0192 single add-to-cart buy-verb).
 const _catalogItem = editionCatalogItem("compliance");
@@ -131,6 +228,7 @@ export default function CompliancePage() {
 
   return (
     <>
+      <TrackView item="edition:compliance" />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -138,7 +236,7 @@ export default function CompliancePage() {
             softwareApplication({
               name: "Caisson Compliance",
               description:
-                "Fail-closed RLS, WORM evidence storage, an append-only audit chain, per-tenant field encryption, and a SOC 2 / HIPAA evidence-pack generator for regulated SaaS.",
+                "Fail-closed Postgres RLS, S3 Object-Lock WORM, an append-only audit chain, per-tenant field encryption, alerting, and a retention runner — composed into one edition and shipped with a SOC 2 / HIPAA evidence-pack generator. Caisson ships the technical controls and generates the evidence; the certification is your auditor's.",
               url: `${SITE_URL}/compliance`,
               priceId: "compliance",
             }),
@@ -167,7 +265,7 @@ export default function CompliancePage() {
       <Hero
         eyebrow="Compliance-grade infrastructure for regulated SaaS"
         title="Audit-ready from the first commit."
-        lede="The Compliance edition wires the technical controls an auditor asks for — tenant isolation, immutable evidence, and a tamper-evident log — in before your first customer, tested in CI. You start fail-closed, then prove it on demand."
+        lede="Compliance composes seven packages into one edition: tenant isolation that fails closed, evidence that can't be overwritten, and a tamper-evident log that proves it. Own the source, wire it in before your first customer, and hand an auditor an artifact instead of a slide deck."
         ctas={
           <>
             {editionCartItem && (
@@ -192,12 +290,40 @@ export default function CompliancePage() {
         artifact={heroArtifact}
       />
 
-      {/* ===== The wedge: scanner vs construction ===== */}
+      {/* ===== What it composes ===== */}
       <Reveal>
         <Section
-          eyebrow="The compliance wedge"
-          title="Compliance prevention at the application layer."
-          lede="A scanner is a smoke detector. Caisson is the fail-closed construction — prevention wired in before the fire, not after. Each control below ships with a live artifact you can read, run, and hand to an auditor."
+          eyebrow="What it composes"
+          lede="The Compliance edition is a real runtime composition of seven @caisson/* packages, not a bundle of marketing copy: kernel (typed config, the SHA-256 chain primitive, append-only versioning), tenancy-rls (the fail-closed RLS guard), field-crypto (per-tenant HKDF-SHA256 + AES-256-GCM field encryption), audit-worm (the append-only audit chain plus the S3 Object-Lock WORM adapter), migrate (the one migration assembler and runner, forward-only and checksum-drift-safe), and alerting plus retention-runner (deduped alert delivery and policy-driven data retention). alerting and retention-runner are wired in as real workspace dependencies and re-exported through the edition's own index, not asserted in a manifest and left uncomposed."
+        />
+      </Reveal>
+
+      {/* ===== Media slot (ADR-0237 F2) ===== */}
+      <Section>
+        <MediaPlaceholder icon={EDITION_MARKS.compliance} />
+      </Section>
+
+      {/* ===== The seven composed packages ===== */}
+      <Reveal>
+        <Section
+          eyebrow="The composition"
+          title="Seven packages, one edition."
+          lede="Each member is a real workspace dependency — not a manifest claim. The ones also sold standalone carry their own price."
+        >
+          <FeatureGrid cols={3}>
+            {MEMBER_MODULES.map((m) => (
+              <MemberModuleCard key={m.id} {...m} />
+            ))}
+          </FeatureGrid>
+        </Section>
+      </Reveal>
+
+      {/* ===== Who it's for ===== */}
+      <Reveal>
+        <Section
+          eyebrow="Who it's for"
+          title="Teams that need the controls before the first customer, not after."
+          lede="Teams building regulated SaaS — HIPAA, SOC 2, or both — who need the technical access and integrity controls in place before the first customer shares a row, not backfilled after a pen test or a procurement questionnaire flags the gap. Retrofitting RLS, WORM, and an audit chain into a live multi-tenant database is a migration with customer data on the line; wiring them in on day one is a schema decision."
           band="tint"
         >
           <Card accent className="cs-elevate-md">
@@ -293,7 +419,7 @@ export default function CompliancePage() {
         <Section
           eyebrow="The honesty boundary"
           title="Caisson ships the controls. Your auditor signs the certificate."
-          lede="Compliance is trust, so the line is drawn plainly: Caisson covers the technical half and generates the evidence. It does not — and cannot — make you certified."
+          lede="Caisson ships the technical controls SOC 2 CC6.x / CC7.2 and HIPAA §164.312 require, and generates the dated evidence bundle mapped to those named controls. It does not — and cannot — make you certified: the administrative controls (HR, vendor management, incident response) and the audit engagement itself stay with you and your auditor."
           band="surface"
         >
           <div
@@ -366,7 +492,7 @@ export default function CompliancePage() {
         </Section>
       </Reveal>
 
-      {/* ===== Pricing ===== */}
+      {/* ===== Pricing / how it ships ===== */}
       <Reveal>
         <Section
           eyebrow="How Compliance is sold"
@@ -390,24 +516,32 @@ export default function CompliancePage() {
                   letterSpacing: "var(--cs-tracking-tight)",
                 }}
               >
-                {compliancePrice ? formatPrice(compliancePrice) : "from $799"}
+                {editionPrice("compliance")}
               </span>
               <span className="cs-tag">One-time license · own the source</span>
+              <StatusChip label="Edition" tone="muted" />
             </div>
             <p
               className="cs-muted"
-              style={{ marginTop: "var(--cs-space-4)", maxWidth: "58ch" }}
+              style={{ marginTop: "var(--cs-space-4)", maxWidth: "60ch" }}
             >
-              Own the Compliance edition outright — the base, the five controls,
-              and the evidence-pack generator. Regulations don&apos;t hold
-              still, so an optional Compliance Updates subscription keeps the
-              control mappings current as SOC 2 / HIPAA guidance moves.
+              A one-time, perpetual license: npx create-caisson@latest scaffolds
+              the base with tenancy-rls fail-closed and the standards gate
+              passing, and the five evidence collectors — RLS-force,
+              chain-verify, WORM-retention, field-crypto-policy, and the
+              impersonation collector — are already wired into the SOC 2, HIPAA,
+              and EU-AI-Act evidence packs. The pack format includes an OSCAL
+              v1.2.2 export (canonical JSON plus an XML conversion path)
+              alongside Ed25519 and RFC-3161 signing.{" "}
+              <code className="mono">caisson audit verify</code> walks the chain
+              and reports the root hash; the evidence pack is generated from the
+              live system, not written by hand.
             </p>
             <div className="cs-cta-row">
               {editionCartItem && (
                 <AddToCartButton item={editionCartItem} variant="primary" />
               )}
-              <Button href="/pricing" variant="ghost">
+              <Button href="/marketplace" variant="ghost">
                 See the full lineup
               </Button>
             </div>

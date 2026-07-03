@@ -123,6 +123,19 @@ kbd,
   backdrop-filter: saturate(140%) blur(12px);
 }
 
+/* ADR-0237 F3: desktop nav is a 3-column grid — logo left, trigger row CENTERED, utility
+   cluster right. At/below 900px the flex fallback above holds (logo + compact cluster). */
+@media (min-width: 901px) {
+  .cs-nav {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+  }
+
+  .cs-nav > .cs-brand {
+    justify-self: start;
+  }
+}
+
 .cs-nav-links {
   display: flex;
   align-items: center;

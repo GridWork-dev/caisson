@@ -17,7 +17,14 @@ import Link from "next/link";
 
 import { serializeJsonLd, softwareApplication } from "@/lib/jsonld";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
-import { SKU_COLUMNS, SKU_FEATURE_ROWS } from "@/lib/pricing";
+import {
+  editionPrice,
+  EDITION_PRICES,
+  formatUsd,
+  PLAN_PRICES,
+  SKU_COLUMNS,
+  SKU_FEATURE_ROWS,
+} from "@/lib/pricing";
 
 export const metadata = buildMetadata({
   description:
@@ -67,6 +74,17 @@ const CI_CHECKS = [
   "RLS cross-tenant read: denied",
 ] as const;
 
+// How-to-buy price bands — derived from lib/pricing.ts (never hand-duplicated) so the three
+// figures on the type-chip cards below can't drift from the SKUs they describe.
+const HOW_TO_BUY_MODULE_PRICE = editionPrice("module");
+const EDITION_AMOUNTS = EDITION_PRICES.map((p) => p.amount ?? 0);
+const HOW_TO_BUY_EDITION_RANGE = `${formatUsd(Math.min(...EDITION_AMOUNTS))}–${formatUsd(Math.max(...EDITION_AMOUNTS))}`;
+const YEARLY_PLAN_AMOUNTS = PLAN_PRICES.filter(
+  (p): p is typeof p & { amount: number } =>
+    p.unit === "year" && p.amount !== null,
+).map((p) => p.amount);
+const HOW_TO_BUY_PLAN_RANGE = `${formatUsd(Math.min(...YEARLY_PLAN_AMOUNTS))}–${formatUsd(Math.max(...YEARLY_PLAN_AMOUNTS))}/yr`;
+
 export default function HomePage() {
   return (
     <>
@@ -82,7 +100,7 @@ export default function HomePage() {
         lede="Fail-closed Postgres RLS, S3 Object-Lock WORM, and an append-only audit chain — wired and tested before your first customer, not backfilled after your first audit."
         ctas={
           <>
-            <Button href="/pricing" variant="primary">
+            <Button href="/marketplace" variant="primary">
               Get started
             </Button>
             <Button href="/docs" variant="ghost">
@@ -189,12 +207,136 @@ export default function HomePage() {
         </Section>
       </Reveal>
 
+      {/* ===== How to buy — the Module/Edition/Plan type-chip vocabulary, defined once before
+          the Editions cards below reuse it (ADR-0237 F5) ===== */}
+      <Reveal>
+        <Section
+          eyebrow="How to buy"
+          title="Module, edition, or plan — same catalog, three shapes."
+          lede="Every price on this site now carries one of three labels. Pick the shape that fits and open the marketplace to browse the rest."
+        >
+          <FeatureGrid cols={3}>
+            <Card>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "baseline",
+                  gap: "var(--cs-space-3)",
+                }}
+              >
+                <span className="cs-card-title">
+                  One capability, standalone
+                </span>
+                <StatusChip label="Module" />
+              </div>
+              <p
+                className="cs-num"
+                style={{
+                  marginTop: "var(--cs-space-3)",
+                  fontSize: "var(--cs-text-2xl)",
+                  fontFamily: "var(--cs-font-mono)",
+                }}
+              >
+                {HOW_TO_BUY_MODULE_PRICE}
+              </p>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                A single package sold on its own — field encryption, the eval
+                harness, the agent runner. 11 modules across the four editions.
+              </p>
+              <div style={{ marginTop: "var(--cs-space-6)" }}>
+                <Button href="/marketplace/modules" variant="ghost">
+                  Browse modules
+                </Button>
+              </div>
+            </Card>
+            <Card>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "baseline",
+                  gap: "var(--cs-space-3)",
+                }}
+              >
+                <span className="cs-card-title">
+                  A composed stack for one job
+                </span>
+                <StatusChip label="Edition" />
+              </div>
+              <p
+                className="cs-num"
+                style={{
+                  marginTop: "var(--cs-space-3)",
+                  fontSize: "var(--cs-text-2xl)",
+                  fontFamily: "var(--cs-font-mono)",
+                }}
+              >
+                {HOW_TO_BUY_EDITION_RANGE}
+              </p>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                Compliance, AI Production Kit, Local-first AI, or Agentic-Dev —
+                each edition composes the same audited base. Never a fork.
+              </p>
+              <div style={{ marginTop: "var(--cs-space-6)" }}>
+                <Button href="/marketplace" variant="ghost">
+                  Browse editions
+                </Button>
+              </div>
+            </Card>
+            <Card>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "baseline",
+                  gap: "var(--cs-space-3)",
+                }}
+              >
+                <span className="cs-card-title">
+                  A subscription, not a one-time buy
+                </span>
+                <StatusChip label="Plan" />
+              </div>
+              <p
+                className="cs-num"
+                style={{
+                  marginTop: "var(--cs-space-3)",
+                  fontSize: "var(--cs-text-2xl)",
+                  fontFamily: "var(--cs-font-mono)",
+                }}
+              >
+                {HOW_TO_BUY_PLAN_RANGE}
+              </p>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                Compliance Updates keeps control mappings and evidence packs
+                current. Developer adds credits and private-registry pulls.
+              </p>
+              <div style={{ marginTop: "var(--cs-space-6)" }}>
+                <Button href="/marketplace/plans" variant="ghost">
+                  Browse plans
+                </Button>
+              </div>
+            </Card>
+          </FeatureGrid>
+        </Section>
+      </Reveal>
+
       {/* ===== Editions — featured-lead hierarchy, one accent ===== */}
       <Reveal>
         <Section
           eyebrow="Editions"
-          title="One umbrella. No orphaned modules."
-          lede="Compliance is the front door. Each edition is a composition of the same audited base — never a fork."
+          title="Four editions, one audited base."
+          lede="Compliance leads. Every edition draws from the same audited base — never a fork. See every module sold on its own in the marketplace."
           band="surface"
         >
           <div
@@ -206,7 +348,7 @@ export default function HomePage() {
               href="/compliance"
               name="Compliance"
               icon="fail-closed"
-              status={<StatusChip tone="accent" dot label="Hero" />}
+              status={<StatusChip tone="accent" dot label="Edition · Hero" />}
               line="Fail-closed RLS, S3 WORM, append-only audit chain, per-tenant field encryption, and a SOC 2 / HIPAA evidence-pack generator."
               proof="ALTER TABLE evidence FORCE ROW LEVEL SECURITY;"
             />
@@ -214,15 +356,17 @@ export default function HomePage() {
               href="/ai-kit"
               name="AI Production Kit"
               icon="gauge"
-              status={<StatusChip tone="muted" dot label="#2" />}
-              line="The production-rigor layer cheap AI boilerplate skips: token metering, spend caps, a circuit breaker, an eval harness in CI, and guardrails."
-              proof="eval gate: regression detected → CI fails"
+              status={<StatusChip tone="muted" dot label="Edition · #2" />}
+              line="The production-rigor layer cheap AI boilerplate skips: token metering, spend caps, a circuit breaker, versioned prompts, and guardrails."
+              proof="breaker open: tenant spend cap hit"
             />
             <EditionCard
               href="/local-first"
               name="Local-first AI"
               icon="cpu"
-              status={<StatusChip tone="muted" dot label="Self-host" />}
+              status={
+                <StatusChip tone="muted" dot label="Edition · Self-host" />
+              }
               line="Compute seam, privacy gate, and on-device vector search. Your data never leaves the device. Own the source."
               proof="egress: blocked at the privacy gate"
             />
@@ -230,7 +374,7 @@ export default function HomePage() {
               href="/agentic-dev"
               name="Agentic-Dev"
               icon="git-branch"
-              status={<StatusChip tone="muted" dot label="Edition #4" />}
+              status={<StatusChip tone="muted" dot label="Edition · #4" />}
               line="The governed-agent kernel: typed agent/skill/rule schema, a lifecycle state machine, and a hooks dispatcher."
               proof="agent · skill · rule — typed, validated, hooked"
             />
@@ -252,8 +396,8 @@ export default function HomePage() {
               style={{ marginTop: "var(--cs-space-5)" }}
             >
               One-time perpetual unless marked /mo.{" "}
-              <Link href="/pricing" style={{ color: "var(--cs-link)" }}>
-                See the full lineup
+              <Link href="/marketplace" style={{ color: "var(--cs-link)" }}>
+                Browse the full marketplace
               </Link>
             </p>
           </div>
@@ -314,7 +458,7 @@ export default function HomePage() {
           id="get-started"
           eyebrow="Get started"
           title="Start audit-ready."
-          lede="Scaffold the audited base in one command, then add the edition you need."
+          lede="Scaffold the audited base in one command, then open the marketplace for the edition, module, or plan you need."
           band="surface"
         >
           <div
@@ -342,7 +486,7 @@ export default function HomePage() {
                 flexWrap: "wrap",
               }}
             >
-              <Button href="/pricing" variant="primary">
+              <Button href="/compliance" variant="primary">
                 Get Compliance
               </Button>
               <Button href="/docs" variant="ghost">

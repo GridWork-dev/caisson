@@ -209,4 +209,24 @@ describe("cartUpgrade (bundle nudge, ADR-0193)", () => {
   test("no suggestion for an empty cart", () => {
     expect(cartUpgrade([], bundle)).toBeUndefined();
   });
+
+  test("no suggestion when a standalone-only module is in the cart (ADR-0238)", () => {
+    // ai-evals is standaloneOnly (granted by no edition, hence not by the bundle). A cart with two
+    // editions + ai-evals totals 799 + 599 + 199 = 1597 > 1499 bundle, so WITHOUT the guard the
+    // nudge would fire and "Switch to the bundle" would silently DROP the ai-evals line — an
+    // entitlement-honesty break (mirrors bestStackUpgrade in pricing.test.ts). Real namespaced id.
+    const aiEvals: CartItem = {
+      id: "module:ai-evals",
+      priceId: "price_module_ai_evals_PLACEHOLDER",
+      label: "Eval harness",
+      amount: 199,
+      kind: "module",
+    };
+    expect(
+      cartUpgrade(
+        [edition("compliance", 799), edition("ai-kit", 599), aiEvals],
+        bundle,
+      ),
+    ).toBeUndefined();
+  });
 });

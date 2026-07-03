@@ -108,6 +108,7 @@ beforeAll(async () => {
     provider: null,
     limiter: new TokenBucketLimiter(loadRateLimitConfig()),
     discordNotify: null,
+    posthogCapture: null,
   });
 });
 afterAll(async () => {
@@ -361,6 +362,7 @@ describe("POST /issue admin-scoped credential (ADR-0220)", () => {
       provider: null,
       limiter: new TokenBucketLimiter(loadRateLimitConfig()),
       discordNotify: null,
+      posthogCapture: null,
     });
   });
 

@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 
 export const dynamic = "force-static";
 export const alt =
-  "Caisson AI Production Kit — metering, spend caps, and an eval gate in CI";
+  "Caisson AI Production Kit — metering, spend caps, and a circuit breaker";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -78,7 +78,7 @@ export default function AiKitOpengraphImage() {
           <span>cheap AI skips.</span>
         </div>
         <div style={{ fontSize: 24, color: C.muted, maxWidth: 680 }}>
-          Atomic metering · spend caps · circuit breaker · eval gate in CI
+          Atomic metering · spend caps · circuit breaker · guardrails
         </div>
       </div>
 
