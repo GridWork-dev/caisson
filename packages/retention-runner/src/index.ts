@@ -33,5 +33,6 @@ export {
   AUTO_90D_SWEEP_TASK,
   autoSweepPayloadSchema,
   defineRetentionTask,
+  enqueueAutoSweep,
 } from "./schedule.ts";
 export type { AutoSweepPayload, RetentionTaskDeps } from "./schedule.ts";

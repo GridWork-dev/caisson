@@ -100,6 +100,10 @@ export function createTriggerJobQueue(
         });
       }
       const validated = parseStrict(task.schema, payload);
+      // ponytail: `options.singletonKey` (ADR-0229 row 56 overlap-safety) is intentionally NOT mapped
+      // here — Trigger.dev's HOSTED scheduler owns overlap for scheduled tasks (`trigger()` exposes no
+      // singletonKey), so faking one client-side would be a lie. Honest no-op; revisit if this driver
+      // ever drives an interval job that isn't Trigger-scheduled. `idempotencyKey` passes through native.
       const triggerOptions =
         options?.idempotencyKey !== undefined
           ? { idempotencyKey: options.idempotencyKey }

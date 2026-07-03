@@ -2,7 +2,7 @@
 // Fork 3). `ccpa_request`/`operator_manual` are operator/subject-triggered one-shot calls straight
 // into `runErasure` (no queue — see README); only the recurring sweep is enqueued.
 import { defineTask } from "@caisson/jobs";
-import type { TaskDefinition } from "@caisson/jobs";
+import type { JobQueue, TaskDefinition } from "@caisson/jobs";
 import { strictObject } from "@caisson/kernel";
 import { z } from "zod";
 import type { ErasureTarget } from "./targets.ts";
@@ -32,6 +32,25 @@ export interface RetentionTaskDeps {
  * (the shipped `createInMemoryQueue` in dev/test; Trigger.dev in prod, per ADR-0152) and enqueue
  * `AUTO_90D_SWEEP_TASK` with an `AutoSweepPayload` for each subject due for erasure.
  */
+/**
+ * Enqueue one subject's `auto_90d` erasure sweep, overlap-safe (ADR-0229 row 56). The `singletonKey`
+ * is per (tenant, subject) so a long-running erasure can never DOUBLE-RUN for the same subject while
+ * distinct subjects still sweep in parallel — the real consumer of the jobs `singletonKey` option. The
+ * one enqueue site the recurring scheduler should call (per subject due for erasure); `queue.enqueue`
+ * validates the payload against `autoSweepPayloadSchema` at the boundary.
+ *
+ * ponytail: tenantId/subjectId are opaque account/subject ids (no `:`), so a plain `:`-join is an
+ * unambiguous key. Length-prefix them if an id class ever contains a colon.
+ */
+export async function enqueueAutoSweep(
+  queue: JobQueue,
+  payload: AutoSweepPayload,
+): Promise<void> {
+  await queue.enqueue(AUTO_90D_SWEEP_TASK, payload, {
+    singletonKey: `${payload.tenantId}:${payload.subjectId}`,
+  });
+}
+
 export function defineRetentionTask(
   deps: RetentionTaskDeps,
 ): TaskDefinition<unknown> {
