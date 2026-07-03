@@ -44,13 +44,16 @@ const SECTION_ORDER = [
   "AI Production Kit edition",
   "Local-first AI edition",
   "Agentic-Dev edition",
+  "Pricing",
   "CLI",
   "Package references",
 ];
 
-/** Public URL for a page: docs → the docs site, READMEs → the GitHub blob (both fetchable markdown). */
+/** Public URL for a page: docs → the docs site, READMEs → the GitHub blob, generated pricing docs →
+ *  the canonical public pricing page (both fetchable). */
 function pageUrl(page: DocPage, origin: string): string {
   if (page.kind === "readme") return `${GITHUB_BLOB}/${page.source}`;
+  if (page.kind === "pricing") return `${origin}/pricing`;
   const rel = (page.source.split("content/docs/")[1] ?? "").replace(
     /\.mdx$/,
     "",
@@ -84,7 +87,11 @@ export function renderLlmsTxt(
   const groups = new Map<string, DocPage[]>();
   for (const page of corpus.pages) {
     const section =
-      page.kind === "readme" ? "Package references" : docSection(page.source);
+      page.kind === "readme"
+        ? "Package references"
+        : page.kind === "pricing"
+          ? "Pricing"
+          : docSection(page.source);
     const bucket = groups.get(section) ?? [];
     bucket.push(page);
     groups.set(section, bucket);
