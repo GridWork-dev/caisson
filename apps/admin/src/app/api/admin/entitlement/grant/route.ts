@@ -7,6 +7,7 @@ import {
 import {
   actorEmail,
   json,
+  mutationErrorResponse,
   mutationResponse,
   parseBody,
 } from "@/lib/admin-route";
@@ -27,7 +28,7 @@ export async function POST(req: Request): Promise<Response> {
       ...parsed.value,
     });
     return mutationResponse(result);
-  } catch {
-    return json({ error: "mutation failed" }, 500);
+  } catch (err) {
+    return mutationErrorResponse(err);
   }
 }

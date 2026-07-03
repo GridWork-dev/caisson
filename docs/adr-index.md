@@ -10,7 +10,7 @@ conflict, the ADR file and the board win over this index.
   never edits the prior file. So most rows below are **partial** supersessions (one clause),
   not a wholesale replacement.
 - Numbering is **not**
-  contiguous: present are **0001-0024** and **0040-0143** + **0150-0153** (Stage-2 Stream B) + **0160-0162** + **0170-0185** (Stage-2 Streams A/C/D · the 2026-07-01 provider picker · the 2026-07-01 edition seam-completion picker 0179-0185) + **0187-0199** (LIFT/site-rework/audit-remediation; 0186 filed 2026-07-02 at agent-runner build start per its "files at build" reservation) + **0200-0203** (commerce-goes-live 0200/0203 + editions-go-live 0201-0202; the Discord ADR was drafted 0201 and renumbered to 0203 at merge — editions claimed 0201 first, ADR-0088 second-merger-renumbers) + **0204-0209** (the 2026-07-02 strix-remediation lock 0204 + the edition-tails-ops picker 0205-0209; the transports ADR was drafted 0204 and renumbered to 0209 at merge — strix claimed 0204 first, ADR-0088 second-merger-renumbers) + **0210-0217** (the 2026-07-02 lift-harvest slice-2 wave, drafted 0204-0211 and renumbered at merge per ADR-0088 — strix/edition-tails claimed 0204-0209 first: reconcile + wave lock 0210 · jobs consumer-side 0211 · branded-money/rounding-provenance 0212 · ai-kit embeddings 0213 · ai-evals depth 0214 · guardrails 0215 · mcp-server manifest/ledger 0216 · ai-meter dedup gate 0217; 0186 filed 2026-07-02 at agent-runner build start per its "files at build" reservation) + **0218-0221** (the 2026-07-02 deferred-respec picker round: Paddle per-line partial refund 0218 · CF front rate-limit 0219 · admin mutation surface v1 0220 · live seams KMS/ONNX 0221) + **0222** (the 2026-07-02 distribution picker: caisson-sh GitHub org + @caisson-sh npm scope + credit-pack/agent-runner catalog completion) + **0223** (the same-day registry self-hosted npm delivery lock: `registry.caisson.sh` serves the npm install protocol, option-A + 8 sub-forks) + **0224** (the same-day live-verification harness fork locks: F1–F6 seam proofs) — **ceiling 0224**; **0025-0039 are an unused gap**
+  contiguous: present are **0001-0024** and **0040-0143** + **0150-0153** (Stage-2 Stream B) + **0160-0162** + **0170-0185** (Stage-2 Streams A/C/D · the 2026-07-01 provider picker · the 2026-07-01 edition seam-completion picker 0179-0185) + **0187-0199** (LIFT/site-rework/audit-remediation; 0186 filed 2026-07-02 at agent-runner build start per its "files at build" reservation) + **0200-0203** (commerce-goes-live 0200/0203 + editions-go-live 0201-0202; the Discord ADR was drafted 0201 and renumbered to 0203 at merge — editions claimed 0201 first, ADR-0088 second-merger-renumbers) + **0204-0209** (the 2026-07-02 strix-remediation lock 0204 + the edition-tails-ops picker 0205-0209; the transports ADR was drafted 0204 and renumbered to 0209 at merge — strix claimed 0204 first, ADR-0088 second-merger-renumbers) + **0210-0217** (the 2026-07-02 lift-harvest slice-2 wave, drafted 0204-0211 and renumbered at merge per ADR-0088 — strix/edition-tails claimed 0204-0209 first: reconcile + wave lock 0210 · jobs consumer-side 0211 · branded-money/rounding-provenance 0212 · ai-kit embeddings 0213 · ai-evals depth 0214 · guardrails 0215 · mcp-server manifest/ledger 0216 · ai-meter dedup gate 0217; 0186 filed 2026-07-02 at agent-runner build start per its "files at build" reservation) + **0218-0221** (the 2026-07-02 deferred-respec picker round: Paddle per-line partial refund 0218 · CF front rate-limit 0219 · admin mutation surface v1 0220 · live seams KMS/ONNX 0221) + **0222** (the 2026-07-02 distribution picker: caisson-sh GitHub org + @caisson-sh npm scope + credit-pack/agent-runner catalog completion) + **0223** (the same-day registry self-hosted npm delivery lock: `registry.caisson.sh` serves the npm install protocol, option-A + 8 sub-forks) + **0224** (the same-day live-verification harness fork locks: F1–F6 seam proofs) + **0225-0227** (the 2026-07-02 third picker round: admin-v2 purchase-revoke six fork locks 0225 · pre-launch credential-sweep four fork locks 0226 · compliance reprice $799 + per-module sandbox catalog 0227) — **ceiling 0227**; **0025-0039 are an unused gap**
   (no files). The 0040 jump was a deliberate block reservation for the brand/positioning set.
   **0089-0093** = the 2026-06-28 picker-round locks (billing X-2 / migrate / mig-bundle / bin / local-debit);
   **0094-0096** = the 2026-06-29 GTM-report locks (open-core Base / GTM offer / services-docs);
@@ -95,8 +95,10 @@ supersession of one clause unless noted.
   self-serve) -> `0106` (final edition-level numbers + grandfathering) -> `0129` (adds
   value-based per-module SKUs + edition-bundle math) -> `0137` (edition reprice to full
   below-sum; supersedes the 0129 edition point-values **in full** and reverses its
-  thin-edition-premium thesis; the 0129 **module** sheet holds). Current: `0137`
-  (Compliance $749 · AI-Kit $599 · Agentic-Dev $249 · Local-first $349 · Bundle $1,499).
+  thin-edition-premium thesis; the 0129 **module** sheet holds) -> `0227` (Compliance
+  $749 -> $799, 5.6% below the $846 member-sum — the 0137 below-sum invariant kept; the
+  other edition numbers hold). Current: `0227` for Compliance; `0137` for the rest
+  (AI-Kit $599 · Agentic-Dev $249 · Local-first $349 · Bundle $1,499).
 - **Registry read-path visibility / gating:** `0047` (static CI-built index + deferred Worker
   seam, free view keyed on `editions[]===[]`) -> `0136` (free floor re-keyed on
   `license === Apache-2.0`; commercial base-kind requires an entitlement, fail-safe to open; the
@@ -631,6 +633,21 @@ seams. Two picks override the spec recommendation (F1 → BOTH; F3 → FULL gran
 | #                                                                  | Title                                                                                            | Domain              | Status   | Relations                                                |
 | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ | ------------------- | -------- | -------------------------------------------------------- |
 | [0224](../knowledge/decisions/ADR-0224-live-harness-fork-locks.md) | Live harness fork locks: F1 BOTH · F2 fleet · F3 full · F4 grep · F5 local · F6 gridwork-env SOT | Testing/Live-verify | accepted | extends 0201; relates 0223/0108/0200/0203/0206/0207/0118 |
+
+### Third picker round (0225-0227, 2026-07-02) - status `accepted`
+
+The third operator picker round of 2026-07-02 (late): 15 questions in one round across the
+admin-v2 purchase-revoke SPEC (CAISSON-19, R-1..R-6), the pre-launch credential-sweep SPEC
+(Forks 1-4), and the commerce numbers, plus the two residual registry npm-delivery mechanism
+forks recorded implementation-level under ADR-0223 (board section, no new ADR). Three picks
+override the tabled recommendation: R-4 (build the edge revocation list into v2), credential
+Fork 4 (on-incident-only rotation), and the module-catalog posture (sandbox catalog now).
+
+| #                                                                                | Title                                                                                           | Domain           | Status   | Relations                                                           |
+| -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ---------------- | -------- | ------------------------------------------------------------------- |
+| [0225](../knowledge/decisions/ADR-0225-admin-v2-purchase-revoke-locks.md)        | Admin v2 purchase-revoke: DB-only + claw · source-scoped · one-time only · edge revocation list | Admin/Security   | accepted | extends 0113/0218/0220/0204; reuses 0007/0212/0005/0014; CAISSON-19 |
+| [0226](../knowledge/decisions/ADR-0226-pre-launch-credential-sweep-locks.md)     | Pre-launch credential sweep: fresh issuer keypair · vault parity tool · on-incident rotation    | Security/Secrets | accepted | extends 0224 F6; relates 0106/0201/0221/0222/0069                   |
+| [0227](../knowledge/decisions/ADR-0227-compliance-reprice-and-module-catalog.md) | Compliance reprice $749 -> $799 + per-module sandbox catalog now                                | Pricing/Commerce | accepted | supersedes the 0137 compliance number; relates 0106/0116/0082/0205  |
 
 ---
 

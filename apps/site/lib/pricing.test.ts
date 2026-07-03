@@ -17,7 +17,7 @@ import {
 
 describe("EDITION_PRICES (Q4 below-sum lock)", () => {
   test("editions carry the Q4 below-sum lock values", () => {
-    expect(priceById("compliance")?.amount).toBe(749);
+    expect(priceById("compliance")?.amount).toBe(799);
     expect(priceById("ai-kit")?.amount).toBe(599);
     expect(priceById("local-first")?.amount).toBe(349);
     expect(priceById("agentic-dev")?.amount).toBe(249);
@@ -65,7 +65,7 @@ describe("the Everything bundle", () => {
   });
 
   test("editionsSubtotal sums the four locked edition prices", () => {
-    expect(editionsSubtotal()).toBe(749 + 599 + 249 + 349);
+    expect(editionsSubtotal()).toBe(799 + 599 + 249 + 349);
   });
 
   test("the bundle price is below the sum of the four editions (a real saving)", () => {
@@ -74,8 +74,8 @@ describe("the Everything bundle", () => {
 
   test("bundleSavings is the positive gap between the edition subtotal and the bundle price", () => {
     expect(bundleSavings()).toBe(editionsSubtotal() - 1499);
-    // The one truthful comparison the site keeps: Save $447 vs à-la-carte (1946 - 1499).
-    expect(bundleSavings()).toBe(447);
+    // The one truthful comparison the site keeps: Save $497 vs à-la-carte (1996 - 1499).
+    expect(bundleSavings()).toBe(497);
     expect(bundleSavings()).toBeGreaterThan(0);
   });
 });
@@ -157,12 +157,12 @@ describe("buildStackSummary (compose-a-stack math, ADR-0191)", () => {
 
   test("all of one edition's modules nudge to that edition when it costs less", () => {
     const s = buildStackSummary(idsOf("compliance"));
-    // 299 + 199 + 149 + 199 = 846 a la carte; the Compliance edition is 749.
+    // 299 + 199 + 149 + 199 = 846 a la carte; the Compliance edition is 799.
     expect(s.total).toBe(846);
     expect(s.moduleCount).toBe(4);
     expect(s.upgrade?.target).toBe("compliance");
-    expect(s.upgrade?.price).toBe(749);
-    expect(s.upgrade?.saves).toBe(97);
+    expect(s.upgrade?.price).toBe(799);
+    expect(s.upgrade?.saves).toBe(47);
   });
 
   test("a cross-edition selection above the bundle price nudges to the bundle", () => {
@@ -174,7 +174,7 @@ describe("buildStackSummary (compose-a-stack math, ADR-0191)", () => {
   });
 
   test("no upgrade offer when a la carte is already the cheapest path", () => {
-    // Three of Compliance's four modules (199 + 149 + 199 = 547) cost less than the 749 edition,
+    // Three of Compliance's four modules (199 + 149 + 199 = 547) cost less than the 799 edition,
     // so nudging to the edition would cost MORE — no offer.
     const s = buildStackSummary([
       "field-crypto",

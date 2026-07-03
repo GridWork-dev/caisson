@@ -8,7 +8,13 @@
 //   - issue — the server-side `/issue` reissue proxy, authenticated with the DISTINCT admin-scoped
 //            credential (`ADMIN_ISSUE_TOKEN`), never `LICENSE_ISSUE_TOKEN` and never the browser.
 import { join } from "node:path";
-import { AuditChainStore, LocalArtifactStore } from "@caisson/audit-worm";
+import { S3Client } from "@aws-sdk/client-s3";
+import {
+  AuditChainStore,
+  LocalArtifactStore,
+  S3ArtifactStore,
+  type ArtifactStore,
+} from "@caisson/audit-worm";
 import { fetchWithTimeout } from "@caisson/kernel";
 import type {
   AdminMutationDeps,
@@ -20,12 +26,20 @@ import { getAdminDb, readAdmin } from "./admin-db.ts";
 /**
  * The WORM object store for the mutation service's audit chain (Fork AM-4 provisioning).
  *
- * // ponytail: LocalArtifactStore is write-once (tamper-evident — the substantive property for an
- * // operator log), but NOT time-locked, so it is not court-admissible. Swap for `S3ArtifactStore`
- * // (Object-Lock, @caisson/audit-worm) at DEPLOY when compliance-grade retention is required —
- * // AuditChainStore is store-agnostic, so it is an env-gated one-liner, no code change here.
+ * CAISSON-18: env-gated — `CAISSON_ADMIN_WORM_BUCKET` set selects the compliance-grade
+ * `S3ArtifactStore` (S3 Object-Lock, GOVERNANCE default; credentials/region via the standard AWS
+ * env chain on the service), unset falls back to the dev `LocalArtifactStore` (write-once and
+ * tamper-evident, but not time-locked). `AuditChainStore` is store-agnostic, so the deploy swap is
+ * this gate plus a deploy-time env set — exported for the gate test.
  */
-function wormStore(): LocalArtifactStore {
+export function wormStore(): ArtifactStore {
+  const bucket = process.env.CAISSON_ADMIN_WORM_BUCKET?.trim() ?? "";
+  if (bucket.length > 0) {
+    return new S3ArtifactStore({
+      client: new S3Client({ region: process.env.AWS_REGION ?? "us-east-1" }),
+      bucket,
+    });
+  }
   const dir =
     process.env.CAISSON_ADMIN_WORM_DIR?.trim() ||
     join(process.cwd(), ".caisson-admin-worm");

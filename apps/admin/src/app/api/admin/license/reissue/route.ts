@@ -9,6 +9,7 @@ import {
 import {
   actorEmail,
   json,
+  mutationErrorResponse,
   mutationResponse,
   parseBody,
 } from "@/lib/admin-route";
@@ -46,7 +47,7 @@ export async function POST(req: Request): Promise<Response> {
       expiry: existing.expiry,
     });
     return mutationResponse(result);
-  } catch {
-    return json({ error: "reissue failed" }, 500);
+  } catch (err) {
+    return mutationErrorResponse(err);
   }
 }
