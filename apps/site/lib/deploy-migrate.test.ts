@@ -41,11 +41,11 @@ afterAll(async () => {
 
 test("platform migrations apply in order then are idempotent", async () => {
   const first = await runPlatformMigrations(pgliteApplier(tp));
-  expect(first.applied).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+  expect(first.applied).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
 
   const second = await runPlatformMigrations(pgliteApplier(tp));
   expect(second.applied).toEqual([]);
-  expect(second.skipped).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+  expect(second.skipped).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
 });
 
 test("0007 adds the ADR-0212 rounding provenance columns to credit_event", async () => {
@@ -101,6 +101,26 @@ test("0012 creates the ADR-0236 ask_ai_question capture table (no RLS — global
     "outcome",
     "question",
   ]);
+});
+
+test("0013 re-creates every tenant policy with the empty-string GUC guard (NULLIF)", async () => {
+  const rows = await tp.query<{ polname: string; qual: string }>(
+    `SELECT p.polname, pg_get_expr(p.polqual, p.polrelid) AS qual
+     FROM pg_policy p
+     WHERE p.polname IN (
+       'credit_wallet_tenant_isolation',
+       'usage_event_tenant_isolation',
+       'billing_processed_event_tenant_isolation',
+       'account_member_isolation'
+     ) ORDER BY p.polname`,
+  );
+  expect(rows.length).toBe(4);
+  for (const r of rows) {
+    expect(r.qual).toContain("NULLIF");
+  }
+  // The dual-GUC membership policy guards BOTH reads.
+  const member = rows.find((r) => r.polname === "account_member_isolation");
+  expect(member?.qual).toContain("app.current_user");
 });
 
 test("every composed tenant table ships FORCE row-level security", async () => {
