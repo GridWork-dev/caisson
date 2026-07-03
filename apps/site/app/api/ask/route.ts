@@ -7,6 +7,7 @@
 import { getSession } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { type AskDeps, handleAsk } from "@/lib/ask-ai/handler";
+import { logQuestion } from "@/lib/ask-ai/question-log";
 import { retrieveChunks } from "@/lib/ask-ai/retrieve";
 import { streamOpenRouter } from "@/lib/ask-ai/openrouter";
 import {
@@ -61,6 +62,10 @@ function buildDeps(): AskDeps {
     models: {
       public: envOr("ASK_AI_PUBLIC_MODEL", DEFAULT_PUBLIC_MODEL),
       premium: envOr("ASK_AI_PREMIUM_MODEL", DEFAULT_PREMIUM_MODEL),
+    },
+    // ADR-0236: consent-noticed question capture (the handler treats it as best-effort).
+    capture: async (lane, question, outcome) => {
+      await logQuestion(await getDb(), lane, question, outcome);
     },
   };
 }
