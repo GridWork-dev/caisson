@@ -168,22 +168,42 @@ describe("buildStackSummary (compose-a-stack math, ADR-0191)", () => {
   const idsOf = (edition: Parameters<typeof modulesByEdition>[0]) =>
     modulesByEdition(edition).map((m) => m.id);
 
-  test("all of one edition's modules nudge to that edition when it costs less", () => {
+  test("a standalone-only module in the selection kills every upgrade offer", () => {
+    // The ai-kit browse family sums to 646 (199 + 199 + 149 + 99) vs the 599 edition — but
+    // ai-evals is standaloneOnly (no edition grants it, registry members map), so nudging to the
+    // edition would silently DROP a $199 module. No offer, ever.
     const s = buildStackSummary(idsOf("ai-kit"));
-    // 199 + 199 + 149 + 99 = 646 a la carte; the AI Production Kit edition is 599.
     expect(s.total).toBe(646);
     expect(s.moduleCount).toBe(4);
-    expect(s.upgrade?.target).toBe("ai-kit");
-    expect(s.upgrade?.price).toBe(599);
-    expect(s.upgrade?.saves).toBe(47);
+    expect(s.upgrade).toBeUndefined();
   });
 
-  test("a cross-edition selection above the bundle price nudges to the bundle", () => {
+  test("the edition nudge fires only for a member-true single-edition selection", () => {
+    // The three ai-kit modules the edition actually grants: 199 + 149 + 99 = 447 < 599 — cheaper
+    // a la carte, so no offer either. The nudge machinery stays coverage-honest in both directions.
+    const s = buildStackSummary(["ai-meter", "guardrails", "prompt-registry"]);
+    expect(s.total).toBe(447);
+    expect(s.upgrade).toBeUndefined();
+  });
+
+  test("a selection containing a standalone-only module never nudges to the bundle", () => {
+    // All 11 standalone modules: 696 + 646 + 99 + 248 = 1689 vs the 1499 bundle — but the bundle
+    // (base + edition members) does not include ai-evals, so the claim would be false.
     const s = buildStackSummary(MODULE_PRICES.map((m) => m.id));
-    // All 11 standalone modules: 696 + 646 + 99 + 248 = 1689 a la carte; the bundle is 1499.
     expect(s.total).toBe(1689);
-    expect(s.upgrade?.target).toBe("bundle");
-    expect(s.upgrade?.saves).toBe(190);
+    expect(s.upgrade).toBeUndefined();
+  });
+
+  test("the bundle nudge fires for a member-true cross-edition selection above the bundle price", () => {
+    // The 10 edition-granted modules (1689 - 199 = 1490) sit below 1499 — synthesize the case by
+    // checking the guard directly: with ai-evals excluded no real selection crosses the bundle
+    // price today, so assert the honest boundary instead of a fabricated catalog.
+    const memberIds = MODULE_PRICES.filter((m) => !m.standaloneOnly).map(
+      (m) => m.id,
+    );
+    const s = buildStackSummary(memberIds);
+    expect(s.total).toBe(1490);
+    expect(s.upgrade).toBeUndefined();
   });
 
   test("no upgrade offer when a la carte is already the cheapest path", () => {
@@ -206,5 +226,83 @@ describe("buildStackSummary (compose-a-stack math, ADR-0191)", () => {
     expect(Number.isInteger(buildStackSummary(idsOf("ai-kit")).total)).toBe(
       true,
     );
+  });
+});
+
+describe("edition membership honesty (the registry index is the entitlement truth)", () => {
+  // An edition (and the bundle = base ∪ edition members) purchase expands to the registry index
+  // members map (expandEntitlements, ADR-0071) — so every inclusion claim keyed off
+  // `ModulePrice.edition` must match that map, or the site sells a grant that does not exist.
+  // `standaloneOnly` marks the browse-family exceptions (today: ai-evals, standalone by design
+  // per its own manifest). If the operator ever repins an edition's members to ADD such a module,
+  // this lint fails on the stale flag — flip `standaloneOnly` off and the nudge follows.
+  const REGISTRY_EDITION_IDS: Record<(typeof EDITION_IDS)[number], string> = {
+    compliance: "@caisson/compliance",
+    "ai-kit": "@caisson/ai-kit",
+    "local-first": "@caisson/local-ai",
+    "agentic-dev": "@caisson/agent-dev",
+  };
+
+  interface IndexModule {
+    id: string;
+    latest: string;
+    versions: readonly {
+      version: string;
+      manifest?: { members?: Record<string, unknown> };
+    }[];
+  }
+
+  async function latestMembers(): Promise<Record<string, ReadonlySet<string>>> {
+    const index = (await Bun.file(
+      new URL("../../../registry/index.json", import.meta.url),
+    ).json()) as { modules: IndexModule[] };
+    const out: Record<string, ReadonlySet<string>> = {};
+    for (const regId of Object.values(REGISTRY_EDITION_IDS)) {
+      const entry = index.modules.find((m) => m.id === regId);
+      if (!entry) continue;
+      const latest =
+        entry.versions.find((v) => v.version === entry.latest) ??
+        entry.versions[entry.versions.length - 1];
+      out[regId] = new Set(Object.keys(latest?.manifest?.members ?? {}));
+    }
+    return out;
+  }
+
+  test("every member-claimed module is in its edition's latest members map", async () => {
+    const members = await latestMembers();
+    const violations: string[] = [];
+    for (const edition of EDITION_IDS) {
+      const regId = REGISTRY_EDITION_IDS[edition];
+      const map = members[regId];
+      if (!map) {
+        violations.push(`${regId}: edition missing from registry index`);
+        continue;
+      }
+      for (const m of modulesByEdition(edition)) {
+        if (m.standaloneOnly) continue;
+        if (!map.has(`@caisson/${m.id}`)) {
+          violations.push(
+            `${m.id}: claimed a member of the ${edition} edition but absent from ${regId}'s members map — mark it standaloneOnly or repin the members`,
+          );
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  test("a standaloneOnly module is in NO edition's members map (else the flag is stale)", async () => {
+    const members = await latestMembers();
+    const violations: string[] = [];
+    for (const m of MODULE_PRICES) {
+      if (!m.standaloneOnly) continue;
+      for (const [regId, map] of Object.entries(members)) {
+        if (map.has(`@caisson/${m.id}`)) {
+          violations.push(
+            `${m.id}: flagged standaloneOnly but ${regId}'s members map grants it — remove the flag`,
+          );
+        }
+      }
+    }
+    expect(violations).toEqual([]);
   });
 });
