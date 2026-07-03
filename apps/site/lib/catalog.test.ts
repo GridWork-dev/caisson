@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import { asCredits } from "@caisson/kernel";
 import {
   BUNDLE_CATALOG_ITEM,
   EDITION_CATALOG,
@@ -82,7 +83,7 @@ describe("catalog coverage", () => {
       const slug = c.id.replace(/^module:/, "");
       const entry = PURCHASE_BOOK[c.priceId];
       expect(entry?.entitlements).toEqual([slug]);
-      expect(entry?.credits).toBe(0);
+      expect(entry?.credits).toBe(asCredits(0));
     }
   });
 
