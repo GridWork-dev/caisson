@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { safeEqualFixed, safeEqualVariable } from "./crypto.ts";
+import {
+  safeEqualFixed,
+  safeEqualVariable,
+  verifyAllowlisted,
+} from "./crypto.ts";
 
 describe("constant-time comparison", () => {
   test("safeEqualFixed matches equal strings and rejects others", () => {
@@ -14,5 +18,33 @@ describe("constant-time comparison", () => {
       true,
     );
     expect(safeEqualVariable("a", "a-very-long-different-value")).toBe(false);
+  });
+});
+
+describe("verifyAllowlisted", () => {
+  const allow = ["owner@caisson.sh", "admin@gridwork.dev", "ops@caisson.sh"];
+
+  test("matches an entry after the default trim+lowercase normalize", () => {
+    expect(verifyAllowlisted("  Admin@GridWork.dev ", allow)).toBe(true);
+  });
+
+  test("rejects a non-member", () => {
+    expect(verifyAllowlisted("attacker@evil.test", allow)).toBe(false);
+  });
+
+  test("matches an entry anywhere in the list, not just index 0", () => {
+    // The last entry — proves the scan does not stop early and covers the whole allowlist.
+    expect(verifyAllowlisted("ops@caisson.sh", allow)).toBe(true);
+  });
+
+  test("an empty allowlist is fail-closed (never authorizes)", () => {
+    expect(verifyAllowlisted("owner@caisson.sh", [])).toBe(false);
+  });
+
+  test("honors a custom normalize (case-sensitive opaque ids)", () => {
+    const ids = ["TOK_abc", "TOK_def"];
+    const identity = (s: string) => s;
+    expect(verifyAllowlisted("TOK_def", ids, identity)).toBe(true);
+    expect(verifyAllowlisted("tok_def", ids, identity)).toBe(false);
   });
 });

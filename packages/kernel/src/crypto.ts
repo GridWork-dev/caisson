@@ -25,3 +25,26 @@ export function safeEqualVariable(a: string, b: string): boolean {
   const bh = createHash("sha256").update(b).digest();
   return timingSafeEqual(ah, bh);
 }
+
+/**
+ * Constant-time membership test (ADR-0229 row 44) — the named wrapper the gridwork-core security
+ * floor's variable-length-secret rule points at (admin-email allowlists, opaque-id allowlists). Is
+ * `candidate`, after `normalize`, equal to ANY entry in `allowed`? Every entry is compared with
+ * {@link safeEqualVariable} and the results are OR-ed with **no early return on a match**, so the
+ * timing does not leak which entry matched or whether one did. `normalize` defaults to
+ * trim+lowercase (the email-allowlist case). An empty `allowed` returns `false` — fail closed.
+ */
+export function verifyAllowlisted(
+  candidate: string,
+  allowed: readonly string[],
+  normalize: (s: string) => string = (s) => s.trim().toLowerCase(),
+): boolean {
+  const c = normalize(candidate);
+  let matched = false;
+  for (const entry of allowed) {
+    // Intentionally scan every entry — `matched ||= …` short-circuits nothing (the compare always
+    // runs); no `break`/early `return` that would make the timing depend on the matching index.
+    if (safeEqualVariable(c, normalize(entry))) matched = true;
+  }
+  return matched;
+}

@@ -19,7 +19,11 @@ export {
 } from "./errors.ts";
 export type { ErrorEnvelope } from "./errors.ts";
 
-export { safeEqualFixed, safeEqualVariable } from "./crypto.ts";
+export {
+  safeEqualFixed,
+  safeEqualVariable,
+  verifyAllowlisted,
+} from "./crypto.ts";
 export { scrubForEgress, looksLikeSecret } from "./secret-scrub.ts";
 export { scrubDeep, PHI_KEY } from "./scrub-deep.ts";
 export { fetchWithTimeout } from "./fetch.ts";
