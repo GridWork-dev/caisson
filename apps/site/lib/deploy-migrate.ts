@@ -37,6 +37,7 @@ import {
 import { getMigrations } from "better-auth/db/migration";
 import { Pool } from "pg";
 import { createAuth } from "./auth-server.ts";
+import { ASK_AI_SPEND_SCHEMA_SQL } from "./ask-ai/spend.ts";
 
 // The `app` RLS role — prod-augmented beyond lib/db.ts's PGlite bootstrap (which only CREATEs the
 // role). On a fresh Railway Postgres the connecting role must be able to `SET LOCAL ROLE app` (a
@@ -93,6 +94,10 @@ function platformPackage(): PackageMigrations {
         name: "0009_credit_line_item.sql",
         sql: CREDIT_LINE_ITEM_MIGRATION_SQL,
       },
+      // ADR-0234: the Ask-AI public-lane daily spend counter. Global (non-tenant), no RLS — accessed
+      // outside withTenant. Appended as a new forward-only migration (the earlier files are
+      // checksum-pinned on the live DB).
+      { name: "0010_ask_ai_spend.sql", sql: ASK_AI_SPEND_SCHEMA_SQL },
     ],
   };
 }
