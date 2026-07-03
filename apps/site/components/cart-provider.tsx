@@ -15,9 +15,11 @@ import {
   cartSubtotal,
   type CartItem,
   parseStoredCart,
+  pruneCart,
   removeCartItem,
   serializeCart,
 } from "@/lib/cart";
+import { LIVE_PRICE_IDS } from "@/lib/catalog";
 
 export interface CartContextValue {
   items: readonly CartItem[];
@@ -53,7 +55,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setItems(parseStoredCart(window.localStorage.getItem(CART_STORAGE_KEY)));
+    // Prune against the live catalog: a persisted line with a retired price id (ADR-0238) would
+    // charge at Paddle and then fail closed at the webhook — drop it before it can check out.
+    setItems(
+      pruneCart(
+        parseStoredCart(window.localStorage.getItem(CART_STORAGE_KEY)),
+        LIVE_PRICE_IDS,
+      ),
+    );
     setHydrated(true);
   }, []);
 

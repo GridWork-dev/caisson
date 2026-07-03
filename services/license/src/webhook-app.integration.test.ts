@@ -233,6 +233,36 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
     expect(res.status).toBeLessThan(600);
   });
 
+  test("a retired edition-core price id (ADR-0238) returns non-2xx and grants NOTHING (stale sandbox redelivery)", async () => {
+    // The four dropped edition-core rows' Paddle SANDBOX products still exist orphaned at Paddle;
+    // a stale redelivery (or a stale persisted cart that slipped past pruneCart) must fail closed
+    // through the FULL route: resolvePurchase throws ConfigError -> non-2xx so Paddle retries,
+    // and neither an entitlement nor a credit lands. Pins the seam end to end, not by composition.
+    const app = makeApp(provider);
+    const acct = "acct_txn_retired_1";
+    const t = Math.floor(Date.now() / 1000);
+    const body = JSON.stringify({
+      event_id: "evt_retired_1",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_retired_1",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: acct },
+        items: [{ price: { id: "pri_01kwj6m31fxw5vn532h5ft6780" } }], // retired compliance_module row
+        details: { totals: { grand_total: "29900" } },
+      },
+    });
+    const res = await app(webhookReq(body, signed(body, t)));
+    expect(res.status).toBeGreaterThanOrEqual(500);
+    expect(res.status).toBeLessThan(600);
+    const entitlements = await withTenant(tp.pg, acct, (tx) =>
+      readEntitlements(tx, acct),
+    );
+    expect(entitlements).toEqual([]);
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(0);
+  });
+
   test("a bad signature returns 401 and provisions NOTHING (fail-closed, never throws to the socket)", async () => {
     const app = makeApp(provider);
     const acct = "acct_badsig";

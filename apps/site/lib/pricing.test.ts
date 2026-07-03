@@ -81,8 +81,21 @@ describe("the Everything bundle", () => {
 });
 
 describe("MODULE_PRICES", () => {
-  test("lists exactly 15 modules", () => {
-    expect(MODULE_PRICES.length).toBe(15);
+  test("lists exactly 11 standalone modules (ADR-0238 — the 4 edition-core rows are dropped)", () => {
+    expect(MODULE_PRICES.length).toBe(11);
+  });
+
+  test("no module id names an edition (ADR-0238 collision lint)", () => {
+    // Site edition slugs AND the registry edition ids the pricebook grants — a module id matching
+    // either would expand a module purchase to the whole parent edition (the dropped-row bug).
+    const editionIds = new Set<string>([
+      ...EDITION_IDS,
+      "local-ai",
+      "agent-dev",
+    ]);
+    for (const m of MODULE_PRICES) {
+      expect(editionIds.has(m.id)).toBe(false);
+    }
   });
 
   test("module ids are unique", () => {
@@ -156,32 +169,30 @@ describe("buildStackSummary (compose-a-stack math, ADR-0191)", () => {
     modulesByEdition(edition).map((m) => m.id);
 
   test("all of one edition's modules nudge to that edition when it costs less", () => {
-    const s = buildStackSummary(idsOf("compliance"));
-    // 299 + 199 + 149 + 199 = 846 a la carte; the Compliance edition is 799.
-    expect(s.total).toBe(846);
+    const s = buildStackSummary(idsOf("ai-kit"));
+    // 199 + 199 + 149 + 99 = 646 a la carte; the AI Production Kit edition is 599.
+    expect(s.total).toBe(646);
     expect(s.moduleCount).toBe(4);
-    expect(s.upgrade?.target).toBe("compliance");
-    expect(s.upgrade?.price).toBe(799);
+    expect(s.upgrade?.target).toBe("ai-kit");
+    expect(s.upgrade?.price).toBe(599);
     expect(s.upgrade?.saves).toBe(47);
   });
 
   test("a cross-edition selection above the bundle price nudges to the bundle", () => {
-    const s = buildStackSummary([...idsOf("compliance"), ...idsOf("ai-kit")]);
-    // 846 + 944 = 1790 a la carte; the Everything bundle is 1499.
-    expect(s.total).toBe(1790);
+    const s = buildStackSummary(MODULE_PRICES.map((m) => m.id));
+    // All 11 standalone modules: 696 + 646 + 99 + 248 = 1689 a la carte; the bundle is 1499.
+    expect(s.total).toBe(1689);
     expect(s.upgrade?.target).toBe("bundle");
-    expect(s.upgrade?.saves).toBe(291);
+    expect(s.upgrade?.saves).toBe(190);
   });
 
   test("no upgrade offer when a la carte is already the cheapest path", () => {
-    // Three of Compliance's four modules (199 + 149 + 199 = 547) cost less than the 799 edition,
-    // so nudging to the edition would cost MORE — no offer.
-    const s = buildStackSummary([
-      "field-crypto",
-      "audit-worm",
-      "retention-runner",
-    ]);
-    expect(s.total).toBe(547);
+    // All four of Compliance's standalone modules (199 + 149 + 199 + 149 = 696) cost less than the
+    // 799 edition, so nudging to the edition would cost MORE — no offer. (alerting is grouped under
+    // compliance because that edition composes @caisson/alerting, ADR-0205.)
+    const s = buildStackSummary(idsOf("compliance"));
+    expect(s.total).toBe(696);
+    expect(s.moduleCount).toBe(4);
     expect(s.upgrade).toBeUndefined();
   });
 

@@ -122,18 +122,13 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
   // `entitlements` carries the BARE package slug (no `@caisson/` prefix) — the per-module
   // entitlement-id convention `expandEntitlements` (@caisson/registry-schema entitlements.ts)
   // resolves against the registry index alongside the long-supported full `@caisson/<slug>`
-  // module-id form and the edition/bundle sentinels above. All 14 modules — including `alerting`
-  // and `retention-runner`, shipped in Stage-2 (ADR-0150/0151) and registry-indexed — are CURRENT;
-  // the earlier "2 FUTURE, package not yet built" caveat no longer applies.
-  // `compliance`/`ai-kit`/`local-ai`/`agent-dev` reuse their EDITION entitlement
-  // id (they name their own edition membership in the registry, ADR-0071) — buying the module row
-  // below and buying the edition row above both resolve through the same edition expansion; this is
-  // the one true "buy just this" price point for a buyer who does not want the rest of the edition.
-  price_compliance_module_PLACEHOLDER: {
-    purchaseTag: "compliance_module",
-    credits: NO_CREDITS,
-    entitlements: ["compliance"],
-  },
+  // module-id form and the edition/bundle sentinels above. All 11 à-la-carte modules — including
+  // `alerting` and `retention-runner`, shipped in Stage-2 (ADR-0150/0151) and registry-indexed —
+  // are CURRENT. The four edition-core rows (`compliance`/`ai-kit`/`local-ai`/`agent-dev` module
+  // SKUs) were DROPPED (ADR-0238): their bare ids named their own EDITION's entitlement id, so a
+  // module purchase silently expanded to the whole parent edition — and no separable core artifact
+  // exists to grant instead (the edition meta-packages hard-depend on their commercial members).
+  // Editions are how composition is bought; à la carte sells only the standalone modules.
   price_field_crypto_module_PLACEHOLDER: {
     purchaseTag: "field-crypto_module",
     credits: NO_CREDITS,
@@ -164,16 +159,6 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
     credits: NO_CREDITS,
     entitlements: ["prompt-registry"],
   },
-  price_ai_kit_module_PLACEHOLDER: {
-    purchaseTag: "ai-kit_module",
-    credits: NO_CREDITS,
-    entitlements: ["ai-kit"],
-  },
-  price_local_ai_module_PLACEHOLDER: {
-    purchaseTag: "local-ai_module",
-    credits: NO_CREDITS,
-    entitlements: ["local-ai"],
-  },
   price_local_store_module_PLACEHOLDER: {
     purchaseTag: "local-store_module",
     credits: NO_CREDITS,
@@ -183,11 +168,6 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
     purchaseTag: "agent-kernel_module",
     credits: NO_CREDITS,
     entitlements: ["agent-kernel"],
-  },
-  price_agent_dev_module_PLACEHOLDER: {
-    purchaseTag: "agent-dev_module",
-    credits: NO_CREDITS,
-    entitlements: ["agent-dev"],
   },
   // agent-runner postdates the rest of this section (harvest slice-2, ADR-0186) — added here to
   // keep the PLACEHOLDER convention symmetric with its REAL row below.
@@ -213,11 +193,9 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
   // section above. Every row is a perpetual license-only buy (`credits: 0`, no bundled credit pack);
   // `entitlements` carries the bare package slug per the ENTITLEMENT-ID convention above. Dollar
   // amounts live on the Paddle product + `apps/site/lib/pricing.ts` display sheet, not here.
-  pri_01kwj6m31fxw5vn532h5ft6780: {
-    purchaseTag: "compliance_module",
-    credits: NO_CREDITS,
-    entitlements: ["compliance"],
-  },
+  // The four dropped edition-core rows' sandbox price ids (ADR-0238) are intentionally UNMAPPED —
+  // `resolvePurchase` fails closed on them, and the site no longer sells them. The orphaned Paddle
+  // SANDBOX products never port to production (ADR-0227).
   pri_01kwj6m3cwez98t45jzwsqb250: {
     purchaseTag: "field-crypto_module",
     credits: NO_CREDITS,
@@ -253,20 +231,10 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
     credits: NO_CREDITS,
     entitlements: ["prompt-registry"],
   },
-  pri_01kwj6m55yagz7188qer0pa0cd: {
-    purchaseTag: "ai-kit_module",
-    credits: NO_CREDITS,
-    entitlements: ["ai-kit"],
-  },
   pri_01kwj6m5da9ay3z85b6qwtjcpe: {
     purchaseTag: "alerting_module",
     credits: NO_CREDITS,
     entitlements: ["alerting"],
-  },
-  pri_01kwj6m5mzyn76b8jkknmjndb4: {
-    purchaseTag: "local-ai_module",
-    credits: NO_CREDITS,
-    entitlements: ["local-ai"],
   },
   pri_01kwj6m5w3s4fmvseap7zmp5yf: {
     purchaseTag: "local-store_module",
@@ -277,11 +245,6 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
     purchaseTag: "agent-kernel_module",
     credits: NO_CREDITS,
     entitlements: ["agent-kernel"],
-  },
-  pri_01kwj6m6cbtsh6n5b1bxtb2j0k: {
-    purchaseTag: "agent-dev_module",
-    credits: NO_CREDITS,
-    entitlements: ["agent-dev"],
   },
   pri_01kwj71a53hycbspsfv8pck5vc: {
     purchaseTag: "agent-runner_module",

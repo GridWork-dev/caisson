@@ -76,11 +76,10 @@ describe("per-module à-la-carte PLACEHOLDER ids round-trip (parsePaddleEvent ->
   // posture as the credit-pack / compliance-onetime placeholders above) — proves the writer
   // (parsePaddleEvent) -> reader (resolvePurchase) seam holds for the bare-slug entitlement-id
   // convention the same way it holds for the REAL edition ids above.
+  // The four edition-core module rows (compliance/ai-kit/local-ai/agent-dev) were DROPPED
+  // (ADR-0238) — their PLACEHOLDER + REAL rows are gone from PURCHASE_BOOK and the retired ids
+  // fail resolvePurchase closed (asserted below).
   const moduleCases: Array<{ priceId: string; entitlement: string }> = [
-    {
-      priceId: "price_compliance_module_PLACEHOLDER",
-      entitlement: "compliance",
-    },
     {
       priceId: "price_field_crypto_module_PLACEHOLDER",
       entitlement: "field-crypto",
@@ -99,8 +98,6 @@ describe("per-module à-la-carte PLACEHOLDER ids round-trip (parsePaddleEvent ->
       priceId: "price_prompt_registry_module_PLACEHOLDER",
       entitlement: "prompt-registry",
     },
-    { priceId: "price_ai_kit_module_PLACEHOLDER", entitlement: "ai-kit" },
-    { priceId: "price_local_ai_module_PLACEHOLDER", entitlement: "local-ai" },
     {
       priceId: "price_local_store_module_PLACEHOLDER",
       entitlement: "local-store",
@@ -109,7 +106,6 @@ describe("per-module à-la-carte PLACEHOLDER ids round-trip (parsePaddleEvent ->
       priceId: "price_agent_kernel_module_PLACEHOLDER",
       entitlement: "agent-kernel",
     },
-    { priceId: "price_agent_dev_module_PLACEHOLDER", entitlement: "agent-dev" },
     // Reserved/future modules (package not yet published) — the PURCHASE_BOOK row + Paddle
     // round-trip resolve fine; only registry-index EXPANSION carves the reserved id out
     // (@caisson/registry-schema entitlements.ts RESERVED_MODULE_ENTITLEMENT_IDS).
@@ -133,6 +129,28 @@ describe("per-module à-la-carte PLACEHOLDER ids round-trip (parsePaddleEvent ->
       const entry = resolvePurchase(priceId);
       expect(entry.entitlements).toEqual([entitlement]);
       expect<number>(entry.credits).toBe(0);
+    });
+  }
+
+  // A webhook for a retired edition-core price id (a stale sandbox re-delivery) must fail closed
+  // at resolvePurchase — never grant, never fall through to an edition expansion (ADR-0238).
+  const retiredIds = [
+    "price_compliance_module_PLACEHOLDER",
+    "price_ai_kit_module_PLACEHOLDER",
+    "price_local_ai_module_PLACEHOLDER",
+    "price_agent_dev_module_PLACEHOLDER",
+    "pri_01kwj6m31fxw5vn532h5ft6780",
+    "pri_01kwj6m55yagz7188qer0pa0cd",
+    "pri_01kwj6m5mzyn76b8jkknmjndb4",
+    "pri_01kwj6m6cbtsh6n5b1bxtb2j0k",
+  ];
+  for (const priceId of retiredIds) {
+    test(`retired ${priceId} still parses but fails resolvePurchase closed`, () => {
+      const ev = parsePaddleEvent(
+        oneTimeTransactionCompleted(priceId),
+      ) as DomainBillingEvent;
+      expect(ev.type).toBe("purchase.completed");
+      expect(() => resolvePurchase(priceId)).toThrow();
     });
   }
 });

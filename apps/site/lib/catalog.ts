@@ -1,20 +1,19 @@
 // Bridges the marketing PRICE DISPLAY (`lib/pricing.ts`) to a cart/checkout-ready catalog: every
-// sellable one-time item (the 4 editions, the bundle, and the 15 à-la-carte modules) carries the
+// sellable one-time item (the 4 editions, the bundle, and the 11 à-la-carte modules) carries the
 // Paddle price id the cart's multi-item checkout passes to `Paddle.Checkout.open()`.
 //
-// CART IDS ARE KIND-NAMESPACED (`edition:<slug>` / `module:<slug>` / `bundle`). Two catalog
-// entries share a bare slug — the Compliance EDITION and the "Compliance core" MODULE are both
-// `compliance`, likewise `ai-kit` — so an un-namespaced id would (a) let the module grid resolve
-// the wrong (edition) row and (b) let the cart's id-dedup conflate a $299 module with its $2,499
-// edition. The namespace keeps the two independently addable and independently priced. Lookups are
-// therefore KIND-SCOPED (`editionCatalogItem` / `moduleCatalogItem` / `bundleCatalogItem`), never a
-// bare-slug search.
+// CART IDS ARE KIND-NAMESPACED (`edition:<slug>` / `module:<slug>` / `bundle`). No module id
+// collides with an edition id anymore (the four edition-core rows were dropped, ADR-0238 — the
+// catalog.test.ts data-lint keeps it that way), but the namespace stays: it keeps the cart's
+// id-dedup and the grid lookups kind-scoped by construction (`editionCatalogItem` /
+// `moduleCatalogItem` / `bundleCatalogItem`), never a bare-slug search, so a future collision is
+// contained before it reaches a buyer.
 //
 // Editions + the bundle map to the REAL Paddle sandbox price ids `@caisson/pricebook`'s
 // PURCHASE_BOOK already carries (ADR-0106/0116) — note the pricebook's entitlement ids for
 // Local-first AI and Agentic-Dev are `local-ai`/`agent-dev` (the registry edition ids), distinct
-// from this site's marketing slugs/labels (see `purchases.ts`'s ENTITLEMENT-ID NOTE). The 15
-// modules now ALSO carry REAL Paddle sandbox price ids (module-SKU wiring, 2026-07-02) —
+// from this site's marketing slugs/labels (see `purchases.ts`'s ENTITLEMENT-ID NOTE). The 11
+// modules ALSO carry REAL Paddle sandbox price ids (module-SKU wiring, 2026-07-02) —
 // `MODULE_PRICE_IDS` below, matched one-for-one against the module rows `@caisson/pricebook`'s
 // PURCHASE_BOOK added in the same wave. `resolvePurchase` throws fail-closed on an unresolved id
 // (ADR-0089 §6 / ADR-0113), so a mismatched id reaching production grants nothing rather than
@@ -68,7 +67,9 @@ const BUNDLE_PRICE_ID = "pri_01kwd76bp60acq51mftvpgr42k";
  *  closed union, so the check runs at catalog build time instead of at `tsc`). (catalog.test.ts pins
  *  the cross-package invariant against PURCHASE_BOOK.) */
 const MODULE_PRICE_IDS: Record<string, string> = {
-  compliance: "pri_01kwj6m31fxw5vn532h5ft6780",
+  // The four dropped edition-core rows' sandbox price ids (pri_01kwj6m31f…, pri_01kwj6m55y…,
+  // pri_01kwj6m5mz…, pri_01kwj6m6cb…) are retired with their rows (ADR-0238) — the products sit
+  // orphaned in the Paddle SANDBOX, which never ports to production (ADR-0227).
   "field-crypto": "pri_01kwj6m3cwez98t45jzwsqb250",
   "audit-worm": "pri_01kwj6m3mjq4rpv7918rhfhrhw",
   "retention-runner": "pri_01kwj6m3x1cw1k54tcdhsc6pgj",
@@ -76,12 +77,9 @@ const MODULE_PRICE_IDS: Record<string, string> = {
   "ai-evals": "pri_01kwj6m4d3npk8sszerx7fek7w",
   guardrails: "pri_01kwj6m4n105qe80fapw9sk5xc",
   "prompt-registry": "pri_01kwj6m4whyw1stbej2qk8q0bg",
-  "ai-kit": "pri_01kwj6m55yagz7188qer0pa0cd",
   alerting: "pri_01kwj6m5da9ay3z85b6qwtjcpe",
-  "local-ai": "pri_01kwj6m5mzyn76b8jkknmjndb4",
   "local-store": "pri_01kwj6m5w3s4fmvseap7zmp5yf",
   "agent-kernel": "pri_01kwj6m63qpt52489tq5a3v6q3",
-  "agent-dev": "pri_01kwj6m6cbtsh6n5b1bxtb2j0k",
   "agent-runner": "pri_01kwj71a53hycbspsfv8pck5vc",
 };
 
@@ -150,6 +148,17 @@ export const MODULE_CATALOG: readonly CatalogItem[] = MODULE_PRICES.map(
     priceId: moduleRealPriceId(m.id),
     blurb: m.blurb,
   }),
+);
+
+/** Every Paddle price id the live catalog can sell — the hydration allowlist for
+ *  `lib/cart.ts` `pruneCart` (a persisted cart line carrying a retired id, e.g. the four
+ *  ADR-0238 edition-core rows, is dropped before it can reach checkout). */
+export const LIVE_PRICE_IDS: ReadonlySet<string> = new Set(
+  [
+    ...EDITION_CATALOG,
+    ...MODULE_CATALOG,
+    ...(BUNDLE_CATALOG_ITEM ? [BUNDLE_CATALOG_ITEM] : []),
+  ].map((c) => c.priceId),
 );
 
 /** The cart-ready catalog item for an edition slug (`compliance`, `ai-kit`, …). */

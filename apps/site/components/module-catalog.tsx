@@ -31,7 +31,7 @@ const PRICE_BANDS: readonly PriceBand[] = [
   { id: "200-up", label: "$200 and up", test: (a) => a >= 200 },
 ];
 
-const TOTAL = MODULE_PRICES.length; // 14
+const TOTAL = MODULE_PRICES.length;
 
 function toggle<T>(set: ReadonlySet<T>, value: T): Set<T> {
   const next = new Set(set);
