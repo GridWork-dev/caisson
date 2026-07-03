@@ -5,7 +5,6 @@
 // misconfigured matcher) fails closed to 401 here.
 import { toErrorResponse } from "@caisson/kernel";
 import { ZodError } from "zod";
-import { toErrorResponse } from "@caisson/kernel";
 
 export function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
