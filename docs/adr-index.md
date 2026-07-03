@@ -632,6 +632,18 @@ seams. Two picks override the spec recommendation (F1 → BOTH; F3 → FULL gran
 | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ | ------------------- | -------- | -------------------------------------------------------- |
 | [0224](../knowledge/decisions/ADR-0224-live-harness-fork-locks.md) | Live harness fork locks: F1 BOTH · F2 fleet · F3 full · F4 grep · F5 local · F6 gridwork-env SOT | Testing/Live-verify | accepted | extends 0201; relates 0223/0108/0200/0203/0206/0207/0118 |
 
+### Members-fold republish, second wave (0228, 2026-07-02) - status `accepted`
+
+The MF-A/B/C execution: consumed all 24 pending changesets, hand-repinned both edition `members`
+maps to the cascade-bumped versions (Compliance + Agentic-Dev), appended 33 `(id, version)` pairs to
+`registry/ledger.jsonl` (65 → 98) + rebuilt `registry/index.json`, re-baselined the two bootstrap-era
+guard tests. `CAISSON_PUBLISH_DRY_RUN` stays `"true"`. **Number reserved as 0228 against the in-flight
+`picker-locks-third-round` 0225–0227 set (ADR-0088 convention).**
+
+| #                                                                             | Title                                                                    | Domain         | Status   | Relations                                            |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------ | -------------- | -------- | ---------------------------------------------------- |
+| [0228](../knowledge/decisions/ADR-0228-members-fold-republish-second-wave.md) | Members-fold republish, second wave: full-tree repin + agent-runner fold | Registry/Infra | accepted | extends 0208 §5; realizes 0186 F5; relates 0178/0077 |
+
 ---
 
 ## Accepted is not the same as shipped
