@@ -150,6 +150,17 @@ export const MODULE_CATALOG: readonly CatalogItem[] = MODULE_PRICES.map(
   }),
 );
 
+/** Every Paddle price id the live catalog can sell — the hydration allowlist for
+ *  `lib/cart.ts` `pruneCart` (a persisted cart line carrying a retired id, e.g. the four
+ *  ADR-0238 edition-core rows, is dropped before it can reach checkout). */
+export const LIVE_PRICE_IDS: ReadonlySet<string> = new Set(
+  [
+    ...EDITION_CATALOG,
+    ...MODULE_CATALOG,
+    ...(BUNDLE_CATALOG_ITEM ? [BUNDLE_CATALOG_ITEM] : []),
+  ].map((c) => c.priceId),
+);
+
 /** The cart-ready catalog item for an edition slug (`compliance`, `ai-kit`, …). */
 export function editionCatalogItem(slug: string): CatalogItem | undefined {
   return EDITION_CATALOG.find((c) => c.id === editionCartId(slug));

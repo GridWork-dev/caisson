@@ -71,7 +71,7 @@ gw-frontend-designer research lane (read-only pass; no code changes)._
 
 ## 3. Product depth pages — module/edition detail routes
 
-**Locked shape (ADR-0237 F2):** real routes (`/marketplace/modules/[slug]` or equivalent) for all 15 modules on the section-union renderer (ADR-0232/0235) + a new `media` section kind; edition pages get the same media slot + card grammar; Product/Offer JSON-LD on every page; **placeholder brand art now, real media later.**
+**Locked shape (ADR-0237 F2):** real routes (`/marketplace/modules/[slug]` or equivalent) for all 11 standalone modules (ADR-0238 — the four edition cores present through their edition pages) on the section-union renderer (ADR-0232/0235) + a new `media` section kind; edition pages get the same media slot + card grammar; Product/Offer JSON-LD on every page; **placeholder brand art now, real media later.**
 
 ### Reference patterns
 
@@ -100,7 +100,12 @@ only contract that matters is the aspect-ratio container the real media will lat
 
 ---
 
-## 4. Bespoke icon set — ~21 marks (15 modules + 4 editions + plans)
+## 4. Bespoke icon set — ~17 marks (11 modules + 4 editions + bundle + plans)
+
+> **Count amendment (2026-07-03, ADR-0238):** the four edition-core à-la-carte rows were dropped —
+> the standalone-module catalog is 11, so the set sizes at ~17 marks, not ~21. Each edition mark
+> doubles as its core package's glyph where one is needed. "21" below is pre-0238 sizing; the
+> grammar and families are unchanged.
 
 ### Reference patterns for icon-language direction
 

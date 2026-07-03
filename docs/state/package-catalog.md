@@ -70,39 +70,40 @@ source of record. Not a defect — the gate is correctly enforcing it and its on
 for literal accuracy. `cli`, `migrate`, and `license-verify` join the open set on top of that (ADR-0136,
 commercial→Apache-2.0), bringing the enforced-open total to **15**.
 
-### Commercial — Compliance edition ($749) + members
+### Commercial — Compliance edition ($799) + members
 
-| Package            | License                                 | Sold as                        | Edition    | Build status         | Owns                                                                                         |
-| ------------------ | --------------------------------------- | ------------------------------ | ---------- | -------------------- | -------------------------------------------------------------------------------------------- |
-| `compliance`       | Commercial                              | edition $749 + à la carte $299 | Compliance | substantial          | evidence collectors, SOC2/HIPAA/EU-AI-Act frameworks, pack-format + Ed25519/RFC-3161 signing |
-| `field-crypto` †   | Commercial                              | à la carte $199                | Compliance | built                | per-tenant HKDF + AES-256-GCM envelope + crypto-shred                                        |
-| `audit-worm` †     | Commercial                              | à la carte $149                | Compliance | substantial          | SHA-256 hash-chain WORM store + S3 ObjectLock adapter                                        |
-| `alerting`         | — (no package.json; ADR-0135, doc-only) | à la carte $149                | Compliance | **pending (0 code)** | SOC2 CC7.2 alert pipeline (dedup → rate-cap → quiet-hours → deliver → audit)                 |
-| `retention-runner` | — (no package.json; ADR-0135, doc-only) | à la carte $199                | Compliance | **pending (0 code)** | CCPA/GDPR erasure runner (purge → cascade-delete → orphan-sweep → audit)                     |
+| Package            | License    | Sold as                                         | Edition    | Build status              | Owns                                                                                         |
+| ------------------ | ---------- | ----------------------------------------------- | ---------- | ------------------------- | -------------------------------------------------------------------------------------------- |
+| `compliance`       | Commercial | edition $799 (ADR-0227); edition-only, ADR-0238 | Compliance | substantial               | evidence collectors, SOC2/HIPAA/EU-AI-Act frameworks, pack-format + Ed25519/RFC-3161 signing |
+| `field-crypto` †   | Commercial | à la carte $199                                 | Compliance | built                     | per-tenant HKDF + AES-256-GCM envelope + crypto-shred                                        |
+| `audit-worm` †     | Commercial | à la carte $149                                 | Compliance | substantial               | SHA-256 hash-chain WORM store + S3 ObjectLock adapter                                        |
+| `alerting`         | Commercial | à la carte $149                                 | Compliance | built (Stage-2, ADR-0150) | SOC2 CC7.2 alert pipeline (dedup → rate-cap → quiet-hours → deliver → audit)                 |
+| `retention-runner` | Commercial | à la carte $199                                 | Compliance | built (Stage-2, ADR-0151) | CCPA/GDPR erasure runner (purge → cascade-delete → orphan-sweep → audit)                     |
 
 ### Commercial — AI Production Kit edition ($599) + members
 
-| Package             | License    | Sold as                                       | Edition           | Build status             | Owns                                                               |
-| ------------------- | ---------- | --------------------------------------------- | ----------------- | ------------------------ | ------------------------------------------------------------------ |
-| `ai-kit`            | Commercial | edition $599 + à la carte $149 (gateway root) | AI Production Kit | partial                  | inference gateway composing the 4 members below                    |
-| `ai-meter` †        | Commercial | à la carte $199                               | AI Production Kit | substantial              | PG-atomic token metering + per-tenant spend caps + circuit breaker |
-| `ai-evals` †        | Commercial | à la carte $199                               | AI Production Kit | substantial (thin tests) | eval harness + CI gate                                             |
-| `guardrails` †      | Commercial | à la carte $149                               | AI Production Kit | substantial              | input/output moderation + PII redaction                            |
-| `prompt-registry` † | Commercial | à la carte $99                                | AI Production Kit | substantial              | versioned prompt registry + golden-pinned render                   |
+| Package             | License    | Sold as                               | Edition           | Build status             | Owns                                                               |
+| ------------------- | ---------- | ------------------------------------- | ----------------- | ------------------------ | ------------------------------------------------------------------ |
+| `ai-kit`            | Commercial | edition $599 (edition-only, ADR-0238) | AI Production Kit | partial                  | inference gateway composing the 4 members below                    |
+| `ai-meter` †        | Commercial | à la carte $199                       | AI Production Kit | substantial              | PG-atomic token metering + per-tenant spend caps + circuit breaker |
+| `ai-evals` †        | Commercial | à la carte $199                       | AI Production Kit | substantial (thin tests) | eval harness + CI gate                                             |
+| `guardrails` †      | Commercial | à la carte $149                       | AI Production Kit | substantial              | input/output moderation + PII redaction                            |
+| `prompt-registry` † | Commercial | à la carte $99                        | AI Production Kit | substantial              | versioned prompt registry + golden-pinned render                   |
 
 ### Commercial — Agentic-Dev edition ($249) + members
 
-| Package          | License    | Sold as                       | Edition     | Build status | Owns                                                              |
-| ---------------- | ---------- | ----------------------------- | ----------- | ------------ | ----------------------------------------------------------------- |
-| `agent-dev`      | Commercial | edition $249 + à la carte $99 | Agentic-Dev | substantial  | typed agent/skill/rule schema + lifecycle + multi-harness emitter |
-| `agent-kernel` † | Commercial | à la carte $199               | Agentic-Dev | substantial  | governed engine-neutral agent kernel                              |
+| Package          | License    | Sold as                               | Edition     | Build status     | Owns                                                                           |
+| ---------------- | ---------- | ------------------------------------- | ----------- | ---------------- | ------------------------------------------------------------------------------ |
+| `agent-dev`      | Commercial | edition $249 (edition-only, ADR-0238) | Agentic-Dev | substantial      | typed agent/skill/rule schema + lifecycle + multi-harness emitter              |
+| `agent-kernel` † | Commercial | à la carte $199                       | Agentic-Dev | substantial      | governed engine-neutral agent kernel                                           |
+| `agent-runner` † | Commercial | à la carte $49                        | Agentic-Dev | built (ADR-0186) | sandboxed, governed agent execution (worktree isolation, auditable transcript) |
 
 ### Commercial — Local-first AI edition ($349) + members
 
-| Package         | License    | Sold as                        | Edition        | Build status | Owns                                                                      |
-| --------------- | ---------- | ------------------------------ | -------------- | ------------ | ------------------------------------------------------------------------- |
-| `local-ai`      | Commercial | edition $349 + à la carte $299 | Local-first AI | substantial  | compute seam, privacy gate, sqlite-vec ANN, offline license, two-way sync |
-| `local-store` † | Commercial | à la carte $99                 | Local-first AI | substantial  | local canonical store, file-per-tenant hybrid FTS5+vec                    |
+| Package         | License    | Sold as                               | Edition        | Build status | Owns                                                                      |
+| --------------- | ---------- | ------------------------------------- | -------------- | ------------ | ------------------------------------------------------------------------- |
+| `local-ai`      | Commercial | edition $349 (edition-only, ADR-0238) | Local-first AI | substantial  | compute seam, privacy gate, sqlite-vec ANN, offline license, two-way sync |
+| `local-store` † | Commercial | à la carte $99                        | Local-first AI | substantial  | local canonical store, file-per-tenant hybrid FTS5+vec                    |
 
 ### Commercial — bundle-only substrate (never a standalone SKU)
 

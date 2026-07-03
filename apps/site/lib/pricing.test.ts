@@ -170,28 +170,29 @@ describe("buildStackSummary (compose-a-stack math, ADR-0191)", () => {
 
   test("all of one edition's modules nudge to that edition when it costs less", () => {
     const s = buildStackSummary(idsOf("ai-kit"));
-    // 199 + 199 + 149 + 99 + 149 = 795 a la carte; the AI Production Kit edition is 599.
-    expect(s.total).toBe(795);
-    expect(s.moduleCount).toBe(5);
+    // 199 + 199 + 149 + 99 = 646 a la carte; the AI Production Kit edition is 599.
+    expect(s.total).toBe(646);
+    expect(s.moduleCount).toBe(4);
     expect(s.upgrade?.target).toBe("ai-kit");
     expect(s.upgrade?.price).toBe(599);
-    expect(s.upgrade?.saves).toBe(196);
+    expect(s.upgrade?.saves).toBe(47);
   });
 
   test("a cross-edition selection above the bundle price nudges to the bundle", () => {
     const s = buildStackSummary(MODULE_PRICES.map((m) => m.id));
-    // All 11 standalone modules: 547 + 795 + 99 + 248 = 1689 a la carte; the bundle is 1499.
+    // All 11 standalone modules: 696 + 646 + 99 + 248 = 1689 a la carte; the bundle is 1499.
     expect(s.total).toBe(1689);
     expect(s.upgrade?.target).toBe("bundle");
     expect(s.upgrade?.saves).toBe(190);
   });
 
   test("no upgrade offer when a la carte is already the cheapest path", () => {
-    // All three of Compliance's standalone modules (199 + 149 + 199 = 547) cost less than the 799
-    // edition, so nudging to the edition would cost MORE — no offer.
+    // All four of Compliance's standalone modules (199 + 149 + 199 + 149 = 696) cost less than the
+    // 799 edition, so nudging to the edition would cost MORE — no offer. (alerting is grouped under
+    // compliance because that edition composes @caisson/alerting, ADR-0205.)
     const s = buildStackSummary(idsOf("compliance"));
-    expect(s.total).toBe(547);
-    expect(s.moduleCount).toBe(3);
+    expect(s.total).toBe(696);
+    expect(s.moduleCount).toBe(4);
     expect(s.upgrade).toBeUndefined();
   });
 

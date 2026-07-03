@@ -73,6 +73,19 @@ export function serializeCart(items: readonly CartItem[]): string {
   return JSON.stringify(items);
 }
 
+/**
+ * Drop lines whose price id is no longer sellable. A persisted cart can outlive a catalog change
+ * (e.g. the four retired ADR-0238 edition-core rows): Paddle would still charge the stale id, then
+ * the webhook's `resolvePurchase` fails closed — buyer pays, nothing grants. Pruning at hydration
+ * (against `lib/catalog.ts` `LIVE_PRICE_IDS`) removes the line before it can reach checkout.
+ */
+export function pruneCart(
+  items: readonly CartItem[],
+  validPriceIds: ReadonlySet<string>,
+): CartItem[] {
+  return items.filter((i) => validPriceIds.has(i.priceId));
+}
+
 export interface CartUpgrade {
   /** The Everything-bundle line the cart would switch to. */
   bundle: CartItem;

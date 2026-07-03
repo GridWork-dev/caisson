@@ -124,6 +124,17 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     blurb:
       "Policy-driven data retention on a schedule — expiry and legal-hold, enforced automatically.",
   },
+  {
+    // Grouped under compliance because that is the edition that composes @caisson/alerting
+    // (packages/compliance dependency; ADR-0205) — an ai-kit grouping would let the /build
+    // edition nudge sell an upgrade that loses this module.
+    id: "alerting",
+    label: "Alert pipeline",
+    amount: 149,
+    edition: "compliance",
+    blurb:
+      "Deduped, rate-capped alert delivery with quiet hours and an audit trail — the SOC 2 CC7.2 alerting control, not another webhook blaster.",
+  },
   // ---- AI Production Kit ----
   {
     id: "ai-meter",
@@ -156,14 +167,6 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     edition: "ai-kit",
     blurb:
       "Versioned prompts with rollout history. No more prompts hardcoded three layers deep in a route handler.",
-  },
-  {
-    id: "alerting",
-    label: "Spend alerting",
-    amount: 149,
-    edition: "ai-kit",
-    blurb:
-      "Threshold alerts on token spend and error rate, wired to the channel you already watch.",
   },
   // ---- Local-first AI ----
   {
