@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { Button, Card, Icon, StatusChip } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { moduleCatalogItem, toCartItem } from "@/lib/catalog";
+import { moduleMark } from "@/lib/marks";
 import {
   EDITION_IDS,
   formatUsd,
@@ -13,7 +15,7 @@ import {
   type ModulePrice,
 } from "@/lib/pricing";
 
-import { EDITION_ICON, editionLabel } from "./marketplace";
+import { editionLabel } from "./marketplace";
 import styles from "./marketplace.module.css";
 
 // Price bands DERIVED from module.amount — no new data field (ADR-0191: facets derive from the
@@ -194,7 +196,8 @@ function ModuleCard({ module: m }: { module: ModulePrice }) {
           marginBottom: "var(--cs-space-3)",
         }}
       >
-        <Icon name={EDITION_ICON[m.edition]} />
+        {/* The module's own bespoke mark (ADR-0237 F6) — the edition stays a text tag. */}
+        <Icon name={moduleMark(m.id)} />
         <span
           className="cs-num"
           style={{
@@ -219,7 +222,13 @@ function ModuleCard({ module: m }: { module: ModulePrice }) {
           gap: "var(--cs-space-3)",
         }}
       >
-        <span className="cs-card-title">{m.label}</span>
+        <Link
+          href={`/marketplace/modules/${m.id}`}
+          className="cs-card-title"
+          style={{ textDecoration: "none" }}
+        >
+          {m.label}
+        </Link>
         <span
           className="cs-num"
           style={{

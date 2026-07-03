@@ -7,10 +7,12 @@ import { MobileNav } from "./mobile-nav";
 import { NavPanels, type NavPanelSpec } from "./nav-panels";
 import { NavSearchTrigger } from "./nav-search-trigger";
 import { Button } from "./button";
+import { EDITION_MARKS } from "@/lib/marks";
 import {
   EDITION_PRICES,
   editionPrice,
   formatUsd,
+  isEditionId,
   priceById,
 } from "@/lib/pricing";
 
@@ -39,6 +41,8 @@ const EDITIONS_PANEL: NavPanelSpec = {
       label: r.navLabel ?? r.label,
       note: priceById(slug)?.note ?? "",
       price: editionPrice(slug),
+      // The edition's bespoke waterline mark (ADR-0237 F6).
+      ...(isEditionId(slug) ? { icon: EDITION_MARKS[slug] } : {}),
     };
   }),
   foot: [
@@ -66,14 +70,14 @@ const MARKETPLACE_PANEL: NavPanelSpec = {
       label: "Editions",
       note: "Compare the four editions and the bundle.",
       price: `from ${formatUsd(EDITION_MIN)}`,
-      icon: "boxes",
+      icon: "caisson",
     },
     {
       href: "/marketplace/modules",
       label: "Modules",
       note: "Every standalone module, à la carte.",
       price: editionPrice("module"),
-      icon: "database",
+      icon: "boxes",
     },
     {
       href: "/marketplace/build",
@@ -86,7 +90,7 @@ const MARKETPLACE_PANEL: NavPanelSpec = {
       label: "Plans",
       note: "Subscriptions that keep it current.",
       price: `from ${editionPrice("developer")}`,
-      icon: "wallet",
+      icon: "plan-tier",
     },
   ],
 };

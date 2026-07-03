@@ -1,6 +1,7 @@
 import {
   Button,
   Card,
+  Faq,
   FeatureGrid,
   Icon,
   Reveal,
@@ -16,7 +17,12 @@ import {
   toCartItem,
 } from "@/lib/catalog";
 import type { CartItem } from "@/lib/cart";
-import { breadcrumb, serializeJsonLd, softwareApplication } from "@/lib/jsonld";
+import {
+  breadcrumb,
+  faqPage,
+  serializeJsonLd,
+  softwareApplication,
+} from "@/lib/jsonld";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import {
   bundleSavings,
@@ -25,6 +31,7 @@ import {
   EDITION_PRICES,
   formatPrice,
   formatUsd,
+  MODULE_PRICES,
   priceById,
   SKU_COLUMNS,
   SKU_FEATURE_ROWS,
@@ -33,10 +40,23 @@ import {
 
 export const metadata = buildMetadata({
   title: "Marketplace — Editions",
-  description:
-    "Compare the four Caisson editions and the everything bundle. Each edition is a composition of the same audited base — one-time perpetual, own the source, no renewal gate.",
+  description: `Buy a Caisson module, edition, or the everything bundle — ${MODULE_PRICES.length} modules across four editions, one-time perpetual pricing plus two subscription plans. Compose your own stack or take a full edition; own the source, no renewal gate.`,
   path: "/marketplace",
 });
+
+// The hub FAQ — real migration/purchase questions (ADR-0080 §6, no schema-bait), rendered
+// visibly below the matrix and mirrored into FAQPage JSON-LD.
+const HUB_FAQ = [
+  {
+    question: "What happened to /pricing, /modules, and /build?",
+    answer:
+      "They're tabs here now — Editions, Modules, and Build, plus a new Plans tab for subscriptions and enterprise procurement. Old links redirect automatically.",
+  },
+  {
+    question: "Can I buy one module without the edition around it?",
+    answer: `Yes. Each of the ${MODULE_PRICES.length} modules is a standalone one-time purchase — pick what composes onto your base, no edition required.`,
+  },
+] as const;
 
 // The Editions tab — the /marketplace hub root (ADR-0237 F1). Edition compare cards, the
 // good/better/best ladder, and the SKU matrix. Modules/Build/Plans live on their sibling tabs.
@@ -70,14 +90,16 @@ const EDITION_META: readonly EditionMeta[] = [
     ],
   },
   {
+    // Bullets are member-true (registry members map): the eval harness is standalone-only
+    // (ai-evals — no edition grants it), so it is never listed as edition content.
     id: "ai-kit",
     accent: false,
     includes: [
       "Provider-agnostic AI config + PG-atomic token metering",
       "Spend caps and per-tenant circuit breaker",
-      "Eval harness that runs in CI, not in prod",
-      "Prompt registry + input / output guardrails",
-      "Agent-setup config bundles",
+      "Versioned prompts with staged rollout",
+      "Input / output guardrails at one seam",
+      "BYOK included — metered embeddings through the same chokepoint",
     ],
   },
   {
@@ -396,6 +418,15 @@ export default function MarketplaceEditionsPage() {
           </div>
         </Section>
       </Reveal>
+
+      {/* ===== FAQ — the redirect + à-la-carte explainers ===== */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqPage(HUB_FAQ)) }}
+      />
+      <Section eyebrow="FAQ" title="Buying, briefly.">
+        <Faq items={HUB_FAQ} defaultOpenFirst />
+      </Section>
     </>
   );
 }

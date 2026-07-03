@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   Button,
   Card,
+  Faq,
   FeatureGrid,
   Icon,
   Reveal,
@@ -12,16 +13,40 @@ import {
 } from "@/components";
 import { CheckoutCta } from "@/components/checkout-cta";
 import { UpdatesForm } from "@/components/waitlist-form";
-import { breadcrumb, serializeJsonLd } from "@/lib/jsonld";
+import { breadcrumb, faqPage, serializeJsonLd } from "@/lib/jsonld";
 import { buildMetadata } from "@/lib/metadata";
 import { formatPrice, PLAN_PRICES } from "@/lib/pricing";
 
 export const metadata = buildMetadata({
   title: "Marketplace — Plans",
   description:
-    "Caisson subscription plans: Compliance Updates keeps framework mappings and evidence packs current; Developer delivers monthly credits and module updates. The codebase is yours either way.",
+    "Compliance Updates ($1,499/yr) and the Developer plan ($499/yr) are subscriptions on top of one-time, perpetual modules and editions. No renewal gate on code you already own.",
   path: "/marketplace/plans",
 });
+
+// Real buyer questions (ADR-0080 §6) — rendered visibly below and mirrored into FAQPage JSON-LD.
+const PLANS_FAQ = [
+  {
+    question: "Do I need a subscription to use an edition or module?",
+    answer:
+      "No. Every module and edition is a one-time perpetual license. Compliance Updates and the Developer plan add updates and credits on top; they're not required for the code to run.",
+  },
+  {
+    question: "What happens to my code if I cancel Compliance Updates?",
+    answer:
+      "You keep it. Cancelling stops new control-mapping updates and evidence-pack regeneration — it doesn't revoke the audit chain, WORM store, or field-crypto module you already own.",
+  },
+  {
+    question: "Is Compliance Updates the same as the Compliance edition?",
+    answer:
+      "No. The Compliance edition ($799, one-time) is the codebase. Compliance Updates ($1,499/yr) is the subscription that keeps its framework mappings and evidence packs current as regulations change.",
+  },
+  {
+    question: "What do Developer plan credits cover?",
+    answer:
+      "A monthly codegen and AI-feature credit allotment, plus entitlement-scoped pulls from the private registry and access to new editions on release.",
+  },
+] as const;
 
 // The Plans tab (ADR-0237 F1): the recurring SKUs — subscriptions + enterprise — plus the
 // licensing explainer. One-time purchases live on the Editions/Modules/Build tabs.
@@ -70,12 +95,42 @@ export default function MarketplacePlansPage() {
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbNode) }}
       />
 
+      {/* ===== One-time vs recurring — the framing ===== */}
+      <Section
+        eyebrow="One-time vs. recurring"
+        title="Two different things are for sale here."
+        lede={
+          <>
+            Modules, editions, and the everything bundle: pay once, own a
+            perpetual license, ship it closed. The price never recurs. The two
+            plans on this tab: pay yearly for the things that only make sense as
+            a subscription — frameworks that change under you, credits that
+            reset, a registry that keeps publishing. Stopping a plan stops new
+            updates and credits. It does not revoke code you already have.
+          </>
+        }
+      />
+
       {/* ===== Subscription plans ===== */}
       <Section
         id="subscriptions"
         eyebrow="Subscriptions"
-        title="Own it once, or subscribe to keep it current."
-        lede="Regulations don&rsquo;t hold still. The codebase is yours either way — subscriptions deliver the parts that move: framework maps, evidence-pack refreshes, and developer credits."
+        title="Own the code once. Subscribe only for what moves."
+        lede={
+          <>
+            The plans below don&rsquo;t gate code you already own — they deliver
+            the parts that keep changing after you buy it: updated framework
+            mappings, regenerated evidence packs, and developer credits.
+            <span
+              className="cs-footnote"
+              style={{ display: "block", marginTop: "var(--cs-space-3)" }}
+            >
+              Compliance Updates is not the Compliance edition. The edition
+              ($799, one-time) is the code; Compliance Updates ($1,499/yr) is
+              the subscription that keeps its framework mappings current.
+            </span>
+          </>
+        }
       >
         <FeatureGrid cols={2}>
           {SUB_META.map((sub, i) => {
@@ -252,6 +307,19 @@ export default function MarketplacePlansPage() {
             </>
           }
         />
+      </Reveal>
+
+      {/* ===== FAQ ===== */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: serializeJsonLd(faqPage(PLANS_FAQ)),
+        }}
+      />
+      <Reveal>
+        <Section eyebrow="FAQ" title="Subscriptions, briefly.">
+          <Faq items={PLANS_FAQ} defaultOpenFirst />
+        </Section>
       </Reveal>
 
       {/* ===== Get started ===== */}
