@@ -137,10 +137,12 @@ implementation**. The harvestable license kit is taken from PUBLIC `tessera`.
   files (ADR-0136 added cli·migrate·license-verify — incl. the generator — to the open Base set); the
   standards-gate enforces the license split + the open↔commercial no-depend-up boundary.
   Remaining W1 tail: `apps/site` licensing copy (design track owns that tree).
-- **Site go-live posture** — LOCKED (**ADR-0082**): the site reads **live self-serve** (purchase CTAs,
-  no waitlist), **committed prices** (no "indicative/subject-to-change" frame — supersedes ADR-0081),
-  **artifacts true-to-built** (no fabricated CLI/CI for the unbuilt editions); Agentic-Dev the one
-  labeled-roadmap exception. Real checkout + EULA drafting are tracked fast-follows.
+- **Site go-live posture** — LOCKED (**ADR-0082**, amended by **ADR-0237 rider 2**): the site reads
+  **live self-serve** (purchase CTAs, no waitlist), **committed prices** (no
+  "indicative/subject-to-change" frame — supersedes ADR-0081), **artifacts true-to-built** as the
+  floor, and — per 0237 rider 2 — **FULL V1-live posture**: no roadmap labels, no "coming soon", no
+  future framing anywhere; the old Agentic-Dev labeled-roadmap exception is RETIRED. Real checkout +
+  EULA have since shipped.
 
 ## Still open (do NOT pre-bind)
 
