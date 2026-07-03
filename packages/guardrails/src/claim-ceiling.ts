@@ -45,7 +45,9 @@ export const claimEvidenceSchema = strictObject({
    *  true "cuts X in half" claim could never be licensed. */
   direction: z.enum(["increase", "decrease"]).default("increase"),
 });
-export type ClaimEvidence = z.infer<typeof claimEvidenceSchema>;
+// The INPUT shape (direction optional, default "increase") — callers hand-construct evidence
+// literals; claimTier treats an absent direction as "increase", matching the schema default.
+export type ClaimEvidence = z.input<typeof claimEvidenceSchema>;
 
 /** A candidate claim string tagged with the minimum evidence tier it requires to run. */
 export const claimSchema = strictObject({
