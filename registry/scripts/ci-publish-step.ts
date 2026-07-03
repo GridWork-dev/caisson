@@ -198,14 +198,16 @@ export type PackFn = (
   stagingDir: string,
 ) => Uint8Array;
 
-/** Default pack: `bun pm pack` (execFile arg-array, no shell). Scope dropped via an explicit --filename. */
+/** Default pack: `bun pm pack` (execFile arg-array, no shell). Scope dropped via an explicit
+ * --filename, passed as the FULL staged path — bun rejects --filename combined with
+ * --destination ("cannot use both filename and destination"), so the path carries the dir. */
 const defaultPack: PackFn = (packageDir, slug, version, stagingDir) => {
   const outDir = join(stagingDir, slug);
   mkdirSync(outDir, { recursive: true });
   const filename = `${slug}-${version}.tgz`;
   const res = spawnSync(
     "bun",
-    ["pm", "pack", "--quiet", "--destination", outDir, "--filename", filename],
+    ["pm", "pack", "--quiet", "--filename", join(outDir, filename)],
     { cwd: packageDir, encoding: "buffer" },
   );
   if (res.status !== 0) {
