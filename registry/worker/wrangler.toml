@@ -35,6 +35,14 @@ routes = [
 binding = "TARBALLS"
 bucket_name = "caisson-registry-tarballs"
 
+# Edge license-revocation deny-set (ADR-0225 R-4=B, launch-runbook §8): deploy-entry reads
+# `revocations/deny-set.json` via env.REVOCATIONS on a 60s stale-while-revalidate TTL, STRICT
+# fail-open (absent object = nobody denied, installs never break). The admin-side publisher stays
+# env-gated ("skipped") until CAISSON_REVOCATIONS_PUT_URL is provisioned on caisson-admin.
+[[r2_buckets]]
+binding = "REVOCATIONS"
+bucket_name = "caisson-registry-revocations"
+
 # Cloudflare Workers observability (native Workers Logs) — invocation logs + sampling in the CF
 # dashboard, no external collector. Distinct from the app-side OTel stack (ADR-0117; fleet sink is
 # Grafana Cloud since ADR-0177). Enabled so the license-gating redeploy (ADR-0136) is observable at

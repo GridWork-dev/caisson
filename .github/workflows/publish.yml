@@ -28,6 +28,15 @@ name: publish
 on:
   push:
     branches: [main]
+  # One-shot operator lever: a manual dispatch with dry_run=false runs ONE live consume
+  # (changeset version + ledger/index + R2 tarball upload + commit-back). Push-triggered runs
+  # stay dry-run — the hardcoded-default below only flips per-dispatch, never latches.
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Set to 'false' to run a LIVE publish (version bumps + R2 upload + commit to main)"
+        required: false
+        default: "true"
 
 permissions:
   contents: read
@@ -52,8 +61,9 @@ jobs:
     permissions:
       contents: write
     env:
-      # Operator publish gate (ADR-0069/0223). Default is dry-run; set "false" to go live.
-      CAISSON_PUBLISH_DRY_RUN: "true"
+      # Operator publish gate (ADR-0069/0223). Default is dry-run; a workflow_dispatch with
+      # dry_run=false runs one live consume. Push events have no inputs → falls back to "true".
+      CAISSON_PUBLISH_DRY_RUN: ${{ github.event.inputs.dry_run || 'true' }}
     steps:
       - uses: actions/checkout@v5
         with:
