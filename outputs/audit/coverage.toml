@@ -1,0 +1,8355 @@
+# audit-harness per-round coverage ledger — ADR-0233 (ADVISORY). One row per audited cell.
+# A cell = (domain × applicable-dimension). executed=true means a finder actually ran the cell this
+# round; a missing/executed=false cell is an unaudited surface, made visible instead of inferred.
+
+[[cell]]
+round = 1
+domain = "apps/admin"
+dimension = "D1"
+files_scanned = 57
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/admin"
+dimension = "D2"
+files_scanned = 66
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/admin"
+dimension = "D6"
+files_scanned = 65
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/admin"
+dimension = "D7"
+files_scanned = 58
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/agent-dev"
+dimension = "D1"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/agent-dev"
+dimension = "D2"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/agent-dev"
+dimension = "D3"
+files_scanned = 15
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/agent-dev"
+dimension = "D4"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/agent-dev"
+dimension = "D6"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/agent-dev"
+dimension = "D7"
+files_scanned = 10
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/ai-kit"
+dimension = "D1"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/ai-kit"
+dimension = "D2"
+files_scanned = 22
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/ai-kit"
+dimension = "D3"
+files_scanned = 22
+findings = 2
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/ai-kit"
+dimension = "D4"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/ai-kit"
+dimension = "D6"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/base"
+dimension = "D1"
+files_scanned = 6
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/base"
+dimension = "D2"
+files_scanned = 39
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/base"
+dimension = "D3"
+files_scanned = 15
+findings = 2
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/base"
+dimension = "D4"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/base"
+dimension = "D6"
+files_scanned = 7
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/base"
+dimension = "D7"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/compliance"
+dimension = "D1"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/compliance"
+dimension = "D2"
+files_scanned = 21
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/compliance"
+dimension = "D3"
+files_scanned = 21
+findings = 2
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/compliance"
+dimension = "D4"
+files_scanned = 18
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/compliance"
+dimension = "D6"
+files_scanned = 4
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/compliance"
+dimension = "D7"
+files_scanned = 14
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/local-ai"
+dimension = "D1"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/local-ai"
+dimension = "D2"
+files_scanned = 17
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/local-ai"
+dimension = "D3"
+files_scanned = 17
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/local-ai"
+dimension = "D4"
+files_scanned = 14
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/local-ai"
+dimension = "D6"
+files_scanned = 4
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/site"
+dimension = "D1"
+files_scanned = 152
+findings = 2
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/site"
+dimension = "D2"
+files_scanned = 202
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/site"
+dimension = "D3"
+files_scanned = 51
+findings = 2
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/site"
+dimension = "D4"
+files_scanned = 203
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/site"
+dimension = "D6"
+files_scanned = 14
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/studio"
+dimension = "D1"
+files_scanned = 0
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/studio"
+dimension = "D2"
+files_scanned = 0
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/studio"
+dimension = "D3"
+files_scanned = 0
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/studio"
+dimension = "D4"
+files_scanned = 0
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "apps/studio"
+dimension = "D6"
+files_scanned = 0
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "docs-content"
+dimension = "D1"
+files_scanned = 26
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "docs-content"
+dimension = "D2"
+files_scanned = 26
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "docs-content"
+dimension = "D6"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "generator-templates"
+dimension = "D1"
+files_scanned = 35
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "generator-templates"
+dimension = "D2"
+files_scanned = 24
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "generator-templates"
+dimension = "D3"
+files_scanned = 18
+findings = 2
+executed = true
+
+[[cell]]
+round = 1
+domain = "generator-templates"
+dimension = "D4"
+files_scanned = 24
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "generator-templates"
+dimension = "D6"
+files_scanned = 7
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "infra/discord"
+dimension = "D1"
+files_scanned = 1
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "infra/discord"
+dimension = "D2"
+files_scanned = 1
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "infra/discord"
+dimension = "D6"
+files_scanned = 1
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "infra/kms"
+dimension = "D1"
+files_scanned = 1
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "infra/kms"
+dimension = "D2"
+files_scanned = 1
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "infra/kms"
+dimension = "D6"
+files_scanned = 1
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "infra/license-issuer"
+dimension = "D1"
+files_scanned = 1
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "infra/license-issuer"
+dimension = "D2"
+files_scanned = 1
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "infra/license-issuer"
+dimension = "D6"
+files_scanned = 1
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "infra/signoz"
+dimension = "D1"
+files_scanned = 3
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "infra/signoz"
+dimension = "D2"
+files_scanned = 3
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "infra/signoz"
+dimension = "D6"
+files_scanned = 3
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "infra/terraform"
+dimension = "D1"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "infra/terraform"
+dimension = "D2"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "infra/terraform"
+dimension = "D6"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "infra/worm"
+dimension = "D1"
+files_scanned = 1
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "infra/worm"
+dimension = "D2"
+files_scanned = 1
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "infra/worm"
+dimension = "D6"
+files_scanned = 1
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D1"
+files_scanned = 51
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D1"
+files_scanned = 431
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D1"
+files_scanned = 1
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D1"
+files_scanned = 19
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D1"
+files_scanned = 19
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D1"
+files_scanned = 1
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D1"
+files_scanned = 51
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D1"
+files_scanned = 51
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D1"
+files_scanned = 431
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D2"
+files_scanned = 51
+findings = 6
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D2"
+files_scanned = 431
+findings = 6
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D2"
+files_scanned = 51
+findings = 6
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D2"
+files_scanned = 862
+findings = 6
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D2"
+files_scanned = 431
+findings = 6
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D2"
+files_scanned = 51
+findings = 6
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D2"
+files_scanned = 431
+findings = 6
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D2"
+files_scanned = 51
+findings = 6
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D2"
+files_scanned = 431
+findings = 6
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D2"
+files_scanned = 431
+findings = 6
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D3"
+files_scanned = 51
+findings = 22
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D3"
+files_scanned = 51
+findings = 22
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D3"
+files_scanned = 431
+findings = 22
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D4"
+files_scanned = 431
+findings = 23
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D4"
+files_scanned = 432
+findings = 23
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D4"
+files_scanned = 431
+findings = 23
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D4"
+files_scanned = 431
+findings = 23
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D6"
+files_scanned = 431
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D6"
+files_scanned = 10
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D6"
+files_scanned = 431
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D6"
+files_scanned = 12
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D6"
+files_scanned = 12
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D6"
+files_scanned = 15
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D6"
+files_scanned = 51
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D6"
+files_scanned = 10
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D6"
+files_scanned = 51
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D7"
+files_scanned = 94
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D7"
+files_scanned = 18
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D7"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D7"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D7"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "oss-mirror"
+dimension = "D7"
+files_scanned = 285
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/agent-dev"
+dimension = "D1"
+files_scanned = 27
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/agent-dev"
+dimension = "D2"
+files_scanned = 27
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/agent-dev"
+dimension = "D3"
+files_scanned = 25
+findings = 6
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/agent-dev"
+dimension = "D4"
+files_scanned = 27
+findings = 2
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/agent-dev"
+dimension = "D6"
+files_scanned = 30
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/agent-dev"
+dimension = "D7"
+files_scanned = 47
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/agent-kernel"
+dimension = "D1"
+files_scanned = 25
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/agent-kernel"
+dimension = "D2"
+files_scanned = 25
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/agent-kernel"
+dimension = "D3"
+files_scanned = 23
+findings = 5
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/agent-kernel"
+dimension = "D4"
+files_scanned = 25
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/agent-kernel"
+dimension = "D6"
+files_scanned = 28
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/agent-kernel"
+dimension = "D7"
+files_scanned = 52
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/agent-runner"
+dimension = "D1"
+files_scanned = 13
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/agent-runner"
+dimension = "D2"
+files_scanned = 13
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/agent-runner"
+dimension = "D3"
+files_scanned = 11
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/agent-runner"
+dimension = "D4"
+files_scanned = 13
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/agent-runner"
+dimension = "D6"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/agent-runner"
+dimension = "D7"
+files_scanned = 25
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ai-config"
+dimension = "D1"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ai-config"
+dimension = "D2"
+files_scanned = 12
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ai-config"
+dimension = "D3"
+files_scanned = 9
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ai-config"
+dimension = "D4"
+files_scanned = 12
+findings = 2
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ai-config"
+dimension = "D6"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ai-config"
+dimension = "D7"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ai-evals"
+dimension = "D1"
+files_scanned = 27
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ai-evals"
+dimension = "D2"
+files_scanned = 27
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ai-evals"
+dimension = "D3"
+files_scanned = 21
+findings = 5
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ai-evals"
+dimension = "D4"
+files_scanned = 27
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ai-evals"
+dimension = "D6"
+files_scanned = 30
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ai-evals"
+dimension = "D7"
+files_scanned = 57
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ai-kit"
+dimension = "D1"
+files_scanned = 21
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ai-kit"
+dimension = "D2"
+files_scanned = 21
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ai-kit"
+dimension = "D3"
+files_scanned = 17
+findings = 5
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ai-kit"
+dimension = "D4"
+files_scanned = 21
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ai-kit"
+dimension = "D6"
+files_scanned = 24
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ai-kit"
+dimension = "D7"
+files_scanned = 45
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ai-meter"
+dimension = "D1"
+files_scanned = 17
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ai-meter"
+dimension = "D2"
+files_scanned = 18
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ai-meter"
+dimension = "D3"
+files_scanned = 18
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ai-meter"
+dimension = "D4"
+files_scanned = 18
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ai-meter"
+dimension = "D6"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ai-meter"
+dimension = "D7"
+files_scanned = 21
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/alerting"
+dimension = "D1"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/alerting"
+dimension = "D2"
+files_scanned = 17
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/alerting"
+dimension = "D3"
+files_scanned = 17
+findings = 5
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/alerting"
+dimension = "D4"
+files_scanned = 17
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/alerting"
+dimension = "D6"
+files_scanned = 10
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/alerting"
+dimension = "D7"
+files_scanned = 20
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/audit-harness"
+dimension = "D1"
+files_scanned = 22
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/audit-harness"
+dimension = "D2"
+files_scanned = 23
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/audit-harness"
+dimension = "D6"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/audit-harness"
+dimension = "D7"
+files_scanned = 26
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/audit-worm"
+dimension = "D1"
+files_scanned = 23
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/audit-worm"
+dimension = "D2"
+files_scanned = 26
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/audit-worm"
+dimension = "D3"
+files_scanned = 26
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/audit-worm"
+dimension = "D4"
+files_scanned = 26
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/audit-worm"
+dimension = "D6"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/audit-worm"
+dimension = "D7"
+files_scanned = 29
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/auth"
+dimension = "D1"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/auth"
+dimension = "D2"
+files_scanned = 18
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/auth"
+dimension = "D3"
+files_scanned = 18
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/auth"
+dimension = "D4"
+files_scanned = 18
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/auth"
+dimension = "D6"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/auth"
+dimension = "D7"
+files_scanned = 21
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/billing"
+dimension = "D1"
+files_scanned = 22
+findings = 2
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/billing"
+dimension = "D2"
+files_scanned = 25
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/billing"
+dimension = "D3"
+files_scanned = 25
+findings = 5
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/billing"
+dimension = "D4"
+files_scanned = 25
+findings = 6
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/billing"
+dimension = "D6"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/billing"
+dimension = "D7"
+files_scanned = 28
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/cli"
+dimension = "D1"
+files_scanned = 14
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/cli"
+dimension = "D2"
+files_scanned = 46
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/cli"
+dimension = "D3"
+files_scanned = 41
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/cli"
+dimension = "D4"
+files_scanned = 41
+findings = 2
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/cli"
+dimension = "D6"
+files_scanned = 46
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/cli"
+dimension = "D7"
+files_scanned = 46
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/compliance"
+dimension = "D1"
+files_scanned = 21
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/compliance"
+dimension = "D2"
+files_scanned = 64
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/compliance"
+dimension = "D3"
+files_scanned = 70
+findings = 6
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/compliance"
+dimension = "D4"
+files_scanned = 64
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/compliance"
+dimension = "D6"
+files_scanned = 64
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/compliance"
+dimension = "D7"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/credits"
+dimension = "D1"
+files_scanned = 3
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/credits"
+dimension = "D2"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/credits"
+dimension = "D3"
+files_scanned = 18
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/credits"
+dimension = "D4"
+files_scanned = 12
+findings = 2
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/credits"
+dimension = "D6"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/credits"
+dimension = "D7"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/email"
+dimension = "D1"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/email"
+dimension = "D2"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/email"
+dimension = "D3"
+files_scanned = 22
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/email"
+dimension = "D4"
+files_scanned = 16
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/email"
+dimension = "D6"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/email"
+dimension = "D7"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/field-crypto"
+dimension = "D1"
+files_scanned = 14
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/field-crypto"
+dimension = "D2"
+files_scanned = 36
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/field-crypto"
+dimension = "D3"
+files_scanned = 42
+findings = 5
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/field-crypto"
+dimension = "D4"
+files_scanned = 36
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/field-crypto"
+dimension = "D6"
+files_scanned = 36
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/field-crypto"
+dimension = "D7"
+files_scanned = 36
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/guardrails"
+dimension = "D1"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/guardrails"
+dimension = "D2"
+files_scanned = 14
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/guardrails"
+dimension = "D3"
+files_scanned = 18
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/guardrails"
+dimension = "D4"
+files_scanned = 14
+findings = 2
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/guardrails"
+dimension = "D6"
+files_scanned = 14
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/guardrails"
+dimension = "D7"
+files_scanned = 14
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/jobs"
+dimension = "D1"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/jobs"
+dimension = "D2"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/jobs"
+dimension = "D3"
+files_scanned = 22
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/jobs"
+dimension = "D4"
+files_scanned = 17
+findings = 2
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/jobs"
+dimension = "D6"
+files_scanned = 22
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/jobs"
+dimension = "D7"
+files_scanned = 11
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/kernel"
+dimension = "D1"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/kernel"
+dimension = "D2"
+files_scanned = 48
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/kernel"
+dimension = "D3"
+files_scanned = 45
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/kernel"
+dimension = "D4"
+files_scanned = 48
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/kernel"
+dimension = "D6"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/kernel"
+dimension = "D7"
+files_scanned = 33
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/license-issue"
+dimension = "D1"
+files_scanned = 4
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/license-issue"
+dimension = "D2"
+files_scanned = 11
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/license-issue"
+dimension = "D6"
+files_scanned = 14
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/license-issue"
+dimension = "D7"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/license-verify"
+dimension = "D1"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/license-verify"
+dimension = "D2"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/license-verify"
+dimension = "D3"
+files_scanned = 14
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/license-verify"
+dimension = "D4"
+files_scanned = 16
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/license-verify"
+dimension = "D6"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/license-verify"
+dimension = "D7"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/local-ai"
+dimension = "D1"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/local-ai"
+dimension = "D2"
+files_scanned = 44
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/local-ai"
+dimension = "D3"
+files_scanned = 42
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/local-ai"
+dimension = "D4"
+files_scanned = 44
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/local-ai"
+dimension = "D6"
+files_scanned = 47
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/local-ai"
+dimension = "D7"
+files_scanned = 31
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/local-store"
+dimension = "D1"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/local-store"
+dimension = "D2"
+files_scanned = 24
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/local-store"
+dimension = "D3"
+files_scanned = 23
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/local-store"
+dimension = "D4"
+files_scanned = 24
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/local-store"
+dimension = "D6"
+files_scanned = 27
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/local-store"
+dimension = "D7"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/mcp-server"
+dimension = "D1"
+files_scanned = 17
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/mcp-server"
+dimension = "D2"
+files_scanned = 20
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/mcp-server"
+dimension = "D3"
+files_scanned = 17
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/mcp-server"
+dimension = "D4"
+files_scanned = 20
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/mcp-server"
+dimension = "D6"
+files_scanned = 20
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/mcp-server"
+dimension = "D7"
+files_scanned = 17
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/migrate"
+dimension = "D1"
+files_scanned = 13
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/migrate"
+dimension = "D2"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/migrate"
+dimension = "D3"
+files_scanned = 13
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/migrate"
+dimension = "D4"
+files_scanned = 19
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/migrate"
+dimension = "D6"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/migrate"
+dimension = "D7"
+files_scanned = 13
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/observability"
+dimension = "D1"
+files_scanned = 13
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/observability"
+dimension = "D2"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/observability"
+dimension = "D3"
+files_scanned = 13
+findings = 9
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/observability"
+dimension = "D4"
+files_scanned = 15
+findings = 5
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/observability"
+dimension = "D6"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/observability"
+dimension = "D7"
+files_scanned = 13
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/platform-reads"
+dimension = "D1"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/platform-reads"
+dimension = "D2"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/platform-reads"
+dimension = "D6"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/platform-reads"
+dimension = "D7"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/pricebook"
+dimension = "D1"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/pricebook"
+dimension = "D2"
+files_scanned = 17
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/pricebook"
+dimension = "D6"
+files_scanned = 17
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/pricebook"
+dimension = "D7"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/prompt-registry"
+dimension = "D1"
+files_scanned = 13
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/prompt-registry"
+dimension = "D2"
+files_scanned = 14
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/prompt-registry"
+dimension = "D3"
+files_scanned = 13
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/prompt-registry"
+dimension = "D4"
+files_scanned = 14
+findings = 2
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/prompt-registry"
+dimension = "D6"
+files_scanned = 14
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/prompt-registry"
+dimension = "D7"
+files_scanned = 13
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/registry-schema"
+dimension = "D1"
+files_scanned = 11
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/registry-schema"
+dimension = "D2"
+files_scanned = 20
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/registry-schema"
+dimension = "D3"
+files_scanned = 18
+findings = 9
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/registry-schema"
+dimension = "D4"
+files_scanned = 20
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/registry-schema"
+dimension = "D6"
+files_scanned = 20
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/registry-schema"
+dimension = "D7"
+files_scanned = 18
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/retention-runner"
+dimension = "D1"
+files_scanned = 11
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/retention-runner"
+dimension = "D2"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/retention-runner"
+dimension = "D3"
+files_scanned = 16
+findings = 5
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/retention-runner"
+dimension = "D4"
+files_scanned = 19
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/retention-runner"
+dimension = "D6"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/retention-runner"
+dimension = "D7"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/tenancy-rls"
+dimension = "D1"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/tenancy-rls"
+dimension = "D2"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/tenancy-rls"
+dimension = "D3"
+files_scanned = 13
+findings = 9
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/tenancy-rls"
+dimension = "D4"
+files_scanned = 16
+findings = 5
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/tenancy-rls"
+dimension = "D6"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/tenancy-rls"
+dimension = "D7"
+files_scanned = 13
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/tool-exec"
+dimension = "D1"
+files_scanned = 4
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/tool-exec"
+dimension = "D2"
+files_scanned = 10
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/tool-exec"
+dimension = "D3"
+files_scanned = 9
+findings = 3
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/tool-exec"
+dimension = "D4"
+files_scanned = 10
+findings = 2
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/tool-exec"
+dimension = "D6"
+files_scanned = 10
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/tool-exec"
+dimension = "D7"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ui"
+dimension = "D1"
+files_scanned = 44
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ui"
+dimension = "D2"
+files_scanned = 80
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ui"
+dimension = "D3"
+files_scanned = 51
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ui"
+dimension = "D4"
+files_scanned = 80
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ui"
+dimension = "D6"
+files_scanned = 80
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "packages/ui"
+dimension = "D7"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "registry/schema"
+dimension = "D1"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "registry/schema"
+dimension = "D2"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "registry/schema"
+dimension = "D6"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "registry/scripts"
+dimension = "D1"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "registry/scripts"
+dimension = "D2"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "registry/scripts"
+dimension = "D6"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "registry/worker"
+dimension = "D1"
+files_scanned = 13
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "registry/worker"
+dimension = "D2"
+files_scanned = 13
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "registry/worker"
+dimension = "D6"
+files_scanned = 13
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D1"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D1"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D1"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D1"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D1"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D1"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D1"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D1"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D1"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D2"
+files_scanned = 6
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D2"
+files_scanned = 6
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D2"
+files_scanned = 3
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D2"
+files_scanned = 5
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D2"
+files_scanned = 7
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D2"
+files_scanned = 6
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D2"
+files_scanned = 6
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D2"
+files_scanned = 6
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D2"
+files_scanned = 6
+findings = 4
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D3"
+files_scanned = 6
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D3"
+files_scanned = 6
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D4"
+files_scanned = 6
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D4"
+files_scanned = 6
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D4"
+files_scanned = 6
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D6"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D6"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D6"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D6"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D6"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D6"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D6"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D6"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D6"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D7"
+files_scanned = 7
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D7"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D7"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D7"
+files_scanned = 7
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D7"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "root-docs"
+dimension = "D7"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "scripts"
+dimension = "D1"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "scripts"
+dimension = "D2"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "scripts"
+dimension = "D6"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "services/docs"
+dimension = "D1"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "services/docs"
+dimension = "D2"
+files_scanned = 29
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "services/docs"
+dimension = "D3"
+files_scanned = 27
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "services/docs"
+dimension = "D4"
+files_scanned = 29
+findings = 2
+executed = true
+
+[[cell]]
+round = 1
+domain = "services/docs"
+dimension = "D6"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "services/license"
+dimension = "D1"
+files_scanned = 14
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "services/license"
+dimension = "D2"
+files_scanned = 40
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "services/license"
+dimension = "D3"
+files_scanned = 38
+findings = 5
+executed = true
+
+[[cell]]
+round = 1
+domain = "services/license"
+dimension = "D4"
+files_scanned = 40
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "services/license"
+dimension = "D6"
+files_scanned = 7
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "services/support-bot"
+dimension = "D1"
+files_scanned = 11
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "services/support-bot"
+dimension = "D2"
+files_scanned = 34
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "services/support-bot"
+dimension = "D3"
+files_scanned = 33
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "services/support-bot"
+dimension = "D4"
+files_scanned = 37
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "services/support-bot"
+dimension = "D6"
+files_scanned = 14
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "tooling/design-critic"
+dimension = "D1"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "tooling/design-critic"
+dimension = "D2"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "tooling/design-critic"
+dimension = "D6"
+files_scanned = 4
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "tooling/eslint-config"
+dimension = "D1"
+files_scanned = 3
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "tooling/eslint-config"
+dimension = "D2"
+files_scanned = 7
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "tooling/eslint-config"
+dimension = "D6"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "tooling/scripts"
+dimension = "D1"
+files_scanned = 4
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "tooling/scripts"
+dimension = "D2"
+files_scanned = 4
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "tooling/scripts"
+dimension = "D6"
+files_scanned = 4
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "tooling/standards-gate"
+dimension = "D1"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "tooling/standards-gate"
+dimension = "D2"
+files_scanned = 18
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "tooling/standards-gate"
+dimension = "D6"
+files_scanned = 7
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "tooling/testing"
+dimension = "D1"
+files_scanned = 11
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "tooling/testing"
+dimension = "D2"
+files_scanned = 34
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "tooling/testing"
+dimension = "D6"
+files_scanned = 4
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "tooling/tsconfig"
+dimension = "D1"
+files_scanned = 3
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "tooling/tsconfig"
+dimension = "D2"
+files_scanned = 3
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "tooling/tsconfig"
+dimension = "D6"
+files_scanned = 3
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "tools/strix"
+dimension = "D1"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "tools/strix"
+dimension = "D2"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "tools/strix"
+dimension = "D6"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "workflows"
+dimension = "D1"
+files_scanned = 8
+findings = 1
+executed = true
+
+[[cell]]
+round = 1
+domain = "workflows"
+dimension = "D2"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 1
+domain = "workflows"
+dimension = "D6"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "apps/ai-kit"
+dimension = "D1"
+files_scanned = 19
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "apps/ai-kit"
+dimension = "D2"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "apps/ai-kit"
+dimension = "D3"
+files_scanned = 19
+findings = 2
+executed = true
+
+[[cell]]
+round = 2
+domain = "apps/ai-kit"
+dimension = "D4"
+files_scanned = 18
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "apps/ai-kit"
+dimension = "D6"
+files_scanned = 7
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "apps/ai-kit"
+dimension = "D7"
+files_scanned = 86
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "apps/base"
+dimension = "D1"
+files_scanned = 8
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "apps/base"
+dimension = "D2"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "apps/base"
+dimension = "D3"
+files_scanned = 11
+findings = 4
+executed = true
+
+[[cell]]
+round = 2
+domain = "apps/base"
+dimension = "D4"
+files_scanned = 12
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "apps/base"
+dimension = "D6"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "apps/base"
+dimension = "D7"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "apps/site"
+dimension = "D1"
+files_scanned = 199
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "apps/site"
+dimension = "D2"
+files_scanned = 199
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "apps/site"
+dimension = "D3"
+files_scanned = 203
+findings = 4
+executed = true
+
+[[cell]]
+round = 2
+domain = "apps/site"
+dimension = "D4"
+files_scanned = 198
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "apps/site"
+dimension = "D6"
+files_scanned = 198
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "apps/site"
+dimension = "D7"
+files_scanned = 203
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "apps/studio"
+dimension = "D1"
+files_scanned = 0
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "apps/studio"
+dimension = "D2"
+files_scanned = 0
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "apps/studio"
+dimension = "D3"
+files_scanned = 0
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "apps/studio"
+dimension = "D4"
+files_scanned = 0
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "apps/studio"
+dimension = "D6"
+files_scanned = 0
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "apps/studio"
+dimension = "D7"
+files_scanned = 0
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "docs-content"
+dimension = "D1"
+files_scanned = 235
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "docs-content"
+dimension = "D2"
+files_scanned = 235
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "docs-content"
+dimension = "D6"
+files_scanned = 235
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "docs-content"
+dimension = "D7"
+files_scanned = 41
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "generator-templates"
+dimension = "D1"
+files_scanned = 24
+findings = 2
+executed = true
+
+[[cell]]
+round = 2
+domain = "generator-templates"
+dimension = "D2"
+files_scanned = 23
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "generator-templates"
+dimension = "D3"
+files_scanned = 24
+findings = 2
+executed = true
+
+[[cell]]
+round = 2
+domain = "generator-templates"
+dimension = "D4"
+files_scanned = 24
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "generator-templates"
+dimension = "D6"
+files_scanned = 24
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "generator-templates"
+dimension = "D7"
+files_scanned = 24
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "infra/license-issuer"
+dimension = "D1"
+files_scanned = 1
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "infra/license-issuer"
+dimension = "D2"
+files_scanned = 1
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "infra/license-issuer"
+dimension = "D6"
+files_scanned = 1
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "infra/license-issuer"
+dimension = "D7"
+files_scanned = 1
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "oss-mirror"
+dimension = "D1"
+files_scanned = 431
+findings = 3
+executed = true
+
+[[cell]]
+round = 2
+domain = "oss-mirror"
+dimension = "D2"
+files_scanned = 431
+findings = 3
+executed = true
+
+[[cell]]
+round = 2
+domain = "oss-mirror"
+dimension = "D3"
+files_scanned = 431
+findings = 27
+executed = true
+
+[[cell]]
+round = 2
+domain = "oss-mirror"
+dimension = "D4"
+files_scanned = 431
+findings = 14
+executed = true
+
+[[cell]]
+round = 2
+domain = "oss-mirror"
+dimension = "D5"
+files_scanned = 32
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "oss-mirror"
+dimension = "D6"
+files_scanned = 245
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "oss-mirror"
+dimension = "D7"
+files_scanned = 42
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/agent-dev"
+dimension = "D1"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/agent-dev"
+dimension = "D2"
+files_scanned = 24
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/agent-dev"
+dimension = "D3"
+files_scanned = 27
+findings = 7
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/agent-dev"
+dimension = "D4"
+files_scanned = 27
+findings = 3
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/agent-dev"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/agent-dev"
+dimension = "D6"
+files_scanned = 9
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/agent-dev"
+dimension = "D7"
+files_scanned = 27
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/agent-kernel"
+dimension = "D1"
+files_scanned = 7
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/agent-kernel"
+dimension = "D2"
+files_scanned = 22
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/agent-kernel"
+dimension = "D3"
+files_scanned = 25
+findings = 4
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/agent-kernel"
+dimension = "D4"
+files_scanned = 25
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/agent-kernel"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/agent-kernel"
+dimension = "D6"
+files_scanned = 7
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/agent-kernel"
+dimension = "D7"
+files_scanned = 25
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/agent-runner"
+dimension = "D1"
+files_scanned = 3
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/agent-runner"
+dimension = "D2"
+files_scanned = 10
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/agent-runner"
+dimension = "D3"
+files_scanned = 13
+findings = 2
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/agent-runner"
+dimension = "D4"
+files_scanned = 13
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/agent-runner"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/agent-runner"
+dimension = "D6"
+files_scanned = 7
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/agent-runner"
+dimension = "D7"
+files_scanned = 13
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-config"
+dimension = "D1"
+files_scanned = 3
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-config"
+dimension = "D2"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-config"
+dimension = "D3"
+files_scanned = 12
+findings = 4
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-config"
+dimension = "D4"
+files_scanned = 12
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-config"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-config"
+dimension = "D6"
+files_scanned = 7
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-config"
+dimension = "D7"
+files_scanned = 11
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-evals"
+dimension = "D1"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-evals"
+dimension = "D2"
+files_scanned = 24
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-evals"
+dimension = "D3"
+files_scanned = 27
+findings = 4
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-evals"
+dimension = "D4"
+files_scanned = 27
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-evals"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-evals"
+dimension = "D6"
+files_scanned = 6
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-evals"
+dimension = "D7"
+files_scanned = 23
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-kit"
+dimension = "D1"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-kit"
+dimension = "D2"
+files_scanned = 20
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-kit"
+dimension = "D3"
+files_scanned = 21
+findings = 4
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-kit"
+dimension = "D4"
+files_scanned = 21
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-kit"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-kit"
+dimension = "D6"
+files_scanned = 8
+findings = 2
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-kit"
+dimension = "D7"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-meter"
+dimension = "D1"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-meter"
+dimension = "D2"
+files_scanned = 17
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-meter"
+dimension = "D3"
+files_scanned = 18
+findings = 2
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-meter"
+dimension = "D4"
+files_scanned = 18
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-meter"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-meter"
+dimension = "D6"
+files_scanned = 7
+findings = 2
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ai-meter"
+dimension = "D7"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/alerting"
+dimension = "D1"
+files_scanned = 10
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/alerting"
+dimension = "D2"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/alerting"
+dimension = "D3"
+files_scanned = 17
+findings = 4
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/alerting"
+dimension = "D4"
+files_scanned = 17
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/alerting"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/alerting"
+dimension = "D6"
+files_scanned = 8
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/alerting"
+dimension = "D7"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/audit-harness"
+dimension = "D1"
+files_scanned = 17
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/audit-harness"
+dimension = "D2"
+files_scanned = 22
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/audit-harness"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/audit-harness"
+dimension = "D6"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/audit-harness"
+dimension = "D7"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/audit-worm"
+dimension = "D1"
+files_scanned = 17
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/audit-worm"
+dimension = "D2"
+files_scanned = 23
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/audit-worm"
+dimension = "D3"
+files_scanned = 26
+findings = 4
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/audit-worm"
+dimension = "D4"
+files_scanned = 26
+findings = 2
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/audit-worm"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/audit-worm"
+dimension = "D6"
+files_scanned = 6
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/audit-worm"
+dimension = "D7"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/auth"
+dimension = "D1"
+files_scanned = 10
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/auth"
+dimension = "D2"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/auth"
+dimension = "D3"
+files_scanned = 18
+findings = 2
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/auth"
+dimension = "D4"
+files_scanned = 18
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/auth"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/auth"
+dimension = "D6"
+files_scanned = 9
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/auth"
+dimension = "D7"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/billing"
+dimension = "D1"
+files_scanned = 17
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/billing"
+dimension = "D2"
+files_scanned = 22
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/billing"
+dimension = "D3"
+files_scanned = 25
+findings = 5
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/billing"
+dimension = "D4"
+files_scanned = 25
+findings = 2
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/billing"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/billing"
+dimension = "D6"
+files_scanned = 8
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/billing"
+dimension = "D7"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/cli"
+dimension = "D1"
+files_scanned = 18
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/cli"
+dimension = "D2"
+files_scanned = 46
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/cli"
+dimension = "D3"
+files_scanned = 65
+findings = 2
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/cli"
+dimension = "D4"
+files_scanned = 58
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/cli"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/cli"
+dimension = "D6"
+files_scanned = 6
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/cli"
+dimension = "D7"
+files_scanned = 65
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/compliance"
+dimension = "D1"
+files_scanned = 24
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/compliance"
+dimension = "D2"
+files_scanned = 64
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/compliance"
+dimension = "D3"
+files_scanned = 51
+findings = 6
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/compliance"
+dimension = "D4"
+files_scanned = 67
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/compliance"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/compliance"
+dimension = "D6"
+files_scanned = 9
+findings = 3
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/compliance"
+dimension = "D7"
+files_scanned = 67
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/credits"
+dimension = "D1"
+files_scanned = 7
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/credits"
+dimension = "D2"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/credits"
+dimension = "D3"
+files_scanned = 15
+findings = 6
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/credits"
+dimension = "D4"
+files_scanned = 15
+findings = 2
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/credits"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/credits"
+dimension = "D6"
+files_scanned = 5
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/credits"
+dimension = "D7"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/email"
+dimension = "D1"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/email"
+dimension = "D2"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/email"
+dimension = "D3"
+files_scanned = 19
+findings = 3
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/email"
+dimension = "D4"
+files_scanned = 19
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/email"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/email"
+dimension = "D6"
+files_scanned = 7
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/email"
+dimension = "D7"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/field-crypto"
+dimension = "D1"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/field-crypto"
+dimension = "D2"
+files_scanned = 36
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/field-crypto"
+dimension = "D3"
+files_scanned = 39
+findings = 4
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/field-crypto"
+dimension = "D4"
+files_scanned = 39
+findings = 2
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/field-crypto"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/field-crypto"
+dimension = "D6"
+files_scanned = 6
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/field-crypto"
+dimension = "D7"
+files_scanned = 39
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/guardrails"
+dimension = "D1"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/guardrails"
+dimension = "D2"
+files_scanned = 14
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/guardrails"
+dimension = "D3"
+files_scanned = 15
+findings = 5
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/guardrails"
+dimension = "D4"
+files_scanned = 15
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/guardrails"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/guardrails"
+dimension = "D6"
+files_scanned = 5
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/guardrails"
+dimension = "D7"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/jobs"
+dimension = "D1"
+files_scanned = 9
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/jobs"
+dimension = "D2"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/jobs"
+dimension = "D3"
+files_scanned = 19
+findings = 6
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/jobs"
+dimension = "D4"
+files_scanned = 19
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/jobs"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/jobs"
+dimension = "D6"
+files_scanned = 8
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/jobs"
+dimension = "D7"
+files_scanned = 25
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/kernel"
+dimension = "D1"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/kernel"
+dimension = "D2"
+files_scanned = 48
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/kernel"
+dimension = "D3"
+files_scanned = 45
+findings = 10
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/kernel"
+dimension = "D4"
+files_scanned = 51
+findings = 2
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/kernel"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/kernel"
+dimension = "D6"
+files_scanned = 7
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/kernel"
+dimension = "D7"
+files_scanned = 74
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/license-issue"
+dimension = "D1"
+files_scanned = 4
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/license-issue"
+dimension = "D2"
+files_scanned = 11
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/license-issue"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/license-issue"
+dimension = "D6"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/license-issue"
+dimension = "D7"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/license-verify"
+dimension = "D1"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/license-verify"
+dimension = "D2"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/license-verify"
+dimension = "D3"
+files_scanned = 14
+findings = 5
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/license-verify"
+dimension = "D4"
+files_scanned = 19
+findings = 2
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/license-verify"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/license-verify"
+dimension = "D6"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/license-verify"
+dimension = "D7"
+files_scanned = 20
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/local-ai"
+dimension = "D1"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/local-ai"
+dimension = "D2"
+files_scanned = 44
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/local-ai"
+dimension = "D3"
+files_scanned = 42
+findings = 6
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/local-ai"
+dimension = "D4"
+files_scanned = 47
+findings = 2
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/local-ai"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/local-ai"
+dimension = "D6"
+files_scanned = 8
+findings = 2
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/local-ai"
+dimension = "D7"
+files_scanned = 73
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/local-store"
+dimension = "D1"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/local-store"
+dimension = "D2"
+files_scanned = 24
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/local-store"
+dimension = "D3"
+files_scanned = 23
+findings = 6
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/local-store"
+dimension = "D4"
+files_scanned = 27
+findings = 2
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/local-store"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/local-store"
+dimension = "D6"
+files_scanned = 7
+findings = 2
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/local-store"
+dimension = "D7"
+files_scanned = 38
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/mcp-server"
+dimension = "D1"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/mcp-server"
+dimension = "D2"
+files_scanned = 20
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/mcp-server"
+dimension = "D3"
+files_scanned = 17
+findings = 6
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/mcp-server"
+dimension = "D4"
+files_scanned = 23
+findings = 3
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/mcp-server"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/mcp-server"
+dimension = "D6"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/mcp-server"
+dimension = "D7"
+files_scanned = 25
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/migrate"
+dimension = "D1"
+files_scanned = 7
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/migrate"
+dimension = "D2"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/migrate"
+dimension = "D3"
+files_scanned = 13
+findings = 4
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/migrate"
+dimension = "D4"
+files_scanned = 22
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/migrate"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/migrate"
+dimension = "D6"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/migrate"
+dimension = "D7"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/observability"
+dimension = "D1"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/observability"
+dimension = "D2"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/observability"
+dimension = "D3"
+files_scanned = 15
+findings = 5
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/observability"
+dimension = "D4"
+files_scanned = 13
+findings = 4
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/observability"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/observability"
+dimension = "D6"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/observability"
+dimension = "D7"
+files_scanned = 17
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/platform-reads"
+dimension = "D1"
+files_scanned = 3
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/platform-reads"
+dimension = "D2"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/platform-reads"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/platform-reads"
+dimension = "D6"
+files_scanned = 4
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/platform-reads"
+dimension = "D7"
+files_scanned = 7
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/pricebook"
+dimension = "D1"
+files_scanned = 10
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/pricebook"
+dimension = "D2"
+files_scanned = 17
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/pricebook"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/pricebook"
+dimension = "D6"
+files_scanned = 6
+findings = 2
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/pricebook"
+dimension = "D7"
+files_scanned = 22
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/prompt-registry"
+dimension = "D1"
+files_scanned = 7
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/prompt-registry"
+dimension = "D2"
+files_scanned = 14
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/prompt-registry"
+dimension = "D3"
+files_scanned = 14
+findings = 3
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/prompt-registry"
+dimension = "D4"
+files_scanned = 13
+findings = 2
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/prompt-registry"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/prompt-registry"
+dimension = "D6"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/prompt-registry"
+dimension = "D7"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/registry-schema"
+dimension = "D1"
+files_scanned = 20
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/registry-schema"
+dimension = "D2"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/registry-schema"
+dimension = "D3"
+files_scanned = 20
+findings = 4
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/registry-schema"
+dimension = "D4"
+files_scanned = 18
+findings = 5
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/registry-schema"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/registry-schema"
+dimension = "D6"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/registry-schema"
+dimension = "D7"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/retention-runner"
+dimension = "D1"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/retention-runner"
+dimension = "D2"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/retention-runner"
+dimension = "D3"
+files_scanned = 19
+findings = 5
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/retention-runner"
+dimension = "D4"
+files_scanned = 16
+findings = 3
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/retention-runner"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/retention-runner"
+dimension = "D6"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/retention-runner"
+dimension = "D7"
+files_scanned = 17
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/tenancy-rls"
+dimension = "D1"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/tenancy-rls"
+dimension = "D2"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/tenancy-rls"
+dimension = "D3"
+files_scanned = 16
+findings = 6
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/tenancy-rls"
+dimension = "D4"
+files_scanned = 13
+findings = 6
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/tenancy-rls"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/tenancy-rls"
+dimension = "D6"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/tenancy-rls"
+dimension = "D7"
+files_scanned = 14
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/tool-exec"
+dimension = "D1"
+files_scanned = 10
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/tool-exec"
+dimension = "D2"
+files_scanned = 10
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/tool-exec"
+dimension = "D3"
+files_scanned = 10
+findings = 2
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/tool-exec"
+dimension = "D4"
+files_scanned = 9
+findings = 2
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/tool-exec"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/tool-exec"
+dimension = "D6"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/tool-exec"
+dimension = "D7"
+files_scanned = 10
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ui"
+dimension = "D1"
+files_scanned = 80
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ui"
+dimension = "D2"
+files_scanned = 44
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ui"
+dimension = "D3"
+files_scanned = 52
+findings = 5
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ui"
+dimension = "D4"
+files_scanned = 80
+findings = 4
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ui"
+dimension = "D5"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ui"
+dimension = "D6"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "packages/ui"
+dimension = "D7"
+files_scanned = 78
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "registry/worker"
+dimension = "D1"
+files_scanned = 13
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "registry/worker"
+dimension = "D2"
+files_scanned = 13
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "registry/worker"
+dimension = "D6"
+files_scanned = 13
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "registry/worker"
+dimension = "D7"
+files_scanned = 13
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "root-docs"
+dimension = "D1"
+files_scanned = 6
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "root-docs"
+dimension = "D2"
+files_scanned = 6
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "root-docs"
+dimension = "D3"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "root-docs"
+dimension = "D4"
+files_scanned = 6
+findings = 3
+executed = true
+
+[[cell]]
+round = 2
+domain = "root-docs"
+dimension = "D6"
+files_scanned = 7
+findings = 11
+executed = true
+
+[[cell]]
+round = 2
+domain = "root-docs"
+dimension = "D7"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "services/docs"
+dimension = "D1"
+files_scanned = 28
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "services/docs"
+dimension = "D2"
+files_scanned = 29
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "services/docs"
+dimension = "D3"
+files_scanned = 29
+findings = 3
+executed = true
+
+[[cell]]
+round = 2
+domain = "services/docs"
+dimension = "D4"
+files_scanned = 29
+findings = 1
+executed = true
+
+[[cell]]
+round = 2
+domain = "services/docs"
+dimension = "D6"
+files_scanned = 29
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "services/docs"
+dimension = "D7"
+files_scanned = 29
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "services/license"
+dimension = "D1"
+files_scanned = 40
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "services/license"
+dimension = "D2"
+files_scanned = 40
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "services/license"
+dimension = "D3"
+files_scanned = 40
+findings = 3
+executed = true
+
+[[cell]]
+round = 2
+domain = "services/license"
+dimension = "D4"
+files_scanned = 40
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "services/license"
+dimension = "D6"
+files_scanned = 40
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "services/license"
+dimension = "D7"
+files_scanned = 40
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "workflows"
+dimension = "D1"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "workflows"
+dimension = "D2"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "workflows"
+dimension = "D6"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 2
+domain = "workflows"
+dimension = "D7"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/admin"
+dimension = "D1"
+files_scanned = 22
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/admin"
+dimension = "D2"
+files_scanned = 66
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/admin"
+dimension = "D6"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/admin"
+dimension = "D7"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/agent-dev"
+dimension = "D1"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/agent-dev"
+dimension = "D2"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/agent-dev"
+dimension = "D3"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/agent-dev"
+dimension = "D4"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/agent-dev"
+dimension = "D6"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/agent-dev"
+dimension = "D7"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/ai-kit"
+dimension = "D1"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/ai-kit"
+dimension = "D2"
+files_scanned = 18
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/ai-kit"
+dimension = "D3"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/ai-kit"
+dimension = "D4"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/ai-kit"
+dimension = "D6"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/ai-kit"
+dimension = "D7"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/base"
+dimension = "D1"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/base"
+dimension = "D2"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/base"
+dimension = "D3"
+files_scanned = 11
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/base"
+dimension = "D4"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/base"
+dimension = "D6"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/base"
+dimension = "D7"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/local-ai"
+dimension = "D1"
+files_scanned = 4
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/local-ai"
+dimension = "D2"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/local-ai"
+dimension = "D3"
+files_scanned = 14
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/local-ai"
+dimension = "D4"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/local-ai"
+dimension = "D6"
+files_scanned = 4
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/local-ai"
+dimension = "D7"
+files_scanned = 14
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/site"
+dimension = "D1"
+files_scanned = 36
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/site"
+dimension = "D2"
+files_scanned = 200
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/site"
+dimension = "D3"
+files_scanned = 205
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/site"
+dimension = "D4"
+files_scanned = 200
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/site"
+dimension = "D6"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/site"
+dimension = "D7"
+files_scanned = 205
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/studio"
+dimension = "D1"
+files_scanned = 0
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/studio"
+dimension = "D2"
+files_scanned = 0
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/studio"
+dimension = "D3"
+files_scanned = 0
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/studio"
+dimension = "D4"
+files_scanned = 0
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/studio"
+dimension = "D6"
+files_scanned = 0
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "apps/studio"
+dimension = "D7"
+files_scanned = 0
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "docs-content"
+dimension = "D1"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "docs-content"
+dimension = "D2"
+files_scanned = 237
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "docs-content"
+dimension = "D6"
+files_scanned = 46
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "docs-content"
+dimension = "D7"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "generator-templates"
+dimension = "D1"
+files_scanned = 24
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "generator-templates"
+dimension = "D2"
+files_scanned = 24
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "generator-templates"
+dimension = "D3"
+files_scanned = 24
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "generator-templates"
+dimension = "D4"
+files_scanned = 24
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "generator-templates"
+dimension = "D6"
+files_scanned = 24
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "generator-templates"
+dimension = "D7"
+files_scanned = 24
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "infra/discord"
+dimension = "D1"
+files_scanned = 1
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "infra/discord"
+dimension = "D2"
+files_scanned = 1
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "infra/discord"
+dimension = "D6"
+files_scanned = 1
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "infra/discord"
+dimension = "D7"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D1"
+files_scanned = 54
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D1"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D1"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D2"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D2"
+files_scanned = 431
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D2"
+files_scanned = 431
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D2"
+files_scanned = 431
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D2"
+files_scanned = 431
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D2"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D3"
+files_scanned = 431
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D3"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D4"
+files_scanned = 431
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D4"
+files_scanned = 431
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D4"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 39
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D6"
+files_scanned = 18
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D6"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D6"
+files_scanned = 46
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D6"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D6"
+files_scanned = 70
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D6"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D7"
+files_scanned = 397
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D7"
+files_scanned = 431
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D7"
+files_scanned = 332
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D7"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D7"
+files_scanned = 18
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D7"
+files_scanned = 21
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D7"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "oss-mirror"
+dimension = "D7"
+files_scanned = 18
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/agent-dev"
+dimension = "D1"
+files_scanned = 13
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/agent-dev"
+dimension = "D2"
+files_scanned = 27
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/agent-dev"
+dimension = "D3"
+files_scanned = 23
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/agent-dev"
+dimension = "D4"
+files_scanned = 24
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/agent-dev"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/agent-dev"
+dimension = "D6"
+files_scanned = 27
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/agent-dev"
+dimension = "D7"
+files_scanned = 48
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/agent-kernel"
+dimension = "D1"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/agent-kernel"
+dimension = "D2"
+files_scanned = 25
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/agent-kernel"
+dimension = "D3"
+files_scanned = 24
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/agent-kernel"
+dimension = "D4"
+files_scanned = 22
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/agent-kernel"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/agent-kernel"
+dimension = "D6"
+files_scanned = 25
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/agent-kernel"
+dimension = "D7"
+files_scanned = 55
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/agent-runner"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ai-config"
+dimension = "D1"
+files_scanned = 3
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ai-config"
+dimension = "D2"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ai-config"
+dimension = "D3"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ai-config"
+dimension = "D4"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ai-config"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ai-config"
+dimension = "D6"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ai-config"
+dimension = "D7"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ai-evals"
+dimension = "D1"
+files_scanned = 11
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ai-evals"
+dimension = "D2"
+files_scanned = 27
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ai-evals"
+dimension = "D3"
+files_scanned = 26
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ai-evals"
+dimension = "D4"
+files_scanned = 20
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ai-evals"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ai-evals"
+dimension = "D6"
+files_scanned = 27
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ai-evals"
+dimension = "D7"
+files_scanned = 61
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ai-kit"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ai-meter"
+dimension = "D1"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ai-meter"
+dimension = "D2"
+files_scanned = 18
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ai-meter"
+dimension = "D3"
+files_scanned = 17
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ai-meter"
+dimension = "D4"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ai-meter"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ai-meter"
+dimension = "D6"
+files_scanned = 18
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ai-meter"
+dimension = "D7"
+files_scanned = 40
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/alerting"
+dimension = "D1"
+files_scanned = 7
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/alerting"
+dimension = "D2"
+files_scanned = 17
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/alerting"
+dimension = "D3"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/alerting"
+dimension = "D4"
+files_scanned = 14
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/alerting"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/alerting"
+dimension = "D6"
+files_scanned = 17
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/alerting"
+dimension = "D7"
+files_scanned = 34
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/audit-harness"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/audit-worm"
+dimension = "D1"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/audit-worm"
+dimension = "D2"
+files_scanned = 26
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/audit-worm"
+dimension = "D3"
+files_scanned = 23
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/audit-worm"
+dimension = "D4"
+files_scanned = 26
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/audit-worm"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/audit-worm"
+dimension = "D6"
+files_scanned = 26
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/audit-worm"
+dimension = "D7"
+files_scanned = 89
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/auth"
+dimension = "D1"
+files_scanned = 7
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/auth"
+dimension = "D2"
+files_scanned = 18
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/auth"
+dimension = "D3"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/auth"
+dimension = "D4"
+files_scanned = 18
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/auth"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/auth"
+dimension = "D6"
+files_scanned = 18
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/auth"
+dimension = "D7"
+files_scanned = 57
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/billing"
+dimension = "D1"
+files_scanned = 10
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/billing"
+dimension = "D2"
+files_scanned = 25
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/billing"
+dimension = "D3"
+files_scanned = 22
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/billing"
+dimension = "D4"
+files_scanned = 25
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/billing"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/billing"
+dimension = "D6"
+files_scanned = 25
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/billing"
+dimension = "D7"
+files_scanned = 88
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/cli"
+dimension = "D1"
+files_scanned = 13
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/cli"
+dimension = "D2"
+files_scanned = 65
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/cli"
+dimension = "D3"
+files_scanned = 46
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/cli"
+dimension = "D4"
+files_scanned = 41
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/cli"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/cli"
+dimension = "D6"
+files_scanned = 65
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/cli"
+dimension = "D7"
+files_scanned = 132
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/compliance"
+dimension = "D1"
+files_scanned = 26
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/compliance"
+dimension = "D2"
+files_scanned = 67
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/compliance"
+dimension = "D3"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/compliance"
+dimension = "D4"
+files_scanned = 67
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/compliance"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/compliance"
+dimension = "D6"
+files_scanned = 67
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/compliance"
+dimension = "D7"
+files_scanned = 255
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/credits"
+dimension = "D1"
+files_scanned = 4
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/credits"
+dimension = "D2"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/credits"
+dimension = "D3"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/credits"
+dimension = "D4"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/credits"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/credits"
+dimension = "D6"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/credits"
+dimension = "D7"
+files_scanned = 42
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/email"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/field-crypto"
+dimension = "D1"
+files_scanned = 28
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/field-crypto"
+dimension = "D2"
+files_scanned = 39
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/field-crypto"
+dimension = "D3"
+files_scanned = 36
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/field-crypto"
+dimension = "D4"
+files_scanned = 39
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/field-crypto"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/field-crypto"
+dimension = "D6"
+files_scanned = 42
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/field-crypto"
+dimension = "D7"
+files_scanned = 146
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/guardrails"
+dimension = "D1"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/guardrails"
+dimension = "D2"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/guardrails"
+dimension = "D3"
+files_scanned = 14
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/guardrails"
+dimension = "D4"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/guardrails"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/guardrails"
+dimension = "D6"
+files_scanned = 18
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/guardrails"
+dimension = "D7"
+files_scanned = 50
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/jobs"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/kernel"
+dimension = "D1"
+files_scanned = 34
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/kernel"
+dimension = "D2"
+files_scanned = 48
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/kernel"
+dimension = "D3"
+files_scanned = 45
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/kernel"
+dimension = "D4"
+files_scanned = 48
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/kernel"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/kernel"
+dimension = "D6"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/kernel"
+dimension = "D7"
+files_scanned = 183
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/license-issue"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/license-verify"
+dimension = "D1"
+files_scanned = 7
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/license-verify"
+dimension = "D2"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/license-verify"
+dimension = "D3"
+files_scanned = 14
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/license-verify"
+dimension = "D4"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/license-verify"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/license-verify"
+dimension = "D6"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/license-verify"
+dimension = "D7"
+files_scanned = 43
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/local-ai"
+dimension = "D1"
+files_scanned = 35
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/local-ai"
+dimension = "D2"
+files_scanned = 44
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/local-ai"
+dimension = "D3"
+files_scanned = 42
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/local-ai"
+dimension = "D4"
+files_scanned = 44
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/local-ai"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/local-ai"
+dimension = "D6"
+files_scanned = 47
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/local-ai"
+dimension = "D7"
+files_scanned = 171
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/local-store"
+dimension = "D1"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/local-store"
+dimension = "D2"
+files_scanned = 24
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/local-store"
+dimension = "D3"
+files_scanned = 23
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/local-store"
+dimension = "D4"
+files_scanned = 24
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/local-store"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/local-store"
+dimension = "D6"
+files_scanned = 27
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/local-store"
+dimension = "D7"
+files_scanned = 87
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/mcp-server"
+dimension = "D1"
+files_scanned = 11
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/mcp-server"
+dimension = "D2"
+files_scanned = 20
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/mcp-server"
+dimension = "D3"
+files_scanned = 20
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/mcp-server"
+dimension = "D4"
+files_scanned = 67
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/mcp-server"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/mcp-server"
+dimension = "D6"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/mcp-server"
+dimension = "D7"
+files_scanned = 11
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/migrate"
+dimension = "D1"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/migrate"
+dimension = "D2"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/migrate"
+dimension = "D3"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/migrate"
+dimension = "D4"
+files_scanned = 46
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/migrate"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/migrate"
+dimension = "D6"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/migrate"
+dimension = "D7"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/observability"
+dimension = "D1"
+files_scanned = 7
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/observability"
+dimension = "D2"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/observability"
+dimension = "D3"
+files_scanned = 15
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/observability"
+dimension = "D4"
+files_scanned = 46
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/observability"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/observability"
+dimension = "D6"
+files_scanned = 10
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/observability"
+dimension = "D7"
+files_scanned = 7
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/platform-reads"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/pricebook"
+dimension = "D1"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/pricebook"
+dimension = "D2"
+files_scanned = 17
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/pricebook"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/pricebook"
+dimension = "D6"
+files_scanned = 11
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/pricebook"
+dimension = "D7"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/prompt-registry"
+dimension = "D1"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/prompt-registry"
+dimension = "D2"
+files_scanned = 14
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/prompt-registry"
+dimension = "D3"
+files_scanned = 14
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/prompt-registry"
+dimension = "D4"
+files_scanned = 41
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/prompt-registry"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/prompt-registry"
+dimension = "D6"
+files_scanned = 10
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/prompt-registry"
+dimension = "D7"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/registry-schema"
+dimension = "D1"
+files_scanned = 10
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/registry-schema"
+dimension = "D2"
+files_scanned = 20
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/registry-schema"
+dimension = "D3"
+files_scanned = 20
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/registry-schema"
+dimension = "D4"
+files_scanned = 63
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/registry-schema"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/registry-schema"
+dimension = "D6"
+files_scanned = 12
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/registry-schema"
+dimension = "D7"
+files_scanned = 10
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/retention-runner"
+dimension = "D1"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/retention-runner"
+dimension = "D2"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/retention-runner"
+dimension = "D3"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/retention-runner"
+dimension = "D4"
+files_scanned = 62
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/retention-runner"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/retention-runner"
+dimension = "D6"
+files_scanned = 22
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/retention-runner"
+dimension = "D7"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/tenancy-rls"
+dimension = "D1"
+files_scanned = 4
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/tenancy-rls"
+dimension = "D2"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/tenancy-rls"
+dimension = "D3"
+files_scanned = 14
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/tenancy-rls"
+dimension = "D4"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/tenancy-rls"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/tenancy-rls"
+dimension = "D6"
+files_scanned = 19
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/tenancy-rls"
+dimension = "D7"
+files_scanned = 16
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/tool-exec"
+dimension = "D1"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/tool-exec"
+dimension = "D2"
+files_scanned = 10
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/tool-exec"
+dimension = "D3"
+files_scanned = 10
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/tool-exec"
+dimension = "D4"
+files_scanned = 10
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/tool-exec"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/tool-exec"
+dimension = "D6"
+files_scanned = 13
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/tool-exec"
+dimension = "D7"
+files_scanned = 10
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ui"
+dimension = "D1"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ui"
+dimension = "D2"
+files_scanned = 80
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ui"
+dimension = "D3"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ui"
+dimension = "D4"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ui"
+dimension = "D5 LICENSE-TIER"
+files_scanned = 2
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ui"
+dimension = "D6"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "packages/ui"
+dimension = "D7"
+files_scanned = 51
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "registry/worker"
+dimension = "D1"
+files_scanned = 13
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "registry/worker"
+dimension = "D2"
+files_scanned = 13
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "registry/worker"
+dimension = "D6"
+files_scanned = 13
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "registry/worker"
+dimension = "D7"
+files_scanned = 13
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "root-docs"
+dimension = "D1"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "root-docs"
+dimension = "D1"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "root-docs"
+dimension = "D1"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "root-docs"
+dimension = "D2"
+files_scanned = 3
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "root-docs"
+dimension = "D2"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "root-docs"
+dimension = "D2"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "root-docs"
+dimension = "D2"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "root-docs"
+dimension = "D2"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "root-docs"
+dimension = "D2"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "root-docs"
+dimension = "D3"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "root-docs"
+dimension = "D4"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "root-docs"
+dimension = "D6"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "root-docs"
+dimension = "D6"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "root-docs"
+dimension = "D6"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "root-docs"
+dimension = "D6"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "root-docs"
+dimension = "D6"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "root-docs"
+dimension = "D7"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "root-docs"
+dimension = "D7"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "root-docs"
+dimension = "D7"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "root-docs"
+dimension = "D7"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "root-docs"
+dimension = "D7"
+files_scanned = 11
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "root-docs"
+dimension = "D7"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "root-docs"
+dimension = "D7"
+files_scanned = 6
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "root-docs"
+dimension = "D7"
+files_scanned = 3
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "services/docs"
+dimension = "D1"
+files_scanned = 9
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "services/docs"
+dimension = "D2"
+files_scanned = 29
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "services/docs"
+dimension = "D3"
+files_scanned = 29
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "services/docs"
+dimension = "D4"
+files_scanned = 29
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "services/docs"
+dimension = "D6"
+files_scanned = 4
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "services/docs"
+dimension = "D7"
+files_scanned = 29
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "services/license"
+dimension = "D1"
+files_scanned = 33
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "services/license"
+dimension = "D2"
+files_scanned = 39
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "services/license"
+dimension = "D3"
+files_scanned = 40
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "services/license"
+dimension = "D4"
+files_scanned = 40
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "services/license"
+dimension = "D6"
+files_scanned = 40
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "services/license"
+dimension = "D7"
+files_scanned = 22
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "tooling/scripts"
+dimension = "D1"
+files_scanned = 4
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "tooling/scripts"
+dimension = "D2"
+files_scanned = 4
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "tooling/scripts"
+dimension = "D6"
+files_scanned = 4
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "tooling/scripts"
+dimension = "D7"
+files_scanned = 4
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "tools/strix"
+dimension = "D1"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "tools/strix"
+dimension = "D2"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "tools/strix"
+dimension = "D6"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "tools/strix"
+dimension = "D7"
+files_scanned = 5
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "workflows"
+dimension = "D1"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "workflows"
+dimension = "D2"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "workflows"
+dimension = "D6"
+files_scanned = 8
+findings = 0
+executed = true
+
+[[cell]]
+round = 3
+domain = "workflows"
+dimension = "D7"
+files_scanned = 8
+findings = 0
+executed = true

@@ -99,7 +99,7 @@ Legend: **CLI** = I run it · **hands** = operator/dashboard action · reversibi
 > 9. **VERIFY `caisson.sh`** (Access-gated 302, Railway-served, all routes + `/dashboard` + `/api/*`, webhook reachable). **Soak.** — CLI
 > 10. **Retire Pages** (LEAST reversible, behind the soak): `DELETE /accounts/{acct}/pages/projects/caisson-site` via the CF API. — CLI
 > 11. **Bind `registry.caisson.sh`** custom route to the Worker (independent fast-follow). — CLI
-> 12. **Arm CI (deferred per lock):** mint a Railway **project token** in the dashboard (Settings → Tokens, env production) → `gh secret set RAILWAY_TOKEN --repo GridWork-dev/caisson`; re-arm lighthouse. — **operator hands** (dashboard) + CLI
+> 12. **Arm CI (deferred per lock):** mint a Railway **project token** in the dashboard (Settings → Tokens, env production) → `gh secret set RAILWAY_TOKEN --repo caisson-sh/caisson`; re-arm lighthouse. — **operator hands** (dashboard) + CLI
 >
 > **Only operator-hands step: #12** (mint the CI token — not CLI-mintable), and it's deferred past first deploy. Everything else is CLI/API.
 
