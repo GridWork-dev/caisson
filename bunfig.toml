@@ -1,0 +1,11 @@
+[test]
+# CAISSON-12: a bare `bun test` (no path arg) recursively discovers every *.test.ts/js
+# under cwd, including stale compiled dist/ output left by a prior `bun run build` — a
+# real repro tonight under services/docs, services/license, tooling/testing. Every wired
+# script already scopes explicitly (`bun test ./src`, `bun test ./live`), so this is
+# defense-in-depth for the one invocation shape that isn't: a bare `bun test` from the
+# repo root.
+# Limitation: bun does not walk up the tree for bunfig.toml, so a bare `bun test` run
+# from inside a package/app subdir (not the repo root) is still unprotected here — accepted,
+# since every wired script scopes explicitly as noted above.
+pathIgnorePatterns = ["**/dist/**"]
