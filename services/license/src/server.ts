@@ -77,6 +77,11 @@ export function startServer(
       webhookSecret,
       apiKey: process.env.PADDLE_API_KEY ?? "",
       env: paddleEnv,
+      // CAISSON-7: a malformed partial-refund adjustment item is a non-fatal anomaly, not a fatal
+      // error — surface it on the same operator-visible stderr surface every other non-fatal signal
+      // in this service uses (console.log is banned in product code).
+      onWarn: (message) =>
+        process.stderr.write(`[service-license] ${message}\n`),
     });
   } else {
     process.stderr.write(

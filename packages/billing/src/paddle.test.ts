@@ -790,6 +790,46 @@ describe("event mapping", () => {
       accountId: "acct_a",
     });
   });
+
+  test("verifyAndParse threads a configured onWarn to the mapper for a malformed adjustment item (CAISSON-7)", () => {
+    // The MUST-FIX gap this pins: onWarn previously had no production path from a signed webhook
+    // delivery to parsePaddleEvent — createPaddleBilling built the event with no way to pass one, so
+    // wiring it only on PaddleConfig (not exercising verifyAndParse end to end) would not have caught
+    // the missing thread-through.
+    const warnings: string[] = [];
+    const body = JSON.stringify({
+      event_id: "evt_provider_warn",
+      event_type: "adjustment.updated",
+      data: {
+        id: "adj_provider",
+        action: "refund",
+        status: "approved",
+        type: "partial",
+        transaction_id: "txn_x",
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        totals: { total: "3000" },
+        items: [
+          {
+            id: "adjitm_1",
+            item_id: "txnitm_a",
+            type: "full",
+            totals: { total: "3000" },
+          },
+          "not an object", // malformed
+        ],
+      },
+    });
+    const billing = createPaddleBilling({
+      webhookSecret: SECRET,
+      apiKey: "pdl_sdbx_test",
+      onWarn: (message) => warnings.push(message),
+    });
+    const out = billing.verifyAndParse(body, signed(body), { now: T });
+    expect(out?.type).toBe("refund.completed");
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatch(/not an object/);
+  });
 });
 
 describe("PaddleEventSchema (envelope boundary validation, services-hardening MED)", () => {
