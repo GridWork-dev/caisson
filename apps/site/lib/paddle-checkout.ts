@@ -8,6 +8,8 @@
 
 import { type Paddle, initializePaddle } from "@paddle/paddle-js";
 
+import { trackEvent } from "./analytics";
+
 let paddleInstance: Paddle | undefined;
 let paddleInitPromise: Promise<Paddle | undefined> | undefined;
 
@@ -69,6 +71,9 @@ export async function openCartCheckout(
   if (items.length === 0) return false;
   const paddle = await getPaddle();
   if (!paddle) return false;
+  // begin_checkout (ADR-0237 F8) — fired only after the two no-op guards, so the funnel never
+  // counts a click Paddle ignored.
+  trackEvent("begin_checkout", { items: String(items.length) });
   paddle.Checkout.open({
     items: items.map((item) => ({
       priceId: item.priceId,

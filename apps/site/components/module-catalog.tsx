@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
-import { Button, Card, Icon } from "@/components";
+import { Button, Card, Icon, StatusChip } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { moduleCatalogItem, toCartItem } from "@/lib/catalog";
+import { moduleMark } from "@/lib/marks";
 import {
   EDITION_IDS,
   formatUsd,
@@ -13,12 +15,12 @@ import {
   type ModulePrice,
 } from "@/lib/pricing";
 
-import { EDITION_ICON, editionLabel } from "./marketplace";
+import { editionLabel } from "./marketplace";
 import styles from "./marketplace.module.css";
 
 // Price bands DERIVED from module.amount — no new data field (ADR-0191: facets derive from the
-// existing catalog). The catalog spans $99–$299; these three bands partition it exactly
-// ($99/$149 → under, $199 → mid, $299 → up).
+// existing catalog). The 11-module catalog spans $49–$199 (ADR-0238 dropped the $299 rows);
+// these three bands partition it exactly ($49/$99 → under, $149 → mid, $199 → up).
 interface PriceBand {
   id: string;
   label: string;
@@ -26,9 +28,9 @@ interface PriceBand {
 }
 
 const PRICE_BANDS: readonly PriceBand[] = [
-  { id: "under-150", label: "Under $150", test: (a) => a < 150 },
-  { id: "150-199", label: "$150–199", test: (a) => a >= 150 && a <= 199 },
-  { id: "200-up", label: "$200 and up", test: (a) => a >= 200 },
+  { id: "under-100", label: "Under $100", test: (a) => a < 100 },
+  { id: "100-149", label: "$100–149", test: (a) => a >= 100 && a <= 149 },
+  { id: "150-up", label: "$150 and up", test: (a) => a >= 150 },
 ];
 
 const TOTAL = MODULE_PRICES.length;
@@ -194,7 +196,8 @@ function ModuleCard({ module: m }: { module: ModulePrice }) {
           marginBottom: "var(--cs-space-3)",
         }}
       >
-        <Icon name={EDITION_ICON[m.edition]} />
+        {/* The module's own bespoke mark (ADR-0237 F6) — the edition stays a text tag. */}
+        <Icon name={moduleMark(m.id)} />
         <span
           className="cs-num"
           style={{
@@ -206,6 +209,10 @@ function ModuleCard({ module: m }: { module: ModulePrice }) {
         >
           {editionLabel(m.edition)}
         </span>
+        {/* Type chip (ADR-0237 F5) — every price surface names its kind. */}
+        <span style={{ marginLeft: "auto" }}>
+          <StatusChip label="Module" />
+        </span>
       </div>
       <div
         style={{
@@ -215,7 +222,13 @@ function ModuleCard({ module: m }: { module: ModulePrice }) {
           gap: "var(--cs-space-3)",
         }}
       >
-        <span className="cs-card-title">{m.label}</span>
+        <Link
+          href={`/marketplace/modules/${m.id}`}
+          className="cs-card-title"
+          style={{ textDecoration: "none" }}
+        >
+          {m.label}
+        </Link>
         <span
           className="cs-num"
           style={{

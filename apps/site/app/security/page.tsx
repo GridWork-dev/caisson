@@ -25,7 +25,7 @@ import {
 export const metadata = buildMetadata({
   title: "Security",
   description:
-    "How Caisson secures the controls it generates — fail-closed RLS, WORM storage, an append-only audit chain — and this site: a hardened CSP, cookieless analytics, and a responsible-disclosure policy. Caisson generates audit evidence; it is not an auditor.",
+    "How Caisson secures the controls it generates and this site itself: fail-closed RLS, a resolve-and-recheck SSRF guard, timing-safe comparisons, and an admin app gated by a fail-closed CF-Access JWT check. Caisson generates audit evidence; it is not an auditor.",
   path: "/security",
 });
 
@@ -39,17 +39,27 @@ const PRODUCT_CONTROLS: ReadonlyArray<{
   {
     icon: "rls",
     label: "Fail-closed RLS",
-    body: "Tenant tables ENABLE and FORCE Postgres row-level security, so the policy binds the owner too. A query that never set the tenant context returns nothing — not everything. Cross-tenant isolation is a CI test, not a convention.",
+    body: "packages/tenancy-rls's buildTenantPolicySql emits ENABLE ROW LEVEL SECURITY plus FORCE ROW LEVEL SECURITY on every tenant table, so the policy binds the table owner too — not just other roles. The sole entry point, withTenant, opens a transaction, drops to the unprivileged app role, and binds the account id into a Postgres GUC (app.current_account) that every policy reads; a code path that forgets withTenant has no GUC bound and the table returns nothing. A one-time role pre-flight (assertRoleNotPrivileged) refuses to run if that role is ever a superuser or BYPASSRLS, since either would silently no-op FORCE ROW LEVEL SECURITY. Cross-tenant isolation is a CI test, not a convention.",
+  },
+  {
+    icon: "shield",
+    label: "Resolve-and-recheck SSRF guard",
+    body: `packages/kernel's ssrf.ts stops DNS rebinding on every buyer- or config-supplied URL — the alerting webhook transports and the ai-kit provider baseUrl both route through it (ADR-0204, closing Strix finding vuln-0004). assertSafePublicUrl rejects non-https, credentials-in-URL, and a literal private/loopback/link-local/metadata host at the config boundary; assertResolvedHostPublic then resolves the hostname and re-checks every returned A/AAAA record against the same denylist immediately before the outbound fetch, so a public name that DNS-rebinds to 127.0.0.1 or 169.254.169.254 is caught where a literal-only check can't see it. ssrfGuardedFetch forces redirect: "error" — only the original host is re-checked, so a followed redirect could otherwise carry the request past the guard.`,
   },
   {
     icon: "worm",
     label: "WORM storage",
-    body: "Evidence buckets enable S3 Object Lock in COMPLIANCE mode with a default retention. Inside the window an object cannot be overwritten or deleted — not by an app bug, an operator, or a leaked root key.",
+    body: "Evidence buckets enable S3 Object Lock. The default is GOVERNANCE mode — inside the retention window an object cannot be overwritten or deleted by an app bug or an ordinary operator, though a caller holding s3:BypassGovernanceRetention can still override it. COMPLIANCE mode is available as an explicit, irreversible opt-in (production-only, gated behind irreversibleComplianceOptIn) for retention even the AWS account root cannot shorten.",
   },
   {
     icon: "audit-chain",
     label: "Append-only audit chain",
-    body: "Each audit row commits SHA-256 over the previous hash plus its payload. Tampering with any historical row breaks every link after it, and the break is detectable, provable, and exportable.",
+    body: "Each audit row commits SHA-256 over the previous hash plus its own payload. Tampering with any historical row breaks every link after it, and the break is detectable, provable, and exportable.",
+  },
+  {
+    icon: "key",
+    label: "Timing-safe comparisons",
+    body: "packages/kernel's crypto.ts is the one home for secret comparison: safeEqualFixed converts both sides to equal-length buffers and runs node:crypto's timingSafeEqual for session tokens and HMAC outputs of known length; safeEqualVariable SHA-256-hashes both sides first for variable-length values like an admin-email allowlist entry, because a raw variable-length timingSafeEqual throws on a length mismatch and leaks a boolean through the catch. verifyAllowlisted scans every allowlist entry with no early return, so the timing never reveals which entry matched.",
   },
   {
     icon: "field-crypto",
@@ -71,23 +81,23 @@ const SITE_POSTURE: ReadonlyArray<{
   },
   {
     icon: "shield",
+    title: "Admin gated by a fail-closed CF-Access JWT check",
+    body: "apps/admin renders cross-tenant business data and ships no other auth, so ADR-0204 added an app-wide middleware.ts that validates Cf-Access-Jwt-Assertion against the admin Access application's JWKS, pins the aud claim to the admin app specifically (the site and admin Access apps share one email policy, so a signature-only check would accept a site token), and denies with a 403 on any failure — expired token, wrong aud/iss, unreachable JWKS, or a request that reached the raw Railway origin directly, bypassing the Cloudflare edge entirely. In production, an unconfigured gate also denies: both CF_ACCESS_TEAM_DOMAIN and CF_ACCESS_AUD must be set before the app serves a single route.",
+  },
+  {
+    icon: "gauge",
     title: "Hardened response headers",
     body: "Every response carries HSTS with preload, X-Content-Type-Options: nosniff, X-Frame-Options: DENY, a strict Referrer-Policy, a closed Permissions-Policy, and a tightened Content-Security-Policy.",
   },
   {
-    icon: "gauge",
-    title: "Cookieless analytics",
-    body: "Analytics run through Plausible — no cookies, no cross-site identifiers, no consent banner because there is nothing to consent to. The CSP's script-src allows exactly three third-party origins: Plausible for analytics, Paddle for checkout, and Cloudflare Turnstile for the Ask-AI bot check (see the CSP section below).",
-  },
-  {
     icon: "lock",
-    title: "Self-hosted fonts",
-    body: "Fonts ship from our own origin via next/font — no third-party font CDN. font-src is locked to 'self', removing an external origin from the trust surface.",
+    title: "Cookieless analytics, self-hosted fonts",
+    body: "Analytics run through Plausible — no cookies, no cross-site identifiers, no consent banner because there is nothing to consent to. Fonts ship from our own origin via next/font, so font-src stays locked to 'self' with no third-party font CDN in the trust surface.",
   },
   {
     icon: "key",
     title: "Validated forms endpoint",
-    body: "The forms function validates input with Zod .strict() (unknown fields rejected), drops bots via a honeypot, and carries an env-gated Turnstile verification seam plus a documented per-IP rate-limit binding as the next step.",
+    body: "The ask-AI and waitlist routes both validate input with Zod .strict() — unknown fields rejected — and gate on a Cloudflare Turnstile token before any request reaches the model or the mailing list. makeTurnstileVerifier fails closed on the ask route; the waitlist route also drops bots via a honeypot field.",
   },
   {
     icon: "file-check",
@@ -108,6 +118,18 @@ const FAQ: ReadonlyArray<{ question: string; answer: string }> = [
     question: "Does this site set tracking cookies?",
     answer:
       "No. Analytics are cookieless (Plausible), there are no third-party trackers, and there is no consent banner because nothing is stored on your device.",
+  },
+  {
+    question:
+      "What stops a DNS-rebinding attack against a webhook or provider URL I configure?",
+    answer:
+      "packages/kernel's ssrf.ts resolves the hostname and re-checks every returned IP against a private/loopback/link-local/metadata denylist immediately before the outbound fetch, and forces the request to fail on any redirect. A literal-only check (the pre-ADR-0204 state) can't see a name that resolves into private space after the fact; the resolve-and-recheck design closes that gap for both the alerting transports and the ai-kit provider baseUrl.",
+  },
+  {
+    question:
+      "How is the admin dashboard protected if it renders every tenant's data?",
+    answer:
+      "Two independent layers: Cloudflare Access gates the edge, and apps/admin's own middleware.ts independently verifies the Cf-Access-Jwt-Assertion token's signature, audience, and issuer before any route runs, denying with a 403 on failure or misconfiguration. A request that reaches the raw Railway origin directly — bypassing Cloudflare — still hits this in-app check and is refused.",
   },
   {
     question: "How do I report a vulnerability?",
@@ -157,7 +179,7 @@ export default function SecurityPage() {
         <Hero
           eyebrow="Security & trust"
           title="Fail-closed by construction."
-          lede="The same posture Caisson generates for your app governs this site: deny by default, prove on demand, and claim nothing we do not ship. Caisson generates the audit evidence — it is not the auditor."
+          lede="The same posture Caisson generates for your app governs this site: deny by default, prove it with code, claim nothing we do not ship. Caisson generates audit evidence — it is not the auditor."
           ctas={
             <>
               <Button href="mailto:security@caisson.sh" external>
@@ -170,7 +192,12 @@ export default function SecurityPage() {
           }
           credentials={
             <CredentialStrip
-              items={["HSTS preload", "Strict CSP", "Cookieless", "RFC 9116"]}
+              items={[
+                "HSTS preload",
+                "Fail-closed RLS",
+                "Resolve-recheck SSRF guard",
+                "RFC 9116",
+              ]}
               note="The shipped posture, not a roadmap."
             />
           }
@@ -320,9 +347,9 @@ content-security-policy: default-src 'self'; …`}
                 style={{ marginTop: "var(--cs-space-4)", maxWidth: "64ch" }}
               >
                 We never imply Caisson is SOC 2 or HIPAA certified — a codebase
-                cannot be. It maps the live RLS policies, WORM retention, and an
-                audit-chain proof to named controls so you can hand an auditor
-                the evidence, not a screenshot. The
+                cannot be. It maps the live RLS policies, the SSRF guard, WORM
+                retention, and the audit-chain proof to named controls so you
+                can hand an auditor the evidence, not a screenshot. The
                 technical-versus-administrative line is drawn on purpose, and we
                 keep it visible.
               </p>

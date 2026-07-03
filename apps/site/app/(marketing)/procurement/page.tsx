@@ -5,7 +5,7 @@ import { serializeJsonLd, breadcrumb, faqPage } from "@/lib/jsonld";
 export const metadata = buildMetadata({
   title: "Security & procurement",
   description:
-    "For security teams and procurement: what Caisson ships (technical controls), the technical-vs-administrative boundary, how to request documentation, and where to report a vulnerability.",
+    "For security teams and procurement: what Caisson ships as technical controls, the entity you're buying from, how Paddle (merchant of record) handles invoicing and refunds, and how to request documentation or report a vulnerability.",
   path: "/procurement",
 });
 
@@ -19,7 +19,7 @@ const WHAT_CAISSON_SHIPS = [
   {
     icon: "worm" as const,
     label: "S3 Object-Lock WORM storage",
-    body: "Evidence buckets in COMPLIANCE mode with a default retention period. Objects cannot be overwritten or deleted inside the window — for any caller, including an operator with a leaked root key.",
+    body: "Evidence buckets default to GOVERNANCE-mode Object Lock: objects can't be overwritten or deleted inside the retention window by an ordinary caller. Escalating a bucket to COMPLIANCE mode — where the lock holds against any caller, including an operator with a leaked root key — is an explicit, irreversible, production-gated opt-in, never the silent default.",
     control: "SOC 2 CC7.2 · HIPAA §164.312(c)(1)",
   },
   {
@@ -48,9 +48,30 @@ const FAQ_ITEMS = [
       "The Compliance edition covers the technical controls in SOC 2 CC6.1 (logical access), CC7.2 (change detection, stored evidence), and HIPAA §164.312(a)(1) (access control), §164.312(b) (audit controls), §164.312(c)(1) (integrity), and §164.312(a)(2)(iv) (encryption/decryption). The organizational and administrative controls remain the operator's responsibility.",
   },
   {
+    question: "Who is the seller — GridWork Digital LLC or Paddle?",
+    answer:
+      "Both, in different roles. Paddle.com is the merchant of record: it's the seller on your transaction, it collects payment, calculates and remits tax, and issues your receipt. GridWork Digital LLC, based in Atlanta, Georgia, is the licensor: it owns the Caisson source and grants you the license under the Commercial License Agreement. Your receipt comes from Paddle; your software rights come from GridWork.",
+  },
+  {
+    question: "Is the license a one-time purchase or a subscription?",
+    answer:
+      "One-time. The perpetual license fee is a single charge per edition or module, and the license doesn't expire, doesn't require renewal, and verifies offline — no call home required. Compliance Updates is a separate, optional, recurring subscription that delivers new package versions with updated control mappings; skipping or cancelling it doesn't affect the perpetual license you already hold.",
+  },
+  {
+    question: "What's the refund policy?",
+    answer:
+      "Buyers in the EU, EEA, UK, and Switzerland get a statutory 14-day withdrawal right under Paddle's buyer terms. Because Caisson is downloadable software delivered for immediate use, that right ends once you consent to immediate access at checkout and then download, install, or use it. Outside that window, refund requests are reviewed case by case. Email <email> with your order number, or contact Paddle directly at paddle.net. An approved refund revokes the entitlement it granted and returns unused credits; a multi-item order can be refunded line by line.",
+  },
+  {
     question: "How do I request security documentation?",
     answer:
       "Email security@caisson.sh with your organization name and what you need (architecture diagram, control mapping, data-flow documentation). We respond to documented requests within 5 business days.",
+  },
+  {
+    question:
+      "Can you provide a W-9 or entity documentation for our vendor file?",
+    answer:
+      "Yes. Email <email> with your organization name and we'll send a completed W-9 and GridWork Digital LLC's entity details.",
   },
   {
     question: "How do I report a vulnerability?",
@@ -88,7 +109,7 @@ export default function ProcurementPage() {
         as="h1"
         eyebrow="Security & procurement"
         title="What to expect from Caisson."
-        lede="For security teams, procurement reviewers, and budget-holders: the scope of the technical controls, the boundary between what Caisson ships and what remains yours, and how to request documentation."
+        lede="For security teams, procurement reviewers, and budget-holders: the scope of the technical controls, the boundary between what Caisson ships and what remains yours, who you're buying from and how invoicing works, and how to request documentation."
       />
 
       {/* ===== The boundary statement ===== */}
@@ -174,11 +195,78 @@ export default function ProcurementPage() {
         </div>
       </Section>
 
+      {/* ===== Who you're buying from ===== */}
+      <Section
+        band="tint"
+        eyebrow="Who you're buying from"
+        title="The entity and the licensing relationship."
+      >
+        <p className="cs-lede">
+          Caisson is licensed to you by GridWork Digital LLC, based in Atlanta,
+          Georgia. That&rsquo;s the party behind the software: it owns the
+          source, grants the license, and stands behind it under the Commercial
+          License Agreement (the EULA) — see the EULA for the entity&rsquo;s
+          full legal description.
+        </p>
+        <p className="cs-muted" style={{ marginTop: "var(--cs-space-4)" }}>
+          Your checkout is handled by a separate party — see the next section.
+          Two different roles, both named on your paperwork: GridWork licenses
+          the software, Paddle sells and bills the transaction.
+        </p>
+        <div style={{ marginTop: "var(--cs-space-6)" }}>
+          <Button href="/legal/eula" variant="ghost">
+            Read the full license terms
+          </Button>
+        </div>
+      </Section>
+
+      {/* ===== Invoicing & merchant of record ===== */}
+      <Section
+        eyebrow="Invoicing & billing"
+        title="Paddle is the merchant of record."
+      >
+        <p className="cs-lede">
+          Every order runs through Paddle.com, Caisson&rsquo;s merchant of
+          record. Paddle collects payment, calculates and remits sales tax and
+          VAT for your jurisdiction, and issues your order receipt — that
+          receipt is your invoice for the purchase. Which Paddle entity is the
+          seller of record for your specific order is stated in Paddle&rsquo;s
+          own buyer terms, presented to you at checkout.
+        </p>
+        <p className="cs-muted" style={{ marginTop: "var(--cs-space-4)" }}>
+          The perpetual license fee is a one-time charge per edition or module.
+          A Compliance Updates subscription, where purchased, bills on a
+          recurring basis until cancelled and delivers new package versions with
+          updated control mappings — it&rsquo;s optional and doesn&rsquo;t
+          affect the perpetual license for versions you already have. The
+          license itself doesn&rsquo;t expire, doesn&rsquo;t require renewal,
+          and doesn&rsquo;t call home to stay valid.
+        </p>
+        <p className="cs-muted" style={{ marginTop: "var(--cs-space-4)" }}>
+          Refunds: consumers in the EU, EEA, UK, and Switzerland have a
+          statutory 14-day withdrawal right under Paddle&rsquo;s buyer terms.
+          Because Caisson is downloadable software delivered for immediate use,
+          consenting to immediate access at checkout and then downloading,
+          installing, or using it ends that statutory right for that purchase.
+          Outside the statutory window, refund requests are reviewed case by
+          case under Paddle&rsquo;s buyer terms. An approved refund revokes the
+          entitlement it granted and returns unused credits; access and credits
+          already used aren&rsquo;t clawed back. If one order covered more than
+          one edition or module, tell us which line item you&rsquo;re refunding
+          — they&rsquo;re refundable individually.
+        </p>
+        <div style={{ marginTop: "var(--cs-space-6)" }}>
+          <Button href="/legal/terms" variant="ghost">
+            Refund & payment terms in full
+          </Button>
+        </div>
+      </Section>
+
       {/* ===== Documentation requests ===== */}
       <Section
         band="tint"
         eyebrow="Documentation requests"
-        title="How to request security docs."
+        title="How to request security and tax docs."
       >
         <p className="cs-lede">
           We respond to documented requests from security reviewers and
@@ -201,6 +289,10 @@ export default function ProcurementPage() {
             {
               label: "Control mapping",
               body: "A mapping of Caisson modules to SOC 2 TSC and HIPAA §164.3xx control clauses. Downloadable in CSV and PDF.",
+            },
+            {
+              label: "W-9 and entity documents",
+              body: "Email <email> with your organization name and we'll send a completed W-9 and GridWork Digital LLC's entity details for your vendor file.",
             },
             {
               label: "Vulnerability reporting",
@@ -256,15 +348,22 @@ export default function ProcurementPage() {
       {/* ===== Contact nudge ===== */}
       <Section band="surface" eyebrow="Get started">
         <p className="cs-lede" style={{ marginBottom: "var(--cs-space-5)" }}>
-          For security documentation, procurement questionnaires, or to discuss
-          the technical controls in detail, email{" "}
+          For security documentation, procurement questionnaires, W-9 requests,
+          or to discuss the technical controls in detail, email{" "}
           <a
             href="mailto:security@caisson.sh"
             style={{ color: "var(--cs-link)" }}
           >
             security@caisson.sh
-          </a>
-          . Ready to purchase or evaluate? See pricing.
+          </a>{" "}
+          (security/technical) or{" "}
+          <a
+            href="mailto:<email>"
+            style={{ color: "var(--cs-link)" }}
+          >
+            <email>
+          </a>{" "}
+          (contracts, tax, entity). Ready to purchase or evaluate? See pricing.
         </p>
         <div
           style={{
@@ -273,7 +372,7 @@ export default function ProcurementPage() {
             flexWrap: "wrap",
           }}
         >
-          <Button href="/pricing" variant="primary">
+          <Button href="/marketplace" variant="primary">
             Get Compliance
           </Button>
           <Button href="/docs" variant="ghost">

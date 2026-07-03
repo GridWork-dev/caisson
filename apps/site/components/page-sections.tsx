@@ -18,6 +18,7 @@ import {
   Section,
   SkuMatrix,
 } from "@/components";
+import { MediaPlaceholder } from "./media-placeholder";
 
 function renderSection(section: PageSection, key: number): ReactNode {
   switch (section.kind) {
@@ -124,6 +125,20 @@ function renderSection(section: PageSection, key: number): ReactNode {
               </Button>
             )}
           </div>
+        </Section>
+      );
+    }
+
+    case "media": {
+      // Placeholder media (ADR-0237 F2) — the shared <MediaPlaceholder> (also used by the
+      // hand-authored edition pages) inside an optional Section header.
+      const { kind: _kind, icon, aspect, ...header } = section;
+      return (
+        <Section key={key} {...header}>
+          <MediaPlaceholder
+            {...(icon !== undefined ? { icon } : {})}
+            {...(aspect !== undefined ? { aspect } : {})}
+          />
         </Section>
       );
     }

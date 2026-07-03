@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 
+import { trackEvent } from "@/lib/analytics";
 import {
   addCartItem,
   CART_STORAGE_KEY,
@@ -70,6 +71,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (!hydrated) return;
     window.localStorage.setItem(CART_STORAGE_KEY, serializeCart(items));
   }, [items, hydrated]);
+
+  // One view_cart per drawer open (ADR-0237 F8) — the single chokepoint every opener routes
+  // through, so the event can't fork per call site.
+  useEffect(() => {
+    if (drawerOpen) trackEvent("view_cart", { items: String(items.length) });
+    // items.length is a label, not a trigger — re-firing on cart mutation would double-count,
+    // so the deps are deliberately [drawerOpen] only.
+  }, [drawerOpen]);
 
   const value = useMemo<CartContextValue>(
     () => ({

@@ -38,7 +38,7 @@ export const CHANGELOG_ENTRIES: readonly ChangelogEntry[] = [
     date: "2026-05-15",
     version: "v0.1",
     title: "Kernel, registry runtime, and fail-closed RLS: initial release",
-    body: "The Caisson kernel and registry runtime are available. The kernel provides verifyChain (append-only SHA-256 audit chain), tenant context primitives, and fail-closed RLS helpers. The registry exposes typed module definitions for all editions. Fail-closed Postgres RLS (FORCE-enabled, cross-tenant isolation tested in CI) is available in the base substrate. The Compliance edition and AI Production Kit are in active development.",
+    body: "The Caisson kernel and registry runtime are available. The kernel provides verifyChain (append-only SHA-256 audit chain), tenant context primitives, and fail-closed RLS helpers. The registry exposes typed module definitions for all editions. Fail-closed Postgres RLS (FORCE-enabled, cross-tenant isolation tested in CI) is available in the base substrate.",
     tags: ["kernel", "registry", "rls"],
   },
 ] as const;

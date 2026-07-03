@@ -22,6 +22,26 @@ const config: NextConfig = {
   // @caisson/ui ships raw TS (exports point at src/*.ts); Next transpiles it (ADR-0042 token floor).
   transpilePackages: ["@caisson/ui"],
   turbopack: { root: monorepoRoot },
+  // ADR-0237 F1: the three old commerce routes fold into the /marketplace hub. Permanent 301s
+  // preserve SEO equity; the registry (lib/routes.ts), sitemap, nav, and footer emit only the
+  // canonical hub routes in the same change, so these are the ONLY surviving references to the
+  // old paths. Fragments survive redirects client-side (#editions still lands), but internal
+  // links are swept to the new paths directly.
+  async redirects() {
+    return [
+      { source: "/pricing", destination: "/marketplace", permanent: true },
+      {
+        source: "/modules",
+        destination: "/marketplace/modules",
+        permanent: true,
+      },
+      {
+        source: "/build",
+        destination: "/marketplace/build",
+        permanent: true,
+      },
+    ];
+  },
   // Security headers — the CSP/HSTS/X-Frame floor the (now-deleted) Cloudflare Pages public/_headers
   // served, now emitted by the Node standalone server (which never read _headers). Divergence from
   // that file: the Paddle Billing overlay checkout is a live surface here, so *.paddle.com is allowed

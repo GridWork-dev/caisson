@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components";
+import { trackEvent } from "@/lib/analytics";
 import type { CartItem } from "@/lib/cart";
 
 import { useCart } from "./cart-provider";
@@ -27,7 +28,13 @@ export function AddToCartButton({
       type="button"
       variant={variant}
       disabled={inCart}
-      onClick={() => addItem(item)}
+      onClick={() => {
+        addItem(item);
+        trackEvent("add_to_cart", {
+          item: item.id,
+          amount: String(item.amount),
+        });
+      }}
     >
       {inCart ? "In cart" : "Add to cart"}
     </Button>

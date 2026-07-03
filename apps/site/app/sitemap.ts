@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { source } from "@/lib/source";
 import { GLOSSARY_TERMS } from "@/lib/glossary";
+import { MODULE_PAGES } from "@/lib/module-pages";
 import { MARKETING_ROUTES } from "@/lib/routes";
 
 export const dynamic = "force-static";
@@ -39,5 +40,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.6,
   }));
 
-  return [...marketing, ...docs, ...glossary];
+  // Module depth pages derive from MODULE_PAGES (ADR-0237 F2) — the same spoke pattern as the
+  // glossary: a record IS the page, so the sitemap can never list a module the catalog dropped.
+  const modules: MetadataRoute.Sitemap = MODULE_PAGES.map((record) => ({
+    url: `${BASE}/marketplace/modules/${record.slug}`,
+    lastModified: BUILT_AT,
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
+  }));
+
+  return [...marketing, ...docs, ...glossary, ...modules];
 }

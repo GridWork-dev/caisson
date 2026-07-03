@@ -92,6 +92,13 @@ export interface ModulePrice {
   edition: EditionId;
   /** Customer-facing benefit, one line — not the internal package README description. */
   blurb: string;
+  /**
+   * True when NO edition (and therefore not the bundle either — bundle = base ∪ edition members)
+   * grants this module: `edition` is then a browse-family only, and the /build + cart upgrade
+   * nudge must never claim an edition covers it. Truth source: the registry index members maps
+   * (pinned by pricing.test.ts against registry/index.json).
+   */
+  standaloneOnly?: true;
 }
 
 export const MODULE_PRICES: readonly ModulePrice[] = [
@@ -145,10 +152,15 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
       "PG-atomic token metering with per-tenant spend caps and a circuit breaker — a runaway prompt loop can't run your bill up.",
   },
   {
+    // Browse-family only: @caisson/ai-evals is standalone BY DESIGN (its manifest: "not a base
+    // service or an edition") — the ai-kit edition's registry members map does not include it, so
+    // an edition/bundle purchase never grants it. `standaloneOnly` keeps the upgrade nudge and
+    // every "included in" surface honest.
     id: "ai-evals",
     label: "Eval harness",
     amount: 199,
     edition: "ai-kit",
+    standaloneOnly: true,
     blurb:
       "Regression-grade evals that run in CI, not in prod. A model swap fails the build first, not a customer's session.",
   },
@@ -310,19 +322,41 @@ export const SKU_COLUMNS = [
   "Agentic-Dev",
 ] as const;
 
-/** The capability rows (no price row) — the home teaser shows exactly these. */
+/** The capability rows (no price row) — the home teaser shows exactly these. A cell is an
+ *  INCLUSION claim. The module LIST (`MODULE_PRICES` × `modulesByEdition`) is pinned to the
+ *  registry index members maps by the membership lint in pricing.test.ts; these capability CELLS
+ *  are hand-maintained against the same registry truth (label-keyed, so not auto-linted) and are
+ *  reviewed alongside that lint whenever an edition's members are repinned. Base capabilities
+ *  (Apache-2.0, ship with everything — incl. fail-closed RLS) live on the one base row; the eval
+ *  harness is standalone-only (no edition row can claim it). */
 export const SKU_FEATURE_ROWS: readonly SkuRow[] = [
-  { label: "Postgres base substrate", cells: [true, true, true, true] },
-  { label: "Fail-closed RLS (FORCE)", cells: [true, false, false, false] },
+  {
+    label: "Postgres base — fail-closed RLS, auth, billing (Apache-2.0)",
+    cells: [true, true, true, true],
+  },
+  {
+    label: "RLS-force evidence collector + isolation tests",
+    cells: [true, false, false, false],
+  },
   { label: "WORM evidence store", cells: [true, false, false, false] },
   { label: "Append-only audit chain", cells: [true, false, false, false] },
-  { label: "Per-tenant field encryption", cells: [true, false, false, false] },
+  { label: "Per-tenant field encryption", cells: [true, true, true, false] },
   { label: "Evidence-pack generator", cells: [true, false, false, false] },
+  {
+    label: "Alert pipeline + retention runner",
+    cells: [true, false, false, false],
+  },
   { label: "Token metering · spend caps", cells: [false, true, false, false] },
-  { label: "Eval harness in CI", cells: [false, true, false, false] },
-  { label: "On-device vector search", cells: [false, false, true, false] },
+  {
+    label: "Versioned prompts + guardrails",
+    cells: [false, true, false, false],
+  },
+  { label: "On-device vector search", cells: [false, false, true, true] },
   { label: "Privacy gate (no-egress)", cells: [false, false, true, false] },
-  { label: "Governed-agent kernel", cells: [false, false, false, true] },
+  {
+    label: "Governed-agent kernel + sandboxed runner",
+    cells: [false, false, false, true],
+  },
 ];
 
 /** The starting-price row — /pricing appends this after the feature rows; the home teaser omits it. */
@@ -369,6 +403,10 @@ function bestStackUpgrade(
   lineItems: readonly ModulePrice[],
   total: number,
 ): StackUpgrade | undefined {
+  // An upgrade offer is a COVERAGE claim ("this includes your selection for less"), so a
+  // standalone-only module (granted by no edition, and hence not by the bundle) disqualifies the
+  // whole selection — otherwise the nudge sells an upgrade that silently drops a module.
+  if (lineItems.some((m) => m.standaloneOnly)) return undefined;
   const offers: StackUpgrade[] = [];
   // Single-edition selection → the whole edition (which includes these modules and more) may cost
   // less than buying them separately.
