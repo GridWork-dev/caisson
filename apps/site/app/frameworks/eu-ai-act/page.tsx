@@ -183,7 +183,7 @@ export default function EuAiActPage() {
         }
         ctas={
           <>
-            <Button href="/pricing" variant="primary">
+            <Button href="/marketplace" variant="primary">
               Get Compliance
             </Button>
             <Button href="/docs" variant="ghost">
@@ -459,7 +459,7 @@ export default function EuAiActPage() {
           </Terminal>
         </div>
         <div className="cs-cta-row">
-          <Button href="/pricing" variant="primary">
+          <Button href="/marketplace" variant="primary">
             Get Compliance
           </Button>
           <Button href="/docs" variant="ghost">

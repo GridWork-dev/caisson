@@ -2,47 +2,42 @@ import Link from "next/link";
 
 import { Wordmark } from "@caisson/ui/components";
 
-import { EDITION_ROUTES, LEGAL_ROUTES } from "@/lib/routes";
+import { footerRoutes, type FooterCol } from "@/lib/routes";
 import { UpdatesForm } from "./waitlist-form";
 
-// Editions + legal-page links derive from the canonical registry (lib/routes.ts) so they can't
-// drift from the nav/sitemap. Product/Resources stay hand-authored — they mix in docs sub-pages,
-// llms.txt, and the external GitHub link, which are not marketing page routes. The Legal column
-// appends `.well-known/security.txt` (a static file, not a registered page route).
-const COLS: { heading: string; links: { href: string; label: string }[] }[] = [
-  {
-    heading: "Editions",
-    links: EDITION_ROUTES.map((r) => ({ href: r.path, label: r.label })),
-  },
-  {
-    heading: "Product",
+// The footer derives from the canonical route registry's `footer` flag (ADR-0237) so it can't
+// drift from the nav/sitemap. Each column = registry routes + the few non-route extras (docs
+// sub-pages, llms.txt, GitHub, and `.well-known/security.txt` — a static disclosure file, not a
+// page route, labeled as such to stop it shadowing the /security page).
+const EXTRAS: Record<FooterCol, { href: string; label: string }[]> = {
+  editions: [],
+  product: [
+    { href: "/docs", label: "Documentation" },
+    { href: "/docs/getting-started", label: "Getting started" },
+  ],
+  resources: [
+    { href: "/llms.txt", label: "llms.txt" },
+    { href: "https://github.com/caisson-sh/caisson", label: "GitHub" },
+  ],
+  legal: [{ href: "/.well-known/security.txt", label: "Security disclosure" }],
+};
+
+const HEADINGS: Record<FooterCol, string> = {
+  editions: "Editions",
+  product: "Marketplace",
+  resources: "Resources",
+  legal: "Legal",
+};
+
+const COLS = (["editions", "product", "resources", "legal"] as const).map(
+  (col) => ({
+    heading: HEADINGS[col],
     links: [
-      { href: "/pricing", label: "Pricing" },
-      { href: "/docs", label: "Documentation" },
-      { href: "/docs/getting-started", label: "Getting started" },
+      ...footerRoutes(col).map((r) => ({ href: r.path, label: r.label })),
+      ...EXTRAS[col],
     ],
-  },
-  {
-    heading: "Resources",
-    links: [
-      { href: "/changelog", label: "Changelog" },
-      { href: "/glossary", label: "Glossary" },
-      { href: "/procurement", label: "Security & procurement" },
-      { href: "/llms.txt", label: "llms.txt" },
-      {
-        href: "https://github.com/caisson-sh/caisson",
-        label: "GitHub",
-      },
-    ],
-  },
-  {
-    heading: "Legal",
-    links: [
-      ...LEGAL_ROUTES.map((r) => ({ href: r.path, label: r.label })),
-      { href: "/.well-known/security.txt", label: "Security" },
-    ],
-  },
-];
+  }),
+);
 
 export function SiteFooter() {
   return (

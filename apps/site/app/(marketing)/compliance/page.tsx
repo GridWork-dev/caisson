@@ -407,7 +407,7 @@ export default function CompliancePage() {
               {editionCartItem && (
                 <AddToCartButton item={editionCartItem} variant="primary" />
               )}
-              <Button href="/pricing" variant="ghost">
+              <Button href="/marketplace" variant="ghost">
                 See the full lineup
               </Button>
             </div>

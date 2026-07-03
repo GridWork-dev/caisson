@@ -273,7 +273,7 @@ export default function ProcurementPage() {
             flexWrap: "wrap",
           }}
         >
-          <Button href="/pricing" variant="primary">
+          <Button href="/marketplace" variant="primary">
             Get Compliance
           </Button>
           <Button href="/docs" variant="ghost">

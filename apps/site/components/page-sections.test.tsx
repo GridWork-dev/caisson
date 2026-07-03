@@ -131,7 +131,7 @@ describe("<PageSections> — exhaustive switch renderer", () => {
           {
             kind: "cta",
             title: "Ship it",
-            primary: { label: "Get Compliance", href: "/pricing" },
+            primary: { label: "Get Compliance", href: "/marketplace" },
             secondary: { label: "Read the docs", href: "/docs" },
           },
         ]}

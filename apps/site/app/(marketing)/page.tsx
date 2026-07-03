@@ -82,7 +82,7 @@ export default function HomePage() {
         lede="Fail-closed Postgres RLS, S3 Object-Lock WORM, and an append-only audit chain — wired and tested before your first customer, not backfilled after your first audit."
         ctas={
           <>
-            <Button href="/pricing" variant="primary">
+            <Button href="/marketplace" variant="primary">
               Get started
             </Button>
             <Button href="/docs" variant="ghost">
@@ -252,7 +252,7 @@ export default function HomePage() {
               style={{ marginTop: "var(--cs-space-5)" }}
             >
               One-time perpetual unless marked /mo.{" "}
-              <Link href="/pricing" style={{ color: "var(--cs-link)" }}>
+              <Link href="/marketplace" style={{ color: "var(--cs-link)" }}>
                 See the full lineup
               </Link>
             </p>
@@ -342,7 +342,7 @@ export default function HomePage() {
                 flexWrap: "wrap",
               }}
             >
-              <Button href="/pricing" variant="primary">
+              <Button href="/marketplace" variant="primary">
                 Get Compliance
               </Button>
               <Button href="/docs" variant="ghost">

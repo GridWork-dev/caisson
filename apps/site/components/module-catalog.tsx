@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { Button, Card, Icon } from "@/components";
+import { Button, Card, Icon, StatusChip } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { moduleCatalogItem, toCartItem } from "@/lib/catalog";
 import {
@@ -17,8 +17,8 @@ import { EDITION_ICON, editionLabel } from "./marketplace";
 import styles from "./marketplace.module.css";
 
 // Price bands DERIVED from module.amount — no new data field (ADR-0191: facets derive from the
-// existing catalog). The catalog spans $99–$299; these three bands partition it exactly
-// ($99/$149 → under, $199 → mid, $299 → up).
+// existing catalog). The 11-module catalog spans $49–$199 (ADR-0238 dropped the $299 rows);
+// these three bands partition it exactly ($49/$99 → under, $149 → mid, $199 → up).
 interface PriceBand {
   id: string;
   label: string;
@@ -26,9 +26,9 @@ interface PriceBand {
 }
 
 const PRICE_BANDS: readonly PriceBand[] = [
-  { id: "under-150", label: "Under $150", test: (a) => a < 150 },
-  { id: "150-199", label: "$150–199", test: (a) => a >= 150 && a <= 199 },
-  { id: "200-up", label: "$200 and up", test: (a) => a >= 200 },
+  { id: "under-100", label: "Under $100", test: (a) => a < 100 },
+  { id: "100-149", label: "$100–149", test: (a) => a >= 100 && a <= 149 },
+  { id: "150-up", label: "$150 and up", test: (a) => a >= 150 },
 ];
 
 const TOTAL = MODULE_PRICES.length;
@@ -205,6 +205,10 @@ function ModuleCard({ module: m }: { module: ModulePrice }) {
           }}
         >
           {editionLabel(m.edition)}
+        </span>
+        {/* Type chip (ADR-0237 F5) — every price surface names its kind. */}
+        <span style={{ marginLeft: "auto" }}>
+          <StatusChip label="Module" />
         </span>
       </div>
       <div

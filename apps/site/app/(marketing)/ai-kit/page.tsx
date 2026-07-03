@@ -396,7 +396,7 @@ export default function AiKitPage() {
           </div>
 
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
-            <Link href="/pricing" style={{ color: "var(--cs-link)" }}>
+            <Link href="/marketplace" style={{ color: "var(--cs-link)" }}>
               See the full lineup
             </Link>
             .
