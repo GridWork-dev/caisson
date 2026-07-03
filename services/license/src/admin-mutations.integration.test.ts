@@ -12,10 +12,12 @@ import { join } from "node:path";
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { AuditChainStore, LocalArtifactStore } from "@caisson/audit-worm";
+import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
 import {
   CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
 } from "@caisson/credits";
+import { NotFoundError } from "@caisson/kernel";
 import {
   ADMIN_WRITE_ROLE_BOOTSTRAP_SQL,
   withTenant,
@@ -48,6 +50,25 @@ function betterAuthId(): string {
   return Array.from(randomBytes(32), (b) => B62[b % B62.length] ?? "0").join(
     "",
   );
+}
+
+/** Seed a real (personal, account_id == user_id) account_member row (CAISSON-9) — every existing
+ * happy-path test in this file now needs this: the mutation surface fails closed on an id with no row. */
+async function seedAccount(acct: string): Promise<void> {
+  await withTenant(db, acct, (tx) =>
+    tx.query(
+      `INSERT INTO account_member (account_id, user_id, role) VALUES ($1, $1, 'owner')
+       ON CONFLICT DO NOTHING`,
+      [acct],
+    ),
+  );
+}
+
+/** `betterAuthId()` + immediately seeded — the common case for every happy-path test below. */
+async function realAccount(): Promise<string> {
+  const acct = betterAuthId();
+  await seedAccount(acct);
+  return acct;
 }
 
 // A stub /issue proxy: re-serves a deterministic token for any (accountId, major). Reissue does no
@@ -84,8 +105,10 @@ beforeAll(async () => {
   await tp.exec(`DO $$ BEGIN
     IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'admin') THEN CREATE ROLE admin NOLOGIN; END IF;
   END $$;`);
-  // Schemas: credits + entitlements + the operator action log, then the EXTERNAL admin_write policies
-  // (entitlement_grant + the base credit tables) — applied after the admin_write role exists.
+  // Schemas: account membership (CAISSON-9 existence check) + credits + entitlements + the operator
+  // action log, then the EXTERNAL admin_write policies (entitlement_grant + the base credit tables +
+  // account_member) — applied after the admin_write role exists.
+  await tp.exec(ACCOUNT_MEMBER_SCHEMA_SQL);
   await tp.exec(CREDIT_SCHEMA_SQL);
   await tp.exec(CREDIT_ROUNDING_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
@@ -128,7 +151,7 @@ describe("worm anchor account derivation (32-char better-auth ids → UUID key s
 
 describe("entitlement grant/revoke (admin_comp, dual-logged)", () => {
   test("grant comps the entitlements, dual-logs, and revoke undoes it", async () => {
-    const acct = betterAuthId();
+    const acct = await realAccount();
     const anchor = wormAnchorAccount(acct);
     const g = await grantEntitlementAdmin(deps(), {
       actorEmail: "op@gridwork.dev",
@@ -177,7 +200,7 @@ describe("entitlement grant/revoke (admin_comp, dual-logged)", () => {
   test("end-to-end WORM append succeeds for a real 32-char better-auth account id", async () => {
     // The bug this pins: a 32-char id is NOT a UUID, so before the fix appendWorm threw AFTER the
     // mutation committed. Now the anchor account is derived — the WORM half actually lands.
-    const acct = betterAuthId();
+    const acct = await realAccount();
     const anchor = wormAnchorAccount(acct);
     const g = await grantEntitlementAdmin(deps(), {
       actorEmail: "op@gridwork.dev",
@@ -198,6 +221,7 @@ describe("entitlement grant/revoke (admin_comp, dual-logged)", () => {
 
   test("back-compat: a UUID account id anchors its chain directly (no derivation)", async () => {
     const acct = randomUUID();
+    await seedAccount(acct);
     await grantEntitlementAdmin(deps(), {
       actorEmail: "op@gridwork.dev",
       targetAccountId: acct,
@@ -210,7 +234,9 @@ describe("entitlement grant/revoke (admin_comp, dual-logged)", () => {
   });
 
   test("a grant is bounded to its one target account (never leaks to another)", async () => {
-    const a = betterAuthId();
+    // `b` is intentionally NEVER seeded — this test only asserts it received zero rows, so its
+    // account-existence status is irrelevant to what it's proving.
+    const a = await realAccount();
     const b = betterAuthId();
     await grantEntitlementAdmin(deps(), {
       actorEmail: "op@gridwork.dev",
@@ -227,7 +253,7 @@ describe("entitlement grant/revoke (admin_comp, dual-logged)", () => {
 
 describe("post-commit WORM failure is DISTINCT from a mutation failure", () => {
   test("a WORM append that throws returns worm:failed while the grant + log row PERSIST (do NOT retry)", async () => {
-    const acct = betterAuthId();
+    const acct = await realAccount();
     // A WORM store whose append always throws — simulating a transient artifact-store outage AFTER
     // the mutation + admin_action_log tx has already committed.
     const brokenWorm = {
@@ -261,7 +287,7 @@ describe("post-commit WORM failure is DISTINCT from a mutation failure", () => {
 
 describe("credit adjust (± integer, feature envelope, never negative)", () => {
   test("positive adjust grants credits under the admin_adjust tag", async () => {
-    const acct = betterAuthId();
+    const acct = await realAccount();
     const anchor = wormAnchorAccount(acct);
     const r = await adjustCreditsAdmin(deps(), {
       actorEmail: "op@gridwork.dev",
@@ -287,7 +313,7 @@ describe("credit adjust (± integer, feature envelope, never negative)", () => {
   });
 
   test("negative adjust CLAMPS to the balance — the wallet never goes negative", async () => {
-    const acct = betterAuthId();
+    const acct = await realAccount();
     await adjustCreditsAdmin(deps(), {
       actorEmail: "op@gridwork.dev",
       targetAccountId: acct,
@@ -311,9 +337,54 @@ describe("credit adjust (± integer, feature envelope, never negative)", () => {
   });
 });
 
+describe("account existence gate on comp grants + credit adjustments (CAISSON-9)", () => {
+  test("a comp grant to a NONEXISTENT account 4xx's and commits zero rows", async () => {
+    const ghost = betterAuthId(); // deliberately NEVER seeded into account_member
+    await expect(
+      grantEntitlementAdmin(deps(), {
+        actorEmail: "op@gridwork.dev",
+        targetAccountId: ghost,
+        entitlementIds: ["compliance"],
+      }),
+    ).rejects.toThrow(NotFoundError);
+    const ent = await ground<{ n: number }>(
+      `SELECT count(*)::int AS n FROM entitlement_grant WHERE account_id = $1`,
+      [ghost],
+    );
+    const log = await ground<{ n: number }>(
+      `SELECT count(*)::int AS n FROM admin_action_log WHERE target_account_id = $1`,
+      [ghost],
+    );
+    expect(ent[0]?.n).toBe(0);
+    expect(log[0]?.n).toBe(0); // the whole withAdminWrite tx rolled back — no ghost audit row either
+  });
+
+  test("a credit adjust to a NONEXISTENT account 4xx's and commits zero rows (no ghost wallet)", async () => {
+    const ghost = betterAuthId();
+    await expect(
+      adjustCreditsAdmin(deps(), {
+        actorEmail: "op@gridwork.dev",
+        targetAccountId: ghost,
+        deltaCredits: 500,
+        reason: "should never land",
+      }),
+    ).rejects.toThrow(NotFoundError);
+    const wallet = await ground<{ n: number }>(
+      `SELECT count(*)::int AS n FROM credit_wallet WHERE account_id = $1`,
+      [ghost],
+    );
+    const events = await ground<{ n: number }>(
+      `SELECT count(*)::int AS n FROM credit_event WHERE account_id = $1`,
+      [ghost],
+    );
+    expect(wallet[0]?.n).toBe(0);
+    expect(events[0]?.n).toBe(0);
+  });
+});
+
 describe("license reissue (dual-logged, atomic on failure)", () => {
   test("reissue re-serves the proxy token and dual-logs", async () => {
-    const acct = betterAuthId();
+    const acct = await realAccount();
     const anchor = wormAnchorAccount(acct);
     const r = await reissueLicenseAdmin(deps(), {
       actorEmail: "op@gridwork.dev",
@@ -334,7 +405,7 @@ describe("license reissue (dual-logged, atomic on failure)", () => {
   });
 
   test("a FAILED reissue (proxy throws) writes NEITHER log", async () => {
-    const acct = betterAuthId();
+    const acct = await realAccount();
     const anchor = wormAnchorAccount(acct);
     const failingIssue: AdminMutationDeps["issue"] = async () => {
       throw new Error("issue service 500");
@@ -361,7 +432,7 @@ describe("atomicity + role separation", () => {
   test("a mutation that throws mid-transaction rolls back BOTH the write and the log", async () => {
     // A Transactor wrapper that runs the mutation fully, then throws — forcing the withAdminWrite
     // transaction to roll back after grant + admin_action_log both executed. Neither must persist.
-    const acct = betterAuthId();
+    const acct = await realAccount();
     const anchor = wormAnchorAccount(acct);
     const failing: Transactor = {
       async transaction(fn) {
@@ -392,7 +463,7 @@ describe("atomicity + role separation", () => {
   });
 
   test("the buyer app role CANNOT write admin_comp grants (only admin_write can)", async () => {
-    const acct = betterAuthId();
+    const acct = await realAccount();
     // As the app role bound to the account, an admin_comp insert is refused: app's WITH CHECK
     // requires account_id = GUC (ok) but the app role has no admin_comp… actually the refusal here
     // is that a plain app insert of admin_comp is a legal tenant row — so instead prove the inverse:

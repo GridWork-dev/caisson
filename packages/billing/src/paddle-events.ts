@@ -73,33 +73,38 @@ function readQuantity(item: Record<string, unknown>): number {
   return typeof q === "number" && Number.isInteger(q) && q > 0 ? q : 1;
 }
 
-/** The transaction's `details.line_items[]` — the array carrying each line's `txnitm_…` id and its
- * per-line `totals` (the request-echo `items[]` carries neither). Read best-effort and correlated BY
- * ORDER with `items[]` (Paddle emits the two arrays in the same order): a missing/short array yields
- * the empty sentinels, never a throw HERE. On a MULTI-line transaction the "" itemId sentinel is NOT
- * benign — it collides on the credit ledger's per-line uniqueness key and silently under-grants — so
- * `readLineItems` fails the whole event closed when it sees one across 2+ lines (see there). On a
- * single-line transaction the sentinel cannot collide, so it stays a permitted best-effort default. */
-function readDetailLine(
+/** The transaction's `details.line_items[]` — the array carrying each line's `txnitm_…` id, its own
+ * `price_id`, and its per-line `totals` (the request-echo `items[]` carries neither). Grouped into
+ * FIFO queues keyed by `price_id` (CAISSON-6): Paddle does not guarantee `items[]` and
+ * `details.line_items[]` share an index order, only that each line item echoes the `price_id` it was
+ * priced from — correlating by that key (rather than by array position) is correct regardless of
+ * ordering. Two lines sharing a `price_id` (the same SKU bought twice) still correlate correctly: each
+ * is queued in the order it appears in `details.line_items[]` and consumed in that same order by
+ * `readLineItems`, so if the two arrays are BOTH in Paddle's natural order the pairing is identical to
+ * the old positional read — this only fixes the case where they diverge. Read best-effort — a
+ * missing/malformed `details`/`line_items` yields an empty map, never a throw HERE. */
+function readLineItemQueues(
   obj: Record<string, unknown>,
-  index: number,
-): { itemId: string; chargedAmount: number } {
+): Map<string, { itemId: string; chargedAmount: number }[]> {
+  const queues = new Map<string, { itemId: string; chargedAmount: number }[]>();
   const details = obj.details;
-  if (typeof details !== "object" || details === null)
-    return { itemId: "", chargedAmount: 0 };
+  if (typeof details !== "object" || details === null) return queues;
   const lines = (details as Record<string, unknown>).line_items;
-  if (!Array.isArray(lines) || index >= lines.length)
-    return { itemId: "", chargedAmount: 0 };
-  const line: unknown = lines[index];
-  if (typeof line !== "object" || line === null)
-    return { itemId: "", chargedAmount: 0 };
-  const rec = line as Record<string, unknown>;
-  const totals = rec.totals;
-  const chargedAmount =
-    typeof totals === "object" && totals !== null
-      ? readMoneyMinorUnits((totals as Record<string, unknown>).total)
-      : 0;
-  return { itemId: readString(rec.id), chargedAmount };
+  if (!Array.isArray(lines)) return queues;
+  for (const raw of lines) {
+    if (typeof raw !== "object" || raw === null) continue;
+    const rec = raw as Record<string, unknown>;
+    const priceId = readString(rec.price_id);
+    const totals = rec.totals;
+    const chargedAmount =
+      typeof totals === "object" && totals !== null
+        ? readMoneyMinorUnits((totals as Record<string, unknown>).total)
+        : 0;
+    const queue = queues.get(priceId) ?? [];
+    queue.push({ itemId: readString(rec.id), chargedAmount });
+    queues.set(priceId, queue);
+  }
+  return queues;
 }
 
 /** EVERY line of a one-time transaction: `items[].price.id` + `items[].quantity` (Strix vuln-0005 —
@@ -118,7 +123,8 @@ function readLineItems(obj: Record<string, unknown>): {
 }[] {
   const items = obj.items;
   if (!Array.isArray(items)) return [];
-  const lines = items.map((raw, index) => {
+  const queues = readLineItemQueues(obj);
+  const lines = items.map((raw) => {
     if (typeof raw !== "object" || raw === null) {
       throw new ValidationError("Paddle line item is not an object");
     }
@@ -131,7 +137,12 @@ function readLineItems(obj: Record<string, unknown>): {
     if (priceId === "") {
       throw new ValidationError("Paddle line item is missing its price id");
     }
-    const detail = readDetailLine(obj, index);
+    // Dequeue this price id's next FIFO-ordered details.line_items entry (CAISSON-6 keyed join); an
+    // exhausted/absent queue for this price id falls back to the empty sentinels, same as before.
+    const detail = queues.get(priceId)?.shift() ?? {
+      itemId: "",
+      chargedAmount: 0,
+    };
     return {
       priceId,
       quantity: readQuantity(item),
@@ -152,15 +163,34 @@ function readLineItems(obj: Record<string, unknown>): {
       "Paddle multi-line transaction is missing a per-line join id (details.line_items)",
     );
   }
+  // Fail closed on a duplicate NON-empty per-line join id (CAISSON-8) — the same collision as the ""
+  // sentinel case above, just with a real txnitm_ id repeated across 2+ lines (a malformed/duplicated
+  // details.line_items delivery). Two lines sharing one itemId collide on the same credit-ledger
+  // uniqueness key, so the second silently no-ops while the webhook still acks 200.
+  const nonEmptyIds = lines
+    .map((line) => line.itemId)
+    .filter((itemId) => itemId !== "");
+  if (new Set(nonEmptyIds).size !== nonEmptyIds.length) {
+    throw new ValidationError(
+      "Paddle multi-line transaction has duplicate per-line join ids (details.line_items)",
+    );
+  }
   return lines;
 }
 
 /** Parse a PARTIAL adjustment's `data.items[]` into per-line refund entries (ADR-0218). Skips Paddle-
- * generated `tax`/`proration` items (not operator-initiated line refunds); each `full`/`partial` item
- * maps to `{itemId: item.item_id (txnitm_), amountRefunded: totals.total, fullyRefunded: type==='full'}`.
- * A malformed/idless item is skipped (best-effort enrichment — the whole-adjustment `amountRefunded`
- * still records the money movement). An absent `items` yields []. */
-function readAdjustmentItems(obj: Record<string, unknown>): {
+ * generated `tax`/`proration` items (not operator-initiated line refunds, so no `onWarn` — this is
+ * expected shape, not an anomaly); each `full`/`partial` item maps to `{itemId: item.item_id
+ * (txnitm_), amountRefunded: totals.total, fullyRefunded: type==='full'}`. A MALFORMED item (not an
+ * object, or missing its `item_id`) is still skipped (best-effort enrichment — the whole-adjustment
+ * `amountRefunded` still records the money movement) but now signals through the optional `onWarn`
+ * (CAISSON-7) so a malformed delivery is observable instead of a silent drop; `console.log` is banned
+ * in product code, so the caller wires this to its own telemetry/log surface. An absent `items` yields
+ * []. */
+function readAdjustmentItems(
+  obj: Record<string, unknown>,
+  onWarn?: (message: string) => void,
+): {
   itemId: string;
   amountRefunded: number;
   fullyRefunded: boolean;
@@ -173,12 +203,18 @@ function readAdjustmentItems(obj: Record<string, unknown>): {
     fullyRefunded: boolean;
   }[] = [];
   for (const raw of items) {
-    if (typeof raw !== "object" || raw === null) continue;
+    if (typeof raw !== "object" || raw === null) {
+      onWarn?.("Paddle adjustment item is not an object — skipped");
+      continue;
+    }
     const item = raw as Record<string, unknown>;
     const type = readString(item.type);
     if (type !== "full" && type !== "partial") continue; // skip tax/proration
     const itemId = readString(item.item_id);
-    if (itemId === "") continue;
+    if (itemId === "") {
+      onWarn?.("Paddle adjustment item is missing its item_id — skipped");
+      continue;
+    }
     const totals = item.totals;
     const amountRefunded =
       typeof totals === "object" && totals !== null
@@ -205,9 +241,12 @@ function readAdjustmentTotal(obj: Record<string, unknown>): number {
   return readMoneyMinorUnits((totals as Record<string, unknown>).total);
 }
 
-/** Map a verified Paddle event to a DomainBillingEvent, or null for events we don't act on. */
+/** Map a verified Paddle event to a DomainBillingEvent, or null for events we don't act on. `onWarn`
+ * (CAISSON-7) is an optional non-fatal-anomaly signal — currently fired only when a partial
+ * adjustment's `items[]` carries a malformed/idless entry (readAdjustmentItems); never `console.log`. */
 export function parsePaddleEvent(
   event: PaddleEvent,
+  onWarn?: (message: string) => void,
 ): DomainBillingEvent | null {
   const obj = event.data;
   const accountId = readAccountId(obj);
@@ -326,7 +365,7 @@ export function parsePaddleEvent(
         // a redelivery of this adjustment, distinct per adjustment so sequential partials both claw).
         adjustmentId: readString(obj.id),
         // Only a partial adjustment carries per-line items; a full one revokes/claws by transaction id.
-        items: fullyRefunded ? [] : readAdjustmentItems(obj),
+        items: fullyRefunded ? [] : readAdjustmentItems(obj, onWarn),
       };
     }
     default:

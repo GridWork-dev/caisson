@@ -102,6 +102,14 @@ export interface PaddleConfig {
   apiKey: string;
   /** Selects the Paddle API base url (ADR-0108 `PADDLE_ENV`). Defaults to `production`. */
   env?: "sandbox" | "production";
+  /**
+   * Optional non-fatal-anomaly signal (CAISSON-7), threaded through to `parsePaddleEvent`: fired
+   * when a partial-refund adjustment's `items[]` carries a malformed or idless entry that gets
+   * skipped. `console.log` is banned in product code, so a production caller wires this to its own
+   * telemetry/log surface (services/license wires `process.stderr.write`). Unset means the skip
+   * stays silent, as before this config existed.
+   */
+  onWarn?: (message: string) => void;
 }
 
 function paddleApiBase(env: PaddleConfig["env"]): string {
@@ -121,7 +129,7 @@ export function createPaddleBilling(config: PaddleConfig): BillingProvider {
       // to a non-2xx so Paddle retries — the mapper's existing fail-closed-to-null/defensive handling
       // of a well-formed-but-unrecognized `data` payload is unchanged.
       const event = parseStrict(PaddleEventSchema, JSON.parse(rawBody));
-      return parsePaddleEvent(event);
+      return parsePaddleEvent(event, config.onWarn);
     },
 
     async createCheckout(input) {

@@ -344,6 +344,47 @@ export async function creditsGrantedBySource(
 }
 
 /**
+ * Sum ALL credits already CLAWED BACK against a purchase, for an account (CAISSON-5) — symmetric
+ * across BOTH claw directions, since a purchase's clawbacks can arrive in either order:
+ *   - a whole-transaction `type:'full'` adjustment (ADR-0113) claws by the transaction's OWN
+ *     `paymentId`, recorded with `line_item_id` NULL (`source_event_id = paymentId`);
+ *   - a per-line partial claw (ADR-0218) is recorded under a DIFFERENT source key
+ *     (`${adjustmentId}:${itemId}`) but tagged with the line's OWN `line_item_id`.
+ * Neither key alone sees the other: `source_event_id = paymentId` misses the per-line rows (their key
+ * is the adjustment:item pair), and filtering by line_item_id alone misses the NULL-line whole-txn
+ * row. This ORs both, so whichever clawback direction landed first is visible to whichever lands
+ * second — `creditsGrantedBySource(paymentId)` minus this is the purchase's TRUE outstanding
+ * remainder no matter the delivery order, closing the reversed-delivery over-claw this function's
+ * name once left open. A `txnitm_…` line-item id is globally unique per transaction line, so the
+ * line_item_id-scoped half can never cross into another purchase's lines, and `source_event_id`
+ * equality only ever matches a whole-txn clawback's own row (a per-line clawback's key always
+ * contains a `:`, never equal to a bare payment id). Returns 0 when the purchase granted no
+ * per-line-keyed rows and no whole-txn claw has landed (pre-ADR-0218 / single-SKU-no-details shape) —
+ * the pre-existing scalar whole-refund behavior for that case is unchanged. Run inside `withTenant`.
+ */
+export async function creditsClawedForSource(
+  tx: TenantExecutor,
+  accountId: string,
+  sourceEventId: string,
+): Promise<number> {
+  const r = await tx.query<{ clawed: number }>(
+    `SELECT COALESCE(-SUM(amount), 0)::int AS clawed
+     FROM credit_event
+     WHERE account_id = $1 AND amount < 0
+       AND (
+         source_event_id = $2
+         OR line_item_id IN (
+           SELECT DISTINCT line_item_id FROM credit_event
+           WHERE account_id = $1 AND source_event_id = $2 AND amount > 0
+             AND line_item_id IS NOT NULL AND line_item_id <> ''
+         )
+       )`,
+    [accountId, sourceEventId],
+  );
+  return r.rows[0]?.clawed ?? 0;
+}
+
+/**
  * Per-line credit ledger for a Paddle transaction item (ADR-0218). `line_item_id` (`txnitm_…`) is
  * globally unique per transaction line, so filtering on it alone yields exactly one purchase's one
  * line: the `granted` positive `purchase` credits, the `clawed` sum of any prior per-line

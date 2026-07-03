@@ -119,8 +119,16 @@ describe("event mapping", () => {
         details: {
           totals: { grand_total: "20000" },
           line_items: [
-            { id: "txnitm_compliance", totals: { total: "15000" } },
-            { id: "txnitm_pack", totals: { total: "5000" } },
+            {
+              id: "txnitm_compliance",
+              price_id: "price_compliance_PLACEHOLDER",
+              totals: { total: "15000" },
+            },
+            {
+              id: "txnitm_pack",
+              price_id: "price_credit_pack_PLACEHOLDER",
+              totals: { total: "5000" },
+            },
           ],
         },
       },
@@ -140,6 +148,117 @@ describe("event mapping", () => {
         priceId: "price_credit_pack_PLACEHOLDER",
         quantity: 3,
         itemId: "txnitm_pack",
+        chargedAmount: 5000,
+      },
+    ]);
+  });
+
+  test("a shuffled details.line_items order still correlates correctly by price_id key (CAISSON-6)", () => {
+    // Paddle does not guarantee items[] and details.line_items[] share an index order — only that each
+    // line item echoes the price_id it was priced from. The pre-fix positional read would have paired
+    // items[0] (compliance) with line_items[0] (the PACK's txnitm_/total, listed here FIRST) — a wrong,
+    // silent mis-join. The keyed-by-price_id read must pair each item with the line_items entry that
+    // actually carries its own price_id, regardless of array order.
+    const event = {
+      event_id: "evt_shuffled",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_shuffled",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        items: [
+          { price: { id: "price_compliance_PLACEHOLDER" }, quantity: 1 },
+          { price: { id: "price_credit_pack_PLACEHOLDER" }, quantity: 3 },
+        ],
+        details: {
+          totals: { grand_total: "20000" },
+          // Reversed relative to items[] above.
+          line_items: [
+            {
+              id: "txnitm_pack",
+              price_id: "price_credit_pack_PLACEHOLDER",
+              totals: { total: "5000" },
+            },
+            {
+              id: "txnitm_compliance",
+              price_id: "price_compliance_PLACEHOLDER",
+              totals: { total: "15000" },
+            },
+          ],
+        },
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    const parsed = parsePaddleEvent(event);
+    expect(parsed?.type).toBe("purchase.completed");
+    expect(
+      parsed?.type === "purchase.completed" ? parsed.lineItems : [],
+    ).toEqual([
+      {
+        priceId: "price_compliance_PLACEHOLDER",
+        quantity: 1,
+        itemId: "txnitm_compliance", // correctly paired despite line_items[] being reversed
+        chargedAmount: 15000,
+      },
+      {
+        priceId: "price_credit_pack_PLACEHOLDER",
+        quantity: 3,
+        itemId: "txnitm_pack",
+        chargedAmount: 5000,
+      },
+    ]);
+  });
+
+  test("two cart lines sharing ONE price_id still pair FIFO, in queue order (CAISSON-6)", () => {
+    // The same SKU bought twice: both items[] entries key the SAME price_id, so they share one FIFO
+    // queue and must dequeue in the order details.line_items[] lists them — NOT re-paired by value or
+    // re-sorted. When both arrays are already in Paddle's natural (matching) order, this FIFO-by-key
+    // read is equivalent to the old positional index read: item[0] gets the queue's first entry,
+    // item[1] gets its second, exactly what a plain index pairing would also have produced.
+    const event = {
+      event_id: "evt_same_price",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_same_price",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        items: [
+          { price: { id: "price_credit_pack_PLACEHOLDER" }, quantity: 1 },
+          { price: { id: "price_credit_pack_PLACEHOLDER" }, quantity: 2 },
+        ],
+        details: {
+          totals: { grand_total: "8000" },
+          line_items: [
+            {
+              id: "txnitm_first",
+              price_id: "price_credit_pack_PLACEHOLDER",
+              totals: { total: "3000" },
+            },
+            {
+              id: "txnitm_second",
+              price_id: "price_credit_pack_PLACEHOLDER",
+              totals: { total: "5000" },
+            },
+          ],
+        },
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    const parsed = parsePaddleEvent(event);
+    expect(parsed?.type).toBe("purchase.completed");
+    expect(
+      parsed?.type === "purchase.completed" ? parsed.lineItems : [],
+    ).toEqual([
+      {
+        priceId: "price_credit_pack_PLACEHOLDER",
+        quantity: 1,
+        itemId: "txnitm_first", // FIFO: the queue's first same-price_id entry
+        chargedAmount: 3000,
+      },
+      {
+        priceId: "price_credit_pack_PLACEHOLDER",
+        quantity: 2,
+        itemId: "txnitm_second", // FIFO: the queue's second same-price_id entry
         chargedAmount: 5000,
       },
     ]);
@@ -401,8 +520,9 @@ describe("event mapping", () => {
 
   test("a one-time transaction captures each line's txnitm_ id + charged total from details.line_items (ADR-0218)", () => {
     // The `txnitm_…` join key + per-line charged total live on `details.line_items[]`, NOT the
-    // request-echo `items[]`. The mapper correlates the two arrays by order so a later per-line
-    // adjustment refund can join back on the item id and proportion against the charged amount.
+    // request-echo `items[]`. The mapper correlates the two arrays by their shared `price_id`
+    // (CAISSON-6) so a later per-line adjustment refund can join back on the item id and proportion
+    // against the charged amount.
     const event = {
       event_id: "evt_join",
       event_type: "transaction.completed",
@@ -418,8 +538,16 @@ describe("event mapping", () => {
         details: {
           totals: { grand_total: "20000" },
           line_items: [
-            { id: "txnitm_compliance", totals: { total: "15000" } },
-            { id: "txnitm_pack", totals: { total: "5000" } },
+            {
+              id: "txnitm_compliance",
+              price_id: "price_compliance_PLACEHOLDER",
+              totals: { total: "15000" },
+            },
+            {
+              id: "txnitm_pack",
+              price_id: "price_credit_pack_PLACEHOLDER",
+              totals: { total: "5000" },
+            },
           ],
         },
       },
@@ -460,7 +588,13 @@ describe("event mapping", () => {
         ],
         details: {
           totals: { grand_total: "5000" },
-          line_items: [{ id: "txnitm_pack", totals: { total: "5000" } }],
+          line_items: [
+            {
+              id: "txnitm_pack",
+              price_id: "price_credit_pack_PLACEHOLDER",
+              totals: { total: "5000" },
+            },
+          ],
         },
       },
     } as Parameters<typeof parsePaddleEvent>[0]);
@@ -544,6 +678,118 @@ describe("event mapping", () => {
     }
   });
 
+  test("a multi-line transaction with a DUPLICATE non-empty join id fails closed (CAISSON-8)", () => {
+    // Two lines sharing the SAME real txnitm_ id collide on the credit ledger's per-line uniqueness
+    // key exactly like the "" sentinel collision above — the second line silently no-ops while the
+    // webhook still acks 200. The mapper must throw so verifyAndParse returns a non-2xx and Paddle
+    // redelivers.
+    const event = {
+      event_id: "evt_dup_join",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_dup_join",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        items: [
+          { price: { id: "price_compliance_PLACEHOLDER" }, quantity: 1 },
+          { price: { id: "price_credit_pack_PLACEHOLDER" }, quantity: 1 },
+        ],
+        details: {
+          totals: { grand_total: "20000" },
+          line_items: [
+            {
+              id: "txnitm_dup",
+              price_id: "price_compliance_PLACEHOLDER",
+              totals: { total: "15000" },
+            },
+            {
+              id: "txnitm_dup", // same join id as the line above — malformed delivery
+              price_id: "price_credit_pack_PLACEHOLDER",
+              totals: { total: "5000" },
+            },
+          ],
+        },
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    expect(() => parsePaddleEvent(event)).toThrow(/duplicate per-line join id/);
+  });
+
+  test("a malformed adjustment item signals onWarn but still SKIPS it, never throwing (CAISSON-7)", () => {
+    const warnings: string[] = [];
+    const event = {
+      event_id: "evt_partial_malformed",
+      event_type: "adjustment.updated",
+      data: {
+        id: "adj_bad",
+        action: "refund",
+        status: "approved",
+        type: "partial",
+        transaction_id: "txn_x",
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        totals: { total: "5000" },
+        items: [
+          {
+            id: "adjitm_1",
+            item_id: "txnitm_a",
+            type: "full",
+            totals: { total: "3000" },
+          },
+          "not an object", // malformed
+          { id: "adjitm_2", type: "partial", totals: { total: "2000" } }, // missing item_id
+        ],
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    const parsed = parsePaddleEvent(event, (message) => warnings.push(message));
+    expect(parsed?.type).toBe("refund.completed");
+    if (parsed?.type === "refund.completed") {
+      // Skip behavior is unchanged: only the one well-formed item lands.
+      expect(parsed.items).toEqual([
+        { itemId: "txnitm_a", amountRefunded: 3000, fullyRefunded: true },
+      ]);
+    }
+    // Both malformed entries fired the warning signal — never a console.log, never a throw.
+    expect(warnings).toHaveLength(2);
+    expect(warnings[0]).toMatch(/not an object/);
+    expect(warnings[1]).toMatch(/item_id/);
+  });
+
+  test("a well-formed partial adjustment emits no warnings (onWarn is opt-in noise-free)", () => {
+    const warnings: string[] = [];
+    const event = {
+      event_id: "evt_partial_clean",
+      event_type: "adjustment.updated",
+      data: {
+        id: "adj_clean",
+        action: "refund",
+        status: "approved",
+        type: "partial",
+        transaction_id: "txn_x",
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        totals: { total: "3000" },
+        items: [
+          {
+            id: "adjitm_1",
+            item_id: "txnitm_a",
+            type: "full",
+            totals: { total: "3000" },
+          },
+          // A Paddle-generated tax item is an EXPECTED skip, not an anomaly — no warning.
+          {
+            id: "adjitm_2",
+            item_id: "txnitm_tax",
+            type: "tax",
+            totals: { total: "500" },
+          },
+        ],
+      },
+    } as Parameters<typeof parsePaddleEvent>[0];
+    parsePaddleEvent(event, (message) => warnings.push(message));
+    expect(warnings).toHaveLength(0);
+  });
+
   test("a pending_approval refund is a no-op (not yet settled)", () => {
     const event = {
       event_id: "evt_pending",
@@ -598,6 +844,46 @@ describe("event mapping", () => {
       type: "purchase.completed",
       accountId: "acct_a",
     });
+  });
+
+  test("verifyAndParse threads a configured onWarn to the mapper for a malformed adjustment item (CAISSON-7)", () => {
+    // The MUST-FIX gap this pins: onWarn previously had no production path from a signed webhook
+    // delivery to parsePaddleEvent — createPaddleBilling built the event with no way to pass one, so
+    // wiring it only on PaddleConfig (not exercising verifyAndParse end to end) would not have caught
+    // the missing thread-through.
+    const warnings: string[] = [];
+    const body = JSON.stringify({
+      event_id: "evt_provider_warn",
+      event_type: "adjustment.updated",
+      data: {
+        id: "adj_provider",
+        action: "refund",
+        status: "approved",
+        type: "partial",
+        transaction_id: "txn_x",
+        currency_code: "usd",
+        custom_data: { account_id: "acct_a" },
+        totals: { total: "3000" },
+        items: [
+          {
+            id: "adjitm_1",
+            item_id: "txnitm_a",
+            type: "full",
+            totals: { total: "3000" },
+          },
+          "not an object", // malformed
+        ],
+      },
+    });
+    const billing = createPaddleBilling({
+      webhookSecret: SECRET,
+      apiKey: "pdl_sdbx_test",
+      onWarn: (message) => warnings.push(message),
+    });
+    const out = billing.verifyAndParse(body, signed(body), { now: T });
+    expect(out?.type).toBe("refund.completed");
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toMatch(/not an object/);
   });
 });
 

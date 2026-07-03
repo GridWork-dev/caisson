@@ -32,10 +32,24 @@ const EMPTY = {
   actions: [] as AdminActionLogRow[],
 };
 
-type LoadedData = typeof EMPTY & { actionLogMissing: boolean };
+/** Postgres SQLSTATE for "undefined table" — same shape on node-postgres and PGlite errors. */
+const PG_UNDEFINED_TABLE = "42P01";
+
+export function isUndefinedTableError(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    (err as { code?: unknown }).code === PG_UNDEFINED_TABLE
+  );
+}
+
+type ActionLogStatus = "ok" | "missing" | "error";
+
+type LoadedData = typeof EMPTY & { actionLogStatus: ActionLogStatus };
 
 async function loadData(): Promise<LoadedData> {
-  if (!adminDbConfigured()) return { ...EMPTY, actionLogMissing: false };
+  if (!adminDbConfigured()) return { ...EMPTY, actionLogStatus: "ok" };
   const [tenants, entitlements, credits, licenses] = await Promise.all([
     readAdmin(readTenants),
     readAdmin(readEntitlements),
@@ -44,13 +58,16 @@ async function loadData(): Promise<LoadedData> {
   ]);
   // The `admin_action_log` table ships in the ADR-0220 DEPLOY DDL. A routine fleet redeploy from
   // main BEFORE that DDL runs must not crash the whole read cockpit — degrade THIS read alone to an
-  // empty log plus a provisioning hint. The other reads predate 0220, so they are not guarded here.
+  // empty log plus a provisioning hint. CAISSON-10: only a genuine undefined-table (42P01) means
+  // "not provisioned yet" — any other error (a transient connection drop, a timeout) is NOT the same
+  // condition and must not render the provisioning hint as if the DDL were simply missing. The other
+  // reads predate 0220, so they are not guarded here.
   let actions: AdminActionLogRow[] = [];
-  let actionLogMissing = false;
+  let actionLogStatus: ActionLogStatus = "ok";
   try {
     actions = await readAdmin((tx) => readAdminActionLog(tx, 50));
-  } catch {
-    actionLogMissing = true;
+  } catch (err) {
+    actionLogStatus = isUndefinedTableError(err) ? "missing" : "error";
   }
   return {
     tenants,
@@ -58,7 +75,7 @@ async function loadData(): Promise<LoadedData> {
     credits,
     licenses,
     actions,
-    actionLogMissing,
+    actionLogStatus,
   };
 }
 
@@ -69,14 +86,8 @@ function fmtDate(iso: string | null): string {
 
 export default async function BusinessPage() {
   const configured = adminDbConfigured();
-  const {
-    tenants,
-    entitlements,
-    credits,
-    licenses,
-    actions,
-    actionLogMissing,
-  } = await loadData();
+  const { tenants, entitlements, credits, licenses, actions, actionLogStatus } =
+    await loadData();
 
   return (
     <div className="shell stack" style={{ gap: "var(--cs-space-10)" }}>
@@ -165,12 +176,18 @@ export default async function BusinessPage() {
       </section>
 
       <Section title={`Action log (${actions.length})`}>
-        {actionLogMissing ? (
+        {actionLogStatus === "missing" ? (
           <p className="muted">
             The <span className="mono">admin_action_log</span> table is not
             provisioned yet — run the ADR-0220 DEPLOY DDL (the action-log schema
             plus <span className="mono">ADMIN_MUTATION_PROVISION_SQL</span>).
             Operator actions are still recorded in the per-tenant WORM chain.
+          </p>
+        ) : actionLogStatus === "error" ? (
+          <p className="muted">
+            The action log could not be read right now — a transient database
+            error, not a missing table. Operator actions are still recorded in
+            the per-tenant WORM chain; reload to retry.
           </p>
         ) : (
           <Table
