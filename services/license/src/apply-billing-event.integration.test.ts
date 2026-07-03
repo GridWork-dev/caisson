@@ -1046,6 +1046,83 @@ describe("applyBillingEvent — Paddle per-line partial refund (ADR-0218)", () =
     expect(clawedFromA).toBe(totalGrantedA);
   });
 
+  test("a per-line partial after a whole-txn FULL refund never over-claws (reversed delivery, CAISSON-5)", async () => {
+    // The mirror image of the test above: the whole-transaction refund lands FIRST, then a per-line
+    // partial adjustment for one of its lines arrives afterward (a delayed/out-of-order webhook). The
+    // whole-txn claw's row carries line_item_id NULL, so lineCreditLedger's per-line filter alone
+    // would see this line as un-clawed and re-claw its full grant a second time — draining a SEPARATE
+    // purchase's untouched credits from the same fungible wallet. The purchase-level remainder bound
+    // must catch this even though lineCreditLedger cannot see the earlier whole-txn row.
+    const acct = "acct_pl_partial_after_whole";
+    // Purchase C: two credit-bearing lines (2 x PACK_CREDITS granted), paymentId txn_C.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompletedMulti(acct, "txn_C", [
+          {
+            priceId: CREDIT_PACK_ID,
+            quantity: 1,
+            itemId: "txnitm_c1",
+            chargedAmount: 3000,
+          },
+          {
+            priceId: CREDIT_PACK_ID,
+            quantity: 1,
+            itemId: "txnitm_c2",
+            chargedAmount: 2000,
+          },
+        ]),
+      ),
+    );
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(
+      2 * PACK_CREDITS,
+    );
+    // A SEPARATE purchase D lands on the SAME account/wallet — must stay untouched by C's refund.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, purchaseCompleted(acct, "txn_D", CREDIT_PACK_ID)),
+    );
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(
+      3 * PACK_CREDITS,
+    );
+    // WHOLE-TRANSACTION full refund lands FIRST — claws all of C's 2 x PACK_CREDITS.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, refundCompleted(acct, "txn_C")),
+    );
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(
+      PACK_CREDITS, // only D's credits remain
+    );
+    // THEN a per-line partial for one of C's lines arrives. The pre-fix bug reads
+    // lineCreditLedger("txnitm_c1") — which never saw the whole-txn claw's NULL-line row — as
+    // granted=PACK_CREDITS, clawed=0, and re-claws the full PACK_CREDITS again, draining D's balance
+    // to 0.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        refundPerLine(acct, "txn_C", "adj_c1", [
+          { itemId: "txnitm_c1", amountRefunded: 3000, fullyRefunded: true },
+        ]),
+      ),
+    );
+    const finalBalance = await withTenant(tp.pg, acct, (tx) =>
+      balance(tx, acct),
+    );
+    // D's PACK_CREDITS survive untouched — the per-line claw is bounded to nothing further, since C's
+    // purchase-level remainder is already fully spent by the earlier whole-txn claw.
+    expect(finalBalance).toBe(PACK_CREDITS);
+    // Total ever clawed from C across BOTH refunds equals exactly what C originally granted, never more.
+    const totalGrantedC = 2 * PACK_CREDITS;
+    const ledger = await withTenant(tp.pg, acct, (tx) => getLedger(tx, acct));
+    const clawedFromC = ledger
+      .filter(
+        (e) =>
+          e.event_type === "refund_clawback" &&
+          (e.source_event_id === "txn_C" ||
+            e.source_event_id?.startsWith("adj_c1:")),
+      )
+      .reduce((sum, e) => sum + -e.amount, 0);
+    expect(clawedFromC).toBe(totalGrantedC);
+  });
+
   test("a Stripe-style partial (fullyRefunded=false, no items[]) stays a no-op (ADR-0218 D-1)", async () => {
     const acct = "acct_pl_noitems";
     await withTenant(tp.pg, acct, (tx) =>
