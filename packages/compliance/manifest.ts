@@ -45,14 +45,14 @@ export default defineModule({
   // and the full-tree-index guard test asserts every pin resolves to a real published ledger version
   // (never the "0.0.0" dev sentinel).
   members: {
-    "@caisson/compliance": "0.2.0",
-    "@caisson/audit-worm": "0.2.0",
-    "@caisson/field-crypto": "0.2.0",
-    "@caisson/tenancy-rls": "0.2.0",
-    "@caisson/kernel": "0.2.0",
+    "@caisson/compliance": "0.2.1",
+    "@caisson/audit-worm": "0.2.1",
+    "@caisson/field-crypto": "0.2.1",
+    "@caisson/tenancy-rls": "0.3.0",
+    "@caisson/kernel": "0.3.0",
     // Stage-2 harvest primitives folded into the Compliance bundle (ADR-0178).
-    "@caisson/alerting": "0.1.1",
-    "@caisson/retention-runner": "0.1.1",
+    "@caisson/alerting": "0.1.2",
+    "@caisson/retention-runner": "0.1.2",
   },
   golden: "src/__golden__",
   description:

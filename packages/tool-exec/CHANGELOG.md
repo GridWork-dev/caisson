@@ -1,5 +1,14 @@
 # @caisson/tool-exec
 
+## 0.1.2
+
+### Patch Changes
+
+- Updated dependencies [e62c88d]
+- Updated dependencies [ccf8b10]
+- Updated dependencies [549dd4e]
+  - @caisson/kernel@0.3.0
+
 ## 0.1.1
 
 ### Patch Changes
