@@ -23,17 +23,25 @@ describe("catalog id namespacing (no edition/module collision)", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  test("the colliding bare slugs resolve to DIFFERENT items by kind", () => {
-    // `compliance` and `ai-kit` exist as BOTH an edition and a module — the kind-scoped lookups
-    // must never cross-resolve (the bug the namespace prevents).
-    for (const slug of ["compliance", "ai-kit"]) {
-      const edition = editionCatalogItem(slug);
-      const mod = moduleCatalogItem(slug);
-      expect(edition?.kind).toBe("edition");
-      expect(mod?.kind).toBe("module");
-      expect(edition?.id).not.toBe(mod?.id);
-      expect(edition?.amount).not.toBe(mod?.amount);
-      expect(edition?.priceId).not.toBe(mod?.priceId);
+  test("no module id collides with an edition id (ADR-0238 data-lint)", () => {
+    // The four edition-core module rows (`compliance`/`ai-kit`/`local-ai`/`agent-dev`) were
+    // DROPPED (ADR-0238): a bare module id that names an edition — either this site's marketing
+    // edition slugs OR the registry edition ids the pricebook grants (`local-ai`/`agent-dev`,
+    // see catalog.ts's ENTITLEMENT-ID note) — would make `expandEntitlements` resolve the module
+    // purchase edition-first and grant the WHOLE parent edition. This lint keeps the collision
+    // from ever coming back.
+    const editionIds = new Set<string>([
+      ...EDITION_IDS,
+      "local-ai", // registry edition id (site slug `local-first`)
+      "agent-dev", // registry edition id (site slug `agentic-dev`)
+    ]);
+    for (const m of MODULE_PRICES) {
+      expect(editionIds.has(m.id)).toBe(false);
+    }
+    // The dropped rows are really gone — kind-scoped module lookups of edition slugs miss.
+    for (const slug of ["compliance", "ai-kit", "local-ai", "agent-dev"]) {
+      expect(moduleCatalogItem(slug)).toBeUndefined();
+      expect(editionCatalogItem(slug)?.kind ?? "edition").toBe("edition");
     }
   });
 
@@ -59,11 +67,11 @@ describe("catalog coverage", () => {
     }
   });
 
-  test("every one of the 15 modules has a catalog item", () => {
+  test("every one of the 11 à-la-carte modules has a catalog item", () => {
     for (const m of MODULE_PRICES) {
       expect(moduleCatalogItem(m.id)).toBeDefined();
     }
-    expect(MODULE_CATALOG.length).toBe(15);
+    expect(MODULE_CATALOG.length).toBe(11);
   });
 
   test("every module has a catalog item carrying a real Paddle price id", () => {
