@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@caisson/kernel": "workspace:*",
+    "@caisson/tenancy-rls": "workspace:*",
     "zod": "^3.23.8"
   },
   "devDependencies": {

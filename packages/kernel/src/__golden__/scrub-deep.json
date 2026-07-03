@@ -1,0 +1,27 @@
+{
+  "patient_email": "[REDACTED]",
+  "firstName": "[REDACTED]",
+  "lastName": "[REDACTED]",
+  "dateOfBirth": "[REDACTED]",
+  "mrn": "[REDACTED]",
+  "user_dob": "[REDACTED]",
+  "employee_mrn": "[REDACTED]",
+  "ssn": "[REDACTED]",
+  "apiKey": "[REDACTED]",
+  "authorization": "[REDACTED]",
+  "note": "Rotate [REDACTED] now",
+  "message": "Refactor the ranker cleanly.",
+  "nested": {
+    "patientId": "[REDACTED]",
+    "connection": "postgres://app:[REDACTED]@db/main",
+    "count": 42,
+    "active": true,
+    "missing": null
+  },
+  "tags": [
+    "clean",
+    "OPENAI_API_KEY=[REDACTED]",
+    "plain"
+  ],
+  "contactAddress": "[REDACTED]"
+}

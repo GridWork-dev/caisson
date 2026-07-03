@@ -17,6 +17,9 @@ import { type Framework, defineFramework } from "../registry/control.ts";
  * The SOC 2 Trust Services Criteria pack: own-authored canonical controls mapped to the Common
  * Criteria (CC1–CC9) and the Availability / Confidentiality / Processing-Integrity categories.
  * Built (and validated) at module load via `defineFramework` — an authoring error fails closed here.
+ *
+ * Control: ADR-0057 — SOC 2 Trust Services Criteria coverage pack
+ * (control-to-code traceability idiom: `docs/compliance/control-traceability.md`).
  */
 export const soc2Tsc: Framework = defineFramework({
   id: "soc2-tsc",

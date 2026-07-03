@@ -41,11 +41,11 @@ afterAll(async () => {
 
 test("platform migrations apply in order then are idempotent", async () => {
   const first = await runPlatformMigrations(pgliteApplier(tp));
-  expect(first.applied).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  expect(first.applied).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 
   const second = await runPlatformMigrations(pgliteApplier(tp));
   expect(second.applied).toEqual([]);
-  expect(second.skipped).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  expect(second.skipped).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 });
 
 test("0007 adds the ADR-0212 rounding provenance columns to credit_event", async () => {

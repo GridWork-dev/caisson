@@ -14,7 +14,7 @@ export default defineModule({
   tier: "oss",
   priceCents: null,
   license: pkg.license,
-  dependencies: ["@caisson/kernel"],
+  dependencies: ["@caisson/kernel", "@caisson/tenancy-rls"],
   description:
     "Stripe + Paddle billing behind a BillingProvider port: HMAC-raw-body webhook verify + DomainBillingEvent dispatch (ADR-0017/0108).",
 });

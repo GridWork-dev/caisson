@@ -13,7 +13,7 @@ export default defineModule({
   tier: "oss",
   priceCents: null,
   license: pkg.license,
-  dependencies: ["@caisson/kernel"],
+  dependencies: ["@caisson/kernel", "@caisson/tenancy-rls"],
   description:
     "Provider-agnostic background-job queue port + in-memory test driver; Trigger.dev prod driver — billing and credit side-effects enqueued, never inline (ADR-0018).",
 });

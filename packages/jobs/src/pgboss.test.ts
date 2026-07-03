@@ -26,6 +26,7 @@ function createFakeClient(): PgBossClient & {
     name: string;
     payload: unknown;
     id: string | undefined;
+    singletonKey: string | undefined;
   }>;
   readonly createQueueCalls: readonly string[];
   readonly workCalls: readonly string[];
@@ -41,6 +42,7 @@ function createFakeClient(): PgBossClient & {
     name: string;
     payload: unknown;
     id: string | undefined;
+    singletonKey: string | undefined;
   }> = [];
   const createQueueCalls: string[] = [];
   const workCalls: string[] = [];
@@ -55,7 +57,12 @@ function createFakeClient(): PgBossClient & {
       createQueueCalls.push(name);
     },
     async send(name, payload, options) {
-      sendCalls.push({ name, payload, id: options?.id });
+      sendCalls.push({
+        name,
+        payload,
+        id: options?.id,
+        singletonKey: options?.singletonKey,
+      });
       return "job_fake";
     },
     async work(name, handler) {
@@ -112,6 +119,7 @@ describe("pg-boss job queue", () => {
         name: "grant-credits",
         payload: { accountId: "acct_a", amount: 100 },
         id: undefined,
+        singletonKey: undefined,
       },
     ]);
   });
@@ -179,6 +187,7 @@ describe("pg-boss idempotent enqueue (ADR-0211)", () => {
         name: "grant-credits",
         payload: { accountId: "acct_a", amount: 1 },
         id: expectedId,
+        singletonKey: undefined,
       },
     ]);
     // UUID-shaped: 8-4-4-4-12 hex.
@@ -223,6 +232,48 @@ describe("pg-boss idempotent enqueue (ADR-0211)", () => {
     await queue.enqueue("grant-credits", { accountId: "acct_a", amount: 1 });
 
     expect(client.sendCalls[0]?.id).toBeUndefined();
+  });
+});
+
+describe("pg-boss overlap-safe enqueue (singletonKey, ADR-0229 row 56)", () => {
+  test("passes singletonKey straight through to boss.send (native overlap suppression)", async () => {
+    const client = createFakeClient();
+    const queue = createPgBossJobQueue(grantCreditsTasks, { client });
+
+    await queue.enqueue(
+      "grant-credits",
+      { accountId: "acct_a", amount: 1 },
+      { singletonKey: "tenant_a:subject_1" },
+    );
+
+    expect(client.sendCalls[0]?.singletonKey).toBe("tenant_a:subject_1");
+    // No id — singletonKey is overlap-safety, not the idempotency-retry id.
+    expect(client.sendCalls[0]?.id).toBeUndefined();
+  });
+
+  test("idempotencyKey and singletonKey can ride one send together", async () => {
+    const client = createFakeClient();
+    const queue = createPgBossJobQueue(grantCreditsTasks, { client });
+
+    await queue.enqueue(
+      "grant-credits",
+      { accountId: "acct_a", amount: 1 },
+      { idempotencyKey: "retry-1", singletonKey: "k" },
+    );
+
+    expect(client.sendCalls[0]?.id).toBe(
+      deriveIdempotentJobId("grant-credits", "retry-1"),
+    );
+    expect(client.sendCalls[0]?.singletonKey).toBe("k");
+  });
+
+  test("without a singletonKey, none is passed to send", async () => {
+    const client = createFakeClient();
+    const queue = createPgBossJobQueue(grantCreditsTasks, { client });
+
+    await queue.enqueue("grant-credits", { accountId: "acct_a", amount: 1 });
+
+    expect(client.sendCalls[0]?.singletonKey).toBeUndefined();
   });
 });
 

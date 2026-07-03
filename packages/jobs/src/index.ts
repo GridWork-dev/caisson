@@ -16,3 +16,4 @@ export type {
   PgBossJob,
   PgBossJobQueueConfig,
 } from "./pgboss.ts";
+export { withAdvisoryXactLock } from "./advisory-lock.ts";
