@@ -33,6 +33,12 @@ const config: NextConfig = {
   // Next still inlines its hydration bootstrap without a per-request nonce under App Router; a nonce
   // path is a tracked follow-up. frame-ancestors 'none' is unchanged (it protects THIS site from
   // being embedded — unrelated to the Paddle iframe we load).
+  //
+  // challenges.cloudflare.com is the Cloudflare Turnstile surface (ADR-0234 F5): its api.js (script-src),
+  // the managed-challenge iframe (frame-src), and the widget's verify XHR (connect-src). Gates /api/ask
+  // (and the waitlist form) from day one; the server-side siteverify runs on the Node server, not the
+  // browser, so no extra connect origin is needed for it. Landed in the same commit as the widget per
+  // the identity/security-surfaces.md same-commit invariant for a new third-party surface.
   async headers() {
     return [
       {
@@ -52,7 +58,7 @@ const config: NextConfig = {
           {
             key: "Content-Security-Policy",
             value:
-              "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: https://*.paddle.com; font-src 'self'; style-src 'self' 'unsafe-inline' https://*.paddle.com; script-src 'self' 'unsafe-inline' https://plausible.io https://cdn.paddle.com; frame-src https://*.paddle.com; connect-src 'self' https://plausible.io https://*.paddle.com",
+              "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: https://*.paddle.com; font-src 'self'; style-src 'self' 'unsafe-inline' https://*.paddle.com; script-src 'self' 'unsafe-inline' https://plausible.io https://cdn.paddle.com https://challenges.cloudflare.com; frame-src https://*.paddle.com https://challenges.cloudflare.com; connect-src 'self' https://plausible.io https://*.paddle.com https://challenges.cloudflare.com",
           },
         ],
       },
