@@ -10,6 +10,7 @@ import {
   ClaimCeilingError,
   type Claim,
   type ClaimEvidence,
+  claimEvidenceSchema,
 } from "./claim-ceiling.ts";
 
 describe("claimTier", () => {
@@ -229,5 +230,60 @@ describe("allowedClaims", () => {
       margin: 5,
     };
     expect(allowedClaims(claims, evidence)).toEqual(claims);
+  });
+});
+
+describe("claimTier — direction: decrease (lower-is-better metrics)", () => {
+  test("a genuine reduction is licensed, not read as a regression", () => {
+    // Review time 100 -> 80: a 20-unit reduction against a 10-unit threshold.
+    expect(
+      claimTier(
+        claimEvidenceSchema.parse({
+          metric: 80,
+          baseline: 100,
+          threshold: 10,
+          margin: 0,
+          direction: "decrease",
+        }),
+      ),
+    ).toBe("validated");
+  });
+
+  test("boundary: reduction exactly at threshold reaches measured; margin gates validated", () => {
+    const at = claimEvidenceSchema.parse({
+      metric: 90,
+      baseline: 100,
+      threshold: 10,
+      margin: 5,
+      direction: "decrease",
+    });
+    expect(claimTier(at)).toBe("measured");
+    const past = claimEvidenceSchema.parse({ ...at, metric: 85 });
+    expect(claimTier(past)).toBe("validated");
+  });
+
+  test("an INCREASE under decrease-direction is a regression (unproven)", () => {
+    expect(
+      claimTier(
+        claimEvidenceSchema.parse({
+          metric: 120,
+          baseline: 100,
+          threshold: 10,
+          margin: 0,
+          direction: "decrease",
+        }),
+      ),
+    ).toBe("unproven");
+  });
+
+  test("direction defaults to increase (existing callers unchanged)", () => {
+    const parsed = claimEvidenceSchema.parse({
+      metric: 120,
+      baseline: 100,
+      threshold: 10,
+      margin: 0,
+    });
+    expect(parsed.direction).toBe("increase");
+    expect(claimTier(parsed)).toBe("validated");
   });
 });

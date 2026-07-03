@@ -15,10 +15,15 @@ export type JsonlSink = (line: string) => void | Promise<void>;
 /**
  * Redact `event` via {@link scrubDeep} (leaf credential-span redaction + PHI/secret-key-named
  * subtree drop) and serialize the result to one JSON Lines record: a single `JSON.stringify` line
- * terminated with `\n`. Pure — never writes, never mutates `event`.
+ * terminated with `\n`. Pure — never writes, never mutates `event`. `bigint` leaves (counts,
+ * sequence ids, DB numerics) serialize as decimal strings — `JSON.stringify` would otherwise
+ * throw, and a logger that rejects an event over a count defeats its purpose.
  */
 export function toRedactedJsonlLine(event: Record<string, unknown>): string {
-  return `${JSON.stringify(scrubDeep(event))}\n`;
+  const line = JSON.stringify(scrubDeep(event), (_key, value: unknown) =>
+    typeof value === "bigint" ? value.toString() : value,
+  );
+  return `${line}\n`;
 }
 
 /**

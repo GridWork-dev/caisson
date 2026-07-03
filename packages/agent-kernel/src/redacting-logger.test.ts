@@ -90,3 +90,16 @@ describe("makeRedactingLogger", () => {
     expect(lines).toHaveLength(1);
   });
 });
+
+describe("toRedactedJsonlLine — bigint safety", () => {
+  test("bigint leaves serialize as decimal strings instead of throwing", () => {
+    const line = toRedactedJsonlLine({
+      kind: "meter",
+      sequence: 9007199254740993n,
+      nested: { count: 42n },
+    });
+    const parsed = JSON.parse(line) as Record<string, unknown>;
+    expect(parsed["sequence"]).toBe("9007199254740993");
+    expect((parsed["nested"] as Record<string, unknown>)["count"]).toBe("42");
+  });
+});

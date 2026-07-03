@@ -39,6 +39,11 @@ export const claimEvidenceSchema = strictObject({
   baseline: z.number().finite(),
   threshold: z.number().finite().nonnegative(),
   margin: z.number().finite().nonnegative(),
+  /** Which way "better" points. `"increase"` (default): improvement = `metric - baseline`
+   *  (throughput, accuracy, revenue). `"decrease"`: improvement = `baseline - metric` (latency,
+   *  error rate, review time) — without this, a genuine reduction reads as a regression and a
+   *  true "cuts X in half" claim could never be licensed. */
+  direction: z.enum(["increase", "decrease"]).default("increase"),
 });
 export type ClaimEvidence = z.infer<typeof claimEvidenceSchema>;
 
@@ -58,13 +63,18 @@ function tierMeets(achieved: ClaimTier, required: ClaimTier): boolean {
 }
 
 /**
- * Score `evidence` against the claim ladder. `lift = metric - baseline`; `lift >= threshold + margin`
- * reaches `"validated"`, `lift >= threshold` reaches `"measured"`, anything short (including a
- * regression) stays `"unproven"`. Boundary is inclusive both steps — a lift landing exactly on
- * `threshold` or exactly on `threshold + margin` clears that rung, it does not fall short of it.
+ * Score `evidence` against the claim ladder. Improvement (`lift`) is direction-aware:
+ * `metric - baseline` for `"increase"` evidence, `baseline - metric` for `"decrease"` evidence.
+ * `lift >= threshold + margin` reaches `"validated"`, `lift >= threshold` reaches `"measured"`,
+ * anything short (including a regression) stays `"unproven"`. Boundary is inclusive both steps —
+ * a lift landing exactly on `threshold` or exactly on `threshold + margin` clears that rung, it
+ * does not fall short of it.
  */
 export function claimTier(evidence: ClaimEvidence): ClaimTier {
-  const lift = evidence.metric - evidence.baseline;
+  const lift =
+    evidence.direction === "decrease"
+      ? evidence.baseline - evidence.metric
+      : evidence.metric - evidence.baseline;
   if (lift >= evidence.threshold + evidence.margin) return "validated";
   if (lift >= evidence.threshold) return "measured";
   return "unproven";
