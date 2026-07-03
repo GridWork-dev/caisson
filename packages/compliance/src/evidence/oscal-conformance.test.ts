@@ -8,7 +8,9 @@
 // (oscal-export-xml.test.ts) skips when the external tool is absent. NEW collectors (HIPAA field-crypto,
 // EU-AI-Act risk-register) are a LATER phase — these fixtures exercise the framework-agnostic emitter.
 import { describe, expect, test } from "bun:test";
+import { createHash } from "node:crypto";
 import { matchGolden } from "@caisson/testing";
+import { canonicalize, type JsonValue } from "@caisson/kernel";
 import { ALG_AES_256_GCM, serializeEnvelope } from "@caisson/field-crypto";
 import {
   parseEvidencePackManifest,
@@ -17,6 +19,7 @@ import {
 import type { CollectorResult } from "./collector.ts";
 import { fieldCryptoPolicyCollector } from "./collectors/field-crypto-policy.ts";
 import { aiRiskRegisterCollector } from "./collectors/ai-risk-register.ts";
+import { toOscalAssessmentPlan } from "./oscal-assessment-plan.ts";
 import {
   OSCAL_VERSION,
   toOscalBundle,
@@ -46,8 +49,36 @@ function counterIds(): () => string {
   };
 }
 
-function det(): OscalExportOptions {
-  return { now: NOW, newId: counterIds() };
+/**
+ * SHA-256 (lowercase hex) of a framework's canonicalized Assessment-Plan bytes — the integrity value the
+ * bundled SAR binds into `rlink.hashes[]` (ADR-0231). Uses a fresh counter so it matches the standalone AP
+ * golden (`toOscalAssessmentPlan` with a fresh seam), keeping the two goldens cross-consistent.
+ */
+function apSha256(fw: FrameworkCase): string {
+  let n = 0;
+  const ap = toOscalAssessmentPlan(
+    { id: fw.id, title: fw.title, version: "2024.1" },
+    {
+      now: NOW,
+      newId: () =>
+        `00000000-0000-4000-8000-${String((n += 1)).padStart(12, "0")}`,
+    },
+  );
+  return createHash("sha256")
+    .update(canonicalize(JSON.parse(JSON.stringify(ap)) as JsonValue), "utf8")
+    .digest("hex");
+}
+
+/** Export options for the bundled (ADR-0231) SAR — relative AP `rlink` + SHA-256 `hashes[]`. */
+function bundleOptions(fw: FrameworkCase): OscalExportOptions {
+  return {
+    now: NOW,
+    newId: counterIds(),
+    assessmentPlan: {
+      rlinkHref: `./assessment-plan/${fw.id}.json`,
+      sha256: apSha256(fw),
+    },
+  };
 }
 
 /** A valid AES-256-GCM field-crypto envelope (base64) — the at-rest shape a PHI field carries. */
@@ -317,7 +348,13 @@ function assertOscalShape(bundle: OscalExportBundle): void {
     "resolvable import-ap resource",
   );
   uuid(ap.uuid, "AP resource");
-  expect(req(ap.rlinks[0], "AP rlink").href).toMatch(/^https:\/\//);
+  // ADR-0231: the AP rlink is a RELATIVE in-bundle path with a SHA-256 hashes[] binding, not a served URL.
+  const apRlink = req(ap.rlinks[0], "AP rlink");
+  expect(apRlink.href.startsWith("./")).toBe(true);
+  expect(apRlink.href).not.toMatch(/^https?:\/\//);
+  const apHash = req(apRlink.hashes?.[0], "AP rlink hash");
+  expect(apHash.algorithm).toBe("SHA-256");
+  expect(apHash.value).toMatch(/^[0-9a-f]{64}$/);
 
   expect(sar.results.length).toBeGreaterThan(0);
   for (const result of sar.results) {
@@ -358,7 +395,7 @@ describe("OSCAL framework conformance — v1.2.2, all three frameworks (ADR-0179
     test(`${fw.id}: shape-conformant SAR + POA&M at the locked version`, () => {
       const bundle = toOscalBundle(
         manifestFor(fw.id, fw.title, fw.ready, fw.gap, fw.extra),
-        det(),
+        bundleOptions(fw),
       );
       expect(
         bundle.assessmentResults["assessment-results"].metadata[
@@ -371,7 +408,7 @@ describe("OSCAL framework conformance — v1.2.2, all three frameworks (ADR-0179
     test(`${fw.id}: deterministic golden bundle`, () => {
       const bundle = toOscalBundle(
         manifestFor(fw.id, fw.title, fw.ready, fw.gap, fw.extra),
-        det(),
+        bundleOptions(fw),
       );
       matchGolden(PKG_SRC_META, `oscal-${fw.slug}.bundle`, bundle);
     });
