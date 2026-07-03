@@ -733,11 +733,11 @@ republishing the registry ledger/index. The ADR is filed **during the republish 
 not up front — consistent with the ADR-0178 ledger/index-only republish posture
 (`CAISSON_PUBLISH_DRY_RUN` stays `"true"`).
 
-| Fork                        | Decision                                                                                                             | ADR                         |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------------- |
-| **A — changeset scope**     | A1 consume-all: consume every pending changeset in the republish run, not a members-only subset.                     | files at execution (per C1) |
-| **B — edition member pins** | B1 repin-to-bumped: edition `members` maps repin to the freshly bumped member versions from the same run.            | files at execution (per C1) |
-| **C — ADR timing**          | C1 short ADR filed at execution: a small ADR lands during the republish run recording the final ledger/index deltas. | files at execution (per C1) |
+| Fork                        | Decision                                                                                                             | ADR          |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------ |
+| **A — changeset scope**     | A1 consume-all EXECUTED: all 24 pending changesets consumed in one `changeset version` sweep.                        | **ADR-0228** |
+| **B — edition member pins** | B1 repin-to-bumped EXECUTED: both `members` maps (Compliance + Agentic-Dev) repinned to the cascade-bumped versions. | **ADR-0228** |
+| **C — ADR timing**          | C1 EXECUTED: ADR-0228 filed at execution recording the ledger 65→98 / 33-pair index-rebuild deltas.                  | **ADR-0228** |
 
 ## Closed by the 2026-07-02 third picker round (operator-locked)
 

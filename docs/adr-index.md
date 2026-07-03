@@ -649,6 +649,18 @@ Fork 4 (on-incident-only rotation), and the module-catalog posture (sandbox cata
 | [0226](../knowledge/decisions/ADR-0226-pre-launch-credential-sweep-locks.md)     | Pre-launch credential sweep: fresh issuer keypair · vault parity tool · on-incident rotation    | Security/Secrets | accepted | extends 0224 F6; relates 0106/0201/0221/0222/0069                   |
 | [0227](../knowledge/decisions/ADR-0227-compliance-reprice-and-module-catalog.md) | Compliance reprice $749 -> $799 + per-module sandbox catalog now                                | Pricing/Commerce | accepted | supersedes the 0137 compliance number; relates 0106/0116/0082/0205  |
 
+### Members-fold republish, second wave (0228, 2026-07-02) - status `accepted`
+
+The MF-A/B/C execution: consumed all 24 pending changesets, hand-repinned both edition `members`
+maps to the cascade-bumped versions (Compliance + Agentic-Dev), appended 33 `(id, version)` pairs to
+`registry/ledger.jsonl` (65 → 98) + rebuilt `registry/index.json`, re-baselined the two bootstrap-era
+guard tests. `CAISSON_PUBLISH_DRY_RUN` stays `"true"`. **Number reserved as 0228 against the in-flight
+`picker-locks-third-round` 0225–0227 set (ADR-0088 convention).**
+
+| #                                                                             | Title                                                                    | Domain         | Status   | Relations                                            |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------ | -------------- | -------- | ---------------------------------------------------- |
+| [0228](../knowledge/decisions/ADR-0228-members-fold-republish-second-wave.md) | Members-fold republish, second wave: full-tree repin + agent-runner fold | Registry/Infra | accepted | extends 0208 §5; realizes 0186 F5; relates 0178/0077 |
+
 ---
 
 ## Accepted is not the same as shipped
