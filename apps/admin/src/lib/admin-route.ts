@@ -4,6 +4,7 @@
 // `verifyAccessJwt`. A route reached without a verified actor (dev with CF-Access unconfigured, or a
 // misconfigured matcher) fails closed to 401 here.
 import { ZodError } from "zod";
+import { toErrorResponse } from "@caisson/kernel";
 
 export function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -40,6 +41,17 @@ export function mutationResponse(result: { worm: "ok" | "failed" }): Response {
     );
   }
   return json(result);
+}
+
+/**
+ * Map a caught mutation error to its real HTTP shape (kernel's `toErrorResponse`, ADR-0019): a
+ * `CaissonError` (e.g. CAISSON-9's `NotFoundError` on a nonexistent target account) keeps its real
+ * `code`/`httpStatus`, instead of every thrown value collapsing to a generic 500. Routed through this
+ * module's own `json()` so the security headers stay on every response, not just the 200 path.
+ */
+export function mutationErrorResponse(err: unknown): Response {
+  const { status, body } = toErrorResponse(err);
+  return json(body, status);
 }
 
 /** The verified CF-Access actor email, or null when the request carries no verified actor. */
