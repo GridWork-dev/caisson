@@ -569,10 +569,17 @@ interface RlsBlock {
  *
  * `sql` is a whole (possibly multi-table, multi-migration-file) concatenation — a package's
  * migrations commonly wire RLS for several tenant tables one after another. The GRANT search is
- * therefore bounded to the span between THIS table's own ENABLE line and its own CREATE POLICY block:
- * unbounded, a lazy `GRANT\s+([\s\S]+?)\s+ON\s+${table}\s+TO…` would latch onto an EARLIER table's
- * real GRANT statement (or a REVOKE) and span forward across unrelated SQL to reach this table's
- * `ON <table> TO <role>;`, silently attributing the wrong privilege set to this table.
+ * therefore bounded to the span between THIS table's own ENABLE line and its own LATEST CREATE
+ * POLICY block: unbounded, a lazy `GRANT\s+([\s\S]+?)\s+ON\s+${table}\s+TO…` would latch onto an
+ * EARLIER table's real GRANT statement (or a REVOKE) and span forward across unrelated SQL to reach
+ * this table's `ON <table> TO <role>;`, silently attributing the wrong privilege set to this table.
+ *
+ * The CREATE POLICY match takes the LAST occurrence in `sql`, not the first: a policy hardening
+ * follow-up (ADR-0006 append-only — a shipped migration's RLS predicate is never edited in place,
+ * only re-issued via `DROP POLICY … ; CREATE POLICY …` in a later migration file) re-emits the same
+ * `<table>_tenant_isolation` policy name later in the concatenated sequence. The effective policy is
+ * whichever one Postgres applies LAST, so equivalence must be checked against that one, not the
+ * table's original (now-superseded) definition.
  */
 function extractRlsBlock(sql: string, table: string): RlsBlock | null {
   const enableM = new RegExp(
@@ -581,10 +588,15 @@ function extractRlsBlock(sql: string, table: string): RlsBlock | null {
   const forceM = new RegExp(
     String.raw`ALTER TABLE\s+${table}\s+FORCE ROW LEVEL SECURITY\s*;`,
   ).exec(sql);
-  const policyM = new RegExp(
+  const policyRe = new RegExp(
     String.raw`CREATE POLICY\s+${table}_tenant_isolation\s+ON\s+${table}\s*` +
       String.raw`USING\s*\(([\s\S]*?)\)\s*WITH CHECK\s*\(([\s\S]*?)\)\s*;`,
-  ).exec(sql);
+    "g",
+  );
+  let policyM: RegExpExecArray | null = null;
+  for (let m = policyRe.exec(sql); m; m = policyRe.exec(sql)) {
+    policyM = m;
+  }
   if (!enableM || !forceM || !policyM) return null;
 
   const windowStart = Math.min(enableM.index, forceM.index);
@@ -733,5 +745,91 @@ export async function checkRlsEquivalence(
     }
   }
 
+  return findings;
+}
+
+/**
+ * Changeset-source prose gate (operator fork lock: gate at PR time, no silent formatter). The
+ * default changeset formatter (`.changeset/config.json` → `@changesets/cli/changelog`) inlines a
+ * changeset's summary markdown VERBATIM into the bumped package's shipped CHANGELOG.md — whatever
+ * an author types into a `.changeset/*.md` body ships to buyers unedited. Rather than silently
+ * rewriting it at release time, this gate fails the PR the moment an internal-prose leak lands in
+ * a changeset body, forcing the author to write buyer-readable prose up front.
+ *
+ * Frontmatter (the `--- \n "@caisson/x": patch \n ---` package/bump header) is exempt — only the
+ * body below it is scanned. An empty changeset (no body) passes trivially. `README.md` and
+ * `config.json` inside `.changeset/` are not summaries and are never scanned.
+ */
+const CHANGESET_LEAK_RULES: { rule: string; re: RegExp; label: string }[] = [
+  { rule: "changeset-prose-adr", re: /\bADR-\d{4}\b/g, label: "ADR citation" },
+  {
+    rule: "changeset-prose-wave",
+    re: /\bwave-?6\w*/gi,
+    label: "internal wave label",
+  },
+  {
+    rule: "changeset-prose-row",
+    re: /\brows?\s*#?\d+\b/gi,
+    label: "row-number jargon",
+  },
+  {
+    rule: "changeset-prose-path",
+    re: /\b(?:docs\/state|outputs|knowledge)\//g,
+    label: "internal repo path",
+  },
+  {
+    rule: "changeset-prose-slug",
+    re: /\bgw-[a-z-]+\b/gi,
+    label: "session/agent slug",
+  },
+];
+
+/**
+ * Strips a changeset's YAML frontmatter (the leading `---`…`---` package/bump block) and returns
+ * the remaining body plus the 1-indexed line number the body's first line sits at in the original
+ * file — so a Finding can cite the real file line, not a body-relative offset. A malformed/absent
+ * frontmatter (no leading `---`, or an unterminated one) falls back to scanning the whole file: the
+ * changeset format always opens with frontmatter, so a missing close is corrupt input, not a
+ * license to skip scanning it.
+ */
+function stripChangesetFrontmatter(content: string): {
+  body: string;
+  startLine: number;
+} {
+  const lines = content.split("\n");
+  if (lines[0]?.trim() !== "---") return { body: content, startLine: 1 };
+  const closeIdx = lines.findIndex((l, i) => i > 0 && l.trim() === "---");
+  if (closeIdx === -1) return { body: content, startLine: 1 };
+  return {
+    body: lines.slice(closeIdx + 1).join("\n"),
+    startLine: closeIdx + 2,
+  };
+}
+
+export function checkChangesetProse(root: string): Finding[] {
+  const dir = join(root, ".changeset");
+  if (!existsSync(dir)) return [];
+  const findings: Finding[] = [];
+  for (const entry of readdirSync(dir)) {
+    if (!entry.endsWith(".md") || entry === "README.md") continue;
+    const relPath = `.changeset/${entry}`;
+    const content = readFileSync(join(dir, entry), "utf8");
+    const { body, startLine } = stripChangesetFrontmatter(content);
+    const bodyLines = body.split("\n");
+    for (let i = 0; i < bodyLines.length; i++) {
+      const line = bodyLines[i] ?? "";
+      for (const { rule, re, label } of CHANGESET_LEAK_RULES) {
+        re.lastIndex = 0; // stateful global regex — reset before every line/rule reuse
+        const m = re.exec(line);
+        if (!m) continue;
+        findings.push({
+          severity: "error",
+          rule,
+          pkg: "(changeset)",
+          message: `${relPath}:${startLine + i}: ${label} "${m[0]}" — a changeset body ships verbatim into the bumped package's CHANGELOG; rewrite in buyer-readable prose.`,
+        });
+      }
+    }
+  }
   return findings;
 }

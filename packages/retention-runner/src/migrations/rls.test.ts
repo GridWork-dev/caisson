@@ -15,6 +15,7 @@ describe("retention_audit RLS migration", () => {
     expect(files.sort()).toEqual([
       "0001_retention_audit.sql",
       "0002_retention_audit_rls.sql",
+      "0003_retention_audit_rls_nullif.sql",
     ]);
   });
 
@@ -35,6 +36,22 @@ describe("retention_audit RLS migration", () => {
     );
     expect(sql).toContain(
       "WITH CHECK (tenant_id = current_setting('app.current_account', true))",
+    );
+  });
+
+  test("0003 hardens the 0002 policy with NULLIF (append-only follow-up, not an edit)", () => {
+    const sql = readFileSync(
+      join(MIGRATIONS_DIR, "0003_retention_audit_rls_nullif.sql"),
+      "utf8",
+    );
+    expect(sql).toContain(
+      "DROP POLICY retention_audit_tenant_isolation ON retention_audit;",
+    );
+    expect(sql).toContain(
+      "USING (tenant_id = NULLIF(current_setting('app.current_account', true), ''))",
+    );
+    expect(sql).toContain(
+      "WITH CHECK (tenant_id = NULLIF(current_setting('app.current_account', true), ''))",
     );
   });
 });

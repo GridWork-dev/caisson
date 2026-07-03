@@ -42,6 +42,11 @@ export * from "./impersonation/session.ts";
 // --- Operational telemetry (T18) — the EventSink ops mirror (evidentiary record stays in WORM).
 export * from "./observe.ts";
 
+// --- Regulatory-exemption posture worksheet — a typed convention artifact (NOT a rules engine
+// or a SHIP gate): legal-test-element -> LLM-output-rule mapping + a human sign-off field.
+export * from "./posture/exemption-worksheet.ts";
+export * from "./posture/exemplar-ftc-endorsement.ts";
+
 // --- Bundled operational-compliance primitives (ADR-0178) — the folded members, composed + surfaced.
 // The Compliance bundle includes SOC2 CC7.2 alerting + CCPA/GDPR erasure; re-export both surfaces from
 // this one edition import home and wire them via `createComplianceEdition` (./edition.ts).

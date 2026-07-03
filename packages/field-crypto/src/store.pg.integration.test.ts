@@ -23,11 +23,20 @@ let tp: TestPg;
 let migrationSql: string;
 
 beforeAll(async () => {
-  migrationSql = await Bun.file(
+  // Concatenate BOTH migration files: 0002 DROP+CREATEs both tenant-isolation policies with the
+  // pgbouncer/pooler NULLIF hardening (ADR-0006 append-only — 0001 already shipped, so the
+  // hardening is a follow-up migration, never an edit to 0001). The drift-guard below checks the
+  // EFFECTIVE (post-0002) policy against buildTenantPolicySql's current output.
+  const m1 = await Bun.file(
     new URL("./migrations/0001_field_keys.sql", import.meta.url),
   ).text();
+  const m2 = await Bun.file(
+    new URL("./migrations/0002_field_keys_rls_nullif.sql", import.meta.url),
+  ).text();
+  migrationSql = m1 + m2;
   tp = await newTestPg();
-  await tp.exec(migrationSql);
+  await tp.exec(m1);
+  await tp.exec(m2);
 });
 
 afterAll(async () => {

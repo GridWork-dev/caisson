@@ -18,6 +18,12 @@ export type {
   EvalRun,
 } from "./define-eval.ts";
 
+// Point-in-time reader seam (ADR-0214) — backtest-via-live-code-path replay: `defineEval`,
+// `recordEvalSpend`, and `captureDisagreement` all take an optional `Clock` instead of reading
+// `Date.now()`/`new Date()` internally, so a replay run takes the identical code path as a live run.
+export { systemClock, fixedClock, sequencedClock } from "./clock.ts";
+export type { Clock } from "./clock.ts";
+
 // Grader taxonomy.
 export {
   exactGrader,

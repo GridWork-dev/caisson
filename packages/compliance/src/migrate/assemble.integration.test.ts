@@ -80,23 +80,33 @@ describe("assembled sequence (ADR-0070, TM-O)", () => {
     // field-crypto's key table renumbers to 0001 AHEAD of the audit-worm chain that stores its
     // ciphertext (TM-O: key tables before the encrypted-column layer), then chain, then version,
     // then the compliance edition's own impersonation table (ADR-0187 — it appends to that chain).
+    // Each package's pgbouncer/pooler NULLIF hardening (ADR-0005/0006) rides its own follow-up
+    // migration file, appended after the package's original migrations — append-only, never an edit.
     expect(assembly.sequence.map((m) => m.filename)).toEqual([
       "0001_field_keys.sql",
-      "0002_audit_chain.sql",
-      "0003_versions.sql",
-      "0004_impersonation_session.sql",
+      "0002_field_keys_rls_nullif.sql",
+      "0003_audit_chain.sql",
+      "0004_versions.sql",
+      "0005_rls_nullif.sql",
+      "0006_impersonation_session.sql",
+      "0007_impersonation_session_rls_nullif.sql",
     ]);
     expect(assembly.sequence.map((m) => m.sourcePackage)).toEqual([
       "@caisson/field-crypto",
+      "@caisson/field-crypto",
+      "@caisson/audit-worm",
       "@caisson/audit-worm",
       "@caisson/audit-worm",
       "@caisson/compliance",
+      "@caisson/compliance",
     ]);
-    expect(assembly.sequence.map((m) => m.seq)).toEqual([1, 2, 3, 4]);
+    expect(assembly.sequence.map((m) => m.seq)).toEqual([1, 2, 3, 4, 5, 6, 7]);
   });
 
   test("stamps ONE schema_version checksum ledger over the merged set (ADR-0014)", () => {
-    expect(assembly.ledger.map((l) => l.version)).toEqual([1, 2, 3, 4]);
+    expect(assembly.ledger.map((l) => l.version)).toEqual([
+      1, 2, 3, 4, 5, 6, 7,
+    ]);
     expect(assembly.ledger.map((l) => l.filename)).toEqual(
       assembly.sequence.map((m) => m.filename),
     );
@@ -115,7 +125,7 @@ describe("assembled sequence (ADR-0070, TM-O)", () => {
 
 describe("ordered apply + ledger (PGlite)", () => {
   test("applies the full ordered sequence on a fresh DB, recording the ledger", async () => {
-    expect(firstRun.applied).toEqual([1, 2, 3, 4]);
+    expect(firstRun.applied).toEqual([1, 2, 3, 4, 5, 6, 7]);
     expect(firstRun.skipped).toEqual([]);
 
     const rows = await tp.query<{ version: number; checksum: string }>(
@@ -141,7 +151,7 @@ describe("ordered apply + ledger (PGlite)", () => {
   test("re-running the assembled apply is idempotent — every version skipped", async () => {
     const second = await runMigrations(assembly, pgApplier(tp));
     expect(second.applied).toEqual([]);
-    expect(second.skipped).toEqual([1, 2, 3, 4]);
+    expect(second.skipped).toEqual([1, 2, 3, 4, 5, 6, 7]);
   });
 });
 

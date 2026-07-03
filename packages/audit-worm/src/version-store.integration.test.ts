@@ -20,11 +20,21 @@ function prov(reason: string): Provenance {
 }
 
 beforeAll(async () => {
-  migrationSql = await Bun.file(
+  const m2 = await Bun.file(
     new URL("./migrations/0002_versions.sql", import.meta.url),
   ).text();
+  // 0003 DROP+CREATEs the tenant-isolation policy with the pgbouncer/pooler NULLIF hardening
+  // (ADR-0006 append-only — 0001/0002 already shipped, so the hardening is a follow-up migration,
+  // never an edit to either); it also touches audit_chain_entry, which this standalone table's
+  // schema doesn't have, so it's concatenated for the drift-guard TEXT check below only, never
+  // exec'd here — the composed compliance-edition test (assemble.integration.test.ts) proves it
+  // applies live.
+  const m3 = await Bun.file(
+    new URL("./migrations/0003_rls_nullif.sql", import.meta.url),
+  ).text();
+  migrationSql = m2 + m3;
   tp = await newTestPg();
-  await tp.exec(migrationSql);
+  await tp.exec(m2);
   store = new LockedVersionStore({ db: tp.pg });
 }, 120_000); // PGlite WASM init can be slow under parallel CI load — generous hook timeout.
 

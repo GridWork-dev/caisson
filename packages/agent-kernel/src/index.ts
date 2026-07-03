@@ -68,3 +68,9 @@ export type {
   AuditedLifecycleOptions,
   RecordOutcome,
 } from "./audit-lifecycle.ts";
+
+export {
+  makeRedactingLogger,
+  toRedactedJsonlLine,
+} from "./redacting-logger.ts";
+export type { JsonlSink } from "./redacting-logger.ts";

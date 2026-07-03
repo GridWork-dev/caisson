@@ -59,9 +59,20 @@ function begin(target: string, ttlMs = 60_000) {
 }
 
 beforeAll(async () => {
-  migrationSql = await Bun.file(
-    new URL("../migrations/0001_impersonation_session.sql", import.meta.url),
-  ).text();
+  // Concatenate BOTH migration files: 0002 DROP+CREATEs the tenant-isolation policy with the
+  // pgbouncer/pooler NULLIF hardening (ADR-0006 append-only — 0001 already shipped, so the
+  // hardening is a follow-up migration, never an edit to 0001). The drift-guard below checks the
+  // EFFECTIVE (post-0002) policy against buildTenantPolicySql's current output.
+  migrationSql =
+    (await Bun.file(
+      new URL("../migrations/0001_impersonation_session.sql", import.meta.url),
+    ).text()) +
+    (await Bun.file(
+      new URL(
+        "../migrations/0002_impersonation_session_rls_nullif.sql",
+        import.meta.url,
+      ),
+    ).text());
   tp = await newTestPg();
   // The REAL composed sequence (field-crypto keys → audit-worm chain/versions → impersonation).
   for (const migration of assembleComplianceMigrations().sequence) {

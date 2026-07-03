@@ -3,6 +3,7 @@
 // NEVER auto-produces an `EvalCase`: the rubric is scorer-owned, and a human merges a consolidated
 // candidate into a committed dataset (ADR-0061). Storage is an injected port, mirroring `Judge`.
 import { z } from "zod";
+import { systemClock, type Clock } from "./clock.ts";
 
 const VERDICTS = ["pass", "fail"] as const;
 type Verdict = (typeof VERDICTS)[number];
@@ -57,11 +58,15 @@ export interface CaptureDisagreementArgs {
   readonly output: string;
   readonly modelVerdict: Verdict;
   readonly humanVerdict: Verdict;
+  /** The point-in-time reader stamped onto `capturedAt` (ADR-0214). Defaults to `systemClock`. */
+  readonly clock?: Clock;
 }
 
 /**
  * Stamp `id`/`capturedAt` and enqueue — but ONLY when the verdicts disagree. Agreement is not
  * interesting to the reflexivity queue (there's nothing to recycle) so it's a silent no-op.
+ * `capturedAt` reads `args.clock` (default `systemClock`), never `Date.now()` directly — a backtest
+ * replays this same function with a fixed/sequenced clock injected.
  */
 export async function captureDisagreement(
   store: ReflexivityQueueStore,
@@ -70,6 +75,7 @@ export async function captureDisagreement(
   if (!flagsDisagreement(args.modelVerdict, args.humanVerdict)) {
     return undefined;
   }
+  const clock = args.clock ?? systemClock;
   const candidate = reflexivityCandidateSchema.parse({
     id: crypto.randomUUID(),
     evalName: args.evalName,
@@ -78,7 +84,7 @@ export async function captureDisagreement(
     output: args.output,
     modelVerdict: args.modelVerdict,
     humanVerdict: args.humanVerdict,
-    capturedAt: new Date().toISOString(),
+    capturedAt: clock.now().toISOString(),
   });
   await store.enqueue(candidate);
   return candidate;

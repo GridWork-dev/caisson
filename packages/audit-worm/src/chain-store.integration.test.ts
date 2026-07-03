@@ -36,11 +36,20 @@ async function seed(
 }
 
 beforeAll(async () => {
-  migrationSql = await Bun.file(
+  const m1 = await Bun.file(
     new URL("./migrations/0001_audit_chain.sql", import.meta.url),
   ).text();
+  // 0003 DROP+CREATEs the tenant-isolation policy with the pgbouncer/pooler NULLIF hardening
+  // (ADR-0006 append-only — 0001 already shipped, so the hardening is a follow-up migration, never
+  // an edit to 0001); it also touches locked_version, which this standalone table's schema doesn't
+  // have, so it's concatenated for the drift-guard TEXT check below only, never exec'd here — the
+  // composed compliance-edition test (assemble.integration.test.ts) proves it applies live.
+  const m3 = await Bun.file(
+    new URL("./migrations/0003_rls_nullif.sql", import.meta.url),
+  ).text();
+  migrationSql = m1 + m3;
   tp = await newTestPg();
-  await tp.exec(migrationSql);
+  await tp.exec(m1);
   tmpDir = await mkdtemp(join(tmpdir(), "audit-worm-chain-"));
   const store = new LocalArtifactStore(tmpDir);
   chain = new AuditChainStore({ db: tp.pg, store, now: FIXED_NOW });
