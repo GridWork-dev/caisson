@@ -22,6 +22,10 @@
 // and passes it as `SendOptions.id`. `insertJobs`' SQL is `INSERT ... ON CONFLICT DO NOTHING
 // RETURNING id` — unconditional on the primary key regardless of policy — so a repeat id is
 // atomically a no-op: `send()` returns `null` and this driver swallows it.
+//
+// Overlap-safety (ADR-0229 row 56) is a SEPARATE concern from that idempotency note: `singletonKey`
+// maps straight to pg-boss's native `SendOptions.singletonKey`, which suppresses OVERLAP (at most one
+// job with that key active/queued at once) rather than dedup'ing a retry. Both can ride one send.
 import { PgBoss } from "pg-boss";
 import { createHash } from "node:crypto";
 import { ConfigError, NotFoundError, parseStrict } from "@caisson/kernel";
@@ -52,7 +56,7 @@ export interface PgBossClient {
   send(
     name: string,
     payload: object | null,
-    options?: { id?: string },
+    options?: { id?: string; singletonKey?: string },
   ): Promise<string | null>;
   /** Native SKIP LOCKED claim — never hand-written SQL. Delivers a batch (default size 1). */
   work(
@@ -162,16 +166,22 @@ export function createPgBossJobQueue(
 
       const client = await getClient();
       await ensureQueue(client, name);
-      const sendOptions =
-        options?.idempotencyKey !== undefined
-          ? { id: deriveIdempotentJobId(name, options.idempotencyKey) }
-          : undefined;
-      // A conflicting deterministic id makes `send` resolve `null` — the repeat is atomically a
-      // no-op at the database level, so there's nothing further to do with the return value.
+      // `id` (from idempotencyKey) dedups a RETRY via ON CONFLICT DO NOTHING; `singletonKey`
+      // (ADR-0229 row 56) is pg-boss's NATIVE overlap suppression — at most one job with that key
+      // active/queued at a time. Distinct concerns, so both can ride one send.
+      const sendOptions: { id?: string; singletonKey?: string } = {};
+      if (options?.idempotencyKey !== undefined) {
+        sendOptions.id = deriveIdempotentJobId(name, options.idempotencyKey);
+      }
+      if (options?.singletonKey !== undefined) {
+        sendOptions.singletonKey = options.singletonKey;
+      }
+      // A conflicting deterministic id (or a singletonKey overlap) makes `send` resolve `null` — the
+      // repeat is atomically a no-op at the database level, so there's nothing to do with the return.
       await client.send(
         name,
         (validated as object | null) ?? null,
-        sendOptions,
+        Object.keys(sendOptions).length > 0 ? sendOptions : undefined,
       );
     },
 

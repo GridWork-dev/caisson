@@ -3,7 +3,11 @@
 // applies the domain event inside withTenant so the credit grant is RLS-scoped to the buyer's account.
 // The provider is INJECTED (not constructed here) so the handler is testable without a live HMAC secret
 // and the MoR driver stays swappable (ADR-0017). A bad signature throws (AuthnError) BEFORE any DB work.
-import type { BillingProvider, DomainBillingEvent } from "@caisson/billing";
+import {
+  type BillingProvider,
+  type DomainBillingEvent,
+  processEvent,
+} from "@caisson/billing";
 import { InternalError } from "@caisson/kernel";
 import { type Transactor, withTenant } from "@caisson/tenancy-rls";
 import { applyBillingEvent } from "./apply-billing-event.ts";
@@ -50,8 +54,26 @@ export async function handleBillingWebhook(
       "verified billing event has no resolvable account id",
     );
   }
-  const effect = await withTenant(pg, event.accountId, (tx) =>
-    applyBillingEvent(tx, event),
+  // Dual-layer idempotency (ADR-0229 rows 50+51). The OUTER `processEvent` claim runs inside the same
+  // withTenant tx as the grant: a fresh delivery runs applyBillingEvent (whose credit ledger is the
+  // idempotent INNER backstop) and captures its grantedEntitlements; a RE-DELIVERY finds the claim,
+  // skips the grant, and leaves grantedEntitlements empty — so the post-commit Discord push (ADR-0203,
+  // gated on grantedEntitlements.length > 0 in app.ts) is skipped too, closing the re-push gap. The
+  // claim + grant commit or roll back together, so a failed grant is retried cleanly next delivery.
+  const grantedEntitlements = await withTenant(
+    pg,
+    event.accountId,
+    async (tx) => {
+      let granted: string[] = [];
+      const { alreadyProcessed } = await processEvent(
+        tx,
+        event.sourceEventId,
+        async () => {
+          granted = (await applyBillingEvent(tx, event)).grantedEntitlements;
+        },
+      );
+      return alreadyProcessed ? [] : granted;
+    },
   );
-  return { event, grantedEntitlements: effect.grantedEntitlements };
+  return { event, grantedEntitlements };
 }

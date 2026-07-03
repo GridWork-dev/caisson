@@ -6,6 +6,7 @@ import {
   buildChain,
   canonicalize,
   chainEntry,
+  contentHash,
   hashChainLink,
   verifyChain,
 } from "./audit-chain.ts";
@@ -24,6 +25,25 @@ describe("audit-chain", () => {
     expect(chain[0]!.seq).toBe(0);
     expect(chain[1]!.prevHash).toBe(chain[0]!.hash); // linked
     expect(verifyChain(chain)).toEqual({ valid: true, brokenAt: null });
+  });
+
+  test("contentHash is a known-answer, canonicalization-invariant, collision-separating tag", () => {
+    // KAT: sha256(canonicalize({claim:"frozen",version:1})) — pins the algorithm + hex encoding.
+    expect(contentHash({ claim: "frozen", version: 1 })).toBe(
+      "2bf699d5bd95fb95122d4252333340c45ec95e28ed6586c8152e33d35d2dfcf5",
+    );
+    // Key order does not change the hash (canonicalization is load-bearing).
+    expect(contentHash({ version: 1, claim: "frozen" })).toBe(
+      contentHash({ claim: "frozen", version: 1 }),
+    );
+    // A different payload yields a different tag.
+    expect(contentHash({ claim: "frozen", version: 2 })).not.toBe(
+      contentHash({ claim: "frozen", version: 1 }),
+    );
+    // A single-claim tag is NOT a chain link — it must differ from the 2-tuple chain hash.
+    expect(contentHash({ claim: "frozen", version: 1 })).not.toBe(
+      hashChainLink(null, { claim: "frozen", version: 1 }),
+    );
   });
 
   test("canonicalization makes the hash key-order independent", () => {

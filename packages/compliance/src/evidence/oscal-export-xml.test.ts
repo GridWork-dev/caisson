@@ -12,6 +12,7 @@ import {
   type OscalModel,
 } from "./oscal-export-xml.ts";
 import { toOscalBundle } from "./oscal-export.ts";
+import { toOscalAssessmentPlan } from "./oscal-assessment-plan.ts";
 import { parseEvidencePackManifest } from "./pack-format.ts";
 
 const HAVE_CLI = oscalCliAvailable();
@@ -106,6 +107,40 @@ describe("JSON → XML → validate round-trip (needs external oscal-cli)", () =
       },
       // Two JVM oscal-cli spawns (convert + validate) — cold JVM startup exceeds bun's 5s default on a
       // slow CI runner (observed 5001ms). Generous headroom so oscal-conformance stops flaking.
+      60_000,
+    );
+  }
+});
+
+// The ADR-0231 Assessment-Plan gate: each per-framework AP converts + validates at v1.2.2 (skip-if-absent).
+describe("assessment-plan JSON → XML → validate (needs external oscal-cli)", () => {
+  const frameworks: readonly { id: string; title: string; version: string }[] =
+    [
+      {
+        id: "soc2-tsc",
+        title: "SOC 2 — Trust Services Criteria",
+        version: "2024.1",
+      },
+      { id: "hipaa-security", title: "HIPAA Security Rule", version: "2024.1" },
+      {
+        id: "eu-ai-act",
+        title: "EU AI Act — High-Risk Obligations",
+        version: "2024.1",
+      },
+    ];
+  for (const fw of frameworks) {
+    test.skipIf(!HAVE_CLI)(
+      `${fw.id} assessment-plan converts + validates at v1.2.2`,
+      async () => {
+        let n = 0;
+        const ap = toOscalAssessmentPlan(fw, {
+          now: new Date("2026-06-28T00:00:00.000Z"),
+          newId: () =>
+            `00000000-0000-4000-8000-${String((n += 1)).padStart(12, "0")}`,
+        });
+        const xml = await convertAndValidate("assessment-plan", ap);
+        expect(xml).toContain("<?xml");
+      },
       60_000,
     );
   }

@@ -144,8 +144,14 @@
             ],
             "rlinks": [
               {
-                "href": "https://caisson.sh/oscal/assessment-plan/eu-ai-act.json",
-                "media-type": "application/oscal-assessment-plan+json"
+                "href": "./assessment-plan/eu-ai-act.json",
+                "media-type": "application/oscal-assessment-plan+json",
+                "hashes": [
+                  {
+                    "algorithm": "SHA-256",
+                    "value": "09ecf4ad7602e088114a293a9619a76096e7710bd11c835e5ce87c03d55af63d"
+                  }
+                ]
               }
             ]
           }

@@ -118,8 +118,14 @@
             ],
             "rlinks": [
               {
-                "href": "https://caisson.sh/oscal/assessment-plan/soc2-tsc.json",
-                "media-type": "application/oscal-assessment-plan+json"
+                "href": "./assessment-plan/soc2-tsc.json",
+                "media-type": "application/oscal-assessment-plan+json",
+                "hashes": [
+                  {
+                    "algorithm": "SHA-256",
+                    "value": "3c72cdf9d11f6730dd57c156e1b6abe2305189cd27b88fe8dbcfb2f22ef0e9ff"
+                  }
+                ]
               }
             ]
           }

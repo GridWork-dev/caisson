@@ -41,11 +41,11 @@ afterAll(async () => {
 
 test("platform migrations apply in order then are idempotent", async () => {
   const first = await runPlatformMigrations(pgliteApplier(tp));
-  expect(first.applied).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  expect(first.applied).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
 
   const second = await runPlatformMigrations(pgliteApplier(tp));
   expect(second.applied).toEqual([]);
-  expect(second.skipped).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  expect(second.skipped).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
 });
 
 test("0007 adds the ADR-0212 rounding provenance columns to credit_event", async () => {
@@ -77,7 +77,7 @@ test("0008/0009 add the ADR-0218 per-line join-key columns", async () => {
   ]);
 });
 
-test("0010 creates the ADR-0234 ask_ai_spend counter (no RLS — a global, non-tenant aggregate)", async () => {
+test("0011 creates the ADR-0234 ask_ai_spend counter (no RLS — a global, non-tenant aggregate)", async () => {
   const rows = await tp.query<{ relname: string; force: boolean }>(
     `SELECT relname, relforcerowsecurity AS force FROM pg_class WHERE relname = 'ask_ai_spend'`,
   );

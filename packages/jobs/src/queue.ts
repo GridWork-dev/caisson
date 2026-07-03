@@ -26,6 +26,13 @@ export interface TaskDefinition<T> {
  */
 export interface EnqueueOptions {
   idempotencyKey?: string;
+  /**
+   * Overlap-safety (ADR-0229 row 56, the APScheduler `max_instances=1`/`coalesce` pattern): at most
+   * one job with this key may be queued/active at once — a second enqueue while one is in flight is a
+   * no-op. The recurring-job default so a slow run never stacks a second instance. Distinct from
+   * `idempotencyKey` (which dedups a RETRY of one logical job); this suppresses concurrent OVERLAP.
+   */
+  singletonKey?: string;
 }
 
 /**
@@ -95,7 +102,9 @@ export function defineTask<T>(
  * awaits the handler — synchronous execution is what makes side-effects assertable in a unit test.
  *
  * `idempotencyKey` dedupe is a `Set<"name\0key">` on the closure: a repeat key is a no-op (the
- * handler is not re-invoked, no error). A handler that throws increments a per-name failure
+ * handler is not re-invoked, no error). `singletonKey` overlap-safety is a second `Set` tracking
+ * IN-FLIGHT keys: a same-key enqueue while its handler is still running is a no-op, then the key frees
+ * on completion (so the next interval tick runs). A handler that throws increments a per-name failure
  * counter, read back via `getQueueState`.
  */
 export function createInMemoryQueue(
@@ -105,6 +114,7 @@ export function createInMemoryQueue(
     tasks.map((task) => [task.name, task]),
   );
   const seenIdempotencyKeys = new Set<string>();
+  const inFlightSingletonKeys = new Set<string>();
   const failureCounts = new Map<string, number>();
 
   return {
@@ -121,19 +131,32 @@ export function createInMemoryQueue(
       }
       const validated = parseStrict(task.schema, payload);
 
-      if (options?.idempotencyKey !== undefined) {
-        const dedupeKey = `${name}\0${options.idempotencyKey}`;
-        if (seenIdempotencyKeys.has(dedupeKey)) {
-          return;
-        }
-        seenIdempotencyKeys.add(dedupeKey);
+      // Overlap suppression FIRST — a run already in flight for this singletonKey drops this enqueue
+      // without recording anything (so it can't consume the idempotencyKey slot on the way out).
+      let singletonHeld: string | undefined;
+      if (options?.singletonKey !== undefined) {
+        const sk = `${name}\0${options.singletonKey}`;
+        if (inFlightSingletonKeys.has(sk)) return;
+        inFlightSingletonKeys.add(sk);
+        singletonHeld = sk;
       }
 
       try {
+        if (options?.idempotencyKey !== undefined) {
+          const dedupeKey = `${name}\0${options.idempotencyKey}`;
+          if (seenIdempotencyKeys.has(dedupeKey)) {
+            return;
+          }
+          seenIdempotencyKeys.add(dedupeKey);
+        }
         await task.handler(validated);
       } catch (error) {
         failureCounts.set(name, (failureCounts.get(name) ?? 0) + 1);
         throw error;
+      } finally {
+        // Release only once the handler settles — the window the overlap check guards.
+        if (singletonHeld !== undefined)
+          inFlightSingletonKeys.delete(singletonHeld);
       }
     },
 

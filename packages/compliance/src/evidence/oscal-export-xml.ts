@@ -17,7 +17,7 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 
 /** The NIST OSCAL model slugs `oscal-cli` accepts as its first subcommand + names the XSLT converter. */
-export type OscalModel = "assessment-results" | "poam";
+export type OscalModel = "assessment-results" | "poam" | "assessment-plan";
 
 const DEFAULT_BIN = "oscal-cli";
 const DEFAULT_TIMEOUT_MS = 60_000;

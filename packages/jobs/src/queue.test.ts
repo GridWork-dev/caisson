@@ -98,6 +98,89 @@ describe("in-memory job queue — idempotent enqueue (ADR-0211)", () => {
   });
 });
 
+describe("in-memory job queue — overlap-safe enqueue (singletonKey, ADR-0229 row 56)", () => {
+  test("a same-singletonKey enqueue while one is in flight is a no-op", async () => {
+    let ran = 0;
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const queue = createInMemoryQueue([
+      defineTask("sweep", grantSchema, async () => {
+        ran += 1;
+        await gate; // stay "in flight" until released
+      }),
+    ]);
+
+    // The first enqueue runs its handler up to `await gate` (holding the singletonKey), then suspends.
+    const first = queue.enqueue(
+      "sweep",
+      { accountId: "a", amount: 1 },
+      { singletonKey: "k" },
+    );
+    // A second same-key enqueue arrives while the first is still in flight — suppressed, no second run.
+    await queue.enqueue(
+      "sweep",
+      { accountId: "a", amount: 1 },
+      { singletonKey: "k" },
+    );
+    expect(ran).toBe(1);
+
+    release();
+    await first;
+    expect(ran).toBe(1);
+  });
+
+  test("after the in-flight run completes, the singletonKey frees for the next run (overlap, not permanent dedupe)", async () => {
+    let ran = 0;
+    const queue = createInMemoryQueue([
+      defineTask("sweep", grantSchema, async () => {
+        ran += 1;
+      }),
+    ]);
+    // Sequential (awaited) runs each free the key before the next — both run, unlike an idempotencyKey.
+    await queue.enqueue(
+      "sweep",
+      { accountId: "a", amount: 1 },
+      { singletonKey: "k" },
+    );
+    await queue.enqueue(
+      "sweep",
+      { accountId: "a", amount: 1 },
+      { singletonKey: "k" },
+    );
+    expect(ran).toBe(2);
+  });
+
+  test("distinct singletonKeys run concurrently — the key scopes suppression", async () => {
+    let ran = 0;
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const queue = createInMemoryQueue([
+      defineTask("sweep", grantSchema, async () => {
+        ran += 1;
+        await gate;
+      }),
+    ]);
+    const a = queue.enqueue(
+      "sweep",
+      { accountId: "a", amount: 1 },
+      { singletonKey: "k1" },
+    );
+    const b = queue.enqueue(
+      "sweep",
+      { accountId: "a", amount: 1 },
+      { singletonKey: "k2" },
+    );
+    expect(ran).toBe(2); // both started — different keys, no suppression
+
+    release();
+    await Promise.all([a, b]);
+  });
+});
+
 describe("in-memory job queue — work() (ADR-0211)", () => {
   test("returns a stoppable no-op WorkHandle for a registered task", async () => {
     const queue = createInMemoryQueue([

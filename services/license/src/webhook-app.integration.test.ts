@@ -8,7 +8,10 @@
 import { createHash, createHmac, createPrivateKey } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import type { BillingProvider } from "@caisson/billing";
-import { createPaddleBilling } from "@caisson/billing";
+import {
+  createPaddleBilling,
+  PROCESSED_EVENT_SCHEMA_SQL,
+} from "@caisson/billing";
 import {
   CREDIT_LINE_ITEM_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
@@ -73,6 +76,7 @@ beforeAll(async () => {
   await tp.exec(CREDIT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
+  await tp.exec(PROCESSED_EVENT_SCHEMA_SQL);
   provider = createPaddleBilling({ webhookSecret: SECRET, apiKey: "pdl_test" });
 });
 afterAll(async () => {
