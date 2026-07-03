@@ -118,6 +118,16 @@ export default function PrivacyPage() {
           browser family). No consent banner is required for this analytics
           implementation.
         </p>
+
+        <h3 style={prose.h3}>Ask-AI questions</h3>
+        <p style={prose.paragraph}>
+          Questions submitted to the on-site Ask-AI widget are stored to improve
+          the product and its documentation. The stored record is the question
+          text, the date, and whether it was answered — never your IP address,
+          account identity, or the generated answer. The widget carries the same
+          notice where you type: do not include secrets or personal data in a
+          question. Stored questions are hard-deleted after 90 days.
+        </p>
       </Section>
 
       {/* Why we collect it */}

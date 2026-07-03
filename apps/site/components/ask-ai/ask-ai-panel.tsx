@@ -236,7 +236,9 @@ export function AskAiPanel({ surface, autoFocus = false }: AskAiPanelProps) {
 
       <p className={styles.disclaimer}>
         Answers are generated from the Caisson docs and can be imperfect —
-        verify anything load-bearing against the cited pages.
+        verify anything load-bearing against the cited pages. Questions are
+        stored to improve the product — don&apos;t include secrets or personal
+        data.
       </p>
 
       {/* Turnstile (F5): invisible/managed, armed only when the public site key is set. The server verify
