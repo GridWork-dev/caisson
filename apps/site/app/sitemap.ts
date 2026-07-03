@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { source } from "@/lib/source";
+import { GLOSSARY_TERMS } from "@/lib/glossary";
 import { MARKETING_ROUTES } from "@/lib/routes";
 
 export const dynamic = "force-static";
@@ -29,5 +30,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.6,
   }));
 
-  return [...marketing, ...docs];
+  // Glossary spokes derive from GLOSSARY_TERMS the same way docs derive from Fumadocs' source —
+  // the bulk program never touches the hand-curated MARKETING_ROUTES list (glossary SPEC §IA).
+  const glossary: MetadataRoute.Sitemap = GLOSSARY_TERMS.map((term) => ({
+    url: `${BASE}/glossary/${term.slug}`,
+    lastModified: BUILT_AT,
+    changeFrequency: "weekly" as const,
+    priority: 0.6,
+  }));
+
+  return [...marketing, ...docs, ...glossary];
 }

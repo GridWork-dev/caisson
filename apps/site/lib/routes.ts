@@ -41,6 +41,7 @@ export const MARKETING_ROUTES: readonly MarketingRoute[] = [
   { path: "/pricing", label: "Pricing", priority: 0.85, changeFrequency: "weekly", group: "product", nav: true }, // prettier-ignore
   { path: "/modules", label: "Modules", priority: 0.85, changeFrequency: "weekly", group: "product" }, // prettier-ignore
   { path: "/build", label: "Build your stack", priority: 0.8, changeFrequency: "weekly", group: "product" }, // prettier-ignore
+  { path: "/glossary", label: "Glossary", priority: 0.7, changeFrequency: "weekly", group: "product" }, // prettier-ignore
   { path: "/security", label: "Security", priority: 0.75, changeFrequency: "weekly", group: "trust" }, // prettier-ignore
   { path: "/changelog", label: "Changelog", priority: 0.7, changeFrequency: "weekly", group: "trust" }, // prettier-ignore
   { path: "/procurement", label: "Security & procurement", priority: 0.7, changeFrequency: "weekly", group: "trust" }, // prettier-ignore
