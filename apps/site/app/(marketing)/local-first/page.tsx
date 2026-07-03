@@ -25,6 +25,7 @@ import {
 } from "@/lib/jsonld";
 import { EDITION_MARKS, moduleMark } from "@/lib/marks";
 import { editionPrice, formatUsd, MODULE_PRICES } from "@/lib/pricing";
+import { TrackView } from "@/components/track-view";
 
 const LOCAL_FIRST_DESCRIPTION =
   "Local-first AI composes on-device ONNX inference, a zero-egress privacy gate, and hybrid sqlite-vec + FTS5 search into one Caisson edition — $349 one-time, own the source.";
@@ -191,6 +192,7 @@ const ldFaq = faqPage(
 export default function LocalFirstPage() {
   return (
     <>
+      <TrackView item="edition:local-first" />
       {/* JSON-LD */}
       <script
         type="application/ld+json"

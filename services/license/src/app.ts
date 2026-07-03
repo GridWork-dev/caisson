@@ -24,6 +24,7 @@ import type { RegistryIndex } from "@caisson/registry-schema";
 import { type Transactor, withTenant } from "@caisson/tenancy-rls";
 import type { DiscordGrantPush } from "./discord-notify.ts";
 import { readLicenseGrant, storeLicenseGrant } from "./license-grant-store.ts";
+import type { PurchaseCapture } from "./posthog-capture.ts";
 import { clientIp, type RateBucket, type RateLimiter } from "./rate-limit.ts";
 import { resolveAccountEntitlements } from "./resolve-entitlements.ts";
 import { type BillingWebhookResult, handleBillingWebhook } from "./webhook.ts";
@@ -64,6 +65,12 @@ export interface IssueAppDeps {
    * `notifyDiscordGrant` — never throws).
    */
   discordNotify: ((push: DiscordGrantPush) => Promise<void>) | null;
+  /**
+   * Server-side PostHog `purchase` capture (ADR-0237 F8). `null` when POSTHOG_CAPTURE_KEY is
+   * unset — the capture is simply skipped. Same post-commit detached contract as `discordNotify`
+   * (the injected implementation — `capturePostHogPurchase` — never throws).
+   */
+  posthogCapture: ((capture: PurchaseCapture) => Promise<void>) | null;
 }
 
 /**
@@ -348,6 +355,35 @@ export function createApp(
         } catch {
           process.stderr.write(
             "[service-license] discord notify threw (ignored)\n",
+          );
+        }
+      }
+      // Post-commit PostHog purchase capture (ADR-0237 F8): same detached contract as the Discord
+      // push — fired only on a durable grant, never delays or fails Paddle's 2xx. Re-deliveries
+      // short-circuit on the grant claim with an empty grant list, so a purchase captures once.
+      // `amountTotal` narrows the event union to the money-carrying kinds (purchase/invoice).
+      if (
+        deps.posthogCapture !== null &&
+        result.event !== null &&
+        "amountTotal" in result.event &&
+        result.grantedEntitlements.length > 0
+      ) {
+        const capture: PurchaseCapture = {
+          accountId: result.event.accountId,
+          entitlements: result.grantedEntitlements,
+          amountTotalMinor: result.event.amountTotal,
+          currency: result.event.currency,
+          sourceEventId: result.event.sourceEventId,
+        };
+        try {
+          void deps.posthogCapture(capture).catch(() => {
+            process.stderr.write(
+              "[service-license] posthog capture rejected (ignored)\n",
+            );
+          });
+        } catch {
+          process.stderr.write(
+            "[service-license] posthog capture threw (ignored)\n",
           );
         }
       }

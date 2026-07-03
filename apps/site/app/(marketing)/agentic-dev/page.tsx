@@ -26,6 +26,7 @@ import {
   MODULE_PRICES,
   priceById,
 } from "@/lib/pricing";
+import { TrackView } from "@/components/track-view";
 
 const AGENTIC_DEV_DESCRIPTION =
   "A governed-agent kernel for TypeScript codebases: typed agent/skill/rule schema, a guarded 7-act lifecycle, a sandboxed agent runner with a from-scratch scrubbed env, local hybrid memory, and a default-deny tool-exec gate. Own the source.";
@@ -233,6 +234,7 @@ export default function AgenticDevPage() {
 
   return (
     <>
+      <TrackView item="edition:agentic-dev" />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(appLd) }}

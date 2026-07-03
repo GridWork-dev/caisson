@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { Icon, type IconName } from "@/components";
+import { trackEvent } from "@/lib/analytics";
 import styles from "./nav-panels.module.css";
 
 // The centered primary-nav trigger row (ADR-0237 F3/F4): three card-panel disclosures —
@@ -100,7 +101,11 @@ export function NavPanels({ panels }: { panels: readonly NavPanelSpec[] }) {
               aria-expanded={open}
               aria-controls={panelId}
               aria-current={onSurface ? "page" : undefined}
-              onClick={() => setOpenIndex(open ? null : i)}
+              onClick={() => {
+                setOpenIndex(open ? null : i);
+                // Nav engagement (ADR-0237 F8) — opens only, never the close of the same panel.
+                if (!open) trackEvent("nav_panel_open", { panel: panel.label });
+              }}
             >
               {panel.label}
               <Chevron />

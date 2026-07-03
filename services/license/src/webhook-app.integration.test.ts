@@ -31,6 +31,7 @@ import {
   ENTITLEMENT_SCHEMA_SQL,
   readEntitlements,
 } from "./entitlement-store.ts";
+import type { PurchaseCapture } from "./posthog-capture.ts";
 import {
   loadRateLimitConfig,
   type RateLimitConfig,
@@ -87,6 +88,7 @@ function makeApp(
   p: BillingProvider | null,
   limiterConfig: RateLimitConfig = loadRateLimitConfig(),
   discordNotify: IssueAppDeps["discordNotify"] = null,
+  posthogCapture: IssueAppDeps["posthogCapture"] = null,
 ): (req: Request) => Promise<Response> {
   return createApp({
     token: "unused-issue-token",
@@ -96,6 +98,7 @@ function makeApp(
     provider: p,
     limiter: new TokenBucketLimiter(limiterConfig),
     discordNotify,
+    posthogCapture,
   });
 }
 
@@ -393,6 +396,93 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
     const res = await app(webhookReq(body, signed(body, t)));
     expect(res.status).toBe(200);
     expect(pushes).toEqual([]);
+  });
+
+  test("a granting purchase fires the DETACHED posthog capture with revenue + entitlements (ADR-0237 F8)", async () => {
+    const captures: PurchaseCapture[] = [];
+    const app = makeApp(
+      provider,
+      loadRateLimitConfig(),
+      null,
+      async (capture) => {
+        captures.push(capture); // records synchronously before its first await — visible right after app()
+      },
+    );
+    const acct = "acct_txn_ph_1";
+    const t = Math.floor(Date.now() / 1000);
+    const body = JSON.stringify({
+      event_id: "evt_ph_1",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_ph_1",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: acct },
+        items: [{ price: { id: PRICE_COMPLIANCE_ONETIME } }],
+        details: { totals: { grand_total: "74900" } },
+      },
+    });
+    const res = await app(webhookReq(body, signed(body, t)));
+    expect(res.status).toBe(200);
+    expect(captures).toEqual([
+      {
+        accountId: acct,
+        entitlements: ["compliance"],
+        amountTotalMinor: 74900,
+        currency: "usd",
+        sourceEventId: "evt_ph_1",
+      },
+    ]);
+  });
+
+  test("a THROWING posthog capturer never fails the webhook 2xx (money path independent of PostHog)", async () => {
+    const app = makeApp(provider, loadRateLimitConfig(), null, () => {
+      throw new Error("posthog ingest exploded synchronously");
+    });
+    const acct = "acct_txn_ph_2";
+    const t = Math.floor(Date.now() / 1000);
+    const body = JSON.stringify({
+      event_id: "evt_ph_2",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_ph_2",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: acct },
+        items: [{ price: { id: PRICE_COMPLIANCE_ONETIME } }],
+        details: { totals: { grand_total: "74900" } },
+      },
+    });
+    const res = await app(webhookReq(body, signed(body, t)));
+    expect(res.status).toBe(200); // the grant committed; PostHog failure is log-and-drop
+    const entitlements = await withTenant(tp.pg, acct, (tx) =>
+      readEntitlements(tx, acct),
+    );
+    expect(entitlements).toEqual(["compliance"]);
+  });
+
+  test("a non-granting event (subscription.canceled) fires NO posthog capture", async () => {
+    const captures: PurchaseCapture[] = [];
+    const app = makeApp(
+      provider,
+      loadRateLimitConfig(),
+      null,
+      async (capture) => {
+        captures.push(capture);
+      },
+    );
+    const t = Math.floor(Date.now() / 1000);
+    const body = JSON.stringify({
+      event_id: "evt_ph_cancel",
+      event_type: "subscription.canceled",
+      data: {
+        id: "sub_ph_cancel",
+        custom_data: { account_id: "acct_txn_ph_1" },
+      },
+    });
+    const res = await app(webhookReq(body, signed(body, t)));
+    expect(res.status).toBe(200);
+    expect(captures).toEqual([]);
   });
 
   test("a per-IP flood on /issue is capped with 429 (limiter runs before the bearer check)", async () => {

@@ -9,6 +9,7 @@ import { notFound } from "next/navigation";
 import { Card, Hero, StatusChip } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { PageSections } from "@/components/page-sections";
+import { TrackView } from "@/components/track-view";
 import { moduleCatalogItem, toCartItem } from "@/lib/catalog";
 import { GLOSSARY_TERMS } from "@/lib/glossary";
 import {
@@ -180,6 +181,7 @@ export default async function ModuleDepthPage(props: Params) {
 
   return (
     <>
+      <TrackView item={`module:${price.id}`} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbLd) }}

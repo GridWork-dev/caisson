@@ -27,6 +27,7 @@ import {
 } from "@/lib/jsonld";
 import { EDITION_MARKS, moduleMark } from "@/lib/marks";
 import { editionPrice, formatUsd, MODULE_PRICES } from "@/lib/pricing";
+import { TrackView } from "@/components/track-view";
 
 export const metadata = buildMetadata({
   title: "Compliance",
@@ -227,6 +228,7 @@ export default function CompliancePage() {
 
   return (
     <>
+      <TrackView item="edition:compliance" />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
