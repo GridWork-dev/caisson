@@ -1,7 +1,7 @@
 // scripts/provision-admin-mutation-surface.ts — the CAISSON-17 DEPLOY provisioning (ADR-0220 +
 // ADR-0141), operator-run against the live Railway Postgres:
 //
-//   DATABASE_URL=<public PG url> bun scripts/provision-admin-mutation-surface.ts [admin-db-user]
+//   DATABASE_URL=<public PG url> bun apps/admin/scripts/provision-admin-mutation-surface.ts [admin-db-user]
 //
 // Idempotent and re-runnable. Applies, in the PGlite-bootstrap order (apps/admin/src/lib/admin-db.ts
 // is the parity reference; the base tenant tables themselves are deploy-migrate's job and are NOT
@@ -22,7 +22,7 @@ import { Pool } from "pg";
 import {
   ADMIN_ROLE_BOOTSTRAP_SQL,
   buildAdminReadPolicySql,
-} from "../apps/admin/src/lib/admin-read.ts";
+} from "../src/lib/admin-read.ts";
 
 /** The cross-tenant read surface (ADR-0141) — keep in sync with admin-db.ts ADMIN_READ_TABLES. */
 const ADMIN_READ_TABLES = [
@@ -35,7 +35,7 @@ function auditChainMigrationSql(): string {
   return readFileSync(
     join(
       import.meta.dir,
-      "../packages/audit-worm/src/migrations/0001_audit_chain.sql",
+      "../../../packages/audit-worm/src/migrations/0001_audit_chain.sql",
     ),
     "utf8",
   );
