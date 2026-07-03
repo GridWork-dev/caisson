@@ -91,7 +91,7 @@ resource "cloudflare_dns_record" "admin" {
   zone_id = var.cloudflare_zone_id
   name    = "admin.${var.zone_name}"
   type    = "CNAME"
-  content = "vfk89jp0.up.railway.app"
+  content = "or2ptvy0.up.railway.app"
   proxied = true
   ttl     = 1
   comment = "Caisson admin control-plane (admin → Railway caisson-admin) — managed by Terraform"
@@ -126,7 +126,7 @@ resource "cloudflare_dns_record" "docs_api" {
   content = var.docs_api_railway_target
   proxied = true
   ttl     = 1
-  comment = "Caisson docs API (docs-api → Railway caisson-docs) — managed by Terraform (ADR-0219: flipped to proxied)"
+  comment = "Caisson docs API - Railway caisson-docs - Terraform-managed (ADR-0219 proxied)"
 }
 
 resource "cloudflare_dns_record" "docs_api_railway_verify" {
