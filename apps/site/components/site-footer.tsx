@@ -26,6 +26,7 @@ const COLS: { heading: string; links: { href: string; label: string }[] }[] = [
     heading: "Resources",
     links: [
       { href: "/changelog", label: "Changelog" },
+      { href: "/glossary", label: "Glossary" },
       { href: "/procurement", label: "Security & procurement" },
       { href: "/llms.txt", label: "llms.txt" },
       {

@@ -1,15 +1,22 @@
-// Gate behaviour: an unauthenticated dashboard access redirects to /login. `next/navigation` and
-// `next/headers` are mocked (this runs outside a Next request scope); with no DB/secret configured
-// the better-auth runtime is unavailable, so `getSession` fails closed to null and the guard
-// redirects — the same path a real request with no session cookie takes.
+// Gate behaviour: an unauthenticated dashboard access redirects to /login. `next/navigation`'s
+// `redirect` and `next/headers`'s `headers` are stubbed (this runs outside a Next request scope);
+// with no DB/secret configured the better-auth runtime is unavailable, so `getSession` fails
+// closed to null and the guard redirects — the same path a real request with no session cookie
+// takes.
 import { expect, mock, test } from "bun:test";
+import * as realNavigation from "next/navigation";
 
 // A holder read through a typed getter: the redirect target is written inside the mock callback,
 // which TS control-flow can't observe, so a bare `let` would narrow to `null` at the assertion.
 const captured: { url: string | null } = { url: null };
 const lastRedirect = (): string | null => captured.url;
 
+// `mock.module` replaces the module in Bun's process-wide registry, not just for this file — a
+// factory that returns ONLY `{ redirect }` would leave every OTHER export (e.g. `usePathname`,
+// used by client nav components) missing for any later-loaded test that transitively imports the
+// real module. Spread the real module first so only `redirect` is actually overridden.
 mock.module("next/navigation", () => ({
+  ...realNavigation,
   redirect: (url: string): never => {
     captured.url = url;
     throw new Error("NEXT_REDIRECT");
