@@ -91,6 +91,17 @@ const sidecar = loadTarballSidecar({
       shasum: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       integrity: "sha512-fieldCryptoSRIplaceholder==",
       size: 2048,
+      // Resolved install fields (workspace:* already concrete) — what CI lifts from the packed
+      // tarball's package.json so the client can build the dependency tree.
+      meta: {
+        dependencies: {
+          "@caisson/kernel": "1.0.0",
+          zod: "^3.23.8",
+          "@noble/ed25519": "^3.1.0",
+        },
+        bin: { "field-crypto": "./bin/fc.js" },
+        engines: { node: ">=18" },
+      },
     },
   },
 });
@@ -167,6 +178,49 @@ describe("abbreviated packument", () => {
     );
     expect(v?.dist.shasum).toBe("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
     expect(v?.dist.integrity).toBe("sha512-fieldCryptoSRIplaceholder==");
+  });
+
+  test("a version carries the resolved dependency tree (deps/bin/engines), not just dist — else the tarball installs with ZERO deps", async () => {
+    const res = await handlerFor(["field-crypto"])(
+      req("/@caisson%2ffield-crypto"),
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      versions: Record<
+        string,
+        {
+          dist: { tarball: string };
+          dependencies?: Record<string, string>;
+          bin?: unknown;
+          engines?: unknown;
+        }
+      >;
+    };
+    const v = body.versions["1.0.0"];
+    expect(v?.dependencies).toEqual({
+      "@caisson/kernel": "1.0.0",
+      zod: "^3.23.8",
+      "@noble/ed25519": "^3.1.0",
+    });
+    expect(v?.bin).toEqual({ "field-crypto": "./bin/fc.js" });
+    expect(v?.engines).toEqual({ node: ">=18" });
+    // dist is still present alongside the deps.
+    expect(v?.dist.tarball).toContain("field-crypto-1.0.0.tgz");
+  });
+
+  test("a meta-less version (kernel) stays {name,version,dist} — no spurious dep keys", async () => {
+    const res = await handlerFor(null)(req("/@caisson%2fkernel"));
+    const body = (await res.json()) as {
+      versions: Record<string, Record<string, unknown>>;
+    };
+    const v = body.versions["1.0.0"];
+    expect(v).toBeDefined();
+    expect("dependencies" in (v as object)).toBe(false);
+    expect(Object.keys(v as object).sort()).toEqual([
+      "dist",
+      "name",
+      "version",
+    ]);
   });
 
   test("the vendor Accept header returns 200, never 406 (the bun-breaking bug)", async () => {

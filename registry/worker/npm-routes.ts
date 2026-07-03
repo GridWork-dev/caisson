@@ -19,14 +19,31 @@ import {
 
 // --- tarball sidecar (Fork 1.1) ------------------------------------------------------------------
 // Maps `<@caisson/module>@<version>` → the R2 object key + the two integrity forms npm needs
-// (`shasum` = SHA-1, `integrity` = sha512 SRI). CI (Task 3) writes this from `npm pack`; the Worker
-// only READS it — the bytes live in R2, this is the metadata. `.strict()` at the boundary.
+// (`shasum` = SHA-1, `integrity` = sha512 SRI) + `meta`: the abbreviated-packument install fields
+// (deps/bin/engines) lifted from the PACKED tarball's package.json — where `bun pm pack` has already
+// rewritten `workspace:*` to concrete versions. Without these the client installs the tarball but
+// NONE of its dependencies (npm builds the tree from the packument, not the tarball). CI (Task 3)
+// writes this from the pack; the Worker only READS it. `.strict()` at the boundary.
+const DepMap = z.record(z.string(), z.string());
+const PackumentMeta = z
+  .object({
+    dependencies: DepMap.optional(),
+    optionalDependencies: DepMap.optional(),
+    peerDependencies: DepMap.optional(),
+    bin: z.union([z.string(), DepMap]).optional(),
+    engines: DepMap.optional(),
+  })
+  .strict();
+export type PackumentMeta = z.infer<typeof PackumentMeta>;
+
 const TarballDist = z
   .object({
     key: z.string().min(1),
     shasum: z.string().min(1),
     integrity: z.string().min(1),
     size: z.number().int().nonnegative(),
+    // Optional so a pre-meta sidecar row (or a package with no deps) still parses.
+    meta: PackumentMeta.optional(),
   })
   .strict();
 
@@ -160,6 +177,14 @@ interface PackumentVersion {
   readonly name: string;
   readonly version: string;
   readonly dist: PackumentDist;
+  // Abbreviated-packument install fields (from `meta`); spread through so the client resolves the
+  // dependency tree. Absent when the package has none. (`| undefined` for the spread under
+  // exactOptionalPropertyTypes — `packumentMeta` strips undefined values before they land here.)
+  readonly dependencies?: Record<string, string> | undefined;
+  readonly optionalDependencies?: Record<string, string> | undefined;
+  readonly peerDependencies?: Record<string, string> | undefined;
+  readonly bin?: string | Record<string, string> | undefined;
+  readonly engines?: Record<string, string> | undefined;
 }
 
 /**
@@ -190,6 +215,9 @@ function abbreviatedPackument(
           shasum: dist.shasum,
           integrity: dist.integrity,
         },
+        // Carry the resolved deps/bin/engines so the client can build the install tree. Spreading
+        // `undefined` is a no-op, so a meta-less row stays `{name,version,dist}`.
+        ...dist.meta,
       };
       if (v.version === entry.latest || modified === undefined)
         modified = v.publishedAt;
