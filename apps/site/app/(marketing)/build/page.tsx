@@ -43,7 +43,7 @@ export default function BuildPage() {
               "select  field-crypto       + $199\nselect  audit-worm         + $149\nselect  retention-runner   + $199\nselect  compliance         + $299\n"
             }
             <span className="cs-tok-accent">total 4 modules $846</span>
-            {"\nupgrade Compliance edition   $749  →  save $97"}
+            {"\nupgrade Compliance edition   $799  →  save $47"}
           </Terminal>
         }
       />
