@@ -216,6 +216,28 @@ export function buildAdminWritePolicySql(
 }
 
 /**
+ * SQL that lets the `admin_write` role cross-tenant SELECT `table`, WITHOUT the INSERT/UPDATE grant
+ * `buildAdminWritePolicySql` also carries (CAISSON-9). Use this for a table the operator mutation
+ * surface only ever READS (e.g. an existence check on the base auth `account_member` table) — the
+ * blast radius of a bug in that surface then stops at a cross-tenant read, never a cross-tenant
+ * write, on a table it has no legitimate reason to mutate. Same idempotent
+ * drop-then-create shape as the write variant.
+ */
+export function buildAdminSelectPolicySql(
+  table: string,
+  { role = ADMIN_WRITE_ROLE }: AdminWritePolicyOptions = {},
+): string {
+  return [
+    `GRANT SELECT ON ${table} TO ${role};`,
+    `DROP POLICY IF EXISTS ${table}_admin_select ON ${table};`,
+    `CREATE POLICY ${table}_admin_select ON ${table}`,
+    `  FOR SELECT`,
+    `  TO ${role}`,
+    `  USING (true);`,
+  ].join("\n");
+}
+
+/**
  * Run `fn` cross-tenant as the `admin_write` role: opens a transaction and `SET LOCAL ROLE
  * admin_write` for its life. No account GUC is bound — the `TO admin_write USING/CHECK (true)`
  * policy admits every tenant's rows, so the one-account bound is the caller's responsibility (pass
