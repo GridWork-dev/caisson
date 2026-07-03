@@ -132,19 +132,27 @@ jobs:
           fi
       # Commit what `changeset version` produced (bumped package.json + written CHANGELOG.md + consumed
       # .changeset deletions) alongside the registry outputs (ledger.jsonl + index.json + tarballs.json)
-      # back to main. Explicit pathspecs (quoted → git's own glob, so new + deleted files are staged);
-      # registry/.tarball-staging/ is NOT a pathspec, so packed tarballs never enter git. In dry-run the
-      # tree is clean → nothing staged → no commit. git pull --rebase guards concurrent writes.
+      # back to main. Pathspecs cover EVERY workspace (apps/services/registry/tooling get dependent
+      # bumps too — the first live run proved `packages/*` alone leaves ~40 files unstaged and the
+      # rebase dies on them); registry/.tarball-staging/ is untracked and never staged, so packed
+      # tarballs never enter git. A loud leftovers check runs before the rebase so a future new
+      # write-site fails with filenames instead of a bare git error. In dry-run the tree is clean →
+      # nothing staged → no commit. git pull --rebase guards concurrent writes.
       - name: commit version bumps + registry files to main
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A -- \
-            'packages/*/package.json' 'packages/*/CHANGELOG.md' '.changeset' \
+            ':(glob)**/package.json' ':(glob)**/CHANGELOG.md' '.changeset' \
             registry/ledger.jsonl registry/index.json registry/tarballs.json
           if git diff --cached --quiet; then
             echo "[publish-and-index] nothing to commit"
           else
+            if ! git diff --quiet; then
+              echo "[publish-and-index] FATAL: tracked changes left unstaged after the pathspec add:"
+              git status --short
+              exit 1
+            fi
             git commit -m "chore(registry): publish tarballs + append ledger + version bump [ci-publish]"
             git pull --rebase origin main
             git push
