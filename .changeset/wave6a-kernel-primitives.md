@@ -2,7 +2,7 @@
 "@caisson/kernel": minor
 ---
 
-Wave-6a kernel compliance/auth/fail-closed primitives (ADR-0229 rows 8, 10, 44, 54, 59). New exports:
+Kernel compliance/auth/fail-closed primitives. New exports:
 `scrubDeep`/`PHI_KEY` (recursive PHI/secret object scrubber composing `scrubForEgress` — deep
 key-name PHI + secret-name subtree drop, leaf credential-span redaction, cycle-guarded, pure,
 idempotent, golden-pinned); `contentHash` (lowercase-hex SHA-256 over `canonicalize(value)` — the
