@@ -58,6 +58,108 @@ async function callRoute(path: string, payload: unknown): Promise<Result> {
   }
 }
 
+// --- ADR-0225 paid-revoke impact preview (R-6) ------------------------------------------------
+
+interface SourcePreview {
+  purchaseId: string;
+  grantedAt: string;
+  entitlementsDropping: string[];
+  entitlementsSurviving: string[];
+  granted: number;
+  alreadyClawed: number;
+  clawPreview: number;
+}
+interface AccountPreview {
+  accountId: string;
+  balance: number;
+  licensesToDeny: string[];
+  sources: SourcePreview[];
+}
+
+function isStringArray(v: unknown): v is string[] {
+  return Array.isArray(v) && v.every((x) => typeof x === "string");
+}
+
+// Narrow the preview endpoint's JSON at the trust boundary — never trust the shape blindly (no `any`).
+function asAccountPreview(v: unknown): AccountPreview | null {
+  if (v === null || typeof v !== "object") return null;
+  const o = v as Record<string, unknown>;
+  if (typeof o.accountId !== "string" || typeof o.balance !== "number")
+    return null;
+  if (!isStringArray(o.licensesToDeny) || !Array.isArray(o.sources))
+    return null;
+  const sources: SourcePreview[] = [];
+  for (const raw of o.sources) {
+    if (raw === null || typeof raw !== "object") return null;
+    const s = raw as Record<string, unknown>;
+    if (typeof s.purchaseId !== "string" || typeof s.grantedAt !== "string")
+      return null;
+    if (
+      typeof s.granted !== "number" ||
+      typeof s.alreadyClawed !== "number" ||
+      typeof s.clawPreview !== "number"
+    )
+      return null;
+    if (
+      !isStringArray(s.entitlementsDropping) ||
+      !isStringArray(s.entitlementsSurviving)
+    )
+      return null;
+    sources.push({
+      purchaseId: s.purchaseId,
+      grantedAt: s.grantedAt,
+      entitlementsDropping: s.entitlementsDropping,
+      entitlementsSurviving: s.entitlementsSurviving,
+      granted: s.granted,
+      alreadyClawed: s.alreadyClawed,
+      clawPreview: s.clawPreview,
+    });
+  }
+  return {
+    accountId: o.accountId,
+    balance: o.balance,
+    licensesToDeny: o.licensesToDeny,
+    sources,
+  };
+}
+
+function errorMessage(body: unknown, status: number): string {
+  if (
+    body !== null &&
+    typeof body === "object" &&
+    "error" in body &&
+    typeof (body as { error: unknown }).error === "string"
+  ) {
+    return (body as { error: string }).error;
+  }
+  return `request failed (${String(status)})`;
+}
+
+async function loadPreview(
+  accountId: string,
+): Promise<
+  { ok: true; preview: AccountPreview } | { ok: false; message: string }
+> {
+  try {
+    const res = await fetch("/api/admin/entitlement/revoke-purchase/preview", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ targetAccountId: accountId }),
+    });
+    const body: unknown = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, message: errorMessage(body, res.status) };
+    const preview = asAccountPreview(body);
+    if (preview === null)
+      return { ok: false, message: "unexpected preview response" };
+    return { ok: true, preview };
+  } catch (err) {
+    return {
+      ok: false,
+      message: err instanceof Error ? err.message : "network error",
+    };
+  }
+}
+
 function ResultLine({ result }: { result: Result }) {
   if (result.kind === "idle") return null;
   if (result.kind === "busy") return <p className="muted">Working…</p>;
@@ -207,6 +309,204 @@ function Field({
   );
 }
 
+function Checkbox({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <label
+      className="stack"
+      style={{
+        flexDirection: "row",
+        gap: 8,
+        alignItems: "center",
+        fontSize: "0.85em",
+      }}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      <span>{label}</span>
+    </label>
+  );
+}
+
+type LoadState =
+  | { kind: "idle" }
+  | { kind: "loading" }
+  | { kind: "loaded"; preview: AccountPreview }
+  | { kind: "error"; message: string };
+
+/**
+ * ADR-0225 action 5 — revoke a REAL paid one-time purchase. The MANDATORY impact preview (R-6 = A):
+ * the operator loads the account's active one-time purchases, picks one, and sees the exact effect
+ * (entitlements dropping vs surviving by refcount, the credit claw, the edge deny-set size) BEFORE
+ * the type-to-confirm gate can arm — `disabled` stays true until a source is selected, which is only
+ * possible once the preview has loaded. Both destructive effects are explicit checkboxes, default ON
+ * (R-1 claw + R-4 edge), matching the service body's per-action choices.
+ */
+function RevokePurchaseCard() {
+  const [acct, setAcct] = useState("");
+  const [load, setLoad] = useState<LoadState>({ kind: "idle" });
+  const [selected, setSelected] = useState("");
+  const [claw, setClaw] = useState(true);
+  const [edge, setEdge] = useState(true);
+  const [reason, setReason] = useState("");
+
+  const preview = load.kind === "loaded" ? load.preview : null;
+  const source =
+    preview !== null
+      ? (preview.sources.find((s) => s.purchaseId === selected) ?? null)
+      : null;
+
+  return (
+    <MutationCard
+      title="Revoke purchase"
+      description="Strip a REAL paid one-time purchase (fraud / chargeback / ToS) with no Paddle refund. Load the impact preview and pick the purchase before confirming (ADR-0225)."
+      targetAccountId={acct}
+      disabled={source === null}
+      onSubmit={() =>
+        callRoute("/api/admin/entitlement/revoke-purchase", {
+          targetAccountId: acct.trim(),
+          purchaseId: selected,
+          clawUnspentCredits: claw,
+          revokeEdgeAccess: edge,
+          ...(reason.trim() === "" ? {} : { reason: reason.trim() }),
+        })
+      }
+    >
+      <Field
+        label="Target account id"
+        value={acct}
+        onChange={(v) => {
+          setAcct(v);
+          setLoad({ kind: "idle" });
+          setSelected("");
+        }}
+      />
+      <button
+        type="button"
+        disabled={acct.trim() === "" || load.kind === "loading"}
+        onClick={() => {
+          setLoad({ kind: "loading" });
+          setSelected("");
+          void loadPreview(acct.trim()).then((r) =>
+            setLoad(
+              r.ok
+                ? { kind: "loaded", preview: r.preview }
+                : { kind: "error", message: r.message },
+            ),
+          );
+        }}
+        style={{ padding: "6px 12px", alignSelf: "flex-start" }}
+      >
+        {load.kind === "loading" ? "Loading…" : "Load impact preview"}
+      </button>
+
+      {load.kind === "error" ? (
+        <p style={{ color: "var(--cs-danger, crimson)", fontSize: "0.85em" }}>
+          Preview error: {load.message}
+        </p>
+      ) : null}
+
+      {preview !== null && preview.sources.length === 0 ? (
+        <p className="muted" style={{ fontSize: "0.85em" }}>
+          No active one-time purchases to revoke for this account.
+        </p>
+      ) : null}
+
+      {preview !== null && preview.sources.length > 0 ? (
+        <div className="stack" style={{ gap: 4 }}>
+          <span className="muted" style={{ fontSize: "0.8em" }}>
+            Select the purchase to revoke:
+          </span>
+          {preview.sources.map((s) => (
+            <label
+              key={s.purchaseId}
+              className="stack"
+              style={{ flexDirection: "row", gap: 8, alignItems: "center" }}
+            >
+              <input
+                type="radio"
+                name="revoke-purchase-source"
+                checked={selected === s.purchaseId}
+                onChange={() => setSelected(s.purchaseId)}
+              />
+              <span className="mono" style={{ fontSize: "0.8em" }}>
+                {s.purchaseId}
+              </span>
+            </label>
+          ))}
+        </div>
+      ) : null}
+
+      {preview !== null && source !== null ? (
+        <div
+          className="stack"
+          style={{
+            gap: 4,
+            fontSize: "0.82em",
+            background: "var(--cs-surface-2, rgba(127,127,127,0.08))",
+            padding: "var(--cs-space-2, 8px)",
+            borderRadius: 6,
+          }}
+        >
+          <p style={{ fontWeight: 600 }}>Impact preview</p>
+          <p>
+            Entitlements dropping:{" "}
+            <span className="mono">
+              {source.entitlementsDropping.length === 0
+                ? "none"
+                : source.entitlementsDropping.join(", ")}
+            </span>
+          </p>
+          <p>
+            Surviving (refcount):{" "}
+            <span className="mono">
+              {source.entitlementsSurviving.length === 0
+                ? "none"
+                : source.entitlementsSurviving.join(", ")}
+            </span>
+          </p>
+          <p>
+            Credit claw if enabled: <strong>{source.clawPreview}</strong> of{" "}
+            {source.granted} granted (already clawed {source.alreadyClawed};
+            wallet balance {preview.balance})
+          </p>
+          <p>
+            Licenses denied at edge if enabled:{" "}
+            <strong>{preview.licensesToDeny.length}</strong>
+          </p>
+        </div>
+      ) : null}
+
+      <Checkbox
+        label="Also claw unspent credits"
+        checked={claw}
+        onChange={setClaw}
+      />
+      <Checkbox
+        label="Also revoke edge license access"
+        checked={edge}
+        onChange={setEdge}
+      />
+      <Field
+        label="Reason (optional — WORM evidence)"
+        value={reason}
+        onChange={setReason}
+        placeholder="chargeback lost on txn …"
+      />
+    </MutationCard>
+  );
+}
+
 export function AdminMutations() {
   const [grantAcct, setGrantAcct] = useState("");
   const [grantIds, setGrantIds] = useState("");
@@ -332,6 +632,8 @@ export function AdminMutations() {
           placeholder="1"
         />
       </MutationCard>
+
+      <RevokePurchaseCard />
     </div>
   );
 }
