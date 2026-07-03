@@ -24,6 +24,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@caisson/audit-worm": "workspace:*",
+        "@caisson/auth": "workspace:*",
         "@caisson/credits": "workspace:*",
         "@caisson/kernel": "workspace:*",
         "@caisson/observability": "workspace:*",
