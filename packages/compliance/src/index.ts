@@ -29,6 +29,8 @@ export * from "./evidence/generate.ts";
 export * from "./evidence/sign.ts";
 export * from "./evidence/oscal-export.ts";
 export * from "./evidence/oscal-export-xml.ts";
+export * from "./evidence/oscal-assessment-plan.ts";
+export * from "./evidence/oscal-bundle.ts";
 
 // --- Composition + assembly (T16/T17) — the security-critical crypto×RLS nesting + migration order.
 export * from "./with-tenant-crypto.ts";
