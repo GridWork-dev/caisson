@@ -24,7 +24,14 @@
 import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { AuditChainStore } from "@caisson/audit-worm";
-import { balance, debit, grant } from "@caisson/credits";
+import {
+  balance,
+  clawback,
+  creditsClawedForSource,
+  creditsGrantedBySource,
+  debit,
+  grant,
+} from "@caisson/credits";
 import { asCredits, NotFoundError, type JsonValue } from "@caisson/kernel";
 import {
   buildAdminSelectPolicySql,
@@ -38,17 +45,22 @@ import {
   grantAdminComp,
   readEntitlements,
   revokeAdminComp,
+  revokePurchaseGrants,
 } from "./entitlement-store.ts";
+import {
+  readDenySet,
+  recordLicenseRevocations,
+} from "./license-revocation-store.ts";
 
 // The `admin_write` cross-tenant policies for every table the mutation surface touches: WRITE
 // policies for the tables it actually mutates — `entitlement_grant` (service-owned) + the BASE
-// credit tables `credit_wallet` / `credit_event` — and a SELECT-only policy for `account_member`
-// (CAISSON-9), which it only ever reads for the existence check. Applied EXTERNALLY — after the
-// `admin_write` role exists — at DEPLOY (and in the test/dev double), NEVER embedded in a schema
-// constant every buyer-path test applies (mirroring how ADR-0141's `buildAdminReadPolicySql` is
-// applied outside the owning packages). Keeping the credit policies here also leaves base
-// `@caisson/credits` untouched (Fork AM-3 — no money-core schema change).
-// `license_grant` needs none (the reissue proxy, not admin_write, persists it). Run once per DEPLOY.
+// credit tables `credit_wallet` / `credit_event` — and SELECT-only policies for the tables it only
+// ever READS (`account_member` for the CAISSON-9 existence check; `license_grant` for the ADR-0225
+// edge-deny-set read). Applied EXTERNALLY — after the `admin_write` role exists — at DEPLOY (and in
+// the test/dev double), NEVER embedded in a schema constant every buyer-path test applies (mirroring
+// how ADR-0141's `buildAdminReadPolicySql` is applied outside the owning packages). Keeping the credit
+// policies here also leaves base `@caisson/credits` untouched (Fork AM-3 — no money-core schema
+// change). Run once per DEPLOY.
 export const ADMIN_MUTATION_PROVISION_SQL = [
   buildAdminWritePolicySql("entitlement_grant"),
   buildAdminWritePolicySql("credit_wallet"),
@@ -59,6 +71,11 @@ export const ADMIN_MUTATION_PROVISION_SQL = [
   // mutation surface never writes account_member, so it gets the SELECT-only policy variant, not
   // the INSERT/UPDATE write grant every table it actually mutates carries.
   buildAdminSelectPolicySql("account_member"),
+  // Read-only edge-deny-set source (ADR-0225 Fork R-4 = B): `revokePurchaseAdmin` reads the target
+  // account's `license_grant` rows cross-tenant to learn which signed `license_id`s to deny at the
+  // edge. It NEVER writes license_grant (the reissue proxy persists it), so it gets the SELECT-only
+  // variant — the paid-revoke blast radius stops at a cross-tenant read of the license index.
+  buildAdminSelectPolicySql("license_grant"),
 ].join("\n");
 
 /** The re-served token an injected `/issue` proxy returns (Fork AM-5); never carries the bearer. */
@@ -85,6 +102,18 @@ export interface AdminMutationDeps {
     major: number;
     expiry: string | null;
   }) => Promise<ReissueProxyResult>;
+  /**
+   * Publish the FULL current edge deny-set to the artifact the registry Worker reads (ADR-0225
+   * R-4 = B) — the WRITE side of `deploy-entry.ts`'s R2 read. Called POST-COMMIT + BEST-EFFORT by
+   * `revokePurchaseAdmin` after a `revokeEdgeAccess` revoke, with every revoked `license_id` across
+   * all tenants (republish-whole, not delta). Injected (prod: an R2-object writer; tests: a double),
+   * so this module holds no bucket credential. OPTIONAL — absent = the edge publisher is not yet
+   * provisioned (operator-gated DEPLOY): the publish is reported `"skipped"`, the DB
+   * `license_revocation` table stays the truth, and the Worker fails OPEN, so installs never break.
+   * The caller CATCHES a throw and surfaces it as `"failed"` — it NEVER rethrows, because the revoke
+   * + the DB deny-set already committed and a retry would double-apply the money/entitlement change.
+   */
+  publishDenySet?: ((revokedLicenseIds: string[]) => Promise<void>) | undefined;
 }
 
 // The real platform account-id shape (better-auth 32-char [A-Za-z0-9], ADR-0176) — NOT a UUID.
@@ -166,6 +195,24 @@ export const ReissueLicenseBody = z
   })
   .strict();
 
+// ADR-0225 (Fork R-2/R-3 = A). The v2 paid-revoke boundary: the operator targets ONE one-time
+// purchase (R-2 source-scoped) by its `purchaseId` (the PaymentIntent / Paddle transaction id).
+// Subscriptions are NOT revocable in v2 (R-3): there is deliberately no subscription-id field — a
+// still-billing subscription's grants are re-created next `invoice.paid`, so the correct lever is
+// cancelling it in Paddle. Both effects are explicit per-action operator choices (default ON in the
+// UI): `clawUnspentCredits` (R-1 = A — claw the purchase's still-outstanding credits, NEVER refund via
+// Paddle) and `revokeEdgeAccess` (R-4 = B — write the edge deny-set so the buyer's offline license is
+// killed at the registry Worker). `reason` is the WORM-evidence "why" for a chargeback dispute.
+export const RevokePurchaseBody = z
+  .object({
+    targetAccountId: accountId,
+    purchaseId: z.string().trim().min(1).max(256),
+    clawUnspentCredits: z.boolean(),
+    revokeEdgeAccess: z.boolean(),
+    reason: z.string().trim().min(1).max(500).optional(),
+  })
+  .strict();
+
 export type GrantEntitlementInput = z.infer<typeof GrantEntitlementBody> & {
   actorEmail: string;
 };
@@ -181,6 +228,9 @@ export type ReissueLicenseInput = z.infer<typeof ReissueLicenseBody> & {
   tier: string;
   expiry: string | null;
 };
+export type PurchaseRevokeInput = z.infer<typeof RevokePurchaseBody> & {
+  actorEmail: string;
+};
 
 /**
  * The tamper-evident WORM half's outcome. `"ok"` = anchored; `"failed"` = the mutation + the
@@ -190,6 +240,17 @@ export type ReissueLicenseInput = z.infer<typeof ReissueLicenseBody> & {
  * entitlement change. The action is still queryable in `admin_action_log`; re-anchor out of band.
  */
 export type WormStatus = "ok" | "failed";
+
+/**
+ * The edge deny-set publish outcome (ADR-0225 R-4 = B), decided POST-COMMIT + best-effort:
+ *   - `"skipped"` — no edge revoke was requested (`revokeEdgeAccess` off) OR no publisher is
+ *     provisioned yet (operator-gated DEPLOY). The DB `license_revocation` table is the sole truth
+ *     and the Worker fails OPEN (nothing denied at the edge) — safe, not broken.
+ *   - `"ok"` — the FULL deny-set was republished to the Worker's artifact.
+ *   - `"failed"` — the publisher threw. The revoke + DB deny-set are ALREADY durable, so this is a
+ *     DO-NOT-RETRY signal (re-publish the artifact out of band); it is NOT a mutation failure.
+ */
+export type EdgePublishStatus = "ok" | "failed" | "skipped";
 
 /** Append the tamper-evident WORM half AFTER the mutation+log tx commits (both are separate roles).
  *  A mutation that throws never reaches here → neither half is written (Fork AM-4 atomicity). The
@@ -451,6 +512,194 @@ export async function reissueLicenseAdmin(
     major: input.major,
     licenseId: reissued.licenseId,
     token: reissued.token,
+    worm,
+  };
+}
+
+export interface PurchaseRevokeResult {
+  targetAccountId: string;
+  purchaseId: string;
+  /** ACTIVE entitlements before the revoke. */
+  before: string[];
+  /** ACTIVE entitlements after — an entitlement backed by a SIBLING source (refcount) survives. */
+  after: string[];
+  /** Grant rows soft-revoked by this purchase's revoke (0 on an idempotent re-run — never an error). */
+  revoked: number;
+  /** Credits actually reclaimed — bounded to `granted − alreadyClawed` AND to the wallet balance; 0
+   *  when `clawUnspentCredits` was off, the buyer already spent them, or a prior claw netted it out. */
+  clawedBack: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  /** The license ids added to the edge deny-set for THIS account (ADR-0225 R-4); `[]` when
+   *  `revokeEdgeAccess` was off. The whole cross-tenant set — not just these — is what gets published. */
+  deniedLicenseIds: string[];
+  /** Edge deny-set publish outcome (ADR-0225 R-4 = B) — see `EdgePublishStatus`. `"skipped"` when no
+   *  edge revoke was requested or the publisher is unprovisioned; the DB stays the truth either way. */
+  edgePublish: EdgePublishStatus;
+  /** WORM audit half's outcome — `"failed"` means DO-NOT-RETRY (the revoke + log already committed). */
+  worm: WormStatus;
+}
+
+/**
+ * Action 5 (ADR-0225) — revoke a REAL paid ONE-TIME purchase: the fraud / chargeback-received /
+ * ToS-ban lever that strips access WITHOUT a Paddle refund (Fork R-1 = A: DB-only, never calls
+ * Paddle). One `withAdminWrite` transaction ties four effects together atomically:
+ *
+ *   1. `assertAccountExists` (CAISSON-9) — a nonexistent target rolls the whole tx back, no ghost rows.
+ *   2. `revokePurchaseGrants` (R-2/R-3 = A) — soft-revoke every ACTIVE grant backed by this ONE-TIME
+ *      purchase, and ONLY it. A subscription grant (source_kind='subscription') can never match a
+ *      `purchase_id` filter, so subscriptions are structurally un-revocable here (R-3 = A), and an
+ *      entitlement a SIBLING source still backs survives (refcount). Idempotent: a re-run finds no
+ *      active rows and revokes 0 — NOT an error (so the caller must not treat 0 as a rejection).
+ *   3. Bounded claw (R-1 = A, opt-in via `clawUnspentCredits`) — `remaining = max(0, granted −
+ *      alreadyClawed)`, then `clawback` further bounds to the wallet balance and never goes negative.
+ *      This is the EXACT arithmetic the full-refund webhook runs (apply-billing-event.ts) keyed on the
+ *      SAME `sourceEventId = purchaseId`, so an operator revoke and a later Paddle refund of the same
+ *      purchase are mutually idempotent — whichever lands second reads `remaining = 0` (and its
+ *      compensating debit collides on the (paymentId, refund_clawback) idempotency index) → claws 0.
+ *      Netting out `alreadyClawed` (not the raw `granted`) is load-bearing: the wallet is a fungible
+ *      pool, so clawing the raw grant after a prior partial claw would drain OTHER purchases' credits
+ *      (CAISSON-5).
+ *   4. Edge deny-set truth (R-4 = B, opt-in via `revokeEdgeAccess`) — `recordLicenseRevocations`
+ *      writes one `license_revocation` row per license the account holds, in the SAME transaction, so
+ *      the DB truth commits atomically with the revoke. Publishing it to the Worker's artifact is a
+ *      separate, fail-open slice (not here).
+ *
+ * Dual-logged like every ADR-0220 action: one `admin_action_log` row IN the tx (the action id is
+ * pinned up front so the `license_revocation` rows can FK-by-value to it), THEN a post-commit WORM
+ * chain entry whose outcome is surfaced as `worm` (`"failed"` = DO-NOT-RETRY, the mutation already
+ * committed). A revoke that throws writes NEITHER log (atomicity).
+ */
+export async function revokePurchaseAdmin(
+  deps: AdminMutationDeps,
+  input: PurchaseRevokeInput,
+): Promise<PurchaseRevokeResult> {
+  // The FULL cross-tenant deny-set as of THIS revoke's commit, captured inside the tx and published
+  // post-commit (below). Assigned from the closure so the atomic post-revoke truth escapes.
+  let fullDenySet: string[] = [];
+  const result = await withAdminWrite(deps.db, async (tx) => {
+    await assertAccountExists(tx, input.targetAccountId);
+    const before = await readEntitlements(tx, input.targetAccountId);
+    const balanceBefore = await balance(tx, input.targetAccountId);
+
+    // R-2/R-3 = A: source-scoped, one-time-only. A subscription's grants never match a purchase_id.
+    const revoked = await revokePurchaseGrants(tx, {
+      accountId: input.targetAccountId,
+      purchaseId: input.purchaseId,
+    });
+
+    // R-1 = A: claw the purchase's STILL-OUTSTANDING credits, bounded two ways, never Paddle.
+    let clawedBack = 0;
+    if (input.clawUnspentCredits) {
+      const granted = await creditsGrantedBySource(
+        tx,
+        input.targetAccountId,
+        input.purchaseId,
+      );
+      const alreadyClawed = await creditsClawedForSource(
+        tx,
+        input.targetAccountId,
+        input.purchaseId,
+      );
+      const remaining = Math.max(0, granted - alreadyClawed);
+      if (remaining > 0) {
+        const clawed = await clawback(tx, {
+          accountId: input.targetAccountId,
+          amount: remaining, // clawback further bounds to balance (never negative)
+          sourceEventId: input.purchaseId, // idempotent with the full-refund webhook's same-key claw
+        });
+        clawedBack = clawed.clawedBack;
+      }
+    }
+
+    // Pin the action id up front so the R-4 deny-set rows FK-by-value to this exact audit event.
+    const adminActionId = randomUUID();
+
+    // R-4 = B: write the edge deny-set truth in the SAME transaction (opt-in).
+    // ponytail: the edge deny is ACCOUNT-scoped (every held license_id) and runs whenever
+    // `revokeEdgeAccess` is on — even when this `purchaseId` matched 0 grants. A mistyped purchaseId
+    // against the RIGHT account therefore still denies that account's licenses at the edge. That is
+    // the deliberate R-4 = B posture (kill the fraud/ToS account's edge access, not one purchase's):
+    // gating on `revoked > 0` would instead break a legitimate idempotent re-run. The mandatory
+    // impact preview + type-to-confirm (Fork R-6) are the guard against a mis-targeted deny; the
+    // per-action checkbox keeps it an explicit choice.
+    let deniedLicenseIds: string[] = [];
+    if (input.revokeEdgeAccess) {
+      deniedLicenseIds = await recordLicenseRevocations(tx, {
+        accountId: input.targetAccountId,
+        adminActionId,
+        reason: input.reason ?? null,
+      });
+      // The whole cross-tenant set (not just this account's) — republish-whole is what the Worker's
+      // artifact carries, so publishing only `deniedLicenseIds` would wipe every prior revoke's denials.
+      fullDenySet = await readDenySet(tx);
+    }
+
+    const after = await readEntitlements(tx, input.targetAccountId);
+    const balanceAfter = await balance(tx, input.targetAccountId);
+    await insertAdminActionLog(tx, {
+      id: adminActionId,
+      actorEmail: input.actorEmail,
+      targetAccountId: input.targetAccountId,
+      action: "purchase_revoke",
+      before: { entitlements: before, balance: balanceBefore },
+      after: {
+        entitlements: after,
+        balance: balanceAfter,
+        purchaseId: input.purchaseId,
+        revoked,
+        clawedBack,
+        deniedLicenseIds,
+        reason: input.reason ?? null,
+      },
+    });
+    return {
+      before,
+      after,
+      revoked,
+      clawedBack,
+      balanceBefore,
+      balanceAfter,
+      deniedLicenseIds,
+    };
+  });
+  const worm = await appendWorm(
+    deps,
+    input.targetAccountId,
+    "purchase_revoke",
+    input.actorEmail,
+    { entitlements: result.before, balance: result.balanceBefore },
+    {
+      entitlements: result.after,
+      balance: result.balanceAfter,
+      purchaseId: input.purchaseId,
+      revoked: result.revoked,
+      clawedBack: result.clawedBack,
+      deniedLicenseIds: result.deniedLicenseIds,
+      reason: input.reason ?? null,
+    },
+  );
+
+  // R-4 = B edge publish — POST-COMMIT + BEST-EFFORT. The revoke + the DB `license_revocation` truth
+  // already committed; republishing the FULL set to the Worker's artifact is what finally cuts a held
+  // offline token's edge access. `"skipped"` when no edge revoke was asked for OR no publisher is
+  // provisioned (operator-gated DEPLOY — the Worker fails open, so the absence is safe, not broken).
+  // A publisher throw is CAUGHT → `"failed"` (do-not-retry: the mutation is durable), never rethrown.
+  let edgePublish: EdgePublishStatus = "skipped";
+  if (input.revokeEdgeAccess && deps.publishDenySet !== undefined) {
+    try {
+      await deps.publishDenySet(fullDenySet);
+      edgePublish = "ok";
+    } catch {
+      edgePublish = "failed";
+    }
+  }
+
+  return {
+    targetAccountId: input.targetAccountId,
+    purchaseId: input.purchaseId,
+    ...result,
+    edgePublish,
     worm,
   };
 }

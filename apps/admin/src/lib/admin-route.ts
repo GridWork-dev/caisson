@@ -3,8 +3,8 @@
 // that header because the middleware `set`s it (replacing any inbound spoof) only after a successful
 // `verifyAccessJwt`. A route reached without a verified actor (dev with CF-Access unconfigured, or a
 // misconfigured matcher) fails closed to 401 here.
-import { ZodError } from "zod";
 import { toErrorResponse } from "@caisson/kernel";
+import { ZodError } from "zod";
 
 export function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {

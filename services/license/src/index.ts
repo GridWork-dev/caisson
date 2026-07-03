@@ -35,9 +35,11 @@ export type {
   RevokeAdminCompInput,
 } from "./entitlement-store.ts";
 
-// ADR-0220 — the operator mutation surface (four locked actions) + its queryable audit-log half.
+// ADR-0220 — the operator mutation surface + its queryable audit-log half. ADR-0225 adds the fifth
+// action `purchase_revoke` (paid one-time revoke + bounded claw + edge deny-set) and its migration.
 export {
   ADMIN_ACTION_LOG_SCHEMA_SQL,
+  ADMIN_ACTION_LOG_ACTION_MIGRATION_SQL,
   ADMIN_ACTIONS,
   AdminActionSchema,
   insertAdminActionLog,
@@ -49,15 +51,23 @@ export type {
   AdminActionLogRow,
 } from "./admin-audit-log.ts";
 export {
+  LICENSE_REVOCATION_SCHEMA_SQL,
+  recordLicenseRevocations,
+  readDenySet,
+} from "./license-revocation-store.ts";
+export type { RecordLicenseRevocationsInput } from "./license-revocation-store.ts";
+export {
   ADMIN_MUTATION_PROVISION_SQL,
   GrantEntitlementBody,
   RevokeEntitlementBody,
   AdjustCreditsBody,
   ReissueLicenseBody,
+  RevokePurchaseBody,
   grantEntitlementAdmin,
   revokeEntitlementAdmin,
   adjustCreditsAdmin,
   reissueLicenseAdmin,
+  revokePurchaseAdmin,
   wormAnchorAccount,
 } from "./admin-mutations.ts";
 export type {
@@ -67,9 +77,11 @@ export type {
   RevokeEntitlementInput,
   AdjustCreditsInput,
   ReissueLicenseInput,
+  PurchaseRevokeInput,
   EntitlementMutationResult,
   CreditAdjustResult,
   ReissueResult,
+  PurchaseRevokeResult,
   WormStatus,
 } from "./admin-mutations.ts";
 export { resolveAccountEntitlements } from "./resolve-entitlements.ts";

@@ -10,12 +10,19 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 
-/** The four locked operator actions (ADR-0220, Fork AM-1 = A). The buyer-lookup 5th is dropped. */
+/**
+ * The locked operator actions. The four v1 actions (ADR-0220, Fork AM-1 = A; the buyer-lookup 5th is
+ * dropped) plus `purchase_revoke` (ADR-0225, Fork R-5 = A): the v2 revoke of a REAL paid one-time
+ * purchase — kept a DISTINCT action from `entitlement_revoke` (which MEANS comp-only) so a chargeback
+ * dispute can filter "show me every paid revoke" without parsing JSON. Its own before/after money
+ * snapshot captures the credit claw + the edge deny-set in one auditable event (no separate row).
+ */
 export const ADMIN_ACTIONS = [
   "entitlement_grant",
   "entitlement_revoke",
   "credit_adjust",
   "license_reissue",
+  "purchase_revoke",
 ] as const;
 export type AdminAction = (typeof ADMIN_ACTIONS)[number];
 
@@ -31,10 +38,26 @@ CREATE TABLE admin_action_log (
   payload_before jsonb,
   payload_after jsonb,
   created_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT admin_action_log_action CHECK (action IN ('entitlement_grant', 'entitlement_revoke', 'credit_adjust', 'license_reissue'))
+  CONSTRAINT admin_action_log_action CHECK (action IN ('entitlement_grant', 'entitlement_revoke', 'credit_adjust', 'license_reissue', 'purchase_revoke'))
 );
 GRANT INSERT ON admin_action_log TO admin_write;
 GRANT SELECT ON admin_action_log TO admin;
+`;
+
+// ADR-0225 (Fork R-5 = A). The forward migration that widens the action-enum CHECK to admit the new
+// `purchase_revoke` action on an environment that already created `admin_action_log` under the
+// four-action CHECK (ADR-0220). Idempotent (DROP IF EXISTS → ADD), additive, and — crucially — NOT an
+// edit to the checksum-pinned CREATE above: mirrors `ENTITLEMENT_ADMIN_COMP_MIGRATION_SQL`'s
+// append-a-migration convention (ADR-0014, never rewrite a shipped DDL). Applied at the operator-gated
+// admin DEPLOY (the same step that runs `ADMIN_ACTION_LOG_SCHEMA_SQL` + `ADMIN_MUTATION_PROVISION_SQL`
+// on the Railway PG) and in the apps/admin PGlite dev/test double AFTER the schema constant, where it
+// is a no-op — the fresh CHECK already lists all five actions. `admin_action_log` is NOT part of the
+// apps/site platform migrate set (deploy-migrate.ts) — it is admin-DEPLOY-provisioned — so this rides
+// the admin DEPLOY, not the platform runner.
+export const ADMIN_ACTION_LOG_ACTION_MIGRATION_SQL = `
+ALTER TABLE admin_action_log DROP CONSTRAINT IF EXISTS admin_action_log_action;
+ALTER TABLE admin_action_log ADD CONSTRAINT admin_action_log_action
+  CHECK (action IN ('entitlement_grant', 'entitlement_revoke', 'credit_adjust', 'license_reissue', 'purchase_revoke'));
 `;
 
 export interface AdminActionLogInput {
@@ -45,6 +68,12 @@ export interface AdminActionLogInput {
   before: unknown;
   /** State snapshot after the mutation (JSON-serializable). */
   after: unknown;
+  /**
+   * Pin the row id instead of minting one, so a caller can reference this action's id from a related
+   * row written in the SAME transaction (ADR-0225: `license_revocation.admin_action_id` is an
+   * FK-by-value to this id). Omitted → a fresh `randomUUID()` (every v1 caller's shape, unchanged).
+   */
+  id?: string;
 }
 
 /**
@@ -55,7 +84,7 @@ export async function insertAdminActionLog(
   tx: TenantExecutor,
   input: AdminActionLogInput,
 ): Promise<string> {
-  const id = randomUUID();
+  const id = input.id ?? randomUUID();
   await tx.query(
     `INSERT INTO admin_action_log
        (id, actor_email, target_account_id, action, payload_before, payload_after)
