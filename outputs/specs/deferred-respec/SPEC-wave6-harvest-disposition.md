@@ -1,7 +1,15 @@
 # SPEC — Wave-6 harvest disposition (enumerate + rank the parked sub-top-15 lift-sweep residual)
 
-**Status: DRAFT — operator lock required.** Document-only; authorizes no build. Realizes
-ADR-0210 §4; spec-gated (ADR-0133). This is a DRAFT for the operator to review and lock — a
+**Status: TERMINAL — ledger closed 2026-07-03 (ADR-0239).** The disposition ran in two
+elections: **ADR-0229** built the compliance/billing 10-row subset (wave-6a, PR #92), and
+**ADR-0239** built the 9 remaining `build-next` rows (wave-6b) and closed the ledger — the 28
+`build-on-trigger` rows stay parked on their recorded per-row triggers (a trigger firing IS the
+election; building without one needs a new ADR). Task 1's evidence-drift risk is resolved: the
+lift-sweep report is folded in-repo at `outputs/research/caisson-lift-sweep-REPORT.md`. This
+document is now evidence, not a queue — any future harvest sweep starts a NEW ledger.
+
+_Original draft header (historical):_ Document-only; authorizes no build. Realizes
+ADR-0210 §4; spec-gated (ADR-0133). This was a DRAFT for the operator to review and lock — a
 single disposition + roadmap document, not 22 (or 67) build specs.
 
 - **Type:** disposition-roadmap — one document, no product code. Format matches the
