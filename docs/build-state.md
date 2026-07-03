@@ -1,5 +1,16 @@
 # Build state & roadmap
 
+> **EXECUTION WAVE + DEPLOY BLOCK DONE (2026-07-02-LATE):** **ADR ceiling is now `0228`.** PRs
+> #75–#83 merged (locks+backlog ledger · reprice display · cred-sweep prep · error mapping · WORM S3
+> gate · members-fold republish **ADR-0228** · live-harness ADR-0224 · infra truth · **registry
+> self-hosted npm delivery built**, ADR-0223 — Worker npm routes + CI R2 pipeline + generator
+> `.npmrc` flip), #84 admin-v2 purchase-revoke (ADR-0225 + R-4 edge deny-set) in the queue. The §7
+> post-merge **DEPLOY block is EXECUTED + live-verified** (launch-runbook §7 banner has the detail):
+> live migrations `0006`–`0009`, admin mutation surface round-trip PASS (dual logs + `caisson-worm`
+> Object-Lock anchors), CF edge rate-limit 429-proven, Paddle SANDBOX edition prices re-pointed.
+> CAISSON-15/16/17/18 Done. Registry Task-1/5 DEPLOY (R2 bucket + `registry.caisson.sh` route + live
+> install proof) and the registry-Worker redeploy for the 0.2.0/0228 index remain operator-gated.
+
 > **DEFERRED-RESPEC WAVE MERGED + LIVE-PROOF GREEN (2026-07-02-PM):** **ADR ceiling is now `0224`.**
 > The four build-now deferred-respec items shipped + **MERGED to `main`** (PRs #66–69): **ADR-0218**
 > Paddle per-line partial refund (revoke + clawback, `line_item_id` columns) · **ADR-0219** Cloudflare

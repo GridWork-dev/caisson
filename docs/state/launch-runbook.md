@@ -461,6 +461,22 @@ Paddle traffic, since that endpoint was never behind Access in the first place (
 
 ## 7. Post-merge DEPLOY block — the 2026-07-02 ADR-0218–0221 wave
 
+> **EXECUTED 2026-07-02/03 (operator-approved), all four Done in Linear.** CAISSON-16: migration
+> checksum drift at v3 (PR #69 edited a pinned `*_SCHEMA_SQL` in place) reconciled read-only, blessed
+> as the sole drift, then migrations `0006`–`0009` applied to the live Railway PG (the ledger was at
+> v1–v5 — `0006 account_member` had never reached prod). CAISSON-17: surface provisioned
+> (`apps/admin/scripts/provision-admin-mutation-surface.ts`) + env set; **grantee gotcha** — the
+> first run granted `admin/admin_write/app` to `postgres` (CURRENT_USER default), not `admin_app`;
+> fixed with an explicit grant, then a live grant→revoke round-trip PASSED (dual log rows + WORM
+> anchors, typo'd account → 404). CAISSON-18: env-gated S3 store (PR #79) proven — anchors in
+> `caisson-worm` with Object-Lock retention to 2033. **Flagged residual:** the bucket's default lock
+> mode is **GOVERNANCE**, this section said COMPLIANCE — operator to confirm posture or escalate the
+> bucket default (extend-only escalation stays per ADR-0202). CAISSON-15: Terraform imported +
+> applied (rate-limit + WAF rulesets, docs-api proxied), `429`s proven on `/query` with cf-ray;
+> `license.caisson.sh` untouched grey-cloud. Both `caisson-license` + `caisson-admin` redeployed
+> from merged `main` (SUCCESS; license `/health` 200). The section below is kept as the historical
+> runbook.
+
 **DEPLOY-class, operator-executed. Separate from the launch flip above** — this is the ordered
 deploy of the four hardening items that merged to `main` today (PRs #66–69: ADR-0218 Paddle per-line
 refund · ADR-0219 CF front rate-limit · ADR-0220 admin mutation surface v1 · ADR-0221 live-seams
