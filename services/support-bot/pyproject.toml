@@ -64,3 +64,11 @@ venv = ".venv"
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+# The live-harness marker (ADR-0224): tests that hit a real external remote (Discord, Linear). The
+# default `-m 'not live'` DESELECTS them so `uv run pytest tests` never collects/runs them (they also
+# self-skip without creds). Run them explicitly with `uv run pytest -m live` (the command-line `-m`
+# overrides this addopts default). --strict-markers so an unregistered marker is an error, not a typo.
+markers = [
+    "live: exercises a real external remote; excluded from default runs, run with -m live",
+]
+addopts = "-m 'not live' --strict-markers"
