@@ -1,5 +1,12 @@
 # @caisson/local-ai-app
 
+## 0.0.2
+
+### Patch Changes
+
+- Updated dependencies [081a1d8]
+  - @caisson/local-ai@0.2.1
+
 ## 0.0.1
 
 ### Patch Changes

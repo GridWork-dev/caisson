@@ -1,6 +1,6 @@
 {
   "name": "@caisson/app-base",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "type": "module",
   "description": "Framework-agnostic reference wiring the base packages over Bun.serve (P1 reference). App framework per edition is deferred.",

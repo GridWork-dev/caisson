@@ -1,5 +1,43 @@
 # @caisson/site
 
+## 0.1.1
+
+### Patch Changes
+
+- 4287ce5: Legal pages carry the Paddle MoR reseller sentence and refund copy grounded in shipped billing behavior.
+- 904b15b: Post-merge consolidation sweep: repo links repointed to caisson-sh/caisson (site footer, JSON-LD, docs edit-links, llms.txt blob URLs), the audit-harness design-ui domain re-globbed from the removed apps/studio to the apps/admin design gallery, and stale SigNoz naming updated to the Grafana Cloud fleet sink (ADR-0177/0207). Docs/comments only apart from the design-ui glob fix; no behavior change to any runtime path.
+- Updated dependencies [b5915e0]
+- Updated dependencies [5fd31fe]
+- Updated dependencies [44a6414]
+- Updated dependencies [959e555]
+- Updated dependencies [20d5ab0]
+- Updated dependencies [e62c88d]
+- Updated dependencies [ccf8b10]
+- Updated dependencies [afa6070]
+- Updated dependencies [081a1d8]
+- Updated dependencies [52c6738]
+- Updated dependencies [95103b6]
+- Updated dependencies [aaff518]
+- Updated dependencies [904b15b]
+- Updated dependencies [f9d58c4]
+- Updated dependencies [549dd4e]
+- Updated dependencies [6e08cc6]
+  - @caisson/tenancy-rls@0.3.0
+  - @caisson/ai-kit@0.2.1
+  - @caisson/ai-meter@0.3.0
+  - @caisson/billing@0.3.0
+  - @caisson/kernel@0.3.0
+  - @caisson/credits@0.3.0
+  - @caisson/pricebook@0.3.0
+  - @caisson/field-crypto@0.2.1
+  - @caisson/service-license@0.0.2
+  - @caisson/ui@0.2.1
+  - @caisson/observability@0.2.1
+  - @caisson/auth@0.2.1
+  - @caisson/platform-reads@0.1.2
+  - @caisson/email@0.2.1
+  - @caisson/migrate@0.2.1
+
 ## 0.1.0
 
 ### Minor Changes

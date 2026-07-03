@@ -1,5 +1,41 @@
 # @caisson/admin
 
+## 0.0.2
+
+### Patch Changes
+
+- f9d58c4: Post-wave-hardening triage Bucket B (CAISSON-10/11/12/13), test and proof hygiene, no
+  runtime behavior change for buyers.
+
+  - CAISSON-12: root bunfig.toml scopes bun test discovery away from stale compiled dist/
+    output, plus a regression test in @caisson/testing.
+  - CAISSON-11: apps/admin's PGlite bootstrap now applies the ADR-0218 line-item migrations
+    (0008/0009), matching the deploy-migrate chain, plus a columns-contract-style parity test.
+  - CAISSON-13: packages/field-crypto's live KMS proof schedules deletion for both throwaway
+    CMKs defensively in afterAll, not just the one the last leg reached.
+  - CAISSON-10: apps/admin's /business degrade path distinguishes a genuine undefined-table
+    error (Postgres 42P01) from any other transient DB error before rendering the
+    provisioning hint.
+
+- Updated dependencies [b5915e0]
+- Updated dependencies [e62c88d]
+- Updated dependencies [ccf8b10]
+- Updated dependencies [afa6070]
+- Updated dependencies [95103b6]
+- Updated dependencies [aaff518]
+- Updated dependencies [904b15b]
+- Updated dependencies [549dd4e]
+- Updated dependencies [6e08cc6]
+  - @caisson/tenancy-rls@0.3.0
+  - @caisson/kernel@0.3.0
+  - @caisson/credits@0.3.0
+  - @caisson/service-license@0.0.2
+  - @caisson/ui@0.2.1
+  - @caisson/observability@0.2.1
+  - @caisson/audit-worm@0.2.1
+  - @caisson/auth@0.2.1
+  - @caisson/platform-reads@0.1.2
+
 ## 0.0.1
 
 ### Patch Changes
