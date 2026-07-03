@@ -1,8 +1,8 @@
 ---
 title: "Glossary / definition-term SEO program — 32 answer-first term pages on the section-union renderer"
-status: FORKS TABLED — spec-only; program pre-committed by ADR-0232 Fork C, but the four operator forks below (term-list sign-off · content author · rollout shape · internal-linking) lock before any code lands (the one operator rule, CLAUDE.md)
+status: FORKS LOCKED — ADR-0235 (2026-07-03 fifth picker round); build unblocked. See the LOCKED addendum at the end of this doc; the fork sections below are kept verbatim as the decision record.
 tags: [ui, frontend]
-proposed-adr: "the next free ADR number at lock (0234+; ceiling 0233 after the 2026-07-03 fourth picker round — re-verify per ADR-0088). ADR-0232 already locked the program-level forks; this SPEC's four forks lock at that new ADR."
+proposed-adr: "LOCKED as ADR-0235 (fifth picker round, 2026-07-03)."
 adr-interactions: realizes ADR-0232 Fork C (glossary pre-commit; renderer is this program's implementation detail) · folds in outputs/specs/deferred-respec/SPEC-seo-section-union-renderer.md Tasks 1–5 as this SPEC's build tasks (its Task 0 trigger gate is CLEARED by §Term list) · extends ADR-0079 §2 (the `/glossary/{term}` taxonomy — scaled past the original 6–10 pilot per the 0232 override, decoupled from the SOC2/HIPAA framework-pilot gate) · reuses ADR-0079 §4 (buildMetadata, root @graph, breadcrumb, self-canonical) + one net-new `DefinedTerm` JSON-LD builder · governed by ADR-0080 (copy laws — precise-scope, owned-vocab, committed-claims, answer-first, competitor-ban) · ADR-0082 (artifacts true-to-built) · ADR-0099 (kit-first, no new visual component) · ADR-0002 Zod carve-out (compile-time-static data, no runtime boundary — same as the renderer SPEC §4)
 linear: "(none yet — file a CAISSON issue in project 'Site & Buyer Dashboard' at PLAN, gitBranchName → feature/glossary-program)"
 originating: ADR-0232 (SEO section-union renderer trigger + glossary program pre-commit, Fork C operator OVERRIDE)
@@ -449,3 +449,20 @@ review cadence, not engineering (a batch of ~8 records/day is realistic agent-dr
 that both ranks and demonstrates the product; and the renderer it lands turns every future SEO page into a
 data file. The dominant risk is copy (compliance over-claim), not build — which is why Fork B gates the
 compliance cluster at 100% review.
+
+---
+
+## LOCKED addendum (ADR-0235, 2026-07-03 fifth picker round)
+
+The five forks above are locked; the sections stay verbatim as the decision record. Binding
+picks (full detail in `knowledge/decisions/ADR-0235-glossary-program-fork-locks.md`):
+
+- **Fork A:** the 32 terms as listed (operator may strike a row at content review, never add).
+- **Fork B (OVERRIDE):** agent-authored via a multi-agent workflow with research grounding +
+  adversarial verification — replaces the tabled operator-review cadence. Claims dated + cited;
+  independent skeptic passes enforce ADR-0080; the compliance cluster (terms 1–10) gets the
+  strictest refutation pass. The operator gate is the PR merge.
+- **Fork C:** cluster batches — batch 1 = renderer + hub + `DefinedTerm` JSON-LD + compliance
+  cluster; later batches pure data, measuring indexation between.
+- **Fork D:** curated related-terms (2–4 same-cluster slugs + `sells` CTA + hub); no auto-linking.
+- **Fork D-nav:** footer only + sitemap.
