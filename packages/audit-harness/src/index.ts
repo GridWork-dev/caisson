@@ -1,5 +1,13 @@
-export { AUDIT_DOMAINS } from "./domains.ts";
-export type { AuditDomain } from "./domains.ts";
+export {
+  deriveDomains,
+  domainForPath,
+  domainIds,
+  IGNORE_UNIT,
+} from "./domains.ts";
+export type { Domain, SurfaceClass } from "./domains.ts";
+
+export { applicableDimensions, DIMENSIONS, dimension } from "./dimensions.ts";
+export type { Dimension, DimensionId } from "./dimensions.ts";
 
 export {
   parseFindings,
@@ -25,6 +33,14 @@ export {
   summarize,
 } from "./surface.ts";
 export type { LedgerSummary } from "./surface.ts";
+
+export {
+  coverageGrid,
+  isRoundDry,
+  parseCoverage,
+  serializeCoverage,
+} from "./coverage.ts";
+export type { Cell, CoverageRow, DryInputs, DryResult } from "./coverage.ts";
 
 export { majorityKills, validateHighRisk } from "./validate.ts";
 export type { ChallengeVerdict, Challenger } from "./validate.ts";
