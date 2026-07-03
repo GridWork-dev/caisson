@@ -164,3 +164,44 @@ export function faqPage(
     })),
   };
 }
+
+/** DefinedTerm — one glossary spoke (ADR-0079 §4 addition, glossary SPEC/ADR-0235). */
+export function definedTerm(opts: {
+  name: string;
+  description: string;
+  url: string;
+  inDefinedTermSet?: string;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "DefinedTerm",
+    name: opts.name,
+    description: opts.description,
+    url: opts.url,
+    ...(opts.inDefinedTermSet
+      ? { inDefinedTermSet: opts.inDefinedTermSet }
+      : {}),
+  };
+}
+
+/** DefinedTermSet — the /glossary hub, listing every spoke (glossary SPEC/ADR-0235). */
+export function definedTermSet(opts: {
+  name: string;
+  description: string;
+  url: string;
+  terms: readonly { name: string; description: string; url: string }[];
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "DefinedTermSet",
+    name: opts.name,
+    description: opts.description,
+    url: opts.url,
+    hasDefinedTerm: opts.terms.map((t) => ({
+      "@type": "DefinedTerm",
+      name: t.name,
+      description: t.description,
+      url: t.url,
+    })),
+  };
+}
