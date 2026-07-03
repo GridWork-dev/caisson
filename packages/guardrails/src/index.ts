@@ -3,8 +3,10 @@
 // fail-closed input/output guard that throws `GuardrailError` 422 and emits a metadata-only
 // `guardrail.blocked` event to the kernel `EventSink`. `guard.ts` also runs an unconditional
 // credential-shape gate (ADR-0215, category `"secret"`) before either leg reaches the moderator; a
-// standalone FTC "4 Ps" dark-pattern evaluator scores marketing/UI copy separately (`ftc4p.ts`). A
-// base primitive the AI Production Kit gateway composes; it never imports an edition (ADR-0003).
+// standalone FTC "4 Ps" dark-pattern evaluator scores marketing/UI copy separately (`ftc4p.ts`), and
+// a claim-ceiling evaluator gates marketing/AI claim strings against their backing eval evidence
+// (`claim-ceiling.ts`). A base primitive the AI Production Kit gateway composes; it never imports an
+// edition (ADR-0003).
 
 // Moderator port + drivers + the forge.config policy block.
 export {
@@ -58,3 +60,16 @@ export {
   ftc4pResultSchema,
 } from "./ftc4p.ts";
 export type { Ftc4PDimension, Ftc4PFinding, Ftc4PResult } from "./ftc4p.ts";
+
+// Evidence-gated claims / honest claim-ceiling release gate — a generic evidence -> claim-tier
+// evaluator consumed at copy-review time, not wired into `guard.ts` (no live request leg).
+export {
+  CLAIM_TIERS,
+  claimTier,
+  assertClaimAllowed,
+  allowedClaims,
+  ClaimCeilingError,
+  claimEvidenceSchema,
+  claimSchema,
+} from "./claim-ceiling.ts";
+export type { ClaimTier, ClaimEvidence, Claim } from "./claim-ceiling.ts";

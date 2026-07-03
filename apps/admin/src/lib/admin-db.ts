@@ -56,8 +56,8 @@ ALTER TABLE audit_chain_entry ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_chain_entry FORCE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT ON audit_chain_entry TO app;
 CREATE POLICY audit_chain_entry_tenant_isolation ON audit_chain_entry
-  USING (account_id = current_setting('app.current_account', true))
-  WITH CHECK (account_id = current_setting('app.current_account', true));
+  USING (account_id = NULLIF(current_setting('app.current_account', true), ''))
+  WITH CHECK (account_id = NULLIF(current_setting('app.current_account', true), ''));
 `;
 
 export type { TenantExecutor, Transactor };

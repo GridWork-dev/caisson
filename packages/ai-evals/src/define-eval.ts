@@ -8,6 +8,7 @@
 // resolves the prompt or calls a provider — cases carry the already-produced `output` for replay (or
 // a `task` produces it from an injected model locally), keeping CI offline + deterministic.
 import { z } from "zod";
+import { systemClock, type Clock } from "./clock.ts";
 import type { Grader } from "./graders.ts";
 
 // --- Dataset boundary schemas (validated on load, `.strict()`) ----------------------------------
@@ -65,6 +66,12 @@ export interface DefineEvalConfig {
    * looser, to catch a lucky-draw small sample rather than a genuinely low score.
    */
   readonly wilsonFloor?: number;
+  /**
+   * The point-in-time reader stamped onto `EvalRun.ranAt` (ADR-0214). Defaults to `systemClock`
+   * (live wall-clock). A backtest injects `fixedClock`/`sequencedClock` here instead — the SAME
+   * `defineEval` runs, scores, and aggregates identically; only the stamped timestamp differs.
+   */
+  readonly clock?: Clock;
 }
 
 export interface ScoredCase {
@@ -89,6 +96,12 @@ export interface EvalRun {
   readonly scoredCases: readonly ScoredCase[];
   /** Carried through from `DefineEvalConfig.wilsonFloor` (ADR-0214) — unset by default. */
   readonly wilsonFloor?: number;
+  /**
+   * ISO-8601, stamped from `DefineEvalConfig.clock` (ADR-0214) — `systemClock` unless overridden.
+   * Optional on the type (a hand-built `EvalRun`, e.g. in a baseline-gate test, need not set it);
+   * `defineEval` itself always populates it.
+   */
+  readonly ranAt?: string;
 }
 
 // Scores are means → fractional; round to a fixed precision so a baseline JSON stays byte-stable
@@ -102,6 +115,12 @@ const round = (n: number): number => Math.round(n * PRECISION) / PRECISION;
  * task output AND no recorded output throws rather than scoring a phantom 0.
  */
 export async function defineEval(config: DefineEvalConfig): Promise<EvalRun> {
+  // The seam (ADR-0214): read the decision instant from the injected clock, never `Date.now()`
+  // directly, so a backtest replaying this same function with `fixedClock`/`sequencedClock` takes
+  // the identical code path as a live run — no replay-only branch to drift out of sync.
+  const clock = config.clock ?? systemClock;
+  const ranAt = clock.now().toISOString();
+
   const entries = Object.entries(config.scorers).sort(([a], [b]) =>
     a.localeCompare(b),
   );
@@ -167,6 +186,7 @@ export async function defineEval(config: DefineEvalConfig): Promise<EvalRun> {
     scorers,
     passed: score >= config.threshold,
     scoredCases,
+    ranAt,
     ...(config.wilsonFloor !== undefined
       ? { wilsonFloor: config.wilsonFloor }
       : {}),

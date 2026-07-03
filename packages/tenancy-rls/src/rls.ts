@@ -141,18 +141,26 @@ export interface TenantPolicyOptions {
  * SQL that makes `table` fail-closed tenant-isolated: ENABLE + **FORCE** RLS, GRANT CRUD to the
  * app role, and a policy that admits a row only when its tenant column equals the bound GUC.
  * Emitted into the table's migration (ADR-0014) so a tenant table can never ship without it.
+ *
+ * The GUC read is wrapped in `NULLIF(..., '')` (pgbouncer/pooler hardening): a pooled connection
+ * that resets custom GUCs to `''` instead of fully unsetting them (a known transaction-pooling
+ * behavior — some poolers' reset query converges a custom parameter to its declared default rather
+ * than removing it) would otherwise compare `column = ''` — a coincidental deny only for as long as
+ * no row's tenant column is literally the empty string. `NULLIF` folds `''` to `NULL` first, so the
+ * comparison is always `NULL` (deny) regardless of what any row's column value happens to be.
  */
 export function buildTenantPolicySql(
   table: string,
   { column = "account_id", role = "app" }: TenantPolicyOptions = {},
 ): string {
+  const guc = `NULLIF(current_setting('${TENANT_GUC}', true), '')`;
   return [
     `ALTER TABLE ${table} ENABLE ROW LEVEL SECURITY;`,
     `ALTER TABLE ${table} FORCE ROW LEVEL SECURITY;`,
     `GRANT SELECT, INSERT, UPDATE, DELETE ON ${table} TO ${role};`,
     `CREATE POLICY ${table}_tenant_isolation ON ${table}`,
-    `  USING (${column} = current_setting('${TENANT_GUC}', true))`,
-    `  WITH CHECK (${column} = current_setting('${TENANT_GUC}', true));`,
+    `  USING (${column} = ${guc})`,
+    `  WITH CHECK (${column} = ${guc});`,
   ].join("\n");
 }
 

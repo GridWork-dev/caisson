@@ -49,6 +49,40 @@ describe("verifyAllowlisted", () => {
     expect(verifyAllowlisted("TOK_def", ids, identity)).toBe(true);
     expect(verifyAllowlisted("tok_def", ids, identity)).toBe(false);
   });
+
+  test("compares every entry — no early return, iteration count is constant regardless of match position", () => {
+    // `normalize` is called once for the candidate plus once per allowlist entry inside the loop,
+    // so a counting `normalize` stands in for a call-count spy on the internal `safeEqualVariable`
+    // compare (which isn't independently interceptable — it's a same-module lexical call, not a
+    // call through the exported binding). Equal counts whether the match lands first, last, or
+    // never proves the scan never `break`s/returns early on a hit.
+    const list = ["a@x.com", "b@x.com", "c@x.com", "d@x.com"];
+    const countingNormalize = () => {
+      let calls = 0;
+      return {
+        fn: (s: string) => {
+          calls++;
+          return s.trim().toLowerCase();
+        },
+        get calls() {
+          return calls;
+        },
+      };
+    };
+    const expectedCalls = list.length + 1;
+
+    const matchFirst = countingNormalize();
+    expect(verifyAllowlisted("a@x.com", list, matchFirst.fn)).toBe(true);
+    expect(matchFirst.calls).toBe(expectedCalls);
+
+    const matchLast = countingNormalize();
+    expect(verifyAllowlisted("d@x.com", list, matchLast.fn)).toBe(true);
+    expect(matchLast.calls).toBe(expectedCalls);
+
+    const noMatch = countingNormalize();
+    expect(verifyAllowlisted("z@x.com", list, noMatch.fn)).toBe(false);
+    expect(noMatch.calls).toBe(expectedCalls);
+  });
 });
 
 describe("verifyBearer", () => {

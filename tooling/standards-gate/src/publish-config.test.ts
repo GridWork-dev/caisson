@@ -81,46 +81,23 @@ describe("publish-readiness flip (ADR-0111)", () => {
     expect(leaked).toEqual([]);
   });
 
-  test("every published package is at its second members-fold republish version", () => {
-    // The 2026-07-02 second-wave consume (members-fold republish, MF-A): every published package
-    // took at least a patch bump off the ADR-0208 first-wave baseline (0.2.0→0.2.1 / 0.1.1→0.1.2)
-    // via `updateInternalDependencies: "patch"` cascade; seven packages with a direct minor
-    // changeset (or a minor-bumped dependency) took 0.2.0/0.1.x straight to 0.3.0. Mirrors the
-    // divergence map in registry/scripts/full-tree-index.test.ts.
-    const MINOR_BUMP = new Set([
-      "@caisson/ai-meter",
-      "@caisson/billing",
-      "@caisson/credits",
-      "@caisson/guardrails",
-      "@caisson/kernel",
-      "@caisson/pricebook",
-      "@caisson/tenancy-rls",
-    ]);
-    const PATCH_ONLY = new Set([
-      "@caisson/alerting",
-      "@caisson/retention-runner",
-      "@caisson/tool-exec",
-      "@caisson/platform-reads",
-    ]);
-    // First publishes AFTER the first republish enter at their own initial version, then cascade
-    // like everything else on later waves (mirrors the FIRST_PUBLISH map in
-    // registry/scripts/full-tree-index.test.ts).
-    const FIRST_PUBLISH: Record<string, string> = {
-      // Slice-2 harvest (ADR-0186): published 0.1.0 after the first wave, cascaded to 0.1.1 here
-      // (depends on @caisson/kernel, which took this wave's minor bump).
-      "@caisson/agent-runner": "0.1.1",
-    };
+  test("every published package's version has a matching ledger entry (version-commit gap guard)", () => {
+    // The old form of this test pinned an exact per-wave version map, which went stale on every
+    // consume (the CI publish run bumps versions on main without re-running this suite — the
+    // 2026-07-03 third-wave consume broke the ADR-0228 second-wave pins). The durable ADR-0111
+    // invariant is wave-independent: a published package.json version must exist as a ledger
+    // entry, so a hand-bumped version (or a consume whose ledger append failed) fails loudly.
+    const ledgered = new Set(
+      readFileSync(join(ROOT, "registry", "ledger.jsonl"), "utf8")
+        .split("\n")
+        .filter((l) => l.trim() !== "")
+        .map((l) => {
+          const e = JSON.parse(l) as { id: string; version: string };
+          return `${e.id}@${e.version}`;
+        }),
+    );
     const off = published
-      .filter(
-        (p) =>
-          p.pj.version !==
-          (FIRST_PUBLISH[p.pj.name ?? ""] ??
-            (MINOR_BUMP.has(p.pj.name ?? "")
-              ? "0.3.0"
-              : PATCH_ONLY.has(p.pj.name ?? "")
-                ? "0.1.2"
-                : "0.2.1")),
-      )
+      .filter((p) => !ledgered.has(`${p.pj.name}@${p.pj.version}`))
       .map((p) => `${p.pj.name}@${p.pj.version}`);
     expect(off).toEqual([]);
   });
