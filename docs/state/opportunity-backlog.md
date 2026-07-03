@@ -7,9 +7,13 @@ side: everything consciously NOT built yet, with its recorded reason and revisit
 Nothing here is a decision; locks land as ADRs (`knowledge/decisions/`), forks on
 `docs/state/decisions-and-forks.md`. Items already promoted to execution tracks are marked.
 
-Snapshot context: ADR ceiling 0228. The 2026-07-02-PM execution wave's seven tracks are
-now **LANDED** (PRs #75–#83 merged; admin-v2 purchase-revoke #84 last in the queue), and
-the §7 launch-runbook DEPLOY block is EXECUTED + live-verified (CAISSON-15/16/17/18 Done).
+Snapshot context: ADR ceiling **0238** (was 0228 at the last refresh). The 2026-07-02-PM
+execution wave's seven tracks LANDED (PRs #75–#84 merged) and the §7 launch-runbook DEPLOY
+block is EXECUTED + live-verified (CAISSON-15/16/17/18 Done). Since then (2026-07-03):
+glossary batch 1 (ADR-0235, PR #99) · the whole-repo audit v2 baseline + remediation specs
+(ADR-0233, PRs #100/#101 — execution operator-gated, dispositions in
+`outputs/specs/audit-v2-remediation/TRIAGE.md`) · the catalog à-la-carte row drop (ADR-0238,
+PR #98) · and the site presentation rework BUILT + MERGED (ADR-0237, PR #102).
 Cross-references below to "in-flight" tracks read as merged. Post-wave operator-gated
 residue, in rough priority order: **(1)** registry npm-delivery Task-1/5 DEPLOY — R2
 tarball bucket + `registry.caisson.sh` route + CF token widen + a live `bun install`
@@ -135,15 +139,17 @@ All gated on P7 intake (`stage2-kickoff-triage.md:141`); named concretely only i
 
 ## 8. Other parked items
 
-| Item                                                                                                       | State                                                                        |
-| ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Live OSCAL push (`OscalExportTransport.deliver()` to a real GRC ingest)                                    | Deferred T15/P7 — export/bundle built, transport not                         |
-| Persistent production KMS CMK (field-crypto)                                                               | Deferred to first-customer time (ADR-0221 KMS-2; throwaway CMKs proven live) |
-| Agentic-Dev Next.js inspector UI                                                                           | Deferred (ADR-0082 §4) — substrate (`agent-kernel`/`agent-runner`) is built  |
-| macOS `native-ext` CI leg on hosted `macos-latest`                                                         | Pre-existing; fleet macOS lane lacks Homebrew SQLite                         |
-| D8(a) FAQ/`FeatureGrid` migration tail · C2 ai-kit streaming test hygiene                                  | Mechanical, non-blocking                                                     |
-| Thin surfaces flagged in `build-state.md` gap #4 (`ai-config` 49 loc, `ai-kit` 358 loc, `ai-evals` 1 test) | Present and green but shallow — verify before quoting as feature-complete    |
-| Board numbering hygiene: interim "ADR-0119" (Railway topology) vs advisory 0119 (email)                    | Documentation-only inconsistency, zero product impact                        |
+| Item                                                                                                       | State                                                                                                                                                                                    |
+| ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Live OSCAL push (`OscalExportTransport.deliver()` to a real GRC ingest)                                    | Deferred T15/P7 — export/bundle built, transport not                                                                                                                                     |
+| Persistent production KMS CMK (field-crypto)                                                               | Deferred to first-customer time (ADR-0221 KMS-2; throwaway CMKs proven live)                                                                                                             |
+| Agentic-Dev Next.js inspector UI                                                                           | Deferred (code gap only — the ADR-0082 §4 site-labeling exception was retired by ADR-0237 rider 2; the site sells the edition live) — substrate (`agent-kernel`/`agent-runner`) is built |
+| Glossary batches 2–3 (~20 of the 32 locked terms)                                                          | ADR-0235 Fork C — batch 1 (12 terms) live via PR #99; later batches are pure data on the shipped renderer, measure indexation between                                                    |
+| Real media for module/edition depth routes (the F2 `media` slot)                                           | ADR-0237 F2 — placeholder brand art shipped in PR #102; "real media later TBD" is the recorded residual                                                                                  |
+| macOS `native-ext` CI leg on hosted `macos-latest`                                                         | Pre-existing; fleet macOS lane lacks Homebrew SQLite                                                                                                                                     |
+| D8(a) FAQ/`FeatureGrid` migration tail · C2 ai-kit streaming test hygiene                                  | Mechanical, non-blocking                                                                                                                                                                 |
+| Thin surfaces flagged in `build-state.md` gap #4 (`ai-config` 49 loc, `ai-kit` 358 loc, `ai-evals` 1 test) | Present and green but shallow — verify before quoting as feature-complete                                                                                                                |
+| Board numbering hygiene: interim "ADR-0119" (Railway topology) vs advisory 0119 (email)                    | Documentation-only inconsistency, zero product impact                                                                                                                                    |
 
 ---
 

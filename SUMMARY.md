@@ -58,7 +58,7 @@ vs exit gates per the caveat above:**
 - **Agentic-Dev** ← gridwork-core — governed-agent kernel (also powers the generator + buyer MCP). **Roadmap edition (most skeletal).**
 - **Base** ← gridwork + gwdigital + tessera — auth + fail-closed RLS + billing + credits + design floor + **buyer MCP (auth)** + AGENTS.md
 
-**Canonical decisions:** ADRs `0001–0137` (with gaps `0025–0039`, and `0119–0128` proposed-only) in `knowledge/decisions/`. The full
+**Canonical decisions:** ADRs `0001–0238` (gaps exist — `0025–0039` unused, `0119–0128` proposed-only; live catalog: `docs/adr-index.md`) in `knowledge/decisions/`. The full
 numbering map + supersession chain is owned by `docs/state/decisions-and-forks.md` (do not duplicate
 here). Founding set `ADR-0001..0012` covers Bun+Turborepo+changesets, TS-strict/Zod/integer-credits,
 composable packages, generator+registry, fail-closed RLS, WORM+audit-chain+field-crypto, credit

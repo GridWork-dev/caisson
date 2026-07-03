@@ -383,7 +383,8 @@ curl -sSI https://admin.caisson.sh/
 ```
 
 Then, in a real browser (incognito, no prior CF-Access session cookie): load `caisson.sh`, confirm no
-Access login page appears, click through to `/pricing` or `/build`, confirm the "Add to cart" → Paddle
+Access login page appears, click through to `/marketplace` (the unified hub — `/pricing` and `/build` 301 into it since
+ADR-0237/PR #102), confirm the "Add to cart" → Paddle
 checkout overlay opens against **Production** (Paddle's overlay shows a "Sandbox" watermark banner when
 misconfigured — if you see that banner post-flip, `NEXT_PUBLIC_PADDLE_ENV` didn't take; see §2.4's
 build-time-inlining gotcha).
