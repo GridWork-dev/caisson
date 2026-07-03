@@ -1,6 +1,8 @@
 # SPEC — pre-launch credential sweep: scoped-key regen, rotation ordering, and the 1Password launch-vault parity check
 
-**Status: SPEC — four operator forks open (see Forks).** Locked context this spec honors
+**Status: forks LOCKED by ADR-0226 (2026-07-02, third picker round) — Forks 1/2/3 = (a)
+Recommended; Fork 4 = (c) on-incident-only, an operator override of the Recommended (b)
+per-class cadence.** Locked context this spec honors
 and does NOT re-open: the operator runs a full pre-launch credential audit, regenerates
 every credential as a **scoped-only** key, and keeps the launch set in **ONE 1Password
 vault kept in parity with the env files**. Per **ADR-0224 (F6=A)**, `~/.gridwork/caisson.env`
@@ -240,6 +242,12 @@ the parity check into `gw verify`; the launch-runbook edit recording the rotatio
   name parity — the tool would need per-field parsing. **Operator taste call.**
 
 **Fork 4 — post-launch rotation cadence.**
+
+> **LOCKED 2026-07-02 (ADR-0226): Fork 4 = (c) — OPERATOR OVERRIDE of the Recommended (b).**
+> Rotation is on-incident-only across the board; no scheduled cadence. The ADR's
+> Consequences section records honestly that this is the weakest posture of the three
+> (no scheduled expiry backstop for an unnoticed compromise) and that the operator
+> accepted it explicitly.
 
 - (a) 90-day for all tokens, on-incident for keypairs/DB.
 - **(b) Per-class: 90-day SaaS/infra tokens, on-incident-only for the license keypair +
