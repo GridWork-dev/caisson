@@ -525,9 +525,11 @@ describe("applyBillingEvent — refund: revoke + claw unspent credits (ADR-0113)
     expect(bal).toBe(0);
     const ledger = await withTenant(tp.pg, acct, (tx) => getLedger(tx, acct));
     // purchase + spend only — NO refund_clawback row (a zero debit would violate amount<>0).
-    expect(ledger.map((e) => e.event_type)).toEqual([
-      "purchase",
+    // Sorted: getLedger tiebreaks same-timestamp rows by random UUID, so insertion order is not
+    // observable when both rows land in the same ms (seen on loaded CI runners).
+    expect(ledger.map((e) => e.event_type).sort()).toEqual([
       "codegen_debit",
+      "purchase",
     ]);
   });
 
