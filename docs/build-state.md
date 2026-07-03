@@ -1,5 +1,18 @@
 # Build state & roadmap
 
+> **CURRENT STATE (2026-07-03):** **ADR ceiling is `0238`.** Since the `0228` execution wave
+> below, the `0229`–`0238` locks landed: wave-6a compliance/billing subset (ADR-0229, PR #92) ·
+> ask-AI widget + question-text capture (ADR-0234/0236, PRs #93/#95) · glossary program batch 1
+> (ADR-0235, PR #99) · site presentation rework locks (ADR-0237, PR #97) · catalog à-la-carte
+> row drop (ADR-0238, PR #98) · and the **whole-repo audit v2 baseline — 941-finding advisory
+> ledger (ADR-0233, PR #100)** at `outputs/audit/ledger.toml` (302 open / 111 open-high;
+> candidates, not verdicts — ~29 refuted round-3 highs may linger from a confirm-filter bug).
+> Open findings are triaged into execution specs at `outputs/specs/audit-v2-remediation/`;
+> roadmap-only buckets + the 6 operator-gated DEPLOY residue items (registry R2 route + Worker
+> redeploy, cred sweep, caisson-oss public flip, WORM posture, mac runner) live in the triage doc
+>
+> - `docs/state/opportunity-backlog.md`. Historical banners below are a timeline, not current state.
+
 > **EXECUTION WAVE + DEPLOY BLOCK DONE (2026-07-02-LATE):** **ADR ceiling is now `0228`.** PRs
 > #75–#83 merged (locks+backlog ledger · reprice display · cred-sweep prep · error mapping · WORM S3
 > gate · members-fold republish **ADR-0228** · live-harness ADR-0224 · infra truth · **registry
