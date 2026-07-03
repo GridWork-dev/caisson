@@ -12,6 +12,7 @@
 import type { DomainBillingEvent } from "@caisson/billing";
 import {
   clawback,
+  creditsClawedForSource,
   creditsGrantedBySource,
   grant,
   lineCreditLedger,
@@ -174,10 +175,23 @@ export async function applyBillingEvent(
           ev.accountId,
           ev.paymentId,
         );
-        if (granted > 0) {
+        // Bound to granted-minus-already-clawed (CAISSON-5): if any of this purchase's lines were
+        // already partially/fully clawed via the ADR-0218 per-line path, clawing the full ORIGINAL
+        // `granted` amount here again would over-claw — and since the wallet is a fungible pool,
+        // `clawback`'s own current-balance bound would silently drain OTHER purchases' credits to
+        // cover it. Netting out prior claws (per-line OR an earlier whole-txn claw, symmetric in
+        // either delivery order — see creditsClawedForSource) keeps this claw scoped to exactly what
+        // THIS purchase still has outstanding.
+        const alreadyClawed = await creditsClawedForSource(
+          tx,
+          ev.accountId,
+          ev.paymentId,
+        );
+        const remaining = Math.max(0, granted - alreadyClawed);
+        if (remaining > 0) {
           await clawback(tx, {
             accountId: ev.accountId,
-            amount: granted,
+            amount: remaining,
             sourceEventId: ev.paymentId,
           });
         }
@@ -194,9 +208,26 @@ export async function applyBillingEvent(
       // two sequential partial adjustments on one line (distinct adjustment ids) both claw.
       // A Stripe partial refund arrives here with `items: []` → a no-op (ADR-0218 D-1), preserving the
       // ADR-0113 scalar-partial semantics for drivers without per-line data.
+      //
+      // Purchase-level remainder bound (CAISSON-5, reversed delivery): a whole-transaction full refund
+      // may have landed BEFORE this per-line adjustment — its clawback row is keyed `line_item_id`
+      // NULL / `source_event_id = paymentId`, invisible to `lineCreditLedger`'s per-line filter, so
+      // that ledger alone would show this line as un-clawed and re-claw it. `creditsClawedForSource`
+      // now counts that NULL-line row too (widened alongside this fix), so netting it against the
+      // purchase's total grant bounds every per-line claw below to what the WHOLE PURCHASE still has
+      // outstanding, not just what this one line's own rows show. Read once, then decrement locally by
+      // each claw's ACTUAL amount as the loop proceeds — one transaction, no concurrent interleaving.
+      let purchaseRemaining = Math.max(
+        0,
+        (await creditsGrantedBySource(tx, ev.accountId, ev.paymentId)) -
+          (await creditsClawedForSource(tx, ev.accountId, ev.paymentId)),
+      );
       for (const item of ev.items) {
         const ledger = await lineCreditLedger(tx, ev.accountId, item.itemId);
-        const remaining = ledger.granted - ledger.clawed;
+        const remaining = Math.min(
+          ledger.granted - ledger.clawed,
+          purchaseRemaining,
+        );
         const key = `${ev.adjustmentId}:${item.itemId}`;
         if (item.fullyRefunded) {
           await revokePurchaseLineGrants(tx, {
@@ -205,12 +236,13 @@ export async function applyBillingEvent(
             lineItemId: item.itemId,
           });
           if (remaining > 0) {
-            await clawback(tx, {
+            const result = await clawback(tx, {
               accountId: ev.accountId,
               amount: remaining,
               sourceEventId: key,
               lineItemId: item.itemId,
             });
+            purchaseRemaining -= result.clawedBack;
           }
           continue;
         }
@@ -230,13 +262,14 @@ export async function applyBillingEvent(
           );
           const amount = Math.min(prop.credits, remaining);
           if (amount > 0) {
-            await clawback(tx, {
+            const result = await clawback(tx, {
               accountId: ev.accountId,
               amount,
               sourceEventId: key,
               lineItemId: item.itemId,
               rounding: prop.rounding,
             });
+            purchaseRemaining -= result.clawedBack;
           }
         }
       }

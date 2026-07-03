@@ -79,21 +79,28 @@ async function mintCmk(label: string): Promise<string> {
   return keyId;
 }
 
-afterAll(async () => {
-  // Best-effort: CMK-A is already pending-deletion (leg 5); schedule CMK-B too. A miss bills $0 once
-  // scheduled and is auditable by the Purpose tag (mirrors the S3 live test's best-effort cleanup).
-  if (cmkB.length > 0) {
-    try {
-      await raw.send(
-        new ScheduleKeyDeletionCommand({
-          KeyId: cmkB,
-          PendingWindowInDays: 7,
-        }),
-      );
-    } catch {
-      // Already scheduled / denied — the Purpose tag makes any survivor auditable.
-    }
+/** Best-effort ScheduleKeyDeletion — swallows "already scheduled" / denied, never throws. */
+async function scheduleDeletion(keyId: string): Promise<void> {
+  try {
+    await raw.send(
+      new ScheduleKeyDeletionCommand({ KeyId: keyId, PendingWindowInDays: 7 }),
+    );
+  } catch {
+    // Already scheduled (leg 5 got there first) / denied — the Purpose tag makes any survivor
+    // auditable via CloudTrail regardless.
   }
+}
+
+afterAll(async () => {
+  // CAISSON-13: schedule BOTH CMKs defensively, not just CMK-B. Leg 5 normally schedules CMK-A's
+  // deletion itself, but if any leg throws before reaching it (a mint failure, an assertion failure
+  // in legs 1-4, cryptoShred itself throwing in leg 5), CMK-A would otherwise leak with no cleanup —
+  // this afterAll is the only place that runs regardless of which leg failed. Re-scheduling an
+  // already-pending-deletion key is a no-op (scheduleDeletion swallows the error), so this is safe
+  // to always run for both keys. A skip-clean run (no CAISSON_KMS_LIVE) never mints either CMK, so
+  // both stay empty strings and this is a no-op.
+  if (cmkA.length > 0) await scheduleDeletion(cmkA);
+  if (cmkB.length > 0) await scheduleDeletion(cmkB);
 });
 
 describe("field-crypto cloud-KMS envelope — LIVE proof against real AWS KMS (ADR-0221)", () => {
