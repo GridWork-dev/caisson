@@ -5,8 +5,15 @@
 // the (Python) support-bot consumes, so they are validated, not just typed.
 import { z } from "zod";
 
-/** What kind of authoritative source a chunk came from. */
-export const DocKindSchema = z.enum(["docs", "readme"]);
+/**
+ * What kind of authoritative source a chunk came from. ADDITIVE ONLY (ADR-0234 F4): appending a
+ * member (e.g. `pricing`) is forward-compatible — existing `docs`/`readme` chunks still validate and
+ * every existing consumer keeps working. The Python mirror (`services/support-bot` `contracts.py`
+ * `DocKind`) must gain the same member so a new-kind chunk in a `/query` result still parses there.
+ * `pricing` = a fact rendered deterministically FROM the pricebook/catalog source of truth (never
+ * scraped page text), so a cited price cannot silently drift stale.
+ */
+export const DocKindSchema = z.enum(["docs", "readme", "pricing"]);
 export type DocKind = z.infer<typeof DocKindSchema>;
 
 /**

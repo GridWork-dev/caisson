@@ -17,6 +17,11 @@ from pydantic import BaseModel, ConfigDict, Field
 class DocKind(str, Enum):
     docs = "docs"
     readme = "readme"
+    # ADR-0234 F4: mirrors the additive `pricing` member in services/docs `types.ts` DocKindSchema.
+    # `ScoredChunk.kind` is a strict enum, and `extra="ignore"` only tolerates unknown FIELDS — an
+    # unknown enum VALUE would still fail model_validate, so a pricing chunk in a /query result must
+    # be a recognized member here or the whole support answer would 500.
+    pricing = "pricing"
 
 
 class ScoredChunk(BaseModel):

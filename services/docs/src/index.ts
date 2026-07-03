@@ -3,8 +3,10 @@
 // serves a typed POST /query retrieval contract the (Python) support-bot + buyer agents consume over
 // HTTP. Retrieval reuses @caisson/local-store's hybrid FTS5 + sqlite-vec engine (ADR-0067); the live
 // embedding provider is a deploy-gated seam (FakeEmbedder is the CI/offline path).
-export { buildCorpus, findRepoRoot } from "./corpus.ts";
+export { buildCorpus, findRepoRoot, loadPricingFacts } from "./corpus.ts";
 export type { BuildCorpusOptions, Corpus } from "./corpus.ts";
+export { generatePricingSources, PricingFactsSchema } from "./pricing-doc.ts";
+export type { PricingFacts } from "./pricing-doc.ts";
 export { parseSource } from "./chunk.ts";
 export { DocsIndex } from "./index-store.ts";
 export { FakeEmbedder, FAKE_EMBED_DIM } from "./embedder.ts";

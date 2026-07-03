@@ -77,7 +77,7 @@ const SITE_POSTURE: ReadonlyArray<{
   {
     icon: "gauge",
     title: "Cookieless analytics",
-    body: "Analytics run through Plausible — no cookies, no cross-site identifiers, no consent banner because there is nothing to consent to. The CSP's script-src allows exactly two third-party origins: Plausible for analytics, and Paddle for checkout (see the CSP section below).",
+    body: "Analytics run through Plausible — no cookies, no cross-site identifiers, no consent banner because there is nothing to consent to. The CSP's script-src allows exactly three third-party origins: Plausible for analytics, Paddle for checkout, and Cloudflare Turnstile for the Ask-AI bot check (see the CSP section below).",
   },
   {
     icon: "lock",
@@ -121,9 +121,11 @@ content-security-policy: default-src 'self'; base-uri 'self';
   object-src 'none'; frame-ancestors 'none'; form-action 'self';
   img-src 'self' data: https://*.paddle.com; font-src 'self';
   style-src 'self' 'unsafe-inline' https://*.paddle.com;
-  script-src 'self' 'unsafe-inline' https://plausible.io https://cdn.paddle.com;
-  frame-src https://*.paddle.com;
-  connect-src 'self' https://plausible.io https://*.paddle.com`;
+  script-src 'self' 'unsafe-inline' https://plausible.io https://cdn.paddle.com
+    https://challenges.cloudflare.com;
+  frame-src https://*.paddle.com https://challenges.cloudflare.com;
+  connect-src 'self' https://plausible.io https://*.paddle.com
+    https://challenges.cloudflare.com`;
 
 export default function SecurityPage() {
   const jsonLd = [
@@ -280,13 +282,15 @@ content-security-policy: default-src 'self'; …`}
                 nonce under the App Router, so those inline tags cannot be hash-
                 or nonce-gated without breaking hydration. Beyond{" "}
                 <code className="mono">&apos;self&apos;</code> the policy allows
-                exactly two third parties, each scoped to the surface that uses
-                it: Plausible for cookieless analytics, and Paddle (
+                exactly three third parties, each scoped to the surface that
+                uses it: Plausible for cookieless analytics, Paddle (
                 <code className="mono">cdn.paddle.com</code> for the checkout
                 script, <code className="mono">*.paddle.com</code> for its
-                overlay iframe and API) — nothing wider. Tightening the inline
-                residual to per-script hashes is a tracked follow-up, not a
-                shipped claim.
+                overlay iframe and API), and Cloudflare Turnstile (
+                <code className="mono">challenges.cloudflare.com</code>) for the
+                invisible bot check on the Ask-AI assistant — nothing wider.
+                Tightening the inline residual to per-script hashes is a tracked
+                follow-up, not a shipped claim.
               </p>
             </Card>
           </div>
