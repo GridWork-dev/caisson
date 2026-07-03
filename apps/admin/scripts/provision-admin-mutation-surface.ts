@@ -73,8 +73,18 @@ async function main(): Promise<void> {
   ];
   try {
     for (const [label, sql] of steps) {
-      await pool.query(sql);
-      process.stdout.write(`[provision-admin] applied: ${label}\n`);
+      try {
+        await pool.query(sql);
+        process.stdout.write(`[provision-admin] applied: ${label}\n`);
+      } catch (err) {
+        // 42710 duplicate_object: the step (or its tail) was provisioned by an earlier deploy and
+        // its DDL has no IF-NOT-EXISTS guard — converged already, skip and continue.
+        if ((err as { code?: string }).code === "42710") {
+          process.stdout.write(`[provision-admin] already present: ${label}\n`);
+        } else {
+          throw err;
+        }
+      }
     }
     // Verify — roles + tables exist, and the action CHECK knows the v1 actions.
     const roles = await pool.query(
