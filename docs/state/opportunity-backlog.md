@@ -7,10 +7,20 @@ side: everything consciously NOT built yet, with its recorded reason and revisit
 Nothing here is a decision; locks land as ADRs (`knowledge/decisions/`), forks on
 `docs/state/decisions-and-forks.md`. Items already promoted to execution tracks are marked.
 
-Snapshot context: ADR ceiling 0227 (third picker round). The 2026-07-02-PM execution wave
-dispatched seven tracks (registry npm delivery · members-fold republish · admin-v2
-purchase revoke · live harness · post-hardening follow-ups · cred-sweep prep · compliance
-reprice); those are IN FLIGHT, not backlog, and appear below only as cross-references.
+Snapshot context: ADR ceiling 0228. The 2026-07-02-PM execution wave's seven tracks are
+now **LANDED** (PRs #75–#83 merged; admin-v2 purchase-revoke #84 last in the queue), and
+the §7 launch-runbook DEPLOY block is EXECUTED + live-verified (CAISSON-15/16/17/18 Done).
+Cross-references below to "in-flight" tracks read as merged. Post-wave operator-gated
+residue, in rough priority order: **(1)** registry npm-delivery Task-1/5 DEPLOY — R2
+tarball bucket + `registry.caisson.sh` route + CF token widen + a live `bun install`
+proof; **(2)** registry Worker redeploy so the live index picks up 0.2.0/ADR-0228 (and,
+once #84 lands, the REVOCATIONS R2 binding); **(3)** cred-sweep execution (ADR-0226 —
+fresh issuer keypair; MIRROR_PUSH_TOKEN rotation is a MUST, it transited a transcript);
+**(4)** caisson-oss public flip + first `confirm=publish` npm dispatch (ADR-0222);
+**(5)** the WORM lock-mode posture check flagged in launch-runbook §7 (GOVERNANCE live vs
+COMPLIANCE in the runbook text); **(6)** the Mac-mini `gw-macos-arm64` runner sat offline
+during the wave — `native-ext (macos)` queued indefinitely (non-required check, merges
+proceeded); restart the scale set before the next native-ext-sensitive PR.
 
 ---
 
@@ -45,8 +55,8 @@ open gaps cluster in BUY:
 | Gap                                                                                                                                                               | State                                                                                                                                         | Vehicle                                                            |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | Production Paddle account / real-money checkout                                                                                                                   | Sandbox only (`launch-runbook.md` P1); nothing purchasable with real money                                                                    | Operator act at launch flip                                        |
-| 14 per-module Paddle price ids are `PLACEHOLDER` strings, and `add-to-cart-button.tsx` has NO guard — a standalone module reaches checkout and fails at Paddle.js | **PROMOTED**: ADR-0227 locked finish-14-sandbox-products-now; execution in the commerce wave (main thread)                                    | Commerce wave                                                      |
-| Compliance edition price re-anchor ($749 launch-sum flag in `package-catalog.md:170-176`)                                                                         | **CLOSED**: ADR-0227 locked $799 (5.6% below the $846 member-sum)                                                                             | `feat/compliance-reprice-799` track                                |
+| 14 per-module Paddle price ids are `PLACEHOLDER` strings, and `add-to-cart-button.tsx` has NO guard — a standalone module reaches checkout and fails at Paddle.js | **DONE**: all 14 SANDBOX products/prices created + wired (`purchases.ts`/`catalog.ts` real ids verified 2026-07-02)                           | Landed (production re-create rides the launch flip)                |
+| Compliance edition price re-anchor ($749 launch-sum flag in `package-catalog.md:170-176`)                                                                         | **DONE**: ADR-0227 $799 locked; display merged (PR #76) + Paddle SANDBOX price PATCHed to 79900                                               | Landed                                                             |
 | Paddle MoR-attribution + refund-policy copy on `/legal/terms` + `/legal/privacy`                                                                                  | Missing (`launch-runbook.md` P2) — Paddle requires it before production flip; `/legal/eula` is DONE (ADR-0082's fast-follow framing is stale) | Small copy PR before launch flip                                   |
 | No pre-purchase "ask AI" surface — the support bot is reachable only inside Discord; site offers only ⌘K docs search + email                                      | Structural gap, never specced                                                                                                                 | Candidate: on-site widget or a docs-bot bridge; needs a small spec |
 | Discord privileged intents + channel/role env (P4), bot-token + OpenRouter rotation (P5)                                                                          | Verify-before-launch, not confirmed resolved                                                                                                  | Launch runbook checklist                                           |
