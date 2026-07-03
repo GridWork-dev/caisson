@@ -9,7 +9,7 @@ dimension = "D3"
 subject = "packages/cli/README.md:6-10"
 title = "SS-9: README claims disk materialization is deliberately deferred — it already ships and is wired end-to-end"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "009f844970a4fe81"
@@ -18,7 +18,7 @@ dimension = "D4"
 subject = "packages/ai-meter/manifest.ts:8"
 title = "Shipped manifest.ts imports a monorepo-only relative path, leaking internal directory layout."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "0118e9009fc3d259"
@@ -27,7 +27,7 @@ dimension = "D3"
 subject = "packages/license-verify/package.json:10"
 title = "SS-3: package.json descriptions across most shipped packages pad the npm-registry-visible text with bare ADR ids and phase shorthand."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "011de9f2f33da782"
@@ -36,7 +36,7 @@ dimension = "D3"
 subject = "packages/ai-kit/src/providers.ts:86"
 title = "SS-4/SS-1: shipped source comment names a third-party pentest vendor and an internal vuln-tracking id"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "01a8e701a3fe62c8"
@@ -45,7 +45,7 @@ dimension = "D3"
 subject = "packages/field-crypto/package.json:10"
 title = "SS-12: npm description ends with a four-ADR-id list"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "0264f769f915a761"
@@ -53,6 +53,15 @@ domain = "packages/agent-dev"
 dimension = "D3"
 subject = "packages/agent-dev/package.json:10"
 title = "SS-12: package.json description ends in a bare ADR citation"
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "02a3de0516986b61"
+domain = "packages/license-verify"
+dimension = "D3"
+subject = "packages/license-verify/README.md:8"
+title = "SS-2: README uses bare internal phase code P6 for the license issuer"
 severity = "warn"
 status = "open"
 
@@ -63,6 +72,33 @@ dimension = "D4"
 subject = "packages/tool-exec/README.md:50"
 title = "SS-1: sibling pro-private repo name (media-pipeline) in shipped README"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "02b0488eff349ad8"
+domain = "packages/mcp-server"
+dimension = "D3"
+subject = "packages/mcp-server/src/server.ts:184"
+title = "SS-3: comment cites a bare git-commit hash (b719aff8) as its sole reference"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "04852d44ec60da97"
+domain = "root-docs"
+dimension = "D6"
+subject = "docs/build-state.md:337"
+title = "mcp-server's src/tests/loc count (3/2/514) understates the actual disk truth (5/6/1178) by more than 2x, despite the table header claiming these are the disk truth on main."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "05d4865a58061b63"
+domain = "packages/credits"
+dimension = "D4"
+subject = "packages/credits/src/credits.ts:347 (also CHANGELOG.md:49)"
+title = "Internal Linear ticket ID embedded directly in shipped source code comment"
+severity = "info"
 status = "open"
 
 [[finding]]
@@ -72,7 +108,7 @@ dimension = "D4"
 subject = "packages/prompt-registry/CHANGELOG.md:24"
 title = "SS-1/SS-2: internal audit-ledger narrative + internal domain codenames in shipped changelog"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "07398bfd0c05206d"
@@ -81,7 +117,7 @@ dimension = "D3"
 subject = "packages/retention-runner/package.json:10"
 title = "SS-12: description trails a bare ADR-0135/0152."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "07e513bdfec656b7"
@@ -90,7 +126,7 @@ dimension = "D1"
 subject = "packages/ai-kit/src/providers.ts:144-156"
 title = "Bedrock's custom baseUrl skips the SSRF DNS-rebinding re-check every other config-supplied baseUrl gets."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "07ec56ea5c64371c"
@@ -99,6 +135,24 @@ dimension = "D3"
 subject = "packages/ai-meter/CHANGELOG.md:16"
 title = "SS-2: harvest slice-2 serialized wave-2 — internal build-wave shorthand in the shipped CHANGELOG"
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "080e827e92b728ff"
+domain = "oss-mirror"
+dimension = "D4"
+subject = "packages/kernel/AGENTS.md:2 (911 occurrences across 235 files)"
+title = "Hundreds of bare ADR-NNNN citations from the private decision log ship unexplained throughout every Apache-2.0 package's comments/READMEs/AGENTS.md in the public mirror."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "081237904910d047"
+domain = "apps/site"
+dimension = "D3"
+subject = "apps/site/lib/routes.ts:3"
+title = "SS-2: (kickoff Phase-2) internal kickoff shorthand appears in live component/lib source, not just tests"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -107,6 +161,24 @@ domain = "packages/alerting"
 dimension = "D3"
 subject = "packages/alerting/package.json:10"
 title = "SS-12: package.json description ends in a bare ADR citation ADR-0135/0151"
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "0a435f1df56fa39b"
+domain = "packages/ai-meter"
+dimension = "D6"
+subject = "packages/ai-meter/manifest.ts:5,15"
+title = "Registry manifest priceCents (4900 = $49) contradicts the locked ADR-0129 ai-meter module price of $199, comment claims pricing is still unlocked"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "0af48c49af5fa569"
+domain = "packages/email"
+dimension = "D6"
+subject = "packages/email/AGENTS.md:3"
+title = "AGENTS.md says the package provides a capture driver for tests and a Resend driver for production, omitting the Postmark, SMTP, and SES drivers that are actually built, tested, and exported."
 severity = "warn"
 status = "open"
 
@@ -117,6 +189,15 @@ dimension = "D3"
 subject = "packages/ai-kit/CHANGELOG.md:19"
 title = "SS-2: changelog cites internal wave/slice shorthand"
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "0b651cecc8b7e73a"
+domain = "packages/email"
+dimension = "D3"
+subject = "packages/email/README.md:9"
+title = "SS-11: README links into the internal docs tree for live per-package status."
+severity = "info"
 status = "open"
 
 [[finding]]
@@ -126,7 +207,7 @@ dimension = "D4"
 subject = "packages/alerting/README.md:65"
 title = "SS-1: shipped README names two internal/sibling assets — gridworkdigital and media-pipeline."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "0bb76ea43eecbdfe"
@@ -138,13 +219,40 @@ severity = "warn"
 status = "open"
 
 [[finding]]
+id = "0c4fd1a57545132a"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/tenancy-rls/README.md:6,10 (and kernel, mcp-server, billing, ai-config, ui, credits, email, auth, jobs, observability, cli identically)"
+title = "Every one of the 15 public-mirror package READMEs names private sibling companies/repos verbatim (SS-1)"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "0c9be4587e0a22b0"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/kernel/src/crypto.ts:1 (floor plus fixture)"
+title = "SS-1: the gridwork-core security floor comment and a hardcoded admin@gridwork.dev test fixture ship in the public kernel package"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "0d1f966a5938e3aa"
+domain = "packages/migrate"
+dimension = "D4"
+subject = "packages/migrate/package.json:10"
+title = "SS-12: npm description embeds (ADR-0070/0090) as the sole framing of what the package does"
+severity = "warn"
+status = "open"
+
+[[finding]]
 id = "0d26fb9cc16c89d2"
 domain = "packages/ai-meter"
 dimension = "D3"
 subject = "packages/ai-meter/package.json:10"
 title = "SS-12: package.json description ends in a bare ADR citation string ADR-0060/0014/0070"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "0d3e1aa8a67f8265"
@@ -153,7 +261,7 @@ dimension = "D3"
 subject = "packages/alerting/README.md:65-66"
 title = "SS-1/SS-10: closing line names gridworkdigital + media-pipeline and narrates the internal rebuild process"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "0d9364dbd96a67d7"
@@ -162,7 +270,7 @@ dimension = "D3"
 subject = "packages/retention-runner/CHANGELOG.md:18"
 title = "SS-2: Whole-repo audit round-4 remediation (ledger 2026-07-01)"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "0e1da253da232c18"
@@ -171,7 +279,7 @@ dimension = "D3"
 subject = "packages/ai-evals/CHANGELOG.md:23,31"
 title = "SS-2: changelog entry narrates an internal audit ledger rather than buyer-facing changes"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "0ed641d99d9bed50"
@@ -180,7 +288,7 @@ dimension = "D3"
 subject = "packages/email/package.json:10"
 title = "SS-12: npm description ends with two bare ADR ids"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "0f5c997817247be0"
@@ -189,7 +297,7 @@ dimension = "D3"
 subject = "packages/field-crypto/README.md:59"
 title = "SS-1/SS-10: README closes with a private-repo mention as its last line"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "0faa973117f53b65"
@@ -198,7 +306,7 @@ dimension = "D2"
 subject = "registry/worker/entitlement-filter.test.ts:16-17"
 title = "A real, non-expiring, production-signed license Bearer token is hardcoded and reused verbatim across three registry Worker test files."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "0fb608d18de428f4"
@@ -207,6 +315,15 @@ dimension = "D3"
 subject = "packages/auth/README.md:1-11"
 title = "SS-1/SS-9/SS-10/SS-11: the entire README is an internal build note, not a buyer README — no usage snippet, gridwork-ism, and a link into internal docs"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "105cc4a8ea595bef"
+domain = "packages/agent-dev"
+dimension = "D4"
+subject = "packages/agent-dev/src/content/agents.ts:7, rules.ts:4, skills.ts:5, content.test.ts:5,44"
+title = "Shipped TypeScript source comments reference the operator's other private system's internal naming convention (gw-prefixed agents) and its internal config filename (capabilities.toml)."
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -215,6 +332,15 @@ domain = "packages/kernel"
 dimension = "D4"
 subject = "packages/kernel/src/ssrf.ts:6"
 title = "Shipped public (Apache-2.0, npmjs.org) source code names a third-party pentest engagement and internal vuln-tracking ID in a code comment."
+severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "10f9d9bab453b0ce"
+domain = "oss-mirror"
+dimension = "D4"
+subject = "packages/cli/templates/eu-ai-act-sample/package.json:11 (exported mirror)"
+title = "Dangling internal specifier: the free sample's only dependency @caisson/kernel does not exist under the mirror's renamed @caisson-sh scope, and the exporter's own header states the public @caisson scope is third-party-owned"
 severity = "high"
 status = "open"
 
@@ -225,6 +351,24 @@ dimension = "D3"
 subject = "packages/field-crypto/src/kms.ts:7"
 title = "SS-2: SCOPE (Wave 0) internal build-phase label opens a real source comment, not just docs"
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "11f1f43142b4241c"
+domain = "root-docs"
+dimension = "D4"
+subject = "SUMMARY.md:116"
+title = "SUMMARY.md hardcodes the operator's actual local filesystem path with the box username, a private-infra-path leak per the D4 rule's own example."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "121039f8dabfa313"
+domain = "packages/ui"
+dimension = "D4"
+subject = "packages/ui/RECIPE.md:45"
+title = "RECIPE.md names the private internal control-plane app apps/admin (its /design gallery), the removed internal app apps/studio, and internal decision id ADR-0140, in prose shipped verbatim to buyers and the public mirror."
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -234,7 +378,7 @@ dimension = "D3"
 subject = "packages/prompt-registry/CHANGELOG.md:24-33"
 title = "SS-2/SS-8: audit round-3 remediation entry names the internal AUDIT_DOMAINS constant"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "12e7271eead4cbfa"
@@ -243,7 +387,7 @@ dimension = "D4"
 subject = "packages/audit-worm/package.json"
 title = "No files allowlist/.npmignore — bun pm pack ships AGENTS.md/CHANGELOG.md/live/.turbo logs/src to every buyer."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "12e77e54fced6ed4"
@@ -251,6 +395,24 @@ domain = "packages/observability"
 dimension = "D3"
 subject = "packages/observability/CHANGELOG.md:30"
 title = "SS-2: Whole-repo audit remediation (rounds 1+2, ledger 2026-07-01) is internal audit-process shorthand"
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "1342bcc6cdf2bcc8"
+domain = "packages/local-ai"
+dimension = "D4"
+subject = "packages/local-ai/package.json:10"
+title = "SS-12: npm/registry description embeds (composition, ADR-0050 fully-commercial)"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "13d992c715d4246c"
+domain = "packages/agent-kernel"
+dimension = "D3"
+subject = "packages/agent-kernel/src/golden.test.ts:1, src/golden.ts:46-58"
+title = "SS-2: same internal task-number shorthand (T4, T11, T12) in shipped source comments"
 severity = "warn"
 status = "open"
 
@@ -261,7 +423,7 @@ dimension = "D4"
 subject = "packages/observability/README.md:10"
 title = "SS-11: dead/internal link to docs/build-state.md in shipped README"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "1412e3317ccdab2a"
@@ -270,6 +432,15 @@ dimension = "D2"
 subject = "SUMMARY.md:116"
 title = "SUMMARY.md leaks the operator's local filesystem path/username in a historical build note."
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "1449836dd1faffd9"
+domain = "packages/ui"
+dimension = "D4"
+subject = "packages/ui/manifest.ts:8,17"
+title = "manifest.ts imports from the nonexistent-in-mirror path ../../registry/schema/module-manifest.ts and its shipped description field names the private sibling repo Wardfile."
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -279,6 +450,33 @@ dimension = "D3"
 subject = "packages/local-ai/src/inference/rented-backend.ts:15-33"
 title = "SS-7/SS-1: a 15-line commented-out example wiring @caisson/credits, threaded with internal-phase shorthand P6 (commerce)."
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "149e8c2950024d3c"
+domain = "apps/site"
+dimension = "D3"
+subject = "apps/site/CHANGELOG.md:57"
+title = "SS-4: internal PR number cited directly (the PR#35 sibling sweep)"
+severity = "info"
+status = "open"
+
+[[finding]]
+id = "14fa411a938b8fd3"
+domain = "packages/jobs"
+dimension = "D1"
+subject = "packages/jobs/src/trigger-driver.ts:144-147"
+title = "The real Trigger.dev SDK client silently drops the idempotencyKey option, breaking the ADR-0211 idempotent-enqueue guarantee for billing/credit side-effect jobs on the only non-test-doubled code path."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "150742698337b6f2"
+domain = "root-docs"
+dimension = "D2"
+subject = "CLAUDE.md:81"
+title = "Root CLAUDE.md (committed to the repo) names the operator's private-infra env path and internal CI-runner hostname."
+severity = "info"
 status = "open"
 
 [[finding]]
@@ -288,7 +486,7 @@ dimension = "D4"
 subject = "packages/audit-worm/README.md:11"
 title = "SS-1: shipped README names sibling private repos Wardfile and gridwork-core as build seeds."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "15c83ebd4d4afd32"
@@ -297,6 +495,51 @@ dimension = "D3"
 subject = "packages/license-verify/package.json:10"
 title = "SS-1: the published npm description names the private sibling repo tessera and the bare phase-id P6 with zero context for a buyer."
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "15fb9c36854c7879"
+domain = "packages/credits"
+dimension = "D3"
+subject = "packages/credits/README.md:3"
+title = "SS-10: the entire README has no install/usage code snippet."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "1640039b1aa6c36d"
+domain = "packages/credits"
+dimension = "D3"
+subject = "packages/credits/package.json:10"
+title = "SS-12: the registry/npm description ends with bare ADR ids."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "17221eff2abcc09b"
+domain = "packages/mcp-server"
+dimension = "D3"
+subject = "packages/mcp-server/README.md:7"
+title = "SS-3: Key ADR: ADR-0008 is a bare id with no explanation"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "175cfe8e0ef9c5ad"
+domain = "packages/guardrails"
+dimension = "D4"
+subject = "packages/guardrails/AGENTS.md:32"
+title = "Buyer-facing AGENTS.md names an internal pro-private sibling repo"
+severity = "info"
+status = "open"
+
+[[finding]]
+id = "17c7e5a7d4d459da"
+domain = "packages/agent-dev"
+dimension = "D4"
+subject = "packages/agent-dev/README.md:9 and packages/ai-config/README.md:9"
+title = "README's Live per-package status line points buyers at ../../docs/build-state.md, an internal monorepo-root file that does not exist in any buyer's delivered package."
+severity = "info"
 status = "open"
 
 [[finding]]
@@ -306,7 +549,7 @@ dimension = "D4"
 subject = "packages/ui/README.md:9"
 title = "Public README points to an internal-only doc path that doesn't exist for the shipped package."
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "19d1af0e70d0c2d7"
@@ -315,7 +558,7 @@ dimension = "D1"
 subject = "packages/observability/src/scrub.ts:23"
 title = "SENSITIVE_ATTRIBUTE_KEY's \\bemail\\b/\\bphone\\b/\\bssn\\b/\\bdob\\b word-boundary terms silently fail to redact camelCase or snake_case attribute keys, letting PII reach the external OTLP sink."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "1a69a0d63d49c167"
@@ -324,7 +567,7 @@ dimension = "D4"
 subject = "packages/auth/src/workos.ts:4"
 title = "Shipped source comment names the internal monorepo app apps/site and its wiring detail."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "1a8dbc41487c961f"
@@ -333,6 +576,24 @@ dimension = "D3"
 subject = "packages/ui/src/tokens/theme.ts:2"
 title = "SS-2: token-selection doc comment is dated internal decision-lock shorthand, not a description of what the code does"
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "1b1ae6d336f26af5"
+domain = "services/docs"
+dimension = "D3"
+subject = "services/docs/package.json:7"
+title = "SS-12: description field leads with bare phase shorthand P6 and stacked ADR ids"
+severity = "info"
+status = "open"
+
+[[finding]]
+id = "1b2790d259c52770"
+domain = "packages/credits"
+dimension = "D3"
+subject = "packages/credits/src/credits.ts:347"
+title = "SS-4: an internal issue-tracker id is embedded directly in a shipped JSDoc comment."
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -342,7 +603,7 @@ dimension = "D4"
 subject = "packages/tenancy-rls/src/rls.ts:220"
 title = "SS-4: internal issue-tracker id (CAISSON-9) in shipped source comment"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "1b9e57a9ae0f1178"
@@ -350,6 +611,15 @@ domain = "oss-mirror"
 dimension = "D3"
 subject = "README.md:44-62"
 title = "SS-9/SS-11: the root package table omits @caisson-sh/eslint-config even though it is exported, versioned, and shipped."
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "1bab1c620ce6d1fb"
+domain = "oss-mirror"
+dimension = "D4"
+subject = "packages/tenancy-rls/src/rls.ts:163"
+title = "A source comment in the exported Apache-2.0 tenancy-rls package names the internal admin app's specific file, apps/admin's admin-read.ts, revealing private control-plane internals inside shipped OSS source."
 severity = "warn"
 status = "open"
 
@@ -359,6 +629,15 @@ domain = "oss-mirror"
 dimension = "D4"
 subject = "packages/kernel/README.md:9 (representative; recurs in nearly every exported package README + AGENTS.md)"
 title = "Public-mirror READMEs cite dangling internal artifacts (../../docs/build-state.md, Build per /plan.md) and bare internal ADR ids that resolve to nothing outside the private monorepo."
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "1cbbb7a49604dd34"
+domain = "packages/ai-meter"
+dimension = "D3"
+subject = "packages/ai-meter/CHANGELOG.md:16"
+title = "SS-2: changelog entry narrates internal build-wave process: Branded money types plus rounding provenance (ADR-0212, harvest slice-2 serialized wave-2)."
 severity = "warn"
 status = "open"
 
@@ -372,12 +651,66 @@ severity = "info"
 status = "open"
 
 [[finding]]
+id = "1d1a44dc6def5d82"
+domain = "packages/billing"
+dimension = "D6"
+subject = "packages/billing/AGENTS.md:5,18"
+title = "AGENTS.md, package.json, and manifest.ts describe the package as only Stripe+Paddle, omitting the two LemonSqueezy/Polar drivers (ADR-0175) the package actually exports"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "1d2f0b18525328f3"
+domain = "packages/agent-kernel"
+dimension = "D3"
+subject = "packages/agent-kernel/README.md:62-63"
+title = "SS-1/SS-10: README's closing line names two private sibling repos and uses the exact banned rebuilt clean from internal-process narrative"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "1d5fce0d89374250"
+domain = "packages/kernel"
+dimension = "D3"
+subject = "packages/kernel/README.md:6"
+title = "SS-1: README names the sibling private repo gridwork-core a buyer has no context for"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "1db8caea467bfaa5"
+domain = "oss-mirror"
+dimension = "D2"
+subject = "packages/license-verify/README.md:31"
+title = "Exported public-mirror docs still show @caisson/* import/usage examples after the npm scope was renamed to @caisson-sh/*, dangling onto a scope the exporter's own header notes is third-party-owned."
+severity = "warn"
+status = "open"
+
+[[finding]]
 id = "1e53d366929f7174"
 domain = "packages/ai-config"
 dimension = "D4"
 subject = "packages/ai-config/README.md:6-10"
 title = "Buyer-facing README names two private sibling repos (gridwork, gridwork-core) plus the pro-private media-pipeline repo, and links the same dangling monorepo paths"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "1e8fbdc944f657ef"
+domain = "packages/guardrails"
+dimension = "D3"
+subject = "packages/guardrails/README.md"
+title = "SS-9/SS-10: the package ships with no README.md at all."
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "1f02b791e1328af5"
+domain = "packages/alerting"
+dimension = "D3"
+subject = "packages/alerting/package.json:10"
+title = "SS-12: package.json description ends with a bare ADR citation (ADR-0135/0151) instead of stopping at the plain capability statement."
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -387,7 +720,7 @@ dimension = "D4"
 subject = "packages/retention-runner/CHANGELOG.md:18"
 title = "SS-2: internal audit-round/ledger narrative in shipped changelog"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "1fce7f6a1486f279"
@@ -396,7 +729,7 @@ dimension = "D4"
 subject = "packages/ui/src/tokens/candidates.ts:186"
 title = "Shipped UI-kit source names the private sibling repo Wardfile as design rationale."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "2013c51dc3e4f6ae"
@@ -404,6 +737,24 @@ domain = "oss-mirror"
 dimension = "D2"
 subject = "packages/license-verify/src/__golden__/prod-signed-token.json:1"
 title = "A real production-signed, unlimited, non-revocable Pro-tier license credential is shipped as a test fixture in the public OSS mirror."
+severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "208768b7440ac860"
+domain = "oss-mirror"
+dimension = "D4"
+subject = "packages/kernel/src/crypto.test.ts:19,27,30 (export)"
+title = "A hardcoded admin@gridwork.dev test fixture reveals the operator's real internal admin-email domain/convention in publicly shipped test source."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "20dbd5bfaa8c6e9e"
+domain = "services/docs"
+dimension = "D4"
+subject = "services/docs/src/corpus.ts:115-127"
+title = "gatherSources() ingests every packages/*/README.md with no license/internal-only filter, contradicting the module's own stated buyer-facing PUBLIC docs only intent."
 severity = "high"
 status = "open"
 
@@ -414,6 +765,15 @@ dimension = "D3"
 subject = "README.md / PRODUCT.md / DESIGN.md / SUMMARY.md / plan.md / CLAUDE.md"
 title = "No SS findings filed — domain is internal-only per its own rubric scope and self-identifies as such"
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "20e2ed88a0abcc01"
+domain = "packages/tenancy-rls"
+dimension = "D3"
+subject = "packages/tenancy-rls/README.md:6,10"
+title = "README names a private sibling company and an internal-only backlink (SS-1/SS-11)"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -423,7 +783,7 @@ dimension = "D3"
 subject = "packages/prompt-registry/README.md:5"
 title = "SS-2: Composes the Wave-0 substrate is internal build-wave shorthand"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "21a81ea76a870eb5"
@@ -431,6 +791,15 @@ domain = "oss-mirror"
 dimension = "D4"
 subject = "packages/kernel/README.md:6 (representative; recurs in 11 of 18 exported packages)"
 title = "Public-mirror package READMEs ship a Seeds rebuild-clean line naming private sibling repos, plus a recurring Pro-private media-pipeline mention, verbatim to the public GitHub mirror."
+severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "221a1288c7cb747e"
+domain = "packages/retention-runner"
+dimension = "D3"
+subject = "packages/retention-runner/package.json:10"
+title = "npm description ends with a bare stacked ADR citation (SS-12)"
 severity = "high"
 status = "open"
 
@@ -441,7 +810,7 @@ dimension = "D4"
 subject = "packages/kernel/src/errors.ts:1"
 title = "Root cause: the export script never sanitizes prose/comments, so internal ADR decision-log citations blanket almost every shipped file."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "227fbdca158d6d84"
@@ -450,6 +819,42 @@ dimension = "D4"
 subject = "packages/prompt-registry/manifest.ts:8"
 title = "Dangling relative import into a private monorepo path ships as dead source"
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "2296aa9dc5d0e4d0"
+domain = "packages/license-verify"
+dimension = "D3"
+subject = "packages/license-verify/AGENTS.md:5"
+title = "SS-2: AGENTS.md repeats the bare P6 issuer shorthand"
+severity = "info"
+status = "open"
+
+[[finding]]
+id = "23127266dfad63b6"
+domain = "packages/tenancy-rls"
+dimension = "D4"
+subject = "packages/tenancy-rls/README.md:7"
+title = "Seeds (rebuild-clean): gridworkdigital names a sibling private codebase in a shipped Apache-2.0 README"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "23e27a2774198a0e"
+domain = "packages/observability"
+dimension = "D3"
+subject = "packages/observability/src/request-span.ts:7"
+title = "Shipped source comment uses the operator's internal tooling jargon ponytail with no explanation (SS-1)"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "23e9b49a2118c59e"
+domain = "packages/ai-kit"
+dimension = "D6"
+subject = "packages/ai-kit/manifest.ts:24"
+title = "ai-kit's frozen members pin map still lists every member at version 0.2.0 even though the module was republished at 0.2.1 and its own CHANGELOG documents those dependencies bumping past 0.2.0."
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -459,7 +864,7 @@ dimension = "D3"
 subject = "packages/agent-dev/src/content/agents.ts:7"
 title = "SS-1: source comments describe content as free of gw-prefixed names"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "2423be01eef745f8"
@@ -468,6 +873,33 @@ dimension = "D4"
 subject = "packages/tenancy-rls/src/rls.ts:163"
 title = "SS-1: private control-plane path (apps/admin's admin-read.ts) named in shipped oss-source comment"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "244af59cf2cbfa16"
+domain = "packages/alerting"
+dimension = "D3"
+subject = "packages/alerting/src/channels.ts:104"
+title = "SS-4: five in-source comments cite an internal pentest tool plus vulnerability id (Strix vuln-0004) as justification for the SSRF guard."
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "25b5446ad20ca7d0"
+domain = "packages/compliance"
+dimension = "D3"
+subject = "packages/compliance/CHANGELOG.md:71"
+title = "SS-2: a changeset entry narrates internal audit-round/ledger process instead of the change."
+severity = "info"
+status = "open"
+
+[[finding]]
+id = "25ca3d79aa315443"
+domain = "packages/auth"
+dimension = "D6"
+subject = "packages/auth/AGENTS.md:1-14"
+title = "AGENTS.md, README.md, package.json, and manifest.ts describe auth as pure EdDSA-JWT/session/better-auth, omitting the WorkOS SSO driver (ADR-0172) and multi-user org account-membership model (ADR-0176) that the package now ships"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -477,6 +909,51 @@ dimension = "D4"
 subject = "packages/agent-dev/README.md:6-10"
 title = "Buyer-facing README names two private sibling repos (gridwork-core, media-pipeline) and links two monorepo-only paths the buyer's install doesn't contain"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "27b418fa34dc7b2c"
+domain = "packages/local-store"
+dimension = "D6"
+subject = "packages/local-store/README.md:19-32"
+title = "README's What it gives you list omits the cloud-egress secret-scrub guard and the GC/retention-dedup policy that ship in src"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "284bd2a4e2425c1d"
+domain = "packages/cli"
+dimension = "D3"
+subject = "packages/cli/src/index.ts:1-3"
+title = "SS-9: the package's top-of-file comment claims disk-write generation is still deferred, but writer.ts implements it and cli.ts already calls it on every run."
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "296ef9296a800ab4"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/ui/manifest.ts:18"
+title = "SS-1: Wardfile (a private sibling repo, explicitly banned by name in the rubric) is cited in the shipped @caisson-sh/ui manifest and token-candidate copy"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "29a750d0386d757d"
+domain = "packages/billing"
+dimension = "D3"
+subject = "packages/billing/src/events.ts:16"
+title = "SS-4: production source cites an internal pentest-tool plus vulnerability id (Strix vuln-0005) as the explanation for a fulfillment fix."
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "29c17562ba983cc0"
+domain = "packages/license-verify"
+dimension = "D3"
+subject = "packages/license-verify/src/token.ts:1"
+title = "SS-2: file header opens with internal task shorthand (T6, ADR-0010)"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -495,6 +972,15 @@ dimension = "D3"
 subject = "packages/billing/src/paddle-events.ts:78,166,187,245"
 title = "SS-4: internal issue-tracker ids (CAISSON-6/7/8) cited directly in shipped Apache-2.0 source comments as load-bearing explanation"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "2a9b3445baf09cd1"
+domain = "packages/agent-dev"
+dimension = "D3"
+subject = "packages/agent-dev/README.md:6,10"
+title = "SS-1/SS-10: same gridwork-core/media-pipeline plus Build per plan.md internal-process template line as ai-config/agent-kernel"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -504,6 +990,15 @@ dimension = "D6"
 subject = "packages/agent-kernel/README.md:3-4"
 title = "agent-kernel's README/AGENTS.md state as present-tense fact that base packages cli and mcp-server compose down onto it, but neither package depends on or imports @caisson/agent-kernel."
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "2b925457569f236a"
+domain = "packages/license-verify"
+dimension = "D4"
+subject = "packages/license-verify/README.md:5; src/token.ts:1-3, claims.ts:1, index.ts:2, verify.ts:2"
+title = "SS-1/SS-2: README plus every core source file cite the sibling repo tessera and the internal pro-private firewall build convention"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -513,7 +1008,7 @@ dimension = "D3"
 subject = "packages/agent-kernel/README.md:62-63"
 title = "SS-1: README closes with a gridwork-core provenance note and a private-repo name"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "2c3ad749b3c4a21f"
@@ -522,7 +1017,7 @@ dimension = "D3"
 subject = "packages/cli/CHANGELOG.md:45"
 title = "SS-2: Whole-repo audit round-3 remediation (ledger 2026-07-01) — same internal round/ledger shorthand, duplicated from the shared changeset"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "2ed436af4ac2ca14"
@@ -531,7 +1026,7 @@ dimension = "D3"
 subject = "packages/ai-meter/CHANGELOG.md:57"
 title = "SS-2: Whole-repo audit round-4 remediation (ledger 2026-07-01) — internal audit-round/ledger shorthand in the shipped CHANGELOG"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "2effc426be4b1c69"
@@ -539,6 +1034,24 @@ domain = "packages/mcp-server"
 dimension = "D3"
 subject = "packages/mcp-server/src/http.ts:1,6,13"
 title = "SS-3: the transport's security-critical invariants (stateless auth, DNS-rebinding protection) are explained only via bare ADR-0161 decision 2/4 citations."
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "2f0584b81d5e4571"
+domain = "packages/kernel"
+dimension = "D3"
+subject = "packages/kernel/README.md:9"
+title = "SS-11: README links to ../../docs/build-state.md, a path outside this package's own tree"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "2f759218e7d48bc8"
+domain = "apps/base"
+dimension = "D1"
+subject = "apps/base/src/server.ts:44"
+title = "POST /spend and POST /mcp cast the parsed JSON body via as instead of a Zod strict schema, violating the security-floor input-validation rule."
 severity = "warn"
 status = "open"
 
@@ -549,6 +1062,33 @@ dimension = "D3"
 subject = "services/license/README.md:30-31"
 title = "SS-1: the service README names both sibling private repos tessera and media-pipeline"
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "2fb4e2cbbc962110"
+domain = "packages/mcp-server"
+dimension = "D3"
+subject = "packages/mcp-server/README.md:6"
+title = "SS-1/SS-2: README names gridwork-core, media-pipeline, and internal plan.md"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "302ee2c9cc02275d"
+domain = "apps/base"
+dimension = "D3"
+subject = "apps/base/README.md:3"
+title = "SS-9: README describes the app as Structure only for now when src/app.ts ships a complete, working reference composition"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "30d054a5090c5f03"
+domain = "oss-mirror"
+dimension = "D4"
+subject = "packages/kernel/README.md:6,10; mcp-server:6,10; license-verify:5 (exported)"
+title = "SS-1: the sibling-private-repo leaks in kernel/mcp-server/license-verify READMEs carry through unmodified into the exported public-mirror output"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -558,7 +1098,7 @@ dimension = "D4"
 subject = "packages/alerting/package.json"
 title = "No files allowlist/.npmignore — bun pm pack ships AGENTS.md/CHANGELOG.md/.turbo logs/src to every buyer."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "310d73cbc74e6cf0"
@@ -566,6 +1106,15 @@ domain = "packages/credits"
 dimension = "D3"
 subject = "packages/credits/README.md:6"
 title = "SS-1/SS-10/SS-11: a four-line README stacks a gridwork-ism, a private-repo mention, and an internal doc link"
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "3124508a3e7affbd"
+domain = "packages/guardrails"
+dimension = "D6"
+subject = "packages/guardrails/AGENTS.md:1"
+title = "AGENTS.md documents cheapDeny plus the Moderator port but omits both the unconditional secret-shape gate (ADR-0215, looksLikeSecret) and the entire FTC-4Ps dark-pattern evaluator module (ftc4p.ts), leaving no README to cover them either."
 severity = "warn"
 status = "open"
 
@@ -576,6 +1125,42 @@ dimension = "D3"
 subject = "packages/license-verify/src/verify.ts:26-29"
 title = "SS-8: the doc comment on the baked-in production public key cites an internal infra file path and a bare ADR id."
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "31b9251f3ed77598"
+domain = "oss-mirror"
+dimension = "D1"
+subject = ".github/workflows/ci.yml:12-13"
+title = "The exported public-mirror repo's own CI also pins actions/checkout and oven-sh/setup-bun by mutable tag rather than commit SHA."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "31bb56a2cac0b456"
+domain = "packages/billing"
+dimension = "D3"
+subject = "packages/billing/CHANGELOG.md:41"
+title = "SS-2/SS-4: a published changelog entry reads as an internal engineering ticket log: Money-path hardening (post-wave triage CAISSON-5/6/7/8/9)."
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "31c47f5a7e7e96fd"
+domain = "packages/ai-kit"
+dimension = "D3"
+subject = "packages/ai-kit/manifest.ts:1-9"
+title = "SS-3: manifest.ts header cites five ADR ids plus the Gate-2 carve-out internal gate terminology"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "32917cd09732a276"
+domain = "packages/alerting"
+dimension = "D3"
+subject = "packages/alerting/README.md:65"
+title = "SS-1/SS-10: README's closing blockquote names the unreachable internal source (gridworkdigital) and the sibling private repo (media-pipeline) as build provenance."
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -585,6 +1170,15 @@ dimension = "D3"
 subject = "packages/ui/src/tokens/candidates.ts:186"
 title = "SS-1: font-choice comment names the private sibling repo Wardfile as provenance"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "32c4b35a256e11ca"
+domain = "packages/ai-evals"
+dimension = "D3"
+subject = "packages/ai-evals/package.json:10"
+title = "SS-12: package description ends with a bare ADR-0062/0013 citation pair"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -594,6 +1188,15 @@ dimension = "D4"
 subject = "packages/agent-runner/package.json (no files field)"
 title = "Missing npm files allowlist ships the full internal source/test/build-log tree (40 files), including the security-critical leak-guard test suite, to every buyer"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "332156e00e0da969"
+domain = "packages/local-store"
+dimension = "D3"
+subject = "packages/local-store/src/egress-guard.ts:6"
+title = "SS-2: comment cites bare internal plan label (PLAN T8)"
+severity = "info"
 status = "open"
 
 [[finding]]
@@ -603,7 +1206,7 @@ dimension = "D3"
 subject = "apps/ai-kit/package.json:6"
 title = "SS-12/SS-2: package description leads with the P3 exit artifact phase shorthand"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "345aa493c7c41c73"
@@ -612,7 +1215,7 @@ dimension = "D4"
 subject = "packages/observability/manifest.ts:8"
 title = "Dangling relative import into a private monorepo path ships as dead source"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "348585a63be87262"
@@ -621,6 +1224,15 @@ dimension = "D2"
 subject = "packages/license-verify/src/__golden__/prod-signed-token.json"
 title = "A real production-signed, perpetual, all-editions pro license token ships as a test golden fixture in the public @caisson-sh/license-verify npm package."
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "34cf920fa0d5d0ce"
+domain = "packages/registry-schema"
+dimension = "D3"
+subject = "packages/registry-schema/CHANGELOG.md:7"
+title = "CHANGELOG entry repeats the same internal fork-board shorthand (SS-2)"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -630,6 +1242,15 @@ dimension = "D4"
 subject = "packages/auth/package.json:10"
 title = "SS-12: package.json description carries an ADR id."
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "354430fee3a3f353"
+domain = "packages/kernel"
+dimension = "D3"
+subject = "packages/kernel/src/crypto.ts:67"
+title = "SS-2: a ponytail internal-tooling-convention comment ships in public source"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -639,6 +1260,24 @@ dimension = "D3"
 subject = "packages/ui/README.md:6-10"
 title = "SS-1/SS-10: package README names private sibling repos and reads as internal build narrative, not buyer docs"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "35849d3330c17b70"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/kernel/src/crypto.ts:1, packages/license-verify/src/token.ts:2-3, packages/ui/src/tokens/candidates.ts:186"
+title = "Private sibling-repo names leak into actual shipped TypeScript source comments, not just docs (SS-1)"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "35aec28a57977333"
+domain = "packages/ai-config"
+dimension = "D3"
+subject = "packages/ai-config/package.json:10"
+title = "SS-12: package description trails off with a bare ADR-0011 fragment"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -648,7 +1287,7 @@ dimension = "D4"
 subject = "packages/ai-meter/package.json:10"
 title = "SS-12: package.json description ends in a bare ADR trailer a buyer/registry reader can't resolve."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "372c44338bb6ea56"
@@ -657,7 +1296,7 @@ dimension = "D3"
 subject = "packages/jobs/CHANGELOG.md:27"
 title = "SS-2: changelog entry narrates the internal whole-repo audit process by name"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "372f25526874f2fb"
@@ -666,6 +1305,15 @@ dimension = "D3"
 subject = "packages/cli/README.md:6"
 title = "SS-2: the package's own README frames its capability in internal build-phase shorthand instead of describing what it does."
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "37b4fc90fb0923c8"
+domain = "packages/ai-evals"
+dimension = "D3"
+subject = "packages/ai-evals/src/evals.test.ts:5"
+title = "SS-2: The T10 fixtures, internal plan task-number reference in a shipped test file"
+severity = "info"
 status = "open"
 
 [[finding]]
@@ -675,7 +1323,7 @@ dimension = "D3"
 subject = "packages/ai-evals/"
 title = "SS-9/SS-10: no README.md ships for this commercially licensed package"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "389b44ec32b8dcf1"
@@ -684,6 +1332,15 @@ dimension = "D3"
 subject = "packages/{billing,kernel,credits,ui,ai-config,tenancy-rls,mcp-server,email,auth,observability}/README.md (exported)"
 title = "SS-1/SS-10: every exported package README carries the internal Seeds rebuild-clean line and Pro-private media-pipeline verbatim into the public mirror"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "39b22ece7a3a8908"
+domain = "generator-templates"
+dimension = "D4"
+subject = "packages/cli/templates/base/src/golden.test.ts:5 (also ci.yml:11, eu-ai-act evidence-path.ts:1)"
+title = "Internal ADR citations (ADR-0013/ADR-0072/ADR-0095) are baked into the generator's base template, so every create-caisson buyer repo ships comments referencing a private decision log it can never open."
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -693,6 +1350,15 @@ dimension = "D3"
 subject = "packages/tenancy-rls/CHANGELOG.md:19-33"
 title = "SS-2/SS-3: SPEC-tenancy-rls, harvest slice-2 #8/#7 and see the build report cite unreachable internal artifacts"
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "3ab2955def2ae12e"
+domain = "root-docs"
+dimension = "D6"
+subject = "README.md:41 (mcp-server scaffolded)"
+title = "Root README's build-status table calls mcp-server partial/scaffolded, contradicting its own actually-shipped state."
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -702,7 +1368,7 @@ dimension = "D3"
 subject = "packages/tool-exec/README.md:50-51"
 title = "SS-1: Pro-private media-pipeline contributes patterns only, never code."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "3ad583166dbac981"
@@ -711,7 +1377,7 @@ dimension = "D4"
 subject = "packages/local-ai/README.md:17-18,23"
 title = "Sold-source README names sibling private repos as build seeds and points at a dangling internal spec-file path."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "3c0e4ce4631a7e6f"
@@ -719,6 +1385,24 @@ domain = "packages/registry-schema"
 dimension = "D3"
 subject = "packages/registry-schema (no README.md)"
 title = "SS-9/SS-10: package ships with no README at all"
+severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "3cb22fd0140ef3d5"
+domain = "packages/field-crypto"
+dimension = "D4"
+subject = "packages/field-crypto/README.md:59"
+title = "Field-crypto README names an internal pro-private sibling repo to paying buyers"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "3d22ee421bc01709"
+domain = "packages/alerting"
+dimension = "D6"
+subject = "packages/alerting/manifest.ts:13-15"
+title = "Registry manifest priceCents (4900 = $49) contradicts the committed alerting price of $149 shown on the site, comment claims pricing is still open"
 severity = "high"
 status = "open"
 
@@ -729,6 +1413,24 @@ dimension = "D3"
 subject = "packages/cli/README.md:1-10"
 title = "SS-2/SS-3: the public generator README opens with 4 bare ADR ids and a Wave-0 scope heading"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "3dd8f383186e91d0"
+domain = "root-docs"
+dimension = "D6"
+subject = "README.md:47 (24 packages, medium)"
+title = "README's Layout section says packages 24 packages, but git-tracked packages now number 35."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "3df2a7aaae5cb26a"
+domain = "packages/agent-kernel"
+dimension = "D3"
+subject = "packages/agent-kernel/package.json:10"
+title = "SS-12: package description embeds a bare (ADR-0065) reference"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -738,7 +1440,7 @@ dimension = "D4"
 subject = "packages/agent-kernel/package.json (no files field)"
 title = "Missing npm files allowlist ships the full internal source/test/build-log tree (88 files) to every buyer"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "3ec922d04f7dde8d"
@@ -746,6 +1448,15 @@ domain = "packages/migrate"
 dimension = "D3"
 subject = "packages/migrate/package.json:10"
 title = "SS-12: the npm/registry description opens with bare (ADR-0070/0090)."
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "3f0685c3a972af24"
+domain = "packages/field-crypto"
+dimension = "D3"
+subject = "packages/field-crypto/package.json:10"
+title = "SS-12: the registry/npm description ends with a string of bare ADR ids."
 severity = "warn"
 status = "open"
 
@@ -756,7 +1467,7 @@ dimension = "D3"
 subject = "packages/audit-worm/AGENTS.md:14 (also src/chain-store.ts:10, store.s3.ts, chain-store.integration.test.ts, version-store.integration.test.ts, store.s3.test.ts)"
 title = "SS-4 (judgement call): pervasive TM-A/TM-C/TM-D/TM-G/TM-H/TM-I threat-model tags cited as the load-bearing explanation across the shipped package, with no glossary shipped anywhere"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "3fcc362676cd41e7"
@@ -764,6 +1475,24 @@ domain = "oss-mirror"
 dimension = "D4"
 subject = "packages/kernel/src/crypto.ts:1, packages/registry-schema/src/entitlements.ts:135"
 title = "Source-code comments in the public mirror name the private gridwork-core repo and an internal tooling path."
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "40630c34bee03a82"
+domain = "packages/local-store"
+dimension = "D4"
+subject = "packages/local-store/package.json:10"
+title = "SS-12: npm/registry description embeds (ADR-0067/0073)"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "40d8f1a433d9d9c4"
+domain = "packages/retention-runner"
+dimension = "D4"
+subject = "packages/retention-runner/manifest.ts:5"
+title = "manifest.ts imports from the internal-only registry/schema tree in a paid, source-delivered package"
 severity = "warn"
 status = "open"
 
@@ -774,7 +1503,7 @@ dimension = "D4"
 subject = "packages/kernel/README.md:10"
 title = "Same README footer discloses the private commercial repo name media-pipeline and an internal firewall policy irrelevant to a public reader."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "4141777b3cf96b5d"
@@ -783,7 +1512,7 @@ dimension = "D3"
 subject = "packages/auth/CHANGELOG.md:24"
 title = "SS-2: Whole-repo audit round-3 remediation (ledger 2026-07-01) plus the round-4/5 audit domains in the shipped CHANGELOG"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "417da45f8c0f3198"
@@ -792,7 +1521,7 @@ dimension = "D3"
 subject = "packages/audit-worm/README.md:11"
 title = "SS-1: Seeds rebuild-clean patterns-only Wardfile / gridwork-core names two internal/sibling repos in the buyer-facing README"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "41a71ed019c45b6a"
@@ -800,6 +1529,15 @@ domain = "packages/field-crypto"
 dimension = "D3"
 subject = "packages/field-crypto/src/aad.ts:8"
 title = "SS-2: closes Wave-0 TM2/TM-E phase+threat-id shorthand opens core source comments"
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "420b0c11d5ea7817"
+domain = "packages/local-store"
+dimension = "D3"
+subject = "packages/local-store/src/tenant-db.ts:2"
+title = "SS-1: comment attributes the isolation floor to the gridwork security floor"
 severity = "warn"
 status = "open"
 
@@ -810,6 +1548,24 @@ dimension = "D4"
 subject = "packages/ui/README.md:6,10"
 title = "Public npm README names private sibling repos as build provenance."
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "4336177899ae5469"
+domain = "packages/migrate"
+dimension = "D3"
+subject = "packages/migrate/src/pg-applier.ts:10"
+title = "SS-2: ponytail internal-tooling marker ships in this Apache-2.0 package's public source"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "437e6b827db73f54"
+domain = "packages/retention-runner"
+dimension = "D3"
+subject = "packages/retention-runner/README.md:70-71"
+title = "README names a private sibling company's codebase as the design source (SS-1)"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -819,6 +1575,15 @@ dimension = "D3"
 subject = "packages/ai-kit/CHANGELOG.md:97,107"
 title = "SS-2: two more changelog entries cite an internal audit ledger date and round numbers"
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "43be2a401d5b4ef0"
+domain = "packages/jobs"
+dimension = "D3"
+subject = "packages/jobs/README.md:9"
+title = "SS-11: README links into the internal docs tree for live per-package status."
+severity = "info"
 status = "open"
 
 [[finding]]
@@ -828,7 +1593,7 @@ dimension = "D3"
 subject = "packages/*/manifest.ts (13 exported files, e.g. packages/ui/manifest.ts:7)"
 title = "Dangling internal specifier: every exported manifest.ts imports ../../registry/schema/module-manifest.ts, a path that does not exist in the mirror tree"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "44337f9281a05d5e"
@@ -837,7 +1602,7 @@ dimension = "D1"
 subject = "apps/site/content/docs/compliance/compliance.mdx:24-29"
 title = "Compliance evidence-pack code sample imports defineComplianceConfig, which does not exist anywhere in @caisson/compliance"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "447d67fc74eab601"
@@ -846,6 +1611,15 @@ dimension = "D3"
 subject = "packages/guardrails/package.json:10"
 title = "SS-12: npm description ends with a bare ADR-id list"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "44a6c3d0702bb299"
+domain = "packages/tenancy-rls"
+dimension = "D3"
+subject = "packages/tenancy-rls/CHANGELOG.md:19,33"
+title = "CHANGELOG entry mixes internal spec/slice shorthand and a bare unresolvable artifact reference (SS-2/SS-3)"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -855,7 +1629,7 @@ dimension = "D3"
 subject = "packages/billing/package.json:10"
 title = "SS-12: package.json description ends in a bare ADR citation ADR-0017/0108"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "457543e8b9410642"
@@ -864,6 +1638,24 @@ dimension = "D4"
 subject = "packages/guardrails/CHANGELOG.md:38,46-47"
 title = "guardrails CHANGELOG exposes internal audit-harness domain taxonomy and an internal audit-ledger reference."
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "4580271a8e908b04"
+domain = "root-docs"
+dimension = "D6"
+subject = "README.md:69"
+title = "Root README locks Cloudflare Pages hosting on caisson.sh as current infra, but the site has been on Railway since ADR-0114/0115 and the Cloudflare Pages project was physically torn down."
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "45a8ab196ba390c7"
+domain = "packages/compliance"
+dimension = "D6"
+subject = "packages/compliance/README.md:22"
+title = "README's Surface section calls the OSCAL export the un-wired OSCAL export seam, but OSCAL export/bundle/assessment-plan are fully built, tested, and CI-gated."
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -873,6 +1665,15 @@ dimension = "D3"
 subject = "packages/observability/README.md:1-12"
 title = "SS-10: README has no install/usage snippet, only internal build-status metadata"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "4625c185385ceb5a"
+domain = "packages/tenancy-rls"
+dimension = "D4"
+subject = "packages/tenancy-rls/manifest.ts:7"
+title = "manifest.ts ships a dead relative import into the internal-only registry/schema tree"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -882,7 +1683,7 @@ dimension = "D3"
 subject = "packages/retention-runner/README.md:70-71"
 title = "SS-1: README names gridworkdigital as the pattern source"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "4684eaf6bd6a5aff"
@@ -891,7 +1692,7 @@ dimension = "D4"
 subject = "README.md, PRODUCT.md, DESIGN.md, SUMMARY.md, plan.md, CLAUDE.md"
 title = "No D4 findings — root-docs is classified internal-only and never reaches a buyer surface"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "46efc47ea95cb829"
@@ -900,7 +1701,7 @@ dimension = "D4"
 subject = "packages/alerting/src/types.ts:3"
 title = "SS-1: shipped source comment names the sibling private repo gridworkdigital by name."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "4857e629c5648743"
@@ -909,6 +1710,33 @@ dimension = "D3"
 subject = "packages/retention-runner/manifest.ts:12-13"
 title = "SS-9-adjacent (judgement call): PLACEHOLDER price pending ADR-0135 pricing lock appears stale"
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "48f4231bdb357509"
+domain = "packages/cli"
+dimension = "D3"
+subject = "packages/cli/CHANGELOG.md:7"
+title = "SS-2: changelog entry narrates internal build-wave process: Branded money types plus rounding provenance (ADR-0212, harvest slice-2 serialized wave-2)."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "493575c49e3effe3"
+domain = "packages/retention-runner"
+dimension = "D3"
+subject = "packages/retention-runner/src/schedule.ts:42"
+title = "Shipped source comment uses the unexplained internal ponytail marker (SS-1)"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "49b232e125a783e6"
+domain = "registry/worker"
+dimension = "D2"
+subject = "registry/worker/entitlement-filter.test.ts:17"
+title = "The same real production-signed local-ai pro license bearer token is hardcoded across four registry/worker test files"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -918,6 +1746,15 @@ dimension = "D1"
 subject = "scripts/mirror-assets/ci.yml:12-13"
 title = "The public mirror's CI workflow pins GitHub Actions to floating tags (@v4/@v2) while every workflow in the private repo pins the same actions to a commit SHA."
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "4cedb6cd2d00bea5"
+domain = "packages/agent-kernel"
+dimension = "D4"
+subject = "packages/agent-kernel/README.md:62-63"
+title = "README's closing block names the private sibling repo gridwork-core and the pro-private media-pipeline repo as this package's origin."
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -927,6 +1764,15 @@ dimension = "D6"
 subject = "packages/ai-config/README.md:1"
 title = "Every exported package README still titles itself with the old @caisson/ npm scope even though package.json was renamed to @caisson-sh/, giving buyers the wrong install name."
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "4d7fd98ebfc8c415"
+domain = "packages/audit-worm"
+dimension = "D4"
+subject = "packages/audit-worm/README.md:11"
+title = "Shipped README's Seeds (rebuild-clean) line names the private sibling repos Wardfile and gridwork-core as pattern sources."
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -936,7 +1782,7 @@ dimension = "D4"
 subject = "packages/ai-kit/package.json (no files field)"
 title = "Missing npm files allowlist ships the full internal source/test/build-log tree (72 files) to every buyer"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "4e30075f6ba01172"
@@ -944,6 +1790,24 @@ domain = "packages/alerting"
 dimension = "D3"
 subject = "packages/alerting/CHANGELOG.md:18"
 title = "SS-2: Whole-repo audit round-4 remediation (ledger 2026-07-01) in the shipped CHANGELOG"
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "4e62a0546944bb05"
+domain = "packages/cli"
+dimension = "D4"
+subject = "packages/cli/README.md:35"
+title = "Shipped generator README names the pro-private media-pipeline codebase as a provenance note."
+severity = "info"
+status = "open"
+
+[[finding]]
+id = "4e9856679c3df1cd"
+domain = "packages/ui"
+dimension = "D3"
+subject = "packages/ui/manifest.ts:18"
+title = "SS-1: the registry-catalog description names the private sibling repo Wardfile"
 severity = "warn"
 status = "open"
 
@@ -963,7 +1827,7 @@ dimension = "D3"
 subject = "packages/cli/README.md:35"
 title = "SS-1: Pro-private media-pipeline contributes patterns only never code — internal sibling-repo reference in the closing line"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "4f34776d94f50202"
@@ -971,6 +1835,15 @@ domain = "packages/alerting"
 dimension = "D4"
 subject = "packages/alerting/package.json:10"
 title = "SS-12: package.json description ends in a bare ADR trailer."
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "4f53036b8766157c"
+domain = "packages/retention-runner"
+dimension = "D4"
+subject = "packages/retention-runner/CHANGELOG.md:18"
+title = "Changelog cites an internal audit ledger 2026-07-01 and unlabeled round-4 process shorthand"
 severity = "warn"
 status = "open"
 
@@ -981,6 +1854,15 @@ dimension = "D1"
 subject = "packages/cli/templates/eu-ai-act-sample/package.json:14"
 title = "The free EU-AI-Act sample template ships with an unscoped @caisson/kernel npm dependency and no .npmrc, so bun install resolves it against the public npm registry where @caisson is a confirmed third-party-owned scope — a dependency-confusion supply-chain trust-boundary defect."
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "50b01995c34fc907"
+domain = "packages/registry-schema"
+dimension = "D3"
+subject = "packages/registry-schema/package.json:10"
+title = "npm description embeds bare ADR ids mid-sentence (SS-12)"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -990,6 +1872,24 @@ dimension = "D2"
 subject = "packages/tool-exec/src/tool-exec.ts:59"
 title = "defaultExecFn spawns allowlisted commands with the full inherited process environment, with no env allowlist/scrub, so any secret held by the host process is reachable to and could be echoed back through the 64KB stdout/stderr capture of a governed tool call."
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "5246dd5345f553b3"
+domain = "packages/agent-dev"
+dimension = "D3"
+subject = "packages/agent-dev/package.json:10"
+title = "SS-12: npm/registry-visible package description ends with a bare ADR chain (ADR-0065/0066/0067)"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "525a0de6eb231fd1"
+domain = "apps/ai-kit"
+dimension = "D1"
+subject = "apps/ai-kit/app/api/demo/[scenario]/route.ts:10-24"
+title = "Unauthenticated demo POST route provisions a fresh embedded WASM Postgres plus applies three schemas on every call with no rate limiting."
+severity = "info"
 status = "open"
 
 [[finding]]
@@ -998,6 +1898,15 @@ domain = "services/docs"
 dimension = "D4"
 subject = "services/docs/src/llms-txt.ts:9,55"
 title = "The live /llms.txt and /llms-full.txt served to any visitor/agent link every package README to the PRIVATE monorepo (github.com/caisson-sh/caisson), not the public mirror."
+severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "531ff4db6d7c6d9b"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/migrate/README.md:16"
+title = "SS-9: migrate's own shipped README falsely claims the package is commercially licensed and excluded from the open base, contradicting its own package.json/LICENSE in the same mirror"
 severity = "high"
 status = "open"
 
@@ -1008,7 +1917,7 @@ dimension = "D3"
 subject = "packages/observability/README.md:6"
 title = "SS-2: new for the P6-tail is internal phase-numbering shorthand"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "53b30dd01e14a5ca"
@@ -1016,6 +1925,15 @@ domain = "packages/jobs"
 dimension = "D4"
 subject = "packages/jobs/README.md:6"
 title = "jobs README discloses the private sibling repo health-service as this package's rebuild-clean seed."
+severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "540d3ce40f1b20a5"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/kernel/src/crypto.ts:1 (most-imported)"
+title = "SS-1: the gridwork-core security floor appears verbatim in the published @caisson-sh/kernel package's most-imported source file"
 severity = "high"
 status = "open"
 
@@ -1026,6 +1944,15 @@ dimension = "D3"
 subject = "packages/local-store/README.md:74"
 title = "SS-9: the README ends cut off mid-sentence (the fleets) with no punctuation — a visibly broken document."
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "547342b2b444d975"
+domain = "packages/agent-dev"
+dimension = "D3"
+subject = "packages/agent-dev/src/tool-exec-wiring.test.ts:1"
+title = "SS-2: shipped test file header opens with Round-3 remediation (ADR-0178), internal audit-round shorthand"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -1034,6 +1961,24 @@ domain = "oss-mirror"
 dimension = "D4"
 subject = "packages/kernel/src/crypto.test.ts:19"
 title = "Public mirror test fixtures hardcode the operator's real internal company email/domain (admin@gridwork.dev)."
+severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "5499558846467a5e"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/migrate/README.md:14-15"
+title = "SS-9: the stale commercial-license claim ships unmodified into the real public GitHub mirror"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "54b9b931dcef6051"
+domain = "packages/billing"
+dimension = "D3"
+subject = "packages/billing/src/paddle-events.ts:78"
+title = "SS-4: public API JSDoc cites an internal Linear issue id (CAISSON-6/CAISSON-7) as its sole cross-reference, recurring across four sites."
 severity = "high"
 status = "open"
 
@@ -1044,6 +1989,24 @@ dimension = "D3"
 subject = "packages/agent-kernel/package.json:10"
 title = "SS-12: package.json description ends in a bare ADR citation"
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "56b34d9410884579"
+domain = "packages/agent-dev"
+dimension = "D3"
+subject = "packages/agent-dev/README.md:9, ai-config/README.md:9"
+title = "SS-11: README links to a relative ../../docs/build-state.md that does not exist outside the monorepo checkout"
+severity = "info"
+status = "open"
+
+[[finding]]
+id = "56bff54264421b74"
+domain = "packages/jobs"
+dimension = "D4"
+subject = "packages/jobs/README.md:6-10"
+title = "README ships to the public npm mirror naming an internal sibling private repo and dead internal doc paths"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -1053,7 +2016,7 @@ dimension = "D3"
 subject = "packages/kernel/README.md:9-10 (verbatim in all 15 exported package READMEs)"
 title = "SS-1/SS-11: every exported OSS package README ships a dead internal link plus a pro-private media-pipeline name-drop"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "56ff2533405e472c"
@@ -1071,7 +2034,7 @@ dimension = "D3"
 subject = "packages/ui/src/tokens/candidates.ts:186"
 title = "SS-1: a design-rationale comment in shipped source names the private sibling repo Wardfile, explicitly listed as banned in the rubric."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "57ffdbfae8282672"
@@ -1080,7 +2043,7 @@ dimension = "D4"
 subject = "packages/auth/README.md:6"
 title = "SS-1/SS-11: shipped README names gridwork/media-pipeline and links a dead internal path."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "580fe86dc8ec3e12"
@@ -1089,6 +2052,15 @@ dimension = "D2"
 subject = "SUMMARY.md:116"
 title = "SUMMARY.md names the operator's local filesystem path for a since-deleted working directory."
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "5870ababfb9409c4"
+domain = "oss-mirror"
+dimension = "D4"
+subject = "packages/ai-config/README.md:6,10 (exported verbatim)"
+title = "ai-config is the ONLY Apache-2.0/oss-source of the assigned set, and its README's sibling-private-repo lines survive export to the public npm/GitHub mirror unchanged."
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -1098,7 +2070,7 @@ dimension = "D3"
 subject = "packages/ai-kit/package.json:10"
 title = "SS-12: package.json description ends in a bare ADR citation"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "592e796b8b0fe11f"
@@ -1107,7 +2079,7 @@ dimension = "D1"
 subject = "apps/site/content/docs/compliance/audit-worm.mdx:37-57"
 title = "Compliance-edition audit-chain code sample imports appendEvent/putEvidence/verifyChain, none of which exist — the real API is class-based (AuditChainStore/S3ArtifactStore)"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "59bbed410e906893"
@@ -1116,7 +2088,7 @@ dimension = "D3"
 subject = "packages/local-ai/package.json:10"
 title = "SS-12: the npm-facing description opens with a bare ADR-0050 citation."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "5a0ffb0e4292599a"
@@ -1125,6 +2097,15 @@ dimension = "D2"
 subject = "packages/ai-config/README.md:6"
 title = "Package README discloses the private upstream repo names gridwork, gridwork-core to buyers, unchanged in the public OSS mirror."
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "5a346024f0f6b229"
+domain = "packages/observability"
+dimension = "D3"
+subject = "packages/observability/src/scrub.ts:47"
+title = "Second ponytail jargon comment in shipped source (SS-1)"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -1134,6 +2115,33 @@ dimension = "D2"
 subject = "CLAUDE.md:81"
 title = "Root CLAUDE.md discloses the operator's private secrets-file path for Caisson env vars"
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "5b1949182d7ea138"
+domain = "packages/local-ai"
+dimension = "D6"
+subject = "packages/local-ai/manifest.ts:30-36"
+title = "The edition's frozen members version-pin map is stale relative to the current versions of the packages it pins"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "5b6e9b05479a3c87"
+domain = "oss-mirror"
+dimension = "D1"
+subject = "packages/cli/templates/eu-ai-act-sample/package.json:14"
+title = "export-public-mirror.ts @caisson to @caisson-sh rename does not touch template assets, so the public mirror ships a dangling @caisson/kernel specifier under a scope the operator does not own on public npm."
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "5b9683bc3f988998"
+domain = "packages/compliance"
+dimension = "D3"
+subject = "packages/compliance/README.md:16"
+title = "SS-10: the README has no install/usage code snippet anywhere."
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -1143,7 +2151,7 @@ dimension = "D3"
 subject = "packages/audit-worm/README.md:8-10"
 title = "SS-3: Key ADRs bullet is a bare enumeration of four ADR ids as the README's main content, not prose with a citation"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "5c5b0a899bc9c37e"
@@ -1152,7 +2160,7 @@ dimension = "D3"
 subject = "packages/ai-evals/package.json:10"
 title = "SS-12: package.json description ends in a bare double ADR citation"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "5c7cf8af7b121e13"
@@ -1161,6 +2169,24 @@ dimension = "D3"
 subject = "apps/ai-kit/README.md:3"
 title = "SS-2: README opening sentence repeats the P3 exit artifact internal phase label"
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "5c7e3fa61103c5bd"
+domain = "packages/local-store"
+dimension = "D6"
+subject = "packages/local-store/README.md:74"
+title = "README ends in a truncated, duplicated macOS CI note sentence"
+severity = "info"
+status = "open"
+
+[[finding]]
+id = "5c9684a46c5df21b"
+domain = "packages/compliance"
+dimension = "D3"
+subject = "packages/compliance/package.json:10"
+title = "SS-12: the npm/registry-facing description ends with bare ADR ids."
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -1170,7 +2196,7 @@ dimension = "D1"
 subject = "apps/site/lib/auth-config.ts:94"
 title = "The sign-in callbackURL open-redirect guard blocks //host but not the backslash-prefixed bypass (/\\host), a well-known CWE-601 evasion."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "5cfe998d898366db"
@@ -1179,7 +2205,7 @@ dimension = "D3"
 subject = "packages/billing/CHANGELOG.md:41; packages/credits/CHANGELOG.md:49; packages/tenancy-rls/CHANGELOG.md:45"
 title = "SS-4: the npm-shipped CHANGELOG cites post-wave triage CAISSON-5/6/7/8/9 verbatim across 3 packages"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "5d5f1b50b01e086b"
@@ -1187,6 +2213,42 @@ domain = "apps/site"
 dimension = "D1"
 subject = "apps/site/app/dashboard/members/page.tsx:36-42"
 title = "Adding a seat by raw user id has no invitation/consent step, so an owner can attach any known user id to their tenant's roster."
+severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "5eb73269b6decaee"
+domain = "packages/retention-runner"
+dimension = "D3"
+subject = "packages/retention-runner/CHANGELOG.md:18"
+title = "CHANGELOG entry is an internal audit-round remediation log, not a release note (SS-2)"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "5ecffb43792b1849"
+domain = "packages/kernel"
+dimension = "D4"
+subject = "packages/kernel/README.md:6,10; src/crypto.ts:1,31"
+title = "SS-1: shipped README plus source comments name the sibling private repo gridwork-core and pro-private media-pipeline as build provenance"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "5fd1ae9d607b7192"
+domain = "packages/ai-meter"
+dimension = "D3"
+subject = "packages/ai-meter/package.json:10"
+title = "SS-12: package.json description ends with a bare three-ADR citation (ADR-0060/0014/0070) instead of stopping at the plain capability statement."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "5ff56ef3dd8167be"
+domain = "packages/audit-worm"
+dimension = "D3"
+subject = "packages/audit-worm/AGENTS.md:14"
+title = "SS-3: the agent-contract doc leans on undocumented internal test-matrix codes (TM-A, TM-D, TM-G, TM-H/TM-I) as parenthetical citations with no legend anywhere in the shipped package."
 severity = "info"
 status = "open"
 
@@ -1197,6 +2259,15 @@ dimension = "D3"
 subject = "packages/agent-kernel/src/golden.ts:46,56-58"
 title = "SS-2/SS-3: dense internal task-id narrative (T11/T12) stands in for a plain explanation"
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "61423e2812f656ae"
+domain = "packages/ai-kit"
+dimension = "D3"
+subject = "packages/ai-kit/package.json:10"
+title = "SS-12: package description ends with a bare ADR-0059 fragment"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -1206,6 +2277,15 @@ dimension = "D4"
 subject = "services/docs/src/corpus.ts:115-130"
 title = "The live docs-service corpus (gatherSources) walks every packages README with no license/audience filter, so fully internal-only packages (audit-harness, platform-reads, pricebook) are indexed and served over the public /llms.txt, /llms-full.txt, and POST /query endpoints."
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "61963d125cd809c5"
+domain = "packages/mcp-server"
+dimension = "D3"
+subject = "packages/mcp-server/src/server.ts:154"
+title = "SS-2: shipped source calls out the Wave-0 contract by name"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -1215,7 +2295,7 @@ dimension = "D4"
 subject = "packages/billing/src/paddle-events.ts:78"
 title = "SS-4: shipped source comments cite internal Linear ticket ids (CAISSON-6/7) as the sole rationale."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "61f5b2cb635fcba6"
@@ -1223,6 +2303,15 @@ domain = "packages/mcp-server"
 dimension = "D4"
 subject = "packages/mcp-server/CHANGELOG.md:35"
 title = "Public npm package CHANGELOG discloses internal audit-program tracking language and internal audit-domain identifiers."
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "620f91f16e201d63"
+domain = "packages/observability"
+dimension = "D4"
+subject = "packages/observability/manifest.ts:8"
+title = "manifest.ts ships a dead relative import into the internal-only registry/schema tree"
 severity = "warn"
 status = "open"
 
@@ -1233,7 +2322,7 @@ dimension = "D4"
 subject = "packages/license-verify/src/verify.ts:27"
 title = "Public license-verify source references a private infra file path and internal phase-codename for the key issuer."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "6279d8e08efc2886"
@@ -1242,7 +2331,7 @@ dimension = "D3"
 subject = "packages/kernel/README.md:1-10"
 title = "SS-9: README describes the package as an agent/skill/rule schema + lint-gate tool and cites stale file counts that don't match what actually ships."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "6319195d0fae2bfd"
@@ -1251,6 +2340,33 @@ dimension = "D3"
 subject = "packages/observability/src/scrub.ts:47"
 title = "SS-2: second ponytail comment repeats the internal-tooling leak"
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "64ef4a8d488a2982"
+domain = "packages/field-crypto"
+dimension = "D6"
+subject = "packages/field-crypto/README.md:6"
+title = "README's What it gives you feature list omits crypto-shred (GDPR/CCPA right-to-erasure via KEK destruction), a fully built, tested, security-relevant capability of the package."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "6500f312ffd198cf"
+domain = "packages/compliance"
+dimension = "D6"
+subject = "packages/compliance/README.md:19"
+title = "Same README calls euAiAct the reserved slot (clean-room; no SCF ingest) as if unbuilt, directly contradicting its own Dependencies section three lines later and the actual fully-authored src/frameworks/eu-ai-act.ts."
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "65a689f6c1f39af5"
+domain = "packages/kernel"
+dimension = "D3"
+subject = "packages/kernel/README.md:10"
+title = "SS-1/SS-2: README names a private sibling repo and points at an internal build-plan file"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -1259,6 +2375,42 @@ domain = "packages/agent-runner"
 dimension = "D3"
 subject = "packages/agent-runner/package.json:10"
 title = "SS-12: package.json description ends in a bare ADR citation"
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "6647444c6b87e539"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/billing/src/paddle-events.ts:78"
+title = "SS-4: internal Linear issue ids (CAISSON-6/7/8) cited as the sole rationale for FIFO/dedup logic, shipped publicly"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "66718d66852142c8"
+domain = "packages/tenancy-rls"
+dimension = "D3"
+subject = "packages/tenancy-rls/CHANGELOG.md:45"
+title = "CHANGELOG entry stacks five internal issue-tracker ids as its only context (SS-4)"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "6796c2f9b1afb017"
+domain = "root-docs"
+dimension = "D4"
+subject = "SUMMARY.md:55-59,110 and plan.md:3,34,48,51,95-96"
+title = "SUMMARY.md and plan.md exhaustively name every private sibling repo (Wardfile, gridwork, gridwork-core, gwdigital, tessera, health-service, media-pipeline, prospector) as the per-edition/per-package seed source."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "685ee22ea087b330"
+domain = "packages/kernel"
+dimension = "D3"
+subject = "packages/kernel/package.json:10"
+title = "SS-12: package.json description carries two bare ADR ids"
 severity = "warn"
 status = "open"
 
@@ -1269,6 +2421,15 @@ dimension = "D3"
 subject = "packages/observability/README.md:11"
 title = "SS-1: README names the sibling private repo media-pipeline"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "68be4447be2d457c"
+domain = "packages/billing"
+dimension = "D4"
+subject = "packages/billing/README.md:7,11"
+title = "Shipped Apache-2.0 package README names the private sibling repo gridwork and the pro-private media-pipeline codebase, mirroring the same leak pattern as auth/audit-worm/alerting."
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -1277,6 +2438,15 @@ domain = "packages/license-verify"
 dimension = "D3"
 subject = "packages/license-verify/src/token.ts:1-3"
 title = "SS-1: exported source file headers reference the sibling repo tessera by name, and this file ships raw (bun export condition resolves ./src)."
+severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "6a2e5a8a6c2e9dda"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/observability/package.json:10, tenancy-rls, registry-schema, license-verify package.json:10"
+title = "npm description fields ship bare ADR ids straight to the public npmjs.org listing (SS-12)"
 severity = "high"
 status = "open"
 
@@ -1287,7 +2457,7 @@ dimension = "D3"
 subject = "packages/compliance/AGENTS.md:10"
 title = "SS-3 (judgement call): pervasive bare TM-x threat-model ids as the load-bearing citation across the package"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "6af8b0a19983d279"
@@ -1299,12 +2469,48 @@ severity = "warn"
 status = "open"
 
 [[finding]]
+id = "6b292a18a3de69bf"
+domain = "packages/jobs"
+dimension = "D6"
+subject = "packages/jobs/README.md:12-19"
+title = "README's Drivers list documents only 2 of the package's 3 production job-queue drivers"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "6b3ce6d858d9d920"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/license-verify/src/token.ts:1-3"
+title = "SS-1: tessera (a private sibling repo, explicitly named as banned in the rubric) is named 5+ times across the published @caisson-sh/license-verify package"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "6b9efcffb600bdd9"
+domain = "packages/tenancy-rls"
+dimension = "D4"
+subject = "packages/tenancy-rls/CHANGELOG.md:45"
+title = "Changelog cites five internal Linear issue ids (CAISSON-5..9) as a change's provenance"
+severity = "high"
+status = "open"
+
+[[finding]]
 id = "6bb8de85756825b4"
 domain = "packages/retention-runner"
 dimension = "D4"
 subject = "packages/retention-runner/AGENTS.md:42"
 title = "SS-2: internal research-process shorthand (the source survey) in shipped agent-usage doc"
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "6c2b8dd371140b3f"
+domain = "docs-content"
+dimension = "D2"
+subject = "docs/state/launch-runbook.md:74"
+title = "Docs confirm a leaked Discord bot token and OpenRouter API key remain unrotated as of the current session"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -1314,7 +2520,7 @@ dimension = "D3"
 subject = "packages/local-store/README.md:71-72"
 title = "SS-1: the README's closing line names both sibling repos gridwork-core and media-pipeline as its provenance."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "6cc806d844b1cbb9"
@@ -1323,6 +2529,15 @@ dimension = "D4"
 subject = "packages/credits/CHANGELOG.md:49,53-58"
 title = "credits CHANGELOG cites internal Linear ticket ids and reveals the existence/internals of the private services/license app."
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "6d7d8f35c5999c46"
+domain = "packages/ai-config"
+dimension = "D3"
+subject = "packages/ai-config/manifest.ts:1-5"
+title = "SS-3: manifest.ts header opens with a bare (ADR-0020) and closes on (ADR-0094 open-core) with no plain restatement"
+severity = "info"
 status = "open"
 
 [[finding]]
@@ -1332,6 +2547,15 @@ dimension = "D4"
 subject = "packages/kernel/README.md:6, packages/mcp-server/README.md:6, packages/ai-config/README.md:6"
 title = "Multiple exported-mirror package READMEs disclose private sibling repos (gridwork-core, gridwork) as rebuild-clean seeds; the exporter does not strip or rewrite this metadata."
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "6e092a5c8c6a4f8a"
+domain = "packages/kernel"
+dimension = "D3"
+subject = "packages/kernel/README.md:7"
+title = "SS-3: Key ADR: ADR-0002, ADR-0003 is a bare id list with zero plain-language explanation"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -1340,6 +2564,15 @@ domain = "packages/registry-schema"
 dimension = "D3"
 subject = "packages/registry-schema/src/feature-tags.ts:15-20"
 title = "SS-2: registered-tag doc comment cites bare internal phase labels (P2)/(P3)/(P5)"
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "6ffe71c16fcb0cd6"
+domain = "packages/ui"
+dimension = "D3"
+subject = "packages/ui/README.md:7"
+title = "SS-3/SS-11: Key ADR: ADR-0002 is a bare citation with no explanation, and the status line links a dead internal doc"
 severity = "warn"
 status = "open"
 
@@ -1350,6 +2583,15 @@ dimension = "D1"
 subject = "packages/ai-meter/src/meter.ts:160-169"
 title = "reserveCoreSchema/reconcileCoreSchema identifier fields have no max-length bound, violating the security-floor bound-strings length-limits rule"
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "712a4d56e29086ca"
+domain = "oss-mirror"
+dimension = "D4"
+subject = "packages/migrate/src/pg-applier.ts:13"
+title = "A source comment in the exported Apache-2.0 migrate package names Railway Postgres as the internal deploy target this adapter is exercised against."
+severity = "info"
 status = "open"
 
 [[finding]]
@@ -1359,6 +2601,15 @@ dimension = "D4"
 subject = "packages/observability/README.md:3"
 title = "Public observability package doc names the private company's actual production vendor infra (Grafana Cloud, formerly SigNoz)."
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "7150104e422c057e"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/license-verify/src/token.ts:1"
+title = "SS-2: internal task-shorthand file headers (T6/T7) ship into the public mirror"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -1367,6 +2618,51 @@ domain = "packages/ui"
 dimension = "D4"
 subject = "packages/ui/RECIPE.md:45"
 title = "Public RECIPE.md names the internal admin control-plane and its build history."
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "73fff4df4a417f76"
+domain = "packages/auth"
+dimension = "D3"
+subject = "packages/auth/README.md:6"
+title = "SS-1/SS-10/SS-11: the entire README is internal build-status narrative with no usage snippet: bare gridwork seed reference plus a plan.md and build-state.md link."
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "74406bc630f3e983"
+domain = "generator-templates"
+dimension = "D1"
+subject = "packages/cli/templates/base/.github/workflows/ci.yml:18,21,28,31,38,41,48,51"
+title = "Buyer-generated CI pins actions/checkout and oven-sh/setup-bun by mutable major-version tag instead of a commit SHA, unlike the operator's own CI."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "74cad4eeecdce9ef"
+domain = "packages/tenancy-rls"
+dimension = "D3"
+subject = "packages/tenancy-rls/src/rls.ts:220"
+title = "Internal issue-tracker id referenced in a shipped doc comment (SS-4)"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "74f8d8944af611f7"
+domain = "packages/observability"
+dimension = "D3"
+subject = "packages/observability/CHANGELOG.md:7"
+title = "Shipped CHANGELOG entry reads as an internal process log, not a user-facing release note (SS-2)"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "75530ea587d2f958"
+domain = "root-docs"
+dimension = "D6"
+subject = "README.md:27"
+title = "Root README's build-status table omits migrate, observability, registry-schema, pricebook, platform-reads, and prompt-registry entirely, despite the paragraph immediately above naming migrate/observability as shipped Apache-2.0 base packages."
 severity = "warn"
 status = "open"
 
@@ -1377,7 +2673,7 @@ dimension = "D3"
 subject = "tooling/eslint-config/README.md:16"
 title = "SS-2/SS-3: internal workstream shorthand (D9) and dead cross-references to two packages that aren't part of this mirror."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "75eda871b02e1ff0"
@@ -1385,6 +2681,15 @@ domain = "oss-mirror"
 dimension = "D4"
 subject = "packages/tenancy-rls/manifest.ts:7"
 title = "manifest.ts's dangling relative import resolves to nothing in the exported mirror (no registry/ dir exists there)"
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "761670130cc01ff9"
+domain = "packages/jobs"
+dimension = "D3"
+subject = "packages/jobs/src/queue.ts:10"
+title = "SS-9 (judgment call): source comment claims the Trigger.dev driver is only documented here, wired in a later phase though it already ships wired."
 severity = "warn"
 status = "open"
 
@@ -1395,7 +2700,7 @@ dimension = "D3"
 subject = "services/license/src/app.ts:13"
 title = "SS-1: the gridwork security-floor headers phrase leaks into a shipped service comment"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "76a0ffea09ed7e94"
@@ -1404,6 +2709,15 @@ dimension = "D3"
 subject = "apps/site/live/analytics-bundle.live.test.ts:1-6"
 title = "SS-2: a live-verification test's header cites seam 5, ADR-0224 F4=A fork shorthand and the operator locked"
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "76e13941fcbb9003"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/kernel/src/crypto.ts:67"
+title = "SS-2: ponytail tool-internal shorthand ships in the real public repo's source"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -1413,7 +2727,7 @@ dimension = "D3"
 subject = "packages/observability/README.md:10"
 title = "SS-11: Live per-package status links to an internal doc not shipped with the package"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "785a346b3d3a65b6"
@@ -1422,7 +2736,7 @@ dimension = "D4"
 subject = "packages/compliance/README.md:13"
 title = "compliance README names two private sibling repos (Wardfile, gridwork-core) as rebuild-clean seeds."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "7938ed6602f01f65"
@@ -1431,6 +2745,15 @@ dimension = "D3"
 subject = "packages/ai-config/package.json:10"
 title = "SS-12: package.json description is a two-word capability statement followed by a bare ADR id"
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "79604b6d62ea1654"
+domain = "packages/cli"
+dimension = "D6"
+subject = "packages/cli/README.md:9"
+title = "README's Wave-0 scope (skeleton) section states the full P5 generation drive (disk materialization) is deliberately deferred, but disk materialization is fully built and wired into the CLI's main entrypoint."
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -1440,6 +2763,15 @@ dimension = "D4"
 subject = "packages/email/README.md:6"
 title = "email README discloses the private sibling repo gridwork as this package's rebuild-clean seed."
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "7a8da3dc9d896138"
+domain = "packages/ai-evals"
+dimension = "D6"
+subject = "packages/ai-evals/README.md"
+title = "ai-evals has no README.md at all, unlike every sibling package in this audit set which ships one alongside its AGENTS.md."
+severity = "info"
 status = "open"
 
 [[finding]]
@@ -1449,7 +2781,7 @@ dimension = "D3"
 subject = "packages/compliance/README.md:13"
 title = "SS-1: README names sibling private repos as build seeds a buyer has no context for"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "7afdfe6ef7c20932"
@@ -1458,6 +2790,33 @@ dimension = "D3"
 subject = "packages/local-ai/README.md:17-18"
 title = "SS-1: README cites pro-private media-pipeline as a provenance note the buyer cannot verify or use."
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "7b1be9076b312cfa"
+domain = "packages/observability"
+dimension = "D4"
+subject = "packages/observability/README.md:6"
+title = "Internal build-phase shorthand P6-tail in a shipped README's Seeds field"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "7b2a20d6f04383a0"
+domain = "packages/email"
+dimension = "D4"
+subject = "packages/email/README.md:6-10"
+title = "README ships to the public npm mirror naming internal sibling private repos and dead internal doc paths"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "7b397fe9c8fb59fd"
+domain = "packages/local-store"
+dimension = "D3"
+subject = "packages/local-store/README.md:71-72"
+title = "SS-1: README names gridwork-core and media-pipeline, both private sibling repos"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -1467,6 +2826,24 @@ dimension = "D3"
 subject = "packages/agent-dev/README.md:6,10"
 title = "SS-1: buyer README names the private seed repo and a sibling pro-private repo"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "7bba13502e992130"
+domain = "packages/mcp-server"
+dimension = "D4"
+subject = "packages/mcp-server/README.md:6,10"
+title = "SS-1: README's Seeds line names the sibling private repo gridwork-core and pro-private media-pipeline"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "7bd24500f2de7403"
+domain = "oss-mirror"
+dimension = "D4"
+subject = "packages/kernel/src/crypto.ts:1"
+title = "A source comment in the exported Apache-2.0 kernel package cites the gridwork-core security floor, naming the private sibling repo gridwork-core directly inside shipped OSS source."
+severity = "info"
 status = "open"
 
 [[finding]]
@@ -1476,6 +2853,15 @@ dimension = "D3"
 subject = "packages/agent-dev/CHANGELOG.md:49-58"
 title = "SS-2: CHANGELOG entry reads as an internal audit log, not buyer release notes"
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "7d152496dc8d47a6"
+domain = "generator-templates"
+dimension = "D3"
+subject = "packages/cli/templates/eu-ai-act-sample/README.md:24"
+title = "SS-9: the free evaluation sample's own README instructs bun install public npm only no license key needed for a dependency that cannot resolve on public npm"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -1485,7 +2871,7 @@ dimension = "D4"
 subject = "packages/ui/CHANGELOG.md:7, packages/observability/CHANGELOG.md:7"
 title = "Public-mirror CHANGELOGs disclose internal ops-vendor history (SigNoz to Grafana Cloud) and internal app restructuring (apps/studio to apps/admin)."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "7d32f2d03627bc66"
@@ -1494,6 +2880,15 @@ dimension = "D3"
 subject = "packages/kernel/README.md:6-10"
 title = "SS-1/SS-11: every per-package README ships an internal build-tracking stub plus two dead links instead of buyer docs."
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "7d57c235d3987c82"
+domain = "packages/agent-dev"
+dimension = "D3"
+subject = "packages/agent-dev/CHANGELOG.md:49"
+title = "SS-2: changeset-generated CHANGELOG entry opens Whole-repo audit round-3 remediation (ledger 2026-07-01), internal audit/ledger shorthand shipped to buyers"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -1502,6 +2897,33 @@ domain = "packages/prompt-registry"
 dimension = "D3"
 subject = "packages/prompt-registry/package.json:10"
 title = "SS-12: description trails a bare ADR-0061/0006/0014."
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "7dc01f52f76a419a"
+domain = "packages/retention-runner"
+dimension = "D4"
+subject = "packages/retention-runner/README.md:70-71"
+title = "Sibling company/repo name gridworkdigital disclosed in a paid package's README"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "7e41777de9f59d90"
+domain = "packages/field-crypto"
+dimension = "D3"
+subject = "packages/field-crypto/README.md:59"
+title = "SS-1: README names media-pipeline as a pro-private contributor using internal rebuild-clean shorthand."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "7e80a79dc4c94460"
+domain = "packages/mcp-server"
+dimension = "D4"
+subject = "packages/mcp-server/package.json:10; manifest.ts:22"
+title = "SS-12: both the npm description AND the registry-catalog description embed the bare citation ADR-0008/0004"
 severity = "warn"
 status = "open"
 
@@ -1512,7 +2934,7 @@ dimension = "D4"
 subject = "packages/observability/CHANGELOG.md:7"
 title = "SS-1/SS-2: internal infra-vendor swap + internal app names narrated in the shipped public changelog"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "808eb159e32175a9"
@@ -1521,7 +2943,7 @@ dimension = "D1"
 subject = "apps/site/content/docs/base/mcp-server.mdx:12"
 title = "Buyer-facing security doc misstates the MCP server's auth model as EdDSA-JWT verification when the shipped code performs a static per-buyer Bearer-token compare"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "80ac17a1fc262bd3"
@@ -1529,6 +2951,51 @@ domain = "packages/registry-schema"
 dimension = "D4"
 subject = "packages/registry-schema/CHANGELOG.md:21"
 title = "SS-2: internal whole-repo-audit-round narrative in shipped changelog"
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "80bb9e63a79a5fc8"
+domain = "packages/local-store"
+dimension = "D4"
+subject = "packages/local-store/README.md:3-6,71-74; src/store.ts:1,5,13"
+title = "SS-1/SS-8: README plus source name the sibling repo gridwork-core, the internal CI fleet, and the box-name-prefixed self-hosted runner label gw-macos-arm64"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "80bd6b32b69a83d5"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/kernel/README.md:9"
+title = "SS-11: Live per-package status: ../../docs/build-state.md is a dead link once published, recurring across 9 package READMEs"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "8120614aaccea04c"
+domain = "packages/tool-exec"
+dimension = "D4"
+subject = "packages/tool-exec/manifest.ts:7"
+title = "manifest.ts imports from the internal-only registry/schema tree in a paid, source-delivered package"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "8123bb2b2f627d89"
+domain = "packages/observability"
+dimension = "D4"
+subject = "packages/observability/README.md:9-11"
+title = "Sibling private repo media-pipeline named plus two dead internal-only links in a shipped Apache-2.0 README"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "81b63c2af57b7069"
+domain = "packages/registry-schema"
+dimension = "D4"
+subject = "packages/registry-schema/src/entitlements.ts:16"
+title = "Internal phase label P6-store track used to describe a buyer-facing purchase-id format"
 severity = "warn"
 status = "open"
 
@@ -1539,6 +3006,15 @@ dimension = "D3"
 subject = "packages/ai-evals/AGENTS.md:8,13"
 title = "SS-2/SS-3: doc cites bare internal spec-task markers (SPEC TM6, TM9) with no gloss"
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "81e61c7b74deba39"
+domain = "packages/jobs"
+dimension = "D3"
+subject = "packages/jobs/README.md:6"
+title = "SS-1: README names the sibling private repo health-service as a seed and media-pipeline as a contributor."
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -1547,6 +3023,33 @@ domain = "packages/registry-schema"
 dimension = "D3"
 subject = "packages/registry-schema/manifest.ts:20-21"
 title = "SS-12: manifest's buyer-facing description also embeds two bare ADR ids"
+severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "82e4f6d5112691fd"
+domain = "packages/jobs"
+dimension = "D3"
+subject = "packages/jobs/CHANGELOG.md:27"
+title = "SS-2: a changeset entry is titled with internal audit-round/ledger shorthand."
+severity = "info"
+status = "open"
+
+[[finding]]
+id = "83084e2c46f22fd2"
+domain = "packages/audit-worm"
+dimension = "D3"
+subject = "packages/audit-worm/src/store.s3.ts:308"
+title = "SS-14: a real thrown ValidationError message embeds a bare ADR id: current lock (ADR-0202)."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "830f63f39a9cc87b"
+domain = "apps/base"
+dimension = "D4"
+subject = "apps/base/CHANGELOG.md:13"
+title = "The shipped reference-app changelog names the private internal tooling path tooling/standards-gate, which never ships to a buyer."
 severity = "info"
 status = "open"
 
@@ -1557,6 +3060,24 @@ dimension = "D4"
 subject = "packages/kernel/README.md:6"
 title = "Every exported package README's Seeds rebuild-clean line names private sibling repos, unfiltered by the export script."
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "8356a79b17d25efd"
+domain = "apps/ai-kit"
+dimension = "D3"
+subject = "apps/ai-kit/lib/demo.ts:1"
+title = "SS-2: bare internal task id T18 and P3 exit artifact open the file's header comment"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "83a68989b59c02e4"
+domain = "packages/guardrails"
+dimension = "D3"
+subject = "packages/guardrails/CHANGELOG.md:38"
+title = "SS-2: changeset entries are titled with internal audit-round/ledger and harvest slice shorthand."
+severity = "info"
 status = "open"
 
 [[finding]]
@@ -1566,6 +3087,24 @@ dimension = "D3"
 subject = "packages/license-verify/README.md:31"
 title = "SS-9: the README usage snippet imports from the wrong, unpublished npm scope — copy-pasting it fails to resolve."
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "8431eef989679e21"
+domain = "packages/ui"
+dimension = "D3"
+subject = "packages/ui/RECIPE.md:3"
+title = "SS-3/SS-8: recipe doc opens on a bare ADR citation and later names the internal apps/admin control-plane"
+severity = "info"
+status = "open"
+
+[[finding]]
+id = "845a874a20d9d2ab"
+domain = "packages/agent-dev"
+dimension = "D3"
+subject = "packages/agent-dev/src/emitter.ts:1-2, src/index.ts:1-2, src/emitter.test.ts:1, src/content/*.ts:1"
+title = "SS-2: internal plan task-numbers (T19, T20, T21) embedded in shipped source file headers across the package"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -1575,7 +3114,7 @@ dimension = "D2"
 subject = "packages/agent-dev/README.md:6"
 title = "Package README discloses the private upstream repo name gridwork-core to buyers."
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "85fb79103e47a629"
@@ -1584,7 +3123,7 @@ dimension = "D4"
 subject = "packages/tenancy-rls/src/rls.ts:198"
 title = "SS-1: internal hosting-provider name (Railway PG) in shipped oss-source comment"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "862e37dd1d4b2fdf"
@@ -1593,7 +3132,7 @@ dimension = "D3"
 subject = "apps/base/package.json:6"
 title = "SS-12: description field embeds internal phase label (P1 reference)"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "872923b81cbde5e5"
@@ -1602,7 +3141,7 @@ dimension = "D4"
 subject = "packages/observability/README.md:11"
 title = "SS-1: sibling pro-private repo name (media-pipeline) in a shipped README"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "884c29ce5a6edce9"
@@ -1611,6 +3150,24 @@ dimension = "D3"
 subject = "packages/billing/src/paddle-events.ts:78"
 title = "SS-4: internal Linear issue ids (CAISSON-5/6/7/8/9/12) are cited directly in shipped source comments and test names across four packages."
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "88620f19d5e9b2d8"
+domain = "packages/agent-dev"
+dimension = "D3"
+subject = "packages/agent-dev/manifest.ts:1-11"
+title = "SS-3: manifest.ts header comment is a wall of bare ADR ids plus internal jargon (Gate-3, AGPL flank, Pricing numbers board fork) shipped in the npm tarball"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "88fb85b2fc2b9bed"
+domain = "packages/audit-worm"
+dimension = "D3"
+subject = "packages/audit-worm/package.json:10"
+title = "SS-12: package.json description ends with a bare four-ADR citation list (ADR-0006/0052/0053/0054) instead of stopping at the plain capability statement."
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -1620,7 +3177,7 @@ dimension = "D4"
 subject = "packages/migrate/src/pg-applier.ts:13"
 title = "Public migrate/tenancy-rls source comments name the private company's real hosting provider (Railway)."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "8a2f02f53eb2d622"
@@ -1629,7 +3186,7 @@ dimension = "D4"
 subject = "packages/kernel/README.md:6,9-10"
 title = "Public npm package README names the internal sibling repo and pro-private repo, and points at repo-root files that don't exist in the published package."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "8a8cbf9132e01235"
@@ -1638,7 +3195,7 @@ dimension = "D3"
 subject = "packages/billing/src/polar.ts:1-2 (duplicated in src/lemonsqueezy.ts:1-2)"
 title = "SS-2 (judgement call): the operator-decided split names an internal decision-maker with no product meaning to a buyer"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "8a9256a37c099c46"
@@ -1647,7 +3204,7 @@ dimension = "D3"
 subject = "packages/alerting/src/types.ts:3,38"
 title = "SS-1: two comments reference the gridworkdigital reference (a private sibling repo) to justify the shipped seed's scope"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "8ad1017e5fda7790"
@@ -1656,7 +3213,7 @@ dimension = "D4"
 subject = "packages/field-crypto/CHANGELOG.md:14,23-32"
 title = "field-crypto's shipped CHANGELOG.md names a private infra script path, internal Linear ticket ids, and internal apps/admin implementation details."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "8bd35819a40aa84f"
@@ -1665,6 +3222,15 @@ dimension = "D3"
 subject = "packages/ai-evals/src/evals.test.ts:5"
 title = "SS-2: bare internal task marker (T10) used as the sole justification in a shipped comment"
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "8c894987902ddc14"
+domain = "packages/kernel"
+dimension = "D6"
+subject = "packages/kernel/README.md:9"
+title = "README's file-count and feature summary understate the package by roughly 50%"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -1674,6 +3240,15 @@ dimension = "D3"
 subject = "packages/agent-dev/README.md:9-10"
 title = "SS-11: README links to repo-relative internal docs that do not ship with the package"
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "8d3a5db50a900f77"
+domain = "packages/pricebook"
+dimension = "D6"
+subject = "packages/pricebook/src/purchases.ts:74"
+title = "PURCHASE_BOOK comment states the compliance one-time price is $749, but ADR-0227 repriced it to $799 on the same Paddle price id and the site already displays $799."
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -1683,6 +3258,33 @@ dimension = "D3"
 subject = "packages/credits/src/schema.ts:80"
 title = "SS-2: an internal decision-fork letter (fork C-b) is the sole design-choice qualifier"
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "8dbb946205dd528e"
+domain = "packages/alerting"
+dimension = "D4"
+subject = "packages/alerting/README.md:65-66 and src/types.ts:3,38"
+title = "Shipped package README and source comment name the private sibling repo gridworkdigital and the pro-private media-pipeline codebase as provenance sources for the alerting pipeline design."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "8e03a3f9cf7cdc78"
+domain = "services/license"
+dimension = "D3"
+subject = "services/license/Dockerfile:12"
+title = "SS-2: the production Dockerfile carries a session-relative validation claim that will silently rot"
+severity = "info"
+status = "open"
+
+[[finding]]
+id = "8e5a39ec11a11b30"
+domain = "packages/ai-meter"
+dimension = "D6"
+subject = "packages/ai-meter/AGENTS.md:6-24"
+title = "AGENTS.md's invariants list omits the pre-reserve dedup gate (checkDedupGate, ADR-0217) and the BYOK keySource tenant zero-cost billing behavior (ADR-0182), both real exported invariants an integrating agent needs"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -1692,7 +3294,7 @@ dimension = "D3"
 subject = "packages/kernel/src/crypto.ts:1"
 title = "SS-1: the security-primitives file itself names gridwork-core in its header comment, and its test hardcodes the operator's real email domain as a fixture."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "8eca15b07648a134"
@@ -1701,7 +3303,7 @@ dimension = "D3"
 subject = "packages/tool-exec/package.json:10"
 title = "SS-12: description ends with a bare ADR-0153."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "8f111ebb12ab1640"
@@ -1710,7 +3312,7 @@ dimension = "D4"
 subject = "packages/ai-evals/package.json (no files field)"
 title = "Missing npm files allowlist ships the full internal source/test/build-log tree (98 files) to every buyer"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "8f321e0bfe438420"
@@ -1719,7 +3321,7 @@ dimension = "D3"
 subject = "packages/local-store/package.json:10"
 title = "SS-12: the npm/registry description embeds bare ADR ids (ADR-0067/0073)."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "8ffddd1080417098"
@@ -1728,7 +3330,7 @@ dimension = "D3"
 subject = "packages/observability/package.json:10"
 title = "SS-12: npm description embeds a bare (ADR-0117) id"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "90174735b082dbf0"
@@ -1737,6 +3339,51 @@ dimension = "D3"
 subject = "packages/registry-schema/src/feature-tags.ts:31"
 title = "SS-2: ADR-0220 (Fork AM-3 = A) repeats the fork-lettering shorthand inline in source"
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "9167fdf6da05724f"
+domain = "root-docs"
+dimension = "D1"
+subject = "README.md:69"
+title = "The Locked vs open section still lists Cloudflare Pages hosting on caisson.sh as a locked decision, which was superseded by the Railway migration months ago (ADR-0114/0115)."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "91851185883b7ed9"
+domain = "packages/registry-schema"
+dimension = "D3"
+subject = "packages/registry-schema/src/feature-tags.ts:31"
+title = "Internal decision-board fork shorthand appears in real shipped source, not just process docs (SS-2)"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "91e686d8349f1472"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/kernel/README.md:6-10"
+title = "SS-1/SS-10/SS-11: every one of the 11 open packages README.md ships an identical internal-process footer (seed-repo names, a dead build-state.md link, a dead plan.md link, and the private media-pipeline repo name)"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "921d68dc446535fc"
+domain = "packages/pricebook"
+dimension = "D6"
+subject = "packages/pricebook/README.md:1"
+title = "pricebook's own README and AGENTS.md never mention the one-time PURCHASE_BOOK / resolvePurchase subsystem, a ~315-line file re-exported from index.ts that holds every live Paddle price id."
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "92d42015b10f521a"
+domain = "oss-mirror"
+dimension = "D4"
+subject = "packages/license-verify/README.md:31 (exported mirror)"
+title = "Dangling internal specifier: the README's copy-pasteable usage snippet still imports from the pre-rename @caisson/license-verify instead of the published @caisson-sh/license-verify"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -1746,7 +3393,7 @@ dimension = "D3"
 subject = "packages/billing/src/paddle-events.ts:78,166,187,245; packages/credits/src/credits.ts:347; packages/tenancy-rls/src/rls.ts:220"
 title = "SS-4: internal ticket ids (CAISSON-6/7/8/9) are embedded in shipped Apache-2.0 billing/credits/RLS source comments"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "93897a014f2ff0c7"
@@ -1755,6 +3402,15 @@ dimension = "D3"
 subject = "services/license/src/paddle-pricebook-roundtrip.test.ts:1"
 title = "SS-2: test header says wired this session and cites an internal W2-class trap"
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "943fd52501e00eb0"
+domain = "packages/ui"
+dimension = "D4"
+subject = "packages/ui/CHANGELOG.md:7"
+title = "The shipped CHANGELOG discloses an internal observability-vendor migration (SigNoz to Grafana Cloud fleet sink) and an internal app rename (apps/studio removed to apps/admin design gallery), in a file every buyer/public reader sees."
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -1767,11 +3423,47 @@ severity = "info"
 status = "open"
 
 [[finding]]
+id = "95281132ab3afb85"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/kernel/src/scrub-deep.test.ts:29"
+title = "SS-6 judgement call: a fixture string containing a plausible-looking live-format OpenAI key literal ships in the published test suite"
+severity = "info"
+status = "open"
+
+[[finding]]
+id = "9587b4ba6f490b2e"
+domain = "root-docs"
+dimension = "D6"
+subject = "docs/build-state.md:361"
+title = "The Stage-2 table row for platform-reads describes the wrong package: an admin cross-tenant RLS view consumed by apps/admin, when the actual package reads per-account grants for the buyer dashboard."
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "95c9fef12bb61958"
+domain = "packages/guardrails"
+dimension = "D3"
+subject = "packages/guardrails/src/pii.ts:1"
+title = "SS-1: the file's very first line names the sibling private repo media-pipeline."
+severity = "warn"
+status = "open"
+
+[[finding]]
 id = "974365332082534e"
 domain = "packages/tenancy-rls"
 dimension = "D3"
 subject = "packages/tenancy-rls/package.json:10"
 title = "SS-12: description ends with a bare ADR-0005."
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "974767918f03594c"
+domain = "packages/license-verify"
+dimension = "D3"
+subject = "packages/license-verify/src/claims.ts:30"
+title = "SS-2: public-API doc-comment cites P6 issuer as the only explanation"
 severity = "warn"
 status = "open"
 
@@ -1782,7 +3474,7 @@ dimension = "D2"
 subject = "packages/license-verify/src/__golden__/prod-signed-token.json:2-4"
 title = "A real production-signed license token granting ALL THREE paid editions (ai-kit, compliance, local-ai), non-expiring, ships verbatim into the public @caisson-sh/license-verify npm package via the oss-mirror export."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "98dee498eef002ae"
@@ -1790,6 +3482,15 @@ domain = "packages/ui"
 dimension = "D3"
 subject = "packages/ui/manifest.ts:18"
 title = "SS-1: registry-manifest description string embeds Wardfile gen-script pattern"
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "98eebd168640cbb6"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/cli/templates/eu-ai-act-sample/src/evidence-path.ts:14,20"
+title = "Dangling internal import specifier in the exported sample template (unresolvable in the public mirror)"
 severity = "warn"
 status = "open"
 
@@ -1800,6 +3501,15 @@ dimension = "D3"
 subject = "packages/mcp-server/src/rate-limit.test.ts:4,55"
 title = "SS-2: test naming/comments use internal Wave-0 build-phase shorthand as the description of a backward-compatibility contract."
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "9b8542bd12e368c6"
+domain = "packages/license-verify"
+dimension = "D3"
+subject = "packages/license-verify/package.json:10"
+title = "SS-12: description ends with a bare ADR-0010/0024 citation"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -1809,7 +3519,7 @@ dimension = "D3"
 subject = "packages/license-verify/README.md:8,47"
 title = "SS-2: the license ISSUER (signing) is P6 uses an internal build-phase label as the sole explanation, in both the README and AGENTS.md."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "9c8567179e6387d8"
@@ -1818,6 +3528,105 @@ dimension = "D3"
 subject = "packages/billing/README.md:1-12"
 title = "SS-1/SS-9/SS-10/SS-11: same internal-build-note pattern as auth — no usage snippet, gridwork-ism, dead internal link"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "9caba297d7416ccc"
+domain = "packages/guardrails"
+dimension = "D3"
+subject = "packages/guardrails/package.json:10"
+title = "SS-12: the registry/npm description ends with bare ADR ids."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "9d0980a936815a58"
+domain = "packages/kernel"
+dimension = "D3"
+subject = "packages/kernel/src/crypto.ts:31"
+title = "SS-1/SS-3: comment cites gridwork-core and an unresolvable ADR-0229 row 44"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "9d14397405965853"
+domain = "packages/credits"
+dimension = "D3"
+subject = "packages/credits/CHANGELOG.md:49"
+title = "SS-4/SS-2: a changeset entry cites raw internal ticket ids and post-wave triage shorthand."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "9d605f3037fd6f95"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/migrate/README.md:14"
+title = "SS-13: package README claims commercial licensing while package.json plus the exported mirror both say Apache-2.0"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "9dca04cad8dfa404"
+domain = "packages/ai-kit"
+dimension = "D6"
+subject = "packages/ai-kit/AGENTS.md:30"
+title = "AGENTS.md claims ai-kit is the ONLY one package allowed to import ai/@ai-sdk/*, contradicting ai-config's own AGENTS.md and the enforced eslint boundary, both of which permit ai-config too."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "9dcab0c38d95709e"
+domain = "packages/billing"
+dimension = "D3"
+subject = "packages/billing/README.md:7"
+title = "SS-1/SS-10/SS-11: the entire README is internal build-status narrative with no usage snippet: bare gridwork seed reference, a plan.md and build-state.md link, and a media-pipeline mention."
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "9e2af92b7c106195"
+domain = "packages/local-ai"
+dimension = "D3"
+subject = "packages/local-ai/package.json:10"
+title = "SS-12: description opens with a bare (composition, ADR-0050 fully-commercial) parenthetical"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "9e482a7b9e59fbf7"
+domain = "packages/prompt-registry"
+dimension = "D3"
+subject = "packages/prompt-registry/README.md:5"
+title = "README uses internal wave-numbering shorthand instead of a plain description (SS-2)"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "9f462cf332db7553"
+domain = "packages/ai-kit"
+dimension = "D3"
+subject = "packages/ai-kit/src/gateway.integration.test.ts:1-2, src/gateway.test.ts:1, src/providers.test.ts:165"
+title = "SS-2: internal task numbers (T14, T15) and audit-round shorthand (round-4/5 remediation) in shipped test source"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "9fa1b75834c45e2b"
+domain = "packages/tenancy-rls"
+dimension = "D4"
+subject = "packages/tenancy-rls/README.md:9-10"
+title = "Sibling private repo media-pipeline named plus two dead internal-only links, identical boilerplate to observability"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "9fd3ec3e2288f3e9"
+domain = "packages/kernel"
+dimension = "D4"
+subject = "packages/kernel/package.json:10"
+title = "SS-12: npm-facing description embeds raw internal ADR ids (ADR-0019)/(ADR-0016) a buyer cannot resolve"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -1827,6 +3636,24 @@ dimension = "D3"
 subject = "packages/registry-schema/src/entitlements.ts:29"
 title = "SS-2: the separate P5 question repeats internal phase-numbering shorthand"
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "9feb3cf77f2412f4"
+domain = "packages/local-ai"
+dimension = "D3"
+subject = "packages/local-ai/README.md:22-23"
+title = "SS-2/SS-11: README cites internal task label T9 scaffold and links an internal spec path"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "a111e8c614f88204"
+domain = "packages/billing"
+dimension = "D3"
+subject = "packages/billing/package.json:10"
+title = "SS-12: package.json description ends with a bare ADR citation (ADR-0017/0108) instead of stopping at the plain capability statement."
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -1836,7 +3663,7 @@ dimension = "D3"
 subject = "packages/kernel/README.md:6-7 (also auth, billing, credits, email, jobs, mcp-server, tenancy-rls, ui, license-verify)"
 title = "SS-1/SS-3: Seeds rebuild-clean gridwork/gridwork-core/gridworkdigital plus bare Key ADR line ship in most public package READMEs"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "a265681b35b71743"
@@ -1844,6 +3671,33 @@ domain = "oss-mirror"
 dimension = "D4"
 subject = "packages/observability/CHANGELOG.md:7 and packages/ui/CHANGELOG.md:7 (pattern recurs across nearly every exported package's CHANGELOG.md)"
 title = "Public-mirror CHANGELOG.md files ship full internal build history verbatim, naming the internal admin control-plane app, the removed apps/studio, the audit-harness tool, and the SigNoz/Grafana Cloud backend, plus every CAISSON ticket and ADR id."
+severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "a2df429d4647dbbc"
+domain = "packages/ui"
+dimension = "D3"
+subject = "packages/ui/package.json:10"
+title = "SS-12: the npm-visible description field embeds bare ADR ids"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "a3529aa19f857eb6"
+domain = "packages/migrate"
+dimension = "D3"
+subject = "packages/migrate/package.json:10"
+title = "SS-12: description cites bare (ADR-0070/0090) ids"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "a38163f2ba6dd28f"
+domain = "packages/prompt-registry"
+dimension = "D3"
+subject = "packages/prompt-registry/package.json:10"
+title = "npm description ends with bare stacked ADR ids (SS-12)"
 severity = "high"
 status = "open"
 
@@ -1854,7 +3708,7 @@ dimension = "D3"
 subject = "packages/agent-kernel/src/golden.test.ts:1,3"
 title = "SS-2: comment cites a bare internal task marker (T4) as its only context"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "a3f820fbd7b10ace"
@@ -1863,7 +3717,7 @@ dimension = "D3"
 subject = "packages/auth/package.json:10"
 title = "SS-12: package.json description ends in a bare ADR citation (ADR-0015)"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "a451e69e39a0c532"
@@ -1872,7 +3726,7 @@ dimension = "D3"
 subject = "packages/license-verify/manifest.ts:21 (exported)"
 title = "SS-12/SS-2: the npm-published module description reads Issuer is P6 — only offline verify lives here"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "a45474beb669bb4a"
@@ -1881,7 +3735,7 @@ dimension = "D3"
 subject = "packages/credits/package.json:10"
 title = "SS-12: npm description ends with a bare ADR-id list"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "a4a5bc77808e4109"
@@ -1890,7 +3744,7 @@ dimension = "D3"
 subject = "packages/audit-worm/package.json:10"
 title = "SS-12: package.json description ends in a bare ADR citation ADR-0006/0052/0053/0054"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "a548d813c640fa84"
@@ -1899,7 +3753,7 @@ dimension = "D3"
 subject = "packages/observability/CHANGELOG.md:7"
 title = "SS-2/SS-8: Post-merge consolidation sweep entry names internal-only tools/dirs in a public changelog"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "a64db9cb5a11b8f7"
@@ -1908,7 +3762,7 @@ dimension = "D4"
 subject = "packages/jobs/CHANGELOG.md:27"
 title = "jobs CHANGELOG references an internal whole-repo-audit remediation ledger by round/date."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "a6878c541d3c8c46"
@@ -1917,6 +3771,24 @@ dimension = "D3"
 subject = "packages/local-ai/src/privacy/policy.ts:2"
 title = "SS-3: fork P4a-7-D is cited as the sole explanation for the zero-egress privacy posture, with no plain-language restatement first."
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "a7ac7d6ae43fa88e"
+domain = "packages/field-crypto"
+dimension = "D4"
+subject = "packages/field-crypto/CHANGELOG.md:23-34"
+title = "CHANGELOG shipped with the commercial package exposes internal Linear ticket IDs and internal app/infra paths"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "a81d7b0298a95090"
+domain = "generator-templates"
+dimension = "D3"
+subject = "packages/cli/templates/eu-ai-act-sample/src/evidence-path.ts:1"
+title = "SS-2: internal wave-shorthand ADR-0095 W3 opens the header comment of the shipped sample's main source file"
+severity = "info"
 status = "open"
 
 [[finding]]
@@ -1926,6 +3798,15 @@ dimension = "D4"
 subject = "packages/ai-meter/package.json"
 title = "No files allowlist/.npmignore — bun pm pack ships the whole package dir, not just dist/, to every buyer."
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "a90fb482d5296e9d"
+domain = "root-docs"
+dimension = "D6"
+subject = "README.md:49"
+title = "README's Layout section lists apps as site studio compliance/ai-kit/local-ai reference; base plus agent-dev, but apps/studio no longer exists (absorbed into apps/admin per ADR-0140) and apps/admin the current control-plane app is not mentioned at all."
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -1938,11 +3819,47 @@ severity = "high"
 status = "fixed"
 
 [[finding]]
+id = "a9a0e33a38d7fc0a"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/kernel/README.md:6 (Seeds line, 12 READMEs)"
+title = "SS-1: Seeds (rebuild-clean): gridwork-core plus a named private sibling repo ship unmodified to the public mirror in at least 12 package READMEs"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "a9cf4db364fcbe69"
+domain = "apps/base"
+dimension = "D3"
+subject = "apps/base/package.json:6"
+title = "SS-12/SS-2: buyer-facing description embeds bare phase shorthand P1 reference"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "a9d38935fda60d55"
+domain = "packages/ai-evals"
+dimension = "D3"
+subject = "packages/ai-evals/CHANGELOG.md:23"
+title = "SS-2: identical Whole-repo audit round-3 remediation (ledger 2026-07-01) boilerplate in this package's changelog"
+severity = "warn"
+status = "open"
+
+[[finding]]
 id = "a9fb63534f672ff4"
 domain = "packages/kernel"
 dimension = "D3"
 subject = "packages/kernel/src/read-only.ts:18"
 title = "SS-4/SS-1: a doc comment cites an internal issue-tracker-style number and the ponytail tooling convention."
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "aabb34291e56edee"
+domain = "packages/ai-kit"
+dimension = "D3"
+subject = "packages/ai-kit/CHANGELOG.md:19, 97, 107"
+title = "SS-2: three changelog entries carry internal wave/round/ledger shorthand, harvest slice-2 serialized wave-2, audit round-4 remediation, rounds 1+2 ledger"
 severity = "warn"
 status = "open"
 
@@ -1953,6 +3870,33 @@ dimension = "D1"
 subject = "packages/billing/src/paddle-events.ts:32-36"
 title = "The untrusted webhook envelope schemas (Paddle/Stripe/Polar/LemonSqueezy) leave event_id/event_type/id/type unbounded, violating the bound-strings length-limits security-floor rule at an external API boundary"
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "ac0f0b4f33475152"
+domain = "root-docs"
+dimension = "D6"
+subject = "README.md:53"
+title = "README's Layout section says knowledge/decisions/ ADRs 0001-0137, but the repo has 189 ADR files with a current ceiling of ADR-0234."
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "ac89e9fafae82172"
+domain = "oss-mirror"
+dimension = "D1"
+subject = "packages/mcp-server/manifest.ts:7"
+title = "13 of the 18 exported Apache packages ship a manifest.ts whose relative import resolves outside the mirror tree, into the never-copied private registry dir"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "ad4547dfdf670906"
+domain = "packages/credits"
+dimension = "D4"
+subject = "packages/credits/README.md:6-10"
+title = "README ships to the public npm mirror naming internal sibling private repos and dead internal doc paths"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -1962,7 +3906,7 @@ dimension = "D2"
 subject = "packages/{ai-config,auth,billing,credits,email,jobs,kernel,license-verify,mcp-server,migrate,observability,tenancy-rls,ui}/manifest.ts:1 (exported output)"
 title = "13 of the 18 packages exported to the public caisson-sh/caisson-oss mirror ship a manifest.ts whose import resolves to the private monorepo's registry/ directory, which export-public-mirror.ts never copies — a dangling internal-path reference shipped to a public repo."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "aded7c5bbc994070"
@@ -1971,6 +3915,24 @@ dimension = "D3"
 subject = "packages/field-crypto/CHANGELOG.md:23"
 title = "SS-4/SS-8: published changelog leaks Linear issue ids and an internal app path"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "ae635c1ce2161c13"
+domain = "packages/compliance"
+dimension = "D3"
+subject = "packages/compliance/README.md:13"
+title = "SS-1: README names sibling private repos (Wardfile, gridwork-core, tessera) as Seeds (rebuild-clean)."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "af13e64333840f01"
+domain = "packages/migrate"
+dimension = "D3"
+subject = "packages/migrate/src/pg-applier.ts:13"
+title = "SS-2: comment cites an unresolvable internal process step the deploy D-step"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -1979,6 +3941,33 @@ domain = "packages/ai-config"
 dimension = "D3"
 subject = "packages/ai-config/README.md:6,10"
 title = "SS-1: README of the public Apache-2.0 package names two internal seed repos and a private sibling repo"
+severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "b0ccba86ef4bc552"
+domain = "packages/ai-config"
+dimension = "D3"
+subject = "packages/ai-config/AGENTS.md:3,7 and src/config.ts:93"
+title = "SS-1: stale pre-rename product codename forge.config used as the buyer-facing settings-file name in shipped docs/comments"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "b0d1879457811cd6"
+domain = "packages/local-store"
+dimension = "D3"
+subject = "packages/local-store/package.json:10"
+title = "SS-12: description cites (ADR-0067/0073) bare ids"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "b0ff030725c39708"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/license-verify/package.json:10"
+title = "SS-12/SS-1: the public npm description field names the private tessera wire format and cites bare phase shorthand P6"
 severity = "high"
 status = "open"
 
@@ -1992,12 +3981,57 @@ severity = "info"
 status = "open"
 
 [[finding]]
+id = "b2094d9842c75533"
+domain = "packages/compliance"
+dimension = "D4"
+subject = "packages/compliance/README.md:13"
+title = "Compliance-edition README names internal sibling private repos to paying buyers"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "b22addc129c4b284"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/registry-schema/ (mirrored, no README)"
+title = "@caisson-sh/registry-schema ships with no README.md at all on the public mirror/npm (SS-10)"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "b23fe6d28f528997"
+domain = "packages/ai-config"
+dimension = "D6"
+subject = "packages/ai-config/AGENTS.md:8"
+title = "AGENTS.md and manifest.ts both understate ai-config's provider list to 5, omitting 3 providers (bedrock, azure-openai, ollama) the code has supported since ADR-0160/0210."
+severity = "high"
+status = "open"
+
+[[finding]]
 id = "b282f16fb9c4204c"
 domain = "packages/mcp-server"
 dimension = "D3"
 subject = "packages/mcp-server/README.md:9-10"
 title = "SS-1/SS-2/SS-11: identical boilerplate to kernel's — Build per /plan.md, a media-pipeline reference, and a link to ../../docs/build-state.md."
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "b2d85331b71b661a"
+domain = "packages/agent-dev"
+dimension = "D6"
+subject = "packages/agent-dev/README.md:9"
+title = "Package README still labels the edition (roadmap edition) despite its own Built (substantial) claim on the same line and a security-hardened agent-runner just added to its members."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "b2e1ea0e9abfabd1"
+domain = "packages/email"
+dimension = "D3"
+subject = "packages/email/package.json:10"
+title = "SS-12: the registry/npm description ends with bare ADR ids."
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -2007,6 +4041,15 @@ dimension = "D4"
 subject = "packages/license-verify/README.md:9 and AGENTS.md:3,40"
 title = "Shipped README/AGENTS.md reference the internal build-phase codename P6 with no buyer-resolvable meaning."
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "b4802ed6e4e9a17d"
+domain = "generator-templates"
+dimension = "D1"
+subject = "packages/cli/templates/eu-ai-act-sample/package.json:14"
+title = "The free EU-AI-Act sample ships a dependency on @caisson/kernel with no .npmrc routing it to the commercial registry, so bun install resolves it against default public npm where it does not exist."
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -2016,7 +4059,7 @@ dimension = "D4"
 subject = "packages/billing/src/idempotency.ts:29"
 title = "Shipped source comment references the internal monorepo app/process apps/site deploy-migrate."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "b4cc1703d25326e4"
@@ -2025,6 +4068,24 @@ dimension = "D3"
 subject = "services/license/CHANGELOG.md:7"
 title = "SS-4: CHANGELOG entry cites post-wave triage CAISSON-5/6/7/8/9"
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "b4d3b0c69707ffd9"
+domain = "packages/field-crypto"
+dimension = "D3"
+subject = "packages/field-crypto/live/kms.live.test.ts:95"
+title = "SS-4: a bare internal ticket id is embedded in a shipped test-file comment."
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "b50ea20e5a74f3eb"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/kernel/README.md:6"
+title = "SS-1: gridwork-core/media-pipeline references ship verbatim to the public mirror"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -2034,7 +4095,7 @@ dimension = "D3"
 subject = "packages/kernel/src/crypto.test.ts:19,27,30"
 title = "SS-1: test fixtures use the internal domain admin@gridwork.dev as sample data."
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "b552c442406b6be5"
@@ -2043,6 +4104,24 @@ dimension = "D3"
 subject = "packages/retention-runner/src/schedule.ts:42-43"
 title = "SS-2: ponytail comment leaks internal AI-tooling jargon into commercial shipped source"
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "b59dccbaccef6176"
+domain = "packages/local-ai"
+dimension = "D3"
+subject = "packages/local-ai/README.md:25"
+title = "SS-2: README cites bare internal task label (T13) for the ONNX backend"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "b66fbe67aab1a1dd"
+domain = "root-docs"
+dimension = "D6"
+subject = "README.md:23"
+title = "Root README calls Agentic-Dev a roadmap edition, but agent-kernel/agent-dev/agent-runner are substantially built, tested, and sold."
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -2052,7 +4131,7 @@ dimension = "D4"
 subject = "packages/agent-kernel/README.md:62-63"
 title = "README footer names the pro-private media-pipeline repo and mislabels the operator's private gridwork-core repo as public"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "b70ae5092e222dab"
@@ -2061,7 +4140,7 @@ dimension = "D3"
 subject = "packages/agent-runner/CHANGELOG.md:17-18"
 title = "SS-3: changelog cites an internal ADR sub-section id (F5) with no gloss"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "b736da584ac06e71"
@@ -2069,6 +4148,15 @@ domain = "packages/registry-schema"
 dimension = "D3"
 subject = "packages/registry-schema/CHANGELOG.md:21"
 title = "SS-2: Whole-repo audit remediation (rounds 1+2, ledger 2026-07-01)"
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "b75c942f9b7db5a6"
+domain = "packages/auth"
+dimension = "D3"
+subject = "packages/auth/CHANGELOG.md:34"
+title = "SS-2: changelog entry opens with internal wave shorthand: Fold the Stage-2 harvest primitives into the edition member pin maps."
 severity = "warn"
 status = "open"
 
@@ -2079,7 +4167,7 @@ dimension = "D3"
 subject = "packages/mcp-server/package.json:10"
 title = "SS-12: the npm/registry description trails off with bare (ADR-0008/0004)."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "b7fbfb86ea769fce"
@@ -2088,7 +4176,7 @@ dimension = "D4"
 subject = "packages/billing/package.json:10"
 title = "SS-12: package.json description ends in a bare ADR trailer."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "b88199f0a264f4fe"
@@ -2097,7 +4185,7 @@ dimension = "D4"
 subject = "packages/ai-config/package.json (no files field)"
 title = "Missing npm files allowlist ships the full internal source/test/build-log tree (27 files) to every buyer"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "b8b3bf5c01d08468"
@@ -2106,6 +4194,15 @@ dimension = "D2"
 subject = "SUMMARY.md:116"
 title = "Root doc discloses the operator's local filesystem path (private-infra path leakage)"
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "b8ee45d94a987ce2"
+domain = "packages/local-ai"
+dimension = "D3"
+subject = "packages/local-ai/README.md:18"
+title = "SS-1: README names the private sibling repo media-pipeline"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -2124,6 +4221,24 @@ dimension = "D3"
 subject = "packages/license-verify/{README.md,src/index.ts,token.ts,claims.ts,verify.ts} (exported)"
 title = "SS-1: five files repeatedly name the private sibling repo tessera as the source of the wire format"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "bc9e41e2d37e3561"
+domain = "packages/ai-evals"
+dimension = "D3"
+subject = "packages/ai-evals/ (no README.md)"
+title = "SS-10: sold-source package ships with no README at all, a buyer opens the tarball to zero purpose/usage docs"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "bcab2660bc040e83"
+domain = "packages/ai-config"
+dimension = "D4"
+subject = "packages/ai-config/README.md:6,10"
+title = "README names three private sibling repos (gridwork, gridwork-core, media-pipeline) as this package's build provenance, and this file is the source of the oss-mirror leak above."
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -2133,7 +4248,7 @@ dimension = "D4"
 subject = "packages/observability/src/scrub.test.ts:21"
 title = "Public test fixture uses the operator's real first name as a sample email local-part."
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "bd4dc6549e0926da"
@@ -2141,6 +4256,15 @@ domain = "packages/cli"
 dimension = "D3"
 subject = "packages/cli/README.md:6"
 title = "SS-2: section header Wave-0 scope (skeleton) is internal build-wave shorthand a buyer cannot parse"
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "bd56f368766839e5"
+domain = "packages/license-verify"
+dimension = "D4"
+subject = "packages/license-verify/package.json:10"
+title = "SS-12: npm description ends with the bare citation ADR-0010/0024 with no plain-English lead-in"
 severity = "warn"
 status = "open"
 
@@ -2151,7 +4275,7 @@ dimension = "D3"
 subject = "packages/jobs/README.md:6"
 title = "SS-1/SS-10/SS-11: README names a sibling private repo as a build seed and links an internal doc"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "be15f45abb2ef0bb"
@@ -2160,7 +4284,7 @@ dimension = "D3"
 subject = "packages/tool-exec/manifest.ts:14-15"
 title = "SS-9-adjacent (judgement call): PLACEHOLDER price pending ADR-0135 pricing lock is likely stale"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "bebe11d747dfb25b"
@@ -2169,7 +4293,7 @@ dimension = "D1"
 subject = "packages/cli/templates/eu-ai-act-sample/package.json:14"
 title = "The free EU-AI-Act sample template ships in the public OSS mirror with a bare dependency on the old @caisson/kernel scope, which the exporter's own header comment states is owned by an unrelated third party on public npm."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "beddbdc8d48fbcc9"
@@ -2178,6 +4302,33 @@ dimension = "D4"
 subject = "packages/ui/CHANGELOG.md:7"
 title = "Public CHANGELOG.md entry narrates internal infra/tooling migrations (SigNoz to Grafana, apps/studio to apps/admin)."
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "bffc3c122bc09d4f"
+domain = "packages/credits"
+dimension = "D3"
+subject = "packages/credits/README.md:6"
+title = "SS-1: README names gridwork as a seed and media-pipeline as a pro-private contributor."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "c14aa066b4396142"
+domain = "packages/registry-schema"
+dimension = "D4"
+subject = "packages/registry-schema/CHANGELOG.md:7"
+title = "Changelog repeats the internal Fork AM-3 = A shorthand"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "c162f02fadff111d"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/cli/templates/eu-ai-act-sample/package.json:14"
+title = "Dangling internal specifier: the free sample template in the public cli package still depends on the commercial @caisson/kernel scope, unexplained"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -2187,7 +4338,7 @@ dimension = "D3"
 subject = "packages/license-verify/package.json:10"
 title = "SS-1/SS-12: the npm/registry-facing description names the sibling private repo tessera and the internal phase P6, plus bare ADR ids."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "c1db011d2026c2e8"
@@ -2195,6 +4346,24 @@ domain = "oss-mirror"
 dimension = "D2"
 subject = "packages/cli/templates/eu-ai-act-sample/README.md:24"
 title = "The generated EU-AI-Act sample tells buyers to bun install an @caisson/kernel specifier that the repo's own exporter says resolves to a scope owned by an unrelated third party."
+severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "c1ffb3462aeb73fe"
+domain = "packages/credits"
+dimension = "D3"
+subject = "packages/credits/README.md:9"
+title = "SS-11: README links into the internal docs tree and references an internal plan.md."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "c20439e3dd62c46d"
+domain = "packages/tool-exec"
+dimension = "D3"
+subject = "packages/tool-exec/package.json:10"
+title = "npm description ends with a bare ADR id (SS-12)"
 severity = "high"
 status = "open"
 
@@ -2205,6 +4374,15 @@ dimension = "D4"
 subject = "packages/tenancy-rls/src/rls.ts:163, packages/ui/RECIPE.md:45"
 title = "Public-mirror source comment and doc name the internal apps/admin control-plane app and its removed sibling apps/studio."
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "c31eb597183be62f"
+domain = "oss-mirror"
+dimension = "D4"
+subject = "packages/ui/CHANGELOG.md:7 (export; also observability, tenancy-rls:25, tooling/testing:7-19)"
+title = "The exporter's copy allowlist never excludes changesets-generated CHANGELOG.md, so raw internal-infra vocabulary ships verbatim into the public GitHub mirror."
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -2214,7 +4392,7 @@ dimension = "D1"
 subject = "apps/base/src/server.ts:44-64"
 title = "The /spend and /mcp route handlers cast req.json() to a typed shape with no Zod .strict() boundary validation, contrary to the security floor's explicit input-validation rule."
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "c383328cb501d8b5"
@@ -2223,7 +4401,7 @@ dimension = "D1"
 subject = ".github/workflows/ci.yml:199"
 title = "oscal-cli is downloaded from Maven Central over plain curl with no checksum/signature verification before being unzipped and put on PATH"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "c38e1460253b2c4c"
@@ -2232,6 +4410,24 @@ dimension = "D4"
 subject = "packages/retention-runner/README.md:70"
 title = "SS-1: sibling-repo build provenance (gridworkdigital) in shipped README"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "c3c7106323af40b1"
+domain = "packages/audit-worm"
+dimension = "D4"
+subject = "packages/audit-worm/live/store.s3.live.test.ts:9,32,144"
+title = "The live WORM proof's own header claims it never reaches the published tarball, but with no files allowlist or .npmignore, bun pm pack includes live/ verbatim, shipping the internal provisioning path and reserved live-proof-tenant UUID to every paying buyer."
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "c3ceabbaa5034549"
+domain = "packages/field-crypto"
+dimension = "D3"
+subject = "packages/field-crypto/AGENTS.md:35"
+title = "SS-2: a section heading uses internal Wave 0 build-phase shorthand."
+severity = "info"
 status = "open"
 
 [[finding]]
@@ -2241,7 +4437,7 @@ dimension = "D4"
 subject = "packages/audit-worm/live/store.s3.live.test.ts:9"
 title = "D4 infra-path leak: shipped live test repeatedly cites the internal ops script infra/worm/provision.ts."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "c50c49b9373d5455"
@@ -2250,7 +4446,7 @@ dimension = "D4"
 subject = "packages/ui/RECIPE.md:45"
 title = "Public design-kit doc names private internal app directories (apps/admin, apps/studio)."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "c5313dde7aebb73e"
@@ -2259,7 +4455,7 @@ dimension = "D4"
 subject = "packages/auth/package.json"
 title = "No files allowlist/.npmignore — bun pm pack ships AGENTS.md/CHANGELOG.md/.turbo logs/src to every buyer."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "c5461ee660ce86db"
@@ -2268,7 +4464,7 @@ dimension = "D4"
 subject = "packages/kernel/CHANGELOG.md:41"
 title = "Public changelog names the third-party pentest vendor (Strix) and internal vulnerability ids for a past security engagement."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "c546b0f54d629112"
@@ -2277,7 +4473,7 @@ dimension = "D4"
 subject = "packages/migrate/src/pg-applier.ts:10-13"
 title = "Shipped public source comment names an internal private-app test path and the operator's specific hosting provider."
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "c54fc42f13ea6db8"
@@ -2286,7 +4482,7 @@ dimension = "D3"
 subject = "packages/email/src/smtp.ts:38"
 title = "SS-3 (low-confidence): bare per ADR-0018 trailing citation repeated verbatim across two driver files"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "c590394fcbc02139"
@@ -2295,7 +4491,7 @@ dimension = "D3"
 subject = "packages/jobs/package.json:10"
 title = "SS-12: npm description ends with a bare ADR id"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "c5a3f79bf0310317"
@@ -2304,6 +4500,24 @@ dimension = "D4"
 subject = "packages/kernel/CHANGELOG.md:41"
 title = "Public npm package CHANGELOG discloses a named pentest engagement and internal vulnerability IDs."
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "c680c8b9580e7fd1"
+domain = "packages/auth"
+dimension = "D4"
+subject = "packages/auth/README.md:6,10"
+title = "Shipped Apache-2.0 package README names the private sibling repo gridwork and the pro-private media-pipeline codebase as rebuild-clean seed sources."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "c6f1317476b74bf7"
+domain = "packages/tenancy-rls"
+dimension = "D3"
+subject = "packages/tenancy-rls/src/rls.ts:159"
+title = "Internal decision-board fork shorthand embedded as a section header comment in real source (SS-2)"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -2313,7 +4527,7 @@ dimension = "D3"
 subject = "packages/agent-runner/README.md:44"
 title = "SS-3: closing README line cites bare internal fork ids (F1/F5) as the only explanation"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "c70f023d01813b6d"
@@ -2322,6 +4536,24 @@ dimension = "D3"
 subject = "apps/site/CHANGELOG.md:57"
 title = "SS-4: CHANGELOG entry cites PR#35 and the sibling sweep backlog shorthand"
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "c719bb8771f004ad"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/kernel/src/crypto.test.ts:19,27"
+title = "Public mirror test fixture bakes in the operator's private company email domain (SS-1)"
+severity = "info"
+status = "open"
+
+[[finding]]
+id = "c7546089ec209709"
+domain = "packages/local-ai"
+dimension = "D3"
+subject = "packages/local-ai/src/privacy/egress-guard.ts:2"
+title = "SS-2: file header cites an internal fork id fork P4a-7-D"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -2331,6 +4563,15 @@ dimension = "D4"
 subject = "packages/guardrails/AGENTS.md:32"
 title = "guardrails AGENTS.md names the private pro-only sibling product media-pipeline."
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "c86142baf9658859"
+domain = "packages/kernel"
+dimension = "D3"
+subject = "packages/kernel/src/crypto.test.ts:19"
+title = "SS-1: test fixtures use the operator's own domain admin@gridwork.dev"
+severity = "info"
 status = "open"
 
 [[finding]]
@@ -2349,7 +4590,7 @@ dimension = "D4"
 subject = "packages/billing/CHANGELOG.md:41"
 title = "SS-4/SS-2: shipped CHANGELOG strings together five internal Linear ids plus post-wave shorthand."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "ca082a51facfb909"
@@ -2357,6 +4598,33 @@ domain = "services/docs"
 dimension = "D3"
 subject = "services/docs/src/app.ts:4"
 title = "SS-1: the gridwork security floor phrase leaks into a shipped service comment"
+severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "ca2f89742469bf20"
+domain = "root-docs"
+dimension = "D6"
+subject = "README.md:47 (24 packages, low)"
+title = "Layout section claims packages 24 packages but the repo now has 35 package directories."
+severity = "info"
+status = "open"
+
+[[finding]]
+id = "caa31eb3c97138fe"
+domain = "packages/registry-schema"
+dimension = "D4"
+subject = "packages/registry-schema/src/entitlements.ts:135"
+title = "Source comment names the internal tooling/standards-gate path as the licensing authority"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "cc8e0f90586bbe92"
+domain = "apps/site"
+dimension = "D3"
+subject = "apps/site/live/analytics-bundle.live.test.ts:1"
+title = "SS-2: dense internal fork/seam shorthand (seam 5, ADR-0224 F4=A, the operator locked) in a live test file"
 severity = "info"
 status = "open"
 
@@ -2367,7 +4635,7 @@ dimension = "D3"
 subject = "packages/migrate/src/pg-applier.ts:10-13"
 title = "SS-1: a ponytail comment — an internal AI-coding-workflow convention — explains a deliberately skipped unit test in shipped Apache-2.0 source."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "cccfe7d729e75f2d"
@@ -2376,6 +4644,15 @@ dimension = "D4"
 subject = "packages/kernel/src/crypto.ts:1,31"
 title = "Shipped public source-code comments cite the internal gridwork-core security floor instruction repo as if the reader shares that context."
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "cd263d293346e912"
+domain = "packages/jobs"
+dimension = "D3"
+subject = "packages/jobs/package.json:10"
+title = "SS-12: the registry/npm description ends with bare ADR ids."
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -2385,6 +4662,15 @@ dimension = "D3"
 subject = "packages/agent-dev/src/golden.test.ts:5"
 title = "SS-2: internal task-id shorthand (T19/T20/Round-3) used as the sole explanation in shipped comments"
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "cd8894117a33ec8e"
+domain = "packages/tool-exec"
+dimension = "D4"
+subject = "packages/tool-exec/README.md:50-51"
+title = "Sibling private repo media-pipeline named in a paid package's README"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -2393,6 +4679,33 @@ domain = "oss-mirror"
 dimension = "D4"
 subject = "tooling/testing/CHANGELOG.md:12,16"
 title = "The public-mirror's tooling/testing package CHANGELOG cites internal Linear ticket ids and internal apps/admin implementation detail."
+severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "ce17c3ca06a089c8"
+domain = "packages/mcp-server"
+dimension = "D3"
+subject = "packages/mcp-server/AGENTS.md:31"
+title = "SS-2: deferred to P5 is bare internal phase shorthand"
+severity = "info"
+status = "open"
+
+[[finding]]
+id = "ce2360b4d5c47418"
+domain = "packages/tenancy-rls"
+dimension = "D3"
+subject = "packages/tenancy-rls/package.json:10"
+title = "npm description ends with a bare ADR id (SS-12)"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "cf31303898fc2749"
+domain = "packages/audit-worm"
+dimension = "D6"
+subject = "packages/audit-worm/manifest.ts:5,15"
+title = "Registry manifest priceCents (4900 = $49) contradicts the locked ADR-0129/ADR-0227 audit-worm module price of $149, and the comment falsely claims pricing is still open"
 severity = "high"
 status = "open"
 
@@ -2403,7 +4716,7 @@ dimension = "D4"
 subject = "packages/credits/README.md:6"
 title = "credits README discloses the private sibling repo gridwork as this package's rebuild-clean seed."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "cf3819b220b1e164"
@@ -2411,6 +4724,15 @@ domain = "packages/observability"
 dimension = "D3"
 subject = "packages/observability/src/request-span.ts:7"
 title = "SS-2: ponytail comment leaks the operator's internal coding-agent tooling name"
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "cf6b84354d6f30a9"
+domain = "services/license"
+dimension = "D3"
+subject = "services/license/src/admin-mutations.ts:58"
+title = "SS-4: internal Linear ticket ids (CAISSON-9) and fork shorthand (Fork AM-3) are the primary explanation for the admin mutation surface's RLS policy design"
 severity = "warn"
 status = "open"
 
@@ -2421,7 +4743,7 @@ dimension = "D4"
 subject = "packages/cli/README.md:35"
 title = "SS-1: the one leak cli's files-allowlist scoping could not prevent — README names the sibling private repo."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "d00d6d4602390085"
@@ -2430,7 +4752,7 @@ dimension = "D3"
 subject = "packages/guardrails/CHANGELOG.md:38"
 title = "SS-2: changelog entry narrates the internal whole-repo audit process by name"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "d130766b28544942"
@@ -2438,6 +4760,15 @@ domain = "packages/ai-kit"
 dimension = "D3"
 subject = "packages/ai-kit/CHANGELOG.md:38"
 title = "SS-4/SS-2: changelog entry is written as an internal pentest-remediation log"
+severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "d13bb4e277de1927"
+domain = "oss-mirror"
+dimension = "D4"
+subject = "export output: observability/manifest.ts:8, tenancy-rls/manifest.ts:7"
+title = "Exported public mirror ships a dangling import into a directory that does not exist in the mirror"
 severity = "high"
 status = "open"
 
@@ -2448,6 +4779,24 @@ dimension = "D4"
 subject = "packages/tenancy-rls/src/rls.ts:163"
 title = "The public-mirror exporter only rewrites @caisson/ npm specifiers — it never scrubs internal prose, so every sibling-repo name, issue id, and private-path reference ships to the public GitHub mirror unmodified"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "d259dc90f7a0eb30"
+domain = "packages/local-store"
+dimension = "D3"
+subject = "packages/local-store/README.md:74"
+title = "SS-2 plus broken content: README ends in a truncated, duplicated CI-note fragment"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "d2d413dbba78e94c"
+domain = "packages/migrate"
+dimension = "D3"
+subject = "packages/migrate/README.md:14-15"
+title = "SS-9: README claims the package is licensed LicenseRef-Caisson-Commercial, contradicting its actual Apache-2.0 package.json and LICENSE file"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -2457,6 +4806,24 @@ dimension = "D4"
 subject = "packages/agent-kernel/README.md:58"
 title = "README's dev/test command uses a monorepo-root-relative path that does not exist in a buyer's installed package"
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "d3c5020ff518a982"
+domain = "oss-mirror"
+dimension = "D4"
+subject = "scripts/export-public-mirror.ts:150-213"
+title = "The exporter only renames npm-scope import specifiers; it performs no scrub of internal shorthand before publishing"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "d3f7bcb4c8621f19"
+domain = "services/license"
+dimension = "D3"
+subject = "services/license/src/app.ts:13"
+title = "SS-1: the license-issuer's main HTTP router file states Every response carries the gridwork security-floor headers"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -2466,6 +4833,33 @@ dimension = "D4"
 subject = "packages/local-store/README.md:3-6,74"
 title = "Sold-source README (commercial package, delivered to paying buyers) discloses internal CI fleet topology."
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "d42a79fb41d8ea4e"
+domain = "packages/jobs"
+dimension = "D3"
+subject = "packages/jobs/src/advisory-lock.ts:1"
+title = "SS-2/SS-3: file header cites an internal ledger row 57 as the only explanation for the design."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "d47f2f296ce33da9"
+domain = "packages/credits"
+dimension = "D6"
+subject = "packages/credits/AGENTS.md:15"
+title = "AGENTS.md's Scope section describes only grant/debit/ledger, omitting the clawback (refund reclaim) function entirely, a money-handling capability with its own locking/idempotency semantics an integrating agent should know about."
+severity = "info"
+status = "open"
+
+[[finding]]
+id = "d482b243619c8df3"
+domain = "packages/prompt-registry"
+dimension = "D4"
+subject = "packages/prompt-registry/manifest.ts:8"
+title = "manifest.ts imports from the internal-only registry/schema tree in a paid, source-delivered package"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -2474,6 +4868,15 @@ domain = "packages/tenancy-rls"
 dimension = "D3"
 subject = "packages/tenancy-rls/CHANGELOG.md:7"
 title = "SS-2: (ADR-0220, Fork AM-2 = B) repeats the fork-lettering leak in the public changelog"
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "d5d157be6dbd2009"
+domain = "packages/guardrails"
+dimension = "D3"
+subject = "packages/guardrails/src/ftc4p.ts:1"
+title = "SS-2: a file header cites internal lift-sweep #13 and tm-watch shorthand alongside the ADR id."
 severity = "warn"
 status = "open"
 
@@ -2484,6 +4887,15 @@ dimension = "D6"
 subject = "packages/auth/src/workos.ts:13"
 title = "The exported @caisson-sh/auth package imports zod without declaring it as a dependency, so the public mirror's own CI (bun run build) fails on first sync."
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "d666ae1cc17c7bcf"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/cli/README.md:6"
+title = "SS-2/SS-3: Wave-0 scope (skeleton) and a bare ADR-id list ship in the public cli README"
+severity = "info"
 status = "open"
 
 [[finding]]
@@ -2492,6 +4904,15 @@ domain = "packages/agent-runner"
 dimension = "D1"
 subject = "packages/agent-runner/src/agent-runner.ts:402-407"
 title = "spawn() never confines the caller-supplied worktree to an allowed root before using it as the sandboxed child's cwd."
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "d6fbdc422d12af88"
+domain = "packages/mcp-server"
+dimension = "D3"
+subject = "packages/mcp-server/package.json:10"
+title = "SS-12: description ends with bare ADR-0008/0004 ids"
 severity = "warn"
 status = "open"
 
@@ -2502,6 +4923,15 @@ dimension = "D3"
 subject = "packages/ai-config/README.md:9"
 title = "SS-11: README links to a repo-relative docs path that will not resolve outside the monorepo"
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "d76f09a778b346e2"
+domain = "packages/tenancy-rls"
+dimension = "D4"
+subject = "packages/tenancy-rls/src/rls.ts:159-163"
+title = "Source comment header carries internal fork shorthand Fork AM-2 = B and names the internal apps/admin path"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -2510,6 +4940,24 @@ domain = "packages/compliance"
 dimension = "D3"
 subject = "packages/compliance/manifest.ts:10"
 title = "SS-2: internal phase shorthand P6 used as the sole qualifier for why credits aren't wired yet"
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "d7888bcd0eb482e9"
+domain = "packages/local-store"
+dimension = "D3"
+subject = "packages/local-store/src/store.ts:5"
+title = "SS-1: source header cites gridwork-core memory-vec.ts and (gridwork-core parity)"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "d79786165f6f6dd8"
+domain = "packages/prompt-registry"
+dimension = "D3"
+subject = "packages/prompt-registry/CHANGELOG.md:24,32"
+title = "CHANGELOG entries read as internal audit-ledger process notes (SS-2)"
 severity = "warn"
 status = "open"
 
@@ -2520,7 +4968,7 @@ dimension = "D3"
 subject = "packages/registry-schema/package.json:10"
 title = "SS-12: description embeds (Apache-2.0, ADR-0094/0097) bare ids"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "d82cbf79ff1050da"
@@ -2529,7 +4977,7 @@ dimension = "D4"
 subject = "packages/tool-exec/manifest.ts:7"
 title = "Dangling relative import into a private monorepo path ships as dead source"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "d85eefc64b7476a1"
@@ -2538,6 +4986,24 @@ dimension = "D1"
 subject = "packages/billing/src/paddle-events.ts:45-49"
 title = "readMoneyMinorUnits fails OPEN on precision loss instead of fail-closed, contradicting the package's own ADR-0007 integer-money discipline"
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "d8ddcb4336629cda"
+domain = "packages/prompt-registry"
+dimension = "D4"
+subject = "packages/prompt-registry/CHANGELOG.md:32-33"
+title = "Changelog references the internal AUDIT_DOMAINS tooling list and unlabeled round-4/5 audit shorthand"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "da4133266f1bda27"
+domain = "oss-mirror"
+dimension = "D6"
+subject = "scripts/mirror-assets/README.md:15"
+title = "The exported mirror's own Quickstart command bunx create-caisson --edition compliance cannot resolve as written, and omits the license/registry setup required to install any commercial edition."
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -2547,6 +5013,42 @@ dimension = "D2"
 subject = "packages/kernel/README.md:6"
 title = "The public OSS mirror ships per-package README lines naming the operator's other private repos, disclosing internal infra structure to a public audience."
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "da9adf148dde7443"
+domain = "packages/agent-runner"
+dimension = "D3"
+subject = "packages/agent-runner/manifest.ts:1-6,15-17"
+title = "SS-3: manifest.ts header plus inline comment chain four bare ADR ids (0020/0186/0186/0137) with no buyer-facing explanation"
+severity = "info"
+status = "open"
+
+[[finding]]
+id = "db192402edfcbc51"
+domain = "packages/registry-schema"
+dimension = "D4"
+subject = "packages/registry-schema/src/feature-tags.ts:15-17"
+title = "Feature-tag list embeds internal build-phase labels P2/P3/P5 next to buyer-facing feature names"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "db6ed2b02fc84c21"
+domain = "apps/base"
+dimension = "D3"
+subject = "apps/base/src/generate.integration.test.ts:4"
+title = "SS-2: bare internal task/phase ids in test comments (T16, T19 convergence, P5 exit-gate-4)"
+severity = "info"
+status = "open"
+
+[[finding]]
+id = "dbfdc66406a728d0"
+domain = "packages/local-ai"
+dimension = "D6"
+subject = "packages/local-ai/src/index.ts:1-7"
+title = "The edition's own barrel file still calls itself a T9 scaffold awaiting future work, even though the same file already exports the full built edition surface"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -2556,7 +5058,7 @@ dimension = "D2"
 subject = "packages/agent-kernel/README.md:62"
 title = "Package README leaks the private repo name gridwork-core and mislabels it public."
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "dc44397d7b8d1aed"
@@ -2565,6 +5067,42 @@ dimension = "D3"
 subject = "packages/prompt-registry/manifest.ts:4-6"
 title = "SS-9-adjacent (judgement call): manifest disclaims its own priceCents as a fake placeholder"
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "dc647389ada7ed62"
+domain = "packages/registry-schema"
+dimension = "D3"
+subject = "packages/registry-schema/ (whole package, no README)"
+title = "Package ships with no README.md (SS-10)"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "dcb4bf65448a6133"
+domain = "packages/compliance"
+dimension = "D3"
+subject = "packages/compliance/README.md:22"
+title = "SS-9 (judgment call): README calls OSCAL export an un-wired seam though it is fully implemented and exported."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "de82d7d0c7295d5b"
+domain = "root-docs"
+dimension = "D6"
+subject = "README.md:41 (partial/scaffolded list)"
+title = "README's Build-status table marks mcp-server license-verify email jobs ui as partial/scaffolded, contradicting docs/build-state.md which marks them built/built (thin)/substantial."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "decb4d0a5fbfd02f"
+domain = "oss-mirror"
+dimension = "D2"
+subject = "packages/license-verify/src/__golden__/prod-signed-token.json"
+title = "The public OSS mirror export ships a real production-signed Ed25519 license bearer token granting non-expiring pro-tier entitlements"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -2574,7 +5112,7 @@ dimension = "D3"
 subject = "packages/cli/templates/eu-ai-act-sample/src/evidence-path.ts:1"
 title = "SS-2/SS-3: the generated sample's top-of-file comment cites bare fork shorthand (ADR-0095 W3)"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "df497616849cf1d8"
@@ -2583,6 +5121,15 @@ dimension = "D3"
 subject = "packages/tenancy-rls/README.md:6"
 title = "SS-1: Seeds rebuild-clean gridworkdigital names an operator-associated repo directly"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "e02784d383bf3978"
+domain = "packages/local-ai"
+dimension = "D3"
+subject = "packages/local-ai/src/inference/sigv4.ts:9"
+title = "SS-2: ponytail internal-tooling marker in shipped commercial source"
+severity = "info"
 status = "open"
 
 [[finding]]
@@ -2592,7 +5139,7 @@ dimension = "D3"
 subject = "packages/tenancy-rls/README.md:9"
 title = "SS-11: links to an internal doc unreachable outside the private monorepo"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "e0539f342db4f01e"
@@ -2601,6 +5148,15 @@ dimension = "D4"
 subject = "packages/kernel/README.md:9"
 title = "Same README footer dangles a relative link to an internal-only doc that does not exist anywhere in the exported mirror."
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "e0555304f28b8917"
+domain = "packages/local-ai"
+dimension = "D4"
+subject = "packages/local-ai/README.md:17-18"
+title = "SS-1: README's Seeds line names three sibling repos, tessera, health-service, and pro-private media-pipeline"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -2610,6 +5166,24 @@ dimension = "D4"
 subject = "packages/tenancy-rls/CHANGELOG.md:45"
 title = "SS-1/SS-4: five internal issue ids + internal service/app names in the shipped public changelog"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "e17d6cc72e3749c1"
+domain = "oss-mirror"
+dimension = "D2"
+subject = "packages/cli/templates/eu-ai-act-sample/package.json:14"
+title = "Free eu-ai-act-sample template depends on @caisson/kernel from public npm, but ADR-0222 records that scope as squatted by a third party, so the flagship free-sample install is broken and its own docs make a now-false claim."
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "e1c7afc7ad92945e"
+domain = "services/docs"
+dimension = "D3"
+subject = "services/docs/src/app.ts:4"
+title = "SS-1: literal gridwork reference in a shipped commercial service's HTTP router comment"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -2619,7 +5193,7 @@ dimension = "D3"
 subject = "packages/tenancy-rls/CHANGELOG.md:45"
 title = "SS-4: post-wave triage CAISSON-5/6/7/8/9 lists five internal Linear ticket ids in a public changelog"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "e219153d44ba2a19"
@@ -2628,7 +5202,7 @@ dimension = "D3"
 subject = "packages/agent-kernel/README.md:4-5"
 title = "SS-3: opening paragraph is structured as a bare four-ADR citation list"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "e298d3b5aad702fa"
@@ -2637,7 +5211,7 @@ dimension = "D3"
 subject = "packages/tenancy-rls/src/rls.ts:220"
 title = "SS-4: (CAISSON-9) is an internal Linear issue id embedded in public Apache-2.0 source"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "e2bf105cd7132806"
@@ -2645,6 +5219,15 @@ domain = "packages/email"
 dimension = "D3"
 subject = "packages/email/README.md:6"
 title = "SS-1/SS-10/SS-11: same gridwork-seed private-repo internal-link pattern repeated in this package's README"
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "e309f14f87731b31"
+domain = "services/docs"
+dimension = "D3"
+subject = "services/docs/README.md:3"
+title = "SS-2/SS-3/SS-10: README opens on bare phase shorthand and internal decision-history narrative"
 severity = "warn"
 status = "open"
 
@@ -2655,7 +5238,7 @@ dimension = "D4"
 subject = "packages/billing/package.json"
 title = "No files allowlist/.npmignore — bun pm pack ships AGENTS.md/CHANGELOG.md/live/.turbo logs/src to every buyer."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "e3ef8381517deb3a"
@@ -2664,7 +5247,7 @@ dimension = "D2"
 subject = "packages/kernel/src/event-sink.ts:53"
 title = "The ops-telemetry redactor never scrubs bare secret-shaped tokens in string attribute values, only key-named secrets/SQL/stack-traces, despite the module's documented guarantee that no secret ever lands in an emitted event."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "e422269c362eb949"
@@ -2673,6 +5256,15 @@ dimension = "D4"
 subject = "packages/registry-schema/CHANGELOG.md:7"
 title = "SS-2: internal fork-decision shorthand (Fork AM-3 = A) in shipped public changelog"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "e46f51589d522e52"
+domain = "packages/compliance"
+dimension = "D3"
+subject = "packages/compliance/README.md:10"
+title = "SS-3: a Key ADRs section is a bare list of ADR numbers with no plain-language explanation."
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -2681,6 +5273,15 @@ domain = "oss-mirror"
 dimension = "D6"
 subject = "packages/ai-config/README.md:9-10"
 title = "Every exported package README's status line points to internal monorepo paths (../../docs/build-state.md, /plan.md) that do not exist anywhere in the shipped public mirror."
+severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "e554320e13e44624"
+domain = "packages/observability"
+dimension = "D4"
+subject = "packages/observability/CHANGELOG.md:7"
+title = "Changelog entry narrates an internal infra rename (apps/admin, apps/studio, audit-harness, SigNoz to Grafana Cloud) in a shipped Apache-2.0 package"
 severity = "warn"
 status = "open"
 
@@ -2691,7 +5292,7 @@ dimension = "D3"
 subject = "packages/compliance/CHANGELOG.md:58"
 title = "SS-2: published changelog carries raw internal build-wave narrative instead of buyer-facing release notes"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "e6f5bfeaafff20fb"
@@ -2700,7 +5301,7 @@ dimension = "D4"
 subject = "packages/retention-runner/manifest.ts:5"
 title = "Dangling relative import into a private monorepo path ships as dead source"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "e7569146ac01ed6a"
@@ -2709,6 +5310,42 @@ dimension = "D3"
 subject = "packages/migrate/AGENTS.md:5"
 title = "SS-3: is an ADR-0090 violation is used as the entire explanation for why a re-implementation is forbidden."
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "e7b4c3614be16fbb"
+domain = "apps/site"
+dimension = "D3"
+subject = "apps/site/lib/byok.ts:149"
+title = "SS-1/SS-5: a literal ponytail internal-tooling-convention comment ships in real product source across 5 files"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "e823be81bd08413b"
+domain = "oss-mirror"
+dimension = "D4"
+subject = "packages/ui/CHANGELOG.md:7 (also observability CHANGELOG.md:7)"
+title = "World-public mirror CHANGELOGs name the private monorepo, internal infra vendors, and internal app names"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "e8e92344bdddbd42"
+domain = "packages/audit-worm"
+dimension = "D3"
+subject = "packages/audit-worm/README.md:11"
+title = "SS-1: README's Seeds bullet names two private/sibling codebases (Wardfile / gridwork-core) as build provenance."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "e92654115a171f30"
+domain = "packages/ui"
+dimension = "D4"
+subject = "packages/ui/README.md:7,9-10"
+title = "The shipped package README carries internal-only boilerplate: Seeds (rebuild-clean): tessera, a dead link to ../../docs/build-state.md, a dead /plan.md reference, and an explicit naming of the private media-pipeline repo."
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -2718,7 +5355,7 @@ dimension = "D4"
 subject = "packages/credits/CHANGELOG.md:49"
 title = "Shipped CHANGELOGs and test comments cite bare private Linear ticket ids (CAISSON-N) with no context an outside reader can resolve."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "e9e64d72429a1b9e"
@@ -2726,6 +5363,15 @@ domain = "packages/tenancy-rls"
 dimension = "D4"
 subject = "packages/tenancy-rls/README.md:6"
 title = "SS-1: sibling-repo build provenance (gridworkdigital) + pro-private repo name in shipped README"
+severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "ea0b48c9acd00723"
+domain = "packages/registry-schema"
+dimension = "D4"
+subject = "packages/registry-schema/src/feature-tags.ts:31"
+title = "Internal fork-resolution shorthand Fork AM-3 = A left in a shipped Apache-2.0 source comment"
 severity = "high"
 status = "open"
 
@@ -2736,6 +5382,24 @@ dimension = "D3"
 subject = "packages/compliance/package.json:10"
 title = "SS-12: npm description ends with a bare ADR-id list instead of stopping at the capability statement"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "eb95eab76530c916"
+domain = "packages/kernel"
+dimension = "D3"
+subject = "packages/kernel/src/gate.ts:208"
+title = "SS-3: the shipped caisson-gate CLI prints a bare ADR id in its own console output"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "ebdcff2cf5ec3de3"
+domain = "packages/tool-exec"
+dimension = "D3"
+subject = "packages/tool-exec/README.md:50-51"
+title = "README names a private sibling repo/company as a design source (SS-1)"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -2745,7 +5409,7 @@ dimension = "D3"
 subject = "packages/billing/src/paddle-events.ts:78,187,245, provider.ts:106; packages/tenancy-rls/src/rls.ts:220; tooling/testing/src/dist-test-shadow.test.ts:1 (exported)"
 title = "SS-4: bare internal issue-tracker ids (CAISSON-5..13) are cited directly in shipped source comments, not just changesets"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "ec89fbfb761f3315"
@@ -2754,7 +5418,7 @@ dimension = "D4"
 subject = "packages/ai-meter/CHANGELOG.md:16"
 title = "SS-2: shipped CHANGELOG narrates internal build-wave shorthand a buyer has no context for."
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "ecaff7f9aa52d9ee"
@@ -2763,7 +5427,7 @@ dimension = "D3"
 subject = "packages/billing/CHANGELOG.md:68"
 title = "SS-2: Whole-repo audit remediation (rounds 1+2, ledger 2026-07-01) in the shipped CHANGELOG"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "ecbdc737f41fc299"
@@ -2772,7 +5436,7 @@ dimension = "D3"
 subject = "packages/alerting/README.md:4"
 title = "SS-3 (judgement call): opening line is a bare two-ADR citation list rather than prose"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "ed329f5716193974"
@@ -2781,7 +5445,7 @@ dimension = "D4"
 subject = "packages/registry-schema/src/feature-tags.ts:31"
 title = "SS-2: the same internal fork-decision shorthand repeated in shipped source comment"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "edaae2bbcca4c69c"
@@ -2790,7 +5454,7 @@ dimension = "D3"
 subject = "packages/compliance/src/evidence/oscal-export.ts:551"
 title = "SS-6: a P7 comment is a disguised TODO stub for an unimplemented delivery transport in paid source"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "ee60e9b3272b0316"
@@ -2799,6 +5463,15 @@ dimension = "D3"
 subject = "packages/credits/CHANGELOG.md:49"
 title = "SS-4: internal issue-tracker ids leaked into the published changelog"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "ef2afbad2640c3de"
+domain = "packages/agent-runner"
+dimension = "D3"
+subject = "packages/agent-runner/package.json:10"
+title = "SS-12: package description trails off with a bare, unexplained ADR-0186 sentence"
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -2808,6 +5481,24 @@ dimension = "D3"
 subject = "apps/base/README.md:3"
 title = "SS-1/SS-9: README uses the internal picker decision-fork term and reads as an unfinished stub"
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "ef5d90281199018f"
+domain = "apps/base"
+dimension = "D3"
+subject = "apps/base/CHANGELOG.md:7"
+title = "SS-1/SS-3/SS-8: a single changeset entry is a wall of internal engineering narrative (task ids, an internal report reference, an internal tool path)"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "efb34c1a37491bac"
+domain = "packages/ai-config"
+dimension = "D3"
+subject = "packages/ai-config/README.md:6,10"
+title = "SS-1: README names gridwork, gridwork-core, and the private media-pipeline repo, and this package is Apache-2.0, exported into the public oss-mirror"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -2817,7 +5508,7 @@ dimension = "D3"
 subject = "packages/cli/templates/eu-ai-act-sample/package.json:14 (exported mirror)"
 title = "Dangling internal specifier: the free sample still depends on @caisson/kernel, unresolvable in the mirror's own npm scope"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "f1264e307de4ef9e"
@@ -2826,7 +5517,7 @@ dimension = "D3"
 subject = "services/license/src/admin-mutations.ts:58,68,286,548,562; apply-billing-event.ts:178,212; server.ts:80"
 title = "SS-4: internal CAISSON-N ticket refs used as the sole justification in several money/entitlement comments"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "f153a2bc7c8addcd"
@@ -2834,6 +5525,15 @@ domain = "docs-content"
 dimension = "D1"
 subject = "apps/site/content/docs/compliance/field-crypto.mdx:24-47"
 title = "Compliance-edition field-encryption code sample references a nonexistent API (wrong encryptField/decryptField signature, nonexistent AwsKmsKeyProvider class and /aws subpath export)"
+severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "f168945127035067"
+domain = "packages/observability"
+dimension = "D3"
+subject = "packages/observability/package.json:10"
+title = "npm description ends with a bare ADR id (SS-12)"
 severity = "high"
 status = "open"
 
@@ -2844,7 +5544,7 @@ dimension = "D3"
 subject = "packages/registry-schema/CHANGELOG.md:7"
 title = "SS-2: (ADR-0220, Fork AM-3 = A) exposes internal decision-fork lettering in a public changelog"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "f2fb531c29312205"
@@ -2852,6 +5552,51 @@ domain = "packages/agent-dev"
 dimension = "D4"
 subject = "packages/agent-dev/package.json (no files field)"
 title = "Missing npm files allowlist ships the full internal source/test/build-log tree to every buyer instead of a curated dist-only surface"
+severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "f323a284758820e5"
+domain = "oss-mirror"
+dimension = "D4"
+subject = "packages/kernel/manifest.ts:8 (all 13 exported manifest.ts)"
+title = "Every exported package's manifest.ts imports defineModule from ../../registry/schema/module-manifest.ts, which does not exist anywhere in the public mirror, a dangling internal specifier pointing at the private registry service's internal schema dir."
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "f386f3973f61614f"
+domain = "packages/agent-kernel"
+dimension = "D3"
+subject = "packages/agent-kernel/manifest.ts:1-7"
+title = "SS-3: same manifest.ts pattern, bare ADR chain plus AGPL flank closed/Pricing numbers board fork jargon in shipped source"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "f416a52df81f0b6d"
+domain = "packages/ui"
+dimension = "D3"
+subject = "packages/ui/README.md:6"
+title = "SS-1: README names private sibling repos tessera and media-pipeline as the package's own seed/build story"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "f490ea0c7a8d4f77"
+domain = "packages/email"
+dimension = "D3"
+subject = "packages/email/README.md:6"
+title = "SS-1: README names gridwork as a seed and media-pipeline as a pro-private contributor."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "f4dd8c22374fed43"
+domain = "packages/billing"
+dimension = "D4"
+subject = "packages/billing/live/paddle-webhook.live.test.ts:1-46"
+title = "Same packaging gap as audit-worm: billing has no files/.npmignore guard, so the live Paddle-webhook proof ships in the public npm tarball and mirror export, exposing tunnel setup, sandbox-checkout wiring notes, and a pointer to docs/state/live-harness.md."
 severity = "high"
 status = "open"
 
@@ -2862,6 +5607,24 @@ dimension = "D3"
 subject = "packages/registry-schema/src/entitlements.ts:16"
 title = "SS-2: (P6-store track) is a bare internal phase label in a public doc comment"
 severity = "info"
+status = "fixed"
+
+[[finding]]
+id = "f507c4ef961f8c81"
+domain = "packages/observability"
+dimension = "D3"
+subject = "packages/observability/README.md:9-11"
+title = "README names a private sibling repo and links to internal-only docs a buyer cannot reach (SS-1/SS-11)"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "f58b9e843e93637b"
+domain = "packages/mcp-server"
+dimension = "D4"
+subject = "packages/mcp-server/CHANGELOG.md:35-44"
+title = "SS-2: shipped CHANGELOG entry narrates the internal audit process, Whole-repo audit round-3 remediation and the round-4/5 audit domains added to AUDIT_DOMAINS"
+severity = "info"
 status = "open"
 
 [[finding]]
@@ -2871,7 +5634,7 @@ dimension = "D3"
 subject = "packages/tenancy-rls/src/rls.ts:159"
 title = "SS-2: (ADR-0220, Fork AM-2 = B) exposes internal decision-fork lettering in public source"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "f7a3173b143f8f8a"
@@ -2880,7 +5643,7 @@ dimension = "D4"
 subject = "packages/observability/README.md:6"
 title = "SS-2: internal wave-shorthand (P6-tail) in shipped README"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "f87bc85c8ab70d9b"
@@ -2889,7 +5652,7 @@ dimension = "D3"
 subject = "packages/tenancy-rls/README.md:10"
 title = "SS-1: Pro-private media-pipeline contributes patterns only, never code."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "f9bc66c32bd09ef3"
@@ -2898,7 +5661,7 @@ dimension = "D4"
 subject = "packages/billing/live/paddle-webhook.live.test.ts:7"
 title = "False claim: file asserts the tarball never sees it, but bun pm pack proves otherwise."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "fa084eabaf33ce7f"
@@ -2906,6 +5669,24 @@ domain = "packages/guardrails"
 dimension = "D3"
 subject = "packages/guardrails (no README.md)"
 title = "SS-9/SS-10: the package ships with no README at all"
+severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "fa50af439950d123"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/license-verify/src/token.ts:1 (T6/T7/T8, W1/W3, Fork AM)"
+title = "SS-2: internal task-shorthand codes (T6/T7/T8, W1/W3, Fork AM-2/AM-3) open the file-header comment of most shipped source files across license-verify, cli, tenancy-rls, registry-schema, and kernel"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "fa571e1147177fad"
+domain = "packages/agent-dev"
+dimension = "D4"
+subject = "packages/agent-dev/README.md:6,10"
+title = "README names the private sibling repos gridwork-core and media-pipeline as this edition's build provenance."
 severity = "high"
 status = "open"
 
@@ -2916,6 +5697,51 @@ dimension = "D3"
 subject = "packages/kernel/src/crypto.test.ts:19,27 (exported)"
 title = "SS-1: shipped open-source test fixture hardcodes the operator's personal email domain admin@gridwork.dev"
 severity = "high"
+status = "fixed"
+
+[[finding]]
+id = "fbcef2ca16bc1f0e"
+domain = "packages/kernel"
+dimension = "D3"
+subject = "packages/kernel/src/crypto.ts:1"
+title = "SS-1: source-file header cites the gridwork-core security floor"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "fdd9ae6ff6ec337c"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/billing/src/paddle-events.ts:78 (CAISSON-5..13)"
+title = "SS-4: internal Linear ticket ids (CAISSON-5..13) are cited directly in shipped production comments across billing, credits, and tenancy-rls, not just tests"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "fe145d1d73403552"
+domain = "packages/compliance"
+dimension = "D6"
+subject = "packages/compliance/AGENTS.md:48"
+title = "AGENTS.md's Dependencies section lists only audit-worm/field-crypto/tenancy-rls/kernel as down-only deps, omitting @caisson/alerting and @caisson/retention-runner, real composed dependencies since ADR-0178."
+severity = "info"
+status = "open"
+
+[[finding]]
+id = "fe51268cad55b636"
+domain = "packages/alerting"
+dimension = "D3"
+subject = "packages/alerting/src/types.ts:3"
+title = "SS-1: source comment cites the private sibling codebase gridworkdigital as provenance for the event-type registry's scope."
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "fe52d739059711fe"
+domain = "root-docs"
+dimension = "D4"
+subject = "PRODUCT.md:28,79"
+title = "PRODUCT.md's design doctrine cites the private sibling repo Wardfile by name as the origin of two design patterns."
+severity = "warn"
 status = "open"
 
 [[finding]]
@@ -2925,6 +5751,42 @@ dimension = "D4"
 subject = "packages/cli/README.md:6"
 title = "SS-2: README (always packed regardless of the files allowlist) opens with internal kickoff/wave shorthand."
 severity = "warn"
+status = "fixed"
+
+[[finding]]
+id = "ff0614130022bdb8"
+domain = "apps/ai-kit"
+dimension = "D3"
+subject = "apps/ai-kit/README.md:3"
+title = "SS-2/SS-12: the P3 exit artifact internal phase shorthand appears in both the README's opening line and the npm-visible package.json description"
+severity = "high"
+status = "open"
+
+[[finding]]
+id = "ff51967169d360cf"
+domain = "packages/retention-runner"
+dimension = "D3"
+subject = "packages/retention-runner/AGENTS.md:43"
+title = "Agent-facing doc references an unresolvable internal process artifact (SS-2)"
+severity = "info"
+status = "open"
+
+[[finding]]
+id = "ff542469a2602d80"
+domain = "oss-mirror"
+dimension = "D3"
+subject = "packages/kernel/package.json:10"
+title = "SS-12: bare ADR ids in package descriptions will surface on the real npm registry once published"
+severity = "warn"
+status = "open"
+
+[[finding]]
+id = "ff5f26380753c50a"
+domain = "packages/tenancy-rls"
+dimension = "D4"
+subject = "packages/tenancy-rls/src/rls.ts:220"
+title = "Source doc-comment cites an internal Linear issue id (CAISSON-9)"
+severity = "high"
 status = "open"
 
 [[finding]]
@@ -2934,7 +5796,7 @@ dimension = "D3"
 subject = "packages/cli/templates/eu-ai-act-sample/package.json:14"
 title = "SS-9: the free sample's package.json depends on @caisson/kernel, which cannot resolve via the install path its own README promises"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "fffe7900624361b6"
@@ -2943,4 +5805,4 @@ dimension = "D4"
 subject = "packages/audit-worm/package.json:10"
 title = "SS-12: package.json description ends in a bare ADR trailer."
 severity = "warn"
-status = "open"
+status = "fixed"
