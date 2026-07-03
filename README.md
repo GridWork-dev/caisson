@@ -9,7 +9,8 @@ a bundle, **per-module à-la-carte**, and a **subscription/credits** layer.
 > **Status:** the **base substrate is built + tested** (kernel · tenancy-rls · field-crypto · auth ·
 > billing · credits) and **`create-caisson`** works. Edition packages have **merged, tested vertical
 > slices** (single composition leg each, golden-file fixtures) but are **not yet feature-complete**;
-> Agentic-Dev is a **roadmap** edition. Built **rebuild-clean** from proven GridWork repos (never a
+> Agentic-Dev is the thinnest edition surface (its ADR-0082 §4 roadmap label was retired by
+> ADR-0237 rider 2). Built **rebuild-clean** from proven GridWork repos (never a
 > port). Founding spec: `specs/00-product-spec.md`. Live build status: `docs/build-state.md`
 > (per-phase + per-package); decisions: `docs/state/decisions-and-forks.md` + `ADR-0082` §3.
 
@@ -20,7 +21,7 @@ a bundle, **per-module à-la-carte**, and a **subscription/credits** layer.
 | **Compliance** (hero) | RLS + WORM + audit-chain + field-crypto + SOC2/HIPAA evidence pack                       | commercial                           |
 | **AI Production Kit** | provider-agnostic AI config + metering + spend-caps + eval/CI + guardrails + agent-setup | commercial                           |
 | **Local-first AI**    | compute seam + sqlite-vec + offline license                                              | commercial                           |
-| **Agentic-Dev**       | governed-agent kernel (also powers the generator + buyer MCP) — roadmap                  | commercial                           |
+| **Agentic-Dev**       | governed-agent kernel (also powers the generator + buyer MCP)                            | commercial                           |
 | **Base**              | auth + fail-closed RLS + billing + credits + design floor + buyer MCP (auth) + AGENTS.md | Apache-2.0 core + commercial modules |
 
 Licensing is **open-core**: the Base set is 15 Apache-2.0 packages (kernel, auth, tenancy-rls, ui,
@@ -37,7 +38,7 @@ What is actually on disk (verify against `packages/*/src` + `*.test.ts`; canonic
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | Substrate (proven) | kernel · tenancy-rls · field-crypto · auth · billing · credits                                                                                                                                          | built + tested                                                              |
 | Generator          | cli (`create-caisson`)                                                                                                                                                                                  | built + tested                                                              |
-| Edition packages   | Compliance (audit-worm · compliance) · AI-Kit (ai-config · ai-kit · ai-meter · prompt-registry · ai-evals · guardrails) · Local-first (local-ai · local-store) · Agentic-Dev (agent-kernel · agent-dev) | merged, tested vertical slices; NOT feature-complete. Agentic-Dev = roadmap |
+| Edition packages   | Compliance (audit-worm · compliance) · AI-Kit (ai-config · ai-kit · ai-meter · prompt-registry · ai-evals · guardrails) · Local-first (local-ai · local-store) · Agentic-Dev (agent-kernel · agent-dev) | merged, tested vertical slices; NOT feature-complete (Agentic-Dev thinnest) |
 | Base + shared      | mcp-server · license-verify · email · jobs · ui                                                                                                                                                         | partial / scaffolded                                                        |
 
 ## Layout
@@ -50,7 +51,7 @@ apps/         # 7 apps: 5 Next.js (ADR-0044) — site (marketing+docs) · studio
 services/     # support-bot (Python) · license · docs
 specs/        # locked concept set: 00 founding · 01 architecture · 02 core-loop · 03 design · 04 voice-and-brand
 plan.md       # P0–P7 build plan
-knowledge/decisions/   # ADRs 0001–0137 (gaps 0025–0039; numbering map in docs/state/decisions-and-forks.md)
+knowledge/decisions/   # ADRs 0001–0238 (gaps exist; live catalog in docs/adr-index.md)
 docs/state/   # decisions-and-forks live board
 outputs/kickoffs/      # kickoff docs for future sessions
 SUMMARY.md    # consolidated summary of how we got here

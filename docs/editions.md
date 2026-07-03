@@ -20,20 +20,20 @@ This file owns the synthesized cross-edition map; it does **not** restate canoni
 
 ## At a glance
 
-| Edition               | Role                                                  | From (committed, ADR-0082)                                              | License    | Build status                          |
-| --------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------- | ---------- | ------------------------------------- |
-| **Base**              | OSS-renamed core substrate; every edition composes it | per-module from $49; included in editions/bundle (no standalone anchor) | commercial | **BUILT** (alpha)                     |
-| **Compliance**        | **HERO** wedge (regulated SaaS)                       | $1,299                                                                  | commercial | implemented, alpha (unverified)       |
-| **AI Production Kit** | #2 - AI feature production rigor                      | $599                                                                    | commercial | implemented, alpha (unverified)       |
-| **Local-first AI**    | on-device / offline AI; **AGPL flank KILLED**         | $499                                                                    | commercial | implemented, alpha (unverified)       |
-| **Agentic-Dev**       | governed agent kernel + emitter                       | $499                                                                    | commercial | **labeled roadmap** (ADR-0082 sec. 4) |
-| _Bundle_              | base + all 4 editions                                 | $2,499                                                                  | commercial | n/a                                   |
+| Edition               | Role                                                  | From (committed, ADR-0082)                                              | License    | Build status                                                  |
+| --------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------- | ---------- | ------------------------------------------------------------- |
+| **Base**              | OSS-renamed core substrate; every edition composes it | per-module from $49; included in editions/bundle (no standalone anchor) | commercial | **BUILT** (alpha)                                             |
+| **Compliance**        | **HERO** wedge (regulated SaaS)                       | $1,299                                                                  | commercial | implemented, alpha (unverified)                               |
+| **AI Production Kit** | #2 - AI feature production rigor                      | $599                                                                    | commercial | implemented, alpha (unverified)                               |
+| **Local-first AI**    | on-device / offline AI; **AGPL flank KILLED**         | $499                                                                    | commercial | implemented, alpha (unverified)                               |
+| **Agentic-Dev**       | governed agent kernel + emitter                       | $499                                                                    | commercial | thinnest edition (0082 §4 roadmap label retired, ADR-0237 r2) |
+| _Bundle_              | base + all 4 editions                                 | $2,499                                                                  | commercial | n/a                                                           |
 
 **Build-status legend.** `BUILT` = real implementation + passing-shaped test files, operator-acknowledged
 as the genuine core. `implemented, alpha (unverified)` = substantial src + tests present in the tree
 (`stability: alpha` in the registry), but production-readiness, end-to-end wiring, and the edition
-reference app are **not** verified here, and the reference apps are thin scaffolds. `labeled roadmap` =
-positioned as "coming" on the site regardless of package state. **No edition is "fully built."** See
+reference app are **not** verified here, and the reference apps are thin scaffolds. (The old
+`labeled roadmap` class is retired — ADR-0237 rider 2.) **No edition is "fully built."** See
 [Accuracy flags](#accuracy-flags).
 
 ---
@@ -139,7 +139,7 @@ Lineage: tessera + health-service (rebuilt clean). Edition ADRs: [`0064`](../kno
 - **Price:** from **$499** (ADR-0083).
 - **Build:** **implemented, alpha (unverified).** Sync/privacy/store/inference all have src + tests. App [`apps/local-ai`](../apps/local-ai) = Next.js, 2 pages.
 
-## Agentic-Dev (labeled roadmap)
+## Agentic-Dev
 
 Governed, **engine-neutral** TS agent kernel (deterministic policy/guards + lifecycle FSM, steps
 recorded into the kernel audit-chain) + a thin multi-harness emitter (one Caisson schema ->
@@ -154,7 +154,11 @@ gridwork-core. Edition ADRs: [`0065`](../knowledge/decisions/ADR-0065-base-agent
 | [`packages/agent-dev`](../packages/agent-dev)       | governed runtime + multi-harness emitter + golden (ADR-0066) | 761 / 3         |
 
 - **License:** commercial · **Price:** from **$499**.
-- **Build:** **labeled roadmap.** Per [`ADR-0082`](../knowledge/decisions/ADR-0082-go-live-site-posture.md) sec. 4 this is the one honest "coming" edition: forward-looking CTA, kept out of primary nav, **not** rewritten as shipping. Package src exists (above) but the edition is positioned as unbuilt; app [`apps/agent-dev`](../apps/agent-dev) = plain-TS consumer (no `.tsx`/`app/` pages).
+- **Build:** the thinnest edition surface. The ADR-0082 sec. 4 "coming"/roadmap carve-out
+  (forward-looking CTA, kept out of primary nav) was **retired by ADR-0237 rider 2** — the site
+  now sells Agentic-Dev under the same FULL V1-live posture as the other editions. Package src
+  exists (above); the `agent-kernel`/`agent-runner` substrate is built (ADR-0186); app
+  [`apps/agent-dev`](../apps/agent-dev) = plain-TS consumer (no `.tsx`/`app/` pages).
 
 ---
 

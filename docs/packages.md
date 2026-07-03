@@ -21,7 +21,7 @@ On any conflict, the canonical source wins over this catalog.
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **BUILT**   | Genuinely built + tested substrate. ADR-0082 sec.3 names exactly these as built: `kernel`, `tenancy-rls`, `field-crypto`, `auth`, `billing`, `credits` + `create-caisson` (`cli`).                   |
 | **STUB**    | "Structure only" per ADR-0082 sec.3. Merged scaffolding exists (LOC shown in `src` col is REAL code), but the package is NOT a production-complete edition primitive. Do not represent as shippable. |
-| **ROADMAP** | Genuinely unbuilt, labeled-roadmap (ADR-0082 sec.4). Applies to the Agentic-Dev edition surface.                                                                                                     |
+| **ROADMAP** | Retired class — ADR-0237 rider 2 retired the ADR-0082 sec.4 roadmap exception; the former ROADMAP row (`agent-dev`) is tracked as STUB.                                                              |
 
 **Evidence** = `src` files (`.ts`, excluding tests) / `test` files (`*.test.ts`), as found on disk
 2026-06-28. High LOC inside a STUB row means scaffolding was merged, not that the edition works
@@ -97,18 +97,20 @@ editions like Local-first AI stay commercial. Re-licensing impl scheduled — wo
 compliance, but ADR-0082 sec.3 lists `local-ai` as "structure only." Treat the privacy-gate config
 demo as illustrative, not built.
 
-## Layer: Agentic-Dev edition (roadmap)
+## Layer: Agentic-Dev edition
 
-Genuinely unbuilt, labeled-roadmap edition (ADR-0082 sec.4). Governed TS kernel + engine-neutral
+The thinnest edition surface (the ADR-0082 sec.4 roadmap label was retired by ADR-0237
+rider 2). Governed TS kernel + engine-neutral
 multi-harness emitter: [`ADR-0066`](../knowledge/decisions/ADR-0066-agentic-dev-governed-kernel-emitter.md).
 
-| Package        | Purpose                                                                                                                                          | Edition             | Status                       | Evidence src/test | Key ADRs                                                                       |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------- | ---------------------------- | ----------------- | ------------------------------------------------------------------------------ |
-| `agent-kernel` | Engine-neutral agent kernel: schema + lifecycle FSM + hooks dispatcher. Shared base, also consumed by `cli` + `mcp-server`.                      | shared (agent base) | **STUB**                     | 8 / 7             | [0065](../knowledge/decisions/ADR-0065-base-agent-kernel-package.md)           |
-| `agent-dev`    | Agentic-Dev edition: typed agent/skill/rule schema + lifecycle FSM + local hybrid memory + multi-harness (.claude / AGENTS.md / Cursor) emitter. | agent-dev           | **ROADMAP** (ADR-0082 sec.4) | 7 / 3             | [0066](../knowledge/decisions/ADR-0066-agentic-dev-governed-kernel-emitter.md) |
+| Package        | Purpose                                                                                                                                          | Edition             | Status                      | Evidence src/test | Key ADRs                                                                       |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------- | --------------------------- | ----------------- | ------------------------------------------------------------------------------ |
+| `agent-kernel` | Engine-neutral agent kernel: schema + lifecycle FSM + hooks dispatcher. Shared base, also consumed by `cli` + `mcp-server`.                      | shared (agent base) | **STUB**                    | 8 / 7             | [0065](../knowledge/decisions/ADR-0065-base-agent-kernel-package.md)           |
+| `agent-dev`    | Agentic-Dev edition: typed agent/skill/rule schema + lifecycle FSM + local hybrid memory + multi-harness (.claude / AGENTS.md / Cursor) emitter. | agent-dev           | **STUB** (thinnest edition) | 7 / 3             | [0066](../knowledge/decisions/ADR-0066-agentic-dev-governed-kernel-emitter.md) |
 
-**Candor:** ADR-0082 sec.4 makes Agentic-Dev the one honest "roadmap" exception. `agent-kernel`
-(1101 LOC) is scaffolded as a base but the edition surface (`agent-dev`) is not shippable.
+**Candor:** ADR-0237 rider 2 retired the ADR-0082 sec.4 roadmap exception (FULL V1-live posture
+on the site). `agent-kernel` (1101 LOC) is scaffolded as a base but the edition surface
+(`agent-dev`) is the thinnest of the four.
 
 ## Layer: shared / cross-edition
 
@@ -146,9 +148,9 @@ license, support-bot) are out of scope for this catalog; see [`specs/01-architec
 ## Build-status rollup
 
 - **BUILT (7):** `kernel`, `tenancy-rls`, `field-crypto`, `auth`_, `billing`_, `credits`, `cli`. (*thin seams)
-- **STUB (16):** `audit-worm`, `compliance`, `ai-kit`, `ai-meter`, `prompt-registry`, `ai-evals`, `guardrails`, `ai-config`, `local-ai`, `local-store`, `agent-kernel`, `mcp-server`, `license-verify`, `ui`, `email`, `jobs`.
-- **ROADMAP (1):** `agent-dev` (Agentic-Dev edition).
+- **STUB (17):** `audit-worm`, `compliance`, `ai-kit`, `ai-meter`, `prompt-registry`, `ai-evals`, `guardrails`, `ai-config`, `local-ai`, `local-store`, `agent-kernel`, `agent-dev`, `mcp-server`, `license-verify`, `ui`, `email`, `jobs`.
 
-Authoritative honesty boundary: [`ADR-0082` sec.3-4](../knowledge/decisions/ADR-0082-go-live-site-posture.md).
+Authoritative honesty boundary: [`ADR-0082` sec.3-4](../knowledge/decisions/ADR-0082-go-live-site-posture.md)
+(sec.4's Agentic-Dev roadmap label retired by ADR-0237 rider 2).
 Merged LOC inside a STUB row is real scaffolding, not a shippable edition. Re-verify this table
 against the filesystem before citing build status downstream.
