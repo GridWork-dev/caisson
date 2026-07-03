@@ -287,3 +287,28 @@ tradeoff. All seven wait for an operator lock (→ ADR-0229) before any code lan
 ~all in `apps/site`, no new package, no new dependency, no corpus change. **Value:** HIGH — closes the
 last structural BUY-funnel gap using assets that are already built and deployed; the marginal build is
 the browser front, not the AI.
+
+---
+
+## LOCKED 2026-07-03 — ADR-0234 (supersedes the tabled recommendations above)
+
+All seven forks are operator-locked; **four are overrides**. The build implements THIS section
+where it differs from the fork prose above:
+
+- **F1** anonymous (as recommended).
+- **F2 OVERRIDE — two model lanes**: public/anonymous site lane default `google/gemini-3.5-flash`
+  (env-swap alt `deepseek/deepseek-v4-flash`); premium authed/Discord lane default
+  `anthropic/claude-sonnet-4.6` — and the support-bot's `OPENROUTER_MODEL` default bumps from the
+  stale `anthropic/claude-3.5-sonnet` to the premium lane pick (one config default change,
+  ADR-0105 env-swap preserved). **$10/day hard fail-closed spend cap on the public lane**, capped
+  requests get the escalation CTA.
+- **F3 OVERRIDE — both placements day one**: the docs-inline widget AND the ⌘K "Ask AI" tab.
+- **F4 OVERRIDE — corpus = docs + marketing/pricing**: the `services/docs` pipeline expansion is
+  in scope; pricing/edition content indexes from the pricebook/catalog source of truth (never
+  scraped page text) so cited prices cannot silently drift.
+- **F5 OVERRIDE — Cloudflare Turnstile gates `/api/ask` from day one** (invisible/managed),
+  layered with the ADR-0219 edge rule + the spend cap; the bespoke per-IP token bucket is the
+  held-in-reserve escalation. CSP gains the Turnstile entries in the same commit
+  (`identity/security-surfaces.md` same-commit invariant applies to the new third-party surface).
+- **F6** Plausible counts only (as recommended).
+- **F7** RAG discipline ports to the site route `/api/ask` (as recommended).

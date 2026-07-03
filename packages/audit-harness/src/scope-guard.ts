@@ -32,6 +32,9 @@ export function checkScope(
         findings.push(
           withId({
             domain,
+            // Not an audit-lens finding — the workflow-scope guard's own "scope" dimension keeps its
+            // id distinct from a real audit finding on the same path (ADR-0233 dimension-keyed id).
+            dimension: "scope",
             subject: path,
             title: `touched outside declared scope (domain: ${domain})`,
             severity: "high",
