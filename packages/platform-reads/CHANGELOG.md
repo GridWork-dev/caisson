@@ -1,5 +1,12 @@
 # @caisson/platform-reads
 
+## 0.1.4
+
+### Patch Changes
+
+- Updated dependencies [cf66d65]
+  - @caisson/tenancy-rls@0.3.2
+
 ## 0.1.3
 
 ### Patch Changes

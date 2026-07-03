@@ -1,5 +1,14 @@
 # @caisson/credits
 
+## 0.3.2
+
+### Patch Changes
+
+- Updated dependencies [cf66d65]
+- Updated dependencies [cf66d65]
+  - @caisson/kernel@0.4.1
+  - @caisson/tenancy-rls@0.3.2
+
 ## 0.3.1
 
 ### Patch Changes

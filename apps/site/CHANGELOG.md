@@ -1,5 +1,29 @@
 # @caisson/site
 
+## 0.1.3
+
+### Patch Changes
+
+- Updated dependencies [cf66d65]
+- Updated dependencies [cf66d65]
+- Updated dependencies [cf66d65]
+- Updated dependencies [cf66d65]
+- Updated dependencies [cf66d65]
+  - @caisson/field-crypto@0.2.3
+  - @caisson/kernel@0.4.1
+  - @caisson/ai-kit@0.3.0
+  - @caisson/tenancy-rls@0.3.2
+  - @caisson/service-license@0.0.4
+  - @caisson/ai-meter@0.3.2
+  - @caisson/auth@0.2.3
+  - @caisson/billing@0.4.1
+  - @caisson/credits@0.3.2
+  - @caisson/email@0.2.3
+  - @caisson/migrate@0.2.3
+  - @caisson/observability@0.2.3
+  - @caisson/pricebook@0.3.2
+  - @caisson/platform-reads@0.1.4
+
 ## 0.1.2
 
 ### Patch Changes

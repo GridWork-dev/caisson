@@ -1,5 +1,22 @@
 # @caisson/service-license
 
+## 0.0.4
+
+### Patch Changes
+
+- Updated dependencies [cf66d65]
+- Updated dependencies [cf66d65]
+- Updated dependencies [cf66d65]
+  - @caisson/audit-worm@0.2.3
+  - @caisson/kernel@0.4.1
+  - @caisson/tenancy-rls@0.3.2
+  - @caisson/billing@0.4.1
+  - @caisson/credits@0.3.2
+  - @caisson/license-issue@0.0.4
+  - @caisson/license-verify@0.2.3
+  - @caisson/observability@0.2.3
+  - @caisson/pricebook@0.3.2
+
 ## 0.0.3
 
 ### Patch Changes

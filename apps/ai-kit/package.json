@@ -1,6 +1,6 @@
 {
   "name": "@caisson/ai-kit-app",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "private": true,
   "type": "module",
   "description": "AI Production Kit reference app (ADR-0044): the P3 exit artifact. A thin Next.js App-Router wiring shell that drives the @caisson/ai-kit infer() gateway end-to-end against an embedded PGlite store and a mock/local model — coach-configure a lane, resolve a prompt by name@version, meter reserve/reconcile, hard-cap → 402, guardrail block → 422. Zero network, zero provider secret.",

@@ -1,5 +1,33 @@
 # @caisson/ai-kit
 
+## 0.3.0
+
+### Minor Changes
+
+- cf66d65: Added `structuredGenerate<T>()`, a typed wrapper around the metered inference call for
+  callers that want a parsed, schema-validated JSON value instead of raw model text. Pass a
+  Zod schema and it returns `{ value, raw }` on success; on an empty completion, malformed
+  JSON, or a schema mismatch it throws a typed `StructuredGenerateError` (with a `reason` of
+  `refusal`, `invalid_json`, or `schema_mismatch`) instead of silently handing back an empty
+  or unusable result. This closes a class of bug where a blocked or malformed model response
+  was easy to miss because nothing failed loudly.
+
+### Patch Changes
+
+- Updated dependencies [cf66d65]
+- Updated dependencies [cf66d65]
+- Updated dependencies [cf66d65]
+- Updated dependencies [cf66d65]
+- Updated dependencies [cf66d65]
+  - @caisson/guardrails@0.4.0
+  - @caisson/field-crypto@0.2.3
+  - @caisson/kernel@0.4.1
+  - @caisson/tenancy-rls@0.3.2
+  - @caisson/ai-config@0.2.3
+  - @caisson/ai-meter@0.3.2
+  - @caisson/credits@0.3.2
+  - @caisson/prompt-registry@0.2.3
+
 ## 0.2.2
 
 ### Patch Changes

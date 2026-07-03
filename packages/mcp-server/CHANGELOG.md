@@ -1,5 +1,13 @@
 # @caisson/mcp-server
 
+## 0.2.3
+
+### Patch Changes
+
+- Updated dependencies [cf66d65]
+  - @caisson/kernel@0.4.1
+  - @caisson/ai-config@0.2.3
+
 ## 0.2.2
 
 ### Patch Changes
