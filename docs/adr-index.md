@@ -683,10 +683,11 @@ The backlog-fork round after the fourth round's builds all merged (PRs #86-#93):
 program's five tabled forks locked (unblocking the ADR-0232 pre-committed build), and the ask-AI
 question-text follow-up fork closed as capture-with-consent (operator override of the defer rec).
 
-| #                                                                       | Title                                                                                             | Domain   | Status   | Relations                        |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | -------- | -------- | -------------------------------- |
-| [0235](../knowledge/decisions/ADR-0235-glossary-program-fork-locks.md)  | Glossary program: 5 fork locks — 32 terms, adversarial agent authoring (Fork-B override), batches | Site/SEO | accepted | realizes 0232; extends 0079/0080 |
-| [0236](../knowledge/decisions/ADR-0236-ask-ai-question-text-capture.md) | Ask-AI question-text capture with consent notice, 90-day retention (override of defer)            | Site/AI  | accepted | extends 0234 F6; relates 0118    |
+| #                                                                         | Title                                                                                                                           | Domain   | Status   | Relations                                                   |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | -------- | -------- | ----------------------------------------------------------- |
+| [0235](../knowledge/decisions/ADR-0235-glossary-program-fork-locks.md)    | Glossary program: 5 fork locks — 32 terms, adversarial agent authoring (Fork-B override), batches                               | Site/SEO | accepted | realizes 0232; extends 0079/0080                            |
+| [0236](../knowledge/decisions/ADR-0236-ask-ai-question-text-capture.md)   | Ask-AI question-text capture with consent notice, 90-day retention (override of defer)                                          | Site/AI  | accepted | extends 0234 F6; relates 0118                               |
+| [0237](../knowledge/decisions/ADR-0237-site-presentation-rework-locks.md) | Site presentation rework: 8 fork locks + V1-live posture — /marketplace hub, nav rebuild, depth pages, id renames (3 overrides) | Site/UI  | accepted | supersedes 0191 + 0082 roadmap exception; extends 0118/0190 |
 
 ---
 
