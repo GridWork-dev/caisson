@@ -1,5 +1,36 @@
 # @caisson/compliance
 
+## 0.3.0
+
+### Minor Changes
+
+- 93770dd: OSCAL Assessment-Plan rlink: author the 3 per-framework AP documents + a signed evidence bundle. New `toOscalAssessmentPlan(framework)` emits a minimal-but-valid OSCAL v1.2.2
+  `assessment-plan` per framework (deterministic via the injected now/newId seam), and a new
+  `assembleOscalEvidenceBundle()` lays out a sibling-directory bundle (`./assessment-plan/<fw>.json`,
+  `./sar.json`, `./poam.json`, `./manifest.json`, `./manifest.sig`), rewriting the SAR back-matter
+  `rlink.href` to the RELATIVE in-bundle AP path with a SHA-256 `hashes[]` binding over the
+  canonicalized AP bytes and reusing `signEvidencePack()` unchanged. `OscalExportOptions` gains an
+  `assessmentPlan { rlinkHref; sha256? }` seam; the `assessmentPlanHref` buyer override is untouched;
+  the OSCAL conformance gate now validates each AP at v1.2.2 (skip-if-absent). Replaces the dead
+  absolute `caisson.sh/oscal/assessment-plan` URL as the emitted default.
+
+### Patch Changes
+
+- fb8d966: Control-to-code traceability idiom — a convention, not a framework: the
+  `soc2Tsc` pack export cites its governing policy decision record in its docstring, and a
+  `control-traceability` golden exemplar pins the `policyVersion` a control-logic fixture was captured
+  under. No runtime/schema change; existing
+  catalog goldens byte-stable.
+- Updated dependencies [fb8d966]
+- Updated dependencies [fb8d966]
+  - @caisson/kernel@0.4.0
+  - @caisson/retention-runner@0.1.3
+  - @caisson/alerting@0.1.3
+  - @caisson/audit-worm@0.2.2
+  - @caisson/field-crypto@0.2.2
+  - @caisson/migrate@0.2.2
+  - @caisson/tenancy-rls@0.3.1
+
 ## 0.2.1
 
 ### Patch Changes

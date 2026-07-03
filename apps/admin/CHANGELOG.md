@@ -1,5 +1,30 @@
 # @caisson/admin
 
+## 0.0.3
+
+### Patch Changes
+
+- 4fc006c: Admin paid-purchase revoke. service-license: `revokePurchaseAdmin` composes the
+  existing source-scoped revoke helpers with the bounded clawback (`creditsGrantedBySource -
+creditsClawedForSource`) under `withAdminWrite` in one transaction, a new `purchase_revoke`
+  `admin_action_log` action + CHECK migration, and a `license-revocation-store` feeding the registry's edge deny-set. admin: a paid-revoke mutation card with an impact-preview read (active sources +
+  projected claw) plus type-to-confirm, and the `/api/admin/entitlement/revoke-purchase` (+
+  `/preview`) routes. registry: the Worker deny-set check (`revocation-list.ts`), wired
+  fail-open into `entitlement-filter.ts`/`deploy-entry.ts` so a fetch/parse failure never blocks an
+  install.
+- Updated dependencies [4fc006c]
+- Updated dependencies [bd9a005]
+- Updated dependencies [fb8d966]
+  - @caisson/service-license@0.0.3
+  - @caisson/ui@0.3.0
+  - @caisson/kernel@0.4.0
+  - @caisson/platform-reads@0.1.3
+  - @caisson/audit-worm@0.2.2
+  - @caisson/auth@0.2.2
+  - @caisson/credits@0.3.1
+  - @caisson/observability@0.2.2
+  - @caisson/tenancy-rls@0.3.1
+
 ## 0.0.2
 
 ### Patch Changes
