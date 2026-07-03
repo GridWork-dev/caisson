@@ -269,4 +269,37 @@ describe("checkRlsEquivalence (ADR-0210/0005)", () => {
     );
     expect(await checkRlsEquivalence([p], root)).toEqual([]);
   });
+
+  // ADR-0006 append-only: a shipped migration's RLS predicate is never edited in place — a
+  // hardening follow-up re-issues the policy (DROP + CREATE) in a NEW migration file instead. The
+  // gate must evaluate the EFFECTIVE (latest) policy across all of a package's migration files, not
+  // the table's original (now-superseded) one.
+  test("a DROP+CREATE POLICY re-issued in a later migration file is checked against its effective form", async () => {
+    const p = widgetPkg(narrowGrantSql()); // 0001: original policy, narrower GRANT
+    writeFileSync(
+      join(p.dir, "src", "migrations", "0002_widget_rls_harden.sql"),
+      [
+        "DROP POLICY widget_tenant_isolation ON widget;",
+        buildTenantPolicySql("widget", { column: "account_id", role: "app" })
+          // buildTenantPolicySql also emits ENABLE/FORCE/full-CRUD GRANT, which 0001 already has —
+          // only the re-issued CREATE POLICY line is relevant to this fixture.
+          .split("\n")
+          .filter((l) => l.startsWith("CREATE POLICY") || l.startsWith("  ")),
+        "",
+      ]
+        .flat()
+        .join("\n"),
+    );
+    // 0002's re-issued policy matches buildTenantPolicySql's CURRENT output exactly — only the
+    // narrower (but overrides-covered) GRANT from 0001 remains, which requires the override.
+    const overridesDir = join(root, "tooling", "standards-gate");
+    mkdirSync(overridesDir, { recursive: true });
+    writeFileSync(
+      join(overridesDir, "rls-equivalence-overrides.json"),
+      JSON.stringify([
+        { table: "widget", package: p.name, reason: "test fixture" },
+      ]),
+    );
+    expect(await checkRlsEquivalence([p], root)).toEqual([]);
+  });
 });

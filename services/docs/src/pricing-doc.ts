@@ -35,6 +35,9 @@ const moduleFactSchema = z
     /** Owning edition id (matches an entry in `editions`). */
     edition: z.string().min(1),
     blurb: z.string(),
+    /** Browse-family only: the module is NOT granted by its edition (or the bundle) — sold
+     *  standalone. Mirrors the SOT flag; the doc must never claim edition inclusion for these. */
+    standaloneOnly: z.boolean().optional(),
   })
   .strict();
 
@@ -102,7 +105,11 @@ function editionsDoc(facts: PricingFacts): string {
     "",
   ];
   for (const edition of facts.editions) {
-    const modules = facts.modules.filter((m) => m.edition === edition.id);
+    // standaloneOnly rows are browse-family only — the edition does NOT grant them, so listing
+    // them under "Includes:" would claim a grant that does not exist.
+    const modules = facts.modules.filter(
+      (m) => m.edition === edition.id && m.standaloneOnly !== true,
+    );
     lines.push(
       `## ${edition.label} — ${fmtPrice(edition)}`,
       "",
@@ -135,8 +142,15 @@ function modulesDoc(facts: PricingFacts): string {
   ];
   for (const mod of facts.modules) {
     lines.push(`## ${mod.label} — ${moduleUsd(mod.amount)}`, "", mod.blurb, "");
-    const owner = editionLabel.get(mod.edition);
-    if (owner !== undefined) lines.push(`Part of the ${owner} edition.`, "");
+    if (mod.standaloneOnly === true) {
+      lines.push(
+        "Standalone module — sold on its own; not included in any edition or the Everything bundle.",
+        "",
+      );
+    } else {
+      const owner = editionLabel.get(mod.edition);
+      if (owner !== undefined) lines.push(`Part of the ${owner} edition.`, "");
+    }
   }
   return lines.join("\n");
 }

@@ -64,5 +64,12 @@ describe("encrypted column seam (sealField / openField)", () => {
     const v2Sealed = sealField(ctx, "c", "new");
     expect(parseEnvelope(v2Sealed).keyVersion).toBe(2); // new write uses the new version
     expect(openField(ctx, "c", v2Sealed)).toBe("new");
+
+    // No-remigration invariant, made explicit: rotation actually changed the key material (not
+    // just a version label) — v1 rows keep decrypting under their OWN recorded key, forever, with
+    // zero bulk re-encrypt of existing data.
+    expect(
+      provider.deriveKey("acct_a", 1).equals(provider.deriveKey("acct_a", 2)),
+    ).toBe(false);
   });
 });

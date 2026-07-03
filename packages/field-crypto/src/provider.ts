@@ -12,6 +12,15 @@ import { KeyVersionRegistry } from "./registry.ts";
  * The async key-management port (ADR-0043). `keyFor` returns a tenant's data-encryption key bytes
  * for a given version; `currentVersion` reports the version a new write should use. (The ADR sketch
  * names `CryptoKey`; `node:crypto` symmetric ciphers take raw key bytes, so the DEK is a `Buffer`.)
+ *
+ * NO-REMIGRATION INVARIANT: an implementation must answer `keyFor(tenantId, v)` for ANY past `v`,
+ * not only the current one — the version lives in the key derivation/wrap, never only in provider
+ * state. An envelope written under v1 stays decryptable forever via `keyFor(tenantId, 1)`, even
+ * after `currentVersion` moves to v2+. Rotation is a version BUMP for new writes only — never a
+ * bulk re-encrypt of existing rows. `DerivedKeyProvider` re-derives any version on demand (the
+ * version is baked into the HKDF `info` string, `derive.ts`); `KmsKeyProvider` keeps every
+ * version's wrapped DEK in `WrappedKeyStore` (ADR-0046 self-describing envelope carries the
+ * version to look up).
  */
 export interface FieldKeyProvider {
   keyFor(tenantId: string, keyVersion: number): Promise<Buffer>;

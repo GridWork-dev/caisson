@@ -845,3 +845,14 @@ Plausible funnel events on marketing + server-side PostHog purchase capture in t
 webhook — and the rider-2 V1-live posture sweep) are both merged to `main`. Recorded residuals:
 F2's "real media later TBD" (placeholder brand art shipped) and glossary batches 2–3 (~20 terms,
 ADR-0235 Fork C) — both tracked in `docs/state/opportunity-backlog.md` §8.
+
+## Closed by the 2026-07-03 deploy-closeout picker round (operator-locked)
+
+Three forks locked in one round during the post-site-rework deploy/closeout session (the two
+parked audit-spec forks promoted per their SPECs, plus the wave-6 remaining scope):
+
+| Fork                               | Decision                                                                                                                                                                                                                                                                    | ADR          |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| **Wave-6 remaining scope**         | **Build the 9 remaining `build-next` rows + close the ledger** (wave-6b, one spec/workflow/PR set). The 28 `build-on-trigger` rows stay parked on their per-row triggers; the lift-sweep report folds in-repo; the disposition SPEC goes terminal. Amends ADR-0229/0210 §4. | **ADR-0239** |
+| **local-ai price (P1 spec fork)**  | **$349 stays canonical** — ADR-0137's below-sum reprice superseded ADR-0129's $399; manifest + site + Paddle already agree. No number change anywhere; the manifest PLACEHOLDER comment is rewritten to cite the lock.                                                      | **ADR-0240** |
+| **Changeset prose (P2 spec fork)** | **Source gate, no silent formatter** — a standards-gate check fails PRs whose `.changeset/*.md` bodies carry internal prose (ADR cites, wave/row jargon, internal paths, agent slugs). The 22 pending changesets were hand-swept (PR #104) before the first live consume.   | **ADR-0241** |

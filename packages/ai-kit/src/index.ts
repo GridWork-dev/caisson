@@ -36,6 +36,17 @@ export type {
   EmbedResult,
 } from "./embed.ts";
 
+// structuredGenerate<T>(): the structured-output-or-throw wrapper around infer() — the canonical
+// default path for a typed value, throwing instead of silently returning an empty/unparseable result.
+export {
+  StructuredGenerateError,
+  structuredGenerate,
+} from "./structured-generate.ts";
+export type {
+  StructuredGenerateReason,
+  StructuredGenerateResult,
+} from "./structured-generate.ts";
+
 // Per-tenant encrypted BYOK (ADR-0162): the encrypted key store + the BYOK-aware resolver.
 export {
   TENANT_AI_CREDENTIAL_SCHEMA_SQL,
