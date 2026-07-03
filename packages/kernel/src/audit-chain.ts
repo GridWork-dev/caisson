@@ -68,6 +68,17 @@ export function canonicalize(value: JsonValue): string {
 }
 
 /**
+ * Content-integrity tag for a SINGLE frozen claim/artifact (ADR-0229 row 10): lowercase-hex SHA-256
+ * over `canonicalize(value)` — no chain wrapper, unlike {@link hashChainLink} (which hashes the
+ * `[prevHash, payload]` 2-tuple). Use to pin the integrity of one immutable value independent of any
+ * chain (a locked artifact, a policy snapshot). NOT a secret comparison — the digest is a public
+ * integrity tag, so plain equality on the result is correct (same rationale as the chain hashes).
+ */
+export function contentHash(value: JsonValue): string {
+  return createHash("sha256").update(canonicalize(value)).digest("hex");
+}
+
+/**
  * The chain link hash: SHA-256 over the canonical serialization of `[prevHash, payload]`. The
  * 2-tuple binds the predecessor hash and the payload unambiguously (JSON's own delimiters separate
  * them — no `prevHash ∥ payload` concatenation ambiguity).

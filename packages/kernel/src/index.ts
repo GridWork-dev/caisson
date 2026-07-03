@@ -37,6 +37,7 @@ export type { EnvSource } from "./config.ts";
 
 export {
   canonicalize,
+  contentHash,
   hashChainLink,
   chainEntry,
   buildChain,
