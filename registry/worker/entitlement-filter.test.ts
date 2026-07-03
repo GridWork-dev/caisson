@@ -4,7 +4,10 @@
 // the verify→entitlements seam end to end against the SHIPPED key. An absent / malformed / non-Bearer /
 // forged license resolves to null (community), so the handler serves the free base only (TM-LIC).
 import { describe, expect, test } from "bun:test";
-import { licenseEntitlementResolver } from "./entitlement-filter";
+import {
+  licenseEntitlementResolver,
+  makeLicenseEntitlementResolver,
+} from "./entitlement-filter";
 
 // A real PRODUCTION-signed license token (minted offline with CAISSON_LICENSE_SIGNING_KEY; a token is
 // public-safe — its detached signature reveals nothing about the private key). Keep in sync with the
@@ -49,5 +52,29 @@ describe("licenseEntitlementResolver (ADR-0010/0071)", () => {
         reqWith("Bearer CAISSON-PRO-not-a-real-token"),
       ),
     ).toBeNull();
+  });
+});
+
+// The signed licenseId in PROD_TOKEN's claims (decoded), the deny-set key (ADR-0225 R-4=B).
+const PROD_LICENSE_ID = "22222222-2222-4222-8222-222222222222";
+
+describe("makeLicenseEntitlementResolver — edge revocation gate (ADR-0225 R-4=B)", () => {
+  test("an empty deny-set leaves a valid license unchanged", () => {
+    const resolve = makeLicenseEntitlementResolver(() => new Set());
+    expect(resolve(reqWith(`Bearer ${PROD_TOKEN}`))).toEqual(["local-ai"]);
+  });
+
+  test("a REVOKED license id → null (community), exactly like a forged token", () => {
+    const resolve = makeLicenseEntitlementResolver(
+      () => new Set([PROD_LICENSE_ID]),
+    );
+    expect(resolve(reqWith(`Bearer ${PROD_TOKEN}`))).toBeNull();
+  });
+
+  test("a deny-set that lists OTHER ids leaves this license unaffected", () => {
+    const resolve = makeLicenseEntitlementResolver(
+      () => new Set(["99999999-9999-4999-8999-999999999999"]),
+    );
+    expect(resolve(reqWith(`Bearer ${PROD_TOKEN}`))).toEqual(["local-ai"]);
   });
 });

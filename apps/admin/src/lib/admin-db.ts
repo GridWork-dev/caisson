@@ -73,9 +73,13 @@ DO $$ BEGIN
 END $$;
 `;
 
-/** The tenant tables the operator cockpit reads cross-tenant (ADR-0141 read-only surface). */
+/** The tenant tables the operator cockpit reads cross-tenant (ADR-0141 read-only surface).
+ *  `credit_event` was added (ADR-0225): the paid-revoke impact preview reuses `@caisson/credits`'
+ *  `creditsGrantedBySource`/`creditsClawedForSource`, which read the per-event ledger, so the `admin`
+ *  role needs a cross-tenant SELECT policy on it to compute the exact claw preview. */
 const ADMIN_READ_TABLES = [
   "credit_wallet",
+  "credit_event",
   "entitlement_grant",
   "license_grant",
 ] as const;

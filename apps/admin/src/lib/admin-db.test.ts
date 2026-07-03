@@ -16,8 +16,8 @@ interface ColumnRow {
 
 test("admin bootstrap carries the ADR-0218 line-item columns (spot-check, not a full deploy-migrate parity gate)", async () => {
   // Queries information_schema directly on the bootstrap connection (NOT through readAdmin/the
-  // `admin` role) — information_schema.columns only lists columns a role has some privilege on, and
-  // `admin` is granted SELECT on entitlement_grant/license_grant/credit_wallet only, not credit_event.
+  // `admin` role) — information_schema.columns only lists columns a role has some privilege on, so a
+  // role-scoped read could hide a column; the owner connection sees the true table shape.
   const db = await getAdminDb();
   const [entitlementCols, creditCols] = await db.transaction(async (tx) => {
     const ent = await tx.query<ColumnRow>(

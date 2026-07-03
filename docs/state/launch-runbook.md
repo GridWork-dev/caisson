@@ -524,3 +524,77 @@ start`** the runscaler unit cleanly (not a hot reload), and **cancel + re-run** 
   queued against the dead set — they do not auto-recover onto the new runners. (This is exactly what
   happened at the transfer: the old scale set had to be torn down and recreated on both the box and
   the Mac mini, and the Greptile app was reinstalled on the new org.)
+
+## 8. Edge license-revocation deny-set (ADR-0225 R-4=B)
+
+Operator `purchase_revoke` (admin v2) revokes a paid entitlement in the DB **and** — when the
+per-action "revoke edge access" checkbox is on — records the account's license ids in the
+`license_revocation` table and (once the edge publisher is provisioned) republishes the full edge
+**deny-set** so the registry Worker stops serving that buyer's paid modules. This closes the gap
+that a DB-only revoke leaves: the Worker verifies a SIGNED offline license token against a baked
+Ed25519 pubkey and **never reads the DB**, so without the deny-set a revoked buyer keeps
+`npm install` access to premium modules until their token expires (forever, for a `expiry: null`
+perpetual-per-major token).
+
+**How it works (code, no infra opened by this PR):**
+
+- **Truth** is the DB table **`license_revocation`** (keyed on `license_id`) — written inside the
+  mutation transaction, ALWAYS. Republishing that truth to the edge artifact is a POST-COMMIT,
+  BEST-EFFORT step that runs ONLY when the publisher is provisioned (env-gated — see DEPLOY below).
+  The mutation surfaces the outcome per revoke as **`edgePublish`**: `"ok"` = the full set was
+  republished · `"failed"` = the revoke is durable but the artifact write threw (re-publish out of
+  band, do NOT retry the mutation) · `"skipped"` = no edge revoke was requested, OR the publisher is
+  unprovisioned, so the DB is the sole truth and the Worker fails open (nothing denied at the edge).
+- **Artifact** = a JSON object `{ "revokedLicenseIds": ["<uuid>", …] }` at the fixed R2 key
+  **`revocations/deny-set.json`**. Republish-whole, not delta (operator actions are low-volume).
+- **Key = the signed `claims.licenseId`** — the ONLY per-license stable id the offline token
+  verifiably carries (there is no `accountId` in the token). Consequence: the edge deny is
+  **license-scoped = account-scoped in practice** (every `license_grant.license_id` the account
+  holds is denied), while the DB revoke stays source-scoped (R-2). Correct for the
+  fraud/chargeback/ToS case (kill their edge access); the refcount-survivor nuance (a buyer keeps a
+  sibling entitlement but their whole token is denied until reissued with reduced claims) is
+  **R-4=C reissue-rotation, explicitly deferred** — hence the per-action checkbox, so the operator
+  never silently over-denies a legit sibling.
+- **Worker read** (`registry/worker/revocation-list.ts`): a module-cached `Set` refreshed on a
+  **60s TTL**, stale-while-revalidate (`ctx.waitUntil`, never awaited before serving). **STRICT
+  fail-open is the binding invariant** — an absent R2 binding, a fetch error, or a malformed artifact
+  keeps the prior set (empty on first failure = nobody denied), so a deny-set outage NEVER breaks
+  installs. Wired into the entitlement resolver in `deploy-entry.ts` (additive; `handler.ts`
+  untouched).
+
+**The staleness window (read this before relying on a revoke for edge cutoff):**
+
+- After a revoke publishes, the edge stops honoring the token within **≤ the TTL (60s)** of the
+  next Worker request that triggers a refresh — NOT instantly, and only once the artifact is
+  actually published to R2.
+- **Before the R2 binding is provisioned** (operator-gated DEPLOY — see below), the deny-set is
+  ALWAYS empty (fail-open), so `revokeEdgeAccess` writes the DB truth but the edge does not yet
+  enforce it. The dashboard view and any FRESH token issue reflect the revoke immediately; the
+  already-distributed token keeps edge access until the binding is live.
+- The deny-set does **not** shrink a `expiry: null` token's blast radius on its own — it is the
+  mechanism that finally cuts a perpetual token's edge access. Pair fraud/ToS revokes with the
+  paid-token TTL policy (a non-null default TTL turns "denied via list" into "also self-expires").
+
+**Operator-gated DEPLOY (NOT run by SHIP — provision before relying on edge enforcement):**
+
+1. Create the R2 bucket + bind it to the registry Worker as **`REVOCATIONS`** (name matches
+   `deploy-entry.ts`); consistent with the existing inline-deploy model, no new heavyweight infra.
+   `infra/terraform` owns the real binding — code + tests here use an injected double.
+2. Set **`CAISSON_REVOCATIONS_PUT_URL`** (+ optional **`CAISSON_REVOCATIONS_PUT_TOKEN`** bearer) on
+   `caisson-admin` to an authorized PUT target for `revocations/deny-set.json` (a pre-signed R2 URL or
+   a small authed shim in front of the bucket). The publisher itself is ALREADY built
+   (`apps/admin/src/lib/admin-mutations-runtime.ts` `denySetPublisher`) — it activates when this env is
+   set and reports `edgePublish: "skipped"` until then. No aws-sdk / SigV4 / R2 credential is added to
+   the admin blast radius; the operator provisions the endpoint that owns the bucket write.
+3. Provision the `license_revocation` table + the `admin_action_log` `purchase_revoke` action ALTER
+   on the Railway Postgres (rides the same admin DEPLOY step as the ADR-0220 mutation surface).
+
+Until (1)-(3) run, admin v2 revoke is DB-truth-only at the edge; the fail-open Worker path means the
+absence is safe, not broken. Each revoke's `edgePublish` field tells the operator which state that
+action landed in (`skipped` before provisioning, `ok`/`failed` after).
+
+**Reversing an edge deny (queued follow-up).** There is no admin un-revoke path for
+`license_revocation` rows yet — a mistaken edge deny is undone only by deleting the row(s) directly
+(then republishing) or issuing a fresh token after a reissue. Acceptable pre-launch given the
+mandatory impact preview + type-to-confirm gate; a `purchase_unrevoke` mutation is queued alongside
+the publisher provisioning above so the reversal is not a raw-SQL-against-production action either.
