@@ -127,9 +127,9 @@ async function bootstrapPglite(): Promise<PGlite> {
   await pg.exec(ADMIN_ROLE_BOOTSTRAP_SQL);
   await pg.exec(ADMIN_WRITE_ROLE_BOOTSTRAP_SQL);
   // Real schema DDL (tenant policies + GRANT app included), then the additive admin-read policies.
-  // CAISSON-11: the line-item migrations (deploy-migrate's 0008/0009) applied in the SAME order as
-  // apps/site/lib/deploy-migrate.ts's platformPackage() — after each column's base schema, so the
-  // bootstrap chain here matches the deploy-migrate chain column-for-column.
+  // CAISSON-11: each line-item migration (deploy-migrate's 0008/0009) runs after its column's base
+  // schema, same as apps/site/lib/deploy-migrate.ts's platformPackage() — independent of the skipped
+  // legacy backfill and the other platformPackage() migrations this bootstrap doesn't apply.
   await pg.exec(CREDIT_SCHEMA_SQL);
   await pg.exec(CREDIT_ROUNDING_MIGRATION_SQL);
   await pg.exec(ENTITLEMENT_SCHEMA_SQL);
