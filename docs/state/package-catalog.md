@@ -161,41 +161,40 @@ is the record until one lands; log the fork on `docs/state/decisions-and-forks.m
 
 | SKU                   | Price                                   | What it is                                                       | Build status                               |
 | --------------------- | --------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------ |
-| **Compliance** (hero) | **$749**                                | SOC2/HIPAA/EU-AI-Act evidence + WORM audit + field crypto        | substantial (P2, partial per build-state)  |
+| **Compliance** (hero) | **$799** (ADR-0227)                     | SOC2/HIPAA/EU-AI-Act evidence + WORM audit + field crypto        | substantial (P2, partial per build-state)  |
 | **AI Production Kit** | **$599**                                | metering + evals + guardrails + prompt registry behind a gateway | partial (P3)                               |
 | **Local-first AI**    | **$349**                                | on-device inference + hybrid local store                         | substantial (P4a, partial per build-state) |
 | **Agentic-Dev**       | **$249**                                | governed agent kernel + multi-harness emitter                    | substantial (P4b, partial per build-state) |
-| **All-Access Bundle** | **$1,499** (23% off edition-sum $1,946) | all four editions                                                | n/a — composite of the four rows above     |
+| **All-Access Bundle** | **$1,499** (25% off edition-sum $1,996) | all four editions                                                | n/a — composite of the four rows above     |
 
-**⚠ Open sub-flag — the $749 launch-sum wrinkle:** $749 is anchored as ~25% off the Compliance
-edition's **5-module** sum ($995 = $299 + $199 + $149 + $149 + $199), i.e. the "full below-sum" Q4
-framing. But **2 of those 5 modules — `alerting` and `retention-runner` — are zero-code, post-go-live
-harvest items** (ADR-0135, ADR-0133 sequencing). At **launch**, the real Compliance catalog is only 3
-modules summing to **$647** (`compliance` $299 + `field-crypto` $199 + `audit-worm` $149), so $749 sits
-**$102 ABOVE** the launch-time module-sum, not below it. This is held deliberately per the as-if-built
-storefront (ADR-0130), which shows all 5 modules as available regardless of code-completeness — but it
-is an **open operator sub-decision** (does $749 get re-anchored to the 3-module launch sum with a smaller
-discount, or does it hold through the harvest window?) not yet logged on the fork board. Log it there
-before launch if it needs a decision.
+**Resolved (was: the $749 launch-sum wrinkle):** superseded by **ADR-0227** (Compliance edition
+repriced **$799**, below-sum invariant kept) and **ADR-0238** (the `compliance` core row no longer
+sells à la carte); `alerting`/`retention-runner` shipped in Stage-2 (ADR-0150/0151), so the
+zero-code-harvest caveat is dead. The historical wrinkle text lives in git history.
 
-### 14 à la carte modules
+### 11 à la carte modules (ADR-0238, 2026-07-03)
 
-| Module              | Price | Edition           | Build status                  |
-| ------------------- | ----- | ----------------- | ----------------------------- |
-| `compliance`        | $299  | Compliance        | substantial                   |
-| `field-crypto` †    | $199  | Compliance        | built                         |
-| `audit-worm` †      | $149  | Compliance        | substantial                   |
-| `alerting`          | $149  | Compliance        | **PENDING (harvest, 0 code)** |
-| `retention-runner`  | $199  | Compliance        | **PENDING (harvest, 0 code)** |
-| `ai-kit`            | $149  | AI Production Kit | partial                       |
-| `ai-meter` †        | $199  | AI Production Kit | substantial                   |
-| `ai-evals` †        | $199  | AI Production Kit | substantial                   |
-| `guardrails` †      | $149  | AI Production Kit | substantial                   |
-| `prompt-registry` † | $99   | AI Production Kit | substantial                   |
-| `agent-kernel` †    | $199  | Agentic-Dev       | substantial                   |
-| `agent-dev`         | $99   | Agentic-Dev       | substantial                   |
-| `local-ai`          | $299  | Local-first AI    | substantial                   |
-| `local-store` †     | $99   | Local-first AI    | substantial                   |
+**The four edition-core rows (`compliance` $299 · `ai-kit` $149 · `local-ai` $299 · `agent-dev` $99)
+were DROPPED from the à-la-carte catalog (ADR-0238):** their bare ids named their own edition's
+entitlement id, so a module purchase silently expanded to the whole parent edition — and no separable
+core artifact exists to grant instead (each edition meta-package hard-depends on its commercial
+members). Editions are how composition is bought; à la carte sells only the standalone modules below.
+Their four Paddle SANDBOX products sit orphaned (sandbox never ports to production, ADR-0227). The
+per-row price NUMBERS below are unchanged.
+
+| Module              | Price | Edition           | Build status              |
+| ------------------- | ----- | ----------------- | ------------------------- |
+| `field-crypto` †    | $199  | Compliance        | built                     |
+| `audit-worm` †      | $149  | Compliance        | substantial               |
+| `alerting`          | $149  | Compliance        | built (Stage-2, ADR-0150) |
+| `retention-runner`  | $199  | Compliance        | built (Stage-2, ADR-0151) |
+| `ai-meter` †        | $199  | AI Production Kit | substantial               |
+| `ai-evals` †        | $199  | AI Production Kit | substantial               |
+| `guardrails` †      | $149  | AI Production Kit | substantial               |
+| `prompt-registry` † | $99   | AI Production Kit | substantial               |
+| `agent-kernel` †    | $199  | Agentic-Dev       | substantial               |
+| `agent-runner`      | $49   | Agentic-Dev       | built (ADR-0186)          |
+| `local-store` †     | $99   | Local-first AI    | substantial               |
 
 Thin base seams (`ai-config`, `tenancy-rls`, `jobs`, `email`) are **never** individually sold — bundle-
 only by ADR-0129 §3, and now also **free/open** anyway (ADR-0094).

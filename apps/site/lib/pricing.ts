@@ -95,15 +95,11 @@ export interface ModulePrice {
 }
 
 export const MODULE_PRICES: readonly ModulePrice[] = [
+  // À-la-carte = the standalone modules only (ADR-0238): the four edition-core rows
+  // ("Compliance core", "Agent-setup config bundles", "On-device inference", "Dev-loop tooling")
+  // were dropped — an edition's core composes its commercial members at runtime, so it has no
+  // separable artifact to sell; editions are how you buy composition.
   // ---- Compliance ----
-  {
-    id: "compliance",
-    label: "Compliance core",
-    amount: 299,
-    edition: "compliance",
-    blurb:
-      "Fail-closed Postgres RLS (FORCE) and cross-tenant isolation tests — the substrate every other compliance module composes onto.",
-  },
   {
     id: "field-crypto",
     label: "Field encryption",
@@ -162,14 +158,6 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
       "Versioned prompts with rollout history. No more prompts hardcoded three layers deep in a route handler.",
   },
   {
-    id: "ai-kit",
-    label: "Agent-setup config bundles",
-    amount: 149,
-    edition: "ai-kit",
-    blurb:
-      "Provider-agnostic AI config, one seam over every model you call — swap providers without a rewrite.",
-  },
-  {
     id: "alerting",
     label: "Spend alerting",
     amount: 149,
@@ -178,14 +166,6 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
       "Threshold alerts on token spend and error rate, wired to the channel you already watch.",
   },
   // ---- Local-first AI ----
-  {
-    id: "local-ai",
-    label: "On-device inference",
-    amount: 299,
-    edition: "local-first",
-    blurb:
-      "The compute seam — same code, on-device or hosted, behind a default-deny privacy gate. Sovereignty is the default.",
-  },
   {
     id: "local-store",
     label: "Local vector store",
@@ -202,14 +182,6 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     edition: "agentic-dev",
     blurb:
       "Typed agent/skill/rule schema plus the guarded lifecycle state machine — VERIFY failing reopens PLAN, there's no edge to SHIP.",
-  },
-  {
-    id: "agent-dev",
-    label: "Dev-loop tooling",
-    amount: 99,
-    edition: "agentic-dev",
-    blurb:
-      "The hooks dispatcher and local hybrid memory that wire a governed agent into your existing dev loop.",
   },
   {
     id: "agent-runner",
@@ -246,7 +218,7 @@ export const PLAN_PRICES: readonly PriceAnchor[] = [
     amount: MODULE_MIN_AMOUNT,
     unit: "once",
     from: true,
-    note: "Take a single module à la carte — 15 modules across the four editions.",
+    note: "Take a single module à la carte — 11 standalone modules across the four editions.",
   },
   {
     id: "compliance-updates",
