@@ -144,8 +144,14 @@
             ],
             "rlinks": [
               {
-                "href": "https://caisson.sh/oscal/assessment-plan/hipaa-security.json",
-                "media-type": "application/oscal-assessment-plan+json"
+                "href": "./assessment-plan/hipaa-security.json",
+                "media-type": "application/oscal-assessment-plan+json",
+                "hashes": [
+                  {
+                    "algorithm": "SHA-256",
+                    "value": "6a32412b968fb6de11fc0e35e9da08f94c4ea5abb27868e8b45adafb7410d4c4"
+                  }
+                ]
               }
             ]
           }
