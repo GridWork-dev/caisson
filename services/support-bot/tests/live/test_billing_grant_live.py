@@ -51,7 +51,7 @@ def _proof_settings() -> Settings:
     return Settings(
         discord_token=DISCORD_TOKEN,
         openrouter_api_key="unused-in-billing-grant",  # required field; the grant path never reads it
-        docs_service_url="https://docs.invalid",  # required field; never called by /billing-grant
+        docs_service_url="https://docs.invalid",  # type: ignore[arg-type]  # required field; never called by /billing-grant
         docs_service_token="unused-in-billing-grant",
         billing_grant_token=GRANT_TOKEN,
         guild_id=int(GUILD_ID),
