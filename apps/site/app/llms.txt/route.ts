@@ -30,9 +30,10 @@ const PREAMBLE = [
 ].join("\n");
 
 export function GET() {
-  // Demote the docs index's leading "# Documentation" to H2 so the file has one H1. Tolerant: a
-  // single non-global regex on the string start — if fumadocs ever changes that header the worst
-  // case is two H1s, never a crash or data loss.
-  const docs = llms(source).index().replace(/^# /, "## ");
+  // Demote EVERY top-level heading fumadocs emits to H2, so the composed file has exactly one H1
+  // (the preamble's "# Caisson"). `/^# /gm` matches only true H1 lines (hash + space) at any line
+  // start — H2s (`## `) and deeper are untouched (their second char is `#`, not a space). Robust
+  // to fumadocs changing its header text/count: there is no path back to a second H1.
+  const docs = llms(source).index().replace(/^# /gm, "## ");
   return new Response(`${PREAMBLE}\n\n${docs}`);
 }

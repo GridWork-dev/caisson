@@ -323,10 +323,12 @@ export const SKU_COLUMNS = [
 ] as const;
 
 /** The capability rows (no price row) — the home teaser shows exactly these. A cell is an
- *  INCLUSION claim, so every ✓/✗ is pinned to the registry index members maps (the entitlement
- *  truth an edition purchase actually expands to) — see the membership lint in pricing.test.ts.
- *  Base capabilities (Apache-2.0, ship with everything — incl. fail-closed RLS) live on the one
- *  base row; the eval harness is standalone-only (no edition row can claim it). */
+ *  INCLUSION claim. The module LIST (`MODULE_PRICES` × `modulesByEdition`) is pinned to the
+ *  registry index members maps by the membership lint in pricing.test.ts; these capability CELLS
+ *  are hand-maintained against the same registry truth (label-keyed, so not auto-linted) and are
+ *  reviewed alongside that lint whenever an edition's members are repinned. Base capabilities
+ *  (Apache-2.0, ship with everything — incl. fail-closed RLS) live on the one base row; the eval
+ *  harness is standalone-only (no edition row can claim it). */
 export const SKU_FEATURE_ROWS: readonly SkuRow[] = [
   {
     label: "Postgres base — fail-closed RLS, auth, billing (Apache-2.0)",

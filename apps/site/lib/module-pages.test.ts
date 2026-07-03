@@ -5,8 +5,22 @@ import { describe, expect, test } from "bun:test";
 
 import { GLOSSARY_TERMS } from "./glossary";
 import { MODULE_MARKS } from "./marks";
-import { MODULE_PAGES } from "./module-pages";
+import { MODULE_PAGES, type ModulePageRecord } from "./module-pages";
 import { MODULE_PRICES } from "./pricing";
+
+/** Flatten every prose string a record renders — the surface where an inclusion/composition claim
+ *  could land. Excludes `artifact.code` (real package code, not a claim) and slugs/ids/labels. */
+function proseStrings(r: ModulePageRecord): string[] {
+  return [
+    r.metaTitle,
+    r.metaDescription,
+    r.heroOneLiner,
+    r.definition,
+    ...r.included.flatMap((i) => [i.title, i.body]),
+    ...r.faq.flatMap((f) => [f.question, f.answer]),
+    r.sells.note,
+  ];
+}
 
 describe("MODULE_PAGES (depth-page records)", () => {
   test("records are a bijection with the sellable catalog", () => {
@@ -57,13 +71,16 @@ describe("MODULE_PAGES (depth-page records)", () => {
 
   test("no record claims the edition or bundle grants ai-evals (standalone-only)", () => {
     // The registry members map is the entitlement truth (see pricing.test.ts). The ai-evals
-    // record itself must state standalone-ness; sibling records may name ai-evals only OUTSIDE
-    // an edition/bundle inclusion list.
+    // record itself must state standalone-ness; sibling records may NEVER name ai-evals/evals in
+    // any prose field — a composition claim ("ships with the eval harness") would naturally land
+    // in `included[].body` or `faq`, not just `sells.note`, so the lint scans every prose string.
     const aiEvals = MODULE_PAGES.find((r) => r.slug === "ai-evals");
     expect(aiEvals?.sells.note).toContain("no edition includes it");
     for (const r of MODULE_PAGES) {
       if (r.slug === "ai-evals") continue;
-      expect(/\bai-evals\b|\bevals\b/i.test(r.sells.note)).toBe(false);
+      for (const text of proseStrings(r)) {
+        expect(/\bai-evals\b|\bevals\b/i.test(text)).toBe(false);
+      }
     }
   });
 });
