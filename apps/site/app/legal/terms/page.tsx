@@ -41,7 +41,7 @@ export default function TermsPage() {
       {/* Page header */}
       <Section eyebrow="Legal" title="Terms of Use" flush as="h1">
         <p className="cs-lede" style={{ marginTop: "var(--cs-space-3)" }}>
-          Last updated: 27 June 2026. Governs use of caisson.sh and purchase of
+          Last updated: 3 July 2026. Governs use of caisson.sh and purchase of
           Caisson software.
         </p>
       </Section>
@@ -222,9 +222,40 @@ export default function TermsPage() {
 
         <h3 style={prose.h3}>Refund policy</h3>
         <p style={prose.paragraph}>
-          Refund requests for a Caisson purchase are reviewed by Paddle on a
-          case-by-case basis, consistent with Paddle&apos;s buyer terms. To
-          request a refund, contact us at{" "}
+          Consumers in the EU, EEA, United Kingdom, and Switzerland have a
+          statutory right to withdraw from a purchase within 14 days of the
+          transaction and receive a full refund, in accordance with
+          Paddle&apos;s{" "}
+          <a
+            href="https://www.paddle.com/legal/buyer-terms"
+            rel="noreferrer"
+            style={{ color: "var(--cs-accent)" }}
+          >
+            buyer terms
+          </a>{" "}
+          and{" "}
+          <a
+            href="https://www.paddle.com/legal/refund-policy"
+            rel="noreferrer"
+            style={{ color: "var(--cs-accent)" }}
+          >
+            Refund Policy
+          </a>
+          . This statutory right applies to consumer purchases; business
+          purchases are not covered by it.
+        </p>
+        <p style={prose.paragraph}>
+          Caisson is downloadable software delivered for immediate use. If you
+          begin downloading, installing, or using the Software during the 14-day
+          period, having consented at checkout to immediate access, the
+          statutory withdrawal right no longer applies to that purchase — this
+          waiver is presented to you by Paddle as part of checkout.
+        </p>
+        <p style={prose.paragraph}>
+          Paddle is the Merchant of Record and executes every approved refund:
+          an approved refund is returned to your original payment method, where
+          possible, within 14 days of approval. To request a refund, contact us
+          at{" "}
           <a
             href="mailto:<email>"
             style={{ color: "var(--cs-accent)" }}
@@ -239,14 +270,17 @@ export default function TermsPage() {
           >
             paddle.net
           </a>
-          .
+          . Outside the statutory withdrawal period, refund requests are
+          reviewed on a case-by-case basis consistent with Paddle&apos;s buyer
+          terms.
         </p>
         <p style={prose.paragraph}>
           An approved refund revokes the license entitlement granted by the
           refunded purchase and returns any unused credits it granted; access
           already exercised and credits already spent are not affected. If a
           single order covered more than one edition or module, tell us which
-          item you are refunding so we can apply it correctly.
+          item you are refunding — individual line items can be refunded on
+          their own.
         </p>
 
         <h3 style={prose.h3}>Buyer support</h3>
