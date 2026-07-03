@@ -1,6 +1,6 @@
-# @caisson/registry
+# @caisson/agent-runner
 
-## 0.0.2
+## 0.1.1
 
 ### Patch Changes
 
@@ -16,16 +16,7 @@
   transcript. Registered in the `apps/agent-dev` demo composition (`runAgentRunnerDemo`), and
   folded into the Agentic-Dev edition's `members` pin map + dependencies (ADR-0186 F5 edition-only
   SKU, the ADR-0178 tool-exec form).
-- 904b15b: Post-merge consolidation sweep: repo links repointed to caisson-sh/caisson (site footer, JSON-LD, docs edit-links, llms.txt blob URLs), the audit-harness design-ui domain re-globbed from the removed apps/studio to the apps/admin design gallery, and stale SigNoz naming updated to the Grafana Cloud fleet sink (ADR-0177/0207). Docs/comments only apart from the design-ui glob fix; no behavior change to any runtime path.
-- Updated dependencies [b5915e0]
-  - @caisson/registry-schema@0.2.1
-  - @caisson/license-verify@0.2.1
-
-## 0.0.1
-
-### Patch Changes
-
-- Updated dependencies [72ffd85]
-- Updated dependencies [9483a36]
-  - @caisson/registry-schema@0.2.0
-  - @caisson/license-verify@0.2.0
+- Updated dependencies [e62c88d]
+- Updated dependencies [ccf8b10]
+- Updated dependencies [549dd4e]
+  - @caisson/kernel@0.3.0

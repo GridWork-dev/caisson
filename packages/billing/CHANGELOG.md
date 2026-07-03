@@ -1,5 +1,62 @@
 # @caisson/billing
 
+## 0.3.0
+
+### Minor Changes
+
+- aaff518: Paddle per-line partial refund — per-line entitlement revoke + per-line credit clawback (ADR-0218,
+  supersedes the ADR-0113 full-refund-only clause). Refunding ONE line of a multi-item Paddle cart is
+  no longer a full no-op.
+
+  `@caisson/billing`: the shared `DomainBillingEvent` gains provider-agnostic per-line refund shape
+  (fork D-2 shape / D-1 population). `purchase.completed.lineItems[]` carries each line's `itemId`
+  (Paddle `txnitm_…` join key from `details.line_items[].id`) + `chargedAmount` (the proportional-
+  refund divisor); `refund.completed` gains `adjustmentId` (the per-line clawback idempotency anchor)
+  and an `items[]` per-line array. The Paddle mapper populates them (correlates `items[]` with
+  `details.line_items[]` by order; parses a partial adjustment's `data.items[]`, skipping Paddle-
+  generated `tax`/`proration` items); Stripe/Polar/LemonSqueezy one-entry-wrap with empty sentinels
+  (no real per-line refund data).
+
+  `@caisson/credits`: `grant` accepts a per-line `lineItemId` + `lineChargedAmount`; `clawback`
+  accepts a per-line `lineItemId` + rounding provenance; new `lineCreditLedger` reads a line's
+  granted/clawed/charged totals so a per-line refund never over-claws past that line's grant onto
+  other lines' fungible balance. New `CREDIT_LINE_ITEM_MIGRATION_SQL` adds the nullable
+  `line_item_id` / `line_charged_amount` columns (fork C-b) and folds `COALESCE(line_item_id, '')`
+  into `credit_event_source_uniq` so a multi-item cart's N per-line `purchase` rows stay distinct
+  (integer money + round-down provenance per ADR-0007/0212).
+
+### Patch Changes
+
+- 20d5ab0: Stripe webhook envelope hardening (ADR-0210): `provider.ts`'s Stripe driver used to trust
+  the raw webhook body via a bare `JSON.parse(rawBody) as StripeEvent` cast — a type-level
+  assertion with no runtime shape check. Signature verification already ran first, but a
+  validly-signed, malformed-envelope delivery (missing/wrong-typed `id`, or an unexpected
+  top-level field) flowed straight into the mapper. `StripeEventSchema` (`strictObject`,
+  mirroring `PaddleEventSchema`) is now wired into `verifyAndParse` via `parseStrict`, closing
+  the gap Paddle/LemonSqueezy/Polar already closed — all four `BillingProvider` drivers now
+  parse through a strict envelope schema before their mapper runs. `data.object` stays a loose
+  `Record<string, unknown>` (the existing `read*` helpers are the defensive layer for it,
+  unchanged). No change to `verifyAndParse`'s call order, the `BillingProvider` port shape, or
+  Stripe driver activation state (ADR-0200: still dormant). New export: `StripeEventSchema`.
+- 95103b6: Money-path hardening (post-wave triage CAISSON-5/6/7/8/9). `parsePaddleEvent` now correlates
+  `items[]` to `details.line_items[]` by their shared `price_id` instead of array position, and fails
+  closed on a duplicate non-empty per-line join id; a malformed adjustment item now signals through an
+  optional `onWarn` callback, threaded all the way from `PaddleConfig` through `verifyAndParse` and
+  wired to `services/license`'s stderr telemetry, instead of a silent skip. `@caisson/credits` gains
+  `creditsClawedForSource`, which `services/license`'s `applyBillingEvent` uses to bound BOTH a
+  whole-transaction `type:full` refund claw AND a per-line partial claw to the purchase's
+  granted-minus-already-clawed remainder regardless of delivery order, never spilling onto another
+  purchase's credits. `@caisson/tenancy-rls` gains `buildAdminSelectPolicySql`, a SELECT-only
+  cross-tenant policy variant; `services/license`'s admin mutation surface now uses it (rather than the
+  write variant) for its read-only `account_member` existence check, and (`grantEntitlementAdmin` /
+  `adjustCreditsAdmin`) fails closed with a 404 on a nonexistent target account, rolling back the whole
+  transaction before any entitlement or credit row commits.
+- 549dd4e: Strix pentest remediation (ADR-0204). kernel: new shared SSRF guard (`ssrf.ts`) — literal denylist + async DNS resolve-recheck of every resolved IP, the DNS-rebinding defense (vuln-0004). alerting + ai-kit: dedupe onto the kernel guard and resolve-recheck at the outbound-fetch seam (alerting per fetch; ai-kit via an injected guarded `fetch` for custom provider baseUrls). billing: `purchase.completed` carries `lineItems: {priceId, quantity}[]` so a multi-item cart fulfills every paid line, not just the first (vuln-0005), and a `subscription_update` regression test (vuln-0002).
+- Updated dependencies [e62c88d]
+- Updated dependencies [ccf8b10]
+- Updated dependencies [549dd4e]
+  - @caisson/kernel@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes

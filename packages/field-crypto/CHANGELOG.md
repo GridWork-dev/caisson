@@ -1,5 +1,43 @@
 # @caisson/field-crypto
 
+## 0.2.1
+
+### Patch Changes
+
+- 081a1d8: Live seams: cloud-KMS envelope proof + ONNX EgressGuard unification (ADR-0221, extends ADR-0201).
+
+  field-crypto: a gated `live/kms.live.test.ts` (`test:live`) drives the real adapter stack —
+  `createAwsKmsClient` → `KmsKeyProvider` → `TenantFieldCrypto.encryptField/decryptField` →
+  `cryptoShred` — against freshly minted, throwaway AWS CMKs: envelope round-trip through a real
+  wrapped DEK, per-tenant CMK isolation, and a real crypto-shred verified by an independent
+  `DescribeKey` (the first live exercise of the ADR-0197 blast-radius fix). Self-skips without
+  `CAISSON_KMS_LIVE` + AWS creds; no `src/` change (print-only `infra/kms/provision.ts` emits the
+  tag-scoped prover statements to add to the shared WORM prover, KMS-1=A1 / KMS-2=B2).
+
+  local-ai: the ONNX backend's inline `#guardedFetch` host/scheme check is unified onto the shared
+  `EgressGuard` (`model-fetch` sink kind, F2=B) so the model-fetch and rented lanes prove egress at the
+  same shared-policy layer; the SHA-256 hash-pin (TM-MODEL) stays inline. The `onnx.live.test.ts`
+  egress-block leg now asserts the shared-guard fail-closed, plus a new guard leg mirroring the rented
+  lane's `liveGuard()`.
+
+- f9d58c4: Post-wave-hardening triage Bucket B (CAISSON-10/11/12/13), test and proof hygiene, no
+  runtime behavior change for buyers.
+
+  - CAISSON-12: root bunfig.toml scopes bun test discovery away from stale compiled dist/
+    output, plus a regression test in @caisson/testing.
+  - CAISSON-11: apps/admin's PGlite bootstrap now applies the ADR-0218 line-item migrations
+    (0008/0009), matching the deploy-migrate chain, plus a columns-contract-style parity test.
+  - CAISSON-13: packages/field-crypto's live KMS proof schedules deletion for both throwaway
+    CMKs defensively in afterAll, not just the one the last leg reached.
+  - CAISSON-10: apps/admin's /business degrade path distinguishes a genuine undefined-table
+    error (Postgres 42P01) from any other transient DB error before rendering the
+    provisioning hint.
+
+- Updated dependencies [e62c88d]
+- Updated dependencies [ccf8b10]
+- Updated dependencies [549dd4e]
+  - @caisson/kernel@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes
