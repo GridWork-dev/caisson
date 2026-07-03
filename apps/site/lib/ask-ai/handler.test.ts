@@ -1,7 +1,7 @@
 // /api/ask orchestration tests — the whole flow driven hermetically with injected fakes: the Zod
 // boundary (400), the Turnstile fail-closed gate (403), dual-lane model selection (F2), the grounded
-// happy path (token + citations + public-lane spend accrual), the sentinel + leak + retrieval
-// escalations, and the public-lane spend-cap trip (F2 rider). No network, no DB.
+// happy path (token + citations + reservation settled to the real cost), the sentinel + leak + retrieval
+// escalations, and the per-lane HARD spend-cap trip on BOTH lanes (F2 rider, hardened). No network, no DB.
 import { expect, test } from "bun:test";
 import { type AskDeps, handleAsk } from "./handler.ts";
 import type { StreamEvent } from "./openrouter.ts";
@@ -37,9 +37,8 @@ function deps(over: Partial<AskDeps> = {}): AskDeps {
     retrieve: async () => [chunk(DOC, "Billing charges integer credits.")],
     stream: () => streamAnswer(`Billing uses integer credits [${DOC}].`),
     spend: {
-      totalMicro: async () => 0,
-      addMicro: async () => {},
-      capMicro: 10_000_000,
+      reserve: async () => true,
+      settle: async () => {},
     },
     models: {
       public: "google/gemini-3.5-flash",
@@ -136,18 +135,17 @@ test("anonymous → public lane model; valid session → premium lane model", as
 
 // --- grounded happy path ----------------------------------------------------------------------------
 
-test("grounded answer streams token(s) + citations, and accrues public-lane spend", async () => {
-  let charged = -1;
+test("grounded answer streams token(s) + citations, and settles the reservation with the real cost", async () => {
+  let settled: { lane: string; micro: number } | undefined;
   const evs = await events(
     await handleAsk(
       ask({ question: "how do credits work?" }),
       deps({
         spend: {
-          totalMicro: async () => 0,
-          addMicro: async (m) => {
-            charged = m;
+          reserve: async () => true,
+          settle: async (lane, micro) => {
+            settled = { lane, micro };
           },
-          capMicro: 10_000_000,
         },
       }),
     ),
@@ -160,7 +158,7 @@ test("grounded answer streams token(s) + citations, and accrues public-lane spen
   expect(cites).toEqual([{ source: DOC, url: "/docs/base/billing" }]);
   expect(evs.at(-1)?.event).toBe("done");
   expect(reasons(evs)).toEqual([]);
-  expect(charged).toBe(2_000); // dollarsToMicro(0.002)
+  expect(settled).toEqual({ lane: "public", micro: 2_000 }); // dollarsToMicro(0.002)
 });
 
 // --- sentinel + leak + retrieval escalations --------------------------------------------------------
@@ -207,19 +205,21 @@ test("retrieval failure and empty retrieval both escalate (never ungrounded)", a
   expect(reasons(empty)).toEqual(["no_match"]);
 });
 
-// --- spend-cap trip (F2 rider) ----------------------------------------------------------------------
+// --- spend-cap trip (F2 rider, hardened + extended to BOTH lanes) ------------------------------------
 
-test("public lane over the daily cap fails CLOSED to escalation, without retrieving or generating", async () => {
+test("public lane whose reservation is refused fails CLOSED to escalation, without retrieving, generating, or settling", async () => {
   let retrieved = false;
   let streamed = false;
+  let settled = false;
   const evs = await events(
     await handleAsk(
       ask({ question: "q" }),
       deps({
         spend: {
-          totalMicro: async () => 10_000_000,
-          addMicro: async () => {},
-          capMicro: 10_000_000,
+          reserve: async () => false, // the cap denies the reservation itself
+          settle: async () => {
+            settled = true;
+          },
         },
         retrieve: async () => {
           retrieved = true;
@@ -235,24 +235,63 @@ test("public lane over the daily cap fails CLOSED to escalation, without retriev
   expect(reasons(evs)).toEqual(["spend_cap"]);
   expect(retrieved).toBe(false);
   expect(streamed).toBe(false);
+  // Nothing was reserved (reserve() returned false), so nothing may be settled either — settling an
+  // ungranted reservation would corrupt the counter.
+  expect(settled).toBe(false);
 });
 
-test("premium (authed) lane is NOT spend-capped — the cap is public-only", async () => {
+test("premium (authed) lane is metered too — its OWN reservation + settle, not a free lane", async () => {
+  let reservedLane: string | undefined;
+  let settled: { lane: string; micro: number } | undefined;
   const evs = await events(
     await handleAsk(
       ask({ question: "q" }),
       deps({
         isAuthed: async () => true,
         spend: {
-          totalMicro: async () => 999_000_000,
-          addMicro: async () => {
-            throw new Error("premium lane must not accrue public spend");
+          reserve: async (lane) => {
+            reservedLane = lane;
+            return true;
           },
-          capMicro: 10_000_000,
+          settle: async (lane, micro) => {
+            settled = { lane, micro };
+          },
         },
       }),
     ),
   );
   expect(reasons(evs)).toEqual([]);
   expect(evs.some((e) => e.event === "citations")).toBe(true);
+  expect(reservedLane).toBe("premium");
+  expect(settled).toEqual({ lane: "premium", micro: 2_000 });
+});
+
+test("premium lane AT its own cap fails CLOSED to escalation too, without retrieving or generating", async () => {
+  let retrieved = false;
+  let streamed = false;
+  const evs = await events(
+    await handleAsk(
+      ask({ question: "q" }),
+      deps({
+        isAuthed: async () => true,
+        spend: {
+          reserve: async () => false, // the premium lane's own cap denies this reservation
+          settle: async () => {
+            throw new Error("must not settle an unreserved request");
+          },
+        },
+        retrieve: async () => {
+          retrieved = true;
+          return [];
+        },
+        stream: () => {
+          streamed = true;
+          return streamAnswer("x");
+        },
+      }),
+    ),
+  );
+  expect(reasons(evs)).toEqual(["spend_cap"]);
+  expect(retrieved).toBe(false);
+  expect(streamed).toBe(false);
 });

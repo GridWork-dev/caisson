@@ -10,9 +10,9 @@ import { type AskDeps, handleAsk } from "@/lib/ask-ai/handler";
 import { retrieveChunks } from "@/lib/ask-ai/retrieve";
 import { streamOpenRouter } from "@/lib/ask-ai/openrouter";
 import {
-  addSpendMicro,
-  readTodaySpendMicro,
+  reserveSpendMicro,
   resolveDailyCapMicro,
+  settleSpendMicro,
 } from "@/lib/ask-ai/spend";
 import { makeTurnstileVerifier } from "@/lib/ask-ai/turnstile";
 
@@ -52,11 +52,11 @@ function buildDeps(): AskDeps {
         user: args.user,
       }),
     spend: {
-      totalMicro: async () => readTodaySpendMicro(await getDb()),
-      addMicro: async (micro) => {
-        await addSpendMicro(await getDb(), micro);
+      reserve: async (lane) =>
+        reserveSpendMicro(await getDb(), lane, resolveDailyCapMicro(lane)),
+      settle: async (lane, actualMicro) => {
+        await settleSpendMicro(await getDb(), lane, actualMicro);
       },
-      capMicro: resolveDailyCapMicro(),
     },
     models: {
       public: envOr("ASK_AI_PUBLIC_MODEL", DEFAULT_PUBLIC_MODEL),

@@ -94,9 +94,10 @@ function platformPackage(): PackageMigrations {
         name: "0009_credit_line_item.sql",
         sql: CREDIT_LINE_ITEM_MIGRATION_SQL,
       },
-      // ADR-0234: the Ask-AI public-lane daily spend counter. Global (non-tenant), no RLS — accessed
-      // outside withTenant. Appended as a new forward-only migration (the earlier files are
-      // checksum-pinned on the live DB).
+      // ADR-0234: the Ask-AI per-lane (public + premium) daily spend counters. Global (non-tenant), no
+      // RLS — accessed outside withTenant. Appended as a new forward-only migration (the earlier files
+      // are checksum-pinned on the live DB); this one is still unmerged, so it was amended in place
+      // (added the `lane` column) rather than appended again when the per-lane cap hardened it.
       { name: "0010_ask_ai_spend.sql", sql: ASK_AI_SPEND_SCHEMA_SQL },
     ],
   };

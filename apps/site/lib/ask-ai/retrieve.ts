@@ -5,18 +5,21 @@
 // caller escalates rather than answering ungrounded (mirrors rag.py's DocsUnavailableError path).
 import { z } from "zod";
 import { fetchWithTimeout } from "@caisson/kernel";
-import { docsRoute } from "../shared.ts";
+import { docsRoute, pricingRoute } from "../shared.ts";
 
 /** The retrieval hit shape returned by POST /query — mirrors services/docs `ScoredChunkSchema`
  * (types.ts). Validated at the boundary (`.strict()`) so a drifted contract fails here, not downstream.
- * `.passthrough()`? No — strict, matching the source contract exactly. */
+ * `.passthrough()`? No — strict, matching the source contract exactly. `kind` MUST stay a superset of
+ * services/docs `DocKindSchema` (types.ts) — a member missing here makes a chunk of that kind reject
+ * `.strict()` and throw the WHOLE response array, hard-failing every question in the same /query batch,
+ * not just the one touching that kind (the ADR-0234 F4 pricing-chunk regression). */
 export const ScoredChunkSchema = z
   .object({
     id: z.string().min(1),
     source: z.string().min(1),
     title: z.string().min(1),
     section: z.string(),
-    kind: z.enum(["docs", "readme"]),
+    kind: z.enum(["docs", "readme", "pricing"]),
     pkg: z.string().min(1).optional(),
     license: z.string().min(1),
     text: z.string().min(1),
@@ -98,14 +101,18 @@ export async function retrieveChunks(
 }
 
 const DOCS_CONTENT_PREFIX = "apps/site/content/docs/";
+// services/docs pricing-doc.ts generates exactly these three sources, all citing the one marketing
+// pricing page (there is no per-doc pricing sub-route).
+const PRICING_SOURCE_PREFIX = "pricing/";
 
 /**
- * Map a chunk `source` path to a clickable `/docs/...` URL, or null when it is not a docs-content page
- * (e.g. a package README, which Fumadocs does not host). Pure — the UI renders the returned link.
+ * Map a chunk `source` path to a clickable URL, or null when it is not a linkable page (e.g. a package
+ * README, which Fumadocs does not host). Pure — the UI renders the returned link.
  * `apps/site/content/docs/base/billing.mdx` -> `/docs/base/billing`; a trailing `/index` collapses to
- * the section root.
+ * the section root; `pricing/editions|modules|plans` -> `/pricing` (ADR-0234 F4).
  */
 export function sourceToDocUrl(source: string): string | null {
+  if (source.startsWith(PRICING_SOURCE_PREFIX)) return pricingRoute;
   if (!source.startsWith(DOCS_CONTENT_PREFIX)) return null;
   let slug = source.slice(DOCS_CONTENT_PREFIX.length).replace(/\.mdx?$/, "");
   if (slug === "index") return docsRoute;

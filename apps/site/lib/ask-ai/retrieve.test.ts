@@ -15,13 +15,16 @@ afterEach(() => {
   globalThis.fetch = realFetch;
 });
 
-function chunk(source: string): ScoredChunk {
+function chunk(
+  source: string,
+  kind: ScoredChunk["kind"] = "docs",
+): ScoredChunk {
   return {
     id: "id-1",
     source,
     title: "T",
     section: "",
-    kind: "docs",
+    kind,
     license: "Apache-2.0",
     text: "body",
     score: 1,
@@ -37,6 +40,12 @@ test("sourceToDocUrl maps docs-content paths and returns null for non-docs sourc
     sourceToDocUrl("apps/site/content/docs/compliance/hipaa/index.mdx"),
   ).toBe("/docs/compliance/hipaa");
   expect(sourceToDocUrl("packages/billing/README.md")).toBeNull();
+});
+
+test("sourceToDocUrl maps every generated pricing source to the one /pricing page", () => {
+  expect(sourceToDocUrl("pricing/editions")).toBe("/pricing");
+  expect(sourceToDocUrl("pricing/modules")).toBe("/pricing");
+  expect(sourceToDocUrl("pricing/plans")).toBe("/pricing");
 });
 
 test("toCitations dedupes sources order-preserving and attaches URLs", () => {
@@ -73,6 +82,23 @@ test("retrieveChunks returns validated chunks on 200", async () => {
   });
   expect(chunks).toHaveLength(1);
   expect(chunks[0]?.source).toBe("a.md");
+});
+
+test("retrieveChunks accepts a pricing-kind chunk co-ranked with docs chunks (no whole-array reject)", async () => {
+  globalThis.fetch = (async () =>
+    new Response(
+      JSON.stringify({
+        chunks: [chunk("pricing/editions", "pricing"), chunk("a.md", "docs")],
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    )) as unknown as typeof fetch;
+  const chunks = await retrieveChunks("q", {
+    url: "https://docs.example/query",
+    token: "tok",
+    k: 6,
+  });
+  expect(chunks).toHaveLength(2);
+  expect(chunks[0]?.kind).toBe("pricing");
 });
 
 test("retrieveChunks throws DocsUnavailableError on a non-2xx response", async () => {

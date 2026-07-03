@@ -1,8 +1,9 @@
 // The /api/ask orchestration (ADR-0234). Pure of I/O wiring: every side-effecting seam (turnstile,
 // session, retrieval, generation, spend) is injected as a dep so the whole flow is exercised
 // hermetically with fakes. route.ts builds the real deps. The flow mirrors rag.py's retrieve → ground →
-// generate → decide, adapted to two model lanes (F2), a fail-closed public spend cap (F2 rider), a
-// day-one Turnstile gate (F5), and SSE streaming.
+// generate → decide, adapted to two model lanes (F2), a fail-closed HARD per-lane spend cap (F2 rider,
+// reserve-before-generate, extended to the premium lane), a day-one Turnstile gate (F5), and SSE
+// streaming.
 //
 // Response contract:
 //   400 application/json {error:"invalid_request"}   — malformed body / Zod .strict() reject
@@ -46,12 +47,13 @@ export type EscalationReason =
   | "generation_failed";
 
 export interface SpendSeam {
-  /** Today's accrued public-lane spend, micro-dollars. */
-  totalMicro: () => Promise<number>;
-  /** Accrue micro-dollars against today (post-generation). Best-effort; never throws into the response. */
-  addMicro: (micro: number) => Promise<void>;
-  /** The hard daily cap, micro-dollars. */
-  capMicro: number;
+  /** Atomically reserve one request's worst-case cost against `lane`'s daily cap (ADR-0234 F2 rider,
+   * hardened + extended to both lanes). `false` means the reservation itself would breach the cap —
+   * escalate WITHOUT any paid work; `true` means the reservation is held and MUST be settled below. */
+  reserve: (lane: Lane) => Promise<boolean>;
+  /** Settle a granted reservation with the real generation cost in micro-dollars (0 when no generation
+   * happened at all). Best-effort; never throws into the response. */
+  settle: (lane: Lane, actualMicro: number) => Promise<void>;
 }
 
 export interface AskDeps {
@@ -149,14 +151,15 @@ export async function handleAsk(
       };
 
       let costUsd: number | undefined;
+      let reserved = false;
       try {
-        // 4a. public-lane hard spend cap (F2 rider) — fail CLOSED to escalation.
-        if (lane === "public") {
-          const spent = await deps.spend.totalMicro();
-          if (spent >= deps.spend.capMicro) {
-            escalate("spend_cap");
-            return;
-          }
+        // 4a. hard per-lane spend cap (F2 rider, hardened + extended to both lanes) — reserve BEFORE
+        // any paid work, atomically, so two concurrent requests near the cap can never both pass (closes
+        // the check-then-charge race). Fails CLOSED to escalation.
+        reserved = await deps.spend.reserve(lane);
+        if (!reserved) {
+          escalate("spend_cap");
+          return;
         }
 
         // 4b. retrieve — a failure or empty result escalates rather than answering ungrounded.
@@ -211,11 +214,15 @@ export async function handleAsk(
         const citations: Citation[] = toCitations(chunks);
         emit("citations", { citations });
       } finally {
-        // Charge the public lane its real cost AFTER generation (only when a generation happened). A
-        // metering write must never fail the user's response — swallow.
-        if (lane === "public" && costUsd !== undefined) {
+        // Settle the reservation with the real cost (0 when no generation happened at all — e.g.
+        // retrieval failed after the reservation was granted, fully releasing it). Only when a
+        // reservation was actually granted above (never after a spend_cap escalation, which reserved
+        // nothing). A metering write must never fail the user's response — swallow.
+        if (reserved) {
+          const actualMicro =
+            costUsd !== undefined ? dollarsToMicro(costUsd) : 0;
           try {
-            await deps.spend.addMicro(dollarsToMicro(costUsd));
+            await deps.spend.settle(lane, actualMicro);
           } catch {
             /* best-effort: never turn a metering-write failure into a user-facing error */
           }
