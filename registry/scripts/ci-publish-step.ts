@@ -5,8 +5,17 @@
 // In dry-run mode (default, CAISSON_PUBLISH_DRY_RUN=true), reports planned actions without
 // writing any files. publishedAt comes from the CI clock via --published-at — never derived
 // internally (determinism: no Date.now(), no new Date() here).
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+} from "node:fs";
+import { dirname, join } from "node:path";
+import { z } from "zod";
 import type { ModuleManifest } from "../schema/module-manifest";
 import { appendLedger } from "./append-ledger";
 import {
@@ -15,6 +24,167 @@ import {
   buildIndexFromLedgerFile,
   parseLedger,
 } from "./build-index";
+
+// ---------------------------------------------------------------------------
+// Tarball sidecar (ADR-0223 Fork 1.1) — the CI writer half of the contract the
+// Worker reads (registry/worker/npm-routes.ts). Maps `<@caisson/module>@<version>`
+// → {key, shasum, integrity, size}: the R2 object key + npm's two integrity forms.
+// This step is the ONLY writer, in the same commit that writes ledger.jsonl + index.json.
+// ---------------------------------------------------------------------------
+
+/** registry/tarballs.json — git-tracked, inlined into the Worker bundle at build time like index.json. */
+export const SIDECAR_PATH = join(import.meta.dir, "..", "tarballs.json");
+/** Where `bun pm pack` output is staged for the R2 upload step (keyed dirs `<slug>/<slug>-<v>.tgz`). */
+export const STAGING_DIR = join(import.meta.dir, "..", ".tarball-staging");
+
+// Local strict schema (the write boundary). The Worker owns the READ schema; keeping the write
+// shape here avoids a scripts→worker layering dependency. Both mirror `{key,shasum,integrity,size}`.
+const SidecarDist = z
+  .object({
+    key: z.string().min(1),
+    shasum: z.string().min(1),
+    integrity: z.string().min(1),
+    size: z.number().int().nonnegative(),
+  })
+  .strict();
+const Sidecar = z
+  .object({
+    $comment: z.string().optional(),
+    tarballs: z.record(z.string(), SidecarDist),
+  })
+  .strict();
+export type TarballDist = z.infer<typeof SidecarDist>;
+export type Sidecar = z.infer<typeof Sidecar>;
+
+/**
+ * Compute the npm dist metadata for a packed tarball's bytes. `shasum` = SHA-1 hex (npm's legacy
+ * `dist.shasum`); `integrity` = sha512 Subresource-Integrity string (`sha512-<base64>`, npm's
+ * `dist.integrity`). `key` = the R2 object key `<slug>/<slug>-<version>.tgz` — scope dropped, byte-for-byte
+ * the key `registry/worker/npm-routes.ts` derives on the tarball GET. node:crypto only, no `ssri` dep.
+ */
+export function computeTarballDist(
+  bytes: Uint8Array,
+  slug: string,
+  version: string,
+): TarballDist {
+  const buf = Buffer.from(bytes);
+  return {
+    key: `${slug}/${slug}-${version}.tgz`,
+    shasum: createHash("sha1").update(buf).digest("hex"),
+    integrity: `sha512-${createHash("sha512").update(buf).digest("base64")}`,
+    size: buf.length,
+  };
+}
+
+/** Read the sidecar (or an empty one if absent), parse-or-throw at the boundary. */
+export function readSidecar(path: string = SIDECAR_PATH): Sidecar {
+  const raw = existsSync(path) ? readFileSync(path, "utf8") : '{"tarballs":{}}';
+  return Sidecar.parse(JSON.parse(raw));
+}
+
+/**
+ * Write the sidecar deterministically: keys sorted, `$comment` preserved first, 2-space JSON +
+ * trailing newline (same discipline as index.json, so a rerun is byte-stable and diffs cleanly).
+ */
+export function writeSidecar(
+  sidecar: Sidecar,
+  path: string = SIDECAR_PATH,
+): void {
+  const tarballs: Record<string, TarballDist> = {};
+  for (const k of Object.keys(sidecar.tarballs).sort()) {
+    tarballs[k] = sidecar.tarballs[k] as TarballDist;
+  }
+  const out =
+    sidecar.$comment !== undefined
+      ? { $comment: sidecar.$comment, tarballs }
+      : { tarballs };
+  writeFileSync(path, `${JSON.stringify(out, null, 2)}\n`);
+}
+
+/** Pack a package into `<staging>/<slug>/<slug>-<version>.tgz` and return its bytes. Injectable for tests. */
+export type PackFn = (
+  packageDir: string,
+  slug: string,
+  version: string,
+  stagingDir: string,
+) => Uint8Array;
+
+/** Default pack: `bun pm pack` (execFile arg-array, no shell). Scope dropped via an explicit --filename. */
+const defaultPack: PackFn = (packageDir, slug, version, stagingDir) => {
+  const outDir = join(stagingDir, slug);
+  mkdirSync(outDir, { recursive: true });
+  const filename = `${slug}-${version}.tgz`;
+  const res = spawnSync(
+    "bun",
+    ["pm", "pack", "--quiet", "--destination", outDir, "--filename", filename],
+    { cwd: packageDir, encoding: "buffer" },
+  );
+  if (res.status !== 0) {
+    throw new Error(
+      `bun pm pack failed for ${slug}@${version}: ${res.stderr?.toString() ?? "unknown error"}`,
+    );
+  }
+  return readFileSync(join(outDir, filename));
+};
+
+export type RecordTarballsOpts = {
+  dryRun: boolean;
+  sidecarPath?: string | undefined;
+  stagingDir?: string | undefined;
+  /** Override the packer for isolated testing; defaults to a real `bun pm pack`. */
+  packFn?: PackFn | undefined;
+};
+
+/**
+ * Pack + hash + record a sidecar row for each appended package (already filtered to non-private by
+ * `findManifestPaths`, so the `isPrivatePackage` exclusion is preserved — a private package's manifest
+ * never reaches here). Append-only (ADR-0006): an existing sidecar key is never overwritten. In dry-run
+ * nothing is packed or written — the planned {id@version → key} set is logged. Returns rows recorded.
+ */
+export function recordTarballs(
+  appended: { manifest: ModuleManifest; packageDir: string }[],
+  opts: RecordTarballsOpts,
+): number {
+  const {
+    dryRun,
+    sidecarPath = SIDECAR_PATH,
+    stagingDir = STAGING_DIR,
+    packFn = defaultPack,
+  } = opts;
+
+  if (appended.length === 0) return 0;
+
+  if (dryRun) {
+    for (const { manifest } of appended) {
+      const slug = manifest.id.slice("@caisson/".length);
+      process.stdout.write(
+        `registry/ci-publish-step: dry-run — would pack ${manifest.id}@${manifest.version} → R2 key ${slug}/${slug}-${manifest.version}.tgz\n`,
+      );
+    }
+    return 0;
+  }
+
+  const sidecar = readSidecar(sidecarPath);
+  let recorded = 0;
+  for (const { manifest, packageDir } of appended) {
+    const key = `${manifest.id}@${manifest.version}`;
+    if (sidecar.tarballs[key] !== undefined) {
+      process.stdout.write(
+        `registry/ci-publish-step: tarball already recorded — ${key} (append-only, kept)\n`,
+      );
+      continue;
+    }
+    const slug = manifest.id.slice("@caisson/".length);
+    const bytes = packFn(packageDir, slug, manifest.version, stagingDir);
+    sidecar.tarballs[key] = computeTarballDist(bytes, slug, manifest.version);
+    recorded++;
+    process.stdout.write(
+      `registry/ci-publish-step: packed + recorded ${key} → ${sidecar.tarballs[key]?.key} (${sidecar.tarballs[key]?.size} bytes)\n`,
+    );
+  }
+  if (recorded > 0) writeSidecar(sidecar, sidecarPath);
+  return recorded;
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -35,6 +205,12 @@ export type PublishStepOpts = {
   indexPath?: string | undefined;
   /** Override for isolated testing; defaults to the monorepo packages/ dir. */
   packagesDir?: string | undefined;
+  /** Override for isolated testing; defaults to the on-disk registry/tarballs.json. */
+  sidecarPath?: string | undefined;
+  /** Override for isolated testing; defaults to registry/.tarball-staging. */
+  stagingDir?: string | undefined;
+  /** Override the packer for isolated testing; defaults to a real `bun pm pack`. */
+  packFn?: PackFn | undefined;
 };
 
 export type PublishStepResult = {
@@ -44,6 +220,8 @@ export type PublishStepResult = {
   skippedExisting: number;
   /** New entries found but not appended due to dry-run mode. */
   wouldAppend: number;
+  /** Tarball sidecar rows recorded (packed + hashed → tarballs.json; always 0 in dry-run). */
+  tarballsRecorded: number;
 };
 
 // ---------------------------------------------------------------------------
@@ -127,6 +305,9 @@ export async function runPublishStep(
     ledgerPath = LEDGER_PATH,
     indexPath = INDEX_PATH,
     packagesDir = DEFAULT_PACKAGES_DIR,
+    sidecarPath,
+    stagingDir,
+    packFn,
   } = opts;
 
   const label = dryRun ? "[dry-run]" : "[live]";
@@ -149,7 +330,7 @@ export async function runPublishStep(
     `registry/ci-publish-step: found ${manifestPaths.length} manifest file(s) under ${packagesDir}\n`,
   );
 
-  const toAppend: ModuleManifest[] = [];
+  const toAppend: { manifest: ModuleManifest; packageDir: string }[] = [];
   let skippedExisting = 0;
 
   for (const p of manifestPaths) {
@@ -172,26 +353,38 @@ export async function runPublishStep(
       process.stdout.write(
         `registry/ci-publish-step: queued for append — ${key}\n`,
       );
-      toAppend.push(manifest);
+      toAppend.push({ manifest, packageDir: dirname(p) });
     }
   }
 
   if (toAppend.length === 0) {
     process.stdout.write("registry/ci-publish-step: nothing new to append\n");
-    return { appended: 0, skippedExisting, wouldAppend: 0 };
+    return {
+      appended: 0,
+      skippedExisting,
+      wouldAppend: 0,
+      tarballsRecorded: 0,
+    };
   }
 
   if (dryRun) {
     process.stdout.write(
       `registry/ci-publish-step: dry-run — ${toAppend.length} entry(s) would be appended; no writes performed\n`,
     );
-    return { appended: 0, skippedExisting, wouldAppend: toAppend.length };
+    // Log the planned tarball pack/upload set; writes nothing (R2 upload gate stays closed).
+    recordTarballs(toAppend, { dryRun: true, sidecarPath, stagingDir, packFn });
+    return {
+      appended: 0,
+      skippedExisting,
+      wouldAppend: toAppend.length,
+      tarballsRecorded: 0,
+    };
   }
 
   // Live mode — append each new entry to the ledger (fail-closed: throws before any write on
   // an invalid manifest, per appendLedger's contract).
   const gateAttestation = `${runId}@${sha}`;
-  for (const manifest of toAppend) {
+  for (const { manifest } of toAppend) {
     appendLedger({ manifest, publishedAt, gateAttestation, ledgerPath });
     process.stdout.write(
       `registry/ci-publish-step: appended ${manifest.id}@${manifest.version}\n`,
@@ -205,7 +398,21 @@ export async function runPublishStep(
     `registry/ci-publish-step: rebuilt index.json → ${indexPath} (${bytes.length} bytes)\n`,
   );
 
-  return { appended: toAppend.length, skippedExisting, wouldAppend: 0 };
+  // Pack + hash + record the tarball sidecar (staged for the R2 upload step). Same commit as
+  // ledger + index, so the three stay coherent (Fork 1.1).
+  const tarballsRecorded = recordTarballs(toAppend, {
+    dryRun: false,
+    sidecarPath,
+    stagingDir,
+    packFn,
+  });
+
+  return {
+    appended: toAppend.length,
+    skippedExisting,
+    wouldAppend: 0,
+    tarballsRecorded,
+  };
 }
 
 // ---------------------------------------------------------------------------
