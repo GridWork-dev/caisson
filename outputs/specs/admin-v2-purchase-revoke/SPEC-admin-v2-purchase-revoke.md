@@ -1,6 +1,6 @@
 ---
 title: admin surface v2 — operator revoke of REAL purchase entitlements
-status: draft - operator lock required
+status: forks LOCKED by ADR-0225 (2026-07-02, third picker round; R-4 = B, an operator override of the Recommended A)
 tags:
   [
     security,
@@ -209,6 +209,11 @@ operator's revoke within one cycle.
   freeze access mid-cycle without cancelling billing (rare).
 
 ### Fork R-4 — EDGE propagation: how fast does registry/download access actually die?
+
+> **LOCKED 2026-07-02 (ADR-0225): R-4 = B — OPERATOR OVERRIDE of the Recommended A.** v2's
+> build INCLUDES the edge revocation list (the CRL-style deny-set + publish path below),
+> scoped as its own task/spec-section — not skipped, not folded silently into the thin
+> composition.
 
 A DB revoke is invisible to the Worker, which verifies a SIGNED offline license token against a
 baked pubkey (`registry/worker/entitlement-filter.ts`). A revoked buyer keeps edge access until
