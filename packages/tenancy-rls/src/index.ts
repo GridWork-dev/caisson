@@ -7,6 +7,7 @@ export {
   ADMIN_WRITE_ROLE,
   ADMIN_WRITE_ROLE_BOOTSTRAP_SQL,
   buildAdminWritePolicySql,
+  buildAdminSelectPolicySql,
   withAdminWrite,
 } from "./rls.ts";
 export type {

@@ -27,6 +27,7 @@ import type { AuditChainStore } from "@caisson/audit-worm";
 import { balance, debit, grant } from "@caisson/credits";
 import { asCredits, NotFoundError, type JsonValue } from "@caisson/kernel";
 import {
+  buildAdminSelectPolicySql,
   buildAdminWritePolicySql,
   withAdminWrite,
   type TenantExecutor,
@@ -39,12 +40,14 @@ import {
   revokeAdminComp,
 } from "./entitlement-store.ts";
 
-// The `admin_write` cross-tenant policies for every table the mutation surface writes:
-// `entitlement_grant` (service-owned) + the BASE credit tables `credit_wallet` / `credit_event`.
-// Applied EXTERNALLY — after the `admin_write` role exists — at DEPLOY (and in the test/dev double),
-// NEVER embedded in a schema constant every buyer-path test applies (mirroring how ADR-0141's
-// `buildAdminReadPolicySql` is applied outside the owning packages). Keeping the credit policies
-// here also leaves base `@caisson/credits` untouched (Fork AM-3 — no money-core schema change).
+// The `admin_write` cross-tenant policies for every table the mutation surface touches: WRITE
+// policies for the tables it actually mutates — `entitlement_grant` (service-owned) + the BASE
+// credit tables `credit_wallet` / `credit_event` — and a SELECT-only policy for `account_member`
+// (CAISSON-9), which it only ever reads for the existence check. Applied EXTERNALLY — after the
+// `admin_write` role exists — at DEPLOY (and in the test/dev double), NEVER embedded in a schema
+// constant every buyer-path test applies (mirroring how ADR-0141's `buildAdminReadPolicySql` is
+// applied outside the owning packages). Keeping the credit policies here also leaves base
+// `@caisson/credits` untouched (Fork AM-3 — no money-core schema change).
 // `license_grant` needs none (the reissue proxy, not admin_write, persists it). Run once per DEPLOY.
 export const ADMIN_MUTATION_PROVISION_SQL = [
   buildAdminWritePolicySql("entitlement_grant"),
@@ -52,8 +55,10 @@ export const ADMIN_MUTATION_PROVISION_SQL = [
   buildAdminWritePolicySql("credit_event"),
   // Read-only existence check (CAISSON-9): `account_member` is the base @caisson/auth table, always
   // carrying at least one row per real account (`ensurePersonalAccount` on first sign-in, ADR-0176) —
-  // admin_write needs cross-tenant SELECT on it to reject a comp/adjust to a nonexistent id.
-  buildAdminWritePolicySql("account_member"),
+  // admin_write needs cross-tenant SELECT on it to reject a comp/adjust to a nonexistent id. This
+  // mutation surface never writes account_member, so it gets the SELECT-only policy variant, not
+  // the INSERT/UPDATE write grant every table it actually mutates carries.
+  buildAdminSelectPolicySql("account_member"),
 ].join("\n");
 
 /** The re-served token an injected `/issue` proxy returns (Fork AM-5); never carries the bearer. */

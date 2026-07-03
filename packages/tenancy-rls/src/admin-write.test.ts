@@ -6,6 +6,7 @@ import { test, expect } from "bun:test";
 import { newTestPg, type TestPg } from "@caisson/testing";
 import {
   ADMIN_WRITE_ROLE_BOOTSTRAP_SQL,
+  buildAdminSelectPolicySql,
   buildAdminWritePolicySql,
   buildTenantPolicySql,
   withAdminWrite,
@@ -93,6 +94,37 @@ test("admin_write reads across every tenant; app stays scoped to its own", async
     tx.query<Row>(`SELECT account_id FROM thing`),
   );
   expect(seenByApp.rows.every((r) => r.account_id === "tenant-a")).toBe(true);
+  await tp.close();
+});
+
+test("buildAdminSelectPolicySql grants admin_write cross-tenant SELECT but NOT write (CAISSON-9)", async () => {
+  const tp = await newTestPg();
+  await tp.exec(ADMIN_WRITE_ROLE_BOOTSTRAP_SQL);
+  await tp.exec(
+    `CREATE TABLE thing (id text PRIMARY KEY, account_id text NOT NULL, val text);`,
+  );
+  await tp.exec(buildTenantPolicySql("thing"));
+  // The SELECT-only variant, not buildAdminWritePolicySql — the blast-radius fix under test.
+  await tp.exec(buildAdminSelectPolicySql("thing"));
+  await tp.exec(
+    `INSERT INTO thing (id, account_id, val) VALUES ('a1', 'tenant-a', 'seed-a');`,
+  );
+  const db = tp.pg as unknown as Transactor;
+  // admin_write CAN read cross-tenant under the SELECT-only policy.
+  const seen = await withAdminWrite(db, (tx) =>
+    tx.query<{ account_id: string }>(`SELECT account_id FROM thing`),
+  );
+  expect(seen.rows).toEqual([{ account_id: "tenant-a" }]);
+  // admin_write CANNOT write under it — no INSERT grant, no WITH CHECK policy for this role.
+  await expect(
+    withAdminWrite(db, (tx) =>
+      tx.query(
+        `INSERT INTO thing (id, account_id, val) VALUES ('x', 'tenant-b', 'evil')`,
+      ),
+    ),
+  ).rejects.toThrow();
+  const rows = await tp.query<Row>(`SELECT id FROM thing`);
+  expect(rows.map((r) => r.id)).toEqual(["a1"]);
   await tp.close();
 });
 
