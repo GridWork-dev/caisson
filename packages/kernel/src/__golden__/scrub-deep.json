@@ -4,6 +4,8 @@
   "lastName": "[REDACTED]",
   "dateOfBirth": "[REDACTED]",
   "mrn": "[REDACTED]",
+  "user_dob": "[REDACTED]",
+  "employee_mrn": "[REDACTED]",
   "ssn": "[REDACTED]",
   "apiKey": "[REDACTED]",
   "authorization": "[REDACTED]",

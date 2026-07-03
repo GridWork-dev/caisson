@@ -12,6 +12,8 @@ function sampleEvent(): Record<string, unknown> {
     lastName: "Doe", // PHI key — drops
     dateOfBirth: "1980-01-01", // PHI key (camel) — drops
     mrn: "MRN-12345", // PHI key (word-anchored) — drops
+    user_dob: "1990-01-01", // PHI key (word-anchored, separator-joined compound) — drops
+    employee_mrn: "MRN-67890", // PHI key (word-anchored, separator-joined compound) — drops
     ssn: "111-22-3333", // PHI key — drops
     apiKey: "sk-proj-AAAABBBBCCCCDDDD", // secret-named key — drops
     authorization: "Bearer ghp_0123456789ABCDEFabcdef0123", // secret-named key — drops
@@ -63,6 +65,21 @@ describe("scrubDeep", () => {
     };
     expect(out.a.note).toBe("leak [REDACTED] here");
     expect(out.b.note).toBe("leak [REDACTED] here");
+  });
+
+  test("compound dob/mrn keys redact across separator styles; substring false-positives do not", () => {
+    const out = scrubDeep({
+      member_dob: "1991-02-02", // word-anchored, separator-joined — drops
+      mrn_number: "MRN-000", // word-anchored, separator-joined — drops
+      adobe: "Adobe Systems", // contains "dob" but not word-anchored — untouched
+      description: "a plain description", // no PHI token — untouched
+      endobar: "unaffected", // contains "dob" but not word-anchored — untouched
+    }) as Record<string, unknown>;
+    expect(out.member_dob).toBe("[REDACTED]");
+    expect(out.mrn_number).toBe("[REDACTED]");
+    expect(out.adobe).toBe("Adobe Systems");
+    expect(out.description).toBe("a plain description");
+    expect(out.endobar).toBe("unaffected");
   });
 });
 

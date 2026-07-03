@@ -98,6 +98,24 @@ describe("processEvent (outer webhook-event dedup)", () => {
     ).rejects.toThrow(ValidationError);
   });
 
+  test("a sourceEventId containing ':' is rejected — it would alias a per-effect composite key", async () => {
+    await expect(
+      tp.asTenant("acct_pe_colon", (tx) =>
+        processEvent(tx, "evt:with:colon", async () => {}),
+      ),
+    ).rejects.toThrow(ValidationError);
+    await expect(
+      tp.asTenant("acct_pe_colon", (tx) =>
+        withIdempotentSideEffect(
+          tx,
+          "evt:with:colon",
+          "discord",
+          async () => {},
+        ),
+      ),
+    ).rejects.toThrow(ValidationError);
+  });
+
   test("a claim without a tenant context fails closed (blank account_id refused)", async () => {
     await expect(
       tp.asAppNoTenant((tx) =>

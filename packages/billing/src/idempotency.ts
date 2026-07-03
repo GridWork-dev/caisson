@@ -50,6 +50,23 @@ export interface ProcessResult {
 }
 
 /**
+ * The outer `sourceEventId` key and the per-effect composite `${sourceEventId}:${sideEffect}`
+ * share this one table's namespace. A `sourceEventId` containing `:` could therefore alias a
+ * side-effect key (e.g. outer id `"abc:x"` collides with the composite of outer id `"abc"` +
+ * side-effect `"x"`) — reject it outright so the two key shapes can never overlap.
+ */
+function assertValidSourceEventId(sourceEventId: string, caller: string): void {
+  if (sourceEventId.length === 0) {
+    throw new ValidationError(`${caller} requires a non-empty sourceEventId`);
+  }
+  if (sourceEventId.includes(":")) {
+    throw new ValidationError(
+      `${caller} requires a sourceEventId without ':' — it would alias the composite side-effect key namespace`,
+    );
+  }
+}
+
+/**
  * Atomically claim `eventKey`: INSERT ... ON CONFLICT DO NOTHING RETURNING. `account_id` is bound from
  * the tenant GUC (`current_setting`, `missing_ok=true`) so a claim ATTEMPTED outside `withTenant` gets
  * a blank account_id (a known placeholder GUC resolves to '' when unset, not NULL) and fails the
@@ -82,12 +99,9 @@ export async function processEvent(
   sourceEventId: string,
   fn: () => Promise<void>,
 ): Promise<ProcessResult> {
-  if (sourceEventId.length === 0) {
-    // A blank claim key would collapse every unattributed event onto one row — fail closed.
-    throw new ValidationError(
-      "processEvent requires a non-empty sourceEventId",
-    );
-  }
+  // A blank claim key would collapse every unattributed event onto one row; a ':' would risk
+  // aliasing a per-effect composite key — both fail closed.
+  assertValidSourceEventId(sourceEventId, "processEvent");
   const fresh = await claim(tx, sourceEventId);
   if (!fresh) return { alreadyProcessed: true };
   await fn();
@@ -107,9 +121,10 @@ export async function withIdempotentSideEffect(
   sideEffect: string,
   fn: () => Promise<void>,
 ): Promise<boolean> {
-  if (sourceEventId.length === 0 || sideEffect.length === 0) {
+  assertValidSourceEventId(sourceEventId, "withIdempotentSideEffect");
+  if (sideEffect.length === 0) {
     throw new ValidationError(
-      "withIdempotentSideEffect requires a non-empty sourceEventId and sideEffect",
+      "withIdempotentSideEffect requires a non-empty sideEffect",
     );
   }
   const fresh = await claim(tx, `${sourceEventId}:${sideEffect}`);

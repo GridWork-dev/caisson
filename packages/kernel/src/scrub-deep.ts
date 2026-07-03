@@ -18,12 +18,15 @@ const REDACTION = "[REDACTED]";
 const CIRCULAR = "[CIRCULAR]";
 
 /**
- * Case-insensitive substring set of PHI/PII key names, tested against a SEPARATOR-STRIPPED,
- * lowercased key so snake_case and camelCase both hit (`date_of_birth` and `dateOfBirth` both
- * normalize to `dateofbirth`). Deliberately conservative — over-redaction (`ipAddress` caught by
- * `address`) is the fail-safe direction for a compliance-evidence egress scrub. Owned here as the
- * reusable set, unifying observability's `SENSITIVE_ATTRIBUTE_KEY` intent. `dob`/`mrn` are word-
- * anchored (against the normalized key) so they don't fire on incidental substrings.
+ * Case-insensitive substring set of PHI/PII key names. Tested (by {@link isRedactedKey}) against
+ * TWO forms of the key: the SEPARATOR-STRIPPED lowercased form so snake_case and camelCase
+ * multi-word literals both hit (`date_of_birth` and `dateOfBirth` both normalize to
+ * `dateofbirth`), AND the separator-PRESERVING lowercased raw key so the word-anchored `dob`/`mrn`
+ * tokens see `_`/`-` as real boundaries (`user_dob` — stripping first would collapse it to
+ * `userdob`, where the anchor's lookbehind sees `r` and misses). Deliberately conservative —
+ * over-redaction (`ipAddress` caught by `address`) is the fail-safe direction for a
+ * compliance-evidence egress scrub. Owned here as the reusable set, unifying observability's
+ * `SENSITIVE_ATTRIBUTE_KEY` intent.
  */
 export const PHI_KEY =
   /email|ssn|socialsecurity|dateofbirth|birthdate|(?<![a-z])dob(?![a-z])|phone|firstname|lastname|fullname|address|(?<![a-z])mrn(?![a-z])|patient/i;
@@ -40,10 +43,20 @@ function normalizeKey(key: string): string {
   return key.replace(/[_\-\s]/g, "").toLowerCase();
 }
 
-/** A key whose NAME alone means its whole subtree must drop (a PHI/PII field or a secret name). */
+/**
+ * A key whose NAME alone means its whole subtree must drop (a PHI/PII field or a secret name).
+ * PHI_KEY runs against both the stripped `norm` form (multi-word literals) and the raw lowercased
+ * key (separators intact, so the anchored `dob`/`mrn` tokens see a real boundary) — see the
+ * {@link PHI_KEY} doc comment. SECRET_KEY_NAME's alternatives already encode their own optional
+ * separator (`api[_-]?key`), so `norm` alone covers it.
+ */
 function isRedactedKey(key: string): boolean {
   const norm = normalizeKey(key);
-  return PHI_KEY.test(norm) || SECRET_KEY_NAME.test(norm);
+  return (
+    PHI_KEY.test(norm) ||
+    PHI_KEY.test(key.toLowerCase()) ||
+    SECRET_KEY_NAME.test(norm)
+  );
 }
 
 /**
