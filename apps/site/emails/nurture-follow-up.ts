@@ -12,6 +12,17 @@ export interface NurtureFollowUpData {
   edition?: string;
 }
 
+// ponytail: stdlib replace chain, no dep — the escape set is 5 chars; email clients + DOM both
+// treat the entities literally. `&` first, else its own replacement re-escapes the others.
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // Brand palette — direct hex equivalents of the --cs-* tokens (email-only exception).
 const C = {
   bg: "#0d1216",
@@ -65,7 +76,7 @@ export function buildNurtureFollowUp({
 
               <!-- Body -->
               <p style="margin:0 0 16px 0;font-size:16px;line-height:1.65;color:${C.fg};">
-                A note for <strong>${email}</strong> — this is the one email we said we'd send, not the start of a drip.
+                A note for <strong>${escapeHtml(email)}</strong> — this is the one email we said we'd send, not the start of a drip.
               </p>
               <p style="margin:0 0 16px 0;font-size:16px;line-height:1.65;color:${C.fg};">
                 ${editionLabel} ships the <strong>technical controls</strong> your audit requires: fail-closed Postgres RLS, S3 Object-Lock WORM storage, an append-only SHA-256 audit chain, per-tenant field encryption, and an evidence-pack generator that formats artifacts for your auditor. It is a codebase, not a scanner.
@@ -129,7 +140,7 @@ export function buildNurtureFollowUp({
                 GridWork Digital LLC · <a href="https://caisson.sh" style="color:${C.fgMuted};">caisson.sh</a>
               </p>
               <p style="margin:0;font-size:12px;color:${C.fgMuted};">
-                You're on the ${editionLabel} early-access list at ${email}.
+                You're on the ${editionLabel} early-access list at ${escapeHtml(email)}.
                 <a href="https://caisson.sh/unsubscribe" style="color:${C.fgMuted};">Unsubscribe</a>
               </p>
             </td>

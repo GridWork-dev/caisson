@@ -14,6 +14,17 @@ export interface WaitlistWelcomeData {
   edition?: string;
 }
 
+// ponytail: stdlib replace chain, no dep — the escape set is 5 chars; email clients + DOM both
+// treat the entities literally. `&` first, else its own replacement re-escapes the others.
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // Brand palette — direct hex equivalents of the --cs-* tokens (email-only exception).
 const C = {
   bg: "#0d1216",
@@ -67,7 +78,7 @@ export function buildWaitlistWelcome({
 
               <!-- Body -->
               <p style="margin:0 0 16px 0;font-size:16px;line-height:1.65;color:${C.fg};">
-                We received your request for early access to ${editionLabel}. We'll reach out to <strong>${email}</strong> when the ${edition === "Caisson" ? "first edition" : edition + " edition"} opens — roughly one email, not a drip.
+                We received your request for early access to ${editionLabel}. We'll reach out to <strong>${escapeHtml(email)}</strong> when the ${edition === "Caisson" ? "first edition" : edition + " edition"} opens — roughly one email, not a drip.
               </p>
               <p style="margin:0 0 32px 0;font-size:16px;line-height:1.65;color:${C.fg};">
                 In the meantime, the docs cover the architecture, the module contracts, and the compliance control maps:

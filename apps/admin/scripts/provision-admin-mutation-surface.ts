@@ -31,6 +31,14 @@ const ADMIN_READ_TABLES = [
   "license_grant",
 ] as const;
 
+/**
+ * The Postgres unquoted-identifier shape — the only role-name shape this script ever legitimately
+ * accepts (e.g. `admin_app`). Postgres has no `GRANT ... TO $1` parameter binding for a role name, so
+ * this regex IS the parameterization: reject anything that doesn't match before it ever reaches the
+ * `GRANT ... TO ${grantee};` template string.
+ */
+export const PG_IDENTIFIER_RE = /^[a-z_][a-z0-9_]*$/;
+
 function auditChainMigrationSql(): string {
   return readFileSync(
     join(
@@ -42,17 +50,30 @@ function auditChainMigrationSql(): string {
 }
 
 async function main(): Promise<void> {
+  // The role to grant admin/admin_write/app membership to — the CAISSON_ADMIN_DB_URL user. Defaults
+  // to the connecting user so a single-credential deploy stays correct. FOOTGUN (hit live
+  // 2026-07-03): running with the superuser DATABASE_URL and no arg grants to `postgres`, leaving
+  // the service's `admin_app` role unable to SET ROLE — pass the service role name explicitly.
+  const rawGrantee = process.argv[2]?.trim();
+  const grantee =
+    rawGrantee !== undefined && rawGrantee.length > 0
+      ? rawGrantee
+      : "CURRENT_USER";
+  // Validate BEFORE anything else (env checks, Pool construction) — an untrusted argv value must
+  // never reach the `GRANT ... TO ${grantee};` interpolation below. "CURRENT_USER" is the hardcoded
+  // fallback literal (a Postgres pseudo-constant keyword), not attacker-controlled input, so it's
+  // exempt from the identifier shape check.
+  if (grantee !== "CURRENT_USER" && !PG_IDENTIFIER_RE.test(grantee)) {
+    throw new Error(
+      `invalid grantee "${grantee}" — must be a bare Postgres identifier matching ${PG_IDENTIFIER_RE.toString()}; refusing to interpolate into GRANT SQL`,
+    );
+  }
   const url = process.env.DATABASE_URL ?? "";
   if (url.length === 0) {
     throw new Error(
       "DATABASE_URL is required (the admin provisioning needs the live Postgres) — refusing to run.",
     );
   }
-  // The role to grant admin/admin_write/app membership to — the CAISSON_ADMIN_DB_URL user. Defaults
-  // to the connecting user so a single-credential deploy stays correct. FOOTGUN (hit live
-  // 2026-07-03): running with the superuser DATABASE_URL and no arg grants to `postgres`, leaving
-  // the service's `admin_app` role unable to SET ROLE — pass the service role name explicitly.
-  const grantee = process.argv[2]?.trim() || "CURRENT_USER";
   if (grantee === "CURRENT_USER") {
     process.stdout.write(
       "[provision-admin] WARNING: no grantee arg — granting to the CONNECTING user. If this URL is\n" +

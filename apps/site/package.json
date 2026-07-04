@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start -p 3030",
     "lint": "eslint .",
-    "test": "bun test ./lib",
+    "test": "bun test ./lib ./emails",
     "test:live": "bun test ./live"
   },
   "dependencies": {
