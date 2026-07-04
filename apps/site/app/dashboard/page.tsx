@@ -5,7 +5,7 @@
 // gates auth; lib/db.ts's PGlite dev double backs an empty-but-real read in local dev).
 import type { Metadata } from "next";
 import Link from "next/link";
-import { MetricStat, StatusPill } from "@caisson/ui/components";
+import { EmptyState, MetricStat, StatusPill } from "@caisson/ui/components";
 import { readScoped } from "@/lib/db";
 import { requireDashboardSession } from "@/lib/auth";
 import { readEntitlementGrants } from "@/lib/dashboard-reads";
@@ -73,10 +73,16 @@ export default async function DashboardOverviewPage() {
           Entitlement grants
         </h2>
         {grants.length === 0 ? (
-          <p className="cs-muted">
-            No entitlements yet — purchase an edition from the{" "}
-            <Link href="/dashboard/plan">Plan</Link> view to get started.
-          </p>
+          <EmptyState
+            icon="boxes"
+            title="No entitlements yet"
+            description={
+              <>
+                Purchase an edition from the{" "}
+                <Link href="/dashboard/plan">Plan</Link> view to get started.
+              </>
+            }
+          />
         ) : (
           <ul
             style={{
