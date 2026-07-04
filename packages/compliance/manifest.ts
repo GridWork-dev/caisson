@@ -1,15 +1,15 @@
-// Registry manifest (ADR-0020/0021). Loaded by @caisson/standards-gate; must agree with
-// package.json on id/version/license/dependencies (the gate fails the build on drift). `kind:
-// "edition"` — this is the Compliance EDITION (the hero, ADR-0040), a composition of base packages,
-// never a fork (ADR-0003); it names its own edition membership in `editions`. Paid +
-// LicenseRef-Caisson-Commercial under the open-core model (ADR-0094/0097, amends ADR-0050): base is
-// Apache-2.0; editions/primitives/cli/registry stay commercial.
+// Registry manifest (ADR-0020/0021). Must agree with package.json on id/version/license/
+// dependencies — drift here fails the build. `kind: "edition"` — this is the Compliance EDITION
+// (the hero, ADR-0040), a composition of base packages, never a fork (ADR-0003); it names its own
+// edition membership in `editions`. Paid + LicenseRef-Caisson-Commercial under the open-core model
+// (ADR-0094/0097, amends ADR-0050): base is Apache-2.0; editions/primitives/cli/registry stay
+// commercial.
 //
-// `priceCents` is a PLACEHOLDER pending the still-open Pricing lock (ADR-0012 anchors only) — it must
-// be a positive integer (ADR-0007), not a final number. Evidence generation is FREE in v1 (no
-// @caisson/credits dependency, ADR-0007 unit deferred to P6): the edition composes the WORM/crypto
-// primitives directly. Dependencies are DOWN-ONLY (ADR-0003): the edition imports base/primitive
-// packages, never the reverse.
+// `priceCents` is the CANONICAL Compliance edition price ($799 = 79900) — locked by ADR-0227
+// (supersedes ADR-0137's $749). Evidence generation is FREE in v1 (no @caisson/credits
+// dependency, ADR-0007 unit deferred to P6): the edition composes the WORM/crypto primitives
+// directly. Dependencies are DOWN-ONLY (ADR-0003): the edition imports base/primitive packages,
+// never the reverse.
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
@@ -19,7 +19,7 @@ export default defineModule({
   kind: "edition",
   editions: ["compliance"],
   tier: "paid",
-  priceCents: 99900,
+  priceCents: 79900,
   license: pkg.license,
   // Must mirror package.json's @caisson/* deps exactly (the gate fails on drift). @caisson/migrate is
   // the base migration assembler/runner the edition COMPOSES at build/test time (ADR-0090).

@@ -59,6 +59,7 @@ edition.
 | `@caisson-sh/observability`   | Vendor-neutral OpenTelemetry bootstrap: env-gated NodeSDK + OTLP/HTTP exporter.                            | Apache-2.0 |
 | `@caisson-sh/ui`              | Design-system kit: OKLCH token floor + the component recipe (Radix base).                                  | Apache-2.0 |
 | `@caisson-sh/tsconfig`        | Shared strict TypeScript base config.                                                                      | Apache-2.0 |
+| `@caisson-sh/eslint-config`   | Shared ESLint flat-config: lint rules + package-boundary enforcement.                                      | Apache-2.0 |
 | `@caisson-sh/testing`         | Shared test harness: golden-file regression + the PGlite fail-closed-RLS harness.                          | Apache-2.0 |
 
 ## The commercial editions
