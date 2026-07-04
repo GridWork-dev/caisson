@@ -146,6 +146,21 @@ describe("createHttpMcpHandler construction (ADR-0161 decision 4 — fail-closed
       createHttpMcpHandler({ ...deps(), allowedOrigins: [] }),
     ).toThrow(ConfigError);
   });
+
+  test("a literal wildcard allowedOrigins entry is rejected at construction (CORS floor)", () => {
+    expect(() =>
+      createHttpMcpHandler({ ...deps(), allowedOrigins: ["*"] }),
+    ).toThrow(ConfigError);
+  });
+
+  test("a real origin entry is accepted", () => {
+    expect(() =>
+      createHttpMcpHandler({
+        ...deps(),
+        allowedOrigins: ["https://example.com"],
+      }),
+    ).not.toThrow();
+  });
 });
 
 describe("HTTP transport binding (ADR-0161)", () => {
@@ -162,6 +177,12 @@ describe("HTTP transport binding (ADR-0161)", () => {
     expect(await res.json()).toMatchObject({
       error: { code: "unauthenticated" },
     });
+    // Security-floor headers must be present even on the error path (b272c2150353492e).
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(res.headers.get("x-frame-options")).toBe("DENY");
+    expect(res.headers.get("strict-transport-security")).toBe(
+      "max-age=63072000; includeSubDomains",
+    );
   });
 
   test("an oversized POST body is rejected 400 before the SDK's uncapped JSON.parse (DoS b719aff8)", async () => {
@@ -202,6 +223,33 @@ describe("HTTP transport binding (ADR-0161)", () => {
     expect(await res.json()).toMatchObject({
       error: { code: "unauthenticated" },
     });
+  });
+
+  test("security-floor headers are present on the authenticated SDK success path", async () => {
+    const { server, url } = await listen();
+    openServers.push(server);
+
+    // A raw fetch (not the SDK client) so we can read response headers directly — the SDK's
+    // `handleRequest` writes its own headers, which must MERGE with, not drop, the pre-set ones.
+    const res = await fetchWithTimeout(url, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        accept: "application/json, text/event-stream",
+        authorization: `Bearer ${TOKEN_A}`,
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/list",
+        params: {},
+      }),
+    });
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(res.headers.get("x-frame-options")).toBe("DENY");
+    expect(res.headers.get("strict-transport-security")).toBe(
+      "max-age=63072000; includeSubDomains",
+    );
   });
 
   test("a valid bearer: list_tools + tools/call round-trip through the real HTTP transport", async () => {

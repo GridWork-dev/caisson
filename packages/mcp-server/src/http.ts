@@ -80,6 +80,24 @@ const MAX_BODY_BYTES = 256 * 1024;
 
 const BEARER_PATTERN = /^Bearer +(.+)$/;
 
+/** The security-floor response headers (`identity/security.md` Headers clause) — same three
+ *  lines as `apps/base/src/server.ts`'s `json()` helper. TLS termination is upstream of this
+ *  plain `node:http` listener; HSTS is what the terminating proxy forwards. */
+const SECURITY_HEADERS: Readonly<Record<string, string>> = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
+};
+
+/** Pre-sets the floor headers via `setHeader` (never `writeHead`) so they merge with, rather than
+ *  get overwritten by, whatever writes the response next — a raw `res.writeHead` call on the error
+ *  path, or the SDK transport's own `writeHead`/`setHeader` calls on the success path. */
+function applySecurityHeaders(res: ServerResponse): void {
+  for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+    res.setHeader(name, value);
+  }
+}
+
 /**
  * Read a POST body under a hard byte ceiling and JSON-parse it, so the SDK's own uncapped
  * `await req.json()` (b719aff8) never runs. Accumulation stops the instant the total exceeds
@@ -198,6 +216,15 @@ export function createHttpMcpHandler(deps: HttpServerDeps): HttpMcpHandler {
       "createHttpMcpHandler requires a non-empty allowedOrigins allowlist",
     );
   }
+  // The floor ("CORS uses an explicit origin allowlist. Never `*` and never reflected origin.")
+  // is a CONTENTS check, not just a non-empty check — a caller passing `["*"]` would otherwise
+  // sail through. The SDK's `allowedOrigins` does literal-equality matching (no pattern parsing),
+  // so a narrow literal-`*` reject is the whole gate; a full CORS-pattern parser is slop.
+  if (deps.allowedOrigins.some((origin) => origin === "*")) {
+    throw new ConfigError(
+      'createHttpMcpHandler rejects a literal "*" in allowedOrigins — CORS requires an explicit origin allowlist',
+    );
+  }
 
   const mcp = createMcpServer(deps.mcp);
   const allowedHosts = [...deps.allowedHosts];
@@ -219,6 +246,7 @@ export function createHttpMcpHandler(deps: HttpServerDeps): HttpMcpHandler {
       }
     } catch (err) {
       const { status, body } = toErrorResponse(err);
+      applySecurityHeaders(res);
       res.writeHead(status, { "content-type": "application/json" });
       res.end(JSON.stringify(body));
       return;
@@ -250,6 +278,9 @@ export function createHttpMcpHandler(deps: HttpServerDeps): HttpMcpHandler {
     // that only surfaces under `exactOptionalPropertyTypes`. `StdioServerTransport` doesn't hit
     // this because it declares plain fields instead of accessors.
     await server.connect(transport as unknown as Transport);
+    // Pre-set via `setHeader`, not `writeHead` — the SDK transport's own `writeHead`/`setHeader`
+    // calls inside `handleRequest` merge with these rather than overwrite them.
+    applySecurityHeaders(res);
     await transport.handleRequest(req, res, parsedBody);
   };
 }
@@ -274,6 +305,7 @@ export async function runHttpServer(
     handler(req, res).catch((err: unknown) => {
       if (!res.headersSent) {
         const { status, body } = toErrorResponse(err);
+        applySecurityHeaders(res);
         res.writeHead(status, { "content-type": "application/json" });
         res.end(JSON.stringify(body));
         return;
