@@ -19,13 +19,13 @@ const WHAT_CAISSON_SHIPS = [
   {
     icon: "worm" as const,
     label: "S3 Object-Lock WORM storage",
-    body: "Evidence buckets default to GOVERNANCE-mode Object Lock: objects can't be overwritten or deleted inside the retention window by an ordinary caller. Escalating a bucket to COMPLIANCE mode — where the lock holds against any caller, including an operator with a leaked root key — is an explicit, irreversible, production-gated opt-in, never the silent default.",
+    body: "Evidence buckets default to GOVERNANCE-mode Object Lock: objects can't be overwritten or deleted inside the retention window by an ordinary caller. Escalating a bucket to COMPLIANCE mode (where the lock holds against any caller, including an operator with a leaked root key) is an explicit, irreversible, production-gated opt-in, never the silent default.",
     control: "SOC 2 CC7.2 · HIPAA §164.312(c)(1)",
   },
   {
     icon: "audit-chain" as const,
     label: "Append-only SHA-256 audit chain",
-    body: "Every privileged action hashes into a chain. Tampering with any historical row breaks every link after it — the break is detectable, provable, and exportable to an auditor.",
+    body: "Every privileged action hashes into a chain. Tampering with any historical row breaks every link after it: the break is detectable, provable, and exportable to an auditor.",
     control: "SOC 2 CC7.2 · HIPAA §164.312(b)",
   },
   {
@@ -48,14 +48,14 @@ const FAQ_ITEMS = [
       "The Compliance edition covers the technical controls in SOC 2 CC6.1 (logical access), CC7.2 (change detection, stored evidence), and HIPAA §164.312(a)(1) (access control), §164.312(b) (audit controls), §164.312(c)(1) (integrity), and §164.312(a)(2)(iv) (encryption/decryption). The organizational and administrative controls remain the operator's responsibility.",
   },
   {
-    question: "Who is the seller — GridWork Digital LLC or Paddle?",
+    question: "Who is the seller: GridWork Digital LLC or Paddle?",
     answer:
       "Both, in different roles. Paddle.com is the merchant of record: it's the seller on your transaction, it collects payment, calculates and remits tax, and issues your receipt. GridWork Digital LLC, based in Atlanta, Georgia, is the licensor: it owns the Caisson source and grants you the license under the Commercial License Agreement. Your receipt comes from Paddle; your software rights come from GridWork.",
   },
   {
     question: "Is the license a one-time purchase or a subscription?",
     answer:
-      "One-time. The perpetual license fee is a single charge per edition or module, and the license doesn't expire, doesn't require renewal, and verifies offline — no call home required. Compliance Updates is a separate, optional, recurring subscription that delivers new package versions with updated control mappings; skipping or cancelling it doesn't affect the perpetual license you already hold.",
+      "One-time. The perpetual license fee is a single charge per edition or module, and the license doesn't expire, doesn't require renewal, and verifies offline: no call home required. Compliance Updates is a separate, optional, recurring subscription that delivers new package versions with updated control mappings; skipping or cancelling it doesn't affect the perpetual license you already hold.",
   },
   {
     question: "What's the refund policy?",
@@ -81,7 +81,7 @@ const FAQ_ITEMS = [
   {
     question: "Where is data processed and stored?",
     answer:
-      "Caisson is a codebase deployed into your infrastructure — it does not process or store your data on Caisson-operated systems. The RLS, WORM, and audit-chain controls run inside your Postgres and S3-compatible storage.",
+      "Caisson is a codebase deployed into your infrastructure: it does not process or store your data on Caisson-operated systems. The RLS, WORM, and audit-chain controls run inside your Postgres and S3-compatible storage.",
   },
 ];
 
@@ -127,7 +127,7 @@ export default function ProcurementPage() {
           </p>
           <p className="cs-muted">
             Caisson is a codebase. It implements the technical requirements
-            SOC&nbsp;2 and HIPAA demand — fail-closed access control,
+            SOC&nbsp;2 and HIPAA demand: fail-closed access control,
             tamper-evident logging, WORM storage, and encrypted field storage.
             It generates evidence artifacts you hand to an auditor. It does not
             replace the auditor, the audit engagement, or the organizational
@@ -205,11 +205,11 @@ export default function ProcurementPage() {
           Caisson is licensed to you by GridWork Digital LLC, based in Atlanta,
           Georgia. That&rsquo;s the party behind the software: it owns the
           source, grants the license, and stands behind it under the Commercial
-          License Agreement (the EULA) — see the EULA for the entity&rsquo;s
-          full legal description.
+          License Agreement (the EULA). See the EULA for the entity&rsquo;s full
+          legal description.
         </p>
         <p className="cs-muted" style={{ marginTop: "var(--cs-space-4)" }}>
-          Your checkout is handled by a separate party — see the next section.
+          Your checkout is handled by a separate party. See the next section.
           Two different roles, both named on your paperwork: GridWork licenses
           the software, Paddle sells and bills the transaction.
         </p>
@@ -228,19 +228,19 @@ export default function ProcurementPage() {
         <p className="cs-lede">
           Every order runs through Paddle.com, Caisson&rsquo;s merchant of
           record. Paddle collects payment, calculates and remits sales tax and
-          VAT for your jurisdiction, and issues your order receipt — that
-          receipt is your invoice for the purchase. Which Paddle entity is the
-          seller of record for your specific order is stated in Paddle&rsquo;s
-          own buyer terms, presented to you at checkout.
+          VAT for your jurisdiction, and issues your order receipt: that receipt
+          is your invoice for the purchase. Which Paddle entity is the seller of
+          record for your specific order is stated in Paddle&rsquo;s own buyer
+          terms, presented to you at checkout.
         </p>
         <p className="cs-muted" style={{ marginTop: "var(--cs-space-4)" }}>
           The perpetual license fee is a one-time charge per edition or module.
           A Compliance Updates subscription, where purchased, bills on a
           recurring basis until cancelled and delivers new package versions with
-          updated control mappings — it&rsquo;s optional and doesn&rsquo;t
-          affect the perpetual license for versions you already have. The
-          license itself doesn&rsquo;t expire, doesn&rsquo;t require renewal,
-          and doesn&rsquo;t call home to stay valid.
+          updated control mappings; it&rsquo;s optional and doesn&rsquo;t affect
+          the perpetual license for versions you already have. The license
+          itself doesn&rsquo;t expire, doesn&rsquo;t require renewal, and
+          doesn&rsquo;t call home to stay valid.
         </p>
         <p className="cs-muted" style={{ marginTop: "var(--cs-space-4)" }}>
           Refunds: consumers in the EU, EEA, UK, and Switzerland have a
@@ -252,8 +252,8 @@ export default function ProcurementPage() {
           case under Paddle&rsquo;s buyer terms. An approved refund revokes the
           entitlement it granted and returns unused credits; access and credits
           already used aren&rsquo;t clawed back. If one order covered more than
-          one edition or module, tell us which line item you&rsquo;re refunding
-          — they&rsquo;re refundable individually.
+          one edition or module, tell us which line item you&rsquo;re refunding:
+          they&rsquo;re refundable individually.
         </p>
         <div style={{ marginTop: "var(--cs-space-6)" }}>
           <Button href="/legal/terms" variant="ghost">
