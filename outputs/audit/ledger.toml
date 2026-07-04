@@ -36,7 +36,7 @@ dimension = "D1"
 subject = "apps/admin/scripts/provision-admin-mutation-surface.ts:55-80"
 title = "The DEPLOY provisioning script builds a GRANT statement via unparameterized template-string interpolation of an operator-supplied CLI argument."
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "0118e9009fc3d259"
@@ -162,7 +162,7 @@ dimension = "D2"
 subject = "packages/license-verify/src/__golden__/prod-signed-token.json:1"
 title = "A live, real production-signed, non-expiring pro license token (all-editions entitlement) is committed as a golden fixture and copied verbatim into the public OSS mirror export."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "05d4865a58061b63"
@@ -378,7 +378,7 @@ dimension = "D1"
 subject = "apps/admin/src/app/business/mutations.tsx:227-232"
 title = "The type-to-confirm safety gate on every destructive admin mutation card accepts the literal string CONFIRM as a universal bypass, regardless of the actual target account id."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "0c4fd1a57545132a"
@@ -819,7 +819,7 @@ dimension = "D6"
 subject = "packages/audit-worm/manifest.ts:5-15"
 title = "audit-worm primitive manifest prices the module at $49 (priceCents 4900), 3x below the ADR-0129-locked $149 module price used verbatim in ADR-0227's own edition-sum math."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "16ee3df36e38af60"
@@ -1134,7 +1134,7 @@ dimension = "D3"
 subject = "packages/cli/templates/eu-ai-act-sample/package.json:14"
 title = "SS-9/SS-10: the free EU-AI-Act sample's own quickstart cannot correctly install its stated dependency"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "1f02b791e1328af5"
@@ -1476,7 +1476,7 @@ dimension = "D1"
 subject = "scripts/mirror-assets/ci.yml:1"
 title = "The public mirror repo's own CI workflow omits the explicit least-privilege permissions block and persist-credentials false that the sibling buyer-facing templates apply, even though it runs on pull_request in a repo designed to receive external contributor PRs."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "2addafdc33c8a260"
@@ -1494,7 +1494,7 @@ dimension = "D2"
 subject = "packages/cli/templates/eu-ai-act-sample/src/evidence-path.ts:14,20 (exported output)"
 title = "One template file in the exported OSS mirror still imports the un-renamed @caisson/kernel product specifier"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "2b925457569f236a"
@@ -1926,7 +1926,7 @@ dimension = "D6"
 subject = "packages/cli/templates/eu-ai-act-sample/package.json:dependencies (exported output)"
 title = "The public @caisson-sh/cli npm package ships a bundled template whose package.json depends on the unscoped @caisson/kernel, a specifier that does not resolve in the OSS mirror's own @caisson-sh/* scope"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "37b4fc90fb0923c8"
@@ -2358,7 +2358,7 @@ dimension = "D1"
 subject = "docs/state/opportunity-backlog.md:18"
 title = "Three real credentials that transited a chat/transcript (OPENROUTER_API_KEY, DISCORD_TOKEN, MIRROR_PUSH_TOKEN) are still flagged as not-confirmed-rotated in the repo's own latest state doc."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "447d67fc74eab601"
@@ -2502,7 +2502,7 @@ dimension = "D2"
 subject = "apps/admin/src/app/business/mutations.tsx:193-207"
 title = "The re-issued buyer license token is rendered unmasked as raw JSON in the admin dashboard DOM with no reveal-then-hide or auto-clear treatment."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "478f3898403a5269"
@@ -2520,7 +2520,7 @@ dimension = "D2"
 subject = "docs/state/launch-runbook.md:74"
 title = "A Discord bot token and an OpenRouter API key were pasted into a chat/transcript session and, per the repo's own tracking, have not been confirmed rotated."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "4857e629c5648743"
@@ -3420,7 +3420,7 @@ dimension = "D2"
 subject = "packages/license-verify/src/__golden__/prod-signed-token.json:2"
 title = "A real, perpetual, production-signed license token unlocking 3 paid editions ships verbatim in the public npm mirror package @caisson-sh/license-verify."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "6796c2f9b1afb017"
@@ -3636,7 +3636,7 @@ dimension = "D3"
 subject = "packages/license-verify/manifest.ts:10"
 title = "Dangling internal specifier: every package's manifest.ts imports from a registry/ directory that does not exist in the exported mirror"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "6ca95b078e8b2c69"
@@ -3645,7 +3645,7 @@ dimension = "D1"
 subject = "apps/site/emails/nurture-follow-up.ts:68,132"
 title = "Same unescaped-email-into-raw-HTML pattern as waitlist-welcome.ts, in the sibling nurture template."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "6cc806d844b1cbb9"
@@ -3897,7 +3897,7 @@ dimension = "D4"
 subject = "packages/cli/templates/eu-ai-act-sample/src/evidence-path.ts:14-20"
 title = "The oss-mirror export's REWRITE_SKIP_DIRS treats packages/cli/templates as pure buyer-repo data, so the shipped @caisson-sh/cli package's own eu-ai-act-sample template still imports the dangling @caisson/kernel specifier after the scope rename."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "7534c26b69b2acd8"
@@ -4311,7 +4311,7 @@ dimension = "D6"
 subject = "packages/compliance/manifest.ts:5-22"
 title = "Compliance edition manifest still prices the edition at $999 (priceCents 99900), $200 below the operator-locked $799 (ADR-0227), which is already live on the site."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "81b63c2af57b7069"
@@ -4500,7 +4500,7 @@ dimension = "D1"
 subject = "packages/mcp-server/src/http.ts:190-200"
 title = "createHttpMcpHandler fails closed on an empty allowedOrigins/allowedHosts array but never rejects a literal wildcard entry, contradicting the security floor's explicit CORS never wildcard rule."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "85fb79103e47a629"
@@ -5022,7 +5022,7 @@ dimension = "D2"
 subject = "packages/cli/templates/eu-ai-act-sample/package.json:9"
 title = "The free eu-ai-act-sample template shipped in the public OSS mirror declares a real npm dependency on @caisson/kernel, a scope the exporter's own header comment says is owned by a third party on the public npm registry."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "97b89aac268d0739"
@@ -5058,7 +5058,7 @@ dimension = "D4"
 subject = "packages/billing/README.md:1"
 title = "Package docs (README/AGENTS.md titles and prose, plus every CHANGELOG's Updated dependencies list) were never scope-renamed, so they still tell buyers to install/import the wrong, non-existent @caisson/<pkg> npm name."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "98cb2f81f54295f6"
@@ -5103,7 +5103,7 @@ dimension = "D6"
 subject = "scripts/mirror-assets/README.md:44-62"
 title = "The public-mirror README's package table lists 17 packages and omits @caisson-sh/eslint-config, which the exporter actually ships as an 18th installed package."
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "9b75dc2ac2fa4dd2"
@@ -5454,7 +5454,7 @@ dimension = "D1"
 subject = "scripts/mirror-assets/ci.yml:12-13"
 title = "The public oss-mirror's CI workflow pins GitHub Actions to mutable version tags, not commit SHAs, unlike the sibling publish.yml."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "a675d9102f28bfc6"
@@ -5787,7 +5787,7 @@ dimension = "D4"
 subject = "packages/compliance/manifest.ts:1,8,14"
 title = "The Compliance edition's shipped manifest.ts leaks the internal standards-gate tool name, a dangling monorepo-only import path, and an admission that the buyer-facing $999 price is a placeholder"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "affb65041821b8ee"
@@ -5796,7 +5796,7 @@ dimension = "D3"
 subject = "packages/field-crypto/README.md:59-60"
 title = "SS-1/SS-10: README footer names the sibling private repo media-pipeline and narrates the internal build process instead of the package"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "b060c3b6a3788e13"
@@ -5913,7 +5913,7 @@ dimension = "D1"
 subject = "packages/mcp-server/src/http.ts:190-224"
 title = "The network-reachable Streamable-HTTP MCP listener never sets the security-floor response headers every sibling HTTP surface in the repo sets."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "b282f16fb9c4204c"
@@ -6012,7 +6012,7 @@ dimension = "D4"
 subject = "packages/cli/templates/eu-ai-act-sample/package.json:14"
 title = "The free, license-free EU-AI-Act sample ships a dependency on the un-rewritten @caisson/kernel scope, which the exporter's own code comments admit does not resolve in this npm mirror."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "b50ea20e5a74f3eb"
@@ -6039,7 +6039,7 @@ dimension = "D3"
 subject = "packages/cli/templates/eu-ai-act-sample/package.json:14 and src/evidence-path.ts:14-20 (in the exported mirror tree)"
 title = "SS-9: the free eu-ai-act-sample template ships the old @caisson/kernel scope unrewritten in the public mirror, which cannot resolve under the mirror's @caisson-sh/* npm namespace."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "b552c442406b6be5"
@@ -6066,7 +6066,7 @@ dimension = "D4"
 subject = "packages/local-ai/manifest.ts:7-8"
 title = "Shipped manifest tells a paying buyer their exact locked price was an internal placeholder"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "b66fbe67aab1a1dd"
@@ -6111,7 +6111,7 @@ dimension = "D6"
 subject = "packages/migrate/README.md (exported to @caisson-sh/migrate/README.md via scripts/export-public-mirror.ts)"
 title = "The public GitHub mirror ships the same wrong commercial-license claim for a package whose actual license is Apache-2.0"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "b736da584ac06e71"
@@ -6282,7 +6282,7 @@ dimension = "D1"
 subject = "apps/base/src/server.ts:44-49"
 title = "POST /spend and POST /mcp parse the request body with a bare as type-cast instead of a Zod strict schema, violating the security-floor API-boundary rule this same file otherwise follows for auth."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "be50a215e9b9b8e1"
@@ -6354,7 +6354,7 @@ dimension = "D4"
 subject = "tooling/tsconfig/base.json:3"
 title = "The exporter's scope-rename misses the tsconfig display field, leaving a stale pre-rename @caisson/tsconfig product name in the shipped @caisson-sh/tsconfig package metadata."
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "c14aa066b4396142"
@@ -6795,7 +6795,7 @@ dimension = "D6"
 subject = "README.md:44-62 (exported mirror output, sourced from scripts/mirror-assets/README.md)"
 title = "Public mirror's top-level README package table omits @caisson-sh/eslint-config even though the exporter always ships it"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "cc8e0f90586bbe92"
@@ -7245,7 +7245,7 @@ dimension = "D4"
 subject = "scripts/export-public-mirror.ts (verified via /tmp/mirror-audit output: packages/kernel/README.md, CHANGELOG.md)"
 title = "The public-mirror exporter renames npm scopes and drops specific test files but never sanitizes README/AGENTS/CHANGELOG prose, so every internal leak in the source packages ships verbatim to the public GitHub mirror and public npm"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "d89a6162e4006627"
@@ -7254,7 +7254,7 @@ dimension = "D2"
 subject = "apps/local-ai/app/demo/pipeline.ts:81-82"
 title = "The demo pipeline hardcodes a second real, perpetual, production-signed license token (entitlements local-ai) instead of using the codebase's own dev-keypair test seam."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "d8ddcb4336629cda"
@@ -7677,7 +7677,7 @@ dimension = "D1"
 subject = "apps/site/emails/waitlist-welcome.ts:70"
 title = "The buyer-supplied email string is interpolated into a raw HTML email template with no output escaping, unlike every other HTML-injection surface in this app (serializeJsonLd escapes the less-than)."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "e6694d4a221b3af3"
@@ -7938,7 +7938,7 @@ dimension = "D1"
 subject = "scripts/mirror-assets/publish.yml:48,54 + scripts/mirror-assets/ci.yml:12-13"
 title = "The generated public-mirror CI/publish workflows pin third-party GitHub Actions by mutable tag, not commit SHA, unlike every workflow in the private repo's own .github/workflows/."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "ef2afbad2640c3de"

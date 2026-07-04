@@ -1,5 +1,16 @@
 # Audit v2 remediation — triage doc
 
+> **EXECUTED 2026-07-04.** All four execution specs below shipped to `main` in parallel
+> sessions: **P0 → PR #110** (agent side; the operator-cred rotations remain operator acts) ·
+> **P1 → PR #111** · **P2 prose → PR #112** (218 findings + the shipped-prose gate) ·
+> **P2 D1 → PR #113** (SHIP security+auth audit: PASS). The live-verification pass that
+> followed found and fixed a fifth, launch-critical item the same day: the strict webhook
+> envelope schemas rejected every real Paddle/Stripe delivery (**PR #114**), proven fixed by a
+> live Paddle-signed simulation (webhook 200 → entitlement grant → PostHog capture). The
+> ledger rows the specs enumerate are flipped to `fixed`; the prose wave's ~194 rows are
+> enforced go-forward by the standards-gate shipped-prose check rather than row-by-row flips.
+> Sections below are preserved as written (pre-execution disposition record).
+
 **Session 2026-07-03.** ADR ceiling **0238**. Source: whole-repo audit v2 (ADR-0233, PR #100) —
 the 941-finding advisory ledger at `outputs/audit/ledger.toml` (302 open / 111 open-high).
 
