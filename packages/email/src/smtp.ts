@@ -3,6 +3,7 @@
 // SES's regional SMTP endpoint (see `sesSmtpConfig`) instead of a separate `aws-sdk` driver.
 import nodemailer from "nodemailer";
 import type { Emailer, EmailMessage } from "./email.ts";
+import { tryRenderEmailTemplate } from "./templates/index.ts";
 
 /**
  * The subset of nodemailer's `Transporter` this driver depends on. Tests inject a fake here so
@@ -14,6 +15,7 @@ export interface SmtpTransport {
     to: string;
     subject: string;
     text: string;
+    html?: string;
   }): Promise<unknown>;
 }
 
@@ -33,9 +35,9 @@ export interface SmtpConfig {
 }
 
 /**
- * Production `Emailer` backed by SMTP. The template is a name, not a render target: the body is a
- * minimal deterministic text mapping (subject = template, body = JSON data) — real template
- * rendering lands with a future template registry (ADR-0018), same as the Resend driver.
+ * Production `Emailer` backed by SMTP, rendering through the same React-Email template registry
+ * as the Resend/Postmark drivers — falling back to a generic subject/text mapping for free-form
+ * (non-branded) templates, e.g. `@caisson/alerting`'s operator alerts.
  */
 export function createSmtpEmailer(config: SmtpConfig): Emailer {
   const transport: SmtpTransport =
@@ -49,11 +51,13 @@ export function createSmtpEmailer(config: SmtpConfig): Emailer {
 
   return {
     async send(msg: EmailMessage): Promise<void> {
+      const rendered = await tryRenderEmailTemplate(msg.template, msg.data);
       await transport.sendMail({
         from: config.from,
         to: msg.to,
-        subject: msg.template,
-        text: JSON.stringify(msg.data),
+        subject: rendered?.subject ?? msg.template,
+        ...(rendered ? { html: rendered.html } : {}),
+        text: rendered?.text ?? JSON.stringify(msg.data),
       });
     },
   };
