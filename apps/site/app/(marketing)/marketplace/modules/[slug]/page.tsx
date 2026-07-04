@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Card, Hero, StatusChip } from "@/components";
+import { Card, Hero, MobileBuyBar, StatusChip } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { PageSections } from "@/components/page-sections";
 import { TrackView } from "@/components/track-view";
@@ -161,6 +161,24 @@ function BuyRail({
   );
 }
 
+/** The condensed sticky mobile counterpart to `BuyRail` (ADR-0242): same price + label + Add-to-cart
+ *  action, reused as-is — not reinvented — so the two surfaces can never drift out of agreement. The
+ *  full card above still renders at its usual position for the edition cross-sell and related
+ *  reading; this bar is the persistent reminder that stays visible at every scroll position. */
+function MobileBuyBarSection({ price }: { price: ModulePrice }) {
+  const catalogItem = moduleCatalogItem(price.id);
+  if (!catalogItem) return null;
+  return (
+    <MobileBuyBar
+      label={price.label}
+      price={formatUsd(price.amount)}
+      action={
+        <AddToCartButton item={toCartItem(catalogItem)} variant="primary" />
+      }
+    />
+  );
+}
+
 export default async function ModuleDepthPage(props: Params) {
   const { slug } = await props.params;
   const record = findRecord(slug);
@@ -221,6 +239,10 @@ export default async function ModuleDepthPage(props: Params) {
           </div>
           <BuyRail record={record} price={price} />
         </div>
+      </div>
+
+      <div className={styles.mobileBarWrap}>
+        <MobileBuyBarSection price={price} />
       </div>
     </>
   );
