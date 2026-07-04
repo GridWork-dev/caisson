@@ -7,7 +7,7 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "description": "Transactional email port: provider-agnostic Emailer + capture (test) + Resend/Postmark/SMTP/SES (prod) drivers. ADR-0018/ADR-0170.",
+  "description": "Transactional email port: a provider-agnostic Emailer interface with a capture driver for tests and Resend, Postmark, SMTP, and SES drivers for production.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",

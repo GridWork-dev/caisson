@@ -3,10 +3,10 @@
 // write-once via a true 412, retention read back from a real lock, extend observed against real
 // GetObjectRetention, and never-shorten refused against the real current date.
 //
-// This file NEVER runs in the default suite: it lives OUTSIDE ./src (so `bun test ./src`, CI, and
-// the published tarball never see it) AND every test self-skips without prover creds (ADR-0201
-// live-test convention). Run it via `bun run test:live` with CAISSON_WORM_LIVE_BUCKET + AWS creds —
-// the scoped prover policy printed by infra/worm/provision.ts, never product creds.
+// This file NEVER runs in the default suite: it lives OUTSIDE ./src (so `bun test ./src` and CI
+// never run it) AND every test self-skips without prover creds (ADR-0201 live-test convention).
+// Run it via `bun run test:live` with CAISSON_WORM_LIVE_BUCKET + AWS creds scoped to a dedicated
+// prover policy, never product creds.
 //
 // GOVERNANCE mode with a minutes-long retention throughout: COMPLIANCE is never live-tested
 // (irreversible objects; the ADR-0051 typed opt-in + production gate stands). Keys sit under the
@@ -29,7 +29,7 @@ const HAVE_CREDS =
 const liveTest = test.skipIf(!HAVE_CREDS);
 const TIMEOUT = 30_000;
 
-/** The reserved live-proof tenant (infra/worm/provision.ts, ADR-0201) — a fixed UUID outside any
+/** The reserved live-proof tenant (ADR-0201) — a fixed UUID outside any
  *  real account space; the provisioner's lifecycle reaper expires versions under this prefix. */
 const PROOF_ACCOUNT_ID = "00000000-0000-4000-8000-00000000c0de";
 /** Fresh per-run segment: WORM keys are write-once, so a re-run must never reuse a key. */
@@ -141,7 +141,7 @@ describe("S3 WORM live proof — GOVERNANCE Object Lock on the real bucket", () 
       } catch {
         // A denied bypass (or any cleanup failure) must NOT fail the proof: the provisioner's
         // lifecycle reaper expires proof-prefix versions ~1 day after the minutes-long retention
-        // lapses (infra/worm/provision.ts) — leftovers are self-cleaning by design.
+        // lapses — leftovers are self-cleaning by design.
       }
     },
     TIMEOUT,

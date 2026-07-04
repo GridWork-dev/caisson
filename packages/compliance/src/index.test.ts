@@ -1,16 +1,16 @@
-// src/index.test.ts — barrel smoke (gate-blocking wiring, T18). Asserts the public barrel re-exports
+// src/index.test.ts — barrel smoke (gate-blocking wiring). Asserts the public barrel re-exports
 // the edition's surface across all four tracks — control model, evidence engine, composition/assembly,
 // and operational telemetry — so a missing re-export is caught here, not by a downstream app's import
 // failure. (Behavioral correctness of each symbol is pinned by its own test; this only proves wiring.)
 import { describe, expect, test } from "bun:test";
 import {
-  // Control model (T9/T10).
+  // Control model.
   defineControl,
   defineFramework,
   soc2Tsc,
   hipaaSecurity,
   euAiAct,
-  // Evidence engine (T11–T15).
+  // Evidence engine.
   rlsForceCollector,
   chainVerifyCollector,
   wormRetentionCollector,
@@ -25,7 +25,7 @@ import {
   verifyEvidenceSignature,
   Ed25519Signer,
   toOscalBundle,
-  // Composition + assembly (T16/T17).
+  // Composition + assembly.
   withTenantCrypto,
   assembleComplianceMigrations,
   complianceMigrationPackages,
@@ -36,7 +36,7 @@ import {
   withImpersonation,
   findDualRecordSeqs,
   impersonationCollector,
-  // Operational telemetry (T18).
+  // Operational telemetry.
   emitEvidenceGenerated,
   emitErasureCryptoShred,
   EVIDENCE_GENERATED,

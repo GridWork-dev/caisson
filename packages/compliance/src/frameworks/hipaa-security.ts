@@ -4,13 +4,13 @@
  *
  * Every `statement` and `guidance` string is original Caisson prose. We do NOT ingest, copy,
  * paraphrase, or transform the regulatory text, NIST 800-66, the Secure Controls Framework
- * (SCF, CC-BY-ND), or any third-party catalog JSON (TM-J / flag-never-guess). The
+ * (SCF, CC-BY-ND), or any third-party catalog JSON (flag-never-guess). The
  * `crosswalk[].reference` values (e.g. `164.312(a)(2)(i)`) are bare CFR citation IDENTIFIERS —
  * factual pointers to the safeguard, not its text. The regulation itself is public law; the
  * canonical control prose here is ours.
  *
  * Canonical control ids are framework-agnostic and Caisson-owned and are shared with the SOC 2
- * pack (`soc2-tsc.ts`) where the underlying control is the same. Depends only on the T9 builder.
+ * pack (`soc2-tsc.ts`) where the underlying control is the same. Depends only on the `defineControl` registry builder.
  */
 import { type Framework, defineFramework } from "../registry/control.ts";
 

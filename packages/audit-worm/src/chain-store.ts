@@ -7,15 +7,15 @@
 //
 // Three invariants, each enforced by a different mechanism so no single bug defeats them:
 //   1. APPEND-ONLY — entries land in `audit_chain_entry`, whose migration grants the `app` role
-//      SELECT + INSERT and *withholds* UPDATE/DELETE (TM-D). A committed entry is immutable by
+//      SELECT + INSERT and *withholds* UPDATE/DELETE. A committed entry is immutable by
 //      privilege, not by convention.
 //   2. NO FORK — appends for one tenant serialize under `pg_advisory_xact_lock`, and the
 //      UNIQUE(account_id, seq) constraint is the hard belt: two racing appends that mint the same
-//      seq collide on 23505 → `ConflictError` → the caller retries against the new tip (TM-I).
+//      seq collide on 23505 → `ConflictError` → the caller retries against the new tip.
 //   3. TRUNCATION/REWRITE EVIDENT — every append mints a fresh `anchorChain()` and writes it to the
 //      WORM store under a LENGTH-keyed, write-once key. The store is therefore the trusted length
-//      oracle: a tail-truncated DB has an anchor for a length it can no longer produce (TM-I), and a
-//      re-anchor of an existing length is refused by the store's write-once put (TM-H). `verify`
+//      oracle: a tail-truncated DB has an anchor for a length it can no longer produce, and a
+//      re-anchor of an existing length is refused by the store's write-once put. `verify`
 //      reads the anchor back and runs `verifyChain(entries, anchor)`.
 //
 // KNOWN BOUND: the anchor `put` is an external side effect inside the DB transaction, so it cannot
@@ -136,7 +136,7 @@ async function loadEntries(
 export interface AuditChainStoreOptions {
   /** A transactor over the tenant DB (PGlite, node-postgres, Drizzle) — appends run under RLS. */
   readonly db: Transactor;
-  /** The WORM store the trusted anchor is written to, write-once (T1 `ArtifactStore`). */
+  /** The WORM store the trusted anchor is written to, write-once (`ArtifactStore`). */
   readonly store: ArtifactStore;
   /** Clock injected at the edge so anchor retention is deterministic + testable. Default: wall clock. */
   readonly now?: () => Date;
@@ -226,7 +226,7 @@ export class AuditChainStore {
 
       // The trusted commitment lands in WORM under a LENGTH-keyed, write-once key. A second anchor
       // for the same length (a truncate-then-re-append, a replay) hits the existing immutable object
-      // → ArtifactExistsError → ConflictError: the original tip can never be overwritten (TM-H).
+      // → ArtifactExistsError → ConflictError: the original tip can never be overwritten.
       try {
         await this.store.put(
           anchorKey(accountId, anchor.length),
@@ -265,7 +265,7 @@ export class AuditChainStore {
     return withTenant(this.db, accountId, async (tx) => {
       const entries = await loadEntries(tx, accountId);
 
-      // Truncation guard (TM-I): the WORM store is the trusted length oracle. An anchor for a length
+      // Truncation guard: the WORM store is the trusted length oracle. An anchor for a length
       // past what the DB can now produce means the tail was dropped — invalid even if the surviving
       // prefix is internally consistent (which, being a true prefix, it always is).
       const beyond = await this.store.head(

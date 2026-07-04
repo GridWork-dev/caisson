@@ -10,13 +10,13 @@
 // (flag-never-guess). Operational telemetry is mirrored through the base `EventSink` port; the
 // evidentiary record stays in the WORM chain.
 
-// --- Control model (T9/T10) — typed registry builders + own-authored framework packs. ------------
+// --- Control model — typed registry builders + own-authored framework packs. --------------------
 export * from "./registry/control.ts";
 export * from "./frameworks/soc2-tsc.ts";
 export * from "./frameworks/hipaa-security.ts";
 export * from "./frameworks/eu-ai-act.ts";
 
-// --- Evidence engine (T11–T15) — collectors, canonical pack format, generator, signer, OSCAL seam.
+// --- Evidence engine — collectors, canonical pack format, generator, signer, OSCAL seam. --------
 export * from "./evidence/collector.ts";
 export * from "./evidence/collectors/rls-force.ts";
 export * from "./evidence/collectors/chain-verify.ts";
@@ -32,14 +32,14 @@ export * from "./evidence/oscal-export-xml.ts";
 export * from "./evidence/oscal-assessment-plan.ts";
 export * from "./evidence/oscal-bundle.ts";
 
-// --- Composition + assembly (T16/T17) — the security-critical crypto×RLS nesting + migration order.
+// --- Composition + assembly — the security-critical crypto×RLS nesting + migration order. -------
 export * from "./with-tenant-crypto.ts";
 export * from "./migrate/assemble.ts";
 
 // --- Support impersonation (ADR-0187) — the dual-audit-trail session kernel.
 export * from "./impersonation/session.ts";
 
-// --- Operational telemetry (T18) — the EventSink ops mirror (evidentiary record stays in WORM).
+// --- Operational telemetry — the EventSink ops mirror (evidentiary record stays in WORM). -------
 export * from "./observe.ts";
 
 // --- Regulatory-exemption posture worksheet — a typed convention artifact (NOT a rules engine

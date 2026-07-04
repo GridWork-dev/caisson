@@ -1,7 +1,7 @@
 // src/index.test.ts — barrel smoke + the canonical WORM-anchor golden (ADR-0052/0013).
 //
 // Two assertions:
-//   1. The public barrel re-exports the T1–T4 surface (the gate-blocking wiring this task lands) —
+//   1. The public barrel re-exports the full surface (gate-blocking wiring) —
 //      a missing re-export is caught here, not by a downstream edition's import failure.
 //   2. The trusted anchor a chain mints is byte-stable. The audit chain's whole tamper-evidence
 //      rests on a reproducible `{length, tipHash, genesisHash}` commitment; the golden pins that
@@ -32,20 +32,20 @@ import {
 
 describe("@caisson/audit-worm barrel", () => {
   test("re-exports the T1–T4 public surface", () => {
-    // T1/T2 — artifact store.
+    // Artifact store.
     expect(typeof assertSafeKey).toBe("function");
     expect(typeof buildArtifactKey).toBe("function");
     expect(typeof LocalArtifactStore).toBe("function");
     expect(typeof S3ArtifactStore).toBe("function");
     expect(typeof irreversibleComplianceOptIn).toBe("function");
     expect(ArtifactExistsError.prototype).toBeInstanceOf(Error);
-    // T1 — retention floor.
+    // Retention floor.
     expect(typeof retainUntilFrom).toBe("function");
     expect(MIN_RETENTION_YEARS).toBe(6);
     expect(DEFAULT_RETENTION_YEARS).toBe(7);
-    // T3 — chain store.
+    // Chain store.
     expect(typeof AuditChainStore).toBe("function");
-    // T4 — version store.
+    // Version store.
     expect(typeof LockedVersionStore).toBe("function");
     expect(typeof provenanceSchema.parse).toBe("function");
   });

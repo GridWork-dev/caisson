@@ -1,9 +1,9 @@
 // src/store.ts — the WORM `ArtifactStore` port (ADR-0054, extended by ADR-0202). A minimal
 // put/get/head/extendRetention object-store contract every backend binds: prod `S3ArtifactStore`
-// (Object-Lock, T2) and dev `LocalArtifactStore` (fs, store.local.ts). Invariants live HERE, at the
+// (Object-Lock) and dev `LocalArtifactStore` (fs, store.local.ts). Invariants live HERE, at the
 // port, so no backend can skip them:
 //   1. Tenant scoping — every key is `{account_id}/…` and traversal-safe via `assertSafeKey`, so no
-//      key can reach another tenant's prefix or escape the store root (ADR-0054, TM-C).
+//      key can reach another tenant's prefix or escape the store root (ADR-0054).
 //   2. Write-once — a key, once written, is immutable; a second `put` to an existing key is an
 //      `ArtifactExistsError`, never an overwrite (the WORM essence; chain anchors rely on it, ADR-0052).
 //   3. Monotonic retention — `extendRetention` only ever moves a lock LATER (strictly), never

@@ -1,4 +1,4 @@
-// The composed Compliance edition (ADR-0178, mirroring ADR-0199). ADR-0178 folds two Stage-2
+// The composed Compliance edition (ADR-0178, mirroring ADR-0199). ADR-0178 folds two
 // operational-compliance primitives into the Compliance bundle: SOC2 CC7.2 alerting
 // (@caisson/alerting) and CCPA/GDPR right-to-erasure (@caisson/retention-runner). Like ADR-0199 did
 // for @caisson/tool-exec in the Agentic-Dev edition, a manifest that DECLARES these members must also

@@ -1,4 +1,4 @@
-// Registry manifest (ADR-0020, ADR-0135, ADR-0152). Loaded by @caisson/standards-gate; must agree
+// Registry manifest (ADR-0020, ADR-0135, ADR-0152). Loaded by the monorepo's build-standards check; must agree
 // with package.json on id/version/license/dependencies. `kind: "primitive"` — a shared compliance
 // primitive, not a base service or an edition. Paid + LicenseRef-Caisson-Commercial (ADR-0023).
 import pkg from "./package.json";
@@ -9,8 +9,7 @@ export default defineModule({
   version: pkg.version,
   kind: "primitive",
   tier: "paid",
-  // PLACEHOLDER price pending ADR-0135 pricing lock (ADR-0129 methodology); positive int required
-  // by the manifest refine (ADR-0007).
+  // Positive int required by the manifest refine (ADR-0007).
   priceCents: 4900,
   license: pkg.license,
   dependencies: ["@caisson/kernel", "@caisson/jobs"],

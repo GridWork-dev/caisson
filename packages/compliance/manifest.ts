@@ -1,15 +1,14 @@
-// Registry manifest (ADR-0020/0021). Loaded by @caisson/standards-gate; must agree with
+// Registry manifest (ADR-0020/0021). Loaded by the monorepo's build-standards check; must agree with
 // package.json on id/version/license/dependencies (the gate fails the build on drift). `kind:
 // "edition"` — this is the Compliance EDITION (the hero, ADR-0040), a composition of base packages,
 // never a fork (ADR-0003); it names its own edition membership in `editions`. Paid +
 // LicenseRef-Caisson-Commercial under the open-core model (ADR-0094/0097, amends ADR-0050): base is
 // Apache-2.0; editions/primitives/cli/registry stay commercial.
 //
-// `priceCents` is a PLACEHOLDER pending the still-open Pricing lock (ADR-0012 anchors only) — it must
-// be a positive integer (ADR-0007), not a final number. Evidence generation is FREE in v1 (no
-// @caisson/credits dependency, ADR-0007 unit deferred to P6): the edition composes the WORM/crypto
-// primitives directly. Dependencies are DOWN-ONLY (ADR-0003): the edition imports base/primitive
-// packages, never the reverse.
+// `priceCents` must be a positive integer (ADR-0007). Evidence generation is FREE in v1 (no
+// @caisson/credits dependency): the edition composes the WORM/crypto primitives directly.
+// Dependencies are DOWN-ONLY (ADR-0003): the edition imports base/primitive packages, never the
+// reverse.
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
@@ -23,8 +22,8 @@ export default defineModule({
   license: pkg.license,
   // Must mirror package.json's @caisson/* deps exactly (the gate fails on drift). @caisson/migrate is
   // the base migration assembler/runner the edition COMPOSES at build/test time (ADR-0090).
-  // @caisson/alerting + @caisson/retention-runner are the Stage-2 primitives folded into the bundle
-  // (ADR-0178) and composed at runtime via `createComplianceEdition` (src/edition.ts, ADR-0199 shape).
+  // @caisson/alerting + @caisson/retention-runner are primitives folded into the bundle (ADR-0178)
+  // and composed at runtime via `createComplianceEdition` (src/edition.ts, ADR-0199 shape).
   dependencies: [
     "@caisson/alerting",
     "@caisson/audit-worm",
@@ -50,7 +49,7 @@ export default defineModule({
     "@caisson/field-crypto": "0.2.1",
     "@caisson/tenancy-rls": "0.3.0",
     "@caisson/kernel": "0.3.0",
-    // Stage-2 harvest primitives folded into the Compliance bundle (ADR-0178).
+    // Operational-compliance primitives folded into the Compliance bundle (ADR-0178).
     "@caisson/alerting": "0.1.2",
     "@caisson/retention-runner": "0.1.2",
   },

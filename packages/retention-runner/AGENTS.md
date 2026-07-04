@@ -32,12 +32,14 @@ edition must know to wire the erasure runner correctly.
 
 `defineRetentionTask(deps)` returns a `@caisson/jobs` `TaskDefinition` for `AUTO_90D_SWEEP_TASK`.
 Register it on a `JobQueue` (`createInMemoryQueue` in dev/test; Trigger.dev in prod — the queue
-port never changes across drivers) and enqueue one `{ subjectId, tenantId }` payload per subject due
-for the recurring sweep. The subject-selection query itself (who is due for `auto_90d` erasure) is
-the caller's concern — this package only runs the erasure once told who.
+port never changes across drivers). Enqueue through `enqueueAutoSweep(queue, { subjectId, tenantId })`
+— never call `queue.enqueue(AUTO_90D_SWEEP_TASK, …)` directly, since `enqueueAutoSweep` sets the
+overlap-safe `singletonKey` (`${tenantId}:${subjectId}`) that keeps a subject already queued for a
+sweep from being double-enqueued. The subject-selection query itself (who is due for `auto_90d`
+erasure) is the caller's concern — this package only runs the erasure once told who.
 
 ## Out of scope
 
 No subject-due-for-erasure selection logic, no live S3/pg driver, no WORM/hash-chain upgrade to the
-audit row (see ADR-0135 Genericness — this class of module was a recurring source of confusion in
-the source survey: audit-logging discipline mistaken for tamper-evidence).
+audit row (see ADR-0135 Genericness — audit-logging discipline is not tamper-evidence; don't
+conflate the two).
