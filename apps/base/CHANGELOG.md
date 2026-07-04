@@ -34,7 +34,7 @@
 
 ### Patch Changes
 
-- afa6070: ADR-0210 hardening (SPEC-tenancy-rls, harvest slice-2 #8/#7): `withTenant`/`withUser`
+- afa6070: ADR-0210 hardening (SPEC-tenancy-rls): `withTenant`/`withUser`
   now run a one-time, fail-closed `assertRoleNotPrivileged` pre-flight (cached per
   `Transactor` in a `WeakSet`) before ever `SET LOCAL ROLE app` — a SUPERUSER or
   BYPASSRLS-configured `app` role is refused before it touches data, instead of silently

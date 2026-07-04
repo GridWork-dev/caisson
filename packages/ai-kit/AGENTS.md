@@ -27,7 +27,7 @@ output-guard → reconcile`
 - **The model is INJECTED (`opts.resolveModel`).** Production wires `buildRegistryResolver(settings,
 defaultProviders(settings))` (a `createProviderRegistry` over the ai-config lanes); tests inject a
   mock `LanguageModelV2`. The Vercel AI SDK v5 is hidden behind `infer()` — never call a provider SDK
-  directly. **This package is the ONLY one that may import `ai` / `@ai-sdk/*`** (Gate-2, ADR-0011/0022).
+  directly. **This package is the ONLY one that may import `ai` / `@ai-sdk/*`** (ADR-0011/0022).
 - **Reserve happens BEFORE the provider call.** A short wallet throws `InsufficientCreditsError` (402)
   and an open breaker throws `SpendCapError` (402) — in both cases the model is never called and
   nothing is written. Reconcile then trues the charge to the provider's ACTUAL usage.

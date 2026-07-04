@@ -1,7 +1,7 @@
 // ADR-0112: the buyer MCP awaits the optional `checkRateLimit` PORT before EVERY tool dispatch.
 // Proves: a denied hook (throws RateLimitError) blocks the tool and the handler never runs; the
 // hook fires once per call across base AND edition tools; and an ABSENT hook runs unthrottled
-// (the Wave-0 backward-compatible contract). The store-backed fail-OPEN behaviour is exercised in
+// (the default backward-compatible contract). The store-backed fail-OPEN behaviour is exercised in
 // services/license (this package is DB-free — it only declares + awaits the seam).
 import { describe, expect, test } from "bun:test";
 import { NotFoundError, RateLimitError } from "@caisson/kernel";
@@ -52,7 +52,7 @@ function baseOptions(): McpServerOptions {
 }
 
 describe("ADR-0112 rate-limit hook (mcp-server seam)", () => {
-  test("an absent hook runs unthrottled (Wave-0 contract)", async () => {
+  test("an absent hook runs unthrottled (the default backward-compatible contract)", async () => {
     const server = createMcpServer(baseOptions());
     const session = server.authenticate(TOKEN);
     // Many calls, no hook → every one runs.

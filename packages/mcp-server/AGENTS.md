@@ -28,5 +28,6 @@ handed a key value rejects it (`strictObject` → `ValidationError`); do the sam
 
 ## Scope
 
-**AI-provider lanes only.** Database and deploy coaching are out of scope here (deferred to P5).
-The coach never runs a shell or subprocess; persistence is an injected port.
+**AI-provider lanes only.** Database and deploy coaching are out of scope here — that's the
+`create-caisson` generator's job, not this coach. The coach never runs a shell or subprocess;
+persistence is an injected port.

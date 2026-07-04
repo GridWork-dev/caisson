@@ -2,7 +2,7 @@
 // `infer(lane, input, opts)` chokepoint composing the four base primitives — prompt-registry
 // (resolve + render), ai-meter (reserve/reconcile + caps/breaker), guardrails (input/output
 // moderation + PII redact/restore), ai-config (lane → provider) — behind Vercel AI SDK v5. The ONLY
-// package that imports a provider SDK (the Gate-2 carve-out, ADR-0011/0022); the SDK stays hidden
+// package that imports a provider SDK (the sanctioned carve-out, ADR-0011/0022); the SDK stays hidden
 // behind `infer()`, so it is swappable. An edition is a composition, never a fork (ADR-0003) — it
 // never imports another edition.
 

@@ -153,7 +153,7 @@ describe("event mapping", () => {
     ]);
   });
 
-  test("a shuffled details.line_items order still correlates correctly by price_id key (CAISSON-6)", () => {
+  test("a shuffled details.line_items order still correlates correctly by price_id key", () => {
     // Paddle does not guarantee items[] and details.line_items[] share an index order — only that each
     // line item echoes the price_id it was priced from. The pre-fix positional read would have paired
     // items[0] (compliance) with line_items[0] (the PACK's txnitm_/total, listed here FIRST) — a wrong,
@@ -209,7 +209,7 @@ describe("event mapping", () => {
     ]);
   });
 
-  test("two cart lines sharing ONE price_id still pair FIFO, in queue order (CAISSON-6)", () => {
+  test("two cart lines sharing ONE price_id still pair FIFO, in queue order", () => {
     // The same SKU bought twice: both items[] entries key the SAME price_id, so they share one FIFO
     // queue and must dequeue in the order details.line_items[] lists them — NOT re-paired by value or
     // re-sorted. When both arrays are already in Paddle's natural (matching) order, this FIFO-by-key
@@ -521,7 +521,7 @@ describe("event mapping", () => {
   test("a one-time transaction captures each line's txnitm_ id + charged total from details.line_items (ADR-0218)", () => {
     // The `txnitm_…` join key + per-line charged total live on `details.line_items[]`, NOT the
     // request-echo `items[]`. The mapper correlates the two arrays by their shared `price_id`
-    // (CAISSON-6) so a later per-line adjustment refund can join back on the item id and proportion
+    // so a later per-line adjustment refund can join back on the item id and proportion
     // against the charged amount.
     const event = {
       event_id: "evt_join",
@@ -678,7 +678,7 @@ describe("event mapping", () => {
     }
   });
 
-  test("a multi-line transaction with a DUPLICATE non-empty join id fails closed (CAISSON-8)", () => {
+  test("a multi-line transaction with a DUPLICATE non-empty join id fails closed", () => {
     // Two lines sharing the SAME real txnitm_ id collide on the credit ledger's per-line uniqueness
     // key exactly like the "" sentinel collision above — the second line silently no-ops while the
     // webhook still acks 200. The mapper must throw so verifyAndParse returns a non-2xx and Paddle
@@ -715,7 +715,7 @@ describe("event mapping", () => {
     expect(() => parsePaddleEvent(event)).toThrow(/duplicate per-line join id/);
   });
 
-  test("a malformed adjustment item signals onWarn but still SKIPS it, never throwing (CAISSON-7)", () => {
+  test("a malformed adjustment item signals onWarn but still SKIPS it, never throwing", () => {
     const warnings: string[] = [];
     const event = {
       event_id: "evt_partial_malformed",
@@ -846,7 +846,7 @@ describe("event mapping", () => {
     });
   });
 
-  test("verifyAndParse threads a configured onWarn to the mapper for a malformed adjustment item (CAISSON-7)", () => {
+  test("verifyAndParse threads a configured onWarn to the mapper for a malformed adjustment item", () => {
     // The MUST-FIX gap this pins: onWarn previously had no production path from a signed webhook
     // delivery to parsePaddleEvent — createPaddleBilling built the event with no way to pass one, so
     // wiring it only on PaddleConfig (not exercising verifyAndParse end to end) would not have caught

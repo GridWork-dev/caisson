@@ -32,7 +32,7 @@
   no policy enforcement, zero wallet movement (`dedup.ts` imports nothing from `@caisson/credits`).
   Zero edits to `meter.ts`/`schema.ts`/`breaker.ts`/`pricebook.ts` beyond a one-line JSDoc pointer on
   `reserve()`; no new dependency, no new Postgres table/migration, no manifest change.
-- ccf8b10: Branded money types + rounding provenance (ADR-0212, harvest slice-2 serialized wave-2).
+- ccf8b10: Branded money types + rounding provenance (ADR-0212).
   Kernel gains `src/money.ts`: TS-native nominal `Cents`/`Credits`/`MicroUsd`/`MicroUsdPerCredit`
   brands (compile-time only, zero runtime cost), `asCents`/`asCredits`/`asMicroUsd`/
   `asMicroUsdPerCredit` constructors (throw `ValidationError` on a non-integer/negative input),

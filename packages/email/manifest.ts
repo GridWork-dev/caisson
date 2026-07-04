@@ -1,4 +1,4 @@
-// Registry manifest (ADR-0020). Loaded by @caisson/standards-gate; must agree with package.json on
+// Registry manifest (ADR-0020). Loaded by the monorepo's build-standards check; must agree with package.json on
 // id/version/license/dependencies. `kind: "base"` — transactional email is a shared base service;
 // all editions that send emails route through this port. Open Base: Apache-2.0, oss tier (ADR-0094 open-core).
 //
@@ -15,5 +15,5 @@ export default defineModule({
   license: pkg.license,
   dependencies: ["@caisson/kernel"],
   description:
-    "Transactional email port: provider-agnostic Emailer interface + capture (test) + Resend (prod) drivers (ADR-0018).",
+    "Transactional email port: provider-agnostic Emailer interface with a capture driver for tests and Resend, Postmark, SMTP, and SES drivers for production (ADR-0018).",
 });

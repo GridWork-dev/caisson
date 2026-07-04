@@ -1,4 +1,4 @@
-// @caisson/agent-dev — the Agentic-Dev EDITION composition (ADR-0065/0066/0067 · T21). An edition is
+// @caisson/agent-dev — the Agentic-Dev EDITION composition (ADR-0065/0066/0067). An edition is
 // NOT a new primitive: it composes the shipped base seams DOWN-ONLY (ADR-0003/0022) into one
 // buyer-facing surface —
 //   • the governed, engine-neutral agent kernel (@caisson/agent-kernel): the agent/skill/rule schema +

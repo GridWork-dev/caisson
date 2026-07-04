@@ -1,4 +1,4 @@
-// Unit tests for the cloud-egress secret-scrub guard (ADR-0067 · T8 SECURITY). Offline + engine-
+// Unit tests for the cloud-egress secret-scrub guard (ADR-0067, security-critical). Offline + engine-
 // neutral: the embed transport is a TEST-DOUBLE (no live cloud call in CI). Proves the scrub contract,
 // scrub-before-egress (the backend never sees a raw secret), the fail-closed https + dimension gates,
 // and that a failed transport throws a redaction-safe error carrying no secret.
@@ -13,7 +13,7 @@ import {
 } from "./egress-guard.ts";
 import type { Embedder } from "./embedder.ts";
 
-describe("scrubForEgress (T8 secret-scrub contract)", () => {
+describe("scrubForEgress (secret-scrub contract)", () => {
   test("C — drops a secret-named assignment value, keeps key + separator", () => {
     expect(scrubForEgress("OPENAI_API_KEY=sk-proj-AAAABBBBCCCCDDDD")).toBe(
       "OPENAI_API_KEY=[REDACTED]",

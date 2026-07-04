@@ -2,7 +2,7 @@
 // SINGLE file; an emit bundle is a TREE (`.claude/`, `AGENTS.md`, `.cursor/`), so this scaffold adds a
 // tree-aware matcher with the same BLESS semantics: `BLESS=1` (re)writes `__golden__/emit/`, otherwise
 // every produced file must exist + match byte-for-byte AND no stale file may linger (full-tree
-// equivalence). GREEN after BLESS today (echo); enforces the T19 emitter byte-for-byte once it lands.
+// equivalence). GREEN after BLESS today (echo); enforces the emitter's output byte-for-byte once it lands.
 import { describe, expect, test } from "bun:test";
 import {
   existsSync,

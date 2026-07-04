@@ -154,8 +154,8 @@ describe("resolveAccountEntitlements (ADR-0071)", () => {
     await withTenant(tp.pg, acct, (tx) =>
       grantEntitlements(tx, {
         accountId: acct,
-        // "alerting" has NO row in this synthetic index yet (its package doesn't exist, P6-store
-        // track) — the resolver must not throw and must not grant a substitute; only the real
+        // "alerting" has NO row in this synthetic index yet (its package doesn't exist)
+        // — the resolver must not throw and must not grant a substitute; only the real
         // "audit-worm" purchase resolves.
         entitlementIds: ["audit-worm", "alerting"],
         sourceEventId: "in_r",

@@ -1,4 +1,4 @@
-// T5.3 follow-on (ADR-0161): the Streamable-HTTP transport binding for the SAME transport-agnostic
+// Follow-on (ADR-0161): the Streamable-HTTP transport binding for the SAME transport-agnostic
 // core `stdio.ts` binds — `server.ts` is reused verbatim, unedited. Unlike stdio (spawned 1:1 by a
 // trusted local client, never network-exposed), this listener is network-reachable, so the auth +
 // network-surface posture differs from stdio in two load-bearing ways documented in the ADR:

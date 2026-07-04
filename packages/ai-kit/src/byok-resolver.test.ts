@@ -1,4 +1,4 @@
-// C7 / ADR-0162 — the BYOK-aware ModelResolver. Env lanes delegate to the boot registry unchanged; a
+// ADR-0162 — the BYOK-aware ModelResolver. Env lanes delegate to the boot registry unchanged; a
 // per-tenant lane pulls the caller's key via the injected port, builds a provider, and caches the built
 // client (TTL) so a repeat resolve skips the port. Error paths are fail-closed. No live model call.
 import { describe, expect, test } from "bun:test";

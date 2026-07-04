@@ -91,7 +91,7 @@ export function counterfactualStability(
 ): StabilityResult {
   const total = variants.length;
   const agree = variants.filter((v) => v === base).length;
-  // ponytail: 0 variants → vacuously stable (1, no counterexample observed). Revisit if a real
+  // 0 variants → vacuously stable (1, no counterexample observed). Revisit if a real
   // zero-variant call needs to distinguish "stable" from "untested".
   const stabilityScore = total === 0 ? 1 : agree / total;
   return { agree, total, stabilityScore };

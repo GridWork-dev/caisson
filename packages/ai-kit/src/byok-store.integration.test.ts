@@ -1,4 +1,4 @@
-// C7 / ADR-0162 — the tenant BYOK key store on PGlite + real withTenant RLS + field-crypto. Asserts:
+// ADR-0162 — the tenant BYOK key store on PGlite + real withTenant RLS + field-crypto. Asserts:
 // a key round-trips (sealed on write, opened on read); a re-put REPLACES (rotatable credential); a
 // missing key reads undefined; RLS isolates accounts (tenant A cannot read tenant B's key); the
 // ciphertext at rest is NOT the plaintext (encrypted-at-rest).

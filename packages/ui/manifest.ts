@@ -15,5 +15,5 @@ export default defineModule({
   license: pkg.license,
   dependencies: [],
   description:
-    "Typed OKLCH token floor (ADR-0042 design foundation: palette + type scale) — OKLCH token objects → generated tokens.css (Wardfile gen-script pattern).",
+    "Typed OKLCH token floor (ADR-0042 design foundation: palette + type scale) — OKLCH token objects generate tokens.css via a small gen-script.",
 });

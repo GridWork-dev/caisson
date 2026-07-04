@@ -55,6 +55,3 @@ await withFieldCryptoContext(derivedContext(provider, tenantId), () => db.insert
 `bun test packages/field-crypto/src` — cipher round-trip + tamper/AAD-mismatch reject, derive KAT,
 the envelope golden, and the cross-tenant **isolation** integration test (two tenants → distinct
 keys; tenant B cannot decrypt tenant A's envelope; a v1 ciphertext still decrypts after rotation).
-
-> Rebuild-clean from public references. Pro-private `media-pipeline` contributes patterns only,
-> never code.

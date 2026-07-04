@@ -1,5 +1,5 @@
-// src/sync/tombstone.test.ts — tombstone persistence + horizon GC (T18, threat TM-SYNC). In-process,
-// deterministic, NO network. The T17 single-batch merge (`reconcile.ts`) already excludes a winning
+// src/sync/tombstone.test.ts — tombstone persistence + horizon GC. In-process,
+// deterministic, NO network. The single-batch merge (`reconcile.ts`) already excludes a winning
 // delete WITHIN one batch (its `tombstone-resolve` golden is pinned in `reconcile.test.ts`); these
 // tests pin the CROSS-ROUND guarantee this module adds: a persisted tombstone outranks a stale,
 // lower-stamped upsert delivered in a LATER batch (no resurrection), a strictly-newer upsert legitimately
@@ -57,8 +57,8 @@ function tombByPk(ts: readonly Tombstone[], pk: string): Tombstone | undefined {
   return ts.find((t) => t.pk === pk);
 }
 
-describe("reconcileWithTombstones — live set composes T17 (reconcile.ts)", () => {
-  // The same divergent two-replica tombstone scenario the T16 golden pins, run through the persistent
+describe("reconcileWithTombstones — live set composes reconcileReplicas (reconcile.ts)", () => {
+  // The same divergent two-replica tombstone scenario the reconcile golden pins, run through the persistent
   // layer with no prior tombstones: the live set MUST equal the single-batch merge (golden-pinned).
   const A = cs(REPLICA_A, [
     upsert("e1", { title: "e1-A" }, 3000, 1),
@@ -162,7 +162,7 @@ describe("reconcileWithTombstones — determinism + partition guard", () => {
     expect(liveByPk(ab.live, "k")?.values).toEqual({ v: 2 });
   });
 
-  test("cross-tenant changesets fail closed (TM-SYNC / ADR-0073)", () => {
+  test("cross-tenant changesets fail closed (ADR-0073)", () => {
     const a = cs(REPLICA_A, [upsert("k", { v: 1 }, 2000, 1)]);
     const foreign: Changeset = {
       tenantId: "tenant-b",

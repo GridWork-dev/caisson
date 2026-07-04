@@ -1,4 +1,4 @@
-// @caisson/service-docs — the AI-native docs corpus + retrieval service (P6, ADR-0096/0009). Builds a
+// @caisson/service-docs — the AI-native docs corpus + retrieval service (ADR-0096/0009). Builds a
 // chunked, agent-queryable corpus from the repo's authoritative docs, emits a canonical llms.txt, and
 // serves a typed POST /query retrieval contract the (Python) support-bot + buyer agents consume over
 // HTTP. Retrieval reuses @caisson/local-store's hybrid FTS5 + sqlite-vec engine (ADR-0067); the live

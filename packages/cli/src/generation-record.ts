@@ -1,4 +1,4 @@
-// The generation audit row (T16 / ADR-0049/0024/0005). Every successful, debited generation records
+// The generation audit row (ADR-0049/0024/0005). Every successful, debited generation records
 // ONE append-only `generation` row INSIDE the same `withTenant` transaction as the debit (POST-debit):
 // the credit ledger answers "was this charged"; this table answers "what was materialized, for whom".
 // Mirrors the credits pattern exactly — fail-closed RLS scoped to `account_id`, `ON CONFLICT DO

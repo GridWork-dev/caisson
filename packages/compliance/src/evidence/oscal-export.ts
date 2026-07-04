@@ -1,9 +1,9 @@
-// src/evidence/oscal-export.ts — OSCAL export adapter (ADR-0058, T15; ADR-0047 un-wired-seam ethos).
+// src/evidence/oscal-export.ts — OSCAL export adapter (ADR-0058; ADR-0047 un-wired-seam ethos).
 //
-// The compliance edition's canonical output is the deterministic, signed Caisson evidence pack (T13).
+// The compliance edition's canonical output is the deterministic, signed Caisson evidence pack.
 // SOME buyers feed a GRC platform (FedRAMP, OpenSCAP, drawio-grade automation) that speaks NIST OSCAL
 // instead. This adapter is the EXPORT SEAM: it maps an already-generated, already-validated
-// `EvidencePackManifest` (the T13 pack shape) into OSCAL v1.2.2 document bodies —
+// `EvidencePackManifest` into OSCAL v1.2.2 document bodies —
 //   - Security Assessment Results (SAR, root `assessment-results`): one finding per control, one
 //     observation per evidence item; a control's derived readiness drives the finding's objective
 //     status (`ready` → `satisfied`, `gap` → `not-satisfied`);
@@ -12,10 +12,10 @@
 //
 // It is a PLAIN, PURE, SEAM-TESTED FUNCTION — NO TRANSPORT. There is no live POST, no file write, no
 // network. The live wire-up (push to a GRC system / OSCAL schema-conformance validation / a real
-// `import-ap` + `import-ssp` resolution) is a `// P7:` seam below; v1 ships the deterministic mapping
-// only (SPEC: "No OSCAL-native v1 artifact (export = un-wired seam)").
+// `import-ap` + `import-ssp` resolution) is a documented seam below; v1 ships the deterministic
+// mapping only (SPEC: "No OSCAL-native v1 artifact (export = un-wired seam)").
 //
-// Two invariants carry over from the pack's honesty floor (ADR-0058 / TM-K):
+// Two invariants carry over from the pack's honesty floor (ADR-0058):
 //   1. FLAG-NEVER-GUESS. The input is the canonical manifest, which by construction has NO unresolved
 //      evidence (those hard-block generation upstream). Every item is `pass` | `flagged`; a `gap`
 //      control's not-satisfied status records the flagged reason — nothing is inferred or fabricated.
@@ -23,7 +23,7 @@
 //      "remediation required"); it never claims "compliant"/"certified". (OSCAL's own required
 //      `satisfied`/`not-satisfied` objective-status enum is format vocabulary, not a conformance claim.)
 //
-// DETERMINISM (mirrors T13 / T14): the wall-clock instant is INJECTED (`now`, clock at the edge) and
+// DETERMINISM (mirrors the generator + signer): the wall-clock instant is INJECTED (`now`, clock at the edge) and
 // UUID minting is a SEAM (`newId`, default `crypto.randomUUID`). With both injected, the output is
 // byte-stable and canonicalizable — so an export can be golden-fixtured or content-hashed downstream.
 import { randomUUID } from "node:crypto";
@@ -241,7 +241,7 @@ export interface OscalExportOptions {
     /** SHA-256 of the canonicalized bundled AP bytes (lowercase 64-char hex). Bound as `rlink.hashes[]`. */
     readonly sha256?: string;
   };
-  /** Optional provenance: the T13 evidence-pack archive SHA-256 (recorded as a `prop`). Must be 64-hex. */
+  /** Optional provenance: the evidence-pack archive SHA-256 (recorded as a `prop`). Must be 64-hex. */
   readonly packSha256?: string;
 }
 
@@ -280,7 +280,7 @@ function buildMetadata(
     version: manifest.framework.version,
     "oscal-version": OSCAL_VERSION,
     props,
-    // Bind the OSCAL doc to the WORM audit-chain tip it was derived from (same anchor T14 signs).
+    // Bind the OSCAL doc to the WORM audit-chain tip it was derived from (same anchor the signer signs).
     links: [
       {
         href: `urn:caisson:audit-chain:${manifest.chainAnchor.tipHash}`,
@@ -291,7 +291,7 @@ function buildMetadata(
   };
 }
 
-/** The flagged-evidence reasons for a gap control, joined for a finding/poam-item rationale (TM-K). */
+/** The flagged-evidence reasons for a gap control, joined for a finding/poam-item rationale. */
 function gapReason(control: ManifestControl): string {
   return control.evidence
     .filter((e) => e.status === "flagged" && e.reason !== undefined)
@@ -455,8 +455,8 @@ export function toOscalAssessmentResults(
  *
  * One `poam-item` per GAP control (a control with any flagged evidence), each referencing the flagged
  * items as `observations` and recording the gap reason — a clean pack yields zero items (no fabricated
- * remediation). The tenant is identified via `system-id` (no SSP exists in v1; `import-ssp` is the
- * `// P7:` wire-up). Deterministic given injected `now` + `newId`.
+ * remediation). The tenant is identified via `system-id` (no SSP exists in v1; `import-ssp` is part
+ * of the un-wired transport seam below). Deterministic given injected `now` + `newId`.
  */
 export function toOscalPlanOfActionAndMilestones(
   manifest: EvidencePackManifest,
@@ -538,7 +538,7 @@ export function toOscalBundle(
   };
 }
 
-// --- the un-wired transport seam (P7) ----------------------------------------------------------
+// --- the un-wired transport seam -----------------------------------------------------------------
 
 /**
  * The OSCAL delivery port. A relying party may want the bundle PUSHED to a GRC platform's OSCAL
@@ -548,7 +548,7 @@ export function toOscalBundle(
  * implementation in v1, and NO call site reaches a network. A future implementation of this port
  * delivers `bundle` to its sink.
  *
- * // P7: wire a live OSCAL transport here — POST each document to the GRC endpoint over
+ * // A live implementation would wire a real OSCAL transport here — POST each document to the GRC endpoint over
  * //   `fetchWithTimeout(url, init, ms)` (NEVER the native `AbortSignal.timeout` helper on Bun),
  * //   Bearer-gated, validating each body against the official OSCAL JSON schema before send, and
  * //   resolving a real `import-ap`/`import-ssp` href. None of that runs on the CI path.

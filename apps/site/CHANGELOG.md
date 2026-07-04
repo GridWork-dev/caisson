@@ -104,7 +104,7 @@
 
 ### Patch Changes
 
-- 84052aa: Backlog P3 defense-in-depth (from the PR#35 sibling sweep; all private apps, no publish):
+- 84052aa: Backlog P3 defense-in-depth (all private apps, no publish):
 
   - `@caisson/site`: `AddMemberInput` gains `.strict()` for boundary-schema floor consistency (behavior
     unchanged — the parse object is hand-built, owner-gated, RLS-scoped, parameterized).

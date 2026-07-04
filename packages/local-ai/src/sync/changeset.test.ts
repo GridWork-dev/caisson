@@ -1,6 +1,6 @@
-// Tests for per-tenant changeset capture (ADR-0064/0073, threat TM-SYNC). In-process, deterministic,
+// Tests for per-tenant changeset capture (ADR-0064/0073). In-process, deterministic,
 // NO network: every store is an in-memory `bun:sqlite` DB and the clock is injected, so capture is
-// reproducible. The security spine of T15 is the tenant partition — a tenant-A changeset must never be
+// reproducible. The security spine is the tenant partition — a tenant-A changeset must never be
 // applicable to a tenant-B file — plus the fail-closed boundary parse for an untrusted peer changeset.
 import { describe, expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
@@ -38,7 +38,7 @@ describe("ChangesetLog.open (tenant binding + replica id)", () => {
     expect(second.replicaId).toBe(first.replicaId);
   });
 
-  test("re-opening a file bound to another tenant fails closed (TM-SYNC)", () => {
+  test("re-opening a file bound to another tenant fails closed", () => {
     const db = new Database(":memory:");
     ChangesetLog.open(db, "tenant-a"); // binds the file to tenant-a
     expect(() => ChangesetLog.open(db, "tenant-b")).toThrow(TenancyError);
@@ -115,7 +115,7 @@ describe("ChangesetLog capture (canonical store is authority)", () => {
   });
 });
 
-describe("ChangesetLog.assertApplicable (the TM-SYNC partition guard)", () => {
+describe("ChangesetLog.assertApplicable (the tenant-partition guard)", () => {
   test("accepts a changeset bound to this tenant's file", () => {
     const log = openLog("tenant-a");
     log.recordUpsert("docs", "d1", { text: "a" });

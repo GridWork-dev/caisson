@@ -1,10 +1,21 @@
 # @caisson/ui
 
-vanilla-extract typed token floor + headless+styled primitives.
+A typed OKLCH token floor plus a consistent component recipe: Radix behavior, co-located
+CSS, and data-* attribute variants, shipped as framework-agnostic raw `.tsx`.
 
 - **Layer:** base
-- **Seeds (rebuild-clean):** tessera
-- **Key ADR:** ADR-0002
 
-> **Built** — real src + tests (token floor). Live per-package status: ../../docs/build-state.md
-> Build per `/plan.md`. Pro-private `media-pipeline` contributes patterns only, never code.
+## Install
+
+```bash
+bun add @caisson/ui
+```
+
+## Use
+
+```ts
+import { foundation, darkTheme, lightTheme } from "@caisson/ui/tokens";
+import { Card, Faq, FeatureGrid } from "@caisson/ui/components";
+import "@caisson/ui/styles/base.css";
+import "@caisson/ui/styles/tokens.css";
+```

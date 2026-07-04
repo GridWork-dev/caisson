@@ -1,6 +1,6 @@
-// Security primitives (ADR-0002 + the gridwork-core security floor). Constant-time comparison
-// for secrets — never `===`/`==`/`Buffer.compare`. Asymmetric (Ed25519 license) verification is
-// NOT here: it uses `crypto.verify`, a different discipline (ADR-0010/0015).
+// Security primitives: constant-time comparison for secrets — never `===`/`==`/`Buffer.compare`.
+// Asymmetric (Ed25519 license) verification is NOT here: it uses `crypto.verify`, a different
+// discipline (ADR-0010/0015).
 import { createHash, timingSafeEqual } from "node:crypto";
 import { AuthnError } from "./errors.ts";
 
@@ -28,8 +28,8 @@ export function safeEqualVariable(a: string, b: string): boolean {
 }
 
 /**
- * Constant-time membership test (ADR-0229 row 44) — the named wrapper the gridwork-core security
- * floor's variable-length-secret rule points at (admin-email allowlists, opaque-id allowlists). Is
+ * Constant-time membership test for the variable-length-secret rule (admin-email allowlists,
+ * opaque-id allowlists). Is
  * `candidate`, after `normalize`, equal to ANY entry in `allowed`? Every entry is compared with
  * {@link safeEqualVariable} and the results are OR-ed with **no early return on a match**, so the
  * timing does not leak which entry matched or whether one did. `normalize` defaults to

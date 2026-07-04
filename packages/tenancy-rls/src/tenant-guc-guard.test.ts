@@ -1,4 +1,4 @@
-// Wave-6 row #2: the pgbouncer/pooler "reset custom GUCs to '' instead of unsetting them" gotcha.
+// The pgbouncer/pooler "reset custom GUCs to '' instead of unsetting them" gotcha.
 // `buildTenantPolicySql`'s policy reads `app.current_account` via `current_setting(..., true)`; an
 // unguarded read compares `column = ''` when a pooled backend is left in that reset state — a
 // coincidental deny only for as long as no row's tenant column is ever literally the empty string.

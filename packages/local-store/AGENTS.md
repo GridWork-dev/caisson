@@ -8,7 +8,7 @@ edition must know to wire the local store correctly.
 - **Engine-neutral.** This package imports NO vendor SDK and runs NO LLM or embedding model. It is the
   store / fuse / isolation **mechanism** only. The embedding that produces a query/doc vector is an
   **injected seam** the consuming edition wires — pass the vector in; never compute it here.
-- **Down-only (ADR-0022 Gate-3).** `@caisson/local-store` is `kind: base`; it may be consumed by the
+- **Down-only (ADR-0022).** `@caisson/local-store` is `kind: base`; it may be consumed by the
   local-ai and agent-dev editions (and base), but it MUST NEVER import an edition. Each edition is a
   composition over this store, never the owner of the primitive.
 - **Dimension is fixed at table creation.** `LocalStore.open({ dim })` creates `vec0(... FLOAT[dim])`.

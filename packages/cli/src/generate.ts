@@ -46,7 +46,7 @@ export function validateSelection(
 }
 
 /**
- * The legacy minimal skeleton engine (Wave 0): a 3-file workspace that INSTALLS the selected
+ * The legacy minimal skeleton engine: a 3-file workspace that INSTALLS the selected
  * modules from the registry (it never copies module source). Superseded as the default by
  * `templatesEngine` (the real templated drive, ADR-0068), but kept exported because the test suite
  * and the spy-engine harness reference it. No network, no fs — pure construction.
@@ -103,7 +103,7 @@ function readme(selection: Selection): string {
 /**
  * Validate (allowlist) then materialize. Validation runs FIRST, so an unknown id/version throws
  * before the engine is ever invoked (a spy engine is never called on a bad selection). Returns the
- * file set in memory — Wave 0 does not write to disk (the P5 writer is a separate, injected seam).
+ * file set in memory — this step does not write to disk (the writer is a separate, injected seam).
  */
 export function generate(
   index: RegistryIndex,

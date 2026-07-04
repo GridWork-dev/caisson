@@ -1,4 +1,4 @@
-// Integration proof for the compliance edition's migration assembly (ADR-0070/0090/0014; TM-O).
+// Integration proof for the compliance edition's migration assembly (ADR-0070/0090/0014).
 // Assembles the REAL per-package on-disk migrations — field-crypto KEY tables → audit-worm
 // chain+version — into ONE ordered, renumbered sequence under ONE `schema_version` checksum ledger
 // (the kernel's pure merge), then APPLIES that sequence against PGlite (a true Postgres with FORCE
@@ -78,7 +78,7 @@ afterAll(async () => {
 describe("assembled sequence (ADR-0070, TM-O)", () => {
   test("merges the dependency closure into ONE ordered, renumbered sequence — key tables FIRST", () => {
     // field-crypto's key table renumbers to 0001 AHEAD of the audit-worm chain that stores its
-    // ciphertext (TM-O: key tables before the encrypted-column layer), then chain, then version,
+    // ciphertext (key tables before the encrypted-column layer), then chain, then version,
     // then the compliance edition's own impersonation table (ADR-0187 — it appends to that chain).
     // Each package's pgbouncer/pooler NULLIF hardening (ADR-0005/0006) rides its own follow-up
     // migration file, appended after the package's original migrations — append-only, never an edit.

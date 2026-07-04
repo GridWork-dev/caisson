@@ -115,7 +115,7 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
     entitlements: ["agent-dev"], // see the ENTITLEMENT-ID NOTE above
   },
 
-  // ---- Per-module à-la-carte PLACEHOLDER rows (P6-store track: sell every commercial module
+  // ---- Per-module à-la-carte PLACEHOLDER rows (sell every commercial module
   // individually, operator-locked — entitlement infra ADR-0071 already supports it). Same
   // PLACEHOLDER posture as the rows above: `price_<slug>_module_PLACEHOLDER` fake keys — these are
   // KEPT as bound `purchases.test.ts` fixtures even now that the REAL module rows exist below.
@@ -169,7 +169,7 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
     credits: NO_CREDITS,
     entitlements: ["agent-kernel"],
   },
-  // agent-runner postdates the rest of this section (harvest slice-2, ADR-0186) — added here to
+  // agent-runner postdates the rest of this section (ADR-0186) — added here to
   // keep the PLACEHOLDER convention symmetric with its REAL row below.
   price_agent_runner_module_PLACEHOLDER: {
     purchaseTag: "agent-runner_module",

@@ -4,7 +4,7 @@
 // prompt/agent quality through), not a base service or an edition. Paid + LicenseRef-Caisson-
 // Commercial (ADR-0050). `dependencies` is empty: the harness is pure + offline (no @caisson runtime
 // dep), grading model calls are injected behind the Judge port. `golden` points at `__evals__` — the
-// committed baseline + case fixtures are this module's golden artifacts (ADR-0013, landed at T10).
+// committed baseline + case fixtures are this module's golden artifacts (ADR-0013).
 // `priceCents` is a PLACEHOLDER pending the Pricing lock (a positive integer is required to validate;
 // the number is not the locked price).
 import pkg from "./package.json";

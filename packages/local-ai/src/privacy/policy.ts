@@ -1,5 +1,5 @@
-// src/privacy/policy.ts — the runtime privacy POLICY for the Local-first AI edition (ADR-0064,
-// fork P4a-7-D — threat TM-EGRESS). The marquee promise is "your data never leaves the device", so
+// src/privacy/policy.ts — the runtime privacy POLICY for the Local-first AI edition (ADR-0064).
+// The marquee promise is "your data never leaves the device", so
 // the policy is the single declarative source the egress guard (`egress-guard.ts`) enforces.
 //
 // The posture is ZERO-EGRESS-BY-DEFAULT, fail-closed-to-offline:
@@ -8,7 +8,7 @@
 //     a schema change. The enum exists so the closed `.strict()` shape documents that local-only is
 //     THE posture, not a default someone can flip.
 //   - The `allowlist` is the ONLY way a host becomes reachable, and every entry must declare one of
-//     two SANCTIONED sink kinds (the model-fetch host, T13; the rented-backend host, T20). An
+//     two SANCTIONED sink kinds (the model-fetch host; the rented-backend host). An
 //     arbitrary host for an arbitrary reason is not expressible — the kind enum is closed.
 //   - An empty / omitted allowlist = ZERO egress (the air-gap default). There is no implicit host.
 //
@@ -18,13 +18,13 @@ import { parseStrict, strictObject } from "@caisson/kernel";
 import { z } from "zod";
 
 /**
- * The two — and only two — sanctioned egress sink kinds (TM-EGRESS / TM-MODEL / TM-RENT). Every
+ * The two — and only two — sanctioned egress sink kinds. Every
  * allowlist entry is one of these; the enum is CLOSED so a host can only ever be opened for a reason
  * the threat model already accounts for:
  *
- * - `model-fetch`     — the first-run model download host (the ONNX backend, T13). Hash-pinned, and
+ * - `model-fetch`     — the first-run model download host (the ONNX backend). Hash-pinned, and
  *                       air-gap buyers pre-seed the cache so even this host is never contacted.
- * - `rented-backend`  — the opt-in metered hosted-inference host (the rented backend seam, T20).
+ * - `rented-backend`  — the opt-in metered hosted-inference host (the rented backend seam).
  *                       Off by default; reachable only when the deployer explicitly allowlists it.
  */
 export const SANCTIONED_SINK_KINDS = ["model-fetch", "rented-backend"] as const;

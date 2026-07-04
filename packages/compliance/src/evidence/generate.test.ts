@@ -23,12 +23,12 @@ import {
 } from "./generate.ts";
 
 // matchGolden anchors __golden__/ to the URL it is handed. ALL compliance goldens live in the ONE
-// package-level dir (src/__golden__) — the same path T12 wrote the evidence-pack fixtures to — so
+// package-level dir (src/__golden__) — the same path the evidence-pack fixtures were written to — so
 // anchor at src/index.ts (one level up from evidence/), exactly as pack-format.test does.
 const PKG_SRC_META = new URL("../index.ts", import.meta.url).href;
 
 const TENANT = "tenant-acme-prod";
-const TIP = "0a1b2c3d".repeat(8); // the manifest's representative chain tip (matches the T12 golden)
+const TIP = "0a1b2c3d".repeat(8); // the manifest's representative chain tip (matches the golden fixture)
 const GENESIS = "9f8e7d6c".repeat(8);
 const FRAMEWORK = {
   id: "soc2-tsc",
@@ -37,8 +37,8 @@ const FRAMEWORK = {
 } as const;
 
 /**
- * The audit-chain-integrity evidence, produced by the REAL T11 collector over a real 128-entry
- * chain + its minted anchor — proving the generator consumes genuine collector output. Its facts
+ * The audit-chain-integrity evidence, produced by the REAL chain-verify collector over a real
+ * 128-entry chain + its minted anchor — proving the generator consumes genuine collector output. Its facts
  * (entryCount/anchorLength 128, valid) reproduce the golden chain item.
  */
 function chainResult(): CollectorResult {
@@ -51,8 +51,8 @@ function chainResult(): CollectorResult {
 
 /**
  * A passing WORM-retention item with one (unfilled) manual slot. Built as an illustrative collector
- * result (its id/title/facts match the canonical golden body, which is illustrative — T12 authored
- * the format, not the live collector wiring), exercising the generator's assembly + slot-fill mapping.
+ * result (its id/title/facts match the canonical golden body, which is illustrative — the golden
+ * pins the format, not the live collector wiring), exercising the generator's assembly + slot-fill mapping.
  */
 function wormResult(): CollectorResult {
   return passResult({

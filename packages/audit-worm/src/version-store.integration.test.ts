@@ -1,5 +1,5 @@
-// Integration proof for the append-only locked-version table + DERIVED current (ADR-0053/0014;
-// TM-D). Runs the REAL `withTenant` + the REAL `0002_versions.sql` migration against PGlite (a true
+// Integration proof for the append-only locked-version table + DERIVED current (ADR-0053/0014).
+// Runs the REAL `withTenant` + the REAL `0002_versions.sql` migration against PGlite (a true
 // Postgres with FORCE RLS, SET ROLE, jsonb, plpgsql triggers, composite FKs). No network, no live
 // cloud. Mutation is attempted both as the `app` role (denied by withheld GRANT) and as the
 // BYPASSRLS superuser (denied by the belt trigger) — exactly the adversaries an immutable, locked

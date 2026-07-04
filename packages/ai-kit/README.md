@@ -8,9 +8,8 @@ content safety, and a quality gate **by construction**, not by discipline.
 - **Layer:** edition (`editions: ["ai-kit"]`) — a composition, never a fork (ADR-0003).
 - **Composes:** `@caisson/prompt-registry` (resolve + render), `@caisson/ai-meter` (reserve /
   reconcile + caps / breaker), `@caisson/guardrails` (moderation + PII), `@caisson/ai-config`
-  (lane → provider).
-- **Key ADRs:** ADR-0059 (gateway), ADR-0060 (metering), ADR-0061 (prompts), ADR-0063 (guardrails),
-  ADR-0011/0022 (the provider-SDK boundary — this is the **only** package that imports `ai` / `@ai-sdk/*`).
+  (lane → provider). The provider-SDK boundary (ADR-0011/0022) makes this the **only** package
+  that imports `ai` / `@ai-sdk/*`.
 
 ## Pipeline (fixed, fail-closed)
 

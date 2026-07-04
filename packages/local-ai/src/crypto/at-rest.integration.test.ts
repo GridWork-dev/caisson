@@ -1,5 +1,5 @@
-// At-rest field-crypto over the per-tenant local store (ADR-0055/0064 — threat TM-REST + the absorbed
-// ADR-0073 cross-tenant assertion = SPEC exit-clause 5). In-process, deterministic, NO network: real
+// At-rest field-crypto over the per-tenant local store (ADR-0055/0064, plus the
+// ADR-0073 cross-tenant assertion). In-process, deterministic, NO network: real
 // per-tenant `bun:sqlite` files under a temp root, sealed/opened through the composed field-crypto
 // seam. Proves the round-trip, that a tenant-B file cannot open a tenant-A ciphertext (auth-fail),
 // that a cross-tenant query is unexpressible, and that a missing local master secret fails closed.
@@ -27,7 +27,7 @@ afterEach(() => {
   rmSync(root, { recursive: true, force: true });
 });
 
-describe("at-rest field-crypto over the per-tenant local store (ADR-0055/0064 — TM-REST)", () => {
+describe("at-rest field-crypto over the per-tenant local store (ADR-0055/0064)", () => {
   test("round-trip: a sealed column persists to the tenant's file and opens back to plaintext", () => {
     const store = AtRestStore.fromEnv(root, ENV);
     const plaintext = "patient SSN 123-45-6789";
@@ -54,7 +54,7 @@ describe("at-rest field-crypto over the per-tenant local store (ADR-0055/0064 �
     }
   });
 
-  test("a tenant-B file cannot open a tenant-A ciphertext (AEAD auth-fail) — TM-REST", () => {
+  test("a tenant-B file cannot open a tenant-A ciphertext (AEAD auth-fail)", () => {
     const store = AtRestStore.fromEnv(root, ENV);
     const secret = "A-only secret";
 

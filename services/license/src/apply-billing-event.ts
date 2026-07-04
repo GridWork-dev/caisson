@@ -1,5 +1,5 @@
 // The billing-event -> grant/revoke mapper (ADR-0089/0071/0109), the locked home for billing
-// orchestration (ADR-0017 P1<->P6 split: @caisson/billing only verifies+parses; the event->effect
+// orchestration (ADR-0017: @caisson/billing only verifies+parses; the event->effect
 // logic lives here). Runs inside withTenant (the caller scopes RLS to the buyer's account, one
 // transaction). It does FOUR things by event type:
 //   - invoice.paid (gated)      -> grant the cycle credits + the plan's SUBSCRIPTION entitlement grants
@@ -175,7 +175,7 @@ export async function applyBillingEvent(
           ev.accountId,
           ev.paymentId,
         );
-        // Bound to granted-minus-already-clawed (CAISSON-5): if any of this purchase's lines were
+        // Bound to granted-minus-already-clawed: if any of this purchase's lines were
         // already partially/fully clawed via the ADR-0218 per-line path, clawing the full ORIGINAL
         // `granted` amount here again would over-claw — and since the wallet is a fungible pool,
         // `clawback`'s own current-balance bound would silently drain OTHER purchases' credits to
@@ -209,7 +209,7 @@ export async function applyBillingEvent(
       // A Stripe partial refund arrives here with `items: []` → a no-op (ADR-0218 D-1), preserving the
       // ADR-0113 scalar-partial semantics for drivers without per-line data.
       //
-      // Purchase-level remainder bound (CAISSON-5, reversed delivery): a whole-transaction full refund
+      // Purchase-level remainder bound (reversed delivery): a whole-transaction full refund
       // may have landed BEFORE this per-line adjustment — its clawback row is keyed `line_item_id`
       // NULL / `source_event_id = paymentId`, invisible to `lineCreditLedger`'s per-line filter, so
       // that ledger alone would show this line as un-clawed and re-claw it. `creditsClawedForSource`

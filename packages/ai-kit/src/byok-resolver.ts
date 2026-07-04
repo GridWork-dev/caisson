@@ -1,4 +1,4 @@
-// C7 / ADR-0162 — the BYOK-aware `ModelResolver`. An env-pointer lane (the default) resolves exactly
+// ADR-0162 — the BYOK-aware `ModelResolver`. An env-pointer lane (the default) resolves exactly
 // as before, through the boot-time provider registry (`buildRegistryResolver`). A per-tenant lane
 // (`keySource: "tenant"`) instead pulls the caller's own decrypted key via the injected
 // `resolveTenantKey` port and builds a provider for it (`providerFor(cfg, key)`), so one buyer's
@@ -66,7 +66,7 @@ export function buildByokResolver(opts: ByokResolverOptions): ModelResolver {
   const envResolver = buildRegistryResolver(opts.settings, providerMap);
   const now = opts.now ?? (() => Date.now());
   const ttlMs = opts.cacheTtlMs ?? DEFAULT_CACHE_TTL_MS;
-  // ponytail: plain Map, one entry per (account, provider). Bounded by distinct BYOK tenants × their
+  // A plain Map, one entry per (account, provider). Bounded by distinct BYOK tenants × their
   // providers; swap for an LRU/size-cap if a deployment accumulates enough tenants to matter.
   const cache = new Map<string, { provider: ProviderV2; expiresAt: number }>();
 

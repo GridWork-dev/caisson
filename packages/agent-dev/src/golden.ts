@@ -1,15 +1,14 @@
 // Multi-harness emit golden (ADR-0013 golden-first · ADR-0066 engine-neutral emitter). Pins the
-// BYTE-STABLE per-harness bundle the agent-dev emitter (T19) must render from ONE typed Caisson
-// schema: `.claude/` for Claude Code (agents/skills/rules + a hooks manifest), a single aggregated
+// BYTE-STABLE per-harness bundle the agent-dev emitter must render from ONE typed Caisson schema:
+// `.claude/` for Claude Code (agents/skills/rules + a hooks manifest), a single aggregated
 // `AGENTS.md` for Codex, and per-artifact `.cursor/rules/*.mdc` for Cursor. The binding contract
 // (ADR-0066) the committed tree enforces: Claude Code is ONE emit target among several — no harness
 // is the substrate, and the same schema fans out to every harness shape.
 //
-// Golden-first (ADR-0013): this fixture + its test landed BEFORE the emitter logic. T19 has now
-// wired `produce` to the live `renderHarnessBundles(EMIT_INPUT)`; the committed `src/__golden__/emit/`
-// tree (frozen at T18) enforces byte-equality with BLESS unset — the emitter must reproduce it exactly.
-// The emitter owns the bundle types; this fixture re-exports them so consumers (and the test) keep one
-// import surface.
+// Golden-first (ADR-0013): this fixture + its test landed before the emitter logic, then `produce`
+// was wired to the live `renderHarnessBundles(EMIT_INPUT)`; the committed `src/__golden__/emit/` tree
+// enforces byte-equality with BLESS unset — the emitter must reproduce it exactly. The emitter owns
+// the bundle types; this fixture re-exports them so consumers (and the test) keep one import surface.
 import { parseArtifact, type Artifact } from "@caisson/agent-kernel";
 import { defineModuleGolden } from "@caisson/testing/golden-module";
 import { renderHarnessBundles, type EmitInput } from "./emitter.ts";
@@ -77,7 +76,7 @@ export const agentDevGolden = defineModuleGolden({
     {
       name: "emit",
       input: EMIT_INPUT,
-      // The live emitter (T19): the committed `__golden__/emit/` tree enforces that
+      // The live emitter: the committed `__golden__/emit/` tree enforces that
       // `renderHarnessBundles` reproduces every harness bundle byte-for-byte (BLESS unset).
       produce: () => renderHarnessBundles(EMIT_INPUT),
     },

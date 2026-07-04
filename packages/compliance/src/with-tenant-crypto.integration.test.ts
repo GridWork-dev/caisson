@@ -1,5 +1,5 @@
-// withTenantCrypto integration proof (ADR-0005/0055, P2-6; TM-N: encrypted write outside the RLS
-// scope). Runs the REAL `withTenant` + the REAL field-crypto context against PGlite (a true Postgres
+// withTenantCrypto integration proof (ADR-0005/0055): proves an encrypted write outside the RLS
+// scope fails closed. Runs the REAL `withTenant` + the REAL field-crypto context against PGlite (a true Postgres
 // with FORCE RLS, SET ROLE, WITH CHECK) — no network, no live cloud/KMS. The boundary == boundary
 // invariant proven from both sides: an encrypted SEC/HIPAA field lands ONLY when both the RLS tenant
 // scope and the crypto context are bound; either one missing → fail-closed, nothing written.

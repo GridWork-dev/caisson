@@ -7,7 +7,7 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "description": "Auth seam: EdDSA-JWT account tokens (the RLS seam) + session contract. Provider = better-auth (ADR-0015).",
+  "description": "Provider-agnostic authentication: EdDSA-JWT account tokens, a session contract, and multi-user account membership over row-level security. better-auth is the reference session provider.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",

@@ -75,7 +75,7 @@ function readQuantity(item: Record<string, unknown>): number {
 
 /** The transaction's `details.line_items[]` — the array carrying each line's `txnitm_…` id, its own
  * `price_id`, and its per-line `totals` (the request-echo `items[]` carries neither). Grouped into
- * FIFO queues keyed by `price_id` (CAISSON-6): Paddle does not guarantee `items[]` and
+ * FIFO queues keyed by `price_id`: Paddle does not guarantee `items[]` and
  * `details.line_items[]` share an index order, only that each line item echoes the `price_id` it was
  * priced from — correlating by that key (rather than by array position) is correct regardless of
  * ordering. Two lines sharing a `price_id` (the same SKU bought twice) still correlate correctly: each
@@ -137,7 +137,7 @@ function readLineItems(obj: Record<string, unknown>): {
     if (priceId === "") {
       throw new ValidationError("Paddle line item is missing its price id");
     }
-    // Dequeue this price id's next FIFO-ordered details.line_items entry (CAISSON-6 keyed join); an
+    // Dequeue this price id's next FIFO-ordered details.line_items entry (keyed join); an
     // exhausted/absent queue for this price id falls back to the empty sentinels, same as before.
     const detail = queues.get(priceId)?.shift() ?? {
       itemId: "",
@@ -163,7 +163,7 @@ function readLineItems(obj: Record<string, unknown>): {
       "Paddle multi-line transaction is missing a per-line join id (details.line_items)",
     );
   }
-  // Fail closed on a duplicate NON-empty per-line join id (CAISSON-8) — the same collision as the ""
+  // Fail closed on a duplicate NON-empty per-line join id — the same collision as the ""
   // sentinel case above, just with a real txnitm_ id repeated across 2+ lines (a malformed/duplicated
   // details.line_items delivery). Two lines sharing one itemId collide on the same credit-ledger
   // uniqueness key, so the second silently no-ops while the webhook still acks 200.
@@ -184,7 +184,7 @@ function readLineItems(obj: Record<string, unknown>): {
  * (txnitm_), amountRefunded: totals.total, fullyRefunded: type==='full'}`. A MALFORMED item (not an
  * object, or missing its `item_id`) is still skipped (best-effort enrichment — the whole-adjustment
  * `amountRefunded` still records the money movement) but now signals through the optional `onWarn`
- * (CAISSON-7) so a malformed delivery is observable instead of a silent drop; `console.log` is banned
+ * so a malformed delivery is observable instead of a silent drop; `console.log` is banned
  * in product code, so the caller wires this to its own telemetry/log surface. An absent `items` yields
  * []. */
 function readAdjustmentItems(
@@ -242,7 +242,7 @@ function readAdjustmentTotal(obj: Record<string, unknown>): number {
 }
 
 /** Map a verified Paddle event to a DomainBillingEvent, or null for events we don't act on. `onWarn`
- * (CAISSON-7) is an optional non-fatal-anomaly signal — currently fired only when a partial
+ * is an optional non-fatal-anomaly signal — currently fired only when a partial
  * adjustment's `items[]` carries a malformed/idless entry (readAdjustmentItems); never `console.log`. */
 export function parsePaddleEvent(
   event: PaddleEvent,

@@ -1,9 +1,9 @@
-// src/evidence/oscal-export.test.ts — OSCAL export adapter (ADR-0058, T15).
+// src/evidence/oscal-export.test.ts — OSCAL export adapter (ADR-0058).
 //
 // Seam-tested (no transport, no network, no golden): the adapter is a PURE deterministic mapping of
-// the T13 evidence-pack manifest into OSCAL v1.2.2 SAR + POA&M bodies. The tests assert the OSCAL
+// the evidence-pack manifest into OSCAL v1.2.2 SAR + POA&M bodies. The tests assert the OSCAL
 // shape, the honest readiness→objective-status mapping (ready→satisfied, gap→not-satisfied + POA&M
-// item), determinism under injected clock + id seam, the TM-K honesty floor (no compliant/certified),
+// item), determinism under injected clock + id seam, the honesty floor (no compliant/certified),
 // and fail-closed behaviour on a bad clock / malformed provenance.
 import { describe, expect, test } from "bun:test";
 import { canonicalize, ValidationError, type JsonValue } from "@caisson/kernel";

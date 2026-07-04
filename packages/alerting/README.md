@@ -61,6 +61,3 @@ const result = await processAlert(event, {
 critical override, capture-channel delivery recording, `deliverAll` per-channel isolation, and
 `processAlert` audit-row outcomes (delivered/suppressed/digested/held). No live network — capture
 drivers only.
-
-> Rebuild-clean from the ADR-0135 pattern description (the gridworkdigital source is not on this
-> box). Pro-private `media-pipeline` contributes nothing here.

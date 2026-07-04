@@ -1,6 +1,6 @@
 // @caisson/local-store — local hybrid retrieval (sqlite-vec vec0 + FTS5 + RRF, RRF_K=60) plus the
-// file-per-tenant isolation floor (ADR-0067 / ADR-0073). A `kind: base` primitive both P4 editions
-// (local-ai, agent-dev) compose DOWN-ONLY — it never imports an edition (ADR-0022 Gate-3 / ADR-0003).
+// file-per-tenant isolation floor (ADR-0067 / ADR-0073). A `kind: base` primitive both the local-ai
+// and agent-dev editions compose DOWN-ONLY — it never imports an edition (ADR-0022 / ADR-0003).
 // No vendor SDK, no LLM call: the embedding that produces a query/doc vector is an injected SEAM the
 // consuming edition wires; this package only stores and fuses.
 //
@@ -20,7 +20,7 @@ export type { Embedder, OptionalEmbedder } from "./embedder.ts";
 export { DEFAULT_SCOPE, MemoryItemSchema, parseMemoryItem } from "./schema.ts";
 export type { MemoryItem } from "./schema.ts";
 
-// The cloud-egress secret-scrub guard (ADR-0067 · T8 SECURITY): credential-bearing content is
+// The cloud-egress secret-scrub guard (ADR-0067, security-critical): credential-bearing content is
 // scrubbed BEFORE any cloud-embed, and the embed transport is a test-doubled seam (no live cloud call
 // in CI). `scrubForEgress` is golden-pinned; `guardEmbedder`/`createCloudEmbedder` apply it.
 export {
@@ -31,7 +31,7 @@ export {
 } from "./egress-guard.ts";
 export type { CloudEmbedConfig, EmbedFetch } from "./egress-guard.ts";
 
-// The retention policy (ADR-0067 · T9): dedup-on-write (a near-duplicate fact is REINFORCED, not
+// The retention policy (ADR-0067): dedup-on-write (a near-duplicate fact is REINFORCED, not
 // copied) + a default sliding TTL + a GC pass (expired / decayed / over-cap) — pure, deterministic,
 // buyer-config (`GcConfig`, `.strict()`). Operates over the `MemoryItem` record the edition owns and
 // composes ON TOP of the store's `upsert`-by-id; the base never deletes or enumerates store rows.

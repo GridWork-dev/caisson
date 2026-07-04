@@ -1,9 +1,9 @@
 // Unit tests for the prod `S3ArtifactStore` backend (ADR-0054, ADR-0051). The S3 transport is an
-// injected `S3Sendable = Pick<S3Client, "send">` STUB — there is NO live cloud call in CI (TM-G); a
+// injected `S3Sendable = Pick<S3Client, "send">` STUB — there is NO live cloud call in CI; a
 // real `S3Client` (the live transport) is the only un-exercised path. The tests assert: write-once
-// via conditional `IfNoneMatch: '*'` (412 → `ArtifactExistsError`, TM-H), GOVERNANCE-default +
-// COMPLIANCE-behind-a-typed-opt-in + never-COMPLIANCE-in-test (TM-A), tenant-scoped traversal-safe
-// keys guarded before any I/O (TM-C), and round-trip of body + retention metadata.
+// via conditional `IfNoneMatch: '*'` (412 → `ArtifactExistsError`), GOVERNANCE-default +
+// COMPLIANCE-behind-a-typed-opt-in + never-COMPLIANCE-in-test, tenant-scoped traversal-safe
+// keys guarded before any I/O, and round-trip of body + retention metadata.
 import { describe, expect, test } from "bun:test";
 import {
   GetObjectCommand,
@@ -53,7 +53,7 @@ interface S3Stub {
 }
 
 /** A `Pick<S3Client,"send">` test double — inspects the command, records the input, and runs the
- *  per-command behaviour. Never touches the network (TM-G). */
+ *  per-command behaviour. Never touches the network. */
 function makeS3Stub(behavior: S3StubBehavior = {}): S3Stub {
   const calls: S3Stub["calls"] = {
     put: [],

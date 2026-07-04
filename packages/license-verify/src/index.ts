@@ -1,7 +1,8 @@
 // @caisson/license-verify — public surface (ADR-0010). Offline, fail-safe-to-community Ed25519
-// license verification: the tessera-format wire codec, the strict signed-claims schema, and the
-// verifier. The license ISSUER is P6 — only OFFLINE verify lives here. Composes `@caisson/kernel`
-// (`canonicalize`, typed errors) down-only; never depends up on an edition (ADR-0003/0022).
+// license verification: the signed wire codec, the strict signed-claims schema, and the
+// verifier. License issuance is a separate private service — only OFFLINE verify lives here.
+// Composes `@caisson/kernel` (`canonicalize`, typed errors) down-only; never depends up on an
+// edition (ADR-0003/0022).
 export {
   SIGNATURE_BYTES,
   decodeToken,

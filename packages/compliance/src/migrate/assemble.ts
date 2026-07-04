@@ -28,7 +28,7 @@ const PACKAGES_ROOT = join(
 
 /**
  * The Compliance edition's migration-contributing packages, declared in compose-time LAYERING order
- * (TM-O — key tables before the encrypted-column / ciphertext layer):
+ * (key tables before the encrypted-column / ciphertext layer):
  *
  *   field-crypto  (field_key_version + field_wrapped_dek)   ── the crypto KEY infrastructure
  *        ↓ ordering predecessor

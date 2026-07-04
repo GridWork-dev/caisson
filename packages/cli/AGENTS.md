@@ -1,6 +1,6 @@
 # AGENTS — @caisson/cli (create-caisson)
 
-Agent-facing contract for driving generation (the buyer's agent + the P5 MCP path).
+Agent-facing contract for driving generation (the buyer's agent + the MCP generation path).
 
 ## Invariants (do not violate)
 
@@ -25,9 +25,9 @@ Agent-facing contract for driving generation (the buyer's agent + the P5 MCP pat
 ```
 
 Zod `.strict()` rejects unknown fields. `projectName` is a strict slug (it becomes a directory at
-P5 — no traversal).
+generation time — no traversal).
 
-## Out of scope (Wave 0)
+## Out of scope (current release)
 
-No disk write, no buyer-MCP wiring, no topological backfill publish — those are P5. This package
-ships the gate + the debit seam + the idempotency contract, fully tested.
+No disk write, no buyer-MCP wiring, no topological backfill publish — those are a later generation
+phase. This package ships the gate + the debit seam + the idempotency contract, fully tested.

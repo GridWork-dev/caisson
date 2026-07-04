@@ -1,4 +1,4 @@
-// Disk FileSetWriter (ADR-0068 / P5). Path safety: zip-slip / traversal guard — every file path
+// Disk FileSetWriter (ADR-0068). Path safety: zip-slip / traversal guard — every file path
 // is validated against the target root BEFORE any write (fail-closed). Atomic: sibling temp dir
 // → rename(2) into place; a partial/failed write leaves no half-tree (temp cleaned on error).
 // ZERO new dependencies — node:fs / node:path only; Zod guards the options boundary.
@@ -14,9 +14,9 @@ import { dirname, join, resolve, sep } from "node:path";
 import { z } from "zod";
 import type { GeneratedFileSet } from "./generate.ts";
 
-/** The disk-write seam (P5): materialize a generated file set to `targetDir`. The default writer
+/** The disk-write seam: materialize a generated file set to `targetDir`. The default writer
  *  (`createFileSetWriter`) lives in this module, so the type is owned here too — keeping the
- *  meter→writer dependency one-directional (no import cycle). Default in Wave 0: none injected, so
+ *  meter→writer dependency one-directional (no import cycle). By default none is injected, so
  *  generation returns the file set only. */
 export type FileSetWriter = (
   targetDir: string,

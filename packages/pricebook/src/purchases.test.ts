@@ -56,7 +56,7 @@ describe("resolvePurchase (ADR-0113, fail-closed)", () => {
   });
 });
 
-describe("per-module à-la-carte PLACEHOLDER rows (P6-store track)", () => {
+describe("per-module à-la-carte PLACEHOLDER rows", () => {
   // The 11 standalone à-la-carte modules (ADR-0071 entitlement infra; ADR-0238 dropped the four
   // edition-core rows — `compliance`/`ai-kit`/`local-ai`/`agent-dev` module SKUs named their own
   // edition's entitlement id and expanded to the whole edition). Entitlement id = bare package slug.

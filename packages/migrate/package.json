@@ -7,7 +7,7 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "description": "The base migration assembler + runner (ADR-0070/0090): reads each selected package's on-disk migrations/NNNN_*.sql, merges them via the kernel into ONE renumbered sequence + single schema_version ledger, emits the generated-app file set, and applies the sequence forward-only through an injected runner port. Owned here so @caisson/cli and @caisson/compliance import it, never copy it.",
+  "description": "The base migration assembler + runner: reads each selected package's on-disk migrations/NNNN_*.sql, merges them via the kernel into ONE renumbered sequence + single schema_version ledger, emits the generated-app file set, and applies the sequence forward-only through an injected runner port. Owned here so @caisson/cli and @caisson/compliance import it, never copy it.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",

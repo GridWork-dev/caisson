@@ -1,4 +1,4 @@
-// T7 proof for the ai-meter store (ADR-0060/0014/0005/0006): the four metering tables apply with
+// Integration proof for the ai-meter store (ADR-0060/0014/0005/0006): the four metering tables apply with
 // FORCE-RLS policies; `usage_event` is append-only + idempotent per call; `tenant_spend_window`
 // mutates atomically via `UPDATE … RETURNING` and stays tenant-isolated; `spend_policy` /
 // `spend_breaker` enforce their CHECK invariants. PGlite + the production `withTenant` shape — no

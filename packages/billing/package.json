@@ -7,7 +7,7 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "description": "Stripe + Paddle billing behind a BillingProvider port: HMAC-raw-body webhook verify + DomainBillingEvent. ADR-0017/0108.",
+  "description": "Stripe + Paddle billing behind a single BillingProvider port: HMAC raw-body webhook verification mapped to a provider-agnostic DomainBillingEvent.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",

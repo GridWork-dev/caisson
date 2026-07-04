@@ -7,7 +7,7 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "description": "Provider-agnostic AI config resolver (all providers) + buyer settings file. ADR-0011.",
+  "description": "Provider-agnostic AI config resolver (OpenAI, Anthropic, Google, OpenRouter, local, Bedrock, Azure OpenAI, Ollama) + buyer settings file.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",

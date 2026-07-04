@@ -5,7 +5,7 @@
 // `priceCents` is a PLACEHOLDER pending the Pricing lock (a positive integer is required to
 // validate; the number is not the locked price). The provider-SDK dependency (`ai` + `@ai-sdk/*`,
 // Apache-2.0 — incl. `@ai-sdk/openai-compatible`, the ADR-0201 chat-completions transport) is the
-// Gate-2 carve-out (ADR-0011/0022); it is not a workspace dep so it does not appear here (the
+// sanctioned carve-out (ADR-0011/0022); it is not a workspace dep so it does not appear here (the
 // `dependencies` schema is @caisson-module-ids only; the gate mirrors package.json's @caisson set).
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";

@@ -1,7 +1,7 @@
-// P1 exit-gate proof (ADR-0008) + T19/T21a convergence: the buyer MCP answers an authed query and
-// gates the `generate` write on the REGISTRY INDEX (id AND version, the same gate the CLI runs), an
-// ADR-0071 entitlement EXPANSION (editions/bundle → member slugs), and a minted-or-reused idempotency
-// key — then delegates the debit + generation to the host via `onGenerate`.
+// Proves (ADR-0008) that the buyer MCP answers an authed query and gates the `generate` write on
+// the REGISTRY INDEX (id AND version, the same gate the CLI runs), an ADR-0071 entitlement
+// EXPANSION (editions/bundle → member slugs), and a minted-or-reused idempotency key — then
+// delegates the debit + generation to the host via `onGenerate`.
 import { describe, expect, test } from "bun:test";
 import {
   AuthnError,

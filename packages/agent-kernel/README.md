@@ -1,12 +1,11 @@
 # @caisson/agent-kernel
 
 The engine-neutral agent kernel — the shared base layer both the base packages (`cli`, `mcp-server`)
-and the **agent-dev edition** compose down-only. ADR-0065 (base placement) · ADR-0022 (down-only) ·
-ADR-0003 (composable, never a fork) · ADR-0002 (strict + Zod boundary).
+and the **agent-dev edition** compose down-only.
 
-Lifted to base BECAUSE the agent/skill/rule schema, the lifecycle FSM, and the hooks dispatcher are
-needed by **both** the edition AND base `cli`/`mcp-server`; placed inside the edition, any base→edition
-import fails the ADR-0022 Gate-3 down-only gate. So the shared layer sits below the edition line.
+Shared at the base layer because the agent/skill/rule schema, the lifecycle FSM, and the hooks
+dispatcher are needed by **both** the edition AND base `cli`/`mcp-server`; a base package may never
+import an edition (ADR-0022 down-only), so the shared layer sits below the edition line.
 
 ## What it gives you
 
@@ -58,6 +57,3 @@ await hooks.dispatch("before:execute", { act: "execute", phase: "before" });
 `bun test packages/agent-kernel/src` — the lifecycle trace matches its golden; an illegal transition
 throws; the schema round-trips + rejects unknown fields. Golden fixtures live in `src/__golden__`;
 update only via `BLESS=1` (ADR-0013).
-
-> Rebuilt clean from the public gridwork-core pattern (the 7-act lifecycle + agent/skill/rule surface).
-> No pro-private `media-pipeline` code — patterns only.

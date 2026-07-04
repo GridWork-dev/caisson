@@ -121,9 +121,9 @@
     on the target tenant's WORM-anchored chain; `impersonation_session` migration (RLS + column-scoped
     GRANT); the impersonation evidence collector cited by both the SOC2 and HIPAA plans.
 
-- a07feb0: Fold the Stage-2 harvest primitives into the edition member pin maps (ADR-0178): Compliance now bundles
-  `@caisson/alerting` + `@caisson/retention-runner`, and Agentic-Dev bundles `@caisson/tool-exec`, so buyers
-  get them at the edition price (matches the ADR-0137 below-module-sum reprice).
+- a07feb0: Fold the operational-compliance primitives into the edition member pin maps: Compliance now
+  bundles `@caisson/alerting` + `@caisson/retention-runner`, and Agentic-Dev bundles `@caisson/tool-exec`,
+  so buyers get them at the edition price (matches the below-module-sum edition reprice).
 
   Also resolves standards-gate debt with no API change: `@caisson/auth`'s manifest now declares its real
   `@caisson/tenancy-rls` dependency (it imports it in `schema.ts`/`membership.ts`), and `@caisson/field-crypto`
@@ -134,7 +134,7 @@
 
 ### Patch Changes
 
-- 72ffd85: Whole-repo audit remediation (rounds 1+2, ledger 2026-07-01): LemonSqueezy credit-grant idempotency keys off the stable resource composite (never webhook_id); BYOK zero-cost gated to a per-action allowlist, default metered (ADR-0198); AWS KMS driver honors per-tenant CMKs and refuses keyId-less crypto-shred (ADR-0197); BYOK baseUrl SSRF guard (https-only, private/metadata ranges rejected); request-span low-cardinality span names + scrubbed http.route; field-crypto-policy evidence collector emits sorted arrays (deterministic canonical body); entitlements free-view docstring corrected to ADR-0136.
+- 72ffd85: Security hardening pass: LemonSqueezy credit-grant idempotency keys off the stable resource composite (never webhook_id); BYOK zero-cost gated to a per-action allowlist, default metered; AWS KMS driver honors per-tenant CMKs and refuses keyId-less crypto-shred; BYOK baseUrl SSRF guard (https-only, private/metadata ranges rejected); request-span low-cardinality span names + scrubbed http.route; field-crypto-policy evidence collector emits sorted arrays (deterministic canonical body); entitlements free-view docstring corrected for accuracy.
 - fcd5131: De-flake the `oscal-conformance` gate: the JSON→XML→validate round-trip test does two JVM `oscal-cli`
   spawns (convert + validate), whose cold-JVM startup can exceed bun's 5s default test timeout on a slow CI
   runner (observed 5001ms on the `assessment-results` leg). Add a 60s per-test timeout. Test-only; no

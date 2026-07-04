@@ -2,7 +2,7 @@
 // through the SAME ai-meter chokepoint (reserve-before/reconcile-after), provider-agnostic via the
 // ai-config lane, BYOK-routed exactly like the language-model gateway. Mirrors `gateway.ts`'s
 // pipeline minus prompt-registry render and guardrails: an embed input feeds a vector index, not a
-// moderated chat turn — guardrails-on-embed-input/output is explicitly out of this SPEC's scope.
+// moderated chat turn — guardrails-on-embed-input/output is explicitly out of scope for embeddings.
 //
 //   resolve → reserve (cap/credit-check) → provider call → record usage → reconcile
 //
@@ -13,8 +13,8 @@
 // so that phantom leg refunds in full at reconcile regardless of the price book's `outputPerMTok`
 // rate for the model — a buyer is billed for input tokens only, exactly what an embedding call
 // consumes. Price key stays `provider/model`: an embedding model is just another `PriceBook` row: no
-// `PriceBookEntry` schema change (a dedicated embedding SKU is a cross-package money question,
-// deferred — see ADR-0213's open question).
+// `PriceBookEntry` schema change (a dedicated flat-rate embedding SKU, distinct from per-token
+// pricing, is a separate cross-package pricing decision, deferred for now).
 import { randomUUID } from "node:crypto";
 import {
   createProviderRegistry,
@@ -130,8 +130,8 @@ function mapEmbeddingUsage(
  * Run one metered embedding call through the gateway. Throws (and never calls the model / never
  * charges) when the wallet is short (`InsufficientCreditsError` 402) or the breaker is open
  * (`SpendCapError` 402) — same fail-closed contract as `infer()`. A failed provider call refunds the
- * reservation. No prompt-registry render and no guardrails run on this path (SPEC ai-kit scope: an
- * embed input feeds a vector index, not a moderated chat turn).
+ * reservation. No prompt-registry render and no guardrails run on this path: an
+ * embed input feeds a vector index, not a moderated chat turn.
  */
 export async function embed(
   lane: string,

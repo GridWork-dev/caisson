@@ -1,10 +1,19 @@
 # @caisson/ai-config
 
-Provider-agnostic AI config (all providers) + buyer settings file.
+Provider-agnostic AI config resolver: parses a buyer's `forge.config` settings file and
+resolves a named lane (OpenAI, Anthropic, Google, OpenRouter, local, AWS Bedrock, Azure
+OpenAI, Ollama) to a provider/model binding. No provider is ever hardcoded — swapping
+providers is a config change, not a code change — and this package never reads API key
+values, only the env-var name a lane points to (or, for per-tenant BYOK, defers to
+encrypted per-tenant storage).
 
 - **Layer:** base
-- **Seeds (rebuild-clean):** gridwork, gridwork-core
-- **Key ADR:** ADR-0011
 
-> **Built (thin)** — real src + tests (provider-agnostic config; minimal surface, verify before extending). Live per-package status: ../../docs/build-state.md
-> Build per `/plan.md`. Pro-private `media-pipeline` contributes patterns only, never code.
+## Usage
+
+```ts
+import { parseAiSettings, resolveProvider } from "@caisson/ai-config";
+
+const settings = parseAiSettings(rawConfig); // rejects unknown keys
+const lane = resolveProvider(settings); // resolves settings.defaultLane
+```

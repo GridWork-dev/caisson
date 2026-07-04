@@ -7,7 +7,7 @@
     "access": "restricted",
     "registry": "https://npm.pkg.github.com"
   },
-  "description": "Compliance edition (the hero): tenant-scoped field crypto + WORM audit chain + own-authored SOC2-TSC/HIPAA control packs + the deterministic, signed control→evidence-pack generator. ADR-0005/0006/0051-0058.",
+  "description": "Compliance edition: tenant-scoped field crypto, a WORM audit chain, own-authored SOC2-TSC and HIPAA control packs, and a deterministic, signed control-to-evidence-pack generator.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",

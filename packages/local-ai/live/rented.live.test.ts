@@ -1,5 +1,5 @@
 // live/rented.live.test.ts — LIVE proof of the OpenRouter rented transport (ADR-0201 §2, over the
-// ADR-0064 T20 seam — threat TM-RENT). This file lives OUTSIDE ./src so the default suite
+// ADR-0064 rented-backend seam). This file lives OUTSIDE ./src so the default suite
 // (`bun test ./src`), CI's secret-free runners, and the published tarball path never run it; it runs
 // only via `bun run test:live` AND self-skips without the org OPENROUTER_API_KEY (the ADR-0201
 // live-test convention, after the oscal-cli availability-probe precedent).
@@ -29,7 +29,7 @@ const EMBEDDING_MODEL = "qwen/qwen3-embedding-8b";
 const ENDPOINT = "https://openrouter.ai/api/v1";
 const TIMEOUT_MS = 60_000;
 
-/** The explicit deployer opt-in (TM-RENT): openrouter.ai allowlisted as a `rented-backend` sink. */
+/** The explicit deployer opt-in: openrouter.ai allowlisted as a `rented-backend` sink. */
 function liveGuard() {
   return createEgressGuard(
     localOnlyPolicy([{ host: "openrouter.ai", kind: "rented-backend" }]),

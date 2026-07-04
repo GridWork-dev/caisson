@@ -1,4 +1,4 @@
-# @caisson/local-ai — published-tarball excludes (T13, TM-MODEL).
+# @caisson/local-ai — published-tarball excludes (the on-device ONNX model cache).
 #
 # The local embedding model is FIRST-RUN-FETCHED + cached at runtime (OnnxEmbeddingBackend), never
 # shipped in the package. These globs keep any downloaded model cache, ONNX weights, or runtime

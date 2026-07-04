@@ -1,7 +1,7 @@
-// The BillingProvider port (ADR-0017). Stripe was the original driver; ADR-0108 switches the live MoR
-// to Paddle — both implementations live behind this ONE port, so a provider swap is a new driver, not
-// a rewrite. P1 ships verify+parse (the seam that feeds the credit grant); the full
-// purchase→entitlement→license→grant orchestration is P6 (services/license).
+// The BillingProvider port (ADR-0017). Stripe was the original driver; ADR-0108 switches the live
+// merchant-of-record to Paddle — both implementations live behind this ONE port, so a provider swap
+// is a new driver, not a rewrite. This package ships verify+parse (the seam that feeds the credit
+// grant); the full purchase→entitlement→license→grant orchestration lives in services/license.
 import { fetchWithTimeout, InternalError, parseStrict } from "@caisson/kernel";
 import { verifyStripeWebhook, type VerifyOptions } from "./webhook.ts";
 import {
@@ -103,7 +103,7 @@ export interface PaddleConfig {
   /** Selects the Paddle API base url (ADR-0108 `PADDLE_ENV`). Defaults to `production`. */
   env?: "sandbox" | "production";
   /**
-   * Optional non-fatal-anomaly signal (CAISSON-7), threaded through to `parsePaddleEvent`: fired
+   * Optional non-fatal-anomaly signal, threaded through to `parsePaddleEvent`: fired
    * when a partial-refund adjustment's `items[]` carries a malformed or idless entry that gets
    * skipped. `console.log` is banned in product code, so a production caller wires this to its own
    * telemetry/log surface (services/license wires `process.stderr.write`). Unset means the skip

@@ -28,7 +28,7 @@
 //   • The sync-metadata columns are likewise forward-only: `sync_changelog.seq` is an
 //     AUTOINCREMENT, replica-LOCAL monotonic sequence that the capture watermark advances against,
 //     and `sync_meta` binds this file's `tenant_id` + stable `replica_id`. Dropping or renumbering
-//     them would reset every peer's convergence watermark and break two-way sync (ADR-0064, TM-SYNC).
+//     them would reset every peer's convergence watermark and break two-way sync (ADR-0064).
 //
 // `ChangesetLog.open` and `LocalStore.open` still create their tables idempotently (`IF NOT EXISTS`)
 // so each subsystem runs standalone; this ledger is the ONE ordered home that owns the same DDL — the
@@ -62,7 +62,7 @@ function retrievalSql(dim: number): string {
 /**
  * The edition's relational table. `id` is a `crypto.randomUUID()` the caller supplies; `secret` holds
  * a field-crypto self-describing at-rest envelope (sealed under the per-tenant derived key BEFORE it
- * touches the file — ADR-0055/TM-REST), never plaintext; `doc_id` links a row to its retrieval mirror
+ * touches the file — ADR-0055), never plaintext; `doc_id` links a row to its retrieval mirror
  * in `docs`. There is intentionally NO `tenant_id` column — the file IS the tenant (file-per-tenant,
  * ADR-0073), so a cross-tenant row is unexpressible.
  */

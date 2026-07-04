@@ -35,7 +35,7 @@ export interface SmtpConfig {
 /**
  * Production `Emailer` backed by SMTP. The template is a name, not a render target: the body is a
  * minimal deterministic text mapping (subject = template, body = JSON data) — real template
- * rendering lands with the template registry per ADR-0018, same as the Resend driver.
+ * rendering lands with a future template registry (ADR-0018), same as the Resend driver.
  */
 export function createSmtpEmailer(config: SmtpConfig): Emailer {
   const transport: SmtpTransport =

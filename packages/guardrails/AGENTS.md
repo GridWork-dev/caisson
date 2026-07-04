@@ -29,7 +29,7 @@ instance from the `forge.config` block validated by `moderatorPolicySchema` (`.s
 moderator under a deadline with `moderateWithDeadline(moderator, text, timeoutMs)` — a rejection
 (timeout/throw) is the fail-closed signal the guard catches.
 
-## PII engine (built fresh — no media-pipeline seed; PUBLIC patterns only)
+## PII engine
 
 `detectPii(text)` runs four detectors (email / US-SSN / credit-card with a Luhn check / phone) over a
 deterministic overlap resolver. Three modes:
@@ -38,7 +38,7 @@ deterministic overlap resolver. Three modes:
 - `redactPii(text, "hash")` → `[KIND:<12-hex sha256>]`, irreversible, stable per value.
 - `tokenizePii(text, ctx)` → REVERSIBLE: seals each hit via field-crypto `sealField` under
   `PII_COLUMN_CONTEXT` and leaves an opaque placeholder; `detokenizePii(text, tokens, ctx)` restores
-  via `openField`. This is the redact-before-egress / restore-on-return round-trip (TM4). The sole
+  via `openField`. This is the redact-before-egress / restore-on-return round-trip. The sole
   reversible path is field-crypto — never a bespoke crypto path. `tokenize` requires a bound
   `FieldCryptoContext` (the same tenant context must open what it sealed).
 

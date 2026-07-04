@@ -32,7 +32,7 @@
 
 ### Patch Changes
 
-- 192c81c: ADR-0211 harvest slice-2: grow `@caisson/jobs` a consumer side. `EnqueueOptions.idempotencyKey`
+- 192c81c: Add a consumer side to `@caisson/jobs`. `EnqueueOptions.idempotencyKey`
   on all 3 drivers (pg-boss: deterministic `sha256`-derived `SendOptions.id` + `ON CONFLICT DO
 NOTHING`, not `singletonKey`; Trigger.dev: native `idempotencyKey`; in-memory: a keyed `Set`); a
   `work(name)` claim surface on all 3 (pg-boss consumes for real via its native SKIP LOCKED
@@ -52,7 +52,7 @@ NOTHING`, not `singletonKey`; Trigger.dev: native `idempotencyKey`; in-memory: a
 
 ### Patch Changes
 
-- 33bee35: Whole-repo audit round-4 remediation (ledger 2026-07-01): BYOK (tenant-key) inference now
+- 33bee35: BYOK (tenant-key) inference now
   makes zero wallet movement while internal metering still runs, implementing ADR-0182/0198;
   provider-unreported token usage is kept distinct from genuine zero so reconcile settles at
   the reserved estimate instead of silently refunding a real call; the spend-window bucket is
