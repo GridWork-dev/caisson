@@ -13,25 +13,27 @@ import styles from "./marketplace-tabs.module.css";
 export function MarketplaceTabs() {
   const pathname = usePathname();
   return (
-    <nav aria-label="Marketplace sections" className={styles.tabs}>
-      {MARKETPLACE_TAB_ROUTES.map((r) => {
-        // The hub root is the Editions tab; deeper tabs match on their own path.
-        const active =
-          r.path === "/marketplace"
-            ? pathname === "/marketplace"
-            : pathname.startsWith(r.path);
-        const label = r.path === "/marketplace" ? "Editions" : r.label;
-        return (
-          <Link
-            key={r.path}
-            href={r.path}
-            className={styles.tab}
-            aria-current={active ? "page" : undefined}
-          >
-            {label}
-          </Link>
-        );
-      })}
-    </nav>
+    <div className={styles.scrollFade}>
+      <nav aria-label="Marketplace sections" className={styles.tabs}>
+        {MARKETPLACE_TAB_ROUTES.map((r) => {
+          // The hub root is the Editions tab; deeper tabs match on their own path.
+          const active =
+            r.path === "/marketplace"
+              ? pathname === "/marketplace"
+              : pathname.startsWith(r.path);
+          const label = r.path === "/marketplace" ? "Editions" : r.label;
+          return (
+            <Link
+              key={r.path}
+              href={r.path}
+              className={styles.tab}
+              aria-current={active ? "page" : undefined}
+            >
+              {label}
+            </Link>
+          );
+        })}
+      </nav>
+    </div>
   );
 }

@@ -30,9 +30,11 @@ export const Terminal = forwardRef<HTMLDivElement, TerminalProps>(
           <span>{label}</span>
           {status}
         </div>
-        <pre className="cs-terminal__body" aria-label={label}>
-          {children}
-        </pre>
+        <div className="cs-terminal__body-frame">
+          <pre className="cs-terminal__body" aria-label={label}>
+            {children}
+          </pre>
+        </div>
       </div>
     );
   },
