@@ -19,7 +19,7 @@ export const INTERNAL_TERM =
 
 /**
  * SS-3: a comment line whose only substantive content is an ADR citation — either
- * "see/per/cf ADR-NNNN" or the naked id itself (`// ADR-0182`, `/* ADR-0182 *​/`), optionally a
+ * "see/per/cf ADR-NNNN" or the naked id itself, in line- or block-comment form, optionally a
  * comma/slash id list with trailing punctuation. The rule itself is unstated, only the id is
  * cited. A citation after real prose on the same line never matches (the shape is anchored to
  * the comment marker with nothing but the citation allowed before end-of-line).
