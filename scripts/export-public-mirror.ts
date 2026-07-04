@@ -28,6 +28,12 @@ import {
   writeFileSync,
 } from "node:fs";
 import { execFileSync } from "node:child_process";
+import {
+  createHash,
+  createPrivateKey,
+  createPublicKey,
+  verify as cryptoVerify,
+} from "node:crypto";
 import { join, resolve } from "node:path";
 
 const APACHE = "Apache-2.0";
@@ -180,6 +186,59 @@ const REWRITE_SKIP_DIRS = new Set([
   "__golden__",
   "__fixtures__",
 ]);
+
+// --- entitlement-token gate (P0 audit remediation) ---------------------------------------------
+// A real entitlement token is itself the leak: the token IS the entitlement, and offline Ed25519
+// verify has no revocation list — private-key secrecy is irrelevant. NO prod-signed token may ever
+// ship in the mirror. DEV-keypair tokens are exempt: they are signed by the DOCUMENTED test seed
+// (SHA-256("caisson-license-verify-KAT-seed-v1")), carry no entitlement, and verify here by
+// reconstruction. ponytail: a regex walk + one Ed25519 check is the whole gate — no pattern DB.
+const TOKEN_SHAPE = /CAISSON-[A-Z0-9]+-[A-Za-z0-9_-]{88,}/g;
+const DEV_VERIFY_KEY = createPublicKey(
+  createPrivateKey({
+    key: Buffer.concat([
+      // Ed25519 PKCS#8 DER prefix ‖ the documented dev test-vector seed (never a production secret).
+      Buffer.from("302e020100300506032b657004220420", "hex"),
+      createHash("sha256")
+        .update("caisson-license-verify-KAT-seed-v1")
+        .digest(),
+    ]),
+    format: "der",
+    type: "pkcs8",
+  }).export({ format: "pem", type: "pkcs8" }),
+);
+
+/** True iff the token's 64-byte signature tail verifies against the DEV public key. */
+function isDevSigned(token: string): boolean {
+  const bodyB64 = token.slice(token.indexOf("-", 8) + 1);
+  const body = Buffer.from(bodyB64, "base64url");
+  // base64url decode is lenient; require the canonical round-trip (mirrors decodeToken) so a
+  // mutated-but-decodes-same string is never exempted on the strength of the original signature.
+  if (body.toString("base64url") !== bodyB64) return false;
+  if (body.length <= 64) return false;
+  const payload = body.subarray(0, body.length - 64);
+  const signature = body.subarray(body.length - 64);
+  try {
+    return cryptoVerify(null, payload, DEV_VERIFY_KEY, signature);
+  } catch {
+    return false;
+  }
+}
+
+/** Scan every text file in the mirror out-dir for non-dev license tokens; FATAL on any hit. */
+function scanForEntitlementTokens(dir: string, hits: string[]): void {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const abs = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name !== "node_modules") scanForEntitlementTokens(abs, hits);
+      continue;
+    }
+    const content = readFileSync(abs, "utf8");
+    for (const match of content.match(TOKEN_SHAPE) ?? []) {
+      if (!isDevSigned(match)) hits.push(`${abs}: ${match.slice(0, 24)}...`);
+    }
+  }
+}
 
 function rewriteImportsInTree(dir: string): void {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -500,6 +559,17 @@ function main(): void {
       2,
     ) + "\n",
   );
+
+  // --- entitlement-token gate: nothing shaped like a license token ships unless dev-signed ---
+  const tokenHits: string[] = [];
+  scanForEntitlementTokens(outDir, tokenHits);
+  if (tokenHits.length) {
+    console.error(
+      "FATAL: entitlement-token-shaped string(s) in the mirror output that do NOT verify against the dev test keypair (a real token is the entitlement itself — never ship one):",
+    );
+    for (const h of tokenHits) console.error(`  ${h}`);
+    process.exit(1);
+  }
 
   console.log(`Exported ${manifestPkgs.length} package(s) to ${outDir}`);
   console.log(`  source commit ${sourceCommit}`);
