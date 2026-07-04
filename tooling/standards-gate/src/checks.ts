@@ -353,6 +353,51 @@ export async function checkManifestAgreement(pkgs: Pkg[]): Promise<Finding[]> {
 }
 
 /**
+ * Every locked buyer-facing price, keyed by package id. The single place to update when an ADR
+ * reprices a module — `checkManifestPriceAgreement` below fails the gate on any drift from here.
+ */
+export const PRICE_AUTHORITY: Record<string, { cents: number; adr: string }> = {
+  "@caisson/compliance": { cents: 79900, adr: "ADR-0227" },
+  "@caisson/audit-worm": { cents: 14900, adr: "ADR-0129" },
+  "@caisson/local-ai": { cents: 34900, adr: "ADR-0240" },
+};
+
+/**
+ * manifest.priceCents ↔ locked-ADR agreement. Root-cause guard for the audit-v2 P1 finding class
+ * (manifests carrying stale/PLACEHOLDER prices that drifted from a later ADR reprice): only
+ * packages seeded in `PRICE_AUTHORITY` are asserted — every other manifest.ts still carrying its
+ * own unpriced/unlocked number is out of scope until it lands in the map. A load failure is
+ * already reported by `checkManifestAgreement` above, so it is silently skipped here (no
+ * double-report).
+ */
+export async function checkManifestPriceAgreement(
+  pkgs: Pkg[],
+): Promise<Finding[]> {
+  const findings: Finding[] = [];
+  for (const p of pkgs) {
+    if (!p.manifestPath) continue;
+    const authority = PRICE_AUTHORITY[p.name];
+    if (!authority) continue;
+    let manifest: { priceCents?: number | null };
+    try {
+      const mod = await import(p.manifestPath);
+      manifest = (mod.default ?? mod.manifest ?? mod) as typeof manifest;
+    } catch {
+      continue;
+    }
+    if (manifest.priceCents !== authority.cents) {
+      findings.push({
+        severity: "error",
+        rule: "manifest-price-agreement",
+        pkg: p.name,
+        message: `manifest.priceCents (${String(manifest.priceCents)}) ≠ the price locked by ${authority.adr} (${authority.cents}) — reconcile the manifest, not the ADR.`,
+      });
+    }
+  }
+  return findings;
+}
+
+/**
  * Gate #4 — TS-compiler copy-guard (ADR-0101). Flags a source module COPY-PASTED across packages:
  * two `src/**` modules in *different* workspace packages whose code is token-identical. The motivating
  * case is the contrast spot-check that was hand-duplicated (and drifted) across apps/site + apps/studio

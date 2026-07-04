@@ -23,6 +23,7 @@ import {
   checkDownOnly,
   checkDeclarations,
   checkManifestAgreement,
+  checkManifestPriceAgreement,
   checkCopyPaste,
   checkOpenCoreLicensing,
   checkOpenCommercialBoundary,
@@ -42,6 +43,7 @@ async function main(): Promise<number> {
     ...checkOpenCommercialBoundary(pkgs),
     ...checkDeclarations(pkgs),
     ...(await checkManifestAgreement(pkgs)),
+    ...(await checkManifestPriceAgreement(pkgs)), // manifest.priceCents vs the locked-ADR PRICE_AUTHORITY map
     ...checkCopyPaste(root), // ADR-0101 gate #4: cross-package copy-paste
     ...(await checkRlsEquivalence(pkgs, root)), // ADR-0210/0005: hand-written RLS vs the generator
     ...checkChangesetProse(root), // changeset-source prose gate: no internal leak in a .changeset/*.md body
