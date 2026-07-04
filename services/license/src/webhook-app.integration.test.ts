@@ -119,9 +119,15 @@ function webhookReq(
 }
 
 function oneTimeBody(eventId: string, txnId: string, priceId: string): string {
+  // The FULL five-field envelope a real Paddle delivery carries (occurred_at + notification_id
+  // included) — regression pin for the 2026-07-04 live-verification finding: the old strict
+  // envelope schema 400'd every real webhook because the fixtures here were minimal three-field
+  // envelopes that never exercised the documented shape.
   return JSON.stringify({
     event_id: eventId,
     event_type: "transaction.completed",
+    occurred_at: "2026-07-04T00:00:00Z",
+    notification_id: `ntf_${eventId}`,
     data: {
       id: txnId,
       subscription_id: null,

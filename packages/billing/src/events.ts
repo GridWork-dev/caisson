@@ -107,19 +107,26 @@ export const DomainBillingEventSchema = z.discriminatedUnion("type", [
 
 export type DomainBillingEvent = z.infer<typeof DomainBillingEventSchema>;
 
-// The envelope (id/type/data.object) is Zod-`.strict()`-validated at the boundary (ADR-0210,
-// mirrors PaddleEventSchema/services-hardening MED finding): the raw webhook body used to be
-// trusted via a bare `JSON.parse(rawBody) as StripeEvent` cast — a type-level assertion with no
-// runtime check, so a validly-signed but malformed/field-injected delivery would flow straight
-// into parseStripeEvent below. `provider.ts`'s verifyAndParse parses through this schema
-// (`parseStrict`, throwing a ValidationError) BEFORE the mapper ever sees the event. `data.object`
-// itself stays a loose `Record<string, unknown>` — this file's `read*` helpers are already the
-// defensive/fail-closed-to-safe-default layer for it; this schema only closes the envelope-level
-// gap, it does not re-validate every event type's inner fields.
-export const StripeEventSchema = strictObject({
+// The envelope (id/type/data.object) is Zod-validated at the boundary (mirrors PaddleEventSchema /
+// services-hardening MED finding): the raw webhook body used to be trusted via a bare
+// `JSON.parse(rawBody) as StripeEvent` cast — a type-level assertion with no runtime check, so a
+// validly-signed but malformed delivery would flow straight into parseStripeEvent below.
+// `provider.ts`'s verifyAndParse parses through this schema (`parseStrict`, throwing a
+// ValidationError) BEFORE the mapper ever sees the event.
+//
+// Deliberately NOT `.strict()` (2026-07-04, same finding as the Paddle envelope): a real Stripe
+// event carries `object`, `api_version`, `created`, `livemode`, `pending_webhooks`, `request` (and
+// `data.previous_attributes` on update events) alongside id/type/data — a strict envelope rejects
+// every real delivery. Authenticity is the signature's job (verifyStripeWebhook runs first); this
+// schema guarantees only the shape of the fields the mapper consumes, and the default `z.object`
+// parse strips the rest. The driver is dormant (ADR-0200: Paddle is the sole live mount) but must
+// not carry a known real-delivery rejection into any future activation. `data.object` itself stays
+// a loose `Record<string, unknown>` — this file's `read*` helpers are already the
+// defensive/fail-closed-to-safe-default layer for it.
+export const StripeEventSchema = z.object({
   id: z.string(),
   type: z.string(),
-  data: strictObject({ object: z.record(z.string(), z.unknown()) }),
+  data: z.object({ object: z.record(z.string(), z.unknown()) }),
 });
 
 export type StripeEvent = z.infer<typeof StripeEventSchema>;

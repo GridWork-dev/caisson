@@ -2,7 +2,7 @@
 // The verified event carries everything the credit grant needs (sourceEventId → idempotency).
 import { createHmac } from "node:crypto";
 import { afterEach, describe, expect, test } from "bun:test";
-import { AuthnError, ValidationError } from "@caisson/kernel";
+import { AuthnError } from "@caisson/kernel";
 import {
   createStripeBilling,
   parseStripeEvent,
@@ -262,14 +262,21 @@ describe("StripeEventSchema (envelope boundary validation, ADR-0210)", () => {
     expect(result.success).toBe(true);
   });
 
-  test("rejects an envelope with an unexpected extra top-level field", () => {
+  test("accepts a REAL-shaped envelope — livemode/api_version/created are documented Stripe fields", () => {
+    // Regression pin (2026-07-04, same finding as the Paddle envelope): a real Stripe event
+    // always carries these fields; the old `.strict()` schema rejected every real delivery.
     const result = StripeEventSchema.safeParse({
       id: "evt_x",
+      object: "event",
+      api_version: "2024-06-20",
+      created: 1_750_000_000,
+      livemode: true,
+      pending_webhooks: 1,
+      request: { id: null, idempotency_key: null },
       type: "checkout.session.completed",
       data: { object: {} },
-      livemode: true, // not a declared envelope field
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   test("rejects an envelope missing id or with the wrong shape", () => {
@@ -288,19 +295,23 @@ describe("StripeEventSchema (envelope boundary validation, ADR-0210)", () => {
     ).toBe(false);
   });
 
-  test("verifyAndParse rejects a signed body carrying an unexpected extra top-level field", () => {
-    // The signature is valid (verifyStripeWebhook passes) — this proves the NEW schema boundary
-    // rejects a malformed envelope even when authenticity already checked out; a signature alone
-    // never guaranteed the payload shape.
-    const extraFieldBody = JSON.stringify({
-      id: "evt_extra",
-      type: "checkout.session.completed",
+  test("verifyAndParse accepts a signed REAL-shaped delivery (full documented envelope) and maps it", () => {
+    // End-to-end regression pin (2026-07-04, same finding as the Paddle envelope): a validly-signed
+    // body shaped like a real Stripe event must parse and map — the old strict envelope threw here.
+    const realShapedBody = JSON.stringify({
+      id: "evt_real_shape",
+      object: "event",
+      api_version: "2024-06-20",
+      created: 1_750_000_000,
       livemode: true,
+      pending_webhooks: 1,
+      request: { id: null, idempotency_key: null },
+      type: "checkout.session.completed",
       data: {
         object: {
           amount_total: 5000,
           currency: "usd",
-          payment_intent: "pi_extra",
+          payment_intent: "pi_real_shape",
           metadata: {
             account_id: "acct_a",
             price_id: "price_credit_pack_PLACEHOLDER",
@@ -312,11 +323,15 @@ describe("StripeEventSchema (envelope boundary validation, ADR-0210)", () => {
       webhookSecret: SECRET,
       apiKey: "sk_test",
     });
-    expect(() =>
-      billing.verifyAndParse(extraFieldBody, signed(extraFieldBody), {
+    const event = billing.verifyAndParse(
+      realShapedBody,
+      signed(realShapedBody),
+      {
         now: T,
-      }),
-    ).toThrow(ValidationError);
+      },
+    );
+    expect(event?.type).toBe("purchase.completed");
+    expect(event?.sourceEventId).toBe("evt_real_shape");
   });
 });
 

@@ -39,10 +39,11 @@ export function createStripeBilling(config: StripeConfig): BillingProvider {
   return {
     verifyAndParse(rawBody, signatureHeader, opts) {
       verifyStripeWebhook(rawBody, signatureHeader, config.webhookSecret, opts);
-      // Zod `.strict()` at the boundary (ADR-0210, mirrors the Paddle driver): reject an envelope
-      // with a missing/wrong-typed id/type or any unknown top-level field BEFORE it reaches the
-      // mapper — a signature check alone does not guarantee the payload SHAPE. parseStrict throws a
-      // redaction-safe ValidationError, which the route layer maps to a non-2xx.
+      // Envelope validation at the boundary (mirrors the Paddle driver): reject an envelope with a
+      // missing/wrong-typed id/type/data.object BEFORE it reaches the mapper — a signature check
+      // alone does not guarantee the payload SHAPE. Tolerant of provider-additive envelope fields
+      // (a real Stripe event carries api_version/created/livemode/…; see StripeEventSchema).
+      // parseStrict throws a redaction-safe ValidationError → the route layer maps it to non-2xx.
       const event = parseStrict(StripeEventSchema, JSON.parse(rawBody));
       return parseStripeEvent(event);
     },
@@ -122,12 +123,15 @@ export function createPaddleBilling(config: PaddleConfig): BillingProvider {
   return {
     verifyAndParse(rawBody, signatureHeader, opts) {
       verifyPaddleWebhook(rawBody, signatureHeader, config.webhookSecret, opts);
-      // Zod `.strict()` at the boundary (services-hardening MED finding): reject an envelope with a
-      // missing/wrong-typed event_id/event_type or any unknown top-level field BEFORE it reaches the
-      // mapper — a signature check alone does not guarantee the payload SHAPE. parseStrict throws a
-      // redaction-safe ValidationError (never echoes the rejected value), which the route layer maps
-      // to a non-2xx so Paddle retries — the mapper's existing fail-closed-to-null/defensive handling
-      // of a well-formed-but-unrecognized `data` payload is unchanged.
+      // Envelope validation at the boundary (services-hardening MED finding): reject an envelope
+      // with a missing/wrong-typed event_id/event_type/data BEFORE it reaches the mapper — a
+      // signature check alone does not guarantee the payload SHAPE. Tolerant of the rest of the
+      // documented envelope (occurred_at/notification_id) and future provider-additive fields — a
+      // `.strict()` envelope rejected every REAL Paddle delivery (2026-07-04 live-verification
+      // finding; see PaddleEventSchema). parseStrict throws a redaction-safe ValidationError
+      // (never echoes the rejected value), which the route layer maps to a non-2xx so Paddle
+      // retries — the mapper's existing fail-closed-to-null/defensive handling of a
+      // well-formed-but-unrecognized `data` payload is unchanged.
       const event = parseStrict(PaddleEventSchema, JSON.parse(rawBody));
       return parsePaddleEvent(event, config.onWarn);
     },
