@@ -8,6 +8,7 @@ import {
   checkOpenCoreLicensing,
   checkOpenCommercialBoundary,
   checkManifestAgreement,
+  checkManifestPriceAgreement,
   checkRlsEquivalence,
 } from "./checks";
 // Same relative import checks.ts itself uses (SPEC-tenancy-rls task 3: no workspace specifier —
@@ -195,6 +196,47 @@ describe("checkManifestAgreement fail-closed (ADR-0094/0097)", () => {
     ]);
     expect(f).toHaveLength(1);
     expect(f[0]?.severity).toBe("warn");
+  });
+});
+
+describe("checkManifestPriceAgreement (audit-v2 P1 price-drift guard)", () => {
+  const fixtureDir = join(import.meta.dir, "__fixtures__");
+
+  test("a priceCents matching PRICE_AUTHORITY passes", async () => {
+    const f = await checkManifestPriceAgreement([
+      pkg({
+        name: "@caisson/compliance",
+        license: COMMERCIAL,
+        manifestPath: join(fixtureDir, "price-agreement-match.fixture.ts"),
+      }),
+    ]);
+    expect(f).toEqual([]);
+  });
+
+  test("a priceCents drifted from PRICE_AUTHORITY is an ERROR", async () => {
+    const f = await checkManifestPriceAgreement([
+      pkg({
+        name: "@caisson/compliance",
+        license: COMMERCIAL,
+        manifestPath: join(fixtureDir, "price-agreement-drift.fixture.ts"),
+      }),
+    ]);
+    expect(f).toHaveLength(1);
+    expect(f[0]?.rule).toBe("manifest-price-agreement");
+    expect(f[0]?.severity).toBe("error");
+    expect(f[0]?.message).toContain("ADR-0227");
+  });
+
+  test("a package not seeded in PRICE_AUTHORITY is out of scope (skipped)", async () => {
+    const f = await checkManifestPriceAgreement([
+      pkg({
+        name: "@caisson/some-other-priced-pkg",
+        license: COMMERCIAL,
+        // Never resolved — the check short-circuits before importing an unseeded package's manifest.
+        manifestPath: join(fixtureDir, "does-not-exist.fixture.ts"),
+      }),
+    ]);
+    expect(f).toEqual([]);
   });
 });
 
