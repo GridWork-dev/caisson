@@ -7,13 +7,18 @@ edition must know to wire the agent kernel correctly.
 
 - **Engine-neutral.** This package imports NO vendor SDK and runs NO LLM. It is the schema/FSM/hooks
   **mechanism** only. The model/engine wiring belongs to the consuming edition, never here.
-- **Down-only (ADR-0022 Gate-3).** `@caisson/agent-kernel` is `kind: base`; it may be consumed by base
+- **Down-only (ADR-0022).** `@caisson/agent-kernel` is `kind: base`; it may be consumed by base
   (`cli`, `mcp-server`) and by the agent-dev edition, but it MUST NEVER import an edition. The agent-dev
   edition is a composition over this kernel (kernel + content + reference app), never the owner of the
   primitives.
 - **`.strict()` at the boundary.** Every artifact is parsed through the Zod `.strict()` union — unknown
   fields are rejected, not dropped. Validate external/authoring input with `parseArtifact`; it throws a
   redaction-safe `ValidationError` (never the rejected values).
+- **Reference integrity over a set.** An artifact may depend on another BY NAME (`dependencies`).
+  `validateArtifactSet(artifacts)` resolves every cross-ref against the authored set and returns the
+  sorted `"<name>-><dep>"` edges; a ref naming nothing in the set is a GHOST — it THROWS a
+  redaction-safe `ValidationError`, never silently drops or guesses. Author artifacts through
+  `defineAgent` / `defineSkill` / `defineRule` (each validates `.strict()` at module load).
 - **Flag-never-guess transitions.** The lifecycle FSM exposes only the legal-transition adjacency. An
   illegal transition THROWS — do not catch-and-continue to "guess" a next act. `verify → plan` (re-plan
   on a failed goal-backward verify) and `sweep → ship` (untagged skip-eval) are the only branch edges;
@@ -41,6 +46,36 @@ The 7 acts: `spec → plan → execute → verify → sweep → eval → ship`. 
 `HookDispatcher` registers handlers at `${'before'|'after'}:${act}` points and dispatches them in
 registration order, awaiting each. Handlers are side-effecting observers — they do not alter the FSM
 transition. Dispatching to a point with no registered handlers is a no-op, never an error.
+
+## Governance guards (allow / deny / mutate)
+
+A transition **guard** is a pure predicate over one edge that returns the unified `HookResult<C>`
+(`allow()` / `deny(reason)` / `mutate(context)`) — the same shape a hook veto returns. A guard is
+layered ON TOP of FSM legality: `canTransition` says the edge is structurally legal, a guard says
+whether policy permits it. `evaluateGuards(guards, transition)` runs a list in order: the first
+`deny` short-circuits (fail-closed — remaining guards never run); a `mutate(ctx)` threads its context
+into every remaining guard; a guard that THROWS is treated as `deny("guard threw")` — a buggy guard
+can never silently admit a transition. `predicateGuard(predicate, reason)` lifts a plain boolean
+check into a guard. `isAllow`/`isDeny`/`isMutate` narrow a `HookResult` to its variant.
+
+## Audited lifecycle (opt-in tamper-evident record)
+
+`AuditedLifecycle` wraps the FSM with an OPT-IN recording layer: every ADMITTED transition is
+chained into the shipped kernel compliance substrate (`@caisson/kernel`'s audit-chain + append-only
+version lineage), so the run's transition history is tamper-**evident** — an altered, reordered,
+dropped, or rewritten step fails `verifyChain` against the anchor. A VETOED transition (`deny`) is
+never recorded as having happened. The host supplies any `AuditLifecycleStore`
+(`InMemoryAuditLifecycleStore` ships for offline/CLI use) and an optional clock seam. With auditing
+off, transitions are still FSM-validated but nothing is recorded.
+
+## Redacting logger
+
+`makeRedactingLogger(sink)` builds a `log(event)` function that redacts `event` through
+`@caisson/kernel`'s `scrubDeep` (credential-span redaction + secret/PHI-named subtree drop) before
+handing one JSON Lines record to the host-supplied `sink`. This is the default redaction pass any
+audit-trail event (a `LifecycleAuditPayload`, or a host-defined event shape) should run through
+before it reaches a persisted sink. `toRedactedJsonlLine(event)` is the pure redact-and-serialize
+step alone, for a caller that owns the write.
 
 ## Golden (ADR-0013)
 

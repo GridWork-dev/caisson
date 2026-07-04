@@ -6,8 +6,8 @@
 // The `tenant_id → path` mapping is a TRUSTED server-side seam: `tenantId` is derived from an
 // AUTHENTICATED context, never raw user input. The resolver still guards fail-closed — a malformed
 // id is a boundary breach, not a lookup miss — by rejecting `..` / null-byte / absolute / separator
-// ids and asserting the resolved path stays under the tenant-data root + `path.sep` (ADR-0073 /
-// the gridwork security floor: reject `..`/null/absolute, `path.resolve` + root-prefix assert).
+// ids and asserting the resolved path stays under the tenant-data root + `path.sep` (ADR-0073), the
+// same reject-`..`/null/absolute + `path.resolve` + root-prefix-assert pattern used across the base.
 import { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { isAbsolute, resolve, sep } from "node:path";

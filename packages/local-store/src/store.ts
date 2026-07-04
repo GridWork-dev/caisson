@@ -1,16 +1,15 @@
 // src/store.ts — local hybrid retrieval (ADR-0067). Raw `bun:sqlite` over sqlite-vec `vec0`
 // (FLOAT[N], dimension fixed at table creation) + FTS5, fused by Reciprocal Rank Fusion (RRF_K=60).
 // The FTS5 path is ALWAYS available; when no query vector is supplied — or the vec leg is
-// missing/fails — retrieval degrades to FTS5-only and still returns. Rebuilt CLEAN from the PUBLIC
-// gridwork-core `memory-vec.ts` `hybridSearch` PATTERN (RRF_K=60, vec0 + FTS5 → degrade); the
-// embedding that produces a vector is an INJECTED SEAM — this module never calls a model, opens no
-// socket, and is deterministic for a fixed input (golden-pinned at `src/__golden__/rrf-ranking.json`).
+// missing/fails — retrieval degrades to FTS5-only and still returns. The embedding that produces a
+// vector is an INJECTED SEAM — this module never calls a model, opens no socket, and is
+// deterministic for a fixed input (golden-pinned at `src/__golden__/rrf-ranking.json`).
 import { Database } from "bun:sqlite";
 import { existsSync } from "node:fs";
 import * as sqliteVec from "sqlite-vec";
 import { ValidationError } from "@caisson/kernel";
 
-/** RRF constant — standard 60; dampens the weight of any single ranking (gridwork-core parity). */
+/** RRF constant — standard 60; dampens the weight of any single ranking. */
 export const RRF_K = 60;
 
 /**

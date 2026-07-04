@@ -1,4 +1,4 @@
-// src/emitter.ts — the thin, ENGINE-NEUTRAL multi-harness emitter (ADR-0066 · T19 SECURITY). Renders
+// src/emitter.ts — the thin, ENGINE-NEUTRAL multi-harness emitter (ADR-0066). Renders
 // ONE typed Caisson schema (agent-kernel `Artifact`s + lifecycle hook bindings) into per-harness
 // config bundles: `.claude/` for Claude Code (agents/skills/rules + a hooks manifest), a single
 // aggregated `AGENTS.md` for Codex, and per-artifact `.cursor/rules/*.mdc` for Cursor. The binding
@@ -9,7 +9,7 @@
 // Two responsibilities, deliberately split:
 //   `renderHarnessBundles` — a PURE, deterministic transform (no clock/randomness/env/fs). Its
 //     byte-stable output is pinned by the `__golden__/emit/` tree (ADR-0013) and reproduced exactly.
-//   `writeBundle`          — the GUARDED egress to disk. Two threats this gate closes (PLAN T19):
+//   `writeBundle`          — the GUARDED egress to disk. Two threats this gate closes:
 //     (1) path traversal escaping the emit target dir — every bundle-relative path is rejected if it
 //         is absolute, carries a null byte, or contains a `..` segment, and the `path.resolve`d
 //         destination MUST sit under the resolved target root (`startsWith(root + sep)`); and
@@ -21,7 +21,7 @@
 // `@caisson/local-store`'s `scrubForEgress`: that primitive REDACTS before a cloud embed, whereas the
 // emitter must FAIL LOUDLY so the buyer fixes the authored source rather than ship a silently-mangled
 // config — and an emitter has no business depending on the sqlite memory store for one predicate. The
-// detected shapes mirror that guard's contract (rebuild-clean; industry-standard credential shapes).
+// detected shapes mirror that guard's contract (industry-standard credential shapes).
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, resolve, sep } from "node:path";
 import type {
@@ -323,8 +323,8 @@ export function renderHarnessBundles(input: EmitInput): EmittedBundle {
 
 // ── Write-path security guards ─────────────────────────────────────────────────────────────────────
 
-// Credential SHAPES the emit refuses to write (rebuild-clean; mirrors the local-store egress-guard
-// contract). `.test` is run WITHOUT the global flag so it stays stateless across calls.
+// Credential SHAPES the emit refuses to write (mirrors the local-store egress-guard contract).
+// `.test` is run WITHOUT the global flag so it stays stateless across calls.
 const SECRET_SHAPES: readonly {
   readonly label: string;
   readonly re: RegExp;

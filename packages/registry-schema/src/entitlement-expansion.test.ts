@@ -39,7 +39,7 @@ const CASES: ReadonlyArray<{ readonly purchased: readonly string[] }> = [
   { purchased: ["@caisson/credits"] },
   { purchased: ["ai-kit", "local-ai"] },
   { purchased: ["compliance", "@caisson/kernel"] },
-  // Bare package-slug per-module purchase-id form (P6-store track, no `@caisson/` prefix) — resolves
+  // Bare package-slug per-module purchase-id form (no `@caisson/` prefix) — resolves
   // the same indexed module the full-id form above does.
   { purchased: ["credits"] },
   { purchased: ["kernel"] },
@@ -89,7 +89,7 @@ describe("ADR-0071 entitlement expansion (golden-first, ADR-0013)", () => {
   });
 });
 
-describe("per-module bare-slug purchase-id form (P6-store track)", () => {
+describe("per-module bare-slug purchase-id form", () => {
   test("a bare slug resolves to the same member the full @caisson/<slug> id would", () => {
     expect([...expandEntitlements(index, ["credits"])]).toEqual([
       ...expandEntitlements(index, ["@caisson/credits"]),
@@ -106,7 +106,7 @@ describe("per-module bare-slug purchase-id form (P6-store track)", () => {
     expect(() => expandEntitlements(index, ["not-a-real-module"])).toThrow();
   });
 
-  test("RESERVED_MODULE_ENTITLEMENT_IDS names the P6-store-locked future Compliance modules", () => {
+  test("RESERVED_MODULE_ENTITLEMENT_IDS names the future Compliance modules sold but not yet published", () => {
     expect([...RESERVED_MODULE_ENTITLEMENT_IDS].sort()).toEqual([
       "alerting",
       "retention-runner",

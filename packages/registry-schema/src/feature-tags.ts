@@ -12,9 +12,9 @@ import { z } from "zod";
 
 /**
  * The registered discriminators — each names ONE metered action across the editions:
- *  - `evidence_pack`   — Compliance evidence-pack generation (P2)
- *  - `inference_call`  — AI Production Kit metered inference (P3)
- *  - `codegen_run`     — create-caisson codegen generation (P5)
+ *  - `evidence_pack`   — Compliance evidence-pack generation
+ *  - `inference_call`  — AI Production Kit metered inference
+ *  - `codegen_run`     — create-caisson codegen generation
  *  - `eval_run`        — per eval-run metering (ADR-0007 proven unit)
  *  - `audit_scan`      — per audit-scan metering (ADR-0007 proven unit)
  *  - `gpu_minute`      — per caption / GPU-minute metering (ADR-0007 proven unit)
@@ -28,7 +28,7 @@ export const REGISTERED_FEATURE_TAGS = [
   "eval_run",
   "audit_scan",
   "gpu_minute",
-  // ADR-0220 (Fork AM-3 = A) — operator credit correction rides the feature envelope under this tag.
+  // ADR-0220 — an operator credit correction rides the feature envelope under this tag.
   "admin_adjust",
 ] as const;
 

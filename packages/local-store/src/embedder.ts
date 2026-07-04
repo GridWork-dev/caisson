@@ -1,7 +1,7 @@
 // src/embedder.ts — the pluggable Embedder PORT (ADR-0067). Engine-neutral: this `kind: base` package
 // ships only the INTERFACE a vector embedder must satisfy — it never bundles a model, opens a socket,
-// or reads a key. The consuming EDITION wires a concrete embedder (the seam T8 guards + the
-// test-doubled cloud-embed path implements). When NO embedder is configured the store runs on the
+// or reads a key. The consuming EDITION wires a concrete embedder — the seam the egress guard covers,
+// with the cloud-embed path test-doubled in CI. When NO embedder is configured the store runs on the
 // FTS5 floor alone — fully offline, never a silent fallback to some default model.
 import { ValidationError } from "@caisson/kernel";
 

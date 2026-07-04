@@ -2,7 +2,7 @@
 // buyer from "no AI config" to a validated `forge.config` — registered through the EXISTING
 // `registerTool` seam, each gated on the `ai-kit` entitlement (per-tool, timing-safe in the seam).
 //
-// SECRETS-SAFE BY CONSTRUCTION (T16 threat model):
+// SECRETS-SAFE BY CONSTRUCTION:
 //   - No tool ever receives or returns a secret VALUE. Args carry env-var NAMES, provider/model
 //     identifiers, and booleans — never a key. `strictObject` rejects any unknown field, so a
 //     `apiKey`-shaped arg is a ValidationError, not a silent leak.
@@ -11,7 +11,8 @@
 //   - The write surface emits env-var NAMES + a `.env.example` (`NAME=` with empty values) +
 //     the provider/model config — never a secret. It is APPROVAL-GATED and fail-closed: with no
 //     explicit `approve: true` the writer port is never invoked.
-//   - AI-provider lanes only (the ai-config provider enum). DB/deploy coaching defers to P5.
+//   - AI-provider lanes only (the ai-config provider enum). DB/deploy coaching is the generator's
+//     job, not this coach's.
 //   - No shell, no subprocess: persistence is an injected port (test-doubled in CI).
 //
 // coach.ts imports NOTHING from server.ts — it declares the minimal slice of the seam it needs

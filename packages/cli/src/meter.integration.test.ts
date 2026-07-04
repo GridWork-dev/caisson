@@ -211,7 +211,7 @@ describe("runGeneration — debit-before-spend (ADR-0049)", () => {
   });
 });
 
-describe("runGeneration — disk materialization + audit row (T16/T17)", () => {
+describe("runGeneration — disk materialization + audit row", () => {
   test("the default disk writer materializes to disk and records a generation row", async () => {
     await grantSome(5);
     const target = join(tmpBase, "out"); // omit writeFileSet → default disk writer kicks in

@@ -1,4 +1,4 @@
-// Unit tests for the retention policy (ADR-0067 · T9): dedup-on-write, default sliding TTL, and the
+// Unit tests for the retention policy (ADR-0067): dedup-on-write, default sliding TTL, and the
 // GC pass (expired / decayed / over-cap). Pure + deterministic — every case pins an explicit `now`, so
 // there is no clock, randomness, or I/O (no live call anywhere). Offline and engine-neutral.
 import { describe, expect, test } from "bun:test";

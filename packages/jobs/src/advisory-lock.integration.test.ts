@@ -1,7 +1,7 @@
-// withAdvisoryXactLock against a real PGlite (ADR-0229 row 57): proves the `pg_advisory_xact_lock(
+// withAdvisoryXactLock against a real PGlite (ADR-0229): proves the `pg_advisory_xact_lock(
 // $1::bigint)` statement is valid real-Postgres and the guarded section runs inside a withTenant tx.
 //
-// ponytail: PGlite is a SINGLE connection, so it can't model true cross-connection contention — two
+// PGlite is a SINGLE connection, so it can't model true cross-connection contention — two
 // "concurrent" tenant txns serialize on the one backend regardless of the lock. The contention
 // semantics (the lock is acquired BEFORE the critical section) are asserted in the unit test against a
 // recording executor; this file proves the SQL + bigint id are accepted by a real Postgres and compose

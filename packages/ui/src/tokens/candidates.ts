@@ -183,7 +183,7 @@ export const typeCandidates: readonly TypeCandidate[] = [
     id: "3",
     name: "Field",
     blurb:
-      "Hanken Grotesk + JetBrains Mono: humanist grotesk, warmer and proven in Wardfile. Slightly more approachable at the cost of mechanical edge.",
+      "Hanken Grotesk + JetBrains Mono: humanist grotesk, warmer and field-proven in production. Slightly more approachable at the cost of mechanical edge.",
     recommended: false,
     sans: '"Hanken Grotesk", ui-sans-serif, system-ui, sans-serif',
     mono: '"JetBrains Mono", ui-monospace, "SFMono-Regular", monospace',

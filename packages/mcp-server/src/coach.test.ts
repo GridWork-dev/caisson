@@ -1,4 +1,4 @@
-// T16 proof (ADR-0076 + ADR-0011): the setup coach is entitlement-gated, secrets-safe, and
+// Proves (ADR-0076 + ADR-0011) that the setup coach is entitlement-gated, secrets-safe, and
 // approval-gated. The cardinal invariant under test — a secret VALUE can neither enter a tool nor
 // appear in any tool output — is asserted directly, not assumed.
 import { describe, expect, test } from "bun:test";

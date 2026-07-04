@@ -15,7 +15,8 @@ export interface FaqProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 /**
- * Faq — a native `<details>`/`<summary>` disclosure list (recipe per ADR-0099). Replaces the two
+ * Faq — a native `<details>`/`<summary>` disclosure list, following the kit's shared component
+ * recipe of co-located CSS + no bespoke styling (ADR-0099). Replaces the two
  * divergent hand-rolled FAQ renders (a `Card`-grid on some pages, a bare flex-`div` on others) with
  * ONE accessible primitive: keyboard focus, screen-reader semantics, and a no-JS toggle come free
  * from `<details>`. Server-safe (no hooks/handlers). BEM block `cs-faq`; co-located CSS reads only

@@ -13,7 +13,7 @@
  * already-built index (the derived allowlist projection), not raw manifests per call (ADR-0071
  * rejected "resolve from manifests live on every gate call").
  *
- * Per-module à-la-carte purchase ids (P6-store track) are the BARE package slug, no `@caisson/`
+ * Per-module à-la-carte purchase ids are the BARE package slug, no `@caisson/`
  * prefix (e.g. `field-crypto` for `@caisson/field-crypto`) — `@caisson/pricebook`'s PURCHASE_BOOK
  * rows key `entitlements` this way. `expandEntitlements` resolves a bare slug against the index the
  * same as the long-supported full `@caisson/<slug>` module-id form, plus a fail-SOFT carve-out for a
@@ -26,7 +26,8 @@
  * PUBLIC catalog identifiers, not secrets, so there is no timing side-channel to close. The
  * timing-safe entitlement compare lives at the per-tool buyer-MCP gate (ADR-0076), where a caller's
  * entitlement set is matched against a tool's required entitlement. Scope (ADR-0071): this fixes the
- * expansion DATA MODEL only; entitlement-vs-allowlist enforcement TIMING is the separate P5 question.
+ * expansion DATA MODEL only; entitlement-vs-allowlist enforcement TIMING is a separate concern this
+ * module does not resolve.
  */
 import { z } from "zod";
 import { EDITIONS, type ModuleManifest } from "./module-manifest";

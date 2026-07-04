@@ -1,9 +1,8 @@
 // Module golden suite (ADR-0021 §golden / ADR-0013 golden-first). Declares the DETERMINISTIC output
 // @caisson/local-store pins: the fused RRF ranking for a FIXED (vectors, FTS docs, query) input
 // (RRF_K=60). The fixture lives in `src/__golden__` (the manifest `golden` dir) and is re-blessed via
-// `BLESS=1` only when the output legitimately changes. This descriptor REFERENCES the to-be-built
-// store API (`LocalStore` / `hybridSearch`) from `./store.ts` — golden-first: the fixture + the red
-// test land before the logic (T7) that turns them green.
+// `BLESS=1` only when the output legitimately changes. Golden-first: the fixture is authored, and its
+// assertions land, before the retrieval logic that turns them green.
 import { defineModuleGolden } from "@caisson/testing/golden-module";
 import { scrubForEgress } from "./egress-guard.ts";
 import { LocalStore } from "./store.ts";
@@ -40,20 +39,21 @@ const RRF_FIXTURE: RrfFixture = {
   query: { queryText: "fox", queryVector: [1, 0, 0], limit: 10 },
 };
 
-// ── Egress secret-scrub golden (T7, golden-first for the T8 guard) ─────────────────────────────────
+// ── Egress secret-scrub golden (golden-first for the egress guard) ─────────────────────────────────
 // The local store's embedder PORT (ADR-0067) is the one path that can carry buyer content OFF the box
-// (to a cloud embedder). Before any such egress the T8 guard MUST scrub credential-bearing content.
-// This fixture PINS that guard's contract — a table of credential-bearing `raw` inputs → the exact
-// `scrubbed` output the guard must produce — and lands BEFORE the logic (ADR-0013 golden-first).
+// (to a cloud embedder). Before any such egress the egress guard MUST scrub credential-bearing
+// content. This fixture PINS that guard's contract — a table of credential-bearing `raw` inputs → the
+// exact `scrubbed` output the guard must produce — and lands BEFORE the logic (ADR-0013 golden-first).
 //
-// Why this case `produce` echoes the authored contract instead of calling the guard: the guard
-// (`src/egress-guard.ts`) does not exist yet, so importing it here would make the suite fail to
-// RESOLVE (a broken tree), not assert a contract. Per the PLAN the fixture commits green
-// ("passes-on-fixture"); T8 then rewrites this `produce` body to `scrubForEgress(c.raw)` and the
-// committed `scrub.json` enforces — BLESS unset — that the real guard reproduces this table
-// byte-for-byte. So the EXPECTED outputs below ARE the guard's spec, authored deterministically.
+// Why this case `produce` echoes the authored contract instead of calling the guard: at authoring
+// time the guard (`src/egress-guard.ts`) did not exist yet, so importing it would have made the suite
+// fail to RESOLVE (a broken tree), not assert a contract. The fixture committed green first
+// ("passes-on-fixture"); the guard implementation then rewrote this `produce` body to
+// `scrubForEgress(c.raw)`, and the committed `scrub.json` enforces — BLESS unset — that the real guard
+// reproduces this table byte-for-byte. So the EXPECTED outputs below ARE the guard's spec, authored
+// deterministically.
 //
-// The contract the `scrubbed` values encode (the algorithm T8 implements), applied in order, each
+// The contract the `scrubbed` values encode (the algorithm the guard implements), applied in order, each
 // secret span collapsing to the fixed sentinel `[REDACTED]` (a constant — no entropy is ever echoed):
 //   A. PEM private-key block  (`-----BEGIN … PRIVATE KEY----- … -----END … PRIVATE KEY-----`) → `[REDACTED]`.
 //   B. URL userinfo password  (`scheme://user:pass@host`)                                     → `scheme://user:[REDACTED]@host` (user kept, password dropped).
@@ -70,7 +70,7 @@ interface ScrubCase {
   name: string;
   /** Credential-bearing input — synthetic, non-live secrets (safe to commit). */
   raw: string;
-  /** The deterministic scrubbed output the T8 guard must reproduce for `raw`. */
+  /** The deterministic scrubbed output the egress guard must reproduce for `raw`. */
   scrubbed: string;
 }
 
@@ -154,7 +154,7 @@ export const localStoreGolden = defineModuleGolden({
       },
     },
     {
-      // T7 fixture, now ENFORCED by the real T8 guard (golden-first, ADR-0013): `produce` runs each
+      // The fixture, now ENFORCED by the real egress guard (golden-first, ADR-0013): `produce` runs each
       // `raw` through `scrubForEgress`, and the committed `scrub.json` asserts — BLESS unset — that the
       // guard reproduces the authored input→output contract byte-for-byte.
       name: "scrub",

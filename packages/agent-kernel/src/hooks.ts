@@ -1,7 +1,7 @@
 // The hooks dispatcher (ADR-0065/0066). Engine-neutral: handlers observe — and may govern —
 // lifecycle act transitions at `${'before'|'after'}:${act}` points. The dispatcher NEVER runs an
 // engine and NEVER rewrites the FSM adjacency; it folds handler outcomes through the unified
-// `HookResult` shape (T15) and is hardened for buyer loops:
+// `HookResult` shape and is hardened for buyer loops:
 //   - FAIL-OPEN on infra failure: a handler that THROWS, and a DOWN/slow sink, never block the loop
 //     and never veto — they are isolated, the loop continues (an observer crash is not a policy).
 //   - FAIL-CLOSED on an EXPLICIT veto: a handler that returns `deny(reason)` short-circuits dispatch

@@ -1,20 +1,12 @@
 # @caisson/local-store
 
-> **macOS CI note (2026-07-02):** the `native-ext` macOS leg runs on the fleet's Mac mini runner
-> (`[self-hosted, gw-macos-arm64]`). The extension-capable Homebrew SQLite it needs is provisioned
-> host-wide at `/opt/homebrew/opt/sqlite` (the first `setCustomSQLite` candidate in `src/store.ts`);
-> the CI step is check-first and only `brew install`s when the dylib is missing (hosted runners).
+The shared **local hybrid-retrieval** primitive — sqlite-vec (`vec0`) for vectors, FTS5 for
+keyword, and a Reciprocal-Rank-Fusion merge over the two — that both local-editions compose
+without ever depending on one another.
 
-The shared **local hybrid-retrieval** base — sqlite-vec (`vec0`) for vectors, FTS5 for keyword, and a
-Reciprocal-Rank-Fusion merge over the two — that both local editions compose down-only. ADR-0067 (base
-placement) · ADR-0073 (file-per-tenant isolation) · ADR-0022 (down-only) · ADR-0003 (composable, never a
-fork) · ADR-0002 (strict + Zod boundary).
-
-Extracted to base BECAUSE the Local-first AI edition (its canonical/vector store) AND the Agentic-Dev
-edition (its local hybrid memory) need the same primitive; placed inside one edition, a base→edition or
-edition→edition import fails the ADR-0022 down-only gate. With local-ai now fully commercial (ADR-0050),
-the former AGPL-consumes-commercial combined-work concern that blocked a shared store is moot — this is a
-clean single-license base dependency.
+Placed in base because the Local-first AI edition (its canonical/vector store) and the
+Agentic-Dev edition (its local hybrid memory) both need the same primitive, and a base
+package never imports an edition or another edition's package.
 
 ## What it gives you
 
@@ -68,7 +60,8 @@ degrades to FTS5-only and still returns; a dimension mismatch throws; a traversa
 id is rejected before any open and two tenants resolve to distinct files. Golden fixtures live in
 `src/__golden__`; update only via `BLESS=1` (ADR-0013).
 
-> Rebuilt clean from the PUBLIC gridwork-core `memory-vec.ts` `hybridSearch` pattern (RRF_K=60, vec0 +
-> FTS5 + degrade). No pro-private `media-pipeline` code — patterns only.
+## macOS note
 
-**macOS CI note (2026-07-02):** the `native-ext` macOS leg runs on the fleets
+macOS ships a system SQLite with extension loading disabled, so a bare `bun:sqlite`
+`loadExtension(sqlite-vec)` throws. Point `bun:sqlite` at an extension-capable build — Homebrew's
+SQLite supports it — before opening a store; see `src/store.ts` for the detection logic.

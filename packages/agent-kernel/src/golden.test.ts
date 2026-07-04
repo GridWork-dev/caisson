@@ -1,6 +1,6 @@
-// RED until T4 (golden-first, ADR-0013). `golden.ts` references the to-be-built `runLifecycle` /
-// `parseArtifact` API, so this file fails to resolve its import until the schema + lifecycle logic
-// land — proving the fixtures precede the logic. T4 makes it green with `BLESS` unset.
+// RED until the schema + lifecycle logic land (golden-first, ADR-0013). `golden.ts` references the
+// to-be-built `runLifecycle` / `parseArtifact` API, so this file fails to resolve its import until
+// that logic lands — proving the fixtures precede the logic — then goes green with `BLESS` unset.
 import { describe, test } from "bun:test";
 import { matchGolden } from "@caisson/testing";
 import { agentKernelGolden } from "./golden.ts";

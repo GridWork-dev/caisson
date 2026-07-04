@@ -1,6 +1,6 @@
 // Governance guards + the unified `HookResult` (ADR-0065/0066). Governance has exactly ONE shape: a
 // decision is `allow | deny(reason) | mutate(ctx)`, returned by BOTH a transition GUARD (a pure
-// predicate gating a lifecycle edge) and a hook VETO (the dispatcher in `hooks.ts`, T16). A guard never
+// predicate gating a lifecycle edge) and a hook VETO (the dispatcher in `hooks.ts`). A guard never
 // runs an engine and never rewrites the FSM adjacency — it decides whether policy permits an
 // already-legal transition, and may rewrite the governance context a downstream guard/hook sees.
 // Engine-neutral, zero-dep, deterministic; `from`/`to` are typed against the shipped lifecycle FSM.

@@ -1,7 +1,7 @@
 /**
  * Token contract types. The TS objects ARE the source of truth; `gen-tokens-css.ts`
  * emits `styles/tokens.css` (--cs-* vars) from the locked default theme. Candidate
- * sets render live in the studio for the operator to pick, then lock into `theme.ts`.
+ * token sets are authored here for evaluation, then the chosen set is locked into `theme.ts`.
  */
 
 /** Semantic colour roles. One set per mode (dark / light). All values are OKLCH strings. */

@@ -7,7 +7,7 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "description": "Auth-gated buyer MCP: timing-safe Bearer, entitlement-scoped reads, allowlist+credit-gated generate. ADR-0008/0004.",
+  "description": "Auth-gated buyer MCP: timing-safe Bearer, entitlement-scoped reads, allowlist+credit-gated generate.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",

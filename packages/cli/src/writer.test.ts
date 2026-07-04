@@ -1,4 +1,4 @@
-// FileSetWriter tests (ADR-0068 / P5). Four concerns:
+// FileSetWriter tests (ADR-0068). Four concerns:
 //   (1) path safety — zip-slip / traversal / null-byte / absolute rejected before any write,
 //   (2) non-empty target guard — refused by default; opt-in overwrite honored,
 //   (3) rollback — a mid-write failure cleans the temp dir; target is untouched,

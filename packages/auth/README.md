@@ -1,10 +1,26 @@
 # @caisson/auth
 
-Authentication (sessions/JWT), provider-agnostic.
+Provider-agnostic authentication: short-lived EdDSA JWTs for account/session tokens, a
+session contract any auth runtime can implement, and multi-user account membership
+(owner/seat roles) scoped by row-level security.
 
 - **Layer:** base
-- **Seeds (rebuild-clean):** gridwork
-- **Key ADR:** ADR-0002
 
-> **Built** — real src + tests (session/RLS seam). Live per-package status: ../../docs/build-state.md
-> Build per `/plan.md`. Pro-private `media-pipeline` contributes patterns only, never code.
+## Install
+
+```bash
+bun add @caisson/auth
+```
+
+## Use
+
+```ts
+import {
+  requireSession,
+  verifyAccountJwt,
+  resolveUserAccounts,
+} from "@caisson/auth";
+```
+
+better-auth is the reference session-provider implementation. The resolved `accountId` is
+the only value the data layer trusts for tenant isolation — never raw user input.
