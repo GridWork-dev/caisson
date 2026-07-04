@@ -22,6 +22,7 @@ export {
 // authority; verify never raises (ADR-0010). The issuer is P6; only offline verify is composed here.
 export {
   verifyLicense,
+  verifyLicenseWithKey,
   decodeToken,
   encodeToken,
   licenseClaimsSchema,

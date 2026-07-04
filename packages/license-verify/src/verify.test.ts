@@ -6,12 +6,14 @@
 // (`CAISSON_LICENSE_SIGNING_KEY`) never lives in this repo — so tests CANNOT mint prod-signed tokens.
 // Instead they mint with a DETERMINISTIC DEV keypair (SHA-256("caisson-license-verify-KAT-seed-v1"),
 // a documented TEST vector, NEVER a production secret) and exercise the verify LOGIC through the
-// explicit-key seam `verifyLicenseWithKey(token, DEV_PUBLIC_KEY)`. The SHIPPED baked key is pinned
-// separately by a real prod-signed golden token (`__golden__/prod-signed-token.json`, minted offline
-// with the production private key) verified through the production `verifyLicense` entrypoint. Ed25519
-// is deterministic (RFC 8032), so the dev seed reproduces the codec golden byte-for-byte.
+// explicit-key seam `verifyLicenseWithKey(token, DEV_PUBLIC_KEY)`. NO prod-signed token is ever
+// committed: a real entitlement token is itself the leak (the token IS the entitlement — offline
+// verify has no revocation list), regardless of the private key staying secret. That the bake
+// actually happened is proven negatively (a dev-signed token is REJECTED by the default entrypoint);
+// the baked prod key's positive path is exercised live by `services/license`, never by a committed
+// token. Ed25519 is deterministic (RFC 8032), so the dev seed reproduces the codec golden
+// byte-for-byte.
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
 import { canonicalize } from "@caisson/kernel";
 import {
   type KeyObject,
@@ -83,25 +85,7 @@ const DEV_TOKEN =
 
 const VALID_UUID = "00000000-0000-4000-8000-000000000000";
 
-describe("verifyLicense — production baked-key KAT (the SHIPPED contract)", () => {
-  /** A real token signed by the PRODUCTION private key — the public key baked into verify.ts. */
-  const prodGolden = JSON.parse(
-    readFileSync(
-      new URL("./__golden__/prod-signed-token.json", import.meta.url),
-      "utf8",
-    ),
-  ) as { token: string; payload: string };
-
-  test("the baked production key verifies a real prod-signed token (default entrypoint)", () => {
-    const result = verifyLicense(prodGolden.token);
-    expect(result.valid).toBe(true);
-    expect(result.tier).toBe("pro");
-    expect(result.entitlements).toEqual(["ai-kit", "compliance", "local-ai"]);
-    expect(result.claims?.licenseId).toBe(
-      "11111111-1111-4111-8111-111111111111",
-    );
-  });
-
+describe("verifyLicense — production baked-key contract (the SHIPPED entrypoint)", () => {
   test("a DEV-key-signed token is REJECTED by the default entrypoint (the bake actually happened)", () => {
     // If verify.ts still baked the dev/KAT key, this dev-signed token would verify — proving the
     // shipped key is the production key, not the publicly-documented test vector.
