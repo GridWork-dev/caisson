@@ -15,21 +15,28 @@
 // Paddle onto the transaction + subscription — this removes the Stripe driver's
 // subscription_data[metadata]-stamping workaround (ADR-0089 §worked-around by ADR-0108).
 //
-// The envelope (event_id/event_type/data) is Zod-`.strict()`-validated at the boundary
-// (services-hardening MED finding): the raw webhook body used to be trusted via a bare
-// `JSON.parse(rawBody) as PaddleEvent` cast — a type-level assertion with no runtime check, so a
-// malformed or field-injected delivery would flow straight into the mapper below. `PaddleEventSchema`
-// rejects any envelope that is missing `event_id`/`event_type`, has the wrong top-level shape, or
-// carries an extra/unknown top-level key; `provider.ts`'s `verifyAndParse` parses through it
-// (`parseStrict`, throwing a `ValidationError`) BEFORE this file's mapper ever sees the event. `data`
-// itself stays a loose `Record<string, unknown>` — Paddle's per-event-type payload shape varies, and
-// the `read*` helpers below are ALREADY the defensive/fail-closed-to-safe-default layer for it; this
-// schema only closes the envelope-level gap, it does not re-validate every event type's inner fields.
+// The envelope is Zod-validated at the boundary (services-hardening MED finding): the raw webhook
+// body used to be trusted via a bare `JSON.parse(rawBody) as PaddleEvent` cast — a type-level
+// assertion with no runtime check, so a malformed delivery would flow straight into the mapper
+// below. `PaddleEventSchema` rejects an envelope that is missing `event_id`/`event_type`/`data` or
+// carries them with the wrong type; `provider.ts`'s `verifyAndParse` parses through it
+// (`parseStrict`, throwing a `ValidationError`) BEFORE this file's mapper ever sees the event.
+//
+// Deliberately NOT `.strict()` (2026-07-04 live-verification finding): every real Paddle delivery
+// carries the full documented envelope — `event_id`, `event_type`, `occurred_at`,
+// `notification_id`, `data` — and Paddle documents adding fields as a non-breaking change with no
+// API version bump. A strict envelope rejected every REAL webhook with a 400 (the integration
+// fixtures were minimal three-field envelopes, so tests stayed green), which on the money path
+// means paid purchases never fulfill. Authenticity is the signature's job (verifyPaddleWebhook
+// runs first); this schema guarantees only the shape of the fields we consume. Unknown envelope
+// keys are stripped by the default `z.object` parse. `data` itself stays a loose
+// `Record<string, unknown>` — the `read*` helpers below are ALREADY the
+// defensive/fail-closed-to-safe-default layer for it.
 import { z } from "zod";
-import { strictObject, ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson/kernel";
 import type { DomainBillingEvent } from "./events.ts";
 
-export const PaddleEventSchema = strictObject({
+export const PaddleEventSchema = z.object({
   event_id: z.string(),
   event_type: z.string(),
   data: z.record(z.string(), z.unknown()),
