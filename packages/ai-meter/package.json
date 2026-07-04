@@ -7,7 +7,7 @@
     "access": "restricted",
     "registry": "https://npm.pkg.github.com"
   },
-  "description": "Metered-inference money path: estimate->reserve->reconcile over the credit ledger + versioned price book + atomic spend window + soft/hard caps + circuit breaker, all FORCE-RLS. ADR-0060/0014/0070.",
+  "description": "Metered-inference money path: estimate->reserve->reconcile over the credit ledger + versioned price book + atomic spend window + soft/hard caps + circuit breaker, all FORCE-RLS.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",

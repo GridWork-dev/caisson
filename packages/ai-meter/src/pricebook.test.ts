@@ -1,6 +1,6 @@
-// T6 price-book cost golden (ADR-0060/0013): `computeCost` normalizes each per-provider usage shape
+// Price-book cost golden (ADR-0060/0013): `computeCost` normalizes each per-provider usage shape
 // to the EXACT integer micro-USD + credit units pinned in `__golden__/cost.json`. The fixture is a
-// fixed data table (committed by T6, BLESS unset here) — it never regenerates, so a rounding or
+// fixed data table (BLESS unset here) — it never regenerates, so a rounding or
 // accounting drift fails this test. Pure, no DB, no network.
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
@@ -50,7 +50,7 @@ const conversion = {
   ),
 };
 
-describe("T6 price-book cost golden (BLESS unset)", () => {
+describe("price-book cost golden (BLESS unset)", () => {
   for (const c of golden.cases) {
     test(c.name, () => {
       const entry = golden.priceBook[priceKey(c.provider, c.model)];

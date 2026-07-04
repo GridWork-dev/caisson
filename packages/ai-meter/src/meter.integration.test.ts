@@ -1,4 +1,4 @@
-// T8 exit-gate proof for the meter money path (ADR-0060/0007/0005). PGlite + the production
+// Integration proof for the meter money path (ADR-0060/0007/0005). PGlite + the production
 // `withTenant` shape, deterministic price book + clock, zero network: the reservation debits BEFORE
 // the (mock) call; a short wallet 402s and writes nothing; reconcile trues the charge to actuals
 // (refund or shortfall); a same-call retry settles once; a hard cap trips the breaker so the next

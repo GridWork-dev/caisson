@@ -1,16 +1,16 @@
-// src/sync/reconcile.ts — the LWW/CRDT merge core (ADR-0064, threat TM-SYNC; pins the T16 goldens). A
+// src/sync/reconcile.ts — the LWW/CRDT merge core (ADR-0064; pins the sync-conflict goldens). A
 // PURE, DETERMINISTIC reduction over the per-replica changelogs of ONE tenant (file-per-tenant,
 // ADR-0073 — every changeset shares a `tenantId`, replicas differ only by `replicaId`) into the
 // converged set of LIVE rows. The local canonical store is the convergence target: after a sync
-// round-trip both replicas reach exactly this set (exit-gate clause 2, T19).
+// round-trip both replicas reach exactly this set.
 //
 // The merge is a last-writer-wins register per `(table, pk)`, keyed by the hybrid logical clock
 // (`clock.ts`): the winning change is the one with the greatest `HlcStamp` — physical (`updatedAt`)
 // then node (`replicaId`) then counter (`seq`). Because `replicaId` is a non-forgeable per-replica UUID,
 // the winner is unambiguous and input-order-independent (`reconcileReplicas([A,B]) === [B,A]`), so a
-// skewed/forged wall clock cannot make convergence non-deterministic (TM-SYNC). A `delete` that wins is
+// skewed/forged wall clock cannot make convergence non-deterministic. A `delete` that wins is
 // a tombstone: the row is EXCLUDED from the live set and a lower-keyed concurrent `upsert` does NOT
-// resurrect it. T18 layers tombstone persistence + horizon GC on top; this core already enforces
+// resurrect it. `tombstone.ts` layers persistence + horizon GC on top; this core already enforces
 // no-resurrection by construction (a losing upsert is simply not the winner).
 //
 // Boundary note: this is the pure merge core, not the untrusted transport boundary — peer changesets are
@@ -23,7 +23,7 @@ import { compareStamps, stampFromEntry, type HlcStamp } from "./clock.ts";
 
 /**
  * One converged live row: the winning `upsert`'s full column values for a `(table, pk)`. The reconciled
- * set is sorted ascending by `table` then `pk`, so two replicas serialize byte-equal (exit-gate clause 2).
+ * set is sorted ascending by `table` then `pk`, so two replicas serialize byte-equal.
  */
 export interface ReconciledRow {
   readonly table: string;
@@ -43,7 +43,7 @@ interface Winner {
  * `(table, pk)` by greatest HLC stamp; a winning `delete` tombstones the row (excluded, no resurrection).
  *
  * Fails closed with `TenancyError` (404, never 403 — never echo a tenant id) if the changesets do not all
- * share one `tenantId`: a cross-tenant merge is a partition breach (TM-SYNC / ADR-0073), not a no-op.
+ * share one `tenantId`: a cross-tenant merge is a partition breach (ADR-0073), not a no-op.
  */
 export function reconcileReplicas(
   changesets: readonly Changeset[],
@@ -88,7 +88,7 @@ export function reconcileReplicas(
     }
   }
 
-  // Total-order the live set by (table, pk) so divergent replicas serialize byte-equal (exit-gate 2).
+  // Total-order the live set by (table, pk) so divergent replicas serialize byte-equal.
   rows.sort((a, b) =>
     a.table < b.table
       ? -1

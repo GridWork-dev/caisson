@@ -1,12 +1,12 @@
-// T15 — end-to-end integration proof for the metered inference gateway (ADR-0059). Where
-// `gateway.test.ts` (T14) exercises each pipeline leg in isolation, this drives the WHOLE composition
+// End-to-end integration proof for the metered inference gateway (ADR-0059). Where
+// `gateway.test.ts` exercises each pipeline leg in isolation, this drives the WHOLE composition
 // against real schemas on PGlite (the production `withTenant` shape) with a test-doubled
 // `LanguageModelV2` (zero network — the live transport stays the only un-exercised path):
 //
 //   - the happy path metered call: resolve `name@version` → render → reserve BEFORE the provider call
 //     → reconcile to ACTUAL, with the wallet, the append-only `usage_event`, and the spend window all
 //     asserted at ground truth;
-//   - a same-`callId` retry settles EXACTLY ONCE (reserve + reconcile idempotent — SPEC exit-gate 1);
+//   - a same-`callId` retry settles EXACTLY ONCE (reserve + reconcile idempotent);
 //   - an empty wallet 402s before any provider call and records no `usage_event` (fail-closed);
 //   - a hard spend cap trips the breaker so the NEXT call 402s without reaching the provider;
 //   - a flagged input throws `GuardrailError` 422, never calls the model, never spends, and emits a

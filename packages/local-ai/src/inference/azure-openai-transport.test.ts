@@ -1,4 +1,4 @@
-// Unit tests for the Azure OpenAI rented transport (ADR-0209 — threat TM-RENT). Same seam as the
+// Unit tests for the Azure OpenAI rented transport (ADR-0209). Same seam as the
 // OpenRouter template tests: the guard ITSELF is the injection point — a subclass runs the REAL
 // `assertAllowed` gate and returns a canned `Response`, proving request shapes AND the fail-closed
 // egress gate with zero network. The live wire is `live/rented-drivers.live.test.ts` (creds-gated).

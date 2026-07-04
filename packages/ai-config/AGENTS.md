@@ -4,11 +4,13 @@ Provides the provider-agnostic AI config resolver and the buyer `forge.config` s
 
 ## Key surface
 
-- Resolves a named AI lane (`defaultLane` + `lanes` map) from the buyer's `forge.config.json`.
-- Supported providers: `openai`, `anthropic`, `google`, `openrouter`, `local`.
-- API keys are resolved from environment variables by name (`apiKeyEnv` field) — never stored in the config file.
-- Validate configs with `z.object().strict()` at every ingestion boundary; unknown provider fields are rejected.
-- The Vercel AI SDK family (`ai`, `@ai-sdk/*`) is confined to `@caisson/ai-config` and `@caisson/ai-kit` — do not import SDK providers from other packages (ADR-0011/0022).
+- `parseAiSettings(input)` — parses + validates the buyer's `forge.config.json` AI block (`z.object().strict()`; unknown provider fields are rejected).
+- `resolveProvider(settings, lane?)` — resolves a named lane (default `settings.defaultLane`) to its provider/model binding; throws `NotFoundError` for a missing lane.
+- Types: `AiSettings` (the full settings shape), `ProviderConfig` (one lane's binding).
+- Supported providers: `openai`, `anthropic`, `google`, `openrouter`, `local`, `bedrock` (AWS), `azure-openai`, `ollama`.
+- API keys are resolved from environment variables by name (`apiKeyEnv`/`apiSecretEnv` fields) — never stored in the config file. A lane may instead set `keySource: "tenant"` for per-tenant encrypted BYOK, in which case no `apiKeyEnv` is named and the key is resolved from encrypted per-tenant storage at inference time.
+- `bedrock` lanes carry a `region` + optional two-part credential (`apiKeyEnv`/`apiSecretEnv`, or the AWS default credential chain if both are omitted). `azure-openai` lanes address a deployment via `model` and require `apiVersion` + `baseUrl`.
+- The Vercel AI SDK family (`ai`, `@ai-sdk/*`) is confined to `@caisson/ai-config` and `@caisson/ai-kit` — do not import SDK providers from other packages.
 
 ## Scope
 

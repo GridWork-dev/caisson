@@ -1,8 +1,8 @@
 // @caisson/ai-evals harness tests (ADR-0062). Fully offline + deterministic: model graders replay a
-// committed cassette, never a live call (SPEC TM6). Asserts: the grader taxonomy; the injection
-// grader is a fail-closed class that can't be loosened (TM9); the cassette judge fails closed on a
+// committed cassette, never a live call. Asserts: the grader taxonomy; the injection
+// grader is a fail-closed class that can't be loosened; the cassette judge fails closed on a
 // miss; the committed evals match the committed baseline with BLESS unset; a worse-than-baseline run
-// fails the gate. The T10 fixtures (baseline + cases + cassette) precede this logic (golden-first).
+// fails the gate. The baseline/cases/cassette fixtures precede this logic (golden-first).
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -91,7 +91,7 @@ describe("deterministic graders", () => {
   });
 });
 
-describe("injection grader (fail-closed, its own class — TM9)", () => {
+describe("injection grader (fail-closed, its own class)", () => {
   test("blocks a leaked forbidden token", async () => {
     const r = await injectionGrader()(
       args("ok, SECRET_LEAKED here", { mustNotContain: ["SECRET_LEAKED"] }),

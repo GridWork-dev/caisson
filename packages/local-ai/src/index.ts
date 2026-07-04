@@ -1,10 +1,10 @@
 // @caisson/local-ai — the Local-first AI EDITION (ADR-0050/0064/0067/0073). A COMPOSITION, not a
 // fork: it depends DOWN-ONLY on the shipped base/primitive packages (edition→base, never up —
-// ADR-0003/0022) and adds the edition-only surface (a built two-way sync engine, an
+// ADR-0003/0022) and adds the edition-only surface: a two-way sync engine, an
 // `InferenceBackend` port, a zero-egress privacy gate, at-rest field-crypto, and the file-per-tenant
-// resolver) in later tasks. At T9 this barrel re-exports the composed base seams the edition is
-// built on — no base contract is rebuilt here. Edition-only surface is appended to this barrel as
-// each task lands (tenancy, crypto, inference, privacy, sync, migration assembly).
+// resolver. This barrel re-exports the composed base seams the edition is
+// built on — no base contract is rebuilt here — plus the edition-only surface (tenancy, crypto,
+// inference, privacy, sync, migration assembly).
 
 // Local hybrid retrieval (sqlite-vec vec0 KNN + FTS5 + RRF, RRF_K=60, FTS-only degrade) plus the
 // file-per-tenant isolation floor — the resolved path IS the tenant boundary (ADR-0067/0073).
@@ -19,7 +19,7 @@ export {
 } from "@caisson/local-store";
 
 // Offline, fail-safe-to-community Ed25519 license verification — the signed tier is the sole
-// authority; verify never raises (ADR-0010). The issuer is P6; only offline verify is composed here.
+// authority; verify never raises (ADR-0010). The issuer lives in the commerce/licensing service; only offline verify is composed here.
 export {
   verifyLicense,
   decodeToken,
@@ -48,7 +48,7 @@ export {
   type AeadCipher,
 } from "@caisson/field-crypto";
 
-// At-rest field encryption composed over the file-per-tenant local store (ADR-0055/0064 — TM-REST):
+// At-rest field encryption composed over the file-per-tenant local store (ADR-0055/0064):
 // the edition seam that seals/opens a sensitive column under a per-tenant derived key before it
 // touches the SQLite file, so a tenant-B file cannot open a tenant-A ciphertext (AEAD auth-fail).
 export { AtRestStore } from "./crypto/at-rest.ts";
@@ -111,7 +111,7 @@ export {
   type BedrockRentedTransportConfig,
 } from "./inference/bedrock-transport.ts";
 
-// The runtime privacy / egress gate (ADR-0064, TM-EGRESS). Zero-egress-by-default, fail-closed-to-
+// The runtime privacy / egress gate (ADR-0064). Zero-egress-by-default, fail-closed-to-
 // offline: the guard wraps the kernel `fetchWithTimeout` chokepoint and blocks every non-allowlisted
 // host; an empty allowlist (`ZERO_EGRESS_POLICY`) blocks ALL egress. "Your data never leaves the device."
 export {
@@ -135,7 +135,7 @@ export {
   type PrivacyMode,
 } from "./privacy/policy.ts";
 
-// The built two-way sync engine (ADR-0064, TM-SYNC): per-tenant changeset capture + the fail-closed
+// The two-way sync engine (ADR-0064): per-tenant changeset capture + the fail-closed
 // peer-boundary parse + the persistent LWW/CRDT-with-tombstones reconcile. The local canonical store
 // is the convergence target — peers move toward it; a tenant-A changeset can never apply to a tenant-B
 // file (file-per-tenant partition, ADR-0073).

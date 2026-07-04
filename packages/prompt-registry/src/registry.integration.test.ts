@@ -1,4 +1,4 @@
-// P3 exit-gate proof for the prompt registry (ADR-0061/0005/0006): versions are append-only +
+// Integration proof for the prompt registry (ADR-0061/0005/0006): versions are append-only +
 // supersede via the kernel chain; `name@version` / `name@alias` / current resolution works;
 // promoting an alias mutates only the pointer; a version row cannot be updated or deleted; and the
 // store is fail-closed tenant-isolated. PGlite + the production `withTenant` shape — no live DB.

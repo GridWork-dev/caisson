@@ -1,4 +1,4 @@
-// T14 exit-gate proof for the metered inference gateway (ADR-0059). PGlite + the production
+// Exit-gate proof for the metered inference gateway (ADR-0059). PGlite + the production
 // `withTenant` shape + a mock `LanguageModelV2` (zero network): a metered `infer()` reserves BEFORE
 // the provider call, reconciles to actual, fail-closed 402s on a short wallet / open breaker without
 // ever calling the model, blocks a guardrailed input with a 422 (no spend), restores tokenized PII on

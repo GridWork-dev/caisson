@@ -7,7 +7,7 @@
     "access": "restricted",
     "registry": "https://npm.pkg.github.com"
   },
-  "description": "Eval harness (defineEval) + grader taxonomy (exact / regex / json-shape / schema / model-graded + a fail-closed injection class) + a regression-vs-committed-baseline gate. Offline + deterministic (cassette-replayed judge). ADR-0062/0013.",
+  "description": "Eval harness (defineEval) + grader taxonomy (exact / regex / json-shape / schema / model-graded + a fail-closed injection class) + a regression-vs-committed-baseline gate. Offline + deterministic (cassette-replayed judge).",
   "exports": {
     ".": {
       "bun": "./src/index.ts",

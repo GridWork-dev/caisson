@@ -1,4 +1,4 @@
-// Unit tests for the Bedrock rented transport (ADR-0209 — threat TM-RENT). Same seam as the
+// Unit tests for the Bedrock rented transport (ADR-0209). Same seam as the
 // OpenRouter template tests: the guard ITSELF is the injection point — a subclass runs the REAL
 // `assertAllowed` gate and returns a canned `Response`, proving request shapes, the SigV4 header
 // wiring, and the fail-closed egress gate with zero network. Signature CORRECTNESS is pinned

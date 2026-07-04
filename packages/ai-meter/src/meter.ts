@@ -355,7 +355,7 @@ export async function reserve(
   // Only a FRESH billable reservation pre-counts its estimate into the window (reserving headroom so
   // concurrent calls can't all slip under the cap). A replay, a zero estimate, or a BYOK lane moves
   // nothing here — BYOK accrues the full actual at reconcile instead.
-  // ponytail: BYOK caps therefore settle post-call; a concurrent BYOK burst can momentarily exceed the
+  // BYOK caps therefore settle post-call; a concurrent BYOK burst can momentarily exceed the
   // cap before the first reconcile trips the breaker — acceptable (no wallet at risk). Pre-count BYOK
   // only if a reservation-marker table is added to anchor its reserve idempotency.
   if (idempotent || reservedCredits === 0 || !billable) {

@@ -36,6 +36,17 @@ Production Kit gateway must know to meter inference correctly.
 override through `parsePriceBook` / `parseCreditConversion` at the edge. An unknown `provider/model`
 throws `ConfigError` — it never meters silently at zero.
 
+## Dedup-before-meter gate
+
+`checkDedupGate(store, config)` (ADR-0217) catches a near-identical prompt retry — an agent loop
+rewording the same question, a re-asked question — BEFORE the price-book estimate/debit, so a
+caller (ai-kit gateway, agent-runner, support-bot) can choose to skip or reuse instead of paying
+twice. Built from `normalizePrompt`/`shingle`/`computeMinHashSignature`/`lshBands`/`jaccardEstimate`
+(pure MinHash/LSH similarity, no network) over an injected `DedupStore`
+(`createInMemoryDedupStore` for tests/single-process). Detection only — it never auto-skips or
+enforces a policy, and moves zero wallet balance; `reserve()`'s own idempotency separately catches
+a literal `callId` retry.
+
 ## Out of scope
 
 No provider-SDK import (the gateway `@caisson/ai-kit` owns that boundary, ADR-0011/0059). No live

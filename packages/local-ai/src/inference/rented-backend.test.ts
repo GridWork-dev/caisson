@@ -1,5 +1,5 @@
-// Unit tests for the rented/hosted inference backend SEAM (ADR-0064, fork P4a-15-C — threat
-// TM-RENT). SHAPE ONLY, NO NETWORK: the wire call is a deterministic `RentedTransport` double and
+// Unit tests for the rented/hosted inference backend SEAM (ADR-0064).
+// SHAPE ONLY, NO NETWORK: the wire call is a deterministic `RentedTransport` double and
 // the meter sink captures the emitted `UsageMetering` records. These tests pin the two safety
 // invariants — OFF BY DEFAULT (the privacy guard gates construction) and METERED (every call emits
 // one integer + idempotent record) — without ever opening a socket. The live transport's wire runs
@@ -69,7 +69,7 @@ function makeBackend(overrides: { dim?: number; meter?: MeterSink } = {}) {
   });
 }
 
-describe("RentedInferenceBackend — OFF BY DEFAULT (TM-RENT, gated by the privacy guard)", () => {
+describe("RentedInferenceBackend — OFF BY DEFAULT (gated by the privacy guard)", () => {
   test("zero-egress (default) policy blocks construction — no rented path without opt-in", () => {
     expect(
       () =>

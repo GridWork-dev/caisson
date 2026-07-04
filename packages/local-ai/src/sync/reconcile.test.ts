@@ -1,13 +1,10 @@
-// src/sync/reconcile.test.ts — the reconcile CONFLICT goldens (T16, golden-before-logic / ADR-0013,
-// threat TM-SYNC). Authored BEFORE the LWW/tombstone logic it pins: it imports the to-be-built
-// `reconcileReplicas` from `./reconcile.ts`, so this file fails to resolve its import and the suite is
-// RED until that logic lands — the fixture precedes the code (the same shape as
-// `@caisson/local-store`'s golden-first test). T17 builds the LWW merge (`reconcile.ts` + the HLC in
-// `clock.ts`) and makes the `lww-resolve` golden pass; T18 hardens tombstone semantics (no
-// resurrection / GC in `tombstone.ts` + its own test) and the `tombstone-resolve` golden stays green.
+// src/sync/reconcile.test.ts — the reconcile CONFLICT goldens (golden-before-logic / ADR-0013).
+// The `reconcileReplicas` merge (`reconcile.ts` + the HLC in `clock.ts`) is pinned against the
+// `lww-resolve` golden; tombstone semantics (no resurrection / GC in `tombstone.ts` + its own test)
+// are pinned against the `tombstone-resolve` golden.
 // Asserted with `BLESS` unset — re-bless only via `BLESS=1 bun test` when the semantics legitimately move.
 //
-// The CONTRACT this golden pins for `reconcileReplicas(changesets) -> ReconciledRow[]` (T17/T18):
+// The CONTRACT this golden pins for `reconcileReplicas(changesets) -> ReconciledRow[]`:
 //   - PURE + DETERMINISTIC: merges the per-replica changelogs of one tenant (every changeset shares a
 //     tenantId; replicas differ only by replicaId) into the converged set of LIVE rows. The local
 //     canonical store is the convergence target — after a round-trip BOTH replicas reach this set.
@@ -16,9 +13,9 @@
 //     `replicaId` (deterministic, since replicaId is a stable per-replica UUID, NOT a forgeable wall
 //     clock); a same-(updatedAt, replicaId) pk within one replica is broken by the greater `seq`.
 //   - TOMBSTONE: if the winning change is a `delete`, the row is a tombstone and is EXCLUDED from the
-//     returned live set — a lower-keyed concurrent `upsert` does NOT resurrect it (TM-SYNC).
+//     returned live set — a lower-keyed concurrent `upsert` does NOT resurrect it.
 //   - SHAPE: each returned row is `{ table, pk, values }` (the winning upsert's `RowValues`), the set
-//     sorted ascending by `table` then `pk` — so two replicas serialize byte-equal (exit-gate clause 2).
+//     sorted ascending by `table` then `pk` — so two replicas serialize byte-equal.
 import { describe, expect, test } from "bun:test";
 import { matchGolden } from "@caisson/testing";
 import { reconcileReplicas } from "./reconcile.ts";
@@ -153,7 +150,7 @@ const TOMB_B: Changeset = {
   ],
 };
 
-describe("reconcileReplicas LWW (T16 golden, golden-before-logic)", () => {
+describe("reconcileReplicas LWW (golden-before-logic)", () => {
   test("two divergent replicas converge per-field LWW to the committed golden", () => {
     matchGolden(
       import.meta.url,
@@ -169,7 +166,7 @@ describe("reconcileReplicas LWW (T16 golden, golden-before-logic)", () => {
   });
 });
 
-describe("reconcileReplicas tombstone (T16 golden, golden-before-logic)", () => {
+describe("reconcileReplicas tombstone (golden-before-logic)", () => {
   test("a delete beats a concurrent edit, no resurrection, matches the committed golden", () => {
     matchGolden(
       import.meta.url,
