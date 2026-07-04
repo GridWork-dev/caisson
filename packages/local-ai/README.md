@@ -14,8 +14,6 @@ edition-only surface.
 - **Adds:** a two-way sync engine (CRDT/LWW + tombstones behind a `SyncEngine` port) · an
   `InferenceBackend` port (real local embeddings; completion seam; stubbed in CI) · a zero-egress
   privacy gate · the file-per-tenant resolver (ADR-0073) · the edition migration assembly
-- **Key ADRs:** ADR-0064 (two-way sync + hybrid-retrieval exit gate) · ADR-0050
-  (fully-commercial) · ADR-0067/0073 (local-store + file-per-tenant) · ADR-0010 (offline license)
 
 ## Local inference backend (`OnnxEmbeddingBackend`)
 

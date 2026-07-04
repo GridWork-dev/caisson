@@ -1,6 +1,6 @@
 # services/docs (`@caisson/service-docs`)
 
-The **AI-native docs corpus + retrieval service** (P6, ADR-0096 / ADR-0009). It builds a chunked,
+The **AI-native docs corpus + retrieval service** (ADR-0096 / ADR-0009). It builds a chunked,
 agent-queryable corpus from the repo's authoritative docs, emits a canonical `llms.txt` /
 `llms-full.txt`, and serves a typed `POST /query` retrieval contract that the (Python)
 `services/support-bot` and buyer agents consume **cross-language over HTTP**.
