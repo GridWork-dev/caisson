@@ -845,7 +845,17 @@ function relatedTermsSection(term: GlossaryTerm): PageSection | undefined {
         createElement(
           "li",
           { key: t.slug },
-          createElement("a", { href: `/glossary/${t.slug}` }, t.term),
+          createElement(
+            "a",
+            {
+              href: `/glossary/${t.slug}`,
+              // Match the site's existing inline-link convention (e.g. ai-kit/procurement/
+              // homepage body copy): inline `color` beats the base.css `a { color: inherit }`
+              // reset on specificity without needing a new class or !important.
+              style: { color: "var(--cs-link)" },
+            },
+            t.term,
+          ),
         ),
       ),
     ),
@@ -866,9 +876,13 @@ export function glossaryPageSpec(term: GlossaryTerm): PageSpec {
       lede: term.definition,
     },
     {
+      // No `title` here on purpose: the H1 (hero, above) already carries the term name and its
+      // full definition as the lede — a second heading with the identical text is a copy-rules
+      // restated-heading bug (no new information). `title` is optional on <Section> (renders
+      // nothing when omitted, packages/ui/src/components/section.tsx), so the "Definition"
+      // eyebrow alone stands as the lead-in label for the code artifact that follows.
       kind: "section",
       eyebrow: "Definition",
-      title: term.term,
     },
     {
       kind: "codeArtifact",
