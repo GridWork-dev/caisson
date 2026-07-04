@@ -141,3 +141,19 @@ runs the 7-act loop (PLAN → EXECUTE → VERIFY → SWEEP → SHIP; SECURITY + 
 tagged specs). **P0 is the sequencing constraint** — it blocks the caisson-oss public flip and
 folds the cred-sweep. Recommended execution order: **P0 → P1 (buyer-breaking) → P2 prose+tooling
 → P2 D1 security-floor** (P1/P2 can parallelize where disjoint; P0 first and alone).
+
+### Execution disposition (operator picker, 2026-07-03)
+
+- **All 4 specs execute this wave.** Merge-queue order: P0 agent-side → P1 → P2 prose → P2 D1.
+- **P0 split (operator lock: agent-side first):** tasks 2/3/5 + the task-4 runbook ship now
+  (branch `audit-fix/p0-agent-side`); the task-1 key-bake + license/Worker redeploys land as a
+  follow-up PR once the operator mints the new keypair (`launch-runbook.md` §1.1).
+- **caisson-oss public flip + first npm publish: HELD** by operator decision — stays gated on the
+  §1.1 sequencing gate even after P0 merges.
+- **P1 + both P2s run as parallel worktree workflows** (builders → adversarial opus review →
+  fixes), merged serially behind P0.
+- **Both spec-parked forks closed by later locks, no picker needed:** local-ai priceCents —
+  ADR-0240 makes $349 canonical (the manifest number stands; comment fix only); changeset
+  formatter — ADR-0241 locked the SOURCE gate (option 2b; the 2a formatter is rejected) and it
+  already shipped in the wave-6b standards-gate, so the P2 prose wave executes as
+  sweep-against-existing-gate.
