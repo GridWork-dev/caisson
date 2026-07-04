@@ -5,7 +5,8 @@
 // LicenseRef-Caisson-Commercial under the open-core model (ADR-0094/0097, amends ADR-0050): base is
 // Apache-2.0; editions/primitives/cli/registry stay commercial.
 //
-// `priceCents` must be a positive integer (ADR-0007). Evidence generation is FREE in v1 (no
+// `priceCents: 79900` is the canonical Compliance edition price ($799, ADR-0227 — supersedes the
+// earlier $749); it must stay a positive integer (ADR-0007). Evidence generation is FREE in v1 (no
 // @caisson/credits dependency): the edition composes the WORM/crypto primitives directly.
 // Dependencies are DOWN-ONLY (ADR-0003): the edition imports base/primitive packages, never the
 // reverse.
@@ -18,7 +19,7 @@ export default defineModule({
   kind: "edition",
   editions: ["compliance"],
   tier: "paid",
-  priceCents: 99900,
+  priceCents: 79900,
   license: pkg.license,
   // Must mirror package.json's @caisson/* deps exactly (the gate fails on drift). @caisson/migrate is
   // the base migration assembler/runner the edition COMPOSES at build/test time (ADR-0090).

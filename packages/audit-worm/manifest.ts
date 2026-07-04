@@ -2,8 +2,8 @@
 // package.json on id/version/license/dependencies (the gate fails the build on drift). `kind:
 // "primitive"` — a shared compliance primitive (WORM store + audit chain + locked-version DB), not
 // a base service or an edition. Paid + LicenseRef-Caisson-Commercial under the open-core model
-// (ADR-0094/0097, amends ADR-0050; base is Apache-2.0). `priceCents` must be a positive integer
-// (ADR-0007).
+// (ADR-0094/0097, amends ADR-0050; base is Apache-2.0). `priceCents: 14900` is the canonical
+// audit-worm primitive price ($149, ADR-0129); it must stay a positive integer (ADR-0007).
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
@@ -12,7 +12,7 @@ export default defineModule({
   version: pkg.version,
   kind: "primitive",
   tier: "paid",
-  priceCents: 4900,
+  priceCents: 14900,
   license: pkg.license,
   dependencies: ["@caisson/kernel", "@caisson/tenancy-rls"],
   golden: "src/__golden__",

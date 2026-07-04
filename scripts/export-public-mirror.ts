@@ -28,6 +28,12 @@ import {
   writeFileSync,
 } from "node:fs";
 import { execFileSync } from "node:child_process";
+import {
+  createHash,
+  createPrivateKey,
+  createPublicKey,
+  verify as cryptoVerify,
+} from "node:crypto";
 import { join, resolve } from "node:path";
 
 const APACHE = "Apache-2.0";
@@ -63,7 +69,7 @@ const EXCLUDE_TEST_FILES: ReadonlyMap<string, string> = new Map([
   ],
   [
     "packages/cli/src/sample-templates.test.ts",
-    "materializes + EXECUTES the free eu-ai-act sample, whose emitted source imports the PRODUCT namespace @caisson/kernel (buyers install sample deps from the commercial registry at caisson.sh); that specifier does not resolve in the @caisson-sh/ npm mirror. The sample generator (sample-templates.ts) still ships.",
+    "materializes + EXECUTES the free eu-ai-act sample by reading its template files from disk at runtime. rewriteCliTemplates rewrites those on-disk template files to @caisson-sh/kernel for the mirror, but this test's assertions are hardcoded to the pre-rewrite @caisson/kernel specifier (correct for the monorepo-native generator) and would fail if run against the rewritten mirror templates. The sample generator (sample-templates.ts) still ships.",
   ],
 ]);
 
@@ -160,6 +166,17 @@ function rewriteImportSpecifiers(code: string): string {
   );
 }
 
+/** Rewrite EVERY bare `@caisson/<slug>` mention → `@caisson-sh/<slug>`, regardless of surrounding
+ *  syntax — broader than `rewriteImportSpecifiers`'s import/require-keyword guard. Used for doc
+ *  prose (README/CHANGELOG/AGENTS.md bodies, task 3.1) where a scope mention is never in import
+ *  position (a CHANGELOG "Updated dependencies" line, a README title/code-fence comment). */
+function rewriteProseMentions(text: string): string {
+  return text.replace(
+    /@caisson\/([\w.-]+)/g,
+    (_m, rest) => `${NEW_SCOPE}${rest}`,
+  );
+}
+
 const SRC_EXT = new Set([
   ".ts",
   ".tsx",
@@ -181,6 +198,62 @@ const REWRITE_SKIP_DIRS = new Set([
   "__fixtures__",
 ]);
 
+// --- entitlement-token gate (P0 audit remediation) ---------------------------------------------
+// A real entitlement token is itself the leak: the token IS the entitlement, and offline Ed25519
+// verify has no revocation list — private-key secrecy is irrelevant. NO prod-signed token may ever
+// ship in the mirror. DEV-keypair tokens are exempt: they are signed by the DOCUMENTED test seed
+// (SHA-256("caisson-license-verify-KAT-seed-v1")), carry no entitlement, and verify here by
+// reconstruction. ponytail: a regex walk + one Ed25519 check is the whole gate — no pattern DB.
+// Match the VERIFIER's wire grammar, not the brand: decodeToken accepts ANY uppercase
+// PREFIX-TIER and never trusts the cosmetic prefix — so the scan must not pin `CAISSON-`.
+const TOKEN_SHAPE = /\b[A-Z0-9]+-[A-Z0-9]+-[A-Za-z0-9_-]{88,}/g;
+const DEV_VERIFY_KEY = createPublicKey(
+  createPrivateKey({
+    key: Buffer.concat([
+      // Ed25519 PKCS#8 DER prefix ‖ the documented dev test-vector seed (never a production secret).
+      Buffer.from("302e020100300506032b657004220420", "hex"),
+      createHash("sha256")
+        .update("caisson-license-verify-KAT-seed-v1")
+        .digest(),
+    ]),
+    format: "der",
+    type: "pkcs8",
+  }).export({ format: "pem", type: "pkcs8" }),
+);
+
+/** True iff the token's 64-byte signature tail verifies against the DEV public key. */
+function isDevSigned(token: string): boolean {
+  // Split on the SECOND hyphen (PREFIX-TIER-body), whatever the prefix length.
+  const bodyB64 = token.slice(token.indexOf("-", token.indexOf("-") + 1) + 1);
+  const body = Buffer.from(bodyB64, "base64url");
+  // base64url decode is lenient; require the canonical round-trip (mirrors decodeToken) so a
+  // mutated-but-decodes-same string is never exempted on the strength of the original signature.
+  if (body.toString("base64url") !== bodyB64) return false;
+  if (body.length <= 64) return false;
+  const payload = body.subarray(0, body.length - 64);
+  const signature = body.subarray(body.length - 64);
+  try {
+    return cryptoVerify(null, payload, DEV_VERIFY_KEY, signature);
+  } catch {
+    return false;
+  }
+}
+
+/** Scan every text file in the mirror out-dir for non-dev license tokens; FATAL on any hit. */
+function scanForEntitlementTokens(dir: string, hits: string[]): void {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const abs = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name !== "node_modules") scanForEntitlementTokens(abs, hits);
+      continue;
+    }
+    const content = readFileSync(abs, "utf8");
+    for (const match of content.match(TOKEN_SHAPE) ?? []) {
+      if (!isDevSigned(match)) hits.push(`${abs}: ${match.slice(0, 24)}...`);
+    }
+  }
+}
+
 function rewriteImportsInTree(dir: string): void {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const abs = join(dir, entry.name);
@@ -198,17 +271,88 @@ function rewriteImportsInTree(dir: string): void {
 
 /** Rewrite `extends` (and any other tooling ref) in package-root tsconfig*.json — these reference
  *  the renamed tooling packages by npm name but are neither import specifiers nor package.json deps.
- *  Package-root only (never recurses into `templates/`, whose tsconfigs are buyer-repo data). */
+ *  Package-root only (never recurses into `templates/`, whose tsconfigs are buyer-repo data).
+ *  Filename match also covers `base.json` (`tooling/tsconfig/base.json` — the base itself, not a
+ *  consumer's `tsconfig.json`); the content regex has no trailing-slash requirement, so it catches
+ *  both a slash-terminated `"extends"` ref AND `base.json`'s human-readable `"display": "@caisson/
+ *  tsconfig base"` field (task 3.3, finding c018d53b61e0d0d7). */
 function rewriteTsconfigRefs(pkgDir: string): void {
   for (const entry of readdirSync(pkgDir, { withFileTypes: true })) {
-    if (!entry.isFile() || !/^tsconfig.*\.json$/.test(entry.name)) continue;
+    if (!entry.isFile() || !/^(tsconfig.*|base)\.json$/.test(entry.name))
+      continue;
     const abs = join(pkgDir, entry.name);
     const before = readFileSync(abs, "utf8");
     const after = before.replace(
-      /"@caisson\/(tsconfig|eslint-config|testing)\//g,
-      `"${NEW_SCOPE}$1/`,
+      /@caisson\/(tsconfig|eslint-config|testing)/g,
+      `${NEW_SCOPE}$1`,
     );
     if (after !== before) writeFileSync(abs, after);
+  }
+}
+
+/** Task 3.1 (findings d88c2d9030c9e5e4 + 98c91a4cca39fec1): the import-specifier rewrite only
+ *  touches import/require statements — it never sanitizes bare scope mentions in doc prose (a
+ *  CHANGELOG "Updated dependencies" entry, a README title/body). Run per package, over just these
+ *  three well-known doc files at the package root — never recurses (a package's own docs, not its
+ *  templates/fixtures data, which stay governed by `REWRITE_SKIP_DIRS`). */
+const PACKAGE_PROSE_FILES = ["README.md", "CHANGELOG.md", "AGENTS.md"];
+
+function rewriteProseFiles(destDir: string): void {
+  for (const name of PACKAGE_PROSE_FILES) {
+    const abs = join(destDir, name);
+    if (!existsSync(abs)) continue;
+    const before = readFileSync(abs, "utf8");
+    const after = rewriteProseMentions(before);
+    if (after !== before) writeFileSync(abs, after);
+  }
+}
+
+/** Task 1.1 (root cause 7533e88d886e6812): the eu-ai-act-sample template ships inside the public
+ *  `@caisson-sh/cli` package and MUST resolve entirely from public npm — no commercial-registry
+ *  configuration required. `REWRITE_SKIP_DIRS` intentionally still skips `templates/` for the
+ *  general per-package walk above (a FUTURE template may carry buyer-repo data meant to stay
+ *  `@caisson/`-scoped for the commercial registry); this is instead a targeted walk of this one
+ *  sample's own tree, run once its package (`@caisson/cli`) has been copied.
+ *
+ *  Unlike the rest of the exported set, this tree carries no `@caisson/<slug>` PRODUCT/module-id
+ *  literal that must survive unrenamed — every mention (import specifier, the package.json
+ *  dependency, and doc/comment prose) is the npm scope, so a blanket rewrite is correct here. The
+ *  `"name": "{{projectName}}"` template placeholder never matches the scope pattern, so it needs
+ *  no special-casing. */
+function rewriteCliTemplates(outDir: string): void {
+  const sampleDir = join(outDir, "packages/cli/templates/eu-ai-act-sample");
+  if (!existsSync(sampleDir)) return;
+  rewriteTreeBlanket(sampleDir);
+}
+
+function rewriteTreeBlanket(dir: string): void {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const abs = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      rewriteTreeBlanket(abs);
+      continue;
+    }
+    const before = readFileSync(abs, "utf8");
+    const after = rewriteProseMentions(rewriteImportSpecifiers(before));
+    if (after !== before) writeFileSync(abs, after);
+  }
+}
+
+/** Task 3.5 (finding b7198f6d6867ff39, validator half — the migrate/README.md source claim fix is
+ *  a separate change): a mirrored README claiming a commercial license for a package this exporter
+ *  ships as Apache-2.0 is a buyer-trust defect. Every package actually shipped here carries
+ *  `license: "Apache-2.0"` post-rewrite (see `rewritePackageJson` — the open set + restamped
+ *  tooling), so any commercial-license claim string in the copied README is definitionally wrong.
+ *  Fails loudly, mirroring the self-containment gate's FATAL pattern in `main()`. */
+function assertReadmeLicenseAgreement(destDir: string, npmName: string): void {
+  const readmePath = join(destDir, "README.md");
+  if (!existsSync(readmePath)) return;
+  const text = readFileSync(readmePath, "utf8");
+  if (/licenseref-caisson-commercial|\bcommercial license\b/i.test(text)) {
+    console.error(
+      `FATAL: ${npmName}'s mirrored README.md claims a commercial license, but this exporter ships every selected package as Apache-2.0.`,
+    );
+    process.exit(1);
   }
 }
 
@@ -245,12 +389,18 @@ function rewritePackageJson(
 }
 
 function copyPkg(srcDir: string, destDir: string): void {
+  // "manifest.ts" (task 3.2, finding 6c975cfc31c03a6f): every package's registry manifest imports
+  // `../../registry/schema/module-manifest` — a path that dangles once the package is copied
+  // standalone into the mirror. Its consumer (standards-gate) never ships in the mirror either, so
+  // the file is dead weight with a broken import; simplest correct fix is to never copy it, same
+  // mechanic as node_modules/dist/.turbo. Confirmed package-root-level only, no nested collisions.
   const skip = new Set([
     "node_modules",
     "dist",
     "migrations-bundle",
     ".turbo",
     "coverage",
+    "manifest.ts",
   ]);
   cpSync(srcDir, destDir, {
     recursive: true,
@@ -352,6 +502,8 @@ function main(): void {
     // scope-rename: import specifiers in the package's own source, tsconfig extends, root package.json
     rewriteImportsInTree(destDir);
     rewriteTsconfigRefs(destDir);
+    rewriteProseFiles(destDir);
+    if (p.json.name === "@caisson/cli") rewriteCliTemplates(outDir);
     const restamp = BUILD_SUPPORT.has(p.json.name);
     writeFileSync(
       join(destDir, "package.json"),
@@ -359,6 +511,7 @@ function main(): void {
     );
     if (restamp && !existsSync(join(destDir, "LICENSE")))
       writeFileSync(join(destDir, "LICENSE"), apacheLicenseText);
+    assertReadmeLicenseAgreement(destDir, renameScope(p.json.name));
 
     manifestPkgs.push({
       npmName: renameScope(p.json.name),
@@ -500,6 +653,17 @@ function main(): void {
       2,
     ) + "\n",
   );
+
+  // --- entitlement-token gate: nothing shaped like a license token ships unless dev-signed ---
+  const tokenHits: string[] = [];
+  scanForEntitlementTokens(outDir, tokenHits);
+  if (tokenHits.length) {
+    console.error(
+      "FATAL: entitlement-token-shaped string(s) in the mirror output that do NOT verify against the dev test keypair (a real token is the entitlement itself — never ship one):",
+    );
+    for (const h of tokenHits) console.error(`  ${h}`);
+    process.exit(1);
+  }
 
   console.log(`Exported ${manifestPkgs.length} package(s) to ${outDir}`);
   console.log(`  source commit ${sourceCommit}`);

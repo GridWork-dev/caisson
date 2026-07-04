@@ -29,7 +29,9 @@ import { decodeToken } from "./token.ts";
  * (`@caisson/license-issue`); it never ships in any tarball and is never committed. Rotating this key
  * is a deliberate release-time change. Tests do NOT sign with this key (no private half lives in the
  * repo) — they exercise the verify logic against a dev keypair via {@link verifyLicenseWithKey} and
- * pin the SHIPPED key with a prod-signed golden token (`__golden__/prod-signed-token.json`).
+ * prove the bake negatively (a dev-signed token is rejected by the default entrypoint). NO
+ * prod-signed token is ever committed: a real entitlement token is itself the leak — the token IS
+ * the entitlement, and offline verify has no revocation list — regardless of private-key secrecy.
  */
 const LICENSE_PUBLIC_KEY_SPKI_B64 =
   "MCowBQYDK2VwAyEAYUM+v6AQcPjNRoRJyQpDSA7S/LwNu1CecWQZ7A1OJU0=";

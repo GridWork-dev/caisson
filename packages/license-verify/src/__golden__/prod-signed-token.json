@@ -1,5 +1,0 @@
-{
-  "token": "CAISSON-PRO-eyJlbnRpdGxlbWVudHMiOlsiYWkta2l0IiwiY29tcGxpYW5jZSIsImxvY2FsLWFpIl0sImV4cGlyeSI6bnVsbCwibGljZW5zZUlkIjoiMTExMTExMTEtMTExMS00MTExLTgxMTEtMTExMTExMTExMTExIiwibWFqb3IiOjEsInRpZXIiOiJwcm8ifffgXo-osbaeaIDRDvsxgGucCQI_dq4vhvXCgnqDwdV-vb9nmwGY6jBerZd8VsM2qr-517PZCL1mWeGyWgphWQk",
-  "payload": "{\"entitlements\":[\"ai-kit\",\"compliance\",\"local-ai\"],\"expiry\":null,\"licenseId\":\"11111111-1111-4111-8111-111111111111\",\"major\":1,\"tier\":\"pro\"}",
-  "_note": "Minted with the PRODUCTION issuer private key (CAISSON_LICENSE_SIGNING_KEY, fingerprint 0ae7d2abb886ca3d). A license token is public-safe — the detached Ed25519 signature reveals nothing about the private key. This KAT proves the key baked into verify.ts (LICENSE_PUBLIC_KEY_SPKI_B64) verifies a real issuer token. Regenerate only on a deliberate key rotation."
-}

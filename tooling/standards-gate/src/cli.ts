@@ -23,12 +23,14 @@ import {
   checkDownOnly,
   checkDeclarations,
   checkManifestAgreement,
+  checkManifestPriceAgreement,
   checkCopyPaste,
   checkOpenCoreLicensing,
   checkOpenCommercialBoundary,
   checkRlsEquivalence,
   checkShippedProse,
   checkChangesetProse,
+  checkEntitlementTokenScan,
   type Finding,
 } from "./checks";
 
@@ -43,10 +45,12 @@ async function main(): Promise<number> {
     ...checkOpenCommercialBoundary(pkgs),
     ...checkDeclarations(pkgs),
     ...(await checkManifestAgreement(pkgs)),
+    ...(await checkManifestPriceAgreement(pkgs)), // manifest.priceCents vs the locked-ADR PRICE_AUTHORITY map
     ...checkCopyPaste(root), // ADR-0101 gate #4: cross-package copy-paste
     ...(await checkRlsEquivalence(pkgs, root)), // ADR-0210/0005: hand-written RLS vs the generator
     ...checkShippedProse(pkgs, root), // shipped-prose gate: no internal-only vocabulary in buyer-visible source
     ...checkChangesetProse(root), // changeset-source prose gate: no internal leak in a .changeset/*.md body
+    ...checkEntitlementTokenScan(root), // P0 audit remediation: no committed prod-signed license token
   ];
 
   const errors = findings.filter((f) => f.severity === "error");
