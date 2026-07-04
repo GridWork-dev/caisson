@@ -160,6 +160,112 @@ async function loadPreview(
   }
 }
 
+/**
+ * A mutation response body carrying a plaintext secret. The only such shape today is the license
+ * reissue result (`{ token, licenseId, major, worm, ... }`) — never render `token` via a raw JSON
+ * dump (this is NOT an HTML-injection finding; React already escapes text — it's a "don't display
+ * the secret by default" finding).
+ */
+export function isTokenBody(
+  body: unknown,
+): body is { token: string } & Record<string, unknown> {
+  return (
+    body !== null &&
+    typeof body === "object" &&
+    "token" in body &&
+    typeof (body as { token: unknown }).token === "string"
+  );
+}
+
+/** The non-secret fields (`licenseId`, `major`, `worm`, …) stay in the JSON dump; only `token` is masked. */
+export function redactToken(
+  body: Record<string, unknown>,
+): Record<string, unknown> {
+  return { ...body, token: "[masked — see reveal above]" };
+}
+
+/** Fixed-length mask regardless of token length, so the mask itself never leaks the secret's shape. */
+export function tokenDisplayValue(token: string, revealed: boolean): string {
+  return revealed ? token : "•".repeat(8);
+}
+
+// ponytail: one component for the one secret-bearing result shape today — a generic
+// secret-redaction framework is speculative until a second token-bearing mutation exists.
+function TokenReveal({ token }: { token: string }) {
+  const [revealed, setRevealed] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [cleared, setCleared] = useState(false);
+
+  if (cleared) {
+    return (
+      <p className="muted" style={{ fontSize: "0.85em" }}>
+        Token cleared.
+      </p>
+    );
+  }
+
+  return (
+    <div className="stack" style={{ gap: 6 }}>
+      <span className="muted" style={{ fontSize: "0.8em" }}>
+        License token (masked — reveal explicitly before copying):
+      </span>
+      <code
+        className="mono"
+        style={{
+          display: "block",
+          fontSize: "0.85em",
+          padding: "var(--cs-space-2, 8px)",
+          background: "var(--cs-surface-2, rgba(127,127,127,0.08))",
+          borderRadius: 6,
+          wordBreak: "break-all",
+        }}
+      >
+        {tokenDisplayValue(token, revealed)}
+      </code>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button type="button" onClick={() => setRevealed((r) => !r)}>
+          {revealed ? "Hide" : "Show"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            void navigator.clipboard?.writeText(token).then(() => {
+              setCopied(true);
+            });
+          }}
+        >
+          {copied ? "Copied" : "Copy"}
+        </button>
+        <button type="button" onClick={() => setCleared(true)}>
+          Clear
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ResultBody({ body }: { body: unknown }) {
+  const dump = isTokenBody(body) ? redactToken(body) : body;
+  return (
+    <>
+      {isTokenBody(body) ? <TokenReveal token={body.token} /> : null}
+      <pre
+        className="mono"
+        style={{
+          whiteSpace: "pre-wrap",
+          fontSize: "0.85em",
+          background: "var(--cs-surface-2, rgba(127,127,127,0.08))",
+          padding: "var(--cs-space-2, 8px)",
+          borderRadius: 6,
+          overflowX: "auto",
+        }}
+      >
+        {JSON.stringify(dump, null, 2)}
+      </pre>
+    </>
+  );
+}
+
 function ResultLine({ result }: { result: Result }) {
   if (result.kind === "idle") return null;
   if (result.kind === "busy") return <p className="muted">Working…</p>;
@@ -175,35 +281,22 @@ function ResultLine({ result }: { result: Result }) {
         <p style={{ color: "var(--cs-warning, #b45309)", fontWeight: 600 }}>
           Committed — do NOT retry. {result.message}
         </p>
-        <pre
-          className="mono"
-          style={{
-            whiteSpace: "pre-wrap",
-            fontSize: "0.85em",
-            background: "var(--cs-surface-2, rgba(127,127,127,0.08))",
-            padding: "var(--cs-space-2, 8px)",
-            borderRadius: 6,
-            overflowX: "auto",
-          }}
-        >
-          {JSON.stringify(result.body, null, 2)}
-        </pre>
+        <ResultBody body={result.body} />
       </div>
     );
+  return <ResultBody body={result.body} />;
+}
+
+/** Armed only when the operator retypes the EXACT target account id — no universal bypass string. */
+export function isArmed(
+  confirm: string,
+  targetAccountId: string,
+  disabled?: boolean,
+): boolean {
   return (
-    <pre
-      className="mono"
-      style={{
-        whiteSpace: "pre-wrap",
-        fontSize: "0.85em",
-        background: "var(--cs-surface-2, rgba(127,127,127,0.08))",
-        padding: "var(--cs-space-2, 8px)",
-        borderRadius: 6,
-        overflowX: "auto",
-      }}
-    >
-      {JSON.stringify(result.body, null, 2)}
-    </pre>
+    targetAccountId.trim() !== "" &&
+    confirm.trim() === targetAccountId.trim() &&
+    disabled !== true
   );
 }
 
@@ -224,12 +317,7 @@ function MutationCard({
 }) {
   const [confirm, setConfirm] = useState("");
   const [result, setResult] = useState<Result>({ kind: "idle" });
-  // Armed only when the operator retypes the exact target account id (or the literal CONFIRM).
-  const armed =
-    targetAccountId.trim() !== "" &&
-    (confirm.trim() === targetAccountId.trim() ||
-      confirm.trim() === "CONFIRM") &&
-    disabled !== true;
+  const armed = isArmed(confirm, targetAccountId, disabled);
 
   return (
     <div
@@ -247,8 +335,7 @@ function MutationCard({
       </div>
       <label className="stack" style={{ gap: 4 }}>
         <span className="muted" style={{ fontSize: "0.8em" }}>
-          Type the target account id (or <span className="mono">CONFIRM</span>)
-          to arm:
+          Type the target account id to arm:
         </span>
         <input
           value={confirm}
