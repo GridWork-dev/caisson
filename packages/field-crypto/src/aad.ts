@@ -5,7 +5,7 @@
 // per-tenant derived key differs, ADR-0043). A JSON tuple binds the fields unambiguously (JSON's
 // own quoting/escaping separates them — no delimiter-injection surface).
 //
-// ROW BINDING (ADR-0055, closes Wave-0 TM2/TM-E). The optional 4th element `rowId` binds the
+// ROW BINDING (ADR-0055, closes threat-model gaps TM2/TM-E). The optional 4th element `rowId` binds the
 // ciphertext to ONE row: with it present the AAD becomes the 4-tuple `tenant∥kv∥column∥rowId`, so a
 // cell relocated to (or rolled back from) another row of the SAME tenant+column+key_version fails to
 // authenticate. SEC/HIPAA columns MUST take this path via `encryptField`/`decryptField`

@@ -19,7 +19,7 @@
 
 ### Minor Changes
 
-- ccf8b10: Branded money types + rounding provenance (ADR-0212, harvest slice-2 serialized wave-2).
+- ccf8b10: Branded money types + rounding provenance (ADR-0212).
   Kernel gains `src/money.ts`: TS-native nominal `Cents`/`Credits`/`MicroUsd`/`MicroUsdPerCredit`
   brands (compile-time only, zero runtime cost), `asCents`/`asCredits`/`asMicroUsd`/
   `asMicroUsdPerCredit` constructors (throw `ValidationError` on a non-integer/negative input),

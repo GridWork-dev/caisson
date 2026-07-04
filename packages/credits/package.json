@@ -7,7 +7,7 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "description": "Integer credit wallet + append-only ledger + debit-before-spend (402, idempotent). ADR-0007/0020.",
+  "description": "Integer credit wallet with an append-only ledger, debit-before-spend (HTTP 402), and idempotent credit grants.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",

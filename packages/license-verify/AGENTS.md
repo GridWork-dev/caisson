@@ -2,7 +2,7 @@
 
 Agent-facing authoring/usage contract (ADR-0020 `agents`). What a generation agent or a downstream
 edition must know to gate a paid surface on a license correctly. This package is **offline verify
-only** — the license ISSUER (signing) is P6 and never ships here.
+only** — license issuance (signing) never ships here.
 
 ## Invariants (do not violate)
 
@@ -41,10 +41,10 @@ only** — the license ISSUER (signing) is P6 and never ships here.
 ## Golden
 
 `src/__golden__` pins the signed-token KAT (a deterministic test vector — NOT a production key;
-the matching private key lives only with the P6 issuer). Assert with `BLESS` unset; regenerate
+the matching private key lives only with the issuer service). Assert with `BLESS` unset; regenerate
 deliberately via the harness only when the wire/claims format intentionally changes.
 
 ## Out of scope
 
-No license ISSUANCE / signing (P6), no revocation list, no network call. This package is the
+No license ISSUANCE / signing, no revocation list, no network call. This package is the
 primitive paid editions consume to resolve their entitlement tier offline (ADR-0010/0024).

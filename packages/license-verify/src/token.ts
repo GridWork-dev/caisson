@@ -1,11 +1,10 @@
-// @caisson/license-verify — token wire codec (T6, ADR-0010). A pure, framework-free codec for the
-// tessera license-token wire format `PREFIX-TIER-base64url(payload ‖ signature)`, rebuilt clean from
-// the PUBLIC tessera format (pro-private firewall holds — wire FORMAT only, no implementation lifted).
+// @caisson/license-verify — token wire codec (ADR-0010). A pure, framework-free codec for the
+// signed license-token wire format `PREFIX-TIER-base64url(payload ‖ signature)`.
 //
 // This module is the CODEC layer ONLY: it joins/splits the wire string and the payload‖signature
 // bytes. It does NOT canonicalize, sign, or verify — claims parsing (Zod `.strict()`) and offline
 // Ed25519 verification (`crypto.verify` over the kernel-canonical payload, baked-in public key) land
-// in T7 (`claims.ts` / `verify.ts`). The cosmetic PREFIX/TIER are informational and MUST NOT be
+// in `claims.ts` / `verify.ts`. The cosmetic PREFIX/TIER are informational and MUST NOT be
 // trusted for authorization; the SIGNED payload is the sole authority (verified downstream).
 import { ValidationError } from "@caisson/kernel";
 import { z } from "zod";

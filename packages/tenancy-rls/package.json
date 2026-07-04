@@ -7,7 +7,7 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "description": "Fail-closed multi-tenant Postgres RLS (FORCE policies + withTenant + a missing-filter proof). ADR-0005.",
+  "description": "Fail-closed multi-tenant Postgres row-level security: FORCE policies, withTenant, and a missing-filter proof.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",

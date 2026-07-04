@@ -7,7 +7,7 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "description": "Governance kernel: typed config loader, the CaissonError model (ADR-0019), security primitives, and the standards gate (ADR-0016).",
+  "description": "Governance kernel: typed config loader, the CaissonError model, security primitives (constant-time compare, SSRF guard), and the standards gate.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
