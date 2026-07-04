@@ -11,5 +11,4 @@ through an injected runner port (the only DB-touching seam — no live DB runs i
 
 See `AGENTS.md` for the public API and invariants.
 
-Licensed `LicenseRef-Caisson-Commercial` (open-core, ADR-0094/0097: the migration tooling is not part
-of the open Base substrate).
+Licensed Apache-2.0 (open-core, ADR-0094/0097/0136: ships-with-generator tooling — open Base substrate).

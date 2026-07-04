@@ -29,8 +29,12 @@ Worker redeploy~~ DONE 2026-07-03 (0.2.0 index + REVOCATIONS binding live; the d
 PUBLISHER — `CAISSON_REVOCATIONS_PUT_URL` authed PUT shim on caisson-admin — is still a small
 security-tagged build, edge reads fail-open until then); **(3)** cred-sweep execution
 (ADR-0226 — fresh issuer keypair; MIRROR_PUSH_TOKEN rotation is a MUST, it transited a
-transcript); **(4)** caisson-oss public flip + first `confirm=publish` npm dispatch
-(ADR-0222); **(5)** the WORM lock-mode posture check flagged in launch-runbook §7 (GOVERNANCE
+transcript) — **runbook now at `launch-runbook.md` §1.1** (P0 audit spec Task 4; agent-side
+defenses shipped: prod goldens retired, entitlement-token scan gate in the standards-gate + the
+mirror exporter; the value-handling rotation itself remains OPERATOR TO DO); **(4)** caisson-oss
+public flip + first `confirm=publish` npm dispatch (ADR-0222) — **HELD by operator decision
+2026-07-03** and hard-gated on the §1.1 sequencing gate (keypair live + rotations probed + scan
+gate green on a fresh export); **(5)** the WORM lock-mode posture check flagged in launch-runbook §7 (GOVERNANCE
 live vs COMPLIANCE in the runbook text); **(6)** the Mac-mini `gw-macos-arm64` runner sat
 offline during the wave — `native-ext (macos)` queued indefinitely (non-required check, merges
 proceeded); restart the scale set before the next native-ext-sensitive PR. Plus buyer-journey:
