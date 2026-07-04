@@ -3,7 +3,7 @@
 // webhook smoke-test are operator/DEPLOY-class, out of scope here.
 import { createHmac } from "node:crypto";
 import { afterEach, describe, expect, test } from "bun:test";
-import { AuthnError, ValidationError } from "@caisson/kernel";
+import { AuthnError } from "@caisson/kernel";
 import {
   createPaddleBilling,
   parsePaddleEvent,
@@ -897,14 +897,30 @@ describe("PaddleEventSchema (envelope boundary validation, services-hardening ME
     expect(result.success).toBe(true);
   });
 
-  test("rejects an envelope with an unexpected extra top-level field", () => {
+  test("accepts the FULL documented envelope — occurred_at + notification_id are real Paddle fields", () => {
+    // Regression pin (2026-07-04 live-verification finding): every real Paddle delivery carries
+    // all five documented envelope fields. The old `.strict()` schema treated occurred_at as an
+    // "unexpected" field and 400'd every real webhook — paid purchases never fulfilled.
     const result = PaddleEventSchema.safeParse({
       event_id: "evt_x",
       event_type: "transaction.completed",
-      data: {},
-      occurred_at: "2026-01-01T00:00:00Z", // not a declared envelope field
+      occurred_at: "2026-01-01T00:00:00Z",
+      notification_id: "ntf_x",
+      data: { id: "txn_1" },
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
+  });
+
+  test("tolerates a provider-additive future envelope field (Paddle documents additions as non-breaking)", () => {
+    const result = PaddleEventSchema.safeParse({
+      event_id: "evt_x",
+      event_type: "transaction.completed",
+      occurred_at: "2026-01-01T00:00:00Z",
+      notification_id: "ntf_x",
+      some_future_field: { paddle: "may add this any time" },
+      data: { id: "txn_1" },
+    });
+    expect(result.success).toBe(true);
   });
 
   test("rejects an envelope missing event_id or with the wrong shape", () => {
@@ -920,16 +936,17 @@ describe("PaddleEventSchema (envelope boundary validation, services-hardening ME
     ).toBe(false);
   });
 
-  test("verifyAndParse rejects a signed body carrying an unexpected extra top-level field", () => {
-    // The signature is valid (verifyPaddleWebhook passes) — this proves the NEW schema boundary
-    // rejects a malformed envelope even when authenticity already checked out; a signature alone
-    // never guaranteed the payload shape.
-    const extraFieldBody = JSON.stringify({
-      event_id: "evt_extra",
+  test("verifyAndParse accepts a signed REAL-shaped delivery (full five-field envelope) and maps it", () => {
+    // End-to-end regression pin for the 2026-07-04 live-verification finding: a validly-signed
+    // body shaped exactly like a real Paddle notification (all five documented envelope fields)
+    // must parse and map — the old strict envelope threw here, 400ing every real purchase.
+    const realShapedBody = JSON.stringify({
+      event_id: "evt_real_shape",
       event_type: "transaction.completed",
       occurred_at: "2026-01-01T00:00:00Z",
+      notification_id: "ntf_real_shape",
       data: {
-        id: "txn_extra",
+        id: "txn_real_shape",
         subscription_id: null,
         currency_code: "usd",
         custom_data: { account_id: "acct_a" },
@@ -941,11 +958,15 @@ describe("PaddleEventSchema (envelope boundary validation, services-hardening ME
       webhookSecret: SECRET,
       apiKey: "pdl_sdbx_test",
     });
-    expect(() =>
-      billing.verifyAndParse(extraFieldBody, signed(extraFieldBody), {
+    const event = billing.verifyAndParse(
+      realShapedBody,
+      signed(realShapedBody),
+      {
         now: T,
-      }),
-    ).toThrow(ValidationError);
+      },
+    );
+    expect(event?.type).toBe("purchase.completed");
+    expect(event?.sourceEventId).toBe("evt_real_shape");
   });
 });
 
