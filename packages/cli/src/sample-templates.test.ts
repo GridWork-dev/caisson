@@ -89,6 +89,11 @@ describe("eu-ai-act-sample (ADR-0095 W3) — free Apache-2.0 evidence-path sampl
     };
     expect(parsed.name).toBe("acme-eval");
     expect(parsed.license).toBe("Apache-2.0");
+    // ponytail: asserts the monorepo-native (source-level) specifier — correct here, since this
+    // test materializes straight from the in-repo template. The public mirror's
+    // export-public-mirror.ts rewriteCliTemplates step rewrites the ON-DISK copy of this same
+    // template to @caisson-sh/kernel for buyers installing from public npm; the source template
+    // itself stays @caisson/kernel, so this expectation is unaffected by that rewrite.
     expect(parsed.dependencies).toEqual({ "@caisson/kernel": "^0.1.0" });
   });
 
