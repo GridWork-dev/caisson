@@ -70,22 +70,22 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       "A WORM audit log is an audit trail stored write once, read many: entries can be appended but never altered or deleted, not even by an administrator. Caisson's audit-worm package hash-chains each entry, then writes a write-once anchor for the chain to WORM storage on every append, so tamper, truncation, and rewrite each surface on verify.",
     artifact: {
       label:
-        "AuditChainStore.append — mint the WORM anchor after every entry, write-once, fail-closed on collision",
+        "AuditChainStore.append: mint the WORM anchor after every entry, write-once, fail-closed on collision",
       lang: "ts",
       code: 'const entries = await loadEntries(tx, accountId);\nconst anchor = anchorChain(entries);\n\n// The trusted commitment lands in WORM under a LENGTH-keyed, write-once key. A second anchor\n// for the same length (a truncate-then-re-append, a replay) hits the existing immutable object\n// → ArtifactExistsError → ConflictError: the original tip can never be overwritten (TM-H).\ntry {\n  await this.store.put(\n    anchorKey(accountId, anchor.length),\n    encodeAnchor(anchor),\n    {\n      retainUntil,\n      contentType: "application/json",\n    },\n  );\n} catch (err) {\n  if (err instanceof ArtifactExistsError) {\n    throw new ConflictError(\n      "audit chain anchor already exists for this length",\n      { accountId, length: anchor.length },\n    );\n  }\n  throw err;\n}\n\nreturn { entry, anchor };',
     },
     properties: [
       {
         title: "Two composable guarantees, one class",
-        body: "AuditChainStore composes the kernel's pure hash-chain algebra with a write-once WORM object store: the DB grant can't be rewritten (no UPDATE/DELETE privilege) and the anchor object can't be overwritten either (a write-once key) — no single control has to hold alone.",
+        body: "AuditChainStore composes the kernel's pure hash-chain algebra with a write-once WORM object store: the DB grant can't be rewritten (no UPDATE/DELETE privilege) and the anchor object can't be overwritten either (a write-once key); no single control has to hold alone.",
       },
       {
         title: "Every append mints a fresh anchor, in the same call",
-        body: "append() inserts the chain entry and, before returning, mints a length-keyed anchor over the resulting chain and writes it write-once to WORM storage — the anchor and the entry it commits to land together, never as a later batch job that could be skipped.",
+        body: "append() inserts the chain entry and, before returning, mints a length-keyed anchor over the resulting chain and writes it write-once to WORM storage; the anchor and the entry it commits to land together, never as a later batch job that could be skipped.",
       },
       {
         title: "Re-anchoring a length collides, it never overwrites",
-        body: "A truncate-then-replay or a duplicate append for an already-anchored length hits the WORM store's existing immutable object and throws ConflictError — the original tip can never be silently replaced by a second write.",
+        body: "A truncate-then-replay or a duplicate append for an already-anchored length hits the WORM store's existing immutable object and throws ConflictError: the original tip can never be silently replaced by a second write.",
       },
       {
         title: "Tenant-scoped and serialized against forks",
@@ -96,7 +96,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       {
         question: "What does 'WORM' mean in an audit log?",
         answer:
-          "Write Once, Read Many — an object can be created but never modified or deleted once written, enforced by the storage layer itself, not by application convention. Caisson pairs a WORM object store with a hash-chained log so both the log and its integrity commitment are independently tamper-evident.",
+          "Write Once, Read Many: an object can be created but never modified or deleted once written, enforced by the storage layer itself rather than application convention. Caisson pairs a WORM object store with a hash-chained log so both the log and its integrity commitment are independently tamper-evident.",
       },
       {
         question:
@@ -107,7 +107,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       {
         question: "Does a WORM audit log make us SOC 2 or HIPAA compliant?",
         answer:
-          "No — it ships the technical control SOC 2 CC7.2 and HIPAA 164.312(b) check for (a tamper-evident, immutable record of activity) and generates the evidence an auditor examines; it does not itself constitute a compliance certification.",
+          "No. It ships the technical control SOC 2 CC7.2 and HIPAA 164.312(b) check for (a tamper-evident, immutable record of activity) and generates the evidence an auditor examines; it does not itself constitute a compliance certification.",
       },
       {
         question: "What happens if an attacker gets full database access?",
@@ -508,14 +508,14 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       "A WORM retention policy is the rule set fixing how long a stored object stays immutable and under which S3 Object-Lock mode: GOVERNANCE (operator-overridable) or COMPLIANCE (locked to the root, no exceptions). Caisson's `@caisson/audit-worm` computes a 6-year-floor retain-until date and only ever lets that date move later, never earlier.",
     artifact: {
       label:
-        "extendRetention — strictly-later date, mode preserved; escalateToCompliance — GOVERNANCE→COMPLIANCE, same date allowed, never earlier",
+        "extendRetention: strictly-later date, mode preserved; escalateToCompliance: GOVERNANCE→COMPLIANCE, same date allowed, never earlier",
       lang: "ts",
       code: '  async extendRetention(\n    key: string,\n    newRetainUntil: Date,\n  ): Promise<ArtifactMeta> {\n    assertSafeKey(key);\n    assertValidRetainUntil(newRetainUntil);\n    const current = await this.currentRetainUntil(key);\n    if (\n      current !== undefined &&\n      newRetainUntil.getTime() <= current.getTime()\n    ) {\n      throw new ValidationError(\n        "audit-worm: retention can only be EXTENDED — the new date must be strictly later than the current lock (ADR-0202)",\n        {\n          key,\n          currentRetainUntil: current.toISOString(),\n          requested: newRetainUntil.toISOString(),\n        },\n      );\n    }\n    await this.putRetention(key, this.mode, newRetainUntil);\n    const meta = await this.headOrThrow(key);\n    return { ...meta, retainUntil: newRetainUntil };\n  }\n\n  async escalateToCompliance(\n    key: string,\n    retainUntil: Date,\n    optIn: IrreversibleComplianceOptIn,\n  ): Promise<ArtifactMeta> {\n    assertSafeKey(key);\n    assertValidRetainUntil(retainUntil);\n    this.assertComplianceAllowed(optIn);\n    const current = await this.currentRetainUntil(key);\n    if (current !== undefined && retainUntil.getTime() < current.getTime()) {\n      throw new ValidationError(\n        "audit-worm: COMPLIANCE escalation cannot shorten retention — the date must be at or later than the current lock (ADR-0202)",\n        {\n          key,\n          currentRetainUntil: current.toISOString(),\n          requested: retainUntil.toISOString(),\n        },\n      );\n    }\n    await this.putRetention(key, "COMPLIANCE", retainUntil);\n    const meta = await this.headOrThrow(key);\n    return { ...meta, retainUntil };\n  }',
     },
     properties: [
       {
         title: "6-year floor, never silently shortened",
-        body: "`retainUntilFrom(now, years)` throws a ValidationError if `years` is below MIN_RETENTION_YEARS (6, matching HIPAA §164.316(b)(2) and SEC 17a-4) — a too-short term is rejected outright, never auto-extended or silently accepted.",
+        body: "`retainUntilFrom(now, years)` throws a ValidationError if `years` is below MIN_RETENTION_YEARS (6, matching HIPAA §164.316(b)(2) and SEC 17a-4): a too-short term is rejected outright, never auto-extended or silently accepted.",
       },
       {
         title: "Extend-only, never earlier",
@@ -523,11 +523,11 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "COMPLIANCE escalation is a three-belt opt-in",
-        body: "Selecting COMPLIANCE mode requires a typed IrreversibleComplianceOptIn naming the exact bucket, and is refused under NODE_ENV=test and outside NODE_ENV=production — no code path reaches it by accident.",
+        body: "Selecting COMPLIANCE mode requires a typed IrreversibleComplianceOptIn naming the exact bucket, and is refused under NODE_ENV=test and outside NODE_ENV=production; no code path reaches it by accident.",
       },
       {
         title: "Every escalation is chain-evidenced",
-        body: "`escalateRetention` applies the store change first, then appends a `retention.escalated` record to the tenant's audit chain; if the chain append fails, the retention change is already applied, and the whole call throws loudly to flag the evidence gap for reconciliation — it is never silently swallowed.",
+        body: "`escalateRetention` applies the store change first, then appends a `retention.escalated` record to the tenant's audit chain; if the chain append fails, the retention change is already applied, and the whole call throws loudly to flag the evidence gap for reconciliation. It is never silently swallowed.",
       },
     ],
     faq: [
@@ -540,7 +540,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       {
         question: "Can a WORM retention date ever be shortened?",
         answer:
-          "No. Both extendRetention and the GOVERNANCE→COMPLIANCE escalation path reject any date at or before the current lock — extension only moves a lock later, and escalation only hardens the mode, never the date backward (ADR-0202).",
+          "No. Both extendRetention and the GOVERNANCE→COMPLIANCE escalation path reject any date at or before the current lock: extension only moves a lock later, and escalation only hardens the mode, never the date backward (ADR-0202).",
       },
       {
         question:
@@ -625,10 +625,10 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "SOC 2 audit log",
     cluster: "compliance",
     definition:
-      "A SOC 2 audit log is the tamper-evident record of security-relevant events a SOC 2 audit checks under CC4.1/CC7.2: who did what, when, provable as complete and unaltered. Caisson's `audit-worm` package ships this as an append-only SHA-256 hash chain anchored in WORM storage, generating the evidence a SOC 2 auditor requires — not a compliance guarantee.",
+      "A SOC 2 audit log is the tamper-evident record of security-relevant events a SOC 2 audit checks under CC4.1/CC7.2: who did what, when, provable as complete and unaltered. Caisson's `audit-worm` package ships this as an append-only SHA-256 hash chain anchored in WORM storage, generating the evidence a SOC 2 auditor requires, not a compliance guarantee.",
     artifact: {
       label:
-        "verifyChain — recompute + compare each link, then check the trusted anchor",
+        "verifyChain: recompute + compare each link, then check the trusted anchor",
       lang: "ts",
       code: "export function verifyChain(\n  entries: readonly AuditChainEntry[],\n  anchor?: AuditChainAnchor,\n): ChainVerification {\n  for (let i = 0; i < entries.length; i++) {\n    const entry = entries[i] as AuditChainEntry;\n    const expectedPrev =\n      i === 0 ? null : (entries[i - 1] as AuditChainEntry).hash;\n    if (entry.seq !== i) return { valid: false, brokenAt: i };\n    if (entry.prevHash !== expectedPrev) return { valid: false, brokenAt: i };\n    if (entry.hash !== hashChainLink(entry.prevHash, entry.payload)) {\n      return { valid: false, brokenAt: i };\n    }\n  }\n  if (anchor !== undefined) {\n    // Genesis mismatch -> the chain has the wrong root (a rewrite from entry 0).\n    if (\n      anchor.genesisHash !== undefined &&\n      (entries.length === 0 ||\n        (entries[0] as AuditChainEntry).hash !== anchor.genesisHash)\n    ) {\n      return { valid: false, brokenAt: 0 };\n    }",
     },
@@ -654,7 +654,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       {
         question: "Does a hash-chained audit log make us SOC 2 compliant?",
         answer:
-          "No single control satisfies SOC 2 on its own. The audit log ships the technical control CC4.1/CC7.2 asks for — a tamper-evident record of security-relevant events — and generates the evidence an auditor examines; the audit opinion itself covers your whole control environment, which a code artifact can't certify.",
+          "No single control satisfies SOC 2 on its own. The audit log ships the technical control CC4.1/CC7.2 asks for (a tamper-evident record of security-relevant events) and generates the evidence an auditor examines; the audit opinion itself covers your whole control environment, which a code artifact can't certify.",
       },
       {
         question: "What SOC 2 logging requirements does this log satisfy?",
@@ -753,17 +753,17 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
     term: "Token metering",
     cluster: "ai-infra",
     definition:
-      "Token metering means estimating, reserving, and reconciling LLM token usage against its real dollar cost, so a crossed spend cap blocks the next call rather than the wallet drifting unchecked. Caisson's `@caisson/ai-meter` module reserves integer credits against a conservative pre-call estimate, then trues the charge to the provider's actual reported usage — refunding over-reservations, billing shortfalls, never touching floats.",
+      "Token metering means estimating, reserving, and reconciling LLM token usage against its real dollar cost, so a crossed spend cap blocks the next call rather than the wallet drifting unchecked. Caisson's `@caisson/ai-meter` module reserves integer credits against a conservative pre-call estimate, then trues the charge to the provider's actual reported usage: refunding over-reservations, billing shortfalls, never touching floats.",
     artifact: {
       label:
-        "reconcile() — true the reservation to actual usage: charge the shortfall or refund the over-reservation",
+        "reconcile() trues the reservation to actual usage: charge the shortfall or refund the over-reservation",
       lang: "ts",
       code: 'const delta = settledCredits - core.reservedCredits;\nlet refundedCredits = 0;\nlet chargedCredits = 0;\nif (billable && delta > 0) {\n  const res = await debit(tx, {\n    accountId: core.accountId,\n    amount: asCredits(delta),\n    eventType: "feature_debit",\n    feature: INFERENCE_FEATURE,\n    idempotencyKey: `${core.callId}:reconcile`,\n    rounding: actual.roundingCredits,\n  });\n  chargedCredits = delta;\n} else if (billable && delta < 0) {\n  const res = await grant(tx, {\n    accountId: core.accountId,\n    amount: asCredits(-delta),\n    eventType: "feature_grant",\n    feature: INFERENCE_FEATURE,\n    idempotencyKey: `${core.callId}:reconcile`,\n    rounding: actual.roundingCredits,\n  });\n  refundedCredits = -delta;\n}\n// delta === 0 (or a BYOK lane): no credit row moves — the wallet stays put.',
     },
     properties: [
       {
         title: "Estimate before spend",
-        body: "A cheap chars/4 heuristic sizes the reservation before the provider answers — conservative (rounds up, assumes a full output budget) so most calls over-reserve; reconcile() trues any residual shortfall afterward.",
+        body: "A cheap chars/4 heuristic sizes the reservation before the provider answers: conservative (rounds up, assumes a full output budget), so most calls over-reserve; reconcile() trues any residual shortfall afterward.",
       },
       {
         title: "Reconcile to actual",
@@ -771,7 +771,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "Idempotent settlement",
-        body: "The append-only usage_event (account_id, call_id) UNIQUE constraint is the reconcile anchor — a retried settlement runs exactly once, so a network retry can never double-charge or double-refund.",
+        body: "The append-only usage_event (account_id, call_id) UNIQUE constraint is the reconcile anchor: a retried settlement runs exactly once, so a network retry can never double-charge or double-refund.",
       },
       {
         title: "Fail-closed pricing",
@@ -793,12 +793,12 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       {
         question: "Does token metering stop a runaway spend spike?",
         answer:
-          "Yes — reserve() checks a per-tenant circuit breaker before every call and evaluates soft/hard spend caps after each fresh, billable reservation (a replay, a zero-credit estimate, or a BYOK call defers cap evaluation to reconcile instead); a crossed hard cap trips the breaker so the next call gets a 402 before the provider is ever invoked.",
+          "Yes: reserve() checks a per-tenant circuit breaker before every call and evaluates soft/hard spend caps after each fresh, billable reservation (a replay, a zero-credit estimate, or a BYOK call defers cap evaluation to reconcile instead); a crossed hard cap trips the breaker so the next call gets a 402 before the provider is ever invoked.",
       },
       {
         question: "Can we bring our own provider key and skip metering?",
         answer:
-          'A BYOK lane (keySource: "tenant") debits $0 from the wallet since you supplied the key, but internal metering — the spend window and caps — still runs, accruing against your actual usage at reconcile.',
+          'A BYOK lane (keySource: "tenant") debits $0 from the wallet since you supplied the key, but internal metering (the spend window and caps) still runs, accruing against your actual usage at reconcile.',
       },
     ],
     sells: {
@@ -828,7 +828,7 @@ function relatedTermsSection(term: GlossaryTerm): PageSection | undefined {
   if (related.length === 0) return undefined;
   return {
     kind: "section",
-    eyebrow: "Related terms",
+    eyebrow: "See also",
     children: createElement(
       "ul",
       {
@@ -879,10 +879,11 @@ export function glossaryPageSpec(term: GlossaryTerm): PageSpec {
       // No `title` here on purpose: the H1 (hero, above) already carries the term name and its
       // full definition as the lede — a second heading with the identical text is a copy-rules
       // restated-heading bug (no new information). `title` is optional on <Section> (renders
-      // nothing when omitted, packages/ui/src/components/section.tsx), so the "Definition"
-      // eyebrow alone stands as the lead-in label for the code artifact that follows.
+      // nothing when omitted, packages/ui/src/components/section.tsx), so the eyebrow alone
+      // stands as the lead-in label for the code artifact that follows (ADR-0242: varied from
+      // the bare "Definition" repeat, since the hero above already covers the definition).
       kind: "section",
-      eyebrow: "Definition",
+      eyebrow: "In code",
     },
     {
       kind: "codeArtifact",

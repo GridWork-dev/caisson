@@ -113,7 +113,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     amount: 199,
     edition: "compliance",
     blurb:
-      "Per-tenant field encryption (HKDF-SHA256). Sealed at rest, refused across tenants — proven, not promised.",
+      "Per-tenant field encryption (HKDF-SHA256): each tenant's ciphertext is sealed under its own derived key, and a cross-tenant read fails to decrypt in the test suite, every run.",
   },
   {
     id: "audit-worm",
@@ -129,7 +129,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     amount: 199,
     edition: "compliance",
     blurb:
-      "Policy-driven data retention on a schedule — expiry and legal-hold, enforced automatically.",
+      "Policy-driven data retention on a schedule: expiry and legal-hold, enforced automatically.",
   },
   {
     // Grouped under compliance because that is the edition that composes @caisson/alerting
@@ -140,7 +140,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     amount: 149,
     edition: "compliance",
     blurb:
-      "Deduped, rate-capped alert delivery with quiet hours and an audit trail — the SOC 2 CC7.2 alerting control, not another webhook blaster.",
+      "Deduped, rate-capped alert delivery with quiet hours and an audit trail: the SOC 2 CC7.2 alerting control your compliance program can point to.",
   },
   // ---- AI Production Kit ----
   {
@@ -149,7 +149,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     amount: 199,
     edition: "ai-kit",
     blurb:
-      "PG-atomic token metering with per-tenant spend caps and a circuit breaker — a runaway prompt loop can't run your bill up.",
+      "PG-atomic token metering with per-tenant spend caps and a circuit breaker that trips before a runaway prompt loop reaches your invoice.",
   },
   {
     // Browse-family only: @caisson/ai-evals is standalone BY DESIGN (its manifest: "not a base
@@ -162,7 +162,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     edition: "ai-kit",
     standaloneOnly: true,
     blurb:
-      "Regression-grade evals that run in CI, not in prod. A model swap fails the build first, not a customer's session.",
+      "Regression-grade evals that run in CI, ahead of production. A model swap that regresses fails the build, catching it before a customer's session does.",
   },
   {
     id: "guardrails",
@@ -170,7 +170,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     amount: 149,
     edition: "ai-kit",
     blurb:
-      "Input and output guardrails between your app and the model — one seam to harden, not one per call site.",
+      "A single guardrail boundary between your app and the model: every call passes through the same PII redaction, moderation, and secret-shape gate.",
   },
   {
     id: "prompt-registry",
@@ -178,7 +178,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     amount: 99,
     edition: "ai-kit",
     blurb:
-      "Versioned prompts with rollout history. No more prompts hardcoded three layers deep in a route handler.",
+      "Versioned prompts with rollout history: promote or roll back a prompt by moving an alias pointer, no redeploy required.",
   },
   // ---- Local-first AI ----
   {
@@ -187,7 +187,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     amount: 99,
     edition: "local-first",
     blurb:
-      "Hybrid FTS5 + sqlite-vec search on disk. Semantic recall with nothing shipped to a vector cloud.",
+      "Hybrid FTS5 + sqlite-vec search that runs on disk, one file per tenant, with no vector-cloud vendor in the loop.",
   },
   // ---- Agentic-Dev ----
   {
@@ -196,7 +196,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     amount: 199,
     edition: "agentic-dev",
     blurb:
-      "Typed agent/skill/rule schema plus the guarded lifecycle state machine — VERIFY failing reopens PLAN, there's no edge to SHIP.",
+      "Typed agent/skill/rule schema plus the guarded lifecycle state machine: a failed VERIFY reopens PLAN, and the only path to SHIP runs back through it.",
   },
   {
     id: "agent-runner",
@@ -204,7 +204,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     amount: 49,
     edition: "agentic-dev",
     blurb:
-      "Sandboxed, governed agent execution — spawn a headless coding agent in an isolated worktree, stream an auditable transcript, zero secret leak by construction.",
+      "Sandboxed, governed agent execution: spawn a headless coding agent into an isolated worktree and stream back an auditable transcript, with the child's environment built from scratch rather than inherited.",
   },
 ] as const;
 

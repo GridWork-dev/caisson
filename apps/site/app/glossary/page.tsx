@@ -9,7 +9,7 @@ import { breadcrumb, definedTermSet, serializeJsonLd } from "@/lib/jsonld";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 
 const DESCRIPTION =
-  "Definitions for the compliance, security, licensing, and AI-infrastructure terms Caisson ships real code against — WORM audit logs, row-level security, token metering, and more.";
+  "Definitions for the compliance, security, licensing, and AI-infrastructure terms Caisson ships real code against: WORM audit logs, row-level security, token metering, and more.";
 
 export const metadata = buildMetadata({
   title: "Glossary",
@@ -69,11 +69,7 @@ export default function GlossaryHubPage() {
         const terms = GLOSSARY_TERMS.filter((t) => t.cluster === cluster);
         if (terms.length === 0) return null;
         return (
-          <Section
-            key={cluster}
-            eyebrow="Cluster"
-            title={CLUSTER_LABELS[cluster]}
-          >
+          <Section key={cluster} title={CLUSTER_LABELS[cluster]}>
             <ul
               style={{
                 listStyle: "none",

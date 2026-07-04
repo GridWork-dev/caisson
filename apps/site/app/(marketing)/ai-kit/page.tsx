@@ -33,7 +33,7 @@ import { editionCatalogItem, toCartItem } from "@/lib/catalog";
 import { TrackView } from "@/components/track-view";
 
 const AI_KIT_DESCRIPTION =
-  "A metered infer()/embed() gateway on Vercel AI SDK v5 — Postgres-atomic token metering with a per-tenant circuit breaker, typed input/output guardrails, and versioned prompts, composed behind one chokepoint. $599 once, own the source.";
+  "A metered infer()/embed() gateway on Vercel AI SDK v5: Postgres-atomic token metering with a per-tenant circuit breaker, typed input/output guardrails, and versioned prompts, composed behind one chokepoint. $599 once, own the source.";
 
 export const metadata = buildMetadata({
   title: "AI Production Kit",
@@ -53,7 +53,7 @@ const FAQ_ITEMS = [
   {
     question: "What does token metering actually prevent?",
     answer:
-      "A runaway loop, a misconfigured agent, or a single burst of traffic can multiply your API invoice by 10x before you see it. Usage writes in the same Postgres transaction as the result — an atomic increment — so concurrent calls can never double-count or drop a charge. Crossing the cap opens the circuit breaker and returns HTTP 402 before the next model call fires.",
+      "A runaway loop, a misconfigured agent, or a single burst of traffic can multiply your API invoice by 10x before you see it. Usage writes in the same Postgres transaction as the result (an atomic increment), so concurrent calls can never double-count or drop a charge. Crossing the cap opens the circuit breaker and returns HTTP 402 before the next model call fires.",
   },
   {
     question: "What happens when a tenant hits their spend cap?",
@@ -86,25 +86,25 @@ const MEMBER_MODULES: readonly {
     id: "prompt-registry",
     name: "Prompt registry",
     oneLiner:
-      "Versioned prompts with rollout history. No more prompts hardcoded three layers deep in a route handler.",
+      "Versioned prompts with rollout history: promote or roll back a prompt by moving an alias pointer, no redeploy required.",
   },
   {
     id: "ai-meter",
     name: "Token metering",
     oneLiner:
-      "PG-atomic token metering with per-tenant spend caps and a circuit breaker — a runaway prompt loop can't run your bill up.",
+      "PG-atomic token metering with per-tenant spend caps and a circuit breaker: a runaway prompt loop trips the breaker before it runs your bill up.",
   },
   {
     id: "guardrails",
     name: "Guardrails",
     oneLiner:
-      "Input and output guardrails between your app and the model — one seam to harden, not one per call site.",
+      "Input and output guardrails wired once, at the model boundary, instead of copy-pasted into every call site.",
   },
   {
     id: "ai-config",
     name: "AI config",
     oneLiner:
-      "Provider-agnostic config resolver plus a buyer settings file — the lane-to-provider mapping infer() reads to pick a model. Base substrate, composed in at no separate module price.",
+      "Provider-agnostic config resolver plus a buyer settings file: the lane-to-provider mapping infer() reads to pick a model. Base substrate, composed in at no separate module price.",
   },
 ];
 
@@ -158,7 +158,7 @@ function MemberModuleCard({
 // the edition never actually ships).
 const HERO_ARTIFACT = (
   <Terminal
-    label="POST /api/support-reply — infer()"
+    label="POST /api/support-reply · infer()"
     status={<StatusChip label="402 spend cap" tone="accent" dot />}
   >
     {'> infer("support-reply", input)\n'}
@@ -215,11 +215,12 @@ export default function AiKitPage() {
         title="One gateway between your code and the model."
         lede={
           <>
-            infer() and embed() are the only door to a model in this kit — every
+            infer() and embed() are the only door to a model in this kit: every
             call resolves a versioned prompt, reserves against a per-tenant
             spend cap, crosses a guardrail on the way in and out, and reconciles
             usage in the same Postgres transaction as the result. Vercel AI SDK
-            v5 sits behind it; you call infer(lane, input), not a provider SDK.
+            v5 sits behind it; your route handler calls infer(lane, input) and
+            never touches a provider SDK directly.
           </>
         }
         ctas={
@@ -239,7 +240,7 @@ export default function AiKitPage() {
       <Section
         eyebrow="What it composes"
         title="One package, four other Caisson packages behind it."
-        lede="The kit is one package, @caisson/ai-kit, wired around four other Caisson packages: prompt-registry resolves and renders the versioned prompt, ai-meter reserves against the tenant's cap before the call and reconciles the real usage after, guardrails runs the input and output through a Zod-typed schema and policy check, and ai-config maps the call's lane to a provider. The pipeline is fixed and fail-closed — resolve, render, input-guard, reserve, provider call, record usage, output-guard, reconcile — and it is the only Caisson package that imports a provider SDK (ai / @ai-sdk/*), so that dependency stays behind one boundary instead of scattered across your route handlers."
+        lede="The kit is one package, @caisson/ai-kit, wired around four other Caisson packages: prompt-registry resolves and renders the versioned prompt, ai-meter reserves against the tenant's cap before the call and reconciles the real usage after, guardrails runs the input and output through a Zod-typed schema and policy check, and ai-config maps the call's lane to a provider. The pipeline is fixed and fail-closed (resolve, render, input-guard, reserve, provider call, record usage, output-guard, reconcile), and it is the only Caisson package that imports a provider SDK (ai / @ai-sdk/*), keeping that dependency behind one boundary instead of scattered across your route handlers."
         band="tint"
       />
 
@@ -274,14 +275,14 @@ export default function AiKitPage() {
       <Section
         eyebrow="Metered by construction"
         title="BYOK included."
-        lede="The same reserve-before / reconcile-after chokepoint covers infer(), inferStream(), embed(), and embedMany() — a runaway embedding job hits the same cap as a runaway chat loop. A tenant can also supply their own provider key instead of the shared platform lane; BYOK resolves the tenant's encrypted key ahead of the default, and a BYOK-backed call debits zero credits, because the tenant is paying the provider directly, not routing spend through Caisson's lane."
+        lede="The same reserve-before / reconcile-after chokepoint covers infer(), inferStream(), embed(), and embedMany(), so a runaway embedding job hits the same cap as a runaway chat loop. A tenant can also supply their own provider key instead of the shared platform lane; BYOK resolves the tenant's encrypted key ahead of the default, and a BYOK-backed call debits zero credits because the tenant pays the provider directly."
       />
 
       {/* ===== Rigor as code ===== */}
       <Section
-        eyebrow="Rigor, not theater"
+        eyebrow="Rigor as code"
         title="Every claim here is a control you can point at."
-        lede="The caps and the breaker are configuration checked into your repo and enforced at call time — not a dashboard you hope someone is watching."
+        lede="The caps and the breaker are configuration checked into your repo, enforced at call time, and reviewable in the same pull request as the feature that needs them."
         band="surface"
       >
         <Reveal delay={100}>
@@ -350,7 +351,7 @@ export default function AiKitPage() {
                 style={{ marginTop: "var(--cs-space-3)" }}
               >
                 The composed modules are also sold individually: prompt-
-                registry from $99, guardrails from $149, ai-meter from $199 —
+                registry from $99, guardrails from $149, ai-meter from $199;
                 {modulePrice ? (
                   <>
                     {" "}
@@ -379,7 +380,7 @@ export default function AiKitPage() {
               See the full lineup
             </Link>
             . Need regression evals in CI too? The eval harness is a separate
-            standalone module —{" "}
+            standalone module:{" "}
             <Link
               href="/marketplace/modules/ai-evals"
               style={{ color: "var(--cs-link)" }}

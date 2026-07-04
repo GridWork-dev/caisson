@@ -64,20 +64,18 @@ function bodySections(record: ModulePageRecord): readonly PageSection[] {
   return [
     {
       kind: "section",
-      eyebrow: "Definition",
       title: "What it is",
       lede: record.definition,
     },
     {
       kind: "featureGrid",
       cols: 2,
-      eyebrow: "Included",
       title: "What ships in the module",
       items: record.included.map((i) => ({ title: i.title, body: i.body })),
     },
     {
       kind: "codeArtifact",
-      label: `${record.artifact.label} — ${record.artifact.file}`,
+      label: `${record.artifact.label}: ${record.artifact.file}`,
       code: record.artifact.code,
     },
     { kind: "media", icon: moduleMark(record.slug) },
@@ -126,7 +124,7 @@ function BuyRail({
           <p className="cs-footnote">{record.sells.note}</p>
           {price.standaloneOnly ? (
             <p className="cs-footnote">
-              Standalone module — no edition includes it.
+              Standalone module: no edition includes it.
             </p>
           ) : (
             edition &&
@@ -134,7 +132,7 @@ function BuyRail({
               <p className="cs-footnote">
                 Or composed into the{" "}
                 <Link href={`/${price.edition}`}>{edition.label} edition</Link>{" "}
-                — {formatUsd(edition.amount)}.
+                for {formatUsd(edition.amount)}.
               </p>
             )
           )}

@@ -8,7 +8,7 @@ import { faqPage, serializeJsonLd } from "@/lib/jsonld";
 export const metadata = buildMetadata({
   title: "License",
   description:
-    "Caisson commercial license summary — what you may build with the kit and what you may not redistribute. One perpetual license across the whole library.",
+    "Caisson commercial license summary: what you may build with the kit and what you may not redistribute. One perpetual license across the whole library.",
   path: "/legal/license",
 });
 
@@ -17,17 +17,17 @@ const FAQ_ITEMS = [
   {
     question: "Can I use Caisson to build a SaaS product I sell to customers?",
     answer:
-      "Yes. Building and operating your own commercial product — including a product you sell to paying customers — is the primary intended use. Your customers use your product; they do not receive the Caisson kit source.",
+      "Yes. Building and operating your own commercial product (including a product you sell to paying customers) is the primary intended use. Your customers use your product; they do not receive the Caisson kit source.",
   },
   {
     question: "Can I include Caisson in an open-source project I publish?",
     answer:
-      "No. Open-sourcing the Caisson kit source (or a project that is substantially the kit) would make it freely redistributable, which the Commercial License prohibits. You can still build and ship your own product on Caisson — your customers use your product, not the kit source.",
+      "No. Open-sourcing the Caisson kit source (or a project that is substantially the kit) would make it freely redistributable, which the Commercial License prohibits. You can still build and ship your own product on Caisson; your customers only ever see your product, never the kit source.",
   },
   {
     question: "What happens when I modify the source?",
     answer:
-      "Modifications you make are yours to use in your own products. The Commercial License terms still govern the underlying Caisson code in any derivative work — you cannot strip the license and redistribute.",
+      "Modifications you make are yours to use in your own products. The Commercial License terms still govern the underlying Caisson code in any derivative work; you cannot strip the license and redistribute.",
   },
   {
     question: "Is the license perpetual?",
@@ -37,7 +37,7 @@ const FAQ_ITEMS = [
   {
     question: "Does Caisson claim to be SOC 2 certified or HIPAA certified?",
     answer:
-      "No. Caisson ships the technical controls that SOC 2, HIPAA, and other frameworks require — fail-closed RLS, WORM storage, an append-only audit chain, field encryption, and an evidence-pack generator. The audit itself, the organizational controls (HR, vendor management, incident response), and the certification decision remain yours. Your auditor certifies your organization; Caisson provides the code that makes the technical evidence.",
+      "No. Caisson ships the technical controls that SOC 2, HIPAA, and other frameworks require: fail-closed RLS, WORM storage, an append-only audit chain, field encryption, and an evidence-pack generator. The audit itself, the organizational controls (HR, vendor management, incident response), and the certification decision remain yours. Your auditor certifies your organization; Caisson provides the code that makes the technical evidence.",
   },
 ];
 
@@ -78,7 +78,7 @@ export default function LicensePage() {
       {/* Page header */}
       <Section eyebrow="Legal" title="License" flush as="h1">
         <p className="cs-lede" style={{ marginTop: "var(--cs-space-3)" }}>
-          A plain-language summary of the Caisson Commercial License — one
+          A plain-language summary of the Caisson Commercial License: one
           perpetual license across every edition and module.
         </p>
       </Section>
@@ -96,7 +96,7 @@ export default function LicensePage() {
               color: "var(--cs-accent)",
             }}
           >
-            Summary only — the EULA is the binding document
+            Summary only: the EULA is the binding document
           </p>
           <p style={{ marginTop: "var(--cs-space-3)", ...prose.paragraph }}>
             This page is a plain-language summary of the Caisson Commercial
@@ -111,10 +111,10 @@ export default function LicensePage() {
       {/* Overview */}
       <Section eyebrow="Overview" title="The licensing model">
         <p style={prose.paragraph}>
-          Caisson ships two tracks. The <strong>Base substrate</strong> —
+          Caisson ships two tracks. The <strong>Base substrate</strong> (
           kernel, auth, tenancy-rls, ui, billing, credits, jobs, email,
           ai-config, mcp-server, registry-schema, observability, and the
-          generator tooling (cli, migrate, license-verify) — is{" "}
+          generator tooling: cli, migrate, license-verify) is{" "}
           <code className="mono">Apache-2.0</code>, open source, free to use.
           Every edition, including the{" "}
           <a href="/local-first" style={{ color: "var(--cs-accent)" }}>
@@ -127,7 +127,7 @@ export default function LicensePage() {
         </p>
         <p style={prose.paragraph}>
           The commercial track is the kit pattern: you purchase, you build, you
-          ship your own products without per-seat or per-project fees — but you
+          ship your own products without per-seat or per-project fees, but you
           do not redistribute or resell the kit itself.
         </p>
       </Section>
@@ -158,7 +158,7 @@ export default function LicensePage() {
           </li>
           <li style={prose.li}>
             Include compiled or bundled output from the code in your products
-            (subject to the no-redistribution restriction — your product ships,
+            (subject to the no-redistribution restriction: your product ships,
             the kit source does not ship as a kit).
           </li>
           <li style={prose.li}>
@@ -175,8 +175,8 @@ export default function LicensePage() {
             kit, boilerplate, library, or template that competes with Caisson.
           </li>
           <li style={prose.li}>
-            Sub-license the kit to third parties as a kit — your customers may
-            use your <em>product</em>, not the underlying Caisson source.
+            Sub-license the kit to third parties as a kit: your customers may
+            use your <em>product</em>, never the underlying Caisson source.
           </li>
           <li style={prose.li}>
             Remove or obscure license notices, SPDX identifiers, or the
@@ -220,7 +220,7 @@ export default function LicensePage() {
           </li>
           <li style={prose.li}>
             The license key is verified at install time and optionally at
-            runtime (for license-gated features). Verification is local —{" "}
+            runtime (for license-gated features). Verification is local, and{" "}
             <strong>no call home is required</strong> for the perpetual license.
           </li>
           <li style={prose.li}>
@@ -274,7 +274,7 @@ export default function LicensePage() {
               className="cs-footnote"
               style={{ marginTop: "var(--cs-space-2)" }}
             >
-              The open Base substrate — free to use, modify, and redistribute
+              The open Base substrate: free to use, modify, and redistribute
               under the Apache-2.0 terms.
             </p>
           </Card>
@@ -304,7 +304,7 @@ export default function LicensePage() {
               className="cs-footnote"
               style={{ marginTop: "var(--cs-space-2)" }}
             >
-              <code className="mono">LicenseRef-Caisson-Commercial</code> —
+              <code className="mono">LicenseRef-Caisson-Commercial</code>: a
               perpetual paid license, no redistribution of the kit.
             </p>
           </Card>
