@@ -856,3 +856,16 @@ parked audit-spec forks promoted per their SPECs, plus the wave-6 remaining scop
 | **Wave-6 remaining scope**         | **Build the 9 remaining `build-next` rows + close the ledger** (wave-6b, one spec/workflow/PR set). The 28 `build-on-trigger` rows stay parked on their per-row triggers; the lift-sweep report folds in-repo; the disposition SPEC goes terminal. Amends ADR-0229/0210 §4. | **ADR-0239** |
 | **local-ai price (P1 spec fork)**  | **$349 stays canonical** — ADR-0137's below-sum reprice superseded ADR-0129's $399; manifest + site + Paddle already agree. No number change anywhere; the manifest PLACEHOLDER comment is rewritten to cite the lock.                                                      | **ADR-0240** |
 | **Changeset prose (P2 spec fork)** | **Source gate, no silent formatter** — a standards-gate check fails PRs whose `.changeset/*.md` bodies carry internal prose (ADR cites, wave/row jargon, internal paths, agent slugs). The 22 pending changesets were hand-swept (PR #104) before the first live consume.   | **ADR-0241** |
+
+## Closed by the 2026-07-04 visual-audit picker round (site-design session)
+
+A full-site Playwright visual-audit workflow (48 routes × mobile/desktop × light/dark, critiqued
+against the impeccable skill + DESIGN.md) surfaced 221 findings into
+`tooling/design-critic/findings.toml`. Three genuine judgment-call forks; everything else in the
+ledger has an unambiguous fix and routes straight to the remediation spec, no pick needed.
+
+| Fork                                | Decision                                                                                                                                                                                                                                                                | ADR          |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| **Eyebrow-on-every-section voice**  | **Vary treatment per section** — keep `.cs-eyebrow` as the tokenized accent-budget primitive (ADR-0078), but differentiate wording/weight per section so the ~20-route repetition reads as voice, not AI-scaffolding reflex. A copy workstream, not a component change. | **ADR-0242** |
+| **Real media on module pages (F2)** | **Reaffirm deferred** — this is the pre-existing ADR-0237 F2 gap, not new information. 14 ledger findings marked `accepted`; revisit when there's design bandwidth for bespoke diagrams/screenshots.                                                                    | **ADR-0242** |
+| **Mobile buy-rail position**        | **OVERRIDE of the safe-default rec**: sticky bottom bar (persistent price + Add-to-cart) on mobile module depth pages, not a simple DOM reorder — the standard e-commerce mobile pattern, touching all 11 module depth pages' shared layout.                            | **ADR-0242** |

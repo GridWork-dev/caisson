@@ -376,7 +376,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__ai-evals"
 title = "The 'how it holds' schematic box below the code sample (both viewports, both themes) is a large bordered grid-paper container holding only one tiny generic 3-node pipeline icon with no caption or label — occupies roughly as much vertical space as the 20-line code block above it while communicating almost nothing, reading as an unfinished placeholder rather than the blueprint/cross-section schematic DESIGN.md commits to"
 severity = "warn"
-status = "open"
+status = "accepted"
 
 [[finding]]
 id = "41c56d2b4e7436aa"
@@ -432,7 +432,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__local-store"
 title = "Unfilled illustration slot ships live: a generic gray 'empty document' icon on a faint blueprint grid sits below the code panel on all 4 screenshots (mobile/desktop x light/dark) — reads as a missing/broken diagram, not the blueprint-schematic or code-artifact visual language DESIGN.md §5 mandates ('the artifact IS the headline'); on a page selling a specific $99 module, an empty asset slot undercuts the 'evidence over adjectives' brand promise"
 severity = "high"
-status = "open"
+status = "accepted"
 
 [[finding]]
 id = "49770da1325d4fc9"
@@ -472,7 +472,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__retention-runner"
 title = "A large empty grid-pattern box with a generic gray file/archive icon sits between the code sample and the FAQ on all 4 screenshots (mobile+desktop, light+dark) — roughly 300-400px of dead space with zero content, reading as an unshipped placeholder component rather than the blueprint/schematic DESIGN.md's illustration doctrine calls for"
 severity = "high"
-status = "open"
+status = "accepted"
 
 [[finding]]
 id = "5046453a5ad3d85c"
@@ -736,7 +736,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__audit-worm"
 title = "The 'media' placeholder block between the code artifact and the FAQ (MediaPlaceholder: a 16:9 grid-textured panel with only a 6x-scaled, 18%-opacity worm icon centered, aria-hidden) is a large, empty-feeling, uncaptioned void on a live $149 checkout page. It's invisible to assistive tech and, without any label explaining what belongs there, reads as unfinished/placeholder content rather than the 'blueprint schematic / real artifact' illustration language DESIGN.md §5 calls for — a visitor mid-purchase-decision has no way to know this is deliberate."
 severity = "warn"
-status = "open"
+status = "accepted"
 
 [[finding]]
 id = "6fb94e97aa492d63"
@@ -808,7 +808,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__field-crypto"
 title = "Empty blueprint-grid placeholder box (graph-paper bg + generic lock/frame icon, no caption, no heading) ships live directly below the code sample on /marketplace/modules/field-crypto — confirmed in all 4 captures (mobile/desktop x light/dark); reads as an unfinished illustration slot rather than shipped content, undermining the 'evidence over adjectives' positioning DESIGN.md commits to"
 severity = "high"
-status = "open"
+status = "accepted"
 
 [[finding]]
 id = "7d4e7e17edd806ca"
@@ -864,7 +864,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__alerting"
 title = "The generic dot-grid + hub-icon illustration block between the code sample and the FAQ occupies roughly 380px of vertical space on desktop with no heading, caption, or label — it does none of the pipeline-explaining work DESIGN.md's illustration section (blueprint/cross-section schematics for 'how it holds') commits to, and reads as an unfinished placeholder rather than a bespoke diagram of the five-stage pipeline just described above it"
 severity = "warn"
-status = "open"
+status = "accepted"
 
 [[finding]]
 id = "848104d9b07a925b"
@@ -936,7 +936,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__agent-runner"
 title = "The illustration panel between the buildEngineEnv code block and the FAQ section renders as an almost-empty dotted grid box with only one disconnected corner-bracket ('L') mark in it — reads as a broken/unfinished diagram asset (identical in light, dark, mobile, and desktop), consuming a large vertical span with no actual content."
 severity = "high"
-status = "open"
+status = "accepted"
 
 [[finding]]
 id = "8c01d32d5747c7d7"
@@ -1000,7 +1000,7 @@ workflow = "visual-audit"
 surface = "agentic-dev"
 title = "First illustration block (\"A governed kernel, not a wrapper\" section) is a large blueprint-grid box with only a small centered glyph icon and no schematic content — consumes roughly 600px of vertical space on desktop for near-zero information, reading as an unfinished placeholder rather than the evidence-forward artifact the brand book calls for"
 severity = "warn"
-status = "open"
+status = "accepted"
 
 [[finding]]
 id = "9348e136ea1f4759"
@@ -1120,7 +1120,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__agent-kernel"
 title = "Empty placeholder illustration block shipped live between the TRANSITIONS code block and the FAQ section — a ~380px-tall bordered panel with only a faint grid pattern and a centered ghost hexagon glyph, no caption, no heading, no real diagram content. Confirmed identical (same empty grid + same icon) across all 4 screenshots: mobile/desktop, light/dark. Reads as an unfinished/broken component slot, not a design choice — directly contradicts DESIGN.md §5's illustration law (blueprint/cross-section schematics OR real code/audit artifacts only, never a blank placeholder) and tanks the page's Aesthetic-and-Minimalist Design heuristic."
 severity = "high"
-status = "open"
+status = "accepted"
 
 [[finding]]
 id = "a539cf0f954a4d1f"
@@ -1128,7 +1128,7 @@ workflow = "visual-audit"
 surface = "compliance"
 title = "The blueprint/schematic illustration between the hero and 'The composition' section is a mostly-empty grid panel (~730px tall on desktop) holding only the small brand glyph — no schematic, no labels, no architecture story as DESIGN.md's illustration guidance calls for; reads as an unfinished placeholder, and the emptiness is far more pronounced on desktop than mobile since the box scales up with no added content"
 severity = "warn"
-status = "open"
+status = "accepted"
 
 [[finding]]
 id = "a5a6fdb32deb953e"
@@ -1232,7 +1232,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__guardrails"
 title = "The mid-page illustration block is an empty graph-paper grid with one generic gray Lucide 'filter' icon centered in it, no caption, label, or annotation — reads as an unfinished/broken placeholder rather than the 'blueprint / cross-section schematic' DESIGN.md §5 mandates, and is the exact 'solid-color rectangle where imagery belongs' anti-pattern from brand.md; identical (equally empty-looking) in all 4 screenshots"
 severity = "high"
-status = "open"
+status = "accepted"
 
 [[finding]]
 id = "b2eed7eb2da335ab"
@@ -1552,7 +1552,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__ai-meter"
 title = "Media slot below the code artifact (dot-grid background + one generic centered icon, no caption/heading/text) renders as an unstyled placeholder in all 4 screenshots (both viewports, both themes) — a ~400-700px block that reads as broken/missing content on a $199 paid module page, undermining the brand's 'artifact IS the headline' evidence-forward promise"
 severity = "high"
-status = "open"
+status = "accepted"
 
 [[finding]]
 id = "e17b9b17279354f7"
@@ -1560,7 +1560,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__prompt-registry"
 title = "Near-empty placeholder box (faint dot-grid background + one small centered icon, no caption or label) sits directly under the render.ts code sample on all four screenshots, consuming roughly 250-300px of vertical space with almost no content — reads as an unfinished diagram slot, undercutting the 'artifact is the headline' evidence-forward standard the code block right above it delivers on"
 severity = "warn"
-status = "open"
+status = "accepted"
 
 [[finding]]
 id = "e18e64a366e185a3"
@@ -1768,4 +1768,4 @@ workflow = "visual-audit"
 surface = "ai-kit"
 title = "The large framed grid-paper diagram block between 'What it composes' and 'What ships in the box' (roughly 700px tall on desktop, full-bleed on mobile) contains no actual schematic — only the small brand glyph centered in an otherwise empty grid, in both themes. DESIGN.md §5 commits to 'blueprint / cross-section schematics for the how-it-holds architecture story' as one of three illustration pillars; this slot ships as an unfilled placeholder consuming significant scroll real estate with zero information."
 severity = "warn"
-status = "open"
+status = "accepted"
