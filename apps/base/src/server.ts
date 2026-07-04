@@ -3,9 +3,26 @@
 // seam, ADR-0015); all errors render through the kernel's redaction-safe envelope with the
 // security headers from the floor.
 import type { KeyObject } from "node:crypto";
-import { AuthnError, toErrorResponse } from "@caisson/kernel";
+import { z } from "zod";
+import { AuthnError, parseStrict, toErrorResponse } from "@caisson/kernel";
 import { verifyAccountJwt } from "@caisson/auth";
 import type { BaseApp } from "./app.ts";
+
+// Zod `.strict()` boundaries (identity/security.md — Input validation): reject unknown fields and
+// wrong types before they reach `app.spend`/`app.mcpQuery`, instead of a bare `as` cast.
+const SpendBodySchema = z
+  .object({
+    amount: z.number().int().positive(),
+    idempotencyKey: z.string().trim().min(1).max(256),
+  })
+  .strict();
+
+const McpBodySchema = z
+  .object({
+    tool: z.string().trim().min(1).max(128),
+    args: z.unknown().optional(),
+  })
+  .strict();
 
 export interface ServerDeps {
   app: BaseApp;
@@ -42,10 +59,7 @@ export function createFetchHandler(
         const token = bearer(req);
         if (token === null) throw new AuthnError();
         const session = verifyAccountJwt(token, deps.authPublicKey);
-        const body = (await req.json()) as {
-          amount: number;
-          idempotencyKey: string;
-        };
+        const body = parseStrict(SpendBodySchema, await req.json());
         return json(200, await deps.app.spend(session, body));
       }
 
@@ -57,7 +71,7 @@ export function createFetchHandler(
 
       if (req.method === "POST" && url.pathname === "/mcp") {
         const token = bearer(req) ?? "";
-        const body = (await req.json()) as { tool: string; args?: unknown };
+        const body = parseStrict(McpBodySchema, await req.json());
         return json(200, {
           result: await deps.app.mcpQuery(token, body.tool, body.args ?? {}),
         });

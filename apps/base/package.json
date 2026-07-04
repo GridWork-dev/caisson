@@ -23,7 +23,8 @@
     "@caisson/kernel": "workspace:*",
     "@caisson/mcp-server": "workspace:*",
     "@caisson/service-license": "workspace:*",
-    "@caisson/tenancy-rls": "workspace:*"
+    "@caisson/tenancy-rls": "workspace:*",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@caisson/cli": "workspace:*",
