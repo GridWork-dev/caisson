@@ -848,7 +848,10 @@ export function checkChangesetProse(root: string): Finding[] {
  * reconstruction. ponytail: a regex walk over two directory globs + one Ed25519 check is the whole
  * gate — no pattern DB, no semgrep.
  */
-const ENTITLEMENT_TOKEN_SHAPE = /CAISSON-[A-Z0-9]+-[A-Za-z0-9_-]{88,}/g;
+// Match the VERIFIER's wire grammar, not the brand: decodeToken accepts ANY uppercase
+// PREFIX-TIER, and the cosmetic prefix is never trusted — so the scan must not pin `CAISSON-`
+// (a re-encoded real token under another prefix would still verify to pro).
+const ENTITLEMENT_TOKEN_SHAPE = /\b[A-Z0-9]+-[A-Z0-9]+-[A-Za-z0-9_-]{88,}/g;
 
 export function checkEntitlementTokenScan(root: string): Finding[] {
   // Derive the dev PUBLIC key via the private half (same pattern as the license-verify tests —
@@ -866,7 +869,8 @@ export function checkEntitlementTokenScan(root: string): Finding[] {
     }).export({ format: "pem", type: "pkcs8" }),
   );
   const isDevSigned = (token: string): boolean => {
-    const bodyB64 = token.slice(token.indexOf("-", 8) + 1);
+    // Split on the SECOND hyphen (PREFIX-TIER-body), whatever the prefix length.
+    const bodyB64 = token.slice(token.indexOf("-", token.indexOf("-") + 1) + 1);
     const body = Buffer.from(bodyB64, "base64url");
     // base64url decode is lenient; require the canonical round-trip (mirrors decodeToken) so a
     // mutated-but-decodes-same string is never exempted on the strength of the original signature.

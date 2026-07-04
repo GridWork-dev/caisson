@@ -95,4 +95,23 @@ describe("checkEntitlementTokenScan", () => {
     );
     expect(checkEntitlementTokenScan(root)).toHaveLength(0);
   });
+
+  test("a re-encoded token under a NON-CAISSON prefix is still an error (the verifier ignores the cosmetic prefix)", () => {
+    const rogue = mintToken("rogue-reencode-seed", CLAIMS).replace(
+      /^CAISSON-PRO-/,
+      "X9-FREE-",
+    );
+    writeFileSync(join(demoDir(), "reencoded.ts"), `const T = "${rogue}";\n`);
+    const findings = checkEntitlementTokenScan(root);
+    expect(findings).toHaveLength(1);
+  });
+
+  test("a dev-signed token under a different prefix is still exempt (split on the second hyphen, not a fixed prefix length)", () => {
+    const dev = mintToken(DEV_SEED_TEXT, CLAIMS).replace(
+      /^CAISSON-PRO-/,
+      "LONGPREFIX-TIER-",
+    );
+    writeFileSync(join(demoDir(), "reframed.ts"), `const T = "${dev}";\n`);
+    expect(checkEntitlementTokenScan(root)).toHaveLength(0);
+  });
 });

@@ -193,7 +193,9 @@ const REWRITE_SKIP_DIRS = new Set([
 // ship in the mirror. DEV-keypair tokens are exempt: they are signed by the DOCUMENTED test seed
 // (SHA-256("caisson-license-verify-KAT-seed-v1")), carry no entitlement, and verify here by
 // reconstruction. ponytail: a regex walk + one Ed25519 check is the whole gate — no pattern DB.
-const TOKEN_SHAPE = /CAISSON-[A-Z0-9]+-[A-Za-z0-9_-]{88,}/g;
+// Match the VERIFIER's wire grammar, not the brand: decodeToken accepts ANY uppercase
+// PREFIX-TIER and never trusts the cosmetic prefix — so the scan must not pin `CAISSON-`.
+const TOKEN_SHAPE = /\b[A-Z0-9]+-[A-Z0-9]+-[A-Za-z0-9_-]{88,}/g;
 const DEV_VERIFY_KEY = createPublicKey(
   createPrivateKey({
     key: Buffer.concat([
@@ -210,7 +212,8 @@ const DEV_VERIFY_KEY = createPublicKey(
 
 /** True iff the token's 64-byte signature tail verifies against the DEV public key. */
 function isDevSigned(token: string): boolean {
-  const bodyB64 = token.slice(token.indexOf("-", 8) + 1);
+  // Split on the SECOND hyphen (PREFIX-TIER-body), whatever the prefix length.
+  const bodyB64 = token.slice(token.indexOf("-", token.indexOf("-") + 1) + 1);
   const body = Buffer.from(bodyB64, "base64url");
   // base64url decode is lenient; require the canonical round-trip (mirrors decodeToken) so a
   // mutated-but-decodes-same string is never exempted on the strength of the original signature.
