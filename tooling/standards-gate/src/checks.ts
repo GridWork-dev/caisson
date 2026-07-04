@@ -20,7 +20,12 @@ import {
   realpathSync,
   statSync,
 } from "node:fs";
-import { createHash } from "node:crypto";
+import {
+  createHash,
+  createPrivateKey,
+  createPublicKey,
+  verify as cryptoVerify,
+} from "node:crypto";
 import ts from "typescript";
 import type { Pkg } from "./workspace";
 import { isAgpl } from "./workspace";
@@ -874,6 +879,91 @@ export function checkChangesetProse(root: string): Finding[] {
           message: `${relPath}:${startLine + i}: ${label} "${m[0]}" — a changeset body ships verbatim into the bumped package's CHANGELOG; rewrite in buyer-readable prose.`,
         });
       }
+    }
+  }
+  return findings;
+}
+
+/**
+ * Entitlement-token scan (P0 audit remediation). A real license token is itself the leak — the
+ * token IS the entitlement, and offline Ed25519 verify has no revocation list — so NO prod-signed
+ * token may live under the paths that ship in fixtures, demos, or the public mirror. DEV-keypair
+ * tokens are exempt: they are signed by the DOCUMENTED test seed
+ * (SHA-256("caisson-license-verify-KAT-seed-v1")), carry no entitlement, and verify here by
+ * reconstruction. ponytail: a regex walk over two directory globs + one Ed25519 check is the whole
+ * gate — no pattern DB, no semgrep.
+ */
+// Match the VERIFIER's wire grammar, not the brand: decodeToken accepts ANY uppercase
+// PREFIX-TIER, and the cosmetic prefix is never trusted — so the scan must not pin `CAISSON-`
+// (a re-encoded real token under another prefix would still verify to pro).
+const ENTITLEMENT_TOKEN_SHAPE = /\b[A-Z0-9]+-[A-Z0-9]+-[A-Za-z0-9_-]{88,}/g;
+
+export function checkEntitlementTokenScan(root: string): Finding[] {
+  // Derive the dev PUBLIC key via the private half (same pattern as the license-verify tests —
+  // `createPublicKey`'s KeyObject overload is absent from bun-types).
+  const devKey = createPublicKey(
+    createPrivateKey({
+      key: Buffer.concat([
+        Buffer.from("302e020100300506032b657004220420", "hex"),
+        createHash("sha256")
+          .update("caisson-license-verify-KAT-seed-v1")
+          .digest(),
+      ]),
+      format: "der",
+      type: "pkcs8",
+    }).export({ format: "pem", type: "pkcs8" }),
+  );
+  const isDevSigned = (token: string): boolean => {
+    // Split on the SECOND hyphen (PREFIX-TIER-body), whatever the prefix length.
+    const bodyB64 = token.slice(token.indexOf("-", token.indexOf("-") + 1) + 1);
+    const body = Buffer.from(bodyB64, "base64url");
+    // base64url decode is lenient; require the canonical round-trip (mirrors decodeToken) so a
+    // mutated-but-decodes-same string is never exempted on the strength of the original signature.
+    if (body.toString("base64url") !== bodyB64) return false;
+    if (body.length <= 64) return false;
+    try {
+      return cryptoVerify(
+        null,
+        body.subarray(0, body.length - 64),
+        devKey,
+        body.subarray(body.length - 64),
+      );
+    } catch {
+      return false;
+    }
+  };
+
+  const findings: Finding[] = [];
+  const scanDir = (dir: string, label: string): void => {
+    if (!existsSync(dir)) return;
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const abs = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        scanDir(abs, label);
+        continue;
+      }
+      const content = readFileSync(abs, "utf8");
+      for (const match of content.match(ENTITLEMENT_TOKEN_SHAPE) ?? []) {
+        if (isDevSigned(match)) continue;
+        findings.push({
+          severity: "error",
+          rule: "entitlement-token-scan",
+          pkg: label,
+          message: `${abs.slice(root.length + 1)}: license-token-shaped string that does NOT verify against the dev test keypair — a real entitlement token must never be committed (rotate the issuer key if one leaked).`,
+        });
+      }
+    }
+  };
+
+  // The two shipping-surface globs: golden fixtures + reference-app demos.
+  for (const group of ["packages", "apps"]) {
+    const base = join(root, group);
+    if (!existsSync(base)) continue;
+    for (const slug of readdirSync(base)) {
+      scanDir(
+        join(base, slug, group === "packages" ? "src/__golden__" : "app/demo"),
+        `${group}/${slug}`,
+      );
     }
   }
   return findings;

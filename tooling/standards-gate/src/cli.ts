@@ -29,6 +29,7 @@ import {
   checkOpenCommercialBoundary,
   checkRlsEquivalence,
   checkChangesetProse,
+  checkEntitlementTokenScan,
   type Finding,
 } from "./checks";
 
@@ -47,6 +48,7 @@ async function main(): Promise<number> {
     ...checkCopyPaste(root), // ADR-0101 gate #4: cross-package copy-paste
     ...(await checkRlsEquivalence(pkgs, root)), // ADR-0210/0005: hand-written RLS vs the generator
     ...checkChangesetProse(root), // changeset-source prose gate: no internal leak in a .changeset/*.md body
+    ...checkEntitlementTokenScan(root), // P0 audit remediation: no committed prod-signed license token
   ];
 
   const errors = findings.filter((f) => f.severity === "error");

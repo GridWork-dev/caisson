@@ -16,6 +16,13 @@
 //   3. offline Ed25519 license verify — valid → pro, tampered/absent → community (fail-safe);
 //   4. zero egress — the privacy gate blocks every host (empty allowlist), and the whole pass fetches 0×;
 //   5. at-rest field-crypto + file-per-tenant isolation — a tenant-B context cannot open a tenant-A row.
+import {
+  type KeyObject,
+  createHash,
+  createPrivateKey,
+  createPublicKey,
+  sign as cryptoSign,
+} from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -31,11 +38,12 @@ import {
   assembleEditionMigrations,
   canonicalize,
   createEgressGuard,
+  encodeToken,
   openTenantDb,
   parseChangeset,
   reconcileWithTombstones,
   tenantDbPath,
-  verifyLicense,
+  verifyLicenseWithKey,
   type Changeset,
   type JsonValue,
   type RowValues,
@@ -73,13 +81,50 @@ const QUERY = "encryption"; // FTS5 phrase-matches only d4 → deterministic top
 const SECRET = "patient SSN 123-45-6789";
 
 /**
- * A real PRODUCTION-signed `pro`/`local-ai` license token (minted offline with the issuer's private
- * key; a license token is public-safe — its detached signature reveals nothing about the private key,
- * which never ships). Verifies against the production public key baked into `@caisson/license-verify`
- * (ADR-0108). Used to demonstrate a valid offline verify with zero network. Keep in sync with that key.
+ * DEV-keypair license leg (TM-LIC). The invariant: NO prod-signed token is ever committed to this
+ * repo — a real entitlement token is itself the leak (the token IS the entitlement, and offline
+ * verify has no revocation list), regardless of the private key staying secret. The demo mints its
+ * token at module load from the DOCUMENTED deterministic dev seed (the same test vector the
+ * license-verify suite uses) and verifies through the explicit-key seam, proving valid → pro /
+ * tampered → community / absent → community with zero network and zero prod-signed material.
+ * ponytail: dev keypair only — the baked prod key is never exercised here; `services/license`
+ * owns the live prod-key path.
  */
-const PRO_TOKEN =
-  "CAISSON-PRO-eyJlbnRpdGxlbWVudHMiOlsibG9jYWwtYWkiXSwiZXhwaXJ5IjpudWxsLCJsaWNlbnNlSWQiOiIyMjIyMjIyMi0yMjIyLTQyMjItODIyMi0yMjIyMjIyMjIyMjIiLCJtYWpvciI6MSwidGllciI6InBybyJ9JCCq8unU9ASs7NpgsOQSFpKl6Bti7J41yCKbLV8-1q0HbeUzZ-K7cfdaBge2_gyn38fKvEomzkH35GRQ0RbFBA";
+const DEV_SEED = createHash("sha256")
+  .update("caisson-license-verify-KAT-seed-v1")
+  .digest();
+// Ed25519 PKCS#8 DER = 16-byte fixed prefix ‖ 32-byte raw seed (RFC 8410).
+const DEV_PRIVATE_KEY: KeyObject = createPrivateKey({
+  key: Buffer.concat([
+    Buffer.from("302e020100300506032b657004220420", "hex"),
+    DEV_SEED,
+  ]),
+  format: "der",
+  type: "pkcs8",
+});
+const DEV_PUBLIC_KEY: KeyObject = createPublicKey(
+  DEV_PRIVATE_KEY.export({ format: "pem", type: "pkcs8" }),
+);
+const PRO_CLAIMS = {
+  entitlements: ["local-ai"],
+  expiry: null,
+  licenseId: "22222222-2222-4222-8222-222222222222",
+  major: 1,
+  tier: "pro",
+} as const;
+const PRO_PAYLOAD = canonicalize(
+  PRO_CLAIMS as Parameters<typeof canonicalize>[0],
+);
+const PRO_TOKEN = encodeToken({
+  prefix: "CAISSON",
+  tier: "PRO",
+  payload: PRO_PAYLOAD,
+  signature: cryptoSign(
+    null,
+    Buffer.from(PRO_PAYLOAD, "utf8"),
+    DEV_PRIVATE_KEY,
+  ),
+});
 
 /** Flip the final character → a tampered token whose Ed25519 signature no longer verifies. */
 const TAMPERED_TOKEN =
@@ -338,9 +383,10 @@ export async function runDemo(
     dbA.close();
 
     // 4) Offline Ed25519 license verify (TM-LIC) — valid → pro; tampered + absent → community.
-    const valid = verifyLicense(PRO_TOKEN);
-    const tampered = verifyLicense(TAMPERED_TOKEN);
-    const absent = verifyLicense(null);
+    // Explicit-key seam with the dev public key: same verify logic, no prod-signed material.
+    const valid = verifyLicenseWithKey(PRO_TOKEN, DEV_PUBLIC_KEY);
+    const tampered = verifyLicenseWithKey(TAMPERED_TOKEN, DEV_PUBLIC_KEY);
+    const absent = verifyLicenseWithKey(null, DEV_PUBLIC_KEY);
 
     // 5) Two-way sync convergence (TM-SYNC) over two device replicas + a test-doubled transport.
     const a = new Replica(openTenantDb(deviceARoot, "tenant-a"), "tenant-a");
