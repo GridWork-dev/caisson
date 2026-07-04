@@ -1,5 +1,5 @@
-// @caisson/license-verify — offline Ed25519 license verification (T7, ADR-0010/0024). Verifies a
-// tessera-format license token entirely OFFLINE (zero network) against a BAKED-IN public key using
+// @caisson/license-verify — offline Ed25519 license verification (ADR-0010/0024). Verifies a
+// signed license token entirely OFFLINE (zero network) against a BAKED-IN public key using
 // `crypto.verify` — NOT `timingSafeEqual`: asymmetric signature verification is its own discipline
 // (kernel `crypto.ts:1-3`), not a secret comparison.
 //
@@ -25,7 +25,7 @@ import { decodeToken } from "./token.ts";
 /**
  * The baked-in Ed25519 verification public key (SPKI DER, base64) — the PRODUCTION issuer key
  * (fingerprint `0ae7d2abb886ca3d`, provisioned ADR-0107 / `infra/license-issuer/ISSUER_PUBLIC_KEY.md`).
- * The matching private signing key is `CAISSON_LICENSE_SIGNING_KEY`, held ONLY by the P6 issuer
+ * The matching private signing key is `CAISSON_LICENSE_SIGNING_KEY`, held ONLY by the issuer service
  * (`@caisson/license-issue`); it never ships in any tarball and is never committed. Rotating this key
  * is a deliberate release-time change. Tests do NOT sign with this key (no private half lives in the
  * repo) — they exercise the verify logic against a dev keypair via {@link verifyLicenseWithKey} and

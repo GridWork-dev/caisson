@@ -1,10 +1,24 @@
 # @caisson/email
 
-Transactional email.
+Transactional email port: one provider-agnostic `Emailer` interface with a capture driver for
+tests and production drivers for Resend, Postmark, SMTP, and SES.
 
 - **Layer:** base
-- **Seeds (rebuild-clean):** gridwork
-- **Key ADR:** ADR-0002
 
-> **Built (thin seam)** — real src + tests (email seam). Live per-package status: ../../docs/build-state.md
-> Build per `/plan.md`. Pro-private `media-pipeline` contributes patterns only, never code.
+## Install
+
+```bash
+bun add @caisson/email
+```
+
+## Usage
+
+```ts
+import { createResendEmailer, createCaptureEmailer } from "@caisson/email";
+
+const emailer = createResendEmailer({ apiKey, from: "no-reply@example.com" });
+await emailer.send({ to, template: "welcome", data: { name } });
+
+// In tests: swap in the capture driver and assert on emailer.sent.
+const testEmailer = createCaptureEmailer();
+```

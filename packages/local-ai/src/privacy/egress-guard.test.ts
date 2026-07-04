@@ -1,4 +1,4 @@
-// Tests for the privacy gate / egress guard (ADR-0064, fork P4a-7-D — threat TM-EGRESS). In-process,
+// Tests for the privacy gate / egress guard (ADR-0064). In-process,
 // deterministic, NO live network: the one test that exercises the allowed path stubs `globalThis.fetch`
 // so it proves the guard ROUTES through the kernel `fetchWithTimeout` without opening a socket, and the
 // block-path tests assert no stubbed fetch is ever called (the block fires before the network).

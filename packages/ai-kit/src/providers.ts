@@ -1,10 +1,10 @@
 // The live provider transport (ADR-0059/0011). Maps each ai-config lane's provider name to a real
 // Vercel AI SDK adapter — the ONLY place in the package graph a vendor SDK is imported (the gateway
-// hides it behind `infer()`; base packages may never import one, enforced by the Gate-2 boundary).
+// hides it behind `infer()`; base packages may never import one directly).
 //
 // This is the LIVE transport: the one path NOT exercised in CI. Every test injects a mock
 // `LanguageModelV2` and never reaches a real adapter, so no provider key, model call, or network
-// request happens in the gate (the SPEC's zero-live-call invariant). A buyer's BYOK key is read from
+// request happens in the test suite (the package's zero-live-call invariant). A buyer's BYOK key is read from
 // the env var the lane NAMES (`apiKeyEnv`, ADR-0011) — ai-config never reads the key itself; the SDK
 // adapter does, here, at the edge. `openrouter`/`local`/`ollama` are OpenAI-API-compatible, so they
 // ride `@ai-sdk/openai-compatible` (ADR-0201) — NOT `createOpenAI`: since AI SDK v5 the OpenAI
@@ -48,7 +48,7 @@ export const DEFAULT_PROVIDER_TIMEOUT_MS = 60_000;
  * invariant, ADR-0059).
  */
 export function timeoutFetch(timeoutMs: number): typeof fetch {
-  // ponytail: two casts, both inert at runtime. (1) `fetchWithTimeout`'s declared param is
+  // Two casts, both inert at runtime. (1) `fetchWithTimeout`'s declared param is
   // `string | URL` (narrower than `RequestInfo | URL`) — every SDK adapter here only ever calls it
   // with a string URL, and `fetch()` itself accepts a `Request` identically either way. (2) Bun's
   // ambient `typeof fetch` additionally requires a static `preconnect` method (a Bun-only fetch

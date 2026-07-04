@@ -57,8 +57,8 @@
   registry-resolver/reserve/reconcile machinery, no guardrails or prompt-registry render (an embed input
   feeds a vector index, not a moderated chat turn). Zero diff in `@caisson/ai-config`,
   `@caisson/ai-meter`, or `@caisson/pricebook` — a bundled embedding price-book row / bulk-embed SKU is
-  cross-package money, deferred to the ADR-0212 serialized wave.
-- ccf8b10: Branded money types + rounding provenance (ADR-0212, harvest slice-2 serialized wave-2).
+  cross-package money, deferred to a later release.
+- ccf8b10: Branded money types + rounding provenance (ADR-0212).
   Kernel gains `src/money.ts`: TS-native nominal `Cents`/`Credits`/`MicroUsd`/`MicroUsdPerCredit`
   brands (compile-time only, zero runtime cost), `asCents`/`asCredits`/`asMicroUsd`/
   `asMicroUsdPerCredit` constructors (throw `ValidationError` on a non-integer/negative input),

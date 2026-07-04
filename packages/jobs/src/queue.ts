@@ -166,14 +166,14 @@ export function createInMemoryQueue(
           task: name,
         });
       }
-      // ponytail: no backlog to poll — work() exists for port symmetry
+      // No backlog to poll in-memory — work() exists for port symmetry with the durable drivers.
       return {
         async stop(): Promise<void> {},
       };
     },
 
     async getQueueState(name: string): Promise<QueueState> {
-      // ponytail: honest zero, not a fake pending-count
+      // An honest zero, not a fake pending-count — the in-memory driver has no backlog to report.
       return {
         queuedCount: 0,
         activeCount: 0,

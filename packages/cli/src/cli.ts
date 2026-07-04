@@ -1,4 +1,4 @@
-// `create-caisson` entry (ADR-0004/T18). Parses --name/--edition/--module/--out/--dry-run/--help,
+// `create-caisson` entry (ADR-0004). Parses --name/--edition/--module/--out/--dry-run/--help,
 // validates the selection against the registry ALLOWLIST, materializes to disk via the path-safe
 // FileSetWriter, runs `git init` in the output directory (fail-soft), and prints a next-steps
 // block to stdout. The registry index is resolved via `import.meta.url` (cwd-independent) with

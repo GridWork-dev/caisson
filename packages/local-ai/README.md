@@ -11,18 +11,11 @@ edition-only surface.
 - **Composes (down-only):** `@caisson/local-store` (sqlite-vec + FTS5 RRF hybrid retrieval, ADR-0067)
   · `@caisson/license-verify` (offline Ed25519, ADR-0010) · `@caisson/field-crypto` (at-rest,
   ADR-0055) · `@caisson/kernel`
-- **Adds:** a built two-way sync engine (CRDT/LWW + tombstones behind a `SyncEngine` port) · an
+- **Adds:** a two-way sync engine (CRDT/LWW + tombstones behind a `SyncEngine` port) · an
   `InferenceBackend` port (real local embeddings; completion seam; stubbed in CI) · a zero-egress
   privacy gate · the file-per-tenant resolver (ADR-0073) · the edition migration assembly
-- **Seeds (rebuild-clean):** PUBLIC tessera (license token format) + health-service (SQLite migration
-  analog) PATTERNS only — pro-private `media-pipeline` contributes patterns only, never code
-- **Key ADRs:** ADR-0064 (built two-way sync + hybrid-retrieval exit gate) · ADR-0050
-  (fully-commercial) · ADR-0067/0073 (local-store + file-per-tenant) · ADR-0010 (offline license)
 
-> T9 scaffold: the package barrel composes the shipped base seams; the edition feature surface
-> (sync, inference, privacy, at-rest, tenancy, migration) lands per `outputs/specs/wave1-p4a-local-ai/PLAN.md`.
-
-## Local inference backend (`OnnxEmbeddingBackend`, T13)
+## Local inference backend (`OnnxEmbeddingBackend`)
 
 The real on-device embedding backend (`src/inference/onnx-backend.ts`) runs a MiniLM-class ONNX model
 via transformers.js (`@huggingface/transformers`) behind the `InferenceBackend` port. It is **never
@@ -33,11 +26,11 @@ leaving the live model load the single un-exercised seam — so the runtime is a
 - **Model is first-run-fetched + cached, never in the tarball** (`.npmignore` keeps the cache,
   `*.onnx`, and weight blobs out of the published package). Air-gap deployments pre-seed the cache and
   construct the backend with `offline: true` for literally zero egress.
-- **Hash-pinned integrity (TM-MODEL):** the config requires at least one `filename → SHA-256` pin;
+- **Hash-pinned integrity:** the config requires at least one `filename → SHA-256` pin;
   every pinned file is verified before its bytes reach the runtime, fail-closed on mismatch.
-- **Single guarded egress chokepoint (TM-EGRESS):** transformers.js's `env.fetch` is overwritten with
+- **Single guarded egress chokepoint:** transformers.js's `env.fetch` is overwritten with
   a guard that hard-blocks any host but the one sanctioned `modelHost` (and any non-https scheme) and
   routes through the kernel `fetchWithTimeout` — no raw `fetch`, no out-of-band download, no silent
-  hosted fallback. (T14's privacy/egress guard later wraps this same chokepoint.)
-- Embedding-only: text generation is a separate seam (the rented backend, T20) — `complete()` fails
-  closed here.
+  hosted fallback. (The package's privacy/egress guard later wraps this same chokepoint.)
+- Embedding-only: text generation is a separate seam (the rented, hosted-inference backend) —
+  `complete()` fails closed here.

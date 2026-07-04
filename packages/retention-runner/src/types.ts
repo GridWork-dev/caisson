@@ -5,7 +5,7 @@ import { strictObject } from "@caisson/kernel";
 import { z } from "zod";
 
 /**
- * The three erasure triggers. `auto_90d` is the recurring scheduled sweep (Fork 3); `ccpa_request`
+ * The three erasure triggers. `auto_90d` is the recurring scheduled sweep; `ccpa_request`
  * and `operator_manual` are one-shot, operator/subject-triggered calls straight into `runErasure`.
  * Closed enum — an unrecognized reason fails strict parsing rather than silently tagging the row.
  */

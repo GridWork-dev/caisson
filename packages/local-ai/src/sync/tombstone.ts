@@ -1,15 +1,15 @@
-// src/sync/tombstone.ts — durable tombstone persistence + horizon GC (ADR-0064, threat TM-SYNC). The
-// PERSISTENCE layer the T17 single-batch merge (`reconcile.ts`) explicitly defers: `reconcileReplicas`
+// src/sync/tombstone.ts — durable tombstone persistence + horizon GC (ADR-0064). The
+// PERSISTENCE layer the single-batch merge (`reconcile.ts`) explicitly defers: `reconcileReplicas`
 // already excludes a winning delete within ONE batch (a losing concurrent upsert is simply not the
 // winner — no resurrection by construction), but real sync is incremental. A replica does not keep
 // every peer changeset forever; it keeps a watermark plus a TOMBSTONE SET. So when a later batch
 // arrives that no longer carries the original delete, the persisted tombstone must STILL outrank a
-// stale, lower-stamped upsert — otherwise the row resurrects (TM-SYNC).
+// stale, lower-stamped upsert — otherwise the row resurrects.
 //
-// This module COMPOSES T17, it does not rebuild it:
+// This module COMPOSES `reconcileReplicas`, it does not rebuild it:
 //   - the LIVE set is delegated verbatim to `reconcileReplicas` — prior tombstones are replayed as
 //     synthetic delete entries (the HLC stamp is losslessly reversible to its originating change), so
-//     the live-set semantics are LITERALLY T17's and follow any future change to it for free;
+//     the live-set semantics are LITERALLY `reconcileReplicas`'s and follow any future change to it for free;
 //   - the only genuinely-new state is the tombstone INDEX (the greatest-stamped delete per `(table, pk)`)
 //     and its horizon GC. Both reuse the `clock.ts` total order — no clock logic is re-implemented here.
 //
@@ -25,7 +25,7 @@ import { TenancyError } from "@caisson/kernel";
 /**
  * A durable record that `(table, pk)` was deleted at HLC `stamp`. Persisted across sync rounds (one per
  * key, the greatest-stamped delete): it suppresses any later upsert whose stamp is not strictly greater,
- * so a stale peer edit cannot resurrect a deleted row (TM-SYNC). Tenant-agnostic by construction — the
+ * so a stale peer edit cannot resurrect a deleted row. Tenant-agnostic by construction — the
  * set lives inside one tenant's file (file-per-tenant, ADR-0073), so the tenant is the file, not the row.
  */
 export interface Tombstone {
@@ -35,9 +35,9 @@ export interface Tombstone {
 }
 
 /**
- * The persistent reconcile outcome: the converged LIVE rows (winning upserts, delete-excluded — the T17
- * shape) plus the ADVANCED tombstone set to persist for the next round. Both are total-ordered by
- * `(table, pk)` so two replicas serialize byte-equal (exit-gate clause 2).
+ * The persistent reconcile outcome: the converged LIVE rows (winning upserts, delete-excluded — the
+ * `reconcileReplicas` shape) plus the ADVANCED tombstone set to persist for the next round. Both are
+ * total-ordered by `(table, pk)` so two replicas serialize byte-equal.
  */
 export interface TombstoneReconcileResult {
   readonly live: ReconciledRow[];
@@ -53,21 +53,21 @@ interface WinningChange {
 /**
  * Reconcile new per-tenant changesets over a PERSISTED tombstone set. Prior tombstones participate in
  * the merge as virtual deletes, so a stale upsert whose original delete is no longer in the batch still
- * loses to the tombstone → no resurrection across sync rounds (TM-SYNC). Pure and deterministic: the
+ * loses to the tombstone → no resurrection across sync rounds. Pure and deterministic: the
  * result depends only on the inputs' content, never on changeset order.
  *
- * Returns the converged live rows (delegated to T17's `reconcileReplicas`, so the live semantics are
+ * Returns the converged live rows (delegated to `reconcileReplicas`, so the live semantics are
  * exactly the single-batch merge's) and the advanced tombstone set (the greatest-stamped delete per key;
  * a key re-created by a strictly-greater upsert drops out of the set).
  *
  * Fails closed with `TenancyError` (404, never 403 — never echo a tenant id) if the changesets do not all
- * share one `tenantId`: a cross-tenant merge is a partition breach (TM-SYNC / ADR-0073), not a no-op.
+ * share one `tenantId`: a cross-tenant merge is a partition breach (ADR-0073), not a no-op.
  */
 export function reconcileWithTombstones(
   prior: readonly Tombstone[],
   changesets: readonly Changeset[],
 ): TombstoneReconcileResult {
-  // Defense-in-depth: all replicas must belong to the same tenant file (the ADR-0073 partition). T17's
+  // Defense-in-depth: all replicas must belong to the same tenant file (the ADR-0073 partition).
   // `reconcileReplicas` re-checks this over the combined set; we derive the tenant here to anchor the
   // synthetic tombstone changesets to it.
   let tenantId: string | undefined;
@@ -90,7 +90,7 @@ export function reconcileWithTombstones(
 
   const synthetic = tombstonesToChangesets(prior, tenantId);
 
-  // LIVE set: delegate verbatim to T17. Replaying tombstones as synthetic deletes makes a stale,
+  // LIVE set: delegate verbatim to `reconcileReplicas`. Replaying tombstones as synthetic deletes makes a stale,
   // lower-stamped upsert lose to the persisted delete (excluded — no resurrection); a strictly-greater
   // upsert beats the synthetic delete and is re-created. We do NOT re-implement the merge.
   const live = reconcileReplicas([...synthetic, ...changesets]);
@@ -121,7 +121,7 @@ export function gcTombstones(
 // --- internal ---
 
 /**
- * Rebuild prior tombstones as synthetic delete changesets so T17's `reconcileReplicas` can replay them.
+ * Rebuild prior tombstones as synthetic delete changesets so `reconcileReplicas` can replay them.
  * The HLC stamp is losslessly reversible to the change that produced it (`stampFromEntry`): `physical →
  * updatedAt`, `node → replicaId`, `counter → seq`. Grouped by node so each synthetic changeset carries a
  * single originating replica's deletes, exactly as a captured changeset would.
@@ -205,7 +205,7 @@ function advanceTombstones(
   return sortTombstones(out);
 }
 
-/** Total-order tombstones by `(table, pk)` so divergent replicas serialize byte-equal (exit-gate 2). */
+/** Total-order tombstones by `(table, pk)` so divergent replicas serialize byte-equal. */
 function sortTombstones(tombstones: readonly Tombstone[]): Tombstone[] {
   return [...tombstones].sort((a, b) =>
     a.table < b.table

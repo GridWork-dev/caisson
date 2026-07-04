@@ -1,12 +1,12 @@
-// TS-native PII detection + redaction (ADR-0063). Built FRESH — no `media-pipeline` seed; PUBLIC
-// patterns only. Four detectors (email / US-SSN / credit-card with a Luhn check / phone) over a
+// TS-native PII detection + redaction (ADR-0063). Four detectors (email / US-SSN /
+// credit-card with a Luhn check / phone) over a
 // deterministic overlap resolver, then three redaction modes:
 //   - `mask`     → a fixed class placeholder (`[EMAIL]`), irreversible.
 //   - `hash`     → a class placeholder + a stable SHA-256 prefix (`[EMAIL:ab12…]`), irreversible,
 //                  but equal values map to equal tokens (correlatable without exposure).
 //   - `tokenize` → REVERSIBLE: the original is sealed via field-crypto `sealField` and replaced with
 //                  an opaque placeholder; `detokenizePii` restores it via `openField`. This is the
-//                  redact-before-egress / restore-on-return round-trip (ADR-0055/TM4). The sole
+//                  redact-before-egress / restore-on-return round-trip (ADR-0055). The sole
 //                  reversible path is field-crypto — never a bespoke crypto path here.
 import { createHash } from "node:crypto";
 import type { FieldCryptoContext } from "@caisson/field-crypto";

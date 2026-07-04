@@ -21,7 +21,7 @@
 
 ### Minor Changes
 
-- ccf8b10: Branded money types + rounding provenance (ADR-0212, harvest slice-2 serialized wave-2).
+- ccf8b10: Branded money types + rounding provenance (ADR-0212).
   Kernel gains `src/money.ts`: TS-native nominal `Cents`/`Credits`/`MicroUsd`/`MicroUsdPerCredit`
   brands (compile-time only, zero runtime cost), `asCents`/`asCredits`/`asMicroUsd`/
   `asMicroUsdPerCredit` constructors (throw `ValidationError` on a non-integer/negative input),
@@ -63,7 +63,7 @@
 
 ### Patch Changes
 
-- 95103b6: Money-path hardening (post-wave triage CAISSON-5/6/7/8/9). `parsePaddleEvent` now correlates
+- 95103b6: Money-path hardening. `parsePaddleEvent` now correlates
   `items[]` to `details.line_items[]` by their shared `price_id` instead of array position, and fails
   closed on a duplicate non-empty per-line join id; a malformed adjustment item now signals through an
   optional `onWarn` callback, threaded all the way from `PaddleConfig` through `verifyAndParse` and

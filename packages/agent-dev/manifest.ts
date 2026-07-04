@@ -1,6 +1,6 @@
 // Registry manifest (ADR-0020). Loaded by @caisson/standards-gate; must agree with package.json on
 // id/version/license/dependencies. `kind: "edition"` (ADR-0066) — the Agentic-Dev edition is a
-// COMPOSITION, never a primitive: it consumes the shipped base seams DOWN-ONLY (ADR-0003/0022 Gate-3)
+// COMPOSITION, never a primitive: it consumes the shipped base seams DOWN-ONLY (ADR-0003/0022)
 // — the governed engine-neutral agent kernel (`@caisson/agent-kernel`), local hybrid memory
 // (`@caisson/local-store`), the embedder-lane seam (`@caisson/ai-config`), the governed sandboxed
 // tool-exec gate (`@caisson/tool-exec`, ADR-0178), and the kernel compliance substrate
@@ -37,14 +37,14 @@ export default defineModule({
   members: {
     "@caisson/agent-dev": "0.2.1",
     "@caisson/agent-kernel": "0.2.1",
-    // Slice-2 harvest primitive folded into the Agentic-Dev bundle (ADR-0186 F1/F5, edition-only
+    // A separately-versioned primitive folded into the Agentic-Dev bundle (ADR-0186, edition-only
     // SKU) — same fold as tool-exec below, pinned to its published ledger version.
     "@caisson/agent-runner": "0.1.1",
     "@caisson/ai-config": "0.2.1",
     "@caisson/kernel": "0.3.0",
     "@caisson/local-store": "0.2.1",
-    // Stage-2 harvest primitive folded into the Agentic-Dev bundle (ADR-0178/0199 — wired live in
-    // src/index.ts's createAgentDevEdition).
+    // A separately-versioned primitive folded into the Agentic-Dev bundle (ADR-0178/0199 — wired
+    // live in src/index.ts's createAgentDevEdition).
     "@caisson/tool-exec": "0.1.2",
   },
   golden: "src/__golden__",

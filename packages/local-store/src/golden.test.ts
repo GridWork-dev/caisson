@@ -1,7 +1,7 @@
-// RED until T7 (golden-first, ADR-0013). `golden.ts` references the to-be-built `LocalStore` /
-// `hybridSearch` API from `./store.ts`, so this file fails to resolve its import until the
-// sqlite-vec + FTS5 + RRF retrieval logic lands — proving the fixture precedes the logic. T7 makes
-// it green with `BLESS` unset (the committed `src/__golden__/rrf-ranking.json` must match exactly).
+// Golden-first (ADR-0013). `golden.ts` references the `LocalStore` / `hybridSearch` API from
+// `./store.ts`, so this file fails to resolve its import until the sqlite-vec + FTS5 + RRF retrieval
+// logic lands — proving the fixture precedes the logic. Landing that logic makes it green with
+// `BLESS` unset (the committed `src/__golden__/rrf-ranking.json` must match exactly).
 import { describe, test } from "bun:test";
 import { matchGolden } from "@caisson/testing";
 import { localStoreGolden } from "./golden.ts";

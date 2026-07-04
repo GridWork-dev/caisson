@@ -1,9 +1,9 @@
-// Curated Caisson-native RULES (T20 · ADR-0065/0066). A minimal, rebuild-clean default set authored
-// against the agent-kernel `RuleArtifact` schema through the `defineRule` builder — so every entry is
-// validated `.strict()` at module load (a mis-shaped rule throws here, never reaches a consumer). These
-// are Caisson-native binding constraints, NOT a lift of any gw-prefixed rule or a `capabilities.toml`
-// paste: the SHAPE is harvested, the content is original. A rule is a blocking constraint with a
-// severity (never advisory). Authored in stable, deterministic order — the emitter renders this order.
+// Curated Caisson-native RULES (ADR-0065/0066). A minimal default set authored against the
+// agent-kernel `RuleArtifact` schema through the `defineRule` builder — so every entry is validated
+// `.strict()` at module load (a mis-shaped rule throws here, never reaches a consumer). These are
+// Caisson-native binding constraints, authored directly against this schema. A rule is a blocking
+// constraint with a severity (never advisory). Authored in stable, deterministic order — the emitter
+// renders this order.
 import { type RuleArtifact, defineRule } from "@caisson/agent-kernel";
 
 /** The default rule set a buyer of the agent-dev edition gets out of the box (engine-neutral). */

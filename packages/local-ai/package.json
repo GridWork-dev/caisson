@@ -7,7 +7,7 @@
     "access": "restricted",
     "registry": "https://npm.pkg.github.com"
   },
-  "description": "Local-first AI edition (composition, ADR-0050 fully-commercial): composes @caisson/local-store (sqlite-vec + FTS5 RRF hybrid retrieval), @caisson/license-verify (offline Ed25519), @caisson/field-crypto (at-rest), and @caisson/kernel; adds a built two-way sync engine, an InferenceBackend port, a zero-egress privacy gate, and file-per-tenant isolation. Offline, no-lock-in — your data never leaves the device.",
+  "description": "Local-first AI edition, fully commercial: composes @caisson/local-store (sqlite-vec + FTS5 RRF hybrid retrieval), @caisson/license-verify (offline Ed25519), @caisson/field-crypto (at-rest), and @caisson/kernel; adds a two-way sync engine, an InferenceBackend port, a zero-egress privacy gate, and file-per-tenant isolation. Offline, no-lock-in — your data never leaves the device.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",

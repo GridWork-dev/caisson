@@ -33,7 +33,7 @@
 
 ### Minor Changes
 
-- e62c88d: Harvest slice-2 (ADR-0215): guardrails' `guard.ts` gains an unconditional `"secret"`
+- e62c88d: (ADR-0215): guardrails' `guard.ts` gains an unconditional `"secret"`
   `GuardCategory` — a credential-shaped span (AWS/GitHub/OpenAI keys, JWTs, PEM blocks, secret-named
   assignments, URL userinfo passwords) now blocks at the cheap pre-screen tier, before the (possibly
   outaged) `Moderator` ever runs, closing the named egress-secret asymmetry. The `scrubForEgress`/

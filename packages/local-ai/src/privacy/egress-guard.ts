@@ -1,14 +1,14 @@
 // src/privacy/egress-guard.ts — the runtime EGRESS GUARD that enforces the privacy policy
-// (`policy.ts`) on every outbound request (ADR-0064, fork P4a-7-D — threat TM-EGRESS).
+// (`policy.ts`) on every outbound request (ADR-0064).
 //
 // It WRAPS the kernel `fetchWithTimeout` — the single audited outbound chokepoint (the native
 // `AbortSignal.timeout` is forbidden on Bun) — and refuses to forward a request unless the policy
 // allowlists the host. The decision is the same `assertAllowed` whether a caller fetches directly
 // (`.fetch`) or installs the guard as another runtime's outbound hook (`.guardedFetch`, the shape
-// transformers.js's `env.fetch` accepts — so T13's model loader and T20's rented backend route
-// through this guard verbatim).
+// transformers.js's `env.fetch` accepts — so the on-device model loader and the rented backend
+// route through this guard verbatim).
 //
-// FAIL-CLOSED-TO-OFFLINE is the whole point (TM-EGRESS):
+// FAIL-CLOSED-TO-OFFLINE is the whole point:
 //   - empty allowlist ⇒ EVERY host blocked (zero egress);
 //   - a non-allowlisted host ⇒ blocked — there is NO silent fallback to a hosted provider;
 //   - a non-https scheme ⇒ blocked (no `http:`, `data:`, `file:`, `javascript:` egress);
@@ -69,7 +69,7 @@ export class EgressGuard {
   /**
    * Decide whether `input` may egress, returning the parsed `URL` if allowed and THROWING a
    * fail-closed `CaissonError` if not. Pure (no network) — usable as a pre-flight check by callers
-   * (e.g. the rented backend, T20) before any request shape is built.
+   * (e.g. the rented backend) before any request shape is built.
    *
    * @throws ValidationError on a malformed URL.
    * @throws AuthzError on a non-https scheme, or a host absent from the allowlist (incl. the
@@ -107,8 +107,8 @@ export class EgressGuard {
   /**
    * {@link assertAllowed} PLUS a sanctioned-sink KIND requirement: the host must be allowlisted
    * for `kind` SPECIFICALLY. Purpose-binding is the point — each sink kind exists for exactly one
-   * credentialed surface (`policy.ts`), so a host sanctioned for the model fetch (T13) must never
-   * receive a rented-backend Bearer request (T20), and vice versa. Fail-closed `AuthzError` naming
+   * credentialed surface (`policy.ts`), so a host sanctioned for the model fetch must never
+   * receive a rented-backend Bearer request, and vice versa. Fail-closed `AuthzError` naming
    * the required and actual kinds (never the full URL).
    */
   assertAllowedFor(input: string | URL, kind: SanctionedSinkKind): URL {
@@ -138,8 +138,8 @@ export class EgressGuard {
 
   /**
    * {@link fetch}, but purpose-bound: the host must be allowlisted for `kind` specifically
-   * ({@link assertAllowedFor}) before any socket opens. The credentialed transports (T20 rented,
-   * both the first-party and OpenRouter wires) route every request here so a Bearer header can
+   * ({@link assertAllowedFor}) before any socket opens. The credentialed rented-backend transports
+   * (both the first-party and OpenRouter wires) route every request here so a Bearer header can
    * never reach a host sanctioned for a different purpose. Delegates to {@link fetch} after the
    * kind gate, so `fetch` stays the ONE outbound seam (tests double it; the re-run of
    * `assertAllowed` inside is an O(1) lookup).
@@ -156,8 +156,8 @@ export class EgressGuard {
 
   /**
    * The guard as a {@link GuardedFetch} — the `(input, init) => Promise<Response>` shape another
-   * runtime can install as its sole outbound hook (e.g. transformers.js `env.fetch`, T13; the rented
-   * backend transport, T20), so that runtime cannot egress out-of-band.
+   * runtime can install as its sole outbound hook (e.g. transformers.js `env.fetch`; the rented
+   * backend transport), so that runtime cannot egress out-of-band.
    */
   readonly guardedFetch: GuardedFetch = (input, init) =>
     this.fetch(inputToUrlString(input), init);

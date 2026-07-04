@@ -1,4 +1,4 @@
-// Row-bound field encryption (ADR-0055, P2-10 — closes Wave-0 TM2/TM-E). The explicit sibling of the
+// Row-bound field encryption (ADR-0055 — closes threat-model gaps TM2/TM-E). The explicit sibling of the
 // transparent column (column.ts `sealField`/`openField`): it threads the row's stable PK into the AAD
 // as a 4-tuple `tenant∥kv∥column∥rowId`, so a ciphertext relocated to (or rolled back from) another
 // row of the SAME tenant+column+key_version fails to authenticate. SEC/HIPAA columns MUST use this

@@ -1,12 +1,11 @@
 # @caisson/license-verify
 
 Offline, fail-safe-to-community license verification — the floor a paid edition stands on to resolve
-its entitlement tier with **zero network**. ADR-0010 (asymmetric license verify) · ADR-0024
-(perpetual-per-major) · rebuilt clean from the PUBLIC tessera wire format (pro-private firewall:
-format only, no implementation lifted).
+its entitlement tier with **zero network**. Supports asymmetric license verify (ADR-0010) and
+perpetual-per-major licensing (ADR-0024).
 
-This package is **verify only**. The license ISSUER (signing) is P6 and never ships here — the
-matching private key lives solely with the issuer.
+This package is **verify only**. License issuance (signing) never ships here — the matching
+private key lives solely with the issuer service.
 
 ## What it gives you
 
@@ -44,5 +43,5 @@ unlicensed install; `now` is injectable for deterministic expiry tests. Returns
 
 ## Out of scope
 
-No license issuance/signing (P6), no revocation, no network. Consumed by paid editions to resolve
+No license issuance/signing, no revocation, no network. Consumed by paid editions to resolve
 their tier offline (ADR-0010/0024).

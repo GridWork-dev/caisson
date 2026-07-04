@@ -1,5 +1,5 @@
-// @caisson/retention-runner — the recurring `auto_90d` sweep as a `@caisson/jobs` task (ADR-0152,
-// Fork 3). `ccpa_request`/`operator_manual` are operator/subject-triggered one-shot calls straight
+// @caisson/retention-runner — the recurring `auto_90d` sweep as a `@caisson/jobs` task (ADR-0152).
+// `ccpa_request`/`operator_manual` are operator/subject-triggered one-shot calls straight
 // into `runErasure` (no queue — see README); only the recurring sweep is enqueued.
 import { defineTask } from "@caisson/jobs";
 import type { JobQueue, TaskDefinition } from "@caisson/jobs";
@@ -39,7 +39,7 @@ export interface RetentionTaskDeps {
  * one enqueue site the recurring scheduler should call (per subject due for erasure); `queue.enqueue`
  * validates the payload against `autoSweepPayloadSchema` at the boundary.
  *
- * ponytail: tenantId/subjectId are opaque account/subject ids (no `:`), so a plain `:`-join is an
+ * `tenantId`/`subjectId` are opaque account/subject ids (no `:`), so a plain `:`-join is an
  * unambiguous key. Length-prefix them if an id class ever contains a colon.
  */
 export async function enqueueAutoSweep(

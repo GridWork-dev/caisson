@@ -1,7 +1,7 @@
 // src/app.ts — the HTTP router (ADR-0096), a pure `Request → Response` function over injected deps so
 // it is trivially testable without a live socket. Public read surfaces (health + the llms artifacts);
 // the retrieval endpoint POST /query is Bearer-gated (timing-safe). Every response carries the security
-// headers from the gridwork security floor (nosniff / frame-deny / HSTS). No CORS header is set — this
+// headers from the standard security floor (nosniff / frame-deny / HSTS). No CORS header is set — this
 // is a server-to-server contract for the support-bot, not a browser surface.
 import { createHash, timingSafeEqual } from "node:crypto";
 import { z } from "zod";

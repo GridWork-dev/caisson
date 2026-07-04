@@ -1,7 +1,7 @@
-// P5 exit-gate-4: prove the buyer-MCP `generate` path DRIVES `runGeneration` (debit + audit row)
+// Prove the buyer-MCP `generate` path DRIVES `runGeneration` (debit + audit row)
 // end-to-end with run-and-read PGlite evidence. The MCP server validates + gates the selection, mints
 // or reuses the idempotency key, then calls `onGenerate` which wires the REAL `runGeneration` inside
-// `withTenant` — debit-before-spend (ADR-0007), idempotent dedup (ADR-0024), audit row (T16).
+// `withTenant` — debit-before-spend (ADR-0007), idempotent dedup (ADR-0024), audit row.
 //
 // Assertions proved:
 //   1. A generate call returns a `generationId` (UUID).
@@ -127,7 +127,7 @@ const genCount = (accountId: string): Promise<number> =>
 /**
  * The real host-pattern onGenerate: withTenant + runGeneration in the SAME transaction. This is the
  * actual wiring the composition root uses — it proves (not mocks) that the MCP `generate` path
- * drives `runGeneration` (ADR-0049 / T19 convergence / P5 exit-gate-4).
+ * drives `runGeneration` (ADR-0049).
  */
 function onGenerate(ctx: GenerateContext): Promise<{ generationId: string }> {
   return withTenant(tp.pg, ctx.accountId, async (tx) => {

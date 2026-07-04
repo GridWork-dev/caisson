@@ -1,4 +1,4 @@
-// Generation audit row (T16 / ADR-0049/0024/0005) on PGlite: the row is append-only, dedups on the
+// Generation audit row (ADR-0049/0024/0005) on PGlite: the row is append-only, dedups on the
 // idempotency key (a same-key retry records once), and is fail-closed tenant-isolated — a query
 // without the bound tenant GUC, and a cross-tenant read, both see nothing. Mirrors the credits
 // integration harness (withTenant over real RLS). Plus a focused hashFileSet determinism check.

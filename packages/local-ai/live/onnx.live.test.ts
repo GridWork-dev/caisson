@@ -1,5 +1,5 @@
 // live/onnx.live.test.ts — LIVE proof of the on-device ONNX backend (ADR-0201 §3, over the
-// ADR-0064 T13 seam — threats TM-MODEL + TM-EGRESS). Lives OUTSIDE ./src (never in the default
+// ADR-0064 seam). Lives OUTSIDE ./src (never in the default
 // suite / CI / tarball path; runs via `bun run test:live` only) and is availability-gated TWO ways,
 // per ADR-0201: `@huggingface/transformers` stays deliberately UNINSTALLED (~270 MB of native deps),
 // so the file probes for the module with a NON-LITERAL dynamic import (the onnx-backend.ts

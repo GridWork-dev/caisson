@@ -3,13 +3,13 @@
  *
  * Every `statement` and `guidance` string below is original Caisson prose. We do NOT ingest,
  * copy, paraphrase, or transform the AICPA Trust Services Criteria text, the Secure Controls
- * Framework (SCF, CC-BY-ND), or any third-party catalog JSON (TM-J / flag-never-guess). The
+ * Framework (SCF, CC-BY-ND), or any third-party catalog JSON (flag-never-guess). The
  * `crosswalk[].reference` values (e.g. `CC6.1`) are bare requirement IDENTIFIERS — factual
  * citations, not control text — used as pointers from our canonical controls to the external
  * criterion they help satisfy. The official criteria text lives behind the citation, never here.
  *
  * Canonical control ids are framework-agnostic and Caisson-owned, so the same control can be
- * crosswalked from multiple frameworks (see `hipaa-security.ts`). Depends only on the T9 builder.
+ * crosswalked from multiple frameworks (see `hipaa-security.ts`). Depends only on the `defineControl` registry builder.
  */
 import { type Framework, defineFramework } from "../registry/control.ts";
 

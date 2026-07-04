@@ -1,8 +1,8 @@
-// @caisson/license-verify — signed license-claims schema (T7, ADR-0010). The Zod `.strict()` shape of
+// @caisson/license-verify — signed license-claims schema (ADR-0010). The Zod `.strict()` shape of
 // the SIGNED license payload: the claims an offline verifier may trust ONLY after `crypto.verify` has
 // accepted the Ed25519 signature over the kernel-canonical bytes (`verify.ts`). The SIGNED `tier` is
 // the sole authority for authorization — the cosmetic wire PREFIX/TIER (`token.ts`) are informational
-// and never consulted. Claims richer than tessera's (entitlements[] + tier + expiry, perpetual-per-major).
+// and never consulted. Claims carry entitlements[] + tier + expiry, with perpetual-per-major support.
 import { strictObject } from "@caisson/kernel";
 import { z } from "zod";
 
@@ -27,7 +27,7 @@ export const COMMUNITY_TIER: LicenseTier = "community";
  * The signed license claims. `.strict()` — an extra / unknown key fails closed: signer and verifier
  * must agree byte-for-byte, so an unexpected field signals a format the verifier cannot trust.
  *
- * - `licenseId`    — opaque UUID of the issued license (audit / revocation correlation; P6 issuer).
+ * - `licenseId`    — opaque UUID of the issued license (audit / revocation correlation).
  * - `tier`         — the AUTHORITATIVE entitlement tier (the cosmetic wire TIER is ignored).
  * - `entitlements` — module / edition slugs this license unlocks (e.g. `local-ai`); bounded.
  * - `major`        — the product MAJOR version this perpetual license covers (perpetual-per-major:

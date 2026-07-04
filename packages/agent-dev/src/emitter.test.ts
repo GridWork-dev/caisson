@@ -1,4 +1,4 @@
-// Emitter write-path security tests (T19 · ADR-0066). The golden test (golden.test.ts) pins the
+// Emitter write-path security tests (ADR-0066). The golden test (golden.test.ts) pins the
 // byte-stable render; THIS suite exercises the two threats the `security` tag fires on: path
 // traversal escaping the emit target dir, and a credential leaking into an emitted bundle. The pure
 // render is verified end-to-end through a real temp-dir write that must round-trip the bytes.

@@ -1,4 +1,4 @@
-// Edition migration assembly + the ordered, idempotent `schema_version` ledger (T21, ADR-0070/0075,
+// Edition migration assembly + the ordered, idempotent `schema_version` ledger (ADR-0070/0075,
 // threat data-migration). In-process, deterministic, NO network: a real sqlite-vec-loaded in-memory
 // `bun:sqlite` connection. Proves the merge composes `@caisson/local-store`'s retrieval tables BELOW
 // the edition's tables (topo-order), that apply is idempotent (a re-apply is a pure no-op that
@@ -48,7 +48,7 @@ afterEach(() => {
   db.close();
 });
 
-describe("edition migration assembly (T21 — ADR-0070/0075, compose-time merge)", () => {
+describe("edition migration assembly (ADR-0070/0075, compose-time merge)", () => {
   test("topo-merges local-store's retrieval tables BELOW the edition tables", () => {
     const { sequence } = assembleEditionMigrations(DIM);
     expect(sequence.map((m) => [m.sourcePackage, m.sourceName])).toEqual([
@@ -80,7 +80,7 @@ describe("edition migration assembly (T21 — ADR-0070/0075, compose-time merge)
   });
 });
 
-describe("migrate apply (T21 — idempotent forward-only ledger)", () => {
+describe("migrate apply (idempotent forward-only ledger)", () => {
   test("a fresh apply creates every table under one ordered ledger", () => {
     const result = migrate(db, { dim: DIM, now: NOW });
 

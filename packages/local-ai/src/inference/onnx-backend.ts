@@ -1,5 +1,5 @@
 // src/inference/onnx-backend.ts — the REAL local embedding backend behind the `InferenceBackend`
-// port (ADR-0064, T13). It runs a MiniLM-class ONNX model on-device via transformers.js
+// port (ADR-0064). It runs a MiniLM-class ONNX model on-device via transformers.js
 // (`@huggingface/transformers` / onnxruntime) and emits the locked `EMBEDDING_DIM` vector the
 // shared base `@caisson/local-store` is opened with.
 //
@@ -9,16 +9,16 @@
 // DYNAMIC import with a NON-LITERAL specifier (`TRANSFORMERS_MODULE`) — tsc never resolves it and no
 // test ever calls it, so `@huggingface/transformers` is an OPTIONAL peer the deployer installs.
 //
-// Egress + integrity posture (the two threats this file carries):
-//   - TM-EGRESS — every byte the runtime fetches routes through ONE guarded chokepoint
-//     (`#guardedFetch`). The host/scheme decision is UNIFIED onto the shared `EgressGuard` (T14,
-//     ADR-0221 F2=B) with the reserved `model-fetch` sink kind — the same fail-closed policy layer
-//     the rented lane (T20) enforces — then through the kernel `fetchWithTimeout` (the native
+// Egress + integrity posture (the two risks this file carries):
+//   - Egress — every byte the runtime fetches routes through ONE guarded chokepoint
+//     (`#guardedFetch`). The host/scheme decision is UNIFIED onto the shared `EgressGuard`
+//     (ADR-0221) with the reserved `model-fetch` sink kind — the same fail-closed policy layer
+//     the rented lane enforces — then through the kernel `fetchWithTimeout` (the native
 //     `AbortSignal.timeout` is forbidden on Bun). transformers.js's own `env.fetch` is overwritten
 //     with it, so the library cannot egress out-of-band: any host but the single sanctioned
 //     `modelHost` is blocked, any non-https scheme is rejected, and the `model-fetch` sink kind is
 //     purpose-bound — fail-closed-to-offline, never a silent hosted fallback.
-//   - TM-MODEL — the model is FIRST-RUN-FETCHED + cached (NOT shipped in the tarball — see
+//   - Model integrity — the model is FIRST-RUN-FETCHED + cached (NOT shipped in the tarball — see
 //     `.npmignore`) and every pinned file is SHA-256 hash-verified before it reaches the runtime;
 //     a mismatch fails closed. Air-gap buyers pre-seed the cache and run with `offline: true`
 //     (`allowRemoteModels=false` + `local_files_only`) for literally zero egress.
@@ -94,7 +94,7 @@ export interface OnnxBackendConfig {
   revision: string;
   /** Embedding width — MUST equal the local-store vec0 `dim` (default {@link EMBEDDING_DIM}). */
   dim: number;
-  /** The ONE sanctioned egress host (the TM-MODEL allowlist entry); the only host a model may load from. */
+  /** The ONE sanctioned egress host (the model-integrity allowlist entry); the only host a model may load from. */
   modelHost: string;
   /** First-run cache directory. NOT shipped in the tarball (see `.npmignore`). */
   cacheDir: string;
@@ -178,15 +178,15 @@ function resolveConfig(c: OnnxBackendConfig): ResolvedConfig {
 
 /**
  * The real local embedding backend. Implements the {@link InferenceBackend} port with an on-device
- * ONNX model; completion is intentionally unsupported here (the generation seam is the rented backend,
- * T20). Loading is lazy + memoized, so first `embed()` triggers the (guarded, hash-pinned) model
+ * ONNX model; completion is intentionally unsupported here (the generation seam is the rented backend).
+ * Loading is lazy + memoized, so first `embed()` triggers the (guarded, hash-pinned) model
  * load and every later call reuses the resident extractor with zero further egress.
  */
 export class OnnxEmbeddingBackend implements InferenceBackend {
   readonly model: string;
   readonly dim: number;
   readonly #config: ResolvedConfig;
-  /** The shared egress guard, allowlisting ONLY `modelHost` as a `model-fetch` sink (T14, F2=B). */
+  /** The shared egress guard, allowlisting ONLY `modelHost` as a `model-fetch` sink. */
   readonly #guard: EgressGuard;
   #extractor: FeatureExtractor | null = null;
 
@@ -194,9 +194,9 @@ export class OnnxEmbeddingBackend implements InferenceBackend {
     this.#config = resolveConfig(config);
     this.model = `${this.#config.modelId}@${this.#config.revision}`;
     this.dim = this.#config.dim;
-    // F2=B (ADR-0221): host/scheme egress enforcement is unified onto the shared EgressGuard — the
-    // same fail-closed policy layer the rented lane (T20) uses — with the reserved `model-fetch`
-    // sink kind. Only the sanctioned modelHost is reachable; the SHA-256 hash-pin (TM-MODEL) below
+    // ADR-0221: host/scheme egress enforcement is unified onto the shared EgressGuard — the
+    // same fail-closed policy layer the rented lane uses — with the reserved `model-fetch`
+    // sink kind. Only the sanctioned modelHost is reachable; the SHA-256 hash-pin below
     // stays inline (the guard vouches for the host, not the bytes).
     this.#guard = createEgressGuard(
       localOnlyPolicy([{ host: this.#config.modelHost, kind: "model-fetch" }]),
@@ -224,12 +224,12 @@ export class OnnxEmbeddingBackend implements InferenceBackend {
 
   /**
    * Not supported: this is an embedding-only backend. Local text generation is a separate seam (the
-   * rented/hosted backend, T20). Fail closed rather than silently degrade.
+   * rented/hosted backend). Fail closed rather than silently degrade.
    */
   complete(_req: CompletionRequest): Promise<CompletionResult> {
     return Promise.reject(
       new InternalError(
-        "the onnx embedding backend does not generate completions; wire a completion backend (rented seam, T20)",
+        "the onnx embedding backend does not generate completions; wire a completion backend (the rented-inference seam)",
         { model: this.model },
       ),
     );
@@ -245,7 +245,7 @@ export class OnnxEmbeddingBackend implements InferenceBackend {
     env.useFSCache = true;
     env.allowLocalModels = true;
     env.allowRemoteModels = !this.#config.offline; // air-gap ⇒ zero egress
-    env.fetch = this.#guardedFetch; // the SINGLE outbound chokepoint (TM-EGRESS)
+    env.fetch = this.#guardedFetch; // the SINGLE outbound chokepoint
     const extractor = await mod.pipeline(
       "feature-extraction",
       this.#config.modelId,
@@ -262,10 +262,10 @@ export class OnnxEmbeddingBackend implements InferenceBackend {
   /**
    * The guarded outbound chokepoint installed as transformers.js's `env.fetch`. The host/scheme/
    * sink-kind decision is delegated to the shared {@link EgressGuard} via `assertAllowedFor(url,
-   * "model-fetch")` — the same fail-closed policy layer the rented lane uses (T14, ADR-0221 F2=B):
+   * "model-fetch")` — the same fail-closed policy layer the rented lane uses (ADR-0221):
    * a non-https scheme, a host off the allowlist, or a wrong sink kind all block BEFORE any socket
    * opens. It then routes through the kernel `fetchWithTimeout` and SHA-256-verifies every pinned
-   * file before its bytes reach the runtime (TM-MODEL); the hash compare is constant-time
+   * file before its bytes reach the runtime; the hash compare is constant-time
    * (`safeEqualFixed`). The guard vouches for the HOST; the hash-pin vouches for the BYTES.
    */
   readonly #guardedFetch: FetchFn = async (input, init) => {

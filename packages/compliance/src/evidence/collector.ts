@@ -1,4 +1,4 @@
-// src/evidence/collector.ts — the declarative evidence-collector contract (ADR-0058, P2-13).
+// src/evidence/collector.ts — the declarative evidence-collector contract (ADR-0058).
 //
 // An EvidenceCollector is a PURE, typed transform from one already-gathered substrate fact to one
 // evidence item plus its verdict. It runs NO I/O, opens NO DB transaction, and reads NO clock — the
@@ -11,10 +11,10 @@
 // trusted substrate stores (`AuditChainStore.load`, the RLS catalog read, `ArtifactStore.head`),
 // each of which already validates at ITS boundary (e.g. `version-store` Zod-parses provenance on
 // read-back). Collectors introduce no new external boundary, so they validate by TYPE, not Zod —
-// the external surfaces (DB rows, manual-upload payloads) are parsed where they are read (T13/T19).
+// the external surfaces (DB rows, manual-upload payloads) are parsed where they are read.
 //
 // Flag-never-guess (ADR-0058): a collector NEVER infers a passing status it cannot evidence. A
-// `flagged` (real deficiency) or `unresolved` (evidence absent → hard-blocks the pack in T13) result
+// `flagged` (real deficiency) or `unresolved` (evidence absent → hard-blocks the pack in the generator) result
 // MUST carry a recorded reason — enforced by the `flaggedResult`/`unresolvedResult` constructors.
 import { ValidationError, type JsonValue } from "@caisson/kernel";
 
@@ -24,7 +24,7 @@ import { ValidationError, type JsonValue } from "@caisson/kernel";
  * - `flagged`    — the check was performed and found a real deficiency (a gap / POA&M item); a
  *                  recorded reason is mandatory. Never "non-compliant/certified" copy (readiness only).
  * - `unresolved` — the evidence required to make the determination was ABSENT; the collector refuses
- *                  to guess. The generator (T13) treats this as a hard block — no partial pack.
+ *                  to guess. The generator treats this as a hard block — no partial pack.
  */
 export type EvidenceStatus = "pass" | "flagged" | "unresolved";
 
@@ -69,7 +69,7 @@ export interface CollectorResult {
 /**
  * A declarative, typed evidence collector. Generic over the substrate `Fact` it consumes; `collect`
  * is pure (same fact → same result). Concrete collectors live under `collectors/`; the generator
- * (T13) gathers facts and runs each collector to assemble the pack.
+ * gathers facts and runs each collector to assemble the pack.
  */
 export interface EvidenceCollector<Fact> {
   /** Stable collector id (e.g. `substrate.audit-chain-integrity`). */
@@ -107,7 +107,7 @@ export function flaggedResult(
 
 /**
  * The evidence to make the determination was absent — the collector refuses to guess. The reason
- * (what was missing) is MANDATORY; the generator (T13) hard-blocks on any unresolved item.
+ * (what was missing) is MANDATORY; the generator hard-blocks on any unresolved item.
  */
 export function unresolvedResult(
   item: EvidenceItem,

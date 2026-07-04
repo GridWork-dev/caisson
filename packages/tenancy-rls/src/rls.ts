@@ -225,7 +225,7 @@ export function buildAdminWritePolicySql(
 
 /**
  * SQL that lets the `admin_write` role cross-tenant SELECT `table`, WITHOUT the INSERT/UPDATE grant
- * `buildAdminWritePolicySql` also carries (CAISSON-9). Use this for a table the operator mutation
+ * `buildAdminWritePolicySql` also carries. Use this for a table the operator mutation
  * surface only ever READS (e.g. an existence check on the base auth `account_member` table) — the
  * blast radius of a bug in that surface then stops at a cross-tenant read, never a cross-tenant
  * write, on a table it has no legitimate reason to mutate. Same idempotent

@@ -344,7 +344,7 @@ export async function creditsGrantedBySource(
 }
 
 /**
- * Sum ALL credits already CLAWED BACK against a purchase, for an account (CAISSON-5) — symmetric
+ * Sum ALL credits already CLAWED BACK against a purchase, for an account — symmetric
  * across BOTH claw directions, since a purchase's clawbacks can arrive in either order:
  *   - a whole-transaction `type:'full'` adjustment (ADR-0113) claws by the transaction's OWN
  *     `paymentId`, recorded with `line_item_id` NULL (`source_event_id = paymentId`);

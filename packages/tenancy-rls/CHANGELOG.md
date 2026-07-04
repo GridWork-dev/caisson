@@ -41,7 +41,7 @@
 
 ### Patch Changes
 
-- afa6070: ADR-0210 hardening (SPEC-tenancy-rls, harvest slice-2 #8/#7): `withTenant`/`withUser`
+- afa6070: ADR-0210 hardening: `withTenant`/`withUser`
   now run a one-time, fail-closed `assertRoleNotPrivileged` pre-flight (cached per
   `Transactor` in a `WeakSet`) before ever `SET LOCAL ROLE app` — a SUPERUSER or
   BYPASSRLS-configured `app` role is refused before it touches data, instead of silently
@@ -67,7 +67,7 @@
   as an unprivileged role (the fail-closed guard otherwise reads the empty fixture result as
   a store fault and fails open, masking the deny path).
 
-- 95103b6: Money-path hardening (post-wave triage CAISSON-5/6/7/8/9). `parsePaddleEvent` now correlates
+- 95103b6: Money-path hardening. `parsePaddleEvent` now correlates
   `items[]` to `details.line_items[]` by their shared `price_id` instead of array position, and fails
   closed on a duplicate non-empty per-line join id; a malformed adjustment item now signals through an
   optional `onWarn` callback, threaded all the way from `PaddleConfig` through `verifyAndParse` and

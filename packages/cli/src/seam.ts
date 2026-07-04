@@ -22,7 +22,7 @@ const ModuleSelection = z
   })
   .strict();
 
-/** A strict project-name slug (it becomes a directory at P5 — no traversal). Exported standalone
+/** A strict project-name slug (it becomes a directory at generation time — no traversal). Exported standalone
  *  (not read off `Selection.shape`) because `Selection` is a `ZodEffects` post-`.refine()` and does
  *  not expose `.shape` — the free-sample engine (`sample-templates.ts`, ADR-0095 W3) imports this
  *  directly so the paid and free generation paths enforce the exact same one rule. */
@@ -32,7 +32,7 @@ export const ProjectName = z
   .max(64)
   .regex(/^[a-z0-9][a-z0-9-]*$/, "must be a lowercase slug");
 
-/** A buyer's selection. Project name is a strict slug (it becomes a directory at P5 — no traversal). */
+/** A buyer's selection. Project name is a strict slug (it becomes a directory at generation time — no traversal). */
 export const Selection = z
   .object({
     projectName: ProjectName,

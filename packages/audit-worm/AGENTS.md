@@ -11,22 +11,21 @@ it.
 - **Write-once is the whole point.** A chain anchor lands under a LENGTH-keyed, write-once WORM key
   (`{account_id}/audit-chain/anchors/<padded-length>.json`). Re-anchoring an existing length is
   REFUSED (`ArtifactExistsError` → `ConflictError`). Never delete, overwrite, or "fix" an anchor —
-  that is the truncation/rewrite tripwire (TM-H/TM-I).
+  that is the truncation/rewrite tripwire.
 - **Append-only by privilege, not convention.** `audit_chain_entry` and `locked_version` grant the
   `app` role SELECT + INSERT and WITHHOLD UPDATE/DELETE (the version table adds a BEFORE UPDATE/DELETE
-  RAISE trigger belt). Never author a migration or query that mutates a committed entry/version
-  (TM-D).
+  RAISE trigger belt). Never author a migration or query that mutates a committed entry/version.
 - **Everything is tenant-scoped, fail-closed.** Every store method runs inside `withTenant` and every
   WORM key is prefixed `{account_id}/…` (validated by `assertSafeKey`). A forgotten filter still sees
   only the caller's chain (ADR-0005). Never call a store outside a tenant scope.
 - **"Current" is DERIVED, never stored.** `LockedVersionStore` computes the current version from a
   no-successor predicate AND cross-checks it against the kernel `currentVersions` model — a drift
   flags, never guesses. Do not add a `is_current` column.
-- **No live cloud on the CI path (TM-G).** `S3ArtifactStore` takes an injected `S3Sendable =
+- **No live cloud on the CI path.** `S3ArtifactStore` takes an injected `S3Sendable =
 Pick<S3Client,"send">`; tests double it (no AWS call). The live S3 transport is the only
   un-exercised path. `LocalArtifactStore` is a dev/test fs double — it IGNORES retention; never use
   it where Object-Lock retention matters.
-- **COMPLIANCE mode is an irreversible footgun (TM-A).** S3 Object-Lock defaults to GOVERNANCE.
+- **COMPLIANCE mode is an irreversible footgun.** S3 Object-Lock defaults to GOVERNANCE.
   COMPLIANCE (which can brick a bucket until the retention term elapses) is reachable ONLY through the
   typed `irreversibleComplianceOptIn(...)` guard and is refused outside a real deployment. Never opt
   in from a test or a generator.

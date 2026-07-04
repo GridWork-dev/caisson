@@ -16,7 +16,7 @@ describe("constant-time comparison", () => {
   });
 
   test("safeEqualVariable hashes first, so length differences never throw", () => {
-    expect(safeEqualVariable("<email>", "<email>")).toBe(
+    expect(safeEqualVariable("admin@example.com", "admin@example.com")).toBe(
       true,
     );
     expect(safeEqualVariable("a", "a-very-long-different-value")).toBe(false);
@@ -24,10 +24,10 @@ describe("constant-time comparison", () => {
 });
 
 describe("verifyAllowlisted", () => {
-  const allow = ["owner@caisson.sh", "<email>", "ops@caisson.sh"];
+  const allow = ["owner@caisson.sh", "admin@example.com", "ops@caisson.sh"];
 
   test("matches an entry after the default trim+lowercase normalize", () => {
-    expect(verifyAllowlisted("  <email> ", allow)).toBe(true);
+    expect(verifyAllowlisted("  Admin@Example.com ", allow)).toBe(true);
   });
 
   test("rejects a non-member", () => {

@@ -1,4 +1,4 @@
-// Template token-replace + JSON deep-merge for the generator engine (P5, ADR-0048).
+// Template token-replace + JSON deep-merge for the generator engine (ADR-0048).
 // NO templating runtime — tokens are double-brace literals only ({{token}}), resolved
 // from a typed map. Unknown tokens are left verbatim; the caller inspects `unresolved`
 // to surface gaps. Deep merge is deterministic: object keys are sorted lexicographically

@@ -57,9 +57,9 @@ export function meterGeneration(
 export interface GenerationDeps {
   index: RegistryIndex;
   engine?: GeneratorEngine;
-  /** Injected at P5 to materialize to disk (re-asserts path safety). Omitted → nothing is written. */
+  /** Injected to materialize to disk (re-asserts path safety). Omitted → nothing is written. */
   writeFileSet?: FileSetWriter;
-  /** Where a P5 writer would materialize. Unused until a writer is injected. */
+  /** Where the disk writer would materialize. Unused until a writer is injected. */
   targetDir?: string;
   /** Override the migrations-bundle root the compose-time migration merge reads from. Omitted → the
    *  build-time `../migrations-bundle` dir resolved via `import.meta.url` (the published default). Tests
@@ -72,7 +72,7 @@ export interface GenerationOutcome {
   files: GeneratedFileSet;
   balance: number;
   idempotent: boolean;
-  /** The canonical generation audit row id (ADR-0049/T16). Stable across same-key retries. */
+  /** The canonical generation audit row id (ADR-0049). Stable across same-key retries. */
   generationId: string;
 }
 
@@ -222,7 +222,7 @@ function composeGeneratedFileSet(
  *      migration assembly) — all read-only, throws before any side effect,
  *   2. DEBIT before spend (402 aborts the whole transaction — nothing is written),
  *   3. write the file set (default disk writer when a `targetDir` is given; an injected writer wins),
- *   4. record the generation audit row (T16), POST-debit, in the same transaction.
+ *   4. record the generation audit row, POST-debit, in the same transaction.
  * A retried call with the same `idempotencyKey` debits once (ADR-0024), re-materializes, and the
  * `generation` row stays at one (ON CONFLICT). The debit strictly precedes the write: on a 402, steps
  * 3–4 are never reached, so a failed generation writes nothing and records nothing.
@@ -242,7 +242,7 @@ export async function runGeneration(
   );
   const result = await meterGeneration(tx, meter); // debit-before-spend; 402 throws here
   // An injected writer/spy still wins; otherwise default to the path-safe disk writer when a target
-  // is given. With neither, nothing is written (Wave 0 returns the file set only).
+  // is given. With neither, nothing is written (the file set is returned but not persisted).
   const writer =
     deps.writeFileSet ??
     (deps.targetDir !== undefined ? createFileSetWriter() : undefined);

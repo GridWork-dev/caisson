@@ -21,7 +21,7 @@ export function sesSmtpConfig(config: SesConfig): SmtpConfig {
   return {
     host: `email-smtp.${config.region}.amazonaws.com`,
     port: 587,
-    // ponytail: 587 is SES's STARTTLS port (secure:false, upgraded in-place); the implicit-TLS
+    // 587 is SES's STARTTLS port (secure:false, upgraded in-place); the implicit-TLS
     // wrapper is 465 (secure:true) if that's ever needed instead.
     secure: false,
     user: config.smtpUser,

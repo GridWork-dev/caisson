@@ -7,7 +7,7 @@
     "access": "restricted",
     "registry": "https://npm.pkg.github.com"
   },
-  "description": "Per-tenant authenticated field encryption: HKDF key derivation + AES-256-GCM + versioned envelope + Drizzle column + pluggable FieldKeyProvider (KMS seam). ADR-0043/0046/0045/0006.",
+  "description": "Per-tenant authenticated field encryption: HKDF key derivation, AES-256-GCM, a versioned envelope, a Drizzle column type, and a pluggable FieldKeyProvider with a KMS seam.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",

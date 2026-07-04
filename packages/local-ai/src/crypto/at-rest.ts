@@ -1,4 +1,4 @@
-// At-rest field encryption over the per-tenant local SQLite store (ADR-0055/0064 — threat TM-REST).
+// At-rest field encryption over the per-tenant local SQLite store (ADR-0055/0064).
 //
 // A COMPOSITION, not a new crypto stack (ADR-0055): @caisson/field-crypto supplies per-tenant HKDF
 // key derivation + AES-256-GCM behind the AeadCipher seam + a self-describing envelope;
@@ -81,7 +81,7 @@ export class AtRestStore {
 
   /**
    * Open a stored at-rest envelope for a tenant + column → plaintext. THROWS (AEAD auth-fail) if the
-   * envelope was sealed for a different tenant or column — the at-rest guarantee behind TM-REST.
+   * envelope was sealed for a different tenant or column — the at-rest guarantee this class exists for.
    */
   open(tenantId: string, columnContext: string, stored: string): string {
     return openField(this.contextFor(tenantId), columnContext, stored);

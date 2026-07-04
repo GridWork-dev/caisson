@@ -3,7 +3,7 @@
 // agent/skill/rule sample. The fixtures live in `src/__golden__` (the manifest `golden` dir) and are
 // re-blessed via `BLESS=1` when the output legitimately changes. This descriptor REFERENCES the
 // to-be-built FSM/schema API (`runLifecycle` / `parseArtifact`) — golden-first: the fixtures + the red
-// test land before the logic (T4) that turns them green.
+// test land before the logic that turns them green.
 import { toErrorResponse } from "@caisson/kernel";
 import { defineModuleGolden } from "@caisson/testing/golden-module";
 import { CANONICAL_LIFECYCLE, runLifecycle, type Act } from "./lifecycle.ts";
@@ -43,25 +43,25 @@ const ARTIFACT_SAMPLE: readonly unknown[] = [
   },
 ];
 
-// ── Reference-integrity (ghost-ref) validation golden (T11, golden-first for the T12 validator) ─────
+// ── Reference-integrity (ghost-ref) validation golden, golden-first for `src/validate.ts` ────────────
 // An authored artifact may reference OTHER artifacts BY NAME — an agent depending on a skill, a skill
-// depending on a rule — through a `dependencies: string[]` cross-ref field. Reference integrity (the
-// ADR-0065 validator, T12 `src/validate.ts`) resolves every such ref against the AUTHORED SET at
-// validate time: the mcp-server registry-ALLOWLIST pattern applied to artifact names. A ref that names
-// a member of the set RESOLVES; a ref that names nothing in the set is a GHOST — the validator THROWS a
-// typed `ValidationError` (it never guesses, never silently drops a ref: fail-closed, one ghost rejects
-// the whole set).
+// depending on a rule — through a `dependencies: string[]` cross-ref field. The reference-integrity
+// validator (ADR-0065, `src/validate.ts`) resolves every such ref against the AUTHORED SET at validate
+// time: the mcp-server registry-ALLOWLIST pattern applied to artifact names. A ref that names a member
+// of the set RESOLVES; a ref that names nothing in the set is a GHOST — the validator THROWS a typed
+// `ValidationError` (it never guesses, never silently drops a ref: fail-closed, one ghost rejects the
+// whole set).
 //
 // This fixture PINS that contract — a table of authored sets → outcome — and landed BEFORE the logic
-// (ADR-0013 golden-first): T11 committed it green with `produce` ECHOING the authored outcomes (the
-// T12 validator did not exist yet, so importing it would have failed the suite to RESOLVE — a broken
-// tree — rather than assert a contract). T12 then (a) extended the schema with the optional
-// `dependencies` cross-ref field and (b) rewired this `produce` body to run each set through the real
+// (ADR-0013 golden-first): it was committed green with `produce` ECHOING the authored outcomes (the
+// validator did not exist yet, so importing it would have failed the suite to RESOLVE — a broken tree
+// — rather than assert a contract). The schema was then extended with the optional `dependencies`
+// cross-ref field and this `produce` body was rewired to run each set through the real
 // `validateArtifactSet`. The committed `validate.json` now enforces — BLESS unset — that the live
 // validator reproduces the input→outcome table byte-for-byte. The EXPECTED outcomes below ARE the
 // validator's spec, authored deterministically.
 //
-// The contract the outcomes encode (the algorithm T12 implements), per scenario:
+// The contract the outcomes encode (the algorithm the validator implements), per scenario:
 //   • clean set → `{ ok: true, resolved }` — `resolved` is every `"<name>-><dep>"` ref edge, SORTED.
 //   • ghost ref → `{ ok: false, error }` — `error` is `toErrorResponse(validationError).body.error`
 //     = `{ code: "validation_error", message, details: { missingRef, referencedBy } }`. The throw is
@@ -236,10 +236,10 @@ export const agentKernelGolden = defineModuleGolden({
       produce: (input) => (input as readonly unknown[]).map(parseArtifact),
     },
     {
-      // T12: the live reference-integrity validator (see the block comment above `VALIDATE_FIXTURE`).
+      // The live reference-integrity validator (see the block comment above `VALIDATE_FIXTURE`).
       // Each authored set runs through `validateArtifactSet`; a clean set yields its sorted ref edges,
       // a ghost ref throws a `ValidationError` rendered to the client-safe `toErrorResponse` envelope.
-      // The committed `validate.json` (T11) enforces this byte-for-byte with BLESS unset.
+      // The committed `validate.json` enforces this byte-for-byte with BLESS unset.
       name: "validate",
       input: VALIDATE_FIXTURE,
       produce: (input) =>

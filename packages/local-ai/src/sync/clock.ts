@@ -1,16 +1,16 @@
-// src/sync/clock.ts — the hybrid logical clock (HLC) for sync reconciliation (ADR-0064, threat
-// TM-SYNC). A captured change carries a `updatedAt` wall-clock-ms HINT, but a peer's wall clock is
+// src/sync/clock.ts — the hybrid logical clock (HLC) for sync reconciliation (ADR-0064).
+// A captured change carries a `updatedAt` wall-clock-ms HINT, but a peer's wall clock is
 // skewable and forgeable, so it is NEVER the sole authority. The HLC stamp layers two non-forgeable,
 // deterministic components on top of that hint:
 //
 //   physical — the `updatedAt` wall-clock-ms hint (a peer-supplied input; ordering signal, not authority)
-//   node     — the originating `replicaId` (a stable per-replica UUID minted locally in `sync_meta`,
-//              T15 — a peer cannot mint another replica's id to win a tie)
+//   node     — the originating `replicaId` (a stable per-replica UUID minted locally in `sync_meta`
+//              — a peer cannot mint another replica's id to win a tie)
 //   counter  — the per-replica monotonic change-log `seq` (disambiguates same-node, same-physical events)
 //
 // `compareStamps` is a STRICT TOTAL ORDER over these three: physical first, then node, then counter.
 // Because `node` is globally unique per replica, two distinct replicas never produce an ambiguous tie —
-// so the LWW winner (T17 `reconcile.ts`) is fully deterministic and order-independent. Convergence does
+// so the LWW winner (`reconcile.ts`) is fully deterministic and order-independent. Convergence does
 // not depend on which replica observed a change first, nor on re-reading a local wall clock; a skewed or
 // forged `updatedAt` cannot make the merge non-deterministic, only bias the physical leg of a true
 // concurrent edit — and that bias is itself bounded and tie-broken by the non-forgeable `node`/`counter`.
@@ -20,7 +20,7 @@ import type { ChangesetEntry } from "./port.ts";
  * A hybrid logical clock timestamp — the LWW comparison key for one captured row change. Ordered by
  * `compareStamps`: greater wins. `physical` is the non-authoritative wall-clock hint; `node` + `counter`
  * are the deterministic, non-forgeable tiebreak that makes reconciliation converge identically on every
- * replica regardless of clock skew (TM-SYNC).
+ * replica regardless of clock skew.
  */
 export interface HlcStamp {
   /** The `updatedAt` wall-clock-ms hint. An ordering signal only — never the sole authority. */

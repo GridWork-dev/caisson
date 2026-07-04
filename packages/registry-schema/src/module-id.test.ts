@@ -1,4 +1,4 @@
-// Regression for the @stack→@caisson module-id fix (Wave-0). The old `/^@stack\/…/` regex rejected
+// Regression for the @stack→@caisson module-id fix. The old `/^@stack\/…/` regex rejected
 // every real `@caisson/…` id, which would break the manifest + allowlist the moment a real module
 // manifest landed. These assert the corrected regex in BOTH schema sites.
 import { describe, expect, test } from "bun:test";

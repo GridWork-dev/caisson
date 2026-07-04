@@ -1,25 +1,24 @@
-// src/evidence/generate.ts — the deterministic, control→evidence pack generator (ADR-0058, the
-// P2 net-new build: P2-14 assembly / P2-15 flag-never-guess / P2-17 determinism / P2-23 honest copy).
+// src/evidence/generate.ts — the deterministic, control→evidence pack generator (ADR-0058).
 //
 // This is the convergence point of the compliance leg. It composes, never re-implements:
-//   - `@caisson/kernel` `canonicalize` for the byte-stable signable body (the same bytes T14 signs);
-//   - the T11 `EvidenceCollector` results (run at the edge, where the substrate facts live);
-//   - the T12 `pack-format` schema (the determinism + honesty CONTRACT) — every assembled body is
+//   - `@caisson/kernel` `canonicalize` for the byte-stable signable body (the same bytes the signer signs);
+//   - the `EvidenceCollector` results (run at the edge, where the substrate facts live);
+//   - the `pack-format` schema (the determinism + honesty CONTRACT) — every assembled body is
 //     re-validated through `parseEvidencePackManifest`, so the generator cannot regress an invariant
 //     the format already forbids (no injected timestamp/signature, no fabricated counts, derived
 //     readiness, no "compliant/certified" copy).
 //
-// Three load-bearing properties, asserted by the tests against the T12 golden (BLESS unset):
+// Three load-bearing properties, asserted by the tests against the golden fixture (BLESS unset):
 //
-//   1. FLAG-NEVER-GUESS (TM-K). Before assembling anything, every control is scanned for an
+//   1. FLAG-NEVER-GUESS. Before assembling anything, every control is scanned for an
 //      `unresolved` collector result. If ANY exists the generator throws `EvidencePackBlockedError`
 //      carrying the BLOCKED-case report — and NO partial pack is produced (the throw precedes all
 //      assembly, and this module touches no filesystem, so a partial write is structurally
 //      impossible). A `flagged` item without a recorded reason is likewise rejected fail-closed.
 //
 //   2. CLOCK AT THE EDGE. The wall-clock instant is INJECTED (`now`), never read here, and is
-//      surfaced only on the result envelope (`generatedAt`) for the outer signing/timestamp layer
-//      (T14). It NEVER enters the canonical body or the archive — so the same evidence yields the
+//      surfaced only on the result envelope (`generatedAt`) for the outer signing/timestamp layer.
+//      It NEVER enters the canonical body or the archive — so the same evidence yields the
 //      same bytes regardless of when or by whom it was generated.
 //
 //   3. DETERMINISTIC ARCHIVE. The pack is a ZIP with fixed (1980-epoch) entry mtimes, name-sorted
@@ -55,8 +54,8 @@ type ControlInput = ManifestInput["controls"][number];
 type ItemInput = ControlInput["evidence"][number];
 
 /**
- * One control's assembly plan: its registry metadata (from `defineControl`, T9/T10) plus the
- * collector results gathered for it at the edge (each `EvidenceCollector.collect(fact)`, T11). The
+ * One control's assembly plan: its registry metadata (from `defineControl`) plus the
+ * collector results gathered for it at the edge (each `EvidenceCollector.collect(fact)`). The
  * generator derives readiness, summary counts, and posture from these — none is asserted by the caller.
  */
 export interface EvidenceControlPlan {
@@ -86,7 +85,7 @@ export interface GenerateEvidencePackInput {
 export interface EvidencePack {
   /** The validated canonical manifest body (no timestamp, no signature). */
   readonly manifest: EvidencePackManifest;
-  /** `canonicalize(manifest)` — the exact bytes T14 signs; byte-identical to `manifest.json` in the archive. */
+  /** `canonicalize(manifest)` — the exact bytes the signer signs; byte-identical to `manifest.json` in the archive. */
   readonly canonicalManifest: string;
   /** The deterministic ZIP archive (manifest + per-control evidence + auditor summary). */
   readonly archive: Uint8Array;
@@ -98,7 +97,7 @@ export interface EvidencePack {
 
 /**
  * Thrown when any control's evidence is `unresolved` — the pack is refused with the BLOCKED-case
- * report and nothing is produced (flag-never-guess, ADR-0058 / TM-K). 422: the request is
+ * report and nothing is produced (flag-never-guess, ADR-0058). 422: the request is
  * well-formed but cannot be fulfilled until the missing evidence is supplied.
  */
 export class EvidencePackBlockedError extends CaissonError {

@@ -1,7 +1,7 @@
 # @caisson/tool-exec
 
 Governed tool-call / sandboxed-exec primitive — the security floor Agentic-Dev's tool layer stands
-on. ADR-0153.
+on.
 
 ## What it gives you
 
@@ -46,6 +46,3 @@ A name not on the allowlist, or args that fail the schema, throw before any proc
 `bun test packages/tool-exec/src` — default-deny (unregistered name, empty allowlist),
 schema-rejects-before-exec, a valid call's full provenance record, a non-zero exit captured (not
 thrown), and one real `execFile` spawn against `node -e` proving the bounded-output path end to end.
-
-> Rebuild-clean from public references. Pro-private `media-pipeline` contributes patterns only,
-> never code.

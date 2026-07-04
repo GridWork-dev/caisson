@@ -1,7 +1,7 @@
-// src/evidence/sign.ts — evidence-pack signing (ADR-0056, P2-16 / TM-L / TM-M).
+// src/evidence/sign.ts — evidence-pack signing (ADR-0056).
 //
-// The edge layer that proves PROVENANCE of an evidence pack. T13 produces a byte-stable canonical
-// `manifest.json`; this module signs it so a relying party can prove *who* sealed it and *what
+// The edge layer that proves PROVENANCE of an evidence pack. The generator produces a byte-stable
+// canonical `manifest.json`; this module signs it so a relying party can prove *who* sealed it and *what
 // chain state* it was sealed against — without touching the canonical body (the signature is
 // DETACHED, so the body stays byte-stable and golden-fixturable, ADR-0013).
 //
@@ -18,7 +18,7 @@
 //      will use, so the verify path is a single primitive across the product.
 //   4. RFC-3161 trusted timestamp COUNTERSIGNS the signature (a near-free "existed at time T"
 //      attestation over the Ed25519 signature, layered on top — never a replacement). It is
-//      test-doubled here: NO live TSA call runs in CI (TM-G/TM-M). The live HTTP transport is the
+//      test-doubled here: NO live TSA call runs in CI. The live HTTP transport is the
 //      only un-exercised path (un-wired seam, ADR-0047 ethos).
 //   5. Buyer-supplied AWS KMS Sign and DSSE/in-toto + Sigstore/Rekor are documented UN-WIRED seams,
 //      reachable behind the `Signer` / premium-provenance boundary — not the v1 base path.
@@ -140,18 +140,18 @@ export interface TimestampToken {
 /**
  * The RFC-3161 authority port. `countersign` attests that a signature existed at a point in time.
  *
- * UN-WIRED LIVE SEAM (ADR-0056, ADR-0047 ethos / TM-G / TM-M): a live TSA implementation of this
+ * UN-WIRED LIVE SEAM (ADR-0056, ADR-0047 ethos): a live TSA implementation of this
  * port POSTs a DER `TimeStampReq` (messageImprint = `sha256(signature)`) to the authority over
  * `fetchWithTimeout(tsaUrl, init, ms)` — NEVER the native `AbortSignal.timeout` helper — and parses
  * the DER `TimeStampResp`. It is intentionally NOT wired in v1: no live network call runs on the CI
- * path, leaving the live transport as the only un-exercised path. Wire it in P7.
+ * path, leaving the live transport as the only un-exercised path.
  */
 export interface TimestampAuthority {
   countersign(signature: Uint8Array): Promise<TimestampToken>;
 }
 
 /**
- * A deterministic, network-free RFC-3161 test double (TM-M). It reproduces the messageImprint a real
+ * A deterministic, network-free RFC-3161 test double. It reproduces the messageImprint a real
  * TSA would attest (`sha256(signature)`) and stamps an injected clock, so countersigning is fully
  * exercised in CI without a live authority. NOT for production use.
  */
@@ -242,7 +242,7 @@ export async function signEvidencePack(
 /**
  * Verify a detached evidence signature against the manifest, reusing the one shared `@noble/ed25519`
  * primitive. Fails CLOSED: an unknown algorithm, malformed hex, wrong-length key/signature, or any
- * verification error returns `false` rather than throwing (TM-L — a forgery must not pass as valid).
+ * verification error returns `false` rather than throwing — a forgery must not pass as valid.
  */
 export async function verifyEvidenceSignature(
   manifest: EvidencePackManifest,
@@ -268,7 +268,7 @@ export async function verifyEvidenceSignature(
 /**
  * Constant-time equality for two detached signatures (or public keys) given as hex. Ed25519
  * signatures are deterministic, so the key holder can re-sign and compare; this compare is
- * timing-safe (`safeEqualFixed`) so it never leaks how many leading bytes matched (TM-L).
+ * timing-safe (`safeEqualFixed`) so it never leaks how many leading bytes matched.
  */
 export function signaturesEqual(a: string, b: string): boolean {
   return safeEqualFixed(a, b);

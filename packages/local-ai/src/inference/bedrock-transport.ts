@@ -1,9 +1,9 @@
 // src/inference/bedrock-transport.ts — the AWS Bedrock RENTED transport (ADR-0209, mapping the
-// ADR-0064 T20 `RentedTransport` port — threat TM-RENT). Same discipline as the OpenRouter
+// ADR-0064 `RentedTransport` port). Same discipline as the OpenRouter
 // template (ADR-0201), but AWS-native on both axes:
 //
 //   AUTH  — SigV4, hand-rolled on node:crypto (`sigv4.ts`, pinned against the documented AWS test
-//           vectors). No @aws-sdk/@smithy dependency: the Gate-2 SDK-import boundary confines
+//           vectors). No @aws-sdk/@smithy dependency: the SDK-import boundary confines
 //           vendor SDKs to ai-config/ai-kit (ADR-0209). Signed headers per request:
 //           content-type;host;x-amz-content-sha256;x-amz-date (+ x-amz-security-token for STS).
 //   WIRE  — bedrock-runtime's two model-agnostic-enough routes:

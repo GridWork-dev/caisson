@@ -1,4 +1,4 @@
-// T5.3: end-to-end proof of the stdio transport binding — drives the bound `Server` through a REAL
+// End-to-end proof of the stdio transport binding — drives the bound `Server` through a REAL
 // `@modelcontextprotocol/sdk` `Client` over `InMemoryTransport` (the SDK's own pair-of-linked-pipes
 // test utility: real JSON-RPC request/response framing, just not a real OS stdin/stdout pipe — the
 // server-side code under test (`createStdioMcpServer`) is transport-agnostic over any `Transport`,
@@ -69,7 +69,7 @@ afterEach(async () => {
   client = undefined;
 });
 
-describe("stdio transport binding (T5.3)", () => {
+describe("stdio transport binding", () => {
   test("auth gates an unauthenticated call: a bad bearer never reaches a transport", () => {
     // No `Server` is constructed and no transport connects on a bad token — every tool a valid
     // buyer could call is unreachable, not just the first one (see stdio.ts file header).

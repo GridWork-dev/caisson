@@ -1,4 +1,4 @@
-// C5 / ADR-0160: construction-level coverage for the provider transport. The LIVE call stays the
+// ADR-0160: construction-level coverage for the provider transport. The LIVE call stays the
 // deliberately un-exercised seam (the package's zero-live-call invariant, ADR-0059) — these tests
 // only prove that each config enum builds a real `ProviderV2` adapter (has `.languageModel`), so a
 // new backend is wired, without any network/model call or provider key.
@@ -280,7 +280,7 @@ describe("providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2)
   });
 });
 
-describe("timeoutFetch — the fetch-deadline floor (ADR-0213, C5/SPEC ai-kit)", () => {
+describe("timeoutFetch — the fetch-deadline floor (ADR-0213)", () => {
   // A loopback stub (not external — `assertSafeBaseUrl` blocks any real provider from ever pointing
   // here) that never answers `/slow`, proving `timeoutMs` aborts a hung request instead of letting it
   // hang the process. Mirrors `@caisson/kernel`'s own `fetchWithTimeout` test pattern.

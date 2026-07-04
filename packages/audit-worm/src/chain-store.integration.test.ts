@@ -1,4 +1,4 @@
-// Integration proof for the append-only, WORM-anchored audit chain (ADR-0052/0014; TM-D/H/I).
+// Integration proof for the append-only, WORM-anchored audit chain (ADR-0052/0014).
 // Runs the REAL `withTenant` + the REAL `0001_audit_chain.sql` migration against PGlite (a true
 // Postgres with FORCE RLS, SET ROLE, advisory locks, jsonb), with a `LocalArtifactStore` standing
 // in for the WORM bucket. No network, no live cloud. Tamper is simulated as the BYPASSRLS superuser

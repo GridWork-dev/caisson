@@ -1,8 +1,8 @@
-// SPEC ai-kit / ADR-0213 exit-gate proof for the metered embeddings gateway: `embed()`/`embedMany()`
+// Exit-gate proof for the metered embeddings gateway (ADR-0213): `embed()`/`embedMany()`
 // reserve BEFORE the provider call, reconcile to the provider's actual usage (or the chars/4 fallback
 // on an unreported one), zero-debit a BYOK lane, and refund a failed provider call — over PGlite + a
 // mock `EmbeddingModelV2` (zero network). Mirrors `gateway.test.ts`'s fixtures/shape for the
-// embeddings surface (no prompt-registry, no guardrails — out of this SPEC's scope).
+// embeddings surface (no prompt-registry, no guardrails — out of scope for embeddings).
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import { newTestPg, type TestPg } from "@caisson/testing";
 import {
@@ -32,7 +32,7 @@ const A = "acct_kit_embed";
 
 // A fixed price book + denomination + clock, same deterministic shape as gateway.test.ts's METER:
 // $1/MTok input, 1 credit = 100 micro-USD. `outputPerMTok` is deliberately NONZERO — the reservation's
-// phantom output budget must refund in full at reconcile regardless of this rate (SPEC design).
+// phantom output budget must refund in full at reconcile regardless of this rate (by design).
 const METER: MeterConfig = {
   priceBook: {
     "openai/text-embedding-3-small": {

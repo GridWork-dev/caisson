@@ -9,7 +9,7 @@
 // Three properties, each enforced by a different mechanism so no single bug defeats them:
 //   1. APPEND-ONLY — rows land in `locked_version`, whose migration grants the `app` role SELECT +
 //      INSERT only (UPDATE/DELETE withheld + REVOKEd) AND carries a BEFORE UPDATE/DELETE RAISE
-//      trigger as a belt against any role that does hold them (TM-D). A committed version is
+//      trigger as a belt against any role that does hold them. A committed version is
 //      immutable by privilege + trigger, not by convention.
 //   2. NO FORK / IN-TENANT SUPERSEDE — `UNIQUE(account_id, supersedes_id)` lets a prior be
 //      superseded at most once (a fork hits 23505 → `ConflictError`), and the composite FK keeps a

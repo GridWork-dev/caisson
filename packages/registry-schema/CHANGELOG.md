@@ -4,11 +4,11 @@
 
 ### Patch Changes
 
-- b5915e0: Register the `admin_adjust` feature tag (ADR-0220, Fork AM-3 = A). The operator credit-adjust
-  action rides the existing ADR-0074 `feature_grant` / `feature_debit` envelope under this tag rather
-  than adding a new base `credit_event` type — so the money core needs no schema change to gain an
-  operator correction path. Additive to `REGISTERED_FEATURE_TAGS`; `@caisson/credits` validates it at
-  the boundary like any other registered tag.
+- b5915e0: Register the `admin_adjust` feature tag (ADR-0220). An operator credit-adjust action rides
+  the existing ADR-0074 `feature_grant` / `feature_debit` envelope under this tag rather than adding a
+  new base `credit_event` type — so the money core needs no schema change to gain an operator
+  correction path. Additive to `REGISTERED_FEATURE_TAGS`; `@caisson/credits` validates it at the
+  boundary like any other registered tag.
 
 ## 0.2.0
 
@@ -18,4 +18,4 @@
 
 ### Patch Changes
 
-- 72ffd85: Whole-repo audit remediation (rounds 1+2, ledger 2026-07-01): LemonSqueezy credit-grant idempotency keys off the stable resource composite (never webhook_id); BYOK zero-cost gated to a per-action allowlist, default metered (ADR-0198); AWS KMS driver honors per-tenant CMKs and refuses keyId-less crypto-shred (ADR-0197); BYOK baseUrl SSRF guard (https-only, private/metadata ranges rejected); request-span low-cardinality span names + scrubbed http.route; field-crypto-policy evidence collector emits sorted arrays (deterministic canonical body); entitlements free-view docstring corrected to ADR-0136.
+- 72ffd85: LemonSqueezy credit-grant idempotency keys off the stable resource composite (never webhook_id); BYOK zero-cost gated to a per-action allowlist, default metered (ADR-0198); AWS KMS driver honors per-tenant CMKs and refuses keyId-less crypto-shred (ADR-0197); BYOK baseUrl SSRF guard (https-only, private/metadata ranges rejected); request-span low-cardinality span names + scrubbed http.route; field-crypto-policy evidence collector emits sorted arrays (deterministic canonical body); entitlements free-view docstring corrected (ADR-0136).

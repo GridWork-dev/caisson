@@ -55,7 +55,7 @@ import {
 // The `admin_write` cross-tenant policies for every table the mutation surface touches: WRITE
 // policies for the tables it actually mutates — `entitlement_grant` (service-owned) + the BASE
 // credit tables `credit_wallet` / `credit_event` — and SELECT-only policies for the tables it only
-// ever READS (`account_member` for the CAISSON-9 existence check; `license_grant` for the ADR-0225
+// ever READS (`account_member` for the existence check; `license_grant` for the ADR-0225
 // edge-deny-set read). Applied EXTERNALLY — after the `admin_write` role exists — at DEPLOY (and in
 // the test/dev double), NEVER embedded in a schema constant every buyer-path test applies (mirroring
 // how ADR-0141's `buildAdminReadPolicySql` is applied outside the owning packages). Keeping the credit
@@ -65,7 +65,7 @@ export const ADMIN_MUTATION_PROVISION_SQL = [
   buildAdminWritePolicySql("entitlement_grant"),
   buildAdminWritePolicySql("credit_wallet"),
   buildAdminWritePolicySql("credit_event"),
-  // Read-only existence check (CAISSON-9): `account_member` is the base @caisson/auth table, always
+  // Read-only existence check: `account_member` is the base @caisson/auth table, always
   // carrying at least one row per real account (`ensurePersonalAccount` on first sign-in, ADR-0176) —
   // admin_write needs cross-tenant SELECT on it to reject a comp/adjust to a nonexistent id. This
   // mutation surface never writes account_member, so it gets the SELECT-only policy variant, not

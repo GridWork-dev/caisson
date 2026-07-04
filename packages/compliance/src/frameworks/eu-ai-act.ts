@@ -3,7 +3,7 @@
  *
  * Every `statement` and `guidance` string below is original Caisson prose. We do NOT ingest, copy,
  * paraphrase, or transform the regulation's text (Regulation (EU) 2024/1689), the Secure Controls
- * Framework (SCF, CC-BY-ND), or any third-party catalog JSON (TM-J / flag-never-guess). The
+ * Framework (SCF, CC-BY-ND), or any third-party catalog JSON (flag-never-guess). The
  * `crosswalk[].reference` values (e.g. `Art. 9`) are bare ARTICLE-LEVEL citation IDENTIFIERS —
  * factual pointers to the obligation, not its text — used as pointers from our canonical controls
  * to the regulation provision they help satisfy. The regulation itself is public law; the canonical
@@ -23,7 +23,7 @@
  * `GOVERNANCE.SECURITY-RESPONSIBILITY` precedent shared by `soc2-tsc.ts`/`hipaa-security.ts`. Where
  * the obligation is genuinely AI-specific (risk management system, data governance, human oversight,
  * conformity assessment, …), this pack mints its own id and notes the related control via a
- * crosswalk `note` instead of forcing a false equivalence. Depends only on the T9 builder.
+ * crosswalk `note` instead of forcing a false equivalence. Depends only on the `defineControl` registry builder.
  */
 import { type Framework, defineFramework } from "../registry/control.ts";
 

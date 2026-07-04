@@ -3,7 +3,7 @@
 // fenced behind a typed irreversible opt-in. Two invariants are enforced at this backend:
 //   1. Write-once — every `put` is a conditional `IfNoneMatch: '*'` PUT; S3 answers 412 on an
 //      existing key, which becomes `ArtifactExistsError` (the WORM essence + chain-anchor safety,
-//      ADR-0052/TM-H). No overwrite path exists.
+//      ADR-0052). No overwrite path exists.
 //   2. Retention lock — every object carries `ObjectLockMode` + `ObjectLockRetainUntilDate`, with
 //      the date == the caller's `retainUntil` so the S3 lock date provably equals the DB row date.
 //   3. Monotonic escalation (ADR-0202) — `extendRetention` moves a lock strictly LATER preserving
@@ -14,7 +14,7 @@
 // `send`, so NO live cloud call runs in tests — a real `S3Client` (the live transport) is the only
 // un-exercised path, the same seam-real / cloud-behind-the-port precedent as `field-crypto`'s
 // `kms.ts` (ADR-0047). COMPLIANCE-mode is refused outside a production deployment so a dev or test
-// bucket can never be irreversibly bricked (ADR-0051/TM-A).
+// bucket can never be irreversibly bricked (ADR-0051).
 import {
   GetObjectCommand,
   GetObjectRetentionCommand,
@@ -65,7 +65,7 @@ const OPT_IN_BRAND: unique symbol = Symbol(
  * The typed, opaque proof that a buyer has acknowledged COMPLIANCE-mode is irreversible (ADR-0051).
  * It is unforgeable in practice — the only constructor is {@link irreversibleComplianceOptIn}, which
  * demands the exact acknowledgement string and the bucket it applies to. No code path selects
- * COMPLIANCE without one of these in hand, so the footgun (TM-A) is impossible to pull by accident.
+ * COMPLIANCE without one of these in hand, so the footgun is impossible to pull by accident.
  */
 export interface IrreversibleComplianceOptIn {
   readonly [OPT_IN_BRAND]: true;
@@ -77,7 +77,7 @@ export interface IrreversibleComplianceOptIn {
  * Mint the irreversible-COMPLIANCE opt-in for one bucket. Fail-closed: the acknowledgement must be
  * the exact {@link COMPLIANCE_ACKNOWLEDGEMENT} and `deployment` must be the literal `"production"`,
  * so neither a typo nor a default ever yields one. This proves *intent*; the store separately proves
- * *environment* (it refuses COMPLIANCE unless `NODE_ENV === "production"`, ADR-0051/TM-A).
+ * *environment* (it refuses COMPLIANCE unless `NODE_ENV === "production"`, ADR-0051).
  */
 export function irreversibleComplianceOptIn(input: {
   bucket: string;
@@ -121,7 +121,7 @@ export interface S3ArtifactStoreConfig {
   complianceOptIn?: IrreversibleComplianceOptIn;
   /**
    * Optional per-tenant SSE-KMS key id. When set, every PUT is encrypted with `aws:kms` under this
-   * key — the per-tenant cryptographic boundary that backs key-prefix isolation (ADR-0054/TM-C).
+   * key — the per-tenant cryptographic boundary that backs key-prefix isolation (ADR-0054).
    */
   sseKmsKeyId?: string;
 }
@@ -152,8 +152,8 @@ function httpStatusOf(err: unknown): number | undefined {
 
 /**
  * The prod WORM backend (ADR-0054). Every key is `assertSafeKey`-guarded BEFORE any I/O (tenant
- * scoping + traversal guard, TM-C); `put` is a conditional `IfNoneMatch: '*'` write (412 →
- * `ArtifactExistsError`, TM-H); `get` throws `NotFoundError` on 404; `head` resolves `null` on 404.
+ * scoping + traversal guard); `put` is a conditional `IfNoneMatch: '*'` write (412 →
+ * `ArtifactExistsError`); `get` throws `NotFoundError` on 404; `head` resolves `null` on 404.
  */
 export class S3ArtifactStore implements ArtifactStore {
   private readonly client: S3Sendable;
@@ -177,7 +177,7 @@ export class S3ArtifactStore implements ArtifactStore {
   }
 
   /**
-   * Fail-closed COMPLIANCE gate (ADR-0051/TM-A), three belts, all at construction so a COMPLIANCE
+   * Fail-closed COMPLIANCE gate (ADR-0051), three belts, all at construction so a COMPLIANCE
    * store cannot even be built without clearance:
    *   1. never under a test runner (`NODE_ENV === "test"`);
    *   2. never outside a production deployment (`NODE_ENV !== "production"`);
@@ -219,7 +219,7 @@ export class S3ArtifactStore implements ArtifactStore {
       Key: key,
       Body: body,
       ContentLength: body.byteLength,
-      // Write-once: S3 fails a conditional PUT to an existing key with 412 (TM-H).
+      // Write-once: S3 fails a conditional PUT to an existing key with 412.
       IfNoneMatch: "*",
       // Retention lock: object date == DB `retain_until` (ADR-0051/0054).
       ObjectLockMode: this.mode,

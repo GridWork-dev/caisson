@@ -6,8 +6,8 @@ import { hipaaSecurity } from "./hipaa-security.ts";
 import { soc2Tsc } from "./soc2-tsc.ts";
 
 // matchGolden anchors __golden__/ to the file URL it is handed. The compliance package keeps ALL
-// goldens in ONE package-level dir (src/__golden__ — the path the manifest's `golden` field gates,
-// T18), so anchor at src/ (one level up from frameworks/), not this test's own subdir.
+// goldens in ONE package-level dir (src/__golden__ — the path the manifest's `golden` field gates),
+// so anchor at src/ (one level up from frameworks/), not this test's own subdir.
 const PKG_SRC_META = new URL("../index.ts", import.meta.url).href;
 
 /** Catalog-level structural invariants shared by every authored framework pack. */
@@ -156,7 +156,7 @@ describe("control-to-code traceability (ADR-0229 row 9)", () => {
 });
 
 describe("catalog goldens", () => {
-  // Pins the validated wire shape T11 (collectors) and T18 (manifest) consume. Ships inline; the
+  // Pins the validated wire shape the collectors and manifest consume. Ships inline; the
   // gate runs with BLESS unset.
   test("soc2-tsc catalog is byte-stable", () => {
     matchGolden(PKG_SRC_META, "soc2-tsc.catalog", soc2Tsc);

@@ -1,9 +1,10 @@
-// Curated Caisson-native SKILLS (T20 · ADR-0065/0066). A minimal, rebuild-clean default set authored
-// against the agent-kernel `SkillArtifact` schema through the `defineSkill` builder — validated
-// `.strict()` at module load. A skill is an ordered workflow with a trigger class (`user`/`manual`/
-// `runtime`); each `steps[]` is non-empty (the schema enforces `min(1)`). Caisson-native content, NOT a
-// gw-prefixed lift. Some skills declare a by-name `dependencies` cross-ref to ANOTHER artifact in the
-// default set; reference integrity (no ghost refs) is enforced over the whole set by the T12 validator.
+// Curated Caisson-native SKILLS (ADR-0065/0066). A minimal default set authored against the
+// agent-kernel `SkillArtifact` schema through the `defineSkill` builder — validated `.strict()` at
+// module load. A skill is an ordered workflow with a trigger class (`user`/`manual`/`runtime`); each
+// `steps[]` is non-empty (the schema enforces `min(1)`). Caisson-native content, not carried over
+// from another naming scheme. Some skills declare a by-name `dependencies` cross-ref to ANOTHER
+// artifact in the default set; reference integrity (no ghost refs) is enforced over the whole set by
+// the `validateArtifactSet` check.
 import { type SkillArtifact, defineSkill } from "@caisson/agent-kernel";
 
 /** The default skill set a buyer of the agent-dev edition gets out of the box (engine-neutral). */

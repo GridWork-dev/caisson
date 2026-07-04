@@ -1,13 +1,15 @@
 # @caisson/jobs
 
-Background jobs / scheduler spine.
+Provider-agnostic background-job queue port: an enqueue interface with an in-memory
+reference driver and a production driver.
 
 - **Layer:** base
-- **Seeds (rebuild-clean):** health-service
-- **Key ADR:** ADR-0002, ADR-0018
 
-> **Built (thin seam)** — real src + tests (job seam). Live per-package status: ../../docs/build-state.md
-> Build per `/plan.md`. Pro-private `media-pipeline` contributes patterns only, never code.
+## Install
+
+```bash
+bun add @caisson/jobs
+```
 
 ## Drivers
 
