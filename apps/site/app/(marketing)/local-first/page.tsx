@@ -437,8 +437,8 @@ export default function LocalFirstPage() {
             status={<StatusChip tone="muted" label="scaffold" />}
           >
             <span className="cs-tok-muted">{"$ "}</span>
-            {"npx "}
-            <span className="cs-tok-accent">{"create-caisson"}</span>
+            {"bun create "}
+            <span className="cs-tok-accent">{"caisson"}</span>
             {"@latest"}
           </Terminal>
           <div

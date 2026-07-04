@@ -525,7 +525,7 @@ export default function CompliancePage() {
               className="cs-muted"
               style={{ marginTop: "var(--cs-space-4)", maxWidth: "60ch" }}
             >
-              A one-time, perpetual license: npx create-caisson@latest scaffolds
+              A one-time, perpetual license: bun create caisson@latest scaffolds
               the base with tenancy-rls fail-closed and the standards gate
               passing, and the five evidence collectors — RLS-force,
               chain-verify, WORM-retention, field-crypto-policy, and the
@@ -556,7 +556,7 @@ export default function CompliancePage() {
             label="shell"
             status={<StatusChip label="ready" tone="success" dot />}
           >
-            {`$ npx create-caisson@latest\n`}
+            {`$ bun create caisson@latest\n`}
             <span className="cs-tok-accent">{`✓ scaffold complete\n`}</span>
             <span className="cs-tok-accent">{`✓ tenancy-rls: fail-closed\n`}</span>
             <span className="cs-tok-accent">{`✓ standards gate: passing\n`}</span>

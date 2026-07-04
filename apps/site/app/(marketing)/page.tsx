@@ -139,8 +139,8 @@ export default function HomePage() {
               label="install"
               code={
                 <>
-                  <span className="cs-tok-muted">$</span> npx{" "}
-                  <span className="cs-tok-accent">create-caisson</span>@latest
+                  <span className="cs-tok-muted">$</span> bun create{" "}
+                  <span className="cs-tok-accent">caisson</span>@latest
                 </>
               }
             />
@@ -474,8 +474,8 @@ export default function HomePage() {
               label="install"
               code={
                 <>
-                  <span className="cs-tok-muted">$</span> npx{" "}
-                  <span className="cs-tok-accent">create-caisson</span>@latest
+                  <span className="cs-tok-muted">$</span> bun create{" "}
+                  <span className="cs-tok-accent">caisson</span>@latest
                 </>
               }
             />

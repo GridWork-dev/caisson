@@ -332,11 +332,11 @@ export default function MarketplacePlansPage() {
         >
           <div style={{ marginTop: "var(--cs-space-6)" }}>
             <Terminal
-              label="npx create-caisson@latest"
+              label="bun create caisson@latest"
               status={<StatusChip label="ready" tone="success" dot />}
             >
               {
-                "$ npx create-caisson@latest\n✓ Caisson base substrate initialized\n✓ Fail-closed RLS (FORCE) + cross-tenant isolation tests\n✓ Append-only audit chain — SHA-256 verified\n✓ Field encryption — per-tenant DEK (HKDF-SHA256)\n✓ Standards gate — lint · test · golden-file"
+                "$ bun create caisson@latest\n✓ Caisson base substrate initialized\n✓ Fail-closed RLS (FORCE) + cross-tenant isolation tests\n✓ Append-only audit chain — SHA-256 verified\n✓ Field encryption — per-tenant DEK (HKDF-SHA256)\n✓ Standards gate — lint · test · golden-file"
               }
             </Terminal>
           </div>

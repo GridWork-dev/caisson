@@ -1,13 +1,14 @@
 ---
 title: Billing
-description: Stripe and Paddle behind a BillingProvider port, with HMAC raw-body webhook verification.
+description: Stripe, Paddle, LemonSqueezy, and Polar behind a BillingProvider port, with HMAC raw-body webhook verification.
 ---
 
-`@caisson/billing` wires Stripe and Paddle behind the same `BillingProvider` port, so the rest of
-the base depends on the port, not the vendor. Stripe pairs with Stripe Tax, with the operator as the
-merchant of record. Paddle is Merchant of Record itself — it computes, collects, and remits tax on
-the sale, and is the provider Caisson's own store runs on; Stripe stays a buyer-selectable driver
-for products composed on the base.
+`@caisson/billing` wires four drivers — Stripe, Paddle, LemonSqueezy, and Polar — behind the same
+`BillingProvider` port, so the rest of the base depends on the port, not the vendor. Stripe pairs
+with Stripe Tax, with the operator as the merchant of record. Paddle, LemonSqueezy, and Polar are
+each Merchant of Record themselves — they compute, collect, and remit tax on the sale. Paddle is
+the provider Caisson's own store runs on; Stripe, LemonSqueezy, and Polar are buyer-selectable
+drivers for products composed on the base, dormant until you supply credentials.
 
 ## The contract
 

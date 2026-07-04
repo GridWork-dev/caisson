@@ -455,7 +455,7 @@ export default function EuAiActPage() {
         </p>
         <div style={{ marginBottom: "var(--cs-space-5)" }}>
           <Terminal label="scaffold a Caisson project">
-            npx create-caisson@latest
+            bun create caisson@latest
           </Terminal>
         </div>
         <div className="cs-cta-row">
