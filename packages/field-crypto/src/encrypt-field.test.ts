@@ -33,7 +33,7 @@ describe("encryptField (row-bound AAD, ADR-0055 — TM-E)", () => {
     expect(decryptField(ctx, COL, ROW, sealed)).toBe(SSN);
   });
 
-  test("a cross-row relocate fails to authenticate (TM-E, closes Wave-0 TM2)", () => {
+  test("a cross-row relocate fails to authenticate (TM-E, closes TM2)", () => {
     const ctx = ctxFor("acct_a");
     const sealed = encryptField(ctx, COL, ROW, SSN);
     // Same tenant, same column, same key version — only the row id differs. The 4-tuple AAD no

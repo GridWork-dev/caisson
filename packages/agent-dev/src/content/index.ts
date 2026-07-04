@@ -1,8 +1,8 @@
-// Curated Caisson-native content barrel (T20 · ADR-0065/0066). The agent-dev edition's default
-// agents/skills/rules set, authored once against the engine-neutral agent-kernel schema and exposed as
-// ONE typed `Artifact[]` the emitter (T19) and the edition composition (T21) consume down-only. Every
-// member was validated `.strict()` by its `define*()` builder; reference integrity over the whole set
-// (no ghost cross-refs) is asserted by the T12 `validateArtifactSet` in `content.test.ts`.
+// Curated Caisson-native content barrel (ADR-0065/0066). The agent-dev edition's default
+// agents/skills/rules set, authored once against the engine-neutral agent-kernel schema and exposed
+// as ONE typed `Artifact[]` the emitter and the edition composition consume down-only. Every member
+// was validated `.strict()` by its `define*()` builder; reference integrity over the whole set (no
+// ghost cross-refs) is asserted by `validateArtifactSet` in `content.test.ts`.
 //
 // Stable, deterministic order — rules, then skills, then agents — so the emitted bundle is byte-stable.
 // This barrel is content only; it imports NOTHING from the emitter or the package root, keeping the

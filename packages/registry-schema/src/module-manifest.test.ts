@@ -1,4 +1,4 @@
-// ADR-0077 edition member-version pin map. T7 + T8: the `members` field added to ModuleManifest
+// ADR-0077 edition member-version pin map. The `members` field added to ModuleManifest
 // enforces that `kind === "edition"` carries a non-empty EXACT-version pin map; ranges and `latest`
 // are rejected by the shared `semver` regex; the representative golden fixture round-trips.
 //

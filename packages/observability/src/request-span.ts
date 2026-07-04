@@ -4,9 +4,9 @@
 // server span using the OTel tracer API directly — no node internals patched, no dependency added
 // (`@opentelemetry/api` is already a dependency of this package).
 //
-// ponytail: manual spans at the handler boundary only — no automatic child-spans for DB/fetch calls
-// inside the handler. Add those explicitly at each call site if a trace needs them. Swap to Bun-native
-// auto-instrumentation if/when one exists (see ADR-0185).
+// Deliberately scoped: this wraps only the handler boundary — no automatic child-spans for DB/fetch
+// calls inside the handler. Add those explicitly at each call site if a trace needs them. Swap to
+// Bun-native auto-instrumentation if/when one exists — the same gap ADR-0185 accepts for now.
 import { SpanStatusCode, trace } from "@opentelemetry/api";
 import {
   ATTR_HTTP_REQUEST_METHOD,

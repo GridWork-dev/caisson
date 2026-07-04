@@ -1,6 +1,7 @@
-// The real templated generator engine (ADR-0068/0072 / P5). Reads an in-repo template SCAFFOLD
-// tree (degit-pattern, NO network), applies the T12 transform (`replaceTokens` + `deepMerge`) with
-// tokens derived from the validated `Selection`, and returns a deterministic, sorted
+// The real templated generator engine (ADR-0068/0072). Reads an in-repo template SCAFFOLD
+// tree (degit-pattern, NO network), applies the token-replace + deep-merge transform
+// (`replaceTokens` + `deepMerge`) with tokens derived from the validated `Selection`, and returns a
+// deterministic, sorted
 // `GeneratedFileSet`. Pure construction: reads template files from disk (resolved via
 // `import.meta.url`, NEVER from caller input) and never writes, fetches, or spawns.
 //

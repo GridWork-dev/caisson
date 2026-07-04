@@ -1,5 +1,5 @@
 // src/gc.ts — dedup-on-write + TTL/GC decay default (ADR-0067). The retention POLICY layered ON TOP
-// of the store's `upsert`-by-id (T6): content dedup so a near-duplicate fact is REINFORCED not copied,
+// of the store's `upsert`-by-id: content dedup so a near-duplicate fact is REINFORCED not copied,
 // a default sliding TTL, and a GC pass that drops expired / decayed / over-cap items. Buyer-config
 // (`GcConfig`, validated `.strict()` at the boundary) with sane defaults.
 //

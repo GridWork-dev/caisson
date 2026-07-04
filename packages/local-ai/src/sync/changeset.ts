@@ -1,4 +1,4 @@
-// src/sync/changeset.ts — per-tenant changeset capture (ADR-0064/0073, threat TM-SYNC). The
+// src/sync/changeset.ts — per-tenant changeset capture (ADR-0064/0073). The
 // application-layer analog of the SQLite session/changeset extension (which `bun:sqlite` does not
 // expose): a per-replica, monotonically-sequenced change log over the canonical local store, plus the
 // tenant-partition guard that makes a tenant-A changeset un-appliable to a tenant-B file.
@@ -6,11 +6,12 @@
 // The canonical local store is the authority — the change log MIRRORS local mutations (the edition's
 // write path calls `recordUpsert`/`recordDelete` as it writes), and `capture` packages everything
 // past a watermark into a tenant-bound, replica-stamped changeset a peer can pull. The reconcile/
-// apply/LWW/tombstone halves land on the critical path after this (T16–T19).
+// apply/LWW/tombstone halves build on this change log.
 //
 // Two sync-metadata tables (`sync_meta`, `sync_changelog`) are created idempotently here so capture
-// runs standalone; T21 folds the same DDL under the ordered, idempotent `schema_version` ledger
-// (the sync-metadata columns are migration-versioned + irreversible — no rollback past them).
+// runs standalone; the edition migration assembly folds the same DDL under the ordered, idempotent
+// `schema_version` ledger (the sync-metadata columns are migration-versioned + irreversible — no
+// rollback past them).
 import type { Database } from "bun:sqlite";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
@@ -140,8 +141,8 @@ interface MaxRow {
  * The per-tenant changeset capture seam (the `ChangesetCapture` half of the `SyncEngine` port). One
  * instance is bound to exactly ONE tenant's already-open SQLite file: the file IS the partition
  * boundary (ADR-0073), and `assertApplicable` enforces that an inbound changeset's `tenantId` matches
- * this file before any apply (TM-SYNC). A stable `replicaId` is minted on first init and persisted in
- * `sync_meta`, so the LWW tiebreak input (T17) survives across opens.
+ * this file before any apply. A stable `replicaId` is minted on first init and persisted in
+ * `sync_meta`, so the LWW tiebreak input survives across opens.
  */
 export class ChangesetLog implements ChangesetCapture {
   readonly #db: Database;
@@ -166,7 +167,7 @@ export class ChangesetLog implements ChangesetCapture {
     return this.#tenantId;
   }
 
-  /** This replica's stable id — the deterministic LWW tiebreak input (T17). */
+  /** This replica's stable id — the deterministic LWW tiebreak input. */
   get replicaId(): string {
     return this.#replicaId;
   }
@@ -230,7 +231,7 @@ export class ChangesetLog implements ChangesetCapture {
     this.#append(table, pk, "upsert", canonicalize(values));
   }
 
-  /** Record a delete (a tombstone is materialized from this in T18). */
+  /** Record a delete (a tombstone is later materialized from this). */
   recordDelete(table: string, pk: string): void {
     this.#append(table, pk, "delete", null);
   }
@@ -264,9 +265,9 @@ export class ChangesetLog implements ChangesetCapture {
   }
 
   /**
-   * The TM-SYNC partition guard: a changeset may be applied to this file ONLY if its `tenantId`
+   * The tenant-partition guard: a changeset may be applied to this file ONLY if its `tenantId`
    * matches the tenant this log is bound to. A cross-tenant changeset fails closed (`TenancyError`,
-   * 404) — a tenant-A changeset can never mutate a tenant-B file (ADR-0073). Apply/reconcile (T16–T18)
+   * 404) — a tenant-A changeset can never mutate a tenant-B file (ADR-0073). Apply/reconcile
    * call this before integrating any entry.
    */
   assertApplicable(changeset: Changeset): void {

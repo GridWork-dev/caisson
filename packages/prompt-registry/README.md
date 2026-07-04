@@ -2,8 +2,8 @@
 
 Append-only versioned prompts with `name@version` / `name@alias` addressing and an injection-safe
 templating boundary. A base **primitive** (paid, `LicenseRef-Caisson-Commercial`) of the AI
-Production Kit edition (ADR-0061). Composes the Wave-0 substrate (`@caisson/kernel` versioning +
-errors, `@caisson/tenancy-rls` FORCE-RLS); never depends "up" on an edition (ADR-0003).
+Production Kit edition (ADR-0061). Built on `@caisson/kernel` (versioning + errors) and
+`@caisson/tenancy-rls` (FORCE-RLS); never depends "up" on an edition (ADR-0003).
 
 ## What it gives you
 

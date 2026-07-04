@@ -146,7 +146,7 @@ interface RingEntry {
 
 /**
  * A bounded, per-`${accountId}:${scope}` ring buffer, linear-scanned for bucket-key overlap.
- * ponytail: capacity is small by design — a real bucket-indexed Map only pays off past a few
+ * Capacity is small by design — a real bucket-indexed Map only pays off past a few
  * thousand entries, and this store's bound (`capacity`, default 200) never gets there.
  */
 export function createInMemoryDedupStore(capacity = 200): DedupStore {

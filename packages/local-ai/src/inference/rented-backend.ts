@@ -1,24 +1,24 @@
-// src/inference/rented-backend.ts — the RENTED / hosted inference backend SEAM (ADR-0064, fork
-// P4a-15-C — threat TM-RENT). It implements the SAME `InferenceBackend` port as the deterministic
-// stub (T12) and the on-device ONNX backend (T13), so a deployer who explicitly opts into a hosted
+// src/inference/rented-backend.ts — the RENTED / hosted inference backend SEAM (ADR-0064).
+// It implements the SAME `InferenceBackend` port as the deterministic
+// stub and the on-device ONNX backend, so a deployer who explicitly opts into a hosted
 // provider swaps the backend without touching any caller. Two invariants make a hosted path safe in
 // an edition whose marquee promise is "your data never leaves the device":
 //
-//   1. OFF BY DEFAULT, gated by the privacy guard (TM-RENT / TM-EGRESS). The backend refuses to
+//   1. OFF BY DEFAULT, gated by the privacy guard. The backend refuses to
 //      construct unless its endpoint host is HTTPS *and* explicitly allowlisted as a `rented-backend`
-//      sanctioned sink in the T14 privacy policy. A zero-egress (default) policy makes construction
+//      sanctioned sink in the privacy policy. A zero-egress (default) policy makes construction
 //      throw — there is NO way to reach a hosted provider without the deployer opting the host in,
 //      and NO silent fallback (fail-closed-to-offline). Every call re-asserts the gate.
 //
 //   2. METERED. A rented call is a PAID call, so every `embed`/`complete` emits exactly one metered
 //      record (kernel `UsageMetering` — integer units, ADR-0007; per-call idempotency key, ADR-0074)
-//      through a `meter` sink before the result is returned. The sink is the P6 commerce seam:
+//      through a `meter` sink before the result is returned. The billing/commerce layer wires the sink:
 //
-//        // P6 (commerce): swap the test/no-op sink for the real append-only/integer/idempotent
+//        // Swap the test/no-op sink for the real append-only/integer/idempotent
 //        // debit. The credits package is NOT a dependency of this edition — only the SHAPE ships
-//        // here; the live debit is wired in P6:
+//        // here; the live debit is wired by the buyer's billing integration:
 //        //
-//        //   import { debit } from "@caisson/credits";            // P6 dep
+//        //   import { debit } from "@caisson/credits";
 //        //   meter: async (record) => {
 //        //     await debit({
 //        //       accountId,
@@ -29,8 +29,8 @@
 //        //     });
 //        //   }
 //        //
-//      The record is already integer + idempotent, so P6 only replaces the sink — nothing in this
-//      file ever touches the ledger.
+//      The record is already integer + idempotent, so the billing wiring only replaces the sink —
+//      nothing in this file ever touches the ledger.
 //
 // NO NETWORK IN CI (ADR-0064): the wire call is a `RentedTransport` PORT. CI injects a deterministic
 // double; the LIVE transport (`createLiveRentedTransport`) routes every byte through the egress
@@ -98,7 +98,7 @@ export interface RentedTransport {
 
 /**
  * The metered-call sink: every rented call hands it one {@link UsageMetering} record before the
- * result is returned. P6 commerce wires the live `credits.debit` here (see the file header); the
+ * result is returned. The buyer's billing integration wires the live `credits.debit` here (see the file header); the
  * edition ships only the shape. If the sink throws, the call fails — a paid call that cannot be
  * recorded must not silently succeed (fail-closed).
  */
@@ -108,11 +108,11 @@ export type MeterSink = (record: UsageMetering) => void | Promise<void>;
 export interface RentedBackendConfig {
   /** The hosted-inference HTTPS endpoint. Its host MUST be allowlisted as a `rented-backend` sink. */
   endpoint: string;
-  /** The egress guard enforcing the T14 privacy policy — the opt-in gate (off unless allowlisted). */
+  /** The egress guard enforcing the privacy policy — the opt-in gate (off unless allowlisted). */
   guard: EgressGuard;
   /** The wire-call transport (the live transport is un-exercised in CI; tests inject a double). */
   transport: RentedTransport;
-  /** The metered-call sink — one record per call. P6 wires `credits.debit` here. */
+  /** The metered-call sink — one record per call. The buyer's billing integration wires `credits.debit` here. */
   meter: MeterSink;
   /** Per-tenant id stamped on each metered record (local-first: one backend instance per tenant). */
   tenantId: string;
@@ -134,7 +134,7 @@ function assertNonEmpty(value: string, field: string): void {
 
 /**
  * The rented/hosted inference backend. Off by default and gated by the privacy guard at construction
- * (and re-checked per call); every call is metered through the P6-wired sink. Implements the shared
+ * (and re-checked per call); every call is metered through the billing-wired sink. Implements the shared
  * {@link InferenceBackend} port so it drops in wherever the stub or ONNX backend is used.
  */
 export class RentedInferenceBackend implements InferenceBackend {
@@ -159,10 +159,10 @@ export class RentedInferenceBackend implements InferenceBackend {
     assertNonEmpty(config.feature, "feature");
     assertNonEmpty(config.model, "model");
 
-    // OFF BY DEFAULT (TM-RENT). `assertAllowedFor` throws unless the endpoint is HTTPS, the host
+    // OFF BY DEFAULT. `assertAllowedFor` throws unless the endpoint is HTTPS, the host
     // is on the privacy allowlist (a zero-egress default policy fails closed), AND the sanctioned
     // sink KIND is `rented-backend` specifically — a host allowlisted only for the model fetch
-    // (T13) can never double as a hosted-inference egress.
+    // can never double as a hosted-inference egress.
     const url = config.guard.assertAllowedFor(
       config.endpoint,
       "rented-backend",
@@ -216,8 +216,8 @@ export class RentedInferenceBackend implements InferenceBackend {
 
   /**
    * Build + validate one metered record and hand it to the sink. The record is the canonical
-   * append-only/integer/idempotent ledger shape (`UsageMetering`); P6 commerce swaps the sink for
-   * the live `credits.debit` (see the file header). `idempotencyKey` is fresh per call so a replay
+   * append-only/integer/idempotent ledger shape (`UsageMetering`); the buyer's billing integration
+   * swaps the sink for the live `credits.debit` (see the file header). `idempotencyKey` is fresh per call so a replay
    * of the SAME key never double-charges.
    */
   async #emitMeter(usage: z.infer<typeof rentedUsageSchema>): Promise<void> {
@@ -249,7 +249,7 @@ export interface LiveRentedTransportConfig {
  * The LIVE rented transport (proven live per ADR-0201; no network in the default suite, ADR-0064).
  * Every byte routes through the egress guard's `fetchAs` (→ kernel `fetchWithTimeout`; the native
  * `AbortSignal.timeout` is forbidden on Bun), PURPOSE-BOUND to the `rented-backend` sink kind — a
- * host allowlisted for a different purpose (e.g. the T13 model fetch) can never receive the Bearer
+ * host allowlisted for a different purpose (e.g. the model fetch) can never receive the Bearer
  * header. Every response is re-validated against the wire schema before it reaches the backend.
  */
 export function createLiveRentedTransport(

@@ -28,7 +28,7 @@ Bearer` check via `safeEqualFixed`, refusing a blank secret/header/scheme/token 
 
 ### Minor Changes
 
-- e62c88d: Harvest slice-2 (ADR-0215): guardrails' `guard.ts` gains an unconditional `"secret"`
+- e62c88d: Egress secret-scan hardening (ADR-0215): guardrails' `guard.ts` gains an unconditional `"secret"`
   `GuardCategory` — a credential-shaped span (AWS/GitHub/OpenAI keys, JWTs, PEM blocks, secret-named
   assignments, URL userinfo passwords) now blocks at the cheap pre-screen tier, before the (possibly
   outaged) `Moderator` ever runs, closing the named egress-secret asymmetry. The `scrubForEgress`/
@@ -40,7 +40,7 @@ Bearer` check via `safeEqualFixed`, refusing a blank secret/header/scheme/token 
   evaluator scoring marketing/UI copy against prominence/presentation/placement/proximity for false
   urgency, forced continuity, confirmshaming, opt-out-framed enrollment, and drip pricing, optionally
   wrappable as a `Moderator` via `ftc4pModerator`.
-- ccf8b10: Branded money types + rounding provenance (ADR-0212, harvest slice-2 serialized wave-2).
+- ccf8b10: Branded money types + rounding provenance (ADR-0212).
   Kernel gains `src/money.ts`: TS-native nominal `Cents`/`Credits`/`MicroUsd`/`MicroUsdPerCredit`
   brands (compile-time only, zero runtime cost), `asCents`/`asCredits`/`asMicroUsd`/
   `asMicroUsdPerCredit` constructors (throw `ValidationError` on a non-integer/negative input),

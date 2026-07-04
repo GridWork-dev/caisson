@@ -28,7 +28,7 @@ function req<T>(value: T | undefined, what: string): T {
   return value;
 }
 
-/** The T13 golden canonical manifest (soc2-tsc: one ready + one gap control), parsed + validated. */
+/** The golden canonical manifest (soc2-tsc: one ready + one gap control), parsed + validated. */
 function goldenManifest(): EvidencePackManifest {
   const raw = JSON.parse(
     readFileSync(

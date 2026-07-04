@@ -1,11 +1,24 @@
 # @caisson/observability
 
-Vendor-neutral OpenTelemetry bootstrap (instrumentation only); the fleet backend is Grafana Cloud (ADR-0177).
+Vendor-neutral OpenTelemetry bootstrap: instrumentation only, pointed at any OTLP-compatible
+backend via one endpoint config.
 
 - **Layer:** base
-- **Seeds (rebuild-clean):** new for the P6-tail
-- **Key ADR:** ADR-0117
 
-> **Built (thin)** — real src + tests (env-gated NodeSDK boot + span scrubbing; minimal surface,
-> verify before extending). Live per-package status: ../../docs/build-state.md
-> Build per `/plan.md`. Pro-private `media-pipeline` contributes patterns only, never code.
+## Install
+
+```bash
+bun add @caisson/observability
+```
+
+## Use
+
+```ts
+import {
+  initObservability,
+  shutdownObservability,
+} from "@caisson/observability";
+
+// Boots a NodeSDK + OTLP/HTTP exporter when OTEL_EXPORTER_OTLP_ENDPOINT is set; a no-op otherwise.
+initObservability();
+```

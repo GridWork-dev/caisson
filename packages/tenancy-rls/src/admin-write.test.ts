@@ -97,7 +97,7 @@ test("admin_write reads across every tenant; app stays scoped to its own", async
   await tp.close();
 });
 
-test("buildAdminSelectPolicySql grants admin_write cross-tenant SELECT but NOT write (CAISSON-9)", async () => {
+test("buildAdminSelectPolicySql grants admin_write cross-tenant SELECT but NOT write", async () => {
   const tp = await newTestPg();
   await tp.exec(ADMIN_WRITE_ROLE_BOOTSTRAP_SQL);
   await tp.exec(

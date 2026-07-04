@@ -7,7 +7,7 @@
     "access": "restricted",
     "registry": "https://npm.pkg.github.com"
   },
-  "description": "Sandboxed governed agent runner for Agentic-Dev: spawn a headless agent CLI in an isolated worktree with a from-scratch scrubbed env (never spreads process.env), stream the transcript to a durable .jsonl, and parse it into a structured run report. ADR-0186.",
+  "description": "Sandboxed governed agent runner for Agentic-Dev: spawn a headless agent CLI in an isolated worktree with a from-scratch scrubbed env (never spreads process.env), stream the transcript to a durable .jsonl, and parse it into a structured run report.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",

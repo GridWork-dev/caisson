@@ -7,7 +7,7 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "description": "Vendor-neutral OpenTelemetry bootstrap (ADR-0117): env-gated NodeSDK + OTLP/HTTP exporter, HTTP/fetch/pg auto-instrumentation, and span-attribute scrubbing. Inert until OTEL_EXPORTER_OTLP_ENDPOINT is set.",
+  "description": "Vendor-neutral OpenTelemetry bootstrap: env-gated NodeSDK + OTLP/HTTP exporter, HTTP/fetch/pg auto-instrumentation, and span-attribute scrubbing. Inert until OTEL_EXPORTER_OTLP_ENDPOINT is set.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",

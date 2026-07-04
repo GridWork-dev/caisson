@@ -1,6 +1,6 @@
 // @caisson/service-license — Merchant-of-Record billing webhook + idempotent credit grants + the
 // reference-counted account-entitlement store/resolver (grant · revoke · refund-clawback) + the
-// Ed25519 offline-license ISSUER HTTP surface (P6, ADR-0089/0017/0071/0110/0113). A gated
+// Ed25519 offline-license ISSUER HTTP surface (ADR-0089/0017/0071/0110/0113). A gated
 // `invoice.paid` grants cycle credits + the plan's subscription entitlement grants; a one-time
 // `purchase.completed` grants its credits + one_time entitlement grants; `subscription.canceled`
 // immediately soft-revokes that subscription's grants; `refund.completed` soft-revokes the purchase's

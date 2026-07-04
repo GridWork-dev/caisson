@@ -21,7 +21,7 @@ Caisson schema** and gets a governed lifecycle, local hybrid memory, and per-har
 
 ## Invariants (do not violate)
 
-- **Edition, down-only (ADR-0003/0022 Gate-3).** This edition imports base packages
+- **Edition, down-only (ADR-0003/0022).** This edition imports base packages
   (`@caisson/{agent-kernel,local-store,ai-config,kernel}`) — it MUST NEVER import another edition, and
   no base package may import it. The composition owns no primitive; it wires the ones the base ships.
 - **No harness is the substrate (ADR-0066).** Claude Code is ONE emit target among several. The same
@@ -60,4 +60,5 @@ the emitter must reproduce from one schema. Deterministic (no clocks/randomness/
 ## Out of scope
 
 No LLM/harness runtime, no agent EXECUTION loop, no provider SDK. The reference CLI app that drives one
-lifecycle act end-to-end lives in `apps/agent-dev`; the P5 generator/registry-publish is separate.
+lifecycle act end-to-end lives in `apps/agent-dev`; the `create-caisson` generator and registry-publish
+flow are separate.

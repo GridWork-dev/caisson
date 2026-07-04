@@ -1,5 +1,5 @@
 // withTenantCrypto — the single seam where the RLS tenant boundary and the field-crypto boundary
-// become ONE boundary (ADR-0005/0055, P2-6; closes TM-N). It nests the field-crypto context INSIDE
+// become ONE boundary (ADR-0005/0055). It nests the field-crypto context INSIDE
 // the RLS transaction: `withTenant(db, accountId, …)` opens the tenant-scoped transaction (SET ROLE
 // app + bind `app.current_account`), and within it `withFieldCryptoContext(derivedContext(provider,
 // accountId), …)` binds the SAME `accountId` into the synchronous crypto context the encrypted
@@ -11,7 +11,7 @@
 // is load-bearing: the crypto context lives for exactly the life of the RLS transaction, never
 // beyond it, so a value can never be sealed/opened outside a bound tenant scope.
 //
-// FAIL-CLOSED ON EITHER HALF (TM-N — the encryption boundary EQUALS the RLS boundary):
+// FAIL-CLOSED ON EITHER HALF (the encryption boundary EQUALS the RLS boundary):
 //   - No `withTenant` → no GUC bound → an INSERT/SELECT on a tenant table is refused by RLS
 //     (WITH CHECK / USING evaluates against a NULL account) — the row never lands.
 //   - No `withFieldCryptoContext` → `currentFieldCryptoContext()` throws — an encrypted column

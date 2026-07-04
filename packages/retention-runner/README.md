@@ -31,7 +31,7 @@ import {
   createCaptureAuditSink,
   runErasure,
   defineRetentionTask,
-  AUTO_90D_SWEEP_TASK,
+  enqueueAutoSweep,
 } from "@caisson/retention-runner";
 import { createInMemoryQueue } from "@caisson/jobs";
 
@@ -49,9 +49,11 @@ await runErasure(
   sink,
 );
 
-// Recurring: the auto_90d sweep, enqueued on a JobQueue.
+// Recurring: the auto_90d sweep, enqueued on a JobQueue. Always enqueue through
+// enqueueAutoSweep — it sets the overlap-safe singleton key so a subject already
+// queued for a sweep is never double-enqueued.
 const queue = createInMemoryQueue([defineRetentionTask({ targets, sink })]);
-await queue.enqueue(AUTO_90D_SWEEP_TASK, { subjectId, tenantId });
+await enqueueAutoSweep(queue, { subjectId, tenantId });
 ```
 
 ## Drivers
@@ -66,6 +68,3 @@ and `createCaptureAuditSink` are the in-memory drivers for tests + the framework
 `bun test packages/retention-runner/src` — per-target error isolation, the reason-tagged audit row,
 `.strict()` rejection of an unknown field / bad reason, the injected-client reference targets, and
 the `auto_90d` sweep task enqueuing + running on `createInMemoryQueue`.
-
-> Rebuild-clean from a public reference (gridworkdigital's erasure shape) — pattern only, never
-> ported code.

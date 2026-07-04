@@ -2,7 +2,7 @@
 // `AlertChannel` port. Four network drivers (email/webhook/Slack/Telegram) plus a capture driver
 // for tests. Every network driver reads its endpoint/token from injected config (never a module
 // constant), routes through `fetchWithTimeout`, and on a non-ok response throws a `@caisson/kernel`
-// typed error WITHOUT the response body (the `email.ts` no-body-leak rule) — then CATCHES that
+// typed error WITHOUT the response body (the same no-body-leak rule `@caisson/email`'s drivers follow) — then CATCHES that
 // itself so one channel failing never aborts the others (per-channel isolation). `deliverAll` adds
 // a second isolation layer on top, so isolation holds even for a channel that doesn't self-catch.
 // Buyer-supplied destination URLs (webhook/Slack/Telegram) pass an SSRF guard (`assertSafeUrl`) at
@@ -101,7 +101,7 @@ export function createEmailChannel(emailer: Emailer): AlertChannel {
 
 /** An https URL to a public host — the SSRF-guarded string type used for every buyer-supplied
  * destination. Runs the kernel {@link assertSafePublicUrl} LITERAL guard at the schema boundary (sync,
- * no DNS); the resolve-time re-check (DNS-rebinding defense, Strix vuln-0004) runs at each fetch seam
+ * no DNS); the resolve-time re-check (DNS-rebinding defense) runs at each fetch seam
  * via {@link assertSafePublicUrlResolved} — one shared policy source (@caisson/kernel/ssrf). */
 const safeHttpsUrl = z.string().superRefine((value, ctx) => {
   try {
@@ -127,7 +127,7 @@ export function createWebhookChannel(config: WebhookConfig): AlertChannel {
     async deliver(event: AlertEvent): Promise<DeliveryResult> {
       try {
         // Guard at the fetch seam too — a config object can be built without parsing the schema —
-        // and RESOLVE the host here (DNS-rebinding defense, Strix vuln-0004): a public name pointing
+        // and RESOLVE the host here (DNS-rebinding defense): a public name pointing
         // at a private/loopback/metadata address is caught before the POST leaves.
         await assertSafePublicUrlResolved(config.url);
         const body = JSON.stringify(event);
@@ -147,7 +147,7 @@ export function createWebhookChannel(config: WebhookConfig): AlertChannel {
           headers,
           body,
           // Refuse redirects: only `config.url`'s host was SSRF-rechecked, so a 3xx to a private host
-          // would bypass the guard (Strix vuln-0004). A real webhook returns 2xx, never redirects.
+          // would bypass the guard. A real webhook returns 2xx, never redirects.
           redirect: "error",
         });
         if (!res.ok) {

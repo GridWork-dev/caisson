@@ -1,12 +1,12 @@
 // src/inference/sigv4.ts — hand-rolled AWS Signature Version 4 on node:crypto (ADR-0209). The
-// Gate-2 SDK-import boundary confines vendor SDKs to ai-config/ai-kit, so the Bedrock rented
+// SDK-import boundary confines vendor SDKs to ai-config/ai-kit, so the Bedrock rented
 // transport signs its own requests: the deterministic HMAC-SHA256 chain (kDate → kRegion →
 // kService → kSigning) over a canonical request, exactly as the AWS SigV4 spec defines it. The
 // module is PURE — no network, no env reads, no implicit clock (the caller passes `date`) — so the
 // whole derivation is pinned in sigv4.test.ts against the documented AWS test vectors (fixed date
 // 20150830T123600Z, credentials AKIDEXAMPLE / wJalrXUtnFEMI…) independent of any live call.
 //
-// Scope (ponytail: the ceiling is named): the canonical path is double-URI-encoded (the non-S3
+// Scope (the ceiling is named): the canonical path is double-URI-encoded (the non-S3
 // rule) and assumed pre-normalized — the Bedrock transport constructs its own `/model/{id}/…`
 // paths, so dot-segment normalization is out of scope. S3's single-encode / UNSIGNED-PAYLOAD
 // variants are likewise out of scope: this signs bedrock-runtime requests, nothing else.

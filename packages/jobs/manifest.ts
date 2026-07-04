@@ -15,5 +15,5 @@ export default defineModule({
   license: pkg.license,
   dependencies: ["@caisson/kernel", "@caisson/tenancy-rls"],
   description:
-    "Provider-agnostic background-job queue port + in-memory test driver; Trigger.dev prod driver — billing and credit side-effects enqueued, never inline (ADR-0018).",
+    "Provider-agnostic background-job queue port + in-memory test driver; Trigger.dev prod driver — billing and credit side-effects enqueued, never inline.",
 });

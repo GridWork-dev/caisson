@@ -33,7 +33,7 @@ const frameworkId = z
  * A crosswalk reference: a pointer from a canonical control to an external framework's requirement
  * id (e.g. SOC2-TSC `CC6.1`, HIPAA-Security `164.312(a)(2)(i)`). `reference` is an opaque, bounded
  * label -- external ids carry parens/lowercase/citation syntax, so it is not pattern-constrained.
- * No external control TEXT is stored here (licensing floor, ADR-0057 / TM-J).
+ * No external control TEXT is stored here (licensing floor, ADR-0057).
  */
 export const CrosswalkReference = strictObject({
   /** External framework label, e.g. `SOC2-TSC`, `HIPAA-Security`, `NIST-800-53`. */

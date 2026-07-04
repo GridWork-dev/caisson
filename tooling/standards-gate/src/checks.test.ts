@@ -10,6 +10,7 @@ import {
   checkManifestAgreement,
   checkManifestPriceAgreement,
   checkRlsEquivalence,
+  checkShippedProse,
 } from "./checks";
 // Same relative import checks.ts itself uses (SPEC-tenancy-rls task 3: no workspace specifier —
 // this build session cannot `bun install` a new dependency edge).
@@ -343,5 +344,183 @@ describe("checkRlsEquivalence (ADR-0210/0005)", () => {
       ]),
     );
     expect(await checkRlsEquivalence([p], root)).toEqual([]);
+  });
+});
+
+describe("checkShippedProse (docs/shipped-source-quality-rubric.md)", () => {
+  // Real temp-dir fixtures — the gate reads README/AGENTS/CHANGELOG/package.json/src off disk
+  // (same real-fs pattern as checkRlsEquivalence's fixtures above).
+  let root: string;
+
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), "standards-gate-prose-"));
+  });
+
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  /** A module-candidate Pkg rooted at `<root>/<relDir>`, with `src/` pre-created. */
+  function fixturePkg(name: string, relDir: string): Pkg {
+    const dir = join(root, relDir);
+    mkdirSync(join(dir, "src"), { recursive: true });
+    return pkg({ name, dir, license: APACHE });
+  }
+
+  test("a clean package — README, comment, and description all buyer-readable — passes", () => {
+    const p = fixturePkg("@caisson/fixture-clean", "packages/fixture-clean");
+    writeFileSync(
+      join(p.dir, "README.md"),
+      "# Fixture\n\nInstalls the fixture client and retries once on timeout.\n",
+    );
+    writeFileSync(
+      join(p.dir, "package.json"),
+      JSON.stringify({
+        name: p.name,
+        description: "A buyer-readable one-line capability statement.",
+      }),
+    );
+    writeFileSync(
+      join(p.dir, "src", "index.ts"),
+      '// Retries the request once before giving up — the upstream API is flaky under load.\nexport const parseWave = () => 1;\nconst url = "https://example.com//two-slashes-not-a-comment";\n',
+    );
+    expect(checkShippedProse([p], root)).toEqual([]);
+  });
+
+  test("a gridwork-ism in a README is flagged (SS-1)", () => {
+    const p = fixturePkg(
+      "@caisson/fixture-gridwork",
+      "packages/fixture-gridwork",
+    );
+    writeFileSync(
+      join(p.dir, "README.md"),
+      "Rebuilt clean from the public gridwork-core.\n",
+    );
+    const f = checkShippedProse([p], root);
+    expect(f).toHaveLength(1);
+    expect(f[0]?.rule).toBe("shipped-prose");
+    expect(f[0]?.message).toContain("SS-1");
+    expect(f[0]?.message).toContain("gridwork");
+  });
+
+  test("a Linear ticket id in a CHANGELOG is flagged (SS-4)", () => {
+    const p = fixturePkg(
+      "@caisson/fixture-caisson",
+      "packages/fixture-caisson",
+    );
+    writeFileSync(
+      join(p.dir, "CHANGELOG.md"),
+      "### Patch\n\nFixed the ledger race condition (CAISSON-17).\n",
+    );
+    const f = checkShippedProse([p], root);
+    expect(f).toHaveLength(1);
+    expect(f[0]?.message).toContain("CAISSON-17");
+  });
+
+  test("a Wave-N label in AGENTS.md is flagged (SS-2)", () => {
+    const p = fixturePkg("@caisson/fixture-wave", "packages/fixture-wave");
+    writeFileSync(join(p.dir, "AGENTS.md"), "Composes the Wave-0 substrate.\n");
+    const f = checkShippedProse([p], root);
+    expect(f).toHaveLength(1);
+    expect(f[0]?.message).toContain("Wave-0");
+  });
+
+  test("a bare `// see ADR-NNNN` comment is flagged (SS-3)", () => {
+    const p = fixturePkg(
+      "@caisson/fixture-bare-adr",
+      "packages/fixture-bare-adr",
+    );
+    writeFileSync(
+      join(p.dir, "src", "index.ts"),
+      "// see ADR-0182\nexport const x = 1;\n",
+    );
+    const f = checkShippedProse([p], root);
+    expect(f).toHaveLength(1);
+    expect(f[0]?.message).toContain("SS-3");
+  });
+
+  test("a NAKED id-only comment is flagged too — line and block forms (SS-3, review P1)", () => {
+    const p = fixturePkg(
+      "@caisson/fixture-naked-adr",
+      "packages/fixture-naked-adr",
+    );
+    writeFileSync(
+      join(p.dir, "src", "index.ts"),
+      "// ADR-0182\nexport const x = 1;\n/* ADR-0182 */\nexport const y = 2;\n// ADR-0182, ADR-0183.\nexport const z = 3;\n",
+    );
+    const f = checkShippedProse([p], root);
+    expect(f).toHaveLength(3);
+    expect(f.every((x) => x.message.includes("SS-3"))).toBe(true);
+  });
+
+  test("a trailing non-parenthetical ADR citation in package.json description is flagged (SS-12)", () => {
+    const p = fixturePkg("@caisson/fixture-desc", "packages/fixture-desc");
+    writeFileSync(
+      join(p.dir, "package.json"),
+      JSON.stringify({
+        name: p.name,
+        description:
+          "Provider-agnostic AI config resolver for buyer-supplied keys. ADR-0070/0090",
+      }),
+    );
+    const f = checkShippedProse([p], root);
+    expect(f).toHaveLength(1);
+    expect(f[0]?.message).toContain("SS-12");
+  });
+
+  test("an ADR id cited parenthetically after ≥4 plain-English words in a comment passes (SS-3 allowlist)", () => {
+    const p = fixturePkg(
+      "@caisson/fixture-parenthetical",
+      "packages/fixture-parenthetical",
+    );
+    writeFileSync(
+      join(p.dir, "src", "index.ts"),
+      "// BYOK inference is billed at zero credits (ADR-0182).\nexport const x = 1;\n",
+    );
+    expect(checkShippedProse([p], root)).toEqual([]);
+  });
+
+  test("the same parenthetical allowance holds for a package.json description", () => {
+    const p = fixturePkg(
+      "@caisson/fixture-desc-parenthetical",
+      "packages/fixture-desc-parenthetical",
+    );
+    writeFileSync(
+      join(p.dir, "package.json"),
+      JSON.stringify({
+        name: p.name,
+        description:
+          "Handles the credits ledger and the integer money path (ADR-0060).",
+      }),
+    );
+    expect(checkShippedProse([p], root)).toEqual([]);
+  });
+
+  test("packages/audit-harness is exempt even with a leak", () => {
+    const p = fixturePkg("@caisson/audit-harness", "packages/audit-harness");
+    writeFileSync(
+      join(p.dir, "README.md"),
+      "gridwork-core CAISSON-99 Wave-0\n",
+    );
+    expect(checkShippedProse([p], root)).toEqual([]);
+  });
+
+  test("apps/admin is exempt even with a leak", () => {
+    const p = fixturePkg("@caisson/admin", "apps/admin");
+    writeFileSync(
+      join(p.dir, "README.md"),
+      "gridwork-core internal ops console.\n",
+    );
+    expect(checkShippedProse([p], root)).toEqual([]);
+  });
+
+  test("apps/site is in scope", () => {
+    const p = fixturePkg("@caisson/site", "apps/site");
+    writeFileSync(
+      join(p.dir, "README.md"),
+      "The gridwork-core marketing shell.\n",
+    );
+    const f = checkShippedProse([p], root);
+    expect(f).toHaveLength(1);
   });
 });

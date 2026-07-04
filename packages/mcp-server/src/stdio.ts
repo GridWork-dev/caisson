@@ -1,4 +1,4 @@
-// T5.3: the @modelcontextprotocol/sdk transport binding for the transport-agnostic core in
+// The @modelcontextprotocol/sdk transport binding for the transport-agnostic core in
 // `server.ts`. STDIO ONLY — no SSE/HTTP listener (deferred: a network-reachable MCP gateway raises
 // token-mint abuse stakes until license-persistence resolves; stdio is spawned 1:1 by a trusted
 // local client, e.g. Claude Desktop / Claude Code, never exposed to the network).

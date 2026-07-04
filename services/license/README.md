@@ -1,6 +1,6 @@
 # services/license
 
-Merchant-of-Record billing webhook + idempotent credit grants (P6). Commercial service.
+Merchant-of-Record billing webhook + idempotent credit grants. Commercial service.
 
 **Built (code-wiring B1, ADR-0089/0017; Paddle mount ADR-0200):**
 
@@ -27,5 +27,5 @@ Merchant-of-Record billing webhook + idempotent credit grants (P6). Commercial s
   automatic retry — an accepted gap, not a bug, since the site's link-time backfill re-converges roles.
 
 **Follow-on Bucket-B slices:** the entitlement resolver (purchase → edition/bundle/module set,
-ADR-0071), the Ed25519 offline-license issuer (ADR-0010, harvested from PUBLIC tessera only — never
-pro-private media-pipeline), and the HTTP transport (Bun.serve route over `handleBillingWebhook`).
+ADR-0071), the Ed25519 offline-license issuer (ADR-0010), and the HTTP transport (Bun.serve route
+over `handleBillingWebhook`).

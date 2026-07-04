@@ -1,17 +1,18 @@
-// src/evidence/pack-format.ts — the typed evidence-pack manifest format (ADR-0058, P2-13/P2-14).
+// src/evidence/pack-format.ts — the typed evidence-pack manifest format (ADR-0058).
 //
-// This is the DETERMINISM CONTRACT the generator (T13) must satisfy — the typed, Zod-`.strict()`
+// This is the DETERMINISM CONTRACT the generator must satisfy — the typed, Zod-`.strict()`
 // shape of the canonical evidence-pack body, plus the BLOCKED-case report. It carries NO assembly
-// logic (no collector running, no clock, no ZIP, no signing): those live in T13/T14. Authoring the
-// format + its golden fixtures BEFORE the generator is the golden-file-before-logic gate
-// (ADR-0013/0058) — the generator is written to reproduce a body that already matches this shape.
+// logic (no collector running, no clock, no ZIP, no signing): those live in the generator and signer.
+// Authoring the format + its golden fixtures BEFORE the generator is the golden-file-before-logic
+// gate (ADR-0013/0058) — the generator is written to reproduce a body that already matches this shape.
 //
 // Two honesty invariants are enforced HERE, at the type boundary, so the generator cannot regress
-// them (TM-K, false attestation):
+// them (no false attestation):
 //   1. The canonical body EXCLUDES the timestamp and the signature. Both are injected at the edge
-//      (T13 stamps the clock, T14 signs `canonicalize(manifest) ∥ anchor.tipHash`); `.strict()`
-//      rejects either field inside the body. Excluding them is what keeps the body byte-stable so
-//      the same evidence canonicalizes to the same bytes regardless of when/who generated it.
+//      (the generator stamps the clock, the signer signs `canonicalize(manifest) ∥ anchor.tipHash`);
+//      `.strict()` rejects either field inside the body. Excluding them is what keeps the body
+//      byte-stable so the same evidence canonicalizes to the same bytes regardless of when/who
+//      generated it.
 //   2. Flag-never-guess. A manifest evidence item can only be `pass` or `flagged` — `unresolved`
 //      has NO representation in a manifest: it hard-blocks generation, surfacing instead through
 //      `evidencePackBlockedSchema` (no partial pack). A `flagged` item REQUIRES a recorded reason;
@@ -72,7 +73,7 @@ export type EvidencePackFramework = z.infer<typeof evidencePackFramework>;
 /**
  * The WORM audit-chain anchor this pack is bound to (ADR-0052). The same `{length, tipHash,
  * genesisHash?}` triple `kernel.anchorChain` mints — pinning it is what binds the pack to the
- * evidentiary chain (and what T14 signs alongside the canonical body).
+ * evidentiary chain (and what the signer signs alongside the canonical body).
  */
 export const evidencePackChainAnchor = strictObject({
   length: z.number().int().positive(),
@@ -170,7 +171,7 @@ export const manifestSummary = strictObject({
 
 /**
  * The canonical evidence-pack manifest — the body that `canonicalize`s to byte-stable bytes and
- * that T14 signs. EXCLUDES the generation timestamp and the signature (injected at the edge);
+ * that the signer signs. EXCLUDES the generation timestamp and the signature (injected at the edge);
  * `.strict()` rejects either inside the body. The summary counts MUST agree with `controls`.
  */
 export const evidencePackManifestSchema = strictObject({
@@ -212,7 +213,7 @@ export type EvidencePackManifest = z.infer<typeof evidencePackManifestSchema>;
 
 /**
  * The BLOCKED-case report (flag-never-guess, ADR-0058). When ANY control's evidence is `unresolved`,
- * NO manifest is assembled — the generator (T13) throws, surfacing this body so the buyer knows
+ * NO manifest is assembled — the generator throws, surfacing this body so the buyer knows
  * exactly which evidence is absent. There is no partial pack: this report is the only output of a
  * blocked run, and it lists every unresolved item.
  */

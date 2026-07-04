@@ -9,7 +9,7 @@ import {
 
 // matchGolden anchors __golden__/ to the file URL it's handed. The compliance package keeps ALL
 // goldens in ONE package-level dir (src/__golden__ — the path the module manifest's `golden` field
-// gates, T18), so anchor at src/ (one level up from registry/), not this test's own subdir.
+// gates), so anchor at src/ (one level up from registry/), not this test's own subdir.
 const PKG_SRC_META = new URL("../index.ts", import.meta.url).href;
 
 /** A representative own-authored canonical control with crosswalk references — the golden subject. */
@@ -179,7 +179,7 @@ describe("defineFramework", () => {
 
 describe("golden", () => {
   test("canonical control shape is byte-stable", () => {
-    // Pins the canonical-control + crosswalk-reference wire shape that T10/T11 consume.
+    // Pins the canonical-control + crosswalk-reference wire shape the framework packs and collectors consume.
     matchGolden(PKG_SRC_META, "sample-control", sampleControl());
   });
 });

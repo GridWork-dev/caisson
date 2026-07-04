@@ -151,7 +151,7 @@ export interface McpServerOptions {
    * Optional server-side per-account rate-limit gate (ADR-0112). When present it is AWAITED before
    * EVERY tool dispatch (base or edition) — a buyer over their limit is blocked with `RateLimitError`
    * (429) before reaching any handler, so one licensed caller cannot exhaust shared capacity. When
-   * omitted the server runs UNTHROTTLED (the Wave-0 contract — backward-compatible). The hook owns
+   * omitted the server runs UNTHROTTLED (the default contract — backward-compatible). The hook owns
    * the fail-OPEN policy (ADR-0112 lock 5): a store fault resolves (allow + alert), only a genuine
    * deny throws. `services/license` provides the token-bucket-backed implementation.
    */
@@ -326,7 +326,7 @@ export function createMcpServer(options: McpServerOptions): McpServer {
     // Abuse-throttle gate (ADR-0112): awaited before dispatching ANY tool — base or edition. A
     // genuine deny throws RateLimitError (429) and the handler never runs; a store fault resolves
     // (fail-OPEN, decided in the hook) so a paying buyer is never locked out by infrastructure.
-    // Absent hook ⇒ unthrottled, the Wave-0 contract.
+    // Absent hook ⇒ unthrottled, the default backward-compatible contract.
     if (options.checkRateLimit !== undefined) {
       await options.checkRateLimit(session.accountId);
     }

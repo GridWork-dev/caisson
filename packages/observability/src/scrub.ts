@@ -5,9 +5,9 @@
 // secret slip through, which is the failure mode that matters here.
 //
 // This is deliberately NOT a re-export of @caisson/kernel's `redactEvent` (ADR-0075): that function
-// redacts the `OpsEvent` envelope (product-internal ops telemetry, a different sink per ADR-0117
-// Relations); this one mutates a span's flat `attributes` record in place, which is the shape
-// `SpanProcessor#onEnd` hands back. The two paths intentionally never share a write path.
+// redacts the `OpsEvent` envelope, a separate operational-telemetry event stream (ADR-0117); this one
+// mutates a span's flat `attributes` record in place, which is the shape `SpanProcessor#onEnd` hands
+// back. The two paths intentionally never share a write path.
 import type { Context } from "@opentelemetry/api";
 import type {
   ReadableSpan,
@@ -44,9 +44,9 @@ function isSensitiveSegment(segment: string): boolean {
   if (UUID_SEGMENT.test(segment)) return true;
   if (EMAIL_SEGMENT.test(segment)) return true;
   if (NUMERIC_SEGMENT.test(segment)) return true;
-  // ponytail: require a digit so a long static English route word (e.g. "responsibilities") isn't
-  // mistaken for an opaque token; a pure-letter token of 16+ chars would slip through — tighten with
-  // an entropy check if that ever surfaces in practice.
+  // Requires a digit so a long static English route word (e.g. "responsibilities") isn't mistaken
+  // for an opaque token; a pure-letter token of 16+ chars would slip through — tighten with an
+  // entropy check if that becomes an issue in practice.
   return TOKEN_SEGMENT.test(segment) && /\d/.test(segment);
 }
 

@@ -1,9 +1,10 @@
-// src/egress-guard.ts — the cloud-egress secret-scrub guard (ADR-0067 · T8 SECURITY). The Embedder
-// PORT is the ONE path that can carry buyer content OFF the box (to a cloud embedder). Before any such
-// egress, credential-bearing spans MUST be scrubbed, and the embed transport stays a TEST-DOUBLED
-// seam — no live cloud call ever runs in CI (the live transport is the only un-exercised path).
+// src/egress-guard.ts — the cloud-egress secret-scrub guard (ADR-0067, security-critical). The
+// Embedder PORT is the ONE path that can carry buyer content OFF the box (to a cloud embedder).
+// Before any such egress, credential-bearing spans MUST be scrubbed, and the embed transport stays a
+// TEST-DOUBLED seam — no live cloud call ever runs in CI (the live transport is the only
+// un-exercised path).
 //
-// Threats this guard models (PLAN T8): (1) PII/credential content egressing to a cloud embedder —
+// Threats this guard models: (1) PII/credential content egressing to a cloud embedder —
 // every text is run through `scrubForEgress` BEFORE it leaves; (2) a secret landing in a log/sink —
 // nothing here logs the input, and thrown errors carry only a status/dim, never the content, the
 // `apiKey`, or the rejected value; (3) a live cloud call sneaking into CI — the transport defaults to

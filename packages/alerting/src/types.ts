@@ -1,6 +1,6 @@
 // Shared types for the alerting pipeline (ADR-0135). `AlertEvent` is the one Zod-`.strict()`
 // boundary every stage consumes; `EventTypeRegistry` is a data-only per-event-type policy table
-// (the gridworkdigital reference spans 12 production types — this ships the shape + a small seed).
+// (this ships the shape + a small seed — extend with your own event types per real usage).
 import { z } from "zod";
 import { strictObject } from "@caisson/kernel";
 
@@ -35,7 +35,7 @@ export interface EventTypeConfig {
 /** `eventType -> policy`. Declaration only — callers resolve `event.type` against this. */
 export type EventTypeRegistry = Readonly<Record<string, EventTypeConfig>>;
 
-/** A small seed, not the full 12-type gridworkdigital reference (YAGNI — extend per real usage). */
+/** A small seed, not an exhaustive catalog (YAGNI — extend per real usage). */
 export const DEFAULT_EVENT_TYPE_REGISTRY: EventTypeRegistry = {
   "auth.failed_login_spike": {
     defaultSeverity: "warning",

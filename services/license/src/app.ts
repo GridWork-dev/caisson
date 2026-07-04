@@ -10,7 +10,7 @@
 // destination (license.caisson.sh/webhook, ADR-0108/0116): it verifies the `Paddle-Signature` HMAC over
 // the RAW body (timing-safe, fail-closed) and provisions a verified purchase by running BOTH the credit
 // grant AND the entitlement grant in ONE tenant transaction. /health is public (like services/docs). Every
-// response carries the gridwork security-floor headers (nosniff / frame-deny / HSTS). The Bearer gate is
+// response carries the standard security-floor headers (nosniff / frame-deny / HSTS). The Bearer gate is
 // timing-safe over the VARIABLE-LENGTH token (SHA-256 → `timingSafeEqual`, the security-floor rule) and
 // fail-closed when the token is unset. Server-to-server contract — no CORS.
 import { createHash, randomUUID, timingSafeEqual } from "node:crypto";

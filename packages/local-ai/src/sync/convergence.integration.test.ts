@@ -1,12 +1,12 @@
-// src/sync/convergence.integration.test.ts — two-way sync convergence INTEGRATION test (T19, EXIT
-// GATE clause 2, threat TM-SYNC). Where the pure merge tests (reconcile.test.ts / tombstone.test.ts)
+// src/sync/convergence.integration.test.ts — two-way sync convergence INTEGRATION test. Where the
+// pure merge tests (reconcile.test.ts / tombstone.test.ts)
 // drive hand-built changesets through the reconcile functions, THIS test drives the whole sync seam
 // over TWO real in-process `bun:sqlite` replicas of one tenant: the canonical local store (a real
-// `synced_rows` table mirrored into the `ChangesetLog`, T15), a TEST-DOUBLED transport (in-process
+// `synced_rows` table mirrored into the `ChangesetLog`), a TEST-DOUBLED transport (in-process
 // serialize → fail-closed boundary parse — NO real network), and the persistent LWW/tombstone merge
-// (reconcileWithTombstones, T17/T18). It composes the shipped pieces; it builds no new product module.
+// (`reconcileWithTombstones`). It composes the shipped pieces; it builds no new product module.
 //
-// The guarantee pinned (exit-gate clause 2): two divergent replicas with concurrent per-key edits AND
+// The guarantee pinned: two divergent replicas with concurrent per-key edits AND
 // a delete converge byte-equal on the synced table after a round-trip; the result is deterministic
 // (independent of the random replica ids and of changeset order); a delete does not resurrect; and the
 // local canonical store is the convergence target. Deterministic + offline → CI-safe (no live network).
@@ -40,8 +40,8 @@ function transport(cs: Changeset): Changeset {
 
 /**
  * An in-process replica of ONE tenant's local store: a real `bun:sqlite` file (`:memory:`), the
- * materialized `synced_rows` convergence table, the `ChangesetLog` capture seam (T15), and the
- * persisted tombstone set (T18). The canonical local store is the authority — `put`/`remove` mutate
+ * materialized `synced_rows` convergence table, the `ChangesetLog` capture seam, and the
+ * persisted tombstone set. The canonical local store is the authority — `put`/`remove` mutate
  * the data table AND mirror the change into the log; `integrate` reconciles a peer changeset toward
  * this local set and re-materializes the table from the converged result. A monotonic injected clock
  * stamps each write deterministically (no real wall clock in CI).
@@ -88,7 +88,7 @@ class Replica {
   }
 
   /**
-   * Integrate a peer's changeset: enforce the tenant partition (TM-SYNC, fail-closed), reconcile the
+   * Integrate a peer's changeset: enforce the tenant partition (fail-closed), reconcile the
    * peer against THIS replica's changelog over the persisted tombstone set, persist the advanced
    * tombstones, and re-materialize `synced_rows` from the converged live set. The local store is the
    * convergence target — peers move toward it, never the other way.
@@ -119,7 +119,7 @@ class Replica {
 
   /**
    * Canonical byte-serialization of the synced table (rows ordered by `(tbl, pk)`, keys sorted). Two
-   * replicas that have converged serialize to an IDENTICAL string — the exit-gate-clause-2 assertion.
+   * replicas that have converged serialize to an IDENTICAL string.
    */
   snapshot(): string {
     const rows = this.#db
@@ -146,7 +146,7 @@ function expectSnapshot(
   return canonicalize(value);
 }
 
-describe("two-way convergence — concurrent per-key edits + a delete (exit-gate clause 2)", () => {
+describe("two-way convergence — concurrent per-key edits + a delete", () => {
   test("two divergent replicas reach byte-equal synced tables after one round-trip", () => {
     const a = new Replica(TENANT);
     const b = new Replica(TENANT);
@@ -181,7 +181,7 @@ describe("two-way convergence — concurrent per-key edits + a delete (exit-gate
     ]);
     expect(a.snapshot()).toBe(converged);
 
-    // The delete became a durable tombstone on BOTH replicas (T18 persistence wired through sync).
+    // The delete became a durable tombstone on BOTH replicas (persistence wired through sync).
     expect(a.tombstones().some((t) => t.pk === "d4")).toBe(true);
     expect(b.tombstones().some((t) => t.pk === "d4")).toBe(true);
   });
@@ -206,7 +206,7 @@ describe("two-way convergence — concurrent per-key edits + a delete (exit-gate
   });
 });
 
-describe("apply path is tenant-partitioned (TM-SYNC / ADR-0073)", () => {
+describe("apply path is tenant-partitioned (ADR-0073)", () => {
   test("a foreign-tenant changeset is rejected on integrate and never materialized", () => {
     const a = new Replica("tenant-a");
     const foreign = new Replica("tenant-b");
@@ -220,7 +220,7 @@ describe("apply path is tenant-partitioned (TM-SYNC / ADR-0073)", () => {
   });
 });
 
-describe("tombstone persistence across sync rounds — no resurrection (TM-SYNC)", () => {
+describe("tombstone persistence across sync rounds — no resurrection", () => {
   test("a persisted tombstone suppresses a stale upsert redelivered without the deleting changeset", () => {
     const a = new Replica(TENANT);
     const b = new Replica(TENANT);

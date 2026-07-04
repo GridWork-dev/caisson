@@ -1,4 +1,4 @@
-// Render contract (ADR-0061/0013). The golden fixture `__golden__/render.json` (committed by T4)
+// Render contract (ADR-0061/0013). The golden fixture `__golden__/render.json`
 // pins the full { messages, vars, rendered } record; this test recomputes `rendered` from the
 // committed inputs and asserts the whole record matches with BLESS unset — proving the injection-safe
 // render contract, not just that a file exists. Independent assertions backstop the golden.

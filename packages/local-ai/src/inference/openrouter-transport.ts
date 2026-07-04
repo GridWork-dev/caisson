@@ -1,5 +1,5 @@
 // src/inference/openrouter-transport.ts — the OpenRouter RENTED transport (ADR-0201 §2, mapping the
-// ADR-0064 T20 `RentedTransport` port — threat TM-RENT). `createLiveRentedTransport` speaks a
+// ADR-0064 `RentedTransport` port). `createLiveRentedTransport` speaks a
 // first-party wire (`/embed`, `/complete`); THIS transport speaks OpenRouter's OpenAI-compatible
 // wire (`/embeddings`, `/chat/completions`) so the hosted (non-BYOK, fully-metered) lane runs on the
 // one org OPENROUTER_API_KEY without a bespoke daemon or provider SDK (ADR-0044: framework-free).
@@ -9,9 +9,9 @@
 //      audited chokepoint (→ kernel `fetchWithTimeout`; the native `AbortSignal.timeout` is
 //      forbidden on Bun), PURPOSE-BOUND to the `rented-backend` sink KIND: a non-allowlisted host
 //      is blocked BEFORE any socket opens, and so is a host allowlisted for a DIFFERENT sanctioned
-//      purpose (a T13 `model-fetch` host must never receive this Bearer request). There is no way
+//      purpose (a `model-fetch` host must never receive this Bearer request). There is no way
 //      to reach OpenRouter without the deployer allowlisting `openrouter.ai` as a `rented-backend`
-//      sanctioned sink (TM-RENT); the same gate runs at construction so a mis-sanctioned endpoint
+//      sanctioned sink; the same gate runs at construction so a mis-sanctioned endpoint
 //      fails at composition, not first call.
 //   2. ERROR HYGIENE — a non-2xx throws with the STATUS ONLY, never the response body: some proxies
 //      echo request headers back in error bodies, so surfacing the body could leak the Bearer key.

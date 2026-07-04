@@ -7,7 +7,7 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "description": "Provider-agnostic background-job queue port + in-memory test driver. Billing/credit side-effects are enqueued, never inline; Trigger.dev prod driver (ADR-0018).",
+  "description": "Provider-agnostic background-job queue port + in-memory test driver. Billing/credit side-effects are enqueued, never inline; Trigger.dev is the production driver.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",

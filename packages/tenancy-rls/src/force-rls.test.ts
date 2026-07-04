@@ -1,4 +1,4 @@
-// Wave-6 row #1: FORCE RLS proven at the Postgres catalog, not just at the SQL-text level (the
+// FORCE RLS proven at the Postgres catalog, not just at the SQL-text level (the
 // standards-gate's `checkRlsEquivalence` already checks that a migration's SQL TEXT matches the
 // generator's output — this is the runtime companion: a `pg_class` introspection that the FORCE
 // flag actually took effect once the SQL runs). Also pins the existence-leak guard: a tenancy

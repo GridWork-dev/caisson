@@ -12,8 +12,8 @@ import {
 } from "./pack-format.ts";
 
 // matchGolden anchors __golden__/ to the file URL it is handed. The compliance package keeps ALL
-// goldens in ONE package-level dir (src/__golden__ — the path the manifest's `golden` field gates,
-// T18), so anchor at src/ (one level up from evidence/), not this test's own subdir.
+// goldens in ONE package-level dir (src/__golden__ — the path the manifest's `golden` field gates),
+// so anchor at src/ (one level up from evidence/), not this test's own subdir.
 const PKG_SRC_META = new URL("../index.ts", import.meta.url).href;
 
 type ManifestInput = z.input<typeof evidencePackManifestSchema>;
@@ -49,7 +49,7 @@ function manifestMeta() {
   };
 }
 
-/** A passing audit-chain-integrity evidence item (mirrors the T11 chain-verify collector facts). */
+/** A passing audit-chain-integrity evidence item (mirrors the chain-verify collector facts). */
 function chainPassItem(): ItemInput {
   return {
     collectorId: "substrate.audit-chain-integrity",

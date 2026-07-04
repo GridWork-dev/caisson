@@ -1,4 +1,4 @@
-// Unit tests for the OpenRouter rented transport (ADR-0201 §2 — threat TM-RENT). NO NETWORK, no
+// Unit tests for the OpenRouter rented transport (ADR-0201 §2). NO NETWORK, no
 // global stubs: the injection seam is the guard ITSELF — the transport routes every byte through
 // `guard.fetch`, so a test subclass that runs the REAL `assertAllowed` gate and then returns a
 // canned `Response` proves both the request shapes and the fail-closed egress gate without ever

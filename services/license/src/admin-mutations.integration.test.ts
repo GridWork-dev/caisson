@@ -83,7 +83,7 @@ function betterAuthId(): string {
   );
 }
 
-/** Seed a real (personal, account_id == user_id) account_member row (CAISSON-9) — every existing
+/** Seed a real (personal, account_id == user_id) account_member row — every existing
  * happy-path test in this file now needs this: the mutation surface fails closed on an id with no row. */
 async function seedAccount(acct: string): Promise<void> {
   await withTenant(db, acct, (tx) =>

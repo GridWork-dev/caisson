@@ -7,7 +7,7 @@
     "access": "restricted",
     "registry": "https://npm.pkg.github.com"
   },
-  "description": "CCPA/GDPR right-to-erasure runner: pluggable multi-store erasure (object-storage purge -> cascade DB delete -> orphan sweep) with per-target error isolation + reason-tagged audit row (auto_90d/ccpa_request/operator_manual), scheduled via @caisson/jobs. ADR-0135/0152.",
+  "description": "CCPA/GDPR right-to-erasure runner: pluggable multi-store erasure (object-storage purge, cascade DB delete, orphan sweep) with per-target error isolation and a reason-tagged audit row, scheduled via @caisson/jobs.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",

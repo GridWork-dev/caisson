@@ -16,5 +16,5 @@ export default defineModule({
   license: pkg.license,
   dependencies: ["@caisson/kernel"],
   description:
-    "Vendor-neutral OpenTelemetry bootstrap: env-gated NodeSDK + OTLP/HTTP exporter, HTTP/fetch/pg auto-instrumentation, and conservative span-attribute scrubbing (ADR-0117).",
+    "Vendor-neutral OpenTelemetry bootstrap: env-gated NodeSDK + OTLP/HTTP exporter, HTTP/fetch/pg auto-instrumentation, and conservative span-attribute scrubbing.",
 });

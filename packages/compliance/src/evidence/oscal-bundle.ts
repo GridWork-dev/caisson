@@ -2,7 +2,7 @@
 //
 // The final delivery shape ADR-0231 locked (Option 1): a sibling-directory bundle that makes the SAR's
 // Assessment-Plan `rlink` honestly resolvable WITHOUT a hosted route. It co-locates the real per-framework
-// AP (`oscal-assessment-plan.ts`), the SAR, the POA&M, the T13 canonical manifest, and the T13 detached
+// AP (`oscal-assessment-plan.ts`), the SAR, the POA&M, the canonical manifest, and its detached
 // Ed25519 signature — then rewrites the SAR's back-matter `rlink.href` to the RELATIVE in-bundle AP path
 // with a SHA-256 `hashes[]` binding over the exact bundled AP bytes. A buyer's GRC tooling resolves the
 // reference relative to the doc's own location (OSCAL relative-URI resolution) — no `caisson.sh` URL served.
@@ -74,7 +74,7 @@ export interface AssembledOscalBundle {
   readonly assessmentResults: OscalAssessmentResultsDocument;
   /** The POA&M document (bytes at `./poam.json`). */
   readonly planOfActionAndMilestones: OscalPlanOfActionAndMilestonesDocument;
-  /** The T13 detached Ed25519 signature over the manifest (bytes at `./manifest.sig`). */
+  /** The detached Ed25519 signature over the manifest (bytes at `./manifest.sig`). */
   readonly signature: EvidenceSignature;
   /** The relative in-bundle AP path the SAR `rlink.href` points at. */
   readonly assessmentPlanHref: string;
@@ -83,7 +83,7 @@ export interface AssembledOscalBundle {
 }
 
 /**
- * Assemble an OSCAL signed evidence bundle from a T13 manifest (ADR-0231). Authors the framework's AP,
+ * Assemble an OSCAL signed evidence bundle from an evidence-pack manifest (ADR-0231). Authors the framework's AP,
  * hashes its canonical bytes, builds the SAR with the AP `rlink` rewritten to the relative in-bundle path
  * + `hashes[]`, builds the POA&M, and signs the manifest with the per-tenant signer (reused unchanged).
  *

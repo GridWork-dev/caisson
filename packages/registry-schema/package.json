@@ -7,7 +7,7 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "description": "Open registry contract (Apache-2.0, ADR-0094/0097): module-manifest schema + index schema + allowlist helpers + feature-tags + entitlement-expansion. zod/fs-only. The commercial @caisson/registry service re-exports this.",
+  "description": "Open registry contract (Apache-2.0): module-manifest schema + index schema + allowlist helpers + feature-tags + entitlement-expansion. zod/fs-only. The commercial @caisson/registry service re-exports this.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",

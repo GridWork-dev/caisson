@@ -7,8 +7,8 @@
 // `priceCents` is the CANONICAL Local-first edition price ($349 = 34900) — locked by ADR-0240
 // (affirms the ADR-0137 below-sum reprice over ADR-0129's earlier $399; matches the site + Paddle).
 // `golden` points at the sync-reconcile conflict fixtures (src/sync/__golden__ — the LWW + tombstone
-// resolves asserted via `matchGolden`); create-caisson (P5) consumes this relative path. The relative
-// import keeps `@caisson/registry` out of the runtime deps.
+// resolves asserted via `matchGolden`); the create-caisson generator consumes this relative path. The
+// relative import keeps `@caisson/registry` out of the runtime deps.
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 

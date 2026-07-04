@@ -18,7 +18,7 @@ edition must know to wire alerting correctly.
   on `deliverAll`'s isolation — never let one channel's rejection propagate past `deliverAll`.
 - **Network drivers never leak the upstream response body** into the thrown error — it can echo a
   recipient address, webhook secret fragment, or bot token. Throw a `@caisson/kernel` typed error
-  with a fixed message only (the `email.ts` rule).
+  with a fixed message only (the same no-body-leak rule `@caisson/email`'s drivers follow).
 - **`EventTypeRegistry` is a lookup table the caller consults, not something this package enforces.**
   `processAlert` takes an explicit `ratePolicy`/`recipientTz`/`quietPolicy` — resolve those from the
   registry (or your own policy source) before calling.

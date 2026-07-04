@@ -1,8 +1,8 @@
-// src/evidence/sign.test.ts — evidence-pack signing (ADR-0056, T14 / TM-L / TM-M).
+// src/evidence/sign.test.ts — evidence-pack signing (ADR-0056).
 //
-// Golden-with-logic (ADR-0013, the T7/T14 exception): the detached signature is byte-pinned by
+// Golden-with-logic (ADR-0013): the detached signature is byte-pinned by
 // `__golden__/signed-manifest.sig`, shipped in THIS commit alongside the code it pins, because the
-// golden IS the deterministic output of the logic (a fixed test key over the fixed T13 golden body).
+// golden IS the deterministic output of the logic (a fixed test key over the fixed golden body).
 // Run with `BLESS` unset — the .sig golden is read directly and compared in constant time.
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
@@ -43,7 +43,7 @@ const TENANT_PUBLIC_KEY =
 /** A second, distinct per-tenant key — used to prove signing identity is per-tenant, not shared. */
 const OTHER_SEED = Uint8Array.from(Buffer.from("a7".repeat(32), "hex"));
 
-/** The T13 golden canonical body (the byte-stable manifest the generator emits), parsed + validated. */
+/** The golden canonical body (the byte-stable manifest the generator emits), parsed + validated. */
 function goldenManifest(): EvidencePackManifest {
   const raw = JSON.parse(
     readFileSync(
@@ -94,7 +94,7 @@ describe("signEvidencePack — deterministic detached Ed25519 (golden, BLESS uns
     expect(sig.keyId).toBe(TENANT_KEY_ID);
     expect(sig.publicKey).toBe(TENANT_PUBLIC_KEY);
     expect(sig.signature).toHaveLength(128);
-    // Constant-time compare against the committed golden (timing-safe sig compare, TM-L).
+    // Constant-time compare against the committed golden (timing-safe sig compare).
     expect(signaturesEqual(sig.signature, goldenSignatureHex())).toBe(true);
     // Plain equality too, for a readable diff on drift.
     expect(sig.signature).toBe(goldenSignatureHex());

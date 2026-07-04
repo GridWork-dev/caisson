@@ -3,7 +3,7 @@
 // non-zero on a regression, BLESS-style. This is a MONOREPO-only gate — it is NEVER injected into a
 // generated buyer repo as a required CI job (ADR-0072): a buyer owns their own eval cadence.
 //
-// Offline + deterministic by construction (SPEC TM6): model-graded scorers replay a committed
+// Offline + deterministic by construction: model-graded scorers replay a committed
 // cassette, never a live provider call, never a secret. `BLESS=1 bun run eval` is the one sanctioned
 // re-baseline path (see `baseline.ts`).
 import { readFileSync } from "node:fs";
