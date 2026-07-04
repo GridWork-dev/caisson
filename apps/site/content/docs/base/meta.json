@@ -1,5 +1,5 @@
 {
-  "title": "Base substrate",
+  "title": "Packages",
   "pages": [
     "auth",
     "tenancy-rls",

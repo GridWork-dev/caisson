@@ -318,7 +318,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: ["soc2-audit-log", "control-to-code-mapping"],
     sells: {
       edition: "Compliance",
-      note: "Alerting is a real workspace:* dependency the Compliance edition re-exports at runtime (packages/compliance/src/index.ts), not a manifest-only listing — buy it standalone at $149 or get it composed into Compliance.",
+      note: "Alerting is a real workspace:* dependency that the Compliance edition re-exports at runtime (packages/compliance/src/index.ts), not a manifest-only listing — buy it standalone at $149 or get it composed into Compliance.",
     },
   },
   {

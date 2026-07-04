@@ -136,6 +136,10 @@ kbd,
   font-size: var(--cs-text-3xl);
   font-weight: var(--cs-weight-semibold);
   letter-spacing: var(--cs-tracking-tight);
+  /* letter-spacing narrows the inter-word gap too (it applies after every glyph, the space
+   * included); at this bold display weight a narrow-letter word boundary (e.g. "t "+"i") can read
+   * as no gap at all. word-spacing restores a legible gap without loosening in-word tracking. */
+  word-spacing: 0.12em;
   line-height: var(--cs-leading-tight);
   margin-block: var(--cs-space-4) var(--cs-space-3);
   max-width: 28ch;
