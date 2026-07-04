@@ -12,7 +12,7 @@
  * SDK family is Apache-2.0, so it passes the Gate 1/1b AGPL tripwire below by construction; its
  * only constraint is composition (ADR-0011/0022), not copyleft.
  */
-import { join } from "node:path";
+import { join, relative, sep } from "node:path";
 import {
   existsSync,
   readFileSync,
@@ -24,6 +24,12 @@ import { createHash } from "node:crypto";
 import ts from "typescript";
 import type { Pkg } from "./workspace";
 import { isAgpl } from "./workspace";
+import {
+  ADR_ID_SOURCE,
+  BARE_ADR,
+  hasBareAdrInDescription,
+  INTERNAL_TERM,
+} from "./prose-regex";
 // Type-only — erased at transpile, so it cannot break the pre-install fs-only pass (see
 // checkRlsEquivalence's lazy VALUE import below for the runtime seam).
 import type { buildTenantPolicySql as BuildTenantPolicySqlFn } from "@caisson/tenancy-rls";
@@ -749,6 +755,134 @@ export async function checkRlsEquivalence(
 }
 
 /**
+ * Shipped-prose gate (`docs/shipped-source-quality-rubric.md`, ADR-0233 Fork E). A buyer who opens
+ * a `packages/*` README/AGENTS/CHANGELOG, a `package.json` description, or a `.ts` comment must
+ * see buyer-readable prose — no internal vocabulary, no bare ADR/issue-tracker citations. Only the
+ * `oss-source`/`sold-source`/`buyer-runtime` surface is scanned; `tooling/`, `infra/`,
+ * `apps/admin`, `registry/`, `packages/audit-harness`, `docs/`, `.github/`, `.changeset/`, and
+ * `outputs/` are internal-only and exempt per the rubric.
+ */
+const PROSE_SCAN_DOC_FILES = ["README.md", "AGENTS.md", "CHANGELOG.md"];
+
+/** True for a package/app dir this gate scans — the rubric's oss-source/sold-source/buyer-runtime class. */
+function isProseScanTarget(relDir: string): boolean {
+  if (relDir.startsWith("packages/"))
+    return relDir !== "packages/audit-harness";
+  return (
+    relDir === "apps/site" ||
+    relDir === "apps/base" ||
+    relDir === "services/license" ||
+    relDir === "services/docs"
+  );
+}
+
+/**
+ * Every physical line of every `//` and `/* … *\/` comment in `src`, each paired with its
+ * 1-indexed line number — strings and code are never returned, so an exported symbol like
+ * `parseWave` never trips the gate. Built on the same `ts.createScanner` this file already uses
+ * for the copy-paste gate (comment trivia included this time — `skipTrivia: false`), not a
+ * text-search heuristic, so a `//` inside a string literal is never mistaken for a comment.
+ */
+function extractCommentLines(src: string): { line: number; text: string }[] {
+  const scanner = ts.createScanner(
+    ts.ScriptTarget.Latest,
+    /* skipTrivia */ false,
+    ts.LanguageVariant.JSX,
+    src,
+  );
+  const out: { line: number; text: string }[] = [];
+  let kind = scanner.scan();
+  while (kind !== ts.SyntaxKind.EndOfFileToken) {
+    if (
+      kind === ts.SyntaxKind.SingleLineCommentTrivia ||
+      kind === ts.SyntaxKind.MultiLineCommentTrivia
+    ) {
+      const startLine = src.slice(0, scanner.getTokenPos()).split("\n").length;
+      const lines = scanner.getTokenText().split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        out.push({ line: startLine + i, text: lines[i] ?? "" });
+      }
+    }
+    kind = scanner.scan();
+  }
+  return out;
+}
+
+export function checkShippedProse(pkgs: Pkg[], root: string): Finding[] {
+  const findings: Finding[] = [];
+
+  const flagTerm = (
+    pkgName: string,
+    relFile: string,
+    lineNo: number,
+    line: string,
+  ): void => {
+    const m = INTERNAL_TERM.exec(line);
+    if (!m) return;
+    findings.push({
+      severity: "error",
+      rule: "shipped-prose",
+      pkg: pkgName,
+      message: `SS-1/SS-2/SS-4: internal term "${m[0]}" in ${relFile}:${lineNo} — shipped source must be buyer-readable.`,
+    });
+  };
+
+  for (const p of pkgs) {
+    const relDir = relative(root, p.dir).split(sep).join("/");
+    if (!isProseScanTarget(relDir)) continue;
+
+    for (const docFile of PROSE_SCAN_DOC_FILES) {
+      const path = join(p.dir, docFile);
+      if (!existsSync(path)) continue;
+      const lines = readFileSync(path, "utf8").split("\n");
+      const relFile = `${relDir}/${docFile}`;
+      lines.forEach((line, i) => flagTerm(p.name, relFile, i + 1, line));
+    }
+
+    const pjPath = join(p.dir, "package.json");
+    if (existsSync(pjPath)) {
+      const relFile = `${relDir}/package.json`;
+      let description: unknown;
+      try {
+        description = JSON.parse(readFileSync(pjPath, "utf8")).description;
+      } catch {
+        description = undefined; // malformed package.json is another gate's problem
+      }
+      if (typeof description === "string") {
+        flagTerm(p.name, `${relFile} (description)`, 1, description);
+        if (hasBareAdrInDescription(description)) {
+          findings.push({
+            severity: "error",
+            rule: "shipped-prose",
+            pkg: p.name,
+            message: `SS-12: bare ADR citation in ${relFile} description — write a plain one-line capability statement (an id may follow parenthetically only after ≥4 plain-English words).`,
+          });
+        }
+      }
+    }
+
+    const glob = new Bun.Glob("src/**/*.{ts,tsx}");
+    for (const rel of glob.scanSync({ cwd: p.dir })) {
+      const src = readFileSync(join(p.dir, rel), "utf8");
+      const relFile = `${relDir}/${rel}`;
+      for (const { line: lineNo, text } of extractCommentLines(src)) {
+        flagTerm(p.name, relFile, lineNo, text);
+        if (BARE_ADR.test(text)) {
+          findings.push({
+            severity: "error",
+            rule: "shipped-prose",
+            pkg: p.name,
+            message: `SS-3: bare ADR citation in ${relFile}:${lineNo} — state the rule in plain terms; the id may follow parenthetically.`,
+          });
+        }
+      }
+    }
+  }
+
+  return findings;
+}
+
+/**
  * Changeset-source prose gate (operator fork lock: gate at PR time, no silent formatter). The
  * default changeset formatter (`.changeset/config.json` → `@changesets/cli/changelog`) inlines a
  * changeset's summary markdown VERBATIM into the bumped package's shipped CHANGELOG.md — whatever
@@ -761,7 +895,15 @@ export async function checkRlsEquivalence(
  * `config.json` inside `.changeset/` are not summaries and are never scanned.
  */
 const CHANGESET_LEAK_RULES: { rule: string; re: RegExp; label: string }[] = [
-  { rule: "changeset-prose-adr", re: /\bADR-\d{4}\b/g, label: "ADR citation" },
+  // Shares the ADR-id shape with prose-regex.ts's ADR_ID_SOURCE (checkShippedProse/BARE_ADR) so
+  // the two gates can never independently drift on what an ADR citation looks like — same
+  // /\bADR-\d{4}\b/g pattern as before this share, unconditional here (a changeset body allows NO
+  // ADR mention at all, stricter than checkShippedProse's parenthetical-after-4-words allowance).
+  {
+    rule: "changeset-prose-adr",
+    re: new RegExp(`\\b${ADR_ID_SOURCE}\\b`, "g"),
+    label: "ADR citation",
+  },
   {
     rule: "changeset-prose-wave",
     re: /\bwave-?6\w*/gi,

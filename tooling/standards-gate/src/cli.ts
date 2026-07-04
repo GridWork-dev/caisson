@@ -27,6 +27,7 @@ import {
   checkOpenCoreLicensing,
   checkOpenCommercialBoundary,
   checkRlsEquivalence,
+  checkShippedProse,
   checkChangesetProse,
   type Finding,
 } from "./checks";
@@ -44,6 +45,7 @@ async function main(): Promise<number> {
     ...(await checkManifestAgreement(pkgs)),
     ...checkCopyPaste(root), // ADR-0101 gate #4: cross-package copy-paste
     ...(await checkRlsEquivalence(pkgs, root)), // ADR-0210/0005: hand-written RLS vs the generator
+    ...checkShippedProse(pkgs, root), // shipped-prose gate: no internal-only vocabulary in buyer-visible source
     ...checkChangesetProse(root), // changeset-source prose gate: no internal leak in a .changeset/*.md body
   ];
 
