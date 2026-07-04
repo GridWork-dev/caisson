@@ -439,6 +439,20 @@ describe("checkShippedProse (docs/shipped-source-quality-rubric.md)", () => {
     expect(f[0]?.message).toContain("SS-3");
   });
 
+  test("a NAKED id-only comment is flagged too — line and block forms (SS-3, review P1)", () => {
+    const p = fixturePkg(
+      "@caisson/fixture-naked-adr",
+      "packages/fixture-naked-adr",
+    );
+    writeFileSync(
+      join(p.dir, "src", "index.ts"),
+      "// ADR-0182\nexport const x = 1;\n/* ADR-0182 */\nexport const y = 2;\n// ADR-0182, ADR-0183.\nexport const z = 3;\n",
+    );
+    const f = checkShippedProse([p], root);
+    expect(f).toHaveLength(3);
+    expect(f.every((x) => x.message.includes("SS-3"))).toBe(true);
+  });
+
   test("a trailing non-parenthetical ADR citation in package.json description is flagged (SS-12)", () => {
     const p = fixturePkg("@caisson/fixture-desc", "packages/fixture-desc");
     writeFileSync(

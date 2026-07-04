@@ -18,12 +18,20 @@ export const INTERNAL_TERM =
   /\b(gridwork|tessera|media-pipeline|Wardfile|prospector|gw-ms-a2|GW\s+Digital|CAISSON-\d+|Linear\s+\w|PR\s*#\d+|Wave-[0-9]|harvest\s+slice|picker\s+round|ponytail:)\b|\b(P[56]|T1[0-8]|Gate-[0-9]|fork-[a-z])\b/i;
 
 /**
- * SS-3: a comment line whose only substantive content is "see/per/cf ADR-NNNN" — the rule itself
- * is unstated, only the id is cited. A parenthetical mention after real prose on the same line
- * never matches this shape (there's no leading `see`/`per`/`cf` right after the comment marker).
+ * SS-3: a comment line whose only substantive content is an ADR citation — either
+ * "see/per/cf ADR-NNNN" or the naked id itself (`// ADR-0182`, `/* ADR-0182 *​/`), optionally a
+ * comma/slash id list with trailing punctuation. The rule itself is unstated, only the id is
+ * cited. A citation after real prose on the same line never matches (the shape is anchored to
+ * the comment marker with nothing but the citation allowed before end-of-line).
  */
 export const BARE_ADR = new RegExp(
-  `^\\s*(//|/\\*|\\*)\\s*(see|per|cf\\.?)\\s+${ADR_ID_SOURCE}\\b`,
+  // Alternation: (a) citation-opener style — "see/per/cf ADR-NNNN" right after the comment
+  // marker, trailing prose or not; (b) naked-id style — the line's ONLY content is the id
+  // (or a comma/slash id list), optional period and block-comment close. A trailing `)` is
+  // deliberately NOT allowed to end the naked form: a lone `// ADR-NNNN).` line is the wrap
+  // tail of a parenthetical opened on the previous line, not a bare citation (this scan is
+  // line-based and cannot see the opening line).
+  `^\\s*(//|/\\*|\\*)\\s*(?:(?:see|per|cf\\.?)\\s+${ADR_ID_SOURCE}\\b|${ADR_ID_SOURCE}(?:\\s*[,/+]\\s*(?:${ADR_ID_SOURCE}|\\d{4}))*\\s*\\.?\\s*(?:\\*/)?\\s*$)`,
   "i",
 );
 
