@@ -42,8 +42,12 @@ Plus, independent of Paddle:
 
 - **Privacy Policy** — required day one (any site reachable from CA → CalOPPA; and Caisson processes
   auth/billing/audit data, so it's also a buyer trust signal)
-- **Cookie consent banner** — you run Plausible (cookieless, no banner needed) **+ PostHog** (sets
-  cookies → banner needed) — reconcile: either gate PostHog behind consent or run it cookieless
+- **Cookie consent banner** — **RESOLVED, no banner needed.** Plausible runs cookieless
+  site-wide. PostHog is scoped to the authenticated `/dashboard` only (never the marketing
+  layout, `components/posthog-init.tsx`) and now runs `persistence: "memory"` — no cookie, no
+  localStorage, state lives only for the page's lifetime (`chore/site-content-tail`). Ruled
+  out `cookieless_mode: "always"` instead: that mode forbids `identify()`, which would break
+  the account-linked analytics PostHog exists for on the dashboard.
 - **DPA (Data Processing Agreement) — have a template ready at launch.** Not legally forced for early
   B2C, but Caisson's buyer _is_ the audit-focused technical founder — they will ask early, and
   "already have one" is on-brand for a product selling compliance rigor. No-DPA = lost enterprise deal.

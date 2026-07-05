@@ -1,10 +1,9 @@
 // Plan (ADR-0114 scope item 6e + 8): current plan/entitlements + upgrade/purchase options from
 // the pricebook, each with a Paddle checkout button (lib/paddle-checkout.ts). The grant itself is
-// server-side via the existing webhook -> services/license -> pricebook path
-// (apply-billing-event.ts) once a billing-webhook HTTP route is mounted (a pre-existing gap,
-// surfaced — not created — while wiring this view: `handleBillingWebhook` is exported by
-// `@caisson/service-license` but no service mounts it on a route yet, see the session notes); this
-// page only opens checkout and reads the resulting entitlement/credit state once granted.
+// server-side via the Paddle webhook mounted at POST /webhook on `services/license`
+// (`handleBillingWebhook`, ADR-0108/0116/0200) -> `apply-billing-event.ts` -> pricebook, one
+// tenant-scoped transaction per event; this page only opens checkout and reads the resulting
+// entitlement/credit state once granted.
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { PLAN_BOOK, PURCHASE_BOOK } from "@caisson/pricebook";

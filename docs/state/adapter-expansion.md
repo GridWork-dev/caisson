@@ -75,9 +75,10 @@ pattern) — never a fork of the port contract.
 
 ### 1D. Analytics port + env-gate (fixes a live bug) → **ADR-0122**
 
-- `apps/site/app/layout.tsx:61` **hardcodes** `data-domain="caisson.sh"` — contradicts ADR-0118
-  ("env-gated on `PLAUSIBLE_DOMAIN`"). **Phase 2 fixes the env-gate**; this ADR adds the analytics
-  **port** so PostHog / GA4 are swappable, not just Plausible.
+- The env-gate is **DONE** (`apps/site/components/plausible-init.tsx` reads
+  `NEXT_PUBLIC_PLAUSIBLE_DOMAIN`, no-ops when unset — `936f54f`, same day this row was
+  authored). Still open: this ADR's actual scope, an analytics **port** so PostHog / GA4 are
+  swappable, not just Plausible — roadmap, not built.
 
 ---
 
