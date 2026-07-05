@@ -22,7 +22,7 @@
     "@caisson/credits": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/mcp-server": "workspace:*",
-    "@caisson/service-license": "workspace:*",
+    "@caisson/rate-limit": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",
     "zod": "^3.23.8"
   },

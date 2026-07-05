@@ -1,9 +1,9 @@
-// rate_limit token-bucket store on PGlite + real withTenant RLS (ADR-0112/0005). Asserts: a bucket
-// consumes tokens to zero then denies (with a retry-after); lazy refill restores tokens after
-// elapsed time (injected clock); the atomic UPDATE is race-safe (two concurrent consumes on one
-// token → exactly one winner); a per-account override changes the limit; and RLS isolates accounts
-// (a forged cross-tenant write is refused by the policy WITH CHECK). Each test uses its own account
-// id so no cross-test cleanup is needed. Token counts are integers; `now` is injected epoch-ms.
+// rate_limit token-bucket store on PGlite + real withTenant RLS. Asserts: a bucket consumes tokens
+// to zero then denies (with a retry-after); lazy refill restores tokens after elapsed time (injected
+// clock); the atomic UPDATE is race-safe (two concurrent consumes on one token → exactly one winner);
+// a per-account override changes the limit; and RLS isolates accounts (a forged cross-tenant write is
+// refused by the policy WITH CHECK). Each test uses its own account id so no cross-test cleanup is
+// needed. Token counts are integers; `now` is injected epoch-ms.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { withTenant } from "@caisson/tenancy-rls";
@@ -11,7 +11,7 @@ import {
   RATE_LIMIT_SCHEMA_SQL,
   checkRateLimit,
   setAccountRateLimit,
-} from "./rate-limit-store.ts";
+} from "./account-store.ts";
 
 let tp: TestPg;
 
@@ -28,7 +28,7 @@ afterAll(async () => {
   await tp.close();
 });
 
-describe("rate_limit token-bucket store (ADR-0112, RLS)", () => {
+describe("rate_limit token-bucket store (RLS)", () => {
   test("consumes tokens to zero then denies — with a retry-after", async () => {
     const acct = "acct_drain";
     // Seed an explicit small override so the default 120 bucket doesn't mask the drain.
@@ -102,7 +102,7 @@ describe("rate_limit token-bucket store (ADR-0112, RLS)", () => {
     // `periods * refill_amount` would exceed int8 → "bigint out of range" → which the hook swallows as
     // fail-open, silently disabling the throttle for that account. The period count is capped at
     // `capacity` before the multiply, so the product stays bounded and the refill still clamps to
-    // capacity. (See REFILLED_TOKENS in rate-limit-store.ts.)
+    // capacity. (See REFILLED_TOKENS in account-store.ts.)
     const acct = "acct_overflow";
     const BIG = {
       capacity: 5,
