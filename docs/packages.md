@@ -1,8 +1,14 @@
 # Package catalog
 
-Internal source-of-truth index for the 24 workspaces under `packages/`. This file OWNS the
-synthesized catalog view (purpose + edition membership + build status + evidence + ADR routing);
-it does NOT restate canonical prose. Canonical sources stay authoritative:
+Internal source-of-truth index for the **original 24** workspaces under `packages/` (kernel +
+base substrate + edition + shared packages, as scoped at ADR-0082 §3). `packages/*` has since
+grown to **35 dirs** — 11 later additions (`agent-runner`, `alerting`, `audit-harness`,
+`license-issue`, `migrate`, `observability`, `platform-reads`, `pricebook`, `registry-schema`,
+`retention-runner`, `tool-exec`, from the Stage-2/harvest waves) are not yet catalogued in the
+tables below; see [`docs/build-state.md`](build-state.md) for their per-package status until this
+catalog is extended. This file OWNS the synthesized catalog view (purpose + edition membership +
+build status + evidence + ADR routing) for the packages it covers; it does NOT restate canonical
+prose. Canonical sources stay authoritative:
 
 - Architecture + package taxonomy: [`specs/01-architecture.md`](../specs/01-architecture.md), [`specs/00-product-spec.md`](../specs/00-product-spec.md)
 - The decision record: [`knowledge/decisions/`](../knowledge/decisions/) (ADR-NNNN, append-only)
@@ -27,7 +33,8 @@ On any conflict, the canonical source wins over this catalog.
 2026-06-28. High LOC inside a STUB row means scaffolding was merged, not that the edition works
 end-to-end. Several BUILT substrate packages are also still thin seams (see Candor notes per group).
 
-All 24 are `@caisson/*`, `"private": true`, `version 0.0.0` (unpublished; publish flow = ADR-0069).
+All 24 catalogued here are `@caisson/*`, `"private": true`, `version 0.0.0` (unpublished; publish
+flow = ADR-0069).
 
 ---
 
@@ -142,7 +149,7 @@ These resolve from sibling workspaces (`workspaces: tooling/*, registry, service
 | `tooling/standards-gate`                                       | Bun standards-gate runner + dependency-cruiser boundary enforcement.                                                               | 0022, 0016                                                                           |
 | `registry/` (`@caisson/registry`)                              | Static CI-built `index.json` source-of-truth + allowlist; thin Cloudflare Worker read seam; publish ledger.                        | 0021, [0047](../knowledge/decisions/ADR-0047-registry-readpath-worker-seam.md), 0071 |
 
-`apps/*` (7: agent-dev, ai-kit, base, compliance, local-ai, site, studio) and `services/*` (3: docs,
+`apps/*` (7: admin, agent-dev, ai-kit, base, compliance, local-ai, site) and `services/*` (3: docs,
 license, support-bot) are out of scope for this catalog; see [`specs/01-architecture.md`](../specs/01-architecture.md).
 
 ## Build-status rollup
