@@ -3,12 +3,14 @@ title: Billing
 description: Stripe, Paddle, LemonSqueezy, and Polar behind a BillingProvider port, with HMAC raw-body webhook verification.
 ---
 
-`@caisson/billing` wires four drivers — Stripe, Paddle, LemonSqueezy, and Polar — behind the same
-`BillingProvider` port, so the rest of the base depends on the port, not the vendor. Stripe pairs
-with Stripe Tax, with the operator as the merchant of record. Paddle, LemonSqueezy, and Polar are
-each Merchant of Record themselves — they compute, collect, and remit tax on the sale. Paddle is
-the provider Caisson's own store runs on; Stripe, LemonSqueezy, and Polar are buyer-selectable
-drivers for products composed on the base, dormant until you supply credentials.
+`@caisson/billing` wires four providers — Stripe, Paddle, LemonSqueezy, and Polar — behind the
+same `BillingProvider` port, so the rest of the base depends on the port, not the vendor. Stripe
+pairs with Stripe Tax, with the operator as the merchant of record. Paddle, LemonSqueezy, and Polar
+are each Merchant of Record themselves — they compute, collect, and remit tax on the sale. Paddle
+is the provider Caisson's own store runs on; Stripe, LemonSqueezy, and Polar stay buyer-selectable
+drivers for products composed on the base, dormant until you supply that provider's credentials,
+each satisfying the identical port — swap providers by injecting a different driver, not by
+rewriting call sites.
 
 ## The contract
 
@@ -42,8 +44,27 @@ grants), and `subscription_charge` is a mid-cycle one-time charge that must not 
 allotment (non-granting). Idempotency anchors on the Paddle **transaction id** (`txn_…`) — stable
 across redeliveries — rather than `invoice_id`, which Paddle documents as deprecated.
 
-Because billing rides a port, a test driver stands in for either provider under the standards gate —
-suites assert on charge and webhook behavior without a network call.
+**LemonSqueezy** and **Polar** are two more MoR drivers behind the same port (ADR-0175), for
+products where the buyer wants one of those rails instead. Both are dormant until you supply that
+provider's credentials — nothing is imported or constructed unless you configure it.
+
+```ts
+import { verifyLemonSqueezyWebhook } from "@caisson/billing";
+
+// LemonSqueezy's signature is a bare HMAC-SHA256 hex digest over the raw body — no timestamp,
+// so there is no replay-tolerance window to configure.
+verifyLemonSqueezyWebhook(rawBody, req.headers["x-signature"], secret);
+```
+
+```ts
+import { verifyPolarWebhook } from "@caisson/billing";
+
+// Polar uses the Standard Webhooks scheme (id.timestamp.signature); default tolerance is 300s.
+verifyPolarWebhook(rawBody, req.headers["webhook-signature"], secret);
+```
+
+Because billing rides a port, a test driver stands in for any of the four providers under the
+standards gate — suites assert on charge and webhook behavior without a network call.
 
 ## Related
 
@@ -60,6 +81,6 @@ suites assert on charge and webhook behavior without a network call.
 
 <Callout type="info">
   This page covers the essentials. The full `@caisson/billing` API reference —
-  the `BillingProvider` port, the Stripe and Paddle drivers, and the webhook
-  event map — is still expanding.
+  the `BillingProvider` port, all four drivers (Stripe, Paddle, LemonSqueezy,
+  Polar), and the webhook event map — is still expanding.
 </Callout>

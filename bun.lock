@@ -114,7 +114,7 @@
         "@caisson/credits": "workspace:*",
         "@caisson/kernel": "workspace:*",
         "@caisson/mcp-server": "workspace:*",
-        "@caisson/service-license": "workspace:*",
+        "@caisson/rate-limit": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
         "zod": "^3.23.8",
       },
@@ -760,6 +760,21 @@
         "typescript": "^5.6.0",
       },
     },
+    "packages/rate-limit": {
+      "name": "@caisson/rate-limit",
+      "version": "0.1.0",
+      "dependencies": {
+        "@caisson/kernel": "workspace:*",
+        "@caisson/tenancy-rls": "workspace:*",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "^9.13.0",
+        "typescript": "^5.6.0",
+      },
+    },
     "packages/registry-schema": {
       "name": "@caisson/registry-schema",
       "version": "0.2.1",
@@ -872,6 +887,7 @@
         "@caisson/kernel": "workspace:*",
         "@caisson/local-store": "workspace:*",
         "@caisson/observability": "workspace:*",
+        "@caisson/rate-limit": "workspace:*",
         "sqlite-vec": "^0.1.9",
         "zod": "^3.23.8",
       },
@@ -896,6 +912,7 @@
         "@caisson/license-verify": "workspace:*",
         "@caisson/observability": "workspace:*",
         "@caisson/pricebook": "workspace:*",
+        "@caisson/rate-limit": "workspace:*",
         "@caisson/registry-schema": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
         "pg": "^8.16.0",
@@ -1149,6 +1166,8 @@
     "@caisson/pricebook": ["@caisson/pricebook@workspace:packages/pricebook"],
 
     "@caisson/prompt-registry": ["@caisson/prompt-registry@workspace:packages/prompt-registry"],
+
+    "@caisson/rate-limit": ["@caisson/rate-limit@workspace:packages/rate-limit"],
 
     "@caisson/registry": ["@caisson/registry@workspace:registry"],
 

@@ -10,8 +10,11 @@ export const dynamic = "force-static";
 const BASE = "https://caisson.sh";
 
 // lastModified is set to the build date so search engines see a consistent
-// freshness signal per deploy. In a CMS-driven site this would be per-entry.
-const BUILT_AT = new Date("2026-06-27T00:00:00Z");
+// freshness signal per deploy. `force-static` prerenders this route once at build
+// time, so `new Date()` bakes in the real build timestamp rather than a hand-set
+// value that goes stale the moment it's forgotten. In a CMS-driven site this would
+// be per-entry.
+const BUILT_AT = new Date();
 
 export default function sitemap(): MetadataRoute.Sitemap {
   // Marketing pages derive 1:1 from the canonical MARKETING_ROUTES registry (lib/routes.ts) — the

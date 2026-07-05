@@ -110,7 +110,10 @@ export {
   DEFAULT_RATE_LIMIT,
   checkRateLimit,
   setAccountRateLimit,
-} from "./rate-limit-store.ts";
-export type { RateLimitConfig, RateLimitDecision } from "./rate-limit-store.ts";
-export { createRateLimitHook } from "./rate-limit-hook.ts";
-export type { RateLimitHookDeps } from "./rate-limit-hook.ts";
+  createRateLimitHook,
+} from "@caisson/rate-limit";
+export type {
+  RateLimitConfig,
+  RateLimitDecision,
+  RateLimitHookDeps,
+} from "@caisson/rate-limit";

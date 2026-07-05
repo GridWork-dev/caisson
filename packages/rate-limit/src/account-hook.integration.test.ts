@@ -1,13 +1,13 @@
-// The services/license `checkRateLimit` hook (ADR-0112 lock 3/5). Proves the three outcomes the
-// mcp-server seam relies on: an under-limit account resolves (allow); an over-limit account throws
-// RateLimitError (429, the ONLY blocking path); and a STORE ERROR fails OPEN — the hook resolves
-// (the tool would run) AND signals an alert through the operator sink, never locking out a buyer.
+// The per-account `checkRateLimit` hook. Proves the three outcomes the mcp-server seam relies on:
+// an under-limit account resolves (allow); an over-limit account throws RateLimitError (429, the
+// ONLY blocking path); and a STORE ERROR fails OPEN — the hook resolves (the tool would run) AND
+// signals an alert through the operator sink, never locking out a buyer.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { RateLimitError } from "@caisson/kernel";
 import { type TestPg, newTestPg } from "@caisson/testing";
 import type { Transactor } from "@caisson/tenancy-rls";
-import { RATE_LIMIT_SCHEMA_SQL } from "./rate-limit-store.ts";
-import { createRateLimitHook } from "./rate-limit-hook.ts";
+import { RATE_LIMIT_SCHEMA_SQL } from "./account-store.ts";
+import { createRateLimitHook } from "./account-hook.ts";
 
 let tp: TestPg;
 const T0 = 1_700_000_000_000;
@@ -21,7 +21,7 @@ afterAll(async () => {
   await tp.close();
 });
 
-describe("createRateLimitHook (ADR-0112)", () => {
+describe("createRateLimitHook", () => {
   test("an under-limit account resolves (allow)", async () => {
     const hook = createRateLimitHook({
       db: tp.pg,
