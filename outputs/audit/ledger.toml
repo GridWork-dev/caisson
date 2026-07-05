@@ -1836,7 +1836,7 @@ dimension = "D7"
 subject = "turbo.json:6"
 title = "Stale turbo.json outputs configuration does not account for Next.js .next/ directory."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "34f95ecd1c84a379"
