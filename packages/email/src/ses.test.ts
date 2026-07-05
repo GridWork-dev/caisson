@@ -37,17 +37,24 @@ describe("SES emailer", () => {
 
     await emailer.send({
       to: "x@y.com",
-      template: "welcome",
-      data: { n: 1 },
+      template: "magic-link",
+      data: { url: "https://caisson.sh/verify?token=abc" },
     });
 
-    expect(sent).toEqual([
-      {
-        from: "a@b.c",
-        to: "x@y.com",
-        subject: "welcome",
-        text: JSON.stringify({ n: 1 }),
-      },
-    ]);
+    expect(sent).toHaveLength(1);
+    const messages = sent as Array<{
+      from: string;
+      to: string;
+      subject: string;
+      html: string;
+      text: string;
+    }>;
+    const msg = messages[0];
+    if (!msg) throw new Error("expected a sent message");
+    expect(msg.from).toBe("a@b.c");
+    expect(msg.to).toBe("x@y.com");
+    expect(msg.subject).toBe("Sign in to Caisson");
+    expect(msg.html).toContain("https://caisson.sh/verify?token=abc");
+    expect(msg.text).toContain("https://caisson.sh/verify?token=abc");
   });
 });

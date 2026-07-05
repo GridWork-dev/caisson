@@ -17,6 +17,31 @@
   }
 }
 
+/* Below 900px the sticky mobile buy bar (ADR-0242, packages/ui MobileBuyBar) pins over the bottom
+ * of the viewport at every scroll position. Reserve real space below the last section so it never
+ * permanently sits over the tail of the page's own content (the FAQ, then this full purchase card,
+ * both before the footer) with no room left to scroll past it. */
+@media (max-width: 900px) {
+  .grid {
+    padding-bottom: 5rem;
+  }
+}
+
+/* MobileBuyBar renders unconditionally (kit component, no baked-in breakpoint); this page owns
+ * exactly WHEN it shows, matching the same 900px cutover the grid above already collapses at — so
+ * the bar and the desktop sticky sidebar rail are never both visible in the same viewport width.
+ * `display: contents` keeps the wrapper out of layout below 900px (the bar is position:fixed and
+ * doesn't need a box of its own); hiding it outright at/above 900px removes it from the a11y tree too. */
+.mobileBarWrap {
+  display: contents;
+}
+
+@media (min-width: 900px) {
+  .mobileBarWrap {
+    display: none;
+  }
+}
+
 .railCard {
   display: grid;
   gap: var(--cs-space-4);

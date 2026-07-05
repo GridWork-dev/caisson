@@ -21,6 +21,15 @@
   color: var(--cs-fg-muted);
 }
 
+/* Non-scrolling frame around the body — exists only so the scroll-fade ::after below has a
+ * containing block that doesn't move when `.cs-terminal__body` scrolls horizontally (a
+ * pseudo-element positioned absolute on the scrolling element itself would scroll away with the
+ * content). `.cs-terminal`'s own `overflow: hidden` + radius (above) clips the fade's square
+ * corners to match, so no extra radius is needed here. */
+.cs-terminal__body-frame {
+  position: relative;
+}
+
 .cs-terminal__body {
   margin: 0;
   padding: var(--cs-space-5);
@@ -30,6 +39,20 @@
   line-height: var(--cs-leading-snug);
   color: var(--cs-fg);
   tab-size: 2;
+}
+
+/* Scroll affordance (visual-audit remediation): same fade-edge treatment as `.cs-code-frame` in
+ * code-block.css — a right-edge gradient into the card's own surface color, painted over the
+ * body's content so it only reads as "more content" where text actually reaches the edge. */
+.cs-terminal__body-frame::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 2rem;
+  pointer-events: none;
+  background: linear-gradient(to right, transparent, var(--cs-surface-1));
 }
 
 /* Forced-colors (Windows high-contrast) — the bordered frame stays visible (the old global

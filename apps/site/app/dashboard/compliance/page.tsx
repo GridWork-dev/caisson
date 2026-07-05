@@ -6,7 +6,13 @@
 import type { Metadata } from "next";
 import { revalidatePath } from "next/cache";
 import { assertCanManageMembers } from "@caisson/auth";
-import { Button, StatusChip } from "@caisson/ui/components";
+import {
+  Button,
+  Card,
+  FormField,
+  Icon,
+  StatusChip,
+} from "@caisson/ui/components";
 import {
   AttestationInput,
   COMPLIANCE_FRAMEWORKS,
@@ -54,16 +60,6 @@ async function clearAction(formData: FormData): Promise<void> {
   revalidatePath(PATH);
 }
 
-const inputStyle: React.CSSProperties = {
-  fontSize: "var(--cs-text-sm)",
-  padding: "var(--cs-space-2) var(--cs-space-3)",
-  border: "1px solid var(--cs-border)",
-  borderRadius: "var(--cs-radius-md)",
-  background: "var(--cs-surface-1)",
-  color: "var(--cs-fg)",
-  minWidth: "28ch",
-};
-
 export default async function DashboardCompliancePage() {
   const session = await requireDashboardSession(PATH);
   // Owner-only management (Strix vuln-0006, ADR-0176): seats see attestation state read-only; only an
@@ -108,7 +104,9 @@ export default async function DashboardCompliancePage() {
         const filled =
           filledByFramework.get(fw.id) ?? new Map<string, string>();
         return (
-          <section
+          // One card per framework (was an unbounded <section>) — a clear break between
+          // the three frameworks instead of an h2 floating over an unbroken run of gaps.
+          <Card
             key={fw.id}
             style={{ display: "grid", gap: "var(--cs-space-4)" }}
           >
@@ -132,19 +130,21 @@ export default async function DashboardCompliancePage() {
               />
             </div>
 
-            {fw.slots.map((slot) => {
+            {fw.slots.map((slot, i) => {
               const isFilled = filled.has(slot.id);
               const note = filled.get(slot.id) ?? "";
               return (
+                // A plain row + top divider, not another bordered box — the framework
+                // already owns one card; nesting a card per slot inside it would double
+                // the boxing (impeccable layout.md: never nest cards inside cards).
                 <div
                   key={slot.id}
                   style={{
                     display: "grid",
                     gap: "var(--cs-space-2)",
-                    padding: "var(--cs-space-4)",
-                    border: "1px solid var(--cs-border)",
-                    borderRadius: "var(--cs-radius-md)",
-                    background: "var(--cs-surface-1)",
+                    paddingTop: i === 0 ? undefined : "var(--cs-space-4)",
+                    borderTop:
+                      i === 0 ? undefined : "1px solid var(--cs-border)",
                   }}
                 >
                   <div
@@ -174,39 +174,46 @@ export default async function DashboardCompliancePage() {
                     >
                       <input type="hidden" name="framework" value={fw.id} />
                       <input type="hidden" name="slotId" value={slot.id} />
-                      <label
-                        style={{
-                          display: "grid",
-                          gap: "var(--cs-space-2)",
-                          flex: 1,
-                        }}
+                      <FormField
+                        label="Attestation note / artifact reference"
+                        style={{ flex: 1 }}
                       >
-                        <span
-                          className="cs-muted"
-                          style={{ fontSize: "var(--cs-text-xs)" }}
-                        >
-                          Attestation note / artifact reference
-                        </span>
                         <input
                           name="note"
                           defaultValue={note}
                           maxLength={2000}
                           placeholder="e.g. link to the signed policy PDF, ticket, or reviewer + date"
-                          style={inputStyle}
                         />
-                      </label>
+                      </FormField>
                       <Button type="submit" variant="primary">
                         {isFilled ? "Update" : "Attest"}
                       </Button>
                     </form>
                   ) : (
                     // Seats (ADR-0176) see the attested note read-only — owner-only management.
-                    <p className="cs-muted" style={{ margin: 0 }}>
-                      {isFilled
-                        ? note === ""
-                          ? "Attested."
-                          : note
-                        : "Only the account owner can attest."}
+                    // The pending case gets a lock glyph (never colour-alone) so it visually
+                    // reads as "gated", not just as thinner body copy.
+                    <p
+                      className="cs-muted"
+                      style={{
+                        margin: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "var(--cs-space-2)",
+                      }}
+                    >
+                      {isFilled ? (
+                        note === "" ? (
+                          "Attested."
+                        ) : (
+                          note
+                        )
+                      ) : (
+                        <>
+                          <Icon name="lock" size="md" />
+                          Only the account owner can attest.
+                        </>
+                      )}
                     </p>
                   )}
 
@@ -222,7 +229,7 @@ export default async function DashboardCompliancePage() {
                 </div>
               );
             })}
-          </section>
+          </Card>
         );
       })}
     </div>

@@ -10,8 +10,16 @@ import { createSmtpEmailer, type SmtpTransport } from "./smtp.ts";
 
 const MSG: EmailMessage = {
   to: "user@example.com",
-  template: "welcome",
-  data: { name: "Ada" },
+  template: "magic-link",
+  data: { url: "https://caisson.sh/verify?token=abc" },
+};
+
+// The port is shared with non-buyer-facing callers (e.g. `@caisson/alerting`'s free-form
+// `alert.*` templates) — every driver must also handle a template outside the branded registry.
+const FREEFORM_MSG: EmailMessage = {
+  to: "ops@example.com",
+  template: "alert.system.error_rate_high",
+  data: { title: "Error rate spike" },
 };
 
 function okFetch(): typeof fetch {
@@ -78,6 +86,11 @@ describe("Emailer port conformance", () => {
       const emailer = build();
       expect(typeof emailer.send).toBe("function");
       await expect(emailer.send(MSG)).resolves.toBeUndefined();
+    });
+
+    test(`${name} also accepts a free-form (non-branded) template, e.g. alerting's alert.* namespace`, async () => {
+      const emailer = build();
+      await expect(emailer.send(FREEFORM_MSG)).resolves.toBeUndefined();
     });
   }
 });

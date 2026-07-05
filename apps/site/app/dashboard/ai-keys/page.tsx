@@ -1,7 +1,7 @@
 // AI keys (BYOK, ADR-0183/0182): bring your own provider key. The dashboard reads the write-only
 // metadata (masked last-4 + version + timestamps — never the key) and renders the submit/rotate form.
 import type { Metadata } from "next";
-import { DataTable, StatusChip } from "@caisson/ui/components";
+import { DataTable, EmptyState, StatusChip } from "@caisson/ui/components";
 import { ByokForm } from "@/components/byok-form";
 import { type ByokKeyStatus, readKeyStatuses } from "@/lib/byok";
 import { isOwner, requireDashboardSession } from "@/lib/auth";
@@ -64,7 +64,13 @@ export default async function DashboardAiKeysPage() {
         ]}
         rows={keys}
         rowKey={(k) => k.provider}
-        empty={<span className="cs-muted">No provider keys stored yet.</span>}
+        empty={
+          <EmptyState
+            icon="lock"
+            title="No provider keys stored yet"
+            description="Add your first key below to bring your own provider billing."
+          />
+        }
       />
 
       {/* Key writes are owner-only (vuln-0006, ADR-0208 #1) — POST /api/byok enforces the 403;
@@ -83,9 +89,11 @@ export default async function DashboardAiKeysPage() {
           <ByokForm />
         </div>
       ) : (
-        <p className="cs-muted">
-          Only the account owner can add or rotate provider keys.
-        </p>
+        <EmptyState
+          icon="lock"
+          title="Owner-only"
+          description="Only the account owner can add or rotate provider keys."
+        />
       )}
     </div>
   );

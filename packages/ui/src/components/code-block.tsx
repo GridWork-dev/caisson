@@ -23,9 +23,11 @@ export interface CodeBlockProps {
  * so no `"use client"`). Two shapes from one prop API:
  *   - `frame` → defers to the sibling `<Terminal>` primitive (chrome bar + body); terminal classes
  *     are owned there, never redefined here.
- *   - default → a bare `<pre class="cs-code">`, the always-dark code surface.
- * No `forwardRef`: the component branches between two roots (a `<Terminal>` wrapper vs a `<pre>`),
- * so there is no single stable DOM root to forward a ref to — unlike the `Button` reference.
+ *   - default → a `<pre class="cs-code">` (the always-dark code surface) inside a non-scrolling
+ *     `.cs-code-frame` wrapper that pins the right-edge scroll-shadow affordance in place.
+ * No `forwardRef`: the component branches between two roots (a `<Terminal>` wrapper vs a
+ * `.cs-code-frame` div), so there is no single stable DOM root to forward a ref to — unlike the
+ * `Button` reference.
  */
 export function CodeBlock({ code, label, frame, status }: CodeBlockProps) {
   if (frame) {
@@ -36,8 +38,10 @@ export function CodeBlock({ code, label, frame, status }: CodeBlockProps) {
     );
   }
   return (
-    <pre className="cs-code" aria-label={label}>
-      {code}
-    </pre>
+    <div className="cs-code-frame">
+      <pre className="cs-code" aria-label={label}>
+        {code}
+      </pre>
+    </div>
   );
 }

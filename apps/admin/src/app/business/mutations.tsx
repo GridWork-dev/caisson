@@ -1,7 +1,8 @@
 "use client";
 
-// The ADR-0220 operator mutation panel: the four locked actions (grant · revoke · adjust · reissue),
-// each behind a type-to-confirm gate (retype the target account id to arm the destructive submit —
+// The ADR-0220 operator mutation panel: the five locked actions (grant · revoke · adjust · reissue ·
+// revoke-purchase, the last added by ADR-0225), each behind a type-to-confirm gate (retype the
+// target account id to arm the destructive submit —
 // the security floor's input-validation-at-the-boundary rule, made visible). Each form POSTs to its
 // CF-Access-gated route (`/api/admin/...`); the middleware supplies the verified actor, so the client
 // never sends one. The money/license blast radius is why the confirm gate is mandatory, not cosmetic.

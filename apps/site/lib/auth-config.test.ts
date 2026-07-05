@@ -1,7 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import {
   configuredProviderIds,
+  forgotPasswordSchema,
   magicLinkRequestSchema,
+  passwordSignInSchema,
+  passwordSignUpSchema,
+  resetPasswordSchema,
   resolveSocialProviders,
 } from "./auth-config.ts";
 
@@ -96,5 +100,77 @@ describe("magic-link request boundary (.strict())", () => {
       callbackURL: "/dashboard/license",
     });
     expect(parsed.success).toBe(true);
+  });
+});
+
+describe("password auth boundaries (.strict())", () => {
+  test("sign-in accepts any non-empty password (length floor is a sign-up concern)", () => {
+    expect(
+      passwordSignInSchema.safeParse({
+        email: "buyer@example.com",
+        password: "x",
+      }).success,
+    ).toBe(true);
+    expect(
+      passwordSignInSchema.safeParse({
+        email: "buyer@example.com",
+        password: "",
+      }).success,
+    ).toBe(false);
+  });
+
+  test("sign-up requires a name and an 8+ char password", () => {
+    expect(
+      passwordSignUpSchema.safeParse({
+        name: "Ada",
+        email: "buyer@example.com",
+        password: "short",
+      }).success,
+    ).toBe(false);
+    expect(
+      passwordSignUpSchema.safeParse({
+        name: "Ada",
+        email: "buyer@example.com",
+        password: "long-enough-password",
+      }).success,
+    ).toBe(true);
+    expect(
+      passwordSignUpSchema.safeParse({
+        name: "",
+        email: "buyer@example.com",
+        password: "long-enough-password",
+      }).success,
+    ).toBe(false);
+  });
+
+  test("forgot-password rejects unknown fields (strict boundary)", () => {
+    expect(
+      forgotPasswordSchema.safeParse({ email: "buyer@example.com" }).success,
+    ).toBe(true);
+    expect(
+      forgotPasswordSchema.safeParse({
+        email: "buyer@example.com",
+        extra: true,
+      }).success,
+    ).toBe(false);
+  });
+
+  test("reset-password requires a token and an 8+ char new password", () => {
+    expect(
+      resetPasswordSchema.safeParse({ token: "tok", newPassword: "short" })
+        .success,
+    ).toBe(false);
+    expect(
+      resetPasswordSchema.safeParse({
+        token: "tok",
+        newPassword: "long-enough-password",
+      }).success,
+    ).toBe(true);
+    expect(
+      resetPasswordSchema.safeParse({
+        token: "",
+        newPassword: "long-enough-password",
+      }).success,
+    ).toBe(false);
   });
 });

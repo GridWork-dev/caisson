@@ -28,7 +28,7 @@ import { editionPrice, formatUsd, MODULE_PRICES } from "@/lib/pricing";
 import { TrackView } from "@/components/track-view";
 
 const LOCAL_FIRST_DESCRIPTION =
-  "Local-first AI composes on-device ONNX inference, a zero-egress privacy gate, and hybrid sqlite-vec + FTS5 search into one Caisson edition — $349 one-time, own the source.";
+  "Local-first AI composes on-device ONNX inference, a zero-egress privacy gate, and hybrid sqlite-vec + FTS5 search into one Caisson edition ($349 one-time, own the source).";
 
 export const metadata = buildMetadata({
   title: "Local-first AI",
@@ -59,7 +59,7 @@ const PIECES = [
   {
     icon: "server" as const,
     label: "Compute seam",
-    body: "One interface over on-device and hosted inference. Local is the default you ship; hosted is an opt-in you make on purpose — not a default you discover in a network trace.",
+    body: "One interface over on-device and hosted inference. Local is the default you ship; hosted only turns on when you flip it in config, on purpose.",
   },
   {
     icon: "lock" as const,
@@ -74,7 +74,7 @@ const PIECES = [
   {
     icon: "cpu" as const,
     label: "Offline license",
-    body: "License verification that works air-gapped — signature-checked on the device, no phone-home, no remote kill switch. The library keeps running when the network does not.",
+    body: "License verification that works air-gapped: signature-checked on the device, no phone-home, no remote kill switch. The library keeps running when the network does not.",
   },
 ] as const;
 
@@ -105,7 +105,7 @@ const MEMBER_MODULES: readonly {
     id: "license-verify",
     name: "@caisson/license-verify",
     oneLiner:
-      "Offline Ed25519 license verification — checks the signature on the device, fails safe to the community tier if it cannot verify.",
+      "Offline Ed25519 license verification: checks the signature on the device, fails safe to the community tier if it cannot verify.",
   },
   {
     id: "field-crypto",
@@ -117,7 +117,7 @@ const MEMBER_MODULES: readonly {
     id: "kernel",
     name: "@caisson/kernel",
     oneLiner:
-      "The governance kernel underneath every edition — typed config, the shared error model, and security primitives.",
+      "The governance kernel underneath every edition: typed config, the shared error model, and security primitives.",
   },
 ];
 
@@ -171,7 +171,7 @@ const FAQ_ITEMS = [
   {
     question: 'Does "own the source" rule out hosted inference?',
     answer:
-      "No. The compute seam supports opt-in rented transports — OpenRouter, Azure OpenAI, and AWS Bedrock — behind the same InferenceBackend interface used on-device. They are off by default; the privacy policy's allowlist is the only way any of those hosts becomes reachable.",
+      "No. The compute seam supports opt-in rented transports (OpenRouter, Azure OpenAI, and AWS Bedrock) behind the same InferenceBackend interface used on-device. They are off by default; the privacy policy's allowlist is the only way any of those hosts becomes reachable.",
   },
   {
     question: "What does the on-device model need to run?",
@@ -181,7 +181,7 @@ const FAQ_ITEMS = [
   {
     question: "Can I buy just the vector store instead of the whole edition?",
     answer:
-      "Yes — @caisson/local-store is also sold standalone for $99. The full Local-first AI edition — all four composed packages plus the compute seam, privacy gate, sync engine, and offline license verify — is $349 one-time.",
+      "Yes. @caisson/local-store is also sold standalone for $99. The full Local-first AI edition (all four composed packages plus the compute seam, privacy gate, sync engine, and offline license verify) is $349 one-time.",
   },
 ] as const;
 
@@ -437,8 +437,8 @@ export default function LocalFirstPage() {
             status={<StatusChip tone="muted" label="scaffold" />}
           >
             <span className="cs-tok-muted">{"$ "}</span>
-            {"npx "}
-            <span className="cs-tok-accent">{"create-caisson"}</span>
+            {"bun create "}
+            <span className="cs-tok-accent">{"caisson"}</span>
             {"@latest"}
           </Terminal>
           <div

@@ -1,9 +1,21 @@
-// Provider-agnostic transactional email (ADR-0018). The `Emailer` port has two drivers: a capture
+// Provider-agnostic transactional email. The `Emailer` port has two drivers: a capture
 // driver (records sends in memory for tests — never touches the network) and a Resend driver (prod)
 // that POSTs via `fetchWithTimeout` (ADR-0002) and reads its API key from injected config — no
-// provider key in code. Real template rendering (React-Email, ADR-0018) lands with a future template
-// registry; here the payload maps template + data honestly into Resend's request shape.
+// provider key in code. `template`/`data` stay free-form on the port itself (the `alerting`
+// package sends free-form operator alerts through this same port with its own template
+// namespace) — every network driver tries the React-Email registry
+// (`./templates/index.ts#tryRenderEmailTemplate`) first and falls back to the original honest
+// template/data mapping when `template` isn't one of the branded ids.
 import { fetchWithTimeout, InternalError } from "@caisson/kernel";
+import { tryRenderEmailTemplate } from "./templates/index.ts";
+export {
+  EMAIL_TEMPLATE_IDS,
+  renderEmailTemplate,
+  tryRenderEmailTemplate,
+  type EmailTemplateData,
+  type EmailTemplateId,
+  type RenderedEmail,
+} from "./templates/index.ts";
 
 export interface EmailMessage {
   to: string;
@@ -53,6 +65,7 @@ const RESEND_ENDPOINT = "https://api.resend.com/emails";
 export function createResendEmailer(config: ResendConfig): Emailer {
   return {
     async send(msg: EmailMessage): Promise<void> {
+      const rendered = await tryRenderEmailTemplate(msg.template, msg.data);
       const res = await fetchWithTimeout(RESEND_ENDPOINT, {
         method: "POST",
         headers: {
@@ -62,8 +75,9 @@ export function createResendEmailer(config: ResendConfig): Emailer {
         body: JSON.stringify({
           from: config.from,
           to: msg.to,
-          subject: msg.template,
-          text: JSON.stringify(msg.data),
+          subject: rendered?.subject ?? msg.template,
+          ...(rendered ? { html: rendered.html } : {}),
+          text: rendered?.text ?? JSON.stringify(msg.data),
         }),
       });
       if (!res.ok) {

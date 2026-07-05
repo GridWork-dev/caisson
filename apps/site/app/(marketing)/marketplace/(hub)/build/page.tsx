@@ -25,6 +25,12 @@ const EXAMPLE_EDITION = "ai-kit" as const;
 const exampleModules = modulesByEdition(EXAMPLE_EDITION);
 const exampleSummary = buildStackSummary(exampleModules.map((m) => m.id));
 const pad = (s: string, w: number) => s + " ".repeat(Math.max(1, w - s.length));
+// The id column only needs to be as wide as the longest id actually rendered below, plus a
+// 1-space gap — a hardcoded width wider than that (18 was sized for ids this edition doesn't
+// have) pads every "select" line past the mobile terminal's visible width, silently clipping the
+// trailing digit of every 3-digit price under the no-affordance overflow-x:auto scroll (the
+// $199/$149 lines truncated to $19/$14 at 390px; the shorter $99 line already fit).
+const ID_COLUMN_WIDTH = Math.max(...exampleModules.map((m) => m.id.length)) + 1;
 
 export default function MarketplaceBuildPage() {
   const breadcrumbNode = breadcrumb([
@@ -52,7 +58,9 @@ export default function MarketplaceBuildPage() {
             status={<StatusChip label="live total" tone="success" dot />}
           >
             {exampleModules
-              .map((m) => `select  ${pad(m.id, 18)} + $${m.amount}\n`)
+              .map(
+                (m) => `select  ${pad(m.id, ID_COLUMN_WIDTH)} + $${m.amount}\n`,
+              )
               .join("")}
             <span className="cs-tok-accent">
               {`total ${exampleSummary.moduleCount} modules $${exampleSummary.total}`}

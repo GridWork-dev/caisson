@@ -72,6 +72,24 @@ export function configuredProviderIds(env: EnvLike): OAuthProviderId[] {
   return OAUTH_PROVIDER_IDS.filter((id) => configured[id] !== undefined);
 }
 
+/** Shared email validator: trimmed + lowercased + length-bounded + pattern-checked. */
+const emailField = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(3)
+  .max(254)
+  .refine((v) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v), "invalid email");
+
+/** Root-relative-only path (never absolute/protocol-bearing — no open redirect via callbackURL). */
+const callbackPathField = z
+  .string()
+  .max(512)
+  .refine((v) => v.startsWith("/") && !v.startsWith("//"), "invalid path");
+
+/** better-auth's own bound for `emailAndPassword` (min 8 chars by default). */
+const newPasswordField = z.string().min(8).max(128);
+
 /**
  * The sign-in boundary schema (security floor: `.strict()` rejects unknown fields; bounded
  * strings). Email is trimmed + lowercased + length-bounded + pattern-checked, matching the
@@ -81,19 +99,51 @@ export function configuredProviderIds(env: EnvLike): OAuthProviderId[] {
  */
 export const magicLinkRequestSchema = z
   .object({
-    email: z
-      .string()
-      .trim()
-      .toLowerCase()
-      .min(3)
-      .max(254)
-      .refine((v) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v), "invalid email"),
-    callbackURL: z
-      .string()
-      .max(512)
-      .refine((v) => v.startsWith("/") && !v.startsWith("//"), "invalid path")
-      .optional(),
+    email: emailField,
+    callbackURL: callbackPathField.optional(),
   })
   .strict();
 
 export type MagicLinkRequest = z.infer<typeof magicLinkRequestSchema>;
+
+/** Password sign-in boundary — no length floor on the password (that's a sign-up-time concern). */
+export const passwordSignInSchema = z
+  .object({
+    email: emailField,
+    password: z.string().min(1).max(128),
+    callbackURL: callbackPathField.optional(),
+  })
+  .strict();
+
+export type PasswordSignInRequest = z.infer<typeof passwordSignInSchema>;
+
+/** Password sign-up boundary — `name` is required by better-auth's base user schema. */
+export const passwordSignUpSchema = z
+  .object({
+    name: z.string().trim().min(1).max(200),
+    email: emailField,
+    password: newPasswordField,
+    callbackURL: callbackPathField.optional(),
+  })
+  .strict();
+
+export type PasswordSignUpRequest = z.infer<typeof passwordSignUpSchema>;
+
+/** Forgot-password boundary — just the email; better-auth no-ops silently for an unknown one. */
+export const forgotPasswordSchema = z
+  .object({
+    email: emailField,
+  })
+  .strict();
+
+export type ForgotPasswordRequest = z.infer<typeof forgotPasswordSchema>;
+
+/** Reset-password boundary — the one-time token plus the new password. */
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().trim().min(1).max(2048),
+    newPassword: newPasswordField,
+  })
+  .strict();
+
+export type ResetPasswordRequest = z.infer<typeof resetPasswordSchema>;

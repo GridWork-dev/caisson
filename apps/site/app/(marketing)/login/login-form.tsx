@@ -1,16 +1,20 @@
 "use client";
 
-// The buyer sign-in form (client). Magic-link email is the PRIMARY path; OAuth buttons render
-// only for providers the server reported as configured (`providers` prop — never a button for an
-// unconfigured provider). Deliberately minimal — a copy/design polish pass follows separately.
-// The email is validated through the shared `.strict()` boundary schema before any call, so the
-// same bound the server trusts is enforced at the edge too.
+// The buyer sign-in form (client). Magic-link email is the PRIMARY path; a password mode is
+// offered alongside it (sign in / create account); OAuth buttons render only for providers the
+// server reported as configured (`providers` prop — never a button for an unconfigured
+// provider). Deliberately minimal — a copy/design polish pass follows separately. Every field is
+// validated through the shared `.strict()` boundary schemas before any call, so the same bound
+// the server trusts is enforced at the edge too.
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@caisson/ui/components";
 import { authClient } from "@/lib/auth-client";
 import {
   type OAuthProviderId,
   magicLinkRequestSchema,
+  passwordSignInSchema,
+  passwordSignUpSchema,
 } from "@/lib/auth-config";
 
 const PROVIDER_LABEL: Record<OAuthProviderId, string> = {
@@ -19,7 +23,22 @@ const PROVIDER_LABEL: Record<OAuthProviderId, string> = {
   discord: "Continue with Discord",
 };
 
+const fieldStyle: React.CSSProperties = {
+  padding: "var(--cs-space-3)",
+  borderRadius: "var(--cs-radius-md)",
+  border: "1px solid var(--cs-border)",
+  background: "var(--cs-surface-1)",
+  color: "var(--cs-fg)",
+  fontSize: "var(--cs-text-base)",
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: "var(--cs-text-sm)",
+};
+
 type Status = "idle" | "sending" | "sent" | "error";
+type Mode = "magiclink" | "password";
+type PasswordMode = "signin" | "signup";
 
 export function LoginForm({
   providers,
@@ -28,14 +47,18 @@ export function LoginForm({
   providers: OAuthProviderId[];
   next: string;
 }): React.ReactElement {
+  const [mode, setMode] = useState<Mode>("magiclink");
+  const [passwordMode, setPasswordMode] = useState<PasswordMode>("signin");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
   // Guard the redirect target: only a root-relative in-app path is ever followed after sign-in.
   const callbackURL =
     next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
 
-  async function onSubmit(event: React.FormEvent): Promise<void> {
+  async function onMagicLinkSubmit(event: React.FormEvent): Promise<void> {
     event.preventDefault();
     const parsed = magicLinkRequestSchema.safeParse({ email, callbackURL });
     if (!parsed.success) {
@@ -58,52 +81,210 @@ export function LoginForm({
     setMessage(`Check ${parsed.data.email} for your sign-in link.`);
   }
 
+  async function onPasswordSignIn(event: React.FormEvent): Promise<void> {
+    event.preventDefault();
+    const parsed = passwordSignInSchema.safeParse({
+      email,
+      password,
+      callbackURL,
+    });
+    if (!parsed.success) {
+      setStatus("error");
+      setMessage("Enter a valid email and password.");
+      return;
+    }
+    setStatus("sending");
+    setMessage("");
+    const { error } = await authClient.signIn.email(parsed.data);
+    if (error) {
+      setStatus("error");
+      setMessage(
+        error.status === 403
+          ? "Verify your email before signing in — check your inbox."
+          : "Incorrect email or password.",
+      );
+      return;
+    }
+    setStatus("sent");
+    setMessage("Signed in.");
+  }
+
+  async function onPasswordSignUp(event: React.FormEvent): Promise<void> {
+    event.preventDefault();
+    const parsed = passwordSignUpSchema.safeParse({
+      name,
+      email,
+      password,
+      callbackURL,
+    });
+    if (!parsed.success) {
+      setStatus("error");
+      setMessage(
+        "Enter your name, a valid email, and an 8+ character password.",
+      );
+      return;
+    }
+    setStatus("sending");
+    setMessage("");
+    const { error } = await authClient.signUp.email(parsed.data);
+    if (error) {
+      setStatus("error");
+      setMessage("Could not create that account. Try again.");
+      return;
+    }
+    setStatus("sent");
+    setMessage(
+      `Check ${parsed.data.email} to verify your account before signing in.`,
+    );
+  }
+
   async function onSocial(provider: OAuthProviderId): Promise<void> {
     await authClient.signIn.social({ provider, callbackURL });
   }
+
+  const busy = status === "sending" || status === "sent";
 
   return (
     <div
       style={{ display: "grid", gap: "var(--cs-space-6)", maxWidth: "24rem" }}
     >
-      <form
-        onSubmit={onSubmit}
-        style={{ display: "grid", gap: "var(--cs-space-3)" }}
-      >
-        <label
-          htmlFor="login-email"
-          className="cs-muted"
-          style={{ fontSize: "var(--cs-text-sm)" }}
+      {mode === "magiclink" ? (
+        <form
+          onSubmit={onMagicLinkSubmit}
+          style={{ display: "grid", gap: "var(--cs-space-3)" }}
         >
-          Email
-        </label>
-        <input
-          id="login-email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@company.com"
-          disabled={status === "sending" || status === "sent"}
-          style={{
-            padding: "var(--cs-space-3)",
-            borderRadius: "var(--cs-radius-md)",
-            border: "1px solid var(--cs-border)",
-            background: "var(--cs-surface-1)",
-            color: "var(--cs-fg)",
-            fontSize: "var(--cs-text-base)",
-          }}
-        />
-        <Button
-          type="submit"
-          variant="primary"
-          disabled={status === "sending" || status === "sent"}
+          <label htmlFor="login-email" className="cs-muted" style={labelStyle}>
+            Email
+          </label>
+          <input
+            id="login-email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@company.com"
+            disabled={busy}
+            style={fieldStyle}
+          />
+          <Button type="submit" variant="primary" disabled={busy}>
+            {status === "sending" ? "Sending…" : "Send magic link"}
+          </Button>
+        </form>
+      ) : (
+        <form
+          onSubmit={
+            passwordMode === "signin" ? onPasswordSignIn : onPasswordSignUp
+          }
+          style={{ display: "grid", gap: "var(--cs-space-3)" }}
         >
-          {status === "sending" ? "Sending…" : "Send magic link"}
-        </Button>
-      </form>
+          {passwordMode === "signup" ? (
+            <>
+              <label
+                htmlFor="login-name"
+                className="cs-muted"
+                style={labelStyle}
+              >
+                Name
+              </label>
+              <input
+                id="login-name"
+                name="name"
+                type="text"
+                autoComplete="name"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ada Lovelace"
+                disabled={busy}
+                style={fieldStyle}
+              />
+            </>
+          ) : null}
+          <label
+            htmlFor="login-pw-email"
+            className="cs-muted"
+            style={labelStyle}
+          >
+            Email
+          </label>
+          <input
+            id="login-pw-email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@company.com"
+            disabled={busy}
+            style={fieldStyle}
+          />
+          <label
+            htmlFor="login-password"
+            className="cs-muted"
+            style={labelStyle}
+          >
+            Password
+          </label>
+          <input
+            id="login-password"
+            name="password"
+            type="password"
+            autoComplete={
+              passwordMode === "signin" ? "current-password" : "new-password"
+            }
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            disabled={busy}
+            style={fieldStyle}
+          />
+          <Button type="submit" variant="primary" disabled={busy}>
+            {status === "sending"
+              ? "Please wait…"
+              : passwordMode === "signin"
+                ? "Sign in"
+                : "Create account"}
+          </Button>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: "var(--cs-text-xs)",
+            }}
+          >
+            <button
+              type="button"
+              className="cs-muted"
+              onClick={() => {
+                setStatus("idle");
+                setMessage("");
+                setPasswordMode(
+                  passwordMode === "signin" ? "signup" : "signin",
+                );
+              }}
+              style={{
+                background: "none",
+                border: 0,
+                cursor: "pointer",
+                padding: 0,
+              }}
+            >
+              {passwordMode === "signin"
+                ? "New here? Create an account"
+                : "Have an account? Sign in"}
+            </button>
+            {passwordMode === "signin" ? (
+              <Link href="/forgot-password" className="cs-muted">
+                Forgot password?
+              </Link>
+            ) : null}
+          </div>
+        </form>
+      )}
 
       {message !== "" ? (
         <p
@@ -114,6 +295,28 @@ export function LoginForm({
           {message}
         </p>
       ) : null}
+
+      <button
+        type="button"
+        className="cs-muted"
+        onClick={() => {
+          setStatus("idle");
+          setMessage("");
+          setMode(mode === "magiclink" ? "password" : "magiclink");
+        }}
+        style={{
+          background: "none",
+          border: 0,
+          cursor: "pointer",
+          padding: 0,
+          fontSize: "var(--cs-text-xs)",
+          textAlign: "center",
+        }}
+      >
+        {mode === "magiclink"
+          ? "Prefer a password? Sign in with email + password"
+          : "Prefer a link? Sign in with a magic link"}
+      </button>
 
       {providers.length > 0 ? (
         <div style={{ display: "grid", gap: "var(--cs-space-3)" }}>

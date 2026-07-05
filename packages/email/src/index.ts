@@ -11,3 +11,13 @@ export { createSesEmailer, sesSmtpConfig } from "./ses.ts";
 export type { SesConfig } from "./ses.ts";
 export { createSmtpEmailer } from "./smtp.ts";
 export type { SmtpConfig, SmtpTransport } from "./smtp.ts";
+export {
+  EMAIL_TEMPLATE_IDS,
+  renderEmailTemplate,
+  tryRenderEmailTemplate,
+} from "./templates/index.ts";
+export type {
+  EmailTemplateData,
+  EmailTemplateId,
+  RenderedEmail,
+} from "./templates/index.ts";

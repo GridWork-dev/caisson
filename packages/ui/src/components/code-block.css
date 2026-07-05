@@ -12,3 +12,29 @@
   color: var(--cs-fg);
   tab-size: 2;
 }
+
+/* Scroll affordance (visual-audit remediation): `.cs-code` already scrolls (overflow-x: auto
+ * above) — the bug was zero visual cue at scroll-position-zero, reading as a hard clip. The frame
+ * clips its own square corners to `.cs-code`'s radius so the fade's edge matches; the fade itself
+ * is a right-edge gradient into the card's own surface color, painted OVER the pre's content
+ * (::after is the last paint layer) so it reads as "more content" only where text actually reaches
+ * it — content that fits never touches the fade, so nothing renders differently when there's
+ * nothing to scroll. Lives on a wrapper (not `.cs-code` itself) because a pseudo-element
+ * positioned absolute on the scrolling element itself would scroll away with the content;
+ * `.cs-code-frame` never scrolls, so the fade stays pinned to the visible edge. */
+.cs-code-frame {
+  position: relative;
+  border-radius: var(--cs-radius-md);
+  overflow: hidden;
+}
+
+.cs-code-frame::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 2rem;
+  pointer-events: none;
+  background: linear-gradient(to right, transparent, var(--cs-surface-1));
+}

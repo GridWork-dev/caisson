@@ -5,7 +5,7 @@
 // the free-billing note (ADR-0182). Rotation is the same form (re-submit a provider = UPSERT).
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@caisson/ui/components";
+import { Button, Card, FormField } from "@caisson/ui/components";
 import { BYOK_PROVIDERS, type ByokProvider } from "@/lib/byok-providers";
 
 type SubmitState =
@@ -13,16 +13,6 @@ type SubmitState =
   | { kind: "validating" }
   | { kind: "ok"; masked: string }
   | { kind: "error"; reason: string };
-
-const fieldStyle: React.CSSProperties = {
-  fontFamily: "var(--cs-font-mono)",
-  fontSize: "var(--cs-text-sm)",
-  padding: "var(--cs-space-2) var(--cs-space-3)",
-  border: "1px solid var(--cs-border)",
-  borderRadius: "var(--cs-radius-md)",
-  background: "var(--cs-surface-1)",
-  color: "var(--cs-fg)",
-};
 
 export function ByokForm() {
   const router = useRouter();
@@ -71,86 +61,84 @@ export function ByokForm() {
   const busy = state.kind === "validating";
 
   return (
-    <form
-      onSubmit={onSubmit}
-      style={{ display: "grid", gap: "var(--cs-space-4)" }}
-    >
-      <div
-        style={{
-          display: "flex",
-          gap: "var(--cs-space-3)",
-          alignItems: "flex-end",
-          flexWrap: "wrap",
-        }}
+    <Card>
+      <form
+        onSubmit={onSubmit}
+        style={{ display: "grid", gap: "var(--cs-space-4)" }}
       >
-        <label style={{ display: "grid", gap: "var(--cs-space-2)" }}>
-          <span className="cs-muted" style={{ fontSize: "var(--cs-text-xs)" }}>
-            Provider
-          </span>
-          <select
-            value={provider}
-            onChange={(e) => setProvider(e.target.value as ByokProvider)}
-            style={{ ...fieldStyle, minWidth: "14ch" }}
+        <div
+          style={{
+            display: "flex",
+            gap: "var(--cs-space-3)",
+            alignItems: "flex-end",
+            flexWrap: "wrap",
+          }}
+        >
+          <FormField label="Provider" mono style={{ minWidth: "14ch" }}>
+            <select
+              value={provider}
+              onChange={(e) => setProvider(e.target.value as ByokProvider)}
+            >
+              {BYOK_PROVIDERS.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </FormField>
+          <FormField
+            label="Secret API key"
+            mono
+            style={{ flex: 1, minWidth: "28ch" }}
           >
-            {BYOK_PROVIDERS.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label style={{ display: "grid", gap: "var(--cs-space-2)", flex: 1 }}>
-          <span className="cs-muted" style={{ fontSize: "var(--cs-text-xs)" }}>
-            Secret API key
-          </span>
-          <input
-            type="password"
-            autoComplete="off"
-            spellCheck={false}
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder="sk-…"
-            maxLength={500}
-            style={{ ...fieldStyle, minWidth: "28ch" }}
-          />
-        </label>
-        <Button type="submit" variant="primary" disabled={busy}>
-          {busy ? "Validating…" : "Save & validate"}
-        </Button>
-      </div>
+            <input
+              type="password"
+              autoComplete="off"
+              spellCheck={false}
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="sk-…"
+              maxLength={500}
+            />
+          </FormField>
+          <Button type="submit" variant="primary" disabled={busy}>
+            {busy ? "Validating…" : "Save & validate"}
+          </Button>
+        </div>
 
-      <p
-        className="cs-muted"
-        style={{ fontSize: "var(--cs-text-xs)", margin: 0 }}
-      >
-        Your usage is billed by your provider — no Caisson credits are charged
-        for bring-your-own-key lanes. The key is validated live, stored
-        encrypted, and never shown again.
-      </p>
+        <p
+          className="cs-muted"
+          style={{ fontSize: "var(--cs-text-xs)", margin: 0 }}
+        >
+          Your usage is billed by your provider — no Caisson credits are charged
+          for bring-your-own-key lanes. The key is validated live, stored
+          encrypted, and never shown again.
+        </p>
 
-      {state.kind === "ok" && (
-        <p
-          style={{
-            fontSize: "var(--cs-text-sm)",
-            color: "var(--cs-success, var(--cs-fg))",
-            margin: 0,
-          }}
-        >
-          Connected — key stored ({state.masked}).
-        </p>
-      )}
-      {state.kind === "error" && (
-        <p
-          role="alert"
-          style={{
-            fontSize: "var(--cs-text-sm)",
-            color: "var(--cs-danger, var(--cs-fg))",
-            margin: 0,
-          }}
-        >
-          {state.reason}
-        </p>
-      )}
-    </form>
+        {state.kind === "ok" && (
+          <p
+            style={{
+              fontSize: "var(--cs-text-sm)",
+              color: "var(--cs-success)",
+              margin: 0,
+            }}
+          >
+            Connected — key stored ({state.masked}).
+          </p>
+        )}
+        {state.kind === "error" && (
+          <p
+            role="alert"
+            style={{
+              fontSize: "var(--cs-text-sm)",
+              color: "var(--cs-danger)",
+              margin: 0,
+            }}
+          >
+            {state.reason}
+          </p>
+        )}
+      </form>
+    </Card>
   );
 }

@@ -548,17 +548,19 @@ const BESPOKE: Record<
       <circle cx="16.3" cy="9.3" r="1.3" fill="currentColor" />
     </svg>
   ),
-  // Agent runner: an execution path through an isolated worktree, node by node.
+  // Agent runner: an execution path through an isolated worktree, node by node. A stepped
+  // diagonal (not a single right-angle elbow) so the glyph reads as a path, not the letter "L".
   "agent-runner": (p) => (
     <svg viewBox="0 0 24 24" fill="none" {...p}>
       <rect x="4.5" y="4.5" width="3" height="3" rx="1" fill="currentColor" />
-      <rect x="4.5" y="15.5" width="3" height="3" rx="1" fill="currentColor" />
-      <rect x="15.5" y="15.5" width="3" height="3" rx="1" fill="currentColor" />
+      <rect x="10.5" y="10.5" width="3" height="3" rx="1" fill="currentColor" />
+      <rect x="16.5" y="16.5" width="3" height="3" rx="1" fill="currentColor" />
       <path
-        d="M6 8v7.5M8 17h6"
+        d="M6 8v3.5h5M12 14v3.5h5"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   ),
