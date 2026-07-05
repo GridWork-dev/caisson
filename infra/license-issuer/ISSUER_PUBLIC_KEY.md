@@ -1,18 +1,28 @@
 # Caisson license issuer — public verify key (B4, P6 operator-gates)
 
-Provisioned 2026-06-30 by the P6 operator-gates session (ADR-0107 checklist step 3). The Ed25519
+Provisioned 2026-06-30 by the P6 operator-gates session (ADR-0107 checklist step 3);
+**ROTATED 2026-07-05** per ADR-0226 / the P0 license-token credential incident (tokens signed by the
+prior key were committed and survive in git history + mirror snapshots; offline verify has no
+revocation list, so rotating the baked key is the only invalidation). The Ed25519
 **signing keypair** is the root of trust for all license issuance. This file holds the **public**
 (verify) half only — non-secret, safe to commit. The **private** signing key never appears in the repo.
 
-## Public verify key (SPKI DER, base64)
+## Public verify key (SPKI DER, base64) — active since 2026-07-05
 
 ```
-MCowBQYDK2VwAyEAYUM+v6AQcPjNRoRJyQpDSA7S/LwNu1CecWQZ7A1OJU0=
+MCowBQYDK2VwAyEAuZK8MtzHKMZgRwuu8OWrIeGuYYfVg7+sjV4oeh2ynlA=
 ```
 
-- **Fingerprint** (`sha256(spki_b64)[:16]`): `0ae7d2abb886ca3d`
+- **Fingerprint** (`sha256(spki_b64)[:16]`): `c0bfb8277a840d2e`
 - **Algorithm:** Ed25519 (`crypto.verify(null, …)`)
-- **Round-trip verified:** the matching private key signs and this key verifies (checked at provisioning).
+- **Round-trip verified:** the matching private key signs and this key verifies (worker fixture
+  re-minted and verified against the new baked key at rotation).
+
+### Retired keys
+
+| Fingerprint        | Active     | Retired    | Why                                                                                                                       |
+| ------------------ | ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `0ae7d2abb886ca3d` | 2026-06-30 | 2026-07-05 | ADR-0226 rotation: prod-signed tokens leaked into git history/mirror; every token signed by this key is now unverifiable. |
 
 ## Code-track action (I1 issuer — NOT this operator session)
 

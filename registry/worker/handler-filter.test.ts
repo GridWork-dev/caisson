@@ -19,7 +19,7 @@ import { createIndexHandler } from "./handler";
 // (ADR-0110). Keep in sync with the baked key in license-verify/src/verify.ts. Drives the REAL
 // verifier→expand→filter end to end.
 const PROD_TOKEN =
-  "CAISSON-PRO-eyJlbnRpdGxlbWVudHMiOlsibG9jYWwtYWkiXSwiZXhwaXJ5IjpudWxsLCJsaWNlbnNlSWQiOiIyMjIyMjIyMi0yMjIyLTQyMjItODIyMi0yMjIyMjIyMjIyMjIiLCJtYWpvciI6MSwidGllciI6InBybyJ9JCCq8unU9ASs7NpgsOQSFpKl6Bti7J41yCKbLV8-1q0HbeUzZ-K7cfdaBge2_gyn38fKvEomzkH35GRQ0RbFBA";
+  "CAISSON-PRO-eyJlbnRpdGxlbWVudHMiOlsibG9jYWwtYWkiXSwiZXhwaXJ5IjpudWxsLCJsaWNlbnNlSWQiOiIyMjIyMjIyMi0yMjIyLTQyMjItODIyMi0yMjIyMjIyMjIyMjIiLCJtYWpvciI6MSwidGllciI6InBybyJ9s5abAWoJnigs0h0oHu26viTz6EF3Z181CDnTFb11QUpmRSeNSNyWP5a4OuCVP19Kf6koIlrSx1S9yyDCgHoZDg";
 
 function entry(
   id: string,
