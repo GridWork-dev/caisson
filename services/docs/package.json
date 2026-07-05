@@ -22,6 +22,7 @@
     "@caisson/kernel": "workspace:*",
     "@caisson/local-store": "workspace:*",
     "@caisson/observability": "workspace:*",
+    "@caisson/rate-limit": "workspace:*",
     "sqlite-vec": "^0.1.9",
     "zod": "^3.23.8"
   },

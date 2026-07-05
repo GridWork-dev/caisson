@@ -78,6 +78,10 @@ const OPEN_BASE_NAMES = new Set([
   "@caisson/cli",
   "@caisson/migrate",
   "@caisson/license-verify",
+  // Shared abuse-throttle primitives (extracted out of two near-duplicate service-local copies plus
+  // a per-account store that was marooned in a commercial service): generic infra, no commercial
+  // secret, open Base alongside kernel/tenancy-rls.
+  "@caisson/rate-limit",
 ]);
 
 // A registry-module candidate is a `packages/` member. `apps/` are reference applications (the
