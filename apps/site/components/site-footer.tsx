@@ -52,8 +52,11 @@ export function SiteFooter() {
             © {new Date().getFullYear()} GridWork Digital LLC
           </p>
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-2)" }}>
-            Base substrate is <Link href="/legal/license">Apache-2.0</Link>,
-            free to use. Editions and modules are commercial.
+            Base substrate is{" "}
+            <Link href="/legal/license" className="cs-link">
+              Apache-2.0
+            </Link>
+            , free to use. Editions and modules are commercial.
           </p>
           <div style={{ marginTop: "var(--cs-space-6)" }}>
             <div

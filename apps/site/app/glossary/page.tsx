@@ -82,7 +82,9 @@ export default function GlossaryHubPage() {
             >
               {terms.map((t) => (
                 <li key={t.slug}>
-                  <Link href={`/glossary/${t.slug}`}>{t.term}</Link>
+                  <Link href={`/glossary/${t.slug}`} className="cs-link">
+                    {t.term}
+                  </Link>
                 </li>
               ))}
             </ul>

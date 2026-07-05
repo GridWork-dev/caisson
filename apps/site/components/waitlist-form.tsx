@@ -208,7 +208,9 @@ export function UpdatesForm({ source = "site" }: { source?: string }) {
         />
         <span className="cs-muted">
           I agree to receive product update emails.{" "}
-          <Link href="/legal/privacy">Privacy policy</Link>
+          <Link href="/legal/privacy" className="cs-link">
+            Privacy policy
+          </Link>
         </span>
       </label>
       <Button
