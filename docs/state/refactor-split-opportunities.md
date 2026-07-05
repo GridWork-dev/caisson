@@ -133,10 +133,13 @@ $199 | audit-worm $149 | alerting $149 | retention-runner $199`), so it needs an
 
 ## R4 — Analytics has no port (hardcoded)
 
-`apps/site/app/layout.tsx:61` hardcodes `data-domain="caisson.sh"` with no port/env-gate — a boundary
-smell and a live bug (contradicts ADR-0118's env-gate). **Already owned** by
-`docs/state/adapter-expansion.md` §1D → ADR-0122 (add an analytics port so PostHog/GA4 are swappable).
-Listed here only for completeness; execute it there, not from this page.
+The env-gate half is **DONE**: `apps/site/components/plausible-init.tsx` reads
+`NEXT_PUBLIC_PLAUSIBLE_DOMAIN` and no-ops (no init, no network) when unset — no hardcoded
+`data-domain` remains anywhere in `layout.tsx` (fixed same-day as this row was written,
+commit `936f54f`; this row went stale, not the code). What's still open is the bigger ask:
+a real analytics **port** so PostHog/GA4 are swappable, not just Plausible. **Owned** by
+`docs/state/adapter-expansion.md` §1D → ADR-0122 (roadmap, not built). Listed here only for
+completeness; execute it there, not from this page.
 
 ---
 

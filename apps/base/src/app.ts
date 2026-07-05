@@ -11,7 +11,7 @@ import {
   type McpServerOptions,
   type RateLimitHook,
 } from "@caisson/mcp-server";
-import { createRateLimitHook } from "@caisson/service-license";
+import { createRateLimitHook } from "@caisson/rate-limit";
 import type { BillingProvider } from "@caisson/billing";
 
 export interface BaseAppDeps {
@@ -19,10 +19,10 @@ export interface BaseAppDeps {
   billing: BillingProvider;
   mcp: McpServerOptions;
   /**
-   * Telemetry sink for an MCP rate-limit store FAIL-OPEN event (ADR-0112 lock 5). The base
-   * mcp-server ships DB-free and only declares the `checkRateLimit` PORT; this reference app — the
-   * served composition that owns the `Transactor` — provisions the token-bucket-backed throttle hook
-   * from `services/license` BY DEFAULT (see `createBaseApp`). When that store faults the hook fails
+   * Telemetry sink for an MCP rate-limit store FAIL-OPEN event. The base mcp-server ships DB-free
+   * and only declares the `checkRateLimit` PORT; this reference app — the served composition that
+   * owns the `Transactor` — provisions the token-bucket-backed throttle hook from
+   * `@caisson/rate-limit` BY DEFAULT (see `createBaseApp`). When that store faults the hook fails
    * OPEN (allow + alert) so a paying buyer is never locked out by infra; the alert lands here. Wire
    * it to the observability surface — NEVER `console.log`. Omit only in tests (silent fail-open).
    */
@@ -48,12 +48,12 @@ export interface BaseApp {
 }
 
 export function createBaseApp(deps: BaseAppDeps): BaseApp {
-  // ADR-0112: throttle EVERY buyer-MCP tool dispatch BY DEFAULT. The base mcp-server declares the
+  // Throttle EVERY buyer-MCP tool dispatch BY DEFAULT. The base mcp-server declares the
   // `checkRateLimit` PORT but ships DB-free, so the served composition (this reference app, which is
   // the embedding buyer's wiring and owns the Transactor) provisions the token-bucket-backed hook
-  // from `services/license`. An embedding buyer therefore gets per-account abuse throttling with no
-  // extra wiring; a caller may still override by supplying its own `deps.mcp.checkRateLimit`. The
-  // hook fails OPEN on a store fault (lock 5) and routes the alert to `onRateLimitStoreError`.
+  // from `@caisson/rate-limit`. An embedding buyer therefore gets per-account abuse throttling with
+  // no extra wiring; a caller may still override by supplying its own `deps.mcp.checkRateLimit`. The
+  // hook fails OPEN on a store fault and routes the alert to `onRateLimitStoreError`.
   const checkRateLimit: RateLimitHook =
     deps.mcp.checkRateLimit ??
     createRateLimitHook({

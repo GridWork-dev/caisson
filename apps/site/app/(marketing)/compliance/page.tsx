@@ -422,10 +422,7 @@ export default function CompliancePage() {
           lede="Caisson ships the technical controls SOC 2 CC6.x / CC7.2 and HIPAA §164.312 require, and generates the dated evidence bundle mapped to those named controls. It does not — and cannot — make you certified: the administrative controls (HR, vendor management, incident response) and the audit engagement itself stay with you and your auditor."
           band="surface"
         >
-          <div
-            className="cs-grid cs-grid--2"
-            style={{ marginTop: "var(--cs-space-8)" }}
-          >
+          <FeatureGrid cols={2}>
             <Card>
               <div className="cs-status">
                 <StatusChip
@@ -478,7 +475,7 @@ export default function CompliancePage() {
                 </li>
               </ul>
             </Card>
-          </div>
+          </FeatureGrid>
         </Section>
       </Reveal>
 

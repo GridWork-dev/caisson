@@ -214,9 +214,11 @@ export default function LicensePage() {
             you purchased.
           </li>
           <li style={prose.li}>
-            Your entitlement grants access to the{" "}
-            <strong>GitHub Packages private registry</strong> for entitled
-            packages under the <code className="mono">@caisson</code> scope.
+            Your entitlement grants access to{" "}
+            <code className="mono">registry.caisson.sh</code>, the private npm
+            registry serving entitled packages under the{" "}
+            <code className="mono">@caisson</code> scope, authenticated with
+            your license token.
           </li>
           <li style={prose.li}>
             The license key is verified at install time and optionally at

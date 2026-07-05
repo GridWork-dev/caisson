@@ -318,10 +318,7 @@ export default function AiKitPage() {
       {/* ===== Pricing ===== */}
       <Section eyebrow={"How it's sold"} title="Own the code, or subscribe.">
         <Reveal>
-          <div
-            className="cs-grid cs-grid--3"
-            style={{ marginTop: "var(--cs-space-8)" }}
-          >
+          <FeatureGrid cols={3}>
             <Card accent>
               <div className="cs-card-title">One-time license</div>
               <p
@@ -373,7 +370,7 @@ export default function AiKitPage() {
                 pulls on top of any license you own.
               </p>
             </Card>
-          </div>
+          </FeatureGrid>
 
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
             <Link href="/marketplace" style={{ color: "var(--cs-link)" }}>

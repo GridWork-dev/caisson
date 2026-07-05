@@ -130,52 +130,56 @@ Canonical: [`knowledge/decisions/ADR-0021-registry-publish-pipeline.md`](../know
 
 ---
 
-## 5. Deploy: `apps/site` (marketing + docs)
+## 5. Deploy: `apps/site` (marketing + docs + `/dashboard`)
 
-> Canonical deploy doc: [`infra/terraform/README.md`](../infra/terraform/README.md). This is a summary.
+> Canonical deploy doc: [`infra/terraform/README.md`](../infra/terraform/README.md) (DNS + Access
+> only now -- see the note below; that file still needs its own Pages-era cleanup pass).
 
-`apps/site` is **one Next 16 App Router app, static export** (`output: 'export'`, ADR-0084),
-direct-uploaded to the existing `caisson-site` Cloudflare Pages project. **There is NO
-Cloudflare-side build** -- so the Pages project carries no `build_config` and no `source` (that
-is correct, not missing). `@cloudflare/next-on-pages` is NOT used (npm-deprecated/archived).
+`apps/site` is **one Next 16 App Router app, `output: 'standalone'`** (Node runtime, ADR-0114,
+superseding the ADR-0084 static-export plan), built + run on **Railway** (`caisson-prod` project,
+service `caisson-site`) via `apps/site/Dockerfile` (`RAILWAY_DOCKERFILE_PATH` set on the Railway
+service). The prior static-export -> Cloudflare Pages path (`wrangler pages deploy`,
+`caisson-site` Pages project) is **retired**; the Pages project itself has been torn down.
 
 ```bash
-bun run --filter @caisson/site build          # next build -> apps/site/out
-cd apps/site                                   # CWD must be apps/site so wrangler finds
-bunx wrangler pages deploy out \               #   wrangler.jsonc AND functions/
-  --project-name=caisson-site --branch=main
+railway up --service caisson-site --ci        # from repo root; builds via apps/site/Dockerfile
 ```
 
-- The deploy pointer is the `out/` arg + `pages_build_output_dir: "out"` in
-  [`apps/site/wrangler.jsonc`](../apps/site/wrangler.jsonc).
-- Run from `apps/site/` so Cloudflare resolves `apps/site/functions/` (the waitlist Pages
-  Function, ADR-0085) relative to CWD, not the output dir.
-- Secrets: `CLOUDFLARE_API_TOKEN` (Account -> Cloudflare Pages -> Edit) + `CLOUDFLARE_ACCOUNT_ID`.
+- `.github/workflows/deploy-railway.yml` runs the same `railway up` on every push to `main`
+  touching `apps/site/**`/`packages/**`, but **stays an inert no-op today** -- the `RAILWAY_TOKEN`
+  repo secret is not set, so deploys are the operator running `railway up` manually. It self-arms
+  the moment that secret is added (no other change needed).
+- Secrets: a Railway project token (`RAILWAY_TOKEN`), scoped to `caisson-prod`. No Cloudflare
+  deploy credential is needed for the site anymore.
 
 ---
 
-## 6. Terraform: Cloudflare DNS + Pages (`caisson.sh`)
+## 6. Terraform: Cloudflare DNS + Access + WAF (`caisson.sh`)
 
-> Canonical: [`infra/terraform/README.md`](../infra/terraform/README.md).
+> Canonical: [`infra/terraform/README.md`](../infra/terraform/README.md) -- **that file's own prose
+> still describes the retired `cloudflare_pages_project`/`cloudflare_pages_domain` resources; the
+> actual `.tf` files (`main.tf`/`access.tf`/`waf.tf`) no longer declare any `cloudflare_pages_*`
+> resource.** Flagged here, not fixed in this pass -- treat the `.tf` files, not that README prose,
+> as ground truth until it gets its own correction.
 
-IaC for the `caisson.sh` zone + the Pages project. The `.sh` registration is external
-(Cloudflare Registrar does not sell `.sh`); the zone is hosted on Cloudflare and this module
-references it by id.
+IaC for the `caisson.sh` zone: DNS records (apex/www/license/admin/docs-api + their Railway
+domain-verification TXT records), Cloudflare Access (Zero Trust) gating `admin.caisson.sh`, and
+the edge WAF/rate-limit rulesets (ADR-0219). The Pages project + its DNS CNAMEs are gone -- site
+traffic now resolves straight to Railway. The `.sh` registration is external (Cloudflare Registrar
+does not sell `.sh`); the zone is hosted on Cloudflare and this module references it by id.
 
 ```bash
 cd infra/terraform
-export CLOUDFLARE_API_TOKEN=...                # Zone->DNS->Edit + Account->Pages->Edit; never commit
+export CLOUDFLARE_API_TOKEN=...                # Zone->DNS->Edit + Access->Edit; never commit
 cp terraform.tfvars.example terraform.tfvars   # account_id + zone_id (gitignored)
 terraform init && terraform plan && terraform apply
 ```
 
-Creates: `cloudflare_pages_project.site` (`caisson-site`, prod branch `main`),
-`cloudflare_pages_domain.{apex,www}`, `cloudflare_dns_record.{apex,www}` (proxied CNAMEs ->
-`<project>.pages.dev`). State is local + gitignored — deliberate today (single operator, zero CI
-applies, `ADR-0107`). **Locking gap (ADR-0208 #3):** R2 silently ignores S3 conditional-write
-headers, so Terraform's `use_lockfile` is a no-op there; "R2 + a lock" needs a locking posture
-picked consciously at migration time (accept-no-lock on R2 · a Worker/DO lock backend · AWS
-S3+DynamoDB), triggered by a second operator or a CI-driven apply. Detail:
+State is local + gitignored — deliberate today (single operator, zero CI applies, `ADR-0107`).
+**Locking gap (ADR-0208 #3):** R2 silently ignores S3 conditional-write headers, so Terraform's
+`use_lockfile` is a no-op there; "R2 + a lock" needs a locking posture picked consciously at
+migration time (accept-no-lock on R2 · a Worker/DO lock backend · AWS S3+DynamoDB), triggered by a
+second operator or a CI-driven apply. Detail:
 [`infra/terraform/README.md`](../infra/terraform/README.md#state-deferred-adr-0208-3).
 
 ---
@@ -251,25 +255,32 @@ is check-first so it never needs brew write access on the fleet box. Saves the ~
 macOS minutes. Manual fallback if the mini is down: flip the leg back to `runs-on: macos-latest`
 (one line).
 
-### `deploy-site.yml` (DEPLOY -- operator-gated)
+### `deploy-railway.yml` (DEPLOY -- operator-gated)
 
-- Triggers: **push to `main`** filtered to `apps/site/**`, `packages/ui/**` (bundled via
-  `transpilePackages`), `infra/terraform/**`, the workflow file -- plus `workflow_dispatch`.
-  **Never on a pull_request**, so opening/merging a feature PR never deploys.
-- Steps: build `@caisson/site` static export -> `out/`, then (working-directory `apps/site`)
-  `bunx wrangler pages deploy out --project-name=caisson-site --branch=main`.
-- Least privilege: `permissions: contents: read`; uses Cloudflare secrets, not `GITHUB_TOKEN`.
-  Third-party actions pinned to commit SHAs (this job holds a prod deploy token).
-  `concurrency: deploy-site`, `cancel-in-progress`, `timeout-minutes: 15`.
-- **Stays GitHub-hosted (not on the fleet):** a production Cloudflare deploy token does not belong
-  on the self-hosted box; keep it on a clean hosted runner.
+- Triggers: **push to `main`** filtered to `apps/site/**`, `packages/**`, the workflow file --
+  plus `workflow_dispatch`. **Never on a pull_request**, so opening/merging a feature PR never
+  deploys.
+- Steps: an arm-check gates on the `RAILWAY_TOKEN` secret (absent -> every real step SKIPS and the
+  job succeeds as a no-op); when armed, installs the Railway CLI and runs
+  `railway up --service caisson-site --ci` (build-on-Railway via `apps/site/Dockerfile`).
+- Least privilege: `permissions: contents: read`; uses the Railway project token, not
+  `GITHUB_TOKEN`. `concurrency: deploy-railway`, `cancel-in-progress: false`, `timeout-minutes: 25`.
+- **Stays GitHub-hosted (not on the fleet):** a production deploy token does not belong on the
+  self-hosted box; keep it on a clean hosted runner.
+- Supersedes the retired static-export `deploy-site.yml` (Cloudflare Pages, `wrangler pages
+deploy`), which no longer exists in `.github/workflows/`.
 
 ### `lighthouse.yml` (informational)
 
-- Trigger: `pull_request` on `apps/site/**` + `packages/ui/**`.
+- Trigger: **`workflow_dispatch` only** (gated 2026-06-30, ADR-0114) -- the `pull_request` trigger
+  was dropped because the audit still targets the retired static `out/` export
+  (`lighthouserc.json` `staticDistDir: "out"`), which no longer exists now that `apps/site` builds
+  `output: 'standalone'`. Re-arm at the Railway deploy-runbook's C.4/C.6 step: retarget
+  `lighthouserc.json` at the live Railway origin (`collect.url` + `startServerCommand`), then
+  restore a `pull_request`/`schedule` trigger. The file stays in place meanwhile.
 - `continue-on-error: true`; all assertions are `warn` level (`apps/site/lighthouserc.json`).
-  Non-blocking until scores stabilize (ADR-0079 §6). Builds the static export, runs
-  `bunx @lhci/cli autorun`. Secret: `LHCI_GITHUB_APP_TOKEN`. `timeout-minutes: 20`.
+  Non-blocking until scores stabilize (ADR-0079 §6). Secret: `LHCI_GITHUB_APP_TOKEN`.
+  `timeout-minutes: 20`.
 - **Stays GitHub-hosted (not on the fleet):** needs a headless Chrome (the fleet runner image ships
   no browser) + uploads to temporary-public-storage; moving it would require a Chrome-equipped image.
 
@@ -278,26 +289,26 @@ macOS minutes. Manual fallback if the mini is down: flip the leg back to `runs-o
 ## 8. DEPLOY is operator-gated (never auto)
 
 DEPLOY is a separate, explicit, operator-gated act -- it is NOT part of the autonomous
-SHIP cycle. SHIP stops at the merged PR. `deploy-site.yml` enforces this in CI: it fires only
-on a `main` push (post-merge) or a manual `workflow_dispatch`, never on a PR. No service
-restart / redeploy happens inside the SPEC->...->SHIP loop. Doctrine:
-`identity/doctrine.md` (Autonomy line + DEPLOY, gridwork-core).
+SHIP cycle. SHIP stops at the merged PR. `deploy-railway.yml` enforces this in CI: it fires only
+on a `main` push (post-merge) or a manual `workflow_dispatch`, never on a PR -- and stays inert
+until the operator arms it with `RAILWAY_TOKEN`. No service restart / redeploy happens inside the
+SPEC->...->SHIP loop. Doctrine: `identity/doctrine.md` (Autonomy line + DEPLOY, gridwork-core).
 
 ---
 
 ## ADR / spec routing
 
-| For                                           | See                                                                                                                                       |
-| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| CI/CD + standards gate                        | [`knowledge/decisions/ADR-0016-ci-cd-standards-gate.md`](../knowledge/decisions/ADR-0016-ci-cd-standards-gate.md)                         |
-| Registry publish pipeline                     | [`knowledge/decisions/ADR-0021-registry-publish-pipeline.md`](../knowledge/decisions/ADR-0021-registry-publish-pipeline.md)               |
-| Publish credential + changesets backfill      | [`knowledge/decisions/ADR-0069-publish-flow-credential-backfill.md`](../knowledge/decisions/ADR-0069-publish-flow-credential-backfill.md) |
-| GTM site stack (static export -> Pages)       | [`knowledge/decisions/ADR-0084-gtm-site-stack.md`](../knowledge/decisions/ADR-0084-gtm-site-stack.md)                                     |
-| Eval CI gate                                  | [`knowledge/decisions/ADR-0062-ai-kit-eval-harness-ci-gate.md`](../knowledge/decisions/ADR-0062-ai-kit-eval-harness-ci-gate.md)           |
-| Buyer-repo CI boundary                        | [`knowledge/decisions/ADR-0072-buyer-repo-boundary.md`](../knowledge/decisions/ADR-0072-buyer-repo-boundary.md)                           |
-| Go-live build-truth posture                   | [`knowledge/decisions/ADR-0082-go-live-site-posture.md`](../knowledge/decisions/ADR-0082-go-live-site-posture.md)                         |
-| ADR renumber map (GTM 0045-0048 -> 0084-0087) | [`knowledge/decisions/ADR-0088-adr-number-collision-renumber.md`](../knowledge/decisions/ADR-0088-adr-number-collision-renumber.md)       |
-| Architecture                                  | [`specs/01-architecture.md`](../specs/01-architecture.md)                                                                                 |
-| Live decision board                           | [`docs/state/decisions-and-forks.md`](state/decisions-and-forks.md)                                                                       |
-| Build plan (P0-P7)                            | [`plan.md`](../plan.md)                                                                                                                   |
-| Deploy (canonical)                            | [`infra/terraform/README.md`](../infra/terraform/README.md)                                                                               |
+| For                                                                             | See                                                                                                                                       |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| CI/CD + standards gate                                                          | [`knowledge/decisions/ADR-0016-ci-cd-standards-gate.md`](../knowledge/decisions/ADR-0016-ci-cd-standards-gate.md)                         |
+| Registry publish pipeline                                                       | [`knowledge/decisions/ADR-0021-registry-publish-pipeline.md`](../knowledge/decisions/ADR-0021-registry-publish-pipeline.md)               |
+| Publish credential + changesets backfill                                        | [`knowledge/decisions/ADR-0069-publish-flow-credential-backfill.md`](../knowledge/decisions/ADR-0069-publish-flow-credential-backfill.md) |
+| GTM site stack (static export -> Pages, superseded by ADR-0114/0115 -> Railway) | [`knowledge/decisions/ADR-0084-gtm-site-stack.md`](../knowledge/decisions/ADR-0084-gtm-site-stack.md)                                     |
+| Eval CI gate                                                                    | [`knowledge/decisions/ADR-0062-ai-kit-eval-harness-ci-gate.md`](../knowledge/decisions/ADR-0062-ai-kit-eval-harness-ci-gate.md)           |
+| Buyer-repo CI boundary                                                          | [`knowledge/decisions/ADR-0072-buyer-repo-boundary.md`](../knowledge/decisions/ADR-0072-buyer-repo-boundary.md)                           |
+| Go-live build-truth posture                                                     | [`knowledge/decisions/ADR-0082-go-live-site-posture.md`](../knowledge/decisions/ADR-0082-go-live-site-posture.md)                         |
+| ADR renumber map (GTM 0045-0048 -> 0084-0087)                                   | [`knowledge/decisions/ADR-0088-adr-number-collision-renumber.md`](../knowledge/decisions/ADR-0088-adr-number-collision-renumber.md)       |
+| Architecture                                                                    | [`specs/01-architecture.md`](../specs/01-architecture.md)                                                                                 |
+| Live decision board                                                             | [`docs/state/decisions-and-forks.md`](state/decisions-and-forks.md)                                                                       |
+| Build plan (P0-P7)                                                              | [`plan.md`](../plan.md)                                                                                                                   |
+| Deploy (canonical)                                                              | [`infra/terraform/README.md`](../infra/terraform/README.md)                                                                               |

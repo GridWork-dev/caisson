@@ -467,8 +467,24 @@ index** — the redeploy is DEPLOY-class, PENDING (see the top note).
    three frameworks, golden-fixture-pinned (`ADR-0179`-`0181`). Grep `un-wired`/`seam` in source headers
    before assuming any OTHER adapter is live — the former S3-ObjectLock/inference stub caveat is closed
    (`ADR-0201` superseded the `ADR-0184` defer; see gap #2).
-4. **`ai-config` (49 loc), `ai-kit` (358 loc), and `ai-evals` (1 test file)** are the thinnest
-   surfaces - present and green, but verify depth before quoting them as feature-complete.
+4. **Re-verified 2026-07-05 (the "49 loc"/"358 loc"/"1 test file" figures below were stale by
+   roughly one build generation — corrected here, not just re-asserted):**
+   **`ai-config`** is genuinely thin, and that's the whole point of it — 125 src LOC across
+   `config.ts` + `index.ts`: a provider-agnostic lane resolver (`parseAiSettings`/
+   `resolveProvider`) spanning 8 providers, including the two-part Bedrock credential and the
+   Azure OpenAI deployment/`apiVersion`/`baseUrl` trio. 15/15 tests pass in its one test file (185
+   LOC). **`ai-kit` is NOT thin** — 1,424 src LOC across 7 files (`gateway.ts` 624,
+   `embed.ts` 258, `providers.ts` 188, `byok-resolver.ts` 116, `byok-store.ts` 95,
+   `structured-generate.ts` 83, `index.ts` 60) exporting `infer`/`inferStream`/`embed`/
+   `embedMany`/`structuredGenerate`/the BYOK key store + resolver/the live-provider registry.
+   92/92 tests pass across 7 files (2,482 LOC of DI-stubbed, zero-network tests) plus 2
+   self-skipping live-transport suites (328 LOC, `test.skipIf` gated on `OPENROUTER_API_KEY`).
+   **`ai-evals`** was never "1 test file" — 1,323 src LOC across 12 files (the harness, a
+   6-class grader taxonomy, cassette judge record/replay, the regression-vs-baseline gate,
+   Wilson-CI, Fleiss-kappa agreement, a reflexivity queue, a budget-isolated eval-spend ledger),
+   79/79 tests passing across 7 test files (1,014 LOC). All three packages are present, green,
+   and — for `ai-kit`/`ai-evals` — substantive; `ai-config`'s thinness is by design (it's a
+   resolver, not an engine).
 5. **Stale upstream claims:** `ADR-0082` §3 ("empty stubs") and `SUMMARY.md` ("editions ... remain")
    both predate PR#11. Do not cite either for build-status; cite this file.
 

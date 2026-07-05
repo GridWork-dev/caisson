@@ -159,7 +159,8 @@ checks (ADR-0016) - build, lint, test(unit), test(integration), standards-gate, 
 | `native-ext`     | `bun test packages/local-store/src` on ubuntu + macOS                                                  | exercises the sqlite-vec native ext (vec0 + FTS5 + RRF) on both OSes; `fail-fast: false`                           |
 | `registry-index` | registry tests + rebuild `index.json` from ledger, `git diff --exit-code`                              | provenance proof the index is CI-built, not hand-appended                                                          |
 
-Separate workflows: `.github/workflows/deploy-site.yml` (Cloudflare Pages, `apps/site`) and
+Separate workflows: `.github/workflows/deploy-railway.yml` (`apps/site` -> Railway, ADR-0114/0115,
+superseding the retired static-export `deploy-site.yml`/Cloudflare Pages path) and
 `.github/workflows/lighthouse.yml`.
 
 ## Commit conventions
@@ -204,9 +205,9 @@ unverified, not certified by an ADR): `agent-kernel` `ai-config` `ai-evals` `ai-
 
 **Apps** (`apps/`): `base` `compliance` `ai-kit` `local-ai` `agent-dev` are edition
 reference apps (consumers ABOVE the package tower - exempt from the down-only rule, never
-registry-published); `site` is the marketing + docs app (Next, static-exported to Cloudflare
-Pages); `studio` is the design-system studio. **Services** (`services/`): `docs` `license`
-`support-bot`.
+registry-published); `site` is the marketing + docs app (Next, standalone Node app on
+Railway, ADR-0114/0115); `admin` is the operator control-plane (absorbed the design-system
+studio, ADR-0140). **Services** (`services/`): `docs` `license` `support-bot`.
 
 ## Quickstart
 

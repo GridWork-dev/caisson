@@ -1,20 +1,24 @@
-// Per-account abuse-throttle store (ADR-0112, implements ADR-0008). A SERVER-SIDE token bucket so
-// one licensed buyer cannot exhaust the shared MCP capacity. One row per account in `rate_limit`;
-// each check refills lazily by elapsed time then consumes a single token — done as ONE atomic
-// conditional UPDATE (the refilled count is computed in SQL from `now - last_refill_ms`, clamped to
-// capacity, decremented and stamped in the same statement; the UPDATE's WHERE makes "had a token
-// after refill" the success condition). No read-then-write race: two concurrent consumes on one
+// Per-account abuse-throttle store (implements the credits abuse-throttle design). A SERVER-SIDE
+// token bucket so one licensed buyer cannot exhaust shared capacity. One row per account in
+// `rate_limit`; each check refills lazily by elapsed time then consumes a single token — done as ONE
+// atomic conditional UPDATE (the refilled count is computed in SQL from `now - last_refill_ms`,
+// clamped to capacity, decremented and stamped in the same statement; the UPDATE's WHERE makes "had a
+// token after refill" the success condition). No read-then-write race: two concurrent consumes on one
 // token resolve to exactly one winner because the WHERE guard re-checks the live row.
 //
-// Token counts are INTEGERS (ADR-0002); time is carried as integer epoch-milliseconds (a `bigint`
-// column + an injectable `now`), so the whole refill computation is integer-pure and deterministic
-// in tests. The store is tenant-owned + fail-closed RLS via @caisson/tenancy-rls (ADR-0005),
-// mirroring entitlement-store: every read/write runs inside `withTenant`, the policy WITH CHECK
-// rejects a write whose account_id ≠ the bound GUC.
+// Token counts are INTEGERS; time is carried as integer epoch-milliseconds (a `bigint` column + an
+// injectable `now`), so the whole refill computation is integer-pure and deterministic in tests. The
+// store is tenant-owned + fail-closed RLS via @caisson/tenancy-rls, mirroring an entitlement store:
+// every read/write runs inside `withTenant`, the policy WITH CHECK rejects a write whose account_id
+// does not match the bound tenant.
 //
 // Fail-OPEN is NOT decided here — `checkRateLimit` returns a typed allowed/denied decision and lets
-// its caller (the services/license hook, ADR-0112 lock 5) choose to allow + alert on a store error.
-// A DENY (out of tokens) is the only signal that ever blocks a buyer.
+// its caller (see account-hook.ts) choose to allow + alert on a store error. A DENY (out of tokens)
+// is the only signal that ever blocks a buyer.
+//
+// Originally implemented inside the license-issuer service; hoisted into this shared base package so
+// the reference app composing the base substrate can wire per-account throttling without depending on
+// a commercial service (see account-hook.ts for the composition seam).
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 import { buildTenantPolicySql } from "@caisson/tenancy-rls";
 
@@ -33,9 +37,9 @@ export interface RateLimitConfig {
 }
 
 /**
- * The STATIC global default (ADR-0112 lock 4). A per-account row may override any of these columns;
- * a freshly auto-provisioned row inherits these. 120 tokens, refilling 120 every 60s ⇒ a sustained
- * ~120 tool-calls/minute with a full 120-call burst. Tuned to throttle abuse, not normal buyer use.
+ * The STATIC global default. A per-account row may override any of these columns; a freshly
+ * auto-provisioned row inherits these. 120 tokens, refilling 120 every 60s ⇒ a sustained ~120
+ * tool-calls/minute with a full 120-call burst. Tuned to throttle abuse, not normal buyer use.
  */
 export const DEFAULT_RATE_LIMIT: RateLimitConfig = {
   capacity: 120,
@@ -172,9 +176,9 @@ export async function checkRateLimit(
 }
 
 /**
- * Set (or update) a per-account OVERRIDE of the bucket parameters (ADR-0112 lock 4). Upserts the
- * row, resetting the balance to the new capacity. Must run inside `withTenant(db, accountId, …)`;
- * the policy WITH CHECK refuses an override targeting another tenant's account.
+ * Set (or update) a per-account OVERRIDE of the bucket parameters. Upserts the row, resetting the
+ * balance to the new capacity. Must run inside `withTenant(db, accountId, …)`; the policy WITH CHECK
+ * refuses an override targeting another tenant's account.
  */
 export async function setAccountRateLimit(
   tx: TenantExecutor,
