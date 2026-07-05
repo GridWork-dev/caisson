@@ -5,7 +5,7 @@
 // + filter. No token / malformed / forged / expired → `null` (community → base-only view). Runs at the
 // edge under `nodejs_compat` — workerd implements node:crypto sign/verify (since 2025-02), so the same
 // verifier the local-ai/agent-dev installs use runs unmodified on the Worker; no WebCrypto fork.
-import { verifyLicense } from "@caisson/license-verify";
+import { verifyLicense, type VerifiedLicense } from "@caisson/license-verify";
 
 // `PREFIX-TIER-base64url(...)` carried after the Bearer scheme. Case-insensitive scheme, one token.
 const BEARER_RE = /^Bearer\s+(\S+)$/i;
@@ -18,9 +18,16 @@ const NO_REVOCATIONS: ReadonlySet<string> = new Set<string>();
  * REVOKED license is treated exactly like an absent/forged token → `null` (community, base-only view).
  * `getDenied` MUST be total (its backing cache is fail-open — an unavailable deny-set returns an empty
  * set, so installs never break); this function never fetches, so it stays a pure sync resolver.
+ *
+ * `verify` defaults to the SHIPPED baked-key verifier and exists ONLY so tests can drive this seam
+ * with runtime-minted DEV-key tokens (`verifyLicenseWithKey`) — NO prod-signed token is ever
+ * committed as a fixture (a real entitlement token IS the entitlement; the P0 incident class). Every
+ * live call site uses the default; the bake itself is pinned negatively (a dev-signed token must be
+ * rejected by the default path).
  */
 export function makeLicenseEntitlementResolver(
   getDenied: () => ReadonlySet<string>,
+  verify: (token: string) => VerifiedLicense = verifyLicense,
 ): (request: Request) => readonly string[] | null {
   return (request: Request): readonly string[] | null => {
     const header = request.headers.get("authorization");
@@ -28,7 +35,7 @@ export function makeLicenseEntitlementResolver(
     const match = BEARER_RE.exec(header.trim());
     const token = match?.[1];
     if (token === undefined) return null;
-    const verified = verifyLicense(token);
+    const verified = verify(token);
     if (!verified.valid || verified.claims === null) return null;
     // Edge revocation gate: an operator-revoked license id → community. Fail-open lives in getDenied's
     // cache (revocation-list.ts), so a deny-set outage denies nobody rather than blocking every buyer.

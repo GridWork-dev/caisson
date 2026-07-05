@@ -858,6 +858,7 @@
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
+        "@caisson/license-issue": "workspace:*",
         "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "eslint": "^9.13.0",

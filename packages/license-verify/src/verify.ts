@@ -24,7 +24,7 @@ import { decodeToken } from "./token.ts";
 
 /**
  * The baked-in Ed25519 verification public key (SPKI DER, base64) — the PRODUCTION issuer key
- * (fingerprint `c0bfb8277a840d2e`, rotated 2026-07-05 per ADR-0226 / the P0 credential incident;
+ * (fingerprint `a170f7a0ab89bab0`, rotated 2026-07-05 per ADR-0226 / the P0 credential incident;
  * provenance `infra/license-issuer/ISSUER_PUBLIC_KEY.md`).
  * The matching private signing key is `CAISSON_LICENSE_SIGNING_KEY`, held ONLY by the issuer service
  * (`@caisson/license-issue`); it never ships in any tarball and is never committed. Rotating this key
@@ -35,7 +35,7 @@ import { decodeToken } from "./token.ts";
  * the entitlement, and offline verify has no revocation list — regardless of private-key secrecy.
  */
 const LICENSE_PUBLIC_KEY_SPKI_B64 =
-  "MCowBQYDK2VwAyEAuZK8MtzHKMZgRwuu8OWrIeGuYYfVg7+sjV4oeh2ynlA=";
+  "MCowBQYDK2VwAyEAQUI4pkfsYmA3f616p5xCM0P+EzHS9+rRN/y/AGXnOP4=";
 
 /** Imported once at module load — a fixed, baked key, never reconstructed per call. */
 const licensePublicKey: KeyObject = createPublicKey({

@@ -1,80 +1,92 @@
 // licenseEntitlementResolver — the Worker's offline license → purchased-ids path (ADR-0010/0047/0071).
-// Drives the REAL @caisson/license-verify Ed25519 verifier with a PRODUCTION-signed token (the verifier
-// bakes the production public key, ADR-0110; entitlements ["local-ai"], tier pro, non-expiring), proving
-// the verify→entitlements seam end to end against the SHIPPED key. An absent / malformed / non-Bearer /
-// forged license resolves to null (community), so the handler serves the free base only (TM-LIC).
+// Drives the REAL @caisson/license-verify Ed25519 verify logic with a RUNTIME-MINTED dev-key token
+// through the injectable verify seam (`devVerify`); NO prod-signed token is committed (a real
+// entitlement token IS the entitlement — the P0 incident class). The production bake is pinned
+// NEGATIVELY: the default (baked-key) entrypoint must REJECT a dev-signed token. An absent /
+// malformed / non-Bearer / forged license resolves to null (community), so the handler serves the
+// free base only (TM-LIC).
 import { describe, expect, test } from "bun:test";
+import { devVerify, mintDevToken } from "./dev-license";
 import {
   licenseEntitlementResolver,
   makeLicenseEntitlementResolver,
 } from "./entitlement-filter";
 
-// A real PRODUCTION-signed license token (minted offline with CAISSON_LICENSE_SIGNING_KEY; a token is
-// public-safe — its detached signature reveals nothing about the private key). Keep in sync with the
-// baked key in license-verify/src/verify.ts. Signed claims { entitlements: ["local-ai"], tier "pro",
-// expiry null }.
-const PROD_TOKEN =
-  "CAISSON-PRO-eyJlbnRpdGxlbWVudHMiOlsibG9jYWwtYWkiXSwiZXhwaXJ5IjpudWxsLCJsaWNlbnNlSWQiOiIyMjIyMjIyMi0yMjIyLTQyMjItODIyMi0yMjIyMjIyMjIyMjIiLCJtYWpvciI6MSwidGllciI6InBybyJ9s5abAWoJnigs0h0oHu26viTz6EF3Z181CDnTFb11QUpmRSeNSNyWP5a4OuCVP19Kf6koIlrSx1S9yyDCgHoZDg";
+// The deny-set key (ADR-0225 R-4=B) carried in the minted claims — a synthetic v4 UUID.
+const LICENSE_ID = "22222222-2222-4222-8222-222222222222";
+
+// Minted fresh per test run with the DOCUMENTED dev seed — never a committed token string.
+const DEV_TOKEN = await mintDevToken({
+  entitlements: ["local-ai"],
+  expiry: null,
+  licenseId: LICENSE_ID,
+  major: 1,
+  tier: "pro",
+});
 
 const reqWith = (authorization?: string): Request =>
   new Request("https://registry.caisson.sh/", {
     headers: authorization === undefined ? {} : { authorization },
   });
 
+// The resolver under test: revocations off, dev-key verify injected through the test seam.
+const resolveDev = makeLicenseEntitlementResolver(() => new Set(), devVerify);
+
 describe("licenseEntitlementResolver (ADR-0010/0071)", () => {
   test("a valid Bearer license resolves to its signed entitlements", () => {
-    expect(licenseEntitlementResolver(reqWith(`Bearer ${PROD_TOKEN}`))).toEqual(
-      ["local-ai"],
-    );
+    expect(resolveDev(reqWith(`Bearer ${DEV_TOKEN}`))).toEqual(["local-ai"]);
   });
 
   test("a case-insensitive bearer scheme still resolves", () => {
-    expect(licenseEntitlementResolver(reqWith(`bearer ${PROD_TOKEN}`))).toEqual(
-      ["local-ai"],
-    );
+    expect(resolveDev(reqWith(`bearer ${DEV_TOKEN}`))).toEqual(["local-ai"]);
   });
 
   test("no Authorization header → null (community)", () => {
-    expect(licenseEntitlementResolver(reqWith())).toBeNull();
+    expect(resolveDev(reqWith())).toBeNull();
   });
 
   test("a non-Bearer scheme → null", () => {
-    expect(licenseEntitlementResolver(reqWith("Basic abc123"))).toBeNull();
+    expect(resolveDev(reqWith("Basic abc123"))).toBeNull();
   });
 
   test("an empty Bearer value → null", () => {
-    expect(licenseEntitlementResolver(reqWith("Bearer "))).toBeNull();
+    expect(resolveDev(reqWith("Bearer "))).toBeNull();
   });
 
   test("a forged / malformed token → null (verify fails safe to community)", () => {
     expect(
-      licenseEntitlementResolver(
-        reqWith("Bearer CAISSON-PRO-not-a-real-token"),
-      ),
+      resolveDev(reqWith("Bearer CAISSON-PRO-not-a-real-token")),
+    ).toBeNull();
+  });
+
+  test("the DEFAULT baked-key entrypoint REJECTS a dev-signed token (the production bake happened)", () => {
+    // The bake pin, proven negatively (mirrors verify.test.ts): if someone wired the dev verifier
+    // into the shipped default, this dev token would resolve and this test would catch it.
+    expect(
+      licenseEntitlementResolver(reqWith(`Bearer ${DEV_TOKEN}`)),
     ).toBeNull();
   });
 });
 
-// The signed licenseId in PROD_TOKEN's claims (decoded), the deny-set key (ADR-0225 R-4=B).
-const PROD_LICENSE_ID = "22222222-2222-4222-8222-222222222222";
-
 describe("makeLicenseEntitlementResolver — edge revocation gate (ADR-0225 R-4=B)", () => {
   test("an empty deny-set leaves a valid license unchanged", () => {
-    const resolve = makeLicenseEntitlementResolver(() => new Set());
-    expect(resolve(reqWith(`Bearer ${PROD_TOKEN}`))).toEqual(["local-ai"]);
+    const resolve = makeLicenseEntitlementResolver(() => new Set(), devVerify);
+    expect(resolve(reqWith(`Bearer ${DEV_TOKEN}`))).toEqual(["local-ai"]);
   });
 
   test("a REVOKED license id → null (community), exactly like a forged token", () => {
     const resolve = makeLicenseEntitlementResolver(
-      () => new Set([PROD_LICENSE_ID]),
+      () => new Set([LICENSE_ID]),
+      devVerify,
     );
-    expect(resolve(reqWith(`Bearer ${PROD_TOKEN}`))).toBeNull();
+    expect(resolve(reqWith(`Bearer ${DEV_TOKEN}`))).toBeNull();
   });
 
   test("a deny-set that lists OTHER ids leaves this license unaffected", () => {
     const resolve = makeLicenseEntitlementResolver(
       () => new Set(["99999999-9999-4999-8999-999999999999"]),
+      devVerify,
     );
-    expect(resolve(reqWith(`Bearer ${PROD_TOKEN}`))).toEqual(["local-ai"]);
+    expect(resolve(reqWith(`Bearer ${DEV_TOKEN}`))).toEqual(["local-ai"]);
   });
 });

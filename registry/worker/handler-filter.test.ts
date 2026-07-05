@@ -11,15 +11,21 @@ import {
   loadRegistryIndex,
   loadRegistryIndexFromFile,
 } from "../schema/registry-index";
-import { licenseEntitlementResolver } from "./entitlement-filter";
+import { devVerify, mintDevToken } from "./dev-license";
+import { makeLicenseEntitlementResolver } from "./entitlement-filter";
 import { createIndexHandler } from "./handler";
 
-// A real PRODUCTION-signed license (minted offline with CAISSON_LICENSE_SIGNING_KEY; public-safe) —
-// signs entitlements ["local-ai"], pro, non-expiring. The verifier bakes the production public key
-// (ADR-0110). Keep in sync with the baked key in license-verify/src/verify.ts. Drives the REAL
-// verifier→expand→filter end to end.
-const PROD_TOKEN =
-  "CAISSON-PRO-eyJlbnRpdGxlbWVudHMiOlsibG9jYWwtYWkiXSwiZXhwaXJ5IjpudWxsLCJsaWNlbnNlSWQiOiIyMjIyMjIyMi0yMjIyLTQyMjItODIyMi0yMjIyMjIyMjIyMjIiLCJtYWpvciI6MSwidGllciI6InBybyJ9s5abAWoJnigs0h0oHu26viTz6EF3Z181CDnTFb11QUpmRSeNSNyWP5a4OuCVP19Kf6koIlrSx1S9yyDCgHoZDg";
+// A RUNTIME-MINTED dev-key license (documented KAT seed; no committed token string — a real
+// entitlement token is itself the leak, the P0 incident class). Signs entitlements ["local-ai"],
+// pro, non-expiring; drives the REAL verify logic → expand → filter end to end through the
+// injectable verify seam. The production-key bake is pinned negatively in entitlement-filter.test.ts.
+const DEV_TOKEN = await mintDevToken({
+  entitlements: ["local-ai"],
+  expiry: null,
+  licenseId: "22222222-2222-4222-8222-222222222222",
+  major: 1,
+  tier: "pro",
+});
 
 function entry(
   id: string,
@@ -166,7 +172,7 @@ describe("Worker entitlement filtering (ADR-0071)", () => {
 });
 
 describe("Worker filtering composed with the REAL license verifier (end-to-end seam)", () => {
-  // An index that actually contains a local-ai member, so the prod token's signed entitlement
+  // An index that actually contains a local-ai member, so the minted token's signed entitlement
   // (["local-ai"]) expands to a non-empty member set — proving verify → expand → filter end to end.
   const localAiIndex = loadRegistryIndex({
     schemaVersion: 1,
@@ -177,13 +183,16 @@ describe("Worker filtering composed with the REAL license verifier (end-to-end s
     ],
   });
   const realHandler = createIndexHandler(localAiIndex, {
-    resolveEntitlements: licenseEntitlementResolver,
+    resolveEntitlements: makeLicenseEntitlementResolver(
+      () => new Set(),
+      devVerify,
+    ),
   });
 
-  test("a real production-signed license sees base ∪ its entitled edition (local-ai), not other editions", async () => {
+  test("a real dev-signed license sees base ∪ its entitled edition (local-ai), not other editions", async () => {
     const res = realHandler(
       new Request("https://registry.caisson.sh/", {
-        headers: { authorization: `Bearer ${PROD_TOKEN}` },
+        headers: { authorization: `Bearer ${DEV_TOKEN}` },
       }),
     );
     expect(res.status).toBe(200);

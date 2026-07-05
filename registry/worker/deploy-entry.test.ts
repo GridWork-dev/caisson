@@ -6,7 +6,8 @@
 // optional) flips the edge to the unfiltered full-catalog branch — leaking every paid/edition module
 // to anonymous callers with public cache headers. Any one of the assertions below fails loudly if so.
 import { describe, expect, test } from "bun:test";
-import worker from "./deploy-entry";
+import worker, { buildLicenseEntitlementResolver } from "./deploy-entry";
+import { devVerify, mintDevToken } from "./dev-license";
 
 const get = (init?: RequestInit): Response =>
   worker.fetch(new Request("https://registry.caisson.sh/", init));
@@ -45,12 +46,19 @@ describe("deploy-entry live composition root (B2b seam pin)", () => {
   });
 });
 
-// A real PRODUCTION-signed local-ai license (same token as entitlement-filter.test.ts); its signed
-// claims.licenseId is the deny-set key. Anonymous callers never see @caisson/local-ai; a valid holder
-// does — UNLESS the operator revoked it (ADR-0225 R-4=B), which the wired R2 deny-set enforces here.
-const PROD_TOKEN =
-  "CAISSON-PRO-eyJlbnRpdGxlbWVudHMiOlsibG9jYWwtYWkiXSwiZXhwaXJ5IjpudWxsLCJsaWNlbnNlSWQiOiIyMjIyMjIyMi0yMjIyLTQyMjItODIyMi0yMjIyMjIyMjIyMjIiLCJtYWpvciI6MSwidGllciI6InBybyJ9s5abAWoJnigs0h0oHu26viTz6EF3Z181CDnTFb11QUpmRSeNSNyWP5a4OuCVP19Kf6koIlrSx1S9yyDCgHoZDg";
-const PROD_LICENSE_ID = "22222222-2222-4222-8222-222222222222";
+// A RUNTIME-MINTED dev-key local-ai license (documented KAT seed; NO committed prod token — a real
+// entitlement token is itself the leak, the P0 incident class); its signed claims.licenseId is the
+// deny-set key. The shipped worker REJECTS this token (bake pin below); the deny-set flow is driven
+// through the exported buildLicenseEntitlementResolver — the SAME factory (and the same live
+// denySet.get) the shipped resolver is built from, with the dev verifier injected.
+const DEV_LICENSE_ID = "22222222-2222-4222-8222-222222222222";
+const DEV_TOKEN = await mintDevToken({
+  entitlements: ["local-ai"],
+  expiry: null,
+  licenseId: DEV_LICENSE_ID,
+  major: 1,
+  tier: "pro",
+});
 
 // An injected R2-object double + a ctx that lets the test await the background deny-set refresh.
 const envWith = (revokedLicenseIds: string[]) => ({
@@ -73,36 +81,39 @@ const drainCtx = () => {
 
 const tokenReq = () =>
   new Request("https://registry.caisson.sh/", {
-    headers: { authorization: `Bearer ${PROD_TOKEN}` },
+    headers: { authorization: `Bearer ${DEV_TOKEN}` },
   });
 
 // NOTE: the deny-set cache is a module singleton with a 60s TTL, so these two tests share it and MUST
 // run in order — the first asserts the pristine (never-loaded, empty) state, the second performs the
 // FIRST real load (fetchedAt = -Infinity → always fetches regardless of TTL) and asserts the revoke.
 describe("deploy-entry edge revocation deny-set (ADR-0225 R-4=B)", () => {
-  test("a valid holder is entitled before any deny-set loads (empty cache)", async () => {
-    // One-arg fetch: no env, no ctx → no refresh kicked → deny-set stays empty → holder entitled.
+  test("the SHIPPED worker rejects a dev-signed token (the production-key bake is wired live)", async () => {
+    // The bake pin, proven negatively: if deploy-entry ever wired a non-baked verifier, this
+    // dev-signed token would be accepted and @caisson/local-ai would leak into the response.
     const res = worker.fetch(tokenReq());
     expect(res.status).toBe(200);
-    expect(await idsOf(res)).toContain("@caisson/local-ai");
+    expect(await idsOf(res)).not.toContain("@caisson/local-ai");
+  });
+
+  test("a valid holder is entitled before any deny-set loads (empty cache)", () => {
+    // The exported factory composes the LIVE denySet.get with the dev verifier — same wiring as
+    // the shipped resolver, minus the baked key a committed fixture would require.
+    const resolve = buildLicenseEntitlementResolver(devVerify);
+    expect(resolve(tokenReq())).toEqual(["local-ai"]);
   });
 
   test("once the holder's license is revoked and the list loads, the edition is hidden", async () => {
-    // First request kicks the background refresh (served stale/empty); settle it, then re-request.
+    // First request kicks the background refresh (served stale/empty); settle it, then re-resolve.
     const load = drainCtx();
     worker.fetch(
       new Request("https://registry.caisson.sh/"),
-      envWith([PROD_LICENSE_ID]),
+      envWith([DEV_LICENSE_ID]),
       load.ctx,
     );
     await load.settle();
 
-    const res = worker.fetch(
-      tokenReq(),
-      envWith([PROD_LICENSE_ID]),
-      drainCtx().ctx,
-    );
-    expect(res.status).toBe(200);
-    expect(await idsOf(res)).not.toContain("@caisson/local-ai"); // revoked → base-only
+    const resolve = buildLicenseEntitlementResolver(devVerify);
+    expect(resolve(tokenReq())).toBeNull(); // revoked → community (base-only view)
   });
 });
