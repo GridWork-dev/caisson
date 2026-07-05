@@ -828,7 +828,7 @@ dimension = "D6"
 subject = "apps/site/content/docs/base/billing.mdx:1-10"
 title = "The billing docs page only documents Stripe and Paddle, but @caisson/billing also ships full LemonSqueezy and Polar drivers"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "17221eff2abcc09b"
@@ -3787,9 +3787,9 @@ id = "7187ceba82df7646"
 domain = "packages/billing"
 dimension = "D7"
 subject = "packages/billing/src/index.ts:19-32"
-title = "Dead exports: LemonSqueezy and Polar billing providers unused in production"
+title = "REFUTED: not dead code -- LemonSqueezy/Polar are ADR-0175 buyer-facing dormant drivers, conformance-tested (provider-conformance.test.ts) alongside Stripe/Paddle; contradicted finding 16ee3df36e38af60 (undocumented) instead, resolved there via apps/site/content/docs/base/billing.mdx"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "722585904581fe1d"
