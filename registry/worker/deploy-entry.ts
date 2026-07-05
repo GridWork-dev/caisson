@@ -71,7 +71,14 @@ const denySet = makeRevocationDenySet(async (): Promise<unknown> => {
 
 // ONE deny-set-wired resolver gates BOTH surfaces — the npm install channel (ADR-0223) is exactly
 // what a revoked license must lose, so it cannot bypass the edge deny-set (ADR-0225 R-4=B).
-const licenseEntitlementResolver = makeLicenseEntitlementResolver(denySet.get);
+// The factory is exported ONLY so tests can compose the LIVE denySet.get with a runtime-minted
+// dev-key verifier (no committed prod token — the P0 incident class); it is inert at the edge
+// (Worker modules are not externally importable) and every shipped call site takes the baked default.
+export const buildLicenseEntitlementResolver = (
+  verify?: Parameters<typeof makeLicenseEntitlementResolver>[1],
+): ((request: Request) => readonly string[] | null) =>
+  makeLicenseEntitlementResolver(denySet.get, verify);
+const licenseEntitlementResolver = buildLicenseEntitlementResolver();
 
 // Parse-or-throw at module load (cold start) over the bundled JSON: a tampered/malformed bundle fails
 // loudly rather than serving a half-typed object. createIndexHandler re-validates as defense in depth

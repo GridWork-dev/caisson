@@ -1108,5 +1108,10 @@ export function checkEntitlementTokenScan(root: string): Finding[] {
       );
     }
   }
+  // The registry Worker tree (PR #117 P1 follow-up): its tests historically committed a
+  // PROD-signed fixture — now they mint dev-key tokens at runtime (worker/dev-license.ts), and
+  // this scan keeps it that way. Whole-tree walk; the shape regex only fires on 88+ char
+  // token-shaped strings, so index/tarball hashes and attestations never match.
+  scanDir(join(root, "registry", "worker"), "registry/worker");
   return findings;
 }

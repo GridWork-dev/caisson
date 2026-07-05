@@ -7,22 +7,24 @@ revocation list, so rotating the baked key is the only invalidation). The Ed2551
 **signing keypair** is the root of trust for all license issuance. This file holds the **public**
 (verify) half only — non-secret, safe to commit. The **private** signing key never appears in the repo.
 
-## Public verify key (SPKI DER, base64) — active since 2026-07-05
+## Public verify key (SPKI DER, base64) — active since 2026-07-05 (rotation 2)
 
 ```
-MCowBQYDK2VwAyEAuZK8MtzHKMZgRwuu8OWrIeGuYYfVg7+sjV4oeh2ynlA=
+MCowBQYDK2VwAyEAQUI4pkfsYmA3f616p5xCM0P+EzHS9+rRN/y/AGXnOP4=
 ```
 
-- **Fingerprint** (`sha256(spki_b64)[:16]`): `c0bfb8277a840d2e`
+- **Fingerprint** (`sha256(spki_b64)[:16]`): `a170f7a0ab89bab0`
 - **Algorithm:** Ed25519 (`crypto.verify(null, …)`)
-- **Round-trip verified:** the matching private key signs and this key verifies (worker fixture
-  re-minted and verified against the new baked key at rotation).
+- **Round-trip verified:** the matching private key signs and this key verifies (dev-key test suite
+  proves the verify path; the bake is pinned negatively — a dev-signed token is rejected by the
+  shipped entrypoint).
 
 ### Retired keys
 
-| Fingerprint        | Active     | Retired    | Why                                                                                                                       |
-| ------------------ | ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `0ae7d2abb886ca3d` | 2026-06-30 | 2026-07-05 | ADR-0226 rotation: prod-signed tokens leaked into git history/mirror; every token signed by this key is now unverifiable. |
+| Fingerprint        | Active     | Retired    | Why                                                                                                                                                                                                                                           |
+| ------------------ | ---------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `c0bfb8277a840d2e` | 2026-07-05 | 2026-07-05 | Rotation 1's re-minted worker test fixture was itself a live prod-signed token in-repo (review P1); fixtures went dev-key-runtime-minted, then the key rotated again so the fixture token dies. Never deployed to the live service or Worker. |
+| `0ae7d2abb886ca3d` | 2026-06-30 | 2026-07-05 | ADR-0226 rotation: prod-signed tokens leaked into git history/mirror; every token signed by this key is now unverifiable.                                                                                                                     |
 
 ## Code-track action (I1 issuer — NOT this operator session)
 
