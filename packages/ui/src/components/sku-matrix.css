@@ -1,7 +1,31 @@
 /* SkuMatrix (V14 — editions × modules). Co-located; values via --cs-* only; the row-label
  * font-weight that was an inline style in the old apps/site primitive lives here. */
+
+/* Non-scrolling frame around the scrolling `.cs-matrix__wrap` — same reason as
+ * `.cs-terminal__body-frame` / `.cs-code-frame`: a pseudo-element positioned absolute on the
+ * scrolling element itself would scroll away with the content, so the fade lives on this static
+ * parent instead (visual-audit remediation — a wide comparison table has real overflow columns
+ * on mobile but shipped with zero visual cue that more exist off-screen). Both current callers
+ * (home + marketplace-hub "Compose, don't fork") sit directly on the plain page background with
+ * no `Section band` — the fade targets `--cs-bg` to match; a future caller nesting this inside a
+ * tinted/surfaced band would need its own override. */
+.cs-matrix__frame {
+  position: relative;
+}
+
 .cs-matrix__wrap {
   overflow-x: auto;
+}
+
+.cs-matrix__frame::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 2rem;
+  pointer-events: none;
+  background: linear-gradient(to right, transparent, var(--cs-bg));
 }
 
 .cs-matrix {

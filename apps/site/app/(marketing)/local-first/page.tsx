@@ -235,25 +235,27 @@ export default function LocalFirstPage() {
             status={<StatusChip tone="success" label="sealed per-tenant" dot />}
           >
             <span className="cs-tok-muted">
-              {'import { TenantFieldCrypto } from "@caisson/field-crypto"\n\n'}
+              {
+                'import {\n  TenantFieldCrypto,\n} from\n  "@caisson/field-crypto"\n\n'
+              }
             </span>
             <span className="cs-tok-accent">{"const"}</span>
             {" env = "}
-            <span className="cs-tok-accent">{"await"}</span>
-            {' fc.encryptField(tenant, "record", "notes")\n'}
+            <span className="cs-tok-accent">{"await\n  "}</span>
+            {'fc.encryptField(\n  tenant, "record", "notes")\n'}
             <span className="cs-tok-muted">
-              {"// v1 · aes-256-gcm · per-tenant key · AAD-bound  "}
+              {"// v1 · aes-256-gcm ·\n// per-tenant key ·\n// AAD-bound  "}
             </span>
-            <span className="cs-tok-success">{"← sealed at rest\n\n"}</span>
+            <span className="cs-tok-success">{"← sealed\n// at rest\n\n"}</span>
             <span className="cs-tok-accent">{"await"}</span>
-            {" fc.decryptField(otherTenant, env, "}
+            {" fc.decryptField(\n  otherTenant, env, "}
             <span className="cs-tok-accent">{'"notes"'}</span>
             {")\n"}
             <span className="cs-tok-muted">
-              {"// cross-tenant key — open "}
+              {"// cross-tenant key —\n// open "}
             </span>
             <span className="cs-tok-danger">{"refused"}</span>
-            <span className="cs-tok-muted">{"  ← isolation proof"}</span>
+            <span className="cs-tok-muted">{"  ← isolation\n// proof"}</span>
           </Terminal>
         }
       />

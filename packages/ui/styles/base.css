@@ -50,6 +50,17 @@ a {
   text-decoration: none;
 }
 
+/* Global placeholder floor (visual-audit remediation): the browser default placeholder color
+ * measures ~3.3:1 in light mode against the kit's own form-field fill (`--cs-surface-1`) — below
+ * the 4.5:1 AA floor — while passing at ~4.8:1 in dark, so this was a light-mode-only regression
+ * on every unstyled input (login, forgot/reset-password; the newsletter and ask-AI inputs had
+ * already reinvented this same fix locally). `--cs-fg-muted` on `--cs-surface-1` is gated ≥4.5:1
+ * in BOTH modes by tokens-contrast.test.ts, so setting it once here is the floor every input
+ * inherits — a local override still wins where a field sits on a different surface. */
+::placeholder {
+  color: var(--cs-fg-muted);
+}
+
 code,
 kbd,
 .mono {
@@ -169,6 +180,23 @@ kbd,
 .cs-footnote {
   color: var(--cs-fg-muted);
   font-size: var(--cs-text-sm);
+}
+
+/* Inline prose link (visual-audit remediation): the `a { color: inherit; text-decoration: none }`
+ * reset above means an unstyled `<Link>` inside body copy reads as plain static text — no color
+ * shift, no underline, nothing signaling it's interactive (glossary term list, FAQ/consent-copy
+ * links). `--cs-link` already existed in tokens.css but had no consuming class, so every call site
+ * either reinvented `style={{ color: "var(--cs-link)" }}` inline (still colour-alone, no underline)
+ * or, more often, just used a bare `<Link>` with the reset's plain-text look. Underline is
+ * load-bearing here, not decorative — never colour-alone. */
+.cs-link {
+  color: var(--cs-link);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.cs-link:hover {
+  color: var(--cs-accent);
 }
 
 /* Martian Mono tabular figures — every numeral (ADR-0078 §8). */

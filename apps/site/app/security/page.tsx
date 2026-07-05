@@ -211,9 +211,10 @@ strict-transport-security: max-age=63072000;
   includeSubDomains; preload
 x-content-type-options: nosniff
 x-frame-options: DENY
-referrer-policy: strict-origin-when-cross-origin
-permissions-policy: geolocation=(), microphone=(),
-  camera=()
+referrer-policy: strict-origin-when-cross-
+  origin
+permissions-policy: geolocation=(),
+  microphone=(), camera=()
 content-security-policy: default-src 'self'; …`}
             </Terminal>
           }

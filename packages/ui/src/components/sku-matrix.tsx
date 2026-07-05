@@ -30,44 +30,46 @@ export const SkuMatrix = forwardRef<HTMLDivElement, SkuMatrixProps>(
       <div
         ref={ref}
         className={
-          className ? `cs-matrix__wrap ${className}` : "cs-matrix__wrap"
+          className ? `cs-matrix__frame ${className}` : "cs-matrix__frame"
         }
         {...rest}
       >
-        <table className="cs-matrix">
-          <thead>
-            <tr>
-              <th scope="col">Module</th>
-              {columns.map((c) => (
-                <th key={c} scope="col">
-                  {c}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.label}>
-                <th scope="row">{r.label}</th>
-                {r.cells.map((cell, i) =>
-                  typeof cell === "boolean" ? (
-                    <td
-                      key={i}
-                      className={cell ? "cs-matrix__yes" : undefined}
-                      aria-label={cell ? "included" : "not included"}
-                    >
-                      {cell ? <Icon name="check" /> : "—"}
-                    </td>
-                  ) : (
-                    <td key={i} className="cs-matrix__price">
-                      {cell}
-                    </td>
-                  ),
-                )}
+        <div className="cs-matrix__wrap">
+          <table className="cs-matrix">
+            <thead>
+              <tr>
+                <th scope="col">Module</th>
+                {columns.map((c) => (
+                  <th key={c} scope="col">
+                    {c}
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.label}>
+                  <th scope="row">{r.label}</th>
+                  {r.cells.map((cell, i) =>
+                    typeof cell === "boolean" ? (
+                      <td
+                        key={i}
+                        className={cell ? "cs-matrix__yes" : undefined}
+                        aria-label={cell ? "included" : "not included"}
+                      >
+                        {cell ? <Icon name="check" /> : "—"}
+                      </td>
+                    ) : (
+                      <td key={i} className="cs-matrix__price">
+                        {cell}
+                      </td>
+                    ),
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     );
   },

@@ -9,7 +9,6 @@ import {
 import { EDITION_MARKS, moduleMark } from "@/lib/marks";
 import {
   editionPrice,
-  formatPrice,
   formatUsd,
   MODULE_PRICES,
   priceById,
@@ -255,7 +254,7 @@ export default function AiKitPage() {
         title="Four modules behind one chokepoint."
       >
         <Reveal>
-          <FeatureGrid cols={3}>
+          <FeatureGrid cols={2}>
             {MEMBER_MODULES.map((m) => (
               <MemberModuleCard key={m.id} {...m} />
             ))}
@@ -347,13 +346,15 @@ export default function AiKitPage() {
                 className="cs-muted"
                 style={{ marginTop: "var(--cs-space-3)" }}
               >
-                The composed modules are also sold individually: prompt-
-                registry from $99, guardrails from $149, ai-meter from $199;
-                {modulePrice ? (
+                The composed modules are also sold individually: prompt-registry
+                from $99, guardrails from $149, ai-meter from $199;
+                {modulePrice && modulePrice.amount !== null ? (
                   <>
                     {" "}
-                    the catalog floor is{" "}
-                    <span className="cs-num">{formatPrice(modulePrice)}</span>
+                    the catalog floor is {modulePrice.from ? "from " : ""}
+                    <span className="cs-num">
+                      {formatUsd(modulePrice.amount)}
+                    </span>
                   </>
                 ) : null}
                 .

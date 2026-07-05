@@ -187,14 +187,21 @@ const AgentDeclaration = (
 capability:   code_write
 model:        `}
     <span className="cs-tok-accent">sonnet</span>
-    {`         # a lane, not a default to the top tier
-tools:        [read, edit, run-tests]
+    {`
+  # a lane, not a default
+  # to the top tier
+tools:        [read, edit,
+  run-tests]
 side_effects: `}
     <span className="cs-tok-danger">false</span>
-    {`          # cannot push, deploy, or read a secret
+    {`
+  # cannot push, deploy,
+  # or read a secret
 gate:         `}
     <span className="cs-tok-success">human-approval</span>
-    {`  # data-migration tag → operator re-entry`}
+    {`
+  # data-migration tag →
+  # operator re-entry`}
   </Terminal>
 );
 
