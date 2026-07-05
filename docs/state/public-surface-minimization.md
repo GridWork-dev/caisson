@@ -59,7 +59,7 @@ const entitled = new Set<string>(baseModuleIds(index)); // base is ALWAYS in the
 commercial module scoped to no edition (a `kind: base` or `kind: primitive` with `editions: []`) is
 classified as free base and served to anonymous callers. That is the leak.
 
-### Current LIVE state: fully unfiltered
+### Current LIVE state: fully unfiltered (as of this section's writing — SUPERSEDED, see below)
 
 The ADR-0047 entitlement filter IS built and wired in `registry/worker/deploy-entry.ts` (it injects
 `licenseEntitlementResolver`), but it is **not yet deployed**:
@@ -74,6 +74,13 @@ So **right now the live Worker serves the entire 27-module `index.json` unfilter
 unauthenticated** — including all four paid editions (`compliance`, `ai-kit`, `local-ai`, `agent-dev`).
 That is the worst-case current surface. The pending ADR-0047 DEPLOY closes the _edition_ half; ADR-0136
 (§2) closed the _base-kind_ half that ADR-0047 alone does not — built on this branch, live at deploy.
+
+> **SUPERSEDED — VERIFIED 2026-07-05.** The deploy this section flags as pending has since shipped: a
+> live, anonymous probe of `https://registry.caisson.sh` (§2's recommendation 2, below) confirms
+> `GET /` and `GET /index.json` now return only the 15 open modules — zero commercial modules, zero
+> edition roots — and `GET /modules/:id` for any commercial id (including all four editions named
+> above) 404s fail-closed. The worst-case surface described here is closed in production, not just on
+> this branch. Left in place as the historical record of the leak this doc exists to document.
 
 ### The public surface, from disk (built `registry/index.json`, 27 modules)
 
@@ -201,8 +208,35 @@ a chicken-and-egg break.
    trims to `{id, latest}` (`handler.ts:104-106`); ensure `/index.json` and `/modules/:id` for
    non-entitled callers never leak commercial modules' `members` pin-maps, `dependencies`, or
    `entry`/`agents` paths (recon surface for a would-be reimplementer).
+
+   **VERIFIED live 2026-07-05** against `https://registry.caisson.sh`, anonymous (no
+   `Authorization` header): `GET /` and `GET /index.json` both return only the 15 open
+   (Apache-2.0) base modules (`ai-config`, `auth`, `billing`, `cli`, `credits`, `email`, `jobs`,
+   `kernel`, `license-verify`, `mcp-server`, `migrate`, `observability`, `registry-schema`,
+   `tenancy-rls`, `ui`) — zero commercial modules present, and a grep of the full `/index.json`
+   body for every commercial module name (`agent-dev`, `compliance`, `field-crypto`, `audit-worm`,
+   `ai-kit`, `local-ai`, `ai-meter`, `ai-evals`, `guardrails`, `prompt-registry`, `local-store`,
+   `agent-kernel`) matched nothing — no `members`/`dependencies`/`entry`/`agents` leakage anywhere,
+   not even as a stray dependency reference inside an open module's manifest. `GET
+/modules/%40caisson%2Fagent-dev` (and `compliance`, `field-crypto`, `ai-kit`) each returned
+   `404 {"error":"unknown_module"}` — fail-closed, indistinguishable from a genuinely-unknown id,
+   exactly per the `handler.ts` D-gate design. Contrast: `GET /modules/%40caisson%2Fkernel` (open)
+   returns `200` with its full manifest (`entry`/`agents`/`dependencies`/`members` all present),
+   as intended for a free module.
+
 3. **Don't ship compiled premium `dist/` to any public read path.** The Worker serves _metadata_; the
    actual tarballs must sit behind the same license gate, not a public CDN.
+
+   **VERIFIED live 2026-07-05:** an anonymous fetch of a commercial tarball,
+   `GET /@caisson/field-crypto/-/field-crypto-0.2.3.tgz` (no `Authorization` header), returned
+   `401` with body `{"error":"not_found"}` (`content-type: application/json`, `file(1)` confirms
+   JSON text, not a tarball) — not a 200, not a byte of compiled `dist/`. Headers carry
+   `cache-control: private, no-store`, `vary: Authorization`, `www-authenticate: Bearer`, matching
+   the documented D3 gate (`npm-routes.ts`: no-auth → 401 retry-with-token, auth-but-unentitled →
+   404, never a 200). The packument endpoint (`GET /@caisson/field-crypto`, no tarball, just
+   metadata) returned the identical `401`/`{"error":"not_found"}` — the metadata path is gated
+   exactly as strictly as the tarball bytes.
+
 4. **Rate-limit the anon catalog** (reuse the ADR-0112 token-bucket shape) to blunt scraping/enumeration.
 5. **Treat the `paid` flag as the single gating axis going forward** — new modules inherit gating from
    being sold, so a future commercial primitive can never re-leak by forgetting to add it to a hand-list.

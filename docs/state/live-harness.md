@@ -53,9 +53,23 @@ ADR-0224 Task 1: the Paddle webhook simulator delivers real-shaped payloads to a
 destination, but it was open whether that delivery is **signed** with the destination's secret. The
 billing leg (`packages/billing/live/paddle-webhook.live.test.ts`) resolves this live: a signed delivery
 asserts the full `verifyPaddleWebhook` leg; an unsigned one asserts parse-only and prints a verify-leg
-skip note. **A1 result: _(fill in after the first live run — signed ⇒ the simulator covers the real
-verify leg; unsigned ⇒ the real-signature verify stays covered by the hand-signed unit suite
-`packages/billing/src/paddle.test.ts` + the `webhook-grant` leg, which signs with the real secret)._**
+skip note.
+
+**A1 result: SIGNED.** A live Paddle Simulations-API purchase proof ran 2026-07-04 end-to-end: signed
+sim delivery -> `verifyPaddleWebhook` -> envelope parse -> `purchase.completed` -> a real
+`entitlement_grant` row (field-crypto, line-item join id carried) -> `billing_processed_event` dedup
+row -> a PostHog `purchase` capture. The simulator **does** cover the real verify leg — the
+hand-signed unit suite is a belt-and-suspenders backstop, not the only signed coverage. The same live
+pass also caught and fixed a launch-critical bug the fixture-only tests had missed: `PaddleEventSchema`/
+`StripeEventSchema` were `.strict()` over just the mapper's consumed fields, so every real delivery
+(which always carries additive fields Paddle/Stripe document as non-breaking, e.g. `occurred_at` +
+`notification_id`) 400'd at the boundary -- no purchase would ever have fulfilled in production. Fixed
+in `fix(billing): accept real Paddle and Stripe webhook envelopes at the boundary (#114)`, commit
+`b674ed3`. One gotcha worth carrying forward: the simulator merges omitted payload-override fields in
+from its static example, so a nulled field (e.g. `subscription_id`) must be set explicitly `null` or it
+leaks in and misroutes the mapper. Evidence:
+`outputs/specs/audit-v2-remediation/TRIAGE.md` (2026-07-04 EXECUTED banner) + project memory
+`remediation-closeout-live-proofs`.
 
 ## Invariants (why this is safe to run against production)
 
