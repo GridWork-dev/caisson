@@ -4,6 +4,7 @@
 // recipient / token fragments).
 import { fetchWithTimeout, InternalError } from "@caisson/kernel";
 import type { Emailer, EmailMessage } from "./email.ts";
+import { tryRenderEmailTemplate } from "./templates/index.ts";
 
 export interface PostmarkConfig {
   serverToken: string;
@@ -19,6 +20,7 @@ const POSTMARK_ENDPOINT = "https://api.postmark.com/email";
 export function createPostmarkEmailer(config: PostmarkConfig): Emailer {
   return {
     async send(msg: EmailMessage): Promise<void> {
+      const rendered = await tryRenderEmailTemplate(msg.template, msg.data);
       const res = await fetchWithTimeout(POSTMARK_ENDPOINT, {
         method: "POST",
         headers: {
@@ -29,8 +31,9 @@ export function createPostmarkEmailer(config: PostmarkConfig): Emailer {
         body: JSON.stringify({
           From: config.from,
           To: msg.to,
-          Subject: msg.template,
-          TextBody: JSON.stringify(msg.data),
+          Subject: rendered?.subject ?? msg.template,
+          ...(rendered ? { HtmlBody: rendered.html } : {}),
+          TextBody: rendered?.text ?? JSON.stringify(msg.data),
         }),
       });
       if (!res.ok) {

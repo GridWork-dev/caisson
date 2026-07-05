@@ -5,6 +5,7 @@ import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "./button";
+import styles from "./waitlist-form.module.css";
 
 type State = "idle" | "loading" | "ok" | "error";
 
@@ -162,6 +163,7 @@ export function UpdatesForm({ source = "site" }: { source?: string }) {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         disabled={state === "loading"}
+        className={styles.emailInput}
         style={{
           flex: "1 1 16rem",
           padding: "var(--cs-space-3) var(--cs-space-4)",

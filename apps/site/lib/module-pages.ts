@@ -112,34 +112,34 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     metaDescription:
       "Append-only SHA-256 audit chain with a write-once WORM anchor per entry, plus an S3 Object-Lock store. Tamper, truncation, and rewrite all surface on verify.",
     heroOneLiner:
-      "An audit log that proves it wasn't edited — hash-chained entries, a write-once anchor per append, and an S3 Object-Lock store underneath.",
+      "An audit log that proves it wasn't edited: hash-chained entries, a write-once anchor per append, and an S3 Object-Lock store underneath.",
     definition:
       "Audit Chain + WORM is Caisson's evidentiary primitive: an append-only SHA-256 hash chain (AuditChainStore) anchored to a write-once WORM object on every append, plus the S3 Object-Lock artifact store (S3ArtifactStore) it anchors into and an append-only locked-version table with a derived current. Three composable layers, each enforced by a different mechanism, over the kernel's pure chain algebra.",
     included: [
       {
         title: "Append-only hash chain, three independent locks",
-        body: "AuditChainStore.append composes the kernel's canonicalize/chainEntry/anchorChain functions, writes each entry to a table whose migration grants the app role SELECT + INSERT only (no UPDATE/DELETE), serializes appends per tenant under a pg_advisory_xact_lock, and mints a fresh WORM anchor after every entry — a UNIQUE(account_id, seq) constraint is the hard belt if two appends race.",
+        body: "AuditChainStore.append composes the kernel's canonicalize/chainEntry/anchorChain functions, writes each entry to a table whose migration grants the app role SELECT + INSERT only (no UPDATE/DELETE), serializes appends per tenant under a pg_advisory_xact_lock, and mints a fresh WORM anchor after every entry; a UNIQUE(account_id, seq) constraint is the hard belt if two appends race.",
       },
       {
         title: "Verify catches tamper, reorder, and truncation",
-        body: "AuditChainStore.verify recomputes the hash chain against the trusted WORM anchor and treats the anchor store as the length oracle: if an anchor exists for a length beyond what the DB can currently produce, the tail was cut — verify fails even though the surviving prefix hashes clean on its own.",
+        body: "AuditChainStore.verify recomputes the hash chain against the trusted WORM anchor and treats the anchor store as the length oracle: if an anchor exists for a length beyond what the DB can currently produce, the tail was cut, and verify fails even though the surviving prefix hashes clean on its own.",
       },
       {
         title: "S3 Object-Lock backend, write-once by construction",
-        body: "S3ArtifactStore.put is a conditional IfNoneMatch: '*' PUT — S3 answers 412 on an existing key, which the store turns into ArtifactExistsError. GOVERNANCE mode is the default everywhere; COMPLIANCE mode (SEC-17a-4 grade, irreversible until retain_until) requires a typed irreversibleComplianceOptIn() naming the exact bucket and only builds under NODE_ENV==='production' — never under a test runner.",
+        body: "S3ArtifactStore.put is a conditional IfNoneMatch: '*' PUT; S3 answers 412 on an existing key, which the store turns into ArtifactExistsError. GOVERNANCE mode is the default everywhere; COMPLIANCE mode (SEC-17a-4 grade, irreversible until retain_until) requires a typed irreversibleComplianceOptIn() naming the exact bucket and only builds under NODE_ENV==='production', never under a test runner.",
       },
       {
         title: "Retention floor and monotonic escalation",
-        body: "retainUntilFrom enforces MIN_RETENTION_YEARS=6 (HIPAA §164.316(b)(2) and SEC 17a-4 both floor at six years) and defaults new locks to 7; a term below the floor throws rather than silently rounding up. extendRetention only accepts a strictly-later date, and escalateToCompliance hardens GOVERNANCE→COMPLIANCE through the same three-belt gate as a write-time COMPLIANCE store — no code path ever shortens a lock or de-escalates it.",
+        body: "retainUntilFrom enforces MIN_RETENTION_YEARS=6 (HIPAA §164.316(b)(2) and SEC 17a-4 both floor at six years) and defaults new locks to 7; a term below the floor throws rather than silently rounding up. extendRetention only accepts a strictly-later date, and escalateToCompliance hardens GOVERNANCE→COMPLIANCE through the same three-belt gate as a write-time COMPLIANCE store; no code path ever shortens a lock or de-escalates it.",
       },
       {
         title: "Locked-version table with a derived current",
-        body: "LockedVersionStore never stores a 'current' flag — insertVersion appends under an advisory lock with a UNIQUE(account_id, supersedes_id) constraint (a fork hits the belt and rolls back), and currentVersions/currentVersion derive the tip two independent ways — a no-successor SQL predicate and the kernel's currentVersions() over the loaded set — and throw if the two ever disagree.",
+        body: "LockedVersionStore never stores a 'current' flag: insertVersion appends under an advisory lock with a UNIQUE(account_id, supersedes_id) constraint (a fork hits the belt and rolls back), and currentVersions/currentVersion derive the tip two independent ways (a no-successor SQL predicate and the kernel's currentVersions() over the loaded set), throwing if the two ever disagree.",
       },
     ],
     artifact: {
       label:
-        "AuditChainStore.verify — the WORM store as trusted length oracle, catching tail truncation a clean-hashing prefix would otherwise hide",
+        "AuditChainStore.verify: the WORM store as trusted length oracle, catching tail truncation a clean-hashing prefix would otherwise hide",
       lang: "ts",
       file: "packages/audit-worm/src/chain-store.ts",
       code: "  async verify(accountId: string): Promise<ChainVerification> {\n    return withTenant(this.db, accountId, async (tx) => {\n      const entries = await loadEntries(tx, accountId);\n\n      // Truncation guard (TM-I): the WORM store is the trusted length oracle. An anchor for a length\n      // past what the DB can now produce means the tail was dropped — invalid even if the surviving\n      // prefix is internally consistent (which, being a true prefix, it always is).\n      const beyond = await this.store.head(\n        anchorKey(accountId, entries.length + 1),\n      );\n      if (beyond !== null) {\n        return { valid: false, brokenAt: entries.length };\n      }\n      if (entries.length === 0) {\n        return { valid: true, brokenAt: null };\n      }\n\n      const anchorObj = await this.store.get(\n        anchorKey(accountId, entries.length),\n      );\n      const anchor = decodeAnchor(anchorObj.body);\n      return verifyChain(entries, anchor);\n    });\n  }",
@@ -149,13 +149,13 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Can an admin (or Caisson) edit or delete an entry after it's written?",
         answer:
-          "No. The migration for audit_chain_entry grants the app role SELECT and INSERT only — UPDATE and DELETE are withheld at the privilege level, not just by application convention. Even a compromised app connection can't rewrite a committed entry through SQL.",
+          "No. The migration for audit_chain_entry grants the app role SELECT and INSERT only: UPDATE and DELETE are withheld at the privilege level, not just by application convention. Even a compromised app connection can't rewrite a committed entry through SQL.",
       },
       {
         question:
           "What actually stops someone truncating the tail of the chain and re-appending?",
         answer:
-          "Every append mints a fresh anchor keyed by chain length and writes it to the WORM store under a write-once key. verify() checks whether an anchor exists for a length beyond what the DB currently holds — if it does, the tail was cut, even though the surviving rows still hash together cleanly as a valid prefix.",
+          "Every append mints a fresh anchor keyed by chain length and writes it to the WORM store under a write-once key. verify() checks whether an anchor exists for a length beyond what the DB currently holds: if it does, the tail was cut, even though the surviving rows still hash together cleanly as a valid prefix.",
       },
       {
         question: "Does this need AWS, or is there a local option?",
@@ -166,7 +166,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "If I buy this standalone, do I also get retention policy scheduling?",
         answer:
-          "No — Audit Chain + WORM is the storage and verification primitive (chain, anchor, S3 Object-Lock, retention floor/escalation). Scheduled expiry and legal-hold enforcement is the separate Retention Runner module; Compliance composes both.",
+          "No. Audit Chain + WORM is the storage and verification primitive (chain, anchor, S3 Object-Lock, retention floor/escalation). Scheduled expiry and legal-hold enforcement is the separate Retention Runner module; Compliance composes both.",
       },
     ],
     relatedGlossary: [
@@ -176,7 +176,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     sells: {
       edition: "compliance",
-      note: "Every evidence collector in Compliance chains through this store — buy it standalone to anchor your own audit trail, or get it composed for you inside the Compliance edition.",
+      note: "Every evidence collector in Compliance chains through this store: buy it standalone to anchor your own audit trail, or get it composed for you inside the Compliance edition.",
     },
   },
   {
@@ -318,7 +318,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: ["soc2-audit-log", "control-to-code-mapping"],
     sells: {
       edition: "Compliance",
-      note: "Alerting is a real workspace:* dependency the Compliance edition re-exports at runtime (packages/compliance/src/index.ts), not a manifest-only listing — buy it standalone at $149 or get it composed into Compliance.",
+      note: "Alerting is a real workspace:* dependency that the Compliance edition re-exports at runtime (packages/compliance/src/index.ts), not a manifest-only listing — buy it standalone at $149 or get it composed into Compliance.",
     },
   },
   {
@@ -327,17 +327,17 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     metaDescription:
       "PG-atomic reserve/reconcile token metering for LLM calls: per-tenant spend caps, a circuit breaker, and a MinHash dedup gate. Integer credits only, no floats.",
     heroOneLiner:
-      "Reserve a token estimate before the call, true it to actual usage after — a runaway prompt loop 402s on the next call instead of running your bill up.",
+      "Reserve a token estimate before the call, true it to actual usage after: a runaway prompt loop 402s on the next call instead of running your bill up.",
     definition:
-      "ai-meter is the metered-inference money path: estimate a call's cost, reserve integer credits against it before the provider answers, then reconcile to the provider's actual reported usage. A per-tenant spend window and circuit breaker sit on top, so a crossed hard cap blocks the next reservation before a provider call ever fires — checked, not assumed.",
+      "ai-meter is the metered-inference money path: estimate a call's cost, reserve integer credits against it before the provider answers, then reconcile to the provider's actual reported usage. A per-tenant spend window and circuit breaker sit on top, so a crossed hard cap blocks the next reservation before a provider call ever fires; the block is checked against real usage, never assumed.",
     included: [
       {
         title: "Pre-call estimate",
-        body: "estimateCost sizes the reservation before the provider responds — a chars/4 heuristic (estimateTokens) against the message array, deliberately rounded up (a full output budget assumed, no cache) so reconcile() trues a shortfall down rather than an under-reservation slipping past a cap.",
+        body: "estimateCost sizes the reservation before the provider responds: a chars/4 heuristic (estimateTokens) against the message array, deliberately rounded up (a full output budget assumed, no cache) so reconcile() trues a shortfall down rather than an under-reservation slipping past a cap.",
       },
       {
         title: "reserve() then reconcile()",
-        body: "reserve() debits the estimate from the tenant's credit wallet before the call; reconcile() computes the real cost from provider-reported usage and trues the delta — a feature_grant refund on over-reservation, a feature_debit shortfall charge on under-reservation, nothing at all when the delta is zero. The usage_event (account_id, call_id) UNIQUE constraint makes a retried reconcile settle exactly once.",
+        body: "reserve() debits the estimate from the tenant's credit wallet before the call; reconcile() computes the real cost from provider-reported usage and trues the delta: a feature_grant refund on over-reservation, a feature_debit shortfall charge on under-reservation, nothing at all when the delta is zero. The usage_event (account_id, call_id) UNIQUE constraint makes a retried reconcile settle exactly once.",
       },
       {
         title: "Versioned, fail-closed price book",
@@ -345,16 +345,16 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Circuit breaker",
-        body: "assertBreakerClosed runs before every reserve() — an open breaker throws SpendCapError (402) with no provider call made. A crossed hard_limit trips it (tripBreaker); it stays open until an operator calls resetBreaker, so a runaway loop can't spend past the cap on the next retry.",
+        body: "assertBreakerClosed runs before every reserve(): an open breaker throws SpendCapError (402) with no provider call made. A crossed hard_limit trips it (tripBreaker); it stays open until an operator calls resetBreaker, so a runaway loop can't spend past the cap on the next retry.",
       },
       {
         title: "Dedup-before-meter gate",
-        body: "checkDedupGate runs a dependency-free MinHash/LSH similarity check (normalizePrompt → shingle → computeMinHashSignature → lshBands) against recent calls in the same account+scope, ahead of the price-book estimate. It only detects a likely-redundant prompt above a 0.92 Jaccard threshold and returns duplicate-of — it never auto-skips the call or moves a credit itself.",
+        body: "checkDedupGate runs a dependency-free MinHash/LSH similarity check (normalizePrompt → shingle → computeMinHashSignature → lshBands) against recent calls in the same account+scope, ahead of the price-book estimate. It only detects a likely-redundant prompt above a 0.92 Jaccard threshold and returns duplicate-of; it never auto-skips the call or moves a credit itself.",
       },
     ],
     artifact: {
       label:
-        "bumpSpend() — the atomic per-tenant spend-window mutation reserve() and reconcile() both call",
+        "bumpSpend(): the atomic per-tenant spend-window mutation reserve() and reconcile() both call",
       lang: "ts",
       file: "packages/ai-meter/src/meter.ts",
       code: "/**\n * Atomic running-spend mutation, returning the new total. A non-negative `amount` upserts (the window\n * row may not exist yet — the reservation creates it). A negative `amount` (a reconcile refund) is a\n * plain UPDATE on the row the reservation already created: `ON CONFLICT` only arbitrates UNIQUE\n * violations, so a negative VALUES tuple would trip the `spent >= 0` CHECK during the insert attempt\n * BEFORE the conflict resolves — the UPDATE instead evaluates the CHECK on the resulting (>= 0) row.\n */\nasync function bumpSpend(\n  tx: TenantExecutor,\n  accountId: string,\n  scope: string,\n  key: string,\n  amount: number,\n): Promise<number> {\n  if (amount >= 0) {\n    const r = await tx.query<{ spent: number }>(\n      `INSERT INTO ${TENANT_SPEND_WINDOW_TABLE} (account_id, scope, unit, window_key, spent)\n         VALUES ($1, $2, $3, $4, $5)\n       ON CONFLICT (account_id, scope, unit, window_key)\n         DO UPDATE SET spent = ${TENANT_SPEND_WINDOW_TABLE}.spent + EXCLUDED.spent,\n                       updated_at = now()\n         RETURNING spent`,\n      [accountId, scope, SPEND_UNIT, key, amount],\n    );\n    return r.rows[0]?.spent ?? amount;",
@@ -363,29 +363,29 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       {
         question: "Does ai-meter call the LLM provider itself?",
         answer:
-          "No. ai-meter is the money-path seam around a call, not a provider client — reserve() and reconcile() take a provider/model/usage shape from whatever gateway made the call (the AI Production Kit's inference gateway composes it this way) and never make an HTTP request themselves.",
+          "No. ai-meter is the money-path seam around a call, not a provider client: reserve() and reconcile() take a provider/model/usage shape from whatever gateway made the call (the AI Production Kit's inference gateway composes it this way) and never make an HTTP request themselves.",
       },
       {
         question: "What happens when a tenant's spend cap is hit mid-session?",
         answer:
-          "The reserve() that crosses the hard_limit trips the circuit breaker in the same transaction. The NEXT reserve() call for that account+scope throws SpendCapError (402) before the provider is ever invoked — the call that tripped it still completes and reconciles normally.",
+          "The reserve() that crosses the hard_limit trips the circuit breaker in the same transaction. The NEXT reserve() call for that account+scope throws SpendCapError (402) before the provider is ever invoked; the call that tripped it still completes and reconciles normally.",
       },
       {
         question: "Can a network retry double-charge a call?",
         answer:
-          "No. reserve() debits against an idempotencyKey of `${callId}:reserve`, and reconcile() inserts into usage_event on a (account_id, call_id) UNIQUE with ON CONFLICT DO NOTHING — a retried reconcile detects the existing row and returns the already-settled result instead of writing a second credit event.",
+          "No. reserve() debits against an idempotencyKey of `${callId}:reserve`, and reconcile() inserts into usage_event on a (account_id, call_id) UNIQUE with ON CONFLICT DO NOTHING: a retried reconcile detects the existing row and returns the already-settled result instead of writing a second credit event.",
       },
       {
         question:
           "Is the estimate exact, or does it round in the customer's favor?",
         answer:
-          "It's a conservative heuristic (chars/4, full assumed output budget, no cache credit) that deliberately over-reserves rather than under-reserves — reconcile() then refunds the difference to the actual provider-reported usage, so the wallet never sits short mid-call.",
+          "It's a conservative heuristic (chars/4, full assumed output budget, no cache credit) that deliberately over-reserves rather than under-reserves. reconcile() then refunds the difference to the actual provider-reported usage, so the wallet never sits short mid-call.",
       },
     ],
     relatedGlossary: ["token-metering", "row-level-security"],
     sells: {
       edition: "ai-kit",
-      note: "ai-meter is the metering primitive the AI Production Kit's inference gateway composes at runtime — buy it standalone onto the free base, or get it (plus guardrails and the prompt registry) bundled into the $599 edition.",
+      note: "ai-meter is the metering primitive the AI Production Kit's inference gateway composes at runtime: buy it standalone onto the free base, or get it (plus guardrails and the prompt registry) bundled into the $599 edition.",
     },
   },
   {
@@ -680,37 +680,37 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     metaDescription:
       "Agent Kernel: the agent/skill/rule schema, seven-act lifecycle FSM, and hooks dispatcher behind Caisson's Agentic-Dev edition. No vendor SDK, $199 standalone.",
     heroOneLiner:
-      "The guarded agent lifecycle FSM — VERIFY failing reopens PLAN, there's no edge to SHIP.",
+      "The guarded agent lifecycle FSM: VERIFY failing reopens PLAN, there's no edge to SHIP.",
     definition:
-      "Agent kernel is the engine-neutral base for governed AI agent work: a Zod schema for agent/skill/rule artifacts, a seven-act lifecycle state machine (spec through ship), allow/deny/mutate governance guards, a hooks dispatcher, and an opt-in tamper-evident audit-chain recorder. It imports no vendor SDK and runs no LLM — composition only, consumed by both the base CLI and the Agentic-Dev edition.",
+      "Agent kernel is the engine-neutral base for governed AI agent work: a Zod schema for agent/skill/rule artifacts, a seven-act lifecycle state machine (spec through ship), allow/deny/mutate governance guards, a hooks dispatcher, and an opt-in tamper-evident audit-chain recorder. It imports no vendor SDK and runs no LLM: composition only, consumed by both the base CLI and the Agentic-Dev edition.",
     included: [
       {
         title: "Typed agent/skill/rule schema",
-        body: "AgentArtifact, SkillArtifact, and RuleArtifact are a Zod discriminatedUnion on kind, built on @caisson/kernel's strictObject — an unknown field is rejected outright, not silently dropped. A bad artifact fails through parseArtifact as a redaction-safe ValidationError, never the rejected values.",
+        body: "AgentArtifact, SkillArtifact, and RuleArtifact are a Zod discriminatedUnion on kind, built on @caisson/kernel's strictObject: an unknown field is rejected outright, not silently dropped. A bad artifact fails through parseArtifact as a redaction-safe ValidationError, never the rejected values.",
       },
       {
         title: "Seven-act lifecycle FSM",
-        body: "ACTS runs spec through ship in canonical order. transition() is the only way to move between acts and throws on any edge outside the fixed TRANSITIONS adjacency — including the two branches that matter: verify can reopen plan, and eval has no edge but ship.",
+        body: "ACTS runs spec through ship in canonical order. transition() is the only way to move between acts and throws on any edge outside the fixed TRANSITIONS adjacency. The two branches that matter: verify can reopen plan, and eval has no edge but ship.",
       },
       {
         title: "allow / deny / mutate governance",
-        body: "governance.ts gives transition guards and hook vetoes one shared decision shape. evaluateGuards folds a guard list fail-closed — the first deny short-circuits, and a guard that throws is itself treated as a deny, so a buggy guard can never accidentally admit a transition.",
+        body: "governance.ts gives transition guards and hook vetoes one shared decision shape. evaluateGuards folds a guard list fail-closed: the first deny short-circuits, and a guard that throws is itself treated as a deny, so a buggy guard can never accidentally admit a transition.",
       },
       {
         title: "Hooks dispatcher: fail-open on crashes, fail-closed on vetoes",
         body: "HookDispatcher.dispatch runs registered before:/after: act handlers in order. A handler that throws is isolated, reported to an optional sink (hook name + error type only, never a message or stack), and treated as allow; a handler that returns deny() still short-circuits the loop.",
       },
       {
-        title: "Safe shell hooks — no interpolation is possible",
-        body: "commandHandler runs a fixed argv array through node:child_process execFile — no shell is spawned, and no HookContext value can reach the command's arguments, so shell injection through a hook is structurally impossible, not just avoided by convention.",
+        title: "Safe shell hooks: no interpolation is possible",
+        body: "commandHandler runs a fixed argv array through node:child_process execFile: no shell is spawned, and no HookContext value can reach the command's arguments, so shell injection through a hook is structurally impossible, not just avoided by convention.",
       },
       {
         title: "Opt-in tamper-evident audit chain",
-        body: "AuditedLifecycle wraps every governed transition with the kernel's chainEntry/anchorChain/verifyChain hash-chain primitives — the same mechanism the Compliance edition's audit-worm package uses. Off by default; set audited: true and each admitted step becomes an append-only, tamper-evident chain entry.",
+        body: "AuditedLifecycle wraps every governed transition with the kernel's chainEntry/anchorChain/verifyChain hash-chain primitives, the same mechanism the Compliance edition's audit-worm package uses. Off by default; set audited: true and each admitted step becomes an append-only, tamper-evident chain entry.",
       },
     ],
     artifact: {
-      label: "TRANSITIONS — the seven-act lifecycle's only two branch edges",
+      label: "TRANSITIONS: the seven-act lifecycle's only two branch edges",
       lang: "ts",
       file: "packages/agent-kernel/src/lifecycle.ts",
       code: '/**\n * Legal forward adjacency. The two branch edges:\n *   - `verify → plan` — a failed goal-backward verify opens a fresh PLAN cycle (does not SHIP).\n *   - `sweep → ship` — an untagged phase skips EVAL straight to SHIP.\n * An EVAL regression is a fail-stop (no edge out of `eval` but `ship`); `ship` is terminal.\n */\nconst TRANSITIONS: Record<Act, readonly Act[]> = {\n  spec: ["plan"],\n  plan: ["execute"],\n  execute: ["verify"],\n  verify: ["sweep", "plan"],\n  sweep: ["eval", "ship"],\n  eval: ["ship"],\n  ship: [],\n};',
@@ -719,24 +719,24 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       {
         question: "Does agent-kernel call an LLM or import a vendor SDK?",
         answer:
-          "No. Its own package.json says it plainly: engine-neutral, no vendor SDK, no LLM call — the schema, FSM, governance, hooks, and audit-chain primitives are composition mechanism only, consumed down-only by the base cli/mcp-server and by the Agentic-Dev edition.",
+          "No. Its own package.json says it plainly: engine-neutral, no vendor SDK, no LLM call; the schema, FSM, governance, hooks, and audit-chain primitives are composition mechanism only, consumed down-only by the base cli/mcp-server and by the Agentic-Dev edition.",
       },
       {
         question:
           "What happens if a transition is attempted out of order, like execute straight to ship?",
         answer:
-          "transition() throws a ValidationError immediately. canTransition() checks the fixed TRANSITIONS adjacency and there is no edge from execute to ship, only execute → verify — an illegal move throws rather than getting silently reinterpreted.",
+          "transition() throws a ValidationError immediately. canTransition() checks the fixed TRANSITIONS adjacency and there is no edge from execute to ship, only execute → verify; an illegal move throws rather than getting silently reinterpreted.",
       },
       {
         question: "Is the tamper-evident audit chain mandatory?",
         answer:
-          "No. AuditedLifecycle takes an audited option that defaults to false — with it off, every transition is still FSM-validated but nothing is recorded. Turn it on with a store (InMemoryAuditLifecycleStore ships for offline/CLI use, or bring your own) and each admitted step gets chained.",
+          "No. AuditedLifecycle takes an audited option that defaults to false: with it off, every transition is still FSM-validated but nothing is recorded. Turn it on with a store (InMemoryAuditLifecycleStore ships for offline/CLI use, or bring your own) and each admitted step gets chained.",
       },
       {
         question:
           "Does buying agent-kernel alone get me the sandboxed agent runner too?",
         answer:
-          "No — agent-kernel ($199) is the schema/FSM/governance/hooks/audit-chain base; running an actual sandboxed agent process is agent-runner ($49), a separate module. Those are the two Agentic-Dev SKUs sold standalone; the $249 Agentic-Dev edition additionally bundles the local hybrid memory, the sandboxed tool-exec gate, and the multi-harness emitter that wire agent-kernel into one governed loop — buy the modules for your own tooling, buy the edition for the assembled loop.",
+          "No. agent-kernel ($199) is the schema/FSM/governance/hooks/audit-chain base; running an actual sandboxed agent process is agent-runner ($49), a separate module. Those are the two Agentic-Dev SKUs sold standalone; the $249 Agentic-Dev edition additionally bundles the local hybrid memory, the sandboxed tool-exec gate, and the multi-harness emitter that wire agent-kernel into one governed loop. Buy the modules for your own tooling, or buy the edition for the assembled loop.",
       },
     ],
     relatedGlossary: ["hash-chain-audit-trail"],

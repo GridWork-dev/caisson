@@ -106,7 +106,7 @@ export default async function DashboardActivityPage() {
     .reverse();
 
   return (
-    <ActivityShell>
+    <ActivityShell note="Showing credit-ledger activity — per-call model/token detail isn't available in this environment.">
       {debits.length === 0 ? (
         <EmptyState
           icon="gauge"
@@ -120,7 +120,15 @@ export default async function DashboardActivityPage() {
   );
 }
 
-function ActivityShell({ children }: { children: ReactNode }) {
+function ActivityShell({
+  children,
+  note,
+}: {
+  children: ReactNode;
+  /** Shown only when this view differs from the metered default (the credit-ledger
+   * fallback) — so the buyer knows why per-call detail is missing, not just that it is. */
+  note?: string;
+}) {
   return (
     <div style={{ display: "grid", gap: "var(--cs-space-8)" }}>
       <div>
@@ -133,6 +141,17 @@ function ActivityShell({ children }: { children: ReactNode }) {
         <p className="cs-muted" style={{ marginTop: "var(--cs-space-2)" }}>
           Recent metered usage and credit-debiting activity on your account.
         </p>
+        {note !== undefined ? (
+          <p
+            className="cs-muted"
+            style={{
+              marginTop: "var(--cs-space-2)",
+              fontSize: "var(--cs-text-xs)",
+            }}
+          >
+            {note}
+          </p>
+        ) : null}
       </div>
       {children}
     </div>

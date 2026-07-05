@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Card, Hero, StatusChip } from "@/components";
+import { Card, Hero, MobileBuyBar, StatusChip } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { PageSections } from "@/components/page-sections";
 import { TrackView } from "@/components/track-view";
@@ -64,20 +64,18 @@ function bodySections(record: ModulePageRecord): readonly PageSection[] {
   return [
     {
       kind: "section",
-      eyebrow: "Definition",
       title: "What it is",
       lede: record.definition,
     },
     {
       kind: "featureGrid",
       cols: 2,
-      eyebrow: "Included",
       title: "What ships in the module",
       items: record.included.map((i) => ({ title: i.title, body: i.body })),
     },
     {
       kind: "codeArtifact",
-      label: `${record.artifact.label} — ${record.artifact.file}`,
+      label: `${record.artifact.label}: ${record.artifact.file}`,
       code: record.artifact.code,
     },
     { kind: "media", icon: moduleMark(record.slug) },
@@ -126,7 +124,7 @@ function BuyRail({
           <p className="cs-footnote">{record.sells.note}</p>
           {price.standaloneOnly ? (
             <p className="cs-footnote">
-              Standalone module — no edition includes it.
+              Standalone module: no edition includes it.
             </p>
           ) : (
             edition &&
@@ -134,7 +132,7 @@ function BuyRail({
               <p className="cs-footnote">
                 Or composed into the{" "}
                 <Link href={`/${price.edition}`}>{edition.label} edition</Link>{" "}
-                — {formatUsd(edition.amount)}.
+                for {formatUsd(edition.amount)}.
               </p>
             )
           )}
@@ -158,6 +156,24 @@ function BuyRail({
         </div>
       </Card>
     </aside>
+  );
+}
+
+/** The condensed sticky mobile counterpart to `BuyRail` (ADR-0242): same price + label + Add-to-cart
+ *  action, reused as-is — not reinvented — so the two surfaces can never drift out of agreement. The
+ *  full card above still renders at its usual position for the edition cross-sell and related
+ *  reading; this bar is the persistent reminder that stays visible at every scroll position. */
+function MobileBuyBarSection({ price }: { price: ModulePrice }) {
+  const catalogItem = moduleCatalogItem(price.id);
+  if (!catalogItem) return null;
+  return (
+    <MobileBuyBar
+      label={price.label}
+      price={formatUsd(price.amount)}
+      action={
+        <AddToCartButton item={toCartItem(catalogItem)} variant="primary" />
+      }
+    />
   );
 }
 
@@ -221,6 +237,10 @@ export default async function ModuleDepthPage(props: Params) {
           </div>
           <BuyRail record={record} price={price} />
         </div>
+      </div>
+
+      <div className={styles.mobileBarWrap}>
+        <MobileBuyBarSection price={price} />
       </div>
     </>
   );

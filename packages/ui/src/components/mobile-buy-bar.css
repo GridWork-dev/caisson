@@ -1,0 +1,57 @@
+/* MobileBuyBar — presentational recipe (ADR-0099): co-located CSS, values via --cs-* only. A
+ * persistent price + purchase bar pinned to the viewport bottom, rendered as a fixed bar whenever
+ * mounted. The kit owns how it looks; a consuming page owns WHEN it is present (e.g. only below its
+ * own responsive breakpoint) — kept out of this file on purpose, since the kit's own breakpoints are
+ * pinned to the rem ladder (ADR-0100/0101 gate #5) and a page's cutover for its desktop sidebar rail
+ * may be a value off that ladder, as the module depth-page template's 900px is.
+ *
+ * Stacking: z-index 45 sits between the marketplace tab row (40, apps/site marketplace.module.css)
+ * and the mobile nav drawer (49, apps/site global.css) — an open drawer still renders above this
+ * bar. A solid --cs-surface-1 background (not a blur) keeps the bar's own text contrast fixed
+ * regardless of what scrolls underneath it. */
+.cs-mobile-buy-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cs-space-4);
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 45;
+  padding: var(--cs-space-3) var(--cs-space-4);
+  padding-bottom: calc(var(--cs-space-3) + env(safe-area-inset-bottom, 0px));
+  background: var(--cs-surface-1);
+  border-top: 1px solid var(--cs-border);
+  box-shadow: var(--cs-shadow-lg);
+}
+
+.cs-mobile-buy-bar__info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.cs-mobile-buy-bar__label {
+  overflow: hidden;
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cs-mobile-buy-bar__price {
+  color: var(--cs-fg);
+  font-size: var(--cs-text-lg);
+  font-weight: var(--cs-weight-semibold);
+}
+
+.cs-mobile-buy-bar__action {
+  flex: none;
+}
+
+/* Forced-colors (Windows high-contrast) — keep the bar's separation from page content visible. */
+@media (forced-colors: active) {
+  .cs-mobile-buy-bar {
+    border-top: 1px solid CanvasText;
+  }
+}

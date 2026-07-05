@@ -21,7 +21,7 @@ import { breadcrumb, serializeJsonLd, techArticle } from "@/lib/jsonld";
 export const metadata = buildMetadata({
   title: "EU AI Act-ready",
   description:
-    "Caisson generates the logging, traceability, and data-governance artifacts an EU AI Act Annex IV technical-documentation file requires — audit chain, RLS + field-crypto, eval harness, and human-oversight hooks, all wired and testable before your first assessment.",
+    "Caisson generates the logging, traceability, and data-governance artifacts an EU AI Act Annex IV technical-documentation file requires: audit chain, RLS + field-crypto, eval harness, and human-oversight hooks, all wired and testable before your first assessment.",
   path: "/frameworks/eu-ai-act",
   type: "article",
 });
@@ -34,7 +34,7 @@ const ANNEX_CONTROLS = [
     article: "Article 12 · Annex IV §3",
     label: "Record-keeping",
     title: "Every inference hashes into an append-only chain.",
-    body: "Article 12 requires high-risk AI systems to log events at a level sufficient to trace decisions back through time. Caisson's audit chain writes each event with SHA-256 over the previous hash — the log is append-only, tamper-evident, and replayable. You hand an auditor the proof, not a screenshot.",
+    body: "Article 12 requires high-risk AI systems to log events at a level sufficient to trace decisions back through time. Caisson's audit chain writes each event with SHA-256 over the previous hash, so tamper, truncation, and reorder each break the chain and surface on verify. What you hand an auditor is that same chain, run live.",
     evidence: `// kernel verifyChain — append-only SHA-256 audit chain
 import { verifyChain } from "@caisson/kernel";
 
@@ -50,7 +50,7 @@ const result = await verifyChain(db, { table: "ai_inference_log" });
     article: "Article 10 · Annex IV §2(f)",
     label: "Data governance",
     title: "Training and inference data isolated per tenant by construction.",
-    body: "Article 10 requires data-governance practices covering the datasets used to train and operate the system. Fail-closed Postgres RLS ensures no query crosses a tenant boundary without an explicit, policy-enforced grant. A query that never sets the tenant context returns nothing — the control is structural, not a convention.",
+    body: "Article 10 requires data-governance practices covering the datasets used to train and operate the system. Fail-closed Postgres RLS ensures no query crosses a tenant boundary without an explicit, policy-enforced grant. A query that never sets the tenant context returns nothing, enforced by the database's own privilege system rather than a checklist an engineer might skip.",
     evidence: `-- RLS forces every query through the data-governance policy.
 ALTER TABLE ai_training_records ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_training_records FORCE  ROW LEVEL SECURITY;
@@ -85,7 +85,7 @@ const sealed = aesgcm.seal(dek, sensitiveTrainingField);
     article: "Article 9 · Annex IV §5",
     label: "Accuracy and robustness testing",
     title: "Eval harness gates every pull request against a golden set.",
-    body: "Article 9 risk-management and Annex IV §5 require documented testing for accuracy, robustness, and cybersecurity. Caisson's standalone eval-harness module (ai-evals) ships a golden-file eval harness that gates pull requests on score regression past a declared tolerance — the gate is config in the repo, not a dashboard claim.",
+    body: "Article 9 risk-management and Annex IV §5 require documented testing for accuracy, robustness, and cybersecurity. Caisson's standalone eval-harness module (ai-evals) ships a golden-file eval harness that gates pull requests on score regression past a declared tolerance, checked into the repo as caisson.ai.toml and enforced the same way on every push.",
     evidence: `# caisson.ai.toml — eval gate configuration (ai-evals module)
 # Wires CI to fail the PR when accuracy drops past the declared tolerance.
 # The golden set, baseline, and report are repo artifacts an assessor can read.
@@ -103,7 +103,7 @@ report_dir = "reports/"`,
     label: "Human oversight hooks",
     title:
       "Circuit breaker and spend cap surface override control to operators.",
-    body: "Article 14 requires high-risk AI systems to allow natural persons to intervene and override automated outputs. Caisson's circuit breaker opens when a tenant's token spend exceeds a hard cap, returning HTTP 402 and surfacing the event — a structural pause that routes control back to the operator before the next call. Override and reset are explicit actions, not a dashboard hope.",
+    body: "Article 14 requires high-risk AI systems to allow natural persons to intervene and override automated outputs. Caisson's circuit breaker opens when a tenant's token spend exceeds a hard cap, returning HTTP 402 and surfacing the event: a structural pause that routes control back to the operator before the next call. Override and reset are explicit, logged operator actions inside the same audit chain the rest of the system writes to.",
     evidence: `// billing primitives (base substrate) — hard spend cap per tenant
 import { checkCredits, recordUsage } from "@caisson/billing";
 
@@ -147,7 +147,7 @@ function EuAiActTerminal() {
 const articleLd = techArticle({
   headline: "EU AI Act-ready technical documentation with Caisson",
   description:
-    "Map EU AI Act Annex IV requirements to Caisson controls — audit chain, RLS, field-crypto, eval harness, and human-oversight hooks.",
+    "Map EU AI Act Annex IV requirements to Caisson controls: audit chain, RLS, field-crypto, eval harness, and human-oversight hooks.",
   url: `${SITE_URL}/frameworks/eu-ai-act`,
 });
 const breadcrumbLd = breadcrumb([
@@ -194,14 +194,14 @@ export default function EuAiActPage() {
         credentials={
           <CredentialStrip
             items={["Annex IV §2–6", "Art. 10", "Art. 12", "Art. 14"]}
-            note="Evidence artifacts — not a certification or legal opinion"
+            note="Evidence artifacts, no certification or legal opinion implied"
           />
         }
         artifact={<EuAiActTerminal />}
       />
 
       {/* ===== Honesty boundary (ADR-0080 §3 — non-negotiable) ===== */}
-      <Section eyebrow="What this is — and isn't" band="tint">
+      <Section eyebrow="What this is, and isn't" band="tint">
         <Card accent>
           <div
             style={{
@@ -305,8 +305,8 @@ export default function EuAiActPage() {
         <p className="cs-footnote" style={{ marginTop: "var(--cs-space-4)" }}>
           Caisson ships technical controls. Whether your system satisfies every
           EU AI Act obligation depends on deployment context, risk category, and
-          your conformity assessment — a determination your legal team makes,
-          not a codebase starter.
+          your conformity assessment: that determination belongs to your legal
+          team.
         </p>
       </Section>
 
@@ -386,7 +386,7 @@ export default function EuAiActPage() {
         >
           <div style={{ marginTop: "var(--cs-space-8)" }}>
             <CodeBlock
-              label="annex-iv-control-map.json — illustrative artifact structure"
+              label="annex-iv-control-map.json: illustrative artifact structure"
               frame
               status={<StatusChip label="Annex IV" tone="accent" dot />}
               code={`{
@@ -409,7 +409,7 @@ export default function EuAiActPage() {
           </div>
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-5)" }}>
             The EU AI Act-ready evidence bundle ships with the Compliance
-            edition — sold worldwide, never geo-restricted.
+            edition, available to buyers anywhere.
           </p>
         </Section>
       </Reveal>
@@ -435,8 +435,8 @@ export default function EuAiActPage() {
             >
               Once inference data and audit events are commingled in production,
               isolating them for Annex IV becomes a migration. On day one, it is
-              a default. The controls are structural — and testable before your
-              first customer, not backfilled before your first notified-body
+              a default. The controls are structural, tested in CI before your
+              first customer signs, well ahead of your first notified-body
               assessment.
             </p>
           </Card>
@@ -450,12 +450,12 @@ export default function EuAiActPage() {
         </h2>
         <p className="cs-lede" style={{ marginBottom: "var(--cs-space-6)" }}>
           The Compliance edition ships the audit chain, RLS policies, and
-          field-encryption wired and testable from day one — before your first
-          notified-body assessment, not after.
+          field-encryption wired and testable from day one, ready well before
+          your first notified-body assessment.
         </p>
         <div style={{ marginBottom: "var(--cs-space-5)" }}>
           <Terminal label="scaffold a Caisson project">
-            npx create-caisson@latest
+            bun create caisson@latest
           </Terminal>
         </div>
         <div className="cs-cta-row">

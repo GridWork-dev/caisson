@@ -8,6 +8,10 @@
 // Auth methods:
 //  - Magic link (PRIMARY, always on): the link email is sent through `@caisson/email`'s `Emailer`
 //    port — the Resend driver in prod (`RESEND_API_KEY`), the in-memory capture driver otherwise.
+//  - Email + password: a signed-up password account requires email verification before it can
+//    sign in (`requireEmailVerification`) — unlike the magic link, a password alone never proves
+//    inbox ownership, so the trust boundary needs the extra round trip. Both the verification and
+//    password-reset emails route through the SAME injected `Emailer`.
 //  - GitHub + Google OAuth: offered ONLY when their credentials are present (`resolveSocialProviders`).
 //
 // The session cookie is hardened per the security floor: `SameSite=Strict`, `HttpOnly`, and
@@ -71,12 +75,36 @@ export function createAuth(params: {
         sendMagicLink: async ({ email, url }): Promise<void> => {
           await emailer.send({
             to: email,
-            template: "Sign in to Caisson",
-            data: { url, kind: "magic-link" },
+            template: "magic-link",
+            data: { url },
           });
         },
       }),
     ],
+    emailAndPassword: {
+      enabled: true,
+      // A password alone doesn't prove inbox ownership the way a clicked magic link does —
+      // require verification before a password account can sign in.
+      requireEmailVerification: true,
+      sendResetPassword: async ({ user, url }): Promise<void> => {
+        await emailer.send({
+          to: user.email,
+          template: "password-reset",
+          data: { url },
+        });
+      },
+    },
+    emailVerification: {
+      sendVerificationEmail: async ({ user, url }): Promise<void> => {
+        await emailer.send({
+          to: user.email,
+          template: "verify-email",
+          data: { url },
+        });
+      },
+      sendOnSignUp: true,
+      autoSignInAfterVerification: true,
+    },
     socialProviders: resolveSocialProviders(process.env),
     advanced: {
       cookiePrefix: "caisson",

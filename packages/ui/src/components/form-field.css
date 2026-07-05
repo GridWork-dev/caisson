@@ -1,0 +1,47 @@
+/* FormField — label + control + helper/error (ADR-0099 recipe). Co-located; values via
+ * --cs-* only. Consolidates the dashboard's duplicated inline field styles. */
+.cs-field {
+  display: grid;
+  gap: var(--cs-space-2);
+}
+
+.cs-field__label {
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.cs-field__control {
+  width: 100%;
+  font-family: var(--cs-font-sans);
+  font-size: var(--cs-text-sm);
+  padding: var(--cs-space-2) var(--cs-space-3);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-surface-1);
+  color: var(--cs-fg);
+}
+
+/* Control-ID fields (user ids, provider keys) — DESIGN.md §3: Martian Mono carries every
+ * control-ID, never body copy. */
+.cs-field[data-mono] .cs-field__control {
+  font-family: var(--cs-font-mono);
+}
+
+.cs-field__helper {
+  margin: 0;
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.cs-field__error {
+  margin: 0;
+  font-size: var(--cs-text-xs);
+  color: var(--cs-danger);
+}
+
+/* Forced-colors (Windows high-contrast) — keep the control's bordered affordance visible. */
+@media (forced-colors: active) {
+  .cs-field__control {
+    border: 1px solid CanvasText;
+  }
+}

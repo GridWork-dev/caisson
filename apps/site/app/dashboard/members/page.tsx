@@ -10,7 +10,14 @@ import {
   addAccountMember,
   listAccountMembers,
 } from "@caisson/auth";
-import { Button, DataTable, StatusChip } from "@caisson/ui/components";
+import {
+  Button,
+  Card,
+  DataTable,
+  EmptyState,
+  FormField,
+  StatusChip,
+} from "@caisson/ui/components";
 import { getDb } from "@/lib/db";
 import { requireDashboardSession } from "@/lib/auth";
 
@@ -91,47 +98,38 @@ export default async function DashboardMembersPage() {
         ]}
         rows={members}
         rowKey={(m) => m.userId}
-        empty={<span className="cs-muted">No members yet.</span>}
+        empty={<EmptyState icon="users" title="No members yet" />}
       />
 
       {isOwner && (
-        <form
-          action={addMemberAction}
-          style={{
-            display: "flex",
-            gap: "var(--cs-space-3)",
-            alignItems: "flex-end",
-            flexWrap: "wrap",
-          }}
-        >
-          <label style={{ display: "grid", gap: "var(--cs-space-2)" }}>
-            <span
-              className="cs-muted"
-              style={{ fontSize: "var(--cs-text-xs)" }}
+        <Card>
+          <form
+            action={addMemberAction}
+            style={{
+              display: "grid",
+              gap: "var(--cs-space-4)",
+              maxWidth: "28rem",
+            }}
+          >
+            <FormField
+              label="Add a seat by user id"
+              helperText="Paste the exact account/user id of the person to add — invite-by-email isn't available yet."
+              mono
             >
-              Add a seat by user id
-            </span>
-            <input
-              name="userId"
-              required
-              maxLength={200}
-              placeholder="user_…"
-              style={{
-                fontFamily: "var(--cs-font-mono)",
-                fontSize: "var(--cs-text-sm)",
-                padding: "var(--cs-space-2) var(--cs-space-3)",
-                border: "1px solid var(--cs-border)",
-                borderRadius: "var(--cs-radius-md)",
-                background: "var(--cs-surface-1)",
-                color: "var(--cs-fg)",
-                minWidth: "22ch",
-              }}
-            />
-          </label>
-          <Button type="submit" variant="primary">
-            Add seat
-          </Button>
-        </form>
+              <input
+                name="userId"
+                required
+                maxLength={200}
+                placeholder="user_…"
+              />
+            </FormField>
+            <div>
+              <Button type="submit" variant="primary">
+                Add seat
+              </Button>
+            </div>
+          </form>
+        </Card>
       )}
     </div>
   );
