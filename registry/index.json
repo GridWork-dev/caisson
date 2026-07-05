@@ -3692,6 +3692,36 @@
       ]
     },
     {
+      "id": "@caisson/rate-limit",
+      "latest": "0.1.0",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "manifest": {
+            "id": "@caisson/rate-limit",
+            "version": "0.1.0",
+            "kind": "base",
+            "editions": [],
+            "tier": "oss",
+            "priceCents": null,
+            "license": "Apache-2.0",
+            "dependencies": [
+              "@caisson/kernel",
+              "@caisson/tenancy-rls"
+            ],
+            "members": {},
+            "entry": "src/index.ts",
+            "agents": "AGENTS.md",
+            "golden": null,
+            "stability": "alpha",
+            "description": "Shared abuse-throttle primitives: an in-memory per-IP token-bucket limiter for unauthenticated surfaces, and a Postgres-backed per-account token-bucket store for authenticated ones."
+          },
+          "publishedAt": "2026-07-05T22:45:47Z",
+          "gateAttestation": "local-hygiene-wave@722d12c8103458b9e8c484662ffff1389a394f13"
+        }
+      ]
+    },
+    {
       "id": "@caisson/registry-schema",
       "latest": "0.2.1",
       "versions": [
