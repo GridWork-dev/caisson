@@ -8,11 +8,16 @@
   box-shadow: var(--cs-shadow-lg);
 }
 
+/* `flex-wrap` (visual-audit remediation): a long `label` plus a `status` chip together can exceed
+ * the card width on a narrow hero column — `.cs-terminal`'s own `overflow: hidden` (above) then
+ * silently clipped the chip instead of showing it, with no wrap/scroll cue at all (unlike the body,
+ * which at least scrolls). Wrapping lets the chip drop to its own row instead of being cut. */
 .cs-terminal__bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--cs-space-3);
+  gap: var(--cs-space-2) var(--cs-space-3);
   padding: var(--cs-space-3) var(--cs-space-4);
   border-bottom: 1px solid var(--cs-border);
   background: var(--cs-surface-2);

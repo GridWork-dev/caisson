@@ -10,11 +10,17 @@ export const metadata = buildMetadata({
   path: "/legal/eula",
 });
 
+// `ch` is defined against the font's "0" glyph, not its average character width — Hubot Sans's
+// "0" is narrow enough that the original `72ch`/`68ch` resolved to ~742-766px, fitting ~100-110
+// real characters per line (measured live), well past the 65-75ch readability cap the values were
+// meant to enforce (visual-audit remediation). Fixed rem widths, tuned against this typeface's
+// actual measured ~7.1px average character width at 16px, replace the ch units: 33rem/31rem land
+// paragraph/list back in the 65-75-real-character band this page's dense legal prose needs.
 const prose = {
   paragraph: {
     marginTop: "var(--cs-space-4)",
     lineHeight: "var(--cs-leading-relaxed)",
-    maxWidth: "72ch",
+    maxWidth: "33rem",
   } as CSSProperties,
   h3: {
     marginTop: "var(--cs-space-8)",
@@ -27,7 +33,7 @@ const prose = {
     marginTop: "var(--cs-space-3)",
     paddingLeft: "var(--cs-space-5)",
     lineHeight: "var(--cs-leading-relaxed)",
-    maxWidth: "68ch",
+    maxWidth: "31rem",
   } as CSSProperties,
   li: {
     marginBottom: "var(--cs-space-2)",
