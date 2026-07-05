@@ -49,7 +49,7 @@ describe("deploy-entry live composition root (B2b seam pin)", () => {
 // claims.licenseId is the deny-set key. Anonymous callers never see @caisson/local-ai; a valid holder
 // does — UNLESS the operator revoked it (ADR-0225 R-4=B), which the wired R2 deny-set enforces here.
 const PROD_TOKEN =
-  "CAISSON-PRO-eyJlbnRpdGxlbWVudHMiOlsibG9jYWwtYWkiXSwiZXhwaXJ5IjpudWxsLCJsaWNlbnNlSWQiOiIyMjIyMjIyMi0yMjIyLTQyMjItODIyMi0yMjIyMjIyMjIyMjIiLCJtYWpvciI6MSwidGllciI6InBybyJ9JCCq8unU9ASs7NpgsOQSFpKl6Bti7J41yCKbLV8-1q0HbeUzZ-K7cfdaBge2_gyn38fKvEomzkH35GRQ0RbFBA";
+  "CAISSON-PRO-eyJlbnRpdGxlbWVudHMiOlsibG9jYWwtYWkiXSwiZXhwaXJ5IjpudWxsLCJsaWNlbnNlSWQiOiIyMjIyMjIyMi0yMjIyLTQyMjItODIyMi0yMjIyMjIyMjIyMjIiLCJtYWpvciI6MSwidGllciI6InBybyJ9s5abAWoJnigs0h0oHu26viTz6EF3Z181CDnTFb11QUpmRSeNSNyWP5a4OuCVP19Kf6koIlrSx1S9yyDCgHoZDg";
 const PROD_LICENSE_ID = "22222222-2222-4222-8222-222222222222";
 
 // An injected R2-object double + a ctx that lets the test await the background deny-set refresh.
