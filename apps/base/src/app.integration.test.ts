@@ -10,7 +10,7 @@ import {
   CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
 } from "@caisson/credits";
-import { RATE_LIMIT_SCHEMA_SQL } from "@caisson/service-license";
+import { RATE_LIMIT_SCHEMA_SQL } from "@caisson/rate-limit";
 import { createStripeBilling } from "@caisson/billing";
 import { loadRegistryIndex } from "@caisson/registry";
 import { createBaseApp, createFetchHandler } from "./index.ts";
