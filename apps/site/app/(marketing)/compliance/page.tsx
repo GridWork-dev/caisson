@@ -220,8 +220,10 @@ export default function CompliancePage() {
       {`$ psql -c "select * from invoices"\n`}
       <span className="cs-tok-danger">ERROR:</span>
       {`  permission denied for table invoices\n`}
-      {`DETAIL: RLS policy "tenant_isolation" forbids SELECT\n`}
-      {`        with no app.tenant_id set — `}
+      {`DETAIL: RLS policy "tenant_isolation"\n`}
+      {`        forbids SELECT with no\n`}
+      {`        app.tenant_id set —\n`}
+      {`        `}
       <span className="cs-tok-accent">fail-closed by default.</span>
     </Terminal>
   );

@@ -336,7 +336,7 @@ export default function MarketplacePlansPage() {
               status={<StatusChip label="ready" tone="success" dot />}
             >
               {
-                "$ bun create caisson@latest\n✓ Caisson base substrate initialized\n✓ Fail-closed RLS (FORCE) + cross-tenant isolation tests\n✓ Append-only audit chain — SHA-256 verified\n✓ Field encryption — per-tenant DEK (HKDF-SHA256)\n✓ Standards gate — lint · test · golden-file"
+                "$ bun create caisson@latest\n✓ Caisson base substrate\n  initialized\n✓ Fail-closed RLS (FORCE)\n  + cross-tenant\n  isolation tests\n✓ Append-only audit chain —\n  SHA-256 verified\n✓ Field encryption —\n  per-tenant DEK\n  (HKDF-SHA256)\n✓ Standards gate —\n  lint · test · golden-file"
               }
             </Terminal>
           </div>

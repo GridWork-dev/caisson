@@ -126,19 +126,27 @@ function EuAiActTerminal() {
       label="base substrate · RLS + audit chain"
       status={<StatusChip label="CI-tested" tone="success" dot />}
     >
-      {`-- RLS cross-tenant denial (Art. 10 data governance)\n`}
-      {`> SELECT count(*) FROM ai_inference_log;\n`}
+      {`-- RLS cross-tenant denial\n`}
+      {`-- (Art. 10 data governance)\n`}
+      {`> SELECT count(*)\n`}
+      {`  FROM ai_inference_log;\n`}
       {`  -- no tenant context set\n`}
       <span className="cs-tok-accent">
-        {`ERROR:  unrecognized configuration parameter "app.tenant_id"\n`}
+        {`ERROR:  unrecognized config\n`}
+        {`  parameter "app.tenant_id"\n`}
       </span>
       {`\n`}
-      {`// kernel verifyChain (Art. 12 record-keeping)\n`}
-      {`const result = await verifyChain(db, {\n`}
+      {`// kernel verifyChain\n`}
+      {`  (Art. 12 record-keeping)\n`}
+      {`const result = await\n`}
+      {`  verifyChain(db, {\n`}
       {`  table: "ai_inference_log"\n`}
       {`});\n`}
       {`// `}
-      <span className="cs-tok-success">{`{ intact: true, rows: 7043, breaks: 0 }`}</span>
+      <span className="cs-tok-success">
+        {`{ intact: true,\n`}
+        {`  rows: 7043, breaks: 0 }`}
+      </span>
     </Terminal>
   );
 }
