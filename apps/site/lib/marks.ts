@@ -3,7 +3,7 @@
 // field-crypto and audit-worm predate the F6 set under their original bespoke names.
 import type { IconName } from "@caisson/ui/components";
 
-import type { EditionId } from "./pricing";
+import type { BundleId } from "./pricing";
 
 export const MODULE_MARKS: Record<string, IconName> = {
   "field-crypto": "field-crypto",
@@ -19,11 +19,16 @@ export const MODULE_MARKS: Record<string, IconName> = {
   "agent-runner": "agent-runner",
 };
 
-export const EDITION_MARKS: Record<EditionId, IconName> = {
+/** Bundle id → bespoke mark. The persona bundles reuse the edition-era glyphs their personas kept
+ *  (the registered glyph names are the brand package's contract — renaming them is a brand change,
+ *  not a catalog one); Provenance and Everything map to existing bespoke glyphs. */
+export const BUNDLE_MARKS: Record<BundleId, IconName> = {
   compliance: "edition-compliance",
-  "ai-kit": "edition-ai-kit",
+  "ai-production": "edition-ai-kit",
   "local-first": "edition-local-ai",
   "agentic-dev": "edition-agent-dev",
+  provenance: "audit-chain",
+  everything: "bundle",
 };
 
 /** Mark for a module id; falls back to the generic boxes glyph for an unmapped id. */

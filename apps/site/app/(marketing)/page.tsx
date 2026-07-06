@@ -19,9 +19,9 @@ import { serializeJsonLd, softwareApplication } from "@/lib/jsonld";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import {
   BUNDLE_PRICES,
-  editionPrice,
   formatUsd,
   PLAN_PRICES,
+  planPrice,
   SKU_COLUMNS,
   SKU_FEATURE_ROWS,
 } from "@/lib/pricing";
@@ -76,7 +76,7 @@ const CI_CHECKS = [
 
 // How-to-buy price bands — derived from lib/pricing.ts (never hand-duplicated) so the three
 // figures on the type-chip cards below can't drift from the SKUs they describe.
-const HOW_TO_BUY_MODULE_PRICE = editionPrice("module");
+const HOW_TO_BUY_MODULE_PRICE = planPrice("module");
 // The persona/Provenance bundle price band (catalog-rework W6.2, ADR-0258 numbers) — the Everything
 // bundle is the whole-catalog step above, not part of the "take a bundle" range.
 const BUNDLE_AMOUNTS = BUNDLE_PRICES.filter((b) => b.id !== "everything").map(
@@ -211,8 +211,8 @@ export default function HomePage() {
         </Section>
       </Reveal>
 
-      {/* ===== How to buy — the Module/Edition/Plan type-chip vocabulary, defined once before
-          the Editions cards below reuse it (ADR-0237 F5) ===== */}
+      {/* ===== How to buy — the Module/Bundle/Plan type-chip vocabulary, defined once before
+          the Bundles cards below reuse it (ADR-0237 F5) ===== */}
       <Reveal>
         <Section
           eyebrow="How to buy"
@@ -359,7 +359,7 @@ export default function HomePage() {
             />
             <EditionCard
               href="/ai-kit"
-              name="AI Production Kit"
+              name="AI-Production"
               icon="gauge"
               status={<StatusChip tone="muted" dot label="Bundle · #2" />}
               line="The production-rigor layer cheap AI boilerplate skips: token metering, spend caps, a circuit breaker, versioned prompts, and guardrails."
@@ -387,7 +387,7 @@ export default function HomePage() {
         </Section>
       </Reveal>
 
-      {/* ===== SKU matrix — editions × modules + committed price row ===== */}
+      {/* ===== SKU matrix — bundles × modules + committed price row ===== */}
       <Reveal>
         <Section
           eyebrow="What&rsquo;s in each bundle"

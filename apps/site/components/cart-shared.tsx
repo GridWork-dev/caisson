@@ -6,7 +6,7 @@ import { Icon } from "@caisson/ui/components";
 
 import { Button } from "@/components";
 import { cartSubtotal, cartUpgrade, type CartItem } from "@/lib/cart";
-import { BUNDLE_CATALOG_ITEM, toCartItem } from "@/lib/catalog";
+import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
 import { formatUsd } from "@/lib/pricing";
 
 import { useCart } from "./cart-provider";
@@ -64,8 +64,9 @@ export function CartLineItem({
  *  single bundle line, since the bundle is a strict superset of everything the cart could hold. */
 export function CartUpgradeCallout() {
   const { items, replaceCart } = useCart();
-  if (BUNDLE_CATALOG_ITEM === undefined) return null;
-  const upgrade = cartUpgrade(items, toCartItem(BUNDLE_CATALOG_ITEM));
+  const everything = bundleCatalogItem("everything");
+  if (everything === undefined) return null;
+  const upgrade = cartUpgrade(items, toCartItem(everything));
   if (upgrade === undefined) return null;
 
   // The bundle is a strict superset, so switching REPLACES the cart with the single bundle line.
@@ -76,7 +77,7 @@ export function CartUpgradeCallout() {
     <div className={styles.upgrade}>
       <p className={styles.upgradeText}>
         Your cart totals {formatUsd(cartSubtotal(items))}. The{" "}
-        {upgrade.bundle.label} covers every edition for{" "}
+        {upgrade.bundle.label} bundle covers the whole catalog for{" "}
         {formatUsd(upgrade.bundle.amount)} — save {formatUsd(upgrade.saves)}.
       </p>
       <Button type="button" variant="primary" onClick={switchToBundle}>

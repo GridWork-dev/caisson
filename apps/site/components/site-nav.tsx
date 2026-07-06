@@ -8,16 +8,14 @@ import { MobileNav } from "./mobile-nav";
 import { NavPanels, type NavPanelSpec } from "./nav-panels";
 import { NavSearchTrigger } from "./nav-search-trigger";
 import { Button } from "./button";
-import { EDITION_MARKS } from "@/lib/marks";
+import { BUNDLE_MARKS } from "@/lib/marks";
 import {
-  type BundleId,
   BUNDLE_PRICES,
   bundlePriceById,
-  editionPrice,
   formatPrice,
   formatUsd,
-  isEditionId,
-  priceById,
+  isBundleId,
+  planPrice,
 } from "@/lib/pricing";
 
 // Cheapest persona/Provenance bundle — computed, never hand-duplicated (the "from $X" bundle anchor).
@@ -36,22 +34,22 @@ import styles from "./site-nav.module.css";
 // registry (lib/routes.ts) + the single pricing source (lib/pricing.ts).
 
 // Panel 1 — Bundles: the five persona/Provenance bundle cards (label from the registry, note + price
-// from the pricing source — no copy invented here) + marketplace on-ramps in the foot. An edition
-// route resolves its price from the edition anchor; the net-new Provenance route resolves from the
-// bundle anchor (it has no edition row).
+// from the pricing source — no copy invented here) + marketplace on-ramps in the foot. Every card
+// resolves its price from the bundle anchor; the /ai-kit route maps to the ai-production bundle id.
 const BUNDLES_PANEL: NavPanelSpec = {
   label: "Bundles",
   lede: "One audited base. Six bundles — or compose your own.",
   cards: EDITION_ROUTES.map((r) => {
     const slug = r.path.slice(1);
-    const anchor = priceById(slug) ?? bundlePriceById(slug as BundleId);
+    const bundleId = slug === "ai-kit" ? "ai-production" : slug;
+    const anchor = isBundleId(bundleId) ? bundlePriceById(bundleId) : undefined;
     return {
       href: r.path,
       label: r.navLabel ?? r.label,
       note: anchor?.note ?? "",
       price: anchor ? formatPrice(anchor) : "—",
-      // The bundle's bespoke waterline mark (ADR-0237 F6); Provenance takes the audit-chain glyph.
-      icon: isEditionId(slug) ? EDITION_MARKS[slug] : "audit-chain",
+      // The bundle's bespoke waterline mark (ADR-0237 F6).
+      icon: isBundleId(bundleId) ? BUNDLE_MARKS[bundleId] : "audit-chain",
     };
   }),
   foot: [
@@ -85,7 +83,7 @@ const MARKETPLACE_PANEL: NavPanelSpec = {
       href: "/marketplace/modules",
       label: "Modules",
       note: "Every standalone module, à la carte.",
-      price: editionPrice("module"),
+      price: planPrice("module"),
       icon: "boxes",
     },
     {
@@ -98,7 +96,7 @@ const MARKETPLACE_PANEL: NavPanelSpec = {
       href: "/marketplace/plans",
       label: "Plans",
       note: "Subscriptions that keep it current.",
-      price: `from ${editionPrice("developer")}`,
+      price: `from ${planPrice("developer")}`,
       icon: "plan-tier",
     },
   ],

@@ -6,9 +6,9 @@ import {
   serializeJsonLd,
   softwareApplication,
 } from "@/lib/jsonld";
-import { EDITION_MARKS, moduleMark } from "@/lib/marks";
+import { BUNDLE_MARKS, moduleMark } from "@/lib/marks";
 import {
-  editionPrice,
+  bundlePrice,
   formatUsd,
   MODULE_PRICES,
   priceById,
@@ -28,7 +28,7 @@ import {
 } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { MediaPlaceholder } from "@/components/media-placeholder";
-import { editionCatalogItem, toCartItem } from "@/lib/catalog";
+import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
 import { TrackView } from "@/components/track-view";
 
 const AI_KIT_DESCRIPTION =
@@ -44,8 +44,8 @@ export const metadata = buildMetadata({
 const modulePrice = priceById("module");
 
 // Cart-ready CatalogItem for the peak-intent buy CTAs below (ADR-0192 single add-to-cart buy-verb).
-const _catalogItem = editionCatalogItem("ai-kit");
-const editionCartItem = _catalogItem ? toCartItem(_catalogItem) : undefined;
+const _catalogItem = bundleCatalogItem("ai-production");
+const bundleCartItem = _catalogItem ? toCartItem(_catalogItem) : undefined;
 
 // FAQ items — answer-first (ADR-0080 §6); also rendered as faqPage JSON-LD. Record: edition-ai-kit.json.
 const FAQ_ITEMS = [
@@ -73,7 +73,7 @@ const BASE_MEMBER_ICON: Record<string, IconName> = {
   "ai-config": "gauge",
 };
 
-// The edition's real composed packages (record: edition-ai-kit.json memberModules) — icon + name +
+// The bundle's real composed packages (record: edition-ai-kit.json memberModules) — icon + name +
 // one-liner, priced via a StatusChip when the package is also sold standalone (`MODULE_PRICES`),
 // linking to its module depth page; ai-config is base substrate and renders unpriced.
 const MEMBER_MODULES: readonly {
@@ -154,7 +154,7 @@ function MemberModuleCard({
 
 // Hero artifact — the reserve-before / reconcile-after chokepoint every infer()/embed() call
 // crosses, ending in the real 402 spend-cap denial (member-true; replaces the eval-gate artifact
-// the edition never actually ships).
+// the bundle never actually ships).
 const HERO_ARTIFACT = (
   <Terminal
     label="POST /api/support-reply · infer()"
@@ -176,10 +176,10 @@ const HERO_ARTIFACT = (
 export default function AiKitPage() {
   // JSON-LD nodes
   const appNode = softwareApplication({
-    name: "Caisson AI Production Kit",
+    name: "Caisson AI-Production",
     description: AI_KIT_DESCRIPTION,
     url: "https://caisson.sh/ai-kit",
-    priceId: "ai-kit",
+    priceId: "ai-production",
   });
 
   const crumbNode = breadcrumb([
@@ -193,7 +193,7 @@ export default function AiKitPage() {
 
   return (
     <>
-      <TrackView item="edition:ai-kit" />
+      <TrackView item="bundle:ai-production" />
       {/* JSON-LD */}
       <script
         type="application/ld+json"
@@ -210,7 +210,7 @@ export default function AiKitPage() {
 
       {/* ===== Hero: one gateway between your code and the model ===== */}
       <Hero
-        eyebrow="AI Production Kit · Edition #2"
+        eyebrow="AI-Production bundle"
         title="One gateway between your code and the model."
         lede={
           <>
@@ -224,8 +224,8 @@ export default function AiKitPage() {
         }
         ctas={
           <>
-            {editionCartItem && (
-              <AddToCartButton item={editionCartItem} variant="primary" />
+            {bundleCartItem && (
+              <AddToCartButton item={bundleCartItem} variant="primary" />
             )}
             <Button href="/docs/ai-kit" variant="ghost">
               Read the docs
@@ -245,7 +245,7 @@ export default function AiKitPage() {
 
       {/* ===== Media slot (ADR-0237 F2) ===== */}
       <Section>
-        <MediaPlaceholder icon={EDITION_MARKS["ai-kit"]} />
+        <MediaPlaceholder icon={BUNDLE_MARKS["ai-production"]} />
       </Section>
 
       {/* ===== Four composed modules ===== */}
@@ -327,7 +327,7 @@ export default function AiKitPage() {
                   marginTop: "var(--cs-space-2)",
                 }}
               >
-                {editionPrice("ai-kit")}
+                {bundlePrice("ai-production")}
               </p>
               <p
                 className="cs-muted"
@@ -423,8 +423,8 @@ export default function AiKitPage() {
             flexWrap: "wrap",
           }}
         >
-          {editionCartItem && (
-            <AddToCartButton item={editionCartItem} variant="primary" />
+          {bundleCartItem && (
+            <AddToCartButton item={bundleCartItem} variant="primary" />
           )}
           <Button href="/docs/ai-kit" variant="ghost">
             Read the docs

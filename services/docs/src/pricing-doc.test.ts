@@ -7,25 +7,34 @@ import {
 } from "./pricing-doc.ts";
 import { DocChunkSchema } from "./types.ts";
 
-// A hand-built facts fixture (the shape `loadPricingFacts` produces from the live SOT). Editions sum
-// to 1398, the bundle is 999 → a real 399 saving, so the computed savings line is exercised.
+// A hand-built facts fixture (the shape `loadPricingFacts` produces from the live SOT): two persona
+// bundles plus the whole-catalog Everything, a shared member, and a standalone SKU no persona
+// bundle grants — so the Everything-includes-all rule and the standalone line are both exercised.
 const FACTS: PricingFacts = {
-  editions: [
+  bundles: [
     {
       id: "compliance",
       label: "Compliance",
-      amount: 799,
+      amount: 1049,
       unit: "once",
       from: false,
       note: "Own the source. Fail-closed RLS, WORM, audit chain.",
     },
     {
-      id: "ai-kit",
-      label: "AI Production Kit",
-      amount: 599,
+      id: "ai-production",
+      label: "AI-Production",
+      amount: 739,
       unit: "once",
       from: false,
       note: "The production-rigor layer cheap AI boilerplate skips.",
+    },
+    {
+      id: "everything",
+      label: "Everything",
+      amount: 2059,
+      unit: "once",
+      from: false,
+      note: "The full catalog, one purchase.",
     },
   ],
   modules: [
@@ -33,8 +42,7 @@ const FACTS: PricingFacts = {
       id: "field-crypto",
       label: "Field encryption",
       amount: 199,
-      bundles: ["compliance", "ai-production", "local-first", "provenance"],
-      edition: "compliance",
+      bundles: ["compliance", "ai-production"],
       blurb: "Per-tenant field encryption (HKDF-SHA256).",
     },
     {
@@ -42,18 +50,24 @@ const FACTS: PricingFacts = {
       label: "Token metering",
       amount: 149,
       bundles: ["ai-production"],
-      edition: "ai-kit",
       blurb: "PG-atomic token metering with per-tenant spend caps.",
+    },
+    {
+      id: "org-controls",
+      label: "Org controls",
+      amount: 249,
+      bundles: [],
+      blurb: "WorkOS SSO plus the owner-gated multi-user surface.",
     },
   ],
   plans: [
     {
-      id: "bundle",
-      label: "Everything bundle",
-      amount: 999,
-      unit: "once",
+      id: "developer",
+      label: "Developer plan",
+      amount: 499,
+      unit: "year",
       from: false,
-      note: "All four editions plus the base, one purchase.",
+      note: "Credits, updates, and private-registry access.",
     },
     {
       id: "enterprise",
@@ -79,40 +93,49 @@ describe("generatePricingSources", () => {
     );
   });
 
-  test("renders each edition's committed price and composed modules", () => {
-    const editions = raw("pricing/editions");
-    expect(editions).toContain("## Compliance — $799");
-    expect(editions).toContain("## AI Production Kit — $599");
-    expect(editions).toContain("Includes: Field encryption ($199)");
+  test("renders each bundle's committed price and composed modules", () => {
+    const bundles = raw("pricing/bundles");
+    expect(bundles).toContain("## Compliance — $1,049");
+    expect(bundles).toContain("## AI-Production — $739");
+    expect(bundles).toContain("Includes: Field encryption ($199)");
   });
 
-  test("renders each module's price and owning edition", () => {
+  test("the Everything bundle includes every module (the explicit full-catalog rule)", () => {
+    const bundles = raw("pricing/bundles");
+    const everything = bundles.slice(bundles.indexOf("## Everything"));
+    expect(everything).toContain("Org controls ($249)");
+    expect(everything).toContain("Field encryption ($199)");
+    expect(everything).toContain("Token metering ($149)");
+  });
+
+  test("renders each module's price and owning bundles, incl. the standalone line", () => {
     const modules = raw("pricing/modules");
     expect(modules).toContain("## Token metering — $149");
-    expect(modules).toContain("Part of the AI Production Kit edition.");
+    expect(modules).toContain("Part of the AI-Production bundle(s)");
+    expect(modules).toContain("## Org controls — $249");
+    expect(modules).toContain(
+      "only the whole-catalog Everything bundle includes it",
+    );
   });
 
-  test("renders the bundle, its computed saving, and Enterprise 'Contact us'", () => {
+  test("renders the plans, incl. Enterprise 'Contact us'", () => {
     const plans = raw("pricing/plans");
-    expect(plans).toContain("## Everything bundle — $999");
-    expect(plans).toContain(
-      "Saves $399 versus buying the four editions separately.",
-    );
+    expect(plans).toContain("## Developer plan — $499/yr");
     expect(plans).toContain("## Enterprise — Contact us");
   });
 
   test("a changed price regenerates the doc (new figure in, old figure out)", () => {
     const bumped: PricingFacts = {
       ...FACTS,
-      editions: FACTS.editions.map((e) =>
-        e.id === "compliance" ? { ...e, amount: 899 } : e,
+      bundles: FACTS.bundles.map((b) =>
+        b.id === "compliance" ? { ...b, amount: 1149 } : b,
       ),
     };
-    const before = raw("pricing/editions");
-    const after = raw("pricing/editions", bumped);
+    const before = raw("pricing/bundles");
+    const after = raw("pricing/bundles", bumped);
     expect(after).not.toBe(before);
-    expect(after).toContain("## Compliance — $899");
-    expect(after).not.toContain("## Compliance — $799");
+    expect(after).toContain("## Compliance — $1,149");
+    expect(after).not.toContain("## Compliance — $1,049");
   });
 
   test("every generated source chunks into valid DocChunks tagged kind:pricing", () => {

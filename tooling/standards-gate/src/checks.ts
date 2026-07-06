@@ -598,10 +598,9 @@ interface SitePricingModule {
  *       members map actually grants it (else the site sells a grant that doesn't exist).
  *   (2) PRICE — for every à-la-carte module the site prices whose id carries a PRICE_AUTHORITY row,
  *       the displayed USD must equal the locked cents.
- * Editions/bundle DISPLAY prices are intentionally out of scope here: the site still shows pre-rework
- * edition numbers (the display flip is a later wave), so only the à-la-carte module rows that already
- * have a locked authority price are price-checked today. Skips (warn) when a cross-surface file is
- * absent.
+ * Bundle DISPLAY prices are out of scope here: apps/site/lib/pricing.test.ts pins BUNDLE_PRICES to
+ * the pricebook's BUNDLE_RETAIL and re-verifies the below-sum invariant in the same CI run, so this
+ * gate covers the à-la-carte module rows. Skips (warn) when a cross-surface file is absent.
  */
 export async function checkCatalogParity(root: string): Promise<Finding[]> {
   const pricingPath = join(root, "apps/site/lib/pricing.ts");

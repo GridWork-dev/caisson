@@ -15,7 +15,7 @@ import {
 } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { MediaPlaceholder } from "@/components/media-placeholder";
-import { editionCatalogItem, toCartItem } from "@/lib/catalog";
+import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import {
   breadcrumb,
@@ -23,12 +23,12 @@ import {
   serializeJsonLd,
   softwareApplication,
 } from "@/lib/jsonld";
-import { EDITION_MARKS, moduleMark } from "@/lib/marks";
-import { editionPrice, formatUsd, MODULE_PRICES } from "@/lib/pricing";
+import { BUNDLE_MARKS, moduleMark } from "@/lib/marks";
+import { bundlePrice, formatUsd, MODULE_PRICES } from "@/lib/pricing";
 import { TrackView } from "@/components/track-view";
 
 const LOCAL_FIRST_DESCRIPTION =
-  "Local-first AI composes on-device ONNX inference, a zero-egress privacy gate, and hybrid sqlite-vec + FTS5 search into one Caisson edition ($349 one-time, own the source).";
+  "Local-first AI composes on-device ONNX inference, a zero-egress privacy gate, offline sync, and hybrid sqlite-vec + FTS5 search into one Caisson bundle ($629 one-time, own the source).";
 
 export const metadata = buildMetadata({
   title: "Local-first AI",
@@ -39,8 +39,8 @@ export const metadata = buildMetadata({
 const PAGE_URL = `${SITE_URL}/local-first`;
 
 // Cart-ready CatalogItem for the peak-intent buy CTAs below (ADR-0192 single add-to-cart buy-verb).
-const _catalogItem = editionCatalogItem("local-first");
-const editionCartItem = _catalogItem ? toCartItem(_catalogItem) : undefined;
+const _catalogItem = bundleCatalogItem("local-first");
+const bundleCartItem = _catalogItem ? toCartItem(_catalogItem) : undefined;
 
 const ldApp = softwareApplication({
   name: "Caisson Local-first AI",
@@ -86,7 +86,7 @@ const BASE_MEMBER_ICON: Record<string, IconName> = {
   "license-verify": "key",
 };
 
-// The edition's real composed packages (record: edition-local-ai.json memberModules — keyed by
+// The bundle's real composed packages (record: edition-local-ai.json memberModules — keyed by
 // `name` there, e.g. "@caisson/local-store"; the id is that name with the scope stripped). Priced
 // via a StatusChip when the package is also sold standalone (`MODULE_PRICES`), linking to its
 // module depth page; kernel and license-verify are Apache-2.0 base and render unpriced.
@@ -114,10 +114,28 @@ const MEMBER_MODULES: readonly {
       "Per-tenant field encryption: HKDF key derivation plus AES-256-GCM, sealed at rest under a key a different tenant's file cannot open.",
   },
   {
+    id: "local-inference",
+    name: "@caisson/local-inference",
+    oneLiner:
+      "The InferenceBackend seam over a MiniLM-class ONNX model via transformers.js, SHA-256 hash-verified before use — on-device by default.",
+  },
+  {
+    id: "local-privacy",
+    name: "@caisson/local-privacy",
+    oneLiner:
+      "A default-deny egress boundary every payload crosses before it can leave the process — an empty allowlist means zero egress.",
+  },
+  {
+    id: "local-sync",
+    name: "@caisson/local-sync",
+    oneLiner:
+      "Two-way offline sync: changesets, tombstones, a logical clock, and a reconcile pass with a convergence test.",
+  },
+  {
     id: "kernel",
     name: "@caisson/kernel",
     oneLiner:
-      "The governance kernel underneath every edition: typed config, the shared error model, and security primitives.",
+      "The governance kernel underneath every bundle: typed config, the shared error model, and security primitives.",
   },
 ];
 
@@ -179,9 +197,9 @@ const FAQ_ITEMS = [
       "The ONNX backend runs a MiniLM-class model via transformers.js. The @huggingface/transformers runtime is an optional peer you install yourself — it is not bundled in the package — and the model weights are first-run-fetched and SHA-256 hash-verified before use. Air-gapped buyers pre-seed the cache and run fully offline.",
   },
   {
-    question: "Can I buy just the vector store instead of the whole edition?",
+    question: "Can I buy just the vector store instead of the whole bundle?",
     answer:
-      "Yes. @caisson/local-store is also sold standalone for $99. The full Local-first AI edition (all four composed packages plus the compute seam, privacy gate, sync engine, and offline license verify) is $349 one-time.",
+      "Yes. @caisson/local-store is also sold standalone for $99 — as are on-device inference ($249), the sync engine ($199), and the privacy gate ($99). The full Local-first AI bundle (all seven composed packages, own the source) is $629 one-time.",
   },
 ] as const;
 
@@ -192,7 +210,7 @@ const ldFaq = faqPage(
 export default function LocalFirstPage() {
   return (
     <>
-      <TrackView item="edition:local-first" />
+      <TrackView item="bundle:local-first" />
       {/* JSON-LD */}
       <script
         type="application/ld+json"
@@ -214,8 +232,8 @@ export default function LocalFirstPage() {
         lede="The compute seam runs inference on-device by default; the privacy gate makes a hosted call an explicit opt-in, not a default you discover in a network trace. Vector search, sync, and license verification all run against local files — nothing round-trips to a vendor unless you allow it in writing."
         ctas={
           <>
-            {editionCartItem && (
-              <AddToCartButton item={editionCartItem} variant="primary" />
+            {bundleCartItem && (
+              <AddToCartButton item={bundleCartItem} variant="primary" />
             )}
             <Button href="/docs/local-first" variant="ghost">
               Read the docs
@@ -225,7 +243,7 @@ export default function LocalFirstPage() {
         credentials={
           <StatusChip
             tone="accent"
-            label={`Own the source · ${editionPrice("local-first")}`}
+            label={`Own the source · ${bundlePrice("local-first")}`}
             dot
           />
         }
@@ -270,7 +288,7 @@ export default function LocalFirstPage() {
 
       {/* ===== Media slot (ADR-0237 F2) ===== */}
       <Section>
-        <MediaPlaceholder icon={EDITION_MARKS["local-first"]} />
+        <MediaPlaceholder icon={BUNDLE_MARKS["local-first"]} />
       </Section>
 
       {/* ===== Four composed packages ===== */}
@@ -278,7 +296,7 @@ export default function LocalFirstPage() {
         <Section
           eyebrow="What ships in the box"
           title="Four composed packages."
-          lede="Each member is a real workspace dependency. The two commercial ones also carry a standalone price; the Apache-2.0 base ships free with every edition."
+          lede="Each member is a real workspace dependency. The commercial ones also carry a standalone price; the Apache-2.0 base ships free with every bundle."
         >
           <FeatureGrid cols={2}>
             {MEMBER_MODULES.map((m) => (
@@ -291,7 +309,7 @@ export default function LocalFirstPage() {
       {/* ===== Four pieces (capability overview) ===== */}
       <Reveal>
         <Section
-          eyebrow="What's in the edition"
+          eyebrow="What's in the bundle"
           title="Four pieces. All on the device."
           lede="Each piece does its job without a network. Compose them, or take a single module — the data path never widens past the disk."
         >
@@ -369,7 +387,7 @@ export default function LocalFirstPage() {
         <Section
           eyebrow="Search, sync, and licensing"
           title="All local."
-          lede="@caisson/local-store gives you hybrid retrieval: sqlite-vec ANN and FTS5 merged by Reciprocal-Rank-Fusion, degrading to an FTS-only path if the vector leg fails — semantic search with nothing indexed by a vector cloud vendor. Isolation is file-per-tenant: the resolved file path is the tenant boundary. On top, the edition ships a built two-way sync engine (changesets, tombstones, a logical clock, and a reconcile pass with a convergence test) for when a device needs to catch up, plus offline Ed25519 license verification that checks the signature locally with no phone-home and no remote kill switch."
+          lede="@caisson/local-store gives you hybrid retrieval: sqlite-vec ANN and FTS5 merged by Reciprocal-Rank-Fusion, degrading to an FTS-only path if the vector leg fails — semantic search with nothing indexed by a vector cloud vendor. Isolation is file-per-tenant: the resolved file path is the tenant boundary. On top, the bundle ships a built two-way sync engine (changesets, tombstones, a logical clock, and a reconcile pass with a convergence test) for when a device needs to catch up, plus offline Ed25519 license verification that checks the signature locally with no phone-home and no remote kill switch."
           band="surface"
         />
       </Reveal>
@@ -416,7 +434,7 @@ export default function LocalFirstPage() {
         <Section
           eyebrow="Who it's for, and how it ships"
           title="Own the source. Run it on your machine."
-          lede="This edition is for teams that cannot send data off the device — regulated data kept local, air-gapped deployments, embedded and edge tooling, or a product that should not need a network call to work at all. It ships the way every Caisson edition ships: npx create-caisson@latest scaffolds the base, then you add Local-first AI. Two of its four composed packages — kernel and license-verify — are Apache-2.0; local-store and field-crypto are the commercial layer the edition license covers."
+          lede="This bundle is for teams that cannot send data off the device — regulated data kept local, air-gapped deployments, embedded and edge tooling, or a product that should not need a network call to work at all. It ships the way every Caisson bundle ships: npx create-caisson@latest scaffolds the base, then you add Local-first AI. Two of its composed packages — kernel and license-verify — are Apache-2.0; local-store, field-crypto, local-inference, local-privacy, and local-sync are the commercial layer the bundle license covers."
           band="tint"
         />
       </Reveal>
@@ -451,8 +469,8 @@ export default function LocalFirstPage() {
               flexWrap: "wrap",
             }}
           >
-            {editionCartItem && (
-              <AddToCartButton item={editionCartItem} variant="primary" />
+            {bundleCartItem && (
+              <AddToCartButton item={bundleCartItem} variant="primary" />
             )}
             <Button href="/docs/local-first" variant="ghost">
               Read the docs

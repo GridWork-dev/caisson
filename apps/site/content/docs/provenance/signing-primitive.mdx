@@ -13,7 +13,7 @@ their own evidence with their own identity.
 ## What it does
 
 - **Per-tenant detached signing** — `signEvidencePack` signs `canonicalize(manifest) ∥
-  chainAnchor.tipHash` with an `Ed25519Signer` scoped to the tenant. The signature is
+chainAnchor.tipHash` with an `Ed25519Signer` scoped to the tenant. The signature is
   detached and never injected into the body, so the manifest stays byte-identical after
   signing.
 - **Optional trusted timestamp** — supply a `TimestampAuthority` and the signature is
@@ -58,7 +58,10 @@ imprint `sha256(signature)`) over `fetchWithTimeout` and parses the response; th
 stable, so it slots in without touching call sites.
 
 ```ts
-import { signEvidencePack, type TimestampAuthority } from "@caisson/signing-primitive";
+import {
+  signEvidencePack,
+  type TimestampAuthority,
+} from "@caisson/signing-primitive";
 
 const tsa: TimestampAuthority = myRfc3161Authority;
 
