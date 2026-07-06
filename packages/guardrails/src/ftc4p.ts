@@ -1,5 +1,5 @@
-// FTC "4 Ps" (clear-and-conspicuous) dark-pattern presentation guardrail (ADR-0215 / lift-sweep #13,
-// tm-watch pattern only — rebuild-clean). A pure, deterministic heuristic evaluator over MARKETING/UI
+// FTC "4 Ps" (clear-and-conspicuous) dark-pattern presentation guardrail (ADR-0215 —
+// rebuild-clean). A pure, deterministic heuristic evaluator over MARKETING/UI
 // COPY — not a request/response leg (see `guard.ts` for the live gateway chokepoint). Five rule
 // classes over named FTC dark-pattern categories; each finding is scored against the P dimension it
 // violates (prominence / presentation / placement / proximity). No LLM in the hot path — a judge can

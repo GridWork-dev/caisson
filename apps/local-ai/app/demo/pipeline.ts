@@ -1,6 +1,6 @@
-// apps/local-ai/app/demo/pipeline.ts — the Local-first AI edition reference DEMO (T22, ADR-0044).
+// apps/local-ai/app/demo/pipeline.ts — the Local-first AI edition reference DEMO.
 //
-// This is the P4a exit artifact's engine: ONE offline, zero-egress pass that COMPOSES the shipped
+// This is the exit-gate demo's engine: ONE offline, zero-egress pass that COMPOSES the shipped
 // edition (`@caisson/local-ai`) end-to-end — it builds no new product module and imports no provider
 // SDK. The route handler (`app/api/demo/route.ts`) and the RSC page (`app/page.tsx`) are thin wrappers
 // over `runDemo()`; `pipeline.test.ts` is the CI proof that the demo returns hybrid results with zero
@@ -10,8 +10,8 @@
 // `bun:sqlite` is imported TYPE-ONLY (erased at compile), so the Next bundler never sees a runtime
 // `bun:sqlite` import — the native store stays inside the externalized `@caisson/*` packages.
 //
-// The five demonstrated guarantees map 1:1 to the SPEC exit gate:
-//   1. hybrid sqlite-vec + FTS5 RRF retrieval (and the FTS-only degrade) — the literal ADR-0064 gate;
+// The five demonstrated guarantees map 1:1 to the edition's exit gate:
+//   1. hybrid sqlite-vec + FTS5 RRF retrieval (and the FTS-only degrade);
 //   2. two-way sync convergence (LWW/CRDT + tombstone, no resurrection) over a test-doubled transport;
 //   3. offline Ed25519 license verify — valid → pro, tampered/absent → community (fail-safe);
 //   4. zero egress — the privacy gate blocks every host (empty allowlist), and the whole pass fetches 0×;
@@ -51,13 +51,12 @@ import {
 } from "@caisson/local-ai";
 
 /**
- * The one-line reconciliation for the `specs/01` §2 doc-tension. `specs/01-architecture.md` (lines
- * 43–44) says the execution plane uses "hosted inference via API (no local models)" — that governs the
- * SELLER PLATFORM's Python plane (support-bot + buyers' optional cloud workers), NOT this buyer-side
- * edition, which ships REAL on-device models behind a zero-egress gate ("your data never leaves the device").
+ * Clarifies a scope question buyers sometimes ask: our own support tooling calls a hosted
+ * inference API, but that governs OUR platform's support plane only — it does not describe
+ * this edition, which runs real on-device models behind a zero-egress gate.
  */
 export const RECONCILIATION_NOTE =
-  "specs/01 §2 'hosted inference via API (no local models)' governs the SELLER platform's Python execution plane (support-bot + buyers' optional cloud workers) — not this buyer-side local-first edition, which runs real on-device models behind a zero-egress gate.";
+  "Hosted inference via API describes our own platform's support-tooling execution plane (support bot + optional cloud workers) — not this buyer-side local-first edition, which runs real on-device models behind a zero-egress gate.";
 
 /** The two seeded tenant files (the file-per-tenant isolation boundary, ADR-0073). */
 const TENANTS = ["tenant-a", "tenant-b"] as const;

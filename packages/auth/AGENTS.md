@@ -21,8 +21,8 @@ and multi-user account-membership resolution (owner/seat roles) over Postgres RL
   provisioning/SCIM): builds the authorization URL and exchanges the callback code for a
   verified user id + email. Config (client id, API key, redirect URI) is injected — never
   hardcode provider URLs or client secrets in code.
-- Never compare token strings with `===`; use `crypto.timingSafeEqual` (re-exported via
-  `@caisson/kernel`).
+- Never compare token strings with `===`; use `safeEqualFixed`/`safeEqualVariable` from
+  `@caisson/kernel`.
 
 ## Scope
 

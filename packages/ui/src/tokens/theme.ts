@@ -1,5 +1,5 @@
 /**
- * The LOCKED selection (operator pick, 2026-06-27): palette A "Caisson cold-steel teal" +
+ * The LOCKED selection: palette A "Caisson cold-steel teal" +
  * type 2 "Structural" (Hubot Sans + Martian Mono). Recorded in ADR-0042. Changing the pick =
  * change `SELECTED_*` here, then `bun run gen:tokens`. Append-only spirit: the candidate sets
  * in `candidates.ts` stay; only the pointer moves.

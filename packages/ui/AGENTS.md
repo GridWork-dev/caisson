@@ -11,4 +11,4 @@ Provides the typed OKLCH token floor: palette and type-scale token objects that 
 
 ## Scope
 
-Design token primitives only (palette, type scale, spacing). Component implementations and framework-specific bindings are out of scope for this package.
+Design tokens (palette, type scale, spacing) and the component library built on them — see RECIPE.md for the component-authoring rules. Framework-specific bindings (e.g. a framework-router wrapper) are out of scope; components are framework-agnostic raw `.tsx`.

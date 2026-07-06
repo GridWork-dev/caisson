@@ -29,8 +29,8 @@ export default function Home(): ReactNode {
       <p>
         Hit <a href="/api/leg">/api/leg</a> to execute the leg and return a
         structured report of the four exit checks. The byte-stable evidence
-        manifest is golden-pinned by the integration test (
-        <code>bun test apps/compliance</code>).
+        manifest is golden-pinned by this app&apos;s integration test (run with{" "}
+        <code>bun test</code> from within the app directory).
       </p>
     </main>
   );

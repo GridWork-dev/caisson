@@ -1,4 +1,4 @@
-// The base reference app (P1) — the composition of the base packages, framework-agnostic. This
+// The base reference app — the composition of the base packages, framework-agnostic. This
 // object IS the wiring: a credit-gated operation (auth → tenancy → credits), a Stripe webhook that
 // grants credits (billing → credits), and a buyer MCP query. The app framework per edition
 // (Next/TanStack/Hono) is a deferred fork — the HTTP binding here is plain Bun.serve (server.ts).

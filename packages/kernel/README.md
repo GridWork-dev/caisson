@@ -1,6 +1,6 @@
 # @caisson/kernel
 
-Governance kernel: typed config/agent/skill/rule schema + validator + lint-gate.
+Governance kernel: typed config loader, the CaissonError model, security primitives (constant-time compare, SSRF guard), and the standards gate.
 
 - **Layer:** base
 

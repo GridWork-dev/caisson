@@ -2,7 +2,7 @@
 
 A runnable **CLI reference app** for the `agent-dev` edition. It drives one governed lifecycle
 end-to-end against the composed edition surface (`@caisson/agent-dev`), down-only (ADR-0003/0022),
-proving the three SPEC pillars in a single offline pass:
+proving four capabilities in a single offline pass:
 
 1. **Governed, tamper-evident lifecycle** — the canonical act FSM is advanced act-by-act through a
    policy guard; with the audited mode ON, every admitted transition is recorded into the kernel
@@ -14,6 +14,9 @@ proving the three SPEC pillars in a single offline pass:
 3. **Multi-harness emit** — one typed schema renders to `.claude/` + Codex `AGENTS.md` + Cursor
    under a fail-closed path-safe, no-secret guard. Claude Code is one emit target, never the
    substrate (ADR-0066).
+4. **Governed agent-runner reference run** — a sandboxed, governed agent run: a headless agent CLI
+   spawns in an isolated worktree with a from-scratch scrubbed env, and the demo returns the
+   structured run report parsed from the durable transcript (ADR-0186).
 
 ```sh
 bun run apps/agent-dev/src/index.ts [targetDir]   # targetDir defaults to a temp dir

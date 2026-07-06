@@ -1,4 +1,4 @@
-// Coach-configure a lane (ADR-0076 / P3-24). Drives the real setup-coach tools registered on the
+// Coach-configure a lane. Drives the real setup-coach tools registered on the
 // MCP seam through a minimal in-process registrar — propose → (approval-gated) write → validate —
 // to produce the `AiSettings` the gateway prices + meters against. The coach is SECRETS-SAFE by
 // construction: it reads env PRESENCE only (boolean), never a value, and the write surface emits

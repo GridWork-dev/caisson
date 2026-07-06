@@ -37,8 +37,8 @@ export const TENANT_TABLES = [
 ] as const;
 
 // Deterministic, NON-secret demo key material (32-byte master + salt). Real deployments source these
-// from `~/.gridwork/env` / a KMS provider; a fixed demo seed keeps the leg reproducible (ADR-0043:
-// the salt is non-secret; this master is a throwaway demo value, never a production key).
+// from an env-var / secrets manager of your choice, or a KMS provider; a fixed demo seed keeps the
+// leg reproducible (the salt is non-secret; this master is a throwaway demo value, never a production key).
 const DEMO_MASTER_KEY = Buffer.alloc(32, 0x2c);
 const DEMO_FIELD_SALT = Buffer.alloc(32, 0x55);
 

@@ -113,8 +113,8 @@ deliverable** · every research gate honored (converge → report → wait) · n
 
 ## Artifact index (`outputs/research/`)
 
-The old `/home/gw/lab/library-research/` working dir was consolidated into `outputs/research/` then
-deleted — point here:
+The old `library-research/` working dir (a prior local checkout) was consolidated into
+`outputs/research/` then deleted — point here:
 
 `MANIFEST.md` · `decisions-log.md` · `capability-corpus.md` · `raw-extractions.json` · `metrics.tsv` ·
 `market-research.md` · `demand-signals.md` · `demand-data.json` · `deep-dives.json` ·

@@ -4,7 +4,7 @@
 // block to stdout. The registry index is resolved via `import.meta.url` (cwd-independent) with
 // an env override for CI / local overrides.
 //
-// `--sample <id>` (ADR-0095 W3) is a SEPARATE, parallel path: a free Apache-2.0 evaluation sample
+// `--sample <id>` is a SEPARATE, parallel path: a free Apache-2.0 evaluation sample
 // (e.g. `eu-ai-act-sample`) carries no module selection, so it never touches the registry allowlist
 // or `generate()` — it goes straight through `materializeSample` (`sample-templates.ts`).
 import { execFile as execFileCb } from "node:child_process";
@@ -66,7 +66,7 @@ export function runCli(
 }
 
 /**
- * Parse argv for the free-SAMPLE path (ADR-0095 W3): just `--name <slug>`. No `--edition`/
+ * Parse argv for the free-SAMPLE path: just `--name <slug>`. No `--edition`/
  * `--module` here — a sample carries no module selection, so it never reaches the registry
  * allowlist. An unknown flag throws (same fail-closed posture as `parseArgs`).
  */
@@ -169,7 +169,7 @@ function printNextSteps(projectName: string, targetDir: string): void {
   );
 }
 
-/** Next-steps for the free-SAMPLE path (ADR-0095 W3) — no license key, since every dependency the
+/** Next-steps for the free-SAMPLE path — no license key, since every dependency the
  *  sample carries (`@caisson/kernel`) is Apache-2.0 on the public npm registry. */
 function printSampleNextSteps(projectName: string, targetDir: string): void {
   process.stdout.write(

@@ -20,9 +20,7 @@ export function formatMoneyCellValue(
   opts?: { sign?: boolean },
 ): string {
   if (!Number.isSafeInteger(value)) {
-    throw new Error(
-      `MoneyCell: value must be an integer unit (ADR-0007), got ${value}`,
-    );
+    throw new Error(`MoneyCell: value must be an integer unit, got ${value}`);
   }
   const negative = value < 0;
   const showSign = opts?.sign === true;

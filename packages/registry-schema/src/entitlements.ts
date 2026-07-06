@@ -132,9 +132,8 @@ function baseMembers(index: RegistryIndex): string[] {
 
 /**
  * The open SPDX license (ADR-0094/0097). A base-kind module ships this IFF it belongs to the free
- * open Base substrate; every commercial module ships `LicenseRef-Caisson-Commercial`. Mirrors the
- * standards-gate authority `tooling/standards-gate` (`OPEN_LICENSE` / `OPEN_BASE_NAMES`,
- * `checkOpenCoreLicensing`) so the free-view floor and the license gate agree.
+ * open Base substrate; every commercial module ships `LicenseRef-Caisson-Commercial`. Kept in sync
+ * with the repo's license gate so the free-view floor and the license check always agree.
  */
 const OPEN_LICENSE = "Apache-2.0";
 
@@ -154,7 +153,7 @@ const OPEN_LICENSE = "Apache-2.0";
  * (via bare-slug / edition / bundle grant, resolved by `expandEntitlements`).
  *
  * Membership is keyed on the manifest `license` field (SPDX identifier), not a hand-maintained allowlist,
- * ensuring agreement with the standards-gate authority and staying correct as the open set evolves. The
+ * ensuring agreement with the repo's license gate and staying correct as the open set evolves. The
  * Worker unions this free-view floor into every served view: community users get exactly this; licensed
  * buyers get this ∪ their expanded entitlements. On resolver error the Worker degrades to this open set
  * only, fail-safe to never serve a commercial module to unauthorized callers.

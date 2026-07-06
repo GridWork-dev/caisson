@@ -16,21 +16,27 @@ entitlements }`. EXACT integer credits per cycle, never derived from the charged
    à-la-carte module ids), NEVER the expanded member-slug leaf set — the registry index expands those
    at gate time (ADR-0071); a credits-only plan carries `[]`. `resolvePlan` is fail-closed: an unknown
    price id THROWS (never a guessed grant, ADR-0089 §6).
-2. **action-book** (`ACTION_BOOK`) — flat per-action credit cost (e.g. `codegenRunCredits`). The
+2. **purchase-book** (`PURCHASE_BOOK`) — the ONE-TIME (non-subscription) counterpart to the plan-book:
+   which provider price id grants which entitlement ids + how many credits, ONCE. Same fail-closed,
+   append-only, integer-only rules as the plan-book.
+3. **action-book** (`ACTION_BOOK`) — flat per-action credit cost (e.g. `codegenRunCredits`). The
    per-ai-call cost is NOT here — that stays computed from token usage by `@caisson/ai-meter`.
-3. **conversion** — re-exports the ONE credit denomination + `centsToCredits` (round-DOWN grant) from
+4. **conversion** — re-exports the ONE credit denomination + `centsToCredits` (round-DOWN grant) from
    `@caisson/kernel` (ADR-0098). Exactly one definition of the unit exists across the codebase.
 
 ## Public API
 
-| Symbol                                        | Use                                                                                                   |
-| --------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `PLAN_BOOK` / `resolvePlan(id)`               | Provider price id → plan entry (incl. `entitlements` purchased ids); unknown id throws (fail-closed). |
-| `planBookEntrySchema` / `parsePlanBook`       | Strict-validate a plan-book override at a boundary.                                                   |
-| `ACTION_BOOK` / `resolveActionCost(tag)`      | Action tag → integer credit cost (closed union; unknown tag throws).                                  |
-| `actionBookSchema` / `parseActionBook`        | Strict-validate an action-book override at a boundary.                                                |
-| `CREDIT_CONVERSION` / `centsToCredits(cents)` | The credit denomination + cents→credits round-DOWN grant (re-export from kernel).                     |
-| `PRICEBOOK_VERSION`                           | Append-only version stamp — a row change bumps it, never edits in place.                              |
+| Symbol                                          | Use                                                                                                            |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `PLAN_BOOK` / `resolvePlan(id)`                 | Provider price id → plan entry (incl. `entitlements` purchased ids); unknown id throws (fail-closed).          |
+| `planBookEntrySchema` / `parsePlanBook`         | Strict-validate a plan-book override at a boundary.                                                            |
+| `PURCHASE_BOOK` / `resolvePurchase(id)`         | Provider price id → one-time purchase entry (entitlements + one-off credits); unknown id throws (fail-closed). |
+| `purchaseBookEntrySchema` / `parsePurchaseBook` | Strict-validate a purchase-book override at a boundary.                                                        |
+| `PURCHASE_BOOK_VERSION`                         | Append-only version stamp for the purchase-book, same convention as `PRICEBOOK_VERSION`.                       |
+| `ACTION_BOOK` / `resolveActionCost(tag)`        | Action tag → integer credit cost (closed union; unknown tag throws).                                           |
+| `actionBookSchema` / `parseActionBook`          | Strict-validate an action-book override at a boundary.                                                         |
+| `CREDIT_CONVERSION` / `centsToCredits(cents)`   | The credit denomination + cents→credits round-DOWN grant (re-export from kernel).                              |
+| `PRICEBOOK_VERSION`                             | Append-only version stamp — a row change bumps it, never edits in place.                                       |
 
 ## Invariants
 

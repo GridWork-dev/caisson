@@ -1,6 +1,6 @@
 # apps/ai-kit
 
-The **AI Production Kit** reference app — the P3 exit artifact (ADR-0044). A thin Next.js
+The **AI Production Kit** reference app. A thin Next.js
 App-Router wiring shell that drives the `@caisson/ai-kit` `infer()` gateway end-to-end, composing
 the four base primitives (prompt-registry · ai-meter · guardrails · ai-config) behind one metered
 chokepoint.

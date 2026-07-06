@@ -1,6 +1,6 @@
-// The wiring shell (T18, the P3 exit artifact). Three scenarios drive the @caisson/ai-kit `infer()`
-// gateway end-to-end against the embedded PGlite store + the local mock model — proving the SPEC
-// exit gate in a runnable app, with zero network and zero provider secret:
+// The wiring shell. Three scenarios drive the @caisson/ai-kit `infer()`
+// gateway end-to-end against the embedded PGlite store + the local mock model — proving the
+// gateway works end-to-end in a runnable app, with zero network and zero provider secret:
 //
 //   metered   — coach-configure a lane → resolve a prompt by name@version → render → reserve BEFORE
 //               the call → reconcile to ACTUAL; the wallet settles to the real charge.

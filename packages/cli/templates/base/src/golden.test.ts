@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 
-// Golden-file regression inherited from Caisson (ADR-0013): every committed `__golden__/*.json`
+// Golden-file regression: every committed `__golden__/*.json`
 // baseline must parse and be a non-empty object. As you add your installed modules' fixtures,
 // they are covered here automatically. Run `BLESS=1 bun test` to re-bless after a reviewed change.
 const goldenDir = join(import.meta.dir, "__golden__");

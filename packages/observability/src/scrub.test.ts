@@ -18,7 +18,7 @@ describe("scrubAttributes", () => {
       privateKey: "-----BEGIN KEY-----",
       sessionId: "s-1",
       password: "hunter2",
-      "user.email": "liam@example.com",
+      "user.email": "user@example.com",
       "user.phone": "555-0100",
     };
     scrubAttributes(attrs);
@@ -63,7 +63,7 @@ describe("scrubPath", () => {
   });
 
   test("redacts an email segment", () => {
-    expect(scrubPath("/accounts/liam@example.com/profile")).toBe(
+    expect(scrubPath("/accounts/user@example.com/profile")).toBe(
       "/accounts/:id/profile",
     );
   });

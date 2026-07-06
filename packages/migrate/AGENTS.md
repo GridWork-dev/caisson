@@ -18,15 +18,16 @@ owns numbered, forward-only `migrations/NNNN_*.sql`. This package:
 
 ## Public API
 
-| Symbol                             | Use                                                                          |
-| ---------------------------------- | ---------------------------------------------------------------------------- |
-| `SelectedPackage`                  | A package selected into a composition: `{ slug, dir, dependsOn }`.           |
-| `readPackageMigrations(pkg)`       | Read one package's `migrations/NNNN_*.sql` → kernel `PackageMigrations`.     |
-| `assembleSelected(packages)`       | Read + merge a selection into a `MigrationAssembly`.                         |
-| `emitMigrationFileSet(assembly)`   | Assembly → `EmittedFileSet` (`migrations/NNNN_*.sql` + ledger).              |
-| `EmittedFile` / `EmittedFileSet`   | The file-emit primitive (`{ path, content }`), shared with the generator.    |
-| `MigrationApplier`                 | The runner port: `applied()` + `apply(migration)` (one tx).                  |
-| `runMigrations(assembly, applier)` | Apply forward-only; skip recorded; fail-closed on checksum drift (ADR-0006). |
+| Symbol                                                  | Use                                                                          |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `SelectedPackage`                                       | A package selected into a composition: `{ slug, dir, dependsOn }`.           |
+| `readPackageMigrations(pkg)`                            | Read one package's `migrations/NNNN_*.sql` → kernel `PackageMigrations`.     |
+| `assembleSelected(packages)`                            | Read + merge a selection into a `MigrationAssembly`.                         |
+| `emitMigrationFileSet(assembly)`                        | Assembly → `EmittedFileSet` (`migrations/NNNN_*.sql` + ledger).              |
+| `EmittedFile` / `EmittedFileSet`                        | The file-emit primitive (`{ path, content }`), shared with the generator.    |
+| `MigrationApplier`                                      | The runner port: `applied()` + `apply(migration)` (one tx).                  |
+| `runMigrations(assembly, applier)`                      | Apply forward-only; skip recorded; fail-closed on checksum drift (ADR-0006). |
+| `pgMigrationApplier(pool)` (from `@caisson/migrate/pg`) | A node-postgres `MigrationApplier` for a live Postgres `Pool`.               |
 
 ## Invariants
 

@@ -125,12 +125,12 @@ started · `ROADMAP` = post-v1, no code.
 
 ## P6 — Commerce + support + docs
 
-> **STATUS: PARTIAL.** `services/docs` (AI-native corpus + `llms.txt` + Bearer `/query`, PR#23,
+> **STATUS: SHIPPED.** `services/docs` (AI-native corpus + `llms.txt` + Bearer `/query`, PR#23,
 > ADR-0096) + `services/support-bot` (Discord RAG, PR#24, ADR-0009/0105) BUILT + merged;
 > `services/license` carries the X-2 cycle→grant mapper + entitlement resolver + Worker filtering
-> (B1/B2, PR#18, ADR-0089/0098/0071). **Remaining:** Ed25519 license **issuer** (ADR-0010, only
-> verify exists), revoke-on-cancel + one-time-purchase entitlement, buyer/seller dashboards,
-> publish-readiness. NB: the GTM marketing+docs site (`apps/site`, Fumadocs) shipped separately in
+> (B1/B2, PR#18, ADR-0089/0098/0071), the Ed25519 license **issuer** (ADR-0110), revoke-on-cancel +
+> one-time-purchase entitlement (ADR-0113), and publish-readiness (ADR-0111); the buyer dashboard
+> shipped in `apps/site`. NB: the GTM marketing+docs site (`apps/site`, Fumadocs) shipped separately in
 > the GTM wave (ADR-0084–0087) and is distinct from P6's `services/docs`.
 
 - T6.1 `services/license`: Ed25519 issuer + MoR webhook + credit grants (idempotent) ·
