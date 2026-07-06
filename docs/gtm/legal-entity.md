@@ -1,8 +1,9 @@
 ---
-updated: 2026-07-05
+updated: 2026-07-06
 status: live
 grounds:
   - docs/state/go-live-legal-and-entity.md
+  - docs/business/caisson-software-llc.md
 ---
 
 # Legal & entity posture
@@ -15,28 +16,25 @@ checklist) plus the ADRs and live site copy cited inline. **Not legal/tax advice
 
 ## 1. Entity status
 
-Operator is a **Georgia sole proprietor today; GA LLC formation is deferred to first sale**
-(`docs/state/go-live-legal-and-entity.md`, verified against GA SOS + multiple 2026 guides,
-2026-07-01). Locked rationale for the deferral: GA LLC formation is $100 online (eCorp,
-~7 business days, expeditable) + $60/yr recurring, carries **no franchise tax** (GA's net-worth
-tax only applies to LLCs electing C-corp tax treatment — irrelevant to a pass-through), and Paddle
-already accepts an **Individual** seller (government ID + W-9 + payout account) identically to how
-it accepts a formed entity. Because the turnaround is days and the cost is trivial, there is no
-value in pre-paying the liability shield before there is revenue to protect.
-
-**Trigger to form the LLC:** first meaningful revenue or the first enterprise prospect (whichever
-comes first) — operator-owned, not automatic. **Same-week bundle at that point:** file Articles of
-Organization ($100 eCorp) → free EIN at IRS.gov (~10 min) → operating agreement (unfiled template)
-→ separate business bank account. FinCEN BOI reporting is exempt for domestic US LLCs as of early
-2026 (verify at fincen.gov/boi before filing — rules move). Delaware C-corp conversion is
-explicitly out of scope unless/until raising VC.
+**Caisson Software LLC** — Georgia member-managed single-member LLC, formed 2026-07-06 via
+Northwest Registered Agent (operator action superseding the 2026-07-01 defer-to-first-sale
+lock; the entity carries the under-18 ownership structure, so it formed ahead of revenue).
+EIN in flight (est. 2026-07-15). The entity SOT — facts, EIN cheat sheet, the
+operating-agreement lawyer brief (transfer-at-18 + minor-IP-assignment clauses), and the
+approval → EIN → OA → Mercury → Paddle-production order of operations — is
+**`docs/business/caisson-software-llc.md`**; this section is the GTM-layer summary only.
+Paddle production proceeds as business type **Private** (entity, formation docs + EIN), not
+Individual. Public surfaces carry the entity as "Caisson Software LLC … based in Atlanta,
+Georgia" + `admin@caisson.sh` — no street address on the site (Northwest's address takes
+service of process; the principal address goes only to IRS/Mercury, neither public). Delaware
+C-corp conversion stays out of scope unless/until raising VC.
 
 ## 2. The merchant-of-record chain
 
 **Paddle Billing is Merchant of Record for every Caisson sale** — this supersedes an earlier
 Stripe-as-MoR assumption baked into the original commerce model (ADR-0108 supersedes ADR-0012's
-commerce-model assumption + amends ADR-0089's cycle→grant event source). Paddle, not GridWork
-Digital LLC, is the seller of record:
+commerce-model assumption + amends ADR-0089's cycle→grant event source). Paddle, not Caisson
+Software LLC, is the seller of record:
 
 - **Who legally sells:** Paddle. The buyer's invoice, checkout, and receipt all carry Paddle's
   name — site copy states this directly: "Paddle.com is the Merchant of Record for all our
@@ -45,7 +43,7 @@ Digital LLC, is the seller of record:
   procurement FAQ page.
 - **Who's liable:** Paddle absorbs chargeback + fraud handling and executes every approved refund
   (`apps/site/app/legal/terms/page.tsx`: "Paddle is the Merchant of Record and executes every
-  approved refund"). GridWork Digital LLC is the software vendor Paddle resells for, not the
+  approved refund"). Caisson Software LLC is the software vendor Paddle resells for, not the
   transaction counterparty.
 - **Who handles tax:** Paddle computes, collects, and remits global sales tax/VAT and owns nexus
   tracking (ADR-0108 context) — the dominant reason for the Stripe→Paddle switch: a solo founder

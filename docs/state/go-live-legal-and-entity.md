@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-01
+updated: 2026-07-06
 status: live
 ---
 
@@ -23,16 +23,14 @@ $800 franchise-tax math does NOT apply).
 | Tax               | Schedule C on personal return                    | pass-through (same), cleaner separation; GA income tax flat ~5.19% → 4.99% glide           |
 | Registered agent  | n/a                                              | GA street address required — **operator can self-serve** (Atlanta address), $0             |
 
-**DECISION (operator-locked 2026-07-01): sole-proprietor first, form the GA LLC at first sale.**
-Zero setup now; Paddle accepts an Individual (gov ID + W-9 + payout account). Because GA turnaround
-is 2–7 days and cost is only ~$100 + $60/yr (no franchise tax), the LLC can be stood up within days
-once revenue appears — no need to pre-pay a shield before there's anything to protect. Everything
-stays sole-prop-compatible until then (personal Schedule C, SSN or free EIN, separate-tracking bank
-account). Revisit at first meaningful revenue or the first enterprise prospect.
-
-**Same-week bundle once you decide to form:** file Articles of Organization ($100 eCorp) → free
-EIN at IRS.gov (10 min) → operating agreement (free template, not filed) → business bank account.
-FinCEN BOI report: domestic US LLCs are exempt as of early 2026 — verify at fincen.gov/boi.
+**SUPERSEDED (operator action, 2026-07-06):** the 2026-07-01 "sole-proprietor first, form at
+first sale" lock is overtaken — the operator formed **Caisson Software LLC** (GA, member-managed,
+single member, Northwest Registered Agent; membership omitted from the state filing) on
+2026-07-06, ahead of first sale, to carry the under-18 ownership structure. The entity SOT —
+facts, EIN cheat sheet, operating-agreement lawyer brief (transfer-at-18 + minor-IP-assignment
+clauses), and the approval → EIN → OA → Mercury → Paddle-production order of operations — is
+**`docs/business/caisson-software-llc.md`**. Paddle production proceeds as business type
+**Private** (entity), not Individual. The table above stays as the decision-time record.
 
 ## Legal docs — minimal launch stack (Paddle MoR + CalOPPA/GDPR reality)
 
