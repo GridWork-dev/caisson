@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
-  "description": "Local-first AI edition reference app (ADR-0044): offline, zero-egress Next.js App Router server composing @caisson/local-ai — hybrid retrieval, at-rest field-crypto, offline license verify, and two-way sync convergence.",
+  "description": "Local-first AI edition reference app: offline, zero-egress Next.js App Router server composing @caisson/local-ai — hybrid retrieval, at-rest field-crypto, offline license verify, and two-way sync convergence.",
   "scripts": {
     "dev": "bun --bun next dev -p 3040",
     "build": "bun --bun next build",
@@ -14,19 +14,19 @@
   },
   "dependencies": {
     "@caisson/local-ai": "workspace:*",
-    "next": "^16.2.9",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "next": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
-    "@types/bun": "^1.1.14",
-    "@types/node": "^22.10.5",
-    "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0",
-    "eslint": "^9.13.0",
-    "typescript": "^5.7.3"
+    "@types/bun": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:"
   }
 }

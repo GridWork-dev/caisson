@@ -25,13 +25,13 @@
     "@caisson/kernel": "workspace:*",
     "@caisson/registry-schema": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "zod": "^3.23.8"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
-    "eslint": "^9.13.0",
-    "typescript": "^5.6.0"
+    "eslint": "catalog:",
+    "typescript": "catalog:"
   }
 }

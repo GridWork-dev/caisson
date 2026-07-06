@@ -92,6 +92,33 @@ const BUILD_SCRIPT_OVERRIDES: Readonly<Record<string, string>> = {
     "tsc -p tsconfig.json && tsc -p tsconfig.scripts.json && bun run scripts/add-shebang.ts",
 };
 
+interface CatalogConfig {
+  readonly catalog: Record<string, string>;
+  readonly catalogs?: Record<string, Record<string, string>>;
+}
+
+/** Resolve a `catalog:` / `catalog:<name>` dependency specifier to its concrete semver range from
+ *  the root workspace catalog (`bun catalogs`, ADR-program row #4). The mirror is a standalone Bun
+ *  workspace with no root catalog of its own — a `"catalog:"` string shipped in a buyer's
+ *  package.json would break `bun install` outright. Non-catalog specifiers pass through unchanged.
+ *  Fails loud (throws) on an unresolvable reference rather than shipping a broken specifier. */
+export function resolveCatalogSpec(
+  depName: string,
+  spec: string,
+  { catalog, catalogs }: CatalogConfig,
+): string {
+  if (!spec.startsWith("catalog:")) return spec;
+  const catalogName = spec.slice("catalog:".length);
+  const table = catalogName === "" ? catalog : catalogs?.[catalogName];
+  const resolved = table?.[depName];
+  if (!resolved) {
+    throw new Error(
+      `Unresolvable catalog specifier "${spec}" for dependency "${depName}" — no matching entry in the root workspace catalog${catalogName ? ` "${catalogName}"` : ""}.`,
+    );
+  }
+  return resolved;
+}
+
 interface PkgJson {
   readonly name: string;
   readonly version: string;
@@ -264,7 +291,7 @@ function rewriteImportsInTree(dir: string): void {
     const dot = entry.name.lastIndexOf(".");
     if (dot < 0 || !SRC_EXT.has(entry.name.slice(dot))) continue;
     const before = readFileSync(abs, "utf8");
-    const after = rewriteImportSpecifiers(before);
+    const after = sanitizeSourceComments(rewriteImportSpecifiers(before));
     if (after !== before) writeFileSync(abs, after);
   }
 }
@@ -297,12 +324,70 @@ function rewriteTsconfigRefs(pkgDir: string): void {
  *  templates/fixtures data, which stay governed by `REWRITE_SKIP_DIRS`). */
 const PACKAGE_PROSE_FILES = ["README.md", "CHANGELOG.md", "AGENTS.md"];
 
+/** Findings 6efc5c3da5addb5a / 7023e53bc240b60f / a7f243986de1287f: README/CHANGELOG/AGENTS.md
+ *  prose and source comments across the mirror cite bare internal ADR decision-log ids in
+ *  parentheticals — e.g. "(ADR-0175)", "(ADR-0134/0101)", "(P6, ADR-0089/0017)" — unresolvable to
+ *  a buyer with no access to that corpus. A parenthetical is stripped only when its ENTIRE content
+ *  is ADR-id tokens (optionally alongside a short internal phase/wave shorthand code like "P6");
+ *  a parenthetical that mixes real prose with an ADR id — e.g. "(see ADR-0072 for details)" — is
+ *  left untouched, since it reads as ordinary buyer-facing prose, not a bare citation. */
+const ADR_TOKEN_RE = /^ADR-\d+$/;
+const ADR_CONTINUATION_RE = /^\d+$/; // e.g. the "0101" in "(ADR-0134/0101)"
+const SHORT_CODE_RE = /^[A-Za-z]{1,4}\d{0,3}$/; // e.g. "P6" in "(P6, ADR-0089)"
+
+function isBareAdrParenthetical(content: string): boolean {
+  const tokens = content
+    .split(/[,/]/)
+    .map((t) => t.trim())
+    .filter(Boolean);
+  if (tokens.length === 0) return false;
+  let sawAdrToken = false;
+  for (const token of tokens) {
+    if (ADR_TOKEN_RE.test(token)) sawAdrToken = true;
+    else if (!ADR_CONTINUATION_RE.test(token) && !SHORT_CODE_RE.test(token))
+      return false;
+  }
+  return sawAdrToken;
+}
+
+/** Pure sanitizer: strips bare-ADR-id parentheticals from prose text and tidies the whitespace /
+ *  empty-paren residue the strip itself leaves behind. Scoped to the removal site only (consumes
+ *  the whitespace run immediately around a stripped parenthetical, collapsing a trailing run to a
+ *  single separating space so words never fuse) — it never touches whitespace or formatting
+ *  elsewhere in the document (e.g. a markdown list's indented continuation lines). Exported for
+ *  unit testing. */
+export function sanitizeAdrCitations(text: string): string {
+  let out = text.replace(
+    /[ \t]*\(([^()]*)\)([ \t]*)/g,
+    (whole: string, content: string, trailingWs: string) =>
+      isBareAdrParenthetical(content)
+        ? trailingWs.length > 0
+          ? " "
+          : ""
+        : whole,
+  );
+  out = out.replace(/\(\s*\)/g, ""); // any leftover empty parens
+  out = out.replace(/[ \t]+([.,;:])/g, "$1"); // stray space before punctuation left by the strip
+  return out;
+}
+
+/** Applies `sanitizeAdrCitations` only inside `//` line comments and `/* … *\/` block comments —
+ *  code outside a comment is never touched. The `(?<!:)` guard keeps a `https://`-style URL
+ *  string from being misread as the start of a line comment. ponytail: a regex comment scan, not
+ *  a real parser — sufficient since ADR citations only ever appear in prose comments here.
+ *  Exported for unit testing. */
+export function sanitizeSourceComments(code: string): string {
+  return code.replace(/\/\*[\s\S]*?\*\/|(?<!:)\/\/[^\n]*/g, (comment) =>
+    sanitizeAdrCitations(comment),
+  );
+}
+
 function rewriteProseFiles(destDir: string): void {
   for (const name of PACKAGE_PROSE_FILES) {
     const abs = join(destDir, name);
     if (!existsSync(abs)) continue;
     const before = readFileSync(abs, "utf8");
-    const after = rewriteProseMentions(before);
+    const after = sanitizeAdrCitations(rewriteProseMentions(before));
     if (after !== before) writeFileSync(abs, after);
   }
 }
@@ -361,6 +446,7 @@ function assertReadmeLicenseAgreement(destDir: string, npmName: string): void {
 function rewritePackageJson(
   json: PkgJson,
   restampApache: boolean,
+  catalogConfig: CatalogConfig,
 ): Record<string, unknown> {
   const out: Record<string, unknown> = { ...json };
   out.name = renameScope(json.name);
@@ -374,7 +460,7 @@ function rewritePackageJson(
     if (!src) continue;
     const renamed: Record<string, string> = {};
     for (const [dep, ver] of Object.entries(src))
-      renamed[renameScope(dep)] = ver;
+      renamed[renameScope(dep)] = resolveCatalogSpec(dep, ver, catalogConfig);
     out[key] = renamed;
   }
   const scripts = { ...(json.scripts ?? {}) };
@@ -412,6 +498,17 @@ function main(): void {
   const repoRoot = resolve(import.meta.dir, "..");
   const { out, generatedAt } = parseArgs(Bun.argv.slice(2));
   const outDir = resolve(repoRoot, out);
+
+  const sourceRootPkg = readJson(join(repoRoot, "package.json")) as PkgJson & {
+    workspaces?: {
+      catalog?: Record<string, string>;
+      catalogs?: Record<string, Record<string, string>>;
+    };
+  };
+  const catalogConfig: CatalogConfig = {
+    catalog: sourceRootPkg.workspaces?.catalog ?? {},
+    catalogs: sourceRootPkg.workspaces?.catalogs,
+  };
 
   const all = [
     ...scanGroup(repoRoot, "packages"),
@@ -507,7 +604,11 @@ function main(): void {
     const restamp = BUILD_SUPPORT.has(p.json.name);
     writeFileSync(
       join(destDir, "package.json"),
-      JSON.stringify(rewritePackageJson(p.json, restamp), null, 2) + "\n",
+      JSON.stringify(
+        rewritePackageJson(p.json, restamp, catalogConfig),
+        null,
+        2,
+      ) + "\n",
     );
     if (restamp && !existsSync(join(destDir, "LICENSE")))
       writeFileSync(join(destDir, "LICENSE"), apacheLicenseText);
@@ -677,4 +778,4 @@ function main(): void {
   for (const e of excludedApplied) console.log(`  excluded test: ${e.file}`);
 }
 
-main();
+if (import.meta.main) main();

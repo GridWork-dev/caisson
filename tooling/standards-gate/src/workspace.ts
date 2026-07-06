@@ -19,6 +19,15 @@ export interface Pkg {
   hasCode: boolean;
 }
 
+/** `workspaces` is either the legacy bare array or the bun-catalog object form
+ *  (`{ packages: [...], catalog: {...} }`, ADR-program row #4) — read the package globs from
+ *  whichever shape is present. */
+function workspaceGlobs(workspaces: unknown): string[] {
+  if (Array.isArray(workspaces)) return workspaces as string[];
+  const packages = (workspaces as { packages?: unknown } | undefined)?.packages;
+  return Array.isArray(packages) ? (packages as string[]) : [];
+}
+
 /** Repo root = the dir whose package.json declares `workspaces`. */
 export function findRoot(start = process.cwd()): string {
   let dir = resolve(start);
@@ -26,7 +35,8 @@ export function findRoot(start = process.cwd()): string {
     const pj = join(dir, "package.json");
     if (existsSync(pj)) {
       const json = JSON.parse(readFileSync(pj, "utf8"));
-      if (Array.isArray(json.workspaces)) return dir;
+      const ws = json.workspaces;
+      if (Array.isArray(ws) || Array.isArray(ws?.packages)) return dir;
     }
     const parent = dirname(dir);
     if (parent === dir)
@@ -60,7 +70,7 @@ function shipsCode(dir: string, pj: Record<string, unknown>): boolean {
 
 export function readWorkspace(root = findRoot()): Pkg[] {
   const rootPj = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
-  const dirs = (rootPj.workspaces as string[]).flatMap((p) =>
+  const dirs = workspaceGlobs(rootPj.workspaces).flatMap((p) =>
     expandGlob(root, p),
   );
   const out: Pkg[] = [];
