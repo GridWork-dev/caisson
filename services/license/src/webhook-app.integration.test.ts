@@ -443,6 +443,10 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
         amountTotalMinor: 74900,
         currency: "usd",
         sourceEventId: "evt_ph_1",
+        // SKU attribution (CAISSON-22): the compliance price -> canonical bundle id "compliance".
+        skuLines: [
+          { priceId: PRICE_COMPLIANCE_ONETIME, productSlug: "compliance" },
+        ],
       },
     ]);
   });
