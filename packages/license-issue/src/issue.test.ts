@@ -185,26 +185,40 @@ describe("issueLicense — expiry semantics (perpetual-per-major)", () => {
   });
 });
 
-describe("issueLicense — updatesUntil passthrough (ADR-0244/0251 updates window)", () => {
-  test("claims carrying updatesUntil round-trip through issue → verify", async () => {
+describe("issueLicense — updatesWindows passthrough (ADR-0244/0255 per-entitlement updates windows)", () => {
+  test("claims carrying an updatesWindows map round-trip through issue → verify", async () => {
     const token = await issueLicense(devSigner, {
       ...DEV_CLAIMS,
       licenseId: VALID_UUID,
-      updatesUntil: "2027-07-06T00:00:00.000Z",
+      updatesWindows: { "local-ai": "2027-07-06T00:00:00.000Z" },
     });
     const result = verifyDev(token);
     expect(result.valid).toBe(true);
-    expect(result.claims?.updatesUntil).toBe("2027-07-06T00:00:00.000Z");
+    expect(result.claims?.updatesWindows).toEqual({
+      "local-ai": "2027-07-06T00:00:00.000Z",
+    });
   });
 
-  test("claims WITHOUT the field still issue (pre-0251 shape preserved — the golden pins it)", async () => {
+  test("claims WITHOUT the field still issue (pre-window shape preserved — the golden pins it)", async () => {
     const token = await issueLicense(devSigner, DEV_CLAIMS);
-    expect(verifyDev(token).claims?.updatesUntil).toBeUndefined();
+    expect(verifyDev(token).claims?.updatesWindows).toBeUndefined();
   });
 
-  test("a malformed updatesUntil is rejected BEFORE signing", async () => {
+  test("a malformed updatesWindows value is rejected BEFORE signing", async () => {
     await expect(
-      issueLicense(devSigner, { ...DEV_CLAIMS, updatesUntil: "soon" }),
+      issueLicense(devSigner, {
+        ...DEV_CLAIMS,
+        updatesWindows: { "local-ai": "soon" },
+      }),
+    ).rejects.toThrow();
+  });
+
+  test("a null VALUE in the map is rejected BEFORE signing (unbounded = no key, never null)", async () => {
+    await expect(
+      issueLicense(devSigner, {
+        ...DEV_CLAIMS,
+        updatesWindows: { "local-ai": null },
+      }),
     ).rejects.toThrow();
   });
 });

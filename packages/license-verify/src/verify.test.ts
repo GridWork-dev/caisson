@@ -215,14 +215,27 @@ describe("verifyLicense — fail-safe-to-community (threat TM-LIC)", () => {
     expect(verifyDev(extra).tier).toBe("community");
   });
 
-  test("a malformed updatesUntil (not an ISO instant) fails strict parsing → community", () => {
+  test("a malformed updatesWindows value (not an ISO instant) fails strict parsing → community", () => {
     const bad = mint({
       entitlements: ["local-ai"],
       expiry: null,
       licenseId: VALID_UUID,
       major: 1,
       tier: "pro",
-      updatesUntil: "next-year-sometime",
+      updatesWindows: { "local-ai": "next-year-sometime" },
+    });
+    expect(verifyDev(bad).tier).toBe("community");
+  });
+
+  test("a null VALUE in the updatesWindows map fails strict parsing → community", () => {
+    // ADR-0255: an unbounded entitlement simply has NO key — null values are never valid.
+    const bad = mint({
+      entitlements: ["local-ai"],
+      expiry: null,
+      licenseId: VALID_UUID,
+      major: 1,
+      tier: "pro",
+      updatesWindows: { "local-ai": null },
     });
     expect(verifyDev(bad).tier).toBe("community");
   });
@@ -249,40 +262,56 @@ describe("verifyLicense — fail-safe-to-community (threat TM-LIC)", () => {
   });
 });
 
-describe("verifyLicense — updatesUntil claim (ADR-0244/0251 updates window)", () => {
-  test("a token WITHOUT the field still verifies and reads as unbounded (Decision 2)", () => {
-    // The committed golden predates the field — the exact pre-0251 token class.
+describe("verifyLicense — updatesWindows claim (ADR-0244/0255 per-entitlement updates windows)", () => {
+  test("a token WITHOUT the field still verifies and reads as unbounded", () => {
+    // The committed golden predates the field — the exact pre-window token class.
     const result = verifyDev(DEV_TOKEN);
     expect(result.valid).toBe(true);
-    expect(result.claims?.updatesUntil).toBeUndefined();
+    expect(result.claims?.updatesWindows).toBeUndefined();
   });
 
-  test("a token carrying updatesUntil verifies and exposes the signed instant", () => {
+  test("a token carrying updatesWindows verifies and exposes the signed map", () => {
     const windowed = mint({
       entitlements: ["local-ai"],
       expiry: null,
       licenseId: VALID_UUID,
       major: 1,
       tier: "pro",
-      updatesUntil: "2027-01-01T00:00:00.000Z",
+      updatesWindows: { "local-ai": "2027-01-01T00:00:00.000Z" },
     });
     const result = verifyDev(windowed);
     expect(result.valid).toBe(true);
-    expect(result.claims?.updatesUntil).toBe("2027-01-01T00:00:00.000Z");
+    expect(result.claims?.updatesWindows).toEqual({
+      "local-ai": "2027-01-01T00:00:00.000Z",
+    });
   });
 
-  test("updatesUntil: null verifies (explicit unbounded)", () => {
+  test("updatesWindows: null verifies (explicit unbounded)", () => {
     const unbounded = mint({
       entitlements: ["local-ai"],
       expiry: null,
       licenseId: VALID_UUID,
       major: 1,
       tier: "pro",
-      updatesUntil: null,
+      updatesWindows: null,
     });
     const result = verifyDev(unbounded);
     expect(result.valid).toBe(true);
-    expect(result.claims?.updatesUntil).toBeNull();
+    expect(result.claims?.updatesWindows).toBeNull();
+  });
+
+  test("an EMPTY map verifies (every entitlement unbounded — no keys)", () => {
+    const empty = mint({
+      entitlements: ["local-ai"],
+      expiry: null,
+      licenseId: VALID_UUID,
+      major: 1,
+      tier: "pro",
+      updatesWindows: {},
+    });
+    const result = verifyDev(empty);
+    expect(result.valid).toBe(true);
+    expect(result.claims?.updatesWindows).toEqual({});
   });
 
   test("a LAPSED window never invalidates the license itself (window ≠ expiry)", () => {
@@ -292,7 +321,7 @@ describe("verifyLicense — updatesUntil claim (ADR-0244/0251 updates window)", 
       licenseId: VALID_UUID,
       major: 1,
       tier: "pro",
-      updatesUntil: "2020-01-01T00:00:00.000Z",
+      updatesWindows: { "local-ai": "2020-01-01T00:00:00.000Z" },
     });
     const result = verifyDev(lapsed, new Date("2026-07-06T00:00:00.000Z"));
     expect(result.valid).toBe(true); // the registry narrows versions; verify never lapses on it
