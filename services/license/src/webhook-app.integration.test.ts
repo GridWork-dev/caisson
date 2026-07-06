@@ -11,7 +11,7 @@ import type { BillingProvider } from "@caisson/billing";
 import {
   createPaddleBilling,
   PROCESSED_EVENT_SCHEMA_SQL,
-} from "@caisson/billing";
+} from "@caisson/billing-orchestration";
 import {
   CREDIT_LINE_ITEM_MIGRATION_SQL,
   CREDIT_EXPIRY_MIGRATION_SQL,

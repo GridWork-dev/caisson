@@ -1,31 +1,24 @@
-// LemonSqueezy billing seam (ADR-0175) — a buyer-facing Merchant-of-Record `BillingProvider` driver.
-// A NEW sibling file (the operator-decided split — NOT co-located in provider.ts like Stripe/Paddle):
-// raw-body HMAC webhook verification + LemonSqueezy->domain event mapping + REST checkout creation, in
-// ONE file since (unlike Paddle's split-across-3-files) this is a single new addition, not an edit to
-// the two existing drivers. NO new dependency — hand-rolled over LemonSqueezy's plain REST API, mirroring
-// the Stripe/Paddle drivers' no-SDK posture. Dormant: only constructed when the buyer supplies credentials
-// (call-site env-gating, same discipline as every other driver in this package) — the platform MoR stays
-// Paddle (ADR-0116).
-import { createHmac } from "node:crypto";
+// LemonSqueezy billing driver + event mapper (ADR-0175) — a buyer-facing Merchant-of-Record
+// `BillingProvider` driver. LemonSqueezy->domain event mapping + REST checkout creation. The raw-body
+// HMAC signature verifier (`verifyLemonSqueezyWebhook`) stays OPEN in @caisson/billing (uniform rule:
+// signature-verify open for all four providers); this commercial file composes it (ADR-0249 G3). NO new
+// dependency — hand-rolled over LemonSqueezy's plain REST API, mirroring the Stripe/Paddle drivers'
+// no-SDK posture. Dormant: only constructed when the buyer supplies credentials (call-site env-gating,
+// same discipline as every other driver) — the platform MoR stays Paddle (ADR-0116).
 import { z } from "zod";
 import {
-  AuthnError,
   ConfigError,
   InternalError,
   fetchWithTimeout,
   parseStrict,
-  safeEqualFixed,
   strictObject,
 } from "@caisson/kernel";
-import type { BillingProvider } from "./provider.ts";
-import type { DomainBillingEvent } from "./events.ts";
-
-export interface LemonSqueezyConfig {
-  apiKey: string;
-  webhookSecret: string;
-  /** The LemonSqueezy store id — required on every checkout's `relationships.store`. */
-  storeId: string;
-}
+import {
+  verifyLemonSqueezyWebhook,
+  type BillingProvider,
+  type LemonSqueezyConfig,
+  type DomainBillingEvent,
+} from "@caisson/billing";
 
 // The webhook envelope is exactly `{ meta, data }` (LemonSqueezy's example payloads + a captured
 // real `subscription_payment_success` delivery both show only these two top-level keys) — `.strict()`
@@ -40,21 +33,6 @@ export const LemonSqueezyEventSchema = strictObject({
 });
 
 export type LemonSqueezyEvent = z.infer<typeof LemonSqueezyEventSchema>;
-
-/** Throws `AuthnError` unless `signatureHeader` is a valid LemonSqueezy `X-Signature`. LemonSqueezy's
- * signature is a bare HMAC-SHA256 hex digest of the raw body — no timestamp, so (unlike Stripe/Paddle)
- * there is no replay-tolerance window to check (this matches LemonSqueezy's own documented Node example:
- * a single `timingSafeEqual` over the digest, nothing else). */
-export function verifyLemonSqueezyWebhook(
-  rawBody: string,
-  signatureHeader: string,
-  secret: string,
-): void {
-  const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
-  if (!safeEqualFixed(expected, signatureHeader)) {
-    throw new AuthnError("Invalid LemonSqueezy signature");
-  }
-}
 
 function readString(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;

@@ -23,7 +23,7 @@
 //   setting PADDLE_SANDBOX_CHECKOUT_URL.
 import { describe, expect, test } from "bun:test";
 import { AuthnError, fetchWithTimeout, parseStrict } from "@caisson/kernel";
-import { verifyPaddleWebhook } from "../src/paddle-webhook.ts";
+import { verifyPaddleWebhook } from "@caisson/billing";
 import { PaddleEventSchema, parsePaddleEvent } from "../src/paddle-events.ts";
 
 // --- Leg A env (simulator) --------------------------------------------------------------------

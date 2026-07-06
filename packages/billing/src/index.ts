@@ -1,38 +1,18 @@
+// @caisson/billing (open, Apache-2.0) — the raw-body signature verifiers + the BillingProvider port +
+// config-type contracts + the DomainBillingEvent schema. The checkout drivers, provider->domain event
+// parsers, and webhook idempotency are the commercial half (@caisson/billing-orchestration, ADR-0249 G3).
 export { verifyStripeWebhook } from "./webhook.ts";
 export type { VerifyOptions } from "./webhook.ts";
-export {
-  parseStripeEvent,
-  DomainBillingEventSchema,
-  StripeEventSchema,
-} from "./events.ts";
-export type { DomainBillingEvent, StripeEvent } from "./events.ts";
 export { verifyPaddleWebhook } from "./paddle-webhook.ts";
-export { parsePaddleEvent, PaddleEventSchema } from "./paddle-events.ts";
-export type { PaddleEvent } from "./paddle-events.ts";
-export { createStripeBilling, createPaddleBilling } from "./provider.ts";
+export { verifyLemonSqueezyWebhook } from "./lemonsqueezy-webhook.ts";
+export { verifyPolarWebhook } from "./polar-webhook.ts";
+export { DomainBillingEventSchema } from "./events.ts";
+export type { DomainBillingEvent } from "./events.ts";
 export type {
   BillingProvider,
+  CheckoutInput,
   StripeConfig,
   PaddleConfig,
-  CheckoutInput,
+  LemonSqueezyConfig,
+  PolarConfig,
 } from "./provider.ts";
-export {
-  createLemonSqueezyBilling,
-  verifyLemonSqueezyWebhook,
-  parseLemonSqueezyEvent,
-  LemonSqueezyEventSchema,
-} from "./lemonsqueezy.ts";
-export type { LemonSqueezyConfig, LemonSqueezyEvent } from "./lemonsqueezy.ts";
-export {
-  createPolarBilling,
-  verifyPolarWebhook,
-  parsePolarEvent,
-  PolarEventSchema,
-} from "./polar.ts";
-export type { PolarConfig, PolarEvent } from "./polar.ts";
-export {
-  PROCESSED_EVENT_SCHEMA_SQL,
-  processEvent,
-  withIdempotentSideEffect,
-} from "./idempotency.ts";
-export type { ProcessResult } from "./idempotency.ts";

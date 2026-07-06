@@ -10,7 +10,8 @@
 // supplies a Neon-backed Transactor; the signing key → KMS swap (un-wired Signer seam) is the same
 // operator-gated DEPLOY concern as the docs-service real-embedder seam.
 import { resolve } from "node:path";
-import { type BillingProvider, createPaddleBilling } from "@caisson/billing";
+import type { BillingProvider } from "@caisson/billing";
+import { createPaddleBilling } from "@caisson/billing-orchestration";
 import { Ed25519Signer } from "@caisson/license-issue";
 import { initObservability } from "@caisson/observability";
 import { loadRegistryIndexFromFile } from "@caisson/registry-schema";

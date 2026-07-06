@@ -1,12 +1,12 @@
-// Billing seam (ADR-0017): raw-body HMAC webhook verification + Stripe→domain event mapping.
-// The verified event carries everything the credit grant needs (sourceEventId → idempotency).
+// Stripe driver + mapper (ADR-0017): Stripe→domain event mapping, the StripeEventSchema envelope
+// boundary, and createCheckout metadata stamping. The raw-body signature-VERIFY assertions live with the
+// open verifier in @caisson/billing (packages/billing/src/webhook.test.ts); this file covers the
+// commercial parse/driver half (ADR-0249 G3).
 import { createHmac } from "node:crypto";
 import { afterEach, describe, expect, test } from "bun:test";
-import { AuthnError } from "@caisson/kernel";
 import {
   createStripeBilling,
   parseStripeEvent,
-  verifyStripeWebhook,
   StripeEventSchema,
 } from "./index.ts";
 
@@ -29,42 +29,6 @@ const checkoutBody = JSON.stringify({
       metadata: { account_id: "acct_a", price_id: "price_pack_PLACEHOLDER" },
     },
   },
-});
-
-describe("Stripe webhook verification", () => {
-  test("accepts a valid signature within tolerance", () => {
-    expect(() =>
-      verifyStripeWebhook(checkoutBody, signed(checkoutBody), SECRET, {
-        now: T,
-      }),
-    ).not.toThrow();
-  });
-
-  test("rejects a tampered body", () => {
-    const header = signed(checkoutBody);
-    expect(() =>
-      verifyStripeWebhook(`${checkoutBody} `, header, SECRET, { now: T }),
-    ).toThrow(AuthnError);
-  });
-
-  test("rejects the wrong secret", () => {
-    expect(() =>
-      verifyStripeWebhook(
-        checkoutBody,
-        signed(checkoutBody, "whsec_wrong"),
-        SECRET,
-        { now: T },
-      ),
-    ).toThrow(AuthnError);
-  });
-
-  test("rejects an out-of-tolerance timestamp (replay)", () => {
-    expect(() =>
-      verifyStripeWebhook(checkoutBody, signed(checkoutBody), SECRET, {
-        now: T + 1000,
-      }),
-    ).toThrow(AuthnError);
-  });
 });
 
 describe("event mapping", () => {

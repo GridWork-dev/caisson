@@ -6,12 +6,12 @@
 import { createHmac } from "node:crypto";
 import { afterEach, describe, expect, test } from "bun:test";
 import { AuthnError } from "@caisson/kernel";
+import type { BillingProvider } from "@caisson/billing";
 import {
   createLemonSqueezyBilling,
   createPaddleBilling,
   createPolarBilling,
   createStripeBilling,
-  type BillingProvider,
 } from "./index.ts";
 
 const T = 1_700_000_000;

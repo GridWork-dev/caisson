@@ -3,11 +3,8 @@
 // applies the domain event inside withTenant so the credit grant is RLS-scoped to the buyer's account.
 // The provider is INJECTED (not constructed here) so the handler is testable without a live HMAC secret
 // and the MoR driver stays swappable (ADR-0017). A bad signature throws (AuthnError) BEFORE any DB work.
-import {
-  type BillingProvider,
-  type DomainBillingEvent,
-  processEvent,
-} from "@caisson/billing";
+import type { BillingProvider, DomainBillingEvent } from "@caisson/billing";
+import { processEvent } from "@caisson/billing-orchestration";
 import { InternalError } from "@caisson/kernel";
 import { type Transactor, withTenant } from "@caisson/tenancy-rls";
 import { applyBillingEvent } from "./apply-billing-event.ts";

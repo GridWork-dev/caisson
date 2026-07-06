@@ -17,7 +17,8 @@ import {
   getLedger,
 } from "@caisson/credits";
 import { withTenant } from "@caisson/tenancy-rls";
-import { type DomainBillingEvent, parseStripeEvent } from "@caisson/billing";
+import type { DomainBillingEvent } from "@caisson/billing";
+import { parseStripeEvent } from "@caisson/billing-orchestration";
 import { applyBillingEvent } from "./apply-billing-event.ts";
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,

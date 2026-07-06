@@ -1,9 +1,13 @@
 {
-  "name": "@caisson/app-base",
-  "version": "0.0.4",
-  "private": true,
+  "name": "@caisson/billing-orchestration",
+  "version": "0.1.0",
   "type": "module",
-  "description": "Framework-agnostic reference wiring the base packages over Bun.serve. App framework per edition is deferred.",
+  "license": "LicenseRef-Caisson-Commercial",
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
+  "description": "Commercial billing orchestration (ADR-0249 G3): Stripe/Paddle/LemonSqueezy/Polar checkout drivers + provider->DomainBillingEvent parsers + dual-layer webhook idempotency. Raw-body signature verification stays open in @caisson/billing.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -14,23 +18,17 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src",
-    "test": "bun test ./src"
+    "test": "bun test ./src",
+    "test:live": "bun test ./live"
   },
   "dependencies": {
-    "@caisson/auth": "workspace:*",
     "@caisson/billing": "workspace:*",
-    "@caisson/credits": "workspace:*",
     "@caisson/kernel": "workspace:*",
-    "@caisson/mcp-server": "workspace:*",
-    "@caisson/rate-limit": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/billing-orchestration": "workspace:*",
-    "@caisson/cli": "workspace:*",
     "@caisson/eslint-config": "workspace:*",
-    "@caisson/registry": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
     "eslint": "catalog:",
