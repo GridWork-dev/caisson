@@ -102,7 +102,7 @@ describe("deploy-entry edge revocation deny-set (ADR-0225 R-4=B)", () => {
     const resolve = buildLicenseEntitlementResolver(devVerify);
     expect(resolve(tokenReq())).toEqual({
       entitlements: ["local-ai"],
-      updatesUntil: null,
+      updatesWindows: {},
     });
   });
 

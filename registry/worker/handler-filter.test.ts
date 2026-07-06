@@ -349,7 +349,7 @@ describe("Worker delivers an edition's COMMERCIAL members via the sentinel — r
   });
 });
 
-describe("updates-window filtering on /modules/:id (ADR-0244/0251)", () => {
+describe("updates-window filtering on /modules/:id (ADR-0244/0255)", () => {
   // A multi-version commercial edition member: two 2026 versions + one 2027 version.
   const multiVersion = {
     id: "@caisson/compliance",
@@ -375,11 +375,11 @@ describe("updates-window filtering on /modules/:id (ADR-0244/0251)", () => {
     schemaVersion: 1,
     modules: [entry("@caisson/kernel", []), multiVersion],
   });
-  const winHandlerFor = (updatesUntil: string | null) =>
+  const winHandlerFor = (window: string | null) =>
     createIndexHandler(winIndex, {
       resolveEntitlements: () => ({
         entitlements: ["compliance"],
-        updatesUntil,
+        updatesWindows: window === null ? {} : { compliance: window },
       }),
     });
   const WINDOW = "2026-12-31T00:00:00.000Z";
@@ -424,12 +424,54 @@ describe("updates-window filtering on /modules/:id (ADR-0244/0251)", () => {
     expect(body.versions.length).toBe(1);
   });
 
-  test("the bare purchased-id array resolver shape still works (pre-0251 contract = unbounded)", async () => {
+  test("the bare purchased-id array resolver shape still works (pre-window contract = unbounded)", async () => {
     const arrayHandler = createIndexHandler(winIndex, {
       resolveEntitlements: () => ["compliance"],
     });
     const res = arrayHandler(req("/modules/@caisson%2Fcompliance"));
     const body = (await res.json()) as { latest: string };
+    expect(body.latest).toBe("2.0.0");
+  });
+
+  test("MOST FAVORABLE (ADR-0255 D3): two grantors' windows → the module serves under the LARGER instant", async () => {
+    // Bought BOTH the compliance edition (older window) AND the bundle (newer window) — both grant
+    // @caisson/compliance. The better (newer, more permissive) window applies.
+    const handler = createIndexHandler(winIndex, {
+      resolveEntitlements: () => ({
+        entitlements: ["compliance", "bundle"],
+        updatesWindows: {
+          compliance: "2026-01-15T00:00:00.000Z", // would allow only 1.0.0
+          bundle: WINDOW, // allows 1.0.0 + 1.1.0 — the more favorable grantor
+        },
+      }),
+    });
+    const res = handler(req("/modules/@caisson%2Fcompliance"));
+    const body = (await res.json()) as {
+      latest: string;
+      versions: { version: string }[];
+    };
+    expect(body.versions.map((v) => v.version).sort()).toEqual([
+      "1.0.0",
+      "1.1.0",
+    ]);
+    expect(body.latest).toBe("1.1.0");
+  });
+
+  test("MOST FAVORABLE (ADR-0255 D3): a grantor with NO key (unbounded) beats a windowed grantor", async () => {
+    // The bundle purchase carries no key for itself (unbounded) even though the compliance edition
+    // purchase has a narrow window — the unbounded grantor wins, serving every version.
+    const handler = createIndexHandler(winIndex, {
+      resolveEntitlements: () => ({
+        entitlements: ["compliance", "bundle"],
+        updatesWindows: { compliance: "2020-01-01T00:00:00.000Z" }, // bundle: no key = unbounded
+      }),
+    });
+    const res = handler(req("/modules/@caisson%2Fcompliance"));
+    const body = (await res.json()) as {
+      latest: string;
+      versions: { version: string }[];
+    };
+    expect(body.versions.length).toBe(3);
     expect(body.latest).toBe("2.0.0");
   });
 

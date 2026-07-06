@@ -36,14 +36,14 @@ describe("licenseEntitlementResolver (ADR-0010/0071)", () => {
   test("a valid Bearer license resolves to its signed entitlements", () => {
     expect(resolveDev(reqWith(`Bearer ${DEV_TOKEN}`))).toEqual({
       entitlements: ["local-ai"],
-      updatesUntil: null,
+      updatesWindows: {},
     });
   });
 
   test("a case-insensitive bearer scheme still resolves", () => {
     expect(resolveDev(reqWith(`bearer ${DEV_TOKEN}`))).toEqual({
       entitlements: ["local-ai"],
-      updatesUntil: null,
+      updatesWindows: {},
     });
   });
 
@@ -65,18 +65,18 @@ describe("licenseEntitlementResolver (ADR-0010/0071)", () => {
     ).toBeNull();
   });
 
-  test("a windowed token's signed updatesUntil rides along (ADR-0251)", async () => {
+  test("a windowed token's signed updatesWindows map rides along (ADR-0255)", async () => {
     const windowedToken = await mintDevToken({
       entitlements: ["local-ai"],
       expiry: null,
       licenseId: LICENSE_ID,
       major: 1,
       tier: "pro",
-      updatesUntil: "2027-01-01T00:00:00.000Z",
+      updatesWindows: { "local-ai": "2027-01-01T00:00:00.000Z" },
     });
     expect(resolveDev(reqWith(`Bearer ${windowedToken}`))).toEqual({
       entitlements: ["local-ai"],
-      updatesUntil: "2027-01-01T00:00:00.000Z",
+      updatesWindows: { "local-ai": "2027-01-01T00:00:00.000Z" },
     });
   });
 
@@ -94,7 +94,7 @@ describe("makeLicenseEntitlementResolver — edge revocation gate (ADR-0225 R-4=
     const resolve = makeLicenseEntitlementResolver(() => new Set(), devVerify);
     expect(resolve(reqWith(`Bearer ${DEV_TOKEN}`))).toEqual({
       entitlements: ["local-ai"],
-      updatesUntil: null,
+      updatesWindows: {},
     });
   });
 
@@ -113,7 +113,7 @@ describe("makeLicenseEntitlementResolver — edge revocation gate (ADR-0225 R-4=
     );
     expect(resolve(reqWith(`Bearer ${DEV_TOKEN}`))).toEqual({
       entitlements: ["local-ai"],
-      updatesUntil: null,
+      updatesWindows: {},
     });
   });
 });
