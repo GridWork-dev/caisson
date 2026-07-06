@@ -1,0 +1,75 @@
+---
+title: signing-primitive
+description: Per-tenant evidence signing — a detached Ed25519 signature over a canonical, chain-anchored manifest body, with an optional RFC-3161 trusted-timestamp countersignature and a fail-closed verify path.
+---
+
+`@caisson/signing-primitive` signs an evidence pack with a key that belongs to the tenant,
+not to Caisson. It produces a detached Ed25519 signature over the canonicalized manifest
+body concatenated with the audit chain's tip hash. The signature is detached, so the signed
+body stays byte-stable and independently verifiable, and the per-tenant identity is
+deliberately distinct from the Caisson license-issuer key — a buyer proves the provenance of
+their own evidence with their own identity.
+
+## What it does
+
+- **Per-tenant detached signing** — `signEvidencePack` signs `canonicalize(manifest) ∥
+  chainAnchor.tipHash` with an `Ed25519Signer` scoped to the tenant. The signature is
+  detached and never injected into the body, so the manifest stays byte-identical after
+  signing.
+- **Optional trusted timestamp** — supply a `TimestampAuthority` and the signature is
+  countersigned with an RFC-3161 token, attesting the instant the signature existed.
+- **Fail-closed verify** — `verifyEvidenceSignature` reuses one shared Ed25519 primitive and
+  returns `false` on an unknown algorithm, malformed hex, or wrong-length key or signature. A
+  forgery never passes as valid, and a malformed signing result throws rather than emitting a
+  bad signature.
+
+## The guarantee
+
+The signing key is the tenant's, held per tenant and never the license-issuer key. The
+signature covers the manifest and the WORM audit-chain tip together, so a signature is bound
+to the exact evidence state it was produced over — re-anchoring the chain or editing the
+manifest invalidates it:
+
+```ts
+import {
+  Ed25519Signer,
+  signEvidencePack,
+  verifyEvidenceSignature,
+} from "@caisson/signing-primitive";
+
+// A per-tenant signer — the 32-byte seed is the tenant's signing key, never Caisson's.
+const signer = new Ed25519Signer(keyId, tenantSigningKey);
+
+// Sign the pack: detached signature over canonicalize(manifest) ∥ chainAnchor.tipHash.
+const signature = await signEvidencePack(signer, manifest);
+
+// Verify fails closed — any tampering or forgery returns false, never throws through.
+const ok = await verifyEvidenceSignature(manifest, signature);
+if (!ok) {
+  throw new Error("evidence signature does not verify");
+}
+```
+
+## The timestamp authority port
+
+The RFC-3161 countersignature is reached through a `TimestampAuthority` port. A live
+authority is one implementation of that port — it POSTs a DER `TimeStampReq` (message
+imprint `sha256(signature)`) over `fetchWithTimeout` and parses the response; the port is
+stable, so it slots in without touching call sites.
+
+```ts
+import { signEvidencePack, type TimestampAuthority } from "@caisson/signing-primitive";
+
+const tsa: TimestampAuthority = myRfc3161Authority;
+
+// A countersigned signature carries an RFC-3161 timestamp token alongside the Ed25519 bytes.
+const signature = await signEvidencePack(signer, manifest, {
+  timestampAuthority: tsa,
+});
+```
+
+<Callout type="info" title="Reference docs at GA">
+  This page covers the essentials. The full API reference — the canonical
+  signable payload, the `Signer` and `TimestampAuthority` contracts, and the
+  key-rotation model — is still expanding.
+</Callout>
