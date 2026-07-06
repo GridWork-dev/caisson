@@ -6,7 +6,7 @@ import { Card, Section } from "@/components";
 export const metadata = buildMetadata({
   title: "EULA",
   description:
-    "The binding Caisson End User License Agreement (EULA) — the Commercial License Agreement governing your purchase and use of Caisson software. GridWork Digital LLC, governed by the laws of Georgia, USA.",
+    "The binding Caisson End User License Agreement (EULA) — the Commercial License Agreement governing your purchase and use of Caisson software. Caisson Software LLC, governed by the laws of Georgia, USA.",
   path: "/legal/eula",
 });
 
@@ -84,11 +84,11 @@ export default function EulaPage() {
       <Section eyebrow="Parties" title="Parties and definitions">
         <p style={prose.paragraph}>
           This End User License Agreement (&ldquo;Agreement&rdquo; or
-          &ldquo;EULA&rdquo;) is between GridWork Digital LLC, a limited
-          liability company registered in the State of Georgia, USA
-          (&ldquo;GridWork,&rdquo; &ldquo;we,&rdquo; or &ldquo;us&rdquo;), and
-          the individual or entity that purchases a Caisson software license
-          (&ldquo;Licensee&rdquo; or &ldquo;you&rdquo;).
+          &ldquo;EULA&rdquo;) is between Caisson Software LLC, a Georgia limited
+          liability company (&ldquo;Caisson,&rdquo; &ldquo;we,&rdquo; or
+          &ldquo;us&rdquo;), and the individual or entity that purchases a
+          Caisson software license (&ldquo;Licensee&rdquo; or
+          &ldquo;you&rdquo;).
         </p>
 
         <h3 style={prose.h3}>Definitions</h3>
@@ -121,7 +121,7 @@ export default function EulaPage() {
       <Section eyebrow="Grant" title="License grant" band="tint">
         <p style={prose.paragraph}>
           Subject to your compliance with this Agreement and full payment of
-          applicable fees, GridWork grants you a{" "}
+          applicable fees, Caisson grants you a{" "}
           <strong>perpetual, non-exclusive, worldwide, non-transferable</strong>{" "}
           (except as permitted under Assignment and transfer, below) license to
           use, modify, and integrate the Software identified in your
@@ -208,7 +208,7 @@ export default function EulaPage() {
           processed through our merchant of record, who handles payment
           collection, tax calculation, and remittance for your jurisdiction. All
           fees are exclusive of taxes unless stated otherwise, and are
-          non-refundable except as required by applicable law or as GridWork
+          non-refundable except as required by applicable law or as Caisson
           agrees in writing.
         </p>
         <p style={prose.paragraph}>
@@ -252,7 +252,7 @@ export default function EulaPage() {
           AVAILABLE,&rdquo; WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
           INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF
           MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
-          NON-INFRINGEMENT. GRIDWORK DOES NOT WARRANT THAT THE SOFTWARE WILL BE
+          NON-INFRINGEMENT. CAISSON DOES NOT WARRANT THAT THE SOFTWARE WILL BE
           ERROR-FREE OR UNINTERRUPTED, OR THAT IT WILL MEET YOUR SPECIFIC
           REQUIREMENTS.
         </p>
@@ -270,7 +270,7 @@ export default function EulaPage() {
       <Section eyebrow="Liability" title="Limitation of liability" band="tint">
         <p style={prose.paragraph}>
           TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT WILL
-          GRIDWORK OR ITS OFFICERS, DIRECTORS, EMPLOYEES, OR CONTRACTORS BE
+          CAISSON OR ITS OFFICERS, DIRECTORS, EMPLOYEES, OR CONTRACTORS BE
           LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL,
           EXEMPLARY, OR PUNITIVE DAMAGES, OR FOR ANY LOSS OF PROFITS, REVENUE,
           DATA, OR BUSINESS OPPORTUNITY, ARISING OUT OF OR RELATED TO THIS
@@ -278,9 +278,9 @@ export default function EulaPage() {
           DAMAGES.
         </p>
         <p style={prose.paragraph}>
-          GRIDWORK&apos;S TOTAL CUMULATIVE LIABILITY ARISING OUT OF OR RELATED
-          TO THIS AGREEMENT WILL NOT EXCEED THE TOTAL FEES YOU ACTUALLY PAID TO
-          GRIDWORK FOR THE SOFTWARE GIVING RISE TO THE CLAIM IN THE TWELVE (12)
+          CAISSON&apos;S TOTAL CUMULATIVE LIABILITY ARISING OUT OF OR RELATED TO
+          THIS AGREEMENT WILL NOT EXCEED THE TOTAL FEES YOU ACTUALLY PAID TO
+          CAISSON FOR THE SOFTWARE GIVING RISE TO THE CLAIM IN THE TWELVE (12)
           MONTHS PRECEDING THE EVENT GIVING RISE TO LIABILITY.
         </p>
         <p style={prose.paragraph}>
@@ -294,7 +294,7 @@ export default function EulaPage() {
       {/* 9. Indemnification */}
       <Section eyebrow="Indemnity" title="Indemnification">
         <p style={prose.paragraph}>
-          You agree to indemnify, defend, and hold harmless GridWork and its
+          You agree to indemnify, defend, and hold harmless Caisson and its
           officers, directors, employees, and contractors from any claim, loss,
           liability, damage, or expense (including reasonable attorneys&apos;
           fees) arising out of or related to: (a) Your Products; (b) your use of
@@ -302,9 +302,9 @@ export default function EulaPage() {
           applicable law.
         </p>
         <p style={prose.paragraph}>
-          GridWork will provide you with prompt notice of any such claim and
+          Caisson will provide you with prompt notice of any such claim and
           reasonable cooperation, at your expense, in its defense. You may not
-          settle any claim in a way that admits fault on behalf of GridWork
+          settle any claim in a way that admits fault on behalf of Caisson
           without our prior written consent.
         </p>
       </Section>
@@ -312,25 +312,24 @@ export default function EulaPage() {
       {/* 10. Intellectual property */}
       <Section eyebrow="IP" title="Intellectual property" band="tint">
         <p style={prose.paragraph}>
-          GridWork and its licensors retain all right, title, and interest in
-          and to the Software, including all intellectual property rights
-          therein. This Agreement grants you a license to use the Software; it
-          does not transfer ownership. No rights are granted by implication,
-          estoppel, or otherwise beyond those expressly stated in this
-          Agreement.
+          Caisson and its licensors retain all right, title, and interest in and
+          to the Software, including all intellectual property rights therein.
+          This Agreement grants you a license to use the Software; it does not
+          transfer ownership. No rights are granted by implication, estoppel, or
+          otherwise beyond those expressly stated in this Agreement.
         </p>
         <p style={prose.paragraph}>
           You retain all right, title, and interest in Your Products and in any
           modifications you make to the Software for use in Your Products,
-          subject to GridWork&apos;s underlying rights in the Software and the
+          subject to Caisson&apos;s underlying rights in the Software and the
           restrictions in this Agreement — you may not use those modifications
           to circumvent the redistribution restriction.
         </p>
         <p style={prose.paragraph}>
           The Caisson name, wordmark, glyph, and associated marks are the
-          property of GridWork Digital LLC. This Agreement does not grant you
-          any right to use GridWork&apos;s or Caisson&apos;s trademarks, except
-          to state, accurately, that Your Products are built with Caisson.
+          property of Caisson Software LLC. This Agreement does not grant you
+          any right to use those trademarks, except to state, accurately, that
+          Your Products are built with Caisson.
         </p>
       </Section>
 
@@ -338,7 +337,7 @@ export default function EulaPage() {
       <Section eyebrow="Confidential" title="Confidentiality">
         <p style={prose.paragraph}>
           The Software&apos;s non-public source code, and any non-public
-          technical or business information GridWork shares with you in
+          technical or business information Caisson shares with you in
           connection with an Order (collectively, &ldquo;Confidential
           Information&rdquo;), are confidential. You agree to use Confidential
           Information only as necessary to exercise your rights under this
@@ -359,14 +358,14 @@ export default function EulaPage() {
       <Section eyebrow="Assignment" title="Assignment and transfer" band="tint">
         <p style={prose.paragraph}>
           You may not assign or transfer this Agreement or your license without
-          GridWork&apos;s prior written consent, except that you may transfer
+          Caisson&apos;s prior written consent, except that you may transfer
           your license, without consent, to an entity that acquires
           substantially all of your business or the specific product in which
           the Software is embedded, provided the transferee agrees in writing to
           be bound by this Agreement. Contact us for transfer terms.
         </p>
         <p style={prose.paragraph}>
-          GridWork may assign this Agreement in connection with a merger,
+          Caisson may assign this Agreement in connection with a merger,
           acquisition, or sale of substantially all of its assets, on notice to
           you.
         </p>
@@ -386,8 +385,8 @@ export default function EulaPage() {
           courts.
         </p>
         <p style={prose.paragraph}>
-          GridWork Digital LLC is a limited liability company registered in the
-          State of Georgia, USA.
+          Caisson Software LLC is a limited liability company organized under
+          the laws of the State of Georgia, based in Atlanta, Georgia.
         </p>
       </Section>
 
@@ -396,7 +395,7 @@ export default function EulaPage() {
         <p style={prose.paragraph}>
           This Agreement, together with your Order confirmation and any
           applicable module- or edition-specific terms referenced in your
-          Entitlement, constitutes the entire agreement between you and GridWork
+          Entitlement, constitutes the entire agreement between you and Caisson
           regarding the Software, and supersedes all prior or contemporaneous
           understandings regarding its subject matter. Where the plain-language
           summary at{" "}
@@ -407,7 +406,7 @@ export default function EulaPage() {
         </p>
         <p style={prose.paragraph}>
           If any provision of this Agreement is held unenforceable, the
-          remaining provisions remain in full force. GridWork&apos;s failure to
+          remaining provisions remain in full force. Caisson&apos;s failure to
           enforce a provision is not a waiver of that provision. We may update
           this Agreement for future Orders; the version delivered with your
           Order governs that Order.
@@ -421,15 +420,15 @@ export default function EulaPage() {
           terms:
         </p>
         <p style={{ marginTop: "var(--cs-space-4)", ...prose.paragraph }}>
-          GridWork Digital LLC
+          Caisson Software LLC
           <br />
           Atlanta, Georgia, USA
           <br />
           <a
-            href="mailto:legal@gridwork.dev"
+            href="mailto:admin@caisson.sh"
             style={{ color: "var(--cs-accent)" }}
           >
-            legal@gridwork.dev
+            admin@caisson.sh
           </a>
         </p>
       </Section>

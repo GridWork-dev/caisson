@@ -325,15 +325,15 @@ export default function LicensePage() {
           negotiation:
         </p>
         <p style={{ marginTop: "var(--cs-space-4)", ...prose.paragraph }}>
-          GridWork Digital LLC
+          Caisson Software LLC
           <br />
           Atlanta, Georgia, USA
           <br />
           <a
-            href="mailto:legal@gridwork.dev"
+            href="mailto:admin@caisson.sh"
             style={{ color: "var(--cs-accent)" }}
           >
-            legal@gridwork.dev
+            admin@caisson.sh
           </a>
         </p>
       </Section>

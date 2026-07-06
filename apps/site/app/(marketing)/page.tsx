@@ -435,7 +435,7 @@ export default function HomePage() {
                 maxWidth: "60ch",
               }}
             >
-              Caisson is built and supported by Liam at GridWork Digital — a
+              Caisson is built and supported by Liam at Caisson Software — a
               named engineer, not a ticket queue. Every customer gets a direct
               line to the engineer who builds it.
             </p>
