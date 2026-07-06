@@ -71,6 +71,15 @@ export const ModuleManifest = z
     tier: z.enum(COMMERCE_TIERS),
     /** Integer minor units, never floats (ADR-0007); null only for oss / non-priced. */
     priceCents: z.number().int().nonnegative().nullable().default(null),
+    /**
+     * Individually purchasable? Additive/optional (ADR-0257 catalog rework) — absent means sellable,
+     * so every historical manifest stays valid. Set `false` for a commercial package that ships only
+     * as bundle substrate and is never sold on its own (e.g. `@caisson/platform-reads`,
+     * `@caisson/pricebook`): the standards-gate price-coverage check then exempts it from needing a
+     * locked PRICE_AUTHORITY row. Deliberately no `.default(true)` — a default would materialize the
+     * field into every parsed manifest and churn the golden fixtures; absence already reads as `true`.
+     */
+    sellable: z.boolean().optional(),
     /** SPDX from the allowlist; MUST mirror package.json `license` (drives the AGPL gate). */
     license: z.enum(SPDX_LICENSES),
     /** Workspace module ids; down-only — never depends "up" on an edition (ADR-0003). */

@@ -102,6 +102,51 @@ describe("ADR-0077 edition member-version pin map", () => {
     ).toThrow();
   });
 
+  test("sellable is additive/optional — an omitting manifest stays valid and absent from the output (ADR-0257)", () => {
+    const m = defineModule({
+      id: "@caisson/kernel",
+      version: "0.0.0",
+      kind: "base",
+      tier: "paid",
+      priceCents: 4900,
+      license: "LicenseRef-Caisson-Commercial",
+      description: "Governance kernel (fixture — sellable omitted).",
+    });
+    // No `.default(true)`: an omitting manifest carries no `sellable` key at all (so the golden
+    // manifest snapshots don't churn); the price-coverage gate reads absence as sellable.
+    expect("sellable" in m).toBe(false);
+  });
+
+  test("sellable: false is accepted (bundle-only substrate declaration)", () => {
+    const m = defineModule({
+      id: "@caisson/platform-reads",
+      version: "0.0.0",
+      kind: "base",
+      tier: "paid",
+      priceCents: 4900,
+      sellable: false,
+      license: "LicenseRef-Caisson-Commercial",
+      description: "Bundle-only substrate (fixture — sellable false).",
+    });
+    expect(m.sellable).toBe(false);
+  });
+
+  test("sellable rejects a non-boolean (still .strict())", () => {
+    expect(() =>
+      defineModule({
+        id: "@caisson/kernel",
+        version: "0.0.0",
+        kind: "base",
+        tier: "paid",
+        priceCents: 4900,
+        // @ts-expect-error — sellable must be a boolean
+        sellable: "no",
+        license: "LicenseRef-Caisson-Commercial",
+        description: "Fixture — non-boolean sellable.",
+      }),
+    ).toThrow();
+  });
+
   test("a non-edition module may omit members (defaults to {}, no refine fires)", () => {
     // `kind: "base"` is not an edition — omitting members is valid (defaults to {}).
     expect(() =>

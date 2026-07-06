@@ -24,6 +24,10 @@ import {
   checkDeclarations,
   checkManifestAgreement,
   checkManifestPriceAgreement,
+  checkPriceCoverage,
+  checkOrphanSku,
+  checkCatalogParity,
+  checkReservedIdsStaleness,
   checkCopyPaste,
   checkOpenCoreLicensing,
   checkOpenCommercialBoundary,
@@ -46,6 +50,10 @@ async function main(): Promise<number> {
     ...checkDeclarations(pkgs),
     ...(await checkManifestAgreement(pkgs)),
     ...(await checkManifestPriceAgreement(pkgs)), // manifest.priceCents vs the locked-ADR PRICE_AUTHORITY map
+    ...(await checkPriceCoverage(pkgs)), // every sellable commercial SKU with a locked price has a PRICE_AUTHORITY row
+    ...checkOrphanSku(pkgs), // no PRICE_AUTHORITY row without a real on-disk manifested package
+    ...(await checkCatalogParity(root)), // site catalog ↔ registry members map + PRICE_AUTHORITY agreement
+    ...checkReservedIdsStaleness(root), // WARN: a reserved entitlement id that is now indexed (stale)
     ...checkCopyPaste(root), // ADR-0101 gate #4: cross-package copy-paste
     ...(await checkRlsEquivalence(pkgs, root)), // ADR-0210/0005: hand-written RLS vs the generator
     ...checkShippedProse(pkgs, root), // shipped-prose gate: no internal-only vocabulary in buyer-visible source

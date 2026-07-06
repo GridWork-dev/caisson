@@ -19,6 +19,9 @@ export default defineModule({
   kind: "base",
   tier: "paid",
   priceCents: 4900,
+  // The seller's own price catalog — bundle substrate, never sold on its own. Exempts it from the
+  // price-coverage locked-price requirement.
+  sellable: false,
   license: pkg.license,
   dependencies: ["@caisson/kernel"],
   golden: "src/__golden__",
