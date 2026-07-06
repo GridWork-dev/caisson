@@ -1944,3 +1944,10 @@ Reconcile result: **264 open -> 5 open · 0 open-high** (259 closed · 5 unchang
 
 - `755ee6608848de2e` (packages/field-crypto) — fix agent found the package.json description
   already clean at HEAD; nothing to fix, closed by reconcile absence.
+
+### Operator lock (2026-07-05, post-PR)
+
+The operator accepted all five remaining open rows in one batch — rationale: this is a
+private repo and none of the five surfaces ship (root planning docs, docs/build-state.md,
+CLAUDE.md). Statuses hand-flipped open->accepted per the ledger convention; the ledger is
+TERMINAL: 936 fixed / 5 accepted / 0 open of 941.
