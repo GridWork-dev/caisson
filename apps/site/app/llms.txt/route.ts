@@ -1,6 +1,7 @@
 import { llms } from "fumadocs-core/source";
 
 import { source } from "@/lib/source";
+import { GLOSSARY_TERMS } from "@/lib/glossary";
 import { MODULE_PAGES } from "@/lib/module-pages";
 
 // Agent-readable index (specs/03 §3, ADR-0237 F8). Composed, not docs-only: a Caisson preamble
@@ -27,6 +28,11 @@ const PREAMBLE = [
   ...MODULE_PAGES.map(
     (m) => `- [${m.slug}](/marketplace/modules/${m.slug}): ${m.heroOneLiner}`,
   ),
+  "",
+  "## Glossary",
+  "",
+  "- [Glossary](/glossary): Definitions of the compliance, security, licensing, and AI-infrastructure terms Caisson ships against.",
+  ...GLOSSARY_TERMS.map((t) => `- [${t.term}](/glossary/${t.slug})`),
 ].join("\n");
 
 export function GET() {
