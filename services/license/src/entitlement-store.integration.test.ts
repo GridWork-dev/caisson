@@ -373,14 +373,16 @@ describe("updates windows (ADR-0244/0255 per-entitlement)", () => {
     const after = await withTenant(tp.pg, acct, (tx) =>
       computeUpdatesWindows(tx, acct),
     );
-    // GREATEST(now(), granted_at) + 12mo — now() > the pinned 2026-01-05, so the window moved past
-    // the baseline (renewal semantics: +12 months from now for a first renewal, ADR-0251 D5).
-    expect(after.compliance).toBeDefined();
+    // A FIRST renewal bought mid-window STACKS onto the remaining months: GREATEST(now(),
+    // granted_at + 12mo) + 12mo — with the base window end (2027-01-05) still in the future,
+    // the result is exactly base-end + 12 months, never now() + 12 (which would silently drop
+    // the un-elapsed window — the corrected ADR-0251 D5 formula).
+    expect(after.compliance).toBe("2028-01-05T00:00:00.000Z");
     expect(Date.parse(after.compliance as string)).toBeGreaterThan(
       Date.parse(baseline.compliance ?? "0"),
     );
 
-    // A SECOND renewal stacks: GREATEST(now(), current expiry) + 12mo ≈ +24 months out.
+    // A SECOND renewal stacks the same way: GREATEST(now(), current expiry) + 12mo.
     await withTenant(tp.pg, acct, (tx) =>
       extendUpdatesWindow(tx, {
         accountId: acct,
@@ -391,9 +393,43 @@ describe("updates windows (ADR-0244/0255 per-entitlement)", () => {
     const second = await withTenant(tp.pg, acct, (tx) =>
       computeUpdatesWindows(tx, acct),
     );
-    expect(Date.parse(second.compliance as string)).toBeGreaterThan(
-      Date.parse(after.compliance as string),
+    expect(second.compliance).toBe("2029-01-05T00:00:00.000Z");
+  });
+
+  test("a duplicate re-purchase takes the pair's MOST FAVORABLE row (never the oldest purchase's window)", async () => {
+    const acct = "acct_win_dup";
+    // First purchase long ago (its 12-month window already lapsed) …
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pay_dup_1",
+        source: onetime("pay_dup_1"),
+      }),
     );
+    await tp.query(
+      `UPDATE entitlement_grant SET granted_at = $2
+        WHERE account_id = $1 AND source_event_id = $3`,
+      [acct, "2025-01-05T00:00:00.000Z", "pay_dup_1"],
+    );
+    // … then a fresh re-purchase of the same entitlement: the buyer paid again, so the claim
+    // must carry the NEW purchase's window (max per-row bound), not min(granted_at) + 12mo.
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pay_dup_2",
+        source: onetime("pay_dup_2"),
+      }),
+    );
+    await tp.query(
+      `UPDATE entitlement_grant SET granted_at = $2
+        WHERE account_id = $1 AND source_event_id = $3`,
+      [acct, "2026-06-01T00:00:00.000Z", "pay_dup_2"],
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
+    ).toEqual({ compliance: "2027-06-01T00:00:00.000Z" });
   });
 
   test("renewing entitlement X extends ONLY X's window — an unrenewed entitled Y keeps its own", async () => {

@@ -406,14 +406,14 @@ export async function revokeAdminComp(
 /**
  * Compute the account's PER-ENTITLEMENT updates-window bounds for the signed `updatesWindows`
  * claim (ADR-0255 Decision 2), from DB truth over the ACTIVE one_time grants: per
- * `(account, entitlement)` pair, baseline = earliest `granted_at` + 12 months, OVERRIDDEN by
- * `updates_expires_at` where a renewal set it (max across the pair's rows) — the same formula
- * ADR-0251 ran account-wide, now GROUP BY entitlement_id so renewing one module extends exactly
- * that module. Returns a `purchasedEntitlementId → ISO instant` map; EMPTY when the account holds
- * no active one-time grants — an unbounded claim (subscription-only accounts keep their existing
- * expiry semantics, ADR-0244 §4; subscription-sourced entitlements never get a key).
- * Deterministic for a fixed grant set (no `now()`), so the /issue re-mint comparison is stable.
- * Run inside `withTenant`.
+ * `(account, entitlement)` pair, each row's bound is `updates_expires_at` where a renewal set it,
+ * else `granted_at + 12 months`, and the pair takes its MOST FAVORABLE (max) row — so a duplicate
+ * re-purchase starts a fresh 12 months rather than inheriting the oldest purchase's window, the
+ * per-pair mirror of ADR-0255 Decision 3's most-favorable-window rule. Returns a
+ * `purchasedEntitlementId → ISO instant` map; EMPTY when the account holds no active one-time
+ * grants — an unbounded claim (subscription-only accounts keep their existing expiry semantics,
+ * ADR-0244 §4; subscription-sourced entitlements never get a key). Deterministic for a fixed
+ * grant set (no `now()`), so the /issue re-mint comparison is stable. Run inside `withTenant`.
  */
 export async function computeUpdatesWindows(
   tx: TenantExecutor,
@@ -424,7 +424,7 @@ export async function computeUpdatesWindows(
     bound: string | Date;
   }>(
     `SELECT entitlement_id,
-            COALESCE(max(updates_expires_at), min(granted_at) + interval '12 months') AS bound
+            max(COALESCE(updates_expires_at, granted_at + interval '12 months')) AS bound
        FROM entitlement_grant
       WHERE account_id = $1 AND source_kind = 'one_time' AND status = 'active'
       GROUP BY entitlement_id`,
@@ -448,13 +448,16 @@ export interface ExtendUpdatesWindowInput {
 
 /**
  * Extend the updates window for one `(account, entitlement)` pair by 12 months (ADR-0251
- * Decision 5): `updates_expires_at = GREATEST(now(), COALESCE(updates_expires_at, granted_at))
- * + 12 months` on every ACTIVE one_time grant row for the pair (normally exactly one; a
- * duplicate-purchase pair extends both uniformly — never under-grants). FAIL-CLOSED on zero rows
- * updated: renewing an entitlement the account does not actively hold throws — a renewal never
- * silently mints a grant. Idempotency across webhook redeliveries is the caller's OUTER
- * `sourceEventId` claim (webhook.ts), not re-keyed here. Returns the number of rows extended.
- * Run inside `withTenant`.
+ * Decision 5, formula erratum corrected 2026-07-06): `updates_expires_at = GREATEST(now(),
+ * COALESCE(updates_expires_at, granted_at + interval '12 months')) + 12 months` on every ACTIVE
+ * one_time grant row for the pair (normally exactly one; a duplicate-purchase pair extends both
+ * uniformly — never under-grants). The fallback is the base window END (`granted_at + 12mo`), not
+ * `granted_at` — a first renewal bought mid-window stacks onto the remaining months instead of
+ * silently dropping them; a renewal on a LAPSED window extends from now (never resurrects time
+ * already elapsed past the lapse). FAIL-CLOSED on zero rows updated: renewing an entitlement the
+ * account does not actively hold throws — a renewal never silently mints a grant. Idempotency
+ * across webhook redeliveries is the caller's OUTER `sourceEventId` claim (webhook.ts), not
+ * re-keyed here. Returns the number of rows extended. Run inside `withTenant`.
  */
 export async function extendUpdatesWindow(
   tx: TenantExecutor,
@@ -463,7 +466,8 @@ export async function extendUpdatesWindow(
   const r = await tx.query<{ id: string }>(
     `UPDATE entitlement_grant
        SET updates_expires_at =
-             GREATEST(now(), COALESCE(updates_expires_at, granted_at)) + interval '12 months'
+             GREATEST(now(), COALESCE(updates_expires_at, granted_at + interval '12 months'))
+             + interval '12 months'
      WHERE account_id = $1
        AND entitlement_id = $2
        AND source_kind = 'one_time'

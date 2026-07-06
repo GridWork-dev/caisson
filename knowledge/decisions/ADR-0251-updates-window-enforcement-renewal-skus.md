@@ -55,3 +55,10 @@ inherits `billing`.
   renewal price point (the one copy spot with a real number dependency).
 - Creating the actual sandbox renewal product/prices is an operator-side Paddle-dashboard/API
   act rides the build session main-thread; the code ships book-driven either way.
+- **Erratum (2026-07-06, pre-merge, review-caught):** Decision 5's formula as first written used
+  `granted_at` (the window START) as the COALESCE fallback — which made a first mid-window renewal
+  extend from `now()` and silently drop the buyer's remaining months. The shipped formula uses the
+  base window END: `GREATEST(now(), COALESCE(updates_expires_at, granted_at + interval
+'12 months')) + interval '12 months'`. Same intent (extend from the current window end or now,
+  whichever is later), corrected arithmetic. Relatedly, the npm packument for a fully
+  out-of-window module is 404 (indistinguishable from unentitled), not an empty 200.
