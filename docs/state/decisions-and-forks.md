@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-06
 status: live
-adr_ceiling: 0252
+adr_ceiling: 0258
 ---
 
 # Decisions & Forks — live board
@@ -1003,11 +1003,42 @@ the $49 top-up all revalidated-keep · **renewal cents = flat 40% X9-rounded** p
 Display rides the Stage-3/4 rework build (no pricing.ts edit now). Evidence:
 `outputs/research/pricing-revalidation-2026-07.md`.
 
-**Still OPEN after the pricing round**: the **Local-first bundle number** (operator-commissioned
-local-ai carve round — R3-shaped separability pass over sync/inference/privacy; $349 interim,
-ADR-0240 not superseded) · **credits-in-AI-bundle membership** (Stage 3; formula → ≈$745 if it
-joins) · **auth-sso package shape** (Stage 3; both prices pre-locked) · optional Cookiy WTP
-validation (survey 374111 live; ~$20 recruitment needs live operator approval)
+**Catalog-rework SPEC round (2026-07-06, Kickoff D Stage 3, round 1) — ADR-0257:** bundle
+model = **full rename + first-class `bundle` kind + resolve-time alias map** (operator
+override of stable-ids; single alias point in `expandEntitlements`; shared vocabulary
+constant consumed by Kickoff E's RENEWAL_BOOK — cross-session coordination locked, E never
+re-keys) · **F7/F8 = data + D-side enforcement here on E's ADR-0255 plumbing precedent**
+(pricebook member-timeline + F8 credit map + `entitledSince` sibling record + per-member
+fail-soft filter; sequenced after E's PR #128; E owns per-version Worker enforcement;
+absent key = grandfathered on both axes) · **org module = ONE merged `org-controls` $249**
+(narrow membership carve — session-resolution stays open, the "zero blast radius" claim
+REFUTED; all 6 admin-write exports; new `/dashboard/members` entitlement gate; $199
+standalone branch dead) · **display = hub-extend + fifth Provenance persona page**, 1:N
+`bundles[]` pricing model, renewal display deferred to dashboard. Scope:
+`outputs/specs/catalog-rework/{SPEC,PLAN}.md`.
+
+**Catalog pricing-consequence round (2026-07-06, Kickoff D Stage 3, round 2) — ADR-0258
+(supersedes ADR-0252 on 3 numbers; supersedes ADR-0251 §5 on Everything content):**
+**Local-first = full 3-way carve $629** (local-sync $199 · local-inference $249 ·
+local-privacy $99; sum 845; privacy-first extraction order binding) · **credits joins
+AI-Production → recompute $739** (sum 994) · **Everything $2,059 full-catalog content
+incl. ui-pro** (only private `brand` excluded; 0.75 × Σ personas 2,746) · renewal cents:
+AI $289 · Local-first $249 · Everything $819 · sync $79 · inference $99 · privacy $39 ·
+**Paddle = big-bang sandbox rebuild** (operator override of additive-first; editions
+retired in the same sweep; production recreation stays operator-gated at the commerce
+flip). Below-sum ✓ on all six bundles at lock.
+
+**ADR numbering note (2026-07-06):** Kickoff E's branch (`feat/independent-build-wave`)
+holds 0253–0256 (incl. its own 0255 `updatesWindows` claims rewrite); D files from 0257 up
+by cross-session agreement. The dual-branch 0251/0252 collision renumbers at merge per
+ADR-0088 (second merger renumbers).
+
+**Still OPEN after Stage 3**: production Paddle catalog recreation (operator act at the
+commerce flip; sandbox never ports) · optional Cookiy WTP validation (survey 374111 live;
+~$20 recruitment needs live operator approval — now also covers the three local-ai carve
+bands) · kit stage 2 (runtime theme API) then wave-1 `./ui` frontends (sequenced after the
+catalog-rework waves per ADR-0250 G2b/G2d) · grandfathering policy (operator-owned,
+ADR-0106 lineage)
 
 A post-merge scheduling picker (2026-07-05, no ADR — Kickoffs A+B merged as PRs #126/#127) split
 the remaining pool: **Kickoff D** = the catalog program (ui-pro SPEC → pricing pass →

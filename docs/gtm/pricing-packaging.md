@@ -29,6 +29,22 @@ Enterprise tier. The model exists to fix two gaps the market leaves open: no ven
 compliance-grade modules individually, and one-time-only code products have no recurring floor
 (ADR-0012).
 
+## Stage-3 amendments (ADR-0258, 2026-07-06) — three numbers move, two deferred items close
+
+The Stage-3 catalog-rework picker closed ADR-0252's two deferred items and recomputed where the
+formula demanded it. **Superseding rows (everything else in the Stage-2 table below stands):**
+
+| SKU                           | Locked (ADR-0258)                                                                                             | Basis                                                                                                                                                                                                                   |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Local-first bundle**        | **$629**                                                                                                      | full 3-way carve: **local-sync $199 · local-inference $249 · local-privacy $99**; 0.75 × $845 member-sum (carves + local-store $99 + field-crypto $199); closes the ADR-0252 deferred round; supersedes ADR-0240's $349 |
+| **AI-Production bundle**      | **$739**                                                                                                      | credits ($149) confirmed in the member set (registry-true; ai-kit/ai-meter hard-depend) → 0.75 × $994 recompute                                                                                                         |
+| **Everything bundle**         | **$2,059**                                                                                                    | 0.75 × Σ(1,049 + 739 + 629 + 329 = $2,746); **content = every sellable SKU incl. ui-pro** (only private `brand` excluded; supersedes ADR-0251 §5 on this point)                                                         |
+| org module                    | **$249** as ONE merged **`org-controls`**                                                                     | ADR-0257 shape call — the $199 standalone branch is dead                                                                                                                                                                |
+| **Renewal cents (moved/new)** | AI **$289** · Local-first **$249** · Everything **$819** · sync **$79** · inference **$99** · privacy **$39** | flat-40% X9 ladder otherwise unchanged                                                                                                                                                                                  |
+
+Below-sum ✓ on all six bundles at lock. Display still flips in one wave (W6/W7 of
+`outputs/specs/catalog-rework/PLAN.md`); Paddle sandbox rebuilds big-bang at W7.
+
 ## Stage-2 price locks (ADR-0252, 2026-07-06) — display rides the catalog-rework build
 
 The pricing-revalidation pass (Kickoff D Stage 2) locked the post-catalog-rework sheet. **These
@@ -36,7 +52,8 @@ numbers are the committed prices for the bundle catalog; the site display flips 
 the Stage-3/4 catalog-rework build** — the matrix in the next section stays what `pricing.ts`
 shows until then. Formula binding: bundle display = 0.75 × priced-member sum (registry-truth
 membership), rounded down to the 9-ending; **Everything = 0.75 × Σ(bundle prices),
-recompute-on-move**; below-sum invariant verified per bundle at lock.
+recompute-on-move**; below-sum invariant verified per bundle at lock. **Amended by ADR-0258
+above (AI-Production, Local-first, Everything, auth-sso shape, and their renewal cents).**
 
 | SKU                         | Locked                                                                                       | Basis                                                                                                                                                                                                                  |
 | --------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -189,13 +206,12 @@ mechanics are 25%-off-sum + snapshot-at-sale + crediting map (ADR-0247), and the
 pricing pass (ADR-0252) locked the numbers — see the Stage-2 section at the top of this file.
 R3 is thereby closed (the carve exists and is priced).
 
-**Still open after Stage 2:** the Local-first bundle number (operator-commissioned local-ai
-carve round — separability pass over sync/inference/privacy — decides members before the
-number; $349 interim) · `credits` membership in the AI-Production bundle (Stage-3 catalog-rework
-call; formula re-runs to ≈$745 if it joins) · the auth-sso package shape (standalone $199 vs
-merged org-module $249 — both prices pre-locked, Stage 3 picks the shape) · optional WTP
-validation (Cookiy Van Westendorp survey 374111 is live/unanswered; ~$20 recruitment needs
-live operator approval — validates, never blocks).
+**Still open after Stage 2 — ALL CLOSED at Stage 3 (ADR-0257/0258, see the amendments section
+at the top):** Local-first → full 3-way carve, $629 · credits-in-AI → joined, recompute $739 ·
+auth-sso shape → ONE merged `org-controls` $249. **Still open after Stage 3:** optional WTP
+validation only (Cookiy Van Westendorp survey 374111 is live/unanswered; ~$20 recruitment needs
+live operator approval — validates, never blocks; now also covers the three local-ai carve
+bands, which are catalog-ladder-grounded rather than comps-researched).
 
 ## Contradictions found while distilling
 
