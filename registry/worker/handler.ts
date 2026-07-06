@@ -165,10 +165,19 @@ export function createIndexHandler(
     const gate: ResolvedGate | null =
       resolve === undefined ? null : resolveGate(validated, resolve, request);
     const entitled = gate === null ? null : gate.entitled;
+    // Catalog listings apply the same window math as /modules/:id and the npm surface — a
+    // fully-out-of-window module vanishes from the listing and `latest` never advertises a
+    // version the packument/tarball gates would refuse (metadata↔pull consistency).
+    const windowed = (m: ModuleEntry): ModuleEntry | null =>
+      gate === null || gate.updatesUntil === null || baseIds.has(m.id)
+        ? m
+        : windowFilterEntry(m, gate.updatesUntil);
 
     if (path === "/" || path === "") {
       const modules = validated.modules
         .filter((m) => entitled === null || entitled.has(m.id))
+        .map(windowed)
+        .filter((m): m is ModuleEntry => m !== null)
         .map((m) => ({ id: m.id, latest: m.latest }));
       return json(
         { schemaVersion: validated.schemaVersion, modules },
@@ -182,7 +191,10 @@ export function createIndexHandler(
           ? validated
           : {
               ...validated,
-              modules: validated.modules.filter((m) => entitled.has(m.id)),
+              modules: validated.modules
+                .filter((m) => entitled.has(m.id))
+                .map(windowed)
+                .filter((m): m is ModuleEntry => m !== null),
             };
       return json(body, 200, filtering);
     }

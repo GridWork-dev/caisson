@@ -432,4 +432,37 @@ describe("updates-window filtering on /modules/:id (ADR-0244/0251)", () => {
     const body = (await res.json()) as { latest: string };
     expect(body.latest).toBe("2.0.0");
   });
+
+  test("the / catalog listing applies the window — latest never advertises an out-of-window version", async () => {
+    const res = winHandlerFor(WINDOW)(req("/"));
+    const body = (await res.json()) as {
+      modules: { id: string; latest: string }[];
+    };
+    const compliance = body.modules.find((m) => m.id === "@caisson/compliance");
+    expect(compliance?.latest).toBe("1.1.0"); // NOT the catalog's global 2.0.0
+  });
+
+  test("a fully-out-of-window module vanishes from / and /index.json (metadata matches the pull gates)", async () => {
+    const handler = winHandlerFor("2020-01-01T00:00:00.000Z");
+    const root = (await handler(req("/")).json()) as {
+      modules: { id: string }[];
+    };
+    expect(root.modules.map((m) => m.id)).toEqual(["@caisson/kernel"]);
+    const full = (await handler(req("/index.json")).json()) as {
+      modules: { id: string }[];
+    };
+    expect(full.modules.map((m) => m.id)).toEqual(["@caisson/kernel"]);
+  });
+
+  test("/index.json narrows an entitled module's versions to the window", async () => {
+    const res = winHandlerFor(WINDOW)(req("/index.json"));
+    const body = (await res.json()) as {
+      modules: { id: string; versions: { version: string }[] }[];
+    };
+    const compliance = body.modules.find((m) => m.id === "@caisson/compliance");
+    expect(compliance?.versions.map((v) => v.version).sort()).toEqual([
+      "1.0.0",
+      "1.1.0",
+    ]);
+  });
 });
