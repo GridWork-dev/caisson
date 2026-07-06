@@ -1040,3 +1040,14 @@ findings (everything mechanical was fixed inline, operator rule: no deferrals).
   cents. E does not re-key RENEWAL_BOOK.
 - **ADR numbering:** E stops at 0256 (files nothing above it without pinging D); D files from 0257. The dual 0251/0252 collision renumbers at merge per ADR-0088 (second merger renumbers,
   including supersession links).
+
+### Greptile retired (2026-07-06, operator lock, same session)
+
+Greptile's Starter monthly review limit hit mid-PR-#128 and the operator dropped the vendor
+outright — no plan upgrade, no replacement external reviewer. `greptile-gate.yml` + `.greptile/`
+deleted from the tree (git history keeps them); the review gate is the in-session SHIP audit lane
+(gw-code-reviewer + gw-security-auditor + adversarial verify — CLAUDE.md §PR review gate
+rewritten). Amends the ADR-0177 Greptile-PR-gate lock; the formal ADR is **deferred to the next
+free number** (E's ceiling is frozen at 0256 per the D↔E numbering agreement above — D files it or
+it lands post-merge). Operator follow-ups: uninstall the Greptile GitHub app from `caisson-sh`;
+drop `GREPTILE_API_KEY` at the ADR-0226 credential sweep.
