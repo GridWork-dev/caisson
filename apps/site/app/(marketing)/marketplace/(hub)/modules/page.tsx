@@ -4,15 +4,20 @@ import { Section, StatusChip, Terminal } from "@/components";
 import { ModuleCatalog } from "@/components/module-catalog";
 import { breadcrumb, moduleItemList, serializeJsonLd } from "@/lib/jsonld";
 import { buildMetadata } from "@/lib/metadata";
+import { MODULE_PAGES } from "@/lib/module-pages";
 import { MODULE_PRICES } from "@/lib/pricing";
 
 // Counts derive from the catalog — never hardcoded (the "15 modules" strings that survived the
 // ADR-0238 drop were exactly this class of drift).
 const TOTAL = MODULE_PRICES.length;
 
+// Slugs with a built depth page — passed to the catalog so a card only links to a detail route that
+// exists (the W6.2 carve/standalone SKUs have no depth page yet).
+const DETAIL_SLUGS = MODULE_PAGES.map((r) => r.slug);
+
 export const metadata = buildMetadata({
   title: "Marketplace — Modules",
-  description: `Browse all ${TOTAL} standalone Caisson modules à la carte. Filter by edition or price, take exactly the capability you need onto the shared base, or compose a full stack in the builder.`,
+  description: `Browse all ${TOTAL} standalone Caisson modules à la carte. Filter by category or price, take exactly the capability you need onto the shared base, or compose a full stack in the builder.`,
   path: "/marketplace/modules",
 });
 
@@ -40,7 +45,7 @@ export default function MarketplaceModulesPage() {
       <Section
         eyebrow="À la carte"
         title="Every module, standalone."
-        lede={`${TOTAL === 11 ? "Eleven" : String(TOTAL)} standalone modules across the four editions. Take exactly the capability you need onto the shared base — field encryption, token metering, on-device search — or compose a whole stack in the builder.`}
+        lede={`${TOTAL} standalone modules across the six bundles. Take exactly the capability you need onto the shared base — field encryption, token metering, on-device search — or compose a whole stack in the builder.`}
       >
         <div style={{ marginBottom: "var(--cs-space-8)" }}>
           <Terminal
@@ -53,14 +58,14 @@ export default function MarketplaceModulesPage() {
             <span className="cs-tok-accent">field-crypto</span>
             {"     $199    compliance\nmodule."}
             <span className="cs-tok-accent">ai-meter</span>
-            {"         $199    ai-kit\nmodule."}
+            {"         $199    ai-production\nmodule."}
             <span className="cs-tok-accent">local-store</span>
             {"      $99     local-first\nmodule."}
             <span className="cs-tok-accent">agent-kernel</span>
             {"     $199    agentic-dev"}
           </Terminal>
         </div>
-        <ModuleCatalog />
+        <ModuleCatalog detailSlugs={DETAIL_SLUGS} />
       </Section>
 
       {/* ===== Licensing — what's open, what's on this catalog ===== */}
@@ -74,7 +79,7 @@ export default function MarketplaceModulesPage() {
             mcp-server, registry-schema, observability, and the generator
             tooling (cli, migrate, license-verify) — which is{" "}
             <code className="mono">Apache-2.0</code>, free to use on its own.
-            What&rsquo;s priced above are the commercial modules and editions,
+            What&rsquo;s priced above are the commercial modules and bundles,
             under the{" "}
             <Link href="/legal/license" className="mono">
               Commercial License

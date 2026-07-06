@@ -16,12 +16,12 @@ export function MarketplaceTabs() {
     <div className={styles.scrollFade}>
       <nav aria-label="Marketplace sections" className={styles.tabs}>
         {MARKETPLACE_TAB_ROUTES.map((r) => {
-          // The hub root is the Editions tab; deeper tabs match on their own path.
+          // The hub root is the Bundles tab; deeper tabs match on their own path.
           const active =
             r.path === "/marketplace"
               ? pathname === "/marketplace"
               : pathname.startsWith(r.path);
-          const label = r.path === "/marketplace" ? "Editions" : r.label;
+          const label = r.path === "/marketplace" ? "Bundles" : r.label;
           return (
             <Link
               key={r.path}

@@ -137,18 +137,23 @@ export const BUNDLE_CATALOG_ITEM: CatalogItem | undefined = (() => {
   };
 })();
 
-/** Every à-la-carte module as a cart-ready catalog item, each carrying its real Paddle price id
- *  (see the file header). */
-export const MODULE_CATALOG: readonly CatalogItem[] = MODULE_PRICES.map(
-  (m) => ({
-    id: moduleCartId(m.id),
-    kind: "module",
-    label: m.label,
-    amount: m.amount,
-    priceId: moduleRealPriceId(m.id),
-    blurb: m.blurb,
-  }),
-);
+/** Every à-la-carte module WITH a live Paddle price id, as a cart-ready catalog item (see the file
+ *  header). The catalog-rework carve/standalone SKUs (`compliance-core`, `org-controls`, `ui-pro`, …)
+ *  are displayed + priced in the storefront (ADR-0246 F1b) but have NO Paddle sandbox product yet —
+ *  W7's big-bang catalog rebuild (ADR-0257 §1.8) creates them and wires `MODULE_PRICE_IDS`. Until
+ *  then they are filtered OUT of the cart catalog (their buy CTA routes to the bundle that grants
+ *  them), so `moduleRealPriceId`'s fail-closed throw stays intact for every id it IS asked to resolve
+ *  — a wired-but-mis-keyed module still throws; an intentionally-not-yet-wired SKU is simply absent. */
+export const MODULE_CATALOG: readonly CatalogItem[] = MODULE_PRICES.filter(
+  (m) => Object.hasOwn(MODULE_PRICE_IDS, m.id),
+).map((m) => ({
+  id: moduleCartId(m.id),
+  kind: "module",
+  label: m.label,
+  amount: m.amount,
+  priceId: moduleRealPriceId(m.id),
+  blurb: m.blurb,
+}));
 
 /** Every Paddle price id the live catalog can sell — the hydration allowlist for
  *  `lib/cart.ts` `pruneCart` (a persisted cart line carrying a retired id, e.g. the four

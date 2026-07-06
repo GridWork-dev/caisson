@@ -8,19 +8,19 @@ import { AddToCartButton } from "@/components/add-to-cart-button";
 import { moduleCatalogItem, toCartItem } from "@/lib/catalog";
 import { moduleMark } from "@/lib/marks";
 import {
-  EDITION_IDS,
+  type BundleId,
   formatUsd,
   MODULE_PRICES,
-  type EditionId,
+  PERSONA_BUNDLE_IDS,
   type ModulePrice,
 } from "@/lib/pricing";
 
-import { editionLabel } from "./marketplace";
+import { bundleLabel, bundlePagePath } from "./marketplace";
 import styles from "./marketplace.module.css";
 
 // Price bands DERIVED from module.amount — no new data field (ADR-0191: facets derive from the
-// existing catalog). The 11-module catalog spans $49–$199 (ADR-0238 dropped the $299 rows);
-// these three bands partition it exactly ($49/$99 → under, $149 → mid, $199 → up).
+// existing catalog). The full sellable catalog spans $49–$299 (ADR-0246 F1b, ADR-0258/0260 carve
+// prices); these three bands partition it exactly ($49/$99 → under, $149 → mid, $199+ → up).
 interface PriceBand {
   id: string;
   label: string;
@@ -33,6 +33,29 @@ const PRICE_BANDS: readonly PriceBand[] = [
   { id: "150-up", label: "$150 and up", test: (a) => a >= 150 },
 ];
 
+// The category facet (catalog-rework W6.2, supersedes the edition facet): the five persona/Provenance
+// bundles a module can belong to, plus a "platform" bucket for the standalone commercial SKUs that no
+// persona bundle grants (org-controls, billing-orchestration, ui-pro — Everything-only, ADR-0258).
+// Categories DERIVE from the module's index-pinned `bundles[]`; no new data field.
+const PLATFORM = "platform" as const;
+type Category = BundleId | typeof PLATFORM;
+const CATEGORIES: readonly Category[] = [...PERSONA_BUNDLE_IDS, PLATFORM];
+
+function categoryLabel(cat: Category): string {
+  return cat === PLATFORM ? "Platform" : bundleLabel(cat);
+}
+
+function inCategory(m: ModulePrice, cat: Category): boolean {
+  return cat === PLATFORM
+    ? m.bundles.length === 0
+    : m.bundles.includes(cat as BundleId);
+}
+
+/** The module's primary category tag — its first bundle, or Platform when no bundle grants it. */
+function primaryCategory(m: ModulePrice): Category {
+  return m.bundles[0] ?? PLATFORM;
+}
+
 const TOTAL = MODULE_PRICES.length;
 
 function toggle<T>(set: ReadonlySet<T>, value: T): Set<T> {
@@ -43,36 +66,45 @@ function toggle<T>(set: ReadonlySet<T>, value: T): Set<T> {
 }
 
 /**
- * Faceted à-la-carte catalog (ADR-0191). Left facet sidebar (edition + price band, AND across
- * facets / OR within a facet), a result grid reusing the /pricing module-card treatment, and a
- * dedicated live region announcing the result count. Client island — the page shell stays a Server
- * Component and mounts this leaf.
+ * Faceted à-la-carte catalog (ADR-0191, category facet W6.2). Left facet sidebar (category + price
+ * band, AND across facets / OR within a facet), a result grid reusing the module-card treatment, and
+ * a dedicated live region announcing the result count. Client island — the page shell stays a Server
+ * Component and mounts this leaf, passing the set of slugs that have a depth page so a not-yet-built
+ * detail link never 404s (`detailSlugs`).
  */
-export function ModuleCatalog() {
-  const [editions, setEditions] = useState<ReadonlySet<EditionId>>(new Set());
+export function ModuleCatalog({
+  detailSlugs = [],
+}: {
+  detailSlugs?: readonly string[];
+}) {
+  const hasDetail = new Set(detailSlugs);
+  const [categories, setCategories] = useState<ReadonlySet<Category>>(
+    new Set(),
+  );
   const [bands, setBands] = useState<ReadonlySet<string>>(new Set());
 
-  const matchEdition = (m: ModulePrice) =>
-    editions.size === 0 || editions.has(m.edition);
+  const matchCategory = (m: ModulePrice) =>
+    categories.size === 0 ||
+    CATEGORIES.some((c) => categories.has(c) && inCategory(m, c));
   const matchBand = (m: ModulePrice) =>
     bands.size === 0 ||
     PRICE_BANDS.some((b) => bands.has(b.id) && b.test(m.amount));
 
-  // AND across the two facets; OR within each (the .has() checks above).
-  const results = MODULE_PRICES.filter((m) => matchEdition(m) && matchBand(m));
+  // AND across the two facets; OR within each.
+  const results = MODULE_PRICES.filter((m) => matchCategory(m) && matchBand(m));
 
   // Per-value counts are CONTEXTUAL: each option shows how many modules it would yield given the
   // OTHER facet's active filters (never its own group), so a count never contradicts the result set.
-  const editionCount = (e: EditionId) =>
-    MODULE_PRICES.filter((m) => m.edition === e && matchBand(m)).length;
+  const categoryCount = (c: Category) =>
+    MODULE_PRICES.filter((m) => inCategory(m, c) && matchBand(m)).length;
   const bandCount = (b: PriceBand) =>
-    MODULE_PRICES.filter((m) => b.test(m.amount) && matchEdition(m)).length;
+    MODULE_PRICES.filter((m) => b.test(m.amount) && matchCategory(m)).length;
 
   const chips = [
-    ...[...editions].map((e) => ({
-      key: `edition:${e}`,
-      label: editionLabel(e),
-      remove: () => setEditions((prev) => toggle(prev, e)),
+    ...[...categories].map((c) => ({
+      key: `category:${c}`,
+      label: categoryLabel(c),
+      remove: () => setCategories((prev) => toggle(prev, c)),
     })),
     ...[...bands].map((id) => ({
       key: `band:${id}`,
@@ -81,7 +113,7 @@ export function ModuleCatalog() {
     })),
   ];
   const clearAll = () => {
-    setEditions(new Set());
+    setCategories(new Set());
     setBands(new Set());
   };
 
@@ -95,18 +127,18 @@ export function ModuleCatalog() {
       {/* ===== Facets ===== */}
       <aside className={styles.facets} aria-label="Filter modules">
         <fieldset className={styles.fieldset}>
-          <legend className={styles.legend}>Edition</legend>
-          {EDITION_IDS.map((e) => (
-            <label key={e} className={styles.option}>
+          <legend className={styles.legend}>Category</legend>
+          {CATEGORIES.map((c) => (
+            <label key={c} className={styles.option}>
               <input
                 type="checkbox"
                 className={styles.checkbox}
-                checked={editions.has(e)}
-                onChange={() => setEditions((prev) => toggle(prev, e))}
+                checked={categories.has(c)}
+                onChange={() => setCategories((prev) => toggle(prev, c))}
               />
-              <span className={styles.optionLabel}>{editionLabel(e)}</span>
+              <span className={styles.optionLabel}>{categoryLabel(c)}</span>
               <span className={`cs-num ${styles.count}`}>
-                {editionCount(e)}
+                {categoryCount(c)}
               </span>
             </label>
           ))}
@@ -170,7 +202,11 @@ export function ModuleCatalog() {
         ) : (
           <div className="cs-grid cs-grid--3">
             {results.map((m) => (
-              <ModuleCard key={m.id} module={m} />
+              <ModuleCard
+                key={m.id}
+                module={m}
+                hasDetail={hasDetail.has(m.id)}
+              />
             ))}
           </div>
         )}
@@ -179,13 +215,21 @@ export function ModuleCatalog() {
   );
 }
 
-/** One catalog card — label + mono price + blurb + AddToCartButton, plus an edition tag (the flat
- *  filtered grid drops the per-edition group header). */
-function ModuleCard({ module: m }: { module: ModulePrice }) {
+/** One catalog card — label + mono price + blurb + a buy CTA, plus a category tag. A module that is
+ *  Paddle-wired shows Add to cart; a not-yet-wired carve/standalone SKU (W7 wires it) shows a Learn
+ *  more link to the bundle that grants it (never a fabricated "coming soon", ADR-0237 rider 2). The
+ *  title links to the depth page only when one exists (`hasDetail`). */
+function ModuleCard({
+  module: m,
+  hasDetail,
+}: {
+  module: ModulePrice;
+  hasDetail: boolean;
+}) {
   const catalogItem = moduleCatalogItem(m.id);
-  if (catalogItem === undefined) {
-    throw new Error(`module-catalog: no catalog entry for module "${m.id}"`);
-  }
+  const category = primaryCategory(m);
+  const bundlePath =
+    category === PLATFORM ? "/marketplace" : bundlePagePath(category);
   return (
     <Card>
       <div
@@ -196,7 +240,7 @@ function ModuleCard({ module: m }: { module: ModulePrice }) {
           marginBottom: "var(--cs-space-3)",
         }}
       >
-        {/* The module's own bespoke mark (ADR-0237 F6) — the edition stays a text tag. */}
+        {/* The module's own bespoke mark (ADR-0237 F6) — the category stays a text tag. */}
         <Icon name={moduleMark(m.id)} />
         <span
           className="cs-num"
@@ -207,7 +251,7 @@ function ModuleCard({ module: m }: { module: ModulePrice }) {
             letterSpacing: "var(--cs-tracking-wide)",
           }}
         >
-          {editionLabel(m.edition)}
+          {categoryLabel(category)}
         </span>
         {/* Type chip (ADR-0237 F5) — every price surface names its kind. */}
         <span style={{ marginLeft: "auto" }}>
@@ -222,13 +266,17 @@ function ModuleCard({ module: m }: { module: ModulePrice }) {
           gap: "var(--cs-space-3)",
         }}
       >
-        <Link
-          href={`/marketplace/modules/${m.id}`}
-          className="cs-card-title"
-          style={{ textDecoration: "none" }}
-        >
-          {m.label}
-        </Link>
+        {hasDetail ? (
+          <Link
+            href={`/marketplace/modules/${m.id}`}
+            className="cs-card-title"
+            style={{ textDecoration: "none" }}
+          >
+            {m.label}
+          </Link>
+        ) : (
+          <span className="cs-card-title">{m.label}</span>
+        )}
         <span
           className="cs-num"
           style={{
@@ -251,7 +299,13 @@ function ModuleCard({ module: m }: { module: ModulePrice }) {
         {m.blurb}
       </p>
       <div style={{ marginTop: "var(--cs-space-5)" }}>
-        <AddToCartButton item={toCartItem(catalogItem)} />
+        {catalogItem ? (
+          <AddToCartButton item={toCartItem(catalogItem)} />
+        ) : (
+          <Button href={bundlePath} variant="ghost" size="sm">
+            Learn more →
+          </Button>
+        )}
       </div>
     </Card>
   );

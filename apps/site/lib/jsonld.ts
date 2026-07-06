@@ -4,7 +4,7 @@
 // Replaces the duplicated anonymous SoftwareApplication block. Serialization escapes `<` so a
 // stray "</script>" in any field cannot break out of the <script> tag.
 import { SITE_NAME, SITE_URL } from "./metadata";
-import { formatPrice, priceById } from "./pricing";
+import { formatPrice, priceById, type PriceAnchor } from "./pricing";
 
 export const ORG_ID = `${SITE_URL}/#organization`;
 export const SITE_ID = `${SITE_URL}/#website`;
@@ -47,16 +47,20 @@ export const rootGraph = {
 };
 
 /**
- * A page-scoped SoftwareApplication node. Carries the committed Offer price (ADR-0082) by
- * pricing id — pass `priceId` to attach a real price, omit for the umbrella home node.
+ * A page-scoped SoftwareApplication node. Carries the committed Offer price (ADR-0082): pass
+ * `priceId` to resolve an edition/plan anchor, or `price` to attach an explicit anchor (the bundle
+ * cards — a bundle id collides with its same-named edition, so it can't route through `priceById`).
+ * Omit both for the umbrella home node.
  */
 export function softwareApplication(opts: {
   name: string;
   description: string;
   url: string;
   priceId?: string;
+  price?: PriceAnchor;
 }) {
-  const price = opts.priceId ? priceById(opts.priceId) : undefined;
+  const price =
+    opts.price ?? (opts.priceId ? priceById(opts.priceId) : undefined);
   return {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
