@@ -16,7 +16,7 @@ import { ConfigError, parseStrict, strictObject } from "@caisson/kernel";
 import { normalizeEntitlementId } from "@caisson/registry-schema";
 
 /** Append-only version stamp — a renewal-row change bumps this, never edits it in place (ADR-0006). */
-export const RENEWAL_BOOK_VERSION = "2026-07-06.2";
+export const RENEWAL_BOOK_VERSION = "2026-07-06.3";
 
 export const renewalBookEntrySchema = strictObject({
   /** The purchased id (edition/bundle/module slug) whose updates window this price renews. */
@@ -49,6 +49,25 @@ export const RENEWAL_BOOK: Record<string, RenewalBookEntry> = {
   pri_01kwvz6n738kz8n9aygb26jc6j: { renewsEntitlement: "agent-runner" },
   pri_01kwvz6na9hp9gg1b0709exekp: { renewsEntitlement: "alerting" },
   pri_01kwvz6nd2yv34z083cpxamkqy: { renewsEntitlement: "retention-runner" },
+  // The W7 catalog big-bang additions (ADR-0258 §5, created 2026-07-06): the Provenance bundle +
+  // the eleven carve/new module SKUs. The five legacy-keyed edition/bundle rows above already
+  // cover the other five bundles through the resolve-time alias normalization; their placeholder
+  // cents were trued Paddle-side in the same sweep. Cents per ADR-0260 §5 / ADR-0258 §4 live in
+  // Paddle only, never here.
+  pri_01kwwqa4k2z4wx3b53nacbpd7w: { renewsEntitlement: "provenance" },
+  pri_01kwwqa4n21y7ah006yb9q07r1: { renewsEntitlement: "compliance-core" },
+  pri_01kwwqa4qc77j5f1pn61811ent: { renewsEntitlement: "frameworks-pack" },
+  pri_01kwwqa4sfhdbp2rn09s1kpsae: { renewsEntitlement: "signing-primitive" },
+  pri_01kwwqa4vaa99c75mbydysxc2d: { renewsEntitlement: "credits" },
+  pri_01kwwqa4xgef5bzfws498q31y0: { renewsEntitlement: "local-sync" },
+  pri_01kwwqa4zkwdfbxsefe7kveex2: { renewsEntitlement: "local-inference" },
+  pri_01kwwqa51khjcn3y79m7dwhm3z: { renewsEntitlement: "local-privacy" },
+  pri_01kwwqa5434re4xvzpd0y77s35: { renewsEntitlement: "tool-exec" },
+  pri_01kwwqa5634seyq4v05hmft4ws: { renewsEntitlement: "org-controls" },
+  pri_01kwwqa58355kq4t05rtk5v8qf: {
+    renewsEntitlement: "billing-orchestration",
+  },
+  pri_01kwwqa5a8z41s64x1fnfzqanj: { renewsEntitlement: "ui-pro" },
 };
 
 /** Validate a renewal-book override at a boundary (Zod `.strict()` per row). */

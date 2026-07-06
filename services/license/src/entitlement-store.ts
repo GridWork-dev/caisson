@@ -17,6 +17,7 @@
 // write, and a read that forgets its WHERE still sees only the caller's rows.
 import { randomUUID } from "node:crypto";
 import { ConfigError } from "@caisson/kernel";
+import { entitlementIdAliasGroup } from "@caisson/registry-schema";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 import { buildTenantPolicySql } from "@caisson/tenancy-rls";
 
@@ -492,6 +493,11 @@ export interface ExtendUpdatesWindowInput {
  * account does not actively hold throws — a renewal never silently mints a grant. Idempotency
  * across webhook redeliveries is the caller's OUTER `sourceEventId` claim (webhook.ts), not
  * re-keyed here. Returns the number of rows extended. Run inside `withTenant`.
+ *
+ * ALIAS-TOLERANT match (ADR-0257 convergence, W7): `resolveRenewal` hands back the CANONICAL id,
+ * but grants written under the pre-0257 vocabulary store the LEGACY id (`ai-kit`, `bundle`, …).
+ * The match spans the whole alias group so a legacy buyer's renewal extends their legacy-keyed
+ * grant instead of fail-closed-throwing on the canonical spelling.
  */
 export async function extendUpdatesWindow(
   tx: TenantExecutor,
@@ -503,11 +509,11 @@ export async function extendUpdatesWindow(
              GREATEST(now(), COALESCE(updates_expires_at, granted_at + interval '12 months'))
              + interval '12 months'
      WHERE account_id = $1
-       AND entitlement_id = $2
+       AND entitlement_id = ANY($2::text[])
        AND source_kind = 'one_time'
        AND status = 'active'
      RETURNING id`,
-    [input.accountId, input.entitlementId],
+    [input.accountId, entitlementIdAliasGroup(input.entitlementId)],
   );
   if (r.rows.length === 0) {
     throw new ConfigError(

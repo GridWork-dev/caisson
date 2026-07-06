@@ -16,6 +16,7 @@ import { matchGolden } from "@caisson/testing";
 import {
   BUNDLE_IDS,
   LEGACY_ENTITLEMENT_ALIASES,
+  entitlementIdAliasGroup,
   normalizeEntitlementId,
 } from "./bundle-vocabulary";
 import {
@@ -348,6 +349,28 @@ describe("ADR-0257 bundle vocabulary + legacy-alias resolution", () => {
     // Object.prototype members.
     expect(normalizeEntitlementId("constructor")).toBe("constructor");
     expect(normalizeEntitlementId("__proto__")).toBe("__proto__");
+  });
+
+  test("entitlementIdAliasGroup returns every stored spelling of one entitlement", () => {
+    // Canonical id in, legacy spellings out (the read-side reverse the renewal path matches on).
+    expect([...entitlementIdAliasGroup("ai-production")].sort()).toEqual([
+      "ai-kit",
+      "ai-production",
+    ]);
+    expect([...entitlementIdAliasGroup("everything")].sort()).toEqual([
+      "bundle",
+      "everything",
+    ]);
+    // A legacy id normalizes first — same group either way in.
+    expect([...entitlementIdAliasGroup("ai-kit")].sort()).toEqual([
+      "ai-kit",
+      "ai-production",
+    ]);
+    // The identity alias must not duplicate.
+    expect(entitlementIdAliasGroup("compliance")).toEqual(["compliance"]);
+    // Module slugs and unknown ids pass through as singleton groups.
+    expect(entitlementIdAliasGroup("field-crypto")).toEqual(["field-crypto"]);
+    expect(entitlementIdAliasGroup("__proto__")).toEqual(["__proto__"]);
   });
 
   test("each legacy purchased id expands to the IDENTICAL leaf set its new bundle id does", () => {

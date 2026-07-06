@@ -101,4 +101,28 @@ describe("RENEWAL_BOOK (ADR-0251)", () => {
       }
     }
   });
+
+  test("the W7 catalog rows resolve — every carve/new SKU and the Provenance bundle is renewable", () => {
+    // The 12 net-new sandbox renewal prices created at the catalog big-bang (2026-07-06). With the
+    // five legacy-keyed edition/bundle rows normalizing to the other five bundles, the full sellable
+    // catalog is renewable: 22 modules + 6 bundles across 28 rows.
+    const W7_RENEWAL_ROWS: Readonly<Record<string, string>> = {
+      pri_01kwwqa4k2z4wx3b53nacbpd7w: "provenance",
+      pri_01kwwqa4n21y7ah006yb9q07r1: "compliance-core",
+      pri_01kwwqa4qc77j5f1pn61811ent: "frameworks-pack",
+      pri_01kwwqa4sfhdbp2rn09s1kpsae: "signing-primitive",
+      pri_01kwwqa4vaa99c75mbydysxc2d: "credits",
+      pri_01kwwqa4xgef5bzfws498q31y0: "local-sync",
+      pri_01kwwqa4zkwdfbxsefe7kveex2: "local-inference",
+      pri_01kwwqa51khjcn3y79m7dwhm3z: "local-privacy",
+      pri_01kwwqa5434re4xvzpd0y77s35: "tool-exec",
+      pri_01kwwqa5634seyq4v05hmft4ws: "org-controls",
+      pri_01kwwqa58355kq4t05rtk5v8qf: "billing-orchestration",
+      pri_01kwwqa5a8z41s64x1fnfzqanj: "ui-pro",
+    };
+    for (const [priceId, ent] of Object.entries(W7_RENEWAL_ROWS)) {
+      expect(resolveRenewal(priceId).renewsEntitlement).toBe(ent);
+    }
+    expect(Object.keys(RENEWAL_BOOK).length).toBe(28);
+  });
 });

@@ -52,3 +52,18 @@ export const LEGACY_ENTITLEMENT_ALIASES: ReadonlyMap<string, BundleId> =
 export function normalizeEntitlementId(id: string): string {
   return LEGACY_ENTITLEMENT_ALIASES.get(id) ?? id;
 }
+
+/**
+ * Every stored spelling of one entitlement: the canonical id plus each legacy alias that
+ * normalizes to it (identity for module slugs and un-aliased ids). Grant rows written under the
+ * old vocabulary (`ai-kit`, `bundle`, …) stay reachable when a caller holds the canonical id —
+ * the read-side reverse of `normalizeEntitlementId` (ADR-0257: legacy ids resolve forever).
+ */
+export function entitlementIdAliasGroup(id: string): readonly string[] {
+  const canonical = normalizeEntitlementId(id);
+  const group = [canonical];
+  for (const [legacy, bundle] of LEGACY_ENTITLEMENT_ALIASES) {
+    if (bundle === canonical && legacy !== canonical) group.push(legacy);
+  }
+  return group;
+}

@@ -171,3 +171,48 @@ describe("per-module à-la-carte REAL rows (module-SKU wiring, 2026-07-02)", () 
     }
   });
 });
+
+describe("W7 catalog big-bang REAL rows (2026-07-06)", () => {
+  // The 17 sandbox price ids from the catalog rebuild: 11 carve/new module SKUs (bare slugs) +
+  // the 6 bundles keyed to CANONICAL bundle ids — a new bundle grant stores the id the renewal
+  // and expansion paths converge on, no alias hop needed.
+  const W7_MODULE_PRICE_IDS: Readonly<Record<string, string>> = {
+    "compliance-core": "pri_01kwwqa0k69m965tx8hgsv904h",
+    "frameworks-pack": "pri_01kwwqa0rkz3etv2yfd6c7jjad",
+    "signing-primitive": "pri_01kwwqa0y1hn63taahdh7y03vf",
+    credits: "pri_01kwwqa1413c33yfsrvjb4r34a",
+    "local-sync": "pri_01kwwqa1b33ycmh114440xc6re",
+    "local-inference": "pri_01kwwqa1gvkpj7g0jfna7h2qcr",
+    "local-privacy": "pri_01kwwqa1p152hskczw7daszzgn",
+    "tool-exec": "pri_01kwwqa1v2gm7cr5g1rpzyk522",
+    "org-controls": "pri_01kwwqa20m42dmedx9mprk085k",
+    "billing-orchestration": "pri_01kwwqa266p6smw4yaanxg1n5j",
+    "ui-pro": "pri_01kwwqa2c799fpe1af76p75r7r",
+  };
+  const W7_BUNDLE_PRICE_IDS: Readonly<Record<string, string>> = {
+    compliance: "pri_01kwwqa2hne35c1df5xe8p91z3",
+    "ai-production": "pri_01kwwqa2rcxtn8pt3dr3jdnnf0",
+    "local-first": "pri_01kwwqa2xp3jp1qww2j5ya0meh",
+    "agentic-dev": "pri_01kwwqa332mweg8veaarkygbae",
+    provenance: "pri_01kwwqa3872cs4c53w8qhhz31k",
+    everything: "pri_01kwwqa3dfp8k0v5k3bbg3pd5f",
+  };
+
+  for (const [slug, priceId] of Object.entries(W7_MODULE_PRICE_IDS)) {
+    test(`${priceId} resolves to credits:0, entitlements:[${slug}]`, () => {
+      const entry = resolvePurchase(priceId);
+      expect<number>(entry.credits).toBe(0);
+      expect(entry.entitlements).toEqual([slug]);
+      expect(entry.purchaseTag).toBe(`${slug}_module`);
+    });
+  }
+
+  for (const [bundleId, priceId] of Object.entries(W7_BUNDLE_PRICE_IDS)) {
+    test(`${priceId} resolves to the canonical bundle id ${bundleId}`, () => {
+      const entry = resolvePurchase(priceId);
+      expect<number>(entry.credits).toBe(0);
+      expect(entry.entitlements).toEqual([bundleId]);
+      expect(entry.purchaseTag).toBe(`${bundleId}_bundle`);
+    });
+  }
+});

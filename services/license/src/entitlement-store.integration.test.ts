@@ -524,6 +524,40 @@ describe("updates windows (ADR-0244/0255 per-entitlement)", () => {
     ).rejects.toThrow(/extends no active/);
   });
 
+  test("a CANONICAL renewal id extends a LEGACY-keyed grant (alias-group convergence)", async () => {
+    // Pre-fold buyers hold grants under the old vocabulary ("ai-kit"); resolveRenewal hands the
+    // fulfillment mapper the canonical id ("ai-production"). The alias-group match bridges the two
+    // spellings — without it every legacy buyer's renewal would fail-closed-throw.
+    const acct = "acct_win_alias";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["ai-kit"],
+        sourceEventId: "pay_legacy",
+        source: onetime("pay_legacy"),
+      }),
+    );
+    const extended = await withTenant(tp.pg, acct, (tx) =>
+      extendUpdatesWindow(tx, {
+        accountId: acct,
+        entitlementId: "ai-production",
+        sourceEventId: "pay_renew_alias",
+      }),
+    );
+    expect(extended).toBe(1);
+
+    // The tolerance is a bridge, not a wildcard: an alias-group miss still fails closed.
+    await expect(
+      withTenant(tp.pg, acct, (tx) =>
+        extendUpdatesWindow(tx, {
+          accountId: acct,
+          entitlementId: "local-first",
+          sourceEventId: "pay_renew_miss",
+        }),
+      ),
+    ).rejects.toThrow(/extends no active/);
+  });
+
   test("a renewal extends ONLY the named entitlement's rows", async () => {
     const acct = "acct_win_pair";
     await withTenant(tp.pg, acct, (tx) =>
