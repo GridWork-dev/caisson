@@ -6,9 +6,10 @@
 // IDEMPOTENT per (accountId, major) ("persist & reuse"): the first call mints, signs, and persists the
 // token via `license-grant-store.ts`; every later call for the same (accountId, major) re-serves the
 // STORED token byte-identical — never proliferates fresh perpetual tokens for one purchase — UNLESS
-// the account's computed ADR-0244 updates window differs from the stored token's signed `updatesUntil`
-// (a renewal landed), in which case /issue RE-MINTS and replaces the stored token in place (ADR-0251
-// Decision 3; still one row per (account, major)). A different major always mints its own grant. POST /webhook is the Paddle Merchant-of-Record
+// the account's computed ADR-0244/0255 per-entitlement updates windows differ (canonically) from the
+// stored token's signed `updatesWindows` map (a renewal landed), in which case /issue RE-MINTS and
+// replaces the stored token in place (ADR-0251 Decision 3; still one row per (account, major)). A
+// different major always mints its own grant. POST /webhook is the Paddle Merchant-of-Record
 // destination (license.caisson.sh/webhook, ADR-0108/0116): it verifies the `Paddle-Signature` HMAC over
 // the RAW body (timing-safe, fail-closed) and provisions a verified purchase by running BOTH the credit
 // grant AND the entitlement grant in ONE tenant transaction. /health is public (like services/docs). Every
@@ -29,7 +30,7 @@ import { withRequestSpan } from "@caisson/observability";
 import type { RegistryIndex } from "@caisson/registry-schema";
 import { type Transactor, withTenant } from "@caisson/tenancy-rls";
 import type { DiscordGrantPush } from "./discord-notify.ts";
-import { computeUpdatesUntil } from "./entitlement-store.ts";
+import { computeUpdatesWindows } from "./entitlement-store.ts";
 import {
   readLicenseGrant,
   storeLicenseGrant,
@@ -159,23 +160,33 @@ function authorized(req: Request, token: string, adminToken: string): boolean {
 }
 
 /**
- * The `updatesUntil` claim carried by a STORED wire token, for the ADR-0251 Decision 3 re-mint
- * comparison. Decode-only (no signature verify — the stored token was minted by THIS service and is
- * re-verified offline by every consumer; the baked verify key here is prod, which a dev/test-signed
- * stored token would fail). An absent field (a pre-0251 token) normalizes to `null` = unbounded, so
- * a subscription-only account's stored token keeps re-serving byte-identical. A decode/parse failure
- * also reads `null` — at worst a corrupt stored token is re-served for an unbounded account, never
- * re-minted on a read error.
+ * The `updatesWindows` claim carried by a STORED wire token, for the ADR-0251 Decision 3 re-mint
+ * comparison (map-shaped per ADR-0255). Decode-only (no signature verify — the stored token was
+ * minted by THIS service and is re-verified offline by every consumer; the baked verify key here is
+ * prod, which a dev/test-signed stored token would fail). An absent/null field (a pre-window token)
+ * normalizes to the EMPTY map = unbounded, so a subscription-only account's stored token keeps
+ * re-serving byte-identical. A decode/parse failure also reads as the empty map — at worst a corrupt
+ * stored token is re-served for an account with no windows, never re-minted on a read error.
  */
-function storedUpdatesUntil(token: string): string | null {
+function storedUpdatesWindows(token: string): Record<string, string> {
   try {
     const claims = licenseClaimsSchema.parse(
       JSON.parse(decodeToken(token).payload) as unknown,
     );
-    return claims.updatesUntil ?? null;
+    return claims.updatesWindows ?? {};
   } catch {
-    return null;
+    return {};
   }
+}
+
+/**
+ * Canonical form of an updates-windows map for the re-mint equality check (ADR-0255 Decision 4):
+ * sorted-key JSON, so key insertion order never fakes a window change.
+ */
+function canonicalWindows(windows: Record<string, string>): string {
+  return JSON.stringify(
+    Object.entries(windows).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+  );
 }
 
 /** Build the request handler. Async because /issue awaits the tenant read + the signer. */
@@ -251,21 +262,23 @@ export function createApp(
 
       // Idempotent re-serve (persist & reuse), LOOSENED per ADR-0251 Decision 3: a prior /issue for
       // this exact (accountId, major) already minted + stored a token — return it byte-identical
-      // UNLESS the account's freshly computed updates window (ADR-0244, DB truth over the active
-      // one_time grants) differs from the stored token's signed `updatesUntil` — a renewal purchase
-      // must produce a fresh token, never re-serve the stale window. Both reads are RLS-scoped in
-      // ONE withTenant, so this can only ever see the caller's own account's grants.
-      const { existing, updatesUntil } = await withTenant(
+      // UNLESS the account's freshly computed per-entitlement updates windows (ADR-0244/0255, DB
+      // truth over the active one_time grants) differ from the stored token's signed
+      // `updatesWindows` — a renewal purchase must produce a fresh token, never re-serve the stale
+      // window. Maps compare CANONICALLY (sorted-key JSON, ADR-0255 Decision 4). Both reads are
+      // RLS-scoped in ONE withTenant, so this can only ever see the caller's own account's grants.
+      const { existing, updatesWindows } = await withTenant(
         deps.db,
         accountId,
         async (tx) => ({
           existing: await readLicenseGrant(tx, accountId, major),
-          updatesUntil: await computeUpdatesUntil(tx, accountId),
+          updatesWindows: await computeUpdatesWindows(tx, accountId),
         }),
       );
       if (
         existing !== null &&
-        storedUpdatesUntil(existing.token) === updatesUntil
+        canonicalWindows(storedUpdatesWindows(existing.token)) ===
+          canonicalWindows(updatesWindows)
       ) {
         return json({ token: existing.token, licenseId: existing.licenseId });
       }
@@ -289,9 +302,10 @@ export function createApp(
         entitlements,
         major,
         expiry,
-        // The signed ADR-0244 updates window (ADR-0251 Decision 1) — null = unbounded (an account
-        // with no active one-time grants; subscriptions keep their expiry semantics untouched).
-        updatesUntil,
+        // The signed ADR-0244/0255 per-entitlement updates windows — an empty map = every
+        // entitlement unbounded (an account with no active one-time grants; subscriptions keep
+        // their expiry semantics untouched).
+        updatesWindows,
       };
       let token: string;
       try {

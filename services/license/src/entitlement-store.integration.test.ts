@@ -11,7 +11,7 @@ import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
-  computeUpdatesUntil,
+  computeUpdatesWindows,
   extendUpdatesWindow,
   grantEntitlements,
   readEntitlements,
@@ -309,7 +309,7 @@ describe("entitlement_grant junction (ADR-0113, RLS)", () => {
   });
 });
 
-describe("updates window (ADR-0244/0251)", () => {
+describe("updates windows (ADR-0244/0255 per-entitlement)", () => {
   /** Pin a grant's granted_at (superuser bypasses RLS) for deterministic baseline math. */
   const pinGrantedAt = (acct: string, iso: string) =>
     tp.query(
@@ -317,7 +317,7 @@ describe("updates window (ADR-0244/0251)", () => {
       [acct, iso],
     );
 
-  test("no active one-time grants → null (unbounded; subscription-only untouched, ADR-0244 §4)", async () => {
+  test("no active one-time grants → empty map (unbounded; subscription-only untouched, ADR-0244 §4)", async () => {
     const acct = "acct_win_none";
     await withTenant(tp.pg, acct, (tx) =>
       grantEntitlements(tx, {
@@ -328,11 +328,11 @@ describe("updates window (ADR-0244/0251)", () => {
       }),
     );
     expect(
-      await withTenant(tp.pg, acct, (tx) => computeUpdatesUntil(tx, acct)),
-    ).toBeNull();
+      await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
+    ).toEqual({});
   });
 
-  test("baseline = earliest one_time granted_at + 12 months", async () => {
+  test("baseline = earliest one_time granted_at + 12 months, keyed by entitlement_id", async () => {
     const acct = "acct_win_base";
     await withTenant(tp.pg, acct, (tx) =>
       grantEntitlements(tx, {
@@ -344,11 +344,11 @@ describe("updates window (ADR-0244/0251)", () => {
     );
     await pinGrantedAt(acct, "2026-01-05T00:00:00.000Z");
     expect(
-      await withTenant(tp.pg, acct, (tx) => computeUpdatesUntil(tx, acct)),
-    ).toBe("2027-01-05T00:00:00.000Z");
+      await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
+    ).toEqual({ compliance: "2027-01-05T00:00:00.000Z" });
   });
 
-  test("a renewal extends via updates_expires_at, which OVERRIDES the baseline", async () => {
+  test("a renewal extends via updates_expires_at, which OVERRIDES the baseline for that key only", async () => {
     const acct = "acct_win_renew";
     await withTenant(tp.pg, acct, (tx) =>
       grantEntitlements(tx, {
@@ -360,7 +360,7 @@ describe("updates window (ADR-0244/0251)", () => {
     );
     await pinGrantedAt(acct, "2026-01-05T00:00:00.000Z");
     const baseline = await withTenant(tp.pg, acct, (tx) =>
-      computeUpdatesUntil(tx, acct),
+      computeUpdatesWindows(tx, acct),
     );
     const extended = await withTenant(tp.pg, acct, (tx) =>
       extendUpdatesWindow(tx, {
@@ -371,13 +371,13 @@ describe("updates window (ADR-0244/0251)", () => {
     );
     expect(extended).toBe(1);
     const after = await withTenant(tp.pg, acct, (tx) =>
-      computeUpdatesUntil(tx, acct),
+      computeUpdatesWindows(tx, acct),
     );
     // GREATEST(now(), granted_at) + 12mo — now() > the pinned 2026-01-05, so the window moved past
     // the baseline (renewal semantics: +12 months from now for a first renewal, ADR-0251 D5).
-    expect(after).not.toBeNull();
-    expect(Date.parse(after ?? "")).toBeGreaterThan(
-      Date.parse(baseline ?? "0"),
+    expect(after.compliance).toBeDefined();
+    expect(Date.parse(after.compliance as string)).toBeGreaterThan(
+      Date.parse(baseline.compliance ?? "0"),
     );
 
     // A SECOND renewal stacks: GREATEST(now(), current expiry) + 12mo ≈ +24 months out.
@@ -389,9 +389,46 @@ describe("updates window (ADR-0244/0251)", () => {
       }),
     );
     const second = await withTenant(tp.pg, acct, (tx) =>
-      computeUpdatesUntil(tx, acct),
+      computeUpdatesWindows(tx, acct),
     );
-    expect(Date.parse(second ?? "")).toBeGreaterThan(Date.parse(after ?? ""));
+    expect(Date.parse(second.compliance as string)).toBeGreaterThan(
+      Date.parse(after.compliance as string),
+    );
+  });
+
+  test("renewing entitlement X extends ONLY X's window — an unrenewed entitled Y keeps its own", async () => {
+    const acct = "acct_win_pair_map";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance", "local-ai"],
+        sourceEventId: "pay_pair_map",
+        source: onetime("pay_pair_map"),
+      }),
+    );
+    await pinGrantedAt(acct, "2026-01-05T00:00:00.000Z");
+    const before = await withTenant(tp.pg, acct, (tx) =>
+      computeUpdatesWindows(tx, acct),
+    );
+    expect(before).toEqual({
+      compliance: "2027-01-05T00:00:00.000Z",
+      "local-ai": "2027-01-05T00:00:00.000Z",
+    });
+    await withTenant(tp.pg, acct, (tx) =>
+      extendUpdatesWindow(tx, {
+        accountId: acct,
+        entitlementId: "compliance",
+        sourceEventId: "pay_pair_map_renew",
+      }),
+    );
+    const after = await withTenant(tp.pg, acct, (tx) =>
+      computeUpdatesWindows(tx, acct),
+    );
+    // compliance moved; local-ai is UNTOUCHED — no cross-entitlement min/max coupling (ADR-0255 D2).
+    expect(Date.parse(after.compliance as string)).toBeGreaterThan(
+      Date.parse(before.compliance as string),
+    );
+    expect(after["local-ai"]).toBe(before["local-ai"]);
   });
 
   test("extendUpdatesWindow FAILS CLOSED on zero active one_time rows (never mints a grant)", async () => {

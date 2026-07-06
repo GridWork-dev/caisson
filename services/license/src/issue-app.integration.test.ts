@@ -446,17 +446,18 @@ describe("POST /issue admin-scoped credential (ADR-0220)", () => {
   });
 });
 
-// ADR-0244/0251: the signed updates window. /issue computes `updatesUntil` from DB truth (earliest
-// active one_time granted_at + 12 months, overridden by a renewal's updates_expires_at) and signs it
-// into the claims; the (accountId, major) persist-and-reuse idempotency is LOOSENED to re-mint when
-// the computed window differs from the stored token's claim (Decision 3) — while an UNCHANGED window
-// keeps the byte-identical re-serve (the persist&reuse suite above stays green: subscription-only
-// accounts compute null = unbounded).
-describe("POST /issue updates window (ADR-0244/0251)", () => {
+// ADR-0244/0255: the signed per-entitlement updates windows. /issue computes `updatesWindows` from
+// DB truth (per (account, entitlement) pair: earliest active one_time granted_at + 12 months,
+// overridden by a renewal's updates_expires_at) and signs it into the claims; the (accountId, major)
+// persist-and-reuse idempotency is LOOSENED to re-mint when the computed map CANONICALLY differs from
+// the stored token's claim (Decision 3/4) — while an UNCHANGED map keeps the byte-identical re-serve
+// (the persist&reuse suite above stays green: subscription-only accounts compute the empty map =
+// unbounded).
+describe("POST /issue updates windows (ADR-0244/0255)", () => {
   const issueBody = (acct: string) =>
     JSON.stringify({ accountId: acct, tier: "pro", major: 1, expiry: null });
 
-  test("a one-time buyer's token carries updatesUntil = granted_at + 12 months", async () => {
+  test("a one-time buyer's token carries updatesWindows[entitlementId] = granted_at + 12 months", async () => {
     const acct = "acct_win_onetime";
     await withTenant(tp.pg, acct, (tx) =>
       grantEntitlements(tx, {
@@ -476,10 +477,12 @@ describe("POST /issue updates window (ADR-0244/0251)", () => {
     const body = (await res.json()) as { token: string };
     const verified = verifyLicenseWithKey(body.token, DEV_PUB);
     expect(verified.valid).toBe(true);
-    expect(verified.claims?.updatesUntil).toBe("2027-01-05T00:00:00.000Z");
+    expect(verified.claims?.updatesWindows).toEqual({
+      compliance: "2027-01-05T00:00:00.000Z",
+    });
   });
 
-  test("a subscription-only account's token carries updatesUntil: null (unbounded, ADR-0244 §4)", async () => {
+  test("a subscription-only account's token carries an empty updatesWindows map (unbounded, ADR-0244 §4)", async () => {
     const acct = "acct_win_subonly_issue";
     await withTenant(tp.pg, acct, (tx) =>
       grantEntitlements(tx, {
@@ -493,10 +496,10 @@ describe("POST /issue updates window (ADR-0244/0251)", () => {
     const body = (await res.json()) as { token: string };
     const verified = verifyLicenseWithKey(body.token, DEV_PUB);
     expect(verified.valid).toBe(true);
-    expect(verified.claims?.updatesUntil).toBeNull();
+    expect(verified.claims?.updatesWindows).toEqual({});
   });
 
-  test("UNCHANGED window → stored token re-served byte-identical; CHANGED window → re-mint in place", async () => {
+  test("UNCHANGED map → stored token re-served byte-identical; CHANGED map → re-mint in place", async () => {
     const acct = "acct_win_remint";
     await withTenant(tp.pg, acct, (tx) =>
       grantEntitlements(tx, {
@@ -531,9 +534,11 @@ describe("POST /issue updates window (ADR-0244/0251)", () => {
     expect(reminted.token).not.toBe(first.token);
     expect(reminted.licenseId).not.toBe(first.licenseId);
     const firstWindow =
-      verifyLicenseWithKey(first.token, DEV_PUB).claims?.updatesUntil ?? "";
+      verifyLicenseWithKey(first.token, DEV_PUB).claims?.updatesWindows
+        ?.compliance ?? "";
     const remintedWindow =
-      verifyLicenseWithKey(reminted.token, DEV_PUB).claims?.updatesUntil ?? "";
+      verifyLicenseWithKey(reminted.token, DEV_PUB).claims?.updatesWindows
+        ?.compliance ?? "";
     expect(Date.parse(remintedWindow)).toBeGreaterThan(Date.parse(firstWindow));
 
     // Still exactly ONE row per (account, major): the re-mint replaced the stored token in place.
@@ -547,11 +552,49 @@ describe("POST /issue updates window (ADR-0244/0251)", () => {
     );
     expect(stored?.token).toBe(reminted.token);
 
-    // And the NEW window is now the stable one — a further /issue re-serves it byte-identical.
+    // And the NEW map is now the stable one — a further /issue re-serves it byte-identical.
     const afterRemint = (await (
       await app(post(issueBody(acct), `Bearer ${TOKEN}`))
     ).json()) as { token: string };
     expect(afterRemint.token).toBe(reminted.token);
+  });
+
+  test("renewing entitlement X re-mints and extends ONLY X's window — an unrenewed entitled Y keeps its own", async () => {
+    const acct = "acct_win_pair_issue";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance", "local-ai"],
+        sourceEventId: "pay_win_pair",
+        source: { kind: "one_time", purchaseId: "pay_win_pair" },
+      }),
+    );
+    const before = (await (
+      await app(post(issueBody(acct), `Bearer ${TOKEN}`))
+    ).json()) as { token: string };
+    const beforeWindows =
+      verifyLicenseWithKey(before.token, DEV_PUB).claims?.updatesWindows ?? {};
+    expect(beforeWindows.compliance).toBeDefined();
+    expect(beforeWindows["local-ai"]).toBeDefined();
+
+    // Renewing ONLY compliance extends ONLY its window.
+    await withTenant(tp.pg, acct, (tx) =>
+      extendUpdatesWindow(tx, {
+        accountId: acct,
+        entitlementId: "compliance",
+        sourceEventId: "pay_win_pair_renew",
+      }),
+    );
+    const after = (await (
+      await app(post(issueBody(acct), `Bearer ${TOKEN}`))
+    ).json()) as { token: string };
+    const afterWindows =
+      verifyLicenseWithKey(after.token, DEV_PUB).claims?.updatesWindows ?? {};
+    expect(Date.parse(afterWindows.compliance as string)).toBeGreaterThan(
+      Date.parse(beforeWindows.compliance as string),
+    );
+    // local-ai's window is BYTE-IDENTICAL — no cross-entitlement coupling (ADR-0255 D2).
+    expect(afterWindows["local-ai"]).toBe(beforeWindows["local-ai"]);
   });
 });
 

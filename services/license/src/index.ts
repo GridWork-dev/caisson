@@ -25,7 +25,7 @@ export {
   revokePurchaseLineGrants,
   grantAdminComp,
   revokeAdminComp,
-  computeUpdatesUntil,
+  computeUpdatesWindows,
   extendUpdatesWindow,
 } from "./entitlement-store.ts";
 export type {

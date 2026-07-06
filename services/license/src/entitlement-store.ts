@@ -121,8 +121,9 @@ CREATE UNIQUE INDEX entitlement_grant_uniq
 // ADR-0244/0251 (Decision 5): the per-grant updates-window override. A renewal purchase extends the
 // buyer's 12-month updates window by stamping `updates_expires_at` on the ACTIVE one_time grant rows
 // for the renewed (account, entitlement) pair; the issuer reads it back at /issue
-// (`computeUpdatesUntil`). Additive + nullable — NULL means "no renewal yet", the issuer then derives
-// the baseline `granted_at + 12 months`. SEPARATE migration, not an edit to ENTITLEMENT_SCHEMA_SQL,
+// (`computeUpdatesWindows`, ADR-0255 — GROUP BY entitlement_id). Additive + nullable — NULL means
+// "no renewal yet", the issuer then derives the baseline `granted_at + 12 months`. SEPARATE
+// migration, not an edit to ENTITLEMENT_SCHEMA_SQL,
 // for the same checksum-pinning reason as the line_item migration above (ADR-0006 append-only): the
 // prior files are frozen on the live DB. Ships as the numbered `0016_entitlement_updates_window.sql`
 // platform migration (0014/0015 are reserved by the parallel credits build).
@@ -400,34 +401,40 @@ export async function revokeAdminComp(
   return r.rows.length;
 }
 
-// --- ADR-0244/0251 updates window --------------------------------------------------------------
+// --- ADR-0244/0255 updates windows --------------------------------------------------------------
 
 /**
- * Compute the account's updates-window bound for the signed `updatesUntil` claim (ADR-0251
- * Decision 1), from DB truth over the ACTIVE one_time grants: baseline = earliest `granted_at`
- * + 12 months, OVERRIDDEN by `updates_expires_at` where a renewal set it (max across rows).
- * Returns an ISO instant, or `null` when the account holds no active one-time grants — an
- * unbounded claim (subscription-only accounts keep their existing expiry semantics, ADR-0244 §4).
+ * Compute the account's PER-ENTITLEMENT updates-window bounds for the signed `updatesWindows`
+ * claim (ADR-0255 Decision 2), from DB truth over the ACTIVE one_time grants: per
+ * `(account, entitlement)` pair, baseline = earliest `granted_at` + 12 months, OVERRIDDEN by
+ * `updates_expires_at` where a renewal set it (max across the pair's rows) — the same formula
+ * ADR-0251 ran account-wide, now GROUP BY entitlement_id so renewing one module extends exactly
+ * that module. Returns a `purchasedEntitlementId → ISO instant` map; EMPTY when the account holds
+ * no active one-time grants — an unbounded claim (subscription-only accounts keep their existing
+ * expiry semantics, ADR-0244 §4; subscription-sourced entitlements never get a key).
  * Deterministic for a fixed grant set (no `now()`), so the /issue re-mint comparison is stable.
  * Run inside `withTenant`.
  */
-export async function computeUpdatesUntil(
+export async function computeUpdatesWindows(
   tx: TenantExecutor,
   accountId: string,
-): Promise<string | null> {
+): Promise<Record<string, string>> {
   const r = await tx.query<{
-    baseline: string | Date | null;
-    override: string | Date | null;
+    entitlement_id: string;
+    bound: string | Date;
   }>(
-    `SELECT min(granted_at) + interval '12 months' AS baseline,
-            max(updates_expires_at) AS override
+    `SELECT entitlement_id,
+            COALESCE(max(updates_expires_at), min(granted_at) + interval '12 months') AS bound
        FROM entitlement_grant
-      WHERE account_id = $1 AND source_kind = 'one_time' AND status = 'active'`,
+      WHERE account_id = $1 AND source_kind = 'one_time' AND status = 'active'
+      GROUP BY entitlement_id`,
     [accountId],
   );
-  const row = r.rows[0];
-  const bound = row?.override ?? row?.baseline ?? null;
-  return bound === null ? null : new Date(bound).toISOString();
+  const windows: Record<string, string> = {};
+  for (const row of r.rows) {
+    windows[row.entitlement_id] = new Date(row.bound).toISOString();
+  }
+  return windows;
 }
 
 export interface ExtendUpdatesWindowInput {

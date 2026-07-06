@@ -135,8 +135,8 @@ export function platformPackage(): PackageMigrations {
         name: "0015_grant_consumption.sql",
         sql: GRANT_CONSUMPTION_MIGRATION_SQL,
       },
-      // ADR-0244/0251: the per-grant updates-window override a renewal purchase stamps
-      // (`extendUpdatesWindow`) and /issue reads back (`computeUpdatesUntil`).
+      // ADR-0244/0251/0255: the per-grant updates-window override a renewal purchase stamps
+      // (`extendUpdatesWindow`) and /issue reads back (`computeUpdatesWindows`).
       {
         name: "0016_entitlement_updates_window.sql",
         sql: ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
