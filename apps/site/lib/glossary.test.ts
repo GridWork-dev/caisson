@@ -2,12 +2,12 @@ import { describe, expect, test } from "bun:test";
 
 import { GLOSSARY_TERMS, glossaryPageSpec } from "./glossary";
 
-// Data-lint (glossary SPEC Task 5 verify) — this is batch 1 (renderer + hub + compliance cluster,
-// ADR-0235 Fork C); later batches append pure data records, so this asserts a floor, never the
-// eventual 32-term total.
+// Data-lint (glossary SPEC Task 5 verify) — all ADR-0235 batches have shipped, so this pins the
+// SPEC's exact gate: GLOSSARY_TERMS.length === 32. Adding a term requires a new operator lock
+// (Fork A: "never add without a new lock"), so a drift in either direction is a bug.
 describe("GLOSSARY_TERMS — data lint", () => {
-  test("batch 1 ships at least the 12 committed terms", () => {
-    expect(GLOSSARY_TERMS.length).toBeGreaterThanOrEqual(12);
+  test("all 32 locked terms ship (SPEC Task 5 gate, ADR-0235 Fork A)", () => {
+    expect(GLOSSARY_TERMS.length).toBe(32);
   });
 
   test("every slug is unique", () => {
@@ -64,11 +64,10 @@ describe("glossaryPageSpec — the ordered section builder", () => {
   });
 
   test("a term with no resolvable related terms skips the related-terms section", () => {
-    const noRelated = GLOSSARY_TERMS.find(
-      (t) => (t.related ?? []).length === 0,
-    );
-    expect(noRelated).toBeDefined();
-    const spec = glossaryPageSpec(noRelated!);
+    // Every live term now carries curated related links (Fork D), so exercise the builder's
+    // skip branch with a synthetic record rather than coupling the contract to live data.
+    const noRelated = { ...GLOSSARY_TERMS[0]!, related: [] };
+    const spec = glossaryPageSpec(noRelated);
     expect(spec.sections.map((s) => s.kind)).toEqual([
       "hero",
       "section",

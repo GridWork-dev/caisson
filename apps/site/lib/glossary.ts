@@ -57,10 +57,11 @@ export interface GlossaryTerm {
   related?: readonly string[];
 }
 
-// The 12 batch-1 terms (renderer + hub + the full 10-term compliance cluster, ADR-0235 Fork C).
-// Copy is adversarially verified — do not rewrite; a typo fix is fine, a claim change is not.
-// `related` entries are scoped to slugs that resolve WITHIN this batch (later-batch cross-links
-// land when those terms ship, per the data-lint in glossary.test.ts).
+// All 32 ADR-0235-locked terms: batch 1 (renderer + hub + the full 10-term compliance cluster +
+// two pilots, Fork C) followed by batches 2-3 (security, licensing, ai-infra remainders; the two
+// cross-cutting terms fold into compliance/ai-infra since the SPEC's binding cluster union has no
+// fifth value). Copy is adversarially verified per Fork B — do not rewrite; a typo fix is fine,
+// a claim change is not. `related` entries are curated same-cluster slugs (Fork D).
 export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
   {
     slug: "worm-audit-log",
@@ -806,9 +807,1290 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       ctaLabel: "See how the AI Production Kit meters every inference call",
       ctaHref: "/ai-kit",
     },
-    // llm-cost-control / ai-spend-circuit-breaker / ai-guardrails ship in the cluster-D batch
-    // (ADR-0235 Fork C); no cross-links out of batch 1 yet — see glossary.test.ts's data-lint.
-    related: [],
+    related: ["llm-cost-control", "ai-spend-circuit-breaker", "ai-guardrails"],
+  },
+  {
+    slug: "fail-closed",
+    term: "Fail-closed",
+    cluster: "security",
+    definition:
+      "Fail-closed means a security check that errors, times out, or hits an unexpected state denies access by default, rather than falling through to allow it. Caisson's tenancy-rls module practices this literally: an unbound tenant, an unverified role, or an empty account id each refuse the query outright instead of running it unscoped.",
+    artifact: {
+      label:
+        "assertRoleNotPrivileged: refuse to assume a role Caisson has not verified as unprivileged",
+      lang: "ts",
+      code: 'async function assertRoleNotPrivileged(\n  tx: TenantExecutor,\n  role: string,\n): Promise<void> {\n  const { rows } = await tx.query<{\n    rolsuper: boolean;\n    rolbypassrls: boolean;\n  }>(`SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = $1`, [role]);\n  const row = rows[0];\n  if (!row || row.rolsuper || row.rolbypassrls) {\n    throw new TenancyError(\n      `Refusing to use role "${role}" for tenant isolation: it must exist and be neither SUPERUSER nor BYPASSRLS`,\n    );\n  }\n}',
+    },
+    properties: [
+      {
+        title: "Refuse when uncertain, never fall through",
+        body: "assertRoleNotPrivileged runs a positive check: the role must exist and must not be SUPERUSER or BYPASSRLS, and it throws on any other outcome (a missing row, an unexpected privilege, a failed query). There is no default branch that proceeds; unresolved is refused.",
+      },
+      {
+        title: "The same posture gates money and licenses, not just rows",
+        body: "InsufficientCreditsError closes a request with 402 the instant a wallet cannot cover a metered call, and license-verify treats any malformed, unsigned, or unparseable token as fail-safe-to-community instead of guessing at intent. Three different surfaces share one refusal-by-default shape.",
+      },
+      {
+        title: "withTenant refuses an empty account id outright",
+        body: "The tenant-scoping wrapper throws before opening a transaction if accountId.length === 0, so a caller that forgot to resolve a tenant never runs unscoped. It errors immediately instead of quietly defaulting to some global view.",
+      },
+      {
+        title: "Scoped honestly: not every check in Caisson fails closed",
+        body: "The registry Worker's license-revocation deny-set is deliberately fail-open: if the cache backing it is unavailable, getDenied returns an empty set rather than blocking every install. Fail-closed is the posture for tenant data, credits, and license validity; availability wins on the revocation cache.",
+      },
+    ],
+    faq: [
+      {
+        question: 'What does "fail-closed" mean in security design?',
+        answer:
+          "A fail-closed check denies access the moment it cannot positively confirm a request is safe: an error, a missing value, or an unverifiable state all resolve to deny. Caisson's tenancy-rls module applies this to role checks and tenant scoping, throwing instead of proceeding on any ambiguous input.",
+      },
+      {
+        question:
+          "What's the difference between fail-closed and fail-open, and when does each make sense?",
+        answer:
+          "Fail-open keeps a system running when a check cannot be evaluated, favoring availability; fail-closed denies by default, favoring safety. Caisson picks fail-closed for tenant isolation, credit checks, and license validity, where a wrong allow leaks data or revenue, and fail-open only for the registry's revocation deny-set cache, where a stale check should never break every install.",
+      },
+      {
+        question: "Does every check in Caisson fail closed?",
+        answer:
+          "No. The registry Worker's license-revocation deny-set is deliberately fail-open for availability: an unavailable cache resolves to an empty deny-set rather than blocking installs. Fail-closed is reserved for checks where a wrong allow is the expensive failure: tenant data access, credit balances, and license validity.",
+      },
+      {
+        question:
+          "Do I need a paid edition to get fail-closed tenant isolation?",
+        answer:
+          "No. tenancy-rls, including assertRoleNotPrivileged and the fail-closed withTenant/withUser wrappers, ships in the Apache-2.0 Base substrate for free. Every paid edition builds on top of that same isolation floor; it is not a gated upsell.",
+      },
+    ],
+    sells: {
+      ctaLabel: "See where Caisson fails closed (and where it doesn't)",
+      ctaHref: "/security",
+    },
+    related: [
+      "row-level-security",
+      "multi-tenant-isolation",
+      "field-level-encryption",
+      "byok",
+    ],
+  },
+  {
+    slug: "multi-tenant-isolation",
+    term: "Multi-tenant isolation",
+    cluster: "security",
+    definition:
+      "Multi-tenant isolation guarantees one account's data is never visible to another, enforced at both the database and the application layer so a single missed check can't leak across tenants. Caisson's tenancy-rls package makes withTenant the sole entry to tenant data: skip it and a query has no bound account and returns zero rows, never someone else's.",
+    artifact: {
+      label:
+        "withTenant: the sole entry point to tenant data, fail-closed on a missing account id",
+      lang: "ts",
+      code: '/**\n * Run `fn` inside a transaction scoped to `accountId`: `SET LOCAL ROLE app` +\n * `set_config(\'app.current_account\', accountId, true)`. The account id must come from a verified\n * session/JWT (ADR-0015); never from request params. An empty id is refused outright (never run\n * unscoped).\n */\nexport async function withTenant<T>(\n  db: Transactor,\n  accountId: string,\n  fn: (tx: TenantExecutor) => Promise<T>,\n): Promise<T> {\n  if (accountId.length === 0) {\n    throw new TenancyError(\n      "Refusing to run a tenant query without an account id",\n    );\n  }\n  return db.transaction(async (tx) => {\n    // Bind the GUC first (as the privileged role), then drop to `app` for the actual work.\n    await tx.query(`SELECT set_config($1, $2, true)`, [TENANT_GUC, accountId]);\n    await ensureRoleGuard(db, tx, "app");\n    await tx.exec(`SET LOCAL ROLE app`);\n    return fn(tx);\n  });\n}',
+    },
+    properties: [
+      {
+        title: "One entry point, or no data",
+        body: "withTenant is the only function in tenancy-rls that opens tenant access: it refuses to run at all with an empty account id, and the whole call runs inside one transaction so the bound account can never drift mid-query.",
+      },
+      {
+        title: "Account and user access paths never widen each other",
+        body: "withTenant binds the account GUC and leaves the user GUC unset; withUser, the identity-to-account bootstrap read (ADR-0176), does the reverse. A table's policy checks one GUC or the other, so neither access path can accidentally see through the grant the other one holds.",
+      },
+      {
+        title: "Role legitimacy checked before every privilege drop",
+        body: "Before withTenant ever runs SET LOCAL ROLE app, ensureRoleGuard queries pg_roles and refuses to proceed if that role turns out to be SUPERUSER or BYPASSRLS. A misconfigured privileged role is rejected outright instead of silently reopening cross-tenant access.",
+      },
+      {
+        title: "Isolation survives a connection-pooler reset",
+        body: "buildTenantPolicySql wraps the GUC read in NULLIF(current_setting(...), ''): a pooler that resets a custom GUC to an empty string instead of unsetting it would otherwise coincidentally match a row whose column happens to be empty. NULLIF folds that reset value to NULL first, so the comparison denies regardless.",
+      },
+    ],
+    faq: [
+      {
+        question: "What is multi-tenant isolation?",
+        answer:
+          "The guarantee that no tenant can read or write another tenant's rows, enforced at more than one layer so a bug in any single layer does not collapse the boundary. Caisson enforces it at the database with Postgres row-level security and at the application with the withTenant entry point, never in application code alone.",
+      },
+      {
+        question:
+          "What happens if a developer forgets to scope a query to one tenant?",
+        answer:
+          "Nothing leaks. Every tenant query in Caisson must run through withTenant, which binds the account id as a Postgres session variable before the query executes. A call outside withTenant has no account bound, so the row-level-security policy compares against null and the query returns zero rows instead of every tenant's.",
+      },
+      {
+        question: "Can a privileged database role bypass tenant isolation?",
+        answer:
+          "Not through Caisson's own role. Before ever dropping into the app role, ensureRoleGuard checks pg_roles and refuses to proceed if that role is SUPERUSER or BYPASSRLS, so a misconfigured privileged role is rejected rather than silently reopening cross-tenant access.",
+      },
+      {
+        question:
+          "Does multi-tenant isolation alone make us SOC 2 or HIPAA compliant?",
+        answer:
+          "No. It ships the technical control SOC 2 CC6.1 and HIPAA 164.312(a)(1) require for logical access control and generates the isolation proof as a test in the suite, but that control alone is not a compliance certification. The Compliance edition composes it with the audit chain and evidence pack an audit needs.",
+      },
+    ],
+    sells: {
+      ctaLabel: "See how Caisson isolates tenants, fail-closed",
+      ctaHref: "/security",
+    },
+    related: [
+      "row-level-security",
+      "fail-closed",
+      "field-level-encryption",
+      "per-tenant-encryption-keys",
+    ],
+  },
+  {
+    slug: "field-level-encryption",
+    term: "Field-level encryption",
+    cluster: "security",
+    definition:
+      "Field-level encryption encrypts individual database columns rather than the whole disk or table, so a leaked backup, replica, or table dump reveals only ciphertext for that field. Caisson's field-crypto package wraps this in a Drizzle customType: plaintext seals to AES-256-GCM on write and opens on read, transparent to every query the app writes.",
+    artifact: {
+      label:
+        "encryptedColumn: a Drizzle customType that seals plaintext to AES-256-GCM on write and opens it on read, transparent to every query",
+      lang: "ts",
+      code: 'export function encryptedColumn(\n  columnContext: string,\n  cipher: AeadCipher = aesGcm,\n) {\n  return customType<{ data: string; driverData: string }>({\n    dataType() {\n      return "text";\n    },\n    toDriver(plaintext: string): string {\n      return sealField(\n        currentFieldCryptoContext(),\n        columnContext,\n        plaintext,\n        cipher,\n      );\n    },\n    fromDriver(stored: string): string {\n      return openField(currentFieldCryptoContext(), columnContext, stored);\n    },\n  });\n}',
+    },
+    properties: [
+      {
+        title: "A Drizzle column type, not an app-code habit",
+        body: "encryptedColumn wraps a Postgres text column in a Drizzle customType: toDriver seals plaintext on write, fromDriver opens it on read. Every query that touches the column encrypts or decrypts automatically, so there is no separate encrypt-then-insert call to remember or forget.",
+      },
+      {
+        title: "AES-256-GCM, a fresh nonce every write",
+        body: "The cipher is AES-256-GCM through node:crypto's native binding: zero dependency, AES-NI accelerated. Every encrypt draws a new CSPRNG nonce, a (key, nonce) pair is never reused, and a tampered ciphertext or auth tag fails decryption outright rather than returning altered plaintext.",
+      },
+      {
+        title: "AAD locks a ciphertext to its tenant, column, and key version",
+        body: "buildAad binds tenant_id, key_version, and the column's stable identity into the AEAD's authenticated data. Move a cell to another tenant or another column and it fails to authenticate on decrypt even though the underlying bytes are unchanged: a cryptographic property, not an application check.",
+      },
+      {
+        title: "Fail-closed: no bound tenant, no encrypt or decrypt",
+        body: "encryptedColumn reads currentFieldCryptoContext() from an AsyncLocalStorage the caller binds via withFieldCryptoContext. A query that reaches an encrypted column outside that scope throws instead of encrypting or decrypting under a coerced or missing tenant.",
+      },
+    ],
+    faq: [
+      {
+        question: "What is field-level encryption?",
+        answer:
+          "Field-level encryption encrypts specific database columns individually rather than the whole disk, volume, or table. A backup, replica, or direct table read exposes ciphertext for that column while every other field stays in the clear, so the blast radius of a leak is one field, not the whole row.",
+      },
+      {
+        question:
+          "How is field-level encryption different from encryption at rest?",
+        answer:
+          "Encryption at rest (full-disk or TDE) protects data only while the disk is unmounted; once a database connection or query runs, it sees plaintext. Field-level encryption keeps the column ciphertext even from a live query with full table access, since only code holding the tenant's derived key and the bound context can call openField to read it.",
+      },
+      {
+        question:
+          "Can an encrypted value be moved to a different tenant or column to read it there?",
+        answer:
+          "No. The AAD binds tenant_id, key_version, and the column's identity into the authenticated data, so a relocated ciphertext fails AEAD authentication on decrypt and throws instead of returning a different tenant's or column's plaintext.",
+      },
+      {
+        question:
+          "Does field-level encryption alone make us HIPAA or SOC 2 compliant?",
+        answer:
+          "No. Field-level encryption ships the technical control HIPAA 164.312(a)(2)(iv) and SOC 2 CC6.1 expect for data protection and generates the evidence an auditor checks; the certification itself still depends on your organization's administrative controls and the audit process, which Caisson does not perform for you.",
+      },
+    ],
+    sells: {
+      ctaLabel: "See how field-crypto encrypts a Postgres column",
+      ctaHref: "/marketplace/modules/field-crypto",
+    },
+    related: [
+      "envelope-encryption",
+      "per-tenant-encryption-keys",
+      "crypto-shredding",
+      "byok",
+    ],
+  },
+  {
+    slug: "envelope-encryption",
+    term: "Envelope encryption (DEK/KEK)",
+    cluster: "security",
+    definition:
+      "Envelope encryption wraps a data-encryption key (DEK) with a key-encryption key (KEK) that never leaves a KMS, so only the wrapped DEK is stored and the raw key material is never persisted. Caisson's KmsKeyProvider generates a DEK per tenant, stores just its KEK-wrapped form, and unwraps it through the KMS port on every read.",
+    artifact: {
+      label:
+        "KmsKeyProvider.provision / keyFor: mint the DEK through the KMS, persist only its KEK-wrapped form",
+      lang: "ts",
+      code: "export class KmsKeyProvider implements FieldKeyProvider {\n  constructor(\n    private readonly kms: KmsClient,\n    private readonly store: WrappedKeyStore,\n  ) {}\n\n  // Mint a fresh DEK through the KMS; persist only its KEK-wrapped form.\n  async provision(tenantId: string): Promise<number> {\n    const cur = (await this.store.currentVersion(tenantId)) ?? 0;\n    const next = cur + 1;\n    const { wrappedKey } = await this.kms.generateDataKey(tenantId);\n    await this.store.putWrapped(tenantId, next, wrappedKey);\n    await this.store.setCurrentVersion(tenantId, next);\n    return next;\n  }\n\n  // Unwrap the stored DEK through the KMS on every read; plaintext never persists.\n  async keyFor(tenantId: string, keyVersion: number): Promise<Buffer> {\n    const wrapped = await this.store.getWrapped(tenantId, keyVersion);\n    if (wrapped === undefined) {\n      throw new NotFoundError(/* no wrapped DEK for this tenant/version */);\n    }\n    return this.kms.decryptDataKey(tenantId, wrapped);\n  }\n}",
+    },
+    properties: [
+      {
+        title: "One KMS port, four drop-in backends",
+        body: "KmsClient exposes just three methods (generateDataKey, decryptDataKey, scheduleKeyDeletion), so AWS KMS (awsKmsClient, wired), GCP KMS, Azure Key Vault, and HashiCorp Vault Transit all drop in behind the same interface; the field-crypto column and envelope format never know which one is live.",
+      },
+      {
+        title: "Only the wrapped DEK ever touches storage",
+        body: "generateDataKey returns the plaintext DEK and its KEK-wrapped form together; provision() persists only wrappedKey to the WrappedKeyStore. The plaintext key exists in memory just long enough to wrap or to encrypt a field, never logged, never written to disk.",
+      },
+      {
+        title: "Rotation bumps a version, it never re-encrypts",
+        body: "provision() increments the tenant's key version and wraps a fresh DEK under it; keyFor(tenantId, v) must still answer any past version forever, because the version travels inside the self-describing envelope, not provider state. No bulk re-encrypt job runs on rotation.",
+      },
+      {
+        title: "A per-scope KEK makes crypto-shred selective",
+        body: "Every KMS operation is scoped by a keyId (a tenant or subject id); scheduleKeyDeletion(keyId) destroys only that scope's KEK, so shredding one tenant's key leaves every other tenant's wrapped DEKs, and their ciphertext, unaffected.",
+      },
+    ],
+    faq: [
+      {
+        question: "What's the difference between a DEK and a KEK?",
+        answer:
+          "A DEK (data-encryption key) encrypts the actual field value with AES-256-GCM. A KEK (key-encryption key) never touches data directly; it only wraps the DEK. KmsKeyProvider generates a fresh DEK per tenant, then calls the KMS to wrap it under that tenant's KEK before anything is persisted.",
+      },
+      {
+        question:
+          "Why wrap a key instead of just encrypting fields with the KMS directly?",
+        answer:
+          "A KMS call per field would be slow, rate-limited, and expensive at row scale. Envelope encryption calls the KMS once per key operation (generate, unwrap, or shred), while the fast, in-process DEK does the actual AES-256-GCM work on every field read and write.",
+      },
+      {
+        question: "Do I need a cloud KMS to use field-crypto?",
+        answer:
+          "No. DerivedKeyProvider (HKDF-SHA256, zero infrastructure) is the default; KmsKeyProvider is the opt-in upgrade tier for teams that already run AWS KMS, or want a hardware-backed KEK. Both implement the same two-method FieldKeyProvider port, so swapping one for the other touches no calling code.",
+      },
+      {
+        question:
+          "Does KMS-wrapped envelope encryption satisfy an auditor's key-management control on its own?",
+        answer:
+          "It ships the technical control SOC 2 CC6.1 and HIPAA §164.312(a)(2)(iv) require: a KMS-held key that never leaves the KMS, plus a scheduleKeyDeletion primitive an auditor can test. It generates evidence of that control, but it doesn't make an organization compliant by itself; that determination is the organization's and its auditor's.",
+      },
+    ],
+    sells: {
+      edition: "Compliance",
+      ctaLabel: "See how field-crypto wraps every DEK under a KMS-held KEK",
+      ctaHref: "/marketplace/modules/field-crypto",
+    },
+    related: [
+      "field-level-encryption",
+      "crypto-shredding",
+      "byok",
+      "per-tenant-encryption-keys",
+    ],
+  },
+  {
+    slug: "crypto-shredding",
+    term: "Crypto-shredding",
+    cluster: "security",
+    definition:
+      "Crypto-shredding is cryptographic erasure: destroying a scope's encryption key so every ciphertext it protects becomes permanently unrecoverable, satisfying GDPR and CCPA right-to-erasure requests without deleting rows from an immutable audit chain. Caisson's field-crypto module schedules KEK deletion through a scope tied to one tenant, never a shared key, and mints an audit record carrying no PII.",
+    artifact: {
+      label:
+        "cryptoShred(): destroy the scope's KEK through the KMS port, mint the erasure.crypto-shred audit payload (no PII)",
+      lang: "ts",
+      code: "export async function cryptoShred(\n  provider: KmsKeyProvider,\n  request: CryptoShredRequest,\n): Promise<CryptoShredReceipt> {\n  const req = parseStrict(cryptoShredRequestSchema, request);\n  const shreddedThroughVersion = await provider.scheduleKeyDeletion(\n    req.keyScopeId,\n  );\n  const auditPayload: JsonValue = {\n    event: ERASURE_CRYPTO_SHRED,\n    method: SHRED_METHOD,\n    tenantId: req.tenantId,\n    subjectId: req.subjectId,\n    reason: req.reason,\n    occurredAt: req.occurredAt,\n    shreddedThroughVersion,\n  };\n  return { shreddedThroughVersion, auditPayload };\n}",
+    },
+    properties: [
+      {
+        title: "Refuses a shared scope, not just a tenant's own",
+        body: "The KMS port's scheduleKeyDeletion requires an explicit, non-empty keyId; the AWS driver throws rather than falling back to the configured default CMK (ADR-0197), so a per-tenant or per-subject shred can never reach past its own scope into another tenant's key material.",
+      },
+      {
+        title: "Selective because provisioning is per scope",
+        body: "KmsKeyProvider provisions one wrapped DEK version per tenant (or per subject, for a finer erasure grain), and scheduleKeyDeletion destroys only that scope's KEK: every other tenant's wrapped DEKs stay live, and unwrapping them continues to work.",
+      },
+      {
+        title: "The audit record carries no PII",
+        body: "cryptoShred's payload holds only opaque ids, the legal reason, the erasure instant, and the version destroyed, never the erased data itself, so it can be appended forever to the immutable WORM chain without ever recreating what the shred just destroyed.",
+      },
+      {
+        title: "Fail-closed before the deletion, not after",
+        body: "parseStrict validates the erasure request against a .strict() schema before scheduleKeyDeletion ever runs, so a malformed request throws before an irreversible key deletion is scheduled, not after.",
+      },
+    ],
+    faq: [
+      {
+        question: "What is crypto-shredding?",
+        answer:
+          "Crypto-shredding (NIST SP 800-88's erasure-by-key-destruction) satisfies a data-erasure request by destroying the encryption key protecting the data rather than deleting the data's rows. Once the key is gone, the ciphertext it protected is permanently unrecoverable, even though the storage holding that ciphertext is never touched.",
+      },
+      {
+        question: "Why crypto-shred instead of just deleting the row?",
+        answer:
+          "Because the row lives in an append-only, hash-chained audit chain that a DELETE would break (ADR-0055): Caisson never commits plaintext to that chain, only the ciphertext envelope, so destroying the key erases the data while every hash in the chain stays byte-for-byte unchanged and verifyChain still passes.",
+      },
+      {
+        question:
+          "Does crypto-shredding satisfy our GDPR Article 17 obligation on its own?",
+        answer:
+          "Crypto-shredding ships the technical control Article 17 and CCPA §1798.105 ask for, a working erasure mechanism, and generates the audit evidence that a specific scope was destroyed on a specific date, for a specific reason. Whether a given request fully discharges your erasure obligation is a legal determination your organization makes, not a status the code can certify.",
+      },
+      {
+        question: "Can a crypto-shredded key ever be recovered?",
+        answer:
+          "No. AWS KMS's ScheduleKeyDeletion is irreversible once its pending window elapses, and the local test double marks the scope shredded immediately and permanently for that client instance's lifetime: every ciphertext wrapped under that key becomes inert, by design, with no recovery path.",
+      },
+    ],
+    sells: {
+      ctaLabel: "See how field-crypto crypto-shreds a subject's encryption key",
+      ctaHref: "/marketplace/modules/field-crypto",
+    },
+    related: [
+      "field-level-encryption",
+      "envelope-encryption",
+      "per-tenant-encryption-keys",
+      "byok",
+    ],
+  },
+  {
+    slug: "byok",
+    term: "BYOK (bring your own key)",
+    cluster: "security",
+    definition:
+      "BYOK (bring your own key) lets a tenant supply its own AI provider API key instead of the shared lane, encrypted at rest under a per-tenant field-crypto envelope. Caisson's ai-kit resolves the key at inference time inside a tenant-scoped RLS transaction, debits zero credits on a BYOK-backed call, and never logs or persists the key in the clear.",
+    artifact: {
+      label:
+        "putTenantProviderKey: seals a tenant's own provider key into its field-crypto envelope, upsert not append",
+      lang: "ts",
+      code: "/**\n * Store (or replace) a tenant's encrypted provider key. Runs inside `withTenant(tx, accountId)`; the\n * `ctx.tenantId` MUST equal that account (the RLS WITH CHECK and the crypto AAD both enforce it). The\n * plaintext key is sealed under the tenant's current envelope version and never persisted in the clear.\n */\nexport async function putTenantProviderKey(\n  tx: TenantExecutor,\n  ctx: FieldCryptoContext,\n  provider: string,\n  plaintextKey: string,\n): Promise<void> {\n  assertProvider(provider);\n  if (plaintextKey.length === 0) {\n    throw new ValidationError(\"ai-kit BYOK: provider key is required\");\n  }\n  const keyVersion = ctx.currentVersion();\n  const ciphertext = sealField(ctx, BYOK_COLUMN_CONTEXT, plaintextKey);\n  await tx.query(\n    `INSERT INTO tenant_ai_credential (id, account_id, provider, key_version, ciphertext, updated_at)\n     VALUES ($1, $2, $3, $4, $5, now())\n     ON CONFLICT (account_id, provider)\n     DO UPDATE SET ciphertext = EXCLUDED.ciphertext, key_version = EXCLUDED.key_version, updated_at = now()`,\n    [randomUUID(), ctx.tenantId, provider, keyVersion, ciphertext],\n  );\n}",
+    },
+    properties: [
+      {
+        title: "Reuses field-crypto verbatim, no new crypto",
+        body: "putTenantProviderKey seals a tenant's plaintext provider key with the same sealField/openField pair and per-tenant HKDF-derived AES-256-GCM envelope every other encrypted column in Caisson uses; BYOK adds a table, not a cipher.",
+      },
+      {
+        title: "One credential, replace not append",
+        body: "tenant_ai_credential holds one current row per (account_id, provider) under a UNIQUE constraint; putTenantProviderKey upserts on conflict, because a rotated API key is a swappable credential, not a data-encryption key with historical ciphertext depending on it.",
+      },
+      {
+        title: "FORCE RLS scopes every read and write",
+        body: "buildTenantPolicySql wires the same fail-closed FORCE ROW LEVEL SECURITY policy onto tenant_ai_credential that every tenant table gets; a forged cross-tenant write hits the WITH CHECK clause and a read outside withTenant returns nothing.",
+      },
+      {
+        title: "Owner-gated write, allowlisted zero cost",
+        body: "POST /api/byok requires session.role === \"owner\" (ADR-0208, closing a Strix-flagged bypass where any seat could rotate the org's shared key); reads stay seat-visible. resolveActionCost zeroes an inference action's credit cost only when that action is explicitly marked BYOK-covered (ADR-0198); an unclassified action still meters, fail-metered by default.",
+      },
+    ],
+    faq: [
+      {
+        question: "What does BYOK mean for an AI feature?",
+        answer:
+          "Bring your own key means a tenant supplies its own provider API key (OpenAI, Anthropic, or another supported provider) instead of routing through Caisson's shared key. ai-kit stores it encrypted and resolves it ahead of the shared lane at inference time, so the call runs against the tenant's own provider account, quota, and bill.",
+      },
+      {
+        question: "Does a BYOK key ever sit on Caisson's servers as plaintext?",
+        answer:
+          "No. putTenantProviderKey seals it into a field-crypto envelope before the write ever reaches Postgres, and getTenantProviderKey decrypts it only inside a withTenant-scoped transaction long enough to build the provider SDK client; the plaintext key is never logged and never persisted outside that envelope.",
+      },
+      {
+        question: "Who can add or rotate a tenant's BYOK key?",
+        answer:
+          'Only an org owner. POST /api/byok requires session.role === "owner" before accepting a submission, closing a gap where any seat member could otherwise rotate the org\'s shared key or repoint inference at a key they controlled. Reading masked key metadata (provider, last four characters, status) stays open to every seat.',
+      },
+      {
+        question:
+          "Does bringing our own provider key make our AI usage HIPAA or SOC 2 compliant?",
+        answer:
+          "No module makes an organization compliant; that determination belongs to your organization and its auditor. BYOK gives you custody over which provider account a model call actually runs through, the technical control a residency or data-processing requirement points at, and it produces a real key-custody boundary an auditor can inspect.",
+      },
+    ],
+    sells: {
+      edition: "AI Production Kit",
+      ctaLabel:
+        "See how the AI Production Kit's BYOK lane keeps a tenant's key off Caisson's shared lane",
+      ctaHref: "/ai-kit",
+    },
+    related: [
+      "field-level-encryption",
+      "envelope-encryption",
+      "per-tenant-encryption-keys",
+      "row-level-security",
+    ],
+  },
+  {
+    slug: "per-tenant-encryption-keys",
+    term: "Per-tenant key derivation (HKDF)",
+    cluster: "security",
+    definition:
+      "Per-tenant key derivation (HKDF) means generating each tenant's encryption key from one master secret on demand, never storing a distinct key per tenant. Caisson's field-crypto module runs HKDF-SHA256 over the master key, binding tenant id and key version into HKDF's info parameter so every derivation is deterministic, tenant-isolated, and rotation-aware without a key-storage surface.",
+    artifact: {
+      label:
+        "deriveTenantKey: validates every input length, then expands the master key via HKDF-SHA256 into one 32-byte per-tenant key",
+      lang: "ts",
+      code: 'export function deriveTenantKey(\n  masterKey: Buffer,\n  salt: Buffer,\n  keyVersion: number,\n  tenantId: string,\n): Buffer {\n  if (masterKey.length !== TENANT_KEY_BYTES) {\n    throw new ValidationError(\n      `field-crypto: MASTER_FIELD_KEY must be ${TENANT_KEY_BYTES} bytes, got ${masterKey.length}`,\n    );\n  }\n  if (salt.length !== TENANT_KEY_BYTES) {\n    throw new ValidationError(\n      `field-crypto: FIELD_CRYPTO_SALT must be ${TENANT_KEY_BYTES} bytes, got ${salt.length}`,\n    );\n  }\n  const info = deriveInfo(keyVersion, tenantId);\n  // hkdfSync returns an ArrayBuffer; wrap as a Buffer for the cipher key.\n  return Buffer.from(\n    hkdfSync("sha256", masterKey, salt, info, TENANT_KEY_BYTES),\n  );\n}',
+    },
+    properties: [
+      {
+        title: "No per-tenant key is ever stored, only derived",
+        body: "deriveTenantKey recomputes the identical 32-byte key every time from one master secret; there is no per-tenant key table to provision, rotate credentials for, back up, or exfiltrate. The master key itself is read once from the validated env and is never logged.",
+      },
+      {
+        title: "Tenant isolation lives in HKDF's info parameter, not the salt",
+        body: "deriveInfo binds the tenant id into the string caisson-field-crypto:v<keyVersion>:<tenantId>, exactly the domain-separation input HKDF's info parameter is defined for. Two tenants sharing the identical master key and salt still derive cryptographically independent keys (ADR-0043 Fork 3 confirmed the split).",
+      },
+      {
+        title: "Fail-closed validation before any derivation runs",
+        body: "deriveTenantKey asserts the master key and salt are each exactly 32 bytes, and deriveInfo bounds keyVersion to the integer range [1, 65535] and rejects an empty tenantId. Malformed input throws a ValidationError before hkdfSync is ever called, never a silently truncated or padded key.",
+      },
+      {
+        title: "Rotation is a version bump, not a re-encryption migration",
+        body: "keyVersion is baked into the same info string a key derives from, so incrementing it changes every newly derived key while records encrypted under an older version still decrypt correctly by re-deriving with the version recorded on them. Rotating forward never touches stored ciphertext.",
+      },
+    ],
+    faq: [
+      {
+        question:
+          "What is HKDF, and why derive a key instead of storing one per tenant?",
+        answer:
+          "HKDF (HMAC-based Key Derivation Function, RFC 5869) expands one strong secret into as many independent keys as needed, keyed by a context string. field-crypto calls Node's native hkdfSync with SHA-256 to expand one master key into every tenant's 32-byte data-encryption key on demand, so there is no per-tenant key table to provision, back up, or leak.",
+      },
+      {
+        question:
+          "How is one tenant's derived key kept isolated from every other tenant's?",
+        answer:
+          "The tenant id is bound into HKDF's info parameter, not the salt: caisson-field-crypto:v<keyVersion>:<tenantId>. Two tenants deriving from the identical master key and salt still get cryptographically independent keys, because info is exactly the domain-separation input HKDF defines it for (ADR-0043 Fork 3).",
+      },
+      {
+        question: "What happens to existing encrypted data when a key rotates?",
+        answer:
+          "Nothing gets re-encrypted. The key version is part of the same info string a key derives from, so bumping keyVersion changes what new writes derive while existing records still decrypt correctly by re-deriving with the version already recorded on them.",
+      },
+      {
+        question:
+          "Does per-tenant key derivation alone make us GDPR or HIPAA compliant?",
+        answer:
+          "No. It ships the technical control GDPR Article 32 and HIPAA 164.312(a) expect, cryptographically isolated per-tenant keys. It does not itself constitute a compliance certification.",
+      },
+    ],
+    sells: {
+      ctaLabel: "See how field-crypto derives every tenant's key with HKDF",
+      ctaHref: "/marketplace/modules/field-crypto",
+    },
+    related: [
+      "field-level-encryption",
+      "envelope-encryption",
+      "byok",
+      "crypto-shredding",
+    ],
+  },
+  {
+    slug: "offline-license-verification",
+    term: "Offline license verification",
+    cluster: "licensing",
+    definition:
+      "Offline license verification is checking a signed license token's authenticity and entitlements with no network call, against a public key baked into the software itself. Caisson's license-verify package verifies the Ed25519 signature over canonicalized claims, then trusts only the signed tier; any failure, from a missing token to an elapsed expiry, resolves safely to the free community tier.",
+    artifact: {
+      label:
+        "verifyLicenseWithKey: every failure path (bad signature, unparsable claims, an expired token) resolves to the free community tier, never a thrown error",
+      lang: "ts",
+      code: 'export function verifyLicenseWithKey(\n  token: string | null | undefined,\n  publicKey: KeyObject,\n  now: Date = new Date(),\n): VerifiedLicense {\n  if (token === null || token === undefined || token === "") {\n    return COMMUNITY;\n  }\n  try {\n    const decoded = decodeToken(token);\n    const signedBytes = Buffer.from(decoded.payload, "utf8");\n\n    // Asymmetric verify over the EXACT signed bytes (Ed25519: algorithm = null). `crypto.verify`,\n    // not `timingSafeEqual`: a signature check is not a secret comparison (ADR-0010).\n    if (!cryptoVerify(null, signedBytes, publicKey, decoded.signature)) {\n      return COMMUNITY;\n    }\n\n    const parsed = licenseClaimsSchema.safeParse(\n      JSON.parse(decoded.payload) as unknown,\n    );\n    if (!parsed.success) {\n      return COMMUNITY;\n    }\n    const claims = parsed.data;\n\n    // ... format-conformance (canonicalize(claims) === decoded.payload) and expiry checks follow,\n    // each failing safe to COMMUNITY too ...\n\n    return { valid: true, tier: claims.tier, entitlements: claims.entitlements, claims };\n  } catch {\n    // Any unexpected throw (JSON parse, codec edge, crypto) → community. The verifier never raises.\n    return COMMUNITY;\n  }\n}',
+    },
+    properties: [
+      {
+        title: "Baked-in key, zero network dependency",
+        body: "The production verifier pins to one Ed25519 public key (LICENSE_PUBLIC_KEY_SPKI_B64) compiled straight into the package. No request ever leaves the install to check a license; verification is a local crypto.verify() call against that fixed key.",
+      },
+      {
+        title: "Fail-safe-to-community on every error path",
+        body: "A null or absent token, a bad signature, a claims payload that fails strict Zod parsing, a non-canonical signed payload, or an elapsed expiry all resolve to the identical free COMMUNITY result. verifyLicenseWithKey has no throwing path a caller has to guard against.",
+      },
+      {
+        title: "Canonical-bytes check closes a forging gap",
+        body: "The decoded payload must equal canonicalize(claims) exactly, so a signature that would verify over some other serialization of the same fields (reordered keys, different whitespace) is still rejected. The issuer always signs canonical bytes; anything else is treated as crafted.",
+      },
+      {
+        title: "Perpetual-per-major expiry, never silently extended",
+        body: "claims.expiry of null means the license never lapses for the major version it was signed against; a set expiry is checked against the caller-supplied clock. A license never auto-extends itself into a later major it wasn't issued for.",
+      },
+    ],
+    faq: [
+      {
+        question:
+          "How does offline license verification work without phoning home?",
+        answer:
+          "The verifier ships with one Ed25519 public key baked into the package at build time. It checks a token's signature against that key locally with node:crypto's verify(), then reads the tier and entitlements straight out of the signed claims. There is no license-server round trip and no network egress at verify time.",
+      },
+      {
+        question:
+          "What happens if a license token is missing, tampered with, or expired?",
+        answer:
+          "Every one of those cases returns the same result: the free community tier, zero entitlements, valid set to false. verifyLicenseWithKey never throws, so a corrupted, forged, or absent token degrades an install to the free tier instead of crashing it.",
+      },
+      {
+        question:
+          "Can a license token be edited or replayed to unlock a paid tier?",
+        answer:
+          "Editing any claim breaks the Ed25519 signature over the exact canonical bytes the issuer signed, so a tampered token fails verification. A byte-identical replay still only grants what it was originally signed for, and the wire format's cosmetic prefix and tier label are never trusted; only the signed payload's tier field is authoritative.",
+      },
+      {
+        question:
+          "Does offline verification support revoking a license after it ships?",
+        answer:
+          "Not by itself. A signed token that verifies once verifies until its expiry, or forever for a perpetual major, and an air-gapped check has no revocation list to consult. Caisson enforces revocation on the network-connected surfaces instead, the license-issuer and entitlement-resolver paths, for accounts that need a license pulled.",
+      },
+    ],
+    sells: {
+      ctaLabel:
+        "See the perpetual license every Caisson purchase activates offline",
+      ctaHref: "/marketplace/plans",
+    },
+    related: [
+      "ed25519-license-keys",
+      "software-entitlement",
+      "credit-based-billing",
+      "self-hosted-npm-registry",
+    ],
+  },
+  {
+    slug: "ed25519-license-keys",
+    term: "Ed25519 license keys",
+    cluster: "licensing",
+    definition:
+      "Ed25519 license keys are the asymmetric key pair behind Caisson's offline licensing: the issuer holds a private Ed25519 key and signs a buyer's exact license claims; Caisson's registry license gate verifies that signature offline against a baked-in public key, with no network call and no way to forge a license without the private key.",
+    artifact: {
+      label:
+        "issueLicense: canonicalize the parsed claims, sign via the Signer port, then frame the wire token",
+      lang: "ts",
+      code: "export async function issueLicense(\n  signer: Signer,\n  claims: unknown,\n): Promise<string> {\n  const parsed: LicenseClaims = licenseClaimsSchema.parse(claims);\n  // Sign EXACTLY what the verifier re-derives: canonicalize the PARSED object (key-order independent).\n  const payload = canonicalize(parsed as unknown as JsonValue);\n  const signature = await signer.sign(new TextEncoder().encode(payload));\n  if (signature.length !== ED25519_SIGNATURE_BYTES) {\n    throw new ValidationError(\n      `issued signature must be ${String(ED25519_SIGNATURE_BYTES)} bytes, got ${String(signature.length)}`,\n    );\n  }\n  return encodeToken({\n    prefix: WIRE_PREFIX,\n    tier: parsed.tier.toUpperCase(),\n    payload,\n    signature: Buffer.from(signature),\n  });\n}",
+    },
+    properties: [
+      {
+        title: "One shared claims schema, no drift",
+        body: "The issuer imports licenseClaimsSchema, the LicenseClaims type, and encodeToken straight from @caisson/license-verify instead of re-declaring them, so the signer and the verifier can never disagree on what a valid claim looks like.",
+      },
+      {
+        title: "The private key stays an opaque node:crypto KeyObject",
+        body: "Ed25519Signer holds the key in a #private field; node:crypto never exposes its bytes through enumeration, logging, or JSON.stringify, and crypto.sign performs the signature in-engine rather than in JS memory.",
+      },
+      {
+        title: "Signs the canonical bytes, not the raw input",
+        body: "issueLicense signs canonicalize(parsed claims), the identical byte sequence @caisson/license-verify re-derives and compares; a one-byte mismatch anywhere makes the verifier reject the signature outright.",
+      },
+      {
+        title: "KMS is a documented seam, not a v1 dependency",
+        body: "A KmsSigner interface implements the same Signer port for an AWS KMS asymmetric key whose private half never leaves the HSM, but no AWS SDK ships and no live KMS call exists in this version.",
+      },
+    ],
+    faq: [
+      {
+        question: "Why Ed25519 instead of RSA or a JWT library for licensing?",
+        answer:
+          "Ed25519 produces a fixed 64-byte signature with no padding scheme to get wrong, verifies fast enough for a CLI or CI check, and needs nothing beyond node:crypto on both the issuer and the offline verifier, so buyers never install a signing library just to check a license.",
+      },
+      {
+        question: "Where does the private signing key actually live?",
+        answer:
+          "Only inside the license-issue service, as an opaque node:crypto KeyObject loaded from the CAISSON_LICENSE_SIGNING_KEY env var. It never leaves that process, never gets logged, and @caisson/license-issue itself is marked private and never published, so the signing code can't ship in a buyer's tarball.",
+      },
+      {
+        question: "Can a license be checked without calling Caisson's servers?",
+        answer:
+          "Yes. @caisson/license-verify bakes the production Ed25519 public key and checks the signature locally with node:crypto, so a license verifies in an air-gapped deployment with zero network calls.",
+      },
+      {
+        question:
+          "Does a compromised database let someone mint their own license?",
+        answer:
+          "No. POST /issue resolves entitlements from the account's own row under RLS before signing, so a caller can only receive what it already purchased, and no one can forge the signature itself without the private key that never leaves the issuer.",
+      },
+    ],
+    sells: {
+      ctaLabel: "See how a Caisson purchase becomes a signed license",
+      ctaHref: "/marketplace/plans",
+    },
+    related: [
+      "offline-license-verification",
+      "software-entitlement",
+      "self-hosted-npm-registry",
+    ],
+  },
+  {
+    slug: "software-entitlement",
+    term: "Software entitlement",
+    cluster: "licensing",
+    definition:
+      "A software entitlement is the record of exactly which purchased ids (editions, bundles, individual modules) an account is currently allowed to use. Caisson resolves entitlements from a signed license token at the registry edge, cross-checked against a live revocation deny-set, so a lapsed or revoked purchase reverts to the free base view immediately.",
+    artifact: {
+      label:
+        "makeLicenseEntitlementResolver: verify the license token, check the edge revocation deny-set, return the entitlement ids or null",
+      lang: "ts",
+      code: 'export function makeLicenseEntitlementResolver(\n  getDenied: () => ReadonlySet<string>,\n  verify: (token: string) => VerifiedLicense = verifyLicense,\n): (request: Request) => readonly string[] | null {\n  return (request: Request): readonly string[] | null => {\n    const header = request.headers.get("authorization");\n    if (header === null) return null;\n    const match = BEARER_RE.exec(header.trim());\n    const token = match?.[1];\n    if (token === undefined) return null;\n    const verified = verify(token);\n    if (!verified.valid || verified.claims === null) return null;\n    // Edge revocation gate: an operator-revoked license id resolves to community, base-only.\n    if (getDenied().has(verified.claims.licenseId)) return null;\n    return verified.entitlements;\n  };\n}',
+    },
+    properties: [
+      {
+        title: "Signed claims decide, never the wire tier",
+        body: "The resolver never trusts the token's cosmetic TIER string. verifyLicense checks the cryptographically signed claims.entitlements field alone, so editing the wire tier without a matching signature grants nothing.",
+      },
+      {
+        title: "Fail-safe to the base view, never throws",
+        body: "verifyLicense never throws: an absent, malformed, forged, or expired token all resolve to null, and the caller then serves the free base-only view. A verification bug degrades a paid account to community rather than crashing the request.",
+      },
+      {
+        title: "Refcounted grants survive losing one source",
+        body: "The entitlement_grant junction stores one row per account, entitlement, and source. An account holds an entitlement while at least one active grant backs it, so a subscription and a one-time purchase of the same edition each have to be revoked before access is lost.",
+      },
+      {
+        title: "Revoked, never deleted",
+        body: "A revoke flips status to 'revoked' and stamps revoked_at rather than deleting the row, preserving the audit trail. The edge resolver also checks a live revocation deny-set keyed on the license id, so an operator-revoked license reverts to the base view immediately, without waiting for the token to expire.",
+      },
+    ],
+    faq: [
+      {
+        question: "What is a software entitlement?",
+        answer:
+          "A software entitlement is the specific set of purchased ids, editions, bundles, or individual modules, an account is currently allowed to use. Caisson resolves it at request time from a signed license token, not from a client-supplied claim, so the caller can never assert its own access.",
+      },
+      {
+        question:
+          "How does Caisson check entitlements at the edge without a database round trip?",
+        answer:
+          "The registry Worker verifies the license token offline against a baked-in Ed25519 public key, no network call needed to check the signature, then checks the signed claims.licenseId against a live revocation deny-set cached at the edge. No token, or a token that fails either check, resolves to null and the community base-only view.",
+      },
+      {
+        question:
+          "If I hold the same edition from two sources (say a subscription plus a one-time purchase), what happens if I cancel one?",
+        answer:
+          "Nothing changes. The entitlement_grant store keeps one row per account, entitlement, and source, so two active sources both have to be revoked before the entitlement is actually lost. Canceling the subscription revokes only its row; the one-time grant keeps the edition entitled.",
+      },
+      {
+        question:
+          "Can a cryptographically valid license still be denied access?",
+        answer:
+          "Yes. verifyLicense checks the signature, but the resolver then checks the license id against a live revocation deny-set. An operator-revoked license verifies as valid and is denied anyway, reverting the account to the free base view.",
+      },
+    ],
+    sells: {
+      ctaLabel: "See what buying a Caisson plan entitles you to",
+      ctaHref: "/marketplace/plans",
+    },
+    related: [
+      "offline-license-verification",
+      "ed25519-license-keys",
+      "credit-based-billing",
+      "self-hosted-npm-registry",
+    ],
+  },
+  {
+    slug: "credit-based-billing",
+    term: "Credit-based billing",
+    cluster: "licensing",
+    definition:
+      "Credit-based billing meters usage as prepaid, integer credit units debited atomically before the paid work runs, rather than as raw dollars settled after the fact. Caisson's credits package inserts an append-only ledger event and decrements an account's wallet in one transaction: an insufficient balance throws before any work starts, and the balance never goes negative.",
+    artifact: {
+      label:
+        "debit() in packages/credits/src/credits.ts: atomic ledger insert + wallet decrement; an insufficient balance throws and rolls both back",
+      lang: "ts",
+      code: "export async function debit(\n  tx: TenantExecutor,\n  input: DebitInput,\n): Promise<CreditResult> {\n  assertPositiveInt(input.amount);\n  // ... idempotency + feature-tag resolution elided\n  const fresh = await insertEvent(tx, {\n    accountId: input.accountId,\n    eventType: input.eventType,\n    amount: -input.amount,\n    // ...\n  });\n  if (!fresh) return { balance: await balance(tx, input.accountId), idempotent: true };\n  const updated = await tx.query<{ balance: number }>(\n    `UPDATE credit_wallet SET balance = balance - $2\n     WHERE account_id = $1 AND balance >= $2\n     RETURNING balance`,\n    [input.accountId, input.amount],\n  );\n  if (updated.rows.length === 0) {\n    // Insufficient: rolls back the transaction, a failed debit leaves no trace (ADR-0007).\n    throw new InsufficientCreditsError(input.amount, await balance(tx, input.accountId));\n  }\n  return { balance: updated.rows[0]?.balance ?? 0, idempotent: false };\n}",
+    },
+    properties: [
+      {
+        title: "Integer-only, branded credits",
+        body: "Every credit amount is a branded Credits integer minted through asCredits (ADR-0007/ADR-0212); there is no float anywhere in the ledger, so a debit and its balance always resolve to the exact same whole number.",
+      },
+      {
+        title: "Debit-before-spend, atomic",
+        body: "grant() and debit() insert the ledger event and touch the wallet balance inside the same transaction; when the WHERE balance >= amount guard on the wallet UPDATE matches zero rows, InsufficientCreditsError throws and the ledger insert rolls back with it, so a failed debit leaves no trace.",
+      },
+      {
+        title: "Idempotent on a caller key or provider event id",
+        body: "insertEvent's INSERT ... ON CONFLICT DO NOTHING RETURNING absorbs a retried grant or debit without aborting the surrounding transaction; a caught unique-violation would poison it, so the conflict is swallowed instead and the call returns the current balance with idempotent: true.",
+      },
+      {
+        title: "A non-negative wallet, enforced twice",
+        body: "credit_wallet carries its own credit_wallet_balance_nonneg CHECK constraint, backstopping the application-level WHERE balance >= $2 guard even against a bug or a direct write that bypasses debit() entirely.",
+      },
+    ],
+    faq: [
+      {
+        question: "What is credit-based billing?",
+        answer:
+          "Credit-based billing meters usage as prepaid integer credits instead of raw dollars: an account holds a balance from a purchase, subscription allotment, or top-up, and every metered action debits a fixed or computed number of credits from it before the action runs.",
+      },
+      {
+        question:
+          "Why debit credits before the work runs instead of billing usage afterward?",
+        answer:
+          "Debit-before-spend turns a runaway usage spike into an immediate 402 instead of a surprise invoice weeks later: the balance check and the ledger debit happen atomically in one transaction, so there is no window where usage outruns what was actually paid for.",
+      },
+      {
+        question:
+          "What happens if a debit and a refund's clawback race on the same account?",
+        answer:
+          "Both compete for the same wallet row; clawback() takes a row lock (SELECT ... FOR UPDATE) before reading the balance, so a concurrent debit cannot decrement it out from under the calculation, and clawback only ever reclaims the lesser of the amount and the current balance, never pushing the wallet negative.",
+      },
+      {
+        question: "Can a credit debit ever push a balance negative?",
+        answer:
+          "No: the wallet UPDATE only matches WHERE balance >= amount, so an insufficient balance returns zero rows, the surrounding transaction throws InsufficientCreditsError, and the ledger row that would have recorded the debit rolls back with it. The wallet's own DB CHECK constraint holds even against a bug that skips debit() entirely.",
+      },
+    ],
+    sells: {
+      ctaLabel: "See how Caisson prices usage with prepaid credits",
+      ctaHref: "/marketplace/plans",
+    },
+    related: [
+      "software-entitlement",
+      "offline-license-verification",
+      "ed25519-license-keys",
+    ],
+  },
+  {
+    slug: "self-hosted-npm-registry",
+    term: "Self-hosted npm registry",
+    cluster: "licensing",
+    definition:
+      "A self-hosted npm registry serves private packages through the standard npm install protocol from infrastructure you control, rather than a third-party host. Caisson runs one on a Cloudflare Worker: it answers `bun install @caisson/<module>` with real abbreviated packuments and tarballs from R2, gated by the same offline license-token check as the public index, no forked npm client required.",
+    artifact: {
+      label:
+        "gateStatus + the packument route: the same offline-Ed25519 entitlement check the index Worker uses, gating every `bun install`",
+      lang: "ts",
+      code: '// D3 gate: entitled → allowed (null); unentitled + no auth → 401 (retry with token); unentitled +\n// auth present → 404 (indistinguishable from unknown, ADR-0076 no-existence-leak).\nfunction gateStatus(\n  entitled: Set<string>,\n  id: string,\n  hasAuth: boolean,\n): number | null {\n  if (entitled.has(id)) return null;\n  return hasAuth ? 404 : 401;\n}\n\n// ...\n\nconst pk = PACKUMENT_RE.exec(path);\nif (pk) {\n  const name = pk[1];\n  if (name === undefined) return errorJson(404, "not_found");\n  const id = `@caisson/${name}`;\n  const status = gateStatus(entitled, id, hasAuth);\n  if (status !== null) return errorJson(status, "not_found");\n  return json(\n    abbreviatedPackument(validated, sidecar, id, url.origin),\n    200,\n  );\n}',
+    },
+    properties: [
+      {
+        title: "Reuses the index Worker's entitlement math, not a second gate",
+        body: "entitledSet() runs the same baseModuleIds() union expandEntitlements() computation the read-only index route already runs; the npm surface doesn't reimplement license checking, it calls the injected resolveEntitlements against the same offline-Ed25519 verify.",
+      },
+      {
+        title: "No-existence-leak gating",
+        body: "gateStatus() returns 401 (retry with a token) when the request carries no Authorization header, and 404 (indistinguishable from an unknown package) when it does and still isn't entitled, so a probe can never learn whether an unpurchased module even exists (D3, ADR-0076).",
+      },
+      {
+        title: "Real abbreviated packuments, not a redirect",
+        body: "abbreviatedPackument() synthesizes the application/vnd.npm.install-v1+json shape straight from the inlined index plus the tarball sidecar, exposing only versions actually packed and uploaded to R2, so the client resolves a normal dependency tree with no forked install tool.",
+      },
+      {
+        title: "Every response is per-caller, never shared across buyers",
+        body: "gatedHeaders() stamps cache-control: private, no-store and Vary: Authorization on every packument and tarball response, so a commercial package served against one buyer's license token is never served from a shared cache to a different, unentitled caller.",
+      },
+    ],
+    faq: [
+      {
+        question:
+          "Can I just run `bun install @caisson/compliance` against this?",
+        answer:
+          "Yes. The Worker speaks the real npm packument and tarball protocol (registry/worker/npm-routes.ts), so bun install or npm install with your license token set as the registry auth token works with no custom client and no forked install tool.",
+      },
+      {
+        question:
+          "What stops someone from downloading a module they haven't licensed?",
+        answer:
+          "Every packument and tarball request runs the same offline-Ed25519 entitlement check the free index already uses. An unentitled request gets 401 with no token or 404 with the wrong one; it never gets the package.",
+      },
+      {
+        question: "Is this a fork of npm, or a hosted npm alternative?",
+        answer:
+          "Neither. It speaks the exact install protocol npm and bun already implement (abbreviated packuments, npm-shaped tarball URLs), served from Caisson's own Cloudflare Worker and R2 bucket instead of npmjs.com or a third-party host.",
+      },
+    ],
+    sells: {
+      ctaLabel: "See the private registry install flow",
+      ctaHref: "/docs/getting-started",
+    },
+    related: [
+      "offline-license-verification",
+      "ed25519-license-keys",
+      "software-entitlement",
+      "credit-based-billing",
+    ],
+  },
+  {
+    slug: "llm-cost-control",
+    term: "LLM cost control",
+    cluster: "ai-infra",
+    definition:
+      "LLM cost control means bounding and predicting LLM inference spend before it happens: pre-call estimates, integer-credit reservations, spend caps, a circuit breaker, and near-duplicate-prompt detection, all enforced before a provider call runs. Caisson's ai-meter package wires these guards together, then trues each reservation to the provider's actual reported usage afterward.",
+    artifact: {
+      label:
+        "checkDedupGate: MinHash/LSH similarity match, run before a reservation is ever made",
+      lang: "ts",
+      code: "const signature = computeMinHashSignature(\n  shingle(normalizePrompt(core.messages)),\n  numHashes,\n);\nconst bucketKeys = lshBands(signature, bands, rows);\nconst candidates = await config.store.candidates(core.accountId, core.scope, bucketKeys);\n\nlet best: { callId: string; similarity: number; at: Date } | null = null;\nfor (const candidate of candidates) {\n  const similarity = jaccardEstimate(signature, candidate.signature);\n  if (similarity >= threshold && (best === null || similarity > best.similarity)) {\n    best = { callId: candidate.callId, similarity, at: candidate.at };\n  }\n}\n\n// Insert AFTER matching: a call must never match its own just-inserted signature.\nawait config.store.insert(core.accountId, core.scope, bucketKeys, {\n  callId: core.callId,\n  signature,\n  at: new Date(),\n});",
+    },
+    properties: [
+      {
+        title: "Every call clears the breaker before it spends anything",
+        body: "reserve() checks the circuit breaker first, then estimates the cost and debits the wallet before the provider is ever invoked; an open breaker or a short wallet throws a 402 with nothing written, inside the same withTenant transaction.",
+      },
+      {
+        title: "Dedup detects a repeat before estimate or debit ever run",
+        body: "checkDedupGate hashes the prompt into a MinHash/LSH signature and matches it against recent calls, called before reserve(), so a caller can skip the whole reservation on a near-duplicate; the gate only detects, it never auto-skips or moves a wallet credit itself.",
+      },
+      {
+        title: "A crossed hard cap trips the next call, not this one",
+        body: "evaluateCaps runs after the reservation that lands spend at or past the hard limit, so that call is already billed; tripBreaker fires from inside the same transaction and the very next reserve() 402s before a provider is touched.",
+      },
+      {
+        title: "Settled to actual usage, not the estimate",
+        body: "reconcile() trues the reservation against the provider's reported tokens: a feature_grant refunds an over-reservation, a feature_debit charges a shortfall, and the usage_event (account, call_id) unique constraint makes a retried settlement land exactly once.",
+      },
+    ],
+    faq: [
+      {
+        question: "How do you stop runaway spend on LLM API calls?",
+        answer:
+          "Gate every call behind ai-meter's breaker and spend caps. reserve() checks the breaker before the provider is invoked, and a crossed hard cap trips it so the next call 402s before a token is spent, not after a bill arrives.",
+      },
+      {
+        question: "Does deduping prompts actually save money?",
+        answer:
+          "Yes, for the near-duplicate case a literal retry check misses. checkDedupGate flags a reworded repeat of a recent call by MinHash/LSH similarity before reserve() runs, so a caller can skip the paid reservation and the provider call entirely; it only detects, it never auto-skips.",
+      },
+      {
+        question:
+          "Can you control spend on a specific provider, like OpenAI, without switching providers?",
+        answer:
+          "Yes. ai-meter's price book resolves cost per provider and model at both estimate and reconcile time, so the same guards (dedup, reservation, spend caps, circuit breaker) apply no matter which provider a lane calls.",
+      },
+      {
+        question: "What happens if ai-meter's pre-call estimate is wrong?",
+        answer:
+          "reconcile() trues it after the call completes: an over-reservation refunds as a feature_grant, an under-reservation charges the shortfall as a feature_debit, both idempotent on (account, call_id) so a retried settlement never double-moves the wallet.",
+      },
+    ],
+    sells: {
+      edition: "AI Production Kit",
+      ctaLabel: "See how the AI Production Kit controls LLM spend",
+      ctaHref: "/ai-kit",
+    },
+    related: ["token-metering", "ai-spend-circuit-breaker", "ai-guardrails"],
+  },
+  {
+    slug: "ai-spend-circuit-breaker",
+    term: "AI spend circuit breaker",
+    cluster: "ai-infra",
+    definition:
+      "An AI spend circuit breaker trips open when a tenant's LLM cost crosses a hard spend cap, blocking every further inference call with a 402 until an operator resets it. Caisson's `@caisson/ai-meter` checks the breaker before every reserve, so a runaway agent loop stops on the next call, not after the invoice.",
+    artifact: {
+      label:
+        "assertBreakerClosed() blocks every reserve while the breaker is open, throwing SpendCapError before the provider is called",
+      lang: "ts",
+      code: '/**\n * A spend cap reached / circuit breaker open. HTTP 402 (the credit-gate status, ADR-0007) — the\n * tenant has no spendable budget for this call. Metadata only: `details` carries the `scope`, never\n * the spend figures, so the envelope stays redaction-safe (mirrors `InsufficientCreditsError`).\n */\nexport class SpendCapError extends CaissonError {\n  readonly code = "spend_cap_reached";\n  readonly httpStatus = 402;\n  constructor(\n    scope: string,\n    message = "Spend cap reached: circuit breaker open",\n  ) {\n    super(message, { scope });\n  }\n}\n// ...\n/** Throw `SpendCapError` (402) when the breaker is open — the pre-reserve gate. */\nexport async function assertBreakerClosed(\n  tx: TenantExecutor,\n  accountId: string,\n  scope: string,\n): Promise<void> {\n  const status = await readBreaker(tx, accountId, scope);\n  if (status.state === "open") throw new SpendCapError(scope);\n}',
+    },
+    properties: [
+      {
+        title: "Checked before every call",
+        body: "assertBreakerClosed() runs inside reserve() before any provider call: an open breaker throws SpendCapError (402), so a tripped tenant's next call never even reaches the model.",
+      },
+      {
+        title: "Hard cap trips it, soft cap only warns",
+        body: "reserve() evaluates soft and hard spend caps after each fresh, billable reservation. Crossing the soft cap sets softExceeded as a warning only; crossing the hard cap calls tripBreaker() in the same transaction.",
+      },
+      {
+        title: "Fail-closed until an operator clears it",
+        body: "The breaker's state lives per (account, scope) and does not auto-heal: only resetBreaker(), an explicit operator path, closes it again, so a runaway loop can't quietly resume spending on its own.",
+      },
+      {
+        title: "A separate gate from content guardrails",
+        body: "The breaker blocks on spend alone. @caisson/guardrails' fail-closed guard runs the same call through its own moderation and PII chokepoint (ADR-0063), so a call can be stopped for cost, content, or both, without either gate substituting for the other.",
+      },
+    ],
+    faq: [
+      {
+        question:
+          "What's the difference between a soft cap and a hard cap here?",
+        answer:
+          "A soft cap only flags reserve()'s response with softExceeded, a warning your app can act on. A hard cap does more: crossing it calls tripBreaker() in the same transaction, and the very next reserve() 402s before the provider is ever invoked.",
+      },
+      {
+        question: "Does the circuit breaker reset itself once spend cools off?",
+        answer:
+          "No. There's no timer or auto-heal: resetBreaker() is an explicit operator action, so a tripped account stays blocked until a human clears it, closing the runaway-loop gap a self-resetting breaker would reopen.",
+      },
+      {
+        question: "Can a burst of concurrent calls double-spend past the cap?",
+        answer:
+          "No. The per-tenant spend window mutates only through an atomic upsert, never read-modify-write, so concurrent reserves on one tenant can't race the cap check, and the trip itself lands in the same transaction as the reserve that crossed it.",
+      },
+      {
+        question:
+          "Does the spend breaker also block disallowed prompts or outputs?",
+        answer:
+          "No, that's a separate job. The breaker only tracks dollars; @caisson/guardrails' fail-closed guard runs independently on every gateway call to block content, not cost, so the two compose rather than overlap.",
+      },
+    ],
+    sells: {
+      edition: "AI Production Kit",
+      ctaLabel: "See the circuit breaker that caps runaway LLM spend",
+      ctaHref: "/marketplace/modules/ai-meter",
+    },
+    related: ["token-metering", "ai-guardrails", "llm-cost-control"],
+  },
+  {
+    slug: "llm-eval-gate",
+    term: "LLM eval gate",
+    cluster: "ai-infra",
+    definition:
+      "An LLM eval gate is a CI check that runs a versioned eval suite against a committed golden-file baseline and blocks the merge on any score regression. Caisson's @caisson/ai-evals package compares each eval's mean and per-scorer scores to a JSON baseline file, fails closed when no baseline is committed, and rewrites it only through an explicit BLESS re-baseline step.",
+    artifact: {
+      label:
+        "compareToBaseline: the golden-file regression comparator gateAgainstBaseline calls per eval",
+      lang: "ts",
+      code: 'export function compareToBaseline(\n  run: EvalRun,\n  baseline: BaselineFile,\n): BaselineComparison {\n  const findings: RegressionFinding[] = [];\n  const prior = baseline.evals[run.name];\n  if (prior === undefined) {\n    findings.push({\n      kind: "missing-baseline",\n      actual: run.score,\n      detail: `no committed baseline for eval "${run.name}"`,\n    });\n    return { eval: run.name, passed: false, findings, blessed: false };\n  }\n  if (run.score + EPS < prior.score) {\n    findings.push({\n      kind: "score-regression",\n      actual: run.score,\n      baseline: prior.score,\n      detail: `score ${run.score} worse than baseline ${prior.score}`,\n    });\n  }\n  // ... scorer-level, fewer-cases, and Wilson-CI-floor checks follow the same pattern\n  return { eval: run.name, passed: findings.length === 0, findings, blessed: false };\n}',
+      clause:
+        "ADR-0214 (eval-science depth: baseline gate + Wilson-CI floor augmentation)",
+    },
+    properties: [
+      {
+        title: "Fails closed with no committed baseline",
+        body: "compareToBaseline flags an eval with no matching baseline entry as missing-baseline and fails it outright; the fix is to bless it into existence, never to let an unbaselined eval pass by default.",
+      },
+      {
+        title: "Checks the mean, every named scorer, and the case count",
+        body: "A run's aggregate score, each individual scorer's mean, and the dataset's case count are all checked against the committed baseline; a shrunk dataset is flagged too, since fewer cases can flatter a mean without the suite actually improving.",
+      },
+      {
+        title: "One sanctioned rewrite path",
+        body: "BLESS=1 bun run eval is the only way the baseline file changes; every other invocation only compares and never writes, so a baseline update always lands as a reviewable diff in the PR.",
+      },
+      {
+        title: "An opt-in Wilson-CI floor beyond the mean",
+        body: "wilsonFloor gates the lower confidence bound of a scorer's pass rate on top of the raw threshold, catching a lucky small-sample draw that a flattering mean would let through.",
+      },
+    ],
+    faq: [
+      {
+        question: "What is a golden-file eval gate in CI?",
+        answer:
+          "It replays a committed eval suite and compares the result to a committed JSON baseline instead of a live judgment call. @caisson/ai-evals fails the run on any score, per-scorer, or dataset-size regression against that baseline, and on a missing baseline entry too.",
+      },
+      {
+        question: "Does the eval gate call a live LLM model during CI?",
+        answer:
+          "No. The CLI runs offline and deterministically: model-graded scorers replay a committed cassette rather than calling a live provider, so the gate never depends on a network call or a secret.",
+      },
+      {
+        question:
+          "How do you update the baseline after a real quality improvement?",
+        answer:
+          "Set BLESS=1 and run the eval suite once. gateAgainstBaseline rewrites the committed baseline file from the current runs, merging into any existing entries, and the change lands as a normal, reviewable diff in the PR.",
+      },
+      {
+        question: "Is this eval gate required in a generated buyer project?",
+        answer:
+          "No. It runs as its own turbo eval task inside this monorepo only; a project generated from create-caisson owns its own eval cadence rather than inheriting this gate.",
+      },
+    ],
+    sells: {
+      ctaLabel:
+        "See how @caisson/ai-evals gates a PR on golden-file regression",
+      ctaHref: "/marketplace/modules/ai-evals",
+    },
+    related: [
+      "token-metering",
+      "ai-guardrails",
+      "ai-spend-circuit-breaker",
+      "governed-agents",
+    ],
+  },
+  {
+    slug: "ai-guardrails",
+    term: "AI guardrails",
+    cluster: "ai-infra",
+    definition:
+      "AI guardrails are the fail-closed input/output chokepoint every LLM call passes through before a prompt reaches a provider and before its answer reaches a caller: an unconditional credential-shape scan, a swappable content moderator under a deadline, and PII redaction. Caisson's `@caisson/guardrails` blocks on a moderator outage rather than passing text through unchecked.",
+    artifact: {
+      label:
+        "moderate(): the unconditional secret gate, then a fail-closed moderator deadline",
+      lang: "ts",
+      code: 'async function moderate(\n  stage: "input" | "output",\n  text: string,\n  policy: GuardPolicy,\n  rt: GuardRuntime,\n): Promise<void> {\n  // Unconditional credential-shape gate (ADR-0215): runs before the moderator call.\n  // No policy field, no opt-out: a raw credential in either leg never reaches a moderator.\n  if (looksLikeSecret(text)) block(stage, "secret", false, policy, rt);\n  let result: ModerationResult;\n  try {\n    result = await moderateWithDeadline(\n      policy.moderator,\n      text,\n      policy.timeoutMs ?? DEFAULT_TIMEOUT_MS,\n    );\n  } catch {\n    // Outage / timeout / driver throw -> fail-closed unless explicitly opted out.\n    if (policy.failOpen === true) return;\n    block(stage, "moderation", true, policy, rt);\n  }\n  if (result.flagged) block(stage, result.category, false, policy, rt);\n}',
+    },
+    properties: [
+      {
+        title: "Unconditional secret gate",
+        body: "Every input and output leg runs `looksLikeSecret` before any moderator call, with no policy field to disable it: a raw credential never reaches a provider or a caller, live moderator or not.",
+      },
+      {
+        title: "Fail-closed on outage",
+        body: "`moderateWithDeadline` races the configured moderator against a timeout; a driver throw, a rejection, or a deadline miss blocks the call unless the policy explicitly sets `failOpen: true`.",
+      },
+      {
+        title: "Swappable moderator port",
+        body: "A `local` zero-network regex driver, a `provider` driver wrapping an injected HTTP check, or a `custom` hook all implement the same `Moderator` interface, so the gate logic never changes when the driver does.",
+      },
+      {
+        title: "Metadata-only telemetry",
+        body: "A block emits a `guardrail.blocked` event to the kernel `EventSink` carrying block metadata only (block id, stage, category, policy, fail-closed flag, tenant), never the flagged text, so the audit trail never re-leaks what it just redacted.",
+      },
+    ],
+    faq: [
+      {
+        question: "What are AI guardrails?",
+        answer:
+          "AI guardrails are the enforced chokepoint an LLM call passes through on the way in and the way out: a moderator checks the text for policy violations, an unconditional scan blocks anything shaped like a credential, and PII redaction runs on the input leg, all before a provider or a caller ever sees it.",
+      },
+      {
+        question: "What happens if the content moderator goes down?",
+        answer:
+          "The call blocks. `guard.ts` fails closed by default: a moderator timeout, rejection, or thrown error is treated as a block, not a pass-through, unless the policy explicitly sets `failOpen: true`.",
+      },
+      {
+        question:
+          "Do guardrails stop API keys and secrets from leaking through a prompt?",
+        answer:
+          "Yes: `looksLikeSecret` runs unconditionally on both the input and output leg before the moderator is even called, with no policy switch to turn it off.",
+      },
+      {
+        question: "Can I use my own moderation provider?",
+        answer:
+          "Yes: the `Moderator` port ships a `local` regex driver, a `provider` driver that wraps your injected HTTP check, and a `custom` hook, all behind the same fail-closed guard.",
+      },
+    ],
+    sells: {
+      edition: "AI Production Kit",
+      ctaLabel: "See how guardrails gate every inference call",
+      ctaHref: "/marketplace/modules/guardrails",
+    },
+    related: [
+      "llm-cost-control",
+      "ai-spend-circuit-breaker",
+      "governed-agents",
+      "llm-eval-gate",
+    ],
+  },
+  {
+    slug: "governed-agents",
+    term: "Governed agents",
+    cluster: "ai-infra",
+    definition:
+      "Governed agents are AI coding agents run inside hard boundaries, not given free rein over a machine: a subprocess environment scrubbed to one provider credential, an isolated worktree, and a default-deny tool-call allowlist that validates every argument before anything spawns. Caisson's agent-runner and tool-exec packages ship both boundaries together.",
+    artifact: {
+      label:
+        "createToolExec().run: allowlist lookup, then schema-validate BEFORE spawn, never a shell",
+      lang: "ts",
+      code: 'async run(\n  name: string,\n  args: unknown,\n  reason?: string,\n): Promise<ExecResult> {\n  const spec = registry.get(name);\n  if (spec === undefined) {\n    throw new NotFoundError(`No command registered for "${name}"`, {\n      command: name,\n    });\n  }\n  const validatedArgs = parseStrict(spec.argsSchema, args);\n  const { stdout, stderr, exitCode } = await execFn(\n    spec.command,\n    validatedArgs,\n    { cwd, timeoutMs },\n  );\n  const result: ExecResult = {\n    command: spec.command,\n    args: validatedArgs,\n    exitCode,\n    stdout,\n    stderr,\n    ok: exitCode === 0,\n    at: now(),\n  };\n  return reason === undefined ? result : { ...result, reason };\n}',
+    },
+    properties: [
+      {
+        title: "Env scrubbed to one credential",
+        body: "buildEngineEnv() builds the child process environment from scratch off a fixed non-secret passthrough allowlist (PATH, LANG, TERM, TZ and similar) plus only the target provider's routing variable and key; it never spreads process.env, so a subprocess that egresses to a model provider carries no credential beyond that one key.",
+      },
+      {
+        title: "Default-deny tool allowlist",
+        body: "tool-exec's registry maps a logical command name to a real executable plus a Zod .strict() argument schema. An unregistered name throws NotFoundError before anything spawns; a registered call is validated against its schema before an argv array is ever built.",
+      },
+      {
+        title: "Validated argv, never a shell",
+        body: "A tool call's validated arguments become the exact argv array passed to execFile; execSync, exec, and shell: true never appear in tool-exec, so no user-controlled string is ever concatenated into a shell command.",
+      },
+      {
+        title: "Caller owns every side effect",
+        body: "The sandboxed agent runs detached in an isolated worktree and returns a diff, a transcript, and a structured run report; git, PR, and deploy actions stay with the caller, matching agent-runner's stated trust boundary.",
+      },
+    ],
+    faq: [
+      {
+        question: "What does it mean to sandbox an AI coding agent?",
+        answer:
+          "The agent runs as a detached subprocess with its own scrubbed environment (one provider credential, no operator secrets, no inherited MCP servers) inside an isolated worktree. agent-runner spawns it this way and hands back a diff, a durable transcript, and a structured run report, never direct access to the caller's shell or config.",
+      },
+      {
+        question: "Can a governed agent still run arbitrary shell commands?",
+        answer:
+          "No. Every tool call an agent makes through tool-exec is checked against a default-deny allowlist first: an unregistered command name throws NotFoundError before anything spawns, and a registered call's arguments are schema-validated into an execFile argv array, never a shell string.",
+      },
+      {
+        question:
+          "If the agent's environment is compromised, can it steal our other API keys?",
+        answer:
+          "No credential beyond the one configured provider key ever reaches the child process. buildEngineEnv() builds the environment from scratch off a fixed non-secret passthrough list plus that single key; it never spreads process.env, and a leak-guard test asserts this end to end through a real spawn.",
+      },
+    ],
+    sells: {
+      edition: "Agentic-Dev",
+      ctaLabel: "See how agent-runner sandboxes every governed run",
+      ctaHref: "/marketplace/modules/agent-runner",
+    },
+    related: ["ai-guardrails", "mcp-server", "ai-spend-circuit-breaker"],
+  },
+  {
+    slug: "on-device-vector-search",
+    term: "On-device vector search",
+    cluster: "ai-infra",
+    definition:
+      "On-device vector search runs nearest-neighbor embedding lookups locally, inside the application's own SQLite file, with no network round-trip and no vectors leaving the machine. Caisson's local-store package pairs the sqlite-vec vec0 extension with FTS5 in that same file, fusing both rankings by Reciprocal Rank Fusion, so retrieval keeps working with zero embedder configured.",
+    artifact: {
+      label:
+        "hybridSearch fuses the vector KNN leg and the FTS5 leg by Reciprocal Rank Fusion (RRF_K=60), degrading to FTS5-only when the vec leg is empty",
+      lang: "ts",
+      code: "  hybridSearch(opts: HybridSearchOptions): SearchHit[] {\n    const limit = opts.limit ?? 10;\n    const legLimit = Math.max(limit * 8, 50);\n\n    const vecRanks = this.vecLeg(opts.queryVector, legLimit);\n    const ftsRanks = this.ftsLeg(opts.queryText, legLimit);\n\n    // RRF fusion: every leg a doc appears in contributes 1/(RRF_K + rank); sum across legs.\n    const fused = new Map<number, number>();\n    for (const [rowid, rank] of vecRanks)\n      fused.set(rowid, (fused.get(rowid) ?? 0) + 1 / (RRF_K + rank));\n    for (const [rowid, rank] of ftsRanks)\n      fused.set(rowid, (fused.get(rowid) ?? 0) + 1 / (RRF_K + rank));\n\n    const ranked = [...fused.entries()]\n      // score descending; deterministic tie-break by rowid ascending (stable, env-free).\n      .sort((a, b) => b[1] - a[1] || a[0] - b[0])\n      .slice(0, limit);\n    if (ranked.length === 0) return [];\n\n    return ranked.map(([rowid, score]) => ({ id: this.docId(rowid), score }));\n  }",
+    },
+    properties: [
+      {
+        title: "FTS5 is the always-available floor",
+        body: "hybridSearch always runs the FTS5 leg; the vector leg runs only when a queryVector is supplied, and a vec backend fault is caught and skipped rather than thrown. No embedder configured, no live vector index, no server down: retrieval degrades to FTS5-only and keeps answering.",
+      },
+      {
+        title: "One fixed formula, not a tunable blend",
+        body: "Fusion is Reciprocal Rank Fusion at the standard RRF_K=60: every leg a document appears in contributes 1/(60+rank), summed across legs, then ranked descending with a deterministic rowid tie-break. There is no relevance-scoring knob to mistune and no environment-dependent ordering.",
+      },
+      {
+        title: "The embedder is a port, never a bundled model",
+        body: "local-store depends on nothing that opens a socket or loads a model; embed() is an injected Embedder interface the consuming edition wires. An undefined embedder is a first-class, documented mode, not a fallback failure: the FTS5 floor alone runs fully offline.",
+      },
+      {
+        title: "vec0's dimension is fixed at table creation",
+        body: "CREATE VIRTUAL TABLE docs_vec USING vec0(...FLOAT[dim]) locks the embedding width when the store opens. upsert() and every query vector are checked against it, and a mismatch throws instead of silently padding or truncating a vector.",
+      },
+    ],
+    faq: [
+      {
+        question: "What is on-device vector search?",
+        answer:
+          "Running nearest-neighbor lookups over embedding vectors locally, without a network call to a hosted vector database. Caisson's local-store package embeds sqlite-vec's vec0 extension directly in a SQLite file, so a KNN query is a prepared statement against the same file that holds the FTS5 index: no separate vector-DB service to run or reach.",
+      },
+      {
+        question: "Does offline RAG still work without a network connection?",
+        answer:
+          "Yes, for retrieval. hybridSearch always runs its FTS5 leg, and the vector leg is skipped, not thrown, when no query embedding is available or the vec backend faults, so a fully offline call still returns ranked results. Only the embed step itself is a network call, and only when a cloud embedder is wired in.",
+      },
+      {
+        question:
+          "How do local embeddings get produced without local-store bundling a model?",
+        answer:
+          "local-store never imports a model or opens a socket. embed() is an Embedder port with a fixed dim, and the consuming edition wires the concrete backend, on-device such as ONNX or cloud. An unconfigured embedder is a documented first-class mode, not an error: retrieval falls back to the FTS5 floor alone.",
+      },
+      {
+        question:
+          "How does local-store rank results across a vector search and a keyword search?",
+        answer:
+          "By Reciprocal Rank Fusion. Each leg's rank contributes 1/(RRF_K + rank), with RRF_K=60, summed per document across whichever legs ran. It is a fixed formula, not a tunable score blend, so identical inputs always produce the identical fused ranking.",
+      },
+    ],
+    sells: {
+      edition: "Local-first AI",
+      ctaLabel:
+        "See how local-store runs hybrid vector and keyword search fully offline",
+      ctaHref: "/marketplace/modules/local-store",
+    },
+    related: ["mcp-server", "ai-guardrails", "governed-agents"],
+  },
+  {
+    slug: "compliance-as-code",
+    term: "Compliance-as-code",
+    cluster: "compliance",
+    definition:
+      "Compliance-as-code means the controls, the evidence that they hold, and the audit trail proving neither was altered all run as versioned, tested software rather than a spreadsheet assembled by hand once a year. Caisson's Compliance edition composes a typed control registry, a fail-closed evidence generator, and a WORM-anchored audit chain into one reachable runtime surface.",
+    artifact: {
+      label:
+        "createComplianceEdition: composes SOC2 alerting and CCPA/GDPR retention into one reachable Compliance edition surface, no credential at construction",
+      lang: "ts",
+      code: "export function createComplianceEdition(\n  options: ComplianceEditionOptions = {},\n): ComplianceEdition {\n  const alertChannels = options.alerting?.channels ?? [];\n  const alertAuditSink =\n    options.alerting?.auditSink ?? createInMemoryAuditSink();\n  const erasureTargets = options.retention?.targets ?? [];\n  const retentionAuditSink =\n    options.retention?.auditSink ?? createCaptureAuditSink();\n\n  return {\n    alerting: {\n      channels: alertChannels,\n      auditSink: alertAuditSink,\n      process: (event, runtime) =>\n        processAlert(event, { ...runtime, channels: alertChannels, auditSink: alertAuditSink }),\n    },\n    // retention composes the same way over @caisson/retention-runner's erasureTargets and\n    // retentionAuditSink (elided; see packages/compliance/src/edition.ts:98-106).\n  };\n}",
+    },
+    properties: [
+      {
+        title: "The control registry is code, not a spreadsheet",
+        body: "CanonicalControl records are Zod `.strict()`-validated at author time (registry/control.ts): an own-authored requirement statement plus crosswalk references to SOC 2 and HIPAA reference ids, rejected on the first malformed field the same way any other typed domain object in the codebase is.",
+      },
+      {
+        title:
+          "Evidence generation is a build artifact, not a snapshot someone remembered to run",
+        body: "generateEvidencePack refuses to produce a bundle at all when any control's evidence collector comes back unresolved, and identical evidence always canonicalizes to the same SHA-256, so the pack is reproducible output, not a point-in-time export.",
+      },
+      {
+        title:
+          "The audit trail is verified by recomputation, not trusted by timestamp",
+        body: "Every mutation lands in a hash-chained, WORM-anchored chain (@caisson/audit-worm) that a compromised admin session can append to but never rewrite; verifyChain recomputes the chain end to end rather than trusting a log line's date.",
+      },
+      {
+        title: "The edition composes primitives, it does not fork them",
+        body: "createComplianceEdition wires @caisson/alerting and @caisson/retention-runner into one reachable surface at composition time; neither primitive depends back on the edition (ADR-0003 down-only), and construction alone holds no credential and makes no network call.",
+      },
+    ],
+    faq: [
+      {
+        question: "What does 'compliance-as-code' mean?",
+        answer:
+          "Every piece of a compliance program runs as versioned, tested software instead of being assembled by hand: a Zod-validated control registry, an evidence generator that either produces a complete pack or refuses to run, and a hash-chained audit log a function verifies rather than a PDF someone signed.",
+      },
+      {
+        question:
+          "Does compliance-as-code mean the Compliance edition makes us SOC 2 or HIPAA compliant?",
+        answer:
+          "No. Compliance-as-code ships the technical controls a framework's clauses require and generates the evidence an auditor examines; it does not itself constitute a certification. The audit opinion covers your whole control environment, people and process included, which no codebase issues on your behalf.",
+      },
+      {
+        question:
+          "How is compliance-as-code different from a compliance checklist tool?",
+        answer:
+          "A checklist tracks whether a person marked a control done; compliance-as-code runs the control's evidence collector, refuses to assemble a pack when that evidence is missing, and hash-chains every mutation so the underlying claim is checkable, not just recorded.",
+      },
+      {
+        question: "Can the compliance code run without anyone touching it?",
+        answer:
+          "Evidence generation and audit-chain verification run unattended and fail closed: an unresolved collector blocks the entire pack rather than shipping a partial one. Interpreting that evidence for an auditor, and the organizational controls a framework also requires, stay yours.",
+      },
+    ],
+    sells: {
+      edition: "Compliance",
+      ctaLabel:
+        "See how the Compliance edition runs compliance as code, not paperwork",
+      ctaHref: "/compliance",
+    },
+    related: [
+      "control-to-code-mapping",
+      "oscal",
+      "audit-evidence-bundle",
+      "worm-audit-log",
+    ],
+  },
+  {
+    slug: "mcp-server",
+    term: "MCP server (Model Context Protocol)",
+    cluster: "ai-infra",
+    definition:
+      "An MCP server (Model Context Protocol server) exposes tools an AI coding agent can call directly over a standard transport, instead of a bespoke per-agent integration. Caisson's buyer-facing MCP server authenticates every call with a timing-safe Bearer token, gates each tool to the caller's owned entitlements, rate-limits per account, and lets an agent generate a licensed project without a browser.",
+    artifact: {
+      label:
+        "handleToolCall: 404s an unentitled or unknown tool, awaits the rate-limit gate, then dispatches",
+      lang: "ts",
+      code: "async function handleToolCall(\n  session: McpSession,\n  tool: string,\n  args: unknown,\n): Promise<unknown> {\n  const registration = registry.get(tool);\n  // An unregistered tool, and a tool the caller is not entitled to, are both 404: the edition\n  // tool is invisible, never leaking that it exists to a non-entitled caller.\n  if (\n    registration === undefined ||\n    !isEntitled(session, registration.requiredEntitlement)\n  ) {\n    const retired = retiredTools.get(tool);\n    if (retired !== undefined) throw new RetiredToolError(retired);\n    throw new NotFoundError(`Unknown tool: ${tool}`);\n  }\n  // Abuse-throttle gate (ADR-0112): awaited before dispatching any tool, base or edition. A\n  // genuine deny throws RateLimitError (429); a store fault resolves fail-open (ADR-0112 lock 5).\n  if (options.checkRateLimit !== undefined) {\n    await options.checkRateLimit(session.accountId);\n  }\n  return registration.handler({ session, args });\n}",
+    },
+    properties: [
+      {
+        title: "Tools are registered, not hardcoded",
+        body: "Editions call registerTool() to add their own buyer tools through the same seam the three base tools (list_modules, describe_module, generate) use; retireTool() marks a name retired (410) instead of silently vanishing, so a name is always exactly one of active, retired, or unknown.",
+      },
+      {
+        title: "Constant-time entitlement gate",
+        body: "isEntitled() scans every owned entitlement with no early return and compares each one timing-safe, so an edition tool a buyer does not own renders the identical 404 a nonexistent tool would, never leaking which is which.",
+      },
+      {
+        title: "Rate-limited before every dispatch, not just auth-gated",
+        body: "The ADR-0112 checkRateLimit hook is awaited before any tool handler runs, for both base and edition tools. A genuine over-limit throws a 429, but a rate-limit store fault fails open (resolves and alerts) so an infrastructure blip never locks out a paying buyer.",
+      },
+      {
+        title: "One core, two transports",
+        body: "The same createMcpServer core binds to a local stdio process (one connection, one buyer) and a network-reachable Streamable-HTTP listener that re-authenticates every request statelessly and refuses to start without an explicit host and origin allowlist (ADR-0161).",
+      },
+    ],
+    faq: [
+      {
+        question: "What is an MCP server?",
+        answer:
+          "An MCP server (Model Context Protocol server) is a process that exposes a fixed catalog of callable tools to an AI agent over a standard transport, so the agent lists what is available and invokes a tool by name and arguments instead of a hand-wired integration per agent.",
+      },
+      {
+        question:
+          "How does Caisson's MCP server know which tools I'm allowed to call?",
+        answer:
+          "Every tool call re-checks the caller's owned entitlements against the tool's required entitlement in constant time; a tool you do not own is excluded from list_tools and returns the same 404 a nonexistent tool would, so ownership is never leaked by the error itself.",
+      },
+      {
+        question: "Can I call the MCP server from a script instead of stdio?",
+        answer:
+          "Yes. The same tool-dispatch core also binds to a Streamable-HTTP listener that re-authenticates the Bearer token on every request and enforces an explicit host and origin allowlist, since a network listener has no one-to-one process-to-buyer binding the way stdio does.",
+      },
+      {
+        question:
+          "What happens if I call a tool faster than my rate limit allows?",
+        answer:
+          "The call gets a 429 RateLimitError with a retry-after before the tool handler ever runs, refilled on a lazy per-account token bucket. Only a fault in the rate-limit store itself fails open; a genuine over-limit deny always throws.",
+      },
+    ],
+    sells: {
+      ctaLabel: "Connect your AI agent to the Caisson buyer MCP server",
+      ctaHref: "/docs/getting-started",
+    },
+    related: [
+      "token-metering",
+      "ai-guardrails",
+      "governed-agents",
+      "llm-cost-control",
+    ],
   },
 ];
 
