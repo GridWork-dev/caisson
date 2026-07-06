@@ -4,7 +4,7 @@
 "@caisson/ai-kit": minor
 ---
 
-field-crypto ships a real GCP Cloud KMS driver (`createGcpKmsClient`, ADR-0171 pre-authorized) beside
+field-crypto ships a real GCP Cloud KMS driver (`createGcpKmsClient`) beside
 the existing AWS driver: injected config, `ConfigError` fail-closed, per-tenant CryptoKey targeting
 with an `additionalAuthenticatedData` scope binding, and version-scoped crypto-shred via
 `destroyCryptoKeyVersion`. Registered in the shared `KmsClient` port-conformance suite; a self-skipping
@@ -13,7 +13,7 @@ CryptoKey (GCP KeyRings/CryptoKeys can't be deleted, so the fixture KeyRing is p
 `CAISSON_KMS_GCP_KEY_RING`; only the CryptoKey and its primary version are minted/destroyed per run).
 
 ai-config's provider lane enum gains three named OpenAI-compatible vendors — `groq`, `mistral`,
-`together` (board lock 2026-07-06) — following the same `apiKeyEnv`-required rule as `openai`/
+`together` — following the same `apiKeyEnv`-required rule as `openai`/
 `openrouter`. ai-kit's `providerFor` wires all three over `createOpenAICompatible` with a hardcoded
 default `baseUrl` per vendor (Groq `https://api.groq.com/openai/v1`, Mistral
 `https://api.mistral.ai/v1`, Together `https://api.together.xyz/v1`, each overridable), and fails
