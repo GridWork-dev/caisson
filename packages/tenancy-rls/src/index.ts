@@ -18,3 +18,5 @@ export type {
 } from "./rls.ts";
 export { createSupabaseTransactor } from "./supabase.ts";
 export type { SupabaseTransactorConfig } from "./supabase.ts";
+export { queryDrizzle, execDrizzle } from "./drizzle.ts";
+export type { DrizzleToSql } from "./drizzle.ts";
