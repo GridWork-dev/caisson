@@ -1,3 +1,8 @@
+---
+updated: 2026-07-05
+status: archived
+---
+
 # Stage-2 kickoff triage — ARCHIVED
 
 **Archived 2026-07-05** (doc sweep, site-design-2 close-out) → [`docs/archive/stage2-kickoff-triage.md`](../archive/stage2-kickoff-triage.md).

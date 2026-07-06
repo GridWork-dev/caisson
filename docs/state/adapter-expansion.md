@@ -1,3 +1,8 @@
+---
+updated: 2026-06-30
+status: live
+---
+
 # Adapter / driver expansion — buildout roadmap
 
 Status: **planned** · authored 2026-06-30 (operator directed full buildout of all tiers + un-wired

@@ -1,3 +1,8 @@
+---
+updated: 2026-07-05
+status: live
+---
+
 # Public-surface minimization
 
 **What:** how to MINIMIZE what Caisson gives away publicly while keeping open-core adoption intact —

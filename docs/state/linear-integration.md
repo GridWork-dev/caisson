@@ -1,3 +1,8 @@
+---
+updated: 2026-07-01
+status: live
+---
+
 # Linear integration — Caisson workflow
 
 How Linear (Business tier) plugs into the Caisson build workflow. **Locked design (operator picker

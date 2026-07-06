@@ -1,3 +1,8 @@
+---
+updated: 2026-07-02
+status: frozen
+---
+
 # Post-go-live harvest program — ranked execution order
 
 Status: **TERMINAL — the program is fully executed** (ADR-0210 slice-2 wave 2026-07-02, wave-6a

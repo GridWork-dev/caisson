@@ -1,3 +1,8 @@
+---
+updated: 2026-07-05
+status: live
+---
+
 # Build state & roadmap
 
 > **CURRENT STATE (2026-07-05):** **ADR ceiling is `0242`** (0239–0241 deploy-closeout/wave-6b locks ·

@@ -1,6 +1,13 @@
+---
+updated: 2026-07-05
+status: live
+grounds:
+  - packages/
+---
+
 # Package catalog — license, sold-as, price
 
-Dated **2026-06-30**. This file OWNS the **public-vs-commercial + sold-as + price** view: for every
+Dated **2026-07-05** (rate-limit row added; otherwise the 2026-06-30 sweep). This file OWNS the **public-vs-commercial + sold-as + price** view: for every
 package/service/app/tooling workspace in the monorepo — is it Apache-2.0 or commercial, is it sold at
 all, as what (edition / à la carte module / bundle-only substrate / free tooling / app / service), and
 for how much. `docs/build-state.md` OWNS the deep build-status view (LOC/test counts, seams, honest
@@ -41,25 +48,26 @@ only or, for the 2 new ADR-0135 modules, **zero code, document-only lock**.
 path** (license-keyed gating CLOSED by ADR-0136 on this branch; un-gating takes effect at deploy — see
 §3 note). Full build-status prose for any row: `docs/build-state.md` (search the package name).
 
-### Open Base substrate (Apache-2.0) — 15 packages
+### Open Base substrate (Apache-2.0) — 16 packages
 
-| Package           | License    | Sold as                                                       | Edition     | Build status          | Owns                                                                                                        |
-| ----------------- | ---------- | ------------------------------------------------------------- | ----------- | --------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `kernel`          | Apache-2.0 | bundle-only substrate — free, ships with every install        | Base (open) | built                 | config/schema/error model, SHA-256 chain, credit denomination (ADR-0098)                                    |
-| `auth`            | Apache-2.0 | free                                                          | Base (open) | built                 | session/RLS seam                                                                                            |
-| `tenancy-rls`     | Apache-2.0 | free                                                          | Base (open) | built (thin)          | fail-closed RLS guard                                                                                       |
-| `billing`         | Apache-2.0 | free                                                          | Base (open) | built                 | Stripe MoR + webhook events (buyer-side driver; platform billing is Paddle, ADR-0116)                       |
-| `credits`         | Apache-2.0 | free                                                          | Base (open) | built                 | integer wallet + append-only ledger + 402                                                                   |
-| `jobs`            | Apache-2.0 | free                                                          | Base (open) | built (thin)          | job seam                                                                                                    |
-| `email`           | Apache-2.0 | free                                                          | Base (open) | built (thin)          | email seam                                                                                                  |
-| `ai-config`       | Apache-2.0 | free                                                          | Base (open) | built (thin)          | provider-agnostic AI config                                                                                 |
-| `mcp-server`      | Apache-2.0 | free (open transport; the commercial value it gates is not)   | Base (open) | built                 | auth-gated buyer MCP transport + rate-limit hook (ADR-0112)                                                 |
-| `ui`              | Apache-2.0 | free                                                          | Base (open) | built                 | token floor (ADR-0042/0078)                                                                                 |
-| `registry-schema` | Apache-2.0 | free                                                          | Base (open) | built                 | open registry contract split from `@caisson/registry` (ADR-0097)                                            |
-| `observability`   | Apache-2.0 | free                                                          | Base (open) | built                 | vendor-neutral OTel bootstrap (ADR-0117; see note below)                                                    |
-| `cli`             | Apache-2.0 | bundle-only substrate — free, ships with every generated repo | Base (open) | built (full P5 drive) | `create-caisson` index gate, templated engine, `runGeneration`, migration bundler (Apache-2.0 per ADR-0136) |
-| `migrate`         | Apache-2.0 | bundle-only substrate — free, ships with every generated repo | Base (open) | built                 | the one migration assembler + runner + file-emit (ADR-0090/0091; Apache-2.0 per ADR-0136)                   |
-| `license-verify`  | Apache-2.0 | bundle-only substrate — free, ships with every generated repo | Base (open) | substantial           | offline Ed25519 license verification (Apache-2.0 per ADR-0136)                                              |
+| Package           | License    | Sold as                                                       | Edition     | Build status          | Owns                                                                                                              |
+| ----------------- | ---------- | ------------------------------------------------------------- | ----------- | --------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `kernel`          | Apache-2.0 | bundle-only substrate — free, ships with every install        | Base (open) | built                 | config/schema/error model, SHA-256 chain, credit denomination (ADR-0098)                                          |
+| `auth`            | Apache-2.0 | free                                                          | Base (open) | built                 | session/RLS seam                                                                                                  |
+| `tenancy-rls`     | Apache-2.0 | free                                                          | Base (open) | built (thin)          | fail-closed RLS guard                                                                                             |
+| `billing`         | Apache-2.0 | free                                                          | Base (open) | built                 | Stripe MoR + webhook events (buyer-side driver; platform billing is Paddle, ADR-0116)                             |
+| `credits`         | Apache-2.0 | free                                                          | Base (open) | built                 | integer wallet + append-only ledger + 402                                                                         |
+| `jobs`            | Apache-2.0 | free                                                          | Base (open) | built (thin)          | job seam                                                                                                          |
+| `email`           | Apache-2.0 | free                                                          | Base (open) | built (thin)          | email seam                                                                                                        |
+| `ai-config`       | Apache-2.0 | free                                                          | Base (open) | built (thin)          | provider-agnostic AI config                                                                                       |
+| `mcp-server`      | Apache-2.0 | free (open transport; the commercial value it gates is not)   | Base (open) | built                 | auth-gated buyer MCP transport + rate-limit hook (ADR-0112)                                                       |
+| `ui`              | Apache-2.0 | free                                                          | Base (open) | built                 | token floor (ADR-0042/0078)                                                                                       |
+| `registry-schema` | Apache-2.0 | free                                                          | Base (open) | built                 | open registry contract split from `@caisson/registry` (ADR-0097)                                                  |
+| `observability`   | Apache-2.0 | free                                                          | Base (open) | built                 | vendor-neutral OTel bootstrap (ADR-0117; see note below)                                                          |
+| `cli`             | Apache-2.0 | bundle-only substrate — free, ships with every generated repo | Base (open) | built (full P5 drive) | `create-caisson` index gate, templated engine, `runGeneration`, migration bundler (Apache-2.0 per ADR-0136)       |
+| `migrate`         | Apache-2.0 | bundle-only substrate — free, ships with every generated repo | Base (open) | built                 | the one migration assembler + runner + file-emit (ADR-0090/0091; Apache-2.0 per ADR-0136)                         |
+| `license-verify`  | Apache-2.0 | bundle-only substrate — free, ships with every generated repo | Base (open) | substantial           | offline Ed25519 license verification (Apache-2.0 per ADR-0136)                                                    |
+| `rate-limit`      | Apache-2.0 | free                                                          | Base (open) | built                 | per-IP token-bucket limiter + per-account store, extracted from services/docs + services/license (R1+R2, PR #119) |
 
 **Note on `observability`:** enforced open by the standards-gate's `OPEN_BASE_NAMES` allowlist, citing
 ADR-0117 inline ("base substrate every buyer gets, never edition-gated") — this makes it a **12th**

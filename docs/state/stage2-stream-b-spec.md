@@ -1,3 +1,8 @@
+---
+updated: 2026-07-05
+status: archived
+---
+
 # Stage-2 Stream-B spec — ARCHIVED
 
 **Archived 2026-07-05** (doc sweep, site-design-2 close-out) → [`docs/archive/stage2-stream-b-spec.md`](../archive/stage2-stream-b-spec.md).
