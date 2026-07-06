@@ -36,12 +36,12 @@ export function encodeSignupIntentCookie(
   plausibleAlreadyFired: boolean,
 ): string {
   const value = `${sanitizeSignupSource(signupSource)}|${plausibleAlreadyFired ? "1" : "0"}`;
-  return `${COOKIE_NAME}=${encodeURIComponent(value)}; path=/; max-age=${String(MAX_AGE_S)}; samesite=lax`;
+  return `${COOKIE_NAME}=${encodeURIComponent(value)}; path=/; max-age=${String(MAX_AGE_S)}; samesite=lax; secure`;
 }
 
 /** A `document.cookie =`-assignable string that clears the intent cookie (read-once contract). */
 export function clearSignupIntentCookie(): string {
-  return `${COOKIE_NAME}=; path=/; max-age=0; samesite=lax`;
+  return `${COOKIE_NAME}=; path=/; max-age=0; samesite=lax; secure`;
 }
 
 /** Parse the intent cookie out of a raw `document.cookie` string. `null` when absent. */
