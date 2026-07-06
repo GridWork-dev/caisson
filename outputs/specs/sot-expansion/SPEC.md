@@ -123,16 +123,14 @@ ADR/research file; `outputs/research/` stays the raw layer.
 Build shape: one Workflow fan-out (one sonnet agent per file, opus synthesis/consistency pass),
 runnable in parallel with §1/§2 (disjoint trees).
 
-## 4. Hygiene candidates riding the same session (small, no fork needed)
+## 4. Whole-repo improvement program — OWNED ELSEWHERE
 
-From the research gap table — each is S-effort, none re-opens a lock:
-
-- Bun `catalog:` block for shared deps (zod ×4 ranges, typescript ×5) (#4).
-- `renovate.json` catalog-aware config (#8).
-- `knip` advisory CI step (#7).
-- Changesets `privatePackages` policy declared explicitly (#10).
-- Cloudflare Content-Signals header — completes locked ADR-0079 §5 (#6).
-- `build-vs-buy` comparison page — named in ADR-0079, never built (#5; copy lane, gate pipeline).
+The research wave's full execution vehicle is **`outputs/specs/repo-improvement-program/SPEC.md`**
+— the 13-gap disposition table (build-now hygiene wave #4–#8/#10, trigger-parked measurement loops,
+parked affiliate) plus the do-not-copy anti-decision ledger. This SPEC owns only the one row that
+edits the same tree as §1 (the CLAUDE.md trim, §1.5). The program's hygiene wave runs as its own
+branch/PR, parallelizable with the §1–§3 workstreams. Its two revenue-policy forks join the §5
+queue below.
 
 ## 5. Fork queue — operator picker at build-session start (DO NOT auto-decide)
 
@@ -152,6 +150,8 @@ From the research gap table — each is S-effort, none re-opens a lock:
 3. CLAUDE.md item-2 is a pointer (catalog gone), ceiling correct, and a full-gate run stays green.
 4. `docs/gtm/` populated per §3, every file citing sources.
 5. Fork queue §5 presented to the operator in one picker round; locks filed as ADRs.
+6. The repo-improvement program's build-now wave verifies against ITS spec
+   (`outputs/specs/repo-improvement-program/SPEC.md` §Verify), not this one.
 
 ## Non-goals
 

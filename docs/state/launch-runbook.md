@@ -105,9 +105,15 @@ name, ADR-0226 Fork 3) and `~/.gridwork/caisson.env`.
    embed call succeeds.
 3. **`DISCORD_TOKEN`** (support-bot login): regenerate in the Developer Portal (minimal gateway
    intents) → env + vault; the old token dies on regenerate. Probe: bot Online in the guild.
-4. **`MIRROR_PUSH_TOKEN`** (GH secret on `caisson-sh/caisson`): mint a fine-grained PAT scoped
-   `contents:write` on `caisson-sh/caisson-oss` ONLY → `gh secret set MIRROR_PUSH_TOKEN`; revoke
-   the transcript-leaked PAT. Probe: `mirror-sync` workflow_dispatch → green force-push.
+4. **`MIRROR_PUSH_TOKEN`** (GH secret on `caisson-sh/caisson`): mint a fine-grained PAT scoped to
+   `caisson-sh/caisson-oss` ONLY with **Contents: read-write AND Workflows: read-write** →
+   `gh secret set MIRROR_PUSH_TOKEN`; revoke the transcript-leaked PAT. The Workflows permission
+   is REQUIRED, not optional: the mirror snapshot carries `.github/workflows/` (the oss repo owns
+   npmjs publishing per ADR-0222) and the current token lacks it — **`mirror-sync` has been failing
+   on every `main` push since 2026-07-04** ("refusing to allow a Personal Access Token to
+   create or update workflow ci.yml without workflow scope"). Non-blocking today (mirror is
+   PRIVATE, publish is manually gated) but the rotation must fix it. Probe: `mirror-sync`
+   workflow_dispatch → green force-push.
 
 **Sequencing gate (P0 spec Task 5): the caisson-oss public flip + first `confirm=publish` npm
 dispatch MAY NOT proceed until** (1) the keypair rotation is live (license service + Worker

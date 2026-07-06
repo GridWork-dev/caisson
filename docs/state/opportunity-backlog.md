@@ -26,19 +26,17 @@ Cross-references below to "in-flight" tracks read as merged. **Residue re-baseli
 install proof~~ **DONE 2026-07-03/04** — live `bun install` proof + first live consume ran (two
 pipeline bugs fixed en route, PRs #105/#106); **(2)** ~~deny-set publisher~~ **DONE 2026-07-05** —
 the edge revocation deny-set is FULLY LIVE (R2 + `REVOCATIONS` binding + authed PUT shim +
-`license_revocation` DDL, launch-runbook §8); **(3)** cred-sweep (ADR-0226): the **issuer keypair
-
-- `LICENSE_ISSUE_TOKEN` half is DONE** (rotated ×2 2026-07-05, PRs #117/#118, fp
-  `a170f7a0ab89bab0`); the three web-minted values (`OPENROUTER_API_KEY` / `DISCORD_TOKEN` /
-  `MIRROR_PUSH_TOKEN`) remain **OPERATOR TO DO** (`launch-runbook.md` §1.1); **(4)** caisson-oss
-  public flip + first `confirm=publish` npm dispatch (ADR-0222) — still HELD, gated on the §1.1
-  sequencing gate (now only the three rotations + a fresh-export scan-gate run remain); **(5)** the
-  WORM lock-mode posture — resolved as policy by ADR-0230 (GOVERNANCE pre-launch, COMPLIANCE
-  escalation at the commerce flip); the flip itself rides the launch act; **(6)** ~~Mac-mini
-  runner~~ **RESOLVED 2026-07-04** (org-transfer orphan root-caused; scale set re-registered,
-  `native-ext (macos)` green). Plus buyer-journey: CF-Access-gated content eyeball of the new
-  marketplace/ask-AI surfaces (operator SSO; curl and headless probes land on the Access login by
-  design).
+`license_revocation` DDL, launch-runbook §8); **(3)** cred-sweep (ADR-0226): the **issuer-keypair and `LICENSE_ISSUE_TOKEN` half is DONE**
+(rotated ×2 2026-07-05, PRs #117/#118, fp `a170f7a0ab89bab0`); the three web-minted values
+(`OPENROUTER_API_KEY` / `DISCORD_TOKEN` / `MIRROR_PUSH_TOKEN`) remain **OPERATOR TO DO**
+(`launch-runbook.md` §1.1); **(4)** caisson-oss public flip + first `confirm=publish` npm dispatch
+(ADR-0222) — still HELD, gated on the §1.1 sequencing gate (now only the three rotations plus a
+fresh-export scan-gate run remain); **(5)** the WORM lock-mode posture — resolved as policy by
+ADR-0230 (GOVERNANCE pre-launch, COMPLIANCE escalation at the commerce flip); the flip itself
+rides the launch act; **(6)** ~~Mac-mini runner~~ **RESOLVED 2026-07-04** (org-transfer orphan
+root-caused; scale set re-registered, `native-ext (macos)` green). Plus buyer-journey:
+CF-Access-gated content eyeball of the new marketplace/ask-AI surfaces (operator SSO; curl and
+headless probes land on the Access login by design).
 
 ---
 
@@ -164,6 +162,20 @@ All gated on P7 intake (`stage2-kickoff-triage.md:141`); named concretely only i
 | Board numbering hygiene: interim "ADR-0119" (Railway topology) vs advisory 0119 (email)                    | Documentation-only inconsistency, zero product impact. Disambiguated by meaning (ADR-0088 convention): the board's interim "ADR-0119" for Railway provisioning topology (`decisions-and-forks.md:148`) shipped for real as **ADR-0114/0115**; `adapter-expansion.md`'s advisory "ADR-0119" for the email multi-driver (`adapter-expansion.md:53`) shipped for real as **ADR-0170**. Neither claim actually landed on 0119 -- that number stays in the unfiled 0119-0128 advisory gap. |
 
 ---
+
+## 9. Whole-repo improvement program (2026-07-05 research wave — trigger-parked rows)
+
+Program ledger: `outputs/specs/repo-improvement-program/SPEC.md` (13-gap disposition off
+`outputs/research/monorepo-bigpicture-2026-07.md` + the do-not-copy anti-decision list). The
+build-now hygiene wave (#4–#8/#10) and the two revenue-policy forks live there / in the SOT-session
+picker queue; the trigger-parked rows are recorded here per the program convention:
+
+| Item                                                                      | Revisit trigger                                                                                        |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| AI-citation tracking loop feeding `gw-aeo-strategist` (research #9)       | Post-launch: site public + indexed — pre-launch citation data is noise                                 |
+| Support-bot graded confidence gate, 3-tier (research #11)                 | First real support traffic — thresholds untunable at zero users; escalation sink (ADR-0206) is ready   |
+| Docs-conversion instrumentation discover→quickstart→signup (research #12) | Launch flip — needs public traffic; event names designed with the F8 split-analytics scheme            |
+| Affiliate / recurring-commission program (research #13)                   | First organic-channel signal — substrate (Discord + subscriptions) exists; a design doc precedes forks |
 
 ## Cross-reference: promoted to execution 2026-07-02-PM
 
