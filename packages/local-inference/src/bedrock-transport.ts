@@ -30,7 +30,7 @@ import { z } from "zod";
 import type { RentedTransport } from "./rented-backend.ts";
 import { signSigV4 } from "./sigv4.ts";
 import type { SigV4Credentials } from "./sigv4.ts";
-import type { EgressGuard } from "../privacy/egress-guard.ts";
+import type { EgressGuard } from "@caisson/local-privacy";
 
 /** The bedrock-runtime credential-scope service code. */
 const SERVICE = "bedrock";

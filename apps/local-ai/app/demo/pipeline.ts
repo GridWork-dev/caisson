@@ -27,28 +27,21 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Database } from "bun:sqlite";
+import { DerivedKeyProvider } from "@caisson/field-crypto";
+import { canonicalize, type JsonValue } from "@caisson/kernel";
+import { AtRestStore, assembleEditionMigrations } from "@caisson/local-ai";
+import { EMBEDDING_DIM, StubInferenceBackend } from "@caisson/local-inference";
+import { ZERO_EGRESS_POLICY, createEgressGuard } from "@caisson/local-privacy";
+import { LocalStore, openTenantDb, tenantDbPath } from "@caisson/local-store";
 import {
-  AtRestStore,
   ChangesetLog,
-  DerivedKeyProvider,
-  EMBEDDING_DIM,
-  LocalStore,
-  StubInferenceBackend,
-  ZERO_EGRESS_POLICY,
-  assembleEditionMigrations,
-  canonicalize,
-  createEgressGuard,
-  encodeToken,
-  openTenantDb,
   parseChangeset,
   reconcileWithTombstones,
-  tenantDbPath,
-  verifyLicenseWithKey,
   type Changeset,
-  type JsonValue,
   type RowValues,
   type Tombstone,
-} from "@caisson/local-ai";
+} from "@caisson/local-sync";
+import { encodeToken, verifyLicenseWithKey } from "@caisson/license-verify";
 
 /**
  * Clarifies a scope question buyers sometimes ask: our own support tooling calls a hosted

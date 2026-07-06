@@ -31,7 +31,7 @@ import {
   tokenQuantity,
 } from "./openrouter-transport.ts";
 import type { RentedTransport } from "./rented-backend.ts";
-import type { EgressGuard } from "../privacy/egress-guard.ts";
+import type { EgressGuard } from "@caisson/local-privacy";
 
 /** The default data-plane `api-version` (the 2024-10-21 GA inference version; overridable). */
 const DEFAULT_API_VERSION = "2024-10-21";
