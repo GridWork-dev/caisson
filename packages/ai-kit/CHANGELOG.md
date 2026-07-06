@@ -1,5 +1,37 @@
 # @caisson/ai-kit
 
+## 0.3.1
+
+### Patch Changes
+
+- b791198: Documentation and metadata cleanup plus dependency-declaration hygiene: package descriptions, READMEs, changelogs, and source comments no longer carry internal build references, and shared external dependency ranges now resolve through the workspace dependency catalog (published dependency ranges unchanged; the TypeScript devDependency floor moves to ^5.7.3).
+- 4d7eb71: Test-double bootstrap sweep for the credit-expiry migrations: every credit-table
+  bootstrap now applies `CREDIT_EXPIRY_MIGRATION_SQL` + `GRANT_CONSUMPTION_MIGRATION_SQL` (the
+  `debit()` FIFO path reads `expires_at` and writes `grant_consumption`). No runtime source change
+  in these packages.
+- 0af4dbf: Rewrote README, AGENTS, CHANGELOG, package.json descriptions, and inline source comments to
+  read as clean, buyer-facing documentation. Removed sibling-repository provenance framing,
+  internal build-phase shorthand, and bare specification-id citations that had leaked into
+  shipped copy, and regenerated a couple of stale public-surface sections against the actual
+  exports. No runtime behavior changed in any package — documentation and comments only.
+- Updated dependencies [b791198]
+- Updated dependencies [dec93f3]
+- Updated dependencies [0c883ae]
+- Updated dependencies [ad02304]
+- Updated dependencies [4d7eb71]
+- Updated dependencies [4d7eb71]
+- Updated dependencies [850b844]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [0af4dbf]
+  - @caisson/ai-config@0.2.4
+  - @caisson/ai-meter@0.3.3
+  - @caisson/credits@0.4.0
+  - @caisson/field-crypto@0.2.4
+  - @caisson/guardrails@0.4.1
+  - @caisson/kernel@0.4.2
+  - @caisson/prompt-registry@0.2.4
+  - @caisson/tenancy-rls@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes

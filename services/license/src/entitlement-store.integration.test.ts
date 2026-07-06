@@ -11,6 +11,7 @@ import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
+  computeEntitledSince,
   computeUpdatesWindows,
   extendUpdatesWindow,
   grantEntitlements,
@@ -523,6 +524,40 @@ describe("updates windows (ADR-0244/0255 per-entitlement)", () => {
     ).rejects.toThrow(/extends no active/);
   });
 
+  test("a CANONICAL renewal id extends a LEGACY-keyed grant (alias-group convergence)", async () => {
+    // Pre-fold buyers hold grants under the old vocabulary ("ai-kit"); resolveRenewal hands the
+    // fulfillment mapper the canonical id ("ai-production"). The alias-group match bridges the two
+    // spellings — without it every legacy buyer's renewal would fail-closed-throw.
+    const acct = "acct_win_alias";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["ai-kit"],
+        sourceEventId: "pay_legacy",
+        source: onetime("pay_legacy"),
+      }),
+    );
+    const extended = await withTenant(tp.pg, acct, (tx) =>
+      extendUpdatesWindow(tx, {
+        accountId: acct,
+        entitlementId: "ai-production",
+        sourceEventId: "pay_renew_alias",
+      }),
+    );
+    expect(extended).toBe(1);
+
+    // The tolerance is a bridge, not a wildcard: an alias-group miss still fails closed.
+    await expect(
+      withTenant(tp.pg, acct, (tx) =>
+        extendUpdatesWindow(tx, {
+          accountId: acct,
+          entitlementId: "local-first",
+          sourceEventId: "pay_renew_miss",
+        }),
+      ),
+    ).rejects.toThrow(/extends no active/);
+  });
+
   test("a renewal extends ONLY the named entitlement's rows", async () => {
     const acct = "acct_win_pair";
     await withTenant(tp.pg, acct, (tx) =>
@@ -552,5 +587,96 @@ describe("updates windows (ADR-0244/0255 per-entitlement)", () => {
       { entitlement_id: "compliance", extended: true },
       { entitlement_id: "local-ai", extended: false },
     ]);
+  });
+});
+
+describe("snapshot-at-sale entitledSince (ADR-0257 §1.2)", () => {
+  const pinGrantedAt = (acct: string, iso: string, sourceEventId: string) =>
+    tp.query(
+      `UPDATE entitlement_grant SET granted_at = $2
+        WHERE account_id = $1 AND source_event_id = $3`,
+      [acct, iso, sourceEventId],
+    );
+
+  test("no active one-time grants → empty map (grandfathered; subscription-only never keyed)", async () => {
+    const acct = "acct_since_none";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "since_sub_0",
+        source: sub("since_sub_0"),
+      }),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => computeEntitledSince(tx, acct)),
+    ).toEqual({});
+  });
+
+  test("entitledSince = the one_time grant's granted_at, keyed by entitlement_id", async () => {
+    const acct = "acct_since_one";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "since_pay_1",
+        source: onetime("since_pay_1"),
+      }),
+    );
+    await pinGrantedAt(acct, "2026-07-06T00:00:00.000Z", "since_pay_1");
+    expect(
+      await withTenant(tp.pg, acct, (tx) => computeEntitledSince(tx, acct)),
+    ).toEqual({ compliance: "2026-07-06T00:00:00.000Z" });
+  });
+
+  test("a re-purchase takes the MOST FAVORABLE (latest) granted_at — the newer, larger snapshot", async () => {
+    const acct = "acct_since_dup";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "since_dup_1",
+        source: onetime("since_dup_1"),
+      }),
+    );
+    await pinGrantedAt(acct, "2026-01-05T00:00:00.000Z", "since_dup_1");
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "since_dup_2",
+        source: onetime("since_dup_2"),
+      }),
+    );
+    await pinGrantedAt(acct, "2026-07-06T00:00:00.000Z", "since_dup_2");
+    // MAX(granted_at) — a later re-purchase entitles the buyer to the newer snapshot, mirroring
+    // computeUpdatesWindows' most-favorable rule (ADR-0255 D3).
+    expect(
+      await withTenant(tp.pg, acct, (tx) => computeEntitledSince(tx, acct)),
+    ).toEqual({ compliance: "2026-07-06T00:00:00.000Z" });
+  });
+
+  test("subscription grants never appear (their expiry governs, not a snapshot)", async () => {
+    const acct = "acct_since_mixed";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "since_ot",
+        source: onetime("since_ot"),
+      }),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["local-ai"],
+        sourceEventId: "since_sub",
+        source: sub("since_sub"),
+      }),
+    );
+    const since = await withTenant(tp.pg, acct, (tx) =>
+      computeEntitledSince(tx, acct),
+    );
+    expect(Object.keys(since)).toEqual(["compliance"]);
   });
 });

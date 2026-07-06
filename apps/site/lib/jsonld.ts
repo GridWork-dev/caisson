@@ -4,7 +4,13 @@
 // Replaces the duplicated anonymous SoftwareApplication block. Serialization escapes `<` so a
 // stray "</script>" in any field cannot break out of the <script> tag.
 import { SITE_NAME, SITE_URL } from "./metadata";
-import { formatPrice, priceById } from "./pricing";
+import {
+  bundlePriceById,
+  formatPrice,
+  isBundleId,
+  priceById,
+  type PriceAnchor,
+} from "./pricing";
 
 export const ORG_ID = `${SITE_URL}/#organization`;
 export const SITE_ID = `${SITE_URL}/#website`;
@@ -22,7 +28,7 @@ export const rootGraph = {
       "@type": "Organization",
       "@id": ORG_ID,
       name: SITE_NAME,
-      legalName: "GridWork Digital LLC",
+      legalName: "Caisson Software LLC",
       url: SITE_URL,
       description:
         "Compliance-grade infrastructure for regulated SaaS — fail-closed Postgres RLS, S3 Object-Lock WORM, and an append-only audit chain.",
@@ -47,16 +53,23 @@ export const rootGraph = {
 };
 
 /**
- * A page-scoped SoftwareApplication node. Carries the committed Offer price (ADR-0082) by
- * pricing id — pass `priceId` to attach a real price, omit for the umbrella home node.
+ * A page-scoped SoftwareApplication node. Carries the committed Offer price (ADR-0082): pass
+ * `priceId` to resolve a bundle or plan anchor (post-flip the two id sets are disjoint), or
+ * `price` to attach an explicit anchor. Omit both for the umbrella home node.
  */
 export function softwareApplication(opts: {
   name: string;
   description: string;
   url: string;
   priceId?: string;
+  price?: PriceAnchor;
 }) {
-  const price = opts.priceId ? priceById(opts.priceId) : undefined;
+  const price =
+    opts.price ??
+    (opts.priceId
+      ? (priceById(opts.priceId) ??
+        (isBundleId(opts.priceId) ? bundlePriceById(opts.priceId) : undefined))
+      : undefined);
   return {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",

@@ -5,7 +5,7 @@
 // `parsePaddleEvent` and `resolvePlan`/`resolvePurchase` are pure functions over their inputs.
 import { describe, expect, test } from "bun:test";
 import type { DomainBillingEvent } from "@caisson/billing";
-import { parsePaddleEvent } from "@caisson/billing";
+import { parsePaddleEvent } from "@caisson/billing-orchestration";
 import { resolvePlan, resolvePurchase } from "@caisson/pricebook";
 
 function oneTimeTransactionCompleted(
@@ -106,9 +106,9 @@ describe("per-module à-la-carte PLACEHOLDER ids round-trip (parsePaddleEvent ->
       priceId: "price_agent_kernel_module_PLACEHOLDER",
       entitlement: "agent-kernel",
     },
-    // Reserved/future modules (package not yet published) — the PURCHASE_BOOK row + Paddle
-    // round-trip resolve fine; only registry-index EXPANSION carves the reserved id out
-    // (@caisson/registry-schema entitlements.ts RESERVED_MODULE_ENTITLEMENT_IDS).
+    // alerting + retention-runner: the PURCHASE_BOOK row + Paddle round-trip resolve fine. Both are
+    // now published in the registry index (ADR-0150/0151) — no longer in
+    // RESERVED_MODULE_ENTITLEMENT_IDS — so expansion resolves their bare slug to the real grant.
     { priceId: "price_alerting_module_PLACEHOLDER", entitlement: "alerting" },
     {
       priceId: "price_retention_runner_module_PLACEHOLDER",

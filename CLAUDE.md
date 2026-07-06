@@ -21,7 +21,9 @@ edited — supersede with a later ADR).
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
 2. `knowledge/decisions/` — the ADRs themselves. Append-only (`ADR-NNNN-slug.md`, never edited — supersede
-   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0268.** The full
+   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0268** (D's
+   Stage-1/2 locks drafted 0251/0252, renumbered 0259/0260 at the Kickoff-E merge; 0261 =
+   the Greptile-retirement ADR; 0262-0268 = Kickoff F dx-demos-compat). The full
    catalog — every number, title, and supersession chain — is `docs/adr-index.md`; do NOT restate it here.
 3. `specs/` — locked concept docs; `specs/00-product-spec.md` is the founding spec
 4. `plan.md` / `SUMMARY.md` — build plan + consolidated summary

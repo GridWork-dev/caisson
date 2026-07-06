@@ -204,4 +204,5 @@ jobs:
       - name: JSON to XML to validate round-trip (SAR + POA&M at v1.2.2)
         run: |
           oscal-cli --version
-          cd packages/compliance && bun test src/evidence/oscal-export-xml.test.ts
+          # The OSCAL export moved from packages/compliance to the compliance-core carve (ADR-0257 W1).
+          cd packages/compliance-core && bun test src/evidence/oscal-export-xml.test.ts

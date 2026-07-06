@@ -7,6 +7,8 @@
 // `modulePageSpec` (module-page-spec.tsx) turns a record into the PageSpec the shared
 // <PageSections> renderer consumes; the buy rail is page chrome, not a section.
 
+import { bundlePrice } from "./pricing";
+
 /** One artifact proof block: real package code, cited by file. */
 export interface ModulePageArtifact {
   label: string;
@@ -31,7 +33,7 @@ export interface ModulePageRecord {
   faq: readonly { question: string; answer: string }[];
   /** Curated glossary cross-links — every slug resolves in GLOSSARY_TERMS (lint in tests). */
   relatedGlossary: readonly string[];
-  /** How this module is sold relative to its edition family — entitlement-honest. */
+  /** How this module is sold relative to its bundle family — entitlement-honest. */
   sells: { edition: string; note: string };
   /** A produced media asset for this module's `media` section (ADR-0263) — omitted means the
    *  page still gets the plain icon placeholder. Only set once a render has actually shipped. */
@@ -106,7 +108,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: ["hipaa-technical-safeguards", "row-level-security"],
     sells: {
       edition: "Compliance",
-      note: "Sold standalone at $199, or as one of the primitives composing the $799 Compliance edition alongside audit-worm, retention-runner, and the alert pipeline.",
+      note: `Sold standalone at $199, or as one of the primitives composing the ${bundlePrice("compliance")} Compliance bundle alongside audit-worm, retention-runner, and the alert pipeline.`,
     },
   },
   {
@@ -179,7 +181,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     ],
     sells: {
       edition: "compliance",
-      note: "Every evidence collector in Compliance chains through this store: buy it standalone to anchor your own audit trail, or get it composed for you inside the Compliance edition.",
+      note: "Every evidence collector in Compliance chains through this store: buy it standalone to anchor your own audit trail, or get it composed for you inside the Compliance bundle.",
     },
     // The ADR-0263 pilot render: append -> tamper-attempt -> verify-catches-it, produced from
     // apps/site/remotion/AuditWormDemo.tsx via `bun run remotion:render`.
@@ -189,7 +191,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     slug: "retention-runner",
     metaTitle: "Retention Runner — CCPA/GDPR Erasure Module | Caisson",
     metaDescription:
-      "The right-to-erasure runner in Caisson's Compliance edition: multi-store erasure, per-target failure isolation, one audit row per run — scheduled or on request.",
+      "The right-to-erasure runner in Caisson's Compliance bundle: multi-store erasure, per-target failure isolation, one audit row per run — scheduled or on request.",
     heroOneLiner:
       "One erasure request, every store, one audit row — even when a target fails.",
     definition:
@@ -251,7 +253,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: ["worm-retention-policy", "row-level-security"],
     sells: {
       edition: "Compliance",
-      note: "@caisson/compliance composes retention-runner at runtime as a real workspace:* dependency (ADR-0205) — buy it standalone at $199 or get it inside the $799 Compliance edition.",
+      note: `@caisson/compliance composes retention-runner at runtime as a real workspace:* dependency (ADR-0205) — buy it standalone at $199 or get it inside the ${bundlePrice("compliance")} Compliance bundle.`,
     },
   },
   {
@@ -318,13 +320,13 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Can I buy the alerting module standalone, or only inside Compliance?",
         answer:
-          "Standalone, $149. It's also a real workspace:* dependency of the Compliance edition, re-exported from its entry point (\"export * from '@caisson/alerting'\") rather than just listed on a manifest — buying Compliance gets you the same package, not a promise of it.",
+          "Standalone, $149. It's also a real workspace:* dependency of the Compliance bundle, re-exported from its entry point (\"export * from '@caisson/alerting'\") rather than just listed on a manifest — buying Compliance gets you the same package, not a promise of it.",
       },
     ],
     relatedGlossary: ["soc2-audit-log", "control-to-code-mapping"],
     sells: {
       edition: "Compliance",
-      note: "Alerting is a real workspace:* dependency that the Compliance edition re-exports at runtime (packages/compliance/src/index.ts), not a manifest-only listing — buy it standalone at $149 or get it composed into Compliance.",
+      note: "Alerting is a real workspace:* dependency that the Compliance bundle re-exports at runtime (packages/compliance/src/index.ts), not a manifest-only listing — buy it standalone at $149 or get it composed into Compliance.",
     },
   },
   {
@@ -391,7 +393,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: ["token-metering", "row-level-security"],
     sells: {
       edition: "ai-kit",
-      note: "ai-meter is the metering primitive the AI Production Kit's inference gateway composes at runtime: buy it standalone onto the free base, or get it (plus guardrails and the prompt registry) bundled into the $599 edition.",
+      note: `ai-meter is the metering primitive the AI-Production bundle's inference gateway composes at runtime: buy it standalone onto the free base, or get it (plus guardrails and the prompt registry) bundled into the ${bundlePrice("ai-production")} bundle.`,
     },
   },
   {
@@ -463,7 +465,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: [],
     sells: {
       edition: "ai-kit",
-      note: "Sold standalone at $199 — no edition includes it (standalone by design), so it stays its own line on any stack. It pairs with the AI Production Kit's metering and guardrails to gate CI on regression.",
+      note: "Sold standalone at $199 — no persona bundle includes it (standalone by design), so it stays its own line on any stack. It pairs with the AI-Production bundle's metering and guardrails to gate CI on regression.",
     },
   },
   {
@@ -534,7 +536,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: [],
     sells: {
       edition: "ai-kit",
-      note: "Guardrails ships inside the $599 AI Production Kit (with ai-meter and prompt-registry) or standalone at $149.",
+      note: `Guardrails ships inside the ${bundlePrice("ai-production")} AI-Production bundle (with ai-meter and prompt-registry) or standalone at $149.`,
     },
   },
   {
@@ -607,7 +609,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: ["row-level-security"],
     sells: {
       edition: "ai-kit",
-      note: "Prompt registry is one of the modules composing the $599 AI Production Kit edition — the inference gateway resolves every promptRef through it before rendering and metering a call. Buy it standalone at $99, or get it with ai-meter and guardrails in the edition, or in the $1,499 Everything bundle — all four editions plus the base.",
+      note: `Prompt registry is one of the modules composing the ${bundlePrice("ai-production")} AI-Production bundle — the inference gateway resolves every promptRef through it before rendering and metering a call. Buy it standalone at $99, or get it with ai-meter and guardrails in the bundle, or in the ${bundlePrice("everything")} Everything bundle — the whole catalog, one purchase.`,
     },
   },
   {
@@ -630,7 +632,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Pluggable embedder port, no bundled model",
-        body: "Embedder is an interface the edition wires — this package never calls a model or opens a socket. embedOrSkip treats an absent embedder as a first-class mode: retrieval runs on the FTS5 floor alone, not an error, not a silent default model.",
+        body: "Embedder is an interface the bundle wires — this package never calls a model or opens a socket. embedOrSkip treats an absent embedder as a first-class mode: retrieval runs on the FTS5 floor alone, not an error, not a silent default model.",
       },
       {
         title: "Cloud-egress secret scrub",
@@ -661,7 +663,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       {
         question: "Do I have to bring my own embedding model?",
         answer:
-          "Yes. Embedder is an interface the edition or your app wires — local-store bundles no model and never calls one. With no embedder configured, retrieval runs on the FTS5 leg alone, which is a documented zero-config mode, not a degraded one.",
+          "Yes. Embedder is an interface the bundle or your app wires — local-store bundles no model and never calls one. With no embedder configured, retrieval runs on the FTS5 leg alone, which is a documented zero-config mode, not a degraded one.",
       },
       {
         question: "How is tenant data kept apart?",
@@ -677,18 +679,18 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: [],
     sells: {
       edition: "local-first",
-      note: "Local vector store is the retrieval engine inside Local-first AI ($349), alongside on-device inference and the privacy gate. Buy it standalone ($99) to add hybrid search to any stack without the rest of the edition.",
+      note: `Local vector store is the retrieval engine inside the ${bundlePrice("local-first")} Local-first bundle, alongside on-device inference and the privacy gate. Buy it standalone ($99) to add hybrid search to any stack without the rest of the bundle.`,
     },
   },
   {
     slug: "agent-kernel",
     metaTitle: "Agent Kernel — Governed Agent Lifecycle FSM | Caisson",
     metaDescription:
-      "Agent Kernel: the agent/skill/rule schema, seven-act lifecycle FSM, and hooks dispatcher behind Caisson's Agentic-Dev edition. No vendor SDK, $199 standalone.",
+      "Agent Kernel: the agent/skill/rule schema, seven-act lifecycle FSM, and hooks dispatcher behind Caisson's Agentic-Dev bundle. No vendor SDK, $199 standalone.",
     heroOneLiner:
       "The guarded agent lifecycle FSM: VERIFY failing reopens PLAN, there's no edge to SHIP.",
     definition:
-      "Agent kernel is the engine-neutral base for governed AI agent work: a Zod schema for agent/skill/rule artifacts, a seven-act lifecycle state machine (spec through ship), allow/deny/mutate governance guards, a hooks dispatcher, and an opt-in tamper-evident audit-chain recorder. It imports no vendor SDK and runs no LLM: composition only, consumed by both the base CLI and the Agentic-Dev edition.",
+      "Agent kernel is the engine-neutral base for governed AI agent work: a Zod schema for agent/skill/rule artifacts, a seven-act lifecycle state machine (spec through ship), allow/deny/mutate governance guards, a hooks dispatcher, and an opt-in tamper-evident audit-chain recorder. It imports no vendor SDK and runs no LLM: composition only, consumed by both the base CLI and the Agentic-Dev bundle.",
     included: [
       {
         title: "Typed agent/skill/rule schema",
@@ -712,7 +714,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Opt-in tamper-evident audit chain",
-        body: "AuditedLifecycle wraps every governed transition with the kernel's chainEntry/anchorChain/verifyChain hash-chain primitives, the same mechanism the Compliance edition's audit-worm package uses. Off by default; set audited: true and each admitted step becomes an append-only, tamper-evident chain entry.",
+        body: "AuditedLifecycle wraps every governed transition with the kernel's chainEntry/anchorChain/verifyChain hash-chain primitives, the same mechanism the Compliance bundle's audit-worm package uses. Off by default; set audited: true and each admitted step becomes an append-only, tamper-evident chain entry.",
       },
     ],
     artifact: {
@@ -725,7 +727,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       {
         question: "Does agent-kernel call an LLM or import a vendor SDK?",
         answer:
-          "No. Its own package.json says it plainly: engine-neutral, no vendor SDK, no LLM call; the schema, FSM, governance, hooks, and audit-chain primitives are composition mechanism only, consumed down-only by the base cli/mcp-server and by the Agentic-Dev edition.",
+          "No. Its own package.json says it plainly: engine-neutral, no vendor SDK, no LLM call; the schema, FSM, governance, hooks, and audit-chain primitives are composition mechanism only, consumed down-only by the base cli/mcp-server and by the Agentic-Dev bundle.",
       },
       {
         question:
@@ -741,14 +743,13 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       {
         question:
           "Does buying agent-kernel alone get me the sandboxed agent runner too?",
-        answer:
-          "No. agent-kernel ($199) is the schema/FSM/governance/hooks/audit-chain base; running an actual sandboxed agent process is agent-runner ($49), a separate module. Those are the two Agentic-Dev SKUs sold standalone; the $249 Agentic-Dev edition additionally bundles the local hybrid memory, the sandboxed tool-exec gate, and the multi-harness emitter (Claude Code, Cursor, Devin, GitHub Copilot, Cline, plus a universal AGENTS.md base read natively by Codex, Zed, and Gemini CLI — with fidelity warnings whenever a target can't represent an authored activation choice) that wire agent-kernel into one governed loop. Buy the modules for your own tooling, or buy the edition for the assembled loop.",
+        answer: `No. agent-kernel ($199) is the schema/FSM/governance/hooks/audit-chain base; running an actual sandboxed agent process is agent-runner ($49), a separate module. Those are the two Agentic-Dev SKUs sold standalone; the ${bundlePrice("agentic-dev")} Agentic-Dev bundle additionally bundles the local hybrid memory, the sandboxed tool-exec gate, and the multi-harness emitter (Claude Code, Cursor, Devin, GitHub Copilot, Cline, plus a universal AGENTS.md base read natively by Codex, Zed, and Gemini CLI — with fidelity warnings whenever a target can't represent an authored activation choice) that wire agent-kernel into one governed loop. Buy the modules for your own tooling, or buy the bundle for the assembled loop.`,
       },
     ],
     relatedGlossary: ["hash-chain-audit-trail"],
     sells: {
       edition: "agentic-dev",
-      note: "Agent kernel ($199) and agent-runner ($49) are the two Agentic-Dev SKUs sold standalone; the $249 Agentic-Dev edition additionally bundles the local hybrid memory, the sandboxed tool-exec gate, and the multi-harness emitter (Claude Code, Cursor, Devin, GitHub Copilot, Cline, plus a universal AGENTS.md base read natively by Codex, Zed, and Gemini CLI — with fidelity warnings whenever a target can't represent an authored activation choice) that wire agent-kernel into one governed loop. Buy the module alone to consume the schema/FSM/governance/hooks/audit-chain from your own tooling, or buy the edition for the assembled loop.",
+      note: `Agent kernel ($199) and agent-runner ($49) are the two Agentic-Dev SKUs sold standalone; the ${bundlePrice("agentic-dev")} Agentic-Dev bundle additionally bundles the local hybrid memory, the sandboxed tool-exec gate, and the multi-harness emitter (Claude Code, Cursor, Devin, GitHub Copilot, Cline, plus a universal AGENTS.md base read natively by Codex, Zed, and Gemini CLI — with fidelity warnings whenever a target can't represent an authored activation choice) that wire agent-kernel into one governed loop. Buy the module alone to consume the schema/FSM/governance/hooks/audit-chain from your own tooling, or buy the bundle for the assembled loop.`,
     },
   },
   {
@@ -820,7 +821,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     relatedGlossary: [],
     sells: {
       edition: "Agentic-Dev",
-      note: "$49 à la carte, or included in the $249 Agentic-Dev edition alongside agent-kernel.",
+      note: `$49 à la carte, or included in the ${bundlePrice("agentic-dev")} Agentic-Dev bundle alongside agent-kernel.`,
     },
   },
 ];

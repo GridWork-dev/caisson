@@ -15,24 +15,22 @@
 // caller writes to disk / archives to the WORM store (`audit-worm/store.s3.ts`); it never touches a network.
 import { createHash } from "node:crypto";
 import { canonicalize, type JsonValue } from "@caisson/kernel";
-import type { EvidencePackManifest } from "./pack-format.ts";
 import {
   toOscalAssessmentPlan,
-  type OscalAssessmentPlanDocument,
-} from "./oscal-assessment-plan.ts";
-import {
   toOscalAssessmentResults,
   toOscalPlanOfActionAndMilestones,
+  type EvidencePackManifest,
+  type OscalAssessmentPlanDocument,
   type OscalAssessmentResultsDocument,
   type OscalExportOptions,
   type OscalPlanOfActionAndMilestonesDocument,
-} from "./oscal-export.ts";
+} from "@caisson/compliance-core";
 import {
   signEvidencePack,
   type EvidenceSignature,
   type SignEvidencePackOptions,
   type Signer,
-} from "./sign.ts";
+} from "@caisson/signing-primitive";
 
 /** Fixed bundle layout (ADR-0231, sibling-directory sub-fork) — relative to the bundle root. */
 const SAR_PATH = "./sar.json" as const;

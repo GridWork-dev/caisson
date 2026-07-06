@@ -15,11 +15,8 @@ import {
   balance,
 } from "@caisson/credits";
 import { withTenant } from "@caisson/tenancy-rls";
-import {
-  type BillingProvider,
-  type DomainBillingEvent,
-  PROCESSED_EVENT_SCHEMA_SQL,
-} from "@caisson/billing";
+import type { BillingProvider, DomainBillingEvent } from "@caisson/billing";
+import { PROCESSED_EVENT_SCHEMA_SQL } from "@caisson/billing-orchestration";
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,

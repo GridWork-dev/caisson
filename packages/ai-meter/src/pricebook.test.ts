@@ -7,7 +7,12 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import { asMicroUsdPerCredit } from "@caisson/kernel";
-import { computeCost, priceKey } from "./pricebook.ts";
+import {
+  BUNDLED_PRICE_BOOK,
+  computeCost,
+  priceKey,
+  resolvePriceEntry,
+} from "./pricebook.ts";
 
 const entrySchema = z.object({
   inputPerMTok: z.number().int(),
@@ -68,4 +73,29 @@ describe("price-book cost golden (BLESS unset)", () => {
       });
     });
   }
+});
+
+describe("BUNDLED_PRICE_BOOK anthropic/claude-sonnet-4.5", () => {
+  test("resolves instead of throwing ConfigError", () => {
+    expect(() =>
+      resolvePriceEntry(BUNDLED_PRICE_BOOK, "anthropic", "claude-sonnet-4.5"),
+    ).not.toThrow();
+  });
+
+  test("meters a usage event at the verified $3 / $15 per-MTok rates", () => {
+    const entry = resolvePriceEntry(
+      BUNDLED_PRICE_BOOK,
+      "anthropic",
+      "claude-sonnet-4.5",
+    );
+    const usage = {
+      inputTokens: 1_000_000,
+      cachedInputTokens: 0,
+      outputTokens: 1_000_000,
+    };
+    expect(() => computeCost(usage, entry, conversion)).not.toThrow();
+    const cost = computeCost(usage, entry, conversion);
+    // $3.00 input + $15.00 output per 1M tokens = $18.00 = 18,000,000 micro-USD.
+    expect<number>(cost.costMicroUsd).toBe(18_000_000);
+  });
 });

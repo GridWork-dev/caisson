@@ -17,7 +17,7 @@ import {
 } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { MediaPlaceholder } from "@/components/media-placeholder";
-import { editionCatalogItem, toCartItem } from "@/lib/catalog";
+import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import {
   breadcrumb,
@@ -25,14 +25,14 @@ import {
   serializeJsonLd,
   softwareApplication,
 } from "@/lib/jsonld";
-import { EDITION_MARKS, moduleMark } from "@/lib/marks";
-import { editionPrice, formatUsd, MODULE_PRICES } from "@/lib/pricing";
+import { BUNDLE_MARKS, moduleMark } from "@/lib/marks";
+import { bundlePrice, formatUsd, MODULE_PRICES } from "@/lib/pricing";
 import { TrackView } from "@/components/track-view";
 
 export const metadata = buildMetadata({
   title: "Compliance",
   description:
-    "Fail-closed Postgres RLS, S3 Object-Lock WORM, an append-only audit chain, per-tenant field encryption, alerting, and a retention runner — composed into one edition and shipped with a SOC 2 / HIPAA evidence-pack generator. Caisson ships the technical controls and generates the evidence; the certification is your auditor's.",
+    "Fail-closed Postgres RLS, S3 Object-Lock WORM, an append-only audit chain, per-tenant field encryption, alerting, and a retention runner — composed into one bundle and shipped with a SOC 2 / HIPAA evidence-pack generator. Caisson ships the technical controls and generates the evidence; the certification is your auditor's.",
   path: "/compliance",
 });
 
@@ -44,7 +44,7 @@ const BASE_MEMBER_ICON: Record<string, IconName> = {
   migrate: "database",
 };
 
-// The edition's real composed packages (record: edition-compliance.json memberModules) — icon +
+// The bundle's real composed packages (record: edition-compliance.json memberModules) — icon +
 // name + one-liner, priced via a StatusChip when the package is also sold standalone
 // (`MODULE_PRICES`), linking to its module depth page; base packages render unpriced.
 const MEMBER_MODULES: readonly {
@@ -56,7 +56,7 @@ const MEMBER_MODULES: readonly {
     id: "kernel",
     name: "Kernel",
     oneLiner:
-      "Typed config/schema, the SHA-256 chain primitive, and append-only versioning that the rest of the edition builds on.",
+      "Typed config/schema, the SHA-256 chain primitive, and append-only versioning that the rest of the bundle builds on.",
   },
   {
     id: "tenancy-rls",
@@ -93,6 +93,24 @@ const MEMBER_MODULES: readonly {
     name: "Retention runner",
     oneLiner:
       "Policy-driven data retention on a schedule — expiry and legal-hold, enforced automatically, not by a recurring calendar reminder.",
+  },
+  {
+    id: "compliance-core",
+    name: "Compliance core",
+    oneLiner:
+      "The RLS-force evidence collector, isolation tests, and the SOC 2 / HIPAA evidence-pack generator that maps live controls to named clauses.",
+  },
+  {
+    id: "frameworks-pack",
+    name: "Frameworks pack",
+    oneLiner:
+      "SOC 2, HIPAA, and EU AI Act control mappings with OSCAL v1.2.2 export — the clause-to-control catalog the evidence packs render against.",
+  },
+  {
+    id: "signing-primitive",
+    name: "Signing primitive",
+    oneLiner:
+      "Detached Ed25519 + RFC-3161 signing over evidence bundles and audit roots — a signature a third party can verify without your keys.",
   },
 ];
 
@@ -196,9 +214,9 @@ const FAQ: readonly { question: string; answer: string }[] = [
       "No. Caisson ships the technical controls those frameworks require and generates the evidence to prove them. Certification comes from an auditor assessing your whole program — the organizational controls and the audit itself remain yours.",
   },
   {
-    question: "Which packages does the edition actually compose?",
+    question: "Which packages does the bundle actually compose?",
     answer:
-      "Seven real workspace dependencies, wired at runtime and re-exported through the edition's own entry point: kernel, tenancy-rls, field-crypto, audit-worm, migrate, alerting, and retention-runner. Nothing on this page is a manifest claim without composed code behind it.",
+      "Ten real workspace dependencies, wired at runtime and re-exported through the bundle's own entry point: kernel, tenancy-rls, field-crypto, audit-worm, migrate, alerting, retention-runner, compliance-core, frameworks-pack, and signing-primitive. Nothing on this page is a manifest claim without composed code behind it.",
   },
   {
     question: "Do I own the source?",
@@ -208,8 +226,8 @@ const FAQ: readonly { question: string; answer: string }[] = [
 ];
 
 // Cart-ready CatalogItem for the peak-intent buy CTAs below (ADR-0192 single add-to-cart buy-verb).
-const _catalogItem = editionCatalogItem("compliance");
-const editionCartItem = _catalogItem ? toCartItem(_catalogItem) : undefined;
+const _catalogItem = bundleCatalogItem("compliance");
+const bundleCartItem = _catalogItem ? toCartItem(_catalogItem) : undefined;
 
 export default function CompliancePage() {
   const heroArtifact: ReactNode = (
@@ -230,7 +248,7 @@ export default function CompliancePage() {
 
   return (
     <>
-      <TrackView item="edition:compliance" />
+      <TrackView item="bundle:compliance" />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -238,7 +256,7 @@ export default function CompliancePage() {
             softwareApplication({
               name: "Caisson Compliance",
               description:
-                "Fail-closed Postgres RLS, S3 Object-Lock WORM, an append-only audit chain, per-tenant field encryption, alerting, and a retention runner — composed into one edition and shipped with a SOC 2 / HIPAA evidence-pack generator. Caisson ships the technical controls and generates the evidence; the certification is your auditor's.",
+                "Fail-closed Postgres RLS, S3 Object-Lock WORM, an append-only audit chain, per-tenant field encryption, alerting, and a retention runner — composed into one bundle and shipped with a SOC 2 / HIPAA evidence-pack generator. Caisson ships the technical controls and generates the evidence; the certification is your auditor's.",
               url: `${SITE_URL}/compliance`,
               priceId: "compliance",
             }),
@@ -267,11 +285,11 @@ export default function CompliancePage() {
       <Hero
         eyebrow="Compliance-grade infrastructure for regulated SaaS"
         title="Audit-ready from the first commit."
-        lede="Compliance composes seven packages into one edition: tenant isolation that fails closed, evidence that can't be overwritten, and a tamper-evident log that proves it. Own the source, wire it in before your first customer, and hand an auditor an artifact instead of a slide deck."
+        lede="Compliance composes ten packages into one bundle: tenant isolation that fails closed, evidence that can't be overwritten, and a tamper-evident log that proves it. Own the source, wire it in before your first customer, and hand an auditor an artifact instead of a slide deck."
         ctas={
           <>
-            {editionCartItem && (
-              <AddToCartButton item={editionCartItem} variant="primary" />
+            {bundleCartItem && (
+              <AddToCartButton item={bundleCartItem} variant="primary" />
             )}
             <Button href="/docs" variant="ghost">
               Read the docs
@@ -296,20 +314,20 @@ export default function CompliancePage() {
       <Reveal>
         <Section
           eyebrow="What it composes"
-          lede="The Compliance edition is a real runtime composition of seven @caisson/* packages, not a bundle of marketing copy: kernel (typed config, the SHA-256 chain primitive, append-only versioning), tenancy-rls (the fail-closed RLS guard), field-crypto (per-tenant HKDF-SHA256 + AES-256-GCM field encryption), audit-worm (the append-only audit chain plus the S3 Object-Lock WORM adapter), migrate (the one migration assembler and runner, forward-only and checksum-drift-safe), and alerting plus retention-runner (deduped alert delivery and policy-driven data retention). alerting and retention-runner are wired in as real workspace dependencies and re-exported through the edition's own index, not asserted in a manifest and left uncomposed."
+          lede="The Compliance bundle is a real runtime composition of ten @caisson/* packages, not a bundle of marketing copy: kernel (typed config, the SHA-256 chain primitive, append-only versioning), tenancy-rls (the fail-closed RLS guard), field-crypto (per-tenant HKDF-SHA256 + AES-256-GCM field encryption), audit-worm (the append-only audit chain plus the S3 Object-Lock WORM adapter), migrate (the one migration assembler and runner, forward-only and checksum-drift-safe), alerting plus retention-runner (deduped alert delivery and policy-driven data retention), and the three carves — compliance-core (the evidence engine), frameworks-pack (the control mappings with OSCAL export), and signing-primitive (detached Ed25519 + RFC-3161 signing). alerting and retention-runner are wired in as real workspace dependencies and re-exported through the bundle's own index, not asserted in a manifest and left uncomposed."
         />
       </Reveal>
 
       {/* ===== Media slot (ADR-0237 F2) ===== */}
       <Section>
-        <MediaPlaceholder icon={EDITION_MARKS.compliance} />
+        <MediaPlaceholder icon={BUNDLE_MARKS.compliance} />
       </Section>
 
-      {/* ===== The seven composed packages ===== */}
+      {/* ===== The ten composed packages ===== */}
       <Reveal>
         <Section
           eyebrow="The composition"
-          title="Seven packages, one edition."
+          title="Ten packages, one bundle."
           lede="Each member is a real workspace dependency — not a manifest claim. The ones also sold standalone carry their own price."
         >
           <FeatureGrid cols={3}>
@@ -515,10 +533,10 @@ export default function CompliancePage() {
                   letterSpacing: "var(--cs-tracking-tight)",
                 }}
               >
-                {editionPrice("compliance")}
+                {bundlePrice("compliance")}
               </span>
               <span className="cs-tag">One-time license · own the source</span>
-              <StatusChip label="Edition" tone="muted" />
+              <StatusChip label="Bundle" tone="muted" />
             </div>
             <p
               className="cs-muted"
@@ -537,8 +555,8 @@ export default function CompliancePage() {
               live system, not written by hand.
             </p>
             <div className="cs-cta-row">
-              {editionCartItem && (
-                <AddToCartButton item={editionCartItem} variant="primary" />
+              {bundleCartItem && (
+                <AddToCartButton item={bundleCartItem} variant="primary" />
               )}
               <Button href="/marketplace" variant="ghost">
                 See the full lineup
@@ -562,8 +580,8 @@ export default function CompliancePage() {
           </Terminal>
         </div>
         <div className="cs-cta-row" style={{ marginTop: "var(--cs-space-6)" }}>
-          {editionCartItem && (
-            <AddToCartButton item={editionCartItem} variant="primary" />
+          {bundleCartItem && (
+            <AddToCartButton item={bundleCartItem} variant="primary" />
           )}
           <Button href="/docs" variant="ghost">
             Read the docs

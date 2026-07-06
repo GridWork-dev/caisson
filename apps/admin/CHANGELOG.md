@@ -1,5 +1,40 @@
 # @caisson/admin
 
+## 0.0.5
+
+### Patch Changes
+
+- 783110d: Corrected an internal code comment that undercounted the operator mutation panel's actions by one.
+- Updated dependencies [b791198]
+- Updated dependencies [aec9f1c]
+- Updated dependencies [defb22e]
+- Updated dependencies [0c883ae]
+- Updated dependencies [ad02304]
+- Updated dependencies [41e07b6]
+- Updated dependencies [4d7eb71]
+- Updated dependencies [783110d]
+- Updated dependencies [ad66801]
+- Updated dependencies [783110d]
+- Updated dependencies [8ab8ccc]
+- Updated dependencies [783110d]
+- Updated dependencies [850b844]
+- Updated dependencies [850b844]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [783110d]
+  - @caisson/audit-worm@0.2.4
+  - @caisson/auth@0.3.0
+  - @caisson/credits@0.4.0
+  - @caisson/kernel@0.4.2
+  - @caisson/observability@0.2.4
+  - @caisson/platform-reads@0.1.5
+  - @caisson/tenancy-rls@0.4.0
+  - @caisson/ui@0.4.0
+  - @caisson/brand@0.1.0
+  - @caisson/org-controls@0.2.0
+  - @caisson/service-license@0.0.5
+
 ## 0.0.4
 
 ### Patch Changes

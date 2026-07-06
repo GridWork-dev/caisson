@@ -19,6 +19,7 @@ import {
   CREDIT_SCHEMA_SQL,
   GRANT_CONSUMPTION_MIGRATION_SQL,
   balance,
+  debit,
   grant,
 } from "@caisson/credits";
 import { loadRegistryIndex } from "@caisson/registry";
@@ -137,7 +138,8 @@ function onGenerate(ctx: GenerateContext): Promise<{ generationId: string }> {
   return withTenant(tp.pg, ctx.accountId, async (tx) => {
     const out = await runGeneration(
       tx,
-      { index: INDEX, engine: defaultEngine },
+      // The host supplies the concrete credits debit through the DebitFn port (ADR-0249 G5).
+      { index: INDEX, engine: defaultEngine, debit },
       ctx.selection,
       { accountId: ctx.accountId, idempotencyKey: ctx.idempotencyKey },
     );

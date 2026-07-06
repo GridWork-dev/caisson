@@ -48,9 +48,9 @@ const FAQ_ITEMS = [
       "The Compliance edition covers the technical controls in SOC 2 CC6.1 (logical access), CC7.2 (change detection, stored evidence), and HIPAA §164.312(a)(1) (access control), §164.312(b) (audit controls), §164.312(c)(1) (integrity), and §164.312(a)(2)(iv) (encryption/decryption). The organizational and administrative controls remain the operator's responsibility.",
   },
   {
-    question: "Who is the seller: GridWork Digital LLC or Paddle?",
+    question: "Who is the seller: Caisson Software LLC or Paddle?",
     answer:
-      "Both, in different roles. Paddle.com is the merchant of record: it's the seller on your transaction, it collects payment, calculates and remits tax, and issues your receipt. GridWork Digital LLC, based in Atlanta, Georgia, is the licensor: it owns the Caisson source and grants you the license under the Commercial License Agreement. Your receipt comes from Paddle; your software rights come from GridWork.",
+      "Both, in different roles. Paddle.com is the merchant of record: it's the seller on your transaction, it collects payment, calculates and remits tax, and issues your receipt. Caisson Software LLC, based in Atlanta, Georgia, is the licensor: it owns the Caisson source and grants you the license under the Commercial License Agreement. Your receipt comes from Paddle; your software rights come from Caisson.",
   },
   {
     question: "Is the license a one-time purchase or a subscription?",
@@ -60,7 +60,7 @@ const FAQ_ITEMS = [
   {
     question: "What's the refund policy?",
     answer:
-      "Buyers in the EU, EEA, UK, and Switzerland get a statutory 14-day withdrawal right under Paddle's buyer terms. Because Caisson is downloadable software delivered for immediate use, that right ends once you consent to immediate access at checkout and then download, install, or use it. Outside that window, refund requests are reviewed case by case. Email <email> with your order number, or contact Paddle directly at paddle.net. An approved refund revokes the entitlement it granted and returns unused credits; a multi-item order can be refunded line by line.",
+      "Buyers in the EU, EEA, UK, and Switzerland get a statutory 14-day withdrawal right under Paddle's buyer terms. Because Caisson is downloadable software delivered for immediate use, that right ends once you consent to immediate access at checkout and then download, install, or use it. Outside that window, refund requests are reviewed case by case. Email admin@caisson.sh with your order number, or contact Paddle directly at paddle.net. An approved refund revokes the entitlement it granted and returns unused credits; a multi-item order can be refunded line by line.",
   },
   {
     question: "How do I request security documentation?",
@@ -71,7 +71,7 @@ const FAQ_ITEMS = [
     question:
       "Can you provide a W-9 or entity documentation for our vendor file?",
     answer:
-      "Yes. Email <email> with your organization name and we'll send a completed W-9 and GridWork Digital LLC's entity details.",
+      "Yes. Email admin@caisson.sh with your organization name and we'll send a completed W-9 and Caisson Software LLC's entity details.",
   },
   {
     question: "How do I report a vulnerability?",
@@ -202,7 +202,7 @@ export default function ProcurementPage() {
         title="The entity and the licensing relationship."
       >
         <p className="cs-lede">
-          Caisson is licensed to you by GridWork Digital LLC, based in Atlanta,
+          Caisson is licensed to you by Caisson Software LLC, based in Atlanta,
           Georgia. That&rsquo;s the party behind the software: it owns the
           source, grants the license, and stands behind it under the Commercial
           License Agreement (the EULA). See the EULA for the entity&rsquo;s full
@@ -210,7 +210,7 @@ export default function ProcurementPage() {
         </p>
         <p className="cs-muted" style={{ marginTop: "var(--cs-space-4)" }}>
           Your checkout is handled by a separate party. See the next section.
-          Two different roles, both named on your paperwork: GridWork licenses
+          Two different roles, both named on your paperwork: Caisson licenses
           the software, Paddle sells and bills the transaction.
         </p>
         <div style={{ marginTop: "var(--cs-space-6)" }}>
@@ -294,7 +294,7 @@ export default function ProcurementPage() {
             },
             {
               label: "W-9 and entity documents",
-              body: "Email <email> with your organization name and we'll send a completed W-9 and GridWork Digital LLC's entity details for your vendor file.",
+              body: "Email admin@caisson.sh with your organization name and we'll send a completed W-9 and Caisson Software LLC's entity details for your vendor file.",
             },
             {
               label: "Vulnerability reporting",
@@ -359,11 +359,8 @@ export default function ProcurementPage() {
             security@caisson.sh
           </a>{" "}
           (security/technical) or{" "}
-          <a
-            href="mailto:<email>"
-            style={{ color: "var(--cs-link)" }}
-          >
-            <email>
+          <a href="mailto:admin@caisson.sh" style={{ color: "var(--cs-link)" }}>
+            admin@caisson.sh
           </a>{" "}
           (contracts, tax, entity). Ready to purchase or evaluate? See pricing.
         </p>

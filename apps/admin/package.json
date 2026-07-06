@@ -1,6 +1,6 @@
 {
   "name": "@caisson/admin",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "private": true,
   "type": "module",
   "scripts": {
@@ -15,9 +15,11 @@
     "@aws-sdk/client-s3": "catalog:",
     "@caisson/audit-worm": "workspace:*",
     "@caisson/auth": "workspace:*",
+    "@caisson/brand": "workspace:*",
     "@caisson/credits": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/observability": "workspace:*",
+    "@caisson/org-controls": "workspace:*",
     "@caisson/platform-reads": "workspace:*",
     "@caisson/service-license": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",

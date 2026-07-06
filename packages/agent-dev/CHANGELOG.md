@@ -1,5 +1,30 @@
 # @caisson/agent-dev
 
+## 0.3.0
+
+### Minor Changes
+
+- b791198: The Agentic-Dev edition now re-exports the sandboxed agent-runner surface (createAgentRunner, buildEngineEnv, run summaries, and the runner config types) from the edition's single import home, completing the composition the edition manifest already declares. Runner provider configuration types are exposed as AgentRunnerProviderConfig / AgentRunnerProviderConfigInput to avoid clashing with the AI-config provider types.
+
+### Patch Changes
+
+- 0af4dbf: Rewrote README, AGENTS, CHANGELOG, package.json descriptions, and inline source comments to
+  read as clean, buyer-facing documentation. Removed sibling-repository provenance framing,
+  internal build-phase shorthand, and bare specification-id citations that had leaked into
+  shipped copy. No runtime behavior changed in any package — documentation and comments only.
+- Updated dependencies [b791198]
+- Updated dependencies [4d7eb71]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [5349b63]
+  - @caisson/agent-kernel@0.3.1
+  - @caisson/agent-runner@0.1.4
+  - @caisson/ai-config@0.2.4
+  - @caisson/kernel@0.4.2
+  - @caisson/local-store@0.2.4
+  - @caisson/tool-exec@0.1.5
+
 ## 0.2.3
 
 ### Patch Changes

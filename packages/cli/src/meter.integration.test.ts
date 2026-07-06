@@ -28,6 +28,7 @@ import {
   CREDIT_SCHEMA_SQL,
   GRANT_CONSUMPTION_MIGRATION_SQL,
   balance,
+  debit,
   getLedger,
   grant,
 } from "@caisson/credits";
@@ -132,10 +133,15 @@ describe("runGeneration — debit-before-spend (ADR-0049)", () => {
     await grantSome(5);
     const spy = writerSpy();
     const outcome = await withTenant(tp.pg, ACCOUNT, (tx) =>
-      runGeneration(tx, { index: INDEX, writeFileSet: spy.writer }, SELECTION, {
-        accountId: ACCOUNT,
-        idempotencyKey: "gen-1",
-      }),
+      runGeneration(
+        tx,
+        { index: INDEX, debit, writeFileSet: spy.writer },
+        SELECTION,
+        {
+          accountId: ACCOUNT,
+          idempotencyKey: "gen-1",
+        },
+      ),
     );
     expect(outcome.balance).toBe(4); // 5 − 1
     expect(outcome.idempotent).toBe(false);
@@ -149,7 +155,7 @@ describe("runGeneration — debit-before-spend (ADR-0049)", () => {
       withTenant(tp.pg, ACCOUNT, (tx) =>
         runGeneration(
           tx,
-          { index: INDEX, writeFileSet: spy.writer },
+          { index: INDEX, debit, writeFileSet: spy.writer },
           SELECTION,
           {
             accountId: ACCOUNT,
@@ -171,16 +177,26 @@ describe("runGeneration — debit-before-spend (ADR-0049)", () => {
     await grantSome(5);
     const spy = writerSpy();
     const first = await withTenant(tp.pg, ACCOUNT, (tx) =>
-      runGeneration(tx, { index: INDEX, writeFileSet: spy.writer }, SELECTION, {
-        accountId: ACCOUNT,
-        idempotencyKey: "gen-dup",
-      }),
+      runGeneration(
+        tx,
+        { index: INDEX, debit, writeFileSet: spy.writer },
+        SELECTION,
+        {
+          accountId: ACCOUNT,
+          idempotencyKey: "gen-dup",
+        },
+      ),
     );
     const retry = await withTenant(tp.pg, ACCOUNT, (tx) =>
-      runGeneration(tx, { index: INDEX, writeFileSet: spy.writer }, SELECTION, {
-        accountId: ACCOUNT,
-        idempotencyKey: "gen-dup",
-      }),
+      runGeneration(
+        tx,
+        { index: INDEX, debit, writeFileSet: spy.writer },
+        SELECTION,
+        {
+          accountId: ACCOUNT,
+          idempotencyKey: "gen-dup",
+        },
+      ),
     );
     expect(first.idempotent).toBe(false);
     expect(retry.idempotent).toBe(true);
@@ -199,7 +215,7 @@ describe("runGeneration — debit-before-spend (ADR-0049)", () => {
       withTenant(tp.pg, ACCOUNT, (tx) =>
         runGeneration(
           tx,
-          { index: INDEX, writeFileSet: spy.writer },
+          { index: INDEX, debit, writeFileSet: spy.writer },
           {
             projectName: "x",
             modules: [{ id: "@caisson/nope", version: "0.1.0" }],
@@ -220,7 +236,7 @@ describe("runGeneration — disk materialization + audit row", () => {
     await grantSome(5);
     const target = join(tmpBase, "out"); // omit writeFileSet → default disk writer kicks in
     const outcome = await withTenant(tp.pg, ACCOUNT, (tx) =>
-      runGeneration(tx, { index: INDEX, targetDir: target }, SELECTION, {
+      runGeneration(tx, { index: INDEX, debit, targetDir: target }, SELECTION, {
         accountId: ACCOUNT,
         idempotencyKey: "disk-1",
       }),
@@ -235,10 +251,15 @@ describe("runGeneration — disk materialization + audit row", () => {
     const target = join(tmpBase, "nope"); // no grant → balance 0 → 402 before any write/record
     await expect(
       withTenant(tp.pg, ACCOUNT, (tx) =>
-        runGeneration(tx, { index: INDEX, targetDir: target }, SELECTION, {
-          accountId: ACCOUNT,
-          idempotencyKey: "disk-402",
-        }),
+        runGeneration(
+          tx,
+          { index: INDEX, debit, targetDir: target },
+          SELECTION,
+          {
+            accountId: ACCOUNT,
+            idempotencyKey: "disk-402",
+          },
+        ),
       ),
     ).rejects.toBeInstanceOf(InsufficientCreditsError);
     expect(existsSync(target)).toBe(false); // the write was never reached
@@ -251,6 +272,7 @@ describe("runGeneration — disk materialization + audit row", () => {
     // overwrite so the second pass re-materializes over the same target dir
     const deps = {
       index: INDEX,
+      debit,
       writeFileSet: createFileSetWriter({ overwrite: true }),
       targetDir: target,
     };
@@ -346,7 +368,7 @@ describe("runGeneration — edition pin resolution (ADR-0077)", () => {
     const outcome = await withTenant(tp.pg, ACCOUNT, (tx) =>
       runGeneration(
         tx,
-        { index: editionIndex("0.2.0"), writeFileSet: spy.writer },
+        { index: editionIndex("0.2.0"), debit, writeFileSet: spy.writer },
         EDITION_SELECTION,
         { accountId: ACCOUNT, idempotencyKey: "ed-1" },
       ),
@@ -370,7 +392,7 @@ describe("runGeneration — edition pin resolution (ADR-0077)", () => {
       withTenant(tp.pg, ACCOUNT, (tx) =>
         runGeneration(
           tx,
-          { index: editionIndex("9.9.9"), writeFileSet: spy.writer }, // credits@9.9.9 is not in the index
+          { index: editionIndex("9.9.9"), debit, writeFileSet: spy.writer }, // credits@9.9.9 is not in the index
           EDITION_SELECTION,
           { accountId: ACCOUNT, idempotencyKey: "ed-bad" },
         ),
@@ -418,7 +440,12 @@ describe("runGeneration — compose-time migration merge (ADR-0091)", () => {
     const outcome = await withTenant(tp.pg, ACCOUNT, (tx) =>
       runGeneration(
         tx,
-        { index: INDEX, writeFileSet: spy.writer, bundleRoot: migBundle },
+        {
+          index: INDEX,
+          debit,
+          writeFileSet: spy.writer,
+          bundleRoot: migBundle,
+        },
         SELECTION,
         { accountId: ACCOUNT, idempotencyKey: "gen-mig" },
       ),
@@ -440,10 +467,15 @@ describe("runGeneration — compose-time migration merge (ADR-0091)", () => {
     await grantSome(5);
     const spy = writerSpy();
     const outcome = await withTenant(tp.pg, ACCOUNT, (tx) =>
-      runGeneration(tx, { index: INDEX, writeFileSet: spy.writer }, SELECTION, {
-        accountId: ACCOUNT,
-        idempotencyKey: "gen-default",
-      }),
+      runGeneration(
+        tx,
+        { index: INDEX, debit, writeFileSet: spy.writer },
+        SELECTION,
+        {
+          accountId: ACCOUNT,
+          idempotencyKey: "gen-default",
+        },
+      ),
     );
     expect(outcome.files.some((f) => f.content.includes("seam_probe"))).toBe(
       false,

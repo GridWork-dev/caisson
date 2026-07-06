@@ -38,9 +38,8 @@ import {
   buildAdminSelectPolicySql,
   buildAdminWritePolicySql,
   withAdminWrite,
-  type TenantExecutor,
-  type Transactor,
-} from "@caisson/tenancy-rls";
+} from "@caisson/org-controls";
+import type { TenantExecutor, Transactor } from "@caisson/tenancy-rls";
 import { insertAdminActionLog, type AdminAction } from "./admin-audit-log.ts";
 import {
   grantAdminComp,

@@ -1,5 +1,36 @@
 # @caisson/standards-gate
 
+## 0.0.5
+
+### Patch Changes
+
+- ad66801: Clarify two historical code comments; no behavior change.
+- 850b844: Added a new shared rate-limiting package with an in-memory per-client-IP throttle for
+  surfaces with no signed-in identity yet. The docs and license services now both import
+  this shared limiter instead of each keeping a separate copy of the same logic. The
+  internal licensing-boundary check also now recognizes the new package as part of the
+  open, freely licensed base set. Buyer-visible throttling behavior, including the limits,
+  the retry timing, and which header is trusted for the client IP, is unchanged; this only
+  changes where the code lives.
+- 0af4dbf: Added a gate check that scans shipped documentation and source comments for internal-only
+  vocabulary and bare specification-id citations.
+- aec9f1c: The standards gate now checks a locked module's registry manifest price against its authoritative
+  listed price, keyed by package id. A manifest carrying a stale or drifted price now fails the
+  build before it can ship, instead of the mismatch only surfacing later at checkout. Package names
+  and version bumps in a changeset header are unaffected by this change; only manifest pricing is
+  checked.
+- Updated dependencies [b791198]
+- Updated dependencies [d6cc28e]
+- Updated dependencies [0c883ae]
+- Updated dependencies [2834c3f]
+- Updated dependencies [41e07b6]
+- Updated dependencies [850b844]
+- Updated dependencies [31d6a41]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [0af4dbf]
+  - @caisson/registry-schema@0.3.0
+  - @caisson/tenancy-rls@0.4.0
+
 ## 0.0.4
 
 ### Patch Changes

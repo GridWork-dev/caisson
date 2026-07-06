@@ -1,24 +1,28 @@
 import Link from "next/link";
 
-import { ThemeToggle, Wordmark } from "@caisson/ui/components";
+import { ThemeToggle } from "@caisson/ui/components";
+import { Wordmark } from "@caisson/brand";
 
 import { CartTrigger } from "./cart-trigger";
 import { MobileNav } from "./mobile-nav";
 import { NavPanels, type NavPanelSpec } from "./nav-panels";
 import { NavSearchTrigger } from "./nav-search-trigger";
 import { Button } from "./button";
-import { EDITION_MARKS } from "@/lib/marks";
+import { BUNDLE_MARKS } from "@/lib/marks";
 import {
-  EDITION_PRICES,
-  editionPrice,
+  BUNDLE_PRICES,
+  bundlePriceById,
+  formatPrice,
   formatUsd,
-  isEditionId,
-  priceById,
+  isBundleId,
+  planPrice,
 } from "@/lib/pricing";
 
-// Cheapest edition — computed, never hand-duplicated (the "from $X" anchor on the Editions card).
-const EDITION_MIN = Math.min(
-  ...EDITION_PRICES.map((p) => p.amount ?? Infinity),
+// Cheapest persona/Provenance bundle — computed, never hand-duplicated (the "from $X" bundle anchor).
+const BUNDLE_MIN = Math.min(
+  ...BUNDLE_PRICES.filter((b) => b.id !== "everything").map(
+    (b) => b.amount ?? Infinity,
+  ),
 );
 import { EDITION_ROUTES } from "@/lib/routes";
 import styles from "./site-nav.module.css";
@@ -29,32 +33,35 @@ import styles from "./site-nav.module.css";
 // and the mobile drawer ship as client islands. Everything derives from the canonical route
 // registry (lib/routes.ts) + the single pricing source (lib/pricing.ts).
 
-// Panel 1 — Editions: the four edition cards (label from the registry, note + price from the
-// pricing source — no copy invented here) + marketplace on-ramps in the foot.
-const EDITIONS_PANEL: NavPanelSpec = {
-  label: "Editions",
-  lede: "One audited base. Four editions — or compose your own.",
+// Panel 1 — Bundles: the five persona/Provenance bundle cards (label from the registry, note + price
+// from the pricing source — no copy invented here) + marketplace on-ramps in the foot. Every card
+// resolves its price from the bundle anchor; the /ai-kit route maps to the ai-production bundle id.
+const BUNDLES_PANEL: NavPanelSpec = {
+  label: "Bundles",
+  lede: "One audited base. Six bundles — or compose your own.",
   cards: EDITION_ROUTES.map((r) => {
     const slug = r.path.slice(1);
+    const bundleId = slug === "ai-kit" ? "ai-production" : slug;
+    const anchor = isBundleId(bundleId) ? bundlePriceById(bundleId) : undefined;
     return {
       href: r.path,
       label: r.navLabel ?? r.label,
-      note: priceById(slug)?.note ?? "",
-      price: editionPrice(slug),
-      // The edition's bespoke waterline mark (ADR-0237 F6).
-      ...(isEditionId(slug) ? { icon: EDITION_MARKS[slug] } : {}),
+      note: anchor?.note ?? "",
+      price: anchor ? formatPrice(anchor) : "—",
+      // The bundle's bespoke waterline mark (ADR-0237 F6).
+      icon: isBundleId(bundleId) ? BUNDLE_MARKS[bundleId] : "audit-chain",
     };
   }),
   foot: [
     {
       href: "/marketplace",
-      label: "Compare editions & bundle",
+      label: "Compare the bundles",
       desc: "Side-by-side, plus the Everything bundle.",
     },
     {
       href: "/marketplace/build",
       label: "Build your stack",
-      desc: "Compose your own edition, module by module.",
+      desc: "Compose your own stack, module by module.",
     },
   ],
 };
@@ -63,20 +70,20 @@ const EDITIONS_PANEL: NavPanelSpec = {
 // (icon + label + one-liner + price where the surface has one).
 const MARKETPLACE_PANEL: NavPanelSpec = {
   label: "Marketplace",
-  lede: "Buy a module, an edition, or everything.",
+  lede: "Buy a module, a bundle, or everything.",
   cards: [
     {
       href: "/marketplace",
-      label: "Editions",
-      note: "Compare the four editions and the bundle.",
-      price: `from ${formatUsd(EDITION_MIN)}`,
+      label: "Bundles",
+      note: "Compare the six bundles side by side.",
+      price: `from ${formatUsd(BUNDLE_MIN)}`,
       icon: "caisson",
     },
     {
       href: "/marketplace/modules",
       label: "Modules",
       note: "Every standalone module, à la carte.",
-      price: editionPrice("module"),
+      price: planPrice("module"),
       icon: "boxes",
     },
     {
@@ -89,7 +96,7 @@ const MARKETPLACE_PANEL: NavPanelSpec = {
       href: "/marketplace/plans",
       label: "Plans",
       note: "Subscriptions that keep it current.",
-      price: `from ${editionPrice("developer")}`,
+      price: `from ${planPrice("developer")}`,
       icon: "plan-tier",
     },
   ],
@@ -127,12 +134,12 @@ const RESOURCES_PANEL: NavPanelSpec = {
 };
 
 const PANELS: readonly NavPanelSpec[] = [
-  EDITIONS_PANEL,
+  BUNDLES_PANEL,
   MARKETPLACE_PANEL,
   RESOURCES_PANEL,
 ];
 
-// The mobile drawer lists every destination flat (no disclosure): the four editions, the four
+// The mobile drawer lists every destination flat (no disclosure): the bundle personas, the four
 // marketplace tabs, then the resource surfaces.
 const MOBILE_LINKS: readonly { href: string; label: string }[] = [
   ...EDITION_ROUTES.map((r) => ({

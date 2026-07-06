@@ -5,25 +5,47 @@ import { useEffect, useState } from "react";
 import { Button, Icon } from "@/components";
 import { useCart } from "@/components/cart-provider";
 import {
-  BUNDLE_CATALOG_ITEM,
-  editionCatalogItem,
+  bundleCatalogItem,
   moduleCatalogItem,
   toCartItem,
 } from "@/lib/catalog";
 import {
+  type BundleId,
   buildStackSummary,
-  EDITION_IDS,
   formatUsd,
-  modulesByEdition,
-  type EditionId,
+  MODULE_PRICES,
+  PERSONA_BUNDLE_IDS,
 } from "@/lib/pricing";
 
-import { EDITION_ICON, editionLabel } from "./marketplace";
+import { BUNDLE_ICON, bundleLabel } from "./marketplace";
 import styles from "./marketplace.module.css";
+
+// Picker groups: one per persona/Provenance bundle (a module lists ONCE, under its FIRST bundle —
+// the primary-category convention the /modules facet uses) + a Platform group for the SKUs no
+// persona bundle grants (org-controls, billing-orchestration, ui-pro).
+const PICKER_GROUPS: readonly {
+  key: string;
+  label: string;
+  icon: (typeof BUNDLE_ICON)[BundleId];
+  modules: readonly (typeof MODULE_PRICES)[number][];
+}[] = [
+  ...PERSONA_BUNDLE_IDS.map((b) => ({
+    key: b,
+    label: bundleLabel(b),
+    icon: BUNDLE_ICON[b],
+    modules: MODULE_PRICES.filter((m) => m.bundles[0] === b),
+  })),
+  {
+    key: "platform",
+    label: "Platform",
+    icon: "boxes" as const,
+    modules: MODULE_PRICES.filter((m) => m.bundles.length === 0),
+  },
+].filter((g) => g.modules.length > 0);
 
 /**
  * Flagship stack configurator (ADR-0191). Left = the à-la-carte modules as toggle rows grouped by
- * edition;
+ * bundle;
  * right = a `position: sticky` running-total rail that itemises the selection, shows the live total,
  * and surfaces the cheapest covering upgrade (`buildStackSummary().upgrade`). Under 768px the rail
  * stops being a side column and the total + primary CTA move to a fixed bottom bar. The total is
@@ -54,12 +76,11 @@ export function StackBuilder() {
     }
   };
 
-  // The upgrade nudge — add the whole edition or the bundle INSTEAD of the loose modules. Clearing
-  // the picker is the "instead": it drops the redundant module lines so a following "Add to cart"
-  // can't stack the edition on top of the modules it already covers (double coverage / overpay).
-  const addUpgradeToCart = (target: EditionId | "bundle") => {
-    const item =
-      target === "bundle" ? BUNDLE_CATALOG_ITEM : editionCatalogItem(target);
+  // The upgrade nudge — add the covering bundle INSTEAD of the loose modules. Clearing the picker
+  // is the "instead": it drops the redundant module lines so a following "Add to cart" can't stack
+  // the bundle on top of the modules it already covers (double coverage / overpay).
+  const addUpgradeToCart = (target: BundleId) => {
+    const item = bundleCatalogItem(target);
     if (item) {
       addItem(toCartItem(item));
       setSelected(new Set());
@@ -97,13 +118,13 @@ export function StackBuilder() {
     <div className={styles.build}>
       {/* ===== Module picker ===== */}
       <div className={styles.picker}>
-        {EDITION_IDS.map((e) => (
-          <fieldset key={e} className={styles.pickerGroup}>
+        {PICKER_GROUPS.map((g) => (
+          <fieldset key={g.key} className={styles.pickerGroup}>
             <legend className={styles.pickerLegend}>
-              <Icon name={EDITION_ICON[e]} />
-              {editionLabel(e)}
+              <Icon name={g.icon} />
+              {g.label}
             </legend>
-            {modulesByEdition(e).map((m) => (
+            {g.modules.map((m) => (
               <label key={m.id} className={styles.pickerRow}>
                 <input
                   type="checkbox"
@@ -156,7 +177,7 @@ export function StackBuilder() {
             <Icon name="inbox" size="lg" />
             <p>
               No modules selected yet. Pick modules on the left to see the
-              running total — and any edition that would cover them for less.
+              running total — and any bundle that would cover them for less.
             </p>
           </div>
         ) : (

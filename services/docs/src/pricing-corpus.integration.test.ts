@@ -9,10 +9,10 @@ describe("pricing corpus (real SOT)", () => {
   test("loadPricingFacts reads the live display source of truth", async () => {
     const facts = await loadPricingFacts();
     if (facts === null) throw new Error("pricing SOT not found");
-    expect(facts.editions.length).toBeGreaterThan(0);
+    expect(facts.bundles.length).toBe(6);
     expect(facts.modules.length).toBeGreaterThan(0);
-    // The committed compliance price — read from the SOT, never scraped.
-    expect(facts.editions.find((e) => e.id === "compliance")?.amount).toBe(799);
+    // The committed compliance bundle price — read from the SOT, never scraped.
+    expect(facts.bundles.find((b) => b.id === "compliance")?.amount).toBe(1049);
   });
 
   test("buildCorpus(pricingFacts) appends valid kind:pricing chunks + pages", async () => {
@@ -23,8 +23,9 @@ describe("pricing corpus (real SOT)", () => {
     expect(pricing.length).toBeGreaterThan(0);
     for (const c of pricing)
       expect(() => DocChunkSchema.parse(c)).not.toThrow();
-    // The live compliance price appears verbatim in a pricing chunk — a stale citation is impossible.
-    expect(pricing.some((c) => c.text.includes("$799"))).toBe(true);
+    // The live compliance bundle price appears verbatim in a pricing chunk — a stale citation is
+    // impossible.
+    expect(pricing.some((c) => c.text.includes("$1,049"))).toBe(true);
     expect(corpus.pages.some((p) => p.kind === "pricing")).toBe(true);
   });
 

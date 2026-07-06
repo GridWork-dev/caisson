@@ -11,6 +11,7 @@ import { AddToCartButton } from "@/components/add-to-cart-button";
 import { PageSections } from "@/components/page-sections";
 import { TrackView } from "@/components/track-view";
 import { moduleCatalogItem, toCartItem } from "@/lib/catalog";
+import { bundleLabel, bundlePagePath } from "@/components/marketplace";
 import { GLOSSARY_TERMS } from "@/lib/glossary";
 import {
   breadcrumb,
@@ -23,9 +24,9 @@ import { buildMetadata } from "@/lib/metadata";
 import { MODULE_PAGES, type ModulePageRecord } from "@/lib/module-pages";
 import type { PageSection } from "@/lib/page-sections";
 import {
+  bundlePriceById,
   formatUsd,
   MODULE_PRICES,
-  priceById,
   type ModulePrice,
 } from "@/lib/pricing";
 import styles from "./depth.module.css";
@@ -114,7 +115,7 @@ function bodySections(record: ModulePageRecord): readonly PageSection[] {
 }
 
 /** The sticky buy rail (ADR-0237 F2): type chip, committed price, add-to-cart, the
- *  entitlement-honest edition cross-sell, and curated glossary reading. */
+ *  entitlement-honest bundle cross-sell, and curated glossary reading. */
 function BuyRail({
   record,
   price,
@@ -123,7 +124,6 @@ function BuyRail({
   price: ModulePrice;
 }) {
   const catalogItem = moduleCatalogItem(price.id);
-  const edition = priceById(price.edition);
   const related = record.relatedGlossary
     .map((slug) => GLOSSARY_TERMS.find((t) => t.slug === slug))
     .filter((t) => t !== undefined);
@@ -146,19 +146,28 @@ function BuyRail({
             <AddToCartButton item={toCartItem(catalogItem)} variant="primary" />
           )}
           <p className="cs-footnote">{record.sells.note}</p>
-          {price.standaloneOnly ? (
+          {price.bundles.length === 0 ? (
             <p className="cs-footnote">
-              Standalone module: no edition includes it.
+              Standalone module: only the whole-catalog Everything bundle
+              includes it.
             </p>
           ) : (
-            edition &&
-            edition.amount !== null && (
-              <p className="cs-footnote">
-                Or composed into the{" "}
-                <Link href={`/${price.edition}`}>{edition.label} edition</Link>{" "}
-                for {formatUsd(edition.amount)}.
-              </p>
-            )
+            <p className="cs-footnote">
+              Or composed into{" "}
+              {price.bundles.map((b, i) => {
+                const anchor = bundlePriceById(b);
+                return (
+                  <span key={b}>
+                    {i > 0 && (i === price.bundles.length - 1 ? " or " : ", ")}
+                    <Link href={bundlePagePath(b)}>
+                      the {bundleLabel(b)} bundle
+                    </Link>
+                    {anchor?.amount != null && ` (${formatUsd(anchor.amount)})`}
+                  </span>
+                );
+              })}
+              .
+            </p>
           )}
           {related.length > 0 && (
             <div>
@@ -185,7 +194,7 @@ function BuyRail({
 
 /** The condensed sticky mobile counterpart to `BuyRail` (ADR-0242): same price + label + Add-to-cart
  *  action, reused as-is — not reinvented — so the two surfaces can never drift out of agreement. The
- *  full card above still renders at its usual position for the edition cross-sell and related
+ *  full card above still renders at its usual position for the bundle cross-sell and related
  *  reading; this bar is the persistent reminder that stays visible at every scroll position. */
 function MobileBuyBarSection({ price }: { price: ModulePrice }) {
   const catalogItem = moduleCatalogItem(price.id);
@@ -207,7 +216,6 @@ export default async function ModuleDepthPage(props: Params) {
   const price = findPrice(slug);
   if (!record || !price) notFound();
 
-  const edition = priceById(price.edition);
   const breadcrumbLd = breadcrumb([
     { name: "Home", path: "/" },
     { name: "Marketplace", path: "/marketplace" },
@@ -237,9 +245,9 @@ export default async function ModuleDepthPage(props: Params) {
 
       <Hero
         eyebrow={
-          price.standaloneOnly
+          price.bundles.length === 0
             ? "Module · Standalone"
-            : `Module · ${edition?.label ?? price.edition}`
+            : `Module · ${bundleLabel(price.bundles[0]!)}`
         }
         title={price.label}
         lede={record.heroOneLiner}

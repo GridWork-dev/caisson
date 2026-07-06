@@ -1,5 +1,20 @@
 # @caisson/migrate
 
+## 0.2.4
+
+### Patch Changes
+
+- b791198: Documentation and metadata cleanup plus dependency-declaration hygiene: package descriptions, READMEs, changelogs, and source comments no longer carry internal build references, and shared external dependency ranges now resolve through the workspace dependency catalog (published dependency ranges unchanged; the TypeScript devDependency floor moves to ^5.7.3).
+- aec9f1c: Corrected the package README's licensing line: it previously claimed a commercial license, but
+  this package ships Apache-2.0. No code changes.
+- 0af4dbf: Rewrote README, AGENTS, CHANGELOG, package.json descriptions, and inline source comments to
+  read as clean, buyer-facing documentation. Removed sibling-repository provenance framing,
+  internal build-phase shorthand, and bare specification-id citations that had leaked into
+  shipped copy. No runtime behavior changed in any package — documentation and comments only.
+- Updated dependencies [b791198]
+- Updated dependencies [0af4dbf]
+  - @caisson/kernel@0.4.2
+
 ## 0.2.3
 
 ### Patch Changes

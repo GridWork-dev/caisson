@@ -1,5 +1,37 @@
 # @caisson/local-ai
 
+## 0.2.4
+
+### Patch Changes
+
+- b791198: Documentation and metadata cleanup plus dependency-declaration hygiene: package descriptions, READMEs, changelogs, and source comments no longer carry internal build references, and shared external dependency ranges now resolve through the workspace dependency catalog (published dependency ranges unchanged; the TypeScript devDependency floor moves to ^5.7.3).
+- bc12f3a: Carve local-first privacy, inference, and sync into separately priced commercial modules.
+- 9efcff2: Export verifyLicenseWithKey from the edition surface so reference applications and tests can
+  exercise offline license verification against an explicit public key instead of the baked
+  production key.
+- 0af4dbf: Rewrote README, AGENTS, CHANGELOG, package.json descriptions, and inline source comments to
+  read as clean, buyer-facing documentation. Removed sibling-repository provenance framing,
+  internal build-phase shorthand, and bare specification-id citations that had leaked into
+  shipped copy, and regenerated a couple of stale public-surface sections against the actual
+  exports. No runtime behavior changed in any package — documentation and comments only.
+- Updated dependencies [b791198]
+- Updated dependencies [bc12f3a]
+- Updated dependencies [2834c3f]
+- Updated dependencies [90b6dc1]
+- Updated dependencies [f178f9a]
+- Updated dependencies [9efcff2]
+- Updated dependencies [4d7eb71]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [4d7eb71]
+  - @caisson/field-crypto@0.2.4
+  - @caisson/kernel@0.4.2
+  - @caisson/license-verify@0.3.0
+  - @caisson/local-store@0.2.4
+  - @caisson/local-inference@0.1.0
+  - @caisson/local-privacy@0.1.0
+  - @caisson/local-sync@0.1.0
+
 ## 0.2.3
 
 ### Patch Changes

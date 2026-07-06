@@ -9,7 +9,10 @@ const config: NextConfig = {
   reactStrictMode: true,
   serverExternalPackages: [
     "@caisson/local-ai",
+    "@caisson/local-inference",
+    "@caisson/local-privacy",
     "@caisson/local-store",
+    "@caisson/local-sync",
     "@caisson/field-crypto",
     "@caisson/license-verify",
     "@caisson/kernel",

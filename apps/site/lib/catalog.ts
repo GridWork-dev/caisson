@@ -1,38 +1,26 @@
 // Bridges the marketing PRICE DISPLAY (`lib/pricing.ts`) to a cart/checkout-ready catalog: every
-// sellable one-time item (the 4 editions, the bundle, and the 11 à-la-carte modules) carries the
-// Paddle price id the cart's multi-item checkout passes to `Paddle.Checkout.open()`.
+// sellable one-time item (the 6 bundles and the 22 à-la-carte modules) carries the Paddle price id
+// the cart's multi-item checkout passes to `Paddle.Checkout.open()`.
 //
-// CART IDS ARE KIND-NAMESPACED (`edition:<slug>` / `module:<slug>` / `bundle`). No module id
-// collides with an edition id anymore (the four edition-core rows were dropped, ADR-0238 — the
-// catalog.test.ts data-lint keeps it that way), but the namespace stays: it keeps the cart's
-// id-dedup and the grid lookups kind-scoped by construction (`editionCatalogItem` /
-// `moduleCatalogItem` / `bundleCatalogItem`), never a bare-slug search, so a future collision is
-// contained before it reaches a buyer.
+// CART IDS ARE KIND-NAMESPACED (`bundle:<slug>` / `module:<slug>`). A bundle id can collide with a
+// module-adjacent name, so the namespace keeps the cart's id-dedup and the grid lookups kind-scoped
+// by construction (`bundleCatalogItem` / `moduleCatalogItem`), never a bare-slug search.
 //
-// Editions + the bundle map to the REAL Paddle sandbox price ids `@caisson/pricebook`'s
-// PURCHASE_BOOK already carries (ADR-0106/0116) — note the pricebook's entitlement ids for
-// Local-first AI and Agentic-Dev are `local-ai`/`agent-dev` (the registry edition ids), distinct
-// from this site's marketing slugs/labels (see `purchases.ts`'s ENTITLEMENT-ID NOTE). The 11
-// modules ALSO carry REAL Paddle sandbox price ids (module-SKU wiring, 2026-07-02) —
-// `MODULE_PRICE_IDS` below, matched one-for-one against the module rows `@caisson/pricebook`'s
-// PURCHASE_BOOK added in the same wave. `resolvePurchase` throws fail-closed on an unresolved id
-// (ADR-0089 §6 / ADR-0113), so a mismatched id reaching production grants nothing rather than
-// silently succeeding. This file is display + cart wiring only, not a source of commerce truth.
+// Bundles + modules map to the REAL Paddle sandbox price ids `@caisson/pricebook`'s PURCHASE_BOOK
+// carries (the W7 catalog big-bang section; the original 11 modules from the 2026-07-02 module-SKU
+// wiring). `resolvePurchase` throws fail-closed on an unresolved id (ADR-0089 §6 / ADR-0113), so a
+// mismatched id reaching production grants nothing rather than silently succeeding. The retired
+// edition-era ids (4 editions + the legacy $1,499 bundle) are absent — their Paddle products are
+// archived, and `pruneCart` drops any persisted cart line still carrying one. This file is
+// display + cart wiring only, not a source of commerce truth.
 import type { CartItem } from "./cart";
-import {
-  type EditionId,
-  EDITION_PRICES,
-  isEditionId,
-  MODULE_PRICES,
-  type PriceAnchor,
-  priceById,
-} from "./pricing";
+import { type BundleId, BUNDLE_PRICES, MODULE_PRICES } from "./pricing";
 
-export type CatalogKind = "module" | "edition" | "bundle";
+export type CatalogKind = "module" | "bundle";
 
 export interface CatalogItem {
-  /** Stable, KIND-NAMESPACED cart key (`edition:<slug>` / `module:<slug>` / `bundle`) — also the
-   *  Plausible event prop and the React list key. */
+  /** Stable, KIND-NAMESPACED cart key (`bundle:<slug>` / `module:<slug>`) — also the Plausible
+   *  event prop and the React list key. */
   id: string;
   kind: CatalogKind;
   label: string;
@@ -44,18 +32,18 @@ export interface CatalogItem {
   blurb: string;
 }
 
-/** Marketing edition slug -> the pricebook's REAL Paddle price id (`purchases.ts`, ADR-0106/0116
- *  sandbox rows). A `Record` over the closed `EditionId` union, not an open index signature — every
- *  edition MUST resolve, so a future 5th edition added to `pricing.ts` without a row here is a
- *  compile error, not a silent `undefined` at checkout time. */
-const EDITION_PRICE_IDS: Record<EditionId, string> = {
-  compliance: "pri_01kwd76be2eq96kff5nqw236c0",
-  "ai-kit": "pri_01kwd76c1pgs2csxcj2n0y7vv0",
-  "local-first": "pri_01kwd76cahy825m14334aqf209", // pricebook entitlement id "local-ai"
-  "agentic-dev": "pri_01kwd76ck3w8myy4p4f1gj0dcy", // pricebook entitlement id "agent-dev"
+/** Bundle id -> the pricebook's REAL Paddle price id (`purchases.ts`, W7 catalog big-bang rows —
+ *  each grants the CANONICAL bundle entitlement id). A `Record` over the closed `BundleId` union,
+ *  not an open index signature — every bundle MUST resolve, so a future 7th bundle added to
+ *  `pricing.ts` without a row here is a compile error, not a silent `undefined` at checkout time. */
+const BUNDLE_PRICE_IDS: Record<BundleId, string> = {
+  compliance: "pri_01kwwqa2hne35c1df5xe8p91z3",
+  "ai-production": "pri_01kwwqa2rcxtn8pt3dr3jdnnf0",
+  "local-first": "pri_01kwwqa2xp3jp1qww2j5ya0meh",
+  "agentic-dev": "pri_01kwwqa332mweg8veaarkygbae",
+  provenance: "pri_01kwwqa3872cs4c53w8qhhz31k",
+  everything: "pri_01kwwqa3dfp8k0v5k3bbg3pd5f",
 };
-
-const BUNDLE_PRICE_ID = "pri_01kwd76bp60acq51mftvpgr42k";
 
 /** À-la-carte module slug -> the pricebook's REAL Paddle price id (`purchases.ts`'s per-module REAL
  *  section, module-SKU wiring 2026-07-02). MUST match the same slug's row there EXACTLY — the cart
@@ -63,7 +51,7 @@ const BUNDLE_PRICE_ID = "pri_01kwd76bp60acq51mftvpgr42k";
  *  the entitlement (ADR-0071/0113); a mismatch fails resolvePurchase closed and a module purchase
  *  grants NOTHING. Keyed by every id `pricing.ts`'s MODULE_PRICES carries; `moduleRealPriceId` below
  *  throws if a future module is added there without a matching row here — the runtime mirror of the
- *  `EDITION_PRICE_IDS` `Record<EditionId, string>` compile-time guard above (module ids aren't a
+ *  `BUNDLE_PRICE_IDS` `Record<BundleId, string>` compile-time guard above (module ids aren't a
  *  closed union, so the check runs at catalog build time instead of at `tsc`). (catalog.test.ts pins
  *  the cross-package invariant against PURCHASE_BOOK.) */
 const MODULE_PRICE_IDS: Record<string, string> = {
@@ -81,10 +69,23 @@ const MODULE_PRICE_IDS: Record<string, string> = {
   "local-store": "pri_01kwj6m5w3s4fmvseap7zmp5yf",
   "agent-kernel": "pri_01kwj6m63qpt52489tq5a3v6q3",
   "agent-runner": "pri_01kwj71a53hycbspsfv8pck5vc",
+  // The 11 carve/standalone SKUs from the W7 catalog big-bang (each matched one-for-one against
+  // the pricebook's W7 PURCHASE_BOOK rows).
+  "compliance-core": "pri_01kwwqa0k69m965tx8hgsv904h",
+  "frameworks-pack": "pri_01kwwqa0rkz3etv2yfd6c7jjad",
+  "signing-primitive": "pri_01kwwqa0y1hn63taahdh7y03vf",
+  credits: "pri_01kwwqa1413c33yfsrvjb4r34a",
+  "local-sync": "pri_01kwwqa1b33ycmh114440xc6re",
+  "local-inference": "pri_01kwwqa1gvkpj7g0jfna7h2qcr",
+  "local-privacy": "pri_01kwwqa1p152hskczw7daszzgn",
+  "tool-exec": "pri_01kwwqa1v2gm7cr5g1rpzyk522",
+  "org-controls": "pri_01kwwqa20m42dmedx9mprk085k",
+  "billing-orchestration": "pri_01kwwqa266p6smw4yaanxg1n5j",
+  "ui-pro": "pri_01kwwqa2c799fpe1af76p75r7r",
 };
 
-function editionCartId(slug: string): string {
-  return `edition:${slug}`;
+function bundleCartId(slug: string): string {
+  return `bundle:${slug}`;
 }
 
 function moduleCartId(slug: string): string {
@@ -101,48 +102,29 @@ function moduleRealPriceId(moduleId: string): string {
   return priceId;
 }
 
-function hasAmount(p: PriceAnchor): p is PriceAnchor & { amount: number } {
-  return p.amount !== null;
-}
-
-/** The four editions as cart-ready catalog items, each carrying its real Paddle price id. */
-export const EDITION_CATALOG: readonly CatalogItem[] = EDITION_PRICES.filter(
-  hasAmount,
-).map((p) => {
-  if (!isEditionId(p.id)) {
-    throw new Error(`catalog.ts: "${p.id}" is not a known edition id`);
+/** The six bundles as cart-ready catalog items, each carrying its real Paddle price id. */
+export const BUNDLE_CATALOG: readonly CatalogItem[] = BUNDLE_PRICES.map((p) => {
+  if (p.amount === null) {
+    throw new Error(`catalog.ts: bundle "${p.id}" has no committed amount`);
   }
   return {
-    id: editionCartId(p.id),
-    kind: "edition",
+    id: bundleCartId(p.id),
+    kind: "bundle" as const,
     label: p.label,
     amount: p.amount,
-    priceId: EDITION_PRICE_IDS[p.id],
+    priceId: BUNDLE_PRICE_IDS[p.id],
     blurb: p.note,
   };
 });
 
-/** The Everything bundle as a cart-ready catalog item, or `undefined` if `pricing.ts` ever drops
- *  the bundle row entirely (defensive — the row is always present today). */
-export const BUNDLE_CATALOG_ITEM: CatalogItem | undefined = (() => {
-  const bundle = priceById("bundle");
-  if (!bundle || bundle.amount === null) return undefined;
-  return {
-    id: "bundle",
-    kind: "bundle",
-    label: bundle.label,
-    amount: bundle.amount,
-    priceId: BUNDLE_PRICE_ID,
-    blurb: bundle.note,
-  };
-})();
-
-/** Every à-la-carte module as a cart-ready catalog item, each carrying its real Paddle price id
- *  (see the file header). */
+/** Every à-la-carte module as a cart-ready catalog item. Post-W7 every sellable SKU is
+ *  Paddle-wired, so this is a straight map — a module added to `pricing.ts` without a
+ *  `MODULE_PRICE_IDS` row fails the build via `moduleRealPriceId`'s fail-closed throw (never a
+ *  silently unpurchasable card). */
 export const MODULE_CATALOG: readonly CatalogItem[] = MODULE_PRICES.map(
   (m) => ({
     id: moduleCartId(m.id),
-    kind: "module",
+    kind: "module" as const,
     label: m.label,
     amount: m.amount,
     priceId: moduleRealPriceId(m.id),
@@ -151,19 +133,16 @@ export const MODULE_CATALOG: readonly CatalogItem[] = MODULE_PRICES.map(
 );
 
 /** Every Paddle price id the live catalog can sell — the hydration allowlist for
- *  `lib/cart.ts` `pruneCart` (a persisted cart line carrying a retired id, e.g. the four
- *  ADR-0238 edition-core rows, is dropped before it can reach checkout). */
+ *  `lib/cart.ts` `pruneCart` (a persisted cart line carrying a retired id — the four ADR-0238
+ *  edition-core rows, the 4 archived editions, or the legacy $1,499 bundle — is dropped before it
+ *  can reach checkout). */
 export const LIVE_PRICE_IDS: ReadonlySet<string> = new Set(
-  [
-    ...EDITION_CATALOG,
-    ...MODULE_CATALOG,
-    ...(BUNDLE_CATALOG_ITEM ? [BUNDLE_CATALOG_ITEM] : []),
-  ].map((c) => c.priceId),
+  [...BUNDLE_CATALOG, ...MODULE_CATALOG].map((c) => c.priceId),
 );
 
-/** The cart-ready catalog item for an edition slug (`compliance`, `ai-kit`, …). */
-export function editionCatalogItem(slug: string): CatalogItem | undefined {
-  return EDITION_CATALOG.find((c) => c.id === editionCartId(slug));
+/** The cart-ready catalog item for a bundle slug (`compliance`, `everything`, …). */
+export function bundleCatalogItem(slug: string): CatalogItem | undefined {
+  return BUNDLE_CATALOG.find((c) => c.id === bundleCartId(slug));
 }
 
 /** The cart-ready catalog item for a module slug (`field-crypto`, `ai-meter`, …). */

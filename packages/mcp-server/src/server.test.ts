@@ -437,3 +437,96 @@ describe("ADR-0076 tool-registration seam (per-tool entitlement gating)", () => 
     });
   });
 });
+
+describe("ADR-0257 bundle vocabulary through the server gate (legacy aliases keep resolving)", () => {
+  // The buyer MCP consumes `expandEntitlements` — the single ADR-0257 alias point — so a legacy
+  // purchased id ("ai-kit") and its new bundle id ("ai-production") must gate identically, and a
+  // first-class kind:"bundle" index entry must expand via its members map exactly like an edition.
+  const bundleIndex = loadRegistryIndex({
+    schemaVersion: 1,
+    modules: [
+      baseModule("@caisson/kernel"),
+      editionModule("@caisson/ai-kit", "ai-kit", {
+        "@caisson/ai-kit": "0.1.0",
+        "@caisson/gateway": "0.1.0",
+      }),
+      baseModule("@caisson/gateway", ["ai-kit"]),
+      {
+        id: "@caisson/provenance",
+        latest: "0.1.0",
+        versions: [
+          {
+            version: "0.1.0",
+            manifest: {
+              id: "@caisson/provenance",
+              version: "0.1.0",
+              kind: "bundle",
+              editions: [],
+              tier: "paid",
+              priceCents: 39900,
+              license: "LicenseRef-Caisson-Commercial",
+              members: { "@caisson/kernel": "0.1.0" },
+              description: "Provenance bundle fixture (ADR-0257).",
+            },
+            publishedAt: "2026-07-06T00:00:00.000Z",
+            gateAttestation: "ci-fixture@0000000",
+          },
+        ],
+      },
+    ],
+  });
+
+  const srv = createMcpServer({
+    tokens: [
+      {
+        token: "tok_acct_l_000000000000",
+        accountId: "acct_legacy",
+        entitlements: ["ai-kit"], // legacy purchased id — must never 422/downgrade (ADR-0257)
+      },
+      {
+        token: "tok_acct_n_111111111111",
+        accountId: "acct_new",
+        entitlements: ["ai-production"], // the new bundle id — same leaf set via the alias map
+      },
+      {
+        token: "tok_acct_p_222222222222",
+        accountId: "acct_prov",
+        entitlements: ["provenance"], // a kind:"bundle" entry expands via its members map
+      },
+    ],
+    index: bundleIndex,
+    onGenerate: async () => ({ generationId: "gen_b" }),
+  });
+
+  test("a legacy purchased id and its new bundle id gate the generate path identically", async () => {
+    // The generate gate is the server's `expandEntitlements` consumer (ADR-0071) — both tokens
+    // must resolve @caisson/gateway (an ai-kit member) through the ADR-0257 alias map.
+    const legacy = srv.authenticate("tok_acct_l_000000000000");
+    const modern = srv.authenticate("tok_acct_n_111111111111");
+    for (const s of [legacy, modern]) {
+      expect(
+        await srv.handleToolCall(s, "generate", {
+          projectName: "my-app",
+          modules: [{ id: "@caisson/gateway", version: "0.1.0" }],
+        }),
+      ).toEqual({ generationId: "gen_b" });
+    }
+  });
+
+  test('a kind:"bundle" entitlement expands via its members map (edition parity)', async () => {
+    const prov = srv.authenticate("tok_acct_p_222222222222");
+    expect(
+      await srv.handleToolCall(prov, "generate", {
+        projectName: "my-app",
+        modules: [{ id: "@caisson/kernel", version: "0.1.0" }],
+      }),
+    ).toEqual({ generationId: "gen_b" });
+    // gateway is NOT in the provenance members map — denied before the host call (fail-closed).
+    await expect(
+      srv.handleToolCall(prov, "generate", {
+        projectName: "my-app",
+        modules: [{ id: "@caisson/gateway", version: "0.1.0" }],
+      }),
+    ).rejects.toBeInstanceOf(EntitlementError);
+  });
+});

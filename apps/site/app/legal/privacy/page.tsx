@@ -311,10 +311,10 @@ export default function PrivacyPage() {
         <p style={{ marginTop: "var(--cs-space-5)", ...prose.paragraph }}>
           To exercise any of these rights, email{" "}
           <a
-            href="mailto:<email>"
+            href="mailto:admin@caisson.sh"
             style={{ color: "var(--cs-accent)" }}
           >
-            <email>
+            admin@caisson.sh
           </a>{" "}
           with the subject line &ldquo;Data request — [right you are
           exercising]&rdquo;. We will respond within 30 days. If you are
@@ -337,15 +337,15 @@ export default function PrivacyPage() {
       {/* Contact */}
       <Section eyebrow="Contact" title="Get in touch" band="tint">
         <p style={prose.paragraph}>
-          GridWork Digital LLC
+          Caisson Software LLC
           <br />
           Atlanta, Georgia, USA
           <br />
           <a
-            href="mailto:<email>"
+            href="mailto:admin@caisson.sh"
             style={{ color: "var(--cs-accent)" }}
           >
-            <email>
+            admin@caisson.sh
           </a>
         </p>
         <p style={{ marginTop: "var(--cs-space-5)", ...prose.paragraph }}>

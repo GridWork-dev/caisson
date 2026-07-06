@@ -2,7 +2,12 @@
 // on the opaque `account_id`; this module is the identity→account indirection that was 1:1 (personal)
 // and is now many-to-many (org). Pure selection logic + RLS-scoped stores over `account_member`
 // (schema.ts). No schema change anywhere else — withTenant/RLS/entitlements/licenses are untouched.
-import { AuthzError } from "@caisson/kernel";
+//
+// SCOPE (ADR-0257 §1.3): this file keeps only the login-critical SESSION-RESOLUTION half
+// (`resolveUserAccounts` / `ensurePersonalAccount` / `selectActiveAccount`) — it runs on every buyer
+// login (apps/site getSession), so it stays in the open Apache-2.0 substrate. The owner-gated MANAGE
+// half (`listAccountMembers` / `addAccountMember` / `assertCanManageMembers`) moved to the commercial
+// `@caisson/org-controls`, which re-uses `AccountMembership` + `Role` from here.
 import { withTenant, withUser, type Transactor } from "@caisson/tenancy-rls";
 
 import type { Role } from "./session.ts";
@@ -79,45 +84,4 @@ export function selectActiveAccount(
   return (
     memberships.find((m) => m.accountId === m.userId) ?? memberships[0] ?? null
   );
-}
-
-/** Owner-only gate for member/billing management (ADR-0176 — seats cannot manage). */
-export function assertCanManageMembers(role: Role): void {
-  if (role !== "owner") {
-    throw new AuthzError("Only an account owner can manage members or billing");
-  }
-}
-
-/** List the members of an account (member-management path — tenant-scoped via `withTenant`). */
-export async function listAccountMembers(
-  db: Transactor,
-  accountId: string,
-): Promise<AccountMembership[]> {
-  return withTenant(db, accountId, async (tx) => {
-    const { rows } = await tx.query<MemberRow>(
-      `SELECT account_id, user_id, role FROM account_member ORDER BY created_at`,
-    );
-    return rows.map(toMembership);
-  });
-}
-
-/**
- * An owner adds a member (default role `seat`) to their account — tenant-scoped write, owner-gated.
- * `actorRole` is the caller's role in `accountId` (from their resolved session). Idempotent.
- */
-export async function addAccountMember(
-  db: Transactor,
-  actorRole: Role,
-  accountId: string,
-  userId: string,
-  role: Role = "seat",
-): Promise<void> {
-  assertCanManageMembers(actorRole);
-  await withTenant(db, accountId, async (tx) => {
-    await tx.query(
-      `INSERT INTO account_member (account_id, user_id, role)
-       VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
-      [accountId, userId, role],
-    );
-  });
 }

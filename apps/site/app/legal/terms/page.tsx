@@ -7,7 +7,7 @@ import { Card, Section } from "@/components";
 export const metadata = buildMetadata({
   title: "Terms of Use",
   description:
-    "Terms governing use of caisson.sh and purchase of Caisson software licenses. GridWork Digital LLC, governed by the laws of Georgia, USA.",
+    "Terms governing use of caisson.sh and purchase of Caisson software licenses. Caisson Software LLC, governed by the laws of Georgia, USA.",
   path: "/legal/terms",
 });
 
@@ -169,7 +169,7 @@ export default function TermsPage() {
         <p style={prose.paragraph}>
           All content on caisson.sh — including text, code examples, diagrams,
           the Caisson wordmark and glyph, and the documentation — is owned by
-          GridWork Digital LLC or its licensors. All rights reserved.
+          Caisson Software LLC or its licensors. All rights reserved.
         </p>
         <p style={prose.paragraph}>
           You may link to caisson.sh and quote brief excerpts for the purpose of
@@ -178,7 +178,7 @@ export default function TermsPage() {
         </p>
         <p style={prose.paragraph}>
           The Caisson name, wordmark, glyph, and &ldquo;Fail-closed by
-          construction&rdquo; tagline are proprietary marks of GridWork Digital
+          construction&rdquo; tagline are proprietary marks of Caisson Software
           LLC. Use in public materials requires written permission.
         </p>
         <p style={prose.paragraph}>
@@ -204,7 +204,7 @@ export default function TermsPage() {
           You purchase a Caisson license from Paddle, and Paddle collects
           payment, calculates and remits applicable sales tax and VAT, and
           issues your order receipt. The Caisson software itself remains
-          licensed to you by GridWork Digital LLC under the{" "}
+          licensed to you by Caisson Software LLC under the{" "}
           <a href="/legal/eula" style={{ color: "var(--cs-accent)" }}>
             Commercial License Agreement
           </a>
@@ -257,10 +257,10 @@ export default function TermsPage() {
           possible, within 14 days of approval. To request a refund, contact us
           at{" "}
           <a
-            href="mailto:<email>"
+            href="mailto:admin@caisson.sh"
             style={{ color: "var(--cs-accent)" }}
           >
-            <email>
+            admin@caisson.sh
           </a>{" "}
           with your order number, or contact Paddle directly through{" "}
           <a
@@ -286,13 +286,13 @@ export default function TermsPage() {
         <h3 style={prose.h3}>Buyer support</h3>
         <p style={prose.paragraph}>
           For questions about your order, license, or a refund request that
-          Paddle&apos;s own support cannot resolve, contact GridWork Digital LLC
+          Paddle&apos;s own support cannot resolve, contact Caisson Software LLC
           at{" "}
           <a
-            href="mailto:<email>"
+            href="mailto:admin@caisson.sh"
             style={{ color: "var(--cs-accent)" }}
           >
-            <email>
+            admin@caisson.sh
           </a>
           .
         </p>
@@ -321,7 +321,7 @@ export default function TermsPage() {
         <p style={prose.paragraph}>
           THE SITE AND ITS CONTENTS ARE PROVIDED &ldquo;AS IS&rdquo; AND
           &ldquo;AS AVAILABLE&rdquo; WITHOUT WARRANTY OF ANY KIND. TO THE
-          MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, GRIDWORK DIGITAL LLC
+          MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, CAISSON SOFTWARE LLC
           DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT
           LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
           PURPOSE, AND NON-INFRINGEMENT.
@@ -343,13 +343,13 @@ export default function TermsPage() {
       <Section eyebrow="Liability" title="Limitation of liability">
         <p style={prose.paragraph}>
           TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL
-          GRIDWORK DIGITAL LLC OR ITS OFFICERS, DIRECTORS, EMPLOYEES, OR
+          CAISSON SOFTWARE LLC OR ITS OFFICERS, DIRECTORS, EMPLOYEES, OR
           CONTRACTORS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL,
           CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING OUT OF OR RELATED TO YOUR
           USE OF THIS SITE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
         </p>
         <p style={prose.paragraph}>
-          GRIDWORK DIGITAL LLC&apos;S TOTAL LIABILITY TO YOU FOR CLAIMS ARISING
+          CAISSON SOFTWARE LLC&apos;S TOTAL LIABILITY TO YOU FOR CLAIMS ARISING
           FROM YOUR USE OF THIS SITE SHALL NOT EXCEED ONE HUNDRED US DOLLARS
           (USD $100). LIABILITY ARISING FROM THE USE OF CAISSON SOFTWARE IS
           GOVERNED BY THE COMMERCIAL LICENSE AGREEMENT.
@@ -373,7 +373,7 @@ export default function TermsPage() {
           Georgia, and you consent to the personal jurisdiction of those courts.
         </p>
         <p style={prose.paragraph}>
-          GridWork Digital LLC is a limited liability company registered in the
+          Caisson Software LLC is a limited liability company registered in the
           State of Georgia, USA.
         </p>
       </Section>
@@ -396,15 +396,15 @@ export default function TermsPage() {
           Questions about these Terms? Contact us at:
         </p>
         <p style={{ marginTop: "var(--cs-space-4)", ...prose.paragraph }}>
-          GridWork Digital LLC
+          Caisson Software LLC
           <br />
           Atlanta, Georgia, USA
           <br />
           <a
-            href="mailto:<email>"
+            href="mailto:admin@caisson.sh"
             style={{ color: "var(--cs-accent)" }}
           >
-            <email>
+            admin@caisson.sh
           </a>
         </p>
       </Section>

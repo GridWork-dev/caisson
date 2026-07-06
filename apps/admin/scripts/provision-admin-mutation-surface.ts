@@ -17,7 +17,7 @@ import {
   ADMIN_MUTATION_PROVISION_SQL,
   ENTITLEMENT_ADMIN_COMP_MIGRATION_SQL,
 } from "@caisson/service-license";
-import { ADMIN_WRITE_ROLE_BOOTSTRAP_SQL } from "@caisson/tenancy-rls";
+import { ADMIN_WRITE_ROLE_BOOTSTRAP_SQL } from "@caisson/org-controls";
 import { Pool } from "pg";
 import {
   ADMIN_ROLE_BOOTSTRAP_SQL,

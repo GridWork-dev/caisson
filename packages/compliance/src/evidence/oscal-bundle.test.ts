@@ -12,8 +12,11 @@ import { canonicalize, type JsonValue } from "@caisson/kernel";
 import {
   parseEvidencePackManifest,
   type EvidencePackManifest,
-} from "./pack-format.ts";
-import { Ed25519Signer, verifyEvidenceSignature } from "./sign.ts";
+} from "@caisson/compliance-core";
+import {
+  Ed25519Signer,
+  verifyEvidenceSignature,
+} from "@caisson/signing-primitive";
 import { assembleOscalEvidenceBundle } from "./oscal-bundle.ts";
 
 const TENANT_SEED = Uint8Array.from(Buffer.from("42".repeat(32), "hex"));

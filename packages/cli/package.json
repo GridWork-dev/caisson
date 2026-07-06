@@ -1,6 +1,6 @@
 {
   "name": "@caisson/cli",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "type": "module",
   "license": "Apache-2.0",
   "publishConfig": {
@@ -32,7 +32,6 @@
     "test": "bun test ./src ./scripts"
   },
   "dependencies": {
-    "@caisson/credits": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/migrate": "workspace:*",
     "@caisson/registry-schema": "workspace:*",
@@ -40,6 +39,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@caisson/credits": "workspace:*",
     "@caisson/eslint-config": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",
     "@caisson/testing": "workspace:*",

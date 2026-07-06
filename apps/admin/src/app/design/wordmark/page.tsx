@@ -1,4 +1,4 @@
-import { Glyph } from "@caisson/ui/components";
+import { Glyph } from "@caisson/brand";
 
 import { CONCEPTS } from "./marks";
 

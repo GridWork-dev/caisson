@@ -240,6 +240,47 @@ describe("verifyLicense — fail-safe-to-community (threat TM-LIC)", () => {
     expect(verifyDev(bad).tier).toBe("community");
   });
 
+  test("a valid entitledSince map round-trips through verify (ADR-0257 snapshot claim)", () => {
+    const token = mint({
+      entitlements: ["compliance"],
+      expiry: null,
+      licenseId: VALID_UUID,
+      major: 1,
+      tier: "pro",
+      entitledSince: { compliance: "2026-07-06T00:00:00.000Z" },
+    });
+    const result = verifyDev(token);
+    expect(result.valid).toBe(true);
+    expect(result.claims?.entitledSince).toEqual({
+      compliance: "2026-07-06T00:00:00.000Z",
+    });
+  });
+
+  test("a malformed entitledSince value (not an ISO instant) fails strict parsing → community", () => {
+    const bad = mint({
+      entitlements: ["compliance"],
+      expiry: null,
+      licenseId: VALID_UUID,
+      major: 1,
+      tier: "pro",
+      entitledSince: { compliance: "sometime-in-june" },
+    });
+    expect(verifyDev(bad).tier).toBe("community");
+  });
+
+  test("a null VALUE in the entitledSince map fails strict parsing → community", () => {
+    // ADR-0257: absent key = grandfathered — a null value is never valid (mirrors updatesWindows).
+    const bad = mint({
+      entitlements: ["compliance"],
+      expiry: null,
+      licenseId: VALID_UUID,
+      major: 1,
+      tier: "pro",
+      entitledSince: { compliance: null },
+    });
+    expect(verifyDev(bad).tier).toBe("community");
+  });
+
   test("a NON-CANONICAL signed payload → community (canonical conformance)", () => {
     // Sign authentic bytes whose key order is NOT canonical; the signature is genuine but the
     // payload is not `canonicalize(claims)`, so format conformance rejects it.

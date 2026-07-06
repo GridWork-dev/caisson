@@ -1,4 +1,4 @@
-// src/pricing-doc.ts — deterministic pricing/edition/module docs generated FROM the pricebook/catalog
+// src/pricing-doc.ts — deterministic pricing/bundle/module docs generated FROM the pricebook/catalog
 // source of truth (ADR-0234 F4). NOT scraped page text: the facts are the committed data structures in
 // `apps/site/lib/pricing.ts` (the display SOT the cart + JSON-LD also read), so a cited price cannot
 // silently drift stale. The output is plain markdown `DocsSource`s that flow through the SAME
@@ -12,7 +12,7 @@ import type { DocsSource } from "./types.ts";
 /** Billing unit, mirroring `apps/site/lib/pricing.ts` `PriceAnchor.unit` (`null` = "Contact us"). */
 const priceUnitSchema = z.enum(["once", "month", "year"]).nullable();
 
-/** One priced anchor — an edition or a plan. Mirror of the SOT's `PriceAnchor` (strict: an added SOT
+/** One priced anchor — a bundle or a plan. Mirror of the SOT's `PriceAnchor` (strict: an added SOT
  *  field must be reflected here, not silently dropped, so the doc stays a faithful projection). */
 const priceAnchorSchema = z
   .object({
@@ -32,32 +32,30 @@ const moduleFactSchema = z
     id: z.string().min(1),
     label: z.string().min(1),
     amount: z.number().int().nonnegative(),
-    /** Owning edition id (matches an entry in `editions`). */
-    edition: z.string().min(1),
+    /** The bundles this module is a member of (1:N — the SOT's index-pinned `bundles[]`); empty =
+     *  a standalone SKU only the whole-catalog Everything bundle grants. */
+    bundles: z.array(z.string().min(1)),
     blurb: z.string(),
-    /** Browse-family only: the module is NOT granted by its edition (or the bundle) — sold
-     *  standalone. Mirrors the SOT flag; the doc must never claim edition inclusion for these. */
-    standaloneOnly: z.boolean().optional(),
   })
   .strict();
 
 /**
  * The pricing facts a prospect-facing doc renders. This is the validated projection of the live SOT
- * (`apps/site/lib/pricing.ts` `EDITION_PRICES` / `MODULE_PRICES` / `PLAN_PRICES`). Bounded + strict so
+ * (`apps/site/lib/pricing.ts` `BUNDLE_PRICES` / `MODULE_PRICES` / `PLAN_PRICES`). Bounded + strict so
  * a shape drift in the SOT fails loudly at load rather than emitting a malformed pricing doc.
  */
 export const PricingFactsSchema = z
   .object({
-    editions: z.array(priceAnchorSchema),
+    bundles: z.array(priceAnchorSchema),
     modules: z.array(moduleFactSchema),
-    /** The bundle + subscription/per-module/enterprise anchors (the SOT's `PLAN_PRICES`). */
+    /** The subscription/per-module/enterprise anchors (the SOT's `PLAN_PRICES`). */
     plans: z.array(priceAnchorSchema),
   })
   .strict();
 export type PricingFacts = z.infer<typeof PricingFactsSchema>;
 
 /** SPDX marker for the generated pricing docs — pricing is public information (as public as the open
- *  base docs), so it carries the open license, not the commercial edition marker. */
+ *  base docs), so it carries the open license, not the commercial module marker. */
 const PRICING_LICENSE = "Apache-2.0";
 
 type PriceLike = {
@@ -91,31 +89,26 @@ function pricingSource(source: string, title: string, raw: string): DocsSource {
   };
 }
 
-function editionsDoc(facts: PricingFacts): string {
+function bundlesDoc(facts: PricingFacts): string {
   const lines = [
     "---",
-    "title: Caisson editions and pricing",
-    "description: The four Caisson editions, their one-time prices, and the modules each includes.",
+    "title: Caisson bundles and pricing",
+    "description: The six Caisson bundles, their one-time prices, and the modules each includes.",
     "---",
     "",
-    "# Caisson editions and pricing",
+    "# Caisson bundles and pricing",
     "",
-    "Caisson is a composable base substrate plus four premium editions. Every edition is a one-time",
-    "perpetual purchase — you own the source. The prices below are the committed public prices.",
+    "Caisson is a composable base substrate plus six bundles. Every bundle is a one-time perpetual",
+    "purchase — you own the source. The prices below are the committed public prices.",
     "",
   ];
-  for (const edition of facts.editions) {
-    // standaloneOnly rows are browse-family only — the edition does NOT grant them, so listing
-    // them under "Includes:" would claim a grant that does not exist.
-    const modules = facts.modules.filter(
-      (m) => m.edition === edition.id && m.standaloneOnly !== true,
-    );
-    lines.push(
-      `## ${edition.label} — ${fmtPrice(edition)}`,
-      "",
-      edition.note,
-      "",
-    );
+  for (const bundle of facts.bundles) {
+    // The whole-catalog Everything bundle includes every sellable module by construction.
+    const modules =
+      bundle.id === "everything"
+        ? facts.modules
+        : facts.modules.filter((m) => m.bundles.includes(bundle.id));
+    lines.push(`## ${bundle.label} — ${fmtPrice(bundle)}`, "", bundle.note, "");
     if (modules.length > 0) {
       const list = modules
         .map((m) => `${m.label} (${moduleUsd(m.amount)})`)
@@ -127,29 +120,29 @@ function editionsDoc(facts: PricingFacts): string {
 }
 
 function modulesDoc(facts: PricingFacts): string {
-  const editionLabel = new Map(facts.editions.map((e) => [e.id, e.label]));
+  const bundleLabel = new Map(facts.bundles.map((b) => [b.id, b.label]));
   const lines = [
     "---",
     "title: Caisson modules a la carte",
-    "description: Every Caisson module sold individually, its one-time price, and the edition it belongs to.",
+    "description: Every Caisson module sold individually, its one-time price, and the bundles it belongs to.",
     "---",
     "",
     "# Caisson modules a la carte",
     "",
-    "Any module can be bought on its own; buying the whole edition or the Everything bundle is cheaper",
-    "once you need several. Every module is a one-time perpetual license.",
+    "Any module can be bought on its own; buying a bundle is cheaper once you need several. Every",
+    "module is a one-time perpetual license.",
     "",
   ];
   for (const mod of facts.modules) {
     lines.push(`## ${mod.label} — ${moduleUsd(mod.amount)}`, "", mod.blurb, "");
-    if (mod.standaloneOnly === true) {
+    if (mod.bundles.length === 0) {
       lines.push(
-        "Standalone module — sold on its own; not included in any edition or the Everything bundle.",
+        "Standalone module — sold on its own; among the bundles, only the whole-catalog Everything bundle includes it.",
         "",
       );
     } else {
-      const owner = editionLabel.get(mod.edition);
-      if (owner !== undefined) lines.push(`Part of the ${owner} edition.`, "");
+      const owners = mod.bundles.map((b) => bundleLabel.get(b) ?? b).join(", ");
+      lines.push(`Part of the ${owners} bundle(s), and of Everything.`, "");
     }
   }
   return lines.join("\n");
@@ -158,30 +151,17 @@ function modulesDoc(facts: PricingFacts): string {
 function plansDoc(facts: PricingFacts): string {
   const lines = [
     "---",
-    "title: Caisson bundle and plans",
-    "description: The Everything bundle, subscription plans, and per-module and enterprise options.",
+    "title: Caisson plans",
+    "description: Subscription plans, per-module purchase, and enterprise options.",
     "---",
     "",
-    "# Caisson bundle and plans",
+    "# Caisson plans",
     "",
-    "Beyond single editions: the Everything bundle, subscriptions, per-module purchase, and enterprise.",
+    "Beyond the one-time bundles: subscriptions, per-module purchase, and enterprise.",
     "",
   ];
-  const editionsSubtotal = facts.editions.reduce(
-    (sum, e) => sum + (e.amount ?? 0),
-    0,
-  );
   for (const plan of facts.plans) {
     lines.push(`## ${plan.label} — ${fmtPrice(plan)}`, "", plan.note, "");
-    if (plan.id === "bundle" && plan.amount !== null) {
-      const saves = Math.max(0, editionsSubtotal - plan.amount);
-      if (saves > 0) {
-        lines.push(
-          `Saves $${saves.toLocaleString("en-US")} versus buying the four editions separately.`,
-          "",
-        );
-      }
-    }
   }
   return lines.join("\n");
 }
@@ -189,20 +169,20 @@ function plansDoc(facts: PricingFacts): string {
 /**
  * Generate the pricing corpus sources from validated facts. Deterministic + pure: same `facts` →
  * identical sources; a changed price → changed source text (regeneration is content-driven, ADR-0234
- * F4). Three docs so citations land on a coherent topic: editions, modules, and the bundle/plans.
+ * F4). Three docs so citations land on a coherent topic: bundles, modules, and the plans.
  */
 export function generatePricingSources(facts: PricingFacts): DocsSource[] {
   return [
     pricingSource(
-      "pricing/editions",
-      "Caisson editions and pricing",
-      editionsDoc(facts),
+      "pricing/bundles",
+      "Caisson bundles and pricing",
+      bundlesDoc(facts),
     ),
     pricingSource(
       "pricing/modules",
       "Caisson modules a la carte",
       modulesDoc(facts),
     ),
-    pricingSource("pricing/plans", "Caisson bundle and plans", plansDoc(facts)),
+    pricingSource("pricing/plans", "Caisson plans", plansDoc(facts)),
   ];
 }
