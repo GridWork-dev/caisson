@@ -100,7 +100,10 @@ describe("deploy-entry edge revocation deny-set (ADR-0225 R-4=B)", () => {
     // The exported factory composes the LIVE denySet.get with the dev verifier — same wiring as
     // the shipped resolver, minus the baked key a committed fixture would require.
     const resolve = buildLicenseEntitlementResolver(devVerify);
-    expect(resolve(tokenReq())).toEqual(["local-ai"]);
+    expect(resolve(tokenReq())).toEqual({
+      entitlements: ["local-ai"],
+      updatesUntil: null,
+    });
   });
 
   test("once the holder's license is revoked and the list loads, the edition is hidden", async () => {

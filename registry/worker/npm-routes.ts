@@ -13,9 +13,14 @@ import { z } from "zod";
 import {
   type RegistryIndex,
   baseModuleIds,
-  expandEntitlements,
   loadRegistryIndex,
 } from "../schema/registry-index";
+import {
+  type ResolvedEntitlements,
+  type ResolvedGate,
+  resolveGate,
+  windowFilterEntry,
+} from "./handler";
 
 // --- tarball sidecar (Fork 1.1) ------------------------------------------------------------------
 // Maps `<@caisson/module>@<version>` → the R2 object key + the two integrity forms npm needs
@@ -81,8 +86,10 @@ export interface NpmEnv {
 }
 
 export interface NpmHandlerOptions {
-  /** Per-request purchased-id resolver (the offline license verify, injected — same as handler.ts). */
-  readonly resolveEntitlements: (request: Request) => readonly string[] | null;
+  /** Per-request license resolver (the offline license verify, injected — same as handler.ts). */
+  readonly resolveEntitlements: (
+    request: Request,
+  ) => ResolvedEntitlements | null;
 }
 
 // --- routing shapes -------------------------------------------------------------------------------
@@ -134,28 +141,8 @@ function errorJson(status: number, error: string): Response {
   });
 }
 
-/**
- * The caller's entitled module-id set: the free Apache base (`baseModuleIds`, always served) ∪ the
- * expansion of the caller's purchased ids. Fail-SAFE — a throwing resolver OR a stale/forged
- * entitlement degrades to base-only, NEVER a 500 (same contract as handler.ts's private version;
- * reused machinery, not re-implemented math). `null` purchased ids = community = base.
- */
-function entitledSet(
-  index: RegistryIndex,
-  resolve: (request: Request) => readonly string[] | null,
-  request: Request,
-): Set<string> {
-  const set = new Set<string>(baseModuleIds(index));
-  try {
-    const purchased = resolve(request);
-    if (purchased === null) return set;
-    for (const memberId of expandEntitlements(index, purchased))
-      set.add(memberId);
-  } catch {
-    // A throwing resolver / stale entitlement → keep the safe base-only view (never crash the edge).
-  }
-  return set;
-}
+// The entitled-set + updates-window gate math is handler.ts's exported `resolveGate` — ONE
+// implementation for both surfaces (was a duplicated private copy here pre-ADR-0251).
 
 // D3 gate: entitled → allowed (null); unentitled + no auth → 401 (retry with token); unentitled +
 // auth present → 404 (indistinguishable from unknown, ADR-0076 no-existence-leak).
@@ -188,18 +175,19 @@ interface PackumentVersion {
 }
 
 /**
- * Synthesize the ABBREVIATED packument (`application/vnd.npm.install-v1+json` shape) from the inlined
- * index + tarball sidecar. Only versions with a sidecar entry (packed + uploaded) are exposed;
- * `dist-tags.latest` is the index entry's `.latest` (E1, latest-only). Content negotiation is a no-op:
- * we ALWAYS return abbreviated, so the vendor `Accept` header can never 406 (the bun-breaking bug).
+ * Synthesize the ABBREVIATED packument (`application/vnd.npm.install-v1+json` shape) from a (possibly
+ * window-filtered, ADR-0251) index entry + tarball sidecar. Only versions with a sidecar entry
+ * (packed + uploaded) are exposed; `dist-tags.latest` is the entry's `.latest` (E1, latest-only —
+ * already recomputed to the newest in-window version when a window applied). Content negotiation is
+ * a no-op: we ALWAYS return abbreviated, so the vendor `Accept` header can never 406 (the
+ * bun-breaking bug).
  */
 function abbreviatedPackument(
-  index: RegistryIndex,
+  entry: RegistryIndex["modules"][number] | undefined,
   sidecar: TarballSidecar,
   id: string,
   origin: string,
 ): Record<string, unknown> {
-  const entry = index.modules.find((m) => m.id === id);
   const slug = id.slice("@caisson/".length);
   const versions: Record<string, PackumentVersion> = {};
   let modified: string | undefined;
@@ -248,6 +236,8 @@ export function createNpmHandler(
   // unparsed object past the type.
   const validated = loadRegistryIndex(index);
   const resolve = options.resolveEntitlements;
+  // The free base is NEVER window-filtered (ADR-0251: the window governs entitled COMMERCIAL pulls).
+  const baseIds = new Set<string>(baseModuleIds(validated));
 
   return async (request: Request, env?: NpmEnv): Promise<Response> => {
     // Writes are out of scope (CI uploads straight to R2): PUT publish + POST audits → 501.
@@ -258,7 +248,18 @@ export function createNpmHandler(
 
     if (path === "/-/ping") return json({}, 200);
 
-    const entitled = entitledSet(validated, resolve, request);
+    const gate: ResolvedGate = resolveGate(validated, resolve, request);
+    const entitled = gate.entitled;
+    // Window-filter an entitled COMMERCIAL entry's versions (ADR-0244/0251); base + an unbounded
+    // window pass through untouched. `null` = every version is out-of-window (fail-closed).
+    const windowed = (
+      id: string,
+    ): RegistryIndex["modules"][number] | undefined | null => {
+      const entry = validated.modules.find((m) => m.id === id);
+      if (entry === undefined) return undefined;
+      if (gate.updatesUntil === null || baseIds.has(id)) return entry;
+      return windowFilterEntry(entry, gate.updatesUntil);
+    };
     const hasAuth = request.headers.get("authorization") !== null;
 
     const tb = TARBALL_RE.exec(path);
@@ -275,6 +276,20 @@ export function createNpmHandler(
       const id = `@caisson/${name}`;
       const status = gateStatus(entitled, id, hasAuth);
       if (status !== null) return errorJson(status, "not_found");
+      // ADR-0244/0251 per-version window check BEFORE the R2 fetch: the gate above proved only
+      // module-level entitlement — an out-of-window (or index-unknown) version of an entitled
+      // commercial module is 404 even though the tarball exists in R2 (fail-closed; the packument
+      // filter alone would still leave the raw version URL pullable).
+      if (gate.updatesUntil !== null && !baseIds.has(id)) {
+        const entry = windowed(id);
+        if (
+          entry === undefined ||
+          entry === null ||
+          !entry.versions.some((v) => v.version === version)
+        ) {
+          return errorJson(404, "not_found");
+        }
+      }
       const bucket = env?.TARBALLS;
       if (bucket === undefined)
         return errorJson(503, "tarball_store_unavailable");
@@ -293,8 +308,15 @@ export function createNpmHandler(
       const id = `@caisson/${name}`;
       const status = gateStatus(entitled, id, hasAuth);
       if (status !== null) return errorJson(status, "not_found");
+      // A fully-out-of-window entry (windowed → null) synthesizes an EMPTY packument — the module
+      // stays visible to its (entitled) buyer, but no version resolves (ADR-0251).
       return json(
-        abbreviatedPackument(validated, sidecar, id, url.origin),
+        abbreviatedPackument(
+          windowed(id) ?? undefined,
+          sidecar,
+          id,
+          url.origin,
+        ),
         200,
       );
     }

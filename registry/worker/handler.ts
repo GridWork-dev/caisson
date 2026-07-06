@@ -19,13 +19,30 @@ import {
 } from "../schema/registry-index";
 
 /**
- * Per-request entitlement source. Returns the caller's PURCHASED IDS from a verified license, or
- * `null` for an unlicensed/community caller. SHOULD be total, but it need not be: the handler runs it
+ * A resolved license: the caller's PURCHASED IDS plus the signed ADR-0244 updates window
+ * (`updatesUntil`, ISO instant). `null` window = unbounded (an absent claim — every pre-0251 token —
+ * or a subscription-backed license, ADR-0251 Decision 2).
+ */
+export interface ResolvedLicense {
+  readonly entitlements: readonly string[];
+  readonly updatesUntil: string | null;
+}
+
+/**
+ * What a resolver may return: the bare purchased-id array (the pre-0251 contract, kept so injected
+ * test doubles stay valid — reads as an unbounded window) or a {@link ResolvedLicense} carrying the
+ * updates window. The live edge resolver (entitlement-filter.ts) always returns the object form.
+ */
+export type ResolvedEntitlements = readonly string[] | ResolvedLicense;
+
+/**
+ * Per-request entitlement source. Returns the caller's resolved entitlements, or `null` for an
+ * unlicensed/community caller. SHOULD be total, but it need not be: the handler runs it
  * INSIDE the fail-safe boundary, so even a throwing resolver degrades to the community (base-only)
  * view, never a 500. When this option is omitted the handler serves the full unfiltered public catalog.
  */
 export interface IndexHandlerOptions {
-  resolveEntitlements?: (request: Request) => readonly string[] | null;
+  resolveEntitlements?: (request: Request) => ResolvedEntitlements | null;
 }
 
 function jsonHeaders(filtering: boolean): Record<string, string> {
@@ -48,27 +65,71 @@ function json(body: unknown, status: number, filtering: boolean): Response {
   });
 }
 
+/** The gate result: the caller's entitled module ids + their updates-window bound (null = unbounded). */
+export interface ResolvedGate {
+  readonly entitled: Set<string>;
+  readonly updatesUntil: string | null;
+}
+
 /**
  * The caller's entitled module-id set for a filtered request: the free base (ADR-0094, always served)
- * ∪ the expansion of the caller's purchased ids. Fail-SAFE: ANY error — a throwing resolver, a
- * malformed token, or a stale entitlement no longer in the index (`expandEntitlements` throws on an
- * unknown id) — degrades to base-only, NEVER a 500. The resolver is called INSIDE the guard so its
- * total-safety does not rely on the injected implementation. `null` purchased ids = community = base.
+ * ∪ the expansion of the caller's purchased ids — plus the license's ADR-0244 updates window
+ * (ADR-0251). Fail-SAFE: ANY error — a throwing resolver, a malformed token, or a stale entitlement
+ * no longer in the index (`expandEntitlements` throws on an unknown id) — degrades to base-only,
+ * NEVER a 500 (base is never window-filtered, so the degraded window is moot). The resolver is
+ * called INSIDE the guard so its total-safety does not rely on the injected implementation.
+ * `null` resolved = community = base. Shared with the npm surface (npm-routes.ts) — ONE gate math.
  */
-function entitledModuleSet(
+export function resolveGate(
   index: RegistryIndex,
-  resolve: (request: Request) => readonly string[] | null,
+  resolve: (request: Request) => ResolvedEntitlements | null,
   request: Request,
-): Set<string> {
+): ResolvedGate {
   const entitled = new Set<string>(baseModuleIds(index));
   try {
-    const purchased = resolve(request);
-    if (purchased === null) return entitled;
+    const resolved = resolve(request);
+    if (resolved === null) return { entitled, updatesUntil: null };
+    const purchased = Array.isArray(resolved)
+      ? resolved
+      : resolved.entitlements;
+    const updatesUntil = Array.isArray(resolved) ? null : resolved.updatesUntil;
     for (const id of expandEntitlements(index, purchased)) entitled.add(id);
+    return { entitled, updatesUntil };
   } catch {
     // A throwing resolver OR a stale/forged entitlement → keep the safe base-only view (no crash).
+    return { entitled, updatesUntil: null };
   }
-  return entitled;
+}
+
+/** One index module entry (the /modules/:id + packument unit the window filter narrows). */
+type ModuleEntry = RegistryIndex["modules"][number];
+
+/**
+ * Narrow a COMMERCIAL module entry to the versions inside the caller's updates window (ADR-0251):
+ * keep `publishedAt <= updatesUntil`, recompute `latest` to the newest IN-WINDOW version (the index
+ * `latest` if it survived, else the max `publishedAt` survivor). Returns `null` when NO version is
+ * in-window — the caller was never entitled to any published version, indistinguishable from
+ * unentitled (fail-closed, ADR-0076). An unparseable bound filters everything (fail-closed). The
+ * caller decides applicability: base/community modules are NEVER window-filtered (the window
+ * governs entitled commercial pulls only).
+ */
+export function windowFilterEntry(
+  entry: ModuleEntry,
+  updatesUntil: string,
+): ModuleEntry | null {
+  const cutoff = Date.parse(updatesUntil);
+  const versions = entry.versions.filter(
+    (v) => Date.parse(v.publishedAt) <= cutoff,
+  );
+  let newest = versions[0];
+  if (newest === undefined) return null;
+  for (const v of versions) {
+    if (Date.parse(v.publishedAt) > Date.parse(newest.publishedAt)) newest = v;
+  }
+  const latest = versions.some((v) => v.version === entry.latest)
+    ? entry.latest
+    : newest.version;
+  return { ...entry, latest, versions };
 }
 
 /**
@@ -87,6 +148,8 @@ export function createIndexHandler(
   const validated = loadRegistryIndex(index);
   const resolve = options.resolveEntitlements;
   const filtering = resolve !== undefined;
+  // The free base is NEVER window-filtered (ADR-0251: the window governs entitled COMMERCIAL pulls).
+  const baseIds = new Set<string>(baseModuleIds(validated));
 
   return (request: Request): Response => {
     if (request.method !== "GET")
@@ -94,13 +157,12 @@ export function createIndexHandler(
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // Entitlement gate (ADR-0008/0071): compute the caller's entitled module set, or `null` when no
-    // resolver is configured (serve everything). The resolver runs inside entitledModuleSet's
-    // fail-safe boundary, so a throw degrades to base-only rather than 500ing the edge.
-    const entitled: Set<string> | null =
-      resolve === undefined
-        ? null
-        : entitledModuleSet(validated, resolve, request);
+    // Entitlement gate (ADR-0008/0071): compute the caller's entitled module set + updates window,
+    // or `null` when no resolver is configured (serve everything). The resolver runs inside
+    // resolveGate's fail-safe boundary, so a throw degrades to base-only rather than 500ing the edge.
+    const gate: ResolvedGate | null =
+      resolve === undefined ? null : resolveGate(validated, resolve, request);
+    const entitled = gate === null ? null : gate.entitled;
 
     if (path === "/" || path === "") {
       const modules = validated.modules
@@ -139,7 +201,23 @@ export function createIndexHandler(
       if (entitled !== null && !entitled.has(id)) {
         return json({ error: "unknown_module" }, 404, filtering);
       }
-      const entry = validated.modules.find((m) => m.id === id);
+      let entry = validated.modules.find((m) => m.id === id);
+      // Updates-window filter (ADR-0244/0251): an entitled COMMERCIAL module serves only versions
+      // published inside the license's window, with `latest` recomputed to the newest in-window
+      // version. Base modules and an unbounded (null/absent) window are untouched. A module with NO
+      // in-window version is 404 — same invisibility as unentitled.
+      if (
+        entry !== undefined &&
+        gate !== null &&
+        gate.updatesUntil !== null &&
+        !baseIds.has(id)
+      ) {
+        const windowed = windowFilterEntry(entry, gate.updatesUntil);
+        if (windowed === null) {
+          return json({ error: "unknown_module" }, 404, filtering);
+        }
+        entry = windowed;
+      }
       return json(entry, 200, filtering);
     }
     return json({ error: "not_found" }, 404, filtering);
