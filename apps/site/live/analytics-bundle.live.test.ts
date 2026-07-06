@@ -1,10 +1,10 @@
-// live/analytics-bundle.live.test.ts — the LIVE analytics-inlining proof (seam 5, ADR-0224 F4=A /
-// ADR-0118). The PostHog + Plausible init components read NEXT_PUBLIC_* at build time; Next inlines
-// those values into the client JS at `next build`, so there is no server call to intercept and no
+// live/analytics-bundle.live.test.ts — the LIVE analytics-inlining proof (ADR-0224 / ADR-0118).
+// The PostHog + Plausible init components read NEXT_PUBLIC_* at build time; Next inlines those
+// values into the client JS at `next build`, so there is no server call to intercept and no
 // double to swap. The one thing a rotation breaks — the env value actually reaching the shipped
 // bundle — is provable only by building with the envs set and grepping the built client chunks.
-// This is the F4=A build-grep leg the operator locked (provider-side INGESTION stays dashboard-
-// verified; only PostHog/Plausible can confirm receipt, so that half is out of the harness).
+// This build-grep leg covers only that (provider-side INGESTION stays dashboard-verified; only
+// PostHog/Plausible can confirm receipt, so that half is out of the harness).
 //
 // ADR-0201 convention: lives OUTSIDE ./lib (default suite `bun test ./lib` / CI / tarball never see
 // it) AND self-skips unless both analytics envs are set. Running leg builds apps/site (heavy — a full
@@ -40,7 +40,7 @@ function bundleContains(chunks: string[], needle: string): boolean {
   return chunks.some((f) => readFileSync(f, "utf8").includes(needle));
 }
 
-describe("analytics bundle-inlining live proof — NEXT_PUBLIC_* reaches the client (seam 5, ADR-0224)", () => {
+describe("analytics bundle-inlining live proof — NEXT_PUBLIC_* reaches the client (ADR-0224)", () => {
   liveTest(
     "a build with the analytics envs inlines the PostHog key + Plausible domain into the client bundle",
     () => {

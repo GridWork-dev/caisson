@@ -1162,7 +1162,7 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       },
       {
         title: "Owner-gated write, allowlisted zero cost",
-        body: "POST /api/byok requires session.role === \"owner\" (ADR-0208, closing a Strix-flagged bypass where any seat could rotate the org's shared key); reads stay seat-visible. resolveActionCost zeroes an inference action's credit cost only when that action is explicitly marked BYOK-covered (ADR-0198); an unclassified action still meters, fail-metered by default.",
+        body: "POST /api/byok requires session.role === \"owner\" (ADR-0208, closing a bypass where any seat could rotate the org's shared key); reads stay seat-visible. resolveActionCost zeroes an inference action's credit cost only when that action is explicitly marked BYOK-covered (ADR-0198); an unclassified action still meters, fail-metered by default.",
       },
     ],
     faq: [

@@ -38,7 +38,7 @@
 
 ### Patch Changes
 
-- 22077d1: Whole-repo audit round-3 remediation (ledger 2026-07-01): emitted buyer CI templates get
+- 22077d1: Hardening pass (2026-07-01): emitted buyer CI templates get
   least-privilege `permissions:` + `persist-credentials: false`; verifyAccountJwt failure
   messages collapse to one generic reason (oracle closed); judgeGrader validates live judge
   verdicts fail-closed and judge output is bounded; MCP `generate` modules array + id/version
@@ -46,8 +46,8 @@
   free-text frontmatter so the `tools:` allowlist is un-suppressible, and `@caisson/tool-exec`
   is wired into the Agentic-Dev edition (ADR-0199, honoring ADR-0178); guardrails cheapDeny is
   stateless across calls (global-regex lastIndex bypass closed); prompt-registry bounds rawVars
-  values and total rendered content. Plus the round-4/5 audit domains (admin-plane,
-  metering-byok, destructive-jobs, composition-roots, worm-integrity) added to AUDIT_DOMAINS.
+  values and total rendered content. Additional coverage was also added for the admin control
+  plane, metering/BYOK paths, destructive job flows, composition roots, and WORM integrity.
 - Updated dependencies [69817a1]
 - Updated dependencies [9483a36]
   - @caisson/kernel@0.2.0

@@ -4,6 +4,8 @@ The single **commerce** price-book (ADR-0089). Commercial base package.
 
 - **plan-book** — `providerPriceId → { planTag, creditsPerCycle, cadence }`. Exact integer credits per
   cycle, never derived from the charged amount. `resolvePlan` is fail-closed (unknown id throws).
+- **purchase-book** — the one-time (non-subscription) counterpart: `providerPriceId → { entitlements,
+credits }` for a single checkout. Same fail-closed, append-only rules as the plan-book.
 - **action-book** — flat per-action credit cost (e.g. `codegenRunCredits`). The per-ai-call cost is
   **not** here — that stays computed from token usage by `@caisson/ai-meter` (ADR-0060).
 - **conversion** — re-exports the one credit denomination + `centsToCredits` (round-DOWN grant) from

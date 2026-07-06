@@ -2,11 +2,19 @@
 
 The generator that composes a tailored repo from the versioned registry.
 
+## Usage
+
+```
+npx create-caisson --name my-app --edition base --module @caisson/kernel@1.0.0 --out ./my-app
+```
+
+Run `npx create-caisson --help` for the full flag list (`--dry-run`, `--sample <id>`, etc.).
+
 ## Current scope
 
-The **allowlist gate**, the **codegen debit-before-spend seam**, and the **idempotency contract**
-are real and tested now. The full generation drive (disk materialization + the buyer-MCP path) is
-deliberately deferred — it plugs in behind the same seams.
+The **allowlist gate**, the **codegen debit-before-spend seam**, the **idempotency contract**, and
+the **disk materialization** are all shipped and tested. The buyer-MCP generation path is not part
+of this package yet.
 
 - **`generate(index, raw)`** — Zod-`.strict()` selection → validate **every** module id + version
   against the registry allowlist (`assertKnownModule` / `assertKnownVersion`) **before any path or
@@ -15,9 +23,11 @@ deliberately deferred — it plugs in behind the same seams.
 - **`runGeneration(tx, deps, raw, meter)`** — the gated flow inside `withTenant`: validate → **debit
   before spend** (`meterGeneration` → `credits.debit`, `eventType: "codegen_debit"`) → write (the
   generation-write seam). A short balance returns **402 with nothing written**; a retry with the same
-  `idempotencyKey` debits once (ADR-0024).
-- **`create-caisson` CLI** — `--name <slug> --edition <e> --module <id@version> …`; arg-parse + the
-  same allowlist gate.
+  `idempotencyKey` debits once.
+- **`createFileSetWriter`** — writes the generated file set to disk atomically (temp dir + rename),
+  rejecting any path that would escape the target directory.
+- **`create-caisson` CLI** — `--name <slug> --edition <e> --module <id@version> …`; arg-parse, the
+  same allowlist gate, then disk materialization via `createFileSetWriter`.
 
 ## Engine seam (ADR-0048)
 

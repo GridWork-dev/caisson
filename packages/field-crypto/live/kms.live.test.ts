@@ -92,7 +92,7 @@ async function scheduleDeletion(keyId: string): Promise<void> {
 }
 
 afterAll(async () => {
-  // CAISSON-13: schedule BOTH CMKs defensively, not just CMK-B. Leg 5 normally schedules CMK-A's
+  // Schedule BOTH CMKs defensively, not just CMK-B. Leg 5 normally schedules CMK-A's
   // deletion itself, but if any leg throws before reaching it (a mint failure, an assertion failure
   // in legs 1-4, cryptoShred itself throwing in leg 5), CMK-A would otherwise leak with no cleanup —
   // this afterAll is the only place that runs regardless of which leg failed. Re-scheduling an

@@ -9,8 +9,8 @@
 //
 // ponytail: no unit test here — a node-postgres applier can't talk to PGlite, and mocking a Pool to
 // assert SQL strings is low-value. The assembly + run-once contract is covered against a real
-// Postgres (PGlite) by apps/site/lib/deploy-migrate.test.ts; this adapter is exercised end-to-end at
-// the deploy D-step against Railway Postgres.
+// Postgres (PGlite) by an integration test in the app that consumes this package; this adapter is
+// exercised end-to-end against a live Postgres instance during deployment.
 import type { MergedMigration } from "@caisson/kernel";
 import type { Pool } from "pg";
 import type { AppliedMigration, MigrationApplier } from "./runner.ts";

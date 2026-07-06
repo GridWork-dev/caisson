@@ -114,14 +114,14 @@ function readLineItemQueues(
   return queues;
 }
 
-/** EVERY line of a one-time transaction: `items[].price.id` + `items[].quantity` (Strix vuln-0005 —
- * a multi-item cart is ONE transaction carrying N lines; fulfilling only `items[0]` under-grants a
- * cart the buyer paid for in full), enriched per line with its `details.line_items[].id` (`txnitm_…`)
- * join key + charged total for ADR-0218 per-line refunds. FAILS CLOSED on any unreadable line in a
- * non-empty `items` (money path): throwing makes `verifyAndParse` return a non-2xx so Paddle RETRIES,
- * versus silently skipping the line — which would ack the delivery and under-grant a buyer who paid for
- * it, permanently (Greptile P1). An absent / empty `items` returns [] (the caller maps that to null:
- * nothing to grant — a genuinely itemless event, NOT a dropped paid line). */
+/** EVERY line of a one-time transaction: `items[].price.id` + `items[].quantity` — a multi-item cart
+ * is ONE transaction carrying N lines; fulfilling only `items[0]` under-grants a cart the buyer paid
+ * for in full — enriched per line with its `details.line_items[].id` (`txnitm_…`) join key + charged
+ * total for per-line refunds. FAILS CLOSED on any unreadable line in a non-empty `items` (money path):
+ * throwing makes `verifyAndParse` return a non-2xx so Paddle RETRIES, versus silently skipping the
+ * line — which would ack the delivery and under-grant a buyer who paid for it, permanently. An
+ * absent / empty `items` returns [] (the caller maps that to null: nothing to grant — a genuinely
+ * itemless event, NOT a dropped paid line). */
 function readLineItems(obj: Record<string, unknown>): {
   priceId: string;
   quantity: number;
@@ -267,8 +267,8 @@ export function parsePaddleEvent(
         // degenerate event missing it has nothing to anchor a grant's idempotency key on — never a
         // guessed grant.
         if (txnId === "") return null;
-        // Fulfill EVERY paid line, not just items[0] (Strix vuln-0005). A degenerate transaction with
-        // no readable line item has nothing to grant — null rather than a guessed/empty grant.
+        // Fulfill EVERY paid line, not just items[0]. A degenerate transaction with no readable line
+        // item has nothing to grant — null rather than a guessed/empty grant.
         const lineItems = readLineItems(obj);
         if (lineItems.length === 0) return null;
         return {

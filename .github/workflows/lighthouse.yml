@@ -39,7 +39,7 @@ jobs:
       - name: install dependencies
         run: bun install --frozen-lockfile
 
-      - name: build site (static export)
+      - name: build site (Next standalone)
         working-directory: apps/site
         run: bun run build
 

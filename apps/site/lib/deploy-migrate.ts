@@ -107,9 +107,7 @@ export function platformPackage(): PackageMigrations {
         sql: PROCESSED_EVENT_SCHEMA_SQL,
       },
       // ADR-0234: the Ask-AI per-lane (public + premium) daily spend counters. Global (non-tenant), no
-      // RLS — accessed outside withTenant. Renumbered 0010 -> 0011 at merge: wave-6a's billing dedup
-      // migration claimed 0010 on main first (second-merger-renumbers, the migration-file analog of
-      // ADR-0088).
+      // RLS — accessed outside withTenant.
       { name: "0011_ask_ai_spend.sql", sql: ASK_AI_SPEND_SCHEMA_SQL },
       // ADR-0236: consent-noticed question-text capture. Global (non-tenant), no RLS — same posture
       // as 0011. Anonymous by construction (no IP / user id / answer text); 90-day retention is a

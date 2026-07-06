@@ -9,9 +9,6 @@ agent-queryable corpus from the repo's authoritative docs, emits a canonical `ll
 its own static `llms.txt` mirror. This service is the first-class corpus the support-bot RAG grounds
 on (ADR-0009: "never answers from anything but the codebase/docs RAG").
 
-> Supersedes the old scaffold note ("Mintlify vs self-host"): ADR-0096 locked this as a **standalone,
-> operator-owned, in-monorepo service** — not a vendor, not folded into `apps/site`.
-
 ## How it works
 
 ```
@@ -42,4 +39,4 @@ bun test ./src                                  # the suite
 ```
 
 Env: `DOCS_SERVICE_TOKEN` (Bearer for `/query`), `PORT`, `DOCS_SITE_ORIGIN` (llms.txt link base).
-A real embedder is wired at deploy (out of scope for this slice).
+A real embedder is wired at deploy.

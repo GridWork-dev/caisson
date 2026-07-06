@@ -49,17 +49,9 @@
   egress-block leg now asserts the shared-guard fail-closed, plus a new guard leg mirroring the rented
   lane's `liveGuard()`.
 
-- f9d58c4: Test and proof hygiene, no runtime behavior change for buyers.
-
-  - root bunfig.toml scopes bun test discovery away from stale compiled dist/
-    output, plus a regression test in @caisson/testing.
-  - apps/admin's PGlite bootstrap now applies the ADR-0218 line-item migrations
-    (0008/0009), matching the deploy-migrate chain, plus a columns-contract-style parity test.
-  - packages/field-crypto's live KMS proof schedules deletion for both throwaway
-    CMKs defensively in afterAll, not just the one the last leg reached.
-  - apps/admin's /business degrade path distinguishes a genuine undefined-table
-    error (Postgres 42P01) from any other transient DB error before rendering the
-    provisioning hint.
+- f9d58c4: Test and proof hygiene, no runtime behavior change for buyers: the live KMS proof
+  now schedules deletion for both throwaway CMKs defensively in `afterAll`, not just the one
+  the last leg reached.
 
 - Updated dependencies [e62c88d]
 - Updated dependencies [ccf8b10]

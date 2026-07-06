@@ -29,7 +29,7 @@ const PATH = "/dashboard/compliance";
 async function attestAction(formData: FormData): Promise<void> {
   "use server";
   const session = await requireDashboardSession(PATH);
-  // Owner-only (Strix vuln-0006): compliance attestations are org-governance evidence that feeds the
+  // Owner-only: compliance attestations are org-governance evidence that feeds the
   // customer-facing OSCAL SAR/POA&M export — a `seat` must not fabricate or overwrite them. Throws
   // AuthzError (fail-closed) if a seat crafts the POST directly; the UI hides the form from seats.
   assertCanManageMembers(session.role);
@@ -46,7 +46,7 @@ async function attestAction(formData: FormData): Promise<void> {
 async function clearAction(formData: FormData): Promise<void> {
   "use server";
   const session = await requireDashboardSession(PATH);
-  // Owner-only (Strix vuln-0006): clearing an attestation is the destructive, evidence-tampering half.
+  // Owner-only: clearing an attestation is the destructive, evidence-tampering half.
   assertCanManageMembers(session.role);
   const parsed = AttestationInput.pick({
     framework: true,
@@ -62,7 +62,7 @@ async function clearAction(formData: FormData): Promise<void> {
 
 export default async function DashboardCompliancePage() {
   const session = await requireDashboardSession(PATH);
-  // Owner-only management (Strix vuln-0006, ADR-0176): seats see attestation state read-only; only an
+  // Owner-only management (ADR-0176): seats see attestation state read-only; only an
   // owner gets the attest/clear forms. The server actions enforce the same gate (defense-in-depth).
   const owner = isOwner(session);
 

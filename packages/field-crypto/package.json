@@ -24,15 +24,15 @@
   "dependencies": {
     "@aws-sdk/client-kms": "^3.1075.0",
     "@caisson/kernel": "workspace:*",
-    "drizzle-orm": "^0.45.0",
-    "zod": "^3.23.8"
+    "drizzle-orm": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",
-    "eslint": "^9.13.0",
-    "typescript": "^5.6.0"
+    "eslint": "catalog:",
+    "typescript": "catalog:"
   }
 }

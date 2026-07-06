@@ -64,6 +64,11 @@ const config: NextConfig = {
       {
         source: "/:path*",
         headers: [
+          // ADR-0079 §5: allow-all posture, LOCKED — do not change the values.
+          {
+            key: "Content-Signal",
+            value: "search=yes, ai-input=yes, ai-train=yes",
+          },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
           {

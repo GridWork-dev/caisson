@@ -39,7 +39,7 @@ What is actually on disk (verify against `packages/*/src` + `*.test.ts`; canonic
 | Substrate (proven) | kernel · tenancy-rls · field-crypto · auth · billing · credits                                                                                                                                          | built + tested                                                              |
 | Generator          | cli (`create-caisson`)                                                                                                                                                                                  | built + tested                                                              |
 | Edition packages   | Compliance (audit-worm · compliance) · AI-Kit (ai-config · ai-kit · ai-meter · prompt-registry · ai-evals · guardrails) · Local-first (local-ai · local-store) · Agentic-Dev (agent-kernel · agent-dev) | merged, tested vertical slices; NOT feature-complete (Agentic-Dev thinnest) |
-| Base + shared      | mcp-server · license-verify · email · jobs · ui                                                                                                                                                         | partial / scaffolded                                                        |
+| Base + shared      | mcp-server · license-verify · email · jobs · ui                                                                                                                                                         | built (thin for jobs/email; substantial for license-verify)                 |
 
 ## Layout
 

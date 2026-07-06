@@ -29,5 +29,6 @@ generation time — no traversal).
 
 ## Out of scope (current release)
 
-No disk write, no buyer-MCP wiring, no topological backfill publish — those are a later generation
-phase. This package ships the gate + the debit seam + the idempotency contract, fully tested.
+No buyer-MCP wiring, no topological backfill publish — those are a later generation phase. This
+package ships the allowlist gate, the debit seam, the idempotency contract, and the disk writer
+(`createFileSetWriter`), all fully tested.

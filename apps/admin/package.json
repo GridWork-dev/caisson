@@ -12,7 +12,7 @@
     "test:live": "bun test ./live"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1075.0",
+    "@aws-sdk/client-s3": "catalog:",
     "@caisson/audit-worm": "workspace:*",
     "@caisson/auth": "workspace:*",
     "@caisson/credits": "workspace:*",
@@ -22,27 +22,27 @@
     "@caisson/service-license": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",
     "@caisson/ui": "workspace:*",
-    "@electric-sql/pglite": "^0.5.3",
+    "@electric-sql/pglite": "catalog:",
     "@xyflow/react": "^12.11.1",
-    "culori": "^4.0.1",
-    "drizzle-orm": "^0.45.0",
+    "culori": "catalog:",
+    "drizzle-orm": "catalog:",
     "jose": "^5.9.6",
-    "next": "^16.2.9",
-    "pg": "^8.16.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "zod": "^4.0.0"
+    "next": "catalog:",
+    "pg": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "zod": "catalog:zod4"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
-    "@types/culori": "^2.1.1",
-    "@types/node": "^22.10.5",
-    "@types/pg": "^8.11.10",
-    "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0",
-    "eslint": "^9.13.0",
-    "typescript": "^5.7.3"
+    "@types/culori": "catalog:",
+    "@types/node": "catalog:",
+    "@types/pg": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:"
   }
 }

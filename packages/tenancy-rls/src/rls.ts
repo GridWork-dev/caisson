@@ -164,20 +164,21 @@ export function buildTenantPolicySql(
   ].join("\n");
 }
 
-// --- Admin WRITE seam (ADR-0220, Fork AM-2 = B) -----------------------------------------------
+// --- Admin WRITE seam ---------------------------------------------------------------------------
 //
-// The operator mutation surface must CHANGE state across tenants (comp a grant, correct a wallet)
-// — the exact inverse of the buyer `app` role's fail-closed tenant isolation. ADR-0141 put READS
-// behind a dedicated SELECT-only `admin` role (apps/admin's `admin-read.ts`, untouched here); this
-// is its WRITE twin, DB-separated on purpose: admin writes NEVER run as the buyer `app` role, so a
-// bug in the buyer runtime can never reach cross-tenant write privilege and vice-versa. RLS stays
-// the single mechanism — a second, ROLE-SCOPED permissive policy (`TO admin_write USING/CHECK
-// (true)`) lets only this role write any tenant's row; `app`'s `TO app` isolation is unchanged
-// (a `TO admin_write` policy never matches the `app` role). The one-account-per-call bound is the
-// APP layer (each mutation takes exactly one target account id + the writer filters on it) plus the
-// CF-Access gate + the dual audit log — not a GUC, because the locked cross-tenant policy is
-// `WITH CHECK (true)`. The `admin_write` role, like `app`, must be neither SUPERUSER nor BYPASSRLS
-// (the shared `ensureRoleGuard`, keyed per-role, refuses a privileged one — fail-closed).
+// An operator control plane must CHANGE state across tenants (comp a grant, correct a wallet) —
+// the exact inverse of the buyer `app` role's fail-closed tenant isolation. Reads use a dedicated
+// SELECT-only `admin` role elsewhere in the stack, untouched here; this is its WRITE twin,
+// DB-separated on purpose: admin writes NEVER run as the buyer `app` role, so a bug in the buyer
+// runtime can never reach cross-tenant write privilege and vice-versa. RLS stays the single
+// mechanism — a second, ROLE-SCOPED permissive policy (`TO admin_write USING/CHECK (true)`) lets
+// only this role write any tenant's row; `app`'s `TO app` isolation is unchanged (a
+// `TO admin_write` policy never matches the `app` role). The one-account-per-call bound is the
+// APP layer (each mutation takes exactly one target account id + the writer filters on it) plus
+// the caller's own authentication gate + a dual audit log — not a GUC, because the locked
+// cross-tenant policy is `WITH CHECK (true)`. The `admin_write` role, like `app`, must be neither
+// SUPERUSER nor BYPASSRLS (the shared `ensureRoleGuard`, keyed per-role, refuses a privileged one
+// — fail-closed).
 
 /** The write-capable, cross-tenant Postgres role the operator mutation surface writes as. Never a superuser. */
 export const ADMIN_WRITE_ROLE = "admin_write";
@@ -203,8 +204,8 @@ export interface AdminWritePolicyOptions {
  * `GRANT SELECT, INSERT, UPDATE ... TO admin_write` (no DELETE — the mutation surface soft-revokes,
  * never hard-deletes) plus a `TO admin_write USING (true) WITH CHECK (true)` policy. RLS
  * OR-combines permissive policies, but each is role-scoped, so `admin_write` sees/writes every
- * tenant while `app` never matches this policy and stays isolated. Applied to the Railway PG at
- * DEPLOY (ADR-0220), mirroring `buildAdminReadPolicySql`.
+ * tenant while `app` never matches this policy and stays isolated. Applied to the production
+ * database at deploy time, mirroring the read-only counterpart policy builder.
  */
 export function buildAdminWritePolicySql(
   table: string,

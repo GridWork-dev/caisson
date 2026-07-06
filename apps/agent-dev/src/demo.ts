@@ -1,6 +1,6 @@
-// apps/agent-dev/src/demo.ts — the agent-dev edition CLI reference run (P4b · T22). One headless
+// apps/agent-dev/src/demo.ts — the agent-dev edition CLI reference run. One headless
 // function that drives ONE governed lifecycle end-to-end against the composed edition surface
-// (`@caisson/agent-dev`), DOWN-ONLY, proving the three SPEC pillars in a single offline pass:
+// (`@caisson/agent-dev`), DOWN-ONLY, proving three capabilities in a single offline pass:
 //
 //   1. a governed, tamper-EVIDENT lifecycle — the canonical act FSM is advanced act-by-act through a
 //      policy guard; with the audited mode ON every admitted transition is recorded into the kernel

@@ -13,7 +13,11 @@
 //     binding contract VERIFY re-asks);
 //   • the governed sandboxed tool-exec gate (@caisson/tool-exec, ADR-0178): a default-deny allowlist +
 //     Zod-strict argv schemas + execFile arg-arrays (never a shell) — wired as a live gate on the
-//     composed edition so a buyer gets the exec seam from this one import home.
+//     composed edition so a buyer gets the exec seam from this one import home;
+//   • the sandboxed, governed agent runner (@caisson/agent-runner, ADR-0186): spawns a headless agent
+//     CLI in an isolated worktree behind a from-scratch, scrubbed environment, streaming an auditable
+//     run transcript — reachable from this one edition import home; a buyer supplies its own provider
+//     credential and endpoint for each run, so the edition never resolves or holds one itself.
 // Plus the curated Caisson-native default content and the @caisson/ai-config embedder-lane seam.
 // Engine-neutral end to end: no LLM call, no vendor SDK, no harness assumption lives in the kernel.
 
@@ -24,6 +28,37 @@ export * from "@caisson/local-store";
 // + execFile arg-arrays (never a shell). Bundled into the edition so a buyer gets the exec gate from
 // this one import home — the composition factory wires a live instance below.
 export * from "@caisson/tool-exec";
+
+// The sandboxed governed agent-runner primitive (@caisson/agent-runner, ADR-0186) — folded into the
+// edition's paid bundle exactly like tool-exec above, but NOT wired to a live instance here: `spawn()`
+// takes a per-call provider credential + endpoint (`authKey`/`baseUrl`) that this factory, like the
+// ai-config embedder lane below, never resolves or holds (ADR-0066 no-credential/engine-neutral
+// floor). A buyer constructs `createAgentRunner({ runsRoot })` themselves and supplies its own
+// provider config per run. `ProviderConfig` collides with `@caisson/ai-config`'s type of the same
+// name — re-exported under an `AgentRunner`-prefixed alias so both stay reachable from this one home.
+export {
+  buildEngineEnv,
+  createAgentRunner,
+  summarize,
+  CLAUDE_CLI_PROFILE,
+  PASSTHROUGH_KEYS,
+  ProviderConfig as AgentRunnerProviderConfig,
+  RunMeta,
+} from "@caisson/agent-runner";
+export type {
+  AgentRunner,
+  AgentRunnerConfig,
+  BuildEngineEnvOptions,
+  ProviderConfigInput as AgentRunnerProviderConfigInput,
+  RunReport,
+  RunStatus,
+  RunStatusValue,
+  RunSummary,
+  SpawnAgentOptions,
+  SpawnAgentResult,
+  TailResult,
+} from "@caisson/agent-runner";
+
 export * from "./emitter.ts";
 export * from "./content/index.ts";
 

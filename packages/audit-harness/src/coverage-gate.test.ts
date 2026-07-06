@@ -45,6 +45,8 @@ const IGNORE_GLOBS: readonly string[] = [
   "tsconfig.json",
   "turbo.json",
   "eslint.config.js",
+  "knip.json",
+  "renovate.json",
   "bunfig.toml",
   ".dependency-cruiser.cjs",
   "bun.lock",

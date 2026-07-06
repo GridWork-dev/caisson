@@ -18,7 +18,7 @@
 
 ### Patch Changes
 
-- 904b15b: Post-merge consolidation sweep: repo links repointed to caisson-sh/caisson (site footer, JSON-LD, docs edit-links, llms.txt blob URLs), the audit-harness design-ui domain re-globbed from the removed apps/studio to the apps/admin design gallery, and stale SigNoz naming updated to the Grafana Cloud fleet sink (ADR-0177/0207). Docs/comments only apart from the design-ui glob fix; no behavior change to any runtime path.
+- 904b15b: Repointed internal doc links to their current locations, re-globbed the design-ui audit domain to the current admin app, and updated the observability vendor reference to the current fleet sink. Docs/comments only apart from the design-ui glob fix; no behavior change to any runtime path.
 - Updated dependencies [e62c88d]
 - Updated dependencies [ccf8b10]
 - Updated dependencies [549dd4e]
@@ -41,7 +41,7 @@
 
 ### Patch Changes
 
-- 72ffd85: Whole-repo audit remediation (rounds 1+2, ledger 2026-07-01): LemonSqueezy credit-grant idempotency keys off the stable resource composite (never webhook_id); BYOK zero-cost gated to a per-action allowlist, default metered (ADR-0198); AWS KMS driver honors per-tenant CMKs and refuses keyId-less crypto-shred (ADR-0197); BYOK baseUrl SSRF guard (https-only, private/metadata ranges rejected); request-span low-cardinality span names + scrubbed http.route; field-crypto-policy evidence collector emits sorted arrays (deterministic canonical body); entitlements free-view docstring corrected to ADR-0136.
+- 72ffd85: Request spans now use low-cardinality span names with the HTTP route scrubbed before export.
 - 6236f59: Add `@caisson/platform-reads` (new): shared typed read-only queries over the
   services/license cross-service tables (`entitlement_grant` / `license_grant`), so the
   buyer dashboard (apps/site) and any other surface reading those tables imports the typed

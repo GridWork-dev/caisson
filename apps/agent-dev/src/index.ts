@@ -1,5 +1,5 @@
-// apps/agent-dev/src/index.ts — the runnable CLI entrypoint for the agent-dev edition reference app
-// (P4b · T22). Importing this module is side-effect free (the run is gated behind `import.meta.main`),
+// apps/agent-dev/src/index.ts — the runnable CLI entrypoint for the agent-dev edition reference app.
+// Importing this module is side-effect free (the run is gated behind `import.meta.main`),
 // so the exit test imports `runAgentDevDemo` from here without launching the CLI. Output goes through
 // `process.stdout.write` (never `console`) so the no-console product-code floor holds in `src/`.
 //

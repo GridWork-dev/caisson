@@ -9,6 +9,7 @@ Provides the integer credit wallet: append-only ledger, debit-before-spend gate 
 - Ledger entries are append-only; there is no update/delete path.
 - Credit checks run BEFORE the metered operation; a 402 response means the wallet is empty — do not retry without a top-up.
 - Runs inside `withTenant` from `@caisson/tenancy-rls`; never query the ledger without a tenant context.
+- Clawback reverses credits on a refund; it tracks the join key per line item so a partial refund reverses only the credits tied to that line, not the whole order.
 
 ## Scope
 

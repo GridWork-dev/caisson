@@ -100,7 +100,7 @@ function jsonError(error: string, status: number): Response {
   });
 }
 
-/** Prefer the Railway-set X-Real-IP (the trusted signal, Strix vuln-0001), fall back to XFF's first hop. */
+/** Prefer the Railway-set X-Real-IP (not spoofable by the client, unlike XFF), fall back to XFF's first hop. */
 function clientIp(req: Request): string {
   const realIp = req.headers.get("x-real-ip")?.trim();
   if (realIp !== undefined && realIp.length > 0) return realIp;
