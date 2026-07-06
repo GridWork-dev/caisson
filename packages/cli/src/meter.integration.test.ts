@@ -23,8 +23,10 @@ import { type TestPg, newTestPg } from "@caisson/testing";
 import { InsufficientCreditsError, asCredits } from "@caisson/kernel";
 import { withTenant } from "@caisson/tenancy-rls";
 import {
+  CREDIT_EXPIRY_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
+  GRANT_CONSUMPTION_MIGRATION_SQL,
   balance,
   getLedger,
   grant,
@@ -79,10 +81,12 @@ let tmpBase: string;
 beforeEach(async () => {
   if (!tp) tp = await newTestPg();
   await tp.exec(
-    `DROP TABLE IF EXISTS credit_event; DROP TABLE IF EXISTS credit_wallet; DROP TABLE IF EXISTS generation;`,
+    `DROP TABLE IF EXISTS grant_consumption; DROP TABLE IF EXISTS credit_expiry_notice; DROP TABLE IF EXISTS credit_event; DROP TABLE IF EXISTS credit_wallet; DROP TABLE IF EXISTS generation;`,
   );
   await tp.exec(CREDIT_SCHEMA_SQL);
   await tp.exec(CREDIT_ROUNDING_MIGRATION_SQL);
+  await tp.exec(CREDIT_EXPIRY_MIGRATION_SQL);
+  await tp.exec(GRANT_CONSUMPTION_MIGRATION_SQL);
   await tp.exec(GENERATION_SCHEMA_SQL);
   tmpBase = await mkdtemp(join(tmpdir(), "caisson-gen-"));
 });

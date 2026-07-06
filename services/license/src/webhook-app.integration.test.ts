@@ -14,8 +14,10 @@ import {
 } from "@caisson/billing";
 import {
   CREDIT_LINE_ITEM_MIGRATION_SQL,
+  CREDIT_EXPIRY_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
+  GRANT_CONSUMPTION_MIGRATION_SQL,
   balance,
 } from "@caisson/credits";
 import { Ed25519Signer } from "@caisson/license-issue";
@@ -75,6 +77,8 @@ beforeAll(async () => {
   await tp.exec(CREDIT_SCHEMA_SQL);
   await tp.exec(CREDIT_ROUNDING_MIGRATION_SQL);
   await tp.exec(CREDIT_LINE_ITEM_MIGRATION_SQL);
+  await tp.exec(CREDIT_EXPIRY_MIGRATION_SQL);
+  await tp.exec(GRANT_CONSUMPTION_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(PROCESSED_EVENT_SCHEMA_SQL);

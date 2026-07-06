@@ -65,6 +65,10 @@ export const ADMIN_MUTATION_PROVISION_SQL = [
   buildAdminWritePolicySql("entitlement_grant"),
   buildAdminWritePolicySql("credit_wallet"),
   buildAdminWritePolicySql("credit_event"),
+  // ADR-0252: `debit()` now materializes FIFO consumption — the admin negative-adjust path writes
+  // `grant_consumption` rows through the same money core, so admin_write needs the write policy on
+  // the join table too. Re-run this provisioning at DEPLOY after the 0015 migration lands.
+  buildAdminWritePolicySql("grant_consumption"),
   // Read-only existence check: `account_member` is the base @caisson/auth table, always
   // carrying at least one row per real account (`ensurePersonalAccount` on first sign-in, ADR-0176) —
   // admin_write needs cross-tenant SELECT on it to reject a comp/adjust to a nonexistent id. This

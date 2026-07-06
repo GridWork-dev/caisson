@@ -482,9 +482,11 @@
       "name": "@caisson/credits",
       "version": "0.3.2",
       "dependencies": {
+        "@caisson/jobs": "workspace:*",
         "@caisson/kernel": "workspace:*",
         "@caisson/registry-schema": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
+        "zod": "catalog:",
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",

@@ -14,8 +14,10 @@ import { PGlite } from "@electric-sql/pglite";
 import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
 import {
   CREDIT_LINE_ITEM_MIGRATION_SQL,
+  CREDIT_EXPIRY_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
+  GRANT_CONSUMPTION_MIGRATION_SQL,
 } from "@caisson/credits";
 import {
   ADMIN_ACTION_LOG_SCHEMA_SQL,
@@ -137,6 +139,8 @@ async function bootstrapPglite(): Promise<PGlite> {
   // legacy backfill and the other platformPackage() migrations this bootstrap doesn't apply.
   await pg.exec(CREDIT_SCHEMA_SQL);
   await pg.exec(CREDIT_ROUNDING_MIGRATION_SQL);
+  await pg.exec(CREDIT_EXPIRY_MIGRATION_SQL);
+  await pg.exec(GRANT_CONSUMPTION_MIGRATION_SQL);
   await pg.exec(ENTITLEMENT_SCHEMA_SQL);
   await pg.exec(LICENSE_GRANT_SCHEMA_SQL);
   // CAISSON-9: ADMIN_MUTATION_PROVISION_SQL below SELECT-polices account_member (the admin
