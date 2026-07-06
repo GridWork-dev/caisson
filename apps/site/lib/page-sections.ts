@@ -13,6 +13,7 @@ import type {
   IconName,
   SectionProps,
   SkuMatrixRow,
+  StatusChipTone,
 } from "@caisson/ui/components";
 
 import type { PageMeta } from "./metadata";
@@ -127,6 +128,27 @@ export interface MediaSection {
   lede?: ReactNode;
 }
 
+/** One compatibility badge: reuses `<StatusChip>` verbatim (ADR-0263), no new visual component. */
+export interface StackCompatItem {
+  label: string;
+  tone?: StatusChipTone;
+  icon?: IconName;
+}
+
+/**
+ * stackCompat — the "what does this actually work with" badge row (ADR-0263), authored from
+ * `docs/state/compatibility-matrix.md`. A flat `<StatusChip>` row under an optional header; no
+ * new visual primitive, no data fetch — the items are compile-time-static like every other
+ * section (file header note above).
+ */
+export interface StackCompatSection {
+  kind: "stackCompat";
+  eyebrow?: string;
+  title?: string;
+  lede?: ReactNode;
+  items: readonly StackCompatItem[];
+}
+
 /**
  * custom — MANDATORY escape hatch (renderer SPEC §2). Every page eventually needs a hand-authored
  * artifact (a `cs-tok`-colorized Terminal, a bespoke layout) that doesn't reduce to flat data;
@@ -152,6 +174,7 @@ export type PageSection =
   | FaqSection
   | CtaSection
   | MediaSection
+  | StackCompatSection
   | CustomSection;
 
 /** A full page: typed SEO meta + the ordered sections a data file supplies. */

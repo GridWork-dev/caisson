@@ -17,6 +17,7 @@ import {
   Icon,
   Section,
   SkuMatrix,
+  StatusChip,
 } from "@/components";
 import { MediaPlaceholder } from "./media-placeholder";
 import { MediaVideo } from "./media-video";
@@ -149,6 +150,31 @@ function renderSection(section: PageSection, key: number): ReactNode {
               {...(aspect !== undefined ? { aspect } : {})}
             />
           )}
+        </Section>
+      );
+    }
+
+    case "stackCompat": {
+      // The compatibility badge row (ADR-0263) — a flat <StatusChip> wrap, no new primitive.
+      const { kind: _kind, items, ...header } = section;
+      return (
+        <Section key={key} {...header}>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "var(--cs-space-2)",
+            }}
+          >
+            {items.map((item) => (
+              <StatusChip
+                key={item.label}
+                label={item.label}
+                tone={item.tone ?? "accent"}
+                {...(item.icon !== undefined ? { icon: item.icon } : {})}
+              />
+            ))}
+          </div>
         </Section>
       );
     }
