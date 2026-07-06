@@ -310,17 +310,13 @@ export function createNpmHandler(
       const id = `@caisson/${name}`;
       const status = gateStatus(entitled, id, hasAuth);
       if (status !== null) return errorJson(status, "not_found");
-      // A fully-out-of-window entry (windowed → null) synthesizes an EMPTY packument — the module
-      // stays visible to its (entitled) buyer, but no version resolves (ADR-0251).
-      return json(
-        abbreviatedPackument(
-          windowed(id) ?? undefined,
-          sidecar,
-          id,
-          url.origin,
-        ),
-        200,
-      );
+      // A fully-out-of-window entry (windowed → null) is 404 — indistinguishable from unentitled,
+      // matching /modules/:id, the catalog listings, and the tarball route (ADR-0251/0255: never
+      // a 200 that confirms an out-of-window module exists).
+      const entry = windowed(id);
+      if (entry === null || entry === undefined)
+        return errorJson(404, "not_found");
+      return json(abbreviatedPackument(entry, sidecar, id, url.origin), 200);
     }
 
     // Unknown npm read (/-/npm/v1/keys, audits GET, malformed) → 404. Degrades `npm audit`, never install.

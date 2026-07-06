@@ -488,17 +488,18 @@ describe("updates-window filtering (ADR-0244/0255)", () => {
     expect(tarball.status).toBe(200);
   });
 
-  test("a fully out-of-window entitled module packument is EMPTY (no version resolves)", async () => {
+  test("a fully out-of-window entitled module packument is 404 — indistinguishable from unentitled", async () => {
+    // Never a 200 that confirms an out-of-window module exists (ADR-0251/0255 fail-closed posture,
+    // matching /modules/:id, the catalog listings, and the tarball route).
     const res = await winHandlerFor("2020-01-01T00:00:00.000Z")(
       req("/@caisson%2ffield-crypto", { headers: AUTH }),
     );
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as {
-      "dist-tags": { latest: string };
-      versions: Record<string, unknown>;
-    };
-    expect(Object.keys(body.versions)).toEqual([]);
-    expect(body["dist-tags"].latest).toBe("0.0.0");
+    expect(res.status).toBe(404);
+    const unentitled = await createNpmHandler(winIndex, winSidecar, {
+      resolveEntitlements: () => ({ entitlements: [], updatesWindows: {} }),
+    })(req("/@caisson%2ffield-crypto", { headers: AUTH }));
+    expect(unentitled.status).toBe(404);
+    expect(await res.text()).toBe(await unentitled.text());
   });
 
   test("the bare purchased-id array resolver shape still works (pre-window contract = unbounded)", async () => {
