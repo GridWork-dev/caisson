@@ -16,6 +16,7 @@ export {
   ENTITLEMENT_SCHEMA_SQL,
   ENTITLEMENT_GRANT_MIGRATION_SQL,
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
+  ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_ADMIN_COMP_MIGRATION_SQL,
   grantEntitlements,
   readEntitlements,
@@ -24,6 +25,8 @@ export {
   revokePurchaseLineGrants,
   grantAdminComp,
   revokeAdminComp,
+  computeUpdatesUntil,
+  extendUpdatesWindow,
 } from "./entitlement-store.ts";
 export type {
   GrantEntitlementsInput,
@@ -33,6 +36,7 @@ export type {
   RevokePurchaseLineInput,
   GrantAdminCompInput,
   RevokeAdminCompInput,
+  ExtendUpdatesWindowInput,
 } from "./entitlement-store.ts";
 
 // ADR-0220 — the operator mutation surface + its queryable audit-log half. ADR-0225 adds the fifth
@@ -89,6 +93,7 @@ export {
   LICENSE_GRANT_SCHEMA_SQL,
   readLicenseGrant,
   storeLicenseGrant,
+  updateLicenseGrantToken,
 } from "./license-grant-store.ts";
 export type {
   LicenseGrantRecord,

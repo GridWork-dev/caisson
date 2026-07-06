@@ -32,6 +32,7 @@ import { pgMigrationApplier } from "@caisson/migrate/pg";
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_MIGRATION_SQL,
+  ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   LICENSE_GRANT_SCHEMA_SQL,
 } from "@caisson/service-license";
@@ -122,6 +123,14 @@ export function platformPackage(): PackageMigrations {
       // time, once) — a builder call HERE would re-drift this file on the next builder change.
       // Future policy changes ship as a NEW re-create migration, never an edit here (ADR-0006).
       { name: "0013_rls_empty_guc_guard.sql", sql: RLS_EMPTY_GUC_GUARD_SQL },
+      // ADR-0244/0251: the per-grant updates-window override a renewal purchase stamps
+      // (`extendUpdatesWindow`) and /issue reads back (`computeUpdatesUntil`). Numbered 0016 —
+      // 0014/0015 are RESERVED by the parallel credits build (kickoff-E W1b); the assembler
+      // renumbers by sorted name, so the gap closes cleanly when those land.
+      {
+        name: "0016_entitlement_updates_window.sql",
+        sql: ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
+      },
     ],
   };
 }

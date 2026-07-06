@@ -41,11 +41,28 @@ afterAll(async () => {
 
 test("platform migrations apply in order then are idempotent", async () => {
   const first = await runPlatformMigrations(pgliteApplier(tp));
-  expect(first.applied).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
+  expect(first.applied).toEqual([
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+  ]);
 
   const second = await runPlatformMigrations(pgliteApplier(tp));
   expect(second.applied).toEqual([]);
-  expect(second.skipped).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
+  expect(second.skipped).toEqual([
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+  ]);
+});
+
+test("0016 adds the ADR-0251 updates-window column to entitlement_grant", async () => {
+  const cols = await tp.query<{ column_name: string; data_type: string }>(
+    `SELECT column_name, data_type FROM information_schema.columns
+     WHERE table_name = 'entitlement_grant' AND column_name = 'updates_expires_at'`,
+  );
+  expect(cols).toEqual([
+    {
+      column_name: "updates_expires_at",
+      data_type: "timestamp with time zone",
+    },
+  ]);
 });
 
 test("0007 adds the ADR-0212 rounding provenance columns to credit_event", async () => {

@@ -57,6 +57,7 @@ import {
 import { applyBillingEvent } from "./apply-billing-event.ts";
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
+  ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   grantEntitlements,
   readEntitlements,
@@ -147,6 +148,7 @@ beforeAll(async () => {
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   // ADR-0218 line_item_id on entitlement_grant — `grantEntitlements` (the paid-source seeder) needs it.
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
+  await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
   // ADR-0225: the license index (read cross-tenant for the edge deny-set) + the deny-set truth table,
   // created BEFORE ADMIN_MUTATION_PROVISION_SQL (its new license_grant SELECT policy references it).
   await tp.exec(LICENSE_GRANT_SCHEMA_SQL);

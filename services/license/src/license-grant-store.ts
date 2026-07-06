@@ -6,11 +6,14 @@
 // byte-identical on every later call for the same (account, major) makes /issue idempotent — exactly
 // one stored grant per major per account — while a NEW major (a version bump) mints + stores its own.
 //
-// Append-only: this store never updates or deletes a row (no revoke/rotate path here — a future
-// seam, mirroring entitlement-store's soft-revoke). The unique index on (account_id, major) is the
-// idempotency anchor: `storeLicenseGrant`'s `ON CONFLICT DO NOTHING` absorbs a racing duplicate
-// /issue call exactly like `grantEntitlements`/`checkRateLimit` absorb theirs — a losing caller's
-// insert is silently dropped and re-reads via `readLicenseGrant` to discover the winner's token.
+// Append-only, with ONE sanctioned update path (ADR-0251 Decision 3): when the account's computed
+// updates window differs from the stored token's `updatesUntil` claim — a renewal purchase landed —
+// /issue re-mints and `updateLicenseGrantToken` REPLACES the stored row's token in place (still one
+// row per (account, major); the superseded token remains offline-valid, exactly like a re-issue).
+// No delete path. The unique index on (account_id, major) is the idempotency anchor:
+// `storeLicenseGrant`'s `ON CONFLICT DO NOTHING` absorbs a racing duplicate /issue call exactly like
+// `grantEntitlements`/`checkRateLimit` absorb theirs — a losing caller's insert is silently dropped
+// and re-reads via `readLicenseGrant` to discover the winner's token.
 //
 // Tenant-owned + fail-closed RLS via @caisson/tenancy-rls (ADR-0005), mirroring entitlement-store
 // and rate-limit-store: every read/write runs inside `withTenant`, scoped to the buyer's account;
@@ -101,6 +104,34 @@ export async function storeLicenseGrant(
     ],
   );
   return r.rows.length > 0;
+}
+
+/**
+ * Replace the stored token for an EXISTING (accountId, major) grant — the ADR-0251 Decision 3
+ * re-mint path: the account's computed updates window changed (a renewal purchase), so /issue
+ * minted a fresh token and this persists it over the stale one (same row, new license_id/token/
+ * issued_at). Returns the number of rows updated (0 = no grant existed — the caller should have
+ * inserted instead). Must run inside `withTenant(db, accountId, …)`.
+ */
+export async function updateLicenseGrantToken(
+  tx: TenantExecutor,
+  input: StoreLicenseGrantInput,
+): Promise<number> {
+  const r = await tx.query<{ id: string }>(
+    `UPDATE license_grant
+        SET license_id = $3, tier = $4, expiry = $5, token = $6, issued_at = now()
+      WHERE account_id = $1 AND major = $2
+      RETURNING id`,
+    [
+      input.accountId,
+      input.major,
+      input.licenseId,
+      input.tier,
+      input.expiry,
+      input.token,
+    ],
+  );
+  return r.rows.length;
 }
 
 /**
