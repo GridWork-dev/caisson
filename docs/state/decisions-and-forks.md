@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-05
 status: live
-adr_ceiling: 0249
+adr_ceiling: 0250
 ---
 
 # Decisions & Forks — live board
@@ -974,8 +974,16 @@ operator widened it: a public full-surface customizable/modular kit (possibly a 
 `ui`), the internal brand system separate and built ON it, and per-package frontend surfaces as
 build items; grounded options return after the frontend investigation.
 
-**Still OPEN after the G round**: G2 kit/brand/per-package-frontend shape · **every price
-number**
+**G2 third round (same day) — ADR-0250:** G2a = **P3 tiering, operator override** (`ui` stays
+the Apache floor · new commercial `ui-pro` full kit, own SPEC before any build · new private
+`brand` holds the mark + 22 glyphs + caisson preset) · G2b staged buildout (brand cut → theme
+API/presets → public docs) · G2c per-package frontends = `./ui` subpath default, companion
+packages only for framework-free cores, shared frontends package forbidden · G2d wave 1 = the
+six S-effort surfaces (audit-worm viewer · license-issue log · local-store search ·
+prompt-registry browser · ai-meter chart · audit-harness viewer), after the catalog-rework SPEC.
+
+**Still OPEN after the G2 round**: the ui-pro component list + docs surface (its own SPEC) ·
+**every price number**
 (a full pricing-revalidation research pass is operator-commissioned: re-validate/adjust all
 displayed prices, price the 3 compliance SKUs and the per-package catalog, and fold in the
 gate/split pricing of the OSS redraw). Brainstorm evidence lands in
