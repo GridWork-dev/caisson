@@ -1,6 +1,12 @@
 # Refactor / split opportunities — ranked, repo-grounded
 
-Status: **document-only — nothing here is executed.** Authored 2026-06-30. A ranked survey of where
+Status: **R1 + R2 EXECUTED 2026-07-05** (PR #119 hygiene wave — Apache-2.0 `@caisson/rate-limit`
+now owns the token-bucket limiter + the per-account PG store/hook; `services/docs` +
+`services/license` import it down and `apps/base/src/app.ts` imports `@caisson/rate-limit`, the
+app→commercial-service up-dep is gone). **R4's env-gate half was already fixed** (`936f54f`); the
+analytics _port_ stays owned by `adapter-expansion.md`. **R3 remains open and price-lock-gated**
+(now against the ADR-0227 $799 anchor) — queued in the SOT-expansion kickoff, do NOT auto-start.
+Authored 2026-06-30. A ranked survey of where
 the package structure should move: split a god-package, extract a shared concern to base, decouple an
 up-dependency, clean the open↔commercial boundary. Grounded in code-on-disk at `main`, not vibes —
 every row cites a path (`file:line` where load-bearing).

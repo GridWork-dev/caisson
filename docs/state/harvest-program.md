@@ -1,6 +1,9 @@
 # Post-go-live harvest program — ranked execution order
 
-Status: **document-only — nothing here is executed.** Authored 2026-06-30 (harvest grill session).
+Status: **TERMINAL — the program is fully executed** (ADR-0210 slice-2 wave 2026-07-02, wave-6a
+ADR-0229, wave-6b ADR-0239; see §Terminal states below for the item-by-item record). The header
+below is the original 2026-06-30 authoring frame, kept as the historical record — read the
+terminal-states section, not the ranked backlog, for current truth. Authored 2026-06-30 (harvest grill session).
 Consolidates **three** harvest sources into one ranked program: the gridwork-core 142-component
 inventory, the Wardfile lift map, and the 6-repo lift sweep (`caisson-lift-sweep-REPORT.md`). Locks:
 `knowledge/decisions/ADR-0133` (gridwork-core substrate + Wardfile base lifts), `ADR-0134` (the

@@ -1,6 +1,20 @@
 # Build state & roadmap
 
-> **CURRENT STATE (2026-07-03):** **ADR ceiling is `0238`.** Since the `0228` execution wave
+> **CURRENT STATE (2026-07-05):** **ADR ceiling is `0242`** (0239–0241 deploy-closeout/wave-6b locks ·
+> 0242 visual-audit remediation picker). Since the 2026-07-03 banner below: the **audit-v2 remediation
+> specs ALL EXECUTED + MERGED** (PRs #110–#115 — incl. the provider-webhook `.strict()` revert lesson
+> and a live Paddle-sim purchase proof), the **wave-6b close-out** landed (9 remaining build-next rows,
+> ADR-0239, ledger terminal), the **ADR-0226 issuer-keypair rotation EXECUTED ×2** (PRs #117/#118,
+> active fingerprint `a170f7a0ab89bab0`; license + Worker redeployed), the **hygiene wave** merged
+> (PR #119 — `@caisson/rate-limit` extraction closes refactor rows R1+R2), the **visual-audit
+> remediation shipped** (PRs #116/#120 + ADR-0242) with the ledger reconciled 2026-07-05 (PR #122 —
+> 82 closed · 125 open · 14 accepted, 221/221 verified), **glossary batches 2–3 shipped** (PR #121 —
+> all 32 ADR-0235 terms live), and the **§8 edge revocation deny-set is FULLY LIVE** (R2 + PUT shim +
+> `license_revocation` DDL, operator-approved). Fleet current: site + docs redeployed 2026-07-05;
+> license/Worker current from the rotation. `main` is the only branch; full gate green (149 turbo
+> tasks + kernel gate 51 packages). Historical banners below are a timeline, not current state.
+
+> **PRIOR STATE (2026-07-03):** **ADR ceiling was `0238`.** Since the `0228` execution wave
 > below, the `0229`–`0238` locks landed: wave-6a compliance/billing subset (ADR-0229, PR #92) ·
 > ask-AI widget + question-text capture (ADR-0234/0236, PRs #93/#95) · glossary program batch 1
 > (ADR-0235, PR #99) · site presentation rework locks (ADR-0237, PR #97) · catalog à-la-carte

@@ -32,9 +32,12 @@ PERMANENT gate — see the correction in §0.
   `purchases.ts` lines 62–79). This is not a placeholder — sandbox checkout has been smoke-tested
   end-to-end per `docs/state/decisions-and-forks.md` (commerce-goes-live session, 2026-07-01).
 - **The license issuer's production signing key is ALREADY provisioned and baked in** — this is NOT a
-  launch-day step. `infra/license-issuer/ISSUER_PUBLIC_KEY.md` records the production Ed25519 keypair
-  (fingerprint `0ae7d2abb886ca3d`); `packages/license-verify/src/verify.ts` lines 26–27 confirm the KAT
-  test vector was already replaced with this production key. §5 below only re-verifies it works.
+  launch-day step. `infra/license-issuer/ISSUER_PUBLIC_KEY.md` records the production Ed25519 keypair;
+  the ADR-0226 rotation EXECUTED 2026-07-05 (×2 — PRs #117/#118; the rotation-1 fixture was itself a
+  leaked prod token, so the key rotated again). Active fingerprint: **`a170f7a0ab89bab0`**; the
+  `0ae7d2abb886ca3d` and `c0bfb8277a840d2e` keys are retired (see that file's retired-keys table).
+  `packages/license-verify/src/verify.ts` carries the active baked key; the license service + registry
+  Worker were redeployed on it. §5 below only re-verifies it works.
 
 ### Critical correction to ADR-0107's flip mechanic
 
@@ -71,7 +74,7 @@ These are **operator-owned, not box-drivable**, and are cited gaps this session 
 | P2  | **Paddle MoR attribution line + refund policy** — RESOLVED 2026-07-03. The MoR attribution (Paddle's verbatim required text) + a refund section landed via PR #61 (commit `89a1a87`, after this row's grep ran); the refund policy was then rewritten to match Paddle's buyer terms / Refund Policy (14-day EU/UK statutory withdrawal + digital-delivery waiver + per-line refunds per ADR-0218/0200) — the paddle-legal copy PR. Residual: none; re-verify the pages render before flipping §3. | `apps/site/app/legal/terms/page.tsx` ("Payment processing — Paddle (Merchant of Record)" + "Refund policy" sections).     | **VERIFIED 2026-07-05** — `bun run build` + the standalone server (`.next/standalone`, the same `bun apps/site/server.js` entry point the Dockerfile runs) served `/legal/terms`, `/legal/privacy`, and `/legal/eula` locally: all three 200, and the "Paddle (Merchant of Record)" attribution line renders verbatim on `/legal/terms`. |
 | P3  | **Per-module production price ids don't exist yet** — the 11 standalone module SKUs (ADR-0238 dropped the four edition-core rows; ADR-0227's sweep minted the SANDBOX products) carry real SANDBOX `pri_…` ids in `packages/pricebook/src/purchases.ts` + `apps/site/lib/catalog.ts` (`MODULE_PRICE_IDS`), so per-module checkout IS wired against sandbox. Paddle Production mints entirely new ids — same posture as the editions/bundle/subscriptions in §2.2–2.3.                             | `apps/site/lib/catalog.ts` (`MODULE_PRICE_IDS`); `packages/pricebook/src/purchases.ts` (REAL module rows, 2026-07-02).    | **FOLDED INTO §2.2/§2.3** — mint the 11 module Products/Prices in production and fill both books in the same commit as the edition/bundle ids. No separate operator fork remains (the old wire-or-hide choice is obsolete: sandbox wiring shipped 2026-07-02).                                                                           |
 | P4  | **Discord privileged intents + role/channel env** — `SUPPORT_CHANNEL_ID` / `MEMBER_ROLE_ID` and the Developer Portal's Server Members + Message Content intents were the last-known-pending item (2026-07-01). May already be resolved — **verify, don't assume.**                                                                                                                                                                                                                                | `docs/state/p6-deploy-runbook.md` lines 37–45; `docs/state/go-live-legal-and-entity.md` line 66.                          | **VERIFY** — §4 has the check.                                                                                                                                                                                                                                                                                                           |
-| P5  | **Rotate the three transited credentials** — `OPENROUTER_API_KEY`, `DISCORD_TOKEN`, `MIRROR_PUSH_TOKEN` all transited a chat session/transcript and are an ADR-0226 Fork-4 _incident_ (rotation mandated, not optional). Full per-credential runbook: §1.1 below. Also in the same value-handling sitting: mint the fresh launch Ed25519 issuer keypair (ADR-0226 Fork 1 — P0 audit spec Task 1) + a fresh `LICENSE_ISSUE_TOKEN`.                                                                 | ADR-0226; `outputs/specs/audit-v2-remediation/p0-license-token-cred-incident/SPEC.md` (findings `4460dfca` / `47b2f472`). | **OPERATOR TO DO — blocks the caisson-oss public flip** (see the §1.1 sequencing gate). Not yet rotated as of 2026-07-03.                                                                                                                                                                                                                |
+| P5  | **Rotate the three transited credentials** — `OPENROUTER_API_KEY`, `DISCORD_TOKEN`, `MIRROR_PUSH_TOKEN` all transited a chat session/transcript and are an ADR-0226 Fork-4 _incident_ (rotation mandated, not optional). Full per-credential runbook: §1.1 below. The issuer-keypair half of the sitting is DONE: the fresh launch Ed25519 keypair + `LICENSE_ISSUE_TOKEN` rotated 2026-07-05 (×2, PRs #117/#118 — §1.1 step 1).                                                                  | ADR-0226; `outputs/specs/audit-v2-remediation/p0-license-token-cred-incident/SPEC.md` (findings `4460dfca` / `47b2f472`). | **Issuer keypair + `LICENSE_ISSUE_TOKEN`: ROTATED 2026-07-05.** The three web-minted values (`OPENROUTER_API_KEY` / `DISCORD_TOKEN` / `MIRROR_PUSH_TOKEN`) remain **OPERATOR TO DO — block the caisson-oss public flip** (§1.1 sequencing gate).                                                                                         |
 | P6  | **Business entity** — operator locked sole-proprietor-until-first-sale (Paddle accepts an Individual seller: gov ID + W-9 + payout account). Not a blocker for §2.                                                                                                                                                                                                                                                                                                                                | `docs/state/go-live-legal-and-entity.md` lines 9–26.                                                                      | **NO ACTION NEEDED** — informational only, included so you don't second-guess it mid-flip.                                                                                                                                                                                                                                               |
 | P7  | **WORM retention-mode flip GOVERNANCE → COMPLIANCE (ADR-0230)** — the live `caisson-worm` default stays GOVERNANCE pre-launch; at the commerce flip, escalate launch-forward anchors to COMPLIANCE via the ADR-0202 gated extend-only escalation (explicit operator DEPLOY act, never autonomous). Pre-launch GOVERNANCE-era anchors are not retro-escalated by default.                                                                                                                          | ADR-0230; §7's DEPLOY block landed the live anchors under GOVERNANCE (Mode GOVERNANCE, RetainUntilDate 2033).             | **LAUNCH GATE** — execute alongside the §2 Paddle production flip.                                                                                                                                                                                                                                                                       |
 
@@ -84,7 +87,12 @@ Executes ADR-0226 Fork 1 + Fork 4 for the P0 audit incident
 one sitting; mirror every new value into the `Caisson Launch` 1Password vault (title === env var
 name, ADR-0226 Fork 3) and `~/.gridwork/caisson.env`.
 
-1. **Ed25519 issuer keypair + `LICENSE_ISSUE_TOKEN`** (rotated together): mint a fresh keypair per
+1. **Ed25519 issuer keypair + `LICENSE_ISSUE_TOKEN`** — **DONE 2026-07-05 (rotated ×2)**: the
+   agent-side bake landed as PR #117 (injectable verifier + runtime dev-key fixtures + negative bake
+   pins + the entitlement-token scan gate), the review pass caught the re-minted worker fixture as
+   itself a live prod token, and the key rotated AGAIN (PR #118). `caisson-license` + the registry
+   Worker redeployed on fingerprint `a170f7a0ab89bab0`; old-key tokens are dead. Original runbook
+   text kept below for the mechanics: mint a fresh keypair per
    `infra/license-issuer/ISSUER_PUBLIC_KEY.md` "Rotation"; private half → `CAISSON_LICENSE_SIGNING_KEY`
    (PKCS8 DER, base64) in `~/.gridwork/caisson.env`; fresh bearer → `LICENSE_ISSUE_TOKEN`. Then hand
    the PUBLIC half to the agent side: verify.ts `LICENSE_PUBLIC_KEY_SPKI_B64` + the registry
@@ -103,10 +111,11 @@ name, ADR-0226 Fork 3) and `~/.gridwork/caisson.env`.
 
 **Sequencing gate (P0 spec Task 5): the caisson-oss public flip + first `confirm=publish` npm
 dispatch MAY NOT proceed until** (1) the keypair rotation is live (license service + Worker
-redeployed on the new key), (2) the golden/demo dev-key replacements are merged (P0 agent-side
-PR), (3) the entitlement-token scan gate is green on a fresh mirror export, and (4) all three
-rotations above are confirmed with probes green + old values revoked. Record rotation dates here
-when done. (Related, same flip gate but tracked in the pre-launch sweep SPEC: the granular
+redeployed on the new key) — **DONE 2026-07-05**, (2) the golden/demo dev-key replacements are
+merged (P0 agent-side PR) — **DONE 2026-07-05 (PR #117)**, (3) the entitlement-token scan gate is
+green on a fresh mirror export, and (4) all three rotations above are confirmed with probes green +
+old values revoked — **steps 2–4 (OpenRouter / Discord / mirror PAT) still OPERATOR TO DO**. Record
+rotation dates here when done. (Related, same flip gate but tracked in the pre-launch sweep SPEC: the granular
 `@caisson-sh`-scoped `NPM_TOKEN`.)
 
 ---
@@ -612,7 +621,11 @@ perpetual-per-major token).
   mechanism that finally cuts a perpetual token's edge access. Pair fraud/ToS revokes with the
   paid-token TTL policy (a non-null default TTL turns "denied via list" into "also self-expires").
 
-**Operator-gated DEPLOY (NOT run by SHIP — provision before relying on edge enforcement):**
+**Operator-gated DEPLOY — EXECUTED 2026-07-05 (operator-approved): the deny-set is FULLY LIVE.**
+The R2 bucket + `REVOCATIONS` Worker binding, the authed PUT shim (`CAISSON_REVOCATIONS_PUT_URL`
+on `caisson-admin`), and the `license_revocation` DDL are all provisioned — a revoke now
+republishes to the edge and `edgePublish` reports `ok`/`failed`, no longer `skipped`. The original
+provisioning steps are kept below as the runbook record:
 
 1. Create the R2 bucket + bind it to the registry Worker as **`REVOCATIONS`** (name matches
    `deploy-entry.ts`); consistent with the existing inline-deploy model, no new heavyweight infra.
