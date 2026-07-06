@@ -2,7 +2,7 @@
 "@caisson/email": minor
 ---
 
-Add the `credits-expiring` T-30d expiry notice (ADR-0252 Decision 6b) — the first
+Add the `credits-expiring` T-30d expiry notice — the first
 transactional/billing template. The template registry is now keyed by a per-template
 `TemplateDataMap` (the three auth templates keep their `{ url }` shape; `credits-expiring` takes
 `{ credits, expiresOn, url }` and renders a dynamic subject). `tryRenderEmailTemplate` coerces

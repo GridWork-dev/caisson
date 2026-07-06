@@ -2,7 +2,7 @@
 "@caisson/credits": minor
 ---
 
-Grant-level credit expiry + materialized FIFO burn (ADR-0245/0252). Every grant now stamps
+Grant-level credit expiry + materialized FIFO burn. Every grant now stamps
 `expires_at` (default issue + 12 months, overridable per grant class via `GrantInput.expiresAt`);
 `debit()` walks unexpired grants in FIFO burn order (`created_at, expires_at, id`) and records the
 consumption trail in the new append-only `grant_consumption` table, splitting across grants and
