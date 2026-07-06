@@ -3,10 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
-  "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
-  },
+  "private": true,
   "description": "Compliance framework catalogs as config-as-code: the typed canonical-control model plus own-authored SOC2-TSC, HIPAA-Security, and EU-AI-Act control packs with crosswalk references to each framework's requirement ids.",
   "exports": {
     ".": {
