@@ -3,10 +3,7 @@ import type { HTMLAttributes } from "react";
 
 import "./credential-strip.css";
 
-export interface CredentialStripProps extends Omit<
-  HTMLAttributes<HTMLDivElement>,
-  "aria-label"
-> {
+export interface CredentialStripProps extends HTMLAttributes<HTMLDivElement> {
   /** Framework names rendered inline, separated by a leading "·" from the second item on. */
   items: readonly string[];
   /** Optional trailing note; wraps onto its own full-width row in muted text. */
@@ -21,12 +18,21 @@ export interface CredentialStripProps extends Omit<
  *   - `forwardRef` on the single `<div>` root, mirroring the Button reference shape.
  */
 export const CredentialStrip = forwardRef<HTMLDivElement, CredentialStripProps>(
-  function CredentialStrip({ items, note, className, ...rest }, ref) {
+  function CredentialStrip(
+    {
+      items,
+      note,
+      className,
+      "aria-label": ariaLabel = "Credentials",
+      ...rest
+    },
+    ref,
+  ) {
     return (
       <div
         ref={ref}
         className={className ? `cs-credentials ${className}` : "cs-credentials"}
-        aria-label="Compliance frameworks"
+        aria-label={ariaLabel}
         {...rest}
       >
         {items.map((it, i) => (

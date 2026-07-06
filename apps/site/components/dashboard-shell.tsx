@@ -8,6 +8,7 @@ import {
   type AppShellNavItem,
   type AppShellNavItemRenderProps,
 } from "@caisson/ui/components";
+import { Wordmark } from "@caisson/brand";
 
 const NAV_ITEMS: readonly Omit<AppShellNavItem, "active">[] = [
   { label: "Overview", href: "/dashboard", icon: "dashboard" },
@@ -50,6 +51,7 @@ export function DashboardShell({ topBar, children }: DashboardShellProps) {
     <AppShell
       nav={nav}
       topBar={topBar}
+      brand={<Wordmark />}
       renderNavItem={(item, renderProps: AppShellNavItemRenderProps) => (
         <Link href={item.href} {...renderProps} />
       )}
