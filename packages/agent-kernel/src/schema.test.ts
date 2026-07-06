@@ -78,3 +78,71 @@ describe("artifact schema", () => {
     }
   });
 });
+
+describe("activation/paths extension (ADR-0264)", () => {
+  test("absent activation round-trips unaffected (rule and skill)", () => {
+    expect(parseArtifact(RULE)).toEqual(RULE);
+    expect(parseArtifact(SKILL)).toEqual(SKILL);
+  });
+
+  test("`always` and `manual` activation round-trip without paths", () => {
+    const rule = parseArtifact({ ...RULE, activation: "always" });
+    if (rule.kind !== "rule") throw new Error("expected a rule");
+    expect(rule.activation).toBe("always");
+
+    const skill = parseArtifact({ ...SKILL, activation: "manual" });
+    if (skill.kind !== "skill") throw new Error("expected a skill");
+    expect(skill.activation).toBe("manual");
+  });
+
+  test("`paths` activation round-trips with its glob list", () => {
+    const scoped = parseArtifact({
+      ...RULE,
+      activation: "paths",
+      paths: ["src/**/*.ts", "packages/*/src/**"],
+    });
+    if (scoped.kind !== "rule") throw new Error("expected a rule");
+    expect(scoped.activation).toBe("paths");
+    expect(scoped.paths).toEqual(["src/**/*.ts", "packages/*/src/**"]);
+  });
+
+  test("`paths` activation without a paths[] is rejected", () => {
+    expect(() => parseArtifact({ ...RULE, activation: "paths" })).toThrow(
+      ValidationError,
+    );
+  });
+
+  test("`paths` activation with an empty paths[] is rejected", () => {
+    expect(() =>
+      parseArtifact({ ...SKILL, activation: "paths", paths: [] }),
+    ).toThrow(ValidationError);
+  });
+
+  test("an absolute path glob is rejected", () => {
+    expect(() =>
+      parseArtifact({ ...RULE, activation: "paths", paths: ["/etc/passwd"] }),
+    ).toThrow(ValidationError);
+  });
+
+  test("a `..` traversal segment in a path glob is rejected", () => {
+    expect(() =>
+      parseArtifact({
+        ...SKILL,
+        activation: "paths",
+        paths: ["../escape/**"],
+      }),
+    ).toThrow(ValidationError);
+  });
+
+  test("an unrecognized activation value is rejected", () => {
+    expect(() => parseArtifact({ ...RULE, activation: "sometimes" })).toThrow(
+      ValidationError,
+    );
+  });
+
+  test("an agent artifact does not carry activation/paths fields", () => {
+    expect(() => parseArtifact({ ...AGENT, activation: "always" })).toThrow(
+      ValidationError,
+    );
+  });
+});

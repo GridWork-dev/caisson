@@ -1,6 +1,5 @@
 ---
-description: Production code may not use `any` or silence a real type error.
-alwaysApply: false
+trigger: glob
 globs:
   - src/**/*.ts
   - packages/*/src/**/*.ts

@@ -1,7 +1,5 @@
 ---
-description: Production code may not use `any` or silence a real type error.
-alwaysApply: false
-globs:
+paths:
   - src/**/*.ts
   - packages/*/src/**/*.ts
 ---

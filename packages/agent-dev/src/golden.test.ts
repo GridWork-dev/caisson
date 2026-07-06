@@ -48,11 +48,12 @@ describe("agent-dev multi-harness emit golden (ADR-0013 golden-first · ADR-0066
   test("emitted bundle matches the committed __golden__/emit/ tree", async () => {
     if (!emitCase) throw new Error("emit golden case missing");
     const bundle = (await emitCase.produce(emitCase.input)) as EmittedBundle;
-    const emitDir = join(
+    const goldenBase = join(
       dirname(fileURLToPath(import.meta.url)),
       "__golden__",
-      "emit",
     );
+    const emitDir = join(goldenBase, "emit");
+    const warningsFile = join(goldenBase, "emit-warnings.json");
 
     if (blessEnabled()) {
       rmSync(emitDir, { recursive: true, force: true });
@@ -61,6 +62,10 @@ describe("agent-dev multi-harness emit golden (ADR-0013 golden-first · ADR-0066
         mkdirSync(dirname(dest), { recursive: true });
         writeFileSync(dest, file.content);
       }
+      writeFileSync(
+        warningsFile,
+        `${JSON.stringify(bundle.warnings, null, 2)}\n`,
+      );
       return;
     }
 
@@ -77,5 +82,16 @@ describe("agent-dev multi-harness emit golden (ADR-0013 golden-first · ADR-0066
 
     // No stale/extra file may linger beyond what the emitter produces (full-tree equivalence).
     expect(walkFiles(emitDir)).toEqual(bundle.files.map((f) => f.path).sort());
+
+    // The ADR-0264 fidelity-warning channel is pinned too — a target silently regaining a degrade
+    // (or losing a warning) shows up as a golden diff exactly like a file byte would.
+    if (!existsSync(warningsFile)) {
+      throw new Error(
+        `golden fixture missing: ${warningsFile}\n  create it with:  BLESS=1 bun test ./packages/agent-dev`,
+      );
+    }
+    expect(JSON.parse(readFileSync(warningsFile, "utf8"))).toEqual(
+      bundle.warnings,
+    );
   });
 });

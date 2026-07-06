@@ -8,9 +8,11 @@
 //   • the local hybrid memory (@caisson/local-store): vec0 + FTS5 + RRF (RRF_K=60) with the FTS-only
 //     offline floor, the pluggable Embedder port, the cloud-egress secret-scrub guard, and the
 //     dedup/TTL/GC retention default;
-//   • the thin multi-harness emitter (./emitter.ts): one typed schema → `.claude/` + Codex `AGENTS.md`
-//     + Cursor — Claude Code is ONE emit target among several, never the substrate (the ADR-0066
-//     binding contract VERIFY re-asks);
+//   • the thin multi-harness emitter (./emitter.ts): one typed schema → `.claude/` + the universal
+//     `AGENTS.md` base layer (read natively by Codex, Cursor, Devin, Zed, Gemini CLI, and the Copilot
+//     coding agent — ADR-0264, superseding the prior "Codex harness" framing) + per-artifact Cursor,
+//     Devin Desktop/legacy Windsurf, GitHub Copilot, and Cline bundles — Claude Code is ONE emit
+//     target among several, never the substrate (the ADR-0066 binding contract VERIFY re-asks);
 //   • the governed sandboxed tool-exec gate (@caisson/tool-exec, ADR-0178): a default-deny allowlist +
 //     Zod-strict argv schemas + execFile arg-arrays (never a shell) — wired as a live gate on the
 //     composed edition so a buyer gets the exec seam from this one import home;

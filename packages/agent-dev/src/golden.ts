@@ -32,7 +32,10 @@ const RULE_DESC =
 
 // The fixed input: one curated agent + skill + rule, validated through the agent-kernel `.strict()`
 // schema (a mis-shaped artifact throws here, never reaches the emitter), plus two lifecycle hook
-// bindings naming the in-bundle reviewer agent.
+// bindings naming the in-bundle reviewer agent. The rule exercises `paths` activation (representable
+// everywhere — Cursor globs, Devin/Windsurf glob trigger, Copilot applyTo, Cline paths — so it never
+// warns); the skill exercises `manual` activation (representable in Cursor/Devin/Windsurf but NOT in
+// Cline, and un-representable in Claude Code — both fire the ADR-0264 fidelity warning).
 const EMIT_ARTIFACTS: readonly Artifact[] = [
   {
     kind: "agent",
@@ -52,12 +55,15 @@ const EMIT_ARTIFACTS: readonly Artifact[] = [
       "review the diff",
       "unblock the next task",
     ],
+    activation: "manual",
   },
   {
     kind: "rule",
     name: "no-any-in-prod",
     description: RULE_DESC,
     severity: "error",
+    activation: "paths",
+    paths: ["src/**/*.ts", "packages/*/src/**/*.ts"],
   },
 ].map(parseArtifact);
 
