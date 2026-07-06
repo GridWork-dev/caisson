@@ -23,10 +23,16 @@ function proseStrings(r: ModulePageRecord): string[] {
 }
 
 describe("MODULE_PAGES (depth-page records)", () => {
-  test("records are a bijection with the sellable catalog", () => {
-    const recordSlugs = MODULE_PAGES.map((r) => r.slug).sort();
-    const catalogIds = MODULE_PRICES.map((m) => m.id).sort();
-    expect(recordSlugs).toEqual(catalogIds);
+  test("every depth-page record is a real sellable module (subset of the catalog)", () => {
+    // Post-W6.2 the sellable catalog (MODULE_PRICES) is a superset: every module has a priced catalog
+    // listing (ADR-0246 F1b), but only those with authored content have a depth page. The invariant
+    // that must hold is no ORPHAN depth page — every record slug names a real sellable SKU (a depth
+    // page for a product that doesn't exist would 404 its own catalog card link).
+    const catalogIds = new Set(MODULE_PRICES.map((m) => m.id));
+    const orphans = MODULE_PAGES.map((r) => r.slug).filter(
+      (slug) => !catalogIds.has(slug),
+    );
+    expect(orphans).toEqual([]);
   });
 
   test("every record slug carries its own bespoke mark (ADR-0237 F6)", () => {

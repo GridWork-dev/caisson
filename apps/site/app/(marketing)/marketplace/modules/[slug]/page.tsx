@@ -99,7 +99,7 @@ function BuyRail({
   price: ModulePrice;
 }) {
   const catalogItem = moduleCatalogItem(price.id);
-  const edition = priceById(price.edition);
+  const edition = price.edition ? priceById(price.edition) : undefined;
   const related = record.relatedGlossary
     .map((slug) => GLOSSARY_TERMS.find((t) => t.slug === slug))
     .filter((t) => t !== undefined);
@@ -183,7 +183,7 @@ export default async function ModuleDepthPage(props: Params) {
   const price = findPrice(slug);
   if (!record || !price) notFound();
 
-  const edition = priceById(price.edition);
+  const edition = price.edition ? priceById(price.edition) : undefined;
   const breadcrumbLd = breadcrumb([
     { name: "Home", path: "/" },
     { name: "Marketplace", path: "/marketplace" },

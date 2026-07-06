@@ -489,8 +489,8 @@ export default function AgenticDevPage() {
                 {developerPrice ? formatPrice(developerPrice) : "Subscription"}{" "}
                 adds credits, framework updates, and private-registry pulls
                 across whatever you&apos;ve bought. The Everything bundle
-                {bundlePrice ? ` (${formatPrice(bundlePrice)})` : ""} covers all
-                four editions and the base in one purchase.
+                {bundlePrice ? ` (${formatPrice(bundlePrice)})` : ""} covers
+                every edition and the base in one purchase.
               </p>
             </Card>
           </FeatureGrid>

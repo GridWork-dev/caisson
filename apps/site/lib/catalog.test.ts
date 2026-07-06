@@ -67,11 +67,17 @@ describe("catalog coverage", () => {
     }
   });
 
-  test("every one of the 11 à-la-carte modules has a catalog item", () => {
-    for (const m of MODULE_PRICES) {
-      expect(moduleCatalogItem(m.id)).toBeDefined();
+  test("every Paddle-wired module has a cart catalog item; the not-yet-wired W7 SKUs are absent", () => {
+    // The cart catalog covers exactly the modules with a live Paddle sandbox price id. The
+    // catalog-rework carve/standalone SKUs (compliance-core, org-controls, ui-pro, …) are displayed +
+    // priced in the storefront (ADR-0246 F1b) but have no Paddle product until W7's big-bang rebuild,
+    // so they are intentionally NOT in the cart catalog yet (their buy CTA routes to the bundle).
+    for (const c of MODULE_CATALOG) {
+      expect(moduleCatalogItem(c.id.replace(/^module:/, ""))).toBeDefined();
     }
+    // The 11 original edition modules are all wired; the 11 W6.2 additions are not (yet).
     expect(MODULE_CATALOG.length).toBe(11);
+    expect(MODULE_PRICES.length).toBeGreaterThan(MODULE_CATALOG.length);
   });
 
   test("every module has a catalog item carrying a real Paddle price id", () => {

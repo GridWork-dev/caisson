@@ -36,8 +36,10 @@ const moduleFactSchema = z
      *  here so the strict projection stays faithful; the doc rendering still keys off `edition` until
      *  the display flip migrates it (catalog-rework W6.2/W7.2). */
     bundles: z.array(z.string().min(1)),
-    /** Owning edition id (matches an entry in `editions`) — transitional browse-family grouping. */
-    edition: z.string().min(1),
+    /** Owning edition id (matches an entry in `editions`) — legacy browse-family grouping. OPTIONAL
+     *  since the W6.2 catalog flip: the carve/standalone SKUs (`compliance-core`, `org-controls`,
+     *  `ui-pro`, …) have no edition home, so the doc renders no "Part of the X edition" line for them. */
+    edition: z.string().min(1).optional(),
     blurb: z.string(),
     /** Browse-family only: the module is NOT granted by its edition — sold standalone. Mirrors the
      *  SOT flag; the doc must never claim edition inclusion for these. */
@@ -152,7 +154,9 @@ function modulesDoc(facts: PricingFacts): string {
         "",
       );
     } else {
-      const owner = editionLabel.get(mod.edition);
+      // Carve/standalone SKUs (W6.2) have no edition — the doc renders no edition-membership line.
+      const owner =
+        mod.edition !== undefined ? editionLabel.get(mod.edition) : undefined;
       if (owner !== undefined) lines.push(`Part of the ${owner} edition.`, "");
     }
   }

@@ -76,7 +76,7 @@ export function CartUpgradeCallout() {
     <div className={styles.upgrade}>
       <p className={styles.upgradeText}>
         Your cart totals {formatUsd(cartSubtotal(items))}. The{" "}
-        {upgrade.bundle.label} covers all four editions for{" "}
+        {upgrade.bundle.label} covers every edition for{" "}
         {formatUsd(upgrade.bundle.amount)} — save {formatUsd(upgrade.saves)}.
       </p>
       <Button type="button" variant="primary" onClick={switchToBundle}>

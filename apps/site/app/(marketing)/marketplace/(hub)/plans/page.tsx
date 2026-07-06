@@ -101,7 +101,7 @@ export default function MarketplacePlansPage() {
         title="Two different things are for sale here."
         lede={
           <>
-            Modules, editions, and the everything bundle: pay once, own a
+            Modules, bundles, and the Everything bundle: pay once, own a
             perpetual license, ship it closed. The price never recurs. The two
             plans on this tab: pay yearly for the things that only make sense as
             a subscription — frameworks that change under you, credits that
@@ -297,9 +297,9 @@ export default function MarketplacePlansPage() {
               credits, jobs, email, ai-config, mcp-server, registry-schema,
               observability, and the generator tooling (cli, migrate,
               license-verify) — is <code className="mono">Apache-2.0</code>,
-              free to use. What you buy above is the four editions, the
-              compliance primitives (field-crypto, audit-worm), the registry
-              service, and Compliance Updates — under the{" "}
+              free to use. What you buy above is the six bundles, the commercial
+              modules (field-crypto, audit-worm, and the rest of the catalog),
+              the registry service, and Compliance Updates — under the{" "}
               <Link href="/legal/license" className="mono">
                 Commercial License
               </Link>

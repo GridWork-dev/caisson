@@ -92,8 +92,17 @@ describe("the Everything bundle", () => {
 });
 
 describe("MODULE_PRICES", () => {
-  test("lists exactly 11 standalone modules (ADR-0238 — the 4 edition-core rows are dropped)", () => {
-    expect(MODULE_PRICES.length).toBe(11);
+  test("covers exactly the sellable SKU set (ADR-0246 F1b) at the pricebook SKU_RETAIL price", () => {
+    // The catalog-rework flip (W6.2) requires every sellable commercial SKU individually priced +
+    // visible. The site MODULE_PRICES catalog must therefore be exactly `@caisson/pricebook`'s
+    // SKU_RETAIL keyset — no missing SKU (an unpriced product) and no extra (a phantom listing) — and
+    // each display price must equal the locked retail (never hand-invented here).
+    const siteIds = MODULE_PRICES.map((m) => m.id).sort();
+    const retailIds = Object.keys(SKU_RETAIL).sort();
+    expect(siteIds).toEqual(retailIds);
+    for (const m of MODULE_PRICES) {
+      expect(m.amount).toBe(SKU_RETAIL[m.id]);
+    }
   });
 
   test("no module id names an edition (ADR-0238 collision lint)", () => {
@@ -114,9 +123,12 @@ describe("MODULE_PRICES", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  test("every module is grouped under a real edition id", () => {
+  test("every module that carries a legacy edition names a real edition id", () => {
+    // `edition` is optional since the W6.2 flip: the ORIGINAL edition modules keep it (the still-live
+    // /build + module-detail commerce surfaces read it), the carve/standalone SKUs the flip added have
+    // none (their bundle is the only home). Whatever edition IS present must still be a real id.
     for (const m of MODULE_PRICES) {
-      expect(isEditionId(m.edition)).toBe(true);
+      if (m.edition !== undefined) expect(isEditionId(m.edition)).toBe(true);
     }
   });
 
@@ -128,12 +140,17 @@ describe("MODULE_PRICES", () => {
     }
   });
 
-  test("modulesByEdition partitions the catalog with no overlap and no loss", () => {
+  test("modulesByEdition partitions the edition-bearing modules with no overlap and no loss", () => {
+    // Post-W6.2 the catalog also holds edition-less carve/standalone SKUs; the edition partition
+    // covers exactly the modules that still carry an `edition` (the legacy /build browse families).
+    const editionBearing = MODULE_PRICES.filter(
+      (m) => m.edition !== undefined,
+    ).length;
     const total = EDITION_IDS.reduce(
       (sum, e) => sum + modulesByEdition(e).length,
       0,
     );
-    expect(total).toBe(MODULE_PRICES.length);
+    expect(total).toBe(editionBearing);
   });
 
   test("the per-module PLAN_PRICES anchor tracks the cheapest real module (no drift)", () => {
@@ -198,9 +215,14 @@ describe("buildStackSummary (compose-a-stack math, ADR-0191)", () => {
   });
 
   test("a selection containing a standalone-only module never nudges to the bundle", () => {
-    // All 11 standalone modules: 696 + 646 + 99 + 248 = 1689 vs the 1499 bundle — but the bundle
-    // (base + edition members) does not include ai-evals, so the claim would be false.
-    const s = buildStackSummary(MODULE_PRICES.map((m) => m.id));
+    // All 11 edition-model modules: 696 + 646 + 99 + 248 = 1689 vs the 1499 bundle — but the bundle
+    // (base + edition members) does not include ai-evals, so the claim would be false. Scoped to the
+    // edition-bearing modules: the W6.2 carve/standalone SKUs carry no edition and never reach the
+    // legacy /build configurator this math powers (its universe is `modulesByEdition`).
+    const editionModuleIds = MODULE_PRICES.filter(
+      (m) => m.edition !== undefined,
+    ).map((m) => m.id);
+    const s = buildStackSummary(editionModuleIds);
     expect(s.total).toBe(1689);
     expect(s.upgrade).toBeUndefined();
   });
@@ -209,9 +231,9 @@ describe("buildStackSummary (compose-a-stack math, ADR-0191)", () => {
     // The 10 edition-granted modules (1689 - 199 = 1490) sit below 1499 — synthesize the case by
     // checking the guard directly: with ai-evals excluded no real selection crosses the bundle
     // price today, so assert the honest boundary instead of a fabricated catalog.
-    const memberIds = MODULE_PRICES.filter((m) => !m.standaloneOnly).map(
-      (m) => m.id,
-    );
+    const memberIds = MODULE_PRICES.filter(
+      (m) => !m.standaloneOnly && m.edition !== undefined,
+    ).map((m) => m.id);
     const s = buildStackSummary(memberIds);
     expect(s.total).toBe(1490);
     expect(s.upgrade).toBeUndefined();

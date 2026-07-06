@@ -117,7 +117,7 @@ export const EDITION_PRICES: readonly PriceAnchor[] = [
  *  `PLAN_PRICES` "bundle" surface stays live until the display flip (catalog-rework W6.2/W7.2)
  *  repoints the marketing pages onto these bundles — so the marketing surface renders unchanged
  *  under this data-layer commit. */
-export const BUNDLE_PRICES: readonly PriceAnchor[] = [
+export const BUNDLE_PRICES: readonly (PriceAnchor & { id: BundleId })[] = [
   {
     id: "compliance",
     label: "Compliance",
@@ -188,12 +188,15 @@ export interface ModulePrice {
    */
   bundles: readonly BundleId[];
   /**
-   * The single edition this module's à-la-carte row is displayed under today — a TRANSITIONAL
-   * browse-family grouping the marketing pages still render (`modulesByEdition`, the SKU matrix, the
-   * module detail cross-sell). The catalog-rework display flip (W6.2/W7.2) migrates those surfaces
-   * onto `bundles`; until then `edition` keeps the storefront rendering unchanged.
+   * The single edition this module's à-la-carte row was displayed under — a LEGACY browse-family
+   * grouping the still-live commerce surfaces read (`modulesByEdition`, the /build configurator, the
+   * cart upgrade nudge, the module-detail cross-sell). Optional since the catalog-rework W6.2 display
+   * flip: the ORIGINAL edition modules keep their `edition`, but the carve/standalone SKUs the flip
+   * added (`compliance-core`, `org-controls`, `ui-pro`, …) have no edition home — the bundle model
+   * (`bundles`) is the membership truth. W7's commerce flip retires the edition surface entirely; an
+   * absent `edition` means the SKU never renders on those legacy edition-shaped surfaces.
    */
-  edition: EditionId;
+  edition?: EditionId;
   /** Customer-facing benefit, one line — not the internal package README description. */
   blurb: string;
   /**
@@ -325,6 +328,106 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     blurb:
       "Sandboxed, governed agent execution: spawn a headless coding agent into an isolated worktree and stream back an auditable transcript, with the child's environment built from scratch rather than inherited.",
   },
+  // ---- Catalog-rework carve + standalone SKUs (ADR-0257/0258/0260) ----
+  // Every sellable commercial SKU is individually priced + visible (ADR-0246 F1b). Prices are the
+  // @caisson/pricebook `SKU_RETAIL` truth (pinned by pricing.test.ts); `bundles[]` is the registry
+  // members-map membership (pinned bidirectionally). These SKUs post-date the edition model, so they
+  // carry NO `edition` (the bundle is their only home) — they never render on the legacy edition-shaped
+  // /build + module-detail surfaces the ORIGINAL 11 modules above still use. Their per-SKU Paddle
+  // add-to-cart binds in W7 (catalog.ts wires the ids then); until then the catalog lists them
+  // priced + routes the buy CTA to the bundle that grants them (never a fabricated "coming soon").
+  // ---- Compliance carves ----
+  {
+    id: "compliance-core",
+    label: "Compliance core",
+    amount: 299,
+    bundles: ["compliance"],
+    blurb:
+      "The fail-closed compliance substrate: the RLS-force evidence collector, isolation tests, and the SOC 2 / HIPAA evidence-pack generator that maps live controls to named clauses.",
+  },
+  {
+    id: "frameworks-pack",
+    label: "Frameworks pack",
+    amount: 249,
+    bundles: ["compliance"],
+    blurb:
+      "The framework control library: SOC 2, HIPAA, and EU AI Act mappings with OSCAL v1.2.2 export — the clause-to-control catalog the evidence packs render against.",
+  },
+  {
+    id: "signing-primitive",
+    label: "Signing primitive",
+    amount: 199,
+    bundles: ["compliance", "provenance"],
+    blurb:
+      "Detached Ed25519 + RFC-3161 signing over evidence bundles and audit roots: a verifiable signature a third party can check without your keys.",
+  },
+  // ---- AI-Production ----
+  {
+    id: "credits",
+    label: "Credits + metering",
+    amount: 149,
+    bundles: ["ai-production"],
+    blurb:
+      "PG-atomic credit ledger with one integer denomination: grant, debit, and spend-cap credits across codegen and AI features, fail-closed on an empty balance (402).",
+  },
+  // ---- Local-first carves ----
+  {
+    id: "local-sync",
+    label: "Local sync engine",
+    amount: 199,
+    bundles: ["local-first"],
+    blurb:
+      "Two-way offline sync: changesets, tombstones, a logical clock, and a reconcile pass with a convergence test — the device catches up without a server round-trip.",
+  },
+  {
+    id: "local-inference",
+    label: "On-device inference",
+    amount: 249,
+    bundles: ["local-first"],
+    blurb:
+      "The InferenceBackend seam over a MiniLM-class ONNX model via transformers.js, SHA-256 hash-verified before use — inference on-device by default, hosted only by opt-in.",
+  },
+  {
+    id: "local-privacy",
+    label: "Privacy egress gate",
+    amount: 99,
+    bundles: ["local-first"],
+    blurb:
+      "A default-deny egress boundary every payload crosses before it can leave the process: no host is reachable unless a typed allowlist names it — leave it empty and egress is zero.",
+  },
+  {
+    id: "tool-exec",
+    label: "Tool-exec gate",
+    amount: 99,
+    bundles: ["agentic-dev"],
+    blurb:
+      "The governed tool-execution gate: a default-deny allowlist over Zod-strict argv schemas and execFile arg-arrays — an agent reaches only the commands you explicitly allowed, never a shell.",
+  },
+  // ---- Platform / standalone commercial SKUs (in Everything, no persona bundle) ----
+  {
+    id: "org-controls",
+    label: "Org controls",
+    amount: 249,
+    bundles: [],
+    blurb:
+      "WorkOS SSO plus the owner-gated multi-user surface: invite and manage account members, and the admin-write RLS layer that lets an owner mutate scoped tenant data under a dual-logged policy.",
+  },
+  {
+    id: "billing-orchestration",
+    label: "Billing orchestration",
+    amount: 99,
+    bundles: [],
+    blurb:
+      "The multi-provider billing engine: Paddle, Stripe, LemonSqueezy, and Polar behind one BillingProvider port, with idempotent webhook fulfillment and a domain event stream.",
+  },
+  {
+    id: "ui-pro",
+    label: "UI Pro",
+    amount: 129,
+    bundles: [],
+    blurb:
+      "The premium component layer on the open @caisson/ui base: the pricing SKU matrix, buy rails, credential strips, and the elevation + glow treatments the brand system ships.",
+  },
 ] as const;
 
 /** Every module belonging to `edition`, in catalog order. */
@@ -342,6 +445,34 @@ export function modulesByBundle(bundle: BundleId): readonly ModulePrice[] {
 /** The cheapest module in the whole catalog — the real floor of the "from $X" per-module anchor
  *  below (computed, never hand-duplicated, so the two numbers can't drift). */
 const MODULE_MIN_AMOUNT = Math.min(...MODULE_PRICES.map((m) => m.amount));
+
+/** A bundle's display anchor from `BUNDLE_PRICES` (ADR-0257/0258). Kept SEPARATE from `priceById`
+ *  on purpose: a bundle id collides with its same-named edition (`compliance` the $1,049 bundle vs
+ *  the $799 edition anchor), so the hub reads bundle prices through this lookup, not the edition map. */
+export function bundlePriceById(id: BundleId): PriceAnchor | undefined {
+  return BUNDLE_PRICES.find((b) => b.id === id);
+}
+
+/** À-la-carte subtotal of every sellable SKU (the real "buy each module separately" baseline). */
+export function moduleCatalogSubtotal(): number {
+  return MODULE_PRICES.reduce((sum, m) => sum + m.amount, 0);
+}
+
+/** À-la-carte subtotal of a persona bundle's priced member modules — the real "buy the members
+ *  separately" baseline the bundle price sits below (the 0.75x below-sum lock, ADR-0258). Everything
+ *  has no per-module `bundles[]` members (it is the whole catalog), so use `moduleCatalogSubtotal`. */
+export function bundleModuleSubtotal(bundle: BundleId): number {
+  return modulesByBundle(bundle).reduce((sum, m) => sum + m.amount, 0);
+}
+
+/** What the Everything bundle saves vs buying every à-la-carte module separately, in whole USD —
+ *  a REAL saving against the live catalog subtotal (never a fabricated price history, ADR-0130).
+ *  Clamped at 0 in case a future reprice ever inverts the below-sum math. */
+export function everythingSavings(): number {
+  const everything = bundlePriceById("everything");
+  if (!everything || everything.amount === null) return 0;
+  return Math.max(0, moduleCatalogSubtotal() - everything.amount);
+}
 
 /** Purchase structures beyond single editions. */
 export const PLAN_PRICES: readonly PriceAnchor[] = [
