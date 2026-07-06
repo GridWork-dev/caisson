@@ -72,7 +72,7 @@ export interface CostBreakdown {
 }
 
 /** The bundled price book version stamp (append-only: a new price set bumps this). */
-export const PRICE_BOOK_VERSION = "2026-07-02";
+export const PRICE_BOOK_VERSION = "2026-07-06";
 
 /** Bundled default rates (micro-USD per million tokens). `forge.config`-overridable. */
 export const BUNDLED_PRICE_BOOK: PriceBook = {
@@ -85,6 +85,14 @@ export const BUNDLED_PRICE_BOOK: PriceBook = {
     inputPerMTok: 800_000,
     cachedInputPerMTok: 80_000,
     outputPerMTok: 4_000_000,
+  },
+  // CAISSON-23: Sonnet-tier usage was fail-closed (ConfigError, no row) — a metering gap, not a
+  // margin call. Verified rates $3.00 / $15.00 per MTok; cachedInputPerMTok mirrors every other
+  // Anthropic row here at 10% of input (Anthropic's published prompt-cache-read discount).
+  "anthropic/claude-sonnet-4.5": {
+    inputPerMTok: 3_000_000,
+    cachedInputPerMTok: 300_000,
+    outputPerMTok: 15_000_000,
   },
   "google/gemini-1.5-flash": {
     inputPerMTok: 75_000,
