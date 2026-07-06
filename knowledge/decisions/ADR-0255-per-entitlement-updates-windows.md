@@ -42,3 +42,10 @@ down; buyer-hostile. **A second edge artifact** — still rejected per ADR-0251/
   only the claim computation, the claim schema, and the edge filter move from scalar to map.
 - Claim size grows O(#purchases) — bounded by the catalog (≤ ~20 keys), negligible.
 - The renewal refund un-extend follow-up (ADR-0251 §Consequences) is unaffected and stays open.
+- **Kickoff-D boundary (reconciled 2026-07-06):** E owns per-VERSION enforcement
+  (`publishedAt <= updatesWindows[id]`) in `registry/worker` and does not touch
+  `registry-schema`; D owns the per-MEMBER join-date filter (`entitledSince`, a sibling
+  per-purchased-id claim record with the same absent-=-unrestricted posture, fail-soft skip) in
+  `registry-schema/entitlements.ts` and does not touch the worker's per-version check. The
+  `entitledSince` field is reserved at the claims schema; its spec ADR lands in the
+  catalog-rework kickoff. Neither side re-scopes the other's filter.

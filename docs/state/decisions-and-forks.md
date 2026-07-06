@@ -1025,3 +1025,18 @@ findings (everything mechanical was fixed inline, operator rule: no deferrals).
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
 | **Window-claim scope (SEC-1)**     | Per-entitlement windows NOW (operator pick above the accept-and-record rec): `updatesWindows` map keyed by purchased id; per-pair issuer compute; most-favorable-window edge filter; supersedes 0251-D1 in part | **ADR-0255** |
 | **Expiry-sweep scheduler (CR-S1)** | pg-boss inside `services/license`, inert until `CREDIT_EXPIRY_SCHEDULE` (cron env) is armed; daily account tick enqueues sweep + notice with singletonKey dedup — the first in-repo recurring-task precedent    | **ADR-0256** |
+
+### Kickoff D ↔ E reconciliation (2026-07-06, binding boundary)
+
+- **Enforcement split:** E = per-VERSION window filter (`publishedAt <= updatesWindows[id]`) in
+  `registry/worker`, never touching `registry-schema`; D = per-MEMBER join-date filter
+  (`entitledSince` vs bundle-member join dates, fail-soft skip) in
+  `registry-schema/entitlements.ts`, never touching the worker's per-version check.
+- **`entitledSince`** is specced by D as a sibling per-purchased-id claim record (absent key =
+  grandfathered/unrestricted — the ADR-0255 posture); reserved by a comment at the claims schema.
+- **Rename surfaces are D's:** the bundle-vocabulary constant + resolve-time alias map (single
+  resolve point in `expandEntitlements`), normalizing the RENEWAL_BOOK lookup through it, the
+  cosmetic sandbox Paddle price names, and appending RENEWAL_BOOK rows for net-new SKUs with real
+  cents. E does not re-key RENEWAL_BOOK.
+- **ADR numbering:** E stops at 0256 (files nothing above it without pinging D); D files from 0257. The dual 0251/0252 collision renumbers at merge per ADR-0088 (second merger renumbers,
+  including supersession links).
