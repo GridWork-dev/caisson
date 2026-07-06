@@ -5,7 +5,7 @@
 // `parsePaddleEvent` and `resolvePlan`/`resolvePurchase` are pure functions over their inputs.
 import { describe, expect, test } from "bun:test";
 import type { DomainBillingEvent } from "@caisson/billing";
-import { parsePaddleEvent } from "@caisson/billing";
+import { parsePaddleEvent } from "@caisson/billing-orchestration";
 import { resolvePlan, resolvePurchase } from "@caisson/pricebook";
 
 function oneTimeTransactionCompleted(

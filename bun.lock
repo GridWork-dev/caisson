@@ -120,6 +120,7 @@
         "zod": "catalog:",
       },
       "devDependencies": {
+        "@caisson/billing-orchestration": "workspace:*",
         "@caisson/cli": "workspace:*",
         "@caisson/eslint-config": "workspace:*",
         "@caisson/registry": "workspace:*",
@@ -183,6 +184,7 @@
         "@caisson/ai-meter": "workspace:*",
         "@caisson/auth": "workspace:*",
         "@caisson/billing": "workspace:*",
+        "@caisson/billing-orchestration": "workspace:*",
         "@caisson/credits": "workspace:*",
         "@caisson/email": "workspace:*",
         "@caisson/field-crypto": "workspace:*",
@@ -423,6 +425,22 @@
       "version": "0.4.1",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
+    "packages/billing-orchestration": {
+      "name": "@caisson/billing-orchestration",
+      "version": "0.1.0",
+      "dependencies": {
+        "@caisson/billing": "workspace:*",
+        "@caisson/kernel": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
         "zod": "catalog:",
       },
@@ -441,13 +459,13 @@
         "create-caisson": "./dist/cli.js",
       },
       "dependencies": {
-        "@caisson/credits": "workspace:*",
         "@caisson/kernel": "workspace:*",
         "@caisson/migrate": "workspace:*",
         "@caisson/registry-schema": "workspace:*",
         "zod": "catalog:",
       },
       "devDependencies": {
+        "@caisson/credits": "workspace:*",
         "@caisson/eslint-config": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
         "@caisson/testing": "workspace:*",
@@ -907,6 +925,7 @@
       "dependencies": {
         "@caisson/audit-worm": "workspace:*",
         "@caisson/billing": "workspace:*",
+        "@caisson/billing-orchestration": "workspace:*",
         "@caisson/credits": "workspace:*",
         "@caisson/kernel": "workspace:*",
         "@caisson/license-issue": "workspace:*",
@@ -1151,6 +1170,8 @@
     "@caisson/auth": ["@caisson/auth@workspace:packages/auth"],
 
     "@caisson/billing": ["@caisson/billing@workspace:packages/billing"],
+
+    "@caisson/billing-orchestration": ["@caisson/billing-orchestration@workspace:packages/billing-orchestration"],
 
     "@caisson/cli": ["@caisson/cli@workspace:packages/cli"],
 

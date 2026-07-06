@@ -1,20 +1,23 @@
 # @caisson/billing — agent usage note
 
-Provides the provider-agnostic `BillingProvider` port: raw-body HMAC webhook verification and typed
-`DomainBillingEvent` dispatch for Stripe (`createStripeBilling`), Paddle (`createPaddleBilling`, the
-live MoR), LemonSqueezy (`createLemonSqueezyBilling`), and Polar (`createPolarBilling`) — no SDK for
-any of them, all hand-rolled HMAC verifiers.
+The OPEN billing seam (Apache-2.0): raw-body HMAC webhook signature verification (`verifyStripeWebhook`,
+`verifyPaddleWebhook`, `verifyLemonSqueezyWebhook`, `verifyPolarWebhook` — no SDK for any of them, all
+hand-rolled), the provider-agnostic `BillingProvider` port + every provider's config TYPE, and the typed
+`DomainBillingEvent` schema. The checkout-driver FACTORIES (`createStripeBilling` / `createPaddleBilling`
+/ `createLemonSqueezyBilling` / `createPolarBilling`), the provider→`DomainBillingEvent` parsers, and the
+webhook idempotency live in the commercial `@caisson/billing-orchestration` (carve, ADR-0249 G3).
 
 ## Key surface
 
 - Webhook handlers MUST pass the raw request body (not parsed JSON) to the HMAC verifier.
 - The `BillingProvider` interface is the only surface editions touch; no provider-specific type
-  escapes the package — every driver maps onto the same `DomainBillingEvent` union.
-- `DomainBillingEvent` objects are enqueued through `@caisson/jobs` — never processed inline.
+  escapes the seam — every driver maps onto the same `DomainBillingEvent` union.
+- The port + config types + `DomainBillingEvent` are OPEN contracts so the free-floor demo (apps/base)
+  typechecks against open code only; the drivers that construct them are commercial.
 - Never log provider metadata that could contain card or PII data (`console.log` is banned in
   product code).
 
 ## Scope
 
-Stripe, Paddle, LemonSqueezy, and Polar integration and webhook verification only. Credit wallet
-operations belong in `@caisson/credits`.
+Signature verification + the port/config/event contracts only. Driver construction, event mapping, and
+idempotency belong in `@caisson/billing-orchestration`; credit wallet operations in `@caisson/credits`.

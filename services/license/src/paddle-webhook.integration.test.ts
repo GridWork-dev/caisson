@@ -16,7 +16,7 @@ import { withTenant } from "@caisson/tenancy-rls";
 import {
   createPaddleBilling,
   PROCESSED_EVENT_SCHEMA_SQL,
-} from "@caisson/billing";
+} from "@caisson/billing-orchestration";
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,

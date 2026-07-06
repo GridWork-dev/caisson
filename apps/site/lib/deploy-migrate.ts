@@ -15,7 +15,7 @@
 // (CREATE TABLE IF NOT EXISTS) on its own boot.
 import { AI_METER_SCHEMA_SQL } from "@caisson/ai-meter";
 import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
-import { PROCESSED_EVENT_SCHEMA_SQL } from "@caisson/billing";
+import { PROCESSED_EVENT_SCHEMA_SQL } from "@caisson/billing-orchestration";
 import {
   CREDIT_LINE_ITEM_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
