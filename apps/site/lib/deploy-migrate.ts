@@ -17,9 +17,11 @@ import { AI_METER_SCHEMA_SQL } from "@caisson/ai-meter";
 import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
 import { PROCESSED_EVENT_SCHEMA_SQL } from "@caisson/billing";
 import {
+  CREDIT_EXPIRY_MIGRATION_SQL,
   CREDIT_LINE_ITEM_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
+  GRANT_CONSUMPTION_MIGRATION_SQL,
 } from "@caisson/credits";
 import { createCaptureEmailer } from "@caisson/email";
 import { type PackageMigrations, assembleMigrations } from "@caisson/kernel";
@@ -122,6 +124,16 @@ export function platformPackage(): PackageMigrations {
       // time, once) — a builder call HERE would re-drift this file on the next builder change.
       // Future policy changes ship as a NEW re-create migration, never an edit here (ADR-0006).
       { name: "0013_rls_empty_guc_guard.sql", sql: RLS_EMPTY_GUC_GUARD_SQL },
+      // ADR-0245/0252: grant-level expiry. `expires_at` on credit_event + a backfill of the
+      // pre-existing (Paddle-SANDBOX proof) grant rows to created_at + 12 months, then the
+      // append-only `grant_consumption` FIFO join table + the `credit_expiry_notice` T-30d
+      // marker. Appended as new checksum-pinned migrations (0002/0007/0009 stay frozen,
+      // ADR-0006). 0016 is reserved for the parallel license build — do not take it here.
+      { name: "0014_credit_expiry.sql", sql: CREDIT_EXPIRY_MIGRATION_SQL },
+      {
+        name: "0015_grant_consumption.sql",
+        sql: GRANT_CONSUMPTION_MIGRATION_SQL,
+      },
     ],
   };
 }
