@@ -34,7 +34,7 @@ import {
   ValidationError,
   type JsonValue,
 } from "@caisson/kernel";
-import type { CrosswalkReference } from "../registry/control.ts";
+import type { CrosswalkReference } from "@caisson/frameworks-pack";
 import type { CollectorResult } from "./collector.ts";
 import {
   EVIDENCE_PACK_FORMAT_VERSION,

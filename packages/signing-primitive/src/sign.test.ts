@@ -1,4 +1,4 @@
-// src/evidence/sign.test.ts — evidence-pack signing (ADR-0056).
+// src/sign.test.ts — evidence-pack signing (ADR-0056).
 //
 // Golden-with-logic (ADR-0013): the detached signature is byte-pinned by
 // `__golden__/signed-manifest.sig`, shipped in THIS commit alongside the code it pins, because the
@@ -17,12 +17,10 @@ import {
 import {
   parseEvidencePackManifest,
   type EvidencePackManifest,
-} from "./pack-format.ts";
-import { chainVerifyCollector } from "./collectors/chain-verify.ts";
-import {
+  chainVerifyCollector,
   generateEvidencePack,
   type GenerateEvidencePackInput,
-} from "./generate.ts";
+} from "@caisson/compliance-core";
 import {
   Ed25519Signer,
   StubTimestampAuthority,
@@ -47,7 +45,7 @@ const OTHER_SEED = Uint8Array.from(Buffer.from("a7".repeat(32), "hex"));
 function goldenManifest(): EvidencePackManifest {
   const raw = JSON.parse(
     readFileSync(
-      new URL("../__golden__/evidence-pack.manifest.json", import.meta.url),
+      new URL("./__golden__/evidence-pack.manifest.json", import.meta.url),
       "utf8",
     ),
   ) as unknown;
@@ -57,7 +55,7 @@ function goldenManifest(): EvidencePackManifest {
 /** The byte-pinned detached signature golden (raw hex, no framing). */
 function goldenSignatureHex(): string {
   return readFileSync(
-    new URL("../__golden__/signed-manifest.sig", import.meta.url),
+    new URL("./__golden__/signed-manifest.sig", import.meta.url),
     "utf8",
   ).trim();
 }
@@ -67,7 +65,7 @@ describe("evidenceSignablePayload — canonical body ∥ chain tip (ADR-0056)", 
     const manifest = goldenManifest();
     const golden = JSON.parse(
       readFileSync(
-        new URL("../__golden__/evidence-pack.manifest.json", import.meta.url),
+        new URL("./__golden__/evidence-pack.manifest.json", import.meta.url),
         "utf8",
       ),
     ) as JsonValue;
