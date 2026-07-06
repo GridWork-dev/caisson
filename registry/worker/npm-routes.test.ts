@@ -371,7 +371,7 @@ describe("fail-safe entitlement (never 500)", () => {
   });
 });
 
-describe("updates-window filtering (ADR-0244/0251)", () => {
+describe("updates-window filtering (ADR-0244/0255)", () => {
   // A multi-version commercial module: 1.0.0 + 1.1.0 published 2026, 2.0.0 published 2027.
   const multiVersion = {
     id: "@caisson/field-crypto",
@@ -420,11 +420,11 @@ describe("updates-window filtering (ADR-0244/0251)", () => {
     get: () => Promise.resolve({ body: TGZ }),
   };
   const winEnv: NpmEnv = { TARBALLS: anyBucket };
-  const winHandlerFor = (updatesUntil: string | null) =>
+  const winHandlerFor = (window: string | null) =>
     createNpmHandler(winIndex, winSidecar, {
       resolveEntitlements: () => ({
         entitlements: ["field-crypto"],
-        updatesUntil,
+        updatesWindows: window === null ? {} : { "field-crypto": window },
       }),
     });
   const WINDOW = "2026-12-31T00:00:00.000Z";
@@ -501,7 +501,7 @@ describe("updates-window filtering (ADR-0244/0251)", () => {
     expect(body["dist-tags"].latest).toBe("0.0.0");
   });
 
-  test("the bare purchased-id array resolver shape still works (pre-0251 contract = unbounded)", async () => {
+  test("the bare purchased-id array resolver shape still works (pre-window contract = unbounded)", async () => {
     const arrayHandler = createNpmHandler(winIndex, winSidecar, {
       resolveEntitlements: () => ["field-crypto"],
     });

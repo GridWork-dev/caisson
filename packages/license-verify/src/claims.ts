@@ -33,13 +33,15 @@ export const COMMUNITY_TIER: LicenseTier = "community";
  * - `major`        — the product MAJOR version this perpetual license covers (perpetual-per-major:
  *                    valid forever for this major, never auto-extended to a later major).
  * - `expiry`       — ISO-8601 instant the license lapses, or `null` for a perpetual license.
- * - `updatesUntil` — ISO-8601 instant bounding the ADR-0244 updates window: the registry serves only
- *                    versions published on or before this instant (per-version filter, ADR-0251).
- *                    OPTIONAL + nullable: a token WITHOUT the field (pre-0251 issue) or carrying
- *                    `null` is UNBOUNDED (ADR-0251 Decision 2 — a moot pre-launch grandfather
- *                    clause; post-flip tokens always carry the field). Distinct from `expiry`:
- *                    a lapsed window never invalidates the license, it only narrows which
- *                    versions the registry serves.
+ * - `updatesWindows` — the per-entitlement ADR-0244 updates windows (ADR-0255, replacing the
+ *                    single account-wide scalar ADR-0251 shipped): a map `purchasedEntitlementId →
+ *                    ISO instant` bounding which published versions the registry serves for the
+ *                    modules that entitlement grants. OPTIONAL + nullable: a token WITHOUT the
+ *                    field (pre-window issue) or carrying `null` is UNBOUNDED (the pre-launch
+ *                    grandfather clause; post-flip tokens always carry the field). An entitlement
+ *                    ABSENT from the map is likewise unbounded — there are never null VALUES in
+ *                    the map. Distinct from `expiry`: a lapsed window never invalidates the
+ *                    license, it only narrows which versions the registry serves.
  */
 export const licenseClaimsSchema = strictObject({
   licenseId: z.string().uuid(),
@@ -47,7 +49,17 @@ export const licenseClaimsSchema = strictObject({
   entitlements: z.array(z.string().min(1).max(128)).max(256),
   major: z.number().int().nonnegative(),
   expiry: z.string().datetime({ offset: true }).nullable(),
-  updatesUntil: z.string().datetime({ offset: true }).nullable().optional(),
+  updatesWindows: z
+    .record(
+      z.string().trim().min(1).max(128),
+      z.string().datetime({ offset: true }),
+    )
+    .nullable()
+    .optional(),
+  // RESERVED: `entitledSince` — a sibling per-purchased-id record (same absent-key-=-unrestricted
+  // posture as `updatesWindows`) for the catalog-rework build; its own spec ADR lands there. Keep
+  // this record-field pattern when adding it, and keep every consumer reading the specific field it
+  // needs rather than destructuring the whole claims shape, so a new sibling key never breaks one.
 });
 
 /** The validated, signed license claims. */

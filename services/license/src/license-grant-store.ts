@@ -7,8 +7,9 @@
 // one stored grant per major per account — while a NEW major (a version bump) mints + stores its own.
 //
 // Append-only, with ONE sanctioned update path (ADR-0251 Decision 3): when the account's computed
-// updates window differs from the stored token's `updatesUntil` claim — a renewal purchase landed —
-// /issue re-mints and `updateLicenseGrantToken` REPLACES the stored row's token in place (still one
+// per-entitlement updates windows differ from the stored token's `updatesWindows` claim (ADR-0255)
+// — a renewal purchase landed — /issue re-mints and `updateLicenseGrantToken` REPLACES the stored
+// row's token in place (still one
 // row per (account, major); the superseded token remains offline-valid, exactly like a re-issue).
 // No delete path. The unique index on (account_id, major) is the idempotency anchor:
 // `storeLicenseGrant`'s `ON CONFLICT DO NOTHING` absorbs a racing duplicate /issue call exactly like

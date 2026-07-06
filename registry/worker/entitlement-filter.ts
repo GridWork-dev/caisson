@@ -41,11 +41,12 @@ export function makeLicenseEntitlementResolver(
     // Edge revocation gate: an operator-revoked license id → community. Fail-open lives in getDenied's
     // cache (revocation-list.ts), so a deny-set outage denies nobody rather than blocking every buyer.
     if (getDenied().has(verified.claims.licenseId)) return null;
-    // The signed ADR-0244 updates window rides along (ADR-0251): an absent claim — every pre-0251
-    // token — normalizes to null = unbounded (Decision 2). The handlers filter versions against it.
+    // The signed ADR-0244/0255 per-entitlement updates windows ride along: an absent/null claim —
+    // every pre-window token — normalizes to the empty map = every entitlement unbounded. The
+    // handlers fold this into a per-module MOST FAVORABLE window (handler.ts `resolveGate`).
     return {
       entitlements: verified.entitlements,
-      updatesUntil: verified.claims.updatesUntil ?? null,
+      updatesWindows: verified.claims.updatesWindows ?? {},
     };
   };
 }

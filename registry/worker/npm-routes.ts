@@ -250,15 +250,17 @@ export function createNpmHandler(
 
     const gate: ResolvedGate = resolveGate(validated, resolve, request);
     const entitled = gate.entitled;
-    // Window-filter an entitled COMMERCIAL entry's versions (ADR-0244/0251); base + an unbounded
-    // window pass through untouched. `null` = every version is out-of-window (fail-closed).
+    // Window-filter an entitled COMMERCIAL entry's versions to its PER-MODULE most-favorable window
+    // (ADR-0244/0255); base + an unbounded window pass through untouched. `null` = every version is
+    // out-of-window (fail-closed).
     const windowed = (
       id: string,
     ): RegistryIndex["modules"][number] | undefined | null => {
       const entry = validated.modules.find((m) => m.id === id);
       if (entry === undefined) return undefined;
-      if (gate.updatesUntil === null || baseIds.has(id)) return entry;
-      return windowFilterEntry(entry, gate.updatesUntil);
+      if (baseIds.has(id)) return entry;
+      const cutoff = gate.windowFor(id);
+      return cutoff === null ? entry : windowFilterEntry(entry, cutoff);
     };
     const hasAuth = request.headers.get("authorization") !== null;
 
@@ -276,11 +278,11 @@ export function createNpmHandler(
       const id = `@caisson/${name}`;
       const status = gateStatus(entitled, id, hasAuth);
       if (status !== null) return errorJson(status, "not_found");
-      // ADR-0244/0251 per-version window check BEFORE the R2 fetch: the gate above proved only
+      // ADR-0244/0255 per-version window check BEFORE the R2 fetch: the gate above proved only
       // module-level entitlement — an out-of-window (or index-unknown) version of an entitled
       // commercial module is 404 even though the tarball exists in R2 (fail-closed; the packument
       // filter alone would still leave the raw version URL pullable).
-      if (gate.updatesUntil !== null && !baseIds.has(id)) {
+      if (!baseIds.has(id)) {
         const entry = windowed(id);
         if (
           entry === undefined ||
