@@ -388,8 +388,18 @@ export async function checkManifestAgreement(pkgs: Pkg[]): Promise<Finding[]> {
 export const PRICE_AUTHORITY: Record<string, { cents: number; adr: string }> = {
   "@caisson/compliance": { cents: 79900, adr: "ADR-0227" },
   "@caisson/audit-worm": { cents: 14900, adr: "ADR-0129" },
-  "@caisson/local-ai": { cents: 34900, adr: "ADR-0240" },
+  // Local-first bundle repriced to the 3-way-carve sum-anchored $629 (was $349/ADR-0240).
+  "@caisson/local-ai": { cents: 62900, adr: "ADR-0258" },
   "@caisson/credits": { cents: 14900, adr: "ADR-0260" },
+  // Catalog-rework carves (all private pre-first-publish; prices locked by the rework pickers).
+  "@caisson/org-controls": { cents: 24900, adr: "ADR-0257" },
+  "@caisson/compliance-core": { cents: 29900, adr: "ADR-0260" },
+  "@caisson/frameworks-pack": { cents: 24900, adr: "ADR-0260" },
+  "@caisson/signing-primitive": { cents: 19900, adr: "ADR-0260" },
+  "@caisson/billing-orchestration": { cents: 9900, adr: "ADR-0260" },
+  "@caisson/local-sync": { cents: 19900, adr: "ADR-0258" },
+  "@caisson/local-inference": { cents: 24900, adr: "ADR-0258" },
+  "@caisson/local-privacy": { cents: 9900, adr: "ADR-0258" },
 };
 
 /**
@@ -421,6 +431,278 @@ export async function checkManifestPriceAgreement(
         rule: "manifest-price-agreement",
         pkg: p.name,
         message: `manifest.priceCents (${String(manifest.priceCents)}) ≠ the price locked by ${authority.adr} (${authority.cents}) — reconcile the manifest, not the ADR.`,
+      });
+    }
+  }
+  return findings;
+}
+
+// ─── Catalog-rework gate checks (ADR-0248 F5, ADR-0257/0258) ─────────────────────────────────────
+// Four checks that keep the sellable catalog, the manifest prices, the PRICE_AUTHORITY map, and the
+// site's displayed catalog in agreement as editions dissolve into bundles. Each is a pure function
+// over (disk, PRICE_AUTHORITY) like its siblings; all degrade to a skip/warn when node_modules or a
+// cross-surface file is absent (the post-install CI pass is authoritative).
+
+/**
+ * The pre-launch placeholder every not-yet-priced commercial manifest carries (`priceCents: 4900`,
+ * documented across the manifests as "the pre-launch placeholder anchor"). A module still at this
+ * anchor has no locked price yet, so price-coverage does not demand a PRICE_AUTHORITY row for it —
+ * the row lands when its real price locks. NOTE: keying the "unlocked" signal on this value means a
+ * SKU whose real locked price happens to be $49 is not FORCED to carry a row (it still may, and once
+ * it does the coverage check passes on the row); the anchor is a floor for "needs a row", not a bar.
+ */
+const PLACEHOLDER_PRICE_ANCHOR = 4900;
+
+interface CatalogManifest {
+  priceCents?: number | null;
+  kind?: string;
+  sellable?: boolean;
+}
+
+/** Import a manifest's catalog fields; null if it can't be resolved (pre-install / broken load —
+ *  the post-install gate pass re-runs it for real, mirroring checkManifestPriceAgreement's posture). */
+async function loadCatalogManifest(p: Pkg): Promise<CatalogManifest | null> {
+  if (!p.manifestPath) return null;
+  try {
+    const mod = await import(p.manifestPath);
+    return (mod.default ?? mod.manifest ?? mod) as CatalogManifest;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * price-coverage (ADR-0248 F5). Every SELLABLE commercial `packages/*` module must carry a positive
+ * integer price AND — once that price is locked (i.e. off the placeholder anchor) — a PRICE_AUTHORITY
+ * row, so a shipped SKU's price is CI-pinned to its ADR and can never silently drift. Exemptions:
+ * a `sellable: false` package is bundle-only substrate (platform-reads/pricebook); an `edition`/
+ * `bundle` meta is formula-priced in apps/site (the below-sum rule), not a per-SKU authority row; a
+ * module still at the placeholder anchor has no locked price yet. Closes the "3-of-19" coverage gap
+ * incrementally: the carve SKUs land rows here; the remaining placeholder modules earn theirs as
+ * their prices lock.
+ */
+export async function checkPriceCoverage(pkgs: Pkg[]): Promise<Finding[]> {
+  const findings: Finding[] = [];
+  for (const p of pkgs) {
+    if (
+      !isModuleCandidate(p) ||
+      p.license !== COMMERCIAL_LICENSE ||
+      !p.manifestPath
+    )
+      continue;
+    const m = await loadCatalogManifest(p);
+    if (m === null) continue; // unresolvable pre-install — post-install pass is authoritative
+    if (m.sellable === false) continue; // bundle-only substrate, never sold standalone
+    if (
+      typeof m.priceCents !== "number" ||
+      !Number.isInteger(m.priceCents) ||
+      m.priceCents <= 0
+    ) {
+      findings.push({
+        severity: "error",
+        rule: "price-coverage",
+        pkg: p.name,
+        message: `sellable commercial module carries no positive integer priceCents (found ${String(m.priceCents)}) — every sold SKU needs a price (ADR-0007).`,
+      });
+      continue;
+    }
+    // Formula-priced metas + not-yet-locked placeholders don't (yet) owe a PRICE_AUTHORITY row.
+    if (m.kind === "edition" || m.kind === "bundle") continue;
+    if (m.priceCents === PLACEHOLDER_PRICE_ANCHOR) continue;
+    if (!PRICE_AUTHORITY[p.name]) {
+      findings.push({
+        severity: "error",
+        rule: "price-coverage",
+        pkg: p.name,
+        message: `sellable commercial module carries a locked price (${m.priceCents}) but has no PRICE_AUTHORITY row — add one keyed by ${p.name} so the manifest price stays CI-locked to its ADR.`,
+      });
+    }
+  }
+  return findings;
+}
+
+/**
+ * orphan-SKU (ADR-0248 F5). The inverse of price-coverage: no PRICE_AUTHORITY row may name a package
+ * that isn't a real, manifested `packages/*` module — a stale row (renamed/deleted package) would
+ * assert a price nothing ships, and the price-drift guard would silently never fire for it.
+ */
+export function checkOrphanSku(pkgs: Pkg[]): Finding[] {
+  const byName = new Map(pkgs.map((p) => [p.name, p]));
+  const findings: Finding[] = [];
+  for (const id of Object.keys(PRICE_AUTHORITY)) {
+    const p = byName.get(id);
+    if (!p || !isModuleCandidate(p) || !p.manifestPath) {
+      findings.push({
+        severity: "error",
+        rule: "orphan-sku",
+        pkg: id,
+        message: !p
+          ? `PRICE_AUTHORITY names ${id} but no such package exists on disk — remove the stale row or restore the package (ADR-0248 F5).`
+          : `PRICE_AUTHORITY names ${id} but it is not a manifested packages/* module — a priced SKU must map to a real, manifested package (ADR-0248 F5).`,
+      });
+    }
+  }
+  return findings;
+}
+
+/** The registry index entry shape this file reads (a lean projection — members map only). */
+interface IndexEntry {
+  id: string;
+  latest: string;
+  versions: {
+    version: string;
+    manifest?: { members?: Record<string, unknown> };
+  }[];
+}
+
+/** Latest-version members map per indexed module id, read off the built registry index (ADR-0071). */
+function readIndexMembers(indexPath: string): Map<string, Set<string>> {
+  const idx = JSON.parse(readFileSync(indexPath, "utf8")) as {
+    modules: IndexEntry[];
+  };
+  const out = new Map<string, Set<string>>();
+  for (const e of idx.modules) {
+    const v =
+      e.versions.find((x) => x.version === e.latest) ??
+      e.versions[e.versions.length - 1];
+    out.set(e.id, new Set(Object.keys(v?.manifest?.members ?? {})));
+  }
+  return out;
+}
+
+/** The site's per-edition slug → registry meta-package id (hand-copy of apps/site/lib/pricing.test.ts's
+ *  REGISTRY_EDITION_IDS; the site catalog reads pre-bundle-rename slugs today). */
+const SITE_EDITION_TO_REGISTRY_ID: Record<string, string> = {
+  compliance: "@caisson/compliance",
+  "ai-kit": "@caisson/ai-kit",
+  "local-first": "@caisson/local-ai",
+  "agentic-dev": "@caisson/agent-dev",
+};
+
+interface SitePricingModule {
+  id: string;
+  amount: number;
+  edition: string;
+  standaloneOnly?: true;
+}
+
+/**
+ * catalog↔manifest parity (ADR-0248 F5). Promotes apps/site/lib/pricing.test.ts's membership lint to
+ * the gate and adds a price cross-check, so the storefront can never advertise a grant or a price the
+ * manifest layer doesn't back:
+ *   (1) MEMBERSHIP — every module the site lists under an edition must be in that edition's registry
+ *       members map (else the site sells a grant that doesn't exist).
+ *   (2) PRICE — for every à-la-carte module the site prices whose id carries a PRICE_AUTHORITY row,
+ *       the displayed USD must equal the locked cents.
+ * Editions/bundle DISPLAY prices are intentionally out of scope here: the site still shows pre-rework
+ * edition numbers (the display flip is a later wave), so only the à-la-carte module rows that already
+ * have a locked authority price are price-checked today. Skips (warn) when a cross-surface file is
+ * absent.
+ */
+export async function checkCatalogParity(root: string): Promise<Finding[]> {
+  const pricingPath = join(root, "apps/site/lib/pricing.ts");
+  const indexPath = join(root, "registry/index.json");
+  if (!existsSync(pricingPath) || !existsSync(indexPath)) {
+    return [
+      {
+        severity: "warn",
+        rule: "catalog-parity",
+        pkg: "(catalog)",
+        message: `apps/site/lib/pricing.ts or registry/index.json absent — catalog↔manifest parity skipped; CI must run it against the full tree.`,
+      },
+    ];
+  }
+  let modules: readonly SitePricingModule[];
+  let members: Map<string, Set<string>>;
+  try {
+    const pricing = (await import(pricingPath)) as {
+      MODULE_PRICES: readonly SitePricingModule[];
+    };
+    modules = pricing.MODULE_PRICES;
+    members = readIndexMembers(indexPath);
+  } catch (e) {
+    return [
+      {
+        severity: "warn",
+        rule: "catalog-parity",
+        pkg: "(catalog)",
+        message: `could not load the site catalog or registry index (${(e as Error).message}) — catalog↔manifest parity skipped.`,
+      },
+    ];
+  }
+
+  const findings: Finding[] = [];
+  for (const m of modules) {
+    // (1) membership honesty (the promoted lint).
+    if (!m.standaloneOnly) {
+      const regId = SITE_EDITION_TO_REGISTRY_ID[m.edition];
+      const map = regId ? members.get(regId) : undefined;
+      if (map && !map.has(`@caisson/${m.id}`)) {
+        findings.push({
+          severity: "error",
+          rule: "catalog-parity",
+          pkg: `@caisson/${m.id}`,
+          message: `apps/site lists @caisson/${m.id} under the ${m.edition} edition but it is absent from ${regId}'s registry members map — the site would sell a grant that doesn't exist; mark it standaloneOnly or repin the members (ADR-0071).`,
+        });
+      }
+    }
+    // (2) price agreement, scoped to modules already locked in PRICE_AUTHORITY.
+    const authority = PRICE_AUTHORITY[`@caisson/${m.id}`];
+    if (authority && m.amount * 100 !== authority.cents) {
+      findings.push({
+        severity: "error",
+        rule: "catalog-parity",
+        pkg: `@caisson/${m.id}`,
+        message: `apps/site prices @caisson/${m.id} at $${m.amount} (${m.amount * 100}¢) but PRICE_AUTHORITY (${authority.adr}) locks it at ${authority.cents}¢ — reconcile the display to the locked price.`,
+      });
+    }
+  }
+  return findings;
+}
+
+/** Extract the `RESERVED_MODULE_ENTITLEMENT_IDS` string set from entitlements.ts source (fs-only, so
+ *  the check survives the pre-install pass and never drifts from a hand-copy — it reads live source). */
+function parseReservedEntitlementIds(src: string): string[] {
+  const block = src.match(
+    /RESERVED_MODULE_ENTITLEMENT_IDS[^=]*=\s*new Set\(\s*\[([\s\S]*?)\]\s*\)/,
+  );
+  if (!block?.[1]) return [];
+  return [...block[1].matchAll(/["']([a-z0-9-]+)["']/g)].map(
+    (m) => m[1] as string,
+  );
+}
+
+/**
+ * reserved-ids staleness (ADR-0248 F5, WARN). `RESERVED_MODULE_ENTITLEMENT_IDS` is a fail-soft
+ * carve-out for a SKU that is sold but not yet published — a purchased reserved id expands to nothing
+ * rather than throwing. Once its package IS published to the registry index, the reservation is stale
+ * and actively under-grants (the buyer's purchased id keeps expanding to nothing instead of the real
+ * grant). WARN (not error) per the advisory-first tier: it flags the stale entries for removal
+ * without blocking, since removal lands in the entitlement-expansion path (a separate wave's tree).
+ */
+export function checkReservedIdsStaleness(root: string): Finding[] {
+  const entPath = join(root, "packages/registry-schema/src/entitlements.ts");
+  const indexPath = join(root, "registry/index.json");
+  if (!existsSync(entPath) || !existsSync(indexPath)) return [];
+  const reserved = parseReservedEntitlementIds(readFileSync(entPath, "utf8"));
+  if (reserved.length === 0) return [];
+  let indexed: Set<string>;
+  try {
+    const idx = JSON.parse(readFileSync(indexPath, "utf8")) as {
+      modules: { id: string }[];
+    };
+    indexed = new Set(idx.modules.map((m) => m.id));
+  } catch {
+    return [];
+  }
+  const findings: Finding[] = [];
+  for (const id of reserved) {
+    if (indexed.has(`@caisson/${id}`)) {
+      findings.push({
+        severity: "warn",
+        rule: "reserved-ids-staleness",
+        pkg: `@caisson/${id}`,
+        message: `RESERVED_MODULE_ENTITLEMENT_IDS still reserves "${id}" but @caisson/${id} is now published in the registry index — the fail-soft carve-out under-grants a buyer who purchased it (expands to nothing). Drop it from the reserved set so its bare slug resolves to the real grant (ADR-0071).`,
       });
     }
   }
