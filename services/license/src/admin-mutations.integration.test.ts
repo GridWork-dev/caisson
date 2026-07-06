@@ -27,8 +27,10 @@ import { AuditChainStore, LocalArtifactStore } from "@caisson/audit-worm";
 import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
 import {
   CREDIT_LINE_ITEM_MIGRATION_SQL,
+  CREDIT_EXPIRY_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
+  GRANT_CONSUMPTION_MIGRATION_SQL,
   debit,
   grant,
 } from "@caisson/credits";
@@ -142,6 +144,8 @@ beforeAll(async () => {
   await tp.exec(ACCOUNT_MEMBER_SCHEMA_SQL);
   await tp.exec(CREDIT_SCHEMA_SQL);
   await tp.exec(CREDIT_ROUNDING_MIGRATION_SQL);
+  await tp.exec(CREDIT_EXPIRY_MIGRATION_SQL);
+  await tp.exec(GRANT_CONSUMPTION_MIGRATION_SQL);
   // ADR-0218 per-line columns — the paid-revoke claw reads `creditsClawedForSource` (line_item_id).
   await tp.exec(CREDIT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
