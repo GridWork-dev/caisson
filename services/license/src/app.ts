@@ -305,6 +305,9 @@ export function createApp(
 
       // Window-changed RE-MINT (ADR-0251 Decision 3): a stored grant exists but its signed window is
       // stale — replace the stored row's token in place (still exactly one row per (account, major)).
+      // Revocation caveat: the re-mint issues a FRESH licenseId, so an edge deny-set entry alone
+      // (grants left active) would not survive a window-change re-mint — revocation must always
+      // revoke the grant rows AND deny-list together, as the shipped admin revoke flow does.
       if (existing !== null) {
         await withTenant(deps.db, accountId, (tx) =>
           updateLicenseGrantToken(tx, {
