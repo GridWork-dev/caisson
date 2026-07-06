@@ -598,6 +598,111 @@ describe("POST /issue updates windows (ADR-0244/0255)", () => {
   });
 });
 
+describe("POST /issue snapshot-at-sale entitledSince (ADR-0257 §1.2)", () => {
+  const issueBody = (acct: string) =>
+    JSON.stringify({ accountId: acct, tier: "pro", major: 1, expiry: null });
+
+  test("a one-time buyer's token carries entitledSince[entitlementId] = granted_at", async () => {
+    const acct = "acct_since_issue";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pay_since_1",
+        source: { kind: "one_time", purchaseId: "pay_since_1" },
+      }),
+    );
+    await tp.query(
+      `UPDATE entitlement_grant SET granted_at = '2026-07-06T00:00:00.000Z' WHERE account_id = $1`,
+      [acct],
+    );
+    const res = await app(post(issueBody(acct), `Bearer ${TOKEN}`));
+    const body = (await res.json()) as { token: string };
+    const verified = verifyLicenseWithKey(body.token, DEV_PUB);
+    expect(verified.claims?.entitledSince).toEqual({
+      compliance: "2026-07-06T00:00:00.000Z",
+    });
+  });
+
+  test("a subscription-only account's token carries an empty entitledSince map (grandfathered)", async () => {
+    const acct = "acct_since_subonly";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "in_since_sub",
+        source: { kind: "subscription", subscriptionId: "sub_since" },
+      }),
+    );
+    const body = (await (
+      await app(post(issueBody(acct), `Bearer ${TOKEN}`))
+    ).json()) as { token: string };
+    expect(
+      verifyLicenseWithKey(body.token, DEV_PUB).claims?.entitledSince,
+    ).toEqual({});
+  });
+
+  test("entitledSince change ALONE re-mints even when updatesWindows is byte-identical", async () => {
+    // Isolate the entitledSince axis: keep the window constant across two purchases (same
+    // updates_expires_at) while a later granted_at moves the snapshot — proving entitledSince is in
+    // the re-mint comparison, not just updatesWindows.
+    const acct = "acct_since_remint";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pay_es_a",
+        source: { kind: "one_time", purchaseId: "pay_es_a" },
+      }),
+    );
+    await tp.query(
+      `UPDATE entitlement_grant
+          SET granted_at = '2026-01-05T00:00:00.000Z',
+              updates_expires_at = '2028-01-05T00:00:00.000Z'
+        WHERE account_id = $1 AND source_event_id = 'pay_es_a'`,
+      [acct],
+    );
+    const first = (await (
+      await app(post(issueBody(acct), `Bearer ${TOKEN}`))
+    ).json()) as { token: string; licenseId: string };
+    const firstClaims = verifyLicenseWithKey(first.token, DEV_PUB).claims;
+    expect(firstClaims?.entitledSince).toEqual({
+      compliance: "2026-01-05T00:00:00.000Z",
+    });
+
+    // A second purchase of the SAME entitlement, later granted_at, SAME window bound.
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pay_es_b",
+        source: { kind: "one_time", purchaseId: "pay_es_b" },
+      }),
+    );
+    await tp.query(
+      `UPDATE entitlement_grant
+          SET granted_at = '2026-06-01T00:00:00.000Z',
+              updates_expires_at = '2028-01-05T00:00:00.000Z'
+        WHERE account_id = $1 AND source_event_id = 'pay_es_b'`,
+      [acct],
+    );
+    const reminted = (await (
+      await app(post(issueBody(acct), `Bearer ${TOKEN}`))
+    ).json()) as { token: string; licenseId: string };
+    const remintedClaims = verifyLicenseWithKey(reminted.token, DEV_PUB).claims;
+
+    // Re-minted (fresh token + licenseId) …
+    expect(reminted.token).not.toBe(first.token);
+    expect(reminted.licenseId).not.toBe(first.licenseId);
+    // … driven by entitledSince (moved to the later purchase) …
+    expect(remintedClaims?.entitledSince).toEqual({
+      compliance: "2026-06-01T00:00:00.000Z",
+    });
+    // … while updatesWindows stayed byte-identical (the isolation).
+    expect(remintedClaims?.updatesWindows).toEqual(firstClaims?.updatesWindows);
+  });
+});
+
 describe("issuer non-issue routes", () => {
   test("GET /health → 200 + security headers (public)", async () => {
     const res = await app(new Request("http://license.test/health"));

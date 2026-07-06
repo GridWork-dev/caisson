@@ -30,7 +30,10 @@ import { withRequestSpan } from "@caisson/observability";
 import type { RegistryIndex } from "@caisson/registry-schema";
 import { type Transactor, withTenant } from "@caisson/tenancy-rls";
 import type { DiscordGrantPush } from "./discord-notify.ts";
-import { computeUpdatesWindows } from "./entitlement-store.ts";
+import {
+  computeEntitledSince,
+  computeUpdatesWindows,
+} from "./entitlement-store.ts";
 import {
   readLicenseGrant,
   storeLicenseGrant,
@@ -160,32 +163,40 @@ function authorized(req: Request, token: string, adminToken: string): boolean {
 }
 
 /**
- * The `updatesWindows` claim carried by a STORED wire token, for the ADR-0251 Decision 3 re-mint
- * comparison (map-shaped per ADR-0255). Decode-only (no signature verify — the stored token was
- * minted by THIS service and is re-verified offline by every consumer; the baked verify key here is
- * prod, which a dev/test-signed stored token would fail). An absent/null field (a pre-window token)
- * normalizes to the EMPTY map = unbounded, so a subscription-only account's stored token keeps
- * re-serving byte-identical. A decode/parse failure also reads as the empty map — at worst a corrupt
- * stored token is re-served for an account with no windows, never re-minted on a read error.
+ * The re-mint-relevant claims carried by a STORED wire token — the per-entitlement `updatesWindows`
+ * (ADR-0251 D3 / ADR-0255) AND the per-entitlement `entitledSince` snapshot instants (ADR-0257
+ * §1.2). Decode-only (no signature verify — the stored token was minted by THIS service and is
+ * re-verified offline by every consumer; the baked verify key here is prod, which a dev/test-signed
+ * stored token would fail). An absent/null field (a pre-window / pre-snapshot token) normalizes to
+ * the EMPTY map, so a subscription-only account's stored token keeps re-serving byte-identical. A
+ * decode/parse failure reads as empty maps — at worst a corrupt stored token is re-served, never
+ * re-minted on a read error.
  */
-function storedUpdatesWindows(token: string): Record<string, string> {
+function storedRemintClaims(token: string): {
+  updatesWindows: Record<string, string>;
+  entitledSince: Record<string, string>;
+} {
   try {
     const claims = licenseClaimsSchema.parse(
       JSON.parse(decodeToken(token).payload) as unknown,
     );
-    return claims.updatesWindows ?? {};
+    return {
+      updatesWindows: claims.updatesWindows ?? {},
+      entitledSince: claims.entitledSince ?? {},
+    };
   } catch {
-    return {};
+    return { updatesWindows: {}, entitledSince: {} };
   }
 }
 
 /**
- * Canonical form of an updates-windows map for the re-mint equality check (ADR-0255 Decision 4):
- * sorted-key JSON, so key insertion order never fakes a window change.
+ * Canonical form of a `purchasedEntitlementId → ISO` map for the re-mint equality check (ADR-0255
+ * Decision 4): sorted-key JSON, so key insertion order never fakes a change. Used for both the
+ * `updatesWindows` and `entitledSince` maps.
  */
-function canonicalWindows(windows: Record<string, string>): string {
+function canonicalMap(map: Record<string, string>): string {
   return JSON.stringify(
-    Object.entries(windows).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+    Object.entries(map).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
   );
 }
 
@@ -262,25 +273,30 @@ export function createApp(
 
       // Idempotent re-serve (persist & reuse), LOOSENED per ADR-0251 Decision 3: a prior /issue for
       // this exact (accountId, major) already minted + stored a token — return it byte-identical
-      // UNLESS the account's freshly computed per-entitlement updates windows (ADR-0244/0255, DB
-      // truth over the active one_time grants) differ from the stored token's signed
-      // `updatesWindows` — a renewal purchase must produce a fresh token, never re-serve the stale
-      // window. Maps compare CANONICALLY (sorted-key JSON, ADR-0255 Decision 4). Both reads are
-      // RLS-scoped in ONE withTenant, so this can only ever see the caller's own account's grants.
-      const { existing, updatesWindows } = await withTenant(
+      // UNLESS the account's freshly computed per-entitlement updates windows (ADR-0244/0255) OR
+      // snapshot-at-sale instants (ADR-0257 §1.2 `entitledSince`) — both DB truth over the active
+      // one_time grants — differ from the stored token's signed maps. A renewal (window) or a
+      // re-purchase that widens the member snapshot (`entitledSince`) must produce a fresh token,
+      // never re-serve the stale claim. Maps compare CANONICALLY (sorted-key JSON, ADR-0255
+      // Decision 4). All reads are RLS-scoped in ONE withTenant — only the caller's own grants.
+      const { existing, updatesWindows, entitledSince } = await withTenant(
         deps.db,
         accountId,
         async (tx) => ({
           existing: await readLicenseGrant(tx, accountId, major),
           updatesWindows: await computeUpdatesWindows(tx, accountId),
+          entitledSince: await computeEntitledSince(tx, accountId),
         }),
       );
-      if (
-        existing !== null &&
-        canonicalWindows(storedUpdatesWindows(existing.token)) ===
-          canonicalWindows(updatesWindows)
-      ) {
-        return json({ token: existing.token, licenseId: existing.licenseId });
+      if (existing !== null) {
+        const stored = storedRemintClaims(existing.token);
+        if (
+          canonicalMap(stored.updatesWindows) ===
+            canonicalMap(updatesWindows) &&
+          canonicalMap(stored.entitledSince) === canonicalMap(entitledSince)
+        ) {
+          return json({ token: existing.token, licenseId: existing.licenseId });
+        }
       }
 
       // Server-side entitlement truth: resolve the account's purchases → member slugs, RLS-scoped.
@@ -306,6 +322,10 @@ export function createApp(
         // entitlement unbounded (an account with no active one-time grants; subscriptions keep
         // their expiry semantics untouched).
         updatesWindows,
+        // The signed ADR-0257 §1.2 per-entitlement snapshot-at-sale instants — an empty map = every
+        // entitlement grandfathered (no member is snapshot-filtered). Sibling of `updatesWindows`
+        // on the member-set axis; read by the registry-schema per-member filter, never here.
+        entitledSince,
       };
       let token: string;
       try {

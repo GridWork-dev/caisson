@@ -41,6 +41,19 @@ export {
 export type { ActionBook, ActionKeySource, ActionTag } from "./actions.ts";
 
 export {
+  UPGRADE_BOOK_VERSION,
+  SKU_RETAIL,
+  BUNDLE_RETAIL,
+  BUNDLE_MEMBERSHIP_BOOK,
+  bundleMembershipTimeline,
+  creditableMembers,
+  isCreditableMember,
+  resolveUpgradeCredit,
+  upgradeQuote,
+} from "./upgrades.ts";
+export type { UpgradeQuote } from "./upgrades.ts";
+
+export {
   CREDIT_CONVERSION,
   centsToCredits,
   centsToCreditsProvenance,

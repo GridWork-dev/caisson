@@ -865,6 +865,7 @@
       "version": "0.3.2",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
+        "@caisson/registry-schema": "workspace:*",
         "zod": "catalog:",
       },
       "devDependencies": {

@@ -437,6 +437,40 @@ export async function computeUpdatesWindows(
   return windows;
 }
 
+/**
+ * Compute the account's PER-ENTITLEMENT snapshot-at-sale instants for the signed `entitledSince`
+ * claim (ADR-0257 §1.2 / ADR-0247 F7) — the SIBLING of {@link computeUpdatesWindows} on the
+ * member-set axis. From DB truth over the ACTIVE one_time grants: per `(account, entitlement)` pair,
+ * `entitledSince` is the MOST FAVORABLE (max) `granted_at` — a buyer who re-purchased a bundle is
+ * entitled to the newer (larger) member snapshot, mirroring the most-favorable rule
+ * `computeUpdatesWindows`/ADR-0255 Decision 3 use for windows. A member that joined a bundle AFTER
+ * this instant is outside the buyer's snapshot; the per-member filter drops it at the registry-schema
+ * resolver (`expandEntitlements`). Returns a `purchasedEntitlementId → ISO instant` map; EMPTY when
+ * the account holds no active one-time grants (an unbounded/grandfathered claim — subscription-
+ * sourced entitlements never get a key, their own `expiry` governs). Deterministic for a fixed grant
+ * set (no `now()`), so the /issue re-mint comparison is stable. Run inside `withTenant`.
+ */
+export async function computeEntitledSince(
+  tx: TenantExecutor,
+  accountId: string,
+): Promise<Record<string, string>> {
+  const r = await tx.query<{
+    entitlement_id: string;
+    since: string | Date;
+  }>(
+    `SELECT entitlement_id, max(granted_at) AS since
+       FROM entitlement_grant
+      WHERE account_id = $1 AND source_kind = 'one_time' AND status = 'active'
+      GROUP BY entitlement_id`,
+    [accountId],
+  );
+  const entitledSince: Record<string, string> = {};
+  for (const row of r.rows) {
+    entitledSince[row.entitlement_id] = new Date(row.since).toISOString();
+  }
+  return entitledSince;
+}
+
 export interface ExtendUpdatesWindowInput {
   /** The buyer account — MUST equal the `withTenant` scope (the RLS WITH CHECK enforces it). */
   accountId: string;

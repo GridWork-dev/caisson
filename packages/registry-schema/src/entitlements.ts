@@ -79,6 +79,67 @@ export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> = new Set([
  *  strings. Classification + fail-closed rejection of unknown values happens below. */
 const PurchasedIds = z.array(z.string().trim().min(1).max(128));
 
+/**
+ * Snapshot-at-sale filter context (ADR-0257 §1.2 / ADR-0247 F7 — the per-MEMBER join-date axis; the
+ * D side of the D/E boundary, sibling of E's per-VERSION `updatesWindows` at the Worker). Turns a
+ * buyer's signed `entitledSince` claim + a bundle-membership timeline (`@caisson/pricebook`) into a
+ * fail-SOFT filter: a bundle MEMBER whose join instant is AFTER the buyer's `entitledSince` for that
+ * bundle was not in the member set as of sale, so it is dropped. FAIL-SOFT by lock — never fail
+ * closed against an existing token:
+ *   - `entitledSince[bundleId]` ABSENT → the bundle is grandfathered → NO member filtering.
+ *   - a member ABSENT from `membershipTimeline[bundleId]` (or a whole bundle absent) → the member is
+ *     KEPT (missing join data never strips access).
+ *   - an unparseable `entitledSince` OR join instant → treated as missing → KEPT.
+ * The E per-version axis (published version ≤ `updatesWindows`) is enforced separately in the
+ * registry Worker and is untouched here. Injected (not imported): `@caisson/registry-schema` is the
+ * open Apache base and never depends "up" on the commercial `@caisson/pricebook` that owns the
+ * timeline DATA — the caller wires the two.
+ */
+export interface EntitlementSnapshot {
+  /** `purchasedEntitlementId → ISO instant` the buyer became entitled (claims `entitledSince`). */
+  readonly entitledSince: Readonly<Record<string, string>>;
+  /** `bundleId → (memberModuleId → ISO join instant)`. Member ids may be `@caisson/<slug>` or the
+   *  bare `<slug>` (pricebook's convention) — the filter matches either form. */
+  readonly membershipTimeline: Readonly<
+    Record<string, Readonly<Record<string, string>>>
+  >;
+}
+
+/** Strip the `@caisson/` scope so a bare-slug-keyed timeline (pricebook) matches an `@caisson/<slug>`
+ *  member id. */
+function bareSlug(moduleId: string): string {
+  return moduleId.startsWith("@caisson/")
+    ? moduleId.slice("@caisson/".length)
+    : moduleId;
+}
+
+/**
+ * Drop the members of `bundleId` that joined AFTER the buyer's `entitledSince` for it (snapshot-at-
+ * sale, ADR-0247 F7). Mutates `members` in place. FAIL-SOFT at every missing/malformed edge (see
+ * {@link EntitlementSnapshot}): the only member removed is one with a PARSEABLE join instant strictly
+ * after a PARSEABLE `entitledSince` for its bundle. An absent `entitledSince[bundleId]` skips the
+ * bundle entirely (grandfathered).
+ */
+function applyMemberSnapshot(
+  members: Set<string>,
+  bundleId: BundleId,
+  snapshot: EntitlementSnapshot,
+): void {
+  const since = snapshot.entitledSince[bundleId];
+  if (since === undefined) return; // grandfathered: no per-member filtering for this bundle
+  const cutoff = Date.parse(since);
+  if (Number.isNaN(cutoff)) return; // unparseable entitledSince → fail soft (keep all)
+  const joinDates = snapshot.membershipTimeline[bundleId];
+  if (joinDates === undefined) return; // no timeline for this bundle → fail soft (keep all)
+  for (const memberId of [...members]) {
+    const raw = joinDates[memberId] ?? joinDates[bareSlug(memberId)];
+    if (raw === undefined) continue; // missing join date → fail soft (keep)
+    const joined = Date.parse(raw);
+    if (Number.isNaN(joined)) continue; // unparseable join date → fail soft (keep)
+    if (joined > cutoff) members.delete(memberId); // joined after sale → outside the snapshot
+  }
+}
+
 /** The membership-bearing manifest for a module entry = its `latest` published version's manifest
  *  (falling back to the last version). Membership reflects the current catalog, not a frozen token. */
 function latestManifest(
@@ -124,7 +185,11 @@ function legacyEditionNamesFor(bundleId: BundleId): readonly Edition[] {
  * harmless — they are already the free floor. This never widens the FREE view: a bundle's members are
  * granted only to a caller holding that bundle's entitlement, never to the anonymous base floor.
  */
-function membersOfBundle(index: RegistryIndex, bundleId: BundleId): string[] {
+function membersOfBundle(
+  index: RegistryIndex,
+  bundleId: BundleId,
+  snapshot?: EntitlementSnapshot,
+): string[] {
   const allow = moduleAllowlist(index);
   const editionNames: ReadonlySet<string> = new Set<string>(
     legacyEditionNamesFor(bundleId),
@@ -146,6 +211,10 @@ function membersOfBundle(index: RegistryIndex, bundleId: BundleId): string[] {
       }
     }
   }
+  // Snapshot-at-sale per-member filter (ADR-0247 F7 / ADR-0257 §1.2), fail-soft — no-op when no
+  // snapshot is injected (the Wave-0 contract; the live Worker path stays unfiltered per the D/E
+  // boundary until a caller wires the pricebook timeline + the buyer's `entitledSince`).
+  if (snapshot !== undefined) applyMemberSnapshot(members, bundleId, snapshot);
   return [...members];
 }
 
@@ -232,10 +301,18 @@ function fullCatalogMembers(index: RegistryIndex): string[] {
  * index presence likewise expands to nothing (same semantics an index-absent edition always had —
  * never an over-grant, never a whole-expansion throw for a paying buyer's other ids). An empty
  * purchase yields an empty set (no entitlement → no access).
+ *
+ * `snapshot` (ADR-0257 §1.2 / ADR-0247 F7, OPTIONAL) applies the per-member snapshot-at-sale filter
+ * (see {@link EntitlementSnapshot}): a bundle member that joined after the buyer's `entitledSince`
+ * for that bundle is dropped, fail-soft. Omitted → identical to the pre-snapshot behavior (the
+ * Wave-0 unfiltered contract; TM-E fail-closed throw untouched on either path). The `everything`
+ * full-catalog FALLBACK derivation is deliberately left unfiltered — Everything is the whole catalog
+ * (grandfathered); once its explicit `kind:"bundle"` entry lands (W5) it filters like any bundle.
  */
 export function expandEntitlements(
   index: RegistryIndex,
   purchasedIds: readonly string[],
+  snapshot?: EntitlementSnapshot,
 ): Set<string> {
   const ids = PurchasedIds.parse(purchasedIds);
   const allowlist = moduleAllowlist(index);
@@ -252,7 +329,7 @@ export function expandEntitlements(
       const expanded =
         id === "everything" && !hasBundleEntry(index, id)
           ? fullCatalogMembers(index)
-          : membersOfBundle(index, id);
+          : membersOfBundle(index, id, snapshot);
       for (const memberId of expanded) members.add(memberId);
       continue;
     }

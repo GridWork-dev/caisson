@@ -42,6 +42,18 @@ export const COMMUNITY_TIER: LicenseTier = "community";
  *                    ABSENT from the map is likewise unbounded — there are never null VALUES in
  *                    the map. Distinct from `expiry`: a lapsed window never invalidates the
  *                    license, it only narrows which versions the registry serves.
+ * - `entitledSince` — the per-purchased-id SNAPSHOT-AT-SALE instant (ADR-0257 §1.2 / ADR-0247 F7):
+ *                    a map `purchasedEntitlementId → ISO instant` recording when the buyer became
+ *                    entitled to that bundle. A bundle MEMBER that joined the bundle AFTER this
+ *                    instant is not part of the buyer's snapshot and is filtered out at the
+ *                    per-member resolver (`@caisson/registry-schema` `expandEntitlements`). SIBLING
+ *                    of `updatesWindows` on a DIFFERENT axis (member-set snapshot here; published
+ *                    VERSIONS there, enforced separately in the registry Worker) — same
+ *                    absent-key-=-unrestricted posture: a token WITHOUT the field, carrying `null`,
+ *                    or missing a key = GRANDFATHERED / full access (never fail-closed against an
+ *                    existing token). Never null VALUES in the map. Each consumer reads the ONE
+ *                    field it needs — never destructures the whole claims shape — so a new sibling
+ *                    key never breaks another reader.
  */
 export const licenseClaimsSchema = strictObject({
   licenseId: z.string().uuid(),
@@ -56,10 +68,13 @@ export const licenseClaimsSchema = strictObject({
     )
     .nullable()
     .optional(),
-  // RESERVED: `entitledSince` — a sibling per-purchased-id record (same absent-key-=-unrestricted
-  // posture as `updatesWindows`) for the catalog-rework build; its own spec ADR lands there. Keep
-  // this record-field pattern when adding it, and keep every consumer reading the specific field it
-  // needs rather than destructuring the whole claims shape, so a new sibling key never breaks one.
+  entitledSince: z
+    .record(
+      z.string().trim().min(1).max(128),
+      z.string().datetime({ offset: true }),
+    )
+    .nullable()
+    .optional(),
 });
 
 /** The validated, signed license claims. */
