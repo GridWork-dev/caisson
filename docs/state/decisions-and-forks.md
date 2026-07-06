@@ -1154,3 +1154,30 @@ retirement); collisions at merge renumber per ADR-0088 (second merger renumbers)
   (ADR-0173) were still framed "planned" in adapter-expansion.md — rows flip to shipped in the
   ADR-0265 doc-correction pass; compatibility-matrix.md §1's Email/Jobs rows corrected the
   same way.
+
+## 2026-07-06 Kickoff-D merge close-out (catalog program LIVE on main)
+
+**PR #130 MERGED** — the full catalog program (waves W0–W7) landed after E (#128) and F (#129):
+the six-bundle catalog (compliance $1,049 · ai-production $739 · local-first $629 · agentic-dev
+$329 · provenance $399 · everything $2,059) is the sold reality in the Paddle SANDBOX, the four
+edition products + the legacy $1,499 bundle are archived, all 22 modules sell à la carte, and the
+renumber agreement realized exactly as recorded above: **D filed 0257–0261** (0259/0260 = the
+renumbered Stage-1/2 drafts; **0261 = the Greptile-retirement ADR the E-session note deferred —
+now FILED**), F's 0262–0268 stand, ceiling **0268**.
+
+**SHIP-audit lane (per the retired-Greptile review posture):** gw-code-reviewer (opus) +
+gw-security-auditor (fable) on the full branch diff — 10 findings, ALL fixed in-session before
+the PR: 2 P1 entitlement-engine (ui-pro reserved-id carve-out; the token now signs PURCHASED ids,
+restoring the Worker's purchased-id-keyed updates-window fold that shipped provably dead — the
+renewal program's enforcement was fail-open at both edge surfaces), 3 P1 display prices
+understating checkout (now SOT-interpolated, never hand-typed), plus members-gate bundle
+coverage, the resolveGate fresh-set catch, the reserved-ids gate regex, and P3 truth fixes.
+Deferrals recorded, not dropped: `entitledSince` gate wiring (outstanding-work §2) and the
+verifier-first deploy-sequence constraint (deploy STATE standing note).
+
+**Open set after the close-out** (supersedes the "Still OPEN after Stage 3" list above):
+production Paddle catalog recreation (operator act at the commerce flip; sandbox never ports) ·
+grandfathering policy (operator-owned) · optional Cookiy WTP validation · the ui-pro PACKAGE
+build (its SKU sells today under the reserved-id fail-soft; unreserve at first publish) · kit
+stage 2 + wave-1 `./ui` frontends (now UNBLOCKED — the catalog-rework waves they were sequenced
+behind are done).

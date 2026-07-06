@@ -30,12 +30,14 @@ PERMANENT gate — see the correction in §0.
   webhook route or secret (ADR-0116). The webhook is mounted at `POST /webhook` on the `caisson-license`
   Railway service (`services/license/src/app.ts` lines 263–336), reachable at
   `https://license.caisson.sh/webhook`.
-- **Paddle is wired end-to-end today, but against the SANDBOX catalog.** `packages/pricebook/src/purchases.ts`
-  and `packages/pricebook/src/plans.ts` (the server-side grant resolver) and `apps/site/lib/catalog.ts`
-  (the client-side checkout catalog) all carry **real Paddle SANDBOX price ids** (`pri_01kwd76…`) for
-  the 4 editions + the bundle + the 2 annual subscriptions (ADR-0106/0116 go-live wiring, comment block
-  `purchases.ts` lines 62–79). This is not a placeholder — sandbox checkout has been smoke-tested
-  end-to-end per `docs/state/decisions-and-forks.md` (commerce-goes-live session, 2026-07-01).
+- **Paddle is wired end-to-end today, but against the SANDBOX catalog.** The pricebook's
+  `purchases.ts`, `renewals.ts`, and `plans.ts` (the server-side grant/renewal resolvers) and
+  `apps/site/lib/catalog.ts` (the client-side checkout catalog) all carry **real Paddle SANDBOX
+  price ids** for the ADR-0257/0258 six-bundle catalog (`pri_01kwwqa…`, W7 big-bang 2026-07-06:
+  6 bundles, 22 modules, the per-SKU renewal rows, and the 2 annual subscriptions; the 4 edition
+  products and the legacy $1,499 bundle are ARCHIVED sandbox-side and reject transactions). This
+  is not a placeholder — the W7 rebuild was smoke-tested per SKU class via pricing-preview, and
+  the earlier end-to-end sandbox checkout proof stands (commerce-goes-live session, 2026-07-01).
 - **The license issuer's production signing key is ALREADY provisioned and baked in** — this is NOT a
   launch-day step. `infra/license-issuer/ISSUER_PUBLIC_KEY.md` records the production Ed25519 keypair;
   the ADR-0226 rotation EXECUTED 2026-07-05 (×2 — PRs #117/#118; the rotation-1 fixture was itself a
@@ -144,24 +146,31 @@ rotation dates here when done. (Related, same flip gate but tracked in the pre-l
 ### 2.2 Recreate the product catalog in Paddle PRODUCTION
 
 Paddle Sandbox and Production are **separate catalogs with separate ids** — nothing carries over
-automatically. In the Production dashboard → Catalog, create one Product + one Price per SKU, matching
-the locked numbers (ADR-0106 § numbers superseded by ADR-0137's below-sum reprice; `apps/site/lib/pricing.ts`
-lines 52–254 is the live display source of truth and already carries these exact amounts):
+automatically. The target is the **ADR-0257/0258 six-bundle catalog exactly as the W7 sandbox
+big-bang built it (2026-07-06)** — production recreation is a re-run of the same target table with
+production ids swapped in. `apps/site/lib/pricing.ts` (`BUNDLE_PRICES`/`MODULE_PRICES`/`PLAN_PRICES`)
+is the live display SOT and already carries every amount; `packages/pricebook/src/upgrades.ts`
+(`BUNDLE_RETAIL`/`SKU_RETAIL`) is the cents authority. The proven idempotent rebuild script pattern
+(custom_data-keyed create/patch/skip, dry-run → apply → re-run) is in the PR #130 record.
 
-| Product            | Price            | Billing               | ADR                  |
-| ------------------ | ---------------- | --------------------- | -------------------- |
-| Compliance         | $749.00          | one-time              | ADR-0137             |
-| All-Access Bundle  | $1,499.00        | one-time              | ADR-0137             |
-| AI Production Kit  | $599.00          | one-time              | ADR-0137 (unchanged) |
-| Local-first AI     | $349.00          | one-time              | ADR-0137             |
-| Agentic-Dev        | $249.00          | one-time              | ADR-0137             |
-| Compliance-Updates | $1,499.00 / year | recurring annual      | ADR-0106             |
-| Developer          | $499.00 / year   | recurring annual      | ADR-0106             |
-| Enterprise / SLA   | —                | no price (Contact us) | ADR-0095 §2          |
+| Product (bundles)  | Price            | Billing               | ADR         |
+| ------------------ | ---------------- | --------------------- | ----------- |
+| Compliance         | $1,049.00        | one-time              | ADR-0258    |
+| AI-Production      | $739.00          | one-time              | ADR-0258    |
+| Local-first        | $629.00          | one-time              | ADR-0258    |
+| Agentic-Dev        | $329.00          | one-time              | ADR-0260    |
+| Provenance         | $399.00          | one-time              | ADR-0260    |
+| Everything         | $2,059.00        | one-time              | ADR-0258    |
+| Compliance-Updates | $1,499.00 / year | recurring annual      | ADR-0106    |
+| Developer          | $499.00 / year   | recurring annual      | ADR-0106    |
+| Enterprise / SLA   | —                | no price (Contact us) | ADR-0095 §2 |
 
-Per-module à-la-carte (11 SKUs, $49–$199 — the ADR-0238 standalone-module catalog; amounts in
-`apps/site/lib/pricing.ts` `MODULE_PRICES`) — create these alongside the editions so the §2.3 book
-update lands as one commit.
+Plus, exactly as in sandbox: the **22 à-la-carte module SKUs** ($49–$299, `MODULE_PRICES` /
+`SKU_RETAIL` — the 11 original modules + the 11 W7 carve/standalone SKUs incl. ui-pro $129 and
+credits) and the **per-SKU "Updates Renewal" prices** at the ADR-0260 §5 flat-40% X9 cents
+(bundles $419/$289/$249/$129/$159/$819 + the per-module ladder). Do NOT create edition products —
+the four editions and the legacy $1,499 bundle are RETIRED (archived in sandbox; legacy
+entitlements resolve via the alias map forever).
 
 Do **not** re-use the Sandbox price ids — Paddle Production mints entirely new `pri_…` ids.
 
@@ -171,25 +180,27 @@ This is a **code change**, not an env var. Both books fail closed on an unrecogn
 (`resolvePurchase`/`resolvePlan` throw — `ConfigError`, ADR-0089 §6 / ADR-0113), so a missed row means
 a real paid purchase grants nothing rather than silently succeeding — get this right before flipping.
 
-1. `packages/pricebook/src/purchases.ts` — replace the 5 real sandbox keys (lines 83, 88, 93, 98, 103:
-   `compliance`, `bundle`, `ai-kit`, `local-ai`, `agent-dev`) with the new production `pri_…` ids from
-   §2.2. Bump `PURCHASE_BOOK_VERSION` (line 28, append-only per ADR-0006 — do not edit a version in
+1. `packages/pricebook/src/purchases.ts` — replace the W7 sandbox keys (the 6 bundle rows + the
+   22 module-SKU rows, `pri_01kwwqa…`/`pri_01kwj…` sections) with the new production `pri_…` ids
+   from §2.2. Bump `PURCHASE_BOOK_VERSION` (append-only per ADR-0006 — do not edit a version in
    place, bump the date-stamp string).
-2. `packages/pricebook/src/plans.ts` — replace the 2 real sandbox keys (lines 82, 88: `developer`,
-   `compliance_updates`) with the new production ids. Bump `PRICEBOOK_VERSION` (line 25).
-3. `apps/site/lib/catalog.ts` — replace `EDITION_PRICE_IDS` (lines 53–58) and `BUNDLE_PRICE_ID`
-   (line 60) with the same new ids — **these must be byte-identical to the pricebook's keys**, or a
-   buyer's checkout will pass a price id the webhook's resolver doesn't recognize (`catalog.test.ts`
-   pins this cross-package invariant — run it after editing, see verify below).
-4. Replace the 11 REAL module-row sandbox keys in `purchases.ts` (the `pri_…` module rows,
-   2026-07-02 wiring) and `catalog.ts`'s `MODULE_PRICE_IDS` values with the new production ids too,
-   in the same commit. The four retired edition-core ids (ADR-0238) get no production counterpart —
-   leave them unmapped so `resolvePurchase` keeps failing closed on stale redeliveries.
+2. `packages/pricebook/src/renewals.ts` — replace the renewal-price sandbox keys (the 16 legacy +
+   12 W7 rows) with the production renewal ids; bump `RENEWAL_BOOK_VERSION`. And
+   `packages/pricebook/src/plans.ts` — replace the 2 subscription keys (`developer`,
+   `compliance_updates`); bump `PRICEBOOK_VERSION`.
+3. `apps/site/lib/catalog.ts` — replace `BUNDLE_PRICE_IDS` (all 6) and `MODULE_PRICE_IDS` (all 22)
+   with the same new ids — **byte-identical to the pricebook's keys**, or a buyer's checkout passes
+   a price id the webhook's resolver doesn't recognize (`catalog.test.ts` pins this cross-package
+   invariant against `PURCHASE_BOOK` — run it after editing, see verify below).
+4. The retired ids get NO production counterpart — the four ADR-0238 edition-core rows, the four
+   archived edition products, and the legacy $1,499 bundle stay unmapped so `resolvePurchase`
+   keeps failing closed on stale redeliveries, and `pruneCart` (LIVE_PRICE_IDS) keeps dropping
+   persisted cart lines that carry them.
 5. Run `bun test packages/pricebook packages/registry-schema apps/site/lib/catalog.test.ts` (or `bun run check`
    for the full gate) before committing — this is a normal EXECUTE-act code change, commit it through
    the standard 7-act flow, not by hand-editing on `main`. **Do this well before the flip window** — it
-   ships through the ordinary PR + CI + merge path (`greptile-gate` fires on this diff: `billing`/`credits`
-   are in the security-critical glob per `CLAUDE.md`'s PR review gate section).
+   ships through the ordinary PR + CI + merge path with the in-session SHIP audit lane on the diff
+   (money seams → gw-security-auditor on fable, per `CLAUDE.md`'s PR review gate section).
 
 ### 2.4 Set production credentials on Railway
 
@@ -333,11 +344,12 @@ final-numbers adjustment to the operator's silent discretion up until the gate f
 "Pre-flip safety clause"; `CLAUDE.md` "Still open" section: "the operator may still adjust a number
 before checkout goes live, but the site no longer _says_ so").
 
-1. Open `apps/site/lib/pricing.ts` (lines 52, 60, 68, 76, 230, 246, 254) side-by-side with the Paddle
-   Production catalog from §2.2. Confirm every amount matches exactly: Compliance $749 · AI-Kit $599 ·
-   Agentic-Dev $249 · Local-first $349 · Bundle $1,499 · Compliance-Updates $1,499/yr · Developer
-   $499/yr. **Verified this session:** `pricing.ts` already carries these exact numbers (matches
-   ADR-0137's below-sum reprice), so if you did §2.2 correctly there should be nothing to change.
+1. Open `apps/site/lib/pricing.ts` (`BUNDLE_PRICES`/`MODULE_PRICES`/`PLAN_PRICES`) side-by-side with
+   the Paddle Production catalog from §2.2. Confirm every amount matches exactly: Compliance $1,049 ·
+   AI-Production $739 · Local-first $629 · Agentic-Dev $329 · Provenance $399 · Everything $2,059 ·
+   the 22 module SKUs · Compliance-Updates $1,499/yr · Developer $499/yr (ADR-0258/0260; the
+   below-sum + Everything-ladder invariants are CI-pinned in `pricing.test.ts`, so if `pricing.ts`
+   is green on `main` the numbers are the locked ones).
 2. If you want to change a number **now** (last free window — see ADR-0106's grandfather policy: once
    real buyers exist, every future increase must forward-grandfather existing buyers, never claw back):
    edit `pricing.ts`'s display amount and the matching Paddle Price in the dashboard. The pricebook

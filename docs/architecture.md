@@ -51,6 +51,16 @@ edition. Provider-SDK reach is confined to `ai-config`+`ai-kit` (ADR-0011).
   WAF/rate-limit rule can ever evaluate against it, by construction not by path-expression). Credits
   are an integer wallet (`@caisson/credits`, debit-before-spend, ADR-0007); branded-money/rounding
   provenance is ADR-0212.
+- **Claims/entitlement seam** (the cross-service contract the 2026-07-06 SHIP audit proved
+  breakable): license tokens sign the account's **PURCHASED entitlement ids** — never the index
+  expansion — because every consumer (Worker `resolveGate`, npm surface, MCP server) expands
+  against the registry index at verification, and the signed `updatesWindows`/`entitledSince`
+  maps are purchased-id-keyed (an expanded claim silently kills the window fold → fail-open).
+  Membership truth is the registry index members maps alone; legacy ids resolve through the ONE
+  alias point (`normalizeEntitlementId`/`LEGACY_ENTITLEMENT_ALIASES`, registry-schema); a
+  sold-but-unpublished SKU sits in `RESERVED_MODULE_ENTITLEMENT_IDS` (fail-soft) until indexed.
+  Deploy-order corollary: the claims schema is `.strict()`, so any wave that widens it deploys
+  VERIFIERS (Worker) before the issuer re-mints (`docs/deploy/STATE.md` standing constraint).
 - **Tenancy** — fail-closed Postgres RLS (`@caisson/tenancy-rls`, `withTenant`/`SET LOCAL`; a missing
   `WHERE` fails closed, ADR-0005), verified against the real generator by `checkRlsEquivalence`
   (checks.ts) so hand-written migration RLS can't silently drift from `buildTenantPolicySql`.
