@@ -1156,7 +1156,7 @@ describe("applyBillingEvent — Paddle per-line partial refund (ADR-0218)", () =
 });
 
 describe("applyBillingEvent — updates-renewal lines (ADR-0244/0251)", () => {
-  const RENEWAL_COMPLIANCE_ID = "pri_placeholder_renewal_compliance";
+  const RENEWAL_COMPLIANCE_ID = "pri_01kwvz6kzh4h43aec3r5rs5je4"; // the live sandbox compliance-renewal price
   const MODULE_ID = "price_field_crypto_module_PLACEHOLDER"; // grants "field-crypto", 0 credits
 
   test("a renewal line EXTENDS the window — no new grant, no credits, no push", async () => {

@@ -8,14 +8,14 @@
 // unknown price id THROWS. A price id lives in EXACTLY ONE of PURCHASE_BOOK / PLAN_BOOK /
 // RENEWAL_BOOK (renewals.test.ts pins the pairwise disjointness).
 //
-// PLACEHOLDER rows (`pri_placeholder_renewal_<slug>`): the operator creates the sandbox "Updates
-// Renewal" product + prices in the Paddle dashboard and swaps in the real `pri_…` ids. Cents live
-// in Paddle (and the site display SOT), NEVER here — Kickoff D owns every number.
+// SANDBOX ids (product pro_01kwvz6ktwkcj90gmtfrft8btr, created 2026-07-06): one "Updates Renewal"
+// product carrying 16 one-time prices at placeholder cents. Production ids swap in at the checkout
+// flip. Cents live in Paddle (and the site display SOT), NEVER here — Kickoff D owns every number.
 import { z } from "zod";
 import { ConfigError, parseStrict, strictObject } from "@caisson/kernel";
 
 /** Append-only version stamp — a renewal-row change bumps this, never edits it in place (ADR-0006). */
-export const RENEWAL_BOOK_VERSION = "2026-07-06.1";
+export const RENEWAL_BOOK_VERSION = "2026-07-06.2";
 
 export const renewalBookEntrySchema = strictObject({
   /** The purchased id (edition/bundle/module slug) whose updates window this price renews. */
@@ -25,33 +25,29 @@ export type RenewalBookEntry = z.infer<typeof renewalBookEntrySchema>;
 
 /**
  * `providerPriceId -> RenewalBookEntry`. One renewal SKU per renewable edition/module (the same
- * catalog PURCHASE_BOOK sells one-time), plus the bundle. All PLACEHOLDER ids until the operator
- * creates the sandbox prices; resolveRenewal throws on any real price id until then (fail-closed:
- * a renewal SKU launched without a row extends NOTHING and the webhook 500s for a retry).
+ * catalog PURCHASE_BOOK sells one-time), plus the bundle. Live SANDBOX price ids; resolveRenewal
+ * throws on any id not in the book (fail-closed: a renewal SKU launched without a row extends
+ * NOTHING and the webhook 500s for a retry).
  */
 export const RENEWAL_BOOK: Record<string, RenewalBookEntry> = {
   // Editions + bundle (the ADR-0246 catalog).
-  pri_placeholder_renewal_compliance: { renewsEntitlement: "compliance" },
-  pri_placeholder_renewal_ai_kit: { renewsEntitlement: "ai-kit" },
-  pri_placeholder_renewal_local_ai: { renewsEntitlement: "local-ai" },
-  pri_placeholder_renewal_agent_dev: { renewsEntitlement: "agent-dev" },
-  pri_placeholder_renewal_bundle: { renewsEntitlement: "bundle" },
+  pri_01kwvz6kzh4h43aec3r5rs5je4: { renewsEntitlement: "compliance" },
+  pri_01kwvz6m46s5tj4k2a09kcaf9s: { renewsEntitlement: "ai-kit" },
+  pri_01kwvz6m791c1xb4wxbedzf9nt: { renewsEntitlement: "local-ai" },
+  pri_01kwvz6m9tr49rstw0x7s8nk5h: { renewsEntitlement: "agent-dev" },
+  pri_01kwvz6mcfzgjemqa72czdfkmq: { renewsEntitlement: "bundle" },
   // The 11 à-la-carte modules (bare package slugs — the PURCHASE_BOOK entitlement-id convention).
-  pri_placeholder_renewal_field_crypto: { renewsEntitlement: "field-crypto" },
-  pri_placeholder_renewal_audit_worm: { renewsEntitlement: "audit-worm" },
-  pri_placeholder_renewal_ai_meter: { renewsEntitlement: "ai-meter" },
-  pri_placeholder_renewal_ai_evals: { renewsEntitlement: "ai-evals" },
-  pri_placeholder_renewal_guardrails: { renewsEntitlement: "guardrails" },
-  pri_placeholder_renewal_prompt_registry: {
-    renewsEntitlement: "prompt-registry",
-  },
-  pri_placeholder_renewal_local_store: { renewsEntitlement: "local-store" },
-  pri_placeholder_renewal_agent_kernel: { renewsEntitlement: "agent-kernel" },
-  pri_placeholder_renewal_agent_runner: { renewsEntitlement: "agent-runner" },
-  pri_placeholder_renewal_alerting: { renewsEntitlement: "alerting" },
-  pri_placeholder_renewal_retention_runner: {
-    renewsEntitlement: "retention-runner",
-  },
+  pri_01kwvz6mf22rqfrx6reh4b88sm: { renewsEntitlement: "field-crypto" },
+  pri_01kwvz6mhkreqepryq96s2wk7n: { renewsEntitlement: "audit-worm" },
+  pri_01kwvz6mm4wnr6b65m2fbq46h5: { renewsEntitlement: "ai-meter" },
+  pri_01kwvz6mppg1y7prs0vqjpha8k: { renewsEntitlement: "ai-evals" },
+  pri_01kwvz6msc5c7ehctejscxebkx: { renewsEntitlement: "guardrails" },
+  pri_01kwvz6mwtsfbmeq39s524na24: { renewsEntitlement: "prompt-registry" },
+  pri_01kwvz6mzmdxkkp180bd36t6xj: { renewsEntitlement: "local-store" },
+  pri_01kwvz6n3jyt5fhgt0hgdgcvv7: { renewsEntitlement: "agent-kernel" },
+  pri_01kwvz6n738kz8n9aygb26jc6j: { renewsEntitlement: "agent-runner" },
+  pri_01kwvz6na9hp9gg1b0709exekp: { renewsEntitlement: "alerting" },
+  pri_01kwvz6nd2yv34z083cpxamkqy: { renewsEntitlement: "retention-runner" },
 };
 
 /** Validate a renewal-book override at a boundary (Zod `.strict()` per row). */

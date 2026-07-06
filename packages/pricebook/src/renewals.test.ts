@@ -13,7 +13,7 @@ import {
 
 describe("RENEWAL_BOOK (ADR-0251)", () => {
   test("a known renewal price resolves to the entitlement it renews", () => {
-    expect(resolveRenewal("pri_placeholder_renewal_compliance")).toEqual({
+    expect(resolveRenewal("pri_01kwvz6kzh4h43aec3r5rs5je4")).toEqual({
       renewsEntitlement: "compliance",
     });
   });
@@ -30,7 +30,7 @@ describe("RENEWAL_BOOK (ADR-0251)", () => {
   });
 
   test("isRenewalPrice is the branch predicate — true for renewal SKUs, false otherwise", () => {
-    expect(isRenewalPrice("pri_placeholder_renewal_bundle")).toBe(true);
+    expect(isRenewalPrice("pri_01kwvz6mcfzgjemqa72czdfkmq")).toBe(true);
     expect(isRenewalPrice("pri_01kwd76be2eq96kff5nqw236c0")).toBe(false); // a PURCHASE_BOOK id
   });
 
@@ -41,9 +41,10 @@ describe("RENEWAL_BOOK (ADR-0251)", () => {
     ).toThrow();
   });
 
-  test("placeholder rows are CLEARLY marked (no real Paddle id until the operator swaps them)", () => {
+  test("every row carries a real Paddle price id (no placeholder left behind)", () => {
     for (const id of Object.keys(RENEWAL_BOOK)) {
-      expect(id.startsWith("pri_placeholder_renewal_")).toBe(true);
+      expect(id).toMatch(/^pri_01[a-z0-9]{24}$/);
+      expect(id).not.toContain("placeholder");
     }
   });
 
