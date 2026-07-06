@@ -1,7 +1,7 @@
 ---
-updated: 2026-07-05
+updated: 2026-07-06
 status: live
-adr_ceiling: 0250
+adr_ceiling: 0251
 ---
 
 # Decisions & Forks — live board
@@ -982,8 +982,18 @@ packages only for framework-free cores, shared frontends package forbidden · G2
 six S-effort surfaces (audit-worm viewer · license-issue log · local-store search ·
 prompt-registry browser · ai-meter chart · audit-harness viewer), after the catalog-rework SPEC.
 
-**Still OPEN after the G2 round**: the ui-pro component list + docs surface (its own SPEC) ·
-**every price number**
+**ui-pro SPEC round (2026-07-06, Kickoff D Stage 1) — ADR-0251:** component line =
+**market-line split** (ui-pro = 7 deep/domain components — DataTable-Pro · Tree-Pro · Ops
+Matrix (absorbs `sku-matrix`) · Audit Timeline · Payload Viewer · Type-to-Confirm · Adv
+Date-Range — a strict leaf: no `packages/*` may depend on it; every table-stakes basic
+stays/returns/backfills into the Apache floor, incl. charts as themed Recharts wrappers) ·
+docs surface = **caisson.sh/ui gallery route** in apps/site, public live demos, registry-layer
+gating, build deferred per 0250 G2b · **v1 = full 7** (operator override of the 5-core rec) ·
+price-band input to Stage 2 = **$129–199, anchor $149, standalone-only** (ai-evals pattern —
+no edition/bundle membership). Scope: `outputs/specs/ui-pro/SPEC.md`.
+
+**Still OPEN after the ui-pro round**: **every price number** (Kickoff D Stage 2 owns the
+cents; the ui-pro band above is input, not a lock)
 
 A post-merge scheduling picker (2026-07-05, no ADR — Kickoffs A+B merged as PRs #126/#127) split
 the remaining pool: **Kickoff D** = the catalog program (ui-pro SPEC → pricing pass →
