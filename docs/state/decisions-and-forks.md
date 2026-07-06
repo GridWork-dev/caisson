@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-06
 status: live
-adr_ceiling: 0260
+adr_ceiling: 0261
 ---
 
 # Decisions & Forks — live board
@@ -1031,8 +1031,8 @@ flip). Below-sum ✓ on all six bundles at lock.
 **ADR numbering note (2026-07-06):** Kickoff E's branch (`feat/independent-build-wave`)
 holds 0253–0256 (incl. its own 0255 `updatesWindows` claims rewrite); D files from 0257 up
 by cross-session agreement. The dual-branch 0251/0252 collision RESOLVED at the merge per
-ADR-0088 (second merger renumbers): D's pair became **0259/0260**; 0261 is reserved for the
-Greptile-retirement ADR.
+ADR-0088 (second merger renumbers): D's pair became **0259/0260**; 0261 = the Greptile-retirement
+ADR (formalizing the 2026-07-06 vendor-drop lock).
 
 **Still OPEN after Stage 3**: production Paddle catalog recreation (operator act at the
 commerce flip; sandbox never ports) · optional Cookiy WTP validation (survey 374111 live;
