@@ -26,7 +26,9 @@ import { withTenant } from "@caisson/tenancy-rls";
 import { createApp } from "./app.ts";
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
+  ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
+  extendUpdatesWindow,
   grantEntitlements,
 } from "./entitlement-store.ts";
 import { loadRateLimitConfig, TokenBucketLimiter } from "./rate-limit.ts";
@@ -96,6 +98,7 @@ beforeAll(async () => {
   tp = await newTestPg();
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
+  await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
   await tp.exec(LICENSE_GRANT_SCHEMA_SQL);
   // provider: null — these tests exercise POST /issue only; /webhook is covered in
   // webhook-app.integration.test.ts. A null provider makes /webhook fail closed (401), not these routes.
@@ -440,6 +443,158 @@ describe("POST /issue admin-scoped credential (ADR-0220)", () => {
       ),
     );
     expect(res.status).toBe(401);
+  });
+});
+
+// ADR-0244/0255: the signed per-entitlement updates windows. /issue computes `updatesWindows` from
+// DB truth (per (account, entitlement) pair: earliest active one_time granted_at + 12 months,
+// overridden by a renewal's updates_expires_at) and signs it into the claims; the (accountId, major)
+// persist-and-reuse idempotency is LOOSENED to re-mint when the computed map CANONICALLY differs from
+// the stored token's claim (Decision 3/4) — while an UNCHANGED map keeps the byte-identical re-serve
+// (the persist&reuse suite above stays green: subscription-only accounts compute the empty map =
+// unbounded).
+describe("POST /issue updates windows (ADR-0244/0255)", () => {
+  const issueBody = (acct: string) =>
+    JSON.stringify({ accountId: acct, tier: "pro", major: 1, expiry: null });
+
+  test("a one-time buyer's token carries updatesWindows[entitlementId] = granted_at + 12 months", async () => {
+    const acct = "acct_win_onetime";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pay_win_1",
+        source: { kind: "one_time", purchaseId: "pay_win_1" },
+      }),
+    );
+    // Pin granted_at for deterministic window math (superuser bypasses RLS).
+    await tp.query(
+      `UPDATE entitlement_grant SET granted_at = '2026-01-05T00:00:00.000Z' WHERE account_id = $1`,
+      [acct],
+    );
+    const res = await app(post(issueBody(acct), `Bearer ${TOKEN}`));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { token: string };
+    const verified = verifyLicenseWithKey(body.token, DEV_PUB);
+    expect(verified.valid).toBe(true);
+    expect(verified.claims?.updatesWindows).toEqual({
+      compliance: "2027-01-05T00:00:00.000Z",
+    });
+  });
+
+  test("a subscription-only account's token carries an empty updatesWindows map (unbounded, ADR-0244 §4)", async () => {
+    const acct = "acct_win_subonly_issue";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "in_win_sub",
+        source: { kind: "subscription", subscriptionId: "sub_win" },
+      }),
+    );
+    const res = await app(post(issueBody(acct), `Bearer ${TOKEN}`));
+    const body = (await res.json()) as { token: string };
+    const verified = verifyLicenseWithKey(body.token, DEV_PUB);
+    expect(verified.valid).toBe(true);
+    expect(verified.claims?.updatesWindows).toEqual({});
+  });
+
+  test("UNCHANGED map → stored token re-served byte-identical; CHANGED map → re-mint in place", async () => {
+    const acct = "acct_win_remint";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pay_win_2",
+        source: { kind: "one_time", purchaseId: "pay_win_2" },
+      }),
+    );
+    const first = (await (
+      await app(post(issueBody(acct), `Bearer ${TOKEN}`))
+    ).json()) as { token: string; licenseId: string };
+
+    // Window unchanged — persist & reuse still holds.
+    const again = (await (
+      await app(post(issueBody(acct), `Bearer ${TOKEN}`))
+    ).json()) as { token: string; licenseId: string };
+    expect(again.token).toBe(first.token);
+    expect(again.licenseId).toBe(first.licenseId);
+
+    // A renewal lands (extends the window) → the next /issue RE-MINTS (Decision 3).
+    await withTenant(tp.pg, acct, (tx) =>
+      extendUpdatesWindow(tx, {
+        accountId: acct,
+        entitlementId: "compliance",
+        sourceEventId: "pay_win_renewal",
+      }),
+    );
+    const reminted = (await (
+      await app(post(issueBody(acct), `Bearer ${TOKEN}`))
+    ).json()) as { token: string; licenseId: string };
+    expect(reminted.token).not.toBe(first.token);
+    expect(reminted.licenseId).not.toBe(first.licenseId);
+    const firstWindow =
+      verifyLicenseWithKey(first.token, DEV_PUB).claims?.updatesWindows
+        ?.compliance ?? "";
+    const remintedWindow =
+      verifyLicenseWithKey(reminted.token, DEV_PUB).claims?.updatesWindows
+        ?.compliance ?? "";
+    expect(Date.parse(remintedWindow)).toBeGreaterThan(Date.parse(firstWindow));
+
+    // Still exactly ONE row per (account, major): the re-mint replaced the stored token in place.
+    const rows = await tp.query(
+      `SELECT count(*)::int AS n FROM license_grant WHERE account_id = $1 AND major = 1`,
+      [acct],
+    );
+    expect((rows[0] as { n: number }).n).toBe(1);
+    const stored = await withTenant(tp.pg, acct, (tx) =>
+      readLicenseGrant(tx, acct, 1),
+    );
+    expect(stored?.token).toBe(reminted.token);
+
+    // And the NEW map is now the stable one — a further /issue re-serves it byte-identical.
+    const afterRemint = (await (
+      await app(post(issueBody(acct), `Bearer ${TOKEN}`))
+    ).json()) as { token: string };
+    expect(afterRemint.token).toBe(reminted.token);
+  });
+
+  test("renewing entitlement X re-mints and extends ONLY X's window — an unrenewed entitled Y keeps its own", async () => {
+    const acct = "acct_win_pair_issue";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance", "local-ai"],
+        sourceEventId: "pay_win_pair",
+        source: { kind: "one_time", purchaseId: "pay_win_pair" },
+      }),
+    );
+    const before = (await (
+      await app(post(issueBody(acct), `Bearer ${TOKEN}`))
+    ).json()) as { token: string };
+    const beforeWindows =
+      verifyLicenseWithKey(before.token, DEV_PUB).claims?.updatesWindows ?? {};
+    expect(beforeWindows.compliance).toBeDefined();
+    expect(beforeWindows["local-ai"]).toBeDefined();
+
+    // Renewing ONLY compliance extends ONLY its window.
+    await withTenant(tp.pg, acct, (tx) =>
+      extendUpdatesWindow(tx, {
+        accountId: acct,
+        entitlementId: "compliance",
+        sourceEventId: "pay_win_pair_renew",
+      }),
+    );
+    const after = (await (
+      await app(post(issueBody(acct), `Bearer ${TOKEN}`))
+    ).json()) as { token: string };
+    const afterWindows =
+      verifyLicenseWithKey(after.token, DEV_PUB).claims?.updatesWindows ?? {};
+    expect(Date.parse(afterWindows.compliance as string)).toBeGreaterThan(
+      Date.parse(beforeWindows.compliance as string),
+    );
+    // local-ai's window is BYTE-IDENTICAL — no cross-entitlement coupling (ADR-0255 D2).
+    expect(afterWindows["local-ai"]).toBe(beforeWindows["local-ai"]);
   });
 });
 

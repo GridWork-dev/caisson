@@ -8,7 +8,9 @@ export type MarketingEvent =
   | "view_cart"
   | "begin_checkout"
   | "nav_panel_open"
-  | "search_open";
+  | "search_open"
+  | "docs_cta_click"
+  | "signup_complete";
 
 export function trackEvent(
   name: MarketingEvent,

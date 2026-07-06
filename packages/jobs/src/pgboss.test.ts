@@ -34,6 +34,12 @@ function createFakeClient(): PgBossClient & {
     name: string;
     id: string | undefined;
   }>;
+  readonly scheduleCalls: ReadonlyArray<{
+    name: string;
+    cron: string;
+    data: object | null;
+    tz: string | undefined;
+  }>;
   queueState: QueueState | null;
   /** Set to make the next `work()` immediately deliver this batch to its handler. */
   nextWorkBatch: readonly PgBossJob[];
@@ -47,6 +53,12 @@ function createFakeClient(): PgBossClient & {
   const createQueueCalls: string[] = [];
   const workCalls: string[] = [];
   const offWorkCalls: Array<{ name: string; id: string | undefined }> = [];
+  const scheduleCalls: Array<{
+    name: string;
+    cron: string;
+    data: object | null;
+    tz: string | undefined;
+  }> = [];
   let queueState: QueueState | null = null;
   let nextWorkBatch: readonly PgBossJob[] = [];
   return {
@@ -76,6 +88,9 @@ function createFakeClient(): PgBossClient & {
     async getQueue() {
       return queueState;
     },
+    async schedule(name, cron, data, options) {
+      scheduleCalls.push({ name, cron, data: data ?? null, tz: options?.tz });
+    },
     get sendCalls() {
       return sendCalls;
     },
@@ -87,6 +102,9 @@ function createFakeClient(): PgBossClient & {
     },
     get offWorkCalls() {
       return offWorkCalls;
+    },
+    get scheduleCalls() {
+      return scheduleCalls;
     },
     get queueState() {
       return queueState;
@@ -347,5 +365,46 @@ describe("pg-boss getQueueState() (ADR-0211)", () => {
       activeCount: 0,
       failedCount: 0,
     });
+  });
+});
+
+describe("pg-boss schedule() (ADR-0256)", () => {
+  test("ensures the queue, then calls client.schedule with the given cron + data", async () => {
+    const client = createFakeClient();
+    const queue = createPgBossJobQueue(grantCreditsTasks, { client });
+
+    await queue.schedule("grant-credits", "0 3 * * *", { foo: "bar" });
+
+    expect(client.createQueueCalls).toEqual(["grant-credits"]);
+    expect(client.scheduleCalls).toEqual([
+      {
+        name: "grant-credits",
+        cron: "0 3 * * *",
+        data: { foo: "bar" },
+        tz: undefined,
+      },
+    ]);
+  });
+
+  test("passes tz through when given", async () => {
+    const client = createFakeClient();
+    const queue = createPgBossJobQueue(grantCreditsTasks, { client });
+
+    await queue.schedule("grant-credits", "0 3 * * *", null, {
+      tz: "America/Chicago",
+    });
+
+    expect(client.scheduleCalls[0]?.tz).toBe("America/Chicago");
+  });
+
+  test("rejects an unregistered task name before touching pg-boss", async () => {
+    const client = createFakeClient();
+    const queue = createPgBossJobQueue(grantCreditsTasks, { client });
+
+    await expect(
+      queue.schedule("not-a-real-task", "0 3 * * *"),
+    ).rejects.toThrow(NotFoundError);
+    expect(client.scheduleCalls).toHaveLength(0);
+    expect(client.createQueueCalls).toHaveLength(0);
   });
 });

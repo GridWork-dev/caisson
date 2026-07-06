@@ -41,11 +41,28 @@ afterAll(async () => {
 
 test("platform migrations apply in order then are idempotent", async () => {
   const first = await runPlatformMigrations(pgliteApplier(tp));
-  expect(first.applied).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
+  expect(first.applied).toEqual([
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+  ]);
 
   const second = await runPlatformMigrations(pgliteApplier(tp));
   expect(second.applied).toEqual([]);
-  expect(second.skipped).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
+  expect(second.skipped).toEqual([
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+  ]);
+});
+
+test("0016 adds the ADR-0251 updates-window column to entitlement_grant", async () => {
+  const cols = await tp.query<{ column_name: string; data_type: string }>(
+    `SELECT column_name, data_type FROM information_schema.columns
+     WHERE table_name = 'entitlement_grant' AND column_name = 'updates_expires_at'`,
+  );
+  expect(cols).toEqual([
+    {
+      column_name: "updates_expires_at",
+      data_type: "timestamp with time zone",
+    },
+  ]);
 });
 
 test("0007 adds the ADR-0212 rounding provenance columns to credit_event", async () => {
@@ -123,11 +140,37 @@ test("0013 re-creates every tenant policy with the empty-string GUC guard (NULLI
   expect(member?.qual).toContain("app.current_user");
 });
 
+test("0014 adds expires_at and backfills existing grant rows (ADR-0252 Decision 4)", async () => {
+  const cols = await tp.query<{ column_name: string; data_type: string }>(
+    `SELECT column_name, data_type FROM information_schema.columns
+     WHERE table_name = 'credit_event' AND column_name = 'expires_at'`,
+  );
+  expect(cols).toEqual([
+    { column_name: "expires_at", data_type: "timestamp with time zone" },
+  ]);
+});
+
+test("0015 creates the grant_consumption + credit_expiry_notice tables with the SUM index (ADR-0252)", async () => {
+  const tables = await tp.query<{ relname: string; force: boolean }>(
+    `SELECT relname, relforcerowsecurity AS force FROM pg_class
+     WHERE relname IN ('grant_consumption','credit_expiry_notice') AND relkind = 'r'
+     ORDER BY relname`,
+  );
+  expect(tables).toEqual([
+    { relname: "credit_expiry_notice", force: true },
+    { relname: "grant_consumption", force: true },
+  ]);
+  const idx = await tp.query<{ indexname: string }>(
+    `SELECT indexname FROM pg_indexes WHERE tablename = 'grant_consumption' AND indexname = 'grant_consumption_grant_idx'`,
+  );
+  expect(idx).toEqual([{ indexname: "grant_consumption_grant_idx" }]);
+});
+
 test("every composed tenant table ships FORCE row-level security", async () => {
   const rows = await tp.query<{ relname: string; force: boolean }>(
     `SELECT relname, relforcerowsecurity AS force FROM pg_class
-     WHERE relname IN ('credit_wallet','credit_event','entitlement_grant','license_grant','usage_event','account_member')`,
+     WHERE relname IN ('credit_wallet','credit_event','entitlement_grant','license_grant','usage_event','account_member','grant_consumption','credit_expiry_notice')`,
   );
-  expect(rows.length).toBeGreaterThanOrEqual(6);
+  expect(rows.length).toBeGreaterThanOrEqual(8);
   expect(rows.every((r) => r.force)).toBe(true);
 });

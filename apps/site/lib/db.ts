@@ -19,9 +19,11 @@ import { AI_METER_SCHEMA_SQL } from "@caisson/ai-meter";
 import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
 import { PROCESSED_EVENT_SCHEMA_SQL } from "@caisson/billing";
 import {
+  CREDIT_EXPIRY_MIGRATION_SQL,
   CREDIT_LINE_ITEM_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
+  GRANT_CONSUMPTION_MIGRATION_SQL,
 } from "@caisson/credits";
 import {
   type TenantExecutor,
@@ -41,6 +43,7 @@ import { ASK_AI_SPEND_SCHEMA_SQL } from "./ask-ai/spend.ts";
 // tests).
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
+  ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   LICENSE_GRANT_SCHEMA_SQL,
 } from "@caisson/service-license";
@@ -151,9 +154,12 @@ async function bootstrapPglite(): Promise<PGlite> {
   await pg.exec(CREDIT_SCHEMA_SQL);
   await pg.exec(CREDIT_ROUNDING_MIGRATION_SQL);
   await pg.exec(CREDIT_LINE_ITEM_MIGRATION_SQL);
+  await pg.exec(CREDIT_EXPIRY_MIGRATION_SQL);
+  await pg.exec(GRANT_CONSUMPTION_MIGRATION_SQL);
   await pg.exec(PROCESSED_EVENT_SCHEMA_SQL);
   await pg.exec(ENTITLEMENT_SCHEMA_SQL);
   await pg.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
+  await pg.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
   await pg.exec(LICENSE_GRANT_SCHEMA_SQL);
   await pg.exec(AI_METER_SCHEMA_SQL);
   await pg.exec(TENANT_AI_CREDENTIAL_SCHEMA_SQL);

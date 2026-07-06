@@ -57,6 +57,33 @@ export interface SearchHit {
   score: number;
 }
 
+/** A page request for {@link LocalStore.list} — a plain enumeration, not a ranked query. */
+export interface ListOptions {
+  limit?: number;
+  offset?: number;
+}
+
+/** One listed document: id + text only (no score — `list` is not a ranked retrieval). */
+export interface ListedDoc {
+  id: string;
+  text: string;
+}
+
+const LIST_DEFAULT_LIMIT = 50;
+const LIST_MAX_LIMIT = 500;
+
+/** Clamp a caller-supplied limit into `[1, LIST_MAX_LIMIT]`; a bad/absent value falls back to the default. */
+function clampListLimit(limit: number | undefined): number {
+  if (limit === undefined || !Number.isFinite(limit)) return LIST_DEFAULT_LIMIT;
+  return Math.min(LIST_MAX_LIMIT, Math.max(1, Math.trunc(limit)));
+}
+
+/** Clamp a caller-supplied offset to a non-negative integer; a bad/absent value is `0`. */
+function clampListOffset(offset: number | undefined): number {
+  if (offset === undefined || !Number.isFinite(offset)) return 0;
+  return Math.max(0, Math.trunc(offset));
+}
+
 interface RowId {
   rowid: number;
 }
@@ -149,6 +176,23 @@ export class LocalStore {
     if (ranked.length === 0) return [];
 
     return ranked.map(([rowid, score]) => ({ id: this.docId(rowid), score }));
+  }
+
+  /**
+   * Page recent documents newest-first (by insertion `rowid`) — a plain enumeration companion to
+   * {@link hybridSearch}, for a read-only consumer that wants "what's in here" rather than a ranked
+   * query (e.g. the agent-dev inspector's `/memory` view). `limit`/`offset` are clamped, never
+   * thrown on — a bad page request degrades to the default page rather than erroring a dev tool.
+   */
+  list(opts: ListOptions = {}): ListedDoc[] {
+    const limit = clampListLimit(opts.limit);
+    const offset = clampListOffset(opts.offset);
+    const rows = this.db
+      .prepare(
+        "SELECT doc_id, text FROM docs ORDER BY rowid DESC LIMIT ? OFFSET ?",
+      )
+      .all(limit, offset) as { doc_id: string; text: string }[];
+    return rows.map((r) => ({ id: r.doc_id, text: r.text }));
   }
 
   close(): void {

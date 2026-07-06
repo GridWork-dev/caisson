@@ -16,6 +16,7 @@
 // inside `withTenant`, scoped to the buyer's account; the policy WITH CHECK rejects a cross-tenant
 // write, and a read that forgets its WHERE still sees only the caller's rows.
 import { randomUUID } from "node:crypto";
+import { ConfigError } from "@caisson/kernel";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 import { buildTenantPolicySql } from "@caisson/tenancy-rls";
 
@@ -115,6 +116,19 @@ ALTER TABLE entitlement_grant ADD COLUMN line_item_id text;
 DROP INDEX entitlement_grant_uniq;
 CREATE UNIQUE INDEX entitlement_grant_uniq
   ON entitlement_grant (account_id, entitlement_id, source_kind, COALESCE(subscription_id, purchase_id), COALESCE(line_item_id, ''));
+`;
+
+// ADR-0244/0251 (Decision 5): the per-grant updates-window override. A renewal purchase extends the
+// buyer's 12-month updates window by stamping `updates_expires_at` on the ACTIVE one_time grant rows
+// for the renewed (account, entitlement) pair; the issuer reads it back at /issue
+// (`computeUpdatesWindows`, ADR-0255 — GROUP BY entitlement_id). Additive + nullable — NULL means
+// "no renewal yet", the issuer then derives the baseline `granted_at + 12 months`. SEPARATE
+// migration, not an edit to ENTITLEMENT_SCHEMA_SQL,
+// for the same checksum-pinning reason as the line_item migration above (ADR-0006 append-only): the
+// prior files are frozen on the live DB. Ships as the numbered `0016_entitlement_updates_window.sql`
+// platform migration (0014/0015 are reserved by the parallel credits build).
+export const ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL = `
+ALTER TABLE entitlement_grant ADD COLUMN updates_expires_at timestamptz;
 `;
 
 /** The provenance of a grant: a recurring subscription, or a one-time (non-subscription) purchase. */
@@ -384,5 +398,87 @@ export async function revokeAdminComp(
      RETURNING id`,
     [input.accountId, input.entitlementId],
   );
+  return r.rows.length;
+}
+
+// --- ADR-0244/0255 updates windows --------------------------------------------------------------
+
+/**
+ * Compute the account's PER-ENTITLEMENT updates-window bounds for the signed `updatesWindows`
+ * claim (ADR-0255 Decision 2), from DB truth over the ACTIVE one_time grants: per
+ * `(account, entitlement)` pair, each row's bound is `updates_expires_at` where a renewal set it,
+ * else `granted_at + 12 months`, and the pair takes its MOST FAVORABLE (max) row — so a duplicate
+ * re-purchase starts a fresh 12 months rather than inheriting the oldest purchase's window, the
+ * per-pair mirror of ADR-0255 Decision 3's most-favorable-window rule. Returns a
+ * `purchasedEntitlementId → ISO instant` map; EMPTY when the account holds no active one-time
+ * grants — an unbounded claim (subscription-only accounts keep their existing expiry semantics,
+ * ADR-0244 §4; subscription-sourced entitlements never get a key). Deterministic for a fixed
+ * grant set (no `now()`), so the /issue re-mint comparison is stable. Run inside `withTenant`.
+ */
+export async function computeUpdatesWindows(
+  tx: TenantExecutor,
+  accountId: string,
+): Promise<Record<string, string>> {
+  const r = await tx.query<{
+    entitlement_id: string;
+    bound: string | Date;
+  }>(
+    `SELECT entitlement_id,
+            max(COALESCE(updates_expires_at, granted_at + interval '12 months')) AS bound
+       FROM entitlement_grant
+      WHERE account_id = $1 AND source_kind = 'one_time' AND status = 'active'
+      GROUP BY entitlement_id`,
+    [accountId],
+  );
+  const windows: Record<string, string> = {};
+  for (const row of r.rows) {
+    windows[row.entitlement_id] = new Date(row.bound).toISOString();
+  }
+  return windows;
+}
+
+export interface ExtendUpdatesWindowInput {
+  /** The buyer account — MUST equal the `withTenant` scope (the RLS WITH CHECK enforces it). */
+  accountId: string;
+  /** The renewed purchased id (RENEWAL_BOOK `renewsEntitlement`). */
+  entitlementId: string;
+  /** The renewal purchase's billing event id — audit context for the fail-closed throw. */
+  sourceEventId: string;
+}
+
+/**
+ * Extend the updates window for one `(account, entitlement)` pair by 12 months (ADR-0251
+ * Decision 5, formula erratum corrected 2026-07-06): `updates_expires_at = GREATEST(now(),
+ * COALESCE(updates_expires_at, granted_at + interval '12 months')) + 12 months` on every ACTIVE
+ * one_time grant row for the pair (normally exactly one; a duplicate-purchase pair extends both
+ * uniformly — never under-grants). The fallback is the base window END (`granted_at + 12mo`), not
+ * `granted_at` — a first renewal bought mid-window stacks onto the remaining months instead of
+ * silently dropping them; a renewal on a LAPSED window extends from now (never resurrects time
+ * already elapsed past the lapse). FAIL-CLOSED on zero rows updated: renewing an entitlement the
+ * account does not actively hold throws — a renewal never silently mints a grant. Idempotency
+ * across webhook redeliveries is the caller's OUTER `sourceEventId` claim (webhook.ts), not
+ * re-keyed here. Returns the number of rows extended. Run inside `withTenant`.
+ */
+export async function extendUpdatesWindow(
+  tx: TenantExecutor,
+  input: ExtendUpdatesWindowInput,
+): Promise<number> {
+  const r = await tx.query<{ id: string }>(
+    `UPDATE entitlement_grant
+       SET updates_expires_at =
+             GREATEST(now(), COALESCE(updates_expires_at, granted_at + interval '12 months'))
+             + interval '12 months'
+     WHERE account_id = $1
+       AND entitlement_id = $2
+       AND source_kind = 'one_time'
+       AND status = 'active'
+     RETURNING id`,
+    [input.accountId, input.entitlementId],
+  );
+  if (r.rows.length === 0) {
+    throw new ConfigError(
+      `renewal ${input.sourceEventId} extends no active one_time grant for entitlement ${input.entitlementId}`,
+    );
+  }
   return r.rows.length;
 }

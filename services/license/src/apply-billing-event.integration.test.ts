@@ -8,8 +8,10 @@ import { ConfigError, asCredits } from "@caisson/kernel";
 import { type TestPg, newTestPg } from "@caisson/testing";
 import {
   CREDIT_LINE_ITEM_MIGRATION_SQL,
+  CREDIT_EXPIRY_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
+  GRANT_CONSUMPTION_MIGRATION_SQL,
   balance,
   debit,
   getLedger,
@@ -19,6 +21,7 @@ import { type DomainBillingEvent, parseStripeEvent } from "@caisson/billing";
 import { applyBillingEvent } from "./apply-billing-event.ts";
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
+  ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   readEntitlements,
 } from "./entitlement-store.ts";
@@ -126,8 +129,11 @@ beforeAll(async () => {
   await tp.exec(CREDIT_SCHEMA_SQL);
   await tp.exec(CREDIT_ROUNDING_MIGRATION_SQL);
   await tp.exec(CREDIT_LINE_ITEM_MIGRATION_SQL);
+  await tp.exec(CREDIT_EXPIRY_MIGRATION_SQL);
+  await tp.exec(GRANT_CONSUMPTION_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
+  await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
 });
 
 afterAll(async () => {
@@ -1146,5 +1152,95 @@ describe("applyBillingEvent — Paddle per-line partial refund (ADR-0218)", () =
     expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(
       PACK_CREDITS,
     );
+  });
+});
+
+describe("applyBillingEvent — updates-renewal lines (ADR-0244/0251)", () => {
+  const RENEWAL_COMPLIANCE_ID = "pri_01kwvz6kzh4h43aec3r5rs5je4"; // the live sandbox compliance-renewal price
+  const MODULE_ID = "price_field_crypto_module_PLACEHOLDER"; // grants "field-crypto", 0 credits
+
+  test("a renewal line EXTENDS the window — no new grant, no credits, no push", async () => {
+    const acct = "acct_renewal_extend";
+    // Precondition: an active one_time compliance grant to renew.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pay_ren_base", ONETIME_EDITION_ID),
+      ),
+    );
+
+    const effect = await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pay_ren_1", RENEWAL_COMPLIANCE_ID),
+      ),
+    );
+    expect(effect.grantedEntitlements).toEqual([]); // nothing granted → no Discord/PostHog push
+
+    // No credits landed, no second grant row — the ORIGINAL row gained updates_expires_at.
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(0);
+    const rows = await tp.query<{ n: number }>(
+      `SELECT count(*)::int AS n FROM entitlement_grant WHERE account_id = $1`,
+      [acct],
+    );
+    expect((rows[0] as { n: number }).n).toBe(1);
+    const win = await tp.query<{ set: boolean }>(
+      `SELECT (updates_expires_at IS NOT NULL) AS set FROM entitlement_grant WHERE account_id = $1`,
+      [acct],
+    );
+    expect((win[0] as { set: boolean }).set).toBe(true);
+  });
+
+  test("a MIXED cart fulfills the purchase line AND the renewal line in one event", async () => {
+    const acct = "acct_renewal_mixed";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pay_mix_base", ONETIME_EDITION_ID),
+      ),
+    );
+
+    const effect = await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompletedMulti(acct, "pay_mix_1", [
+          { priceId: MODULE_ID, quantity: 1, itemId: "txnitm_mod" },
+          { priceId: RENEWAL_COMPLIANCE_ID, quantity: 1, itemId: "txnitm_ren" },
+        ]),
+      ),
+    );
+    // The purchase line granted; the renewal line stayed out of the push list.
+    expect(effect.grantedEntitlements).toEqual(["field-crypto"]);
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance", "field-crypto"]);
+    // The renewal stamped the COMPLIANCE row only.
+    const rows = await tp.query<{ entitlement_id: string; set: boolean }>(
+      `SELECT entitlement_id, (updates_expires_at IS NOT NULL) AS set
+         FROM entitlement_grant WHERE account_id = $1 ORDER BY entitlement_id`,
+      [acct],
+    );
+    expect(rows).toEqual([
+      { entitlement_id: "compliance", set: true },
+      { entitlement_id: "field-crypto", set: false },
+    ]);
+  });
+
+  test("a renewal WITHOUT an active grant THROWS (fail-closed — never mints a grant)", async () => {
+    const acct = "acct_renewal_nogrant";
+    await expect(
+      withTenant(tp.pg, acct, (tx) =>
+        applyBillingEvent(
+          tx,
+          purchaseCompleted(acct, "pay_ren_bad", RENEWAL_COMPLIANCE_ID),
+        ),
+      ),
+    ).rejects.toThrow(ConfigError);
+    // Nothing landed: no grant row, no window stamp.
+    const rows = await tp.query<{ n: number }>(
+      `SELECT count(*)::int AS n FROM entitlement_grant WHERE account_id = $1`,
+      [acct],
+    );
+    expect((rows[0] as { n: number }).n).toBe(0);
   });
 });

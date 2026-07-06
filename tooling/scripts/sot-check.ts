@@ -5,9 +5,10 @@
 // ADVISORY BY DESIGN: prints a drift report, exits 1 on any drift, 0 when green. NEVER
 // writes a file — the never-auto-decide law extends to docs (the tool detects, the
 // session author fixes). `--update` additionally prints a ready-to-apply edit checklist
-// (file + line + suggested new value) for checks #1/#2/#5 — still never writes.
+// (file + line + suggested new value) for checks #1/#2/#5/#7 — still never writes.
 //
-// Six checks (SPEC §2 table), each a pure function over already-gathered data + an
+// Seven checks (SPEC §2 table + ADR-0253's #7), each a pure function over already-gathered
+// data + an
 // impure gatherer that gets that data from the filesystem/git/gh/bunx. A `gh`- or
 // `bunx`-dependent check that can't reach its tool/network degrades to `skip`, never an
 // error.
@@ -598,6 +599,186 @@ export function evaluateChangesetOutcome(
 }
 
 // ============================================================================================
+// Check #7 — package count parity (docs/build-state.md "Per-package reality check" tables)
+// ============================================================================================
+//
+// Scoped to `packages/*` only, matching the doc's own stated semantics ("`src` = non-test
+// source files under `packages/<p>/src`") — the separate apps/services table uses a
+// different 2-number "ts files / loc" shape with no test-count column and is out of scope.
+
+export interface PackageCounts {
+  src: number;
+  tests: number;
+  loc: number;
+}
+
+export interface PackageDiskFile {
+  isTest: boolean;
+  lines: number;
+}
+
+/** Pure: reduce an already-gathered flat file list for one package into src/tests/loc.
+ *  `loc` is source LOC only (mirrors the doc's own `find ... ! -name "*.test.ts" -exec wc -l`
+ *  convention) — test-file lines never count toward it. */
+export function computePackageCounts(
+  files: readonly PackageDiskFile[],
+): PackageCounts {
+  let src = 0;
+  let tests = 0;
+  let loc = 0;
+  for (const f of files) {
+    if (f.isTest) {
+      tests++;
+      continue;
+    }
+    src++;
+    loc += f.lines;
+  }
+  return { src, tests, loc };
+}
+
+export interface DocPackageRow {
+  pkg: string;
+  line: number;
+  src: number;
+  tests: number;
+  loc: number | null; // null = doc cell is the "—" placeholder
+}
+
+// Name cell may carry trailing annotation text before the next `|` (e.g. "`registry-schema`
+// (`packages/`)") — `[^|]*` tolerates it without widening what counts as the package name.
+const PACKAGE_ROW_RE =
+  /^\|\s*`([a-z][a-z0-9-]*)`[^|]*\|\s*(\d+)\s*\/\s*(\d+)\s*\/\s*(\d+|—|-)\s*\|/gm;
+
+/** Pure: extract every `` `pkg` | N / M / L | `` row from the doc's 3-tuple src/tests/loc
+ *  tables. Rows using a different cell shape (the apps/services 2-tuple table) simply don't
+ *  match this pattern and are never considered. */
+export function extractDocPackageRows(text: string): DocPackageRow[] {
+  const rows: DocPackageRow[] = [];
+  for (const m of text.matchAll(PACKAGE_ROW_RE)) {
+    const locRaw = m[4] as string;
+    rows.push({
+      pkg: m[1] as string,
+      line: lineNumberAt(text, m.index ?? 0),
+      src: Number(m[2]),
+      tests: Number(m[3]),
+      loc: locRaw === "—" || locRaw === "-" ? null : Number(locRaw),
+    });
+  }
+  return rows;
+}
+
+function formatDiskCell(c: PackageCounts): string {
+  return `${c.src} / ${c.tests} / ${c.loc}`;
+}
+
+function formatDocCell(r: DocPackageRow): string {
+  return `${r.src} / ${r.tests} / ${r.loc === null ? "—" : r.loc}`;
+}
+
+export interface PackageCountFinding {
+  pkg: string;
+  line: number;
+  kind: "stale" | "missing-row" | "dead-row";
+  detail: string;
+}
+
+/** Pure: diff disk truth against the doc's parsed rows. A doc `loc` of "—" is tolerated
+ *  (never flagged stale on loc alone) since a handful of rows legitimately omit it. A
+ *  package dir on disk with no doc row is `missing-row` (info, not a crash); a doc row
+ *  whose package dir no longer exists is `dead-row`. */
+export function diffPackageCounts(
+  diskByPkg: ReadonlyMap<string, PackageCounts>,
+  docRows: readonly DocPackageRow[],
+): PackageCountFinding[] {
+  const findings: PackageCountFinding[] = [];
+  const docByPkg = new Map(docRows.map((r) => [r.pkg, r]));
+
+  for (const [pkg, disk] of diskByPkg) {
+    const row = docByPkg.get(pkg);
+    if (!row) {
+      findings.push({
+        pkg,
+        line: 0,
+        kind: "missing-row",
+        detail: `packages/${pkg}: on disk (${formatDiskCell(disk)}) but no matching row in docs/build-state.md`,
+      });
+      continue;
+    }
+    const locMatches = row.loc === null || row.loc === disk.loc;
+    if (row.src !== disk.src || row.tests !== disk.tests || !locMatches) {
+      findings.push({
+        pkg,
+        line: row.line,
+        kind: "stale",
+        detail: `docs/build-state.md:${row.line} \`${pkg}\` says ${formatDocCell(row)}, disk truth is ${formatDiskCell(disk)}`,
+      });
+    }
+  }
+  for (const row of docRows) {
+    if (!diskByPkg.has(row.pkg)) {
+      findings.push({
+        pkg: row.pkg,
+        line: row.line,
+        kind: "dead-row",
+        detail: `docs/build-state.md:${row.line} \`${row.pkg}\` has a row but packages/${row.pkg} no longer exists on disk`,
+      });
+    }
+  }
+  return findings;
+}
+
+export function checkPackageCountParity(
+  diskByPkg: ReadonlyMap<string, PackageCounts>,
+  docText: string,
+): CheckResult {
+  const id = "package-count-parity";
+  const findings = diffPackageCounts(diskByPkg, extractDocPackageRows(docText));
+  const stale = findings.filter((f) => f.kind === "stale");
+  const dead = findings.filter((f) => f.kind === "dead-row");
+  const missing = findings.filter((f) => f.kind === "missing-row");
+
+  if (stale.length === 0 && dead.length === 0) {
+    return {
+      id,
+      status: "green",
+      details: [
+        "all packages/* src/tests/loc cells match disk truth",
+        ...missing.map((f) => f.detail),
+      ],
+    };
+  }
+  return {
+    id,
+    status: "drift",
+    details: [
+      ...stale.map((f) => f.detail),
+      ...dead.map((f) => f.detail),
+      ...missing.map((f) => f.detail),
+    ],
+  };
+}
+
+export function buildPackageCountEditSuggestions(
+  diskByPkg: ReadonlyMap<string, PackageCounts>,
+  docText: string,
+  docPath: string,
+): EditSuggestion[] {
+  const findings = diffPackageCounts(
+    diskByPkg,
+    extractDocPackageRows(docText),
+  ).filter((f) => f.kind === "stale");
+  return findings.map((f) => {
+    const disk = diskByPkg.get(f.pkg) as PackageCounts;
+    return {
+      file: docPath,
+      line: f.line,
+      suggestion: `\`${f.pkg}\` row -> ${formatDiskCell(disk)}`,
+    };
+  });
+}
+
+// ============================================================================================
 // Impure: filesystem/git/gh/bunx gatherers
 // ============================================================================================
 
@@ -848,6 +1029,75 @@ function gatherTrackerCheck(): {
   };
 }
 
+function countLines(text: string): number {
+  // matches `wc -l` semantics: a count of newline characters, not a split-based line count
+  let n = 0;
+  for (let i = 0; i < text.length; i++) if (text[i] === "\n") n++;
+  return n;
+}
+
+/** Recursive `.ts` file walk under `dir`, skipping `node_modules`/`dist`/dotfiles — mirrors
+ *  the brief's `find <dir> -name "*.ts"` (no build output, no vendored code). */
+function listTsFiles(dir: string): string[] {
+  const out: string[] = [];
+  const stack = [dir];
+  while (stack.length > 0) {
+    const cur = stack.pop() as string;
+    for (const entry of readdirSync(cur, { withFileTypes: true })) {
+      if (
+        entry.name === "node_modules" ||
+        entry.name === "dist" ||
+        entry.name.startsWith(".")
+      )
+        continue;
+      const full = join(cur, entry.name);
+      if (entry.isDirectory()) stack.push(full);
+      else if (entry.isFile() && entry.name.endsWith(".ts")) out.push(full);
+    }
+  }
+  return out;
+}
+
+function gatherDiskPackageCounts(): Map<string, PackageCounts> {
+  const result = new Map<string, PackageCounts>();
+  const packagesDir = join(REPO_ROOT, "packages");
+  if (!existsSync(packagesDir)) return result;
+  for (const entry of readdirSync(packagesDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const srcDir = join(packagesDir, entry.name, "src");
+    if (!existsSync(srcDir)) continue;
+    const files: PackageDiskFile[] = listTsFiles(srcDir).map((full) => {
+      const isTest = full.endsWith(".test.ts");
+      return {
+        isTest,
+        lines: isTest ? 0 : countLines(readFileSync(full, "utf8")),
+      };
+    });
+    result.set(entry.name, computePackageCounts(files));
+  }
+  return result;
+}
+
+const BUILD_STATE_PATH = "docs/build-state.md";
+
+function gatherPackageCountCheck(): {
+  result: CheckResult;
+  suggestions: EditSuggestion[];
+} {
+  const diskByPkg = gatherDiskPackageCounts();
+  const docText = pathExistsInRepo(BUILD_STATE_PATH)
+    ? fileText(BUILD_STATE_PATH)
+    : "";
+  return {
+    result: checkPackageCountParity(diskByPkg, docText),
+    suggestions: buildPackageCountEditSuggestions(
+      diskByPkg,
+      docText,
+      BUILD_STATE_PATH,
+    ),
+  };
+}
+
 function gatherChangesetCheck(): CheckResult {
   try {
     const stdout = execFileSync(
@@ -898,7 +1148,7 @@ export function printEditChecklist(
 ): void {
   write("\n--update — ready-to-apply edit checklist (never auto-applied)\n");
   if (suggestions.length === 0) {
-    write("    (nothing to suggest — checks #1/#2/#5 are all green)\n");
+    write("    (nothing to suggest — checks #1/#2/#5/#7 are all green)\n");
     return;
   }
   for (const s of suggestions) {
@@ -921,6 +1171,7 @@ async function main(): Promise<void> {
   const branches = gatherBranchHygieneCheck();
   const tracker = gatherTrackerCheck();
   const changeset = gatherChangesetCheck();
+  const packageCounts = gatherPackageCountCheck();
 
   const results = [
     ceiling.result,
@@ -929,6 +1180,7 @@ async function main(): Promise<void> {
     branches,
     tracker.result,
     changeset,
+    packageCounts.result,
   ];
   printResults(results);
 
@@ -937,6 +1189,7 @@ async function main(): Promise<void> {
       ...ceiling.suggestions,
       ...freshness.suggestions,
       ...tracker.suggestions,
+      ...packageCounts.suggestions,
     ].map((s) => ({
       ...s,
       file: s.file.startsWith(REPO_ROOT) ? relRepoPath(s.file) : s.file,

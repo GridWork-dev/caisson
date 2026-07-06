@@ -14,6 +14,7 @@ export default defineModule({
   priceCents: null,
   license: pkg.license,
   dependencies: [
+    "@caisson/jobs",
     "@caisson/kernel",
     "@caisson/registry-schema",
     "@caisson/tenancy-rls",
