@@ -15,6 +15,7 @@
     "@aws-sdk/client-s3": "catalog:",
     "@caisson/audit-worm": "workspace:*",
     "@caisson/auth": "workspace:*",
+    "@caisson/brand": "workspace:*",
     "@caisson/credits": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/observability": "workspace:*",

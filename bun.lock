@@ -27,6 +27,7 @@
         "@aws-sdk/client-s3": "catalog:",
         "@caisson/audit-worm": "workspace:*",
         "@caisson/auth": "workspace:*",
+        "@caisson/brand": "workspace:*",
         "@caisson/credits": "workspace:*",
         "@caisson/kernel": "workspace:*",
         "@caisson/observability": "workspace:*",
@@ -193,6 +194,7 @@
         "@caisson/auth": "workspace:*",
         "@caisson/billing": "workspace:*",
         "@caisson/billing-orchestration": "workspace:*",
+        "@caisson/brand": "workspace:*",
         "@caisson/credits": "workspace:*",
         "@caisson/email": "workspace:*",
         "@caisson/field-crypto": "workspace:*",
@@ -459,6 +461,26 @@
         "@caisson/tsconfig": "workspace:*",
         "eslint": "catalog:",
         "typescript": "catalog:",
+      },
+    },
+    "packages/brand": {
+      "name": "@caisson/brand",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "@caisson/ui": "workspace:*",
+        "@types/react": "catalog:",
+        "@types/react-dom": "catalog:",
+        "eslint": "catalog:",
+        "react": "catalog:",
+        "react-dom": "catalog:",
+        "typescript": "catalog:",
+      },
+      "peerDependencies": {
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
       },
     },
     "packages/cli": {
@@ -1302,6 +1324,8 @@
     "@caisson/billing": ["@caisson/billing@workspace:packages/billing"],
 
     "@caisson/billing-orchestration": ["@caisson/billing-orchestration@workspace:packages/billing-orchestration"],
+
+    "@caisson/brand": ["@caisson/brand@workspace:packages/brand"],
 
     "@caisson/cli": ["@caisson/cli@workspace:packages/cli"],
 

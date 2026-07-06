@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { Wordmark } from "@caisson/ui/components";
+import { Wordmark } from "@caisson/brand";
 
 import { footerRoutes, type FooterCol } from "@/lib/routes";
 import { UpdatesForm } from "./waitlist-form";

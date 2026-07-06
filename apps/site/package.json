@@ -17,6 +17,7 @@
     "@caisson/auth": "workspace:*",
     "@caisson/billing": "workspace:*",
     "@caisson/billing-orchestration": "workspace:*",
+    "@caisson/brand": "workspace:*",
     "@caisson/credits": "workspace:*",
     "@caisson/email": "workspace:*",
     "@caisson/field-crypto": "workspace:*",

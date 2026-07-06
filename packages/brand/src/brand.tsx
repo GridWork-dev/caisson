@@ -1,19 +1,20 @@
-// Wordmark + glyph (ADR-0078 §2) — ported to the @caisson/ui kit recipe (ADR-0099). The lowercase
-// mono `caisson` wordmark is primary; the waterline-over-chamber glyph rides beside it in tight
-// contexts. MONOCHROME ALWAYS — the accent never enters the wordmark (protects the ≤10% accent
-// budget, ADR-0078 §8). Server-safe (no hook/handler/browser API → no "use client"). Both render a
-// single DOM root, so both forwardRef (matching the Button reference).
+// Wordmark + glyph — the Caisson brand lockup. The lowercase mono `caisson` wordmark is primary;
+// the waterline-over-chamber glyph rides beside it in tight contexts. MONOCHROME ALWAYS — the accent
+// never enters the wordmark (protects the ≤10% accent budget). Server-safe (no hook/handler/browser
+// API → no "use client"). Both render a single DOM root, so both forwardRef (matching the kit Button
+// reference). Private brand IP: apps consume `@caisson/brand` directly; the `@caisson/ui` floor no
+// longer ships the mark.
 import { forwardRef } from "react";
 import type { SVGProps } from "react";
 
 import "./brand.css";
 
 /**
- * The Caisson mark — the "Pressure vessel" (ADR-0103): a sealed steel port holding a single
- * instrument light, with a waterline seam across the crown. Monochrome (`currentColor`) in-product;
- * the favicon / app-icon variant (app/icon.svg) carries the accent light on a dark steel field. The
- * accent never enters the in-product mark (ADR-0078 §2, protects the ≤10% budget). `forwardRef` per
- * the recipe (single SVG DOM root).
+ * The Caisson mark — the "Pressure vessel": a sealed steel port holding a single instrument light,
+ * with a waterline seam across the crown. Monochrome (`currentColor`) in-product; the favicon /
+ * app-icon variant (app/icon.svg) carries the accent light on a dark steel field. The accent never
+ * enters the in-product mark (protects the ≤10% budget). `forwardRef` per the recipe (single SVG
+ * DOM root).
  */
 export const Glyph = forwardRef<SVGSVGElement, SVGProps<SVGSVGElement>>(
   function Glyph(props, ref) {
@@ -66,8 +67,8 @@ export interface WordmarkProps {
 
 /**
  * The brand lockup. `descriptor` adds the footer/OG tagline; the glyph rides beside the mono
- * `caisson` wordmark. Prop API + structure preserved verbatim from the original; the descriptor's
- * inline styles are now the co-located `.cs-wordmark__descriptor` class (recipe rule 5).
+ * `caisson` wordmark. The descriptor's inline styles are the co-located `.cs-wordmark__descriptor`
+ * class (recipe rule 5).
  */
 export const Wordmark = forwardRef<HTMLSpanElement, WordmarkProps>(
   function Wordmark({ descriptor = false, className }, ref) {

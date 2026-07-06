@@ -1,6 +1,7 @@
 import Link from "next/link";
 
-import { ThemeToggle, Wordmark } from "@caisson/ui/components";
+import { ThemeToggle } from "@caisson/ui/components";
+import { Wordmark } from "@caisson/brand";
 
 import { CartTrigger } from "./cart-trigger";
 import { MobileNav } from "./mobile-nav";
