@@ -18,6 +18,40 @@ describe("RENEWAL_BOOK (ADR-0251)", () => {
     });
   });
 
+  test("a legacy edition renewal row resolves to its canonical bundle id (alias-normalized)", () => {
+    // ai-kit → ai-production, local-ai → local-first, agent-dev → agentic-dev, bundle → everything:
+    // the single alias point expandEntitlements uses, applied on the renewal lookup so a legacy row
+    // keeps resolving to the id the catalog + grants converge on (ADR-0257).
+    expect(
+      resolveRenewal("pri_01kwvz6m46s5tj4k2a09kcaf9s").renewsEntitlement,
+    ).toBe("ai-production");
+    expect(
+      resolveRenewal("pri_01kwvz6m791c1xb4wxbedzf9nt").renewsEntitlement,
+    ).toBe("local-first");
+    expect(
+      resolveRenewal("pri_01kwvz6m9tr49rstw0x7s8nk5h").renewsEntitlement,
+    ).toBe("agentic-dev");
+    expect(
+      resolveRenewal("pri_01kwvz6mcfzgjemqa72czdfkmq").renewsEntitlement,
+    ).toBe("everything");
+  });
+
+  test("a module renewal row and a canonical bundle-id row pass through unchanged (identity alias)", () => {
+    // A bare module slug is not a legacy edition alias — it resolves to itself.
+    expect(
+      resolveRenewal("pri_01kwvz6mf22rqfrx6reh4b88sm").renewsEntitlement,
+    ).toBe("field-crypto");
+    // A row already written in the new bundle vocabulary (as W7's net-new rows will be) is identity —
+    // normalization never double-maps a canonical id.
+    const newIdBook = {
+      pri_01test000000000000000000new: { renewsEntitlement: "provenance" },
+    };
+    expect(
+      resolveRenewal("pri_01test000000000000000000new", newIdBook)
+        .renewsEntitlement,
+    ).toBe("provenance");
+  });
+
   test("an unknown price id THROWS (fail-closed — never a guessed extension)", () => {
     expect(() => resolveRenewal("pri_unknown_00000000000000000000")).toThrow(
       /no renewal-book entry/,

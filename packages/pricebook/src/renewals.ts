@@ -13,6 +13,7 @@
 // flip. Cents live in Paddle (and the site display SOT), NEVER here — Kickoff D owns every number.
 import { z } from "zod";
 import { ConfigError, parseStrict, strictObject } from "@caisson/kernel";
+import { normalizeEntitlementId } from "@caisson/registry-schema";
 
 /** Append-only version stamp — a renewal-row change bumps this, never edits it in place (ADR-0006). */
 export const RENEWAL_BOOK_VERSION = "2026-07-06.2";
@@ -72,6 +73,14 @@ export function isRenewalPrice(
 /**
  * Resolve a provider price id to its renewal entry, fail-closed: an unknown id THROWS
  * (ADR-0089 §6 posture — never a guessed extension).
+ *
+ * `renewsEntitlement` is NORMALIZED through the bundle alias map on read (ADR-0257): a row keyed to a
+ * legacy edition/bundle-sentinel id (`ai-kit`/`local-ai`/`agent-dev`/`bundle`) resolves to its
+ * canonical bundle id (`ai-production`/`local-first`/`agentic-dev`/`everything`), the same single alias
+ * point `expandEntitlements` uses. The stored book stays append-only (ADR-0006 — legacy rows are never
+ * edited in place); normalizing at the lookup keeps every legacy renewal row resolving to the id the
+ * catalog and its grants converge on, regardless of which vocabulary the row was written in. A module
+ * slug or an already-canonical bundle id passes through unchanged (identity alias).
  */
 export function resolveRenewal(
   priceId: string,
@@ -81,5 +90,8 @@ export function resolveRenewal(
   if (entry === undefined) {
     throw new ConfigError(`no renewal-book entry for price id ${priceId}`);
   }
-  return entry;
+  return {
+    ...entry,
+    renewsEntitlement: normalizeEntitlementId(entry.renewsEntitlement),
+  };
 }
