@@ -32,11 +32,15 @@ const moduleFactSchema = z
     id: z.string().min(1),
     label: z.string().min(1),
     amount: z.number().int().nonnegative(),
-    /** Owning edition id (matches an entry in `editions`). */
+    /** The bundles this module is a member of (1:N — the SOT's index-pinned `bundles[]`). Mirrored
+     *  here so the strict projection stays faithful; the doc rendering still keys off `edition` until
+     *  the display flip migrates it (catalog-rework W6.2/W7.2). */
+    bundles: z.array(z.string().min(1)),
+    /** Owning edition id (matches an entry in `editions`) — transitional browse-family grouping. */
     edition: z.string().min(1),
     blurb: z.string(),
-    /** Browse-family only: the module is NOT granted by its edition (or the bundle) — sold
-     *  standalone. Mirrors the SOT flag; the doc must never claim edition inclusion for these. */
+    /** Browse-family only: the module is NOT granted by its edition — sold standalone. Mirrors the
+     *  SOT flag; the doc must never claim edition inclusion for these. */
     standaloneOnly: z.boolean().optional(),
   })
   .strict();

@@ -1,7 +1,16 @@
 import { describe, expect, test } from "bun:test";
 
 import {
+  BUNDLE_RETAIL,
+  creditableMembers,
+  SKU_RETAIL,
+} from "@caisson/pricebook";
+
+import {
   buildStackSummary,
+  BUNDLE_IDS,
+  type BundleId,
+  BUNDLE_PRICES,
   bundleSavings,
   EDITION_IDS,
   EDITION_PRICES,
@@ -10,7 +19,9 @@ import {
   formatUsd,
   isEditionId,
   MODULE_PRICES,
+  modulesByBundle,
   modulesByEdition,
+  PERSONA_BUNDLE_IDS,
   PLAN_PRICES,
   priceById,
 } from "./pricing";
@@ -229,18 +240,49 @@ describe("buildStackSummary (compose-a-stack math, ADR-0191)", () => {
   });
 });
 
-describe("edition membership honesty (the registry index is the entitlement truth)", () => {
-  // An edition (and the bundle = base ∪ edition members) purchase expands to the registry index
-  // members map (expandEntitlements, ADR-0071) — so every inclusion claim keyed off
-  // `ModulePrice.edition` must match that map, or the site sells a grant that does not exist.
-  // `standaloneOnly` marks the browse-family exceptions (today: ai-evals, standalone by design
-  // per its own manifest). If the operator ever repins an edition's members to ADD such a module,
-  // this lint fails on the stale flag — flip `standaloneOnly` off and the nudge follows.
-  const REGISTRY_EDITION_IDS: Record<(typeof EDITION_IDS)[number], string> = {
+describe("BUNDLE_PRICES (ADR-0257 vocabulary · ADR-0258 numbers)", () => {
+  test("the six bundle ids match the shared pricebook vocabulary (no drift)", () => {
+    const priceIds = BUNDLE_PRICES.map((b) => b.id).sort();
+    expect(priceIds).toEqual(Object.keys(BUNDLE_RETAIL).sort());
+    expect([...BUNDLE_IDS].sort()).toEqual(Object.keys(BUNDLE_RETAIL).sort());
+  });
+
+  test("every bundle display price equals the locked pricebook retail (never hand-invented here)", () => {
+    for (const b of BUNDLE_PRICES) {
+      expect(b.amount).toBe(BUNDLE_RETAIL[b.id as keyof typeof BUNDLE_RETAIL]);
+      expect(Number.isInteger(b.amount)).toBe(true);
+      expect(b.amount).toBeGreaterThan(0);
+    }
+  });
+
+  test("every bundle is priced strictly below the sum of its priced members (the 0.75x below-sum lock)", () => {
+    for (const b of BUNDLE_PRICES) {
+      const memberSum = creditableMembers(
+        b.id as Parameters<typeof creditableMembers>[0],
+      ).reduce((sum, id) => sum + (SKU_RETAIL[id] ?? 0), 0);
+      expect(memberSum).toBeGreaterThan(0);
+      expect(b.amount ?? 0).toBeLessThan(memberSum);
+    }
+  });
+
+  test("no bundle anchor carries a fabricated 'was' compare price (ADR-0130)", () => {
+    for (const b of BUNDLE_PRICES) expect("wasAmount" in b).toBe(false);
+  });
+});
+
+describe("bundle membership honesty (the registry index is the entitlement truth)", () => {
+  // A bundle purchase expands to the registry index members map (expandEntitlements, ADR-0071/0257),
+  // so every `bundles[]` entry a module carries must match that map — registry members maps are the
+  // ONLY membership truth. This lint pins the site's hand-keyed `bundles[]` to them BIDIRECTIONALLY
+  // (over-claim AND under-claim) for every persona/Provenance bundle. Compliance rides the
+  // @caisson/compliance edition entry (which carries the bundle members map); the other four are
+  // first-class kind:"bundle" entries.
+  const REGISTRY_BUNDLE_IDS: Record<Exclude<BundleId, "everything">, string> = {
     compliance: "@caisson/compliance",
-    "ai-kit": "@caisson/ai-kit",
-    "local-first": "@caisson/local-ai",
-    "agentic-dev": "@caisson/agent-dev",
+    "ai-production": "@caisson/ai-production",
+    "local-first": "@caisson/local-first",
+    "agentic-dev": "@caisson/agentic-dev",
+    provenance: "@caisson/provenance",
   };
 
   interface IndexModule {
@@ -252,12 +294,12 @@ describe("edition membership honesty (the registry index is the entitlement trut
     }[];
   }
 
-  async function latestMembers(): Promise<Record<string, ReadonlySet<string>>> {
+  async function bundleMembers(): Promise<Record<string, ReadonlySet<string>>> {
     const index = (await Bun.file(
       new URL("../../../registry/index.json", import.meta.url),
     ).json()) as { modules: IndexModule[] };
     const out: Record<string, ReadonlySet<string>> = {};
-    for (const regId of Object.values(REGISTRY_EDITION_IDS)) {
+    for (const regId of Object.values(REGISTRY_BUNDLE_IDS)) {
       const entry = index.modules.find((m) => m.id === regId);
       if (!entry) continue;
       const latest =
@@ -268,21 +310,29 @@ describe("edition membership honesty (the registry index is the entitlement trut
     return out;
   }
 
-  test("every member-claimed module is in its edition's latest members map", async () => {
-    const members = await latestMembers();
+  test("every module's bundles[] exactly matches the registry members maps (both directions)", async () => {
+    const members = await bundleMembers();
     const violations: string[] = [];
-    for (const edition of EDITION_IDS) {
-      const regId = REGISTRY_EDITION_IDS[edition];
-      const map = members[regId];
-      if (!map) {
-        violations.push(`${regId}: edition missing from registry index`);
-        continue;
-      }
-      for (const m of modulesByEdition(edition)) {
-        if (m.standaloneOnly) continue;
-        if (!map.has(`@caisson/${m.id}`)) {
+    for (const m of MODULE_PRICES) {
+      for (const bundle of PERSONA_BUNDLE_IDS) {
+        const regId = REGISTRY_BUNDLE_IDS[bundle];
+        const map = members[regId];
+        if (!map) {
           violations.push(
-            `${m.id}: claimed a member of the ${edition} edition but absent from ${regId}'s members map — mark it standaloneOnly or repin the members`,
+            `${bundle}: bundle missing from registry index (${regId})`,
+          );
+          continue;
+        }
+        const listed = m.bundles.includes(bundle);
+        const granted = map.has(`@caisson/${m.id}`);
+        if (listed && !granted) {
+          violations.push(
+            `${m.id}: claims membership in ${bundle} but absent from ${regId}'s members map — fix bundles[] or repin the members`,
+          );
+        }
+        if (!listed && granted) {
+          violations.push(
+            `${m.id}: granted by ${regId}'s members map but not listed in bundles[] (under-claim) — add ${bundle}`,
           );
         }
       }
@@ -290,19 +340,21 @@ describe("edition membership honesty (the registry index is the entitlement trut
     expect(violations).toEqual([]);
   });
 
-  test("a standaloneOnly module is in NO edition's members map (else the flag is stale)", async () => {
-    const members = await latestMembers();
-    const violations: string[] = [];
+  test("no module lists the everything bundle (it contains every SKU by construction)", () => {
     for (const m of MODULE_PRICES) {
-      if (!m.standaloneOnly) continue;
-      for (const [regId, map] of Object.entries(members)) {
-        if (map.has(`@caisson/${m.id}`)) {
-          violations.push(
-            `${m.id}: flagged standaloneOnly but ${regId}'s members map grants it — remove the flag`,
-          );
-        }
-      }
+      expect(m.bundles).not.toContain("everything");
     }
-    expect(violations).toEqual([]);
+  });
+
+  test("modulesByBundle returns exactly the modules whose bundles[] include it", () => {
+    for (const bundle of PERSONA_BUNDLE_IDS) {
+      const byHelper = modulesByBundle(bundle)
+        .map((m) => m.id)
+        .sort();
+      const byFilter = MODULE_PRICES.filter((m) => m.bundles.includes(bundle))
+        .map((m) => m.id)
+        .sort();
+      expect(byHelper).toEqual(byFilter);
+    }
   });
 });

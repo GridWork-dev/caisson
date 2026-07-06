@@ -225,9 +225,9 @@ describe("checkCatalogParity", () => {
     expect(f[0]?.severity).toBe("warn");
   });
 
-  test("a module the site claims an edition grants but the members map omits is a membership error", async () => {
+  test("a module the site claims a bundle grants but the members map omits is a membership error", async () => {
     writeCatalog(
-      `[{ id: "audit-worm", amount: 149, edition: "compliance" }, { id: "ghost", amount: 50, edition: "compliance" }]`,
+      `[{ id: "audit-worm", amount: 149, bundles: ["compliance"] }, { id: "ghost", amount: 50, bundles: ["compliance"] }]`,
       { "@caisson/audit-worm": "1.0.0" },
     );
     const f = await checkCatalogParity(root);
@@ -237,9 +237,12 @@ describe("checkCatalogParity", () => {
 
   test("a displayed price that disagrees with a locked PRICE_AUTHORITY row is a price error", async () => {
     // audit-worm is locked at 14900; display it at $999 (99900¢) → mismatch.
-    writeCatalog(`[{ id: "audit-worm", amount: 999, edition: "compliance" }]`, {
-      "@caisson/audit-worm": "1.0.0",
-    });
+    writeCatalog(
+      `[{ id: "audit-worm", amount: 999, bundles: ["compliance"] }]`,
+      {
+        "@caisson/audit-worm": "1.0.0",
+      },
+    );
     const f = await checkCatalogParity(root);
     const price = f.filter((x) => x.message.includes("locks it at"));
     expect(price).toHaveLength(1);
@@ -247,19 +250,32 @@ describe("checkCatalogParity", () => {
   });
 
   test("an agreeing catalog is clean", async () => {
-    writeCatalog(`[{ id: "audit-worm", amount: 149, edition: "compliance" }]`, {
-      "@caisson/audit-worm": "1.0.0",
-    });
+    writeCatalog(
+      `[{ id: "audit-worm", amount: 149, bundles: ["compliance"] }]`,
+      {
+        "@caisson/audit-worm": "1.0.0",
+      },
+    );
     expect(await checkCatalogParity(root)).toEqual([]);
   });
 
-  test("a standaloneOnly module is exempt from the membership check", async () => {
-    writeCatalog(
-      `[{ id: "ai-evals", amount: 199, edition: "ai-kit", standaloneOnly: true }]`,
-      {},
-    );
-    // ai-kit isn't even in this fixture index; standaloneOnly means no membership claim to verify.
+  test("a module with an empty bundles[] makes no membership claim to verify", async () => {
+    writeCatalog(`[{ id: "ai-evals", amount: 199, bundles: [] }]`, {});
+    // No bundles listed → nothing to check against the index (a genuinely standalone SKU).
     expect(await checkCatalogParity(root)).toEqual([]);
+  });
+
+  test("a module listing an unknown bundle id is flagged (1:N — each listed bundle is checked)", async () => {
+    // audit-worm lists compliance (valid, granted by the fixture members map) + a bogus id; only the
+    // bogus one errors, proving each entry in bundles[] is verified independently.
+    writeCatalog(
+      `[{ id: "audit-worm", amount: 149, bundles: ["compliance", "not-a-bundle"] }]`,
+      { "@caisson/audit-worm": "1.0.0" },
+    );
+    const f = await checkCatalogParity(root);
+    const unknown = f.filter((x) => x.message.includes("unknown bundle"));
+    expect(unknown).toHaveLength(1);
+    expect(unknown[0]?.pkg).toBe("@caisson/audit-worm");
   });
 });
 
