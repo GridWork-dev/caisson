@@ -908,3 +908,26 @@ tree — the repo-improvement hygiene wave + audit remediation,
 ledger findings** (91 high · 117 warn · 56 info — un-parks the TRIAGE §3 roadmap-only buckets),
 with **verify-then-fix on all 91 highs** (TRIAGE §5's ~29 possibly-refuted round-3 highs make
 every open-high a candidate, not a verdict).
+
+## 2026-07-05 Kickoff-A picker round (SOT-expansion session) — 3 locks + 1 redirect
+
+The SPEC §5 fork queue (`outputs/specs/sot-expansion/SPEC.md`) went to the operator in one round:
+
+- **Agentic-Dev inspector — LOCKED (ADR-0243)**: Fork A = A1 `Bun.serve` localhost script (the
+  narrow ADR-0044 supersession that lock anticipated) · Fork B = B1 additive
+  `LocalStore.list({limit,offset})`. Build queued for a code-tree session; lock-and-go against
+  `outputs/specs/deferred-respec/SPEC-agent-dev-inspector.md`.
+- **Perpetual updates window — LOCKED (ADR-0244)**: one-time purchases = perpetual use + 12
+  months of included updates + optional renewal (~40% of list, exact cents at the checkout
+  flip). Must be in checkout/EULA copy before the flip.
+- **Credit policy — LOCKED (ADR-0245)**: pooled rollover, every grant expires 12 months from
+  issue, FIFO oldest-first burn. Pricing page may state it now.
+- **R3 compliance split — REDIRECTED, price NOT locked.** The operator widened the fork instead
+  of picking a number: the direction to pressure-test is **all editions become bundle options
+  over an individually-sellable package catalog**, with explicit standards for (a) what goes
+  OSS/base vs commercial-on-site and (b) when a package must split into sellable surfaces.
+  Commissioned as **catalog-doctrine research** (this session, W4 —
+  `outputs/research/catalog-doctrine-2026-07.md`) producing a FORK QUEUE for a future picker;
+  nothing in that direction is locked yet. R3's price re-lock folds INTO that round (still
+  gated against the ADR-0227 $799 anchor + ADR-0238 catalog math); the R3 engineering SPEC is
+  queued for its own session after the lock. The three.js signature spike stays parked.
