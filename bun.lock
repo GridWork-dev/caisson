@@ -910,6 +910,7 @@
         "@caisson/audit-worm": "workspace:*",
         "@caisson/billing": "workspace:*",
         "@caisson/credits": "workspace:*",
+        "@caisson/jobs": "workspace:*",
         "@caisson/kernel": "workspace:*",
         "@caisson/license-issue": "workspace:*",
         "@caisson/license-verify": "workspace:*",
