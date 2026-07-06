@@ -35,6 +35,10 @@ export interface ResolvedLicense {
  */
 export type ResolvedEntitlements = readonly string[] | ResolvedLicense;
 
+/** Narrow the union — `Array.isArray` alone does not narrow a `readonly string[]` union member. */
+const isBareList = (r: ResolvedEntitlements): r is readonly string[] =>
+  Array.isArray(r);
+
 /**
  * Per-request entitlement source. Returns the caller's resolved entitlements, or `null` for an
  * unlicensed/community caller. SHOULD be total, but it need not be: the handler runs it
@@ -89,10 +93,8 @@ export function resolveGate(
   try {
     const resolved = resolve(request);
     if (resolved === null) return { entitled, updatesUntil: null };
-    const purchased = Array.isArray(resolved)
-      ? resolved
-      : resolved.entitlements;
-    const updatesUntil = Array.isArray(resolved) ? null : resolved.updatesUntil;
+    const purchased = isBareList(resolved) ? resolved : resolved.entitlements;
+    const updatesUntil = isBareList(resolved) ? null : resolved.updatesUntil;
     for (const id of expandEntitlements(index, purchased)) entitled.add(id);
     return { entitled, updatesUntil };
   } catch {
