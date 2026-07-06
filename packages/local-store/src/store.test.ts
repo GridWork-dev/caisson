@@ -93,3 +93,61 @@ describe("LocalStore hybrid retrieval (ADR-0067)", () => {
     expect(() => LocalStore.open({ dim: 0 })).toThrow(ValidationError);
   });
 });
+
+describe("LocalStore.list (read-only paging, agent-dev inspector Fork B)", () => {
+  test("pages documents newest-first, bounded by limit + offset", () => {
+    const store = LocalStore.open({ dim: 3 });
+    try {
+      for (let i = 0; i < 5; i++) {
+        store.upsert({ id: `doc-${i}`, text: `text ${i}` });
+      }
+      // DESC by insertion order — the most recently upserted doc first.
+      expect(store.list().map((d) => d.id)).toEqual([
+        "doc-4",
+        "doc-3",
+        "doc-2",
+        "doc-1",
+        "doc-0",
+      ]);
+      // A bounded page: limit 2 offset 1 skips the newest, returns the next two.
+      expect(store.list({ limit: 2, offset: 1 }).map((d) => d.id)).toEqual([
+        "doc-3",
+        "doc-2",
+      ]);
+      // Text round-trips alongside the id.
+      expect(store.list({ limit: 1 })[0]).toEqual({
+        id: "doc-4",
+        text: "text 4",
+      });
+    } finally {
+      store.close();
+    }
+  });
+
+  test("clamps an out-of-range or junk limit/offset instead of throwing", () => {
+    const store = LocalStore.open({ dim: 3 });
+    try {
+      store.upsert({ id: "only", text: "x" });
+      // A non-positive limit clamps up to 1, not 0 (never an empty page for an out-of-range ask).
+      expect(store.list({ limit: 0 }).length).toBe(1);
+      expect(store.list({ limit: -5 }).length).toBe(1);
+      // A huge limit clamps down to LIST_MAX_LIMIT rather than scanning unbounded.
+      expect(() => store.list({ limit: 10_000_000 })).not.toThrow();
+      // A negative offset clamps to 0 rather than throwing.
+      expect(store.list({ offset: -1 }).length).toBe(1);
+      // Non-finite input falls back to the default rather than propagating NaN into SQL.
+      expect(store.list({ limit: Number.NaN }).length).toBe(1);
+    } finally {
+      store.close();
+    }
+  });
+
+  test("an empty store lists as an empty page", () => {
+    const store = LocalStore.open({ dim: 3 });
+    try {
+      expect(store.list()).toEqual([]);
+    } finally {
+      store.close();
+    }
+  });
+});
