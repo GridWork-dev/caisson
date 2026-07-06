@@ -11,9 +11,10 @@ export default defineModule({
   version: pkg.version,
   kind: "primitive",
   tier: "paid",
-  // PLACEHOLDER price pending ADR-0135 pricing lock (ADR-0129 methodology); positive int required
-  // by the manifest refine (ADR-0007).
-  priceCents: 4900,
+  // $99 standalone, locked by ADR-0260 §3 (sum-of-parts, comps-anchored). Off the $49 pre-launch
+  // placeholder anchor, so it now carries a PRICE_AUTHORITY row (tooling/standards-gate). Positive
+  // integer required by the manifest refine (ADR-0007).
+  priceCents: 9900,
   license: pkg.license,
   dependencies: ["@caisson/kernel"],
   golden: null,

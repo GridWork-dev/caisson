@@ -400,6 +400,7 @@ export const PRICE_AUTHORITY: Record<string, { cents: number; adr: string }> = {
   "@caisson/local-sync": { cents: 19900, adr: "ADR-0258" },
   "@caisson/local-inference": { cents: 24900, adr: "ADR-0258" },
   "@caisson/local-privacy": { cents: 9900, adr: "ADR-0258" },
+  "@caisson/tool-exec": { cents: 9900, adr: "ADR-0260" },
 };
 
 /**
