@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-06
 status: live
-adr_ceiling: 0256
+adr_ceiling: 0268
 ---
 
 # Decisions & Forks — live board
@@ -1051,3 +1051,50 @@ rewritten). Amends the ADR-0177 Greptile-PR-gate lock; the formal ADR is **defer
 free number** (E's ceiling is frozen at 0256 per the D↔E numbering agreement above — D files it or
 it lands post-merge). Operator follow-ups: uninstall the Greptile GitHub app from `caisson-sh`;
 drop `GREPTILE_API_KEY` at the ADR-0226 credential sweep.
+
+## 2026-07-06 Kickoff-F picker rounds (dx-demos-compat session) — 7 lock ADRs
+
+Kickoff F ran research-first (6-workstream fan-out, every brief adversarially verified; two
+stub returns caught by the verifiers and re-dispatched), then four picker rounds. Verification
+reshaped the W5 rank table before the round: email SMTP/SES/Postmark + pg-boss were found
+ALREADY SHIPPED (ADR-0170/0173 — adapter-expansion.md was stale), and the R2 "trivial
+S3-compat reuse" premise was found factually wrong (R2 lacks S3 Object Lock).
+
+**Numbering note:** F files **0262–0268**. 0257–0261 were observed already claimed by
+Kickoff D in flight on `feat/catalog-program` (0257/0258 catalog-rework, 0261 Greptile
+retirement); collisions at merge renumber per ADR-0088 (second merger renumbers).
+
+| Fork                              | Decision                                                                                                                                                                               | ADR          |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| **W1 — flags↔prompts precedence** | Per-field gap-fill: flags win, absent fields prompt, stdin-isTTY gate, zero prompt code on the flag path; NEW cli.test.ts pins the (previously untested) argv contract                 | **ADR-0262** |
+| **W1 — interactive shape**        | Per-module toggles over the registry allowlist, version = entry.latest; NO edition concept in the wizard (operator pick above the edition-preset rec)                                  | **ADR-0262** |
+| **W1 — free-sample placement**    | Equal-weight menu choice, never pre-selected; --sample flag path untouched                                                                                                             | **ADR-0262** |
+| **W2 — render mode**              | Static pre-rendered h264 mp4 in apps/site/public via plain `<video>`; renderer never runs in the deployed Next process; @remotion/player rejected                                      | **ADR-0263** |
+| **W2 — pilot scope + module**     | One audit-worm pilot (append→tamper→verify story) before any fan-out to the other 18 slots                                                                                             | **ADR-0263** |
+| **W2 — render-source location**   | apps/site/remotion/ (Remotion's own Next pattern), excluded from the Next build                                                                                                        | **ADR-0263** |
+| **W2 — stackCompat section kind** | BUNDLED into this wave (operator pick above the separate-follow-up rec), sequenced after the W4 matrix corrections                                                                     | **ADR-0263** |
+| **W3 — activation fidelity**      | Extend the IR NOW (operator pick above warnings-only): activation/paths fields through the Zod-strict boundary, fixing the shipped Cursor degrade; warnings field ships too            | **ADR-0264** |
+| **W3 — target set**               | Devin Desktop (.devin/rules/ + .windsurf/rules/ legacy — 2026-06-02 rebrand) + Copilot + Cline; JetBrains/AmazonQ deferred                                                             | **ADR-0264** |
+| **W3 — AGENTS.md reframe**        | Rename-only via superseding ADR: Codex target → universal AGENTS.md base layer; no bespoke overlay files (RFC #185 unratified)                                                         | **ADR-0264** |
+| **W4 — launch-gating posture**    | ENTERPRISE-READY SWEEP (operator pick above hybrid docs-first): every coded transport live-proven or explicitly waived per checklist row before launch; creds operator-owned           | **ADR-0265** |
+| **W5 — ORM adapters**             | Drizzle bridge AND Prisma adapter (operator pick above Drizzle-only); amends ADR-0014 in part — Prisma for buyers, never for Caisson's own code                                        | **ADR-0266** |
+| **W5 — storage disposition**      | BOTH drivers, correctly (operator custom answer): GCS Bucket Lock + R2 on Cloudflare bucket-locks, fail-closed when the bucket rule can't satisfy retainUntil; naive R2-as-S3 rejected | **ADR-0267** |
+| **W5 — deploy-template targets**  | Railway + Fly + Vercel off one shared Dockerfile base (services/docs pattern); deployTarget optional in Selection; unselected = byte-identical                                         | **ADR-0268** |
+
+### Recorded without new ADRs (same rounds)
+
+- **W5 wave composition (multiselect):** Drizzle bridge + auth/billing-webhook framework
+  quickstarts + deploy templates, GCP KMS driver, AI-lane named enums — all three recommended
+  items taken; **Slack QA-path extraction NOT selected → deferred** (Tier 3, member-mgmt
+  descoped whenever it returns).
+- **GCP KMS driver:** pre-authorized by ADR-0171's own binding ("adding a further KMS provider
+  needs no new ADR") — goes straight to `kms-gcp.ts` mirroring `kms-aws.ts`.
+- **AI-lane named enums** (groq/mistral/together): additive provider-enum values riding the
+  existing openai-compatible case (~15 LOC + docs recipes) under the ADR-0160 posture.
+- **MCP-HTTP framework quickstart: DEFERRED to its own spec** — MCP TypeScript SDK v2 is a
+  6-day-old beta with whole-package-split blast radius on the ADR-0161-locked transport file;
+  the auth + billing-webhook quickstarts proceed (already Fetch-native).
+- **Already-shipped discoveries:** email multi-driver (ADR-0170) and pg-boss JobQueue
+  (ADR-0173) were still framed "planned" in adapter-expansion.md — rows flip to shipped in the
+  ADR-0265 doc-correction pass; compatibility-matrix.md §1's Email/Jobs rows corrected the
+  same way.

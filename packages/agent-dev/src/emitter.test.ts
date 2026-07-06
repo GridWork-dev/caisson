@@ -27,8 +27,8 @@ afterEach(() => {
   }
 });
 
-describe("renderHarnessBundles — engine-neutral fan-out (ADR-0066)", () => {
-  test("renders all three harness shapes from one schema (no harness is the substrate)", () => {
+describe("renderHarnessBundles — engine-neutral fan-out (ADR-0066/0264)", () => {
+  test("renders every harness shape from one schema (no harness is the substrate)", () => {
     const bundle = renderHarnessBundles(EMIT_INPUT);
     const paths = bundle.files.map((f) => f.path).sort();
     expect(paths).toEqual(
@@ -41,6 +41,15 @@ describe("renderHarnessBundles — engine-neutral fan-out (ADR-0066)", () => {
         ".cursor/rules/guided-execution.mdc",
         ".cursor/rules/no-any-in-prod.mdc",
         "AGENTS.md",
+        ".devin/rules/guided-execution.md",
+        ".devin/rules/no-any-in-prod.md",
+        ".windsurf/rules/guided-execution.md",
+        ".windsurf/rules/no-any-in-prod.md",
+        ".github/copilot-instructions.md",
+        ".github/instructions/guided-execution.instructions.md",
+        ".github/instructions/no-any-in-prod.instructions.md",
+        ".clinerules/guided-execution.md",
+        ".clinerules/no-any-in-prod.md",
       ].sort(),
     );
   });
@@ -69,7 +78,10 @@ describe("writeBundle — path-traversal safety (threat: escape the emit dir)", 
   for (const path of escapes) {
     test(`rejects ${JSON.stringify(path)} (nothing written)`, () => {
       const root = freshRoot();
-      const bundle: EmittedBundle = { files: [{ path, content: "clean" }] };
+      const bundle: EmittedBundle = {
+        files: [{ path, content: "clean" }],
+        warnings: [],
+      };
       let thrown: unknown;
       try {
         writeBundle(root, bundle);
@@ -87,6 +99,7 @@ describe("writeBundle — path-traversal safety (threat: escape the emit dir)", 
     const root = freshRoot();
     const bundle: EmittedBundle = {
       files: [{ path: "ok\0.md", content: "clean" }],
+      warnings: [],
     };
     expect(() => writeBundle(root, bundle)).toThrow(EmitSecurityError);
   });
@@ -105,6 +118,7 @@ describe("writeBundle — no-secret guard (threat: credential leaks into a bundl
       const root = freshRoot();
       const bundle: EmittedBundle = {
         files: [{ path: "AGENTS.md", content }],
+        warnings: [],
       };
       let thrown: unknown;
       try {
@@ -143,6 +157,7 @@ describe("writeBundle — no-secret guard (threat: credential leaks into a bundl
           content: "password: hunter2-is-a-secret",
         },
       ],
+      warnings: [],
     };
     expect(() => writeBundle(root, bundle)).toThrow(EmitSecurityError);
     expect(existsSync(join(root, "AGENTS.md"))).toBe(false);
@@ -157,6 +172,7 @@ describe("writeBundle — duplicate destination guard", () => {
         { path: "AGENTS.md", content: "one" },
         { path: "AGENTS.md", content: "two" },
       ],
+      warnings: [],
     };
     let thrown: unknown;
     try {
@@ -273,4 +289,44 @@ describe("frontmatter injection — authored fields cannot erase the tools allow
     expect(cursor.description).toBe(payload);
     expect(cursor.injected).toBeUndefined();
   });
+
+  // ADR-0264: Devin/Windsurf, GitHub Copilot, and Cline never interpolate free text INTO their
+  // frontmatter (only the schema-validated `activation`/`paths` fields do) — the hostile description
+  // lands in the BODY, after the closing fence. Every target still owes a SINGLE parseable frontmatter
+  // doc with its scoping field intact, and the hostile body text round-tripping verbatim (never
+  // truncated by a `---`/key-injection payload it doesn't expect).
+  for (const payload of payloads) {
+    test(`rule description ${JSON.stringify(payload)} keeps every new target's frontmatter intact`, () => {
+      const rule = parseArtifact({
+        kind: "rule",
+        name: "attacker-rule",
+        description: payload,
+        severity: "error",
+        activation: "paths",
+        paths: ["src/**"],
+      });
+      const bundle = renderHarnessBundles({ artifacts: [rule], hooks: [] });
+
+      const devinPaths = [
+        ".devin/rules/attacker-rule.md",
+        ".windsurf/rules/attacker-rule.md",
+      ] as const;
+      for (const path of devinPaths) {
+        const fm = parseFrontmatter(fileNamed(bundle, path));
+        expect(fm.trigger).toBe("glob");
+        expect(fm.globs).toEqual(["src/**"]);
+        expect(fileNamed(bundle, path)).toContain(payload);
+      }
+
+      const copilotPath = ".github/instructions/attacker-rule.instructions.md";
+      const copilot = parseFrontmatter(fileNamed(bundle, copilotPath));
+      expect(copilot.applyTo).toBe("src/**");
+      expect(fileNamed(bundle, copilotPath)).toContain(payload);
+
+      const clinePath = ".clinerules/attacker-rule.md";
+      const cline = parseFrontmatter(fileNamed(bundle, clinePath));
+      expect(cline.paths).toEqual(["src/**"]);
+      expect(fileNamed(bundle, clinePath)).toContain(payload);
+    });
+  }
 });

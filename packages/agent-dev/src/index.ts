@@ -8,9 +8,11 @@
 //   • the local hybrid memory (@caisson/local-store): vec0 + FTS5 + RRF (RRF_K=60) with the FTS-only
 //     offline floor, the pluggable Embedder port, the cloud-egress secret-scrub guard, and the
 //     dedup/TTL/GC retention default;
-//   • the thin multi-harness emitter (./emitter.ts): one typed schema → `.claude/` + Codex `AGENTS.md`
-//     + Cursor — Claude Code is ONE emit target among several, never the substrate (the ADR-0066
-//     binding contract VERIFY re-asks);
+//   • the thin multi-harness emitter (./emitter.ts): one typed schema → `.claude/` + the universal
+//     `AGENTS.md` base layer (read natively by Codex, Cursor, Devin, Zed, Gemini CLI, and the Copilot
+//     coding agent — ADR-0264, superseding the prior "Codex harness" framing) + per-artifact Cursor,
+//     Devin Desktop/legacy Windsurf, GitHub Copilot, and Cline bundles — Claude Code is ONE emit
+//     target among several, never the substrate (the ADR-0066 binding contract VERIFY re-asks);
 //   • the governed sandboxed tool-exec gate (@caisson/tool-exec, ADR-0178): a default-deny allowlist +
 //     Zod-strict argv schemas + execFile arg-arrays (never a shell) — wired as a live gate on the
 //     composed edition so a buyer gets the exec seam from this one import home;
@@ -140,11 +142,18 @@ export interface AgentDevEdition {
   readonly artifacts: readonly Artifact[];
   /** PURE render of the artifact set + hook bindings into the multi-harness bundle. */
   render(hooks?: readonly EmitHookBinding[]): EmittedBundle;
-  /** Render + FAIL-CLOSED guarded write of the bundle under `targetRoot`; returns paths written. */
+  /**
+   * Render + FAIL-CLOSED guarded write of the bundle under `targetRoot`. Returns the paths written
+   * AND the bundle's fidelity warnings — the one-call path must surface them (ADR-0264 "warns
+   * loudly, never silently degrades"), not leave them stranded on a `render()` the caller skipped.
+   */
   emit(
     targetRoot: string,
     hooks?: readonly EmitHookBinding[],
-  ): readonly string[];
+  ): {
+    readonly written: readonly string[];
+    readonly warnings: readonly string[];
+  };
   /** Release the memory store's DB handle. */
   close(): void;
 }
@@ -208,7 +217,13 @@ export function createAgentDevEdition(
     toolExec,
     artifacts,
     render,
-    emit: (targetRoot, hooks = []) => writeBundle(targetRoot, render(hooks)),
+    emit: (targetRoot, hooks = []) => {
+      const bundle = render(hooks);
+      return {
+        written: writeBundle(targetRoot, bundle),
+        warnings: bundle.warnings,
+      };
+    },
     close: () => memory.close(),
   };
 }

@@ -31,6 +31,11 @@ import {
 import type { AiSettings, ProviderConfig } from "@caisson/ai-config";
 
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
+// Hardcoded default hosts for the three OpenAI-compatible named vendors (ADR-0171 board lock
+// 2026-07-06) — verified against each vendor's current docs (see the PR/changeset for citations).
+const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
+const MISTRAL_BASE_URL = "https://api.mistral.ai/v1";
+const TOGETHER_BASE_URL = "https://api.together.xyz/v1";
 
 /** The deadline (ms) bound to a provider factory's outbound `fetch` when the caller does not
  *  override `timeoutMs` on {@link providerFor} / {@link defaultProviders}. */
@@ -118,6 +123,34 @@ export function providerFor(
         includeUsage: true,
         ...transport,
       });
+    // Groq / Mistral / Together (ADR-0171 board lock 2026-07-06): real hosted OpenAI-compatible
+    // vendors, each with a hardcoded default `baseUrl` (overridable via `cfg.baseUrl`, like
+    // `openrouter`'s — e.g. to point at a gateway/proxy). Unlike `local`/`ollama`'s "local" placeholder
+    // key, these are paid vendor APIs: a missing key fails closed instead of reaching the vendor with
+    // an empty/absent Authorization header.
+    case "groq":
+    case "mistral":
+    case "together": {
+      if (apiKey === undefined) {
+        throw new ValidationError(
+          `provider apiKey required for the ${cfg.provider} lane (name its env var via apiKeyEnv)`,
+          { provider: cfg.provider },
+        );
+      }
+      const defaultBaseUrl =
+        cfg.provider === "groq"
+          ? GROQ_BASE_URL
+          : cfg.provider === "mistral"
+            ? MISTRAL_BASE_URL
+            : TOGETHER_BASE_URL;
+      return createOpenAICompatible({
+        name: cfg.provider,
+        apiKey,
+        baseURL: cfg.baseUrl ?? defaultBaseUrl,
+        includeUsage: true,
+        ...transport,
+      });
+    }
     // `ollama` serves an OpenAI-compatible endpoint, so it rides the same adapter as `local` — the
     // buyer names the `baseUrl` of their host (no localhost default, per the security floor).
     case "local":

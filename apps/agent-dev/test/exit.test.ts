@@ -135,6 +135,7 @@ describe("agent-dev CLI reference app — goal-backward exit", () => {
     expect(() =>
       writeBundle(tmpRoot(), {
         files: [{ path: "../escaped.md", content: "x" }],
+        warnings: [],
       }),
     ).toThrow(EmitSecurityError);
   });

@@ -9,6 +9,11 @@
 // LicenseRef-Caisson-Commercial (ADR-0050; the AGPL flank is retired). `priceCents` is the established
 // pre-launch placeholder anchor (4900) — final pricing is the open "Pricing numbers" board fork, out
 // of scope here. The relative import keeps `@caisson/registry` out of the runtime dep set.
+// ADR-0264 (2026-07-06): the source IR gained an optional rule/skill `activation`/`paths` pair
+// (never-silent-degrade fidelity warnings on every target), three new emit targets (Devin Desktop +
+// legacy Windsurf, GitHub Copilot, Cline), and the emitted `AGENTS.md` is reframed as the universal
+// multi-tool BASE layer — Codex, Cursor, Devin, Zed, Gemini CLI, and the Copilot coding agent all
+// read it natively (the "Codex harness" framing this description used before is superseded).
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
@@ -49,5 +54,5 @@ export default defineModule({
   },
   golden: "src/__golden__",
   description:
-    "Agentic-Dev edition: composes the governed engine-neutral agent kernel + local hybrid memory + a thin multi-harness emitter (.claude/ · Codex AGENTS.md · Cursor) from one typed Caisson schema; Claude Code is one emit target among several, never the substrate.",
+    "Agentic-Dev edition: composes the governed engine-neutral agent kernel + local hybrid memory + a thin multi-harness emitter (.claude/ · the universal AGENTS.md base layer · Cursor · Devin/Windsurf · GitHub Copilot · Cline) from one typed Caisson schema; Claude Code is one emit target among several, never the substrate.",
 });

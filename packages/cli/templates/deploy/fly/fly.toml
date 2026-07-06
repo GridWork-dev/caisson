@@ -1,0 +1,17 @@
+# Fly.io deploy config for {{projectName}} (ADR-0268). `internal_port` must match the port your
+# server actually listens on inside the container — keep it in sync with the sibling Dockerfile.
+app = "{{projectName}}"
+
+[build]
+
+[http_service]
+internal_port = 8080
+force_https = true
+auto_stop_machines = true
+auto_start_machines = true
+min_machines_running = 0
+
+[[vm]]
+memory = "512mb"
+cpu_kind = "shared"
+cpus = 1

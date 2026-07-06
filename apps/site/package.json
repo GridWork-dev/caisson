@@ -9,7 +9,8 @@
     "start": "next start -p 3030",
     "lint": "eslint .",
     "test": "bun test ./lib ./emails",
-    "test:live": "bun test ./live"
+    "test:live": "bun test ./live",
+    "remotion:render": "node node_modules/.bin/remotion render remotion/index.ts AuditWormDemo public/videos/audit-worm-demo.mp4 --codec=h264"
   },
   "dependencies": {
     "@caisson/ai-kit": "workspace:*",
@@ -49,6 +50,7 @@
     "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
+    "@remotion/cli": "^4.0.485",
     "@tailwindcss/postcss": "^4.3.1",
     "@types/culori": "catalog:",
     "@types/mdx": "^2.0.13",
@@ -58,6 +60,7 @@
     "@types/react-dom": "catalog:",
     "eslint": "catalog:",
     "playwright": "^1.61.1",
+    "remotion": "^4.0.485",
     "tailwindcss": "^4.3.1",
     "typescript": "catalog:"
   }

@@ -93,6 +93,10 @@ const DEFAULT_KEY_ENV: Record<ProviderConfig["provider"], string> = {
   bedrock: "AWS_ACCESS_KEY_ID",
   "azure-openai": "AZURE_OPENAI_API_KEY",
   ollama: "OLLAMA_API_KEY",
+  // Named OpenAI-compatible lanes added in the Kickoff-F wave.
+  groq: "GROQ_API_KEY",
+  mistral: "MISTRAL_API_KEY",
+  together: "TOGETHER_API_KEY",
 };
 
 function defaultKeyEnv(provider: string): string {

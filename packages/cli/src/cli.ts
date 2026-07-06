@@ -14,18 +14,26 @@ import {
   type RegistryIndex,
   loadRegistryIndexFromFile,
 } from "@caisson/registry-schema";
-import { type GeneratedFileSet, type Selection, generate } from "./generate.ts";
+import {
+  type GeneratedFileSet,
+  type RawSelection,
+  type Selection,
+  generate,
+} from "./generate.ts";
+import type * as InteractiveModule from "./interactive.ts";
 import { materializeSample } from "./sample-templates.ts";
 import { createFileSetWriter } from "./writer.ts";
 
 /**
  * Parse argv into a RAW selection (validated downstream by Zod `.strict()` — never trusted here).
- * Flags: `--name <slug>`, `--edition <e>`, `--module <id@version>` (repeatable).
+ * Flags: `--name <slug>`, `--edition <e>`, `--module <id@version>` (repeatable),
+ * `--deploy <railway|fly|vercel>` (ADR-0268).
  */
 export function parseArgs(argv: readonly string[]): unknown {
   const modules: { id: string; version: string }[] = [];
   let projectName: string | undefined;
   let edition: string | undefined;
+  let deployTarget: string | undefined;
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
     const value = argv[i + 1];
@@ -34,6 +42,9 @@ export function parseArgs(argv: readonly string[]): unknown {
       i++;
     } else if (flag === "--edition") {
       edition = value;
+      i++;
+    } else if (flag === "--deploy") {
+      deployTarget = value;
       i++;
     } else if (flag === "--module") {
       // Split on the LAST "@" so a scoped id (@caisson/x) keeps its leading "@".
@@ -54,6 +65,7 @@ export function parseArgs(argv: readonly string[]): unknown {
     ...(projectName !== undefined ? { projectName } : {}),
     ...(edition !== undefined ? { edition } : {}),
     modules,
+    ...(deployTarget !== undefined ? { deployTarget } : {}),
   };
 }
 
@@ -103,23 +115,30 @@ function resolveIndexPath(): string {
   );
 }
 
-const HELP = `\
+export const HELP = `\
 create-caisson — scaffold a repo from the Caisson registry
 
 Usage:
   create-caisson --name <slug> --module <id@version> [--module …] \\
-    [--edition <e>] [--out <dir>] [--dry-run]
+    [--edition <e>] [--deploy <target>] [--out <dir>] [--dry-run]
   create-caisson --sample <id> --name <slug> [--out <dir>] [--dry-run]
+  create-caisson                              # interactive first-run (TTY only)
 
 Flags:
   --name <slug>          Project name (a-z, 0-9, kebab slug; max 64 chars)
   --module <id@version>  @caisson module (repeatable; exact semver version)
   --edition <e>          compliance | ai-kit | local-ai | agent-dev
+  --deploy <target>      Add a deploy config: railway | fly | vercel (default: none)
   --sample <id>          A free, Apache-2.0 evaluation sample (e.g. eu-ai-act-sample) — no
                           --module/--edition; no Caisson license key required to install or run
   --out <dir>            Output directory (defaults to <projectName>)
   --dry-run              Print the file plan without writing anything to disk
   --help, -h             Show this help
+
+Interactive mode: run with no flags in a terminal (TTY) and create-caisson prompts for the
+missing pieces — a licensed module/edition build vs the free sample, project name, and modules.
+Any flag you DO pass is never re-prompted; supply every required flag (or pipe stdin) to skip
+prompts entirely.
 
 Before running the installer (non-sample path), add NODE_AUTH_TOKEN (your Caisson license key) to
 .npmrc. See the generated README for the full setup steps — or https://caisson.sh/docs.
@@ -183,6 +202,127 @@ function printSampleNextSteps(projectName: string, targetDir: string): void {
   );
 }
 
+/**
+ * ADR-0262 gap-fill for the `--sample` path: it carries no module selection, so a missing
+ * project name is the only thing the wizard ever fills in here. Prompts ONLY when `isTTY` is
+ * true; a non-TTY invocation throws exactly like the pre-ADR-0262 behavior (caught by the outer
+ * try/catch → the same stderr message + exit code). `loadInteractive` is an injectable seam
+ * (real dynamic import by default) so `cli.test.ts` can spy on it without a live TTY — it must
+ * NEVER be called when `projectName` is already supplied or `isTTY` is false.
+ */
+export async function resolveSampleProjectName(
+  selectionArgs: readonly string[],
+  isTTY: boolean,
+  loadInteractive: () => Promise<typeof InteractiveModule> = () =>
+    import("./interactive.ts"),
+): Promise<string> {
+  const { projectName } = parseSampleArgs(selectionArgs);
+  if (projectName !== undefined) return projectName;
+  if (!isTTY) {
+    throw new Error("--sample requires --name <slug>");
+  }
+  const { promptSampleProjectName } = await loadInteractive();
+  return promptSampleProjectName();
+}
+
+/** What the licensed (non-`--sample`) path resolved to: either a raw Selection ready for
+ *  `generate()`, or — when the pure-run wizard's mode question picked the free sample instead
+ *  (ADR-0262) — a sample id + project name for the exact same sample flow the `--sample` flag
+ *  path uses. */
+export type LicensedResolution =
+  | {
+      readonly kind: "sample";
+      readonly sampleId: string;
+      readonly projectName: string;
+    }
+  | { readonly kind: "licensed"; readonly raw: unknown };
+
+/**
+ * ADR-0262/ADR-0268 gap-fill for the licensed path: fills a missing projectName/modules via the
+ * interactive wizard ONLY when `isTTY` is true AND a required field is still missing after argv
+ * is parsed. A fully-specified invocation, or non-TTY stdin, returns `rawFromFlags` untouched —
+ * `loadInteractive` (real dynamic import by default) is NEVER called on that path, the invariant
+ * `cli.test.ts` spies to lock.
+ */
+export async function resolveLicensed(
+  selectionArgs: readonly string[],
+  index: RegistryIndex,
+  isTTY: boolean,
+  loadInteractive: () => Promise<typeof InteractiveModule> = () =>
+    import("./interactive.ts"),
+): Promise<LicensedResolution> {
+  const rawFromFlags = parseArgs(selectionArgs) as RawSelection;
+  const allRequiredPresent =
+    rawFromFlags.projectName !== undefined && rawFromFlags.modules.length > 0;
+
+  if (!isTTY || allRequiredPresent) {
+    return { kind: "licensed", raw: rawFromFlags };
+  }
+
+  // "pure run" = zero selection flags at all — arms the licensed-vs-sample mode question and the
+  // optional deploy step (ADR-0262/ADR-0268) inside the wizard; a partial invocation (e.g.
+  // `--edition` alone) still gap-fills the missing required fields, but skips both of those.
+  const anySelectionFlag =
+    rawFromFlags.projectName !== undefined ||
+    rawFromFlags.edition !== undefined ||
+    rawFromFlags.modules.length > 0 ||
+    rawFromFlags.deployTarget !== undefined;
+
+  const { runWizard, DEFAULT_SAMPLE_ID } = await loadInteractive();
+  const wizard = await runWizard(index, {
+    ...(rawFromFlags.projectName !== undefined
+      ? { projectName: rawFromFlags.projectName }
+      : {}),
+    ...(rawFromFlags.edition !== undefined
+      ? { edition: rawFromFlags.edition }
+      : {}),
+    modules: rawFromFlags.modules,
+    ...(rawFromFlags.deployTarget !== undefined
+      ? { deployTarget: rawFromFlags.deployTarget }
+      : {}),
+    pureRun: !anySelectionFlag,
+  });
+
+  if (wizard.kind === "sample") {
+    return {
+      kind: "sample",
+      sampleId: DEFAULT_SAMPLE_ID,
+      projectName: wizard.projectName,
+    };
+  }
+  return { kind: "licensed", raw: wizard.raw };
+}
+
+/**
+ * Materialize a free sample end-to-end: print the dry-run plan (exits) or write to disk, git
+ * init, print next steps. Shared by the `--sample` flag path and the interactive wizard's
+ * "free sample" branch (ADR-0262) so the two entry points stay mechanically identical.
+ */
+async function generateSample(
+  sampleId: string,
+  projectName: string,
+  opts: { out: string | undefined; dryRun: boolean },
+): Promise<void> {
+  const files = materializeSample(sampleId, projectName);
+  const targetDir = opts.out ?? projectName;
+
+  if (opts.dryRun) {
+    process.stdout.write(
+      `create-caisson: dry-run — ${files.length} files for ` +
+        `"${projectName}" (sample: ${sampleId})\n`,
+    );
+    for (const f of files) {
+      process.stdout.write(`  ${f.path}\n`);
+    }
+    process.exit(0);
+  }
+
+  const write = createFileSetWriter();
+  await write(targetDir, files);
+  await tryGitInit(targetDir);
+  printSampleNextSteps(projectName, targetDir);
+}
+
 if (import.meta.main) {
   void (async () => {
     const argv = process.argv.slice(2);
@@ -230,37 +370,33 @@ if (import.meta.main) {
         process.exit(0);
       }
 
+      // Arming rule (ADR-0262): interactive prompts run ONLY when stdin is a TTY, and only for
+      // Selection fields still missing after argv is parsed — a fully-specified invocation (or
+      // non-TTY stdin, e.g. CI/piped) resolves below with `./interactive.ts` never imported, so
+      // the non-interactive behavior is byte-identical to before ADR-0262.
+      const isTTY = process.stdin.isTTY === true;
+
       if (sample !== undefined) {
-        const { projectName } = parseSampleArgs(selectionArgs);
-        if (projectName === undefined) {
-          process.stderr.write(
-            "create-caisson: --sample requires --name <slug>\n",
-          );
-          process.exit(1);
-        }
-        const files = materializeSample(sample, projectName);
-        const targetDir = out ?? projectName;
-
-        if (dryRun) {
-          process.stdout.write(
-            `create-caisson: dry-run — ${files.length} files for ` +
-              `"${projectName}" (sample: ${sample})\n`,
-          );
-          for (const f of files) {
-            process.stdout.write(`  ${f.path}\n`);
-          }
-          process.exit(0);
-        }
-
-        const write = createFileSetWriter();
-        await write(targetDir, files);
-        await tryGitInit(targetDir);
-        printSampleNextSteps(projectName, targetDir);
+        const projectName = await resolveSampleProjectName(
+          selectionArgs,
+          isTTY,
+        );
+        await generateSample(sample, projectName, { out, dryRun });
         return;
       }
 
       const index = loadRegistryIndexFromFile(resolveIndexPath());
-      const { selection, files } = runCli(selectionArgs, { index });
+      const resolved = await resolveLicensed(selectionArgs, index, isTTY);
+
+      if (resolved.kind === "sample") {
+        await generateSample(resolved.sampleId, resolved.projectName, {
+          out,
+          dryRun,
+        });
+        return;
+      }
+
+      const { selection, files } = generate(index, resolved.raw);
       const targetDir = out ?? selection.projectName;
 
       if (dryRun) {
