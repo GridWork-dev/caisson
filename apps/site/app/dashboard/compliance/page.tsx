@@ -5,7 +5,7 @@
 // evidence leg from these filled slots; this page owns the human-fill half of that seam.
 import type { Metadata } from "next";
 import { revalidatePath } from "next/cache";
-import { assertCanManageMembers } from "@caisson/auth";
+import { assertCanManageMembers } from "@caisson/org-controls";
 import {
   Button,
   Card,

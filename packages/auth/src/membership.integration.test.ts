@@ -1,16 +1,16 @@
-// ADR-0176 org account model: account_member resolution, dual-GUC RLS isolation (login path via
-// withUser, member-list path via withTenant), and owner-only authz. Composes @caisson/tenancy-rls on
-// PGlite (the credits.integration.test.ts harness).
+// ADR-0176 org account model — SESSION-RESOLUTION half only (ADR-0257 §1.3 carve). This suite is the
+// regression proof that a buyer login resolves accounts with ZERO @caisson/org-controls involvement:
+// it imports only the open session-resolution surface (`resolveUserAccounts` / `ensurePersonalAccount`
+// / `selectActiveAccount`) — never the carved MANAGE surface — and every assertion is the exact
+// getSession() path (apps/site lib/auth.ts). If org-controls ever became load-bearing on login, this
+// file would fail to compile (it does not depend on that package at all). The MANAGE-surface tests
+// (list/add/owner-authz) moved to packages/org-controls/src/membership.test.ts.
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import { newTestPg, type TestPg } from "@caisson/testing";
-import { AuthzError } from "@caisson/kernel";
 
 import {
   ACCOUNT_MEMBER_SCHEMA_SQL,
-  addAccountMember,
-  assertCanManageMembers,
   ensurePersonalAccount,
-  listAccountMembers,
   resolveUserAccounts,
   selectActiveAccount,
 } from "./index.ts";
@@ -32,7 +32,7 @@ afterAll(async () => {
   await tp.close();
 });
 
-describe("account_member resolution + RLS isolation", () => {
+describe("session resolution needs zero org-controls (login path)", () => {
   test("first sign-in creates a personal account (idempotent)", async () => {
     await ensurePersonalAccount(tp.pg, "user_a");
     await ensurePersonalAccount(tp.pg, "user_a"); // second call is a no-op
@@ -52,43 +52,20 @@ describe("account_member resolution + RLS isolation", () => {
     ).toEqual(["user_b"]);
   });
 
-  test("an owner adds a seat; the seat then belongs to the org account", async () => {
+  test("full getSession() resolution: personal account, selected, no manage surface touched", async () => {
+    // Mirrors apps/site lib/auth.ts resolveActiveAccount end-to-end using ONLY the open surface.
     await ensurePersonalAccount(tp.pg, "user_a");
-    await addAccountMember(tp.pg, "owner", "user_a", "user_b", "seat");
-    expect(await resolveUserAccounts(tp.pg, "user_b")).toContainEqual({
+    const memberships = await resolveUserAccounts(tp.pg, "user_a");
+    const active = selectActiveAccount(memberships);
+    expect(active).toEqual({
       accountId: "user_a",
-      userId: "user_b",
-      role: "seat",
+      userId: "user_a",
+      role: "owner",
     });
-  });
-
-  test("member-list is tenant-isolated (account A cannot see account B's members)", async () => {
-    await ensurePersonalAccount(tp.pg, "user_a");
-    await ensurePersonalAccount(tp.pg, "user_b");
-    await addAccountMember(tp.pg, "owner", "user_a", "seat_1", "seat");
-    expect(
-      (await listAccountMembers(tp.pg, "user_a")).map((m) => m.userId).sort(),
-    ).toEqual(["seat_1", "user_a"]);
-    // A's seat_1 is invisible to B — the account clause is scoped to the bound account GUC.
-    expect(
-      (await listAccountMembers(tp.pg, "user_b")).map((m) => m.userId),
-    ).toEqual(["user_b"]);
   });
 });
 
-describe("owner authz + active-account selection", () => {
-  test("only an owner can manage members", () => {
-    expect(() => assertCanManageMembers("seat")).toThrow(AuthzError);
-    expect(() => assertCanManageMembers("owner")).not.toThrow();
-  });
-
-  test("addAccountMember refuses a non-owner actor", async () => {
-    await ensurePersonalAccount(tp.pg, "user_a");
-    await expect(
-      addAccountMember(tp.pg, "seat", "user_a", "user_x"),
-    ).rejects.toBeInstanceOf(AuthzError);
-  });
-
+describe("active-account selection (pure)", () => {
   const M = (
     accountId: string,
     userId: string,

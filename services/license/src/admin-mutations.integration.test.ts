@@ -35,8 +35,8 @@ import {
   grant,
 } from "@caisson/credits";
 import { asCredits, NotFoundError } from "@caisson/kernel";
+import { ADMIN_WRITE_ROLE_BOOTSTRAP_SQL } from "@caisson/org-controls";
 import {
-  ADMIN_WRITE_ROLE_BOOTSTRAP_SQL,
   withTenant,
   type TenantExecutor,
   type Transactor,
