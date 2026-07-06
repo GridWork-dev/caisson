@@ -276,10 +276,14 @@ export function baseModuleIds(index: RegistryIndex): readonly string[] {
 }
 
 /**
- * The DERIVED full-catalog rule: base ∪ every legacy edition's members, purely from the index. This
- * is the `everything` bundle's expansion until W5 lands its explicit `kind:"bundle"` entry (ADR-0257
- * — the explicit membership rule replaces this derivation; `expandEntitlements` already prefers the
- * indexed entry when present).
+ * The DERIVED full-catalog rule (DEPRECATED fallback): base ∪ every legacy edition's members, purely
+ * from the index. The EXPLICIT full-catalog rule that supersedes it is now the `@caisson/everything`
+ * bundle manifest's frozen `members` map (ADR-0257/0258 §3 — every sellable commercial SKU incl.
+ * `ui-pro`; `@caisson/brand` + `@caisson/license-issue` are private/never-sold and excluded there).
+ * `expandEntitlements` PREFERS that indexed entry the moment it is present (`hasBundleEntry`), so this
+ * derivation only runs BEFORE the members-fold republish indexes the everything bundle — a transitional
+ * path, removable once the index is guaranteed to carry it. The derivation cannot leak a private
+ * package by construction: `brand`/`license-issue` are never published, so they never reach the index.
  */
 function fullCatalogMembers(index: RegistryIndex): string[] {
   const out = new Set<string>(baseMembers(index));

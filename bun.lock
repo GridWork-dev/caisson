@@ -291,6 +291,10 @@
         "typescript": "catalog:",
       },
     },
+    "packages/agentic-dev": {
+      "name": "@caisson/agentic-dev",
+      "version": "0.1.0",
+    },
     "packages/ai-config": {
       "name": "@caisson/ai-config",
       "version": "0.2.3",
@@ -368,6 +372,10 @@
         "eslint": "catalog:",
         "typescript": "catalog:",
       },
+    },
+    "packages/ai-production": {
+      "name": "@caisson/ai-production",
+      "version": "0.1.0",
     },
     "packages/alerting": {
       "name": "@caisson/alerting",
@@ -586,6 +594,10 @@
         "typescript": "catalog:",
       },
     },
+    "packages/everything": {
+      "name": "@caisson/everything",
+      "version": "0.1.0",
+    },
     "packages/field-crypto": {
       "name": "@caisson/field-crypto",
       "version": "0.2.3",
@@ -721,6 +733,10 @@
         "sqlite-vec": "catalog:",
         "typescript": "catalog:",
       },
+    },
+    "packages/local-first": {
+      "name": "@caisson/local-first",
+      "version": "0.1.0",
     },
     "packages/local-inference": {
       "name": "@caisson/local-inference",
@@ -913,6 +929,10 @@
         "eslint": "catalog:",
         "typescript": "catalog:",
       },
+    },
+    "packages/provenance": {
+      "name": "@caisson/provenance",
+      "version": "0.1.0",
     },
     "packages/rate-limit": {
       "name": "@caisson/rate-limit",
@@ -1298,6 +1318,8 @@
 
     "@caisson/agent-runner": ["@caisson/agent-runner@workspace:packages/agent-runner"],
 
+    "@caisson/agentic-dev": ["@caisson/agentic-dev@workspace:packages/agentic-dev"],
+
     "@caisson/ai-config": ["@caisson/ai-config@workspace:packages/ai-config"],
 
     "@caisson/ai-evals": ["@caisson/ai-evals@workspace:packages/ai-evals"],
@@ -1307,6 +1329,8 @@
     "@caisson/ai-kit-app": ["@caisson/ai-kit-app@workspace:apps/ai-kit"],
 
     "@caisson/ai-meter": ["@caisson/ai-meter@workspace:packages/ai-meter"],
+
+    "@caisson/ai-production": ["@caisson/ai-production@workspace:packages/ai-production"],
 
     "@caisson/alerting": ["@caisson/alerting@workspace:packages/alerting"],
 
@@ -1342,6 +1366,8 @@
 
     "@caisson/eslint-config": ["@caisson/eslint-config@workspace:tooling/eslint-config"],
 
+    "@caisson/everything": ["@caisson/everything@workspace:packages/everything"],
+
     "@caisson/field-crypto": ["@caisson/field-crypto@workspace:packages/field-crypto"],
 
     "@caisson/frameworks-pack": ["@caisson/frameworks-pack@workspace:packages/frameworks-pack"],
@@ -1359,6 +1385,8 @@
     "@caisson/local-ai": ["@caisson/local-ai@workspace:packages/local-ai"],
 
     "@caisson/local-ai-app": ["@caisson/local-ai-app@workspace:apps/local-ai"],
+
+    "@caisson/local-first": ["@caisson/local-first@workspace:packages/local-first"],
 
     "@caisson/local-inference": ["@caisson/local-inference@workspace:packages/local-inference"],
 
@@ -1381,6 +1409,8 @@
     "@caisson/pricebook": ["@caisson/pricebook@workspace:packages/pricebook"],
 
     "@caisson/prompt-registry": ["@caisson/prompt-registry@workspace:packages/prompt-registry"],
+
+    "@caisson/provenance": ["@caisson/provenance@workspace:packages/provenance"],
 
     "@caisson/rate-limit": ["@caisson/rate-limit@workspace:packages/rate-limit"],
 

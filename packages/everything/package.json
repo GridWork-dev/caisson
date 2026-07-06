@@ -1,0 +1,8 @@
+{
+  "name": "@caisson/everything",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "LicenseRef-Caisson-Commercial",
+  "private": true,
+  "description": "Everything bundle: the whole Caisson commercial catalog in one purchase — every persona bundle plus every standalone module, at a below-sum price."
+}
