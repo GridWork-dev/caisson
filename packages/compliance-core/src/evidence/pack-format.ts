@@ -22,7 +22,7 @@
 import { z } from "zod";
 import { strictObject, parseStrict } from "@caisson/kernel";
 import type { JsonValue } from "@caisson/kernel";
-import { CrosswalkReference } from "../registry/control.ts";
+import { CrosswalkReference } from "@caisson/frameworks-pack";
 
 /**
  * The evidence-pack format version. Append-only (ADR-0006): a breaking shape change mints a new

@@ -1,9 +1,10 @@
-// src/evidence/sign.ts — evidence-pack signing (ADR-0056).
+// src/sign.ts — evidence-pack signing (ADR-0056), carved out of the Compliance edition as the
+// standalone signing surface (ADR-0246/0257).
 //
-// The edge layer that proves PROVENANCE of an evidence pack. The generator produces a byte-stable
-// canonical `manifest.json`; this module signs it so a relying party can prove *who* sealed it and *what
-// chain state* it was sealed against — without touching the canonical body (the signature is
-// DETACHED, so the body stays byte-stable and golden-fixturable, ADR-0013).
+// The edge layer that proves PROVENANCE of an evidence pack. The generator (@caisson/compliance-core)
+// produces a byte-stable canonical `manifest.json`; this module signs it so a relying party can prove
+// *who* sealed it and *what chain state* it was sealed against — without touching the canonical body
+// (the signature is DETACHED, so the body stays byte-stable and golden-fixturable, ADR-0013).
 //
 // Locked design (ADR-0056), each enforced below:
 //   1. PER-TENANT Ed25519, DISTINCT FROM THE CAISSON LICENSE KEY. The buyer proves provenance of
@@ -30,7 +31,16 @@ import {
   ValidationError,
   type JsonValue,
 } from "@caisson/kernel";
-import type { EvidencePackManifest } from "./pack-format.ts";
+
+/**
+ * The minimal structural shape this module signs: any JSON-serializable, byte-stable manifest body
+ * carrying the WORM audit-chain anchor whose tip hash gets bound into the signed payload. The
+ * evidence-pack manifest (@caisson/compliance-core) satisfies this shape structurally; the signer
+ * deliberately does not depend on that package, so the signing surface stands alone.
+ */
+export interface SignableManifest {
+  readonly chainAnchor: { readonly tipHash: string };
+}
 
 /** The base-tier signature scheme. A buyer-KMS asymmetric scheme would extend this behind the port. */
 export type SignatureAlgorithm = "ed25519";
@@ -65,7 +75,7 @@ function toJsonValue(value: unknown): JsonValue {
  * `pack.canonicalManifest ∥ pack.manifest.chainAnchor.tipHash`.
  */
 export function evidenceSignablePayload(
-  manifest: EvidencePackManifest,
+  manifest: SignableManifest,
 ): Uint8Array {
   const canonical = canonicalize(toJsonValue(manifest));
   return new TextEncoder().encode(canonical + manifest.chainAnchor.tipHash);
@@ -209,7 +219,7 @@ export interface SignEvidencePackOptions {
  */
 export async function signEvidencePack(
   signer: Signer,
-  manifest: EvidencePackManifest,
+  manifest: SignableManifest,
   options?: SignEvidencePackOptions,
 ): Promise<EvidenceSignature> {
   const payload = evidenceSignablePayload(manifest);
@@ -245,7 +255,7 @@ export async function signEvidencePack(
  * verification error returns `false` rather than throwing — a forgery must not pass as valid.
  */
 export async function verifyEvidenceSignature(
-  manifest: EvidencePackManifest,
+  manifest: SignableManifest,
   signature: EvidenceSignature,
 ): Promise<boolean> {
   if (signature.algorithm !== "ed25519") return false;

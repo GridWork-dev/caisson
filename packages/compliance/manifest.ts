@@ -28,11 +28,14 @@ export default defineModule({
   dependencies: [
     "@caisson/alerting",
     "@caisson/audit-worm",
+    "@caisson/compliance-core",
     "@caisson/field-crypto",
+    "@caisson/frameworks-pack",
+    "@caisson/kernel",
     "@caisson/migrate",
     "@caisson/retention-runner",
+    "@caisson/signing-primitive",
     "@caisson/tenancy-rls",
-    "@caisson/kernel",
   ],
   // Frozen member pin map (ADR-0077): edition self + every BUYER-FACING bundled module, exact-version.
   // @caisson/migrate is intentionally NOT a member: it is compose-time tooling (resolved transitively
