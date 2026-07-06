@@ -23,7 +23,7 @@ export default defineModule({
   // price-coverage locked-price requirement.
   sellable: false,
   license: pkg.license,
-  dependencies: ["@caisson/kernel"],
+  dependencies: ["@caisson/kernel", "@caisson/registry-schema"],
   golden: "src/__golden__",
   description:
     "The commerce price-book: plan-book (providerPriceId -> creditsPerCycle), action-book (per-action credit cost), and the shared cents->credits grant conversion. Versioned, append-only, fail-closed, integer-only; shares kernel's one credit denomination.",
