@@ -3,7 +3,8 @@
 // logic lives here). Runs inside withTenant (the caller scopes RLS to the buyer's account, one
 // transaction). It does FOUR things by event type:
 //   - invoice.paid (gated)      -> grant the cycle credits + the plan's SUBSCRIPTION entitlement grants
-//   - purchase.completed        -> grant a ONE-TIME purchase's credits + its one_time entitlement grants
+//   - purchase.completed        -> grant a ONE-TIME purchase's credits + its one_time entitlement grants;
+//                                  a RENEWAL_BOOK line instead EXTENDS the updates window (ADR-0251)
 //   - subscription.canceled     -> IMMEDIATELY soft-revoke that subscription's entitlement grants
 //   - refund.completed          -> soft-revoke the purchase's grants + claw back ONLY unspent credits
 // Fail-closed throughout: an unknown plan/purchase price throws (the webhook returns non-2xx, the
@@ -18,9 +19,15 @@ import {
   lineCreditLedger,
 } from "@caisson/credits";
 import { ConfigError, asCredits, type Credits } from "@caisson/kernel";
-import { resolvePlan, resolvePurchase } from "@caisson/pricebook";
+import {
+  isRenewalPrice,
+  resolvePlan,
+  resolvePurchase,
+  resolveRenewal,
+} from "@caisson/pricebook";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 import {
+  extendUpdatesWindow,
   grantEntitlements,
   revokePurchaseGrants,
   revokePurchaseLineGrants,
@@ -125,6 +132,23 @@ export async function applyBillingEvent(
       // `grantedEntitlements` returns the DISTINCT union for the Discord push (an entitlement is binary).
       const grantedEntitlements = new Set<string>();
       for (const line of ev.lineItems) {
+        // Updates-RENEWAL line (ADR-0244/0251): a renewal SKU grants NO entitlement and NO credits —
+        // it EXTENDS the buyer's updates window on the entitlement it renews (+12 months, per
+        // (account, entitlement) pair). extendUpdatesWindow is fail-closed: renewing an entitlement
+        // with no active one_time grant throws → the webhook returns non-2xx and Paddle retries —
+        // a renewal never silently mints a grant. Redelivery idempotency is the OUTER sourceEventId
+        // claim (webhook.ts processEvent). A price id lives in exactly ONE book (pricebook test),
+        // so this branch can never shadow a real purchase row. Renewal lines stay out of
+        // `grantedEntitlements` — nothing was granted, so no Discord/PostHog push fires for them.
+        if (isRenewalPrice(line.priceId)) {
+          const renewal = resolveRenewal(line.priceId);
+          await extendUpdatesWindow(tx, {
+            accountId: ev.accountId,
+            entitlementId: renewal.renewsEntitlement,
+            sourceEventId: ev.paymentId,
+          });
+          continue;
+        }
         const purchase = resolvePurchase(line.priceId); // fail-closed on an unknown price id
         const lineCredits = purchase.credits * line.quantity;
         if (lineCredits > 0) {
