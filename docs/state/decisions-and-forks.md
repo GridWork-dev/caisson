@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-06
 status: live
-adr_ceiling: 0251
+adr_ceiling: 0252
 ---
 
 # Decisions & Forks — live board
@@ -992,8 +992,22 @@ gating, build deferred per 0250 G2b · **v1 = full 7** (operator override of the
 price-band input to Stage 2 = **$129–199, anchor $149, standalone-only** (ai-evals pattern —
 no edition/bundle membership). Scope: `outputs/specs/ui-pro/SPEC.md`.
 
-**Still OPEN after the ui-pro round**: **every price number** (Kickoff D Stage 2 owns the
-cents; the ui-pro band above is input, not a lock)
+**Pricing-revalidation round (2026-07-06, Kickoff D Stage 2) — ADR-0252:** pricing logic =
+**sum-of-parts comps-anchored** (Vanta-TCO = narrative, never pricing logic) · bundles
+formula-locked at 0.75 × registry-truth member sums: **Compliance $1,049** (carve P_C $299 ·
+P_F $249 · P_S $199) · **AI-Production $629** · **Agentic-Dev $329** (tool-exec $99) ·
+**Provenance $399** · **Everything $1,749** (= 0.75 × Σ bundle prices, recompute-on-move) ·
+new SKUs: auth-sso **$199/$249 conditional on the Stage-3 package shape** · credits $149 ·
+billing-orchestration $99 · **ui-pro $129** · the 11 existing modules + both subscriptions +
+the $49 top-up all revalidated-keep · **renewal cents = flat 40% X9-rounded** per SKU.
+Display rides the Stage-3/4 rework build (no pricing.ts edit now). Evidence:
+`outputs/research/pricing-revalidation-2026-07.md`.
+
+**Still OPEN after the pricing round**: the **Local-first bundle number** (operator-commissioned
+local-ai carve round — R3-shaped separability pass over sync/inference/privacy; $349 interim,
+ADR-0240 not superseded) · **credits-in-AI-bundle membership** (Stage 3; formula → ≈$745 if it
+joins) · **auth-sso package shape** (Stage 3; both prices pre-locked) · optional Cookiy WTP
+validation (survey 374111 live; ~$20 recruitment needs live operator approval)
 
 A post-merge scheduling picker (2026-07-05, no ADR — Kickoffs A+B merged as PRs #126/#127) split
 the remaining pool: **Kickoff D** = the catalog program (ui-pro SPEC → pricing pass →

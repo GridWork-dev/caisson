@@ -1,7 +1,10 @@
 ---
-updated: 2026-07-05
+updated: 2026-07-06
 status: live
 grounds:
+  - knowledge/decisions/ADR-0251-ui-pro-spec-locks.md
+  - knowledge/decisions/ADR-0252-pricing-revalidation-locks.md
+  - outputs/research/pricing-revalidation-2026-07.md
   - knowledge/decisions/ADR-0012-pricing-packaging.md
   - knowledge/decisions/ADR-0095-gtm-offer-structure.md
   - knowledge/decisions/ADR-0106-final-pricing-grandfathering.md
@@ -26,7 +29,41 @@ Enterprise tier. The model exists to fix two gaps the market leaves open: no ven
 compliance-grade modules individually, and one-time-only code products have no recurring floor
 (ADR-0012).
 
-## Locked price matrix (current, live in `apps/site/lib/pricing.ts`)
+## Stage-2 price locks (ADR-0252, 2026-07-06) — display rides the catalog-rework build
+
+The pricing-revalidation pass (Kickoff D Stage 2) locked the post-catalog-rework sheet. **These
+numbers are the committed prices for the bundle catalog; the site display flips in one wave with
+the Stage-3/4 catalog-rework build** — the matrix in the next section stays what `pricing.ts`
+shows until then. Formula binding: bundle display = 0.75 × priced-member sum (registry-truth
+membership), rounded down to the 9-ending; **Everything = 0.75 × Σ(bundle prices),
+recompute-on-move**; below-sum invariant verified per bundle at lock.
+
+| SKU                         | Locked                                                                                       | Basis                                                                                                                                                                                                                  |
+| --------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Compliance bundle**       | **$1,049**                                                                                   | 0.75 × $1,443 member-sum (carve $299+$249+$199 + fc $199 + worm $149 + alerting $149 + retention $199); supersedes ADR-0227's $799                                                                                     |
+| **AI-Production bundle**    | **$629**                                                                                     | 0.75 × $845 (field-crypto is a registry-true member; ai-evals folded in per ADR-0249 G1); if `credits` joins the member set at Stage 3, re-runs to ≈$745                                                               |
+| **Local-first bundle**      | **DEFERRED**                                                                                 | operator-commissioned local-ai carve round decides members before the number; $349 carries interim (ADR-0240 not superseded)                                                                                           |
+| **Agentic-Dev bundle**      | **$329**                                                                                     | 0.75 × $446 (kernel $199 + runner $49 + local-store $99 + tool-exec $99)                                                                                                                                               |
+| **Provenance bundle** (new) | **$399**                                                                                     | 0.75 × $547 (P_S $199 + audit-worm $149 + field-crypto $199); $0 incremental into Everything (member-subset of Compliance)                                                                                             |
+| **Everything bundle**       | **$1,749**                                                                                   | 0.75 × Σ(1,049 + 629 + 349 interim + 329)                                                                                                                                                                              |
+| P_C compliance-core         | **$299**                                                                                     | evidence-assembly engine; comp desert confirmed — internal premium tier                                                                                                                                                |
+| P_F frameworks-pack         | **$249**                                                                                     | SOC2+HIPAA+EU-AI-Act data packs; one-time framework-pack comps $59–1,050                                                                                                                                               |
+| P_S signing-primitive       | **$199**                                                                                     | per-tenant Ed25519 + RFC-3161                                                                                                                                                                                          |
+| tool-exec                   | **$99**                                                                                      | Agentic trio coherence                                                                                                                                                                                                 |
+| auth-sso                    | **$199** standalone / **$249** merged with the rls admin-write carve (Stage 3 decides shape) |
+| credits (post-decouple)     | **$149**                                                                                     | Stigg $399/mo validates; Lago OSS caps                                                                                                                                                                                 |
+| billing-orchestration       | **$99**                                                                                      | Kill Bill/Lago free-OSS ceiling                                                                                                                                                                                        |
+| ui-pro                      | **$129**                                                                                     | inside the ADR-0251 band, low end                                                                                                                                                                                      |
+| 11 existing modules         | **unchanged**                                                                                | every live-comp verdict "keep"                                                                                                                                                                                         |
+| Subscriptions + top-up      | **unchanged**                                                                                | $1,499/yr · $499/yr · $49/5,000 (margin audited 89.8%, mix-proof)                                                                                                                                                      |
+| **Updates-renewal cents**   | **flat 40% of list, X9-rounded**                                                             | Compliance $419 · AI $249 · Agentic $129 · Everything $699 · Provenance $159 · LF $139 interim · modules 299→$119 · 249→$99 · 199→$79 · 149→$59 · 129→$49 · 99→$39 · 49→$19 — Kickoff E's renewal plumbing wires these |
+
+Evidence + formula worksheets: `outputs/research/pricing-revalidation-2026-07.md`. The anchor
+tension resolved sum-of-parts: the Vanta/Drata TCO band ($8–40k+/yr, quote-gated) is marketing
+narrative ("less than 2 months of your first Vanta invoice — and you own it forever"), never
+pricing logic.
+
+## Locked price matrix (current, live in `apps/site/lib/pricing.ts` — pre-rework display)
 
 | SKU                                                     | Price                   | Note                                                                                                                   |
 | ------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------- |
@@ -143,18 +180,22 @@ cart → checkout → webhook → grant path is exercisable pre-launch. Sandbox 
 — the same catalog must be re-created in the production Paddle account at the commerce flip
 (accepted double entry).
 
-## OPEN FORK — catalog doctrine (not decided; do not treat as locked)
+## Catalog doctrine — RESOLVED (ADR-0246–0252); what stays open
 
-The operator redirected the R3 "compliance god-package split" pricing question (originally: does
-splitting framework-catalog/evidence-assembly/signing into separately sellable surfaces re-open
-the $799 anchor math) into a **broader catalog-doctrine research round**, not yet resolved. The
-direction under study — **all editions become bundle options over an individually-sellable
-package catalog, with an explicit OSS/commercial-line and package-split standard** — would, if
-locked, generalize the ADR-0238 edition-vs-module boundary rather than patch it edition-by-edition.
-Findings are slated for `outputs/research/catalog-doctrine-2026-07.md` (not yet written as of this
-distillation). **Until that fork resolves, R3 stays parked and every price above stays as
-currently locked** — do not pre-empt the split, and do not read this section as describing a
-committed future catalog shape.
+The catalog-doctrine round locked 2026-07-05/06: every commercial package individually priced +
+displayed (ADR-0246 F1b), editions dissolve into the Persona+Provenance bundle set (ADR-0246
+F2b / ADR-0249 G1), the compliance 3-SKU carve is formula-priced (ADR-0246 F6), bundle
+mechanics are 25%-off-sum + snapshot-at-sale + crediting map (ADR-0247), and the Stage-2
+pricing pass (ADR-0252) locked the numbers — see the Stage-2 section at the top of this file.
+R3 is thereby closed (the carve exists and is priced).
+
+**Still open after Stage 2:** the Local-first bundle number (operator-commissioned local-ai
+carve round — separability pass over sync/inference/privacy — decides members before the
+number; $349 interim) · `credits` membership in the AI-Production bundle (Stage-3 catalog-rework
+call; formula re-runs to ≈$745 if it joins) · the auth-sso package shape (standalone $199 vs
+merged org-module $249 — both prices pre-locked, Stage 3 picks the shape) · optional WTP
+validation (Cookiy Van Westendorp survey 374111 is live/unanswered; ~$20 recruitment needs
+live operator approval — validates, never blocks).
 
 ## Contradictions found while distilling
 
