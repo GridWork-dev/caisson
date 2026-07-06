@@ -19,6 +19,7 @@
     "eval": "turbo run eval --no-daemon",
     "gate": "bun packages/kernel/src/gate.ts",
     "check": "turbo run build lint test --no-daemon && bun run gate",
+    "sot": "bun tooling/scripts/sot-check.ts",
     "format": "prettier --write \"**/*.{ts,tsx,js,mjs,json,md,css}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,mjs,json,md,css}\""
   },
