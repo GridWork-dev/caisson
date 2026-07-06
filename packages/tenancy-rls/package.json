@@ -22,14 +22,14 @@
   },
   "dependencies": {
     "@caisson/kernel": "workspace:*",
-    "pg": "^8.16.0"
+    "pg": "catalog:"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
-    "@types/pg": "^8.11.10",
-    "eslint": "^9.13.0",
-    "typescript": "^5.6.0"
+    "@types/pg": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:"
   }
 }

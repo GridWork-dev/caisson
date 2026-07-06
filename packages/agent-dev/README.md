@@ -1,7 +1,41 @@
 # @caisson/agent-dev
 
-Agentic-Dev edition: typed agent/skill/rule schema + lifecycle state machine + local hybrid memory + hooks dispatcher.
+The Agentic-Dev edition — a governed agent/skill/rule schema, a lifecycle state machine, local
+hybrid memory, a sandboxed tool-exec gate, and a multi-harness emitter, composed into one
+buyer-facing surface. Author agents/skills/rules once in a typed Caisson schema and get a governed
+lifecycle, local memory, and per-harness config emit (`.claude/`, Codex `AGENTS.md`, Cursor rules).
 
-- **Layer:** edition
+## Install
 
-> **Built (substantial)** — real src + tests (typed agent/skill/rule schema + lifecycle + emitter; roadmap edition). Live per-package status: ../../docs/build-state.md
+```bash
+bun add @caisson/agent-dev
+```
+
+Commercial edition — requires a Caisson license key at runtime.
+
+## Use
+
+```ts
+import { createAgentDevEdition } from "@caisson/agent-dev";
+
+const edition = createAgentDevEdition({
+  store: myAuditLifecycleStore, // host-supplied AuditLifecycleStore
+  memoryDim: 3, // local hybrid-memory vector width
+  tenant: { root: "/var/lib/caisson/tenants", tenantId: "acme" },
+});
+
+// Render the curated artifact set into every supported harness shape.
+const bundle = edition.render();
+
+// Or write it straight to disk (fail-closed guarded write).
+edition.emit("./out");
+
+// The bundled sandboxed tool-exec gate (default-deny until you register commands).
+await edition.toolExec.run("git", ["status"]);
+
+edition.close();
+```
+
+## Docs
+
+https://caisson.sh/docs

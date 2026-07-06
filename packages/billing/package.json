@@ -7,7 +7,7 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "description": "Stripe + Paddle billing behind a single BillingProvider port: HMAC raw-body webhook verification mapped to a provider-agnostic DomainBillingEvent.",
+  "description": "Stripe, Paddle, LemonSqueezy, and Polar billing behind a single BillingProvider port: HMAC raw-body webhook verification mapped to a provider-agnostic DomainBillingEvent.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -24,13 +24,13 @@
   "dependencies": {
     "@caisson/kernel": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",
-    "zod": "^3.23.8"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
-    "eslint": "^9.13.0",
-    "typescript": "^5.6.0"
+    "eslint": "catalog:",
+    "typescript": "catalog:"
   }
 }

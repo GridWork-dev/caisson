@@ -1,6 +1,6 @@
 # @caisson/ui — the component recipe
 
-Operationalizes **ADR-0099**. Every primitive in `src/components/` is built the same way; the
+Every primitive in `src/components/` is built the same way; the
 **reference is `button.tsx` + `button.css`** — copy its shape. The kit is **framework-agnostic raw
 `.tsx`**: it never imports `next/*` or any framework.
 
@@ -13,8 +13,8 @@ Operationalizes **ADR-0099**. Every primitive in `src/components/` is built the 
    presentational primitives (Section, Card, Terminal, …) need **no** Radix.
 2. **Co-located plain CSS.** One `foo.css` next to `foo.tsx`, imported at the top
    (`import "./foo.css"`). Every value is a `var(--cs-*)` token — **no** raw hex, no `oklch(...)`
-   literal, no Tailwind / cva / CSS-modules / vanilla-extract / class-string lib. (The anti-slop gate,
-   ADR-0101, enforces this.)
+   literal, no Tailwind / cva / CSS-modules / vanilla-extract / class-string lib. (A lint gate
+   enforces this.)
 3. **Variants as `data-*`.** Express variants with `data-variant` / `data-size` / `data-status` /
    `data-surface` and style them with attribute selectors (`.cs-foo[data-variant="x"] { … }`). No
    variant logic in JS; theming is pure cascade. For multi-token components use a **local-indirection
@@ -29,12 +29,12 @@ Operationalizes **ADR-0099**. Every primitive in `src/components/` is built the 
 
 ## Brand floor the kit must honor (cite, don't relitigate)
 
-- Accent ≤10%, only on the 5 named slots (DESIGN.md §8). Icons = **Lucide** + bespoke domain glyphs,
-  one `<Icon name=… />` surface (ADR-0099 F8). Code blocks always-dark. Numerals tabular Martian Mono.
+- Accent ≤10%, only on the 5 named slots. Icons = **Lucide** + bespoke domain glyphs,
+  one `<Icon name=… />` surface. Code blocks always-dark. Numerals tabular Martian Mono.
 - Motion: tokenized `--cs-duration-*` / `--cs-ease-*`, transform/opacity-first, `prefers-reduced-motion`
-  honored, content **never** stuck at `opacity:0`, no loop/gimmick (ADR-0078 §6).
+  honored, content **never** stuck at `opacity:0`, no loop/gimmick.
 - Elevation: tonal surface + hairline is the default; `--cs-shadow-*` / `--cs-glow-accent` is the
-  deliberate step (ADR-0078 §7).
+  deliberate step.
 
 ## Packaging
 
@@ -42,5 +42,4 @@ Operationalizes **ADR-0099**. Every primitive in `src/components/` is built the 
   - `@caisson/ui/styles/tokens.css`. Raw `.tsx`, no bundler/dist.
 - Consumers set `transpilePackages: ["@caisson/ui"]` in `next.config` and import the tokens CSS once at
   the root layout. `react` / `react-dom` / `lucide-react` are **peer** deps.
-- `apps/admin` (its `/design` gallery — absorbed `apps/studio`, ADR-0140) consumes the **same** components (gallery == product → no drift). New reusable UI lands
-  here, never inlined on a screen. Build order: tokens → primitives → domain.
+- New reusable UI lands here, never inlined on a screen. Build order: tokens → primitives → domain.

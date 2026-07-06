@@ -34,11 +34,18 @@ function readJson(path: string): Record<string, unknown> {
   return JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
 }
 
+/** `workspaces` is either the legacy bare array or the bun-catalog object form
+ *  (`{ packages: [...], catalog: {...} }`, ADR-program row #4) — read the package globs from
+ *  whichever shape is present. */
+function workspaceGlobs(workspaces: unknown): string[] {
+  if (Array.isArray(workspaces)) return workspaces as string[];
+  const packages = (workspaces as { packages?: unknown } | undefined)?.packages;
+  return Array.isArray(packages) ? (packages as string[]) : [];
+}
+
 function listMembers(): string[] {
   const root = readJson(join(ROOT, "package.json"));
-  const globs = Array.isArray(root.workspaces)
-    ? (root.workspaces as string[])
-    : [];
+  const globs = workspaceGlobs(root.workspaces);
   const members: string[] = [];
   for (const glob of globs) {
     if (glob.endsWith("/*")) {

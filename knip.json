@@ -1,0 +1,13 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    ".": {},
+    "tooling/*": {},
+    "packages/*": {},
+    "apps/*": {},
+    "registry": {},
+    "services/license": {},
+    "services/docs": {}
+  },
+  "ignore": ["**/dist/**", "**/*.d.ts", "**/CHANGELOG.md"]
+}

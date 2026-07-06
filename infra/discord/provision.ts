@@ -17,9 +17,10 @@
  * Prints a NAME → ID map at the end (feed the channel/role ids into the bot's Railway env).
  *
  * Usage: DISCORD_TOKEN=... bun infra/discord/provision.ts   (GUILD_ID defaults to the Caisson guild)
- * Not product code — an operational one-shot. Plain fetch with a bounded timeout + 429 backoff.
+ * Not product code — an operational one-shot. Bounded-timeout fetch + 429 backoff.
  */
 import { readFileSync } from "node:fs";
+import { fetchWithTimeout } from "@caisson/kernel";
 
 const API = "https://discord.com/api/v10";
 const TOKEN = process.env.DISCORD_TOKEN ?? "";
@@ -65,16 +66,19 @@ async function api<T = unknown>(
   body?: unknown,
 ): Promise<T> {
   for (let attempt = 0; attempt < 6; attempt++) {
-    const res = await fetch(`${API}${path}`, {
-      method,
-      headers: {
-        authorization: `Bot ${TOKEN}`,
-        "content-type": "application/json",
-        "user-agent": "CaissonProvisioner (caisson.sh, 1.0)",
+    const res = await fetchWithTimeout(
+      `${API}${path}`,
+      {
+        method,
+        headers: {
+          authorization: `Bot ${TOKEN}`,
+          "content-type": "application/json",
+          "user-agent": "CaissonProvisioner (caisson.sh, 1.0)",
+        },
+        body: body !== undefined ? JSON.stringify(body) : undefined,
       },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-      signal: AbortSignal.timeout(20_000),
-    });
+      { timeoutMs: 20_000 },
+    );
     if (res.status === 429) {
       const j = (await res.json().catch(() => ({}))) as {
         retry_after?: number;
@@ -387,13 +391,16 @@ async function main(): Promise<void> {
 
   if (!community) {
     console.log(
-      "\n⚠ Community NOT enabled — text channels created. After enabling Community in the",
+      "\n⚠ Community NOT enabled — text channels created. This script does not convert channel",
     );
     console.log(
-      "  dashboard, re-run to upgrade #support/#bug-reports/#feature-requests → forum,",
+      "  types after the fact: once Community is enabled in the dashboard, manually convert",
     );
     console.log(
-      "  #announcements/#changelog → announcement, and add Onboarding + AutoMod.",
+      "  #support/#bug-reports/#feature-requests to forum and #announcements/#changelog to",
+    );
+    console.log(
+      "  announcement type in Discord's UI, and add Onboarding + AutoMod there too.",
     );
   }
   console.log("\nDone.");

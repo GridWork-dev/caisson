@@ -42,8 +42,10 @@ export function findRepoRoot(start: string): string {
     const pj = join(dir, "package.json");
     if (existsSync(pj)) {
       try {
-        if (Array.isArray(JSON.parse(readFileSync(pj, "utf8")).workspaces))
-          return dir;
+        // `workspaces` is either the legacy bare array or the bun-catalog object form
+        // (`{ packages: [...], catalog: {...} }`, ADR-program row #4).
+        const ws = JSON.parse(readFileSync(pj, "utf8")).workspaces;
+        if (Array.isArray(ws) || Array.isArray(ws?.packages)) return dir;
       } catch {
         /* keep walking */
       }
@@ -85,14 +87,18 @@ function docPkg(rel: string): string | undefined {
   return m ? `@caisson/${m[1]}` : undefined;
 }
 
-function readPackageJson(abs: string): { name?: string; license?: string } {
+/** `undefined` on a missing/unparseable `package.json` — the caller fails closed (skips the package). */
+function readPackageJson(
+  abs: string,
+): { name?: string; license?: string; private?: boolean } | undefined {
   try {
     return JSON.parse(readFileSync(abs, "utf8")) as {
       name?: string;
       license?: string;
+      private?: boolean;
     };
   } catch {
-    return {};
+    return undefined;
   }
 }
 
@@ -118,6 +124,10 @@ function gatherSources(root: string): DocsSource[] {
       const readme = join(pkgRoot, name, "README.md");
       if (!existsSync(readme)) continue;
       const pj = readPackageJson(join(pkgRoot, name, "package.json"));
+      // Buyer-facing corpus only: a private package is never published to buyers, so its README never
+      // enters the public corpus. Fail closed — a missing/unparseable package.json skips the package
+      // too, since we can't confirm it's safe to publish.
+      if (pj === undefined || pj.private === true) continue;
       sources.push({
         source: join("packages", name, "README.md"),
         kind: "readme",

@@ -27,7 +27,7 @@ mock.module("next/headers", () => ({
   headers: async (): Promise<Headers> => new Headers(),
 }));
 
-// Owner-only write gate (vuln-0006, ADR-0208 #1): owner passes, seat is denied. Unauthenticated is
+// Owner-only write gate (ADR-0208 #1): owner passes, seat is denied. Unauthenticated is
 // the existing null-session case below (the BYOK route 401s / the dashboard redirects before the
 // role check is ever reached). Roles today are only owner | seat.
 test("isOwner: owner passes, seat denied", async () => {

@@ -8,7 +8,7 @@
 #
 # Requires in the environment:
 #   CLOUDFLARE_API_TOKEN   — Account → Workers Scripts → Edit on the caisson account
-#   CLOUDFLARE_ACCOUNT_ID  — the caisson account id (f2851c51b55165a0073a1ce6afeb8016)
+#   CLOUDFLARE_ACCOUNT_ID  — the caisson account id (see ~/.gridwork/caisson.env)
 set -euo pipefail
 
 # Run from this script's dir so wrangler resolves ./wrangler.toml + the ../index.json + ../schema

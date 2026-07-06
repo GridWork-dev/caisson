@@ -31,16 +31,16 @@
     "@caisson/rate-limit": "workspace:*",
     "@caisson/registry-schema": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",
-    "pg": "^8.16.0"
+    "pg": "catalog:"
   },
   "devDependencies": {
     "@caisson/auth": "workspace:*",
     "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
-    "@types/bun": "^1.1.14",
-    "@types/pg": "^8.11.10",
-    "eslint": "^9.13.0",
-    "typescript": "^5.6.0"
+    "@types/bun": "catalog:",
+    "@types/pg": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:"
   }
 }

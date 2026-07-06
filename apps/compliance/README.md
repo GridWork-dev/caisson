@@ -1,7 +1,7 @@
 # apps/compliance
 
-The **Compliance edition** reference app (Next.js App Router, ADR-0044) — the P2 exit artifact. A
-thin wiring shell (NO dashboard) that composes the green base + P2 primitives and runs the
+The **Compliance edition** reference app (Next.js App Router). A
+thin wiring shell (NO dashboard) that composes the green base + compliance primitives and runs the
 Compliance leg end to end over a fully **test-doubled** substrate (embedded PGlite, a local WORM
 store, derived field keys, an in-memory event sink) — **no live cloud, no network**.
 

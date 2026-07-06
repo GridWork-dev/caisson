@@ -8,6 +8,9 @@
     "registry": "https://npm.pkg.github.com"
   },
   "description": "Write-once (WORM) artifact store with an S3 Object-Lock backend, a SHA-256 append-only audit chain with a trusted WORM anchor, and an append-only locked-version database with a derived current version.",
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -22,16 +25,16 @@
     "test:live": "bun test ./live"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1075.0",
+    "@aws-sdk/client-s3": "catalog:",
     "@caisson/kernel": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",
-    "zod": "^3.23.8"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
-    "eslint": "^9.13.0",
-    "typescript": "^5.6.0"
+    "eslint": "catalog:",
+    "typescript": "catalog:"
   }
 }

@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "description": "Shared test harness: golden-file regression (BLESS) + the PGlite fail-closed-RLS harness (ADR-0013). D9 adds the module golden-fixture contract (golden-module.ts).",
+  "description": "Shared test harness: golden-file regression (BLESS) + the PGlite fail-closed-RLS harness, plus a module golden-fixture contract (golden-module.ts).",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -18,12 +18,12 @@
     "test": "bun test ./src"
   },
   "dependencies": {
-    "@electric-sql/pglite": "^0.5.3"
+    "@electric-sql/pglite": "catalog:"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
-    "eslint": "^9.13.0",
-    "typescript": "^5.6.0"
+    "eslint": "catalog:",
+    "typescript": "catalog:"
   }
 }

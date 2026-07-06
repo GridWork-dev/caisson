@@ -5,8 +5,8 @@
 #   Config-as-code path  = services/docs/railway.toml (this file)
 #
 # Service env vars (set in the Railway service — NEVER committed):
-#   DOCS_SERVICE_TOKEN  (required; fail-closed — server refuses to start without it; mint = the value
-#                        provisioned to ~/.gridwork/env this session; copy it in)
+#   DOCS_SERVICE_TOKEN  (required; fail-closed — server refuses to start without it; mint a value
+#                        and copy it in from your local env file)
 #   OPENROUTER_API_KEY  (the live embedder; absent ⇒ FTS5 floor)
 #   PORT                (Railway injects; server binds it)
 [build]

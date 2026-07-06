@@ -1,7 +1,7 @@
-"""Runtime configuration (ADR-0105).
+"""Runtime configuration.
 
-All secrets come from the environment only — never hardcoded, never logged (the gridwork security
-floor). ``Settings`` fails closed: the required secrets have no defaults, so constructing it without
+All secrets come from the environment only — never hardcoded, never logged, per this
+repo's security floor. ``Settings`` fails closed: the required secrets have no defaults, so constructing it without
 them raises, and the entrypoint refuses to start. Optional surfaces (the listener channel, the human
 role, the Postgres DSN) degrade gracefully when unset.
 """

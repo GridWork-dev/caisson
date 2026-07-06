@@ -73,7 +73,7 @@ export default async function DashboardAiKeysPage() {
         }
       />
 
-      {/* Key writes are owner-only (vuln-0006, ADR-0208 #1) — POST /api/byok enforces the 403;
+      {/* Key writes are owner-only (ADR-0208 #1) — POST /api/byok enforces the 403;
           this just mirrors the members-page seat view. The masked table above stays seat-visible. */}
       {isOwner(session) ? (
         <div>

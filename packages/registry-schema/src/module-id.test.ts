@@ -1,6 +1,6 @@
-// Regression for the @stack→@caisson module-id fix. The old `/^@stack\/…/` regex rejected
-// every real `@caisson/…` id, which would break the manifest + allowlist the moment a real module
-// manifest landed. These assert the corrected regex in BOTH schema sites.
+// Guards the `@caisson/…` module-id regex against regressing to accept a legacy/foreign
+// scope like `@stack/…`, which would break the manifest + allowlist. Asserts the regex in
+// BOTH schema sites.
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { type ModuleManifestInput, defineModule } from "./module-manifest";

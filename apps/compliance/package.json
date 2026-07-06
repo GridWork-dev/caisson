@@ -17,19 +17,19 @@
     "@caisson/field-crypto": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",
-    "@electric-sql/pglite": "^0.5.3",
-    "next": "^16.2.9",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "@electric-sql/pglite": "catalog:",
+    "next": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
-    "@types/node": "^22.10.5",
-    "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0",
-    "eslint": "^9.13.0",
-    "typescript": "^5.7.3"
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:"
   }
 }

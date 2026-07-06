@@ -38,8 +38,8 @@
 
 ### Patch Changes
 
-- 33bee35: Whole-repo audit round-4 remediation (ledger 2026-07-01): BYOK (tenant-key) inference now
-  makes zero wallet movement while internal metering still runs, implementing ADR-0182/0198;
+- 33bee35: Security hardening pass: BYOK (tenant-key) inference now
+  makes zero wallet movement while internal metering still runs;
   provider-unreported token usage is kept distinct from genuine zero so reconcile settles at
   the reserved estimate instead of silently refunding a real call; the spend-window bucket is
   fixed at reserve and reused at reconcile so boundary-straddling calls no longer undercount

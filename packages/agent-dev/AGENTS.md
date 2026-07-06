@@ -18,6 +18,9 @@ Caisson schema** and gets a governed lifecycle, local hybrid memory, and per-har
   dedup/TTL/GC retention default.
 - **Thin multi-harness emitter** — `./emitter.ts`: renders one schema into `.claude/` (Claude Code),
   `AGENTS.md` (Codex), and Cursor rules.
+- **Governed sandboxed tool-exec gate** — `@caisson/tool-exec`: a default-deny allowlist + execFile
+  arg-arrays (never a shell), wired live on the composed edition so a buyer gets the exec gate from
+  this one import home.
 
 ## Invariants (do not violate)
 
@@ -39,11 +42,13 @@ Caisson schema** and gets a governed lifecycle, local hybrid memory, and per-har
 
 ## Compose
 
-`createAgentDevEdition({ store, audited?, memoryDim, tenant?, memoryPath?, artifacts?, now? })` wires the
-governed lifecycle (over a host-supplied `AuditLifecycleStore`; `audited: true` turns on the
-tamper-evident record), opens the local hybrid memory, and binds the emitter. It returns
-`{ lifecycle, memory, artifacts, render(hooks?), emit(targetRoot, hooks?), close() }`. `artifacts`
-defaults to the curated `CAISSON_DEFAULT_ARTIFACTS`; `render` is pure and `emit` is the guarded write.
+`createAgentDevEdition({ store, audited?, memoryDim, tenant?, memoryPath?, artifacts?, toolExec?, now? })`
+wires the governed lifecycle (over a host-supplied `AuditLifecycleStore`; `audited: true` turns on the
+tamper-evident record), opens the local hybrid memory, binds the emitter, and constructs the tool-exec
+gate (`toolExec` configures its allowlist; omit for a fail-closed default-deny gate). It returns
+`{ lifecycle, memory, toolExec, artifacts, render(hooks?), emit(targetRoot, hooks?), close() }`.
+`artifacts` defaults to the curated `CAISSON_DEFAULT_ARTIFACTS`; `render` is pure and `emit` is the
+guarded write.
 
 **Multi-tenant hosts MUST pass `tenant: { root, tenantId }`** — the edition then opens memory at the
 ADR-0073 file-per-tenant path (`tenantDbPath(root, tenantId)`), the resolved path IS the isolation

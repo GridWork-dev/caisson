@@ -76,7 +76,7 @@ async function resolveActiveAccount(
 }
 
 /**
- * Owner-only gate for org-mutating writes (Strix vuln-0006, CWE-863 — ADR-0208 decision 1).
+ * Owner-only gate for org-mutating writes (CWE-863 broken-access-control — ADR-0208 decision 1).
  * BYOK provider-key rotation and compliance-attestation writes require the account OWNER role:
  * a seat member must not rotate the org's provider keys or rewrite the attestations that feed
  * the SAR/POA&M export. Reads (masked key metadata, attestation state) stay seat-visible — gate

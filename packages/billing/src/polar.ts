@@ -170,9 +170,9 @@ export function parsePolarEvent(event: PolarEvent): DomainBillingEvent | null {
           amountTotal,
           currency,
           // Polar order webhooks carry a single product per order here — a one-entry wrap of the
-          // shared multi-line shape (Strix vuln-0005), quantity 1. No per-line refund data (ADR-0218
-          // D-1: Paddle-only population), so the join fields are the empty sentinels; `chargedAmount`
-          // carries the order total for the single line.
+          // shared multi-line shape, quantity 1. No per-line refund data (Paddle-only population), so
+          // the join fields are the empty sentinels; `chargedAmount` carries the order total for the
+          // single line.
           lineItems: [
             { priceId, quantity: 1, itemId: "", chargedAmount: amountTotal },
           ],
