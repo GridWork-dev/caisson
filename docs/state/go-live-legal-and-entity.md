@@ -1,3 +1,8 @@
+---
+updated: 2026-07-01
+status: live
+---
+
 # Go-live: legal, entity & launch-blocker checklist
 
 Operator-actionable prep for taking Caisson from "deployed but gated" to "can take a real

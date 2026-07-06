@@ -1,3 +1,8 @@
+---
+updated: 2026-07-04
+status: live
+---
+
 # Live-verification harness — post-rotation credential proof (ADR-0224)
 
 The launch-blocking external seams (Paddle money path, Discord role-grant, Linear Triage sink,

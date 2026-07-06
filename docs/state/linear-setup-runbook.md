@@ -1,3 +1,8 @@
+---
+updated: 2026-07-05
+status: archived
+---
+
 # Linear setup runbook — ARCHIVED
 
 **Archived 2026-07-05** (doc sweep, site-design-2 close-out) → [`docs/archive/linear-setup-runbook.md`](../archive/linear-setup-runbook.md).

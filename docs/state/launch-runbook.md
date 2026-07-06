@@ -1,3 +1,8 @@
+---
+updated: 2026-07-02
+status: live
+---
+
 # Caisson LAUNCH-ACT runbook
 
 **Status: RUNBOOK — operator-executed, not autonomous (DEPLOY-class per doctrine).** Nothing in this

@@ -1,3 +1,8 @@
+---
+updated: 2026-07-05
+status: archived
+---
+
 # P6 deploy runbook — ARCHIVED
 
 **Archived 2026-07-05** (doc sweep, site-design-2 close-out) → [`docs/archive/p6-deploy-runbook.md`](../archive/p6-deploy-runbook.md).

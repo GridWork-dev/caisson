@@ -1,3 +1,8 @@
+---
+updated: 2026-07-05
+status: archived
+---
+
 # Grafana setup runbook — ARCHIVED
 
 **Archived 2026-07-05** (doc sweep, site-design-2 close-out) → [`docs/archive/grafana-setup-runbook.md`](../archive/grafana-setup-runbook.md).

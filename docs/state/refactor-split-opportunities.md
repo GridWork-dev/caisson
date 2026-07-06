@@ -1,3 +1,8 @@
+---
+updated: 2026-07-05
+status: live
+---
+
 # Refactor / split opportunities — ranked, repo-grounded
 
 Status: **R1 + R2 EXECUTED 2026-07-05** (PR #119 hygiene wave — Apache-2.0 `@caisson/rate-limit`

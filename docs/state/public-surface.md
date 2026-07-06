@@ -1,3 +1,8 @@
+---
+updated: 2026-07-05
+status: live
+---
+
 # Public vs commercial package surface
 
 Dated **2026-07-02**. This file OWNS the **npm-distribution-reality** view: for every
@@ -16,7 +21,7 @@ tooling-open), ADR-0111 (publish-readiness split plan), ADR-0069 (publish creden
 
 ---
 
-## 1. Apache-2.0 PUBLIC set (15 packages)
+## 1. Apache-2.0 PUBLIC set (16 packages)
 
 The `OPEN_BASE_NAMES` set the standards-gate enforces (`checkOpenCoreLicensing`). Every package
 below carries `license: "Apache-2.0"`, no `private` flag, and `publishConfig.registry:
@@ -40,10 +45,12 @@ below carries `license: "Apache-2.0"`, no `private` flag, and `publishConfig.reg
 | `@caisson/cli`             | `create-caisson` generator: composes a tailored repo from the versioned registry                                          | Apache-2.0 | same                                                                                          |
 | `@caisson/migrate`         | Base migration assembler/runner (merges per-package `migrations/*.sql` into one sequence)                                 | Apache-2.0 | same                                                                                          |
 | `@caisson/license-verify`  | Offline Ed25519 license-token verification (tessera wire format, baked-in public key)                                     | Apache-2.0 | same                                                                                          |
+| `@caisson/rate-limit`      | Per-IP token-bucket limiter + per-account store (extracted from services/docs + services/license, PR #119)                | Apache-2.0 | same                                                                                          |
 
 Composition: the ADR-0094 original ten (`kernel` through `mcp-server`), plus `registry-schema`
 (ADR-0097), plus `observability` (ADR-0117), plus the ships-with-generator trio
-`cli`/`migrate`/`license-verify` (ADR-0136). Total: 15.
+`cli`/`migrate`/`license-verify` (ADR-0136), plus `rate-limit` (the R1+R2 hygiene extraction,
+PR #119). Total: 16.
 
 ## 2. COMMERCIAL / private set (20 `packages/*` + the registry service)
 

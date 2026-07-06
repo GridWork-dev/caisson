@@ -1,3 +1,10 @@
+---
+updated: 2026-07-05
+status: live
+grounds:
+  - knowledge/decisions/
+---
+
 # ADR index
 
 Canonical catalog of every Architecture Decision Record in `knowledge/decisions/`. This

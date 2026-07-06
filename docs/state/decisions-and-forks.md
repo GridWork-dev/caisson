@@ -1,3 +1,9 @@
+---
+updated: 2026-07-05
+status: live
+adr_ceiling: 0245
+---
+
 # Decisions & Forks — live board
 
 The single live board (CLAUDE.md source-of-truth #1). Locked → an ADR; open → waits for the

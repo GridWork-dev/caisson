@@ -1,3 +1,14 @@
+---
+updated: 2026-07-01
+status: live
+grounds:
+  - infra/terraform/
+  - apps/site/railway.toml
+  - apps/admin/railway.toml
+  - services/license/railway.toml
+  - services/support-bot/railway.toml
+---
+
 # External providers — live ledger
 
 The single roster of every external service Caisson pays for or depends on: role, tier, monthly

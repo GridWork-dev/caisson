@@ -1,3 +1,10 @@
+---
+updated: 2026-06-30
+status: live
+grounds:
+  - packages/
+---
+
 # Package catalog — license, sold-as, price
 
 Dated **2026-06-30**. This file OWNS the **public-vs-commercial + sold-as + price** view: for every
