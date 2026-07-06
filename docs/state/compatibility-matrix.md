@@ -2,7 +2,7 @@
 updated: 2026-07-06
 status: live
 grounds:
-  - packages/*/package.json
+  - packages/tenancy-rls/src/drizzle.ts
   - packages/cli/templates/
   - packages/ai-config/src/config.ts
   - packages/ai-kit/src/providers.ts
