@@ -8,7 +8,7 @@ workflow = "visual-audit"
 surface = "glossary__worm-audit-log"
 title = "Three of the four 'How it holds' property-card bodies use em dashes as a clause break ('...a write-once key) — no single control has to hold alone.', '...WORM storage — the anchor and the entry it commits to land together...', '...throws ConflictError — the original tip can never be silently replaced...'), violating SKILL.md's explicit 'No em dashes' copy rule. Visible as-shipped text in all four screenshots (both viewports, both modes); confirmed against the raw copy in apps/site/lib/glossary.ts."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "03088deb2c955d8c"
@@ -16,7 +16,7 @@ workflow = "visual-audit"
 surface = "glossary__oscal"
 title = "'Related terms' pills (Control-to-code mapping / Audit evidence bundle / HIPAA technical safeguards / SOC 2 audit log) render as plain body-colored text with no underline, no color distinction from surrounding prose, and no separator glyph, in both light and dark — a user has zero static-state cue these are links (Nielsen #6 Recognition, especially costly on mobile with no hover state)."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "032013a70e80de07"
@@ -24,7 +24,7 @@ workflow = "visual-audit"
 surface = "glossary__worm-audit-log"
 title = "The 'DEFINITION' section heading repeats the H1 term name ('WORM audit log') verbatim with no new information, immediately below the hero — a restated heading per SKILL.md's copy rule ('no restated headings'), adding a redundant heading level between the intro and the code artifact."
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "050dc9b07c76fab6"
@@ -56,7 +56,7 @@ workflow = "visual-audit"
 surface = "glossary__worm-audit-log"
 title = "The four 'Related terms' links (Append-only audit log, Tamper-evident hash chain, S3 Object Lock, WORM retention policy) render in the same strong foreground color as headings but with no underline and no accent color in either mode — at rest, nothing but their position under a 'RELATED TERMS' label distinguishes them from non-interactive text."
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "094a40b39f668ad2"
@@ -72,7 +72,7 @@ workflow = "visual-audit"
 surface = "marketplace__build"
 title = "Systemic 'serious statement, then punchy negation' copy cadence across nearly all 11 module-card descriptions and the configurator subhead (e.g. 'refused across tenants – proven, not promised', 'not in prod ... not a customer's session', 'not another webhook blaster', 'no more prompts hardcoded three layers deep', 'not a fabricated discount') — well past the 3-instance threshold SKILL.md flags as the aphoristic-voice anti-pattern."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "0b7b300c83d4b1b1"
@@ -96,7 +96,7 @@ workflow = "visual-audit"
 surface = "ai-kit"
 title = "The 'Four modules behind one chokepoint' grid (Prompt registry / Token metering / Guardrails / AI config) breaks its own pattern on the 4th card: on desktop it wraps alone into a second row with three empty column-widths of dead space beside it, and unlike its three siblings it has no bottom price-pill badge (the other three end in a '$99'/'$199'/'$149' pill; AI config just stops after its paragraph), reading as an unfinished card next to the others in both themes."
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "12b142a42cc26ae0"
@@ -144,7 +144,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__retention-runner"
 title = "Four stacked section eyebrows repeat the same tiny-uppercase-tracked mono label pattern on one page ('MODULE · COMPLIANCE' above the H1, 'DEFINITION' above 'What it is', 'INCLUDED' above 'What ships in the module', 'FAQ' above 'Real questions') — matches the Absolute-bans 'eyebrow on every section' tell, and 'DEFINITION'/'INCLUDED' add no information beyond the heading directly below them"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "1c1140bd1f1a4e01"
@@ -152,7 +152,7 @@ workflow = "visual-audit"
 surface = "glossary"
 title = "Footer newsletter placeholder \"you@company.com\" fails the 4.5:1 placeholder-contrast floor in light mode only — sampled text RGB(131,137,140) on input bg RGB(243,248,249) = ~3.3:1; the identical element in dark mode samples RGB(127,132,135) on RGB(20,28,31) = ~4.6:1 and passes, so this is a light-theme-specific accessibility regression, not a shared design choice"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "1c8c513b2a2025c7"
@@ -160,7 +160,7 @@ workflow = "visual-audit"
 surface = "local-first"
 title = "Hero code panel (@caisson/field-crypto TenantFieldCrypto demo) clips its code text hard at the card's right edge on BOTH desktop (1280w) and mobile (390w), in both light and dark mode — lines like \"import { TenantFieldCrypto } from \\\"@caisson/fiel[d-crypto]\\\"\", \"AAD-boun[d]\", and \"isolatio[n enforced]\" are truncated mid-word with no wrap, no horizontal scroll affordance, and no ellipsis. This is the page's flagship 'the artifact IS the headline' demo per DESIGN.md, and it's unreadable exactly where it matters most."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "1ceefaa8c1764515"
@@ -168,7 +168,7 @@ workflow = "visual-audit"
 surface = "glossary__oscal"
 title = "Restated heading directly under the hero: H1 'OSCAL' is immediately followed by a 'DEFINITION' eyebrow + H2 that just says 'OSCAL' again, repeating the single word with zero new information — violates SKILL.md's 'no restated headings' copy rule and, being on a glossary-term template, likely repeats on every term page."
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "1f66e976f0d7fe49"
@@ -200,7 +200,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__prompt-registry"
 title = "The teal tracked small-caps eyebrow (.cs-eyebrow) repeats above every section on this one page — 'MODULE · AI PRODUCTION KIT' over the hero, 'DEFINITION' over What-it-is, 'INCLUDED' over What-ships-in-the-module, 'FAQ' over Real questions — matching the literal 'eyebrow on every section' AI-scaffolding tell even though it's a tokenized brand component"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "21f1281d3607a9f4"
@@ -224,7 +224,7 @@ workflow = "visual-audit"
 surface = "legal__privacy"
 title = "'Privacy policy' link inside the footer newsletter consent checkbox renders in plain body-gray with no color/underline, identical to the adjacent non-interactive label text — inconsistent with every other inline link on the same page ('the docs', 'Paddle's own privacy policy', 'Resend', 'privacy@gridwork.dev') which are all styled in accent teal, in both light and dark"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "23b58143856693dd"
@@ -264,7 +264,7 @@ workflow = "visual-audit"
 surface = "glossary__s3-object-lock"
 title = "Related Terms links ('WORM retention policy', 'Append-only audit log', 'Tamper-evident hash chain') render in the same plain foreground color as surrounding body text with no underline or accent tint in either light or dark mode, so the glossary's cross-linking — its core discoverability mechanic — has no visual affordance marking these as clickable"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "2ebbcbeca18226c0"
@@ -272,7 +272,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__audit-worm"
 title = "Mobile: the code artifact ('AuditChainStore.verify', the page's proof centerpiece per DESIGN.md's 'the artifact IS the headline' doctrine) has every line clipped mid-statement at the 390px viewport edge (e.g. 'async verify(accountId: string' cuts off before the return type and brace, 'return withTenant(this.db, a' cuts off mid-argument). The container does scroll horizontally (overflow-x:auto in code-block.css/terminal.css) but the screenshot shows no fade/scroll-shadow/scrollbar affordance signalling that — a first-time mobile visitor has no visual cue the code is swipeable and is likely to read it as truncated content rather than discover the scroll."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "2f63f1d5c55901d3"
@@ -280,7 +280,7 @@ workflow = "visual-audit"
 surface = "frameworks__eu-ai-act"
 title = "Hero terminal/code panel (right column of hero, both light+dark, both mobile 390w and desktop 1280w) hard-clips code lines mid-word at the box's right edge with no ellipsis, fade, or scrollbar affordance — e.g. 'ERROR: unrecognized configuration parameter \"ap[p.tenant_id\"]' and '-- RLS cross-tenant denial (Art. 10 data governa[nce...])' are cut off; this is the page's signature 'artifact IS the headline' proof panel, so the core value-prop evidence is unreadable on first paint in every mode/breakpoint tested"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "3335f841a14910ec"
@@ -312,7 +312,7 @@ workflow = "visual-audit"
 surface = "glossary__oscal"
 title = "Footer 'Product updates' email placeholder ('you@company.com') fails WCAG AA contrast in light mode only — measured ~3.3:1 (rgb 131,137,140 on rgb 243,248,249) against the 4.5:1 floor SKILL.md requires for placeholder text specifically. Dark mode passes at ~4.8:1, confirming this is a light-mode-only regression, not a token-wide issue."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "38921c42bedd5252"
@@ -328,7 +328,7 @@ workflow = "visual-audit"
 surface = "glossary__append-only-audit-log"
 title = "Footer newsletter 'Privacy policy' text (under the opt-in checkbox) is styled identically to the plain sentence above it — no underline or color at rest signals it's a link"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "397eb248d57df588"
@@ -336,7 +336,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules"
 title = "Copy: all 11 module card blurbs on this page end on the same 'positive claim, then a punchy negation' cadence — 'proven, not promised' / 'not another webhook blaster' / 'not one per call site' / 'No more prompts hardcoded...' / 'not a customer's session' / 'nothing shipped to a vector cloud' / 'there's no edge to SHIP' / 'zero secret leak by construction'. SKILL.md flags this exact template ('serious statement, then punchy short negation') as a rewrite trigger at 3+ instances on a page; here it's the closing beat of literally every card, which reads as a formula rather than 11 distinct product voices."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "39a628ac6da5812e"
@@ -360,7 +360,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__ai-meter"
 title = "Mobile-only: the $199 price and 'Add to cart' button (BuyRail) render dead last in the page, after the FAQ accordion and immediately before the footer — confirmed in depth.module.css (the sticky 2-col rail only activates at >=900px; BuyRail is the last DOM child with no reorder for narrow viewports), so mobile users must scroll ~82% of the 7188px page past the full feature grid, code artifact, and FAQ before any purchase option appears, versus desktop where the rail sticks beside the hero"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "3be7216690ef09d3"
@@ -408,7 +408,7 @@ workflow = "visual-audit"
 surface = "cart"
 title = "Footer 'Product updates' email input placeholder ('you@company.com') fails WCAG contrast in light mode only — pixel-sampled darkest glyph (131,138,140) on bg (243,248,249) = ~3.3:1, below the 4.5:1 floor the skill requires for placeholder text; the same component in dark mode measures ~4.8:1 and passes"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "4789ef825f6861b2"
@@ -416,7 +416,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__audit-worm"
 title = "Copy: em dashes are the default clause-connector across nearly every paragraph on this route — the hero lede ('wasn't edited — hash-chained entries'), two of five 'What ships' card bodies, one FAQ answer, and both buy-rail notes ('...through this store — buy it standalone', 'edition — $799'), all confirmed in lib/module-pages.ts. SKILL.md's Copy rules explicitly ban em dashes ('No em dashes... Also not `--`'); here it's not one slip but the page's dominant punctuation habit."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "487a947b10813314"
@@ -448,7 +448,7 @@ workflow = "visual-audit"
 surface = "home"
 title = "Mobile footer text overflow: in the 2-column footer link grid at 390-444px, the 'Resources' column link 'Security & procurement' wraps and is visibly clipped at the viewport's right edge (the word 'procurement' runs off-canvas) in both light and dark mode; the adjacent 'Editions' column's 'Agentic-Dev' link is squeezed flush against the same edge with no margin. The footer's 4-column desktop grid collapses to two columns that are individually too narrow for their content at mobile widths."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "4c4f23418512a428"
@@ -464,7 +464,7 @@ workflow = "visual-audit"
 surface = "cart"
 title = "Newsletter opt-in checkbox on mobile renders as a very small (~7-8px) glyph sitting tight against the wrapped 'Privacy policy' link text, a cramped tap target for thumb use next to an unrelated link"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "4fe674c0aa11d14c"
@@ -488,7 +488,7 @@ workflow = "visual-audit"
 surface = "agentic-dev"
 title = "Hero code sample \"agents/db-migrator.agent.yaml\" card clips text mid-word on the right edge (comments like \"# a lane, not a def\", \"# cannot push, dep\", \"# data-migration t\" are hard-cut with no ellipsis/scroll/wrap) — present in all 4 screenshots (mobile+desktop, light+dark), in the very first fold"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "51434a300403fcc6"
@@ -496,7 +496,7 @@ workflow = "visual-audit"
 surface = "reset-password"
 title = "reset-password/ route renders two stacked, contradictory header blocks with no actual password form anywhere on the page — a conditional-rendering bug, not a style issue. Block 1 (eyebrow 'RESET PASSWORD' + H1 'Choose a new password' + 'This link is one-time use. Set a new password to finish resetting your account.') reads as the normal happy-path flow. Directly below it, separated only by a hairline rule, Block 2 (eyebrow 'RESET' + H2 'New password' + 'This reset link is missing its token – request a new one from the forgot password page.') contradicts it and reveals the token is actually missing. No password/confirm-password inputs or submit button render at all — identical on all 4 screenshots (mobile/desktop × light/dark), so this isn't a viewport or theme fluke. The page invites the user to set a password, then in the same breath tells them they can't. Reads as the page-level intro copy rendering unconditionally while the client widget independently discovered the invalid-token state and rendered its own separate header, with nobody suppressing the first block."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "523acfa4a067f814"
@@ -560,7 +560,7 @@ workflow = "visual-audit"
 surface = "legal__terms"
 title = "Footer newsletter input's placeholder text (\"you@company.com\") fails contrast in light mode only: measured 3.28:1 against the input's off-white fill (#F3F8F9-ish), below the 4.5:1 floor SKILL.md flags as the single most common AI-design failure; the same field passes at 4.8:1 in dark mode, so this is a light-mode-specific regression, not a systemic token problem"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "59702577382d9199"
@@ -584,7 +584,7 @@ workflow = "visual-audit"
 surface = "glossary__s3-object-lock"
 title = "The 'Definition' section's H2 heading repeats the H1 verbatim ('S3 Object Lock' appears as both the page H1 and, with a bare 'DEFINITION' eyebrow above it, as the very next heading) with no body copy in between before the code panel starts — the section contributes no new information and reads as template scaffolding, violating the 'no restated headings' copy rule"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "5adafbb5d4a3ffce"
@@ -592,7 +592,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__ai-meter"
 title = "The bumpSpend() code artifact clips long JSDoc-comment and SQL lines (e.g. the INSERT INTO ${TENANT_SPEND_WINDOW_TABLE}... line) flush against the container's right edge with no wrap, no visible scrollbar, and no fade/gradient affordance — present on both desktop crops and worse on the 444px mobile viewport where even more of each line is hidden, leaving the module's core 'proof' code partly unreadable"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "5cd7ffe4e22e452b"
@@ -616,7 +616,7 @@ workflow = "visual-audit"
 surface = "cart"
 title = "Hero lede copy on /cart contains a literal em dash ('...Paddle checkout — not one overlay per line.', U+2014 confirmed in apps/site/app/(marketing)/cart/page.tsx), a direct violation of the skill's hard 'no em dashes' copy rule"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "5e60dc489decb632"
@@ -632,7 +632,7 @@ workflow = "visual-audit"
 surface = "glossary"
 title = "Hero subhead copy uses an em dash (\"Caisson ships real code against — WORM audit logs, row-level security, token metering, and more.\") which violates SKILL.md's explicit \"No em dashes\" copy rule"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "63a8dd91fca45f56"
@@ -656,7 +656,7 @@ workflow = "visual-audit"
 surface = "glossary__hipaa-technical-safeguards"
 title = "'Related terms' links (Tamper-evident hash chain / OSCAL / Control-to-code mapping) render in plain body-ink color with no underline, no accent, and no other affordance distinguishing them from static text — violates Recognition Rather Than Recall and leaves the token system's own `--cs-link` color unused on an actual link row, in both light and dark mode."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "6621dd903929379f"
@@ -672,7 +672,7 @@ workflow = "visual-audit"
 surface = "docs"
 title = "Sidebar nav: \"Base substrate\" group heading and its only child link are the identical label, unlike every other group (Editions expands to Compliance / AI Production Kit / Local-first AI / Agentic-Dev; Tooling expands to create-caisson) — reads as a nav bug, not a deliberate structure. Visible identically on docs__desktop__light.png and docs__desktop__dark.png."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "67485dd3c07cd26f"
@@ -688,7 +688,7 @@ workflow = "visual-audit"
 surface = "changelog"
 title = "Light-mode placeholder text in the newsletter email field ('you@company.com') measures ~3.3:1 contrast against its input background, failing the 4.5:1 floor placeholder text needs per SKILL.md — affects both the mid-page 'Stay current' input and the footer 'Product updates' input; the same field passes at ~4.8:1 in dark mode, so this is a light-mode-only regression"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "684668333ed721c3"
@@ -704,7 +704,7 @@ workflow = "visual-audit"
 surface = "glossary__worm-audit-log"
 title = "Mobile code-artifact block (AuditChainStore.append) clips long lines and comments at the right edge with a hard cut and no scroll affordance — pixel-level check at the card's right boundary shows glyphs sliced mid-character (e.g. 'const entries = await loadEntries(tx,' / the two-line comment block / 'anchorKey(accountId, anchor.lengt') with no fade gradient, no truncation ellipsis, and no visible scrollbar cue. Confirmed identically in both mobile/light and mobile/dark screenshots; the same lines render fully on desktop. This is the page's central 'artifact IS the headline' proof (DESIGN.md §5.2) and it's effectively unreadable/ambiguous on the dominant mobile viewport."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "6d0b140325da5271"
@@ -728,7 +728,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__retention-runner"
 title = "On mobile, the $199 price and 'Add to cart' button are the very last elements on the page (after the entire FAQ accordion, ~6900px down) with no sticky/persistent CTA, whereas on desktop the identical pricing card sits in a visible sidebar right next to the hero — mobile buyers must scroll almost the whole page to find the price"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "6e74403a23cd33a9"
@@ -752,7 +752,7 @@ workflow = "visual-audit"
 surface = "procurement"
 title = "Body copy repeatedly uses a spaced en dash ('word – word') as a clause connector instead of a comma/colon/semicolon/parenthesis, at least 9 times on this single page (e.g. 'HIPAA demand – fail-closed access control...', 'COMPLIANCE mode – where the lock holds...', 'breaks every link after it – the break is detectable...', '(the EULA) – see the EULA...', 'a separate party – see the next section', 'your invoice for the purchase', 'updated control mappings – it's optional', 'you're refunding – they're refundable individually', 'the seller – GridWork Digital LLC or Paddle?' in the FAQ). Not the literally-banned em dash, but the identical dash-as-connector crutch the no-em-dash copy rule targets, applied densely enough to read as a tic rather than a one-off."
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "77a72dc16781fd3e"
@@ -768,7 +768,7 @@ workflow = "visual-audit"
 surface = "glossary"
 title = "Accent-teal \"CLUSTER\" eyebrow (pixel-confirmed as --cs-accent, e.g. rgb(0,116,145) in light mode) repeats above all 3 term clusters, plus the page-level \"GLOSSARY\" eyebrow — 4 tiny uppercase tracked accent labels on one page, a direct match for the SKILL.md Absolute Ban \"tiny uppercase tracked eyebrow above every section\", and it exceeds DESIGN.md's own accent-slot list which names a single \"section eyebrow\", not one per subsection"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "7a29690d7ea867bc"
@@ -800,7 +800,7 @@ workflow = "visual-audit"
 surface = "legal__license"
 title = "Copy uses em dashes in at least 4 places on this one page (hero subhead \"...Commercial License — one perpetual license...\"; overview paragraph \"...per-project fees — but you do not redistribute...\"; 'You may' bullet \"...no-redistribution restriction — your product ships...\"; 'You may not' bullet \"...as a kit — your customers may use...\"), directly violating SKILL.md's explicit 'No em dashes' copy rule. Same text renders identically in light and dark, so it's a copy fix, not a theme-specific one."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "7d382f3d05f2b3ca"
@@ -816,7 +816,7 @@ workflow = "visual-audit"
 surface = "preview__emails"
 title = "Mobile footer's 'Editions' column wraps inconsistently: 'AI Production Kit' breaks into three stacked single-word lines (AI / Production / Kit) while sibling links ('Compliance', 'Agentic-Dev') stay on one line, and the whole column sits flush against the right edge of the 390px viewport with visibly less padding than the left footer column gets."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "7ecfc2706bfe70de"
@@ -824,7 +824,7 @@ workflow = "visual-audit"
 surface = "glossary__worm-retention-policy"
 title = "Em dashes used repeatedly in body/caption copy: the code-block caption ('extendRetention — strictly-later date...') plus 3 of the 4 'How it holds' card bodies ('...SEC 17a-4) — a too-short term is rejected...', '...NODE_ENV=production — no code path reaches it by accident.', '...for reconciliation — it is never silently swallowed.') all use an em dash — 5 instances on one page, directly violating the explicit 'No em dashes' copy rule (also a repo-wide banned-phrasing rule, not just SKILL.md's)."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "7ee8f913dff7f808"
@@ -856,7 +856,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__guardrails"
 title = "Mobile: the $149/Add-to-cart price card is the very last content block before the footer (roughly 80% down a ~7000px page — after Definition, the 6 Included cards, the code sample, the illustration box, and the full FAQ), whereas on desktop the same card is visible immediately in the first viewport via the sidebar — the page's one purchase action is buried for mobile visitors"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "828c8ad23bdd0f3d"
@@ -920,7 +920,7 @@ workflow = "visual-audit"
 surface = "marketplace__build"
 title = "Mobile /marketplace/build: 'stack.compose' configurator preview truncates 3-digit prices to 2 digits ('+ $199' renders as '+ $19', '+ $149' as '+ $14') on all three multi-hundred-dollar lines, in both light and dark mode at 390w — the 2-digit '$99' line and the 'total 4 modules $646' line render correctly, isolating the bug to the price column's fixed width. This is a data-correctness bug on the page's core pricing surface, not just cosmetic clipping (Absolute-ban: text overflowing its container)."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "8b10c127eb8d9444"
@@ -968,7 +968,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__agent-runner"
 title = "Mobile: purchase block ($49 price, edition-bundle note, Add to cart) is pushed to the very bottom of the page, below all 6 feature cards, the code sample, the diagram box, and the entire 4-item FAQ — while desktop pins the identical card beside the hero above the fold. Mobile buyers must scroll past the whole page to find the price or buy button."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "910a722306766501"
@@ -976,7 +976,7 @@ workflow = "visual-audit"
 surface = "agentic-dev"
 title = "Newsletter-signup \"you@company.com\" placeholder text in the footer fails WCAG AA body-text contrast in light mode only (measured ~3.3:1 against its input background vs. the 4.5:1 floor); the identical placeholder in dark mode passes at ~4.8:1"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "9152d0a1f1d2a5b0"
@@ -1008,7 +1008,7 @@ workflow = "visual-audit"
 surface = "marketplace__build"
 title = "Mobile /marketplace/build: the segmented tab control ('Editions / Modules / Build your stack / Plans') overflows the 390w viewport with no scroll affordance — the 'Plans' tab is completely hidden off-screen and the active 'Build your stack' label is clipped mid-word to 'Build you' right at the viewport edge, in both light and dark mode."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "94f5acb945c7455a"
@@ -1032,7 +1032,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__guardrails"
 title = "'DEFINITION', 'INCLUDED', and 'FAQ' — tiny uppercase tracked teal eyebrow labels — precede three of this page's four content sections (on top of the hero's own 'MODULE · AI PRODUCTION KIT' eyebrow), matching SKILL.md's banned 'tiny uppercase tracked eyebrow above every section' AI-scaffolding tell almost verbatim"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "9821214fd90bc93c"
@@ -1048,7 +1048,7 @@ workflow = "visual-audit"
 surface = "glossary__soc2-audit-log"
 title = "Footer newsletter placeholder text (\"you@company.com\") fails WCAG contrast in light mode only — measured ~3.3:1 against its input background, versus ~4.8:1 for the identical element in dark mode"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "9a0d0e0fcdc25fc8"
@@ -1112,7 +1112,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__prompt-registry"
 title = "Mobile: purchase widget ($99 price + Add to cart) is the very last content block before the footer — buyer must scroll past hero, 6 feature cards, a code sample, an empty diagram box, and the full FAQ before seeing price or being able to buy; desktop shows the same widget instantly via a sticky sidebar"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "a4e0bd37bdd0fbb3"
@@ -1136,7 +1136,7 @@ workflow = "visual-audit"
 surface = "glossary__token-metering"
 title = "Footer newsletter email placeholder ('you@company.com') fails WCAG contrast in light mode only: measured ~3.3:1 (#83898C text on #F3F8F9 input bg), below the 4.5:1 floor SKILL.md calls out explicitly for placeholder text. Dark mode passes (~4.8:1) — a light/dark-specific regression, not a shared token problem."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "a6349db12f24f89f"
@@ -1144,7 +1144,7 @@ workflow = "visual-audit"
 surface = "glossary__soc2-audit-log"
 title = "\"Related terms\" cross-links (Append-only audit log / Tamper-evident hash chain / Audit evidence bundle) render as plain body-colored text with no underline or accent — no visual affordance marks them as clickable, in both themes and both viewports"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "a65a0df664932c8e"
@@ -1152,7 +1152,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__agent-kernel"
 title = "Mobile-only responsive break: the 'TRANSITIONS — the seven-act lifecycle's only two branch edges' code block clips horizontally at 390/444w with no scrollbar or fade cue — comment lines ('An EVAL regression is a fail-...') and the type signature ('const TRANSITIONS: Record<Act, r...') are cut off mid-word at the container's right edge in both mobile light and mobile dark screenshots. The identical content renders in full on desktop, so this is a mobile-specific regression on the page's core proof artifact (the real code DESIGN.md calls out as 'the headline'), matching the Absolute-bans 'text overflows its container' failure mode."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "a8ee9a4f224012ae"
@@ -1160,7 +1160,7 @@ workflow = "visual-audit"
 surface = "local-first"
 title = "Light-mode only: the \"● Own the source · $349\" pill's accent-teal text on its accent-tint pill background measures ~4.44:1 contrast (computed from the page's own OKLCH tokens), just under the 4.5:1 AA floor for normal-size text; the dark-mode equivalent pill is a comfortable 6.9:1, so this is a light-theme-specific near-miss."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "aa8eb5c053e86a2f"
@@ -1192,7 +1192,7 @@ workflow = "visual-audit"
 surface = "glossary__control-to-code-mapping"
 title = "'Related terms' chips (SOC 2 audit log, HIPAA technical safeguards, OSCAL, Audit evidence bundle) render in the same color as surrounding body text with no underline or accent tint, so they don't read as clickable links despite --cs-link being accent-hued in tokens.css — weakens discoverability of the glossary program's cross-term interlinking"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "af6200aa7cb2028a"
@@ -1240,7 +1240,7 @@ workflow = "visual-audit"
 surface = "glossary__soc2-audit-log"
 title = "Intro paragraph copy uses an em dash (\"...the evidence a SOC 2 auditor requires — not a compliance guarantee.\"), violating the site's own no-em-dash copy rule"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "b34337732e55646d"
@@ -1256,7 +1256,7 @@ workflow = "visual-audit"
 surface = "procurement"
 title = "Mobile footer nav overflows the page's right margin: in the Editions column ('Compliance', 'AI Production Kit', 'Local-first AI', 'Agentic-Dev') and the Resources column ('Security & procurement' wraps with 'procurement' crossing the margin, 'llms.txt', 'GitHub'), link text sits within ~5-6px of the true viewport edge on the 390w mobile screenshot, vs. the consistent 24px right margin used by every other block on the page (hero copy, cards, FAQ). Verified with a ruler overlay at x=420 (24px from the 444px-wide screenshot edge): the guide line cuts directly through 'Compliance' and through the word 'procurement'. Desktop footer at the same content has full margin, so this is mobile-only breakage, not present at 1280w."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "b679a9e181789fdb"
@@ -1264,7 +1264,7 @@ workflow = "visual-audit"
 surface = "reset-password"
 title = "The only stated recovery path on the error state — 'request a new one from the forgot password page' — is plain paragraph text, not a link or button. In every screenshot that phrase renders in the same muted body color as the rest of the sentence, with no --cs-link teal, no underline, no affordance distinguishing it as clickable. A user who hits this dead-end screen (which is the page's entire reason to exist) has no actionable next step short of hunting through global nav for a forgot-password entry point."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "b6952c8e559fc5e7"
@@ -1280,7 +1280,7 @@ workflow = "visual-audit"
 surface = "glossary"
 title = "Cluster heading \"AI & agent infrastructure\" renders with the word-space dropped between \"agent\" and \"infrastructure\" (\"AI & agentinfrastructure\") on both desktop screenshots (1280w light and dark) — pixel-confirmed, not an antialiasing artifact; the bug is invisible on mobile purely because the heading happens to line-wrap right between those two words, masking it"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "b9bc1e19945765ca"
@@ -1288,7 +1288,7 @@ workflow = "visual-audit"
 surface = "glossary__hash-chain-audit-trail"
 title = "The exact phrase 'Tamper-evident hash chain' is repeated verbatim as heading text three times down the page (the H1, the 'Definition' section's H2, and the bottom CTA heading 'See Tamper-evident hash chain in the product'), restating the title with zero added information each time — reads as templated glossary-generator scaffolding rather than authored copy, violating the no-restated-headings rule"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "bfa0623c1a0da74c"
@@ -1304,7 +1304,7 @@ workflow = "visual-audit"
 surface = "glossary__worm-retention-policy"
 title = "Definition section's H2 verbatim-restates the H1: the hero reads 'WORM retention policy' as the title, then the 'DEFINITION' section's heading repeats the exact same three words with no new phrasing or expansion — a direct hit on the 'no restated headings' copy rule, visible in all 4 screenshots."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "c0f0c430f5aebbe6"
@@ -1320,7 +1320,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__ai-meter"
 title = "Module copy uses em dashes 14 times on this single page (hero lede 'usage after — a runaway prompt loop', all 5 feature-card bodies, FAQ answers) against the impeccable skill's explicit 'no em dashes' copy rule, visible directly in the rendered hero and card text in every screenshot"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "c150086012abf6b3"
@@ -1328,7 +1328,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__audit-worm"
 title = "Mobile: the entire buy rail (price, 'Add to cart', edition cross-sell, related reading) is pushed to the very bottom of the page, after the full FAQ — on desktop the same rail sits sticky near the top beside 'What it is'. Confirmed in depth.module.css ('single column below 900px; body + sticky buy rail above') and page.tsx, where <BuyRail> is the second grid child after <PageSections>; below the 900px breakpoint the grid collapses to one column and the rail simply falls to the end of DOM order. A mobile visitor has to scroll past hero, definition, 5 feature cards, a code artifact, a placeholder panel, and 4 FAQ accordions before reaching the $149 purchase action that's one of the first things a desktop visitor sees."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "c2bce064914c9f59"
@@ -1360,7 +1360,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__agent-runner"
 title = "Four uppercase tracked accent eyebrows stack down the single page (MODULE · AGENTIC-DEV, DEFINITION, INCLUDED, FAQ), one per section — matches the banned 'tiny uppercase tracked eyebrow above every section' AI-scaffold pattern from SKILL.md's Absolute bans."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "c71bd7c6c9d2c276"
@@ -1408,7 +1408,7 @@ workflow = "visual-audit"
 surface = "docs__getting-started"
 title = "Desktop sidebar: the 'Base substrate' category header repeats its own name verbatim as its single child link label, unlike the 'Editions' and 'Tooling' groups whose children carry distinct names"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "cfed0365f2063ce3"
@@ -1416,7 +1416,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__agent-kernel"
 title = "Three distinct tiny-uppercase-tracked eyebrows stack down a single page (DEFINITION above 'What it is', INCLUDED above 'What ships in the module', FAQ above 'Real questions'), plus a fourth 'MODULE · AGENTIC-DEV' eyebrow-styled badge in the header — this is the exact 'kicker above every section' shape the skill calls AI scaffolding when it's more than one deliberate named kicker, even though it's implemented via the tokenized `.cs-eyebrow` component rather than ad hoc."
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "d592812c011d73ce"
@@ -1456,7 +1456,7 @@ workflow = "visual-audit"
 surface = "glossary__control-to-code-mapping"
 title = "The 'DEFINITION' section heading ('Control-to-code mapping') exactly restates the H1 page title verbatim, immediately below it — a directly-restated heading present in all four screenshots (mobile+desktop, light+dark), against the copy rule banning restated headings"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "d9fd56c07da74788"
@@ -1464,7 +1464,7 @@ workflow = "visual-audit"
 surface = "agentic-dev"
 title = "Mobile footer's \"Editions\" and \"Resources\" columns have zero right-side padding — link text (\"Compliance\", \"AI Production Kit\", \"Security & procurement\", the \"Resources\" heading itself) runs flush to the 390px viewport's edge, breaking the ~24px side margin used everywhere else on the page (both light and dark mobile)"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "da5eca50fedd3bc9"
@@ -1480,7 +1480,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__guardrails"
 title = "Code-comment text fails the WCAG body-text contrast floor in both themes: measured ~2.45:1 in light mode (comment rgb(145,155,158) on code-panel bg rgb(234,239,241)) and ~3.04:1 in dark mode (rgb(101,109,114) on rgb(26,35,38)), both well under the 4.5:1 minimum for normal-size text — a distinct failure in each mode independently, on the page's central 'evidence' artifact"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "dac33e92bd7bd852"
@@ -1504,7 +1504,7 @@ workflow = "visual-audit"
 surface = "marketplace__build"
 title = "On mobile, the only running-total/'Add to cart' bar sits in the hero block, well above the 11-item, 4-category module checklist, with no persistent recap near the list or the bottom-of-page 'Your stack' summary card — a user checking boxes through Compliance/AI Kit/Local-first/Agentic-Dev has no visible total in view without scrolling back to the top."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "dcb8e2b8bd1f03ea"
@@ -1520,7 +1520,7 @@ workflow = "visual-audit"
 surface = "glossary__token-metering"
 title = "Mobile footer 'Editions' column is squeezed to ~140px, forcing word-by-word wraps ('AI'/'Production'/'Kit' on 3 lines, 'Local-first'/'AI' on 2 lines) and running labels like 'Agentic-Dev' and 'Security & procurement' flush against the viewport's right edge with effectively zero padding, unlike the 'Marketplace'/'Resources' columns which keep normal margin."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "deda7e0a7cd2d870"
@@ -1536,7 +1536,7 @@ workflow = "visual-audit"
 surface = "legal__privacy"
 title = "Footer newsletter placeholder text ('you@company.com') fails WCAG AA in light mode only: measured ~3.28:1 against its input fill (dark mode measures ~4.8:1, passes) — the exact 'muted-gray placeholder' failure SKILL.md calls out by name"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "e0c0a5baf9b46601"
@@ -1568,7 +1568,7 @@ workflow = "visual-audit"
 surface = "glossary"
 title = "Glossary term rows (\"WORM audit log\", \"S3 Object Lock\", \"Row-Level Security (RLS)\", etc.) render as plain high-contrast body text with no accent color, underline, or icon — nothing visually signals they're clickable definition links, if that is their intended purpose on a glossary page"
 severity = "info"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "e19c12945e281c6f"
@@ -1576,7 +1576,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__alerting"
 title = "Mobile footer's \"Editions\" column is too narrow for its content: \"AI Production Kit\" wraps into three stacked single-word lines (\"AI\" / \"Production\" / \"Kit\"), a cramped, jagged mobile-only footer layout that doesn't occur on desktop"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "e2fe3a9c45e3a9fc"
@@ -1624,7 +1624,7 @@ workflow = "visual-audit"
 surface = "glossary__soc2-audit-log"
 title = "On mobile, every line of the verifyChain code sample is hard-clipped at the card's right edge with no scrollbar or fade cue (e.g. \"entries: readonly AuditChainEntry[]\" cuts off mid-declaration), while the same panel fits comfortably on desktop"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "eca2fd73dfbf86fb"
@@ -1648,7 +1648,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__ai-evals"
 title = "$199 / Add to cart purchase card is the second-to-last content block on mobile (~77% down a 6489px page, after all 6 feature cards + the code sample + the diagram + the full FAQ accordion), while the identical card is visible in the first viewport on desktop via the 2-column layout — mobile buyers must scroll past nearly the entire page before seeing price or the buy button"
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "f0acac77d0a89ea0"
@@ -1656,7 +1656,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__agent-kernel"
 title = "Repeated em dash in body copy despite the skill's explicit 'No em dashes' rule: the H1 subhead ('The guarded agent lifecycle FSM — VERIFY failing reopens PLAN, there's no edge to SHIP.') and the feature-card heading ('Safe shell hooks — no interpolation is possible') both use '—'. Confirmed at pixel-zoom level; same copy renders identically in light and dark so it's not theme-specific, it's a copy-craft violation present at least twice on this one route."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "f19aa88d9060698e"
@@ -1672,7 +1672,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules"
 title = "Desktop: the 'Agent runner' module card (bottom row, Agentic-Dev, $49) renders a broken icon — instead of the bespoke Icon glyph every other card gets (confirmed by comparing to the adjacent 'Agent kernel' card's correct hexagon icon), it shows literal fallback text 'L.' next to the 'AGENTIC-DEV' label. Reproduced identically in marketplace__modules__desktop__light.png and __dark.png — this is a production icon-resolution bug, not a rendering artifact of the screenshot."
 severity = "high"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "f700bb62795967fc"
@@ -1680,7 +1680,7 @@ workflow = "visual-audit"
 surface = "ai-kit"
 title = "The page repeats the banned 'serious statement, then punchy negation' cadence 4 times: the section eyebrow/heading itself is literally titled 'Rigor, not theater' with body copy '...not a dashboard you hope someone is watching', the hero body ends '...you call infer(lane, input), not a provider SDK', and the Guardrails module card ends '...one seam to harden, not one per call site.' SKILL.md flags 3+ occurrences of this rhetorical shape as a voice tell requiring a rewrite."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "f7946df0eff130da"
@@ -1720,7 +1720,7 @@ workflow = "visual-audit"
 surface = "legal__eula"
 title = "Body paragraph lines on desktop run far past the 65-75ch cap — e.g. the 'Parties and definitions' opening line ('This End User License Agreement (\"Agreement\" or \"EULA\") is between GridWork Digital LLC, a limited liability') measures roughly 105-110 characters, about 40% over the guideline, in the exact dense-legal-prose content where line length most affects scanability."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "fc655f9a5ec1ce0c"
@@ -1728,7 +1728,7 @@ workflow = "visual-audit"
 surface = "frameworks__eu-ai-act"
 title = "Body copy falls into the banned 'serious statement, then punchy short negation' aphoristic cadence in at least 7 of the page's ~10 content blocks — 'the control is structural, not a convention' (Data governance), 'not a dashboard claim' (Accuracy testing), 'not a dashboard hope' (Human oversight), 'not a certification or legal opinion' (hero caption), 'not backfilled before your first notified-body assessment' (Why now), 'You hand an auditor the proof, not a screenshot' (Record-keeping), 'not after' (Get started) — the recurring 'X – not Y' pivot is the page's default voice rather than an occasional device"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "fd43587186705f8a"
@@ -1736,7 +1736,7 @@ workflow = "visual-audit"
 surface = "security"
 title = "Desktop (1280w, light+dark): the hero 'response headers' code panel clips 2 of 7 lines mid-word at its right edge ('...cross-origi' and 'microphone=(' get cut with no ellipsis) while the final visible line intentionally trails off with '…' — inconsistent truncation handling within the same block"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "fd6fefc2b2228d65"
@@ -1744,7 +1744,7 @@ workflow = "visual-audit"
 surface = "marketplace__modules__local-store"
 title = "Purchase CTA hierarchy inverts between viewports: the $99/Add-to-cart card sits in the first fold on desktop via the sticky right rail, but on mobile it's pushed to the very bottom of the page, after the FAQ section — a mobile visitor must scroll past the full definition, 6 feature cards, code sample, and 3 FAQ items before reaching the only way to buy the module"
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "fe8ce1a3bdb54b62"
@@ -1752,7 +1752,7 @@ workflow = "visual-audit"
 surface = "glossary__row-level-security"
 title = "'Related terms' pills (HIPAA technical safeguards / SOC 2 audit log / Audit evidence bundle / Control-to-code mapping) render as plain body-colored text with no underline, no accent color, no border, and no icon in either light or dark mode, on both mobile and desktop — visually indistinguishable from static prose. If these are cross-links to other glossary/product entries (the standard purpose of a 'related terms' block, and a stated goal of the glossary/AEO program per ADR-0235), there's no visual signal anywhere that they're interactive, failing Recognition Rather Than Recall."
 severity = "warn"
-status = "open"
+status = "fixed"
 
 [[finding]]
 id = "fea4a01e844e4554"
