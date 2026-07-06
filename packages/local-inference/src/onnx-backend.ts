@@ -32,10 +32,7 @@ import {
   fetchWithTimeout,
   safeEqualFixed,
 } from "@caisson/kernel";
-import {
-  type EgressGuard,
-  createEgressGuard,
-} from "@caisson/local-privacy";
+import { type EgressGuard, createEgressGuard } from "@caisson/local-privacy";
 import { localOnlyPolicy } from "@caisson/local-privacy";
 import { EMBEDDING_DIM } from "./backend.ts";
 import type {
