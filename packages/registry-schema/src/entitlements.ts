@@ -69,11 +69,14 @@ const MODULE_SLUG_RE = /^[a-z0-9-]+$/;
  * a reserved id expands to NOTHING until its package ships and lands in the ledger. Remove an id here
  * in the SAME change that first indexes its package — its bare slug then resolves through the
  * ordinary indexed-module branch below.
+ *
+ * Currently EMPTY: `alerting` and `retention-runner` graduated — both are published in the registry
+ * index (ADR-0150/0151), so their bare slugs resolve through the ordinary indexed-module branch and
+ * reserving them any longer would UNDER-grant a buyer who purchased them (the fail-soft carve-out
+ * expands them to nothing). The mechanism stays for the next SKU sold before its package ships.
  */
-export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> = new Set([
-  "alerting",
-  "retention-runner",
-]);
+export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> =
+  new Set<string>([]);
 
 /** Boundary guard (ADR-0021 input-validation): the purchased ids are an array of bounded, non-empty
  *  strings. Classification + fail-closed rejection of unknown values happens below. */

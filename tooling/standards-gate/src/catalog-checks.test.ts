@@ -49,14 +49,10 @@ describe("catalog gate checks — the committed tree", () => {
     expect(await checkCatalogParity(ROOT)).toEqual([]);
   });
 
-  test("reserved-ids-staleness: flags exactly the two now-indexed reservations, as advisory warns", () => {
-    const f = checkReservedIdsStaleness(ROOT);
-    expect(f.map((x) => x.pkg).sort()).toEqual([
-      "@caisson/alerting",
-      "@caisson/retention-runner",
-    ]);
-    expect(f.every((x) => x.severity === "warn")).toBe(true);
-    expect(f.every((x) => x.rule === "reserved-ids-staleness")).toBe(true);
+  test("reserved-ids-staleness: no stale reservations (alerting/retention-runner graduated to indexed)", () => {
+    // The check flagged alerting + retention-runner while they were still reserved; catalog-rework W5
+    // cleared them from RESERVED_MODULE_ENTITLEMENT_IDS, so a clean tree now has nothing to flag.
+    expect(checkReservedIdsStaleness(ROOT)).toEqual([]);
   });
 
   test("the eight catalog-rework carves carry a PRICE_AUTHORITY row", () => {

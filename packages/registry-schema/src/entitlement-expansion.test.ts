@@ -50,11 +50,6 @@ const CASES: ReadonlyArray<{ readonly purchased: readonly string[] }> = [
   { purchased: ["kernel"] },
   { purchased: ["evidence-pack"] },
   { purchased: ["credits", "evidence-pack"] },
-  // A reserved future-module bare slug (sold, not yet published) expands to nothing — no throw.
-  { purchased: ["alerting"] },
-  { purchased: ["retention-runner"] },
-  // Mixing an indexed bare-slug module with a reserved one still resolves (only the indexed member).
-  { purchased: ["credits", "alerting"] },
 ];
 
 describe("ADR-0071 entitlement expansion (golden-first, ADR-0013)", () => {
@@ -111,37 +106,38 @@ describe("per-module bare-slug purchase-id form", () => {
     expect(() => expandEntitlements(index, ["not-a-real-module"])).toThrow();
   });
 
-  test("RESERVED_MODULE_ENTITLEMENT_IDS names the future Compliance modules sold but not yet published", () => {
-    expect([...RESERVED_MODULE_ENTITLEMENT_IDS].sort()).toEqual([
-      "alerting",
-      "retention-runner",
+  test("RESERVED_MODULE_ENTITLEMENT_IDS is empty — alerting/retention-runner graduated to indexed", () => {
+    // Both are now published in the registry index (ADR-0150/0151), so reserving them would
+    // under-grant a buyer who purchased them; the carve-out set is cleared (catalog-rework W5).
+    expect([...RESERVED_MODULE_ENTITLEMENT_IDS]).toEqual([]);
+  });
+
+  test("a graduated slug now resolves to its real indexed grant, not fail-soft to nothing", () => {
+    // The graduation this change makes: a slug once reserved (fail-soft to nothing) now resolves to
+    // its real @caisson/<slug> grant once its package is indexed — proven here against the REAL
+    // registry index where alerting/retention-runner ship.
+    const real = loadRegistryIndexFromFile(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        "..",
+        "..",
+        "..",
+        "registry",
+        "index.json",
+      ),
+    );
+    expect([...expandEntitlements(real, ["alerting"])]).toEqual([
+      "@caisson/alerting",
+    ]);
+    expect([...expandEntitlements(real, ["retention-runner"])]).toEqual([
+      "@caisson/retention-runner",
     ]);
   });
 
-  test("a reserved future-module slug expands to nothing (fail-soft, never a throw)", () => {
-    for (const reserved of RESERVED_MODULE_ENTITLEMENT_IDS) {
-      expect([...expandEntitlements(index, [reserved])]).toEqual([]);
-    }
-  });
-
-  test("a reserved id never collides with a real indexed module (sold ≠ silently substituted)", () => {
-    for (const reserved of RESERVED_MODULE_ENTITLEMENT_IDS) {
-      expect(index.modules.map((m) => m.id)).not.toContain(
-        `@caisson/${reserved}`,
-      );
-    }
-  });
-
-  test("a reserved id alongside a real purchase still resolves the real member (no whole-expansion throw)", () => {
-    expect(
-      [...expandEntitlements(index, ["credits", "alerting"])].sort(),
-    ).toEqual(["@caisson/credits"]);
-  });
-
-  test("once a reserved module is published its bare slug resolves normally (simulated)", () => {
-    // Prove the carve-out is temporary: an index that DOES carry `@caisson/alerting` resolves the
-    // bare slug to it exactly like any other indexed module — the reserved-set membership is a
-    // pre-publish gap-filler, not a permanent block.
+  test("a bare slug for an indexed module resolves normally (the graduated path)", () => {
+    // An index that carries `@caisson/alerting` resolves the bare slug to it exactly like any other
+    // indexed module — the ordinary indexed-module branch every graduated (formerly-reserved) SKU
+    // now takes.
     const published = loadRegistryIndex({
       schemaVersion: 1,
       modules: [
