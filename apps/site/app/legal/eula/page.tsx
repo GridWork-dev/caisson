@@ -217,10 +217,10 @@ export default function EulaPage() {
           entitled-package version published in that window, plus everything
           already delivered. After that window, you may renew updates access for
           another 12 months at a reduced rate, or let it lapse; non-renewal
-          never affects the perpetual license for versions already delivered. A
-          Compliance Updates subscription, where purchased, is billed on a
-          recurring basis until cancelled and grants access to new package
-          versions with updated control mappings; it is optional and does not
+          never affects the perpetual license for versions already delivered. An
+          Updates Subscription, where purchased, is billed on a recurring basis
+          until cancelled and grants access to new versions of your entitled
+          packages published while it is active; it is optional and does not
           affect the perpetual license for versions already delivered.
         </p>
       </Section>
