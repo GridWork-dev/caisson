@@ -160,7 +160,14 @@
       "name": "@caisson/local-ai-app",
       "version": "0.0.4",
       "dependencies": {
+        "@caisson/field-crypto": "workspace:*",
+        "@caisson/kernel": "workspace:*",
+        "@caisson/license-verify": "workspace:*",
         "@caisson/local-ai": "workspace:*",
+        "@caisson/local-inference": "workspace:*",
+        "@caisson/local-privacy": "workspace:*",
+        "@caisson/local-store": "workspace:*",
+        "@caisson/local-sync": "workspace:*",
         "next": "catalog:",
         "react": "catalog:",
         "react-dom": "catalog:",
@@ -679,7 +686,10 @@
         "@caisson/field-crypto": "workspace:*",
         "@caisson/kernel": "workspace:*",
         "@caisson/license-verify": "workspace:*",
+        "@caisson/local-inference": "workspace:*",
+        "@caisson/local-privacy": "workspace:*",
         "@caisson/local-store": "workspace:*",
+        "@caisson/local-sync": "workspace:*",
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
@@ -690,12 +700,59 @@
         "typescript": "catalog:",
       },
     },
+    "packages/local-inference": {
+      "name": "@caisson/local-inference",
+      "version": "0.0.0",
+      "dependencies": {
+        "@caisson/kernel": "workspace:*",
+        "@caisson/local-privacy": "workspace:*",
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/local-store": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
+    "packages/local-privacy": {
+      "name": "@caisson/local-privacy",
+      "version": "0.0.0",
+      "dependencies": {
+        "@caisson/kernel": "workspace:*",
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "packages/local-store": {
       "name": "@caisson/local-store",
       "version": "0.2.3",
       "dependencies": {
         "@caisson/kernel": "workspace:*",
         "sqlite-vec": "catalog:",
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
+    "packages/local-sync": {
+      "name": "@caisson/local-sync",
+      "version": "0.0.0",
+      "dependencies": {
+        "@caisson/kernel": "workspace:*",
         "zod": "catalog:",
       },
       "devDependencies": {
@@ -1278,7 +1335,13 @@
 
     "@caisson/local-ai-app": ["@caisson/local-ai-app@workspace:apps/local-ai"],
 
+    "@caisson/local-inference": ["@caisson/local-inference@workspace:packages/local-inference"],
+
+    "@caisson/local-privacy": ["@caisson/local-privacy@workspace:packages/local-privacy"],
+
     "@caisson/local-store": ["@caisson/local-store@workspace:packages/local-store"],
+
+    "@caisson/local-sync": ["@caisson/local-sync@workspace:packages/local-sync"],
 
     "@caisson/mcp-server": ["@caisson/mcp-server@workspace:packages/mcp-server"],
 

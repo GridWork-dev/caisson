@@ -7,8 +7,8 @@
 import { describe, expect, test } from "bun:test";
 import { AuthzError, InternalError, ValidationError } from "@caisson/kernel";
 import type { UsageMetering } from "@caisson/kernel";
-import { createEgressGuard } from "../privacy/egress-guard.ts";
-import { ZERO_EGRESS_POLICY, localOnlyPolicy } from "../privacy/policy.ts";
+import { createEgressGuard } from "@caisson/local-privacy";
+import { ZERO_EGRESS_POLICY, localOnlyPolicy } from "@caisson/local-privacy";
 import { EMBEDDING_DIM } from "./backend.ts";
 import {
   RentedInferenceBackend,

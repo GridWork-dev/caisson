@@ -27,7 +27,7 @@ import type { FetchTimeoutOptions } from "@caisson/kernel";
 import { z } from "zod";
 import { EMBEDDING_DIM } from "./backend.ts";
 import type { RentedTransport } from "./rented-backend.ts";
-import type { EgressGuard } from "../privacy/egress-guard.ts";
+import type { EgressGuard } from "@caisson/local-privacy";
 
 /** The hosted OpenRouter API root (overridable for a self-hosted OpenAI-compatible gateway). */
 const DEFAULT_BASE_URL = "https://openrouter.ai/api/v1";

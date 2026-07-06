@@ -53,7 +53,7 @@ import type {
   CompletionResult,
   InferenceBackend,
 } from "./backend.ts";
-import type { EgressGuard } from "../privacy/egress-guard.ts";
+import type { EgressGuard } from "@caisson/local-privacy";
 
 // ── Transport wire shapes (boundary-validated; the live transport's body is untrusted remote JSON) ─
 

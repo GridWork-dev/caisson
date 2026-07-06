@@ -13,7 +13,14 @@
     "test": "bun test ./app"
   },
   "dependencies": {
+    "@caisson/field-crypto": "workspace:*",
+    "@caisson/kernel": "workspace:*",
     "@caisson/local-ai": "workspace:*",
+    "@caisson/local-inference": "workspace:*",
+    "@caisson/local-privacy": "workspace:*",
+    "@caisson/local-store": "workspace:*",
+    "@caisson/local-sync": "workspace:*",
+    "@caisson/license-verify": "workspace:*",
     "next": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:"

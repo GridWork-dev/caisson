@@ -35,8 +35,8 @@ import {
 import {
   type EgressGuard,
   createEgressGuard,
-} from "../privacy/egress-guard.ts";
-import { localOnlyPolicy } from "../privacy/policy.ts";
+} from "@caisson/local-privacy";
+import { localOnlyPolicy } from "@caisson/local-privacy";
 import { EMBEDDING_DIM } from "./backend.ts";
 import type {
   CompletionRequest,

@@ -24,8 +24,11 @@
   "dependencies": {
     "@caisson/field-crypto": "workspace:*",
     "@caisson/kernel": "workspace:*",
+    "@caisson/local-inference": "workspace:*",
+    "@caisson/local-privacy": "workspace:*",
     "@caisson/license-verify": "workspace:*",
-    "@caisson/local-store": "workspace:*"
+    "@caisson/local-store": "workspace:*",
+    "@caisson/local-sync": "workspace:*"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
