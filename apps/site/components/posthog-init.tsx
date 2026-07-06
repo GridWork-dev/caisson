@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
 import {
   clearSignupIntentCookie,
@@ -36,43 +37,76 @@ function readAndClearSignupIntentCookie(): SignupIntent | null {
 // identify the logged-in account immediately, so there is no pre-identify anonymous tracking. The
 // lawful basis is the privacy policy accepted at sign-up (authenticated route). `posthog-js` is
 // dynamically imported inside the effect — it reads `window` at import time and throws under SSR.
+//
+// `capture_pageview: false` + a manual `$pageview` per route change (CAISSON-22): posthog-js's
+// bundled `history_change` autocapture does not reliably observe every Next.js App Router client
+// transition (the router can swap routes via an RSC-payload fetch rather than the plain
+// `history.pushState` the autocapture patch listens for) — the symptom is zero pageview signal in
+// caisson-prod. PostHog's own App Router guidance is to disable the bundled capture and fire
+// `$pageview` manually off `usePathname`/`useSearchParams`, which is what the effect does below.
+// `useSearchParams` requires an ancestor Suspense boundary (a Next.js App Router build rule) — the
+// caller (`dashboard/layout.tsx`) wraps this component in one.
 export function PostHogInit({ accountId }: { accountId: string }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  // Gates init/identify/signup-read to the FIRST effect run per mount; every later run (a route
+  // change) skips them and falls through only to the $pageview capture. The dashboard layout that
+  // hosts this component persists across `/dashboard/**` navigations, so it never remounts.
+  const initialized = useRef(false);
+
   useEffect(() => {
-    // Read+clear FIRST, regardless of whether PostHog itself is configured — Plausible's
-    // `signup_complete` (cookieless, mounted on every route including `/dashboard`, ADR-0118)
-    // must still fire on a fresh signup even when NEXT_PUBLIC_POSTHOG_KEY is unset.
-    const signup = readAndClearSignupIntentCookie();
-    if (signup !== null && !signup.plausibleAlreadyFired) {
-      trackEvent("signup_complete", { source: "oauth_or_magiclink" });
+    // First run only: read+clear the one-shot signup cookie and fire Plausible's cookieless
+    // `signup_complete` (ADR-0118) — regardless of whether PostHog is configured, and never on a
+    // route-change re-run (the read-and-clear is already idempotent, but the ref keeps it to mount).
+    let signup: SignupIntent | null = null;
+    if (!initialized.current) {
+      signup = readAndClearSignupIntentCookie();
+      if (signup !== null && !signup.plausibleAlreadyFired) {
+        trackEvent("signup_complete", { source: "oauth_or_magiclink" });
+      }
     }
 
     const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-    if (key === undefined || key.length === 0) return;
+    if (key === undefined || key.length === 0) {
+      initialized.current = true; // signup handled; nothing more to do without PostHog
+      return;
+    }
     let cancelled = false;
     void import("posthog-js").then(({ default: posthog }) => {
       if (cancelled) return;
-      posthog.init(key, {
-        api_host:
-          process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com",
-        ui_host: "https://us.posthog.com",
-        defaults: "2026-05-30", // modern SPA defaults: history_change pageviews + pageleave
-        person_profiles: "identified_only",
-        persistence: "memory",
-      });
-      posthog.identify(accountId);
-      if (signup !== null) {
-        posthog.capture(
-          "account_created",
-          signup.signupSource.length > 0
-            ? { signup_source: signup.signupSource }
-            : {},
-        );
+      if (!initialized.current) {
+        posthog.init(key, {
+          api_host:
+            process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com",
+          ui_host: "https://us.posthog.com",
+          defaults: "2026-05-30", // modern SPA defaults: pageleave + (overridden) pageview mode
+          person_profiles: "identified_only",
+          persistence: "memory",
+          capture_pageview: false, // this effect captures $pageview manually — see header
+        });
+        posthog.identify(accountId);
+        if (signup !== null) {
+          posthog.capture(
+            "account_created",
+            signup.signupSource.length > 0
+              ? { signup_source: signup.signupSource }
+              : {},
+          );
+        }
+        initialized.current = true;
       }
+      // One $pageview per route change (path or query), including the initial mount. Same resolved
+      // `.then()` as init/identify, so it can never fire against an unconfigured instance.
+      const query = searchParams.toString();
+      const path = query.length > 0 ? `${pathname}?${query}` : pathname;
+      posthog.capture("$pageview", {
+        $current_url: `${window.location.origin}${path}`,
+      });
     });
     return () => {
       cancelled = true;
     };
-  }, [accountId]);
+  }, [accountId, pathname, searchParams]);
 
   return null;
 }

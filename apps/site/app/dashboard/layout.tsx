@@ -1,7 +1,7 @@
 // The buyer dashboard route group (ADR-0114): authed, force-dynamic, tenant-scoped. Every
 // `/dashboard/**` route is gated here — `requireDashboardSession` redirects to `/login` before
 // any child route renders, so a child page never has to re-check auth itself.
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { Button } from "@caisson/ui/components";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { PostHogInit } from "@/components/posthog-init";
@@ -46,8 +46,12 @@ export default async function DashboardLayout({
   return (
     <>
       {/* PostHog product analytics — authed dashboard only (never the cookieless marketing site).
-          No-op until NEXT_PUBLIC_POSTHOG_KEY is set on the caisson-site service. */}
-      <PostHogInit accountId={session.accountId} />
+          No-op until NEXT_PUBLIC_POSTHOG_KEY is set on the caisson-site service. Suspense is the
+          Next.js App Router requirement for PostHogInit's internal useSearchParams (manual
+          $pageview, CAISSON-22) — force-dynamic above does not remove it. */}
+      <Suspense fallback={null}>
+        <PostHogInit accountId={session.accountId} />
+      </Suspense>
       <DashboardShell topBar={topBar}>{children}</DashboardShell>
     </>
   );
