@@ -142,11 +142,18 @@ export interface AgentDevEdition {
   readonly artifacts: readonly Artifact[];
   /** PURE render of the artifact set + hook bindings into the multi-harness bundle. */
   render(hooks?: readonly EmitHookBinding[]): EmittedBundle;
-  /** Render + FAIL-CLOSED guarded write of the bundle under `targetRoot`; returns paths written. */
+  /**
+   * Render + FAIL-CLOSED guarded write of the bundle under `targetRoot`. Returns the paths written
+   * AND the bundle's fidelity warnings — the one-call path must surface them (ADR-0264 "warns
+   * loudly, never silently degrades"), not leave them stranded on a `render()` the caller skipped.
+   */
   emit(
     targetRoot: string,
     hooks?: readonly EmitHookBinding[],
-  ): readonly string[];
+  ): {
+    readonly written: readonly string[];
+    readonly warnings: readonly string[];
+  };
   /** Release the memory store's DB handle. */
   close(): void;
 }
@@ -210,7 +217,13 @@ export function createAgentDevEdition(
     toolExec,
     artifacts,
     render,
-    emit: (targetRoot, hooks = []) => writeBundle(targetRoot, render(hooks)),
+    emit: (targetRoot, hooks = []) => {
+      const bundle = render(hooks);
+      return {
+        written: writeBundle(targetRoot, bundle),
+        warnings: bundle.warnings,
+      };
+    },
     close: () => memory.close(),
   };
 }

@@ -12,9 +12,10 @@
 // version to encrypt with, and auto-detects the version from the ciphertext to decrypt) — there is no
 // per-call version to choose for those two ops. Only destroy is version-scoped:
 // `DestroyCryptoKeyVersion` schedules deletion of ONE CryptoKeyVersion (GCP CryptoKeys/KeyRings
-// themselves can never be deleted, only their versions), so the per-tenant CMK's own scope is
-// destroyed by targeting `<cryptoKeyName>/cryptoKeyVersions/<cryptoKeyVersion>`
-// (`config.cryptoKeyVersion`, default "1" — the version a freshly-provisioned per-tenant key starts on).
+// themselves can never be deleted, only their versions). A crypto-shred therefore LISTS the
+// CryptoKey's versions and destroys EVERY live (ENABLED/DISABLED) one — destroying a single
+// configured version would leave a rotated key's older versions decryptable while reporting
+// success (silently incomplete tenant crypto-erasure).
 //
 // PER-TENANT CMK (mirrors ADR-0197). The port's per-call `keyId` IS the CryptoKey resource name for
 // that tenant, falling back to the configured default (`config.cryptoKeyName`) ONLY when the per-call
@@ -28,14 +29,14 @@
 // Mapping (per kms.ts's documented seam comment, kms.ts:279-282):
 //   generateDataKey(keyId)      -> local randomBytes(32) DEK, then Encrypt({ name: cryptoKeyFor(keyId), plaintext, additionalAuthenticatedData })
 //   decryptDataKey(keyId, blob) -> Decrypt({ name: cryptoKeyFor(keyId), ciphertext: blob, additionalAuthenticatedData })
-//   scheduleKeyDeletion(keyId)  -> DestroyCryptoKeyVersion({ name: `${cryptoKeyFor(keyId)}/cryptoKeyVersions/${cryptoKeyVersion}` })  // empty keyId throws
+//   scheduleKeyDeletion(keyId)  -> ListCryptoKeyVersions({ parent: cryptoKeyFor(keyId) }) then DestroyCryptoKeyVersion on every live version  // empty keyId throws
 //
-// `cryptoKeyVersion` + the default `cryptoKeyName` are injected via `config`, never a module constant;
-// a missing default `cryptoKeyName` fails closed with `ConfigError` at construction, not at the first
-// call. Tests inject a fake `client` (a `Pick<KeyManagementServiceClient, "encrypt"|"decrypt"|
-// "destroyCryptoKeyVersion">`), so `bun test` never reaches GCP.
+// The default `cryptoKeyName` is injected via `config`, never a module constant; a missing default
+// fails closed with `ConfigError` at construction, not at the first call. Tests inject a fake
+// `client` (a `Pick<KeyManagementServiceClient, "encrypt"|"decrypt"|"destroyCryptoKeyVersion"|
+// "listCryptoKeyVersions">`), so `bun test` never reaches GCP.
 import { randomBytes } from "node:crypto";
-import { KeyManagementServiceClient } from "@google-cloud/kms";
+import { KeyManagementServiceClient, protos } from "@google-cloud/kms";
 import { ConfigError, InternalError, ValidationError } from "@caisson/kernel";
 import type { KmsClient } from "./kms-port.ts";
 
@@ -47,7 +48,7 @@ import type { KmsClient } from "./kms-port.ts";
  */
 export type GcpKmsSendable = Pick<
   KeyManagementServiceClient,
-  "encrypt" | "decrypt" | "destroyCryptoKeyVersion"
+  "encrypt" | "decrypt" | "destroyCryptoKeyVersion" | "listCryptoKeyVersions"
 >;
 
 export interface GcpKmsClientConfig {
@@ -56,15 +57,19 @@ export interface GcpKmsClientConfig {
    * Full path shape: `projects/<project>/locations/<location>/keyRings/<ring>/cryptoKeys/<key>`.
    */
   cryptoKeyName: string;
-  /**
-   * The CryptoKeyVersion `scheduleKeyDeletion` targets (GCP's destroy op is version-scoped, not
-   * key-scoped, unlike AWS's key-scoped `ScheduleKeyDeletion`). Defaults to `"1"` — the version a
-   * freshly-provisioned per-tenant key starts on.
-   */
-  cryptoKeyVersion?: string;
   /** Override the underlying KMS transport. Tests inject a fake here so no call reaches GCP. */
   client?: GcpKmsSendable;
 }
+
+/** CryptoKeyVersion states that still hold usable (or re-enablable) key material — the versions a
+ *  crypto-shred must destroy. GAX may surface the proto enum as its string name or its number;
+ *  match both. */
+const LIVE_VERSION_STATES = new Set<string | number>([
+  "ENABLED",
+  protos.google.cloud.kms.v1.CryptoKeyVersion.CryptoKeyVersionState.ENABLED,
+  "DISABLED",
+  protos.google.cloud.kms.v1.CryptoKeyVersion.CryptoKeyVersionState.DISABLED,
+]);
 
 /**
  * The `additionalAuthenticatedData` binding a wrapped DEK to its tenant/subject scope — mirrors
@@ -83,7 +88,6 @@ export function createGcpKmsClient(config: GcpKmsClientConfig): KmsClient {
     );
   }
   const defaultCryptoKeyName = config.cryptoKeyName;
-  const cryptoKeyVersion = config.cryptoKeyVersion ?? "1";
   const sdk: GcpKmsSendable = config.client ?? new KeyManagementServiceClient();
 
   // The CryptoKey a call targets: the per-tenant scope `keyId`, or the default CryptoKey when none is passed.
@@ -126,16 +130,40 @@ export function createGcpKmsClient(config: GcpKmsClientConfig): KmsClient {
     },
 
     async scheduleKeyDeletion(keyId: string): Promise<void> {
-      // Refuse an empty scope: falling back to the default CryptoKey here would destroy its version
-      // for EVERY tenant that shares it as their fallback.
+      // Refuse an empty scope: falling back to the default CryptoKey here would destroy its
+      // versions for EVERY tenant that shares it as their fallback.
       if (keyId.length === 0) {
         throw new ValidationError(
-          "field-crypto: GCP KMS scheduleKeyDeletion requires an explicit keyId — refusing to destroy the default CryptoKey's version",
+          "field-crypto: GCP KMS scheduleKeyDeletion requires an explicit keyId — refusing to destroy the default CryptoKey's versions",
         );
       }
-      await sdk.destroyCryptoKeyVersion({
-        name: `${cryptoKeyFor(keyId)}/cryptoKeyVersions/${cryptoKeyVersion}`,
-      });
+      // Crypto-shred must destroy EVERY live version, not just one: a rotated CryptoKey holds
+      // older versions whose wrapped DEKs would otherwise stay decryptable while the call reports
+      // success (silently incomplete tenant crypto-erasure). List, then destroy each live version.
+      const parent = cryptoKeyFor(keyId);
+      const [versions] = await sdk.listCryptoKeyVersions({ parent });
+      if (versions.length === 0) {
+        throw new InternalError(
+          "field-crypto: GCP KMS crypto-shred found no CryptoKeyVersions — a CryptoKey always has at least one; refusing to report an erasure that touched nothing",
+          { cryptoKeyName: parent },
+        );
+      }
+      const liveNames: string[] = [];
+      for (const v of versions) {
+        if (
+          typeof v.name === "string" &&
+          v.name.length > 0 &&
+          v.state !== undefined &&
+          v.state !== null &&
+          LIVE_VERSION_STATES.has(v.state)
+        ) {
+          liveNames.push(v.name);
+        }
+      }
+      // Zero live versions with some already destroyed/scheduled = an idempotent re-shred — done.
+      for (const name of liveNames) {
+        await sdk.destroyCryptoKeyVersion({ name });
+      }
     },
   };
 }

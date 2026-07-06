@@ -523,3 +523,140 @@ describe("R2ArtifactStore.extendRetention — the documented capability gap (ADR
     expect(stub.total()).toBe(0);
   });
 });
+
+// --- Fail-closed regression locks (2026-07-06 SHIP-audit findings) ---
+
+const ACCOUNT_B = "22222222-2222-4222-8222-222222222222";
+
+describe("R2ArtifactStore — non-finite horizons always REFUSE (audit P1 regression lock)", () => {
+  test("extendRetention on a key covered by NO rule is a ConfigError, never a fake success", async () => {
+    // The exploit shape: a prefix-scoped rule covers the store, but the extended key sits outside
+    // every rule prefix — the horizon is -Infinity, which must refuse, not ride the Indefinite arm.
+    const uncoveredKey = buildArtifactKey(ACCOUNT_B, "anchors", "1.json");
+    const stub = makeR2Stub({
+      head: () => ({
+        ContentLength: 3,
+        LastModified: new Date(Date.UTC(2026, 0, 1)),
+      }),
+    });
+    const scopedRules: R2LockRule[] = [
+      {
+        id: "r1",
+        enabled: true,
+        prefix: `${ACCOUNT_A}/`,
+        condition: { type: "Indefinite" },
+      },
+    ];
+    const store = await R2ArtifactStore.create({
+      client: stub.client,
+      bucket: BUCKET,
+      lockReader: readerOf(scopedRules),
+      keyPrefix: `${ACCOUNT_A}/`,
+    });
+    await expect(
+      store.extendRetention(uncoveredKey, new Date(Date.UTC(2033, 0, 1))),
+    ).rejects.toBeInstanceOf(ConfigError);
+  });
+
+  test("a malformed Date rule (NaN horizon) refuses a put instead of silently passing", async () => {
+    const stub = makeR2Stub();
+    const malformed: R2LockRule[] = [
+      {
+        id: "r1",
+        enabled: true,
+        prefix: "",
+        condition: { type: "Date", date: "not-a-date" },
+      },
+    ];
+    const store = await R2ArtifactStore.create({
+      client: stub.client,
+      bucket: BUCKET,
+      lockReader: readerOf(malformed),
+    });
+    const key = buildArtifactKey(ACCOUNT_A, "anchors", "nan.json");
+    await expect(
+      store.put(key, new Uint8Array([1]), {
+        retainUntil: new Date(Date.UTC(2033, 0, 1)),
+      }),
+    ).rejects.toBeInstanceOf(ConfigError);
+    expect(stub.total()).toBe(0);
+  });
+
+  test("a malformed Date rule ALSO poisons a second valid rule fail-closed, never fail-open", async () => {
+    // Math.max(validHorizon, NaN) = NaN — the driver must refuse the write even though one rule
+    // is fine, because it can no longer PROVE coverage.
+    const stub = makeR2Stub();
+    const mixed: R2LockRule[] = [
+      {
+        id: "good",
+        enabled: true,
+        prefix: "",
+        condition: { type: "Indefinite" },
+      },
+      {
+        id: "bad",
+        enabled: true,
+        prefix: "",
+        condition: { type: "Date", date: "not-a-date" },
+      },
+    ];
+    const store = await R2ArtifactStore.create({
+      client: stub.client,
+      bucket: BUCKET,
+      lockReader: readerOf(mixed),
+    });
+    const key = buildArtifactKey(ACCOUNT_A, "anchors", "mixed.json");
+    await expect(
+      store.put(key, new Uint8Array([1]), {
+        retainUntil: new Date(Date.UTC(2033, 0, 1)),
+      }),
+    ).rejects.toBeInstanceOf(ConfigError);
+  });
+
+  test("extendRetention refuses when HeadObject returns no LastModified (cannot anchor honestly)", async () => {
+    const stub = makeR2Stub({ head: () => ({ ContentLength: 3 }) });
+    const store = await R2ArtifactStore.create({
+      client: stub.client,
+      bucket: BUCKET,
+      lockReader: readerOf(indefiniteRules()),
+    });
+    const key = buildArtifactKey(ACCOUNT_A, "anchors", "nolm.json");
+    await expect(
+      store.extendRetention(key, new Date(Date.UTC(2033, 0, 1))),
+    ).rejects.toThrow(/LastModified/);
+  });
+});
+
+describe("R2ArtifactStore — write paths re-read rules fresh (ADR-0267 verify-per-put)", () => {
+  test("a rule disabled AFTER construction refuses the next put", async () => {
+    let disabled = false;
+    const statefulReader: R2LockReader = async () => [
+      {
+        id: "r1",
+        enabled: !disabled,
+        prefix: "",
+        condition: { type: "Indefinite" },
+      },
+    ];
+    const stub = makeR2Stub();
+    const store = await R2ArtifactStore.create({
+      client: stub.client,
+      bucket: BUCKET,
+      lockReader: statefulReader,
+    });
+    const key = buildArtifactKey(ACCOUNT_A, "anchors", "drift.json");
+    // First put: rule still enabled — succeeds.
+    await store.put(key, new Uint8Array([1]), {
+      retainUntil: new Date(Date.UTC(2033, 0, 1)),
+    });
+    // Ops drift: the rule is disabled out from under the long-lived store.
+    disabled = true;
+    await expect(
+      store.put(
+        buildArtifactKey(ACCOUNT_A, "anchors", "drift2.json"),
+        new Uint8Array([1]),
+        { retainUntil: new Date(Date.UTC(2033, 0, 1)) },
+      ),
+    ).rejects.toBeInstanceOf(ConfigError);
+  });
+});

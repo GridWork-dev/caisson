@@ -6,10 +6,16 @@
 //
 // Fail-closed bound (ADR-0267, BINDING): at construction, the store's declared `keyPrefix` must be
 // covered by an ENABLED lock rule (no covering rule → `ConfigError`, never a store that silently
-// writes unprotected objects). Per `put`/`extendRetention`, the guaranteed horizon is computed from
-// the best matching rule for the actual key at the relevant reference time (an `Age` rule's horizon
-// is anchored to the object's real creation time, never to "now" at read-time) — a requested
-// `retainUntil` that exceeds the horizon THROWS before any write, never silently under-retains.
+// writes unprotected objects). Per `put`/`extendRetention`, the lock rules are RE-READ FRESH from
+// the API (a construction-time snapshot would approve writes against a rule that was disabled or
+// narrowed after construction), and the guaranteed horizon is computed from the best matching rule
+// for the actual key at the relevant reference time (an `Age` rule's horizon is anchored to the
+// object's real creation time, never to "now" at read-time) — a requested `retainUntil` that
+// exceeds the horizon THROWS before any write, never silently under-retains. Horizon comparisons
+// are written so that a non-finite horizon (no covering rule → -Infinity; a malformed rule date →
+// NaN) always REFUSES: only a literal +Infinity (an `Indefinite` rule) is treated as unbounded.
+// Read-path meta (`get`/`head`) reports against the last-known rules without an extra API call —
+// informational only, never a write approval.
 // Because R2 has no per-object retention mechanism, `extendRetention` can only succeed when the
 // governing rule is `Indefinite`; an `Age`/`Date` rule cannot grant one object more protection than
 // the rule already provides, and the driver refuses rather than fake it (documented gap, ADR-0267).
@@ -25,6 +31,7 @@ import {
   ValidationError,
   fetchWithTimeout,
 } from "@caisson/kernel";
+import { z } from "zod";
 import type { S3Sendable } from "./store.s3.ts";
 import {
   ArtifactExistsError,
@@ -45,8 +52,9 @@ export type R2LockCondition =
 export interface R2LockRule {
   id: string;
   enabled: boolean;
-  /** Empty string (or absent) applies the rule bucket-wide. */
-  prefix?: string;
+  /** Empty string (or absent) applies the rule bucket-wide. (`| undefined` so the Zod-parsed
+   *  reader output assigns under exactOptionalPropertyTypes.) */
+  prefix?: string | undefined;
   condition: R2LockCondition;
 }
 
@@ -92,7 +100,9 @@ function ruleCovers(rule: R2LockRule, key: string): boolean {
 }
 
 /** The guaranteed retention horizon (epoch ms) a rule provides, anchored at `referenceTime` — the
- *  object's real creation time for `Age` rules, irrelevant for `Date`/`Indefinite`. */
+ *  object's real creation time for `Age` rules, irrelevant for `Date`/`Indefinite`. A condition
+ *  this driver does not recognize (a future Cloudflare primitive reaching us through an unvalidated
+ *  reader) yields NaN, which every downstream comparison treats as "guarantees nothing" — refuse. */
 function ruleHorizonMs(rule: R2LockRule, referenceTime: Date): number {
   switch (rule.condition.type) {
     case "Indefinite":
@@ -101,6 +111,8 @@ function ruleHorizonMs(rule: R2LockRule, referenceTime: Date): number {
       return new Date(rule.condition.date).getTime();
     case "Age":
       return referenceTime.getTime() + rule.condition.maxAgeSeconds * 1000;
+    default:
+      return Number.NaN;
   }
 }
 
@@ -113,12 +125,15 @@ export class R2ArtifactStore implements ArtifactStore {
   private readonly client: S3Sendable;
   private readonly bucket: string;
   private readonly keyPrefix: string;
+  private readonly lockReader: R2LockReader;
+  /** Last-known rules — refreshed by construction and every write; read-path meta only. */
   private rules: R2LockRule[] = [];
 
   private constructor(config: R2ArtifactStoreConfig) {
     this.client = config.client;
     this.bucket = config.bucket.trim();
     this.keyPrefix = config.keyPrefix ?? "";
+    this.lockReader = config.lockReader;
     if (this.bucket.length === 0) {
       throw new ConfigError("audit-worm: R2ArtifactStore requires a bucket");
     }
@@ -131,7 +146,7 @@ export class R2ArtifactStore implements ArtifactStore {
    */
   static async create(config: R2ArtifactStoreConfig): Promise<R2ArtifactStore> {
     const store = new R2ArtifactStore(config);
-    store.rules = await config.lockReader();
+    await store.refreshRules();
     if (!store.rules.some((r) => ruleCovers(r, store.keyPrefix))) {
       throw new ConfigError(
         "audit-worm: no enabled R2 bucket-lock rule covers this store's key prefix — refusing " +
@@ -142,7 +157,15 @@ export class R2ArtifactStore implements ArtifactStore {
     return store;
   }
 
-  /** The largest horizon any matching enabled rule guarantees for `key`, at `referenceTime`. */
+  /** Re-read the bucket's lock rules fresh — every WRITE path calls this so a rule disabled or
+   *  narrowed after construction can never approve a write (ADR-0267 "verify … per put"). */
+  private async refreshRules(): Promise<void> {
+    this.rules = await this.lockReader();
+  }
+
+  /** The largest horizon any matching enabled rule guarantees for `key`, at `referenceTime`.
+   *  `-Infinity` when no rule covers the key; NaN when a covering rule is malformed — both are
+   *  non-finite and every consumer refuses on them. */
   private guaranteedHorizonMs(key: string, referenceTime: Date): number {
     let best = Number.NEGATIVE_INFINITY;
     for (const rule of this.rules) {
@@ -153,15 +176,16 @@ export class R2ArtifactStore implements ArtifactStore {
     return best;
   }
 
-  /** Fail-closed per-op bound (ADR-0267): throws BEFORE any write when no covering rule's horizon
-   *  reaches `retainUntil` — never silently under-retains. */
+  /** Fail-closed per-op bound (ADR-0267): throws BEFORE any write unless a covering rule's horizon
+   *  provably reaches `retainUntil` — written as a negated "provably covered" check so a NaN or
+   *  -Infinity horizon (malformed rule / no covering rule) always refuses. */
   private assertRetentionCovered(
     key: string,
     retainUntil: Date,
     referenceTime: Date,
   ): void {
     const horizon = this.guaranteedHorizonMs(key, referenceTime);
-    if (retainUntil.getTime() > horizon) {
+    if (!(retainUntil.getTime() <= horizon)) {
       throw new ConfigError(
         "audit-worm: no R2 bucket-lock rule guarantees the requested retention for this key — " +
           "the driver refuses rather than silently under-retain (ADR-0267)",
@@ -181,6 +205,7 @@ export class R2ArtifactStore implements ArtifactStore {
   ): Promise<ArtifactMeta> {
     assertSafeKey(key);
     assertValidRetainUntil(opts.retainUntil);
+    await this.refreshRules();
     this.assertRetentionCovered(key, opts.retainUntil, new Date());
     const command = new PutObjectCommand({
       Bucket: this.bucket,
@@ -286,11 +311,21 @@ export class R2ArtifactStore implements ArtifactStore {
     assertValidRetainUntil(newRetainUntil);
     const raw = await this.headRaw(key);
     if (raw === null) throw new NotFoundError("artifact not found", { key });
-    const referenceTime = raw.lastModified ?? new Date();
-    const horizon = this.guaranteedHorizonMs(key, referenceTime);
-    if (!Number.isFinite(horizon)) {
+    if (raw.lastModified === undefined) {
+      // Without the object's real creation time an Age rule's horizon cannot be anchored honestly
+      // (anchoring at "now" would inflate it). R2 always returns LastModified; its absence is API
+      // drift — refuse rather than guess.
+      throw new InternalError(
+        "audit-worm: R2 HeadObject returned no LastModified — cannot anchor the retention horizon",
+        { key },
+      );
+    }
+    await this.refreshRules();
+    const horizon = this.guaranteedHorizonMs(key, raw.lastModified);
+    if (horizon === Number.POSITIVE_INFINITY) {
       // Indefinite-covered: any future date is already guaranteed — trivially satisfied, no infra
-      // mutation possible or needed.
+      // mutation possible or needed. ONLY a literal +Infinity takes this branch: -Infinity (no
+      // covering rule) and NaN (malformed rule) fall through to the refusals below.
       const meta: ArtifactMeta = {
         key,
         size: raw.size,
@@ -333,10 +368,13 @@ export class R2ArtifactStore implements ArtifactStore {
   ): ArtifactMeta {
     const meta: ArtifactMeta = { key, size };
     if (output.contentType !== undefined) meta.contentType = output.contentType;
-    const referenceTime = output.lastModified ?? new Date();
-    const horizon = this.guaranteedHorizonMs(key, referenceTime);
+    // No LastModified → an Age horizon can't be anchored honestly; report no retainUntil rather
+    // than fabricate an inflated one (read-path meta is informational, never a write approval).
+    if (output.lastModified === undefined) return meta;
+    const horizon = this.guaranteedHorizonMs(key, output.lastModified);
     // An Indefinite-covered object has no finite `retainUntil` to report — `ArtifactMeta.retainUntil`
-    // stays undefined (the port's "optional" slot), not a lie about a bounded date.
+    // stays undefined (the port's "optional" slot), not a lie about a bounded date. A NaN /
+    // -Infinity horizon likewise reports nothing.
     if (Number.isFinite(horizon)) {
       meta.retainUntil = new Date(horizon);
     }
@@ -356,15 +394,39 @@ export interface R2LockReaderConfig {
   apiToken: string;
 }
 
-interface CfLockRulesResponse {
-  success: boolean;
-  result?: { rules?: R2LockRule[] };
-  errors?: { message: string }[];
-}
+// Zod boundary for the third-party response (identity/security.md floor). The condition is a
+// discriminated union, so an unknown `condition.type` (a future Cloudflare retention primitive)
+// FAILS the parse — fail-closed, never a rule this driver silently misjudges. The envelope itself
+// is deliberately NOT `.strict()`: a provider may add fields at any time (the PR #114 lesson) and
+// unknown keys are stripped, not fatal.
+const R2LockRuleSchema = z.object({
+  id: z.string(),
+  enabled: z.boolean(),
+  prefix: z.string().optional(),
+  condition: z.discriminatedUnion("type", [
+    z.object({
+      type: z.literal("Age"),
+      maxAgeSeconds: z.number().int().nonnegative(),
+    }),
+    z.object({
+      type: z.literal("Date"),
+      date: z.string().refine((d) => Number.isFinite(new Date(d).getTime()), {
+        message: "unparseable Date lock-rule date",
+      }),
+    }),
+    z.object({ type: z.literal("Indefinite") }),
+  ]),
+});
+
+const CfLockRulesResponseSchema = z.object({
+  success: z.boolean(),
+  result: z.object({ rules: z.array(R2LockRuleSchema).optional() }).nullish(),
+  errors: z.array(z.object({ message: z.string() })).optional(),
+});
 
 /** The real {@link R2LockReader}: `GET /accounts/{account}/r2/buckets/{bucket}/lock` over
- *  `fetchWithTimeout`. CI never constructs this; `live/store.r2.live.test.ts` proves it against a
- *  real bucket (ADR-0201 live-test convention). */
+ *  `fetchWithTimeout`, response Zod-validated at the boundary. CI never constructs this;
+ *  `live/store.r2.live.test.ts` proves it against a real bucket (ADR-0201 live-test convention). */
 export function createR2LockReader(config: R2LockReaderConfig): R2LockReader {
   return async () => {
     const res = await fetchWithTimeout(
@@ -374,14 +436,17 @@ export function createR2LockReader(config: R2LockReaderConfig): R2LockReader {
         headers: { Authorization: `Bearer ${config.apiToken}` },
       },
     );
-    const body = (await res.json()) as CfLockRulesResponse;
-    if (!res.ok || !body.success) {
+    const raw: unknown = await res.json().catch(() => undefined);
+    const parsed = CfLockRulesResponseSchema.safeParse(raw);
+    if (!res.ok || !parsed.success || !parsed.data.success) {
       throw new ConfigError("audit-worm: could not read R2 bucket-lock rules", {
         bucket: config.bucket,
         status: res.status,
-        errors: body.errors,
+        ...(parsed.success
+          ? { errors: parsed.data.errors }
+          : { parse: "unexpected lock-rules response shape" }),
       });
     }
-    return body.result?.rules ?? [];
+    return parsed.data.result?.rules ?? [];
   };
 }

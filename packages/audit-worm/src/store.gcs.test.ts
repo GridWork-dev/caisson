@@ -471,3 +471,68 @@ describe("mintGcsAccessToken — RS256 signing (no network call)", () => {
     }
   });
 });
+
+// --- Fail-closed regression locks (2026-07-06 SHIP-audit findings) ---
+
+describe("GcsArtifactStore.put — applied-retention assertion + header-injection guard", () => {
+  test("an accepted insert whose response carries NO applied retention is an error, not success", async () => {
+    const { transport } = makeGcsStub(
+      router({
+        // GCS accepts the object but the resource echoes no retention — API drift; the object
+        // would sit unprotected while the caller records a retain_until row.
+        onInsert: () => json({ size: "1", contentType: "text/plain" }),
+      }),
+    );
+    const store = await GcsArtifactStore.create({ transport, bucket: BUCKET });
+    await expect(
+      store.put(
+        buildArtifactKey(ACCOUNT_A, "anchors", "noret.json"),
+        new Uint8Array([1]),
+        { retainUntil: RETAIN },
+      ),
+    ).rejects.toThrow(/did not apply the requested retention/);
+  });
+
+  test("an applied retention SHORTER than requested is also refused", async () => {
+    const { transport } = makeGcsStub(
+      router({
+        onInsert: () =>
+          json({
+            size: "1",
+            retention: {
+              mode: "Unlocked",
+              retainUntilTime: new Date(
+                RETAIN.getTime() - 60_000,
+              ).toISOString(),
+            },
+          }),
+      }),
+    );
+    const store = await GcsArtifactStore.create({ transport, bucket: BUCKET });
+    await expect(
+      store.put(
+        buildArtifactKey(ACCOUNT_A, "anchors", "short.json"),
+        new Uint8Array([1]),
+        { retainUntil: RETAIN },
+      ),
+    ).rejects.toThrow(/did not apply the requested retention/);
+  });
+
+  test("a contentType carrying CR/LF (MIME header injection) is rejected before any call", async () => {
+    const { transport, calls } = makeGcsStub(router({}));
+    const store = await GcsArtifactStore.create({ transport, bucket: BUCKET });
+    // Construction performs the bucket-metadata read; nothing after that may fire.
+    const callsAfterCreate = calls.length;
+    await expect(
+      store.put(
+        buildArtifactKey(ACCOUNT_A, "anchors", "evil.json"),
+        new Uint8Array([1]),
+        {
+          retainUntil: RETAIN,
+          contentType: "text/plain\r\nX-Injected: yes",
+        },
+      ),
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(calls.length).toBe(callsAfterCreate);
+  });
+});

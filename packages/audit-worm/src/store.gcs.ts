@@ -141,6 +141,14 @@ export class GcsArtifactStore implements ArtifactStore {
     assertSafeKey(key);
     assertValidRetainUntil(opts.retainUntil);
     const contentType = opts.contentType ?? "application/octet-stream";
+    // The content type is spliced into MIME part headers below — reject anything outside printable
+    // ASCII so a CR/LF (header injection) or control byte can never reach the multipart envelope.
+    if (/[^\x20-\x7e]/.test(contentType)) {
+      throw new ValidationError(
+        "audit-worm: contentType contains non-printable characters",
+        { key },
+      );
+    }
     const boundary = `caisson-${randomUUID()}`;
     const metadata = {
       name: key,
@@ -170,6 +178,25 @@ export class GcsArtifactStore implements ArtifactStore {
       });
     }
     const created = await readJson<GcsObjectResource>(res);
+    // Fail-closed: don't trust the accepted insert — assert GCS actually APPLIED the requested
+    // retention (a NaN/absent applied time fails the comparison and refuses). Without this, an
+    // API-drift insert that ignored the retention field would return success while the object
+    // sits unprotected (ADR-0267).
+    const applied =
+      created.retention?.retainUntilTime === undefined
+        ? Number.NaN
+        : new Date(created.retention.retainUntilTime).getTime();
+    if (!(applied >= opts.retainUntil.getTime())) {
+      throw new InternalError(
+        "audit-worm: GCS accepted the insert but did not apply the requested retention — " +
+          "treating the object as unprotected (ADR-0267)",
+        {
+          key,
+          requested: opts.retainUntil.toISOString(),
+          applied: created.retention?.retainUntilTime,
+        },
+      );
+    }
     return this.metaFromResource(key, created, contentType);
   }
 

@@ -111,6 +111,23 @@ function fakeGcpBackend(): GcpKmsSendable {
       destroyed = true;
       return [{}, request, {}];
     }) as GcpKmsSendable["destroyCryptoKeyVersion"],
+    listCryptoKeyVersions: (async (request: { parent?: unknown }) => {
+      // One live version until destroyed — the shape the driver's list-then-destroy shred expects.
+      const versions = destroyed
+        ? [
+            {
+              name: `${String(request.parent)}/cryptoKeyVersions/1`,
+              state: "DESTROY_SCHEDULED",
+            },
+          ]
+        : [
+            {
+              name: `${String(request.parent)}/cryptoKeyVersions/1`,
+              state: "ENABLED",
+            },
+          ];
+      return [versions, null, {}];
+    }) as GcpKmsSendable["listCryptoKeyVersions"],
   };
 }
 

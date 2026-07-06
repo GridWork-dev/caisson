@@ -5,7 +5,7 @@
 // press play). Mirrors the `Reveal` component's reduced-motion check (packages/ui/src/components/reveal.tsx).
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 
 export interface MediaVideoProps {
   /** Same-origin asset under /public (e.g. "/videos/audit-worm-demo.mp4"). */
@@ -17,14 +17,19 @@ export interface MediaVideoProps {
 }
 
 export function MediaVideo({ src, aspect, poster }: MediaVideoProps) {
-  const [autoPlay, setAutoPlay] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
+  // Browsers evaluate the `autoPlay` attribute at load — flipping the React prop after mount does
+  // nothing. Start playback imperatively instead (motion-OK users only); the play() promise
+  // rejection (autoplay policy denied it) is deliberately swallowed — controls remain available.
   useEffect(() => {
-    setAutoPlay(!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    void videoRef.current?.play().catch(() => {});
   }, []);
 
   return (
     <video
+      ref={videoRef}
       src={src}
       {...(poster !== undefined ? { poster } : {})}
       muted
@@ -32,7 +37,6 @@ export function MediaVideo({ src, aspect, poster }: MediaVideoProps) {
       playsInline
       preload="metadata"
       controls
-      autoPlay={autoPlay}
       style={{
         aspectRatio: aspect ?? "16 / 9",
         width: "100%",

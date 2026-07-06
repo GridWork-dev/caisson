@@ -76,6 +76,8 @@ export interface AgentDevDemoReport {
   readonly memoryHits: readonly string[];
   /** The absolute paths written by the multi-harness emit, in bundle order. */
   readonly emitted: readonly string[];
+  /** Fidelity warnings from the emit — targets that could not represent an activation choice. */
+  readonly emitWarnings: readonly string[];
 }
 
 /**
@@ -150,7 +152,10 @@ export async function runAgentDevDemo(
     const hooks: readonly EmitHookBinding[] = [
       { on: "pre:execute", use: target.name },
     ];
-    const emitted = edition.emit(options.targetRoot, hooks);
+    const { written: emitted, warnings: emitWarnings } = edition.emit(
+      options.targetRoot,
+      hooks,
+    );
 
     return {
       lifecyclePath,
@@ -161,6 +166,7 @@ export async function runAgentDevDemo(
       retrieval: embedder !== undefined ? "rrf" : "fts-only",
       memoryHits: hits.map((hit) => hit.id),
       emitted,
+      emitWarnings,
     };
   } finally {
     edition.close();
