@@ -237,6 +237,20 @@ source LOC. Counts are the disk truth on `main`, not a quality judgement.
 Six packages built across the Stage-2 streams. All green under `bun run check`; commercial primitives
 are env-gated/dormant until creds. Editions own membership — primitives declare `editions: []`.
 
+Counts backfill (2026-07-06, sot-check parity — these packages predate the ADR-0253 counts check
+and never carried a counts row; detail stays in the rich table below / their own sections):
+
+| Package            | src / tests / loc |
+| ------------------ | ----------------- |
+| `rate-limit`       | 4 / 3 / 432       |
+| `platform-reads`   | 1 / 1 / 137       |
+| `observability`    | 4 / 3 / 309       |
+| `agent-runner`     | 4 / 2 / 635       |
+| `audit-harness`    | 9 / 8 / 1165      |
+| `alerting`         | 6 / 3 / 523       |
+| `tool-exec`        | 2 / 1 / 152       |
+| `retention-runner` | 6 / 4 / 328       |
+
 | Package            | Stream / ADR          | License / tier                                        | Owns                                                                                                                                                                                                                                                                                                                                         |
 | ------------------ | --------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `observability`    | A (`ADR-0117`)        | **open, Apache-2.0 base**                             | OTel wiring shared across services/apps (→ Grafana Cloud sole OTLP sink, `ADR-0177`; self-hosted SigNoz removed 2026-07-01); adds a manual Bun request-span helper (`withRequestSpan`, `ADR-0185`) wired into `services/docs`+`services/license` (Bun bypasses Http/Undici/Pg auto-instrumentation); env-gated inert until `OTEL` env is set |

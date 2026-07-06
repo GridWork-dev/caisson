@@ -171,6 +171,12 @@ describe("generate — allowlist gate (ADR-0021/0048)", () => {
     expect(() => validateSelection(INDEX, { ...VALID, modules: [] })).toThrow();
   });
 
+  test("Zod .strict() rejects an unknown deployTarget (ADR-0268)", () => {
+    expect(() =>
+      validateSelection(INDEX, { ...VALID, deployTarget: "heroku" }),
+    ).toThrow();
+  });
+
   test("a duplicate module id (same id, two versions) is rejected", () => {
     const engine = spyEngine();
     expect(() =>
@@ -204,6 +210,31 @@ describe("generate — allowlist gate (ADR-0021/0048)", () => {
       generate(INDEX, VALID).files,
     );
   });
+});
+
+describe("generate — deploy templates (ADR-0268)", () => {
+  const DEPLOY_FILES = new Set([
+    "Dockerfile",
+    "railway.toml",
+    "fly.toml",
+    "Dockerfile.vercel",
+  ]);
+
+  test("an unset deployTarget composes NO deploy files — byte-identical to pre-ADR-0268 output", () => {
+    const { files } = generate(INDEX, BASE);
+    for (const f of files) {
+      expect(DEPLOY_FILES.has(f.path)).toBe(false);
+    }
+    // The existing BASE golden (asserted above) already pins the full path list; this is an
+    // explicit ADR-0268 regression lock alongside it.
+  });
+
+  for (const target of ["railway", "fly", "vercel"] as const) {
+    test(`deployTarget=${target} composes the matching template + matches its golden`, () => {
+      const { files } = generate(INDEX, { ...BASE, deployTarget: target });
+      matchGolden(import.meta.url, `generated-fileset-deploy-${target}`, files);
+    });
+  }
 });
 
 describe("generate — ADR-0072 buyer-repo boundary", () => {

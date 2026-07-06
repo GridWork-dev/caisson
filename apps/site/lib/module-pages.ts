@@ -35,6 +35,9 @@ export interface ModulePageRecord {
   relatedGlossary: readonly string[];
   /** How this module is sold relative to its bundle family — entitlement-honest. */
   sells: { edition: string; note: string };
+  /** A produced media asset for this module's `media` section (ADR-0263) — omitted means the
+   *  page still gets the plain icon placeholder. Only set once a render has actually shipped. */
+  video?: { src: string; poster?: string };
 }
 
 export const MODULE_PAGES: readonly ModulePageRecord[] = [
@@ -180,6 +183,9 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       edition: "compliance",
       note: "Every evidence collector in Compliance chains through this store: buy it standalone to anchor your own audit trail, or get it composed for you inside the Compliance bundle.",
     },
+    // The ADR-0263 pilot render: append -> tamper-attempt -> verify-catches-it, produced from
+    // apps/site/remotion/AuditWormDemo.tsx via `bun run remotion:render`.
+    video: { src: "/videos/audit-worm-demo.mp4" },
   },
   {
     slug: "retention-runner",
@@ -737,13 +743,13 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       {
         question:
           "Does buying agent-kernel alone get me the sandboxed agent runner too?",
-        answer: `No. agent-kernel ($199) is the schema/FSM/governance/hooks/audit-chain base; running an actual sandboxed agent process is agent-runner ($49), a separate module. Those are the two Agentic-Dev SKUs sold standalone; the ${bundlePrice("agentic-dev")} Agentic-Dev bundle additionally bundles the local hybrid memory, the sandboxed tool-exec gate, and the multi-harness emitter that wire agent-kernel into one governed loop. Buy the modules for your own tooling, or buy the bundle for the assembled loop.`,
+        answer: `No. agent-kernel ($199) is the schema/FSM/governance/hooks/audit-chain base; running an actual sandboxed agent process is agent-runner ($49), a separate module. Those are the two Agentic-Dev SKUs sold standalone; the ${bundlePrice("agentic-dev")} Agentic-Dev bundle additionally bundles the local hybrid memory, the sandboxed tool-exec gate, and the multi-harness emitter (Claude Code, Cursor, Devin, GitHub Copilot, Cline, plus a universal AGENTS.md base read natively by Codex, Zed, and Gemini CLI — with fidelity warnings whenever a target can't represent an authored activation choice) that wire agent-kernel into one governed loop. Buy the modules for your own tooling, or buy the bundle for the assembled loop.`,
       },
     ],
     relatedGlossary: ["hash-chain-audit-trail"],
     sells: {
       edition: "agentic-dev",
-      note: `Agent kernel ($199) and agent-runner ($49) are the two Agentic-Dev SKUs sold standalone; the ${bundlePrice("agentic-dev")} Agentic-Dev bundle additionally bundles the local hybrid memory, the sandboxed tool-exec gate, and the multi-harness emitter that wire agent-kernel into one governed loop. Buy the module alone to consume the schema/FSM/governance/hooks/audit-chain from your own tooling, or buy the bundle for the assembled loop.`,
+      note: `Agent kernel ($199) and agent-runner ($49) are the two Agentic-Dev SKUs sold standalone; the ${bundlePrice("agentic-dev")} Agentic-Dev bundle additionally bundles the local hybrid memory, the sandboxed tool-exec gate, and the multi-harness emitter (Claude Code, Cursor, Devin, GitHub Copilot, Cline, plus a universal AGENTS.md base read natively by Codex, Zed, and Gemini CLI — with fidelity warnings whenever a target can't represent an authored activation choice) that wire agent-kernel into one governed loop. Buy the module alone to consume the schema/FSM/governance/hooks/audit-chain from your own tooling, or buy the bundle for the assembled loop.`,
     },
   },
   {

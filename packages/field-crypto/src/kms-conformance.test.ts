@@ -12,6 +12,7 @@ import {
 } from "@aws-sdk/client-kms";
 import { LocalKmsClient, type KmsClient } from "./kms.ts";
 import { createAwsKmsClient, type KmsSendable } from "./kms-aws.ts";
+import { createGcpKmsClient, type GcpKmsSendable } from "./kms-gcp.ts";
 import { aesGcm } from "./cipher.ts";
 
 const WRAP_AAD = Buffer.from("kms-conformance-fake-aws-wrap");
@@ -63,6 +64,73 @@ function fakeAwsBackend(): KmsSendable {
   } as unknown as KmsSendable;
 }
 
+/**
+ * A STATEFUL fake GCP Cloud KMS backend — genuinely AEAD-wraps/unwraps (same discipline as
+ * `fakeAwsBackend`), so the conformance loop exercises `createGcpKmsClient`'s call mapping against
+ * real crypto. It ignores the per-call `name`/`additionalAuthenticatedData` (a test double, not a
+ * real per-tenant CryptoKey router — that routing is asserted in `kms-gcp.test.ts`) and wraps under
+ * one process KEK; `destroyCryptoKeyVersion` destroys it.
+ */
+function fakeGcpBackend(): GcpKmsSendable {
+  const kek = randomBytes(32);
+  let destroyed = false;
+  return {
+    encrypt: (async (request: { plaintext?: unknown }) => {
+      if (destroyed) {
+        throw new Error("kms-conformance: fake CryptoKeyVersion was destroyed");
+      }
+      const plaintext = Buffer.from(request.plaintext as Uint8Array);
+      const { nonce, ciphertext, tag } = aesGcm.encrypt(
+        kek,
+        plaintext,
+        WRAP_AAD,
+      );
+      return [
+        { ciphertext: Buffer.concat([nonce, ciphertext, tag]) },
+        request,
+        {},
+      ];
+    }) as GcpKmsSendable["encrypt"],
+    decrypt: (async (request: { ciphertext?: unknown }) => {
+      if (destroyed) {
+        throw new Error("kms-conformance: fake CryptoKeyVersion was destroyed");
+      }
+      const blob = Buffer.from(request.ciphertext as Uint8Array);
+      const nonce = blob.subarray(0, 12);
+      const tag = blob.subarray(blob.length - 16);
+      const ciphertext = blob.subarray(12, blob.length - 16);
+      return [
+        {
+          plaintext: aesGcm.decrypt(kek, { nonce, ciphertext, tag }, WRAP_AAD),
+        },
+        request,
+        {},
+      ];
+    }) as GcpKmsSendable["decrypt"],
+    destroyCryptoKeyVersion: (async (request: unknown) => {
+      destroyed = true;
+      return [{}, request, {}];
+    }) as GcpKmsSendable["destroyCryptoKeyVersion"],
+    listCryptoKeyVersions: (async (request: { parent?: unknown }) => {
+      // One live version until destroyed — the shape the driver's list-then-destroy shred expects.
+      const versions = destroyed
+        ? [
+            {
+              name: `${String(request.parent)}/cryptoKeyVersions/1`,
+              state: "DESTROY_SCHEDULED",
+            },
+          ]
+        : [
+            {
+              name: `${String(request.parent)}/cryptoKeyVersions/1`,
+              state: "ENABLED",
+            },
+          ];
+      return [versions, null, {}];
+    }) as GcpKmsSendable["listCryptoKeyVersions"],
+  };
+}
+
 const drivers: ReadonlyArray<{ name: string; client(): KmsClient }> = [
   { name: "LocalKmsClient", client: () => new LocalKmsClient(randomBytes(32)) },
   {
@@ -71,6 +139,15 @@ const drivers: ReadonlyArray<{ name: string; client(): KmsClient }> = [
       createAwsKmsClient({
         keyId: "conformance-cmk",
         client: fakeAwsBackend(),
+      }),
+  },
+  {
+    name: "createGcpKmsClient",
+    client: () =>
+      createGcpKmsClient({
+        cryptoKeyName:
+          "projects/p/locations/l/keyRings/r/cryptoKeys/conformance",
+        client: fakeGcpBackend(),
       }),
   },
 ];

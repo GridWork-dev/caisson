@@ -6,6 +6,8 @@ export {
   type GeneratedFile,
   type GeneratedFileSet,
   type GeneratorEngine,
+  type RawSelection,
+  DEPLOY_TARGETS,
   Selection as SelectionSchema,
   validateSelection,
   defaultEngine,

@@ -7,7 +7,7 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "description": "Provider-agnostic AI config resolver (OpenAI, Anthropic, Google, OpenRouter, local, Bedrock, Azure OpenAI, Ollama) + buyer settings file.",
+  "description": "Provider-agnostic AI config resolver (OpenAI, Anthropic, Google, OpenRouter, local, Bedrock, Azure OpenAI, Ollama, Groq, Mistral, Together) + buyer settings file.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",

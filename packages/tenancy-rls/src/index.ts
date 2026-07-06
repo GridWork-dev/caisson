@@ -9,3 +9,7 @@ export {
 export type { TenantExecutor, Transactor, TenantPolicyOptions } from "./rls.ts";
 export { createSupabaseTransactor } from "./supabase.ts";
 export type { SupabaseTransactorConfig } from "./supabase.ts";
+export { queryDrizzle, execDrizzle } from "./drizzle.ts";
+export type { DrizzleToSql } from "./drizzle.ts";
+export { createPrismaBridge } from "./prisma.ts";
+export type { PrismaRawClient } from "./prisma.ts";

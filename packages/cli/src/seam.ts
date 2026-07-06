@@ -15,6 +15,10 @@ import { z } from "zod";
 
 const EDITIONS = ["compliance", "ai-kit", "local-ai", "agent-dev"] as const;
 
+/** ADR-0268 — the deploy-template targets a generated repo may optionally compose. Each maps to a
+ *  `templates/deploy/<target>/` directory the engine composes on top of base (+ edition). */
+export const DEPLOY_TARGETS = ["railway", "fly", "vercel"] as const;
+
 const ModuleSelection = z
   .object({
     id: z.string(),
@@ -38,6 +42,8 @@ export const Selection = z
     projectName: ProjectName,
     edition: z.enum(EDITIONS).optional(),
     modules: z.array(ModuleSelection).min(1),
+    /** ADR-0268 — optional; unset composes no deploy files (byte-identical to pre-ADR-0268 output). */
+    deployTarget: z.enum(DEPLOY_TARGETS).optional(),
   })
   .strict()
   // One id at two versions makes package.json deps (last-wins) disagree with the README (lists
@@ -56,4 +62,19 @@ export type GeneratedFileSet = EmittedFileSet;
 /** The generator engine seam (ADR-0048). Swap the deterministic copy/transform for ts-morph later. */
 export interface GeneratorEngine {
   materialize(selection: Selection): GeneratedFileSet;
+}
+
+/**
+ * The pre-Zod-validation raw selection shape `parseArgs` and the interactive wizard (ADR-0262)
+ * both produce — every field individually optional except `modules` (always an array, possibly
+ * empty), so a caller can detect which fields argv actually supplied BEFORE `Selection`'s
+ * `.strict()` parse raises the precise validation error. Kept distinct from
+ * `z.input<typeof Selection>` (which requires `projectName`) because the CLI's gap-fill logic
+ * needs to observe a MISSING project name, not just an invalid one.
+ */
+export interface RawSelection {
+  projectName?: string;
+  edition?: string;
+  modules: { id: string; version: string }[];
+  deployTarget?: string;
 }

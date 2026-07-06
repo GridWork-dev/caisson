@@ -29,6 +29,7 @@
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
     "@types/pg": "catalog:",
+    "drizzle-orm": "catalog:",
     "eslint": "catalog:",
     "typescript": "catalog:"
   }

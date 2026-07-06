@@ -61,6 +61,24 @@ export async function generateMetadata(props: Params): Promise<Metadata> {
   });
 }
 
+/**
+ * The stackCompat badge row (ADR-0263), authored from docs/state/compatibility-matrix.md
+ * (2026-07-06 corrected snapshot) — every module page shares one "what this actually plugs into"
+ * row, since Postgres/RLS, billing, email, and jobs are base-level facts true for all of them.
+ * Counts trued up at Kickoff-F integration (2026-07-06): 11 AI lanes after the groq/mistral/
+ * together additions; 6 emitter targets after ADR-0264 (Claude Code, AGENTS.md universal base,
+ * Cursor, Devin incl. the Windsurf legacy mirror, Copilot, Cline).
+ */
+const STACK_COMPAT_ITEMS = [
+  { label: "Postgres + RLS" },
+  { label: "11 AI lanes" },
+  { label: "6 agent-harness targets" },
+  { label: "vendor-neutral OTel" },
+  { label: "4 billing providers" },
+  { label: "5 email drivers" },
+  { label: "pg-boss + Trigger.dev jobs" },
+] as const;
+
 function bodySections(record: ModulePageRecord): readonly PageSection[] {
   return [
     {
@@ -79,7 +97,13 @@ function bodySections(record: ModulePageRecord): readonly PageSection[] {
       label: `${record.artifact.label}: ${record.artifact.file}`,
       code: record.artifact.code,
     },
-    { kind: "media", icon: moduleMark(record.slug) },
+    { kind: "media", icon: moduleMark(record.slug), ...(record.video ?? {}) },
+    {
+      kind: "stackCompat",
+      eyebrow: "Compatibility",
+      title: "What it plugs into",
+      items: STACK_COMPAT_ITEMS,
+    },
     {
       kind: "faq",
       eyebrow: "FAQ",

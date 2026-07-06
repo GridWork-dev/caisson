@@ -2,13 +2,30 @@
 // deliberately un-exercised seam (the package's zero-live-call invariant, ADR-0059) — these tests
 // only prove that each config enum builds a real `ProviderV2` adapter (has `.languageModel`), so a
 // new backend is wired, without any network/model call or provider key.
-import { afterAll, describe, expect, test } from "bun:test";
+import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { parseAiSettings, type AiSettings } from "@caisson/ai-config";
 import { defaultProviders, timeoutFetch } from "./providers.ts";
 
 function laneSettings(lane: AiSettings["lanes"][string]): AiSettings {
   return { defaultLane: "x", lanes: { x: lane } };
 }
+
+// Groq/Mistral/Together fail closed on a missing key (unlike ollama/local's "local" placeholder,
+// ADR-0171) — a dedicated env var per vendor, seeded/restored around the whole file, keeps the shared
+// "X" placeholder (used by every other case below, deliberately unset) untouched.
+const GROQ_KEY_ENV = "AI_KIT_TEST_GROQ_KEY";
+const MISTRAL_KEY_ENV = "AI_KIT_TEST_MISTRAL_KEY";
+const TOGETHER_KEY_ENV = "AI_KIT_TEST_TOGETHER_KEY";
+beforeAll(() => {
+  process.env[GROQ_KEY_ENV] = "test-key";
+  process.env[MISTRAL_KEY_ENV] = "test-key";
+  process.env[TOGETHER_KEY_ENV] = "test-key";
+});
+afterAll(() => {
+  delete process.env[GROQ_KEY_ENV];
+  delete process.env[MISTRAL_KEY_ENV];
+  delete process.env[TOGETHER_KEY_ENV];
+});
 
 describe("defaultProviders — every configured backend builds a ProviderV2 (ADR-0160)", () => {
   const cases: Array<{ name: string; lane: AiSettings["lanes"][string] }> = [
@@ -64,6 +81,30 @@ describe("defaultProviders — every configured backend builds a ProviderV2 (ADR
         apiKeyEnv: "AZURE_OPENAI_KEY",
         baseUrl: "https://res.openai.azure.com",
         apiVersion: "2024-06-01",
+      },
+    },
+    {
+      name: "groq",
+      lane: {
+        provider: "groq",
+        model: "llama-3.3-70b-versatile",
+        apiKeyEnv: GROQ_KEY_ENV,
+      },
+    },
+    {
+      name: "mistral",
+      lane: {
+        provider: "mistral",
+        model: "mistral-large-latest",
+        apiKeyEnv: MISTRAL_KEY_ENV,
+      },
+    },
+    {
+      name: "together",
+      lane: {
+        provider: "together",
+        model: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+        apiKeyEnv: TOGETHER_KEY_ENV,
       },
     },
   ];
@@ -139,6 +180,30 @@ describe("openai-compatible backends resolve the CHAT path (ADR-0201)", () => {
         baseUrl: "https://host:11434/v1",
       },
     },
+    {
+      name: "groq",
+      lane: {
+        provider: "groq",
+        model: "llama-3.3-70b-versatile",
+        apiKeyEnv: GROQ_KEY_ENV,
+      },
+    },
+    {
+      name: "mistral",
+      lane: {
+        provider: "mistral",
+        model: "mistral-large-latest",
+        apiKeyEnv: MISTRAL_KEY_ENV,
+      },
+    },
+    {
+      name: "together",
+      lane: {
+        provider: "together",
+        model: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+        apiKeyEnv: TOGETHER_KEY_ENV,
+      },
+    },
   ];
 
   for (const { name, lane } of cases) {
@@ -157,6 +222,22 @@ describe("openai-compatible backends resolve the CHAT path (ADR-0201)", () => {
       expect(() =>
         defaultProviders(
           laneSettings({ provider, model: "m", apiKeyEnv: "X" }),
+        ),
+      ).toThrow();
+    }
+  });
+
+  test("groq/mistral/together fail closed on a missing key (real paid vendor APIs, ADR-0171)", () => {
+    // Unlike local/ollama's "local" placeholder fallback, these vendors require a genuine key — an
+    // apiKeyEnv naming an unset env var must fail construction, not reach the vendor bare.
+    for (const provider of ["groq", "mistral", "together"] as const) {
+      expect(() =>
+        defaultProviders(
+          laneSettings({
+            provider,
+            model: "m",
+            apiKeyEnv: "AI_KIT_TEST_UNSET_KEY",
+          }),
         ),
       ).toThrow();
     }

@@ -1,15 +1,58 @@
 ---
-updated: 2026-06-30
+updated: 2026-07-06
 status: live
 ---
 
 # Adapter / driver expansion — buildout roadmap
 
-Status: **planned** · authored 2026-06-30 (operator directed full buildout of all tiers + un-wired
-seams). Source: the 2026-06-30 external-provider inventory. This is a roadmap doc (under
-`docs/state/`); each port-family expansion locks an **ADR** in `knowledge/decisions/` before code,
-per the spec-first cadence. ADR ceiling at authoring = **0118** → expansion ADRs start **0119+**
-(assign sequentially at lock time; renumber on collision with concurrent work, by meaning).
+Status: **partially shipped, reconciled 2026-07-06** · authored 2026-06-30 (operator directed
+full buildout of all tiers + un-wired seams). Source: the 2026-06-30 external-provider
+inventory. This is a roadmap doc (under `docs/state/`); each port-family expansion locks an
+**ADR** in `knowledge/decisions/` before code, per the spec-first cadence. The 0119+ ADR
+numbers penciled below were **never used** — the actual locks landed under other numbers
+(see the reconcile block).
+
+## 2026-07-06 reconcile (ADR-0265 doc-correction pass — read this before quoting any row)
+
+Much of Tier 1/2 shipped in the 2026-06-30/07-01 Stage-2 Stream-D wave, same day this doc was
+authored; the tier sections below are kept for their design detail but their "Add"/"planned"
+framing is stale for these rows:
+
+- **Emailer → SHIPPED** (ADR-0170): SMTP-generic + SES + Postmark beside Resend/Capture.
+- **KmsClient AWS → SHIPPED + live-proven** (ADR-0171, real-CMK proof 2026-07-02); **GCP KMS
+  locked into the Kickoff-F wave** (no new ADR needed per ADR-0171's own binding); Azure
+  KV/Vault still open.
+- **SessionProvider WorkOS → SHIPPED** (ADR-0172); Clerk/Auth0 still open.
+- **JobQueue pg-boss → SHIPPED** (ADR-0173; + in-service scheduler ADR-0256); BullMQ/Inngest
+  still open.
+- **AI inference Bedrock/Azure/Ollama → SHIPPED** (Stage-2 Stream C, ADR-0160-0162 wave).
+- **BillingProvider LemonSqueezy/Polar → CODED** (ADR-0175; live-proof pending per ADR-0265).
+- **MCP HTTP transport → SHIPPED** (ADR-0161).
+- **ArtifactStore R2: the "~trivial S3-compat reuse" premise below is WRONG** — R2 does not
+  support S3 Object Lock, and `ArtifactStore` is a WORM-contract port (`retainUntil`
+  mandatory). The corrected lock is **ADR-0267**: GCS Bucket Lock + an R2 driver on
+  Cloudflare's bucket-locks API, fail-closed when the bucket rule can't satisfy the requested
+  retention.
+- Still genuinely open beyond the above: GCS/Azure Blob (now locked via ADR-0267 for GCS),
+  BullMQ/Inngest, Clerk/Auth0, Azure KV/Vault KMS, Slack/Telegram chat (deferred again at the
+  Kickoff-F round, QA-path-only whenever it returns), analytics port (1D scope).
+- Launch gating for every transport row now lives in `docs/state/live-transport-checklist.md`
+  (ADR-0265, enterprise-ready sweep).
+
+**Kickoff-F build wave LANDED (2026-07-06, same day, post-reconcile):**
+
+- **ArtifactStore GCS + R2 → SHIPPED** (`audit-worm/src/store.{gcs,r2}.ts`, ADR-0267). Build
+  correction inside the ADR's bound: GCS uses per-object **Object Retention Lock** (bucket-level
+  Bucket Lock is a single fixed duration and can't honor per-put `retainUntil`). R2's
+  `extendRetention` succeeds only under an `Indefinite` rule — real capability gap vs S3/GCS.
+- **KmsClient GCP → SHIPPED** (`field-crypto/src/kms-gcp.ts`, ADR-0171 binding): official SDK,
+  BYO-DEK envelope (GCP has no GenerateDataKey), AAD scope-binding, version-scoped shred.
+- **ORM bridges → SHIPPED** (`tenancy-rls/src/{drizzle,prisma}.ts`, ADR-0266): structural
+  typing, zero runtime ORM deps; raw-SQL migrations stay canonical for RLS DDL.
+- **AI lanes groq/mistral/together → SHIPPED** (ai-config + ai-kit, fail-closed on missing key).
+- **Emitter targets Devin (+Windsurf mirror)/Copilot/Cline → SHIPPED** (ADR-0264, with the
+  IR activation extension + fidelity warnings; Cursor `alwaysApply` degrade fixed).
+- **Deploy templates railway/fly/vercel → SHIPPED** (`cli/templates/deploy/`, ADR-0268).
 
 ## Why
 
@@ -35,21 +78,21 @@ pattern) — never a fork of the port contract.
 
 ## Port → current drivers → expansion (full inventory)
 
-| Port                           | File:line                                                                         | Drivers today                                                                                     | Add                                                                                              | Tier     |
-| ------------------------------ | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | -------- |
-| `Emailer`                      | `packages/email/src/email.ts:15`                                                  | Resend (`:53`), Capture (test)                                                                    | **SMTP-generic**, **AWS SES**, Postmark                                                          | 1        |
-| `KmsClient` + license `Signer` | `packages/field-crypto/src/kms.ts:30` · `packages/license-issue/src/signer.ts:47` | Local (`kms.ts:241`); `awsKmsClient` **throws**; `KmsSigner` **interface-only** (`signer.ts:176`) | **Wire AWS KMS**, GCP KMS, Azure Key Vault, Vault                                                | 1 (seam) |
-| `SessionProvider`              | `packages/auth/src/session.ts:17`                                                 | better-auth only                                                                                  | **WorkOS** (SAML/SCIM SSO), Clerk, Auth0/Okta                                                    | 1        |
-| Analytics (no port — **bug**)  | `apps/site/app/layout.tsx:61` (hardcoded `data-domain`)                           | Plausible, hardcoded                                                                              | **Make a port + env-gate**; add PostHog, GA4                                                     | 1        |
-| `ArtifactStore`                | `packages/audit-worm/src/store.ts:35`                                             | S3 (`store.s3.ts`), Local                                                                         | **Cloudflare R2** (S3-compat, ~trivial), GCS, Azure Blob                                         | 2        |
-| `JobQueue`                     | `packages/jobs/src/queue.ts:26`                                                   | Trigger.dev (`trigger-driver.ts:52`), InMemory                                                    | **pg-boss** (Postgres-native, zero new infra), BullMQ/Redis, Inngest                             | 2        |
-| AI inference                   | `packages/ai-config/src/config.ts:11` · `packages/ai-kit/src/providers.ts:20`     | openai, anthropic, google, openrouter, local                                                      | **AWS Bedrock**, **Azure OpenAI**, **Ollama**                                                    | 2        |
-| `BillingProvider`              | `packages/billing/src/provider.ts:23`                                             | Stripe (`:38`), Paddle (`:109`)                                                                   | LemonSqueezy, Polar                                                                              | 3        |
-| Chat (support-bot, no port)    | `services/support-bot/.../bot.py`                                                 | Discord                                                                                           | **Slack**, Telegram                                                                              | 3        |
-| MCP transport                  | `packages/mcp-server/src/stdio.ts:24`                                             | stdio only                                                                                        | **HTTP/SSE transport** (remote MCP)                                                              | 3        |
-| Observability                  | `packages/observability/src/observability.ts:79`                                  | OTLP/HTTP single                                                                                  | OTLP/gRPC option (already backend-swappable via endpoint)                                        | 3        |
-| `Transactor` (DB)              | `packages/tenancy-rls/src/rls.ts:21`                                              | node-postgres/Neon (inject), PGlite (test), sqlite (local-first)                                  | Supabase explicit; Neon-serverless-HTTP **only if** RLS-tx model allows (needs TCP tx — careful) | 3        |
-| `Embedder`                     | `packages/local-store/src/embedder.ts:14`                                         | OpenRouter (prod), Fake (ci)                                                                      | (already covered by inference expansion; Bedrock/Azure/local embed)                              | 2        |
+| Port                           | File:line                                                                         | Drivers today                                                                                         | Add                                                                                                                                     | Tier     |
+| ------------------------------ | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `Emailer`                      | `packages/email/src/email.ts:15`                                                  | Resend (`:53`), Capture (test)                                                                        | **SMTP-generic**, **AWS SES**, Postmark                                                                                                 | 1        |
+| `KmsClient` + license `Signer` | `packages/field-crypto/src/kms.ts:30` · `packages/license-issue/src/signer.ts:47` | Local; **AWS KMS SHIPPED + live-proven** (`kms-aws.ts`, ADR-0171 — the "throws" note is pre-Stream-D) | GCP KMS (locked, Kickoff-F wave), Azure Key Vault, Vault                                                                                | 1 (seam) |
+| `SessionProvider`              | `packages/auth/src/session.ts:17`                                                 | better-auth only                                                                                      | **WorkOS** (SAML/SCIM SSO), Clerk, Auth0/Okta                                                                                           | 1        |
+| Analytics (no port — **bug**)  | `apps/site/app/layout.tsx:61` (hardcoded `data-domain`)                           | Plausible, hardcoded                                                                                  | **Make a port + env-gate**; add PostHog, GA4                                                                                            | 1        |
+| `ArtifactStore`                | `packages/audit-worm/src/store.ts:35`                                             | S3 (`store.s3.ts`), Local                                                                             | GCS Bucket Lock + R2 bucket-locks per **ADR-0267** (the old "R2 S3-compat ~trivial" claim was WRONG — no Object Lock on R2), Azure Blob | 2        |
+| `JobQueue`                     | `packages/jobs/src/queue.ts:26`                                                   | Trigger.dev (`trigger-driver.ts:52`), InMemory                                                        | **pg-boss** (Postgres-native, zero new infra), BullMQ/Redis, Inngest                                                                    | 2        |
+| AI inference                   | `packages/ai-config/src/config.ts:11` · `packages/ai-kit/src/providers.ts:20`     | openai, anthropic, google, openrouter, local                                                          | **AWS Bedrock**, **Azure OpenAI**, **Ollama**                                                                                           | 2        |
+| `BillingProvider`              | `packages/billing/src/provider.ts:23`                                             | Stripe (`:38`), Paddle (`:109`)                                                                       | LemonSqueezy, Polar                                                                                                                     | 3        |
+| Chat (support-bot, no port)    | `services/support-bot/.../bot.py`                                                 | Discord                                                                                               | **Slack**, Telegram                                                                                                                     | 3        |
+| MCP transport                  | `packages/mcp-server/src/stdio.ts:24`                                             | stdio only                                                                                            | **HTTP/SSE transport** (remote MCP)                                                                                                     | 3        |
+| Observability                  | `packages/observability/src/observability.ts:79`                                  | OTLP/HTTP single                                                                                      | OTLP/gRPC option (already backend-swappable via endpoint)                                                                               | 3        |
+| `Transactor` (DB)              | `packages/tenancy-rls/src/rls.ts:21`                                              | node-postgres/Neon (inject), PGlite (test), sqlite (local-first)                                      | Supabase explicit; Neon-serverless-HTTP **only if** RLS-tx model allows (needs TCP tx — careful)                                        | 3        |
+| `Embedder`                     | `packages/local-store/src/embedder.ts:14`                                         | OpenRouter (prod), Fake (ci)                                                                          | (already covered by inference expansion; Bedrock/Azure/local embed)                                                                     | 2        |
 
 ---
 
@@ -89,10 +132,13 @@ pattern) — never a fork of the port contract.
 
 ## Tier 2 — broadens deployment targets
 
-### 2A. Storage — `ArtifactStore` → **ADR-0123**
+### 2A. Storage — `ArtifactStore` → superseded by **ADR-0267** (2026-07-06)
 
-- **Cloudflare R2** (S3-compatible → reuse `S3ArtifactStore` with `endpoint`+creds, ~trivial) +
-  GCS + Azure Blob. Lets buyers avoid AWS; R2 is cheap-egress.
+- ~~**Cloudflare R2** (S3-compatible → reuse `S3ArtifactStore` with `endpoint`+creds, ~trivial)~~
+  **WRONG PREMISE** — R2 has no S3 Object Lock and `ArtifactStore` is a WORM-contract port.
+  Corrected scope per ADR-0267: **GCS Bucket Lock** driver + an **R2 driver on Cloudflare's
+  bucket-locks API** (fail-closed when the bucket rule can't satisfy `retainUntil`); Azure
+  Blob immutable-storage later. Lets buyers avoid AWS; R2 stays cheap-egress.
 
 ### 2B. Jobs — `JobQueue` → **ADR-0124**
 

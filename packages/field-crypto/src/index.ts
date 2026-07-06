@@ -72,6 +72,12 @@ export {
 } from "./kms-aws.ts";
 
 export {
+  type GcpKmsSendable,
+  type GcpKmsClientConfig,
+  createGcpKmsClient,
+} from "./kms-gcp.ts";
+
+export {
   type CryptoShredRequest,
   type CryptoShredReceipt,
   cryptoShred,
