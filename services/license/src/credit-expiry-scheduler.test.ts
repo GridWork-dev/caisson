@@ -22,8 +22,8 @@ import type {
 import {
   ADMIN_WRITE_ROLE_BOOTSTRAP_SQL,
   buildAdminWritePolicySql,
-  type Transactor,
-} from "@caisson/tenancy-rls";
+} from "@caisson/org-controls";
+import type { Transactor } from "@caisson/tenancy-rls";
 import { type TestPg, newTestPg } from "@caisson/testing";
 import {
   CREDIT_EXPIRY_TICK_TASK,

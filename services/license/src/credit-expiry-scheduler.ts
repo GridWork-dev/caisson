@@ -19,7 +19,8 @@
 // territory (never caught inside a task handler).
 import { createPgBossJobQueue, defineTask, type JobQueue } from "@caisson/jobs";
 import { strictObject } from "@caisson/kernel";
-import { withAdminWrite, type Transactor } from "@caisson/tenancy-rls";
+import { withAdminWrite } from "@caisson/org-controls";
+import type { Transactor } from "@caisson/tenancy-rls";
 import {
   CREDIT_EXPIRY_NOTICE_TASK,
   CREDIT_EXPIRY_SWEEP_TASK,
