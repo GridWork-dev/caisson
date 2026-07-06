@@ -55,7 +55,7 @@ const FAQ_ITEMS = [
   {
     question: "Is the license a one-time purchase or a subscription?",
     answer:
-      "One-time. The perpetual license fee is a single charge per edition or module, and the license doesn't expire, doesn't require renewal, and verifies offline: no call home required. Compliance Updates is a separate, optional, recurring subscription that delivers new package versions with updated control mappings; skipping or cancelling it doesn't affect the perpetual license you already hold.",
+      "One-time for the license, time-boxed for updates. The perpetual license fee is a single charge per edition or module: the license doesn't expire, doesn't require renewal, and verifies offline — no call home required. Your purchase includes 12 months of registry updates from the Order date; after that, you can renew updates access for another 12 months at a reduced rate, or let it lapse with no penalty to the code you already have. Compliance Updates is a separate, optional, recurring subscription that layers on ongoing framework-mapping updates; skipping either one never affects the perpetual license you already hold.",
   },
   {
     question: "What's the refund policy?",
@@ -234,13 +234,15 @@ export default function ProcurementPage() {
           terms, presented to you at checkout.
         </p>
         <p className="cs-muted" style={{ marginTop: "var(--cs-space-4)" }}>
-          The perpetual license fee is a one-time charge per edition or module.
-          A Compliance Updates subscription, where purchased, bills on a
-          recurring basis until cancelled and delivers new package versions with
-          updated control mappings; it&rsquo;s optional and doesn&rsquo;t affect
-          the perpetual license for versions you already have. The license
-          itself doesn&rsquo;t expire, doesn&rsquo;t require renewal, and
-          doesn&rsquo;t call home to stay valid.
+          The perpetual license fee is a one-time charge per edition or module
+          and includes 12 months of updates from your Order date, renewable
+          afterward at a reduced rate. A Compliance Updates subscription, where
+          purchased, bills on a recurring basis until cancelled and delivers new
+          package versions with updated control mappings; neither is required,
+          and skipping either doesn&rsquo;t affect the perpetual license for
+          versions you already have. The license itself doesn&rsquo;t expire,
+          doesn&rsquo;t require renewal, and doesn&rsquo;t call home to stay
+          valid.
         </p>
         <p className="cs-muted" style={{ marginTop: "var(--cs-space-4)" }}>
           Refunds: consumers in the EU, EEA, UK, and Switzerland have a
