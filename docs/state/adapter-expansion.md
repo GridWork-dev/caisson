@@ -39,6 +39,21 @@ framing is stale for these rows:
 - Launch gating for every transport row now lives in `docs/state/live-transport-checklist.md`
   (ADR-0265, enterprise-ready sweep).
 
+**Kickoff-F build wave LANDED (2026-07-06, same day, post-reconcile):**
+
+- **ArtifactStore GCS + R2 → SHIPPED** (`audit-worm/src/store.{gcs,r2}.ts`, ADR-0267). Build
+  correction inside the ADR's bound: GCS uses per-object **Object Retention Lock** (bucket-level
+  Bucket Lock is a single fixed duration and can't honor per-put `retainUntil`). R2's
+  `extendRetention` succeeds only under an `Indefinite` rule — real capability gap vs S3/GCS.
+- **KmsClient GCP → SHIPPED** (`field-crypto/src/kms-gcp.ts`, ADR-0171 binding): official SDK,
+  BYO-DEK envelope (GCP has no GenerateDataKey), AAD scope-binding, version-scoped shred.
+- **ORM bridges → SHIPPED** (`tenancy-rls/src/{drizzle,prisma}.ts`, ADR-0266): structural
+  typing, zero runtime ORM deps; raw-SQL migrations stay canonical for RLS DDL.
+- **AI lanes groq/mistral/together → SHIPPED** (ai-config + ai-kit, fail-closed on missing key).
+- **Emitter targets Devin (+Windsurf mirror)/Copilot/Cline → SHIPPED** (ADR-0264, with the
+  IR activation extension + fidelity warnings; Cursor `alwaysApply` degrade fixed).
+- **Deploy templates railway/fly/vercel → SHIPPED** (`cli/templates/deploy/`, ADR-0268).
+
 ## Why
 
 Caisson is sold to buyers who deploy it in **their** environment. Every port with a single concrete

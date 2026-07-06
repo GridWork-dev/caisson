@@ -52,16 +52,21 @@ wave, row activates when it lands).
 | Google direct lane     | `packages/ai-kit/src/providers.ts` (`google`)                                | Google AI key                                                                   | unproven-gating                                             |
 | MCP HTTP/SSE transport | `packages/mcp-server/src/http.ts` (ADR-0161)                                 | None external — a live remote-client round-trip leg                             | unproven-gating                                             |
 
-## Pending build (locked this wave — rows activate with the driver PR)
+## Built this wave — rows activated at Kickoff-F integration (2026-07-06)
 
-| Transport                       | Lock                                  | Creds to provision (operator)                          |
-| ------------------------------- | ------------------------------------- | ------------------------------------------------------ |
-| GCP KMS                         | ADR-0171 binding (no new ADR)         | GCP project + KMS keyring + SA key                     |
-| GCS Bucket Lock storage         | ADR-0267                              | GCS bucket with Bucket Lock + SA key                   |
-| R2 bucket-locks storage         | ADR-0267                              | Cloudflare account + R2 bucket with a bucket-lock rule |
-| Drizzle / Prisma bridges        | ADR-0266                              | None external (PGlite/integration legs)                |
-| Groq / Mistral / Together lanes | ai-config additive (board 2026-07-06) | One API key each for the recipe proof                  |
+Self-skipping live tests are in-repo; every row below awaits operator creds to flip to proven.
 
+| Transport               | Package (driver / live test)                                       | Creds / env to provision                                                                                                                           | Status          |
+| ----------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| GCP Cloud KMS           | `packages/field-crypto` · `live/kms-gcp.live.test.ts`              | `CAISSON_KMS_GCP_LIVE` + `CAISSON_KMS_GCP_KEY_RING` (pre-provisioned KeyRing — GCP KeyRings are undeletable) + GCP Application Default Credentials | unproven-gating |
+| GCS Object Retention    | `packages/audit-worm` · `live/store.gcs.live.test.ts`              | `CAISSON_GCS_LIVE_BUCKET` + `GOOGLE_APPLICATION_CREDENTIALS` (bucket must have Object Retention Lock enabled)                                      | unproven-gating |
+| R2 bucket-locks storage | `packages/audit-worm` · `live/store.r2.live.test.ts`               | `CAISSON_R2_LIVE_BUCKET` + `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN` (Edit on bucket lock) + `R2_ACCESS_KEY_ID`/`R2_SECRET_ACCESS_KEY`      | unproven-gating |
+| Groq lane               | `packages/ai-kit/src/providers.ts` (`groq`, OpenAI-compatible)     | Groq API key                                                                                                                                       | unproven-gating |
+| Mistral lane            | `packages/ai-kit/src/providers.ts` (`mistral`, OpenAI-compatible)  | Mistral API key                                                                                                                                    | unproven-gating |
+| Together lane           | `packages/ai-kit/src/providers.ts` (`together`, OpenAI-compatible) | Together API key                                                                                                                                   | unproven-gating |
+
+Drizzle/Prisma bridges (ADR-0266) carry no live row — the isolation proof is in-CI PGlite
+(`packages/tenancy-rls/src/drizzle.integration.test.ts`); no external transport exists.
 Deploy templates (ADR-0268) are inert artifacts — golden-tested, no live row (per that ADR).
 
 ## Operator creds shopping list (delta to prove everything above)
