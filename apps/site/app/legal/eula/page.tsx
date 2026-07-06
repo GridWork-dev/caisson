@@ -96,9 +96,9 @@ export default function EulaPage() {
           <li style={prose.li}>
             <strong>&ldquo;Software&rdquo;</strong> means the Caisson source
             code, the packages under the <code className="mono">@caisson</code>{" "}
-            scope, related documentation, and any updates delivered under a
-            Compliance Updates subscription, as licensed to you under this
-            Agreement.
+            scope, related documentation, and any updates delivered under the
+            license&rsquo;s included updates window or an active updates
+            subscription, as licensed to you under this Agreement.
           </li>
           <li style={prose.li}>
             <strong>&ldquo;Entitlement&rdquo;</strong> means the record of which
@@ -212,11 +212,16 @@ export default function EulaPage() {
           agrees in writing.
         </p>
         <p style={prose.paragraph}>
-          The perpetual license fee is a one-time charge. A Compliance Updates
-          subscription, where purchased, is billed on a recurring basis until
-          cancelled and grants access to new package versions with updated
-          control mappings; it is optional and does not affect the perpetual
-          license for versions already delivered.
+          The perpetual license fee is a one-time charge that includes 12 months
+          of updates from your Order date &mdash; registry access to any
+          entitled-package version published in that window, plus everything
+          already delivered. After that window, you may renew updates access for
+          another 12 months at a reduced rate, or let it lapse; non-renewal
+          never affects the perpetual license for versions already delivered. A
+          Compliance Updates subscription, where purchased, is billed on a
+          recurring basis until cancelled and grants access to new package
+          versions with updated control mappings; it is optional and does not
+          affect the perpetual license for versions already delivered.
         </p>
       </Section>
 
