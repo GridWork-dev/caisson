@@ -1,6 +1,6 @@
 {
   "name": "@caisson/alerting",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
   "publishConfig": {

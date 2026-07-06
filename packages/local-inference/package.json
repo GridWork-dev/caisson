@@ -1,7 +1,10 @@
 {
   "name": "@caisson/local-inference",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
   "description": "Local-first inference seam: deterministic stub, guarded ONNX embeddings, and rented transport drivers sharing the local privacy gate.",

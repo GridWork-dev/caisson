@@ -1,8 +1,11 @@
 {
   "name": "@caisson/everything",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
-  "private": true,
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
   "description": "Everything bundle: the whole Caisson commercial catalog in one purchase — every persona bundle plus every standalone module, at a below-sum price."
 }

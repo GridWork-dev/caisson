@@ -1,7 +1,10 @@
 {
   "name": "@caisson/local-privacy",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
   "description": "Local-first privacy gate: strict zero-egress policy parsing and the EgressGuard wrapper over the kernel fetchWithTimeout chokepoint.",

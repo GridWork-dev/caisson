@@ -1,5 +1,19 @@
 # @caisson/platform-reads
 
+## 0.1.5
+
+### Patch Changes
+
+- b791198: Documentation and metadata cleanup plus dependency-declaration hygiene: package descriptions, READMEs, changelogs, and source comments no longer carry internal build references, and shared external dependency ranges now resolve through the workspace dependency catalog (published dependency ranges unchanged; the TypeScript devDependency floor moves to ^5.7.3).
+- 41e07b6: Module manifests can now declare `sellable: false` to mark a package that ships only as bundle
+  substrate and is never sold on its own. The field is optional and defaults to sellable, so every
+  existing manifest stays valid and unchanged. The shared cross-service read layer and the commerce
+  price-book are both marked bundle-only.
+- Updated dependencies [b791198]
+- Updated dependencies [0c883ae]
+- Updated dependencies [0af4dbf]
+  - @caisson/tenancy-rls@0.4.0
+
 ## 0.1.4
 
 ### Patch Changes

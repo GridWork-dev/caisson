@@ -1,7 +1,10 @@
 {
   "name": "@caisson/local-sync",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
   "description": "Local-first sync engine: changeset capture, HLC stamps, LWW reconciliation, and tombstone-aware convergence.",

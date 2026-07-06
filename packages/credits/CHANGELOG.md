@@ -1,5 +1,43 @@
 # @caisson/credits
 
+## 0.4.0
+
+### Minor Changes
+
+- ad02304: The cli codegen debit is decoupled behind a required `DebitFn` injection port (`GenerationDeps.debit`; `@caisson/credits` moves to devDependencies and off the manifest), and `@caisson/credits` flips commercial at $149 (tier `paid`, priceCents 14900, `LicenseRef-Caisson-Commercial`).
+- 4d7eb71: Grant-level credit expiry + materialized FIFO burn. Every grant now stamps
+  `expires_at` (default issue + 12 months, overridable per grant class via `GrantInput.expiresAt`);
+  `debit()` walks unexpired grants in FIFO burn order (`created_at, expires_at, id`) and records the
+  consumption trail in the new append-only `grant_consumption` table, splitting across grants and
+  never drawing from an expired grant (402 even when the raw wallet aggregate is larger). New:
+  `CREDIT_EXPIRY_MIGRATION_SQL` + `GRANT_CONSUMPTION_MIGRATION_SQL` (apply after the existing credit
+  migrations wherever the table is bootstrapped), `expiringSoon()` (the 30-day dashboard badge read),
+  the idempotent `sweepExpiredGrants()` residue burn (new `expiry_debit` ledger event type), the
+  notified-once `sweepExpiryNotices()` T-30d email sweep, and `@caisson/jobs` task wrappers
+  (`defineCreditExpirySweepTask` / `defineCreditExpiryNoticeTask` + enqueue helpers).
+
+### Patch Changes
+
+- b791198: Documentation and metadata cleanup plus dependency-declaration hygiene: package descriptions, READMEs, changelogs, and source comments no longer carry internal build references, and shared external dependency ranges now resolve through the workspace dependency catalog (published dependency ranges unchanged; the TypeScript devDependency floor moves to ^5.7.3).
+- 0af4dbf: Rewrote README, AGENTS, CHANGELOG, package.json descriptions, and inline source comments to
+  read as clean, buyer-facing documentation. Removed sibling-repository provenance framing,
+  internal build-phase shorthand, and bare specification-id citations that had leaked into
+  shipped copy. No runtime behavior changed in any package — documentation and comments only.
+- Updated dependencies [b791198]
+- Updated dependencies [d6cc28e]
+- Updated dependencies [0c883ae]
+- Updated dependencies [2834c3f]
+- Updated dependencies [41e07b6]
+- Updated dependencies [850b844]
+- Updated dependencies [4d7eb71]
+- Updated dependencies [31d6a41]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [0af4dbf]
+  - @caisson/jobs@0.4.0
+  - @caisson/kernel@0.4.2
+  - @caisson/registry-schema@0.3.0
+  - @caisson/tenancy-rls@0.4.0
+
 ## 0.3.2
 
 ### Patch Changes

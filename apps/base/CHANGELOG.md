@@ -1,5 +1,35 @@
 # @caisson/app-base
 
+## 0.0.5
+
+### Patch Changes
+
+- 850b844: Moved the per-account throttle store out of the commercial license service and into the
+  new shared, freely licensed rate-limiting package. The open reference application now
+  composes this shared store directly for its buyer-facing throttling instead of depending
+  on the commercial license service to get it. Buyer-visible throttling behavior is
+  unchanged; this only changes where the code lives and removes an unnecessary dependency
+  from the open reference application.
+- Updated dependencies [b791198]
+- Updated dependencies [b674ed3]
+- Updated dependencies [d6cc28e]
+- Updated dependencies [d06a9b8]
+- Updated dependencies [0c883ae]
+- Updated dependencies [ad02304]
+- Updated dependencies [4d7eb71]
+- Updated dependencies [6e48b18]
+- Updated dependencies [850b844]
+- Updated dependencies [850b844]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [0af4dbf]
+  - @caisson/auth@0.3.0
+  - @caisson/billing@0.5.0
+  - @caisson/credits@0.4.0
+  - @caisson/kernel@0.4.2
+  - @caisson/mcp-server@0.2.4
+  - @caisson/rate-limit@0.1.1
+  - @caisson/tenancy-rls@0.4.0
+
 ## 0.0.4
 
 ### Patch Changes

@@ -1,5 +1,46 @@
 # @caisson/compliance
 
+## 0.4.0
+
+### Minor Changes
+
+- f01b6ed: Splits the Compliance edition into three separately purchasable modules — the framework
+  catalogs (`@caisson/frameworks-pack`), the per-tenant evidence signer
+  (`@caisson/signing-primitive`), and the evidence engine (`@caisson/compliance-core`) — while
+  the Compliance edition keeps composing all three. The public API is unchanged: every symbol
+  that was importable from `@caisson/compliance` still is.
+
+### Patch Changes
+
+- b791198: Documentation and metadata cleanup plus dependency-declaration hygiene: package descriptions, READMEs, changelogs, and source comments no longer carry internal build references, and shared external dependency ranges now resolve through the workspace dependency catalog (published dependency ranges unchanged; the TypeScript devDependency floor moves to ^5.7.3).
+- aec9f1c: The Compliance edition's registry manifest carried a stale placeholder price. Its listed price
+  now matches the committed $799 shown at checkout, so buyers browsing the module registry and
+  buyers checking out see the same number.
+- 0af4dbf: Rewrote README, AGENTS, CHANGELOG, package.json descriptions, and inline source comments to
+  read as clean, buyer-facing documentation. Removed sibling-repository provenance framing,
+  internal build-phase shorthand, and bare specification-id citations that had leaked into
+  shipped copy, and corrected a couple of stale cross-package dependency and usage claims to
+  match the shipped code. No runtime behavior changed in any package — documentation and
+  comments only.
+- Updated dependencies [b791198]
+- Updated dependencies [aec9f1c]
+- Updated dependencies [f01b6ed]
+- Updated dependencies [0c883ae]
+- Updated dependencies [aec9f1c]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [0af4dbf]
+  - @caisson/alerting@0.1.5
+  - @caisson/audit-worm@0.2.4
+  - @caisson/field-crypto@0.2.4
+  - @caisson/kernel@0.4.2
+  - @caisson/migrate@0.2.4
+  - @caisson/retention-runner@0.1.5
+  - @caisson/tenancy-rls@0.4.0
+  - @caisson/compliance-core@0.2.0
+  - @caisson/frameworks-pack@0.2.0
+  - @caisson/signing-primitive@0.2.0
+
 ## 0.3.1
 
 ### Patch Changes

@@ -1,5 +1,33 @@
 # @caisson/email
 
+## 0.3.0
+
+### Minor Changes
+
+- 783110d: Transactional emails now render as branded HTML with a plain-text fallback instead of plain text,
+  and a new dev-only preview route shows every template with sample data. The buyer sign-in page
+  also gains an email-and-password option alongside the existing magic link, with account
+  verification and a forgot/reset password flow.
+- 4d7eb71: Add the `credits-expiring` T-30d expiry notice — the first
+  transactional/billing template. The template registry is now keyed by a per-template
+  `TemplateDataMap` (the three auth templates keep their `{ url }` shape; `credits-expiring` takes
+  `{ credits, expiresOn, url }` and renders a dynamic subject). `tryRenderEmailTemplate` coerces
+  free-form driver data per template and still falls back to `null` on a shape mismatch, so every
+  driver's generic mapping is unchanged.
+
+### Patch Changes
+
+- b791198: Documentation and metadata cleanup plus dependency-declaration hygiene: package descriptions, READMEs, changelogs, and source comments no longer carry internal build references, and shared external dependency ranges now resolve through the workspace dependency catalog (published dependency ranges unchanged; the TypeScript devDependency floor moves to ^5.7.3).
+- 0af4dbf: Rewrote README, AGENTS, CHANGELOG, package.json descriptions, and inline source comments to
+  read as clean, buyer-facing documentation. Removed sibling-repository provenance framing,
+  internal build-phase shorthand, and bare specification-id citations that had leaked into
+  shipped copy, and corrected a couple of stale cross-package dependency and usage claims to
+  match the shipped code. No runtime behavior changed in any package — documentation and
+  comments only.
+- Updated dependencies [b791198]
+- Updated dependencies [0af4dbf]
+  - @caisson/kernel@0.4.2
+
 ## 0.2.3
 
 ### Patch Changes

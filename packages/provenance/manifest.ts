@@ -18,10 +18,10 @@ export default defineModule({
   license: pkg.license,
   // Frozen member pin map (ADR-0077/0257): the bundle self + every member module, exact-version.
   members: {
-    "@caisson/provenance": "0.1.0",
-    "@caisson/signing-primitive": "0.1.0",
-    "@caisson/audit-worm": "0.2.3",
-    "@caisson/field-crypto": "0.2.3",
+    "@caisson/provenance": "0.2.0",
+    "@caisson/signing-primitive": "0.2.0",
+    "@caisson/audit-worm": "0.2.4",
+    "@caisson/field-crypto": "0.2.4",
   },
   description:
     "Provenance bundle: per-tenant evidence signing (@caisson/signing-primitive detached Ed25519 + RFC-3161 countersign), an append-only SHA-256 WORM audit chain (@caisson/audit-worm), and at-rest field encryption (@caisson/field-crypto) — the provenance cut of Compliance, sold standalone.",

@@ -30,14 +30,14 @@ export default defineModule({
   ],
   // Frozen member pin map (ADR-0077): edition self + every bundled dependency, exact-version.
   members: {
-    "@caisson/local-ai": "0.2.0",
-    "@caisson/kernel": "0.2.0",
-    "@caisson/local-store": "0.2.0",
-    "@caisson/license-verify": "0.2.0",
-    "@caisson/field-crypto": "0.2.0",
-    "@caisson/local-privacy": "0.0.0",
-    "@caisson/local-inference": "0.0.0",
-    "@caisson/local-sync": "0.0.0",
+    "@caisson/local-ai": "0.2.4",
+    "@caisson/kernel": "0.4.2",
+    "@caisson/local-store": "0.2.4",
+    "@caisson/license-verify": "0.3.0",
+    "@caisson/field-crypto": "0.2.4",
+    "@caisson/local-privacy": "0.1.0",
+    "@caisson/local-inference": "0.1.0",
+    "@caisson/local-sync": "0.1.0",
   },
   golden: null,
   description:

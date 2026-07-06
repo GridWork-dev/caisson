@@ -1,5 +1,61 @@
 # @caisson/service-license
 
+## 0.0.5
+
+### Patch Changes
+
+- 850b844: Moved the per-account throttle store out of the commercial license service and into the
+  new shared, freely licensed rate-limiting package. The open reference application now
+  composes this shared store directly for its buyer-facing throttling instead of depending
+  on the commercial license service to get it. Buyer-visible throttling behavior is
+  unchanged; this only changes where the code lives and removes an unnecessary dependency
+  from the open reference application.
+- 850b844: Added a new shared rate-limiting package with an in-memory per-client-IP throttle for
+  surfaces with no signed-in identity yet. The docs and license services now both import
+  this shared limiter instead of each keeping a separate copy of the same logic. The
+  internal licensing-boundary check also now recognizes the new package as part of the
+  open, freely licensed base set. Buyer-visible throttling behavior, including the limits,
+  the retry timing, and which header is trusted for the client IP, is unchanged; this only
+  changes where the code lives.
+- Updated dependencies [b791198]
+- Updated dependencies [aec9f1c]
+- Updated dependencies [b674ed3]
+- Updated dependencies [d6cc28e]
+- Updated dependencies [d06a9b8]
+- Updated dependencies [0c883ae]
+- Updated dependencies [ad02304]
+- Updated dependencies [2834c3f]
+- Updated dependencies [41e07b6]
+- Updated dependencies [4d7eb71]
+- Updated dependencies [90b6dc1]
+- Updated dependencies [850b844]
+- Updated dependencies [f178f9a]
+- Updated dependencies [9efcff2]
+- Updated dependencies [4d7eb71]
+- Updated dependencies [e784af1]
+- Updated dependencies [4d7eb71]
+- Updated dependencies [31d6a41]
+- Updated dependencies [850b844]
+- Updated dependencies [850b844]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [4d7eb71]
+  - @caisson/audit-worm@0.2.4
+  - @caisson/billing@0.5.0
+  - @caisson/credits@0.4.0
+  - @caisson/jobs@0.4.0
+  - @caisson/kernel@0.4.2
+  - @caisson/license-issue@0.0.5
+  - @caisson/license-verify@0.3.0
+  - @caisson/observability@0.2.4
+  - @caisson/pricebook@0.4.0
+  - @caisson/rate-limit@0.1.1
+  - @caisson/registry-schema@0.3.0
+  - @caisson/tenancy-rls@0.4.0
+  - @caisson/billing-orchestration@0.2.0
+  - @caisson/org-controls@0.2.0
+
 ## 0.0.4
 
 ### Patch Changes

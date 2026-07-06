@@ -1,5 +1,28 @@
 # @caisson/billing
 
+## 0.5.0
+
+### Minor Changes
+
+- d06a9b8: The billing-orchestration carve: `@caisson/billing` narrows to the OPEN seam — raw-body HMAC webhook signature verification for all four providers (Stripe/Paddle/LemonSqueezy/Polar, the LemonSqueezy/Polar verifiers extracted into their own open verify-only files), the `BillingProvider` port + every provider's config TYPE, and the `DomainBillingEvent` schema — so apps/base's free-floor demo typechecks against open code only. The `@caisson/tenancy-rls` dependency drops (its only consumer, `idempotency.ts`, moved). New commercial `@caisson/billing-orchestration` ($99, priceCents 9900, tier `paid`, `LicenseRef-Caisson-Commercial`) holds the checkout-driver factories (`createStripeBilling`/`createPaddleBilling`/`createLemonSqueezyBilling`/`createPolarBilling`), the provider→`DomainBillingEvent` parsers (`parseStripeEvent`/`parsePaddleEvent`/`parseLemonSqueezyEvent`/`parsePolarEvent` + their envelope schemas), and the dual-layer webhook idempotency (`processEvent`/`withIdempotentSideEffect`/`PROCESSED_EVENT_SCHEMA_SQL`); deps kernel + tenancy-rls + billing (commercial→open).
+
+### Patch Changes
+
+- b791198: Documentation and metadata cleanup plus dependency-declaration hygiene: package descriptions, READMEs, changelogs, and source comments no longer carry internal build references, and shared external dependency ranges now resolve through the workspace dependency catalog (published dependency ranges unchanged; the TypeScript devDependency floor moves to ^5.7.3).
+- b674ed3: Webhook envelope validation now accepts real provider deliveries. The Paddle and Stripe
+  envelope schemas rejected any notification carrying fields beyond the minimal set the
+  mapper reads (a real Paddle delivery always includes `occurred_at` and `notification_id`;
+  a real Stripe event includes `api_version`, `created`, and more), which surfaced as a 400
+  on every live webhook. Envelopes are now validated on the fields the mapper consumes and
+  tolerate documented provider-additive fields; signature verification is unchanged.
+- 0af4dbf: Rewrote README, AGENTS, CHANGELOG, package.json descriptions, and inline source comments to
+  read as clean, buyer-facing documentation. Removed sibling-repository provenance framing,
+  internal build-phase shorthand, and bare specification-id citations that had leaked into
+  shipped copy. No runtime behavior changed in any package — documentation and comments only.
+- Updated dependencies [b791198]
+- Updated dependencies [0af4dbf]
+  - @caisson/kernel@0.4.2
+
 ## 0.4.1
 
 ### Patch Changes

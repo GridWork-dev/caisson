@@ -1,9 +1,12 @@
 {
   "name": "@caisson/signing-primitive",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
-  "private": true,
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
   "description": "Per-tenant evidence signing: detached Ed25519 signatures over a canonical, chain-anchored manifest body, with an optional RFC-3161 trusted-timestamp countersignature and a fail-closed verify path.",
   "exports": {
     ".": {

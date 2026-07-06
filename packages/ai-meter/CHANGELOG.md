@@ -1,5 +1,33 @@
 # @caisson/ai-meter
 
+## 0.3.3
+
+### Patch Changes
+
+- b791198: Documentation and metadata cleanup plus dependency-declaration hygiene: package descriptions, READMEs, changelogs, and source comments no longer carry internal build references, and shared external dependency ranges now resolve through the workspace dependency catalog (published dependency ranges unchanged; the TypeScript devDependency floor moves to ^5.7.3).
+- dec93f3: Added the missing `anthropic/claude-sonnet-4.5` price-book row (input $3.00 / output $15.00 per
+  MTok) — Sonnet-tier usage was fail-closed with a `ConfigError` for lack of a rate, blocking all
+  metering of that tier.
+- 4d7eb71: Test-double bootstrap sweep for the credit-expiry migrations: every credit-table
+  bootstrap now applies `CREDIT_EXPIRY_MIGRATION_SQL` + `GRANT_CONSUMPTION_MIGRATION_SQL` (the
+  `debit()` FIFO path reads `expires_at` and writes `grant_consumption`). No runtime source change
+  in these packages.
+- 850b844: Add a README to each of these four packages, documenting the functions and types they
+  actually export with a runnable usage example for each. No behavior changes.
+- 0af4dbf: Rewrote README, AGENTS, CHANGELOG, package.json descriptions, and inline source comments to
+  read as clean, buyer-facing documentation. Removed sibling-repository provenance framing,
+  internal build-phase shorthand, and bare specification-id citations that had leaked into
+  shipped copy, and regenerated a couple of stale public-surface sections against the actual
+  exports. No runtime behavior changed in any package — documentation and comments only.
+- Updated dependencies [b791198]
+- Updated dependencies [0c883ae]
+- Updated dependencies [ad02304]
+- Updated dependencies [4d7eb71]
+- Updated dependencies [0af4dbf]
+  - @caisson/credits@0.4.0
+  - @caisson/kernel@0.4.2
+  - @caisson/tenancy-rls@0.4.0
+
 ## 0.3.2
 
 ### Patch Changes

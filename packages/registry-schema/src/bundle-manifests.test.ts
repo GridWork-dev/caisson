@@ -127,10 +127,11 @@ describe("ADR-0258 §3 Everything = explicit full-catalog rule (ui-pro IN, priva
     );
   });
 
-  test("the private, never-sold brand + license-issue packages are OUT", () => {
+  test("the private, never-sold brand + license-issue + audit-harness packages are OUT", () => {
     const members = mf("everything").members;
     expect(Object.hasOwn(members, "@caisson/brand")).toBe(false);
     expect(Object.hasOwn(members, "@caisson/license-issue")).toBe(false);
+    expect(Object.hasOwn(members, "@caisson/audit-harness")).toBe(false);
   });
 
   test("expansion grants ui-pro but never the private packages", () => {
@@ -140,6 +141,7 @@ describe("ADR-0258 §3 Everything = explicit full-catalog rule (ui-pro IN, priva
     expect(granted.has("@caisson/ui-pro")).toBe(true);
     expect(granted.has("@caisson/brand")).toBe(false);
     expect(granted.has("@caisson/license-issue")).toBe(false);
+    expect(granted.has("@caisson/audit-harness")).toBe(false);
   });
 
   test("the explicit rule replaces the derived scan: everything reads its indexed bundle entry", () => {

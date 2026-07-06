@@ -465,11 +465,12 @@ describe("ADR-0257 bundle vocabulary + legacy-alias resolution", () => {
   });
 });
 
-describe("ADR-0257 alias round-trip against the REAL registry index (pre-change capture)", () => {
-  // Captured by running the PRE-0257 resolver against registry/index.json (2026-07-06, index
-  // rebuild 0.2.0 line). Each legacy purchased id must keep expanding to this exact leaf set —
-  // renaming without the alias 422s the server path and silently downgrades the Worker path.
-  // W5's members-fold republish will consciously re-baseline these sets (membership grows).
+describe("ADR-0257 alias round-trip against the REAL registry index (post-fold capture)", () => {
+  // Captured against registry/index.json AFTER the W5 members-fold republish (2026-07-06): the
+  // compliance edition folded its three carve SKUs and local-ai its three carve modules, so the
+  // pre-change sets were consciously re-baselined here (the growth the pre-fold capture predicted).
+  // Each legacy purchased id must keep expanding to this exact leaf set — renaming without the
+  // alias 422s the server path and silently downgrades the Worker path.
   const REAL_INDEX = join(
     dirname(fileURLToPath(import.meta.url)),
     "..",
@@ -483,15 +484,20 @@ describe("ADR-0257 alias round-trip against the REAL registry index (pre-change 
       "@caisson/alerting",
       "@caisson/audit-worm",
       "@caisson/compliance",
+      "@caisson/compliance-core",
       "@caisson/field-crypto",
+      "@caisson/frameworks-pack",
       "@caisson/kernel",
       "@caisson/retention-runner",
+      "@caisson/signing-primitive",
       "@caisson/tenancy-rls",
     ],
     "ai-kit": [
       "@caisson/ai-config",
+      "@caisson/ai-evals",
       "@caisson/ai-kit",
       "@caisson/ai-meter",
+      "@caisson/ai-production",
       "@caisson/credits",
       "@caisson/field-crypto",
       "@caisson/guardrails",
@@ -504,12 +510,17 @@ describe("ADR-0257 alias round-trip against the REAL registry index (pre-change 
       "@caisson/kernel",
       "@caisson/license-verify",
       "@caisson/local-ai",
+      "@caisson/local-first",
+      "@caisson/local-inference",
+      "@caisson/local-privacy",
       "@caisson/local-store",
+      "@caisson/local-sync",
     ],
     "agent-dev": [
       "@caisson/agent-dev",
       "@caisson/agent-kernel",
       "@caisson/agent-runner",
+      "@caisson/agentic-dev",
       "@caisson/ai-config",
       "@caisson/kernel",
       "@caisson/local-store",
@@ -519,7 +530,7 @@ describe("ADR-0257 alias round-trip against the REAL registry index (pre-change 
 
   const realIndex = loadRegistryIndexFromFile(REAL_INDEX);
 
-  test("each legacy id expands to the identical pre-change leaf set", () => {
+  test("each legacy id expands to the identical post-fold leaf set", () => {
     for (const [legacy, expected] of Object.entries(PRE_CHANGE_EXPANSIONS)) {
       expect([...expandEntitlements(realIndex, [legacy])].sort()).toEqual([
         ...expected,
@@ -535,10 +546,26 @@ describe("ADR-0257 alias round-trip against the REAL registry index (pre-change 
     }
   });
 
-  test("the legacy bundle sentinel still expands to the full catalog on the real index", () => {
+  test("the legacy bundle sentinel reads the explicit everything rule on the real index", () => {
+    // Post-fold semantics: the indexed @caisson/everything bundle entry's explicit members map wins
+    // over the derived full-catalog scan. The grant is that map filtered to indexed ids — the
+    // pre-publish ui-pro pin is allowlist-guarded until it ships — and the open Apache base is
+    // deliberately absent (it ships free via the Worker's free-view floor, never as a grant).
     const bundle = [...expandEntitlements(realIndex, [BUNDLE_ID])].sort();
-    const everything = realIndex.modules.map((m) => m.id).sort();
-    expect(bundle).toEqual(everything);
+    const everythingEntry = realIndex.modules.find(
+      (m) => m.id === "@caisson/everything",
+    );
+    const latestManifest = everythingEntry?.versions.find(
+      (v) => v.version === everythingEntry.latest,
+    )?.manifest;
+    const indexed = new Set(realIndex.modules.map((m) => m.id));
+    const expected = Object.keys(latestManifest?.members ?? {})
+      .filter((id) => indexed.has(id))
+      .sort();
+    expect(expected.length).toBeGreaterThan(20);
+    expect(bundle).toEqual(expected);
+    expect(bundle).not.toContain("@caisson/kernel");
+    expect(bundle).not.toContain("@caisson/ui-pro");
   });
 });
 

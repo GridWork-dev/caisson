@@ -19,16 +19,16 @@ export default defineModule({
   // Frozen member pin map (ADR-0077/0257): the bundle self + every member module, exact-version. Base
   // members (kernel, tenancy-rls, ai-config) mirror the edition composition; ai-evals is the fold-in.
   members: {
-    "@caisson/ai-production": "0.1.0",
-    "@caisson/ai-config": "0.2.3",
-    "@caisson/ai-meter": "0.3.2",
-    "@caisson/credits": "0.3.2",
-    "@caisson/field-crypto": "0.2.3",
-    "@caisson/guardrails": "0.4.0",
-    "@caisson/kernel": "0.4.1",
-    "@caisson/prompt-registry": "0.2.3",
-    "@caisson/tenancy-rls": "0.3.2",
-    "@caisson/ai-evals": "0.3.0",
+    "@caisson/ai-production": "0.2.0",
+    "@caisson/ai-config": "0.2.4",
+    "@caisson/ai-meter": "0.3.3",
+    "@caisson/credits": "0.4.0",
+    "@caisson/field-crypto": "0.2.4",
+    "@caisson/guardrails": "0.4.1",
+    "@caisson/kernel": "0.4.2",
+    "@caisson/prompt-registry": "0.2.4",
+    "@caisson/tenancy-rls": "0.4.0",
+    "@caisson/ai-evals": "0.3.1",
   },
   description:
     "AI-Production bundle: the metered infer() gateway composing @caisson/prompt-registry + @caisson/ai-meter + @caisson/guardrails + @caisson/ai-config behind the Vercel AI SDK, with the @caisson/ai-evals CI eval harness folded in and the @caisson/credits metering ledger — the enforced chokepoint for every AI feature.",

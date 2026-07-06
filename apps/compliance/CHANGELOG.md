@@ -1,5 +1,22 @@
 # @caisson/app-compliance
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies [b791198]
+- Updated dependencies [aec9f1c]
+- Updated dependencies [f01b6ed]
+- Updated dependencies [0c883ae]
+- Updated dependencies [aec9f1c]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [0af4dbf]
+  - @caisson/audit-worm@0.2.4
+  - @caisson/compliance@0.4.0
+  - @caisson/field-crypto@0.2.4
+  - @caisson/kernel@0.4.2
+  - @caisson/tenancy-rls@0.4.0
+
 ## 0.0.4
 
 ### Patch Changes

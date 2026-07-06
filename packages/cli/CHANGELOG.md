@@ -1,5 +1,35 @@
 # @caisson/cli
 
+## 0.3.0
+
+### Minor Changes
+
+- ad02304: The cli codegen debit is decoupled behind a required `DebitFn` injection port (`GenerationDeps.debit`; `@caisson/credits` moves to devDependencies and off the manifest), and `@caisson/credits` flips commercial at $149 (tier `paid`, priceCents 14900, `LicenseRef-Caisson-Commercial`).
+
+### Patch Changes
+
+- b791198: Documentation and metadata cleanup plus dependency-declaration hygiene: package descriptions, READMEs, changelogs, and source comments no longer carry internal build references, and shared external dependency ranges now resolve through the workspace dependency catalog (published dependency ranges unchanged; the TypeScript devDependency floor moves to ^5.7.3).
+- 4d7eb71: Test-double bootstrap sweep for the credit-expiry migrations: every credit-table
+  bootstrap now applies `CREDIT_EXPIRY_MIGRATION_SQL` + `GRANT_CONSUMPTION_MIGRATION_SQL` (the
+  `debit()` FIFO path reads `expires_at` and writes `grant_consumption`). No runtime source change
+  in these packages.
+- 0af4dbf: Rewrote README, AGENTS, CHANGELOG, package.json descriptions, and inline source comments to
+  read as clean, buyer-facing documentation. Removed sibling-repository provenance framing,
+  internal build-phase shorthand, and bare specification-id citations that had leaked into
+  shipped copy. No runtime behavior changed in any package — documentation and comments only.
+- Updated dependencies [b791198]
+- Updated dependencies [d6cc28e]
+- Updated dependencies [2834c3f]
+- Updated dependencies [41e07b6]
+- Updated dependencies [850b844]
+- Updated dependencies [aec9f1c]
+- Updated dependencies [31d6a41]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [0af4dbf]
+  - @caisson/kernel@0.4.2
+  - @caisson/migrate@0.2.4
+  - @caisson/registry-schema@0.3.0
+
 ## 0.2.3
 
 ### Patch Changes
