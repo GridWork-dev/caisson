@@ -1,9 +1,11 @@
 # @caisson/billing
 
-Merchant-of-Record billing + webhooks behind one provider-agnostic `BillingProvider` port — Stripe,
-Paddle (the live MoR), LemonSqueezy, and Polar.
+The open (Apache-2.0) billing seam behind one provider-agnostic `BillingProvider` port — Stripe, Paddle
+(the live MoR), LemonSqueezy, and Polar.
 
 - **Layer:** base
 
-Real src + tests: Stripe, Paddle, LemonSqueezy, and Polar drivers, HMAC webhook verification, and
-provider-agnostic domain billing events.
+Real src + tests: raw-body HMAC webhook signature verification for all four providers, the
+`BillingProvider` port + config-type contracts, and the provider-agnostic `DomainBillingEvent` schema.
+The checkout drivers, provider→domain event parsers, and webhook idempotency are the commercial carve in
+[`@caisson/billing-orchestration`](../billing-orchestration) (ADR-0249 G3).

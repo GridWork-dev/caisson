@@ -123,6 +123,35 @@ describe("ADR-0094 open-core licensing", () => {
     ).toThrow();
   });
 
+  test("a commercial bundle-kind manifest validates on the paid side of the split (ADR-0257)", () => {
+    // Bundles are commercial meta-packages: LicenseRef-Caisson-Commercial ⟺ paid, members required.
+    const m = defineModule({
+      id: "@caisson/local-first",
+      version: "0.1.0",
+      kind: "bundle",
+      tier: "paid",
+      priceCents: 62900,
+      license: "LicenseRef-Caisson-Commercial",
+      members: { "@caisson/local-store": "0.1.0" },
+      description: "Local-first bundle — commercial (ADR-0257/0258).",
+    });
+    expect(m.license).toBe("LicenseRef-Caisson-Commercial");
+    expect(m.tier).toBe("paid");
+    // The license⟺tier refine holds for the new kind: Apache-2.0 with tier `paid` is rejected.
+    expect(() =>
+      defineModule({
+        id: "@caisson/local-first",
+        version: "0.1.0",
+        kind: "bundle",
+        tier: "paid",
+        priceCents: 62900,
+        license: "Apache-2.0",
+        members: { "@caisson/local-store": "0.1.0" },
+        description: "Invalid: Apache-2.0 with paid tier (fixture).",
+      }),
+    ).toThrow();
+  });
+
   test("the committed field-crypto (commercial) + cli (open Base) manifest shapes both validate", () => {
     const fc = defineModule({ ...fieldCryptoManifest });
     expect(fc.license).toBe("LicenseRef-Caisson-Commercial");

@@ -71,7 +71,19 @@ const EXCLUDE_TEST_FILES: ReadonlyMap<string, string> = new Map([
     "packages/cli/src/sample-templates.test.ts",
     "materializes + EXECUTES the free eu-ai-act sample by reading its template files from disk at runtime. rewriteCliTemplates rewrites those on-disk template files to @caisson-sh/kernel for the mirror, but this test's assertions are hardcoded to the pre-rewrite @caisson/kernel specifier (correct for the monorepo-native generator) and would fail if run against the rewritten mirror templates. The sample generator (sample-templates.ts) still ships.",
   ],
+  [
+    "packages/cli/src/meter.integration.test.ts",
+    "exercises the debit-before-spend seam against the real COMMERCIAL @caisson/credits ledger (a dev-only fixture behind the DebitFn injection port); credits is excluded from the open mirror",
+  ],
 ]);
+
+/** Commercial devDependencies stripped from a mirrored package.json (keyed by ORIGINAL @caisson
+ *  name). The dep's only consumers are test files excluded above, so the mirrored package is
+ *  self-contained without it — the self-containment gate below skips exactly these pairs. */
+const DROP_COMMERCIAL_DEV_DEPS: ReadonlyMap<
+  string,
+  ReadonlySet<string>
+> = new Map([["@caisson/cli", new Set(["@caisson/credits"])]]);
 
 /** Packages whose `test` script is dropped in the mirror (their only test is excluded above, so
  *  turbo skips the package rather than erroring on a now-empty glob). */
@@ -458,9 +470,15 @@ function rewritePackageJson(
   ] as const) {
     const src = json[key];
     if (!src) continue;
+    const dropped =
+      key === "devDependencies"
+        ? DROP_COMMERCIAL_DEV_DEPS.get(json.name)
+        : undefined;
     const renamed: Record<string, string> = {};
-    for (const [dep, ver] of Object.entries(src))
+    for (const [dep, ver] of Object.entries(src)) {
+      if (dropped?.has(dep)) continue; // commercial dev-only fixture; its tests are excluded
       renamed[renameScope(dep)] = resolveCatalogSpec(dep, ver, catalogConfig);
+    }
     out[key] = renamed;
   }
   const scripts = { ...(json.scripts ?? {}) };
@@ -549,6 +567,7 @@ function main(): void {
       }
     }
     for (const dep of internalDeps(p.json, "devDependencies")) {
+      if (DROP_COMMERCIAL_DEV_DEPS.get(p.json.name)?.has(dep)) continue; // stripped in the mirror
       if (licenseByName.get(dep) === COMMERCIAL)
         violations.push(
           `${p.group}/${p.slug} → ${dep} (devDependencies, COMMERCIAL)`,

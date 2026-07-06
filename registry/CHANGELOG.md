@@ -1,5 +1,30 @@
 # @caisson/registry
 
+## 0.0.5
+
+### Patch Changes
+
+- 7aee6cc: The registry Worker gains its one write surface: an authed `PUT /revocations/deny-set.json`
+  publisher endpoint for the license-revocation deny-set. Bearer-gated behind a worker secret
+  (timing-safe digest compare), strict-schema validated against the exact shape the edge reader
+  parses, size-capped, and the stored artifact is a canonical deduped re-serialization — never raw
+  request bytes. The route serves 404 until both the secret and the bucket binding are provisioned;
+  all responses carry the standard security headers.
+- Updated dependencies [b791198]
+- Updated dependencies [d6cc28e]
+- Updated dependencies [2834c3f]
+- Updated dependencies [41e07b6]
+- Updated dependencies [90b6dc1]
+- Updated dependencies [850b844]
+- Updated dependencies [f178f9a]
+- Updated dependencies [9efcff2]
+- Updated dependencies [31d6a41]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [4d7eb71]
+  - @caisson/license-verify@0.3.0
+  - @caisson/registry-schema@0.3.0
+
 ## 0.0.4
 
 ### Patch Changes

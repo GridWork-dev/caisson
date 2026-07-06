@@ -22,6 +22,9 @@ export default defineModule({
   kind: "base",
   tier: "paid",
   priceCents: 4900,
+  // Bundle substrate, never sold on its own — the shared cross-service read layer editions compose,
+  // not a standalone SKU. Exempts it from the price-coverage locked-price requirement.
+  sellable: false,
   license: pkg.license,
   dependencies: ["@caisson/tenancy-rls"],
   golden: null,

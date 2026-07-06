@@ -1,5 +1,23 @@
 # @caisson/retention-runner
 
+## 0.1.5
+
+### Patch Changes
+
+- b791198: Documentation and metadata cleanup plus dependency-declaration hygiene: package descriptions, READMEs, changelogs, and source comments no longer carry internal build references, and shared external dependency ranges now resolve through the workspace dependency catalog (published dependency ranges unchanged; the TypeScript devDependency floor moves to ^5.7.3).
+- 0af4dbf: Rewrote README, AGENTS, CHANGELOG, package.json descriptions, and inline source comments to
+  read as clean, buyer-facing documentation. Removed sibling-repository provenance framing,
+  internal build-phase shorthand, and bare specification-id citations that had leaked into
+  shipped copy, and corrected a couple of stale cross-package dependency and usage claims to
+  match the shipped code. No runtime behavior changed in any package — documentation and
+  comments only.
+- Updated dependencies [b791198]
+- Updated dependencies [4d7eb71]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [0af4dbf]
+  - @caisson/jobs@0.4.0
+  - @caisson/kernel@0.4.2
+
 ## 0.1.4
 
 ### Patch Changes

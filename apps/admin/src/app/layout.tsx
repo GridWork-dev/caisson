@@ -1,6 +1,9 @@
 import "@caisson/ui/styles/tokens.css";
 import "@caisson/ui/styles/base.css";
 import "./globals.css";
+// Registers the private brand glyphs into the kit icon surface for the server bundle graph (admin's
+// only bespoke-icon surface — the design/components gallery — is server-rendered). Side-effect.
+import "@/lib/register-brand-icons";
 
 import type { Metadata } from "next";
 import type { ReactNode } from "react";

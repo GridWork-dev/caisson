@@ -25,6 +25,7 @@ import {
   resolvePurchase,
   resolveRenewal,
 } from "@caisson/pricebook";
+import { normalizeEntitlementId } from "@caisson/registry-schema";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 import {
   extendUpdatesWindow,
@@ -33,6 +34,7 @@ import {
   revokePurchaseLineGrants,
   revokeSubscriptionGrants,
 } from "./entitlement-store.ts";
+import type { SkuLine } from "./posthog-capture.ts";
 
 /**
  * Integer proportional credit claw for a dollar-PARTIAL line refund (ADR-0218 fork A-1 / ADR-0007 /
@@ -70,9 +72,19 @@ export interface AppliedBillingEffect {
    * (ADR-0203); computed HERE so the push can never drift from the grant gate's own decision.
    */
   grantedEntitlements: string[];
+  /**
+   * Per-line SKU attribution for THIS event's grant: the provider price id + the
+   * CANONICAL catalog slug (bundle-normalized) actually resolved during the grant, feeding the
+   * post-commit PostHog `purchase` capture's cart-composition breakdown. `[]` for a non-granting
+   * effect (a gated cycle, a revoke, a refund) or a pure-renewal line (which grants nothing).
+   */
+  skuLines: SkuLine[];
 }
 
-const NO_EFFECT: AppliedBillingEffect = { grantedEntitlements: [] };
+const NO_EFFECT: AppliedBillingEffect = {
+  grantedEntitlements: [],
+  skuLines: [],
+};
 
 /**
  * Apply a verified domain billing event (ADR-0089/0071/0109). See the file header for the per-type
@@ -109,7 +121,15 @@ export async function applyBillingEvent(
         sourceEventId: ev.invoiceId,
         source: { kind: "subscription", subscriptionId: ev.subscriptionId },
       });
-      return { grantedEntitlements: [...plan.entitlements] };
+      return {
+        grantedEntitlements: [...plan.entitlements],
+        skuLines: [
+          {
+            priceId: ev.priceId,
+            productSlug: normalizeEntitlementId(plan.planTag),
+          },
+        ],
+      };
     }
     case "purchase.completed": {
       // A one-time (non-subscription) edition/module/credit-pack buy (ADR-0113). The PaymentIntent id
@@ -131,6 +151,7 @@ export async function applyBillingEvent(
       //     lines is two rows (fork B-1 refcount: survives until BOTH lines are refunded).
       // `grantedEntitlements` returns the DISTINCT union for the Discord push (an entitlement is binary).
       const grantedEntitlements = new Set<string>();
+      const skuLines: SkuLine[] = [];
       for (const line of ev.lineItems) {
         // Updates-RENEWAL line (ADR-0244/0251): a renewal SKU grants NO entitlement and NO credits —
         // it EXTENDS the buyer's updates window on the entitlement it renews (+12 months, per
@@ -150,6 +171,12 @@ export async function applyBillingEvent(
           continue;
         }
         const purchase = resolvePurchase(line.priceId); // fail-closed on an unknown price id
+        // Canonical SKU line for the PostHog capture — the legacy purchase tag
+        // (`ai-kit`, `bundle`, …) normalized to its bundle id (`ai-production`, `everything`, …).
+        skuLines.push({
+          priceId: line.priceId,
+          productSlug: normalizeEntitlementId(purchase.purchaseTag),
+        });
         const lineCredits = purchase.credits * line.quantity;
         if (lineCredits > 0) {
           await grant(tx, {
@@ -172,7 +199,7 @@ export async function applyBillingEvent(
         });
         for (const e of purchase.entitlements) grantedEntitlements.add(e);
       }
-      return { grantedEntitlements: [...grantedEntitlements] };
+      return { grantedEntitlements: [...grantedEntitlements], skuLines };
     }
     case "subscription.canceled":
       // IMMEDIATE revoke (ADR-0113): soft-revoke every grant backed by this subscription. An entitlement

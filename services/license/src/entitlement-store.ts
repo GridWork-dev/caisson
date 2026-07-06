@@ -17,6 +17,7 @@
 // write, and a read that forgets its WHERE still sees only the caller's rows.
 import { randomUUID } from "node:crypto";
 import { ConfigError } from "@caisson/kernel";
+import { entitlementIdAliasGroup } from "@caisson/registry-schema";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 import { buildTenantPolicySql } from "@caisson/tenancy-rls";
 
@@ -323,7 +324,7 @@ export async function revokePurchaseLineGrants(
 // --- Operator comp grants (ADR-0220) ----------------------------------------------------------
 //
 // The admin mutation surface's grant/revoke run as the cross-tenant `admin_write` role
-// (`withAdminWrite`, @caisson/tenancy-rls), NOT `withTenant`/`app` — DB-level separation of
+// (`withAdminWrite`, @caisson/org-controls), NOT `withTenant`/`app` — DB-level separation of
 // operator-write from buyer-runtime (Fork AM-2 = B). Both filter by an explicit `account_id`, so a
 // single call is bounded to exactly one target account (the RLS cross-tenant policy is `WITH CHECK
 // (true)`; the bound is the caller passing one id). `source_kind = 'admin_comp'` keeps a comp
@@ -437,6 +438,40 @@ export async function computeUpdatesWindows(
   return windows;
 }
 
+/**
+ * Compute the account's PER-ENTITLEMENT snapshot-at-sale instants for the signed `entitledSince`
+ * claim (ADR-0257 §1.2 / ADR-0247 F7) — the SIBLING of {@link computeUpdatesWindows} on the
+ * member-set axis. From DB truth over the ACTIVE one_time grants: per `(account, entitlement)` pair,
+ * `entitledSince` is the MOST FAVORABLE (max) `granted_at` — a buyer who re-purchased a bundle is
+ * entitled to the newer (larger) member snapshot, mirroring the most-favorable rule
+ * `computeUpdatesWindows`/ADR-0255 Decision 3 use for windows. A member that joined a bundle AFTER
+ * this instant is outside the buyer's snapshot; the per-member filter drops it at the registry-schema
+ * resolver (`expandEntitlements`). Returns a `purchasedEntitlementId → ISO instant` map; EMPTY when
+ * the account holds no active one-time grants (an unbounded/grandfathered claim — subscription-
+ * sourced entitlements never get a key, their own `expiry` governs). Deterministic for a fixed grant
+ * set (no `now()`), so the /issue re-mint comparison is stable. Run inside `withTenant`.
+ */
+export async function computeEntitledSince(
+  tx: TenantExecutor,
+  accountId: string,
+): Promise<Record<string, string>> {
+  const r = await tx.query<{
+    entitlement_id: string;
+    since: string | Date;
+  }>(
+    `SELECT entitlement_id, max(granted_at) AS since
+       FROM entitlement_grant
+      WHERE account_id = $1 AND source_kind = 'one_time' AND status = 'active'
+      GROUP BY entitlement_id`,
+    [accountId],
+  );
+  const entitledSince: Record<string, string> = {};
+  for (const row of r.rows) {
+    entitledSince[row.entitlement_id] = new Date(row.since).toISOString();
+  }
+  return entitledSince;
+}
+
 export interface ExtendUpdatesWindowInput {
   /** The buyer account — MUST equal the `withTenant` scope (the RLS WITH CHECK enforces it). */
   accountId: string;
@@ -458,6 +493,11 @@ export interface ExtendUpdatesWindowInput {
  * account does not actively hold throws — a renewal never silently mints a grant. Idempotency
  * across webhook redeliveries is the caller's OUTER `sourceEventId` claim (webhook.ts), not
  * re-keyed here. Returns the number of rows extended. Run inside `withTenant`.
+ *
+ * ALIAS-TOLERANT match (ADR-0257 convergence, W7): `resolveRenewal` hands back the CANONICAL id,
+ * but grants written under the pre-0257 vocabulary store the LEGACY id (`ai-kit`, `bundle`, …).
+ * The match spans the whole alias group so a legacy buyer's renewal extends their legacy-keyed
+ * grant instead of fail-closed-throwing on the canonical spelling.
  */
 export async function extendUpdatesWindow(
   tx: TenantExecutor,
@@ -469,11 +509,11 @@ export async function extendUpdatesWindow(
              GREATEST(now(), COALESCE(updates_expires_at, granted_at + interval '12 months'))
              + interval '12 months'
      WHERE account_id = $1
-       AND entitlement_id = $2
+       AND entitlement_id = ANY($2::text[])
        AND source_kind = 'one_time'
        AND status = 'active'
      RETURNING id`,
-    [input.accountId, input.entitlementId],
+    [input.accountId, entitlementIdAliasGroup(input.entitlementId)],
   );
   if (r.rows.length === 0) {
     throw new ConfigError(

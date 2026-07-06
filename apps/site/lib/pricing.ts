@@ -1,19 +1,18 @@
-// Committed pricing — the Q4 below-sum lock (supersedes the ADR-0129 edition numbers this file
-// briefly shipped, which themselves superseded the ADR-0106/ADR-0082 sheet). Shown as the prices —
-// NO "subject to change" hedge. The operator may still adjust a final number before checkout goes
-// live, but the site no longer says so. Amounts are integer USD (money is never a float,
-// ADR-0007). All four editions are commercial (ADR-0083 made Local-first commercial — no free/AGPL
-// tier). Single source — pages, SKU grid, cart, and JSON-LD Offers all read from here so a number
-// never drifts between surfaces.
+// Committed pricing — the six-bundle catalog (ADR-0257 vocabulary · ADR-0258 numbers; the W7.2
+// display flip retired the edition sheet this file carried through the catalog rework). Shown as
+// the prices — NO "subject to change" hedge. The operator may still adjust a final number before
+// checkout goes live, but the site no longer says so. Amounts are integer USD (money is never a
+// float, ADR-0007). Single source — pages, SKU grid, cart, and JSON-LD Offers all read from here
+// so a number never drifts between surfaces.
 //
 // Honesty floor (ADR-0130): the site was NEVER live at any earlier number, so a struck-through
-// "was $X now $Y" per-edition or per-module anchor would imply a price no customer ever paid — a
+// "was $X now $Y" per-bundle or per-module anchor would imply a price no customer ever paid — a
 // fabricated discount the guardrails module itself forbids (FTC 4Ps). There is therefore NO
 // per-anchor compare/"was" price on this sheet. The ONE truthful comparison kept is the Everything
-// bundle's "Save $N vs buying the four editions separately" badge (`bundleSavings()`), a real
-// saving against the live à-la-carte subtotal — not an invented price history. Every edition is a
-// real buyable product (no "roadmap" gating), and the per-module offering is a REAL catalog
-// (`MODULE_PRICES`), not a single "from $49" placeholder line.
+// bundle's saving vs the live à-la-carte catalog subtotal (`everythingSavings()`) — a real saving,
+// not an invented price history. Every bundle is a real buyable product (no "roadmap" gating), and
+// the per-module offering is a REAL catalog (`MODULE_PRICES`), not a single "from $49" placeholder
+// line.
 
 export interface PriceAnchor {
   /** Stable id (also the JSON-LD Offer key). */
@@ -30,88 +29,119 @@ export interface PriceAnchor {
   note: string;
 }
 
-/** The four editions, in display order. Every edition is commercial (ADR-0083) and buyable — none
- *  is gated behind a "roadmap" framing (the storefront rework shows the full catalog). */
-export const EDITION_IDS = [
+/** The locked bundle-vocabulary id set (ADR-0257 §1 / ADR-0258) — the personas + Provenance + the
+ *  full-catalog Everything bundle that dissolve the four editions. Kept as a SITE-LOCAL const (not an
+ *  import from `@caisson/registry-schema`) on purpose: this module is client-reachable, and pulling
+ *  registry-schema drags in its `node:fs` disk loader. `pricing.test.ts` pins these values against
+ *  the shared `BUNDLE_IDS` in registry-schema so they can't drift. */
+export const BUNDLE_IDS = [
   "compliance",
-  "ai-kit",
+  "ai-production",
   "local-first",
   "agentic-dev",
+  "provenance",
+  "everything",
 ] as const;
-export type EditionId = (typeof EDITION_IDS)[number];
+export type BundleId = (typeof BUNDLE_IDS)[number];
 
-export function isEditionId(id: string): id is EditionId {
-  return (EDITION_IDS as readonly string[]).includes(id);
+export function isBundleId(id: string): id is BundleId {
+  return (BUNDLE_IDS as readonly string[]).includes(id);
 }
 
-/** The four editions. Compliance is the hero anchor; all four are commercial (ADR-0083). */
-export const EDITION_PRICES: readonly PriceAnchor[] = [
+/** The persona/Provenance bundles a module can be a member of — every bundle except the whole-catalog
+ *  `everything`, which contains every sellable SKU by construction (ADR-0258) and so is never listed
+ *  on a per-module `bundles[]`. */
+export const PERSONA_BUNDLE_IDS = BUNDLE_IDS.filter(
+  (b): b is Exclude<BundleId, "everything"> => b !== "everything",
+);
+
+/** The six bundles, in display order (ADR-0257 vocabulary · ADR-0258 numbers). These are the
+ *  editions' successors: the four personas (Compliance, AI-Production, Local-first, Agentic-Dev) plus
+ *  net-new Provenance and the whole-catalog Everything. Amounts are integer USD (money is never a
+ *  float, ADR-0007) and every one is pinned to `@caisson/pricebook`'s `BUNDLE_RETAIL` by
+ *  `pricing.test.ts` (the locked retail truth — never hand-invented here) and asserted below the sum
+ *  of its priced members (the 0.75× below-sum lock, ADR-0258 §Consequences). */
+export const BUNDLE_PRICES: readonly (PriceAnchor & { id: BundleId })[] = [
   {
     id: "compliance",
     label: "Compliance",
-    amount: 799,
+    amount: 1049,
     unit: "once",
     from: false,
-    note: "Own the source. Fail-closed RLS, WORM, audit chain, evidence packs.",
+    note: "The compliance wedge: fail-closed RLS, WORM, an audit chain, evidence packs, and the framework + signing carves.",
   },
   {
-    id: "ai-kit",
-    label: "AI Production Kit",
-    amount: 599,
+    id: "ai-production",
+    label: "AI-Production",
+    amount: 739,
     unit: "once",
     from: false,
-    note: "The production-rigor layer cheap AI boilerplate skips.",
+    note: "The production-rigor layer for AI features: metering, guardrails, prompt versioning, and the CI eval harness.",
+  },
+  {
+    id: "local-first",
+    label: "Local-first",
+    amount: 629,
+    unit: "once",
+    from: false,
+    note: "On-device inference, a privacy egress gate, and local vector search — your data never leaves the device.",
   },
   {
     id: "agentic-dev",
     label: "Agentic-Dev",
-    amount: 249,
+    amount: 329,
     unit: "once",
     from: false,
-    note: "The governed-agent kernel — typed agent/skill/rule schema, a guarded lifecycle, and a hooks dispatcher.",
+    note: "The governed-agent kernel: typed agent/skill/rule schema, a guarded lifecycle, and sandboxed execution.",
   },
   {
-    id: "local-first",
-    label: "Local-first AI",
-    amount: 349,
+    id: "provenance",
+    label: "Provenance",
+    amount: 399,
     unit: "once",
     from: false,
-    note: "Own the source. On-device inference, a privacy gate, and vector search — your data never leaves the device.",
+    note: "Cryptographic provenance: detached signing, an append-only WORM audit chain, and per-tenant field encryption.",
+  },
+  {
+    id: "everything",
+    label: "Everything",
+    amount: 2059,
+    unit: "once",
+    from: false,
+    note: "The full catalog — every bundle and every à-la-carte module, one purchase.",
   },
 ] as const;
 
-/** Every module sold à la carte, grouped by the edition it composes into (customer-facing
- *  grouping — mirrors the SKU matrix on `/pricing`, not the registry's internal base/edition
- *  split). Prices are the locked $49-$299 band. */
+/** Every module sold à la carte. Prices are the locked $49-$299 band (pricebook `SKU_RETAIL`). */
 export interface ModulePrice {
   /** Slug — the cart key and the Plausible event prop. */
   id: string;
   label: string;
   /** Integer USD, one-time. */
   amount: number;
-  edition: EditionId;
+  /**
+   * The bundles this module is a member of (1:N — a module can belong to several, e.g. field-crypto
+   * spans Compliance, AI-Production, Local-first, and Provenance). This is the MEMBERSHIP TRUTH:
+   * every id here is pinned by `pricing.test.ts` against the bundle's registry-index `members` map
+   * (registry members maps are the only membership truth), and the standards-gate catalog↔manifest
+   * parity check enforces the same. Persona/Provenance ids only — `everything` is never listed (it
+   * contains every sellable SKU by construction, ADR-0258). An empty array = a module no bundle
+   * grants (a genuinely standalone SKU).
+   */
+  bundles: readonly BundleId[];
   /** Customer-facing benefit, one line — not the internal package README description. */
   blurb: string;
-  /**
-   * True when NO edition (and therefore not the bundle either — bundle = base ∪ edition members)
-   * grants this module: `edition` is then a browse-family only, and the /build + cart upgrade
-   * nudge must never claim an edition covers it. Truth source: the registry index members maps
-   * (pinned by pricing.test.ts against registry/index.json).
-   */
-  standaloneOnly?: true;
 }
 
 export const MODULE_PRICES: readonly ModulePrice[] = [
-  // À-la-carte = the standalone modules only (ADR-0238): the four edition-core rows
-  // ("Compliance core", "Agent-setup config bundles", "On-device inference", "Dev-loop tooling")
-  // were dropped — an edition's core composes its commercial members at runtime, so it has no
-  // separable artifact to sell; editions are how you buy composition.
+  // Every sellable commercial SKU, individually priced (ADR-0246 F1b). `bundles` is the
+  // index-pinned membership (pricing.test.ts); sections below are display grouping only.
   // ---- Compliance ----
   {
     id: "field-crypto",
     label: "Field encryption",
     amount: 199,
-    edition: "compliance",
+    bundles: ["compliance", "ai-production", "local-first", "provenance"],
     blurb:
       "Per-tenant field encryption (HKDF-SHA256): each tenant's ciphertext is sealed under its own derived key, and a cross-tenant read fails to decrypt in the test suite, every run.",
   },
@@ -119,7 +149,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     id: "audit-worm",
     label: "Audit chain + WORM",
     amount: 149,
-    edition: "compliance",
+    bundles: ["compliance", "provenance"],
     blurb:
       "Append-only SHA-256 audit chain plus S3 Object-Lock WORM evidence storage. Tamper breaks the link.",
   },
@@ -127,18 +157,17 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     id: "retention-runner",
     label: "Retention runner",
     amount: 199,
-    edition: "compliance",
+    bundles: ["compliance"],
     blurb:
       "Policy-driven data retention on a schedule: expiry and legal-hold, enforced automatically.",
   },
   {
-    // Grouped under compliance because that is the edition that composes @caisson/alerting
-    // (packages/compliance dependency; ADR-0205) — an ai-kit grouping would let the /build
-    // edition nudge sell an upgrade that loses this module.
+    // Compliance membership because that is the bundle that composes @caisson/alerting
+    // (packages/compliance dependency; ADR-0205).
     id: "alerting",
     label: "Alert pipeline",
     amount: 149,
-    edition: "compliance",
+    bundles: ["compliance"],
     blurb:
       "Deduped, rate-capped alert delivery with quiet hours and an audit trail: the SOC 2 CC7.2 alerting control your compliance program can point to.",
   },
@@ -147,20 +176,17 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     id: "ai-meter",
     label: "Token metering",
     amount: 199,
-    edition: "ai-kit",
+    bundles: ["ai-production"],
     blurb:
       "PG-atomic token metering with per-tenant spend caps and a circuit breaker that trips before a runaway prompt loop reaches your invoice.",
   },
   {
-    // Browse-family only: @caisson/ai-evals is standalone BY DESIGN (its manifest: "not a base
-    // service or an edition") — the ai-kit edition's registry members map does not include it, so
-    // an edition/bundle purchase never grants it. `standaloneOnly` keeps the upgrade nudge and
-    // every "included in" surface honest.
+    // The ADR-0258 fold-in: ai-evals joined the ai-production bundle members at the members-fold
+    // republish (it was never in the legacy ai-kit edition map).
     id: "ai-evals",
     label: "Eval harness",
     amount: 199,
-    edition: "ai-kit",
-    standaloneOnly: true,
+    bundles: ["ai-production"],
     blurb:
       "Regression-grade evals that run in CI, ahead of production. A model swap that regresses fails the build, catching it before a customer's session does.",
   },
@@ -168,7 +194,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     id: "guardrails",
     label: "Guardrails",
     amount: 149,
-    edition: "ai-kit",
+    bundles: ["ai-production"],
     blurb:
       "A single guardrail boundary between your app and the model: every call passes through the same PII redaction, moderation, and secret-shape gate.",
   },
@@ -176,7 +202,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     id: "prompt-registry",
     label: "Prompt registry",
     amount: 99,
-    edition: "ai-kit",
+    bundles: ["ai-production"],
     blurb:
       "Versioned prompts with rollout history: promote or roll back a prompt by moving an alias pointer, no redeploy required.",
   },
@@ -185,7 +211,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     id: "local-store",
     label: "Local vector store",
     amount: 99,
-    edition: "local-first",
+    bundles: ["local-first", "agentic-dev"],
     blurb:
       "Hybrid FTS5 + sqlite-vec search that runs on disk, one file per tenant, with no vector-cloud vendor in the loop.",
   },
@@ -194,7 +220,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     id: "agent-kernel",
     label: "Agent kernel",
     amount: 199,
-    edition: "agentic-dev",
+    bundles: ["agentic-dev"],
     blurb:
       "Typed agent/skill/rule schema plus the guarded lifecycle state machine: a failed VERIFY reopens PLAN, and the only path to SHIP runs back through it.",
   },
@@ -202,38 +228,155 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     id: "agent-runner",
     label: "Agent runner",
     amount: 49,
-    edition: "agentic-dev",
+    bundles: ["agentic-dev"],
     blurb:
       "Sandboxed, governed agent execution: spawn a headless coding agent into an isolated worktree and stream back an auditable transcript, with the child's environment built from scratch rather than inherited.",
   },
+  // ---- Catalog-rework carve + standalone SKUs (ADR-0257/0258/0260) ----
+  // Prices are the @caisson/pricebook `SKU_RETAIL` truth (pinned by pricing.test.ts); `bundles[]`
+  // is the registry members-map membership (pinned bidirectionally).
+  // ---- Compliance carves ----
+  {
+    id: "compliance-core",
+    label: "Compliance core",
+    amount: 299,
+    bundles: ["compliance"],
+    blurb:
+      "The fail-closed compliance substrate: the RLS-force evidence collector, isolation tests, and the SOC 2 / HIPAA evidence-pack generator that maps live controls to named clauses.",
+  },
+  {
+    id: "frameworks-pack",
+    label: "Frameworks pack",
+    amount: 249,
+    bundles: ["compliance"],
+    blurb:
+      "The framework control library: SOC 2, HIPAA, and EU AI Act mappings with OSCAL v1.2.2 export — the clause-to-control catalog the evidence packs render against.",
+  },
+  {
+    id: "signing-primitive",
+    label: "Signing primitive",
+    amount: 199,
+    bundles: ["compliance", "provenance"],
+    blurb:
+      "Detached Ed25519 + RFC-3161 signing over evidence bundles and audit roots: a verifiable signature a third party can check without your keys.",
+  },
+  // ---- AI-Production ----
+  {
+    id: "credits",
+    label: "Credits + metering",
+    amount: 149,
+    bundles: ["ai-production"],
+    blurb:
+      "PG-atomic credit ledger with one integer denomination: grant, debit, and spend-cap credits across codegen and AI features, fail-closed on an empty balance (402).",
+  },
+  // ---- Local-first carves ----
+  {
+    id: "local-sync",
+    label: "Local sync engine",
+    amount: 199,
+    bundles: ["local-first"],
+    blurb:
+      "Two-way offline sync: changesets, tombstones, a logical clock, and a reconcile pass with a convergence test — the device catches up without a server round-trip.",
+  },
+  {
+    id: "local-inference",
+    label: "On-device inference",
+    amount: 249,
+    bundles: ["local-first"],
+    blurb:
+      "The InferenceBackend seam over a MiniLM-class ONNX model via transformers.js, SHA-256 hash-verified before use — inference on-device by default, hosted only by opt-in.",
+  },
+  {
+    id: "local-privacy",
+    label: "Privacy egress gate",
+    amount: 99,
+    bundles: ["local-first"],
+    blurb:
+      "A default-deny egress boundary every payload crosses before it can leave the process: no host is reachable unless a typed allowlist names it — leave it empty and egress is zero.",
+  },
+  {
+    id: "tool-exec",
+    label: "Tool-exec gate",
+    amount: 99,
+    bundles: ["agentic-dev"],
+    blurb:
+      "The governed tool-execution gate: a default-deny allowlist over Zod-strict argv schemas and execFile arg-arrays — an agent reaches only the commands you explicitly allowed, never a shell.",
+  },
+  // ---- Platform / standalone commercial SKUs (in Everything, no persona bundle) ----
+  {
+    id: "org-controls",
+    label: "Org controls",
+    amount: 249,
+    bundles: [],
+    blurb:
+      "WorkOS SSO plus the owner-gated multi-user surface: invite and manage account members, and the admin-write RLS layer that lets an owner mutate scoped tenant data under a dual-logged policy.",
+  },
+  {
+    id: "billing-orchestration",
+    label: "Billing orchestration",
+    amount: 99,
+    bundles: [],
+    blurb:
+      "The multi-provider billing engine: Paddle, Stripe, LemonSqueezy, and Polar behind one BillingProvider port, with idempotent webhook fulfillment and a domain event stream.",
+  },
+  {
+    id: "ui-pro",
+    label: "UI Pro",
+    amount: 129,
+    bundles: [],
+    blurb:
+      "The premium component layer on the open @caisson/ui base: the pricing SKU matrix, buy rails, credential strips, and the elevation + glow treatments the brand system ships.",
+  },
 ] as const;
 
-/** Every module belonging to `edition`, in catalog order. */
-export function modulesByEdition(edition: EditionId): readonly ModulePrice[] {
-  return MODULE_PRICES.filter((m) => m.edition === edition);
+/** Every module that is a member of `bundle` (1:N — a module appears under each bundle it belongs
+ *  to), in catalog order. Membership is the index-pinned `bundles[]` (pricing.test.ts); the hub
+ *  bundle cards, persona pages, and the /build configurator all render from this. */
+export function modulesByBundle(bundle: BundleId): readonly ModulePrice[] {
+  return MODULE_PRICES.filter((m) => m.bundles.includes(bundle));
 }
 
 /** The cheapest module in the whole catalog — the real floor of the "from $X" per-module anchor
  *  below (computed, never hand-duplicated, so the two numbers can't drift). */
 const MODULE_MIN_AMOUNT = Math.min(...MODULE_PRICES.map((m) => m.amount));
 
-/** Purchase structures beyond single editions. */
+/** A bundle's display anchor from `BUNDLE_PRICES` (ADR-0257/0258). Kept SEPARATE from `priceById`
+ *  (the subscription-plan lookup) so a one-time bundle can never shadow a plan row. */
+export function bundlePriceById(id: BundleId): PriceAnchor | undefined {
+  return BUNDLE_PRICES.find((b) => b.id === id);
+}
+
+/** À-la-carte subtotal of every sellable SKU (the real "buy each module separately" baseline). */
+export function moduleCatalogSubtotal(): number {
+  return MODULE_PRICES.reduce((sum, m) => sum + m.amount, 0);
+}
+
+/** À-la-carte subtotal of a persona bundle's priced member modules — the real "buy the members
+ *  separately" baseline the bundle price sits below (the 0.75x below-sum lock, ADR-0258). Everything
+ *  has no per-module `bundles[]` members (it is the whole catalog), so use `moduleCatalogSubtotal`. */
+export function bundleModuleSubtotal(bundle: BundleId): number {
+  return modulesByBundle(bundle).reduce((sum, m) => sum + m.amount, 0);
+}
+
+/** What the Everything bundle saves vs buying every à-la-carte module separately, in whole USD —
+ *  a REAL saving against the live catalog subtotal (never a fabricated price history, ADR-0130).
+ *  Clamped at 0 in case a future reprice ever inverts the below-sum math. */
+export function everythingSavings(): number {
+  const everything = bundlePriceById("everything");
+  if (!everything || everything.amount === null) return 0;
+  return Math.max(0, moduleCatalogSubtotal() - everything.amount);
+}
+
+/** Purchase structures beyond the one-time bundles (`BUNDLE_PRICES` owns those — incl. the
+ *  Everything bundle that replaced the retired $1,499 edition-era row). */
 export const PLAN_PRICES: readonly PriceAnchor[] = [
-  {
-    id: "bundle",
-    label: "Everything bundle",
-    amount: 1499,
-    unit: "once",
-    from: false,
-    note: "All four editions plus the base, one purchase.",
-  },
   {
     id: "module",
     label: "Per-module",
     amount: MODULE_MIN_AMOUNT,
     unit: "once",
     from: true,
-    note: "Take a single module à la carte — 11 standalone modules across the four editions.",
+    note: "Take a single module à la carte — 22 standalone modules across the catalog.",
   },
   {
     id: "compliance-updates",
@@ -277,28 +420,21 @@ export function formatUsd(amount: number): string {
   return `$${amount.toLocaleString("en-US")}`;
 }
 
-/** Lookup by id across both tables. */
+/** Lookup a subscription/plan anchor by id (`module`, `compliance-updates`, `developer`,
+ *  `enterprise`). One-time bundle anchors live in `bundlePriceById`. */
 export function priceById(id: string): PriceAnchor | undefined {
-  return [...EDITION_PRICES, ...PLAN_PRICES].find((p) => p.id === id);
+  return PLAN_PRICES.find((p) => p.id === id);
 }
 
-/** Sum of the four edition prices — the "buy each edition separately" baseline the bundle is
- *  compared against for its savings badge. */
-export function editionsSubtotal(): number {
-  return EDITION_PRICES.reduce((sum, p) => sum + (p.amount ?? 0), 0);
-}
-
-/** What the Everything bundle saves vs buying all four editions separately, in whole USD. Clamped
- *  at 0 (never a negative "saving") in case a future reprice inverts the math. */
-export function bundleSavings(): number {
-  const bundle = priceById("bundle");
-  if (!bundle || bundle.amount === null) return 0;
-  return Math.max(0, editionsSubtotal() - bundle.amount);
-}
-
-/** Formatted starting price for an edition slug, or an em-dash if the slug has no anchor. */
-export function editionPrice(id: string): string {
+/** Formatted price for a plan id, or an em-dash if the id has no anchor. */
+export function planPrice(id: string): string {
   const p = priceById(id);
+  return p ? formatPrice(p) : "—";
+}
+
+/** Formatted price for a bundle id, or an em-dash if the id has no anchor. */
+export function bundlePrice(id: BundleId): string {
+  const p = bundlePriceById(id);
   return p ? formatPrice(p) : "—";
 }
 
@@ -314,48 +450,79 @@ export interface SkuRow {
   cells: readonly (boolean | string)[];
 }
 
-/** Matrix columns, in edition display order. */
+/** Matrix columns — the five persona bundles, in display order (Everything contains every SKU by
+ *  construction, so a column for it would be all-true noise). */
 export const SKU_COLUMNS = [
   "Compliance",
-  "AI Kit",
+  "AI-Production",
   "Local-first",
   "Agentic-Dev",
+  "Provenance",
 ] as const;
 
 /** The capability rows (no price row) — the home teaser shows exactly these. A cell is an
- *  INCLUSION claim. The module LIST (`MODULE_PRICES` × `modulesByEdition`) is pinned to the
+ *  INCLUSION claim. The module LIST (`MODULE_PRICES` × `modulesByBundle`) is pinned to the
  *  registry index members maps by the membership lint in pricing.test.ts; these capability CELLS
  *  are hand-maintained against the same registry truth (label-keyed, so not auto-linted) and are
- *  reviewed alongside that lint whenever an edition's members are repinned. Base capabilities
- *  (Apache-2.0, ship with everything — incl. fail-closed RLS) live on the one base row; the eval
- *  harness is standalone-only (no edition row can claim it). */
+ *  reviewed alongside that lint whenever a bundle's members are repinned. Base capabilities
+ *  (Apache-2.0, ship with everything — incl. fail-closed RLS) live on the one base row. */
 export const SKU_FEATURE_ROWS: readonly SkuRow[] = [
   {
-    label: "Postgres base — fail-closed RLS, auth, billing (Apache-2.0)",
-    cells: [true, true, true, true],
+    label: "Postgres base — fail-closed RLS, auth (Apache-2.0)",
+    cells: [true, true, true, true, true],
   },
   {
     label: "RLS-force evidence collector + isolation tests",
-    cells: [true, false, false, false],
+    cells: [true, false, false, false, false],
   },
-  { label: "WORM evidence store", cells: [true, false, false, false] },
-  { label: "Append-only audit chain", cells: [true, false, false, false] },
-  { label: "Per-tenant field encryption", cells: [true, true, true, false] },
-  { label: "Evidence-pack generator", cells: [true, false, false, false] },
+  { label: "WORM evidence store", cells: [true, false, false, false, true] },
+  {
+    label: "Append-only audit chain",
+    cells: [true, false, false, false, true],
+  },
+  {
+    label: "Per-tenant field encryption",
+    cells: [true, true, true, false, true],
+  },
+  {
+    label: "Evidence-pack generator + framework mappings",
+    cells: [true, false, false, false, false],
+  },
+  {
+    label: "Detached Ed25519 + RFC-3161 evidence signing",
+    cells: [true, false, false, false, true],
+  },
   {
     label: "Alert pipeline + retention runner",
-    cells: [true, false, false, false],
+    cells: [true, false, false, false, false],
   },
-  { label: "Token metering · spend caps", cells: [false, true, false, false] },
+  {
+    label: "Token metering · spend caps · credit ledger",
+    cells: [false, true, false, false, false],
+  },
   {
     label: "Versioned prompts + guardrails",
-    cells: [false, true, false, false],
+    cells: [false, true, false, false, false],
   },
-  { label: "On-device vector search", cells: [false, false, true, true] },
-  { label: "Privacy gate (no-egress)", cells: [false, false, true, false] },
   {
-    label: "Governed-agent kernel + sandboxed runner",
-    cells: [false, false, false, true],
+    label: "CI eval harness",
+    cells: [false, true, false, false, false],
+  },
+  {
+    label: "On-device vector search",
+    cells: [false, false, true, true, false],
+  },
+  {
+    label: "On-device inference + offline sync",
+    cells: [false, false, true, false, false],
+  },
+  {
+    label: "Privacy gate (no-egress)",
+    cells: [false, false, true, false, false],
+  },
+  {
+    label: "Governed-agent kernel + sandboxed runner + tool-exec gate",
+    cells: [false, false, false, true, false],
   },
 ];
 
@@ -363,23 +530,24 @@ export const SKU_FEATURE_ROWS: readonly SkuRow[] = [
 export const SKU_PRICE_ROW: SkuRow = {
   label: "Starting price",
   cells: [
-    editionPrice("compliance"),
-    editionPrice("ai-kit"),
-    editionPrice("local-first"),
-    editionPrice("agentic-dev"),
+    bundlePrice("compliance"),
+    bundlePrice("ai-production"),
+    bundlePrice("local-first"),
+    bundlePrice("agentic-dev"),
+    bundlePrice("provenance"),
   ],
 };
 
 // ---- /build configurator: compose-a-stack running total + upgrade nudge (ADR-0191) ----
 // The math that proves the "compose, don't fork" thesis: pick modules, see the live total, and get
-// nudged toward the edition or bundle that covers the same modules for less. Pure + integer USD
-// (money is never a float, ADR-0007) so it is unit-tested and shared by /build and the cart.
+// nudged toward the bundle that covers the same modules for less. Pure + integer USD (money is
+// never a float, ADR-0007) so it is unit-tested and shared by /build and the cart.
 
 /** The single best "buy this instead and save" offer for a set of selected modules. */
 export interface StackUpgrade {
-  /** An edition slug or `"bundle"`. */
-  target: EditionId | "bundle";
-  /** Display label, e.g. "Compliance edition" or "Everything bundle". */
+  /** The covering bundle's id. */
+  target: BundleId;
+  /** Display label, e.g. "Compliance bundle" or "Everything bundle". */
   label: string;
   /** The target's committed price (integer USD). */
   price: number;
@@ -393,44 +561,38 @@ export interface StackSummary {
   moduleCount: number;
   /** Sum of the selected module prices, integer USD. */
   total: number;
-  /** Present only when an edition or the bundle costs strictly less than the à-la-carte total. */
+  /** Present only when a covering bundle costs strictly less than the à-la-carte total. */
   upgrade?: StackUpgrade;
 }
 
-/** The cheapest covering upgrade (edition if the selection is single-edition, else/also the bundle),
- *  or `undefined` if buying à la carte is already the cheapest path. */
+/** The best covering-bundle upgrade, or `undefined` if buying à la carte is already the cheapest
+ *  path. An upgrade offer is a COVERAGE claim ("this includes your selection for less"): a persona
+ *  bundle qualifies only when every selected module's `bundles[]` names it; Everything covers any
+ *  selection by construction (the explicit full-catalog rule, ADR-0258). */
 function bestStackUpgrade(
   lineItems: readonly ModulePrice[],
   total: number,
 ): StackUpgrade | undefined {
-  // An upgrade offer is a COVERAGE claim ("this includes your selection for less"), so a
-  // standalone-only module (granted by no edition, and hence not by the bundle) disqualifies the
-  // whole selection — otherwise the nudge sells an upgrade that silently drops a module.
-  if (lineItems.some((m) => m.standaloneOnly)) return undefined;
   const offers: StackUpgrade[] = [];
-  // Single-edition selection → the whole edition (which includes these modules and more) may cost
-  // less than buying them separately.
-  const editions = new Set(lineItems.map((m) => m.edition));
-  if (editions.size === 1) {
-    const [edition] = [...editions] as [EditionId];
-    const anchor = priceById(edition);
+  for (const bundleId of PERSONA_BUNDLE_IDS) {
+    if (!lineItems.every((m) => m.bundles.includes(bundleId))) continue;
+    const anchor = bundlePriceById(bundleId);
     if (anchor && anchor.amount != null && anchor.amount < total) {
       offers.push({
-        target: edition,
-        label: `${anchor.label} edition`,
+        target: bundleId,
+        label: `${anchor.label} bundle`,
         price: anchor.amount,
         saves: total - anchor.amount,
       });
     }
   }
-  // The everything bundle — relevant once a cross-edition selection outgrows the bundle price.
-  const bundle = priceById("bundle");
-  if (bundle && bundle.amount != null && bundle.amount < total) {
+  const everything = bundlePriceById("everything");
+  if (everything && everything.amount != null && everything.amount < total) {
     offers.push({
-      target: "bundle",
-      label: bundle.label,
-      price: bundle.amount,
-      saves: total - bundle.amount,
+      target: "everything",
+      label: `${everything.label} bundle`,
+      price: everything.amount,
+      saves: total - everything.amount,
     });
   }
   if (offers.length === 0) return undefined;

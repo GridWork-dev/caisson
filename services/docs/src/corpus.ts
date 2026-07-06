@@ -182,7 +182,7 @@ export async function loadPricingFacts(
   if (!existsSync(pricingPath)) return null;
   const mod = await import(pricingPath);
   return PricingFactsSchema.parse({
-    editions: mod.EDITION_PRICES,
+    bundles: mod.BUNDLE_PRICES,
     modules: mod.MODULE_PRICES,
     plans: mod.PLAN_PRICES,
   });

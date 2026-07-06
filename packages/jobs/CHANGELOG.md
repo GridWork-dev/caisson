@@ -1,5 +1,29 @@
 # @caisson/jobs
 
+## 0.4.0
+
+### Minor Changes
+
+- 4d7eb71: The pg-boss driver now exposes native cron scheduling: `queue.schedule(name, cron, data?, options?)`
+  ticks a registered task on a cron expression, backed by pg-boss's own durable Postgres-side
+  scheduler (no new infrastructure, no new dependency). The named task must already be registered
+  the same way `enqueue`/`work` require, so a typo'd or unregistered name fails before it ever
+  reaches Postgres. In-memory and Trigger.dev drivers are unaffected — this capability has no
+  generic-port equivalent since only pg-boss can tick a cron durably inside the database itself.
+
+### Patch Changes
+
+- b791198: Documentation and metadata cleanup plus dependency-declaration hygiene: package descriptions, READMEs, changelogs, and source comments no longer carry internal build references, and shared external dependency ranges now resolve through the workspace dependency catalog (published dependency ranges unchanged; the TypeScript devDependency floor moves to ^5.7.3).
+- 0af4dbf: Rewrote README, AGENTS, CHANGELOG, package.json descriptions, and inline source comments to
+  read as clean, buyer-facing documentation. Removed sibling-repository provenance framing,
+  internal build-phase shorthand, and bare specification-id citations that had leaked into
+  shipped copy. No runtime behavior changed in any package — documentation and comments only.
+- Updated dependencies [b791198]
+- Updated dependencies [0c883ae]
+- Updated dependencies [0af4dbf]
+  - @caisson/kernel@0.4.2
+  - @caisson/tenancy-rls@0.4.0
+
 ## 0.3.1
 
 ### Patch Changes

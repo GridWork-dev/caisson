@@ -1,6 +1,6 @@
 {
   "name": "@caisson/local-ai",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
   "publishConfig": {
@@ -24,8 +24,11 @@
   "dependencies": {
     "@caisson/field-crypto": "workspace:*",
     "@caisson/kernel": "workspace:*",
+    "@caisson/local-inference": "workspace:*",
+    "@caisson/local-privacy": "workspace:*",
     "@caisson/license-verify": "workspace:*",
-    "@caisson/local-store": "workspace:*"
+    "@caisson/local-store": "workspace:*",
+    "@caisson/local-sync": "workspace:*"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",

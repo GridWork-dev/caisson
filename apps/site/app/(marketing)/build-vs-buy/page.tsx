@@ -28,7 +28,7 @@ import {
   serializeJsonLd,
   techArticle,
 } from "@/lib/jsonld";
-import { editionPrice, formatPrice, priceById } from "@/lib/pricing";
+import { bundlePrice, formatPrice, priceById } from "@/lib/pricing";
 
 export const metadata = buildMetadata({
   title: "Build vs buy compliance infrastructure",
@@ -38,9 +38,9 @@ export const metadata = buildMetadata({
   type: "article",
 });
 
-// The compliance edition price ($799 once) and the optional updates cadence ($1,499/yr) both read
+// The compliance bundle price ($1,049 once) and the optional updates cadence ($1,499/yr) both read
 // from the committed sheet (lib/pricing) — never hand-typed, so a reprice can't strand this page.
-const COMPLIANCE_PRICE = editionPrice("compliance");
+const COMPLIANCE_PRICE = bundlePrice("compliance");
 const UPDATES = priceById("compliance-updates");
 const UPDATES_PRICE = UPDATES ? formatPrice(UPDATES) : "—";
 
@@ -116,11 +116,11 @@ const FAQ = [
   },
   {
     question: "Build vs buy — which is cheaper?",
-    answer: `Building the controls yourself runs $80k and 6–9 months for SOC 2 alone. A hosted platform is a recurring subscription that never ends. Owning the Compliance edition source is ${COMPLIANCE_PRICE}, once — the controls are wired on day one, and an optional updates plan keeps framework mappings current if you want it.`,
+    answer: `Building the controls yourself runs $80k and 6–9 months for SOC 2 alone. A hosted platform is a recurring subscription that never ends. Owning the Compliance bundle source is ${COMPLIANCE_PRICE}, once — the controls are wired on day one, and an optional updates plan keeps framework mappings current if you want it.`,
   },
   {
     question: "What happens if I stop paying?",
-    answer: `Nothing you own goes away. The Compliance edition is a one-time, perpetual purchase — the source and every control you bought stay yours. Only the optional Compliance Updates plan (${UPDATES_PRICE}) lapses, which means you stop receiving refreshed framework mappings, not that your code stops working.`,
+    answer: `Nothing you own goes away. The Compliance bundle is a one-time, perpetual purchase — the source and every control you bought stay yours. Only the optional Compliance Updates plan (${UPDATES_PRICE}) lapses, which means you stop receiving refreshed framework mappings, not that your code stops working.`,
   },
 ] as const;
 
@@ -273,7 +273,7 @@ const result = verifyChain(entries, anchor);
           </div>
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-5)" }}>
             The base substrate — fail-closed RLS, auth, billing — is Apache-2.0
-            and ships with every edition. The Compliance edition adds the WORM
+            and ships with every bundle. The Compliance bundle adds the WORM
             store, audit chain, and evidence-pack generator on top.
           </p>
         </Section>
@@ -317,7 +317,7 @@ const result = verifyChain(entries, anchor);
                     "Fail-closed RLS, WORM storage, and an append-only audit chain, as source you own",
                     "An evidence-pack generator that maps controls to framework clauses",
                     "The gates wired and tested in CI before your first assessment",
-                    `A one-time, perpetual purchase — ${COMPLIANCE_PRICE} for the Compliance edition`,
+                    `A one-time, perpetual purchase — ${COMPLIANCE_PRICE} for the Compliance bundle`,
                   ].map((item) => (
                     <li
                       key={item}
@@ -411,7 +411,7 @@ const result = verifyChain(entries, anchor);
               need to stay audit-ready. Building the same controls yourself
               costs <span className="cs-num">$80k</span> and{" "}
               <span className="cs-num">6–9 months</span> for a first SOC 2. The
-              Compliance edition is{" "}
+              Compliance bundle is{" "}
               <span className="cs-num">{COMPLIANCE_PRICE}</span>, once.
             </p>
             <p

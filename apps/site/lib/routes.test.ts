@@ -61,16 +61,22 @@ describe("MARKETING_ROUTES registry", () => {
 });
 
 describe("derived route slices", () => {
-  test("EDITION_ROUTES is exactly the four editions in display order", () => {
+  test("EDITION_ROUTES is exactly the five bundle persona pages in display order", () => {
+    // The four persona pages plus the net-new Provenance persona page (catalog-rework W6.2, ADR-0257).
+    // The `edition` route group is the persona-page grouping (the bundles' front doors); the name is
+    // retained until W7's commerce flip renames the surface.
     expect(EDITION_ROUTES.map((r) => r.path)).toEqual([
       "/compliance",
       "/ai-kit",
       "/local-first",
       "/agentic-dev",
+      "/provenance",
     ]);
   });
 
-  test("NAV_ROUTES are the nav-flagged routes; all four editions are buyable so all four are navigable", () => {
+  test("NAV_ROUTES are the nav-flagged routes; the four core personas plus the hub are navigable", () => {
+    // Provenance is a footer + hub route, not a top-nav item (it's a subset of Compliance, discovered
+    // from the marketplace and the Compliance page, not a primary nav destination).
     const navPaths = NAV_ROUTES.map((r) => r.path);
     expect(navPaths).toEqual([
       "/compliance",

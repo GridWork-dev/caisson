@@ -13,7 +13,7 @@ import {
   GRANT_CONSUMPTION_MIGRATION_SQL,
 } from "@caisson/credits";
 import { RATE_LIMIT_SCHEMA_SQL } from "@caisson/rate-limit";
-import { createStripeBilling } from "@caisson/billing";
+import { createStripeBilling } from "@caisson/billing-orchestration";
 import { loadRegistryIndex } from "@caisson/registry";
 import { createBaseApp, createFetchHandler } from "./index.ts";
 

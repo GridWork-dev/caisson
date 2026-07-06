@@ -151,22 +151,33 @@ describe("resolveAccountEntitlements (ADR-0071)", () => {
     expect([...resolved]).toEqual(["@caisson/audit-worm"]);
   });
 
-  test("a reserved future-module purchase alongside a real one resolves only the real member (fail-soft, never throws)", async () => {
-    const acct = "acct_reserved";
+  test("a graduated bare-slug purchase resolves to its real indexed grant (no longer reserved)", async () => {
+    // "alerting" graduated: it left RESERVED_MODULE_ENTITLEMENT_IDS once its package shipped and got
+    // indexed, so a purchase now resolves to the real @caisson/alerting grant rather than fail-softing
+    // to nothing. Index that carries it (as the real registry index does) → both members resolve.
+    const acct = "acct_graduated";
+    const indexWithAlerting = loadRegistryIndex({
+      schemaVersion: 1,
+      modules: [
+        entry("@caisson/kernel", []),
+        entry("@caisson/audit-worm", []),
+        entry("@caisson/alerting", []),
+      ],
+    });
     await withTenant(tp.pg, acct, (tx) =>
       grantEntitlements(tx, {
         accountId: acct,
-        // "alerting" has NO row in this synthetic index yet (its package doesn't exist)
-        // — the resolver must not throw and must not grant a substitute; only the real
-        // "audit-worm" purchase resolves.
         entitlementIds: ["audit-worm", "alerting"],
         sourceEventId: "in_r",
         source: { kind: "one_time", purchaseId: "pi_r" },
       }),
     );
     const resolved = await withTenant(tp.pg, acct, (tx) =>
-      resolveAccountEntitlements(tx, acct, index),
+      resolveAccountEntitlements(tx, acct, indexWithAlerting),
     );
-    expect([...resolved]).toEqual(["@caisson/audit-worm"]);
+    expect([...resolved].sort()).toEqual([
+      "@caisson/alerting",
+      "@caisson/audit-worm",
+    ]);
   });
 });

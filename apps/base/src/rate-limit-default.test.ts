@@ -8,7 +8,7 @@
 import { describe, expect, test } from "bun:test";
 import { RateLimitError } from "@caisson/kernel";
 import type { Transactor, TenantExecutor } from "@caisson/tenancy-rls";
-import { createStripeBilling } from "@caisson/billing";
+import { createStripeBilling } from "@caisson/billing-orchestration";
 import { loadRegistryIndex } from "@caisson/registry";
 import type { McpServerOptions, RateLimitHook } from "@caisson/mcp-server";
 import { createBaseApp } from "./app.ts";

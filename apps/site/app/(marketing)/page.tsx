@@ -18,10 +18,10 @@ import Link from "next/link";
 import { serializeJsonLd, softwareApplication } from "@/lib/jsonld";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import {
-  editionPrice,
-  EDITION_PRICES,
+  BUNDLE_PRICES,
   formatUsd,
   PLAN_PRICES,
+  planPrice,
   SKU_COLUMNS,
   SKU_FEATURE_ROWS,
 } from "@/lib/pricing";
@@ -76,9 +76,13 @@ const CI_CHECKS = [
 
 // How-to-buy price bands — derived from lib/pricing.ts (never hand-duplicated) so the three
 // figures on the type-chip cards below can't drift from the SKUs they describe.
-const HOW_TO_BUY_MODULE_PRICE = editionPrice("module");
-const EDITION_AMOUNTS = EDITION_PRICES.map((p) => p.amount ?? 0);
-const HOW_TO_BUY_EDITION_RANGE = `${formatUsd(Math.min(...EDITION_AMOUNTS))}–${formatUsd(Math.max(...EDITION_AMOUNTS))}`;
+const HOW_TO_BUY_MODULE_PRICE = planPrice("module");
+// The persona/Provenance bundle price band (catalog-rework W6.2, ADR-0258 numbers) — the Everything
+// bundle is the whole-catalog step above, not part of the "take a bundle" range.
+const BUNDLE_AMOUNTS = BUNDLE_PRICES.filter((b) => b.id !== "everything").map(
+  (b) => b.amount ?? 0,
+);
+const HOW_TO_BUY_BUNDLE_RANGE = `${formatUsd(Math.min(...BUNDLE_AMOUNTS))}–${formatUsd(Math.max(...BUNDLE_AMOUNTS))}`;
 const YEARLY_PLAN_AMOUNTS = PLAN_PRICES.filter(
   (p): p is typeof p & { amount: number } =>
     p.unit === "year" && p.amount !== null,
@@ -207,12 +211,12 @@ export default function HomePage() {
         </Section>
       </Reveal>
 
-      {/* ===== How to buy — the Module/Edition/Plan type-chip vocabulary, defined once before
-          the Editions cards below reuse it (ADR-0237 F5) ===== */}
+      {/* ===== How to buy — the Module/Bundle/Plan type-chip vocabulary, defined once before
+          the Bundles cards below reuse it (ADR-0237 F5) ===== */}
       <Reveal>
         <Section
           eyebrow="How to buy"
-          title="Module, edition, or plan — same catalog, three shapes."
+          title="Module, bundle, or plan — same catalog, three shapes."
           lede="Every price on this site now carries one of three labels. Pick the shape that fits and open the marketplace to browse the rest."
         >
           <FeatureGrid cols={3}>
@@ -245,7 +249,7 @@ export default function HomePage() {
                 style={{ marginTop: "var(--cs-space-3)" }}
               >
                 A single package sold on its own — field encryption, the eval
-                harness, the agent runner. 11 modules across the four editions.
+                harness, the agent runner. Every module, priced à la carte.
               </p>
               <div style={{ marginTop: "var(--cs-space-6)" }}>
                 <Button href="/marketplace/modules" variant="ghost">
@@ -265,7 +269,7 @@ export default function HomePage() {
                 <span className="cs-card-title">
                   A composed stack for one job
                 </span>
-                <StatusChip label="Edition" />
+                <StatusChip label="Bundle" />
               </div>
               <p
                 className="cs-num"
@@ -275,18 +279,19 @@ export default function HomePage() {
                   fontFamily: "var(--cs-font-mono)",
                 }}
               >
-                {HOW_TO_BUY_EDITION_RANGE}
+                {HOW_TO_BUY_BUNDLE_RANGE}
               </p>
               <p
                 className="cs-muted"
                 style={{ marginTop: "var(--cs-space-3)" }}
               >
-                Compliance, AI Production Kit, Local-first AI, or Agentic-Dev —
-                each edition composes the same audited base. Never a fork.
+                Compliance, AI Production, Local-first, Agentic-Dev, or
+                Provenance — each bundle composes the same audited base. Never a
+                fork.
               </p>
               <div style={{ marginTop: "var(--cs-space-6)" }}>
                 <Button href="/marketplace" variant="ghost">
-                  Browse editions
+                  Browse bundles
                 </Button>
               </div>
             </Card>
@@ -331,12 +336,12 @@ export default function HomePage() {
         </Section>
       </Reveal>
 
-      {/* ===== Editions — featured-lead hierarchy, one accent ===== */}
+      {/* ===== Bundles — featured-lead hierarchy, one accent ===== */}
       <Reveal>
         <Section
-          eyebrow="Editions"
-          title="Four editions, one audited base."
-          lede="Compliance leads. Every edition draws from the same audited base — never a fork. See every module sold on its own in the marketplace."
+          eyebrow="Bundles"
+          title="Six bundles, one audited base."
+          lede="Compliance leads. Every bundle draws from the same audited base — never a fork. Provenance and the whole-catalog Everything bundle round out the six; see them all, plus every module sold on its own, in the marketplace."
           band="surface"
         >
           <div
@@ -348,15 +353,15 @@ export default function HomePage() {
               href="/compliance"
               name="Compliance"
               icon="fail-closed"
-              status={<StatusChip tone="accent" dot label="Edition · Hero" />}
+              status={<StatusChip tone="accent" dot label="Bundle · Hero" />}
               line="Fail-closed RLS, S3 WORM, append-only audit chain, per-tenant field encryption, and a SOC 2 / HIPAA evidence-pack generator."
               proof="ALTER TABLE evidence FORCE ROW LEVEL SECURITY;"
             />
             <EditionCard
               href="/ai-kit"
-              name="AI Production Kit"
+              name="AI-Production"
               icon="gauge"
-              status={<StatusChip tone="muted" dot label="Edition · #2" />}
+              status={<StatusChip tone="muted" dot label="Bundle · #2" />}
               line="The production-rigor layer cheap AI boilerplate skips: token metering, spend caps, a circuit breaker, versioned prompts, and guardrails."
               proof="breaker open: tenant spend cap hit"
             />
@@ -365,7 +370,7 @@ export default function HomePage() {
               name="Local-first AI"
               icon="cpu"
               status={
-                <StatusChip tone="muted" dot label="Edition · Self-host" />
+                <StatusChip tone="muted" dot label="Bundle · Self-host" />
               }
               line="Compute seam, privacy gate, and on-device vector search. Your data never leaves the device. Own the source."
               proof="egress: blocked at the privacy gate"
@@ -374,7 +379,7 @@ export default function HomePage() {
               href="/agentic-dev"
               name="Agentic-Dev"
               icon="git-branch"
-              status={<StatusChip tone="muted" dot label="Edition · #4" />}
+              status={<StatusChip tone="muted" dot label="Bundle · #4" />}
               line="The governed-agent kernel: typed agent/skill/rule schema, a lifecycle state machine, and a hooks dispatcher."
               proof="agent · skill · rule — typed, validated, hooked"
             />
@@ -382,12 +387,12 @@ export default function HomePage() {
         </Section>
       </Reveal>
 
-      {/* ===== SKU matrix — editions × modules + committed price row ===== */}
+      {/* ===== SKU matrix — bundles × modules + committed price row ===== */}
       <Reveal>
         <Section
-          eyebrow="What&rsquo;s in each edition"
+          eyebrow="What&rsquo;s in each bundle"
           title="Compose, don&rsquo;t fork."
-          lede="Every edition draws from the same audited base. Modules differ by composition, never by a divergent copy."
+          lede="Every bundle draws from the same audited base. Modules differ by composition, never by a divergent copy."
         >
           <div style={{ marginTop: "var(--cs-space-8)" }}>
             <SkuMatrix columns={[...SKU_COLUMNS]} rows={SKU_FEATURE_ROWS} />
@@ -435,7 +440,7 @@ export default function HomePage() {
                 maxWidth: "60ch",
               }}
             >
-              Caisson is built and supported by Liam at GridWork Digital — a
+              Caisson is built and supported by Liam at Caisson Software — a
               named engineer, not a ticket queue. Every customer gets a direct
               line to the engineer who builds it.
             </p>
@@ -458,7 +463,7 @@ export default function HomePage() {
           id="get-started"
           eyebrow="Get started"
           title="Start audit-ready."
-          lede="Scaffold the audited base in one command, then open the marketplace for the edition, module, or plan you need."
+          lede="Scaffold the audited base in one command, then open the marketplace for the bundle, module, or plan you need."
           band="surface"
         >
           <div

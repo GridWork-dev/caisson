@@ -1,13 +1,13 @@
 {
   "name": "@caisson/billing",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "type": "module",
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "description": "Stripe, Paddle, LemonSqueezy, and Polar billing behind a single BillingProvider port: HMAC raw-body webhook verification mapped to a provider-agnostic DomainBillingEvent.",
+  "description": "Open billing seam: raw-body HMAC webhook signature verification (Stripe, Paddle, LemonSqueezy, Polar), the BillingProvider port + config-type contracts, and the provider-agnostic DomainBillingEvent schema. Drivers/parsers/idempotency live in the commercial @caisson/billing-orchestration.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -18,12 +18,10 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src",
-    "test": "bun test ./src",
-    "test:live": "bun test ./live"
+    "test": "bun test ./src"
   },
   "dependencies": {
     "@caisson/kernel": "workspace:*",
-    "@caisson/tenancy-rls": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {

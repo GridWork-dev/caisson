@@ -3,14 +3,12 @@
 // applies the domain event inside withTenant so the credit grant is RLS-scoped to the buyer's account.
 // The provider is INJECTED (not constructed here) so the handler is testable without a live HMAC secret
 // and the MoR driver stays swappable (ADR-0017). A bad signature throws (AuthnError) BEFORE any DB work.
-import {
-  type BillingProvider,
-  type DomainBillingEvent,
-  processEvent,
-} from "@caisson/billing";
+import type { BillingProvider, DomainBillingEvent } from "@caisson/billing";
+import { processEvent } from "@caisson/billing-orchestration";
 import { InternalError } from "@caisson/kernel";
 import { type Transactor, withTenant } from "@caisson/tenancy-rls";
 import { applyBillingEvent } from "./apply-billing-event.ts";
+import type { SkuLine } from "./posthog-capture.ts";
 
 export interface BillingWebhookResult {
   /** The mapped domain event, or null for an event type we don't act on. */
@@ -21,6 +19,12 @@ export interface BillingWebhookResult {
    * drift from the grant gate's own decision.
    */
   grantedEntitlements: string[];
+  /**
+   * Per-line SKU attribution for this delivery's grant, threaded from
+   * `applyBillingEvent` — `[]` on a re-delivery/no-op, gated identically to `grantedEntitlements`
+   * so the post-commit PostHog capture never drifts from the grant either.
+   */
+  skuLines: SkuLine[];
 }
 
 /**
@@ -45,7 +49,7 @@ export async function handleBillingWebhook(
   signatureHeader: string,
 ): Promise<BillingWebhookResult> {
   const event = provider.verifyAndParse(rawBody, signatureHeader);
-  if (event === null) return { event, grantedEntitlements: [] };
+  if (event === null) return { event, grantedEntitlements: [], skuLines: [] };
   if (event.accountId === "") {
     process.stderr.write(
       `[service-license] ALERT: verified ${event.type} (sourceEventId=${event.sourceEventId}) has no resolvable account_id — purchase unattributed, NOT granted\n`,
@@ -60,20 +64,25 @@ export async function handleBillingWebhook(
   // skips the grant, and leaves grantedEntitlements empty — so the post-commit Discord push (ADR-0203,
   // gated on grantedEntitlements.length > 0 in app.ts) is skipped too, closing the re-push gap. The
   // claim + grant commit or roll back together, so a failed grant is retried cleanly next delivery.
-  const grantedEntitlements = await withTenant(
+  const { grantedEntitlements, skuLines } = await withTenant(
     pg,
     event.accountId,
     async (tx) => {
       let granted: string[] = [];
+      let lines: SkuLine[] = [];
       const { alreadyProcessed } = await processEvent(
         tx,
         event.sourceEventId,
         async () => {
-          granted = (await applyBillingEvent(tx, event)).grantedEntitlements;
+          const effect = await applyBillingEvent(tx, event);
+          granted = effect.grantedEntitlements;
+          lines = effect.skuLines;
         },
       );
-      return alreadyProcessed ? [] : granted;
+      return alreadyProcessed
+        ? { grantedEntitlements: [], skuLines: [] }
+        : { grantedEntitlements: granted, skuLines: lines };
     },
   );
-  return { event, grantedEntitlements };
+  return { event, grantedEntitlements, skuLines };
 }

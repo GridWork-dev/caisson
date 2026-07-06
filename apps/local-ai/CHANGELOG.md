@@ -1,5 +1,31 @@
 # @caisson/local-ai-app
 
+## 0.0.5
+
+### Patch Changes
+
+- bc12f3a: Carve local-first privacy, inference, and sync into separately priced commercial modules.
+- Updated dependencies [b791198]
+- Updated dependencies [bc12f3a]
+- Updated dependencies [2834c3f]
+- Updated dependencies [90b6dc1]
+- Updated dependencies [f178f9a]
+- Updated dependencies [9efcff2]
+- Updated dependencies [9efcff2]
+- Updated dependencies [4d7eb71]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [4d7eb71]
+  - @caisson/field-crypto@0.2.4
+  - @caisson/kernel@0.4.2
+  - @caisson/license-verify@0.3.0
+  - @caisson/local-ai@0.2.4
+  - @caisson/local-store@0.2.4
+  - @caisson/local-inference@0.1.0
+  - @caisson/local-privacy@0.1.0
+  - @caisson/local-sync@0.1.0
+
 ## 0.0.4
 
 ### Patch Changes

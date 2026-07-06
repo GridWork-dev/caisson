@@ -47,6 +47,7 @@ export const MARKETING_ROUTES: readonly MarketingRoute[] = [
   { path: "/ai-kit", label: "AI Production Kit", priority: 0.9, changeFrequency: "weekly", group: "edition", nav: true, footer: "editions" }, // prettier-ignore
   { path: "/local-first", label: "Local-first AI", navLabel: "Local-first", priority: 0.9, changeFrequency: "weekly", group: "edition", nav: true, footer: "editions" }, // prettier-ignore
   { path: "/agentic-dev", label: "Agentic-Dev", priority: 0.9, changeFrequency: "weekly", group: "edition", nav: true, footer: "editions" }, // prettier-ignore
+  { path: "/provenance", label: "Provenance", priority: 0.9, changeFrequency: "weekly", group: "edition", footer: "editions" }, // prettier-ignore
   { path: "/marketplace", label: "Marketplace", priority: 0.9, changeFrequency: "weekly", group: "product", nav: true, footer: "product" }, // prettier-ignore
   { path: "/marketplace/modules", label: "Modules", priority: 0.85, changeFrequency: "weekly", group: "product", footer: "product" }, // prettier-ignore
   { path: "/marketplace/build", label: "Build your stack", priority: 0.8, changeFrequency: "weekly", group: "product", footer: "product" }, // prettier-ignore

@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { Wordmark } from "@caisson/ui/components";
+import { Wordmark } from "@caisson/brand";
 
 import { footerRoutes, type FooterCol } from "@/lib/routes";
 import { UpdatesForm } from "./waitlist-form";
@@ -49,7 +49,7 @@ export function SiteFooter() {
             Compliance-grade infrastructure for regulated SaaS.
           </p>
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-4)" }}>
-            © {new Date().getFullYear()} GridWork Digital LLC
+            © {new Date().getFullYear()} Caisson Software LLC
           </p>
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-2)" }}>
             Base substrate is{" "}

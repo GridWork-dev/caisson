@@ -982,8 +982,64 @@ packages only for framework-free cores, shared frontends package forbidden · G2
 six S-effort surfaces (audit-worm viewer · license-issue log · local-store search ·
 prompt-registry browser · ai-meter chart · audit-harness viewer), after the catalog-rework SPEC.
 
-**Still OPEN after the G2 round**: the ui-pro component list + docs surface (its own SPEC) ·
-**every price number**
+**ui-pro SPEC round (2026-07-06, Kickoff D Stage 1) — ADR-0259 (drafted 0251, renumbered at the E-merge):** component line =
+**market-line split** (ui-pro = 7 deep/domain components — DataTable-Pro · Tree-Pro · Ops
+Matrix (absorbs `sku-matrix`) · Audit Timeline · Payload Viewer · Type-to-Confirm · Adv
+Date-Range — a strict leaf: no `packages/*` may depend on it; every table-stakes basic
+stays/returns/backfills into the Apache floor, incl. charts as themed Recharts wrappers) ·
+docs surface = **caisson.sh/ui gallery route** in apps/site, public live demos, registry-layer
+gating, build deferred per 0250 G2b · **v1 = full 7** (operator override of the 5-core rec) ·
+price-band input to Stage 2 = **$129–199, anchor $149, standalone-only** (ai-evals pattern —
+no edition/bundle membership). Scope: `outputs/specs/ui-pro/SPEC.md`.
+
+**Pricing-revalidation round (2026-07-06, Kickoff D Stage 2) — ADR-0260 (drafted 0252, renumbered at the E-merge):** pricing logic =
+**sum-of-parts comps-anchored** (Vanta-TCO = narrative, never pricing logic) · bundles
+formula-locked at 0.75 × registry-truth member sums: **Compliance $1,049** (carve P_C $299 ·
+P_F $249 · P_S $199) · **AI-Production $629** · **Agentic-Dev $329** (tool-exec $99) ·
+**Provenance $399** · **Everything $1,749** (= 0.75 × Σ bundle prices, recompute-on-move) ·
+new SKUs: auth-sso **$199/$249 conditional on the Stage-3 package shape** · credits $149 ·
+billing-orchestration $99 · **ui-pro $129** · the 11 existing modules + both subscriptions +
+the $49 top-up all revalidated-keep · **renewal cents = flat 40% X9-rounded** per SKU.
+Display rides the Stage-3/4 rework build (no pricing.ts edit now). Evidence:
+`outputs/research/pricing-revalidation-2026-07.md`.
+
+**Catalog-rework SPEC round (2026-07-06, Kickoff D Stage 3, round 1) — ADR-0257:** bundle
+model = **full rename + first-class `bundle` kind + resolve-time alias map** (operator
+override of stable-ids; single alias point in `expandEntitlements`; shared vocabulary
+constant consumed by Kickoff E's RENEWAL_BOOK — cross-session coordination locked, E never
+re-keys) · **F7/F8 = data + D-side enforcement here on E's ADR-0255 plumbing precedent**
+(pricebook member-timeline + F8 credit map + `entitledSince` sibling record + per-member
+fail-soft filter; sequenced after E's PR #128; E owns per-version Worker enforcement;
+absent key = grandfathered on both axes) · **org module = ONE merged `org-controls` $249**
+(narrow membership carve — session-resolution stays open, the "zero blast radius" claim
+REFUTED; all 6 admin-write exports; new `/dashboard/members` entitlement gate; $199
+standalone branch dead) · **display = hub-extend + fifth Provenance persona page**, 1:N
+`bundles[]` pricing model, renewal display deferred to dashboard. Scope:
+`outputs/specs/catalog-rework/{SPEC,PLAN}.md`.
+
+**Catalog pricing-consequence round (2026-07-06, Kickoff D Stage 3, round 2) — ADR-0258
+(supersedes ADR-0260 on 3 numbers; supersedes ADR-0259 §5 on Everything content):**
+**Local-first = full 3-way carve $629** (local-sync $199 · local-inference $249 ·
+local-privacy $99; sum 845; privacy-first extraction order binding) · **credits joins
+AI-Production → recompute $739** (sum 994) · **Everything $2,059 full-catalog content
+incl. ui-pro** (only private `brand` excluded; 0.75 × Σ personas 2,746) · renewal cents:
+AI $289 · Local-first $249 · Everything $819 · sync $79 · inference $99 · privacy $39 ·
+**Paddle = big-bang sandbox rebuild** (operator override of additive-first; editions
+retired in the same sweep; production recreation stays operator-gated at the commerce
+flip). Below-sum ✓ on all six bundles at lock.
+
+**ADR numbering note (2026-07-06):** Kickoff E's branch (`feat/independent-build-wave`)
+holds 0253–0256 (incl. its own 0255 `updatesWindows` claims rewrite); D files from 0257 up
+by cross-session agreement. The dual-branch 0251/0252 collision RESOLVED at the merge per
+ADR-0088 (second merger renumbers): D's pair became **0259/0260**; 0261 = the Greptile-retirement
+ADR (formalizing the 2026-07-06 vendor-drop lock).
+
+**Still OPEN after Stage 3**: production Paddle catalog recreation (operator act at the
+commerce flip; sandbox never ports) · optional Cookiy WTP validation (survey 374111 live;
+~$20 recruitment needs live operator approval — now also covers the three local-ai carve
+bands) · kit stage 2 (runtime theme API) then wave-1 `./ui` frontends (sequenced after the
+catalog-rework waves per ADR-0250 G2b/G2d) · grandfathering policy (operator-owned,
+ADR-0106 lineage)
 
 A post-merge scheduling picker (2026-07-05, no ADR — Kickoffs A+B merged as PRs #126/#127) split
 the remaining pool: **Kickoff D** = the catalog program (ui-pro SPEC → pricing pass →

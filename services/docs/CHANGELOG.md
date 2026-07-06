@@ -1,5 +1,27 @@
 # @caisson/service-docs
 
+## 0.0.5
+
+### Patch Changes
+
+- 850b844: Added a new shared rate-limiting package with an in-memory per-client-IP throttle for
+  surfaces with no signed-in identity yet. The docs and license services now both import
+  this shared limiter instead of each keeping a separate copy of the same logic. The
+  internal licensing-boundary check also now recognizes the new package as part of the
+  open, freely licensed base set. Buyer-visible throttling behavior, including the limits,
+  the retry timing, and which header is trusted for the client IP, is unchanged; this only
+  changes where the code lives.
+- Updated dependencies [b791198]
+- Updated dependencies [4d7eb71]
+- Updated dependencies [850b844]
+- Updated dependencies [850b844]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [0af4dbf]
+  - @caisson/kernel@0.4.2
+  - @caisson/local-store@0.2.4
+  - @caisson/observability@0.2.4
+  - @caisson/rate-limit@0.1.1
+
 ## 0.0.4
 
 ### Patch Changes

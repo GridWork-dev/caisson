@@ -5,7 +5,7 @@
 //   - atomic rotation: encrypted key + display metadata written in one tenant transaction.
 // BYOK is FREE (ADR-0182) — no credit debit, no cost preview.
 import { NextResponse } from "next/server";
-import { assertCanManageMembers } from "@caisson/auth";
+import { assertCanManageMembers } from "@caisson/org-controls";
 import { AuthzError } from "@caisson/kernel";
 import { getSession } from "@/lib/auth";
 import { ByokSubmitBody, readKeyStatuses, submitTenantKey } from "@/lib/byok";

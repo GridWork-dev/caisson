@@ -40,17 +40,17 @@ export default defineModule({
   // and the full-tree-index guard test asserts every pin resolves to a real published ledger version
   // (never the "0.0.0" dev sentinel).
   members: {
-    "@caisson/agent-dev": "0.2.1",
-    "@caisson/agent-kernel": "0.2.1",
+    "@caisson/agent-dev": "0.3.0",
+    "@caisson/agent-kernel": "0.3.1",
     // A separately-versioned primitive folded into the Agentic-Dev bundle (ADR-0186, edition-only
     // SKU) — same fold as tool-exec below, pinned to its published ledger version.
-    "@caisson/agent-runner": "0.1.1",
-    "@caisson/ai-config": "0.2.1",
-    "@caisson/kernel": "0.3.0",
-    "@caisson/local-store": "0.2.1",
+    "@caisson/agent-runner": "0.1.4",
+    "@caisson/ai-config": "0.2.4",
+    "@caisson/kernel": "0.4.2",
+    "@caisson/local-store": "0.2.4",
     // A separately-versioned primitive folded into the Agentic-Dev bundle (ADR-0178/0199 — wired
     // live in src/index.ts's createAgentDevEdition).
-    "@caisson/tool-exec": "0.1.2",
+    "@caisson/tool-exec": "0.1.5",
   },
   golden: "src/__golden__",
   description:

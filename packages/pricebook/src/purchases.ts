@@ -25,7 +25,7 @@ import { planEntitlementsSchema } from "./plans.ts";
 const NO_CREDITS = asCredits(0);
 
 /** Append-only version stamp — a purchase-row change bumps this, never edits it in place (ADR-0006). */
-export const PURCHASE_BOOK_VERSION = "2026-07-02.1";
+export const PURCHASE_BOOK_VERSION = "2026-07-06.1";
 
 export const purchaseBookEntrySchema = strictObject({
   /** Stable internal purchase tag (NOT the Stripe id) — survives a price-id rotation. */
@@ -65,17 +65,14 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
   // license-only buy — `credits: 0` (no bundled credit pack; carried over from the
   // `compliance_onetime` placeholder's number, SD-6 — operator-deferred, non-final).
   //
-  // REPRICE — Q4 "full below-sum" operator lock (per-edition price CHANGE): the price a buyer is
-  // CHARGED is NOT stored here. This book keys the Paddle price id -> credits + entitlements; the
-  // dollar AMOUNT lives on the Paddle product (dashboard/API), and the site DISPLAY amount is owned
-  // by `apps/site/lib/pricing.ts` (the single display SOT, integer USD — FE-2's tree). So a reprice
-  // is a Paddle-side + site-display change, NOT a pricebook code change — no amount is invented here.
-  // New locked below-sum targets (USD, one-time perpetual), by `purchaseTag` / Paddle price id:
-  //   compliance  -> $749   (pri_01kwd76be2eq96kff5nqw236c0)
-  //   ai-kit      -> $599   (pri_01kwd76c1pgs2csxcj2n0y7vv0)  — unchanged
-  //   local-ai    -> $349   (pri_01kwd76cahy825m14334aqf209)
-  //   agent-dev   -> $249   (pri_01kwd76ck3w8myy4p4f1gj0dcy)
-  //   bundle      -> $1,499 (pri_01kwd76bp60acq51mftvpgr42k)  — below the sum of its parts
+  // PRICING NOTE: the price a buyer is CHARGED is NOT stored here. This book keys the Paddle price
+  // id -> credits + entitlements; the dollar AMOUNT lives on the Paddle product (dashboard/API), and
+  // the site DISPLAY amount is owned by `apps/site/lib/pricing.ts` (the single display SOT, integer
+  // USD) with the cents authority in `upgrades.ts` BUNDLE_RETAIL / SKU_RETAIL (ADR-0258/0260). A
+  // reprice is a Paddle-side + site-display change, NOT a pricebook code change — no amount is
+  // invented here. The four edition rows below and the legacy $1,499 bundle row are RETIRED: their
+  // Paddle products were archived in the W7 catalog big-bang (ADR-0258; the rows stay for webhook
+  // replay of historical events, and the six-bundle rows live in the W7 section further down).
   //
   // The one REAL row below that grants CREDITS, not an entitlement — mirrors the
   // `price_credit_pack_PLACEHOLDER` row at the top of this book (5000 credits, $49, no edition
@@ -250,6 +247,100 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
     purchaseTag: "agent-runner_module",
     credits: NO_CREDITS,
     entitlements: ["agent-runner"],
+  },
+
+  // ---- REAL Paddle sandbox price ids — the W7 catalog big-bang (ADR-0258 §5, created
+  // 2026-07-06). Eleven carve/new module SKUs (bare package slugs) + the six ADR-0257 bundles
+  // (CANONICAL bundle ids — new grants store the id `resolveRenewal`/`expandEntitlements`
+  // converge on; legacy-keyed grants stay covered by the alias group in extendUpdatesWindow).
+  // Every row is a perpetual license-only buy (`credits: 0`); dollar amounts live on the Paddle
+  // product + the site display SOT, never here. The four retired edition products' price ids
+  // above stay mapped for historical fulfillment; Paddle-side they are archived (no new
+  // transactions), alongside the legacy $1,499 bundle product superseded by `everything`.
+  pri_01kwwqa0k69m965tx8hgsv904h: {
+    purchaseTag: "compliance-core_module",
+    credits: NO_CREDITS,
+    entitlements: ["compliance-core"],
+  },
+  pri_01kwwqa0rkz3etv2yfd6c7jjad: {
+    purchaseTag: "frameworks-pack_module",
+    credits: NO_CREDITS,
+    entitlements: ["frameworks-pack"],
+  },
+  pri_01kwwqa0y1hn63taahdh7y03vf: {
+    purchaseTag: "signing-primitive_module",
+    credits: NO_CREDITS,
+    entitlements: ["signing-primitive"],
+  },
+  pri_01kwwqa1413c33yfsrvjb4r34a: {
+    purchaseTag: "credits_module",
+    credits: NO_CREDITS,
+    entitlements: ["credits"],
+  },
+  pri_01kwwqa1b33ycmh114440xc6re: {
+    purchaseTag: "local-sync_module",
+    credits: NO_CREDITS,
+    entitlements: ["local-sync"],
+  },
+  pri_01kwwqa1gvkpj7g0jfna7h2qcr: {
+    purchaseTag: "local-inference_module",
+    credits: NO_CREDITS,
+    entitlements: ["local-inference"],
+  },
+  pri_01kwwqa1p152hskczw7daszzgn: {
+    purchaseTag: "local-privacy_module",
+    credits: NO_CREDITS,
+    entitlements: ["local-privacy"],
+  },
+  pri_01kwwqa1v2gm7cr5g1rpzyk522: {
+    purchaseTag: "tool-exec_module",
+    credits: NO_CREDITS,
+    entitlements: ["tool-exec"],
+  },
+  pri_01kwwqa20m42dmedx9mprk085k: {
+    purchaseTag: "org-controls_module",
+    credits: NO_CREDITS,
+    entitlements: ["org-controls"],
+  },
+  pri_01kwwqa266p6smw4yaanxg1n5j: {
+    purchaseTag: "billing-orchestration_module",
+    credits: NO_CREDITS,
+    entitlements: ["billing-orchestration"],
+  },
+  pri_01kwwqa2c799fpe1af76p75r7r: {
+    purchaseTag: "ui-pro_module",
+    credits: NO_CREDITS,
+    entitlements: ["ui-pro"],
+  },
+  pri_01kwwqa2hne35c1df5xe8p91z3: {
+    purchaseTag: "compliance_bundle",
+    credits: NO_CREDITS,
+    entitlements: ["compliance"],
+  },
+  pri_01kwwqa2rcxtn8pt3dr3jdnnf0: {
+    purchaseTag: "ai-production_bundle",
+    credits: NO_CREDITS,
+    entitlements: ["ai-production"],
+  },
+  pri_01kwwqa2xp3jp1qww2j5ya0meh: {
+    purchaseTag: "local-first_bundle",
+    credits: NO_CREDITS,
+    entitlements: ["local-first"],
+  },
+  pri_01kwwqa332mweg8veaarkygbae: {
+    purchaseTag: "agentic-dev_bundle",
+    credits: NO_CREDITS,
+    entitlements: ["agentic-dev"],
+  },
+  pri_01kwwqa3872cs4c53w8qhhz31k: {
+    purchaseTag: "provenance_bundle",
+    credits: NO_CREDITS,
+    entitlements: ["provenance"],
+  },
+  pri_01kwwqa3dfp8k0v5k3bbg3pd5f: {
+    purchaseTag: "everything_bundle",
+    credits: NO_CREDITS,
+    entitlements: ["everything"],
   },
 };
 

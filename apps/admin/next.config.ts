@@ -14,7 +14,7 @@ const config: NextConfig = {
   reactStrictMode: true,
   images: { unoptimized: true },
   // @caisson/ui ships raw TS (exports point at src/*.ts); Next transpiles it (ADR-0042 token floor).
-  transpilePackages: ["@caisson/ui"],
+  transpilePackages: ["@caisson/ui", "@caisson/brand"],
   turbopack: { root: monorepoRoot },
   // Security-floor response headers (identity/security.md), same values as apps/site/next.config.ts —
   // admin.caisson.sh is a LIVE served surface and carries no documented embedding feature.

@@ -144,6 +144,32 @@ describe("Worker entitlement filtering (ADR-0071)", () => {
     expect(await ids(res)).toEqual(["@caisson/kernel"]);
   });
 
+  test("a throw AFTER entitlement expansion still degrades to base-only (fresh set, audit P2-1)", async () => {
+    // resolveGate mutates its entitled set during expansion BEFORE the window fold; a throw between
+    // the two (here: a Proxy updatesWindows whose key probe explodes) must return a FRESH base-only
+    // set — never the half-built one, which would leak commercial modules with UNBOUNDED windows.
+    const poisonedWindows = new Proxy(
+      {},
+      {
+        getOwnPropertyDescriptor() {
+          throw new Error("boom after expansion");
+        },
+        has() {
+          throw new Error("boom after expansion");
+        },
+      },
+    ) as Record<string, string>;
+    const handler = createIndexHandler(index, {
+      resolveEntitlements: () => ({
+        entitlements: ["compliance"],
+        updatesWindows: poisonedWindows,
+      }),
+    });
+    const res = handler(req("/"));
+    expect(res.status).toBe(200);
+    expect(await ids(res)).toEqual(["@caisson/kernel"]);
+  });
+
   test("filtered responses are non-cacheable (private, no-store + Vary)", () => {
     const res = handlerFor(["compliance"])(req("/"));
     expect(res.headers.get("cache-control")).toBe("private, no-store");

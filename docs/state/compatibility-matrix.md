@@ -7,7 +7,7 @@ grounds:
   - packages/ai-config/src/config.ts
   - packages/ai-kit/src/providers.ts
   - packages/billing/src/provider.ts
-  - packages/auth/src/workos.ts
+  - packages/org-controls/src/workos.ts
   - packages/agent-dev/src/emitter.ts
   - docs/state/adapter-expansion.md
 ---
@@ -26,7 +26,7 @@ internal build/deploy (buyers never get Railway/Grafana/SigNoz — those aren't 
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | **Web framework** | Framework-agnostic. No template ships next/react/hono/express (`packages/cli/templates/*/package.json`); reference wiring is raw `Bun.serve` (`apps/base/src/server.ts`)                                                                                                                | n/a — bring your own                                                                                 |
 | **Database**      | Postgres, raw SQL + RLS (`packages/tenancy-rls`, `@caisson/migrate`) + **Drizzle and Prisma bridges over the TenantExecutor port** (`tenancy-rls/src/{drizzle,prisma}.ts`, ADR-0266 — added 2026-07-06). Alternate driver: Supabase session-mode pooler (`tenancy-rls/src/supabase.ts`) | MySQL/SQLite-server/Mongo; RLS DDL stays raw-SQL canonical (drizzle-kit can't emit FORCE RLS)        |
-| **Auth**          | Provider-agnostic core — EdDSA-JWT + session + membership, zero vendor deps (`packages/auth`). Optional WorkOS SSO transport (SAML/SCIM, `packages/auth/src/workos.ts`)                                                                                                                 | Clerk, Auth0/Okta as first-class drivers                                                             |
+| **Auth**          | Provider-agnostic core — EdDSA-JWT + session + membership, zero vendor deps (`packages/auth`). Optional WorkOS SSO transport (SAML/SCIM, `packages/org-controls/src/workos.ts` — carved out of auth by the ADR-0257 W1 org-controls extraction)                                         | Clerk, Auth0/Okta as first-class drivers                                                             |
 | **Billing**       | One `BillingProvider` port, four drivers coded: Stripe, Paddle, LemonSqueezy, Polar (`packages/billing/src/provider.ts`)                                                                                                                                                                | n/a — all four majors already coded                                                                  |
 | **Jobs**          | Trigger.dev, **pg-boss** + in-memory (`packages/jobs/src/{trigger-driver,pgboss}.ts`, ADR-0173; in-service scheduler ADR-0256) — corrected 2026-07-06, was wrongly "not yet"                                                                                                            | BullMQ/Redis, Inngest                                                                                |
 | **Email**         | Five drivers: Resend, **SMTP-generic, AWS SES, Postmark** + Capture (`packages/email/src/{email,smtp,ses,postmark}.ts`, ADR-0170) — corrected 2026-07-06                                                                                                                                | n/a — the majors are coded                                                                           |
@@ -66,7 +66,7 @@ this file's own recon:
 | Row in `adapter-expansion.md`         | Marked as                         | Actual state (2026-07-06)                                          |
 | ------------------------------------- | --------------------------------- | ------------------------------------------------------------------ |
 | AI inference: Bedrock/Azure/Ollama    | "Add" (Tier 2C, not built)        | **Live** — `ai-kit/src/providers.ts` + `ai-config/src/config.ts`   |
-| `SessionProvider`: WorkOS SSO         | "Add" (Tier 1C)                   | **Live** — `packages/auth/src/workos.ts`                           |
+| `SessionProvider`: WorkOS SSO         | "Add" (Tier 1C)                   | **Live** — `packages/org-controls/src/workos.ts`                   |
 | `KmsClient`: AWS KMS                  | "`awsKmsClient` throws" (Tier 1B) | **Live-proven** — 2026-07-02 real-CMK proof, `docs/build-state.md` |
 | `BillingProvider`: LemonSqueezy/Polar | "Add" (Tier 3)                    | **Already coded** — `packages/billing/src/{lemonsquery,polar}.ts`* |
 | MCP transport: HTTP/SSE               | "stdio only" (Tier 3)             | **Both exist** — `mcp-server/src/{stdio,http}.ts` (ADR-0161)       |

@@ -25,10 +25,13 @@ export { EditionCard } from "./edition-card";
 export type { EditionCardProps } from "./edition-card";
 export { SkuMatrix } from "./sku-matrix";
 export type { SkuMatrixProps, SkuMatrixRow } from "./sku-matrix";
-export { Icon } from "./icon";
-export type { IconName, IconProps } from "./icon";
-export { Glyph, Wordmark } from "./brand";
-export type { WordmarkProps } from "./brand";
+export { Icon, registerIcons } from "./icon";
+export type {
+  IconGlyph,
+  IconName,
+  IconProps,
+  RegisteredIconName,
+} from "./icon";
 export { Reveal } from "./reveal";
 export type { RevealProps } from "./reveal";
 export { ThemeToggle } from "./theme-toggle";

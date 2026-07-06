@@ -104,26 +104,5 @@
       "@caisson/credits",
       "@caisson/evidence-pack"
     ]
-  },
-  {
-    "purchased": [
-      "alerting"
-    ],
-    "members": []
-  },
-  {
-    "purchased": [
-      "retention-runner"
-    ],
-    "members": []
-  },
-  {
-    "purchased": [
-      "credits",
-      "alerting"
-    ],
-    "members": [
-      "@caisson/credits"
-    ]
   }
 ]

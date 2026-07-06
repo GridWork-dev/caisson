@@ -117,7 +117,7 @@ export function buildWaitlistWelcome({
           <tr>
             <td style="padding-top:32px;">
               <p style="margin:0 0 4px 0;font-size:12px;color:${C.fgMuted};">
-                GridWork Digital LLC · <a href="https://caisson.sh" style="color:${C.fgMuted};">caisson.sh</a>
+                Caisson Software LLC · <a href="https://caisson.sh" style="color:${C.fgMuted};">caisson.sh</a>
               </p>
               <p style="margin:0;font-size:12px;color:${C.fgMuted};">
                 You're receiving this because you requested early access to ${editionLabel}.

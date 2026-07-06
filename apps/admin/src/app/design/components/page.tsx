@@ -4,7 +4,6 @@ import {
   CodeBlock,
   CredentialStrip,
   EditionCard,
-  Glyph,
   Hero,
   Icon,
   Reveal,
@@ -12,9 +11,9 @@ import {
   SkuMatrix,
   StatusChip,
   Terminal,
-  Wordmark,
   type IconName,
 } from "@caisson/ui/components";
+import { Glyph, Wordmark } from "@caisson/brand";
 
 /**
  * Components — the live @caisson/ui gallery (ADR-0099 recipe). Every primitive rendered from the

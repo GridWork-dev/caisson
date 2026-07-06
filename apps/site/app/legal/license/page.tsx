@@ -32,7 +32,7 @@ const FAQ_ITEMS = [
   {
     question: "Is the license perpetual?",
     answer:
-      "Yes, in two parts. The license itself is perpetual: the version you purchased keeps working, verified offline, for as long as you use it — no expiry, no renewal, no call home. Updates are separate: every purchase includes 12 months of registry updates from your Order date, renewable afterward at a reduced rate. Compliance Updates and the Developer plan are optional subscriptions layered on top for teams that want ongoing framework-mapping updates or credits; none of this changes the perpetual license for the version you already own.",
+      "Yes, in two parts. The license itself is perpetual: the version you purchased keeps working, verified offline, for as long as you use it — no expiry, no renewal, no call home. Updates are separate: every purchase includes 12 months of registry updates from your Order date, renewable afterward at a reduced rate. An optional Updates Subscription can layer on top for teams that want continuous access to new package versions across their entitled modules; none of this changes the perpetual license for the version you already own.",
   },
   {
     question: "Does Caisson claim to be SOC 2 certified or HIPAA certified?",
@@ -79,7 +79,7 @@ export default function LicensePage() {
       <Section eyebrow="Legal" title="License" flush as="h1">
         <p className="cs-lede" style={{ marginTop: "var(--cs-space-3)" }}>
           A plain-language summary of the Caisson Commercial License: one
-          perpetual license across every edition and module.
+          perpetual license across every module and bundle.
         </p>
       </Section>
 
@@ -112,17 +112,14 @@ export default function LicensePage() {
       <Section eyebrow="Overview" title="The licensing model">
         <p style={prose.paragraph}>
           Caisson ships two tracks. The <strong>Base substrate</strong> (
-          kernel, auth, tenancy-rls, ui, billing, credits, jobs, email,
-          ai-config, mcp-server, registry-schema, observability, and the
+          kernel, auth, tenancy-rls, ui, billing, jobs, email, ai-config,
+          mcp-server, registry-schema, observability, rate-limit, and the
           generator tooling: cli, migrate, license-verify) is{" "}
           <code className="mono">Apache-2.0</code>, open source, free to use.
-          Every edition, including the{" "}
-          <a href="/local-first" style={{ color: "var(--cs-accent)" }}>
-            Local-first AI edition
-          </a>
-          , plus the compliance/commercial primitives (field-crypto,
-          audit-worm), the registry service, and Compliance Updates ship under a
-          single proprietary Commercial License (
+          Every commercial module — the compliance and provenance primitives,
+          the local-first and agentic modules, credits, and the registry service
+          — and every bundle that composes them ship under a single proprietary
+          Commercial License (
           <code className="mono">LicenseRef-Caisson-Commercial</code>).
         </p>
         <p style={prose.paragraph}>
@@ -228,10 +225,10 @@ export default function LicensePage() {
           <li style={prose.li}>
             Your purchase includes 12 months of registry-pull updates from your
             Order date, renewable afterward at a reduced rate; letting it lapse
-            never revokes access to versions already delivered. A Compliance
-            Updates subscription, where purchased, additionally delivers new
-            package versions with updated control mappings as regulations
-            change. Both are optional; the perpetual license does not expire.
+            never revokes access to versions already delivered. An Updates
+            Subscription, where purchased, additionally delivers new versions of
+            your entitled packages while it is active. Both are optional; the
+            perpetual license does not expire.
           </li>
         </ul>
       </Section>
@@ -240,8 +237,8 @@ export default function LicensePage() {
       <Section eyebrow="Per module" title="Which license applies where">
         <p style={prose.paragraph}>
           Two licenses, split by package. The Base substrate is Apache-2.0, open
-          source; editions and the commercial primitives ship under the Caisson
-          Commercial License.
+          source; the commercial modules and the bundles that compose them ship
+          under the Caisson Commercial License.
         </p>
         <div
           style={{
@@ -267,10 +264,10 @@ export default function LicensePage() {
                 }}
               >
                 @caisson/kernel · @caisson/auth · @caisson/tenancy-rls ·
-                @caisson/ui · @caisson/billing · @caisson/credits ·
-                @caisson/jobs · @caisson/email · @caisson/ai-config ·
-                @caisson/mcp-server · @caisson/registry-schema ·
-                @caisson/observability · @caisson/cli · @caisson/migrate ·
+                @caisson/ui · @caisson/billing · @caisson/jobs · @caisson/email
+                · @caisson/ai-config · @caisson/mcp-server ·
+                @caisson/registry-schema · @caisson/observability ·
+                @caisson/rate-limit · @caisson/cli · @caisson/migrate ·
                 @caisson/license-verify
               </span>
               <StatusChip label="Apache-2.0" tone="muted" />
@@ -299,9 +296,11 @@ export default function LicensePage() {
                   fontSize: "var(--cs-text-sm)",
                 }}
               >
-                @caisson/field-crypto · @caisson/audit-worm · the registry
-                service · Compliance Updates · and the four editions
-                (Compliance, AI Production Kit, Local-first AI, Agentic-Dev)
+                Every @caisson module outside the open Base set — including
+                field-crypto, audit-worm, signing-primitive, credits, and the
+                local-first modules — the registry service, and the six bundles
+                that compose them: Compliance, AI Production, Local-first AI,
+                Agentic-Dev, Provenance, and Everything
               </span>
               <StatusChip label="Commercial" tone="muted" />
             </div>
@@ -328,15 +327,15 @@ export default function LicensePage() {
           negotiation:
         </p>
         <p style={{ marginTop: "var(--cs-space-4)", ...prose.paragraph }}>
-          GridWork Digital LLC
+          Caisson Software LLC
           <br />
           Atlanta, Georgia, USA
           <br />
           <a
-            href="mailto:legal@gridwork.dev"
+            href="mailto:admin@caisson.sh"
             style={{ color: "var(--cs-accent)" }}
           >
-            legal@gridwork.dev
+            admin@caisson.sh
           </a>
         </p>
       </Section>

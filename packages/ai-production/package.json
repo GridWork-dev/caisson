@@ -1,0 +1,11 @@
+{
+  "name": "@caisson/ai-production",
+  "version": "0.2.0",
+  "type": "module",
+  "license": "LicenseRef-Caisson-Commercial",
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
+  "description": "AI-Production bundle: the metered infer() gateway and its production guardrails — @caisson/ai-meter, @caisson/guardrails, @caisson/prompt-registry, @caisson/ai-config, @caisson/ai-evals, and the @caisson/credits metering ledger — sold as one bundle."
+}

@@ -15,7 +15,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
-import { Wordmark } from "./brand";
 import { Icon, type IconName } from "./icon";
 
 import "./app-shell.css";
@@ -44,7 +43,8 @@ export interface AppShellProps {
   nav: readonly AppShellNavItem[];
   /** Top-bar content — account menu / actions. Right-aligned. */
   topBar?: ReactNode;
-  /** Wordmark slot. Defaults to the Caisson `<Wordmark>`. */
+  /** Brand slot rendered top-left. Optional and brand-neutral — the kit ships no default mark;
+   *  the consumer passes its own (e.g. `<Wordmark />` from `@caisson/brand`). */
   brand?: ReactNode;
   /** Main content region. */
   children: ReactNode;
@@ -104,7 +104,7 @@ export function AppShell({
           <Icon name={mobileNavOpen ? "x" : "menu"} />
         </button>
 
-        <div className="cs-shell__brand">{brand ?? <Wordmark />}</div>
+        <div className="cs-shell__brand">{brand}</div>
 
         {topBar !== undefined ? (
           <div className="cs-shell__topbar-slot">{topBar}</div>

@@ -9,6 +9,7 @@
 //     and a Paddle re-delivery short-circuits on the grant claim with an empty grant list, so a
 //     purchase is captured exactly once per durable grant.
 import { fetchWithTimeout } from "@caisson/kernel";
+import { isBundleId } from "@caisson/registry-schema";
 
 export interface PostHogCaptureConfig {
   /** The PostHog project API key (`phc_…`) — a write-only ingestion key, not a personal key. */
@@ -27,6 +28,20 @@ export function loadPostHogCaptureConfig(
   return { key, host: host.replace(/\/+$/, "") };
 }
 
+/** One granting line of a purchase/cycle — the SKU attribution for the `purchase` event.
+ *  `productSlug` is the CANONICAL catalog id (a bundle id from `BUNDLE_IDS`, a
+ *  `<slug>_module`, or a bare tag like `credit_pack`) — apply-billing-event normalizes the
+ *  pricebook's legacy tag through `normalizeEntitlementId` before it lands here, so a legacy
+ *  edition tag (`ai-kit`, `local-ai`, …) is stamped as its bundle id (`ai-production`, …) and a
+ *  price-id rotation never breaks revenue-by-SKU breakdowns. Renewal lines grant nothing and carry
+ *  no SkuLine (their charge still rides in `amountTotalMinor`). */
+export interface SkuLine {
+  /** The provider price id charged for this line. */
+  priceId: string;
+  /** Canonical catalog slug — already bundle-normalized (see above). */
+  productSlug: string;
+}
+
 export interface PurchaseCapture {
   /** The buyer account id — the PostHog distinct_id (matches the dashboard identify()). */
   accountId: string;
@@ -38,6 +53,29 @@ export interface PurchaseCapture {
   currency: string;
   /** The provider event id — kept as a property for cross-referencing Paddle deliveries. */
   sourceEventId: string;
+  /** Per-line SKU attribution, threaded from `applyBillingEvent`. `[]` only for a
+   *  lineless grant (defensive — a real money capture always fires on a granting line). */
+  skuLines: readonly SkuLine[];
+}
+
+/** Cart-composition bucket for a set of canonical SKU slugs. `"mixed"` when the cart spans more
+ *  than one bucket (e.g. an edition line plus an à-la-carte module in one checkout); `undefined`
+ *  for a lineless grant. Reads the same catalog vocabulary the pricebook attributes with — a bundle
+ *  id (`BUNDLE_IDS`) is a bundle, a `_module` suffix is a module, everything else is other. */
+function cartComposition(
+  lines: readonly SkuLine[],
+): "bundle" | "modules" | "other" | "mixed" | undefined {
+  if (lines.length === 0) return undefined;
+  const buckets = new Set(
+    lines.map((line) =>
+      isBundleId(line.productSlug)
+        ? "bundle"
+        : line.productSlug.endsWith("_module")
+          ? "modules"
+          : "other",
+    ),
+  );
+  return buckets.size === 1 ? [...buckets][0] : "mixed";
 }
 
 /**
@@ -68,6 +106,12 @@ export async function capturePostHogPurchase(
             entitlements: capture.entitlements,
             entitlement_count: capture.entitlements.length,
             source_event_id: capture.sourceEventId,
+            // SKU attribution — revenue broken down by price id / canonical product /
+            // bundle-vs-à-la-carte in PostHog. `cart_composition` is `undefined` (JSON.stringify
+            // drops the key) for a lineless grant.
+            price_ids: capture.skuLines.map((line) => line.priceId),
+            product_slugs: capture.skuLines.map((line) => line.productSlug),
+            cart_composition: cartComposition(capture.skuLines),
           },
         }),
       },

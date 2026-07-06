@@ -163,70 +163,64 @@ test("CART_STORAGE_KEY is namespaced and non-empty", () => {
   expect(CART_STORAGE_KEY.startsWith("cs-")).toBe(true);
 });
 
-describe("cartUpgrade (bundle nudge, ADR-0193)", () => {
-  const bundle: CartItem = {
-    id: "bundle",
-    priceId: "pri_01kwd76bp60acq51mftvpgr42k",
-    label: "Everything bundle",
-    amount: 1499,
+describe("cartUpgrade (Everything nudge, ADR-0193/0258)", () => {
+  const everything: CartItem = {
+    id: "bundle:everything",
+    priceId: "pri_01kwwqa3dfp8k0v5k3bbg3pd5f",
+    label: "Everything",
+    amount: 2059,
     kind: "bundle",
   };
-  const edition = (slug: string, amount: number): CartItem => ({
-    id: `edition:${slug}`,
+  const line = (
+    kind: "bundle" | "module",
+    slug: string,
+    amount: number,
+  ): CartItem => ({
+    id: `${kind}:${slug}`,
     priceId: "pri_x",
     label: slug,
     amount,
-    kind: "edition",
+    kind,
   });
 
-  test("suggests the bundle when the cart totals more than it, with the real saving", () => {
-    // 799 + 599 + 249 = 1647 > 1499 bundle → save 148.
+  test("suggests Everything when the cart totals more than it, with the real saving", () => {
+    // Three module lines totalling 2,257 > the 2,059 bundle → save 198. Everything covers EVERY
+    // sellable SKU by construction (the explicit full-catalog rule), so no line can disqualify.
     const u = cartUpgrade(
       [
-        edition("compliance", 799),
-        edition("ai-kit", 599),
-        edition("agentic-dev", 249),
+        line("module", "compliance-core", 299),
+        line("module", "org-controls", 249),
+        line("module", "field-crypto", 1709),
       ],
-      bundle,
+      everything,
     );
     expect(u?.bundle.kind).toBe("bundle");
-    expect(u?.saves).toBe(1647 - 1499);
+    expect(u?.saves).toBe(2257 - 2059);
   });
 
   test("no suggestion when the subtotal is at or below the bundle price", () => {
-    // 799 + 599 = 1398 < 1499 → the bundle would cost MORE, so no fabricated saving.
+    // 299 + 249 = 548 < 2,059 → the bundle would cost MORE, so no fabricated saving.
     expect(
-      cartUpgrade([edition("compliance", 799), edition("ai-kit", 599)], bundle),
+      cartUpgrade(
+        [
+          line("module", "compliance-core", 299),
+          line("module", "org-controls", 249),
+        ],
+        everything,
+      ),
     ).toBeUndefined();
   });
 
   test("no suggestion when a bundle is already in the cart", () => {
     expect(
-      cartUpgrade([bundle, edition("compliance", 799)], bundle),
+      cartUpgrade(
+        [line("bundle", "compliance", 1049), line("module", "ui-pro", 129)],
+        everything,
+      ),
     ).toBeUndefined();
   });
 
   test("no suggestion for an empty cart", () => {
-    expect(cartUpgrade([], bundle)).toBeUndefined();
-  });
-
-  test("no suggestion when a standalone-only module is in the cart (ADR-0238)", () => {
-    // ai-evals is standaloneOnly (granted by no edition, hence not by the bundle). A cart with two
-    // editions + ai-evals totals 799 + 599 + 199 = 1597 > 1499 bundle, so WITHOUT the guard the
-    // nudge would fire and "Switch to the bundle" would silently DROP the ai-evals line — an
-    // entitlement-honesty break (mirrors bestStackUpgrade in pricing.test.ts). Real namespaced id.
-    const aiEvals: CartItem = {
-      id: "module:ai-evals",
-      priceId: "price_module_ai_evals_PLACEHOLDER",
-      label: "Eval harness",
-      amount: 199,
-      kind: "module",
-    };
-    expect(
-      cartUpgrade(
-        [edition("compliance", 799), edition("ai-kit", 599), aiEvals],
-        bundle,
-      ),
-    ).toBeUndefined();
+    expect(cartUpgrade([], everything)).toBeUndefined();
   });
 });

@@ -1,5 +1,38 @@
 # @caisson/pricebook
 
+## 0.4.0
+
+### Minor Changes
+
+- 2834c3f: Bundle upgrade crediting and snapshot-at-sale entitlements. The price book gains a pre-declared item-to-bundle credit map: upgrading from modules you already own to a bundle now credits each owned member's retail against the bundle price, floored at zero, from one source the checkout reads rather than any ad-hoc arithmetic. A companion bundle-membership timeline records when each member joined each bundle. Licenses gain a per-purchase snapshot record so a bundle purchase delivers exactly the member set as of the sale date, filtered fail-soft at the resolver; missing data always favors full access, and older licenses keep unrestricted access unchanged.
+- 4d7eb71: New RENEWAL_BOOK: one updates-renewal SKU per renewable edition/module mapping a Paddle price id to the entitlement whose 12-month updates window it extends. Fail-closed resolveRenewal plus the isRenewalPrice branch predicate; a price id lives in exactly one of PURCHASE_BOOK / PLAN_BOOK / RENEWAL_BOOK. Live sandbox price ids; cents live in Paddle, never in code.
+
+### Patch Changes
+
+- b791198: Documentation and metadata cleanup plus dependency-declaration hygiene: package descriptions, READMEs, changelogs, and source comments no longer carry internal build references, and shared external dependency ranges now resolve through the workspace dependency catalog (published dependency ranges unchanged; the TypeScript devDependency floor moves to ^5.7.3).
+- 41e07b6: Module manifests can now declare `sellable: false` to mark a package that ships only as bundle
+  substrate and is never sold on its own. The field is optional and defaults to sellable, so every
+  existing manifest stays valid and unchanged. The shared cross-service read layer and the commerce
+  price-book are both marked bundle-only.
+- e784af1: An updates-renewal now resolves the current bundle name of the edition it renews. A renewal
+  written against an edition's earlier name still points at the same entitlement after the catalog
+  is reorganized into bundles, so a renewal keeps extending the correct updates window regardless of
+  which naming the renewal row was created under.
+- 0af4dbf: Rewrote README, AGENTS, CHANGELOG, package.json descriptions, and inline source comments to
+  read as clean, buyer-facing documentation. Removed sibling-repository provenance framing,
+  internal build-phase shorthand, and bare specification-id citations that had leaked into
+  shipped copy. No runtime behavior changed in any package — documentation and comments only.
+- Updated dependencies [b791198]
+- Updated dependencies [d6cc28e]
+- Updated dependencies [2834c3f]
+- Updated dependencies [41e07b6]
+- Updated dependencies [850b844]
+- Updated dependencies [31d6a41]
+- Updated dependencies [0af4dbf]
+- Updated dependencies [0af4dbf]
+  - @caisson/kernel@0.4.2
+  - @caisson/registry-schema@0.3.0
+
 ## 0.3.2
 
 ### Patch Changes

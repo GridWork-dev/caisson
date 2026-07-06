@@ -27,11 +27,8 @@ import {
   ENTITLEMENT_SCHEMA_SQL,
   LICENSE_GRANT_SCHEMA_SQL,
 } from "@caisson/service-license";
-import {
-  ADMIN_WRITE_ROLE_BOOTSTRAP_SQL,
-  type TenantExecutor,
-  type Transactor,
-} from "@caisson/tenancy-rls";
+import { ADMIN_WRITE_ROLE_BOOTSTRAP_SQL } from "@caisson/org-controls";
+import type { TenantExecutor, Transactor } from "@caisson/tenancy-rls";
 import { Pool, type PoolClient } from "pg";
 
 import {

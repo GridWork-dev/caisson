@@ -10,26 +10,14 @@
 // (flag-never-guess). Operational telemetry is mirrored through the base `EventSink` port; the
 // evidentiary record stays in the WORM chain.
 
-// --- Control model — typed registry builders + own-authored framework packs. --------------------
-export * from "./registry/control.ts";
-export * from "./frameworks/soc2-tsc.ts";
-export * from "./frameworks/hipaa-security.ts";
-export * from "./frameworks/eu-ai-act.ts";
+// --- Control model + own-authored framework packs — the carved framework catalogs. -------------
+export * from "@caisson/frameworks-pack";
 
-// --- Evidence engine — collectors, canonical pack format, generator, signer, OSCAL seam. --------
-export * from "./evidence/collector.ts";
-export * from "./evidence/collectors/rls-force.ts";
-export * from "./evidence/collectors/chain-verify.ts";
-export * from "./evidence/collectors/worm-retention.ts";
-export * from "./evidence/collectors/field-crypto-policy.ts";
-export * from "./evidence/collectors/ai-risk-register.ts";
-export * from "./evidence/collectors/impersonation.ts";
-export * from "./evidence/pack-format.ts";
-export * from "./evidence/generate.ts";
-export * from "./evidence/sign.ts";
-export * from "./evidence/oscal-export.ts";
-export * from "./evidence/oscal-export-xml.ts";
-export * from "./evidence/oscal-assessment-plan.ts";
+// --- Evidence engine + per-tenant signer — the carved compliance-core + signing-primitive. ------
+export * from "@caisson/compliance-core";
+export * from "@caisson/signing-primitive";
+
+// --- OSCAL signed evidence-bundle — the composition of the engine + the signer, kept in-edition. -
 export * from "./evidence/oscal-bundle.ts";
 
 // --- Composition + assembly — the security-critical crypto×RLS nesting + migration order. -------

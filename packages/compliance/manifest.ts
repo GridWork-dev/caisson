@@ -28,11 +28,14 @@ export default defineModule({
   dependencies: [
     "@caisson/alerting",
     "@caisson/audit-worm",
+    "@caisson/compliance-core",
     "@caisson/field-crypto",
+    "@caisson/frameworks-pack",
+    "@caisson/kernel",
     "@caisson/migrate",
     "@caisson/retention-runner",
+    "@caisson/signing-primitive",
     "@caisson/tenancy-rls",
-    "@caisson/kernel",
   ],
   // Frozen member pin map (ADR-0077): edition self + every BUYER-FACING bundled module, exact-version.
   // @caisson/migrate is intentionally NOT a member: it is compose-time tooling (resolved transitively
@@ -45,14 +48,19 @@ export default defineModule({
   // and the full-tree-index guard test asserts every pin resolves to a real published ledger version
   // (never the "0.0.0" dev sentinel).
   members: {
-    "@caisson/compliance": "0.2.1",
-    "@caisson/audit-worm": "0.2.1",
-    "@caisson/field-crypto": "0.2.1",
-    "@caisson/tenancy-rls": "0.3.0",
-    "@caisson/kernel": "0.3.0",
+    "@caisson/compliance": "0.4.0",
+    // The three compliance carve SKUs folded into the Compliance bundle
+    // (members-fold republish, third wave).
+    "@caisson/compliance-core": "0.2.0",
+    "@caisson/frameworks-pack": "0.2.0",
+    "@caisson/signing-primitive": "0.2.0",
+    "@caisson/audit-worm": "0.2.4",
+    "@caisson/field-crypto": "0.2.4",
+    "@caisson/tenancy-rls": "0.4.0",
+    "@caisson/kernel": "0.4.2",
     // Operational-compliance primitives folded into the Compliance bundle (ADR-0178).
-    "@caisson/alerting": "0.1.2",
-    "@caisson/retention-runner": "0.1.2",
+    "@caisson/alerting": "0.1.5",
+    "@caisson/retention-runner": "0.1.5",
   },
   golden: "src/__golden__",
   description:

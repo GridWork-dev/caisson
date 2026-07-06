@@ -1,6 +1,6 @@
 {
   "name": "@caisson/service-license",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "private": true,
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
@@ -22,12 +22,14 @@
   "dependencies": {
     "@caisson/audit-worm": "workspace:*",
     "@caisson/billing": "workspace:*",
+    "@caisson/billing-orchestration": "workspace:*",
     "@caisson/credits": "workspace:*",
     "@caisson/jobs": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/license-issue": "workspace:*",
     "@caisson/license-verify": "workspace:*",
     "@caisson/observability": "workspace:*",
+    "@caisson/org-controls": "workspace:*",
     "@caisson/pricebook": "workspace:*",
     "@caisson/rate-limit": "workspace:*",
     "@caisson/registry-schema": "workspace:*",

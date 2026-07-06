@@ -1,5 +1,11 @@
 # @caisson/audit-harness
 
+## 0.1.1
+
+### Patch Changes
+
+- b791198: Documentation and metadata cleanup plus dependency-declaration hygiene: package descriptions, READMEs, changelogs, and source comments no longer carry internal build references, and shared external dependency ranges now resolve through the workspace dependency catalog (published dependency ranges unchanged; the TypeScript devDependency floor moves to ^5.7.3).
+
 ## 0.1.0
 
 ### Minor Changes

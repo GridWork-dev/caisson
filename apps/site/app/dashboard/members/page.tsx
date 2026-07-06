@@ -5,21 +5,20 @@
 import type { Metadata } from "next";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import {
-  type AccountMembership,
-  addAccountMember,
-  listAccountMembers,
-} from "@caisson/auth";
+import type { AccountMembership } from "@caisson/auth";
+import { addAccountMember, listAccountMembers } from "@caisson/org-controls";
 import {
   Button,
   Card,
   DataTable,
   EmptyState,
   FormField,
+  Icon,
   StatusChip,
 } from "@caisson/ui/components";
 import { getDb } from "@/lib/db";
 import { requireDashboardSession } from "@/lib/auth";
+import { accountHoldsOrgControls } from "@/lib/members-gate";
 
 export const metadata: Metadata = { title: "Members" };
 
@@ -32,9 +31,24 @@ const AddMemberInput = z
   })
   .strict();
 
+/**
+ * Fail-closed org-controls entitlement gate (ADR-0257 §1.3): the member-management surface is part of
+ * the $249 @caisson/org-controls module. Deny on ANY read error — never a silent allow.
+ */
+async function isMembersEntitled(accountId: string): Promise<boolean> {
+  try {
+    return await accountHoldsOrgControls(await getDb(), accountId);
+  } catch {
+    return false;
+  }
+}
+
 async function addMemberAction(formData: FormData): Promise<void> {
   "use server";
   const session = await requireDashboardSession("/dashboard/members");
+  // Entitlement gate re-checked in the action (defense-in-depth): a POST from an unentitled account
+  // is refused here even though the UI hides the form, mirroring the owner-gate defense-in-depth.
+  if (!(await isMembersEntitled(session.accountId))) return;
   const parsed = AddMemberInput.safeParse({ userId: formData.get("userId") });
   if (!parsed.success) return;
   const db = await getDb();
@@ -52,6 +66,52 @@ async function addMemberAction(formData: FormData): Promise<void> {
 
 export default async function DashboardMembersPage() {
   const session = await requireDashboardSession("/dashboard/members");
+
+  // Fail-closed org-controls gate (ADR-0257 §1.3): no entitlement → the upsell, never the surface.
+  if (!(await isMembersEntitled(session.accountId))) {
+    return (
+      <div style={{ display: "grid", gap: "var(--cs-space-8)" }}>
+        <div>
+          <h1
+            className="cs-card-title"
+            style={{ fontSize: "var(--cs-text-2xl)" }}
+          >
+            Members
+          </h1>
+          <p className="cs-muted" style={{ marginTop: "var(--cs-space-2)" }}>
+            Multi-user accounts, seats, and SSO are part of Org Controls.
+          </p>
+        </div>
+        <Card style={{ display: "grid", gap: "var(--cs-space-4)" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "var(--cs-space-3)",
+            }}
+          >
+            <Icon name="lock" size="md" />
+            <h2
+              className="cs-card-title"
+              style={{ fontSize: "var(--cs-text-lg)", margin: 0 }}
+            >
+              Org Controls required
+            </h2>
+          </div>
+          <p className="cs-muted" style={{ margin: 0 }}>
+            Add teammates, manage seats, and enable SSO with the Org Controls
+            module. Your account isn&apos;t entitled yet.
+          </p>
+          <div>
+            <a href="/dashboard/plan">
+              <Button variant="primary">View plans</Button>
+            </a>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   const db = await getDb();
   const members = await listAccountMembers(db, session.accountId);
   const isOwner = session.role === "owner";

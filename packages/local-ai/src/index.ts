@@ -69,18 +69,18 @@ export {
 // injected seam; the edition wires it here. CI exercises ONLY the deterministic, zero-network
 // `StubInferenceBackend`; the real on-device ONNX backend (first-run model fetch) and the
 // rented/hosted backend share the same port and stay the un-exercised live paths.
-export { EMBEDDING_DIM } from "./inference/backend.ts";
+export { EMBEDDING_DIM } from "@caisson/local-inference";
 export type {
   InferenceBackend,
   CompletionRequest,
   CompletionResult,
-} from "./inference/backend.ts";
-export { StubInferenceBackend } from "./inference/stub.ts";
+} from "@caisson/local-inference";
+export { StubInferenceBackend } from "@caisson/local-inference";
 export {
   OnnxEmbeddingBackend,
   DEFAULT_ONNX_MODEL,
   type OnnxBackendConfig,
-} from "./inference/onnx-backend.ts";
+} from "@caisson/local-inference";
 export {
   RentedInferenceBackend,
   createLiveRentedTransport,
@@ -90,14 +90,14 @@ export {
   type RentedCompleteResponse,
   type MeterSink,
   type LiveRentedTransportConfig,
-} from "./inference/rented-backend.ts";
+} from "@caisson/local-inference";
 // The OpenRouter rented transport (ADR-0201): the proven-live `RentedTransport` wire — OpenRouter's
 // OpenAI-compatible `/embeddings` + `/chat/completions` through the same egress-guard chokepoint,
 // usage mapped to integer token units for the metered sink (ADR-0007).
 export {
   createOpenRouterRentedTransport,
   type OpenRouterRentedTransportConfig,
-} from "./inference/openrouter-transport.ts";
+} from "@caisson/local-inference";
 // The enterprise rented drivers (ADR-0209, closing the ADR-0160 Surface-B defer): Azure OpenAI
 // (api-key auth, per-deployment routes + api-version) and AWS Bedrock (hand-rolled SigV4 on
 // node:crypto — vector-pinned, no @aws-sdk; InvokeModel embed + Converse complete). Same
@@ -106,11 +106,11 @@ export {
 export {
   createAzureOpenAIRentedTransport,
   type AzureOpenAIRentedTransportConfig,
-} from "./inference/azure-openai-transport.ts";
+} from "@caisson/local-inference";
 export {
   createBedrockRentedTransport,
   type BedrockRentedTransportConfig,
-} from "./inference/bedrock-transport.ts";
+} from "@caisson/local-inference";
 
 // The runtime privacy / egress gate (ADR-0064). Zero-egress-by-default, fail-closed-to-
 // offline: the guard wraps the kernel `fetchWithTimeout` chokepoint and blocks every non-allowlisted
@@ -119,7 +119,7 @@ export {
   EgressGuard,
   createEgressGuard,
   type GuardedFetch,
-} from "./privacy/egress-guard.ts";
+} from "@caisson/local-privacy";
 export {
   parsePrivacyPolicy,
   localOnlyPolicy,
@@ -134,21 +134,25 @@ export {
   type EgressSink,
   type SanctionedSinkKind,
   type PrivacyMode,
-} from "./privacy/policy.ts";
+} from "@caisson/local-privacy";
 
 // The two-way sync engine (ADR-0064): per-tenant changeset capture + the fail-closed
 // peer-boundary parse + the persistent LWW/CRDT-with-tombstones reconcile. The local canonical store
 // is the convergence target — peers move toward it; a tenant-A changeset can never apply to a tenant-B
 // file (file-per-tenant partition, ADR-0073).
-export { ChangesetLog, parseChangeset } from "./sync/changeset.ts";
-export { reconcileReplicas, type ReconciledRow } from "./sync/reconcile.ts";
+export { ChangesetLog, parseChangeset } from "@caisson/local-sync";
+export { reconcileReplicas, type ReconciledRow } from "@caisson/local-sync";
 export {
   reconcileWithTombstones,
   gcTombstones,
   type Tombstone,
   type TombstoneReconcileResult,
-} from "./sync/tombstone.ts";
-export { compareStamps, stampFromEntry, type HlcStamp } from "./sync/clock.ts";
+} from "@caisson/local-sync";
+export {
+  compareStamps,
+  stampFromEntry,
+  type HlcStamp,
+} from "@caisson/local-sync";
 export type {
   Changeset,
   ChangesetEntry,
@@ -159,7 +163,7 @@ export type {
   ApplyResult,
   ReconcileResult,
   SyncEngine,
-} from "./sync/port.ts";
+} from "@caisson/local-sync";
 
 // The edition migration assembly + the ordered, idempotent `schema_version` ledger (ADR-0070/0075,
 // data-migration). Composes local-store's retrieval tables + the edition's `items`/sync-metadata
