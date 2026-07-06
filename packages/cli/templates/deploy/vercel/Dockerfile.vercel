@@ -1,0 +1,24 @@
+# {{projectName}} — Vercel container deploy image (ADR-0268 deploy-template family). Vercel's
+# container runtime went GA 2026-06-30 — six days old at the time this template was written; if
+# it surfaces breakage, this file is a drop-in to amend, since nothing in the generator's code
+# path depends on it. Single-stage Bun build adapted from Caisson's own services/docs Dockerfile
+# pattern, simplified for a NON-monorepo repo: this installs and builds only {{projectName}}
+# itself.
+#
+# Port semantics: Vercel's container runtime defaults to port 80 when `PORT` is unset. If your
+# server binds an explicit port, either set the `PORT` env var on the Vercel project to match, or
+# read `process.env.PORT` in your server so it always agrees with the platform.
+#
+# STARTER SCAFFOLD: the generated repo ships a library harness, not a server — point CMD at your
+# actual entrypoint (and add a `start` script to package.json) before deploying.
+FROM oven/bun:1.3.14-slim
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY . .
+RUN bun install --frozen-lockfile
+RUN bun run build
+
+USER bun
+EXPOSE 80
+CMD ["bun", "run", "start"]

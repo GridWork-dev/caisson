@@ -1,0 +1,9 @@
+# Railway deploy config for {{projectName}} (ADR-0268). Railway builds the sibling `Dockerfile`
+# and injects `PORT` at runtime — bind your server to `process.env.PORT`, never a fixed port.
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
