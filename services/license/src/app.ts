@@ -452,6 +452,7 @@ export function createApp(
           amountTotalMinor: result.event.amountTotal,
           currency: result.event.currency,
           sourceEventId: result.event.sourceEventId,
+          skuLines: result.skuLines,
         };
         try {
           void deps.posthogCapture(capture).catch(() => {
