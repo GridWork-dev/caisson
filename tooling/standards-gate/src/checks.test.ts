@@ -56,8 +56,9 @@ describe("checkOpenCoreLicensing (ADR-0094/0097)", () => {
   });
 
   test("an open-Base package on the commercial license is flagged", () => {
+    // jobs, not credits — credits flipped commercial (ADR-0249 G5) and left OPEN_BASE_NAMES.
     const f = checkOpenCoreLicensing([
-      pkg({ name: "@caisson/credits", license: COMMERCIAL }),
+      pkg({ name: "@caisson/jobs", license: COMMERCIAL }),
     ]);
     expect(f).toHaveLength(1);
     expect(f[0]?.message).toContain("open Base");
