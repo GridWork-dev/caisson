@@ -571,28 +571,31 @@ function readIndexMembers(indexPath: string): Map<string, Set<string>> {
   return out;
 }
 
-/** The site's per-edition slug → registry meta-package id (hand-copy of apps/site/lib/pricing.test.ts's
- *  REGISTRY_EDITION_IDS; the site catalog reads pre-bundle-rename slugs today). */
-const SITE_EDITION_TO_REGISTRY_ID: Record<string, string> = {
+/** The site's bundle id → registry meta-package id (hand-copy of apps/site/lib/pricing.test.ts's
+ *  REGISTRY_BUNDLE_IDS). Compliance rides the @caisson/compliance edition entry (which carries the
+ *  bundle members map); the other four persona/Provenance bundles are first-class kind:"bundle"
+ *  entries. `everything` is omitted — it is never listed on a per-module `bundles[]` (it contains
+ *  every sellable SKU by construction, ADR-0258). */
+const SITE_BUNDLE_TO_REGISTRY_ID: Record<string, string> = {
   compliance: "@caisson/compliance",
-  "ai-kit": "@caisson/ai-kit",
-  "local-first": "@caisson/local-ai",
-  "agentic-dev": "@caisson/agent-dev",
+  "ai-production": "@caisson/ai-production",
+  "local-first": "@caisson/local-first",
+  "agentic-dev": "@caisson/agentic-dev",
+  provenance: "@caisson/provenance",
 };
 
 interface SitePricingModule {
   id: string;
   amount: number;
-  edition: string;
-  standaloneOnly?: true;
+  bundles: readonly string[];
 }
 
 /**
  * catalog↔manifest parity (ADR-0248 F5). Promotes apps/site/lib/pricing.test.ts's membership lint to
  * the gate and adds a price cross-check, so the storefront can never advertise a grant or a price the
  * manifest layer doesn't back:
- *   (1) MEMBERSHIP — every module the site lists under an edition must be in that edition's registry
- *       members map (else the site sells a grant that doesn't exist).
+ *   (1) MEMBERSHIP (1:N) — every bundle the site lists a module under must be a bundle whose registry
+ *       members map actually grants it (else the site sells a grant that doesn't exist).
  *   (2) PRICE — for every à-la-carte module the site prices whose id carries a PRICE_AUTHORITY row,
  *       the displayed USD must equal the locked cents.
  * Editions/bundle DISPLAY prices are intentionally out of scope here: the site still shows pre-rework
@@ -634,16 +637,27 @@ export async function checkCatalogParity(root: string): Promise<Finding[]> {
 
   const findings: Finding[] = [];
   for (const m of modules) {
-    // (1) membership honesty (the promoted lint).
-    if (!m.standaloneOnly) {
-      const regId = SITE_EDITION_TO_REGISTRY_ID[m.edition];
-      const map = regId ? members.get(regId) : undefined;
+    // (1) membership honesty (the promoted lint, 1:N): every bundle the site lists a module under
+    //     must be a bundle whose registry members map actually grants it. An empty bundles[] makes
+    //     no claim (a genuinely standalone SKU).
+    for (const bundle of m.bundles) {
+      const regId = SITE_BUNDLE_TO_REGISTRY_ID[bundle];
+      if (!regId) {
+        findings.push({
+          severity: "error",
+          rule: "catalog-parity",
+          pkg: `@caisson/${m.id}`,
+          message: `apps/site lists @caisson/${m.id} under an unknown bundle "${bundle}" — not a known persona/Provenance bundle id (ADR-0257).`,
+        });
+        continue;
+      }
+      const map = members.get(regId);
       if (map && !map.has(`@caisson/${m.id}`)) {
         findings.push({
           severity: "error",
           rule: "catalog-parity",
           pkg: `@caisson/${m.id}`,
-          message: `apps/site lists @caisson/${m.id} under the ${m.edition} edition but it is absent from ${regId}'s registry members map — the site would sell a grant that doesn't exist; mark it standaloneOnly or repin the members (ADR-0071).`,
+          message: `apps/site lists @caisson/${m.id} in the ${bundle} bundle but it is absent from ${regId}'s registry members map — the site would sell a grant that doesn't exist; fix bundles[] or repin the members (ADR-0071).`,
         });
       }
     }

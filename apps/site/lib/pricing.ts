@@ -44,6 +44,32 @@ export function isEditionId(id: string): id is EditionId {
   return (EDITION_IDS as readonly string[]).includes(id);
 }
 
+/** The locked bundle-vocabulary id set (ADR-0257 §1 / ADR-0258) — the personas + Provenance + the
+ *  full-catalog Everything bundle that dissolve the four editions. Kept as a SITE-LOCAL const (not an
+ *  import from `@caisson/registry-schema`) on purpose: this module is client-reachable, and pulling
+ *  registry-schema drags in its `node:fs` disk loader. `pricing.test.ts` pins these values against
+ *  the shared `BUNDLE_IDS` in registry-schema so they can't drift. */
+export const BUNDLE_IDS = [
+  "compliance",
+  "ai-production",
+  "local-first",
+  "agentic-dev",
+  "provenance",
+  "everything",
+] as const;
+export type BundleId = (typeof BUNDLE_IDS)[number];
+
+export function isBundleId(id: string): id is BundleId {
+  return (BUNDLE_IDS as readonly string[]).includes(id);
+}
+
+/** The persona/Provenance bundles a module can be a member of — every bundle except the whole-catalog
+ *  `everything`, which contains every sellable SKU by construction (ADR-0258) and so is never listed
+ *  on a per-module `bundles[]`. */
+export const PERSONA_BUNDLE_IDS = BUNDLE_IDS.filter(
+  (b): b is Exclude<BundleId, "everything"> => b !== "everything",
+);
+
 /** The four editions. Compliance is the hero anchor; all four are commercial (ADR-0083). */
 export const EDITION_PRICES: readonly PriceAnchor[] = [
   {
@@ -80,6 +106,68 @@ export const EDITION_PRICES: readonly PriceAnchor[] = [
   },
 ] as const;
 
+/** The six bundles, in display order (ADR-0257 vocabulary · ADR-0258 numbers). These are the
+ *  editions' successors: the four personas (Compliance, AI-Production, Local-first, Agentic-Dev) plus
+ *  net-new Provenance and the whole-catalog Everything. Amounts are integer USD (money is never a
+ *  float, ADR-0007) and every one is pinned to `@caisson/pricebook`'s `BUNDLE_RETAIL` by
+ *  `pricing.test.ts` (the locked retail truth — never hand-invented here) and asserted below the sum
+ *  of its priced members (the 0.75× below-sum lock, ADR-0258 §Consequences).
+ *
+ *  ponytail: this is NEW display data (the six-bundle numbers). The legacy `EDITION_PRICES` +
+ *  `PLAN_PRICES` "bundle" surface stays live until the display flip (catalog-rework W6.2/W7.2)
+ *  repoints the marketing pages onto these bundles — so the marketing surface renders unchanged
+ *  under this data-layer commit. */
+export const BUNDLE_PRICES: readonly PriceAnchor[] = [
+  {
+    id: "compliance",
+    label: "Compliance",
+    amount: 1049,
+    unit: "once",
+    from: false,
+    note: "The compliance wedge: fail-closed RLS, WORM, an audit chain, evidence packs, and the framework + signing carves.",
+  },
+  {
+    id: "ai-production",
+    label: "AI-Production",
+    amount: 739,
+    unit: "once",
+    from: false,
+    note: "The production-rigor layer for AI features: metering, guardrails, prompt versioning, and the CI eval harness.",
+  },
+  {
+    id: "local-first",
+    label: "Local-first",
+    amount: 629,
+    unit: "once",
+    from: false,
+    note: "On-device inference, a privacy egress gate, and local vector search — your data never leaves the device.",
+  },
+  {
+    id: "agentic-dev",
+    label: "Agentic-Dev",
+    amount: 329,
+    unit: "once",
+    from: false,
+    note: "The governed-agent kernel: typed agent/skill/rule schema, a guarded lifecycle, and sandboxed execution.",
+  },
+  {
+    id: "provenance",
+    label: "Provenance",
+    amount: 399,
+    unit: "once",
+    from: false,
+    note: "Cryptographic provenance: detached signing, an append-only WORM audit chain, and per-tenant field encryption.",
+  },
+  {
+    id: "everything",
+    label: "Everything",
+    amount: 2059,
+    unit: "once",
+    from: false,
+    note: "The full catalog — every bundle and every à-la-carte module, one purchase.",
+  },
+] as const;
+
 /** Every module sold à la carte, grouped by the edition it composes into (customer-facing
  *  grouping — mirrors the SKU matrix on `/pricing`, not the registry's internal base/edition
  *  split). Prices are the locked $49-$299 band. */
@@ -89,14 +177,32 @@ export interface ModulePrice {
   label: string;
   /** Integer USD, one-time. */
   amount: number;
+  /**
+   * The bundles this module is a member of (1:N — a module can belong to several, e.g. field-crypto
+   * spans Compliance, AI-Production, Local-first, and Provenance). This is the MEMBERSHIP TRUTH:
+   * every id here is pinned by `pricing.test.ts` against the bundle's registry-index `members` map
+   * (registry members maps are the only membership truth), and the standards-gate catalog↔manifest
+   * parity check enforces the same. Persona/Provenance ids only — `everything` is never listed (it
+   * contains every sellable SKU by construction, ADR-0258). An empty array = a module no bundle
+   * grants (a genuinely standalone SKU).
+   */
+  bundles: readonly BundleId[];
+  /**
+   * The single edition this module's à-la-carte row is displayed under today — a TRANSITIONAL
+   * browse-family grouping the marketing pages still render (`modulesByEdition`, the SKU matrix, the
+   * module detail cross-sell). The catalog-rework display flip (W6.2/W7.2) migrates those surfaces
+   * onto `bundles`; until then `edition` keeps the storefront rendering unchanged.
+   */
   edition: EditionId;
   /** Customer-facing benefit, one line — not the internal package README description. */
   blurb: string;
   /**
-   * True when NO edition (and therefore not the bundle either — bundle = base ∪ edition members)
-   * grants this module: `edition` is then a browse-family only, and the /build + cart upgrade
-   * nudge must never claim an edition covers it. Truth source: the registry index members maps
-   * (pinned by pricing.test.ts against registry/index.json).
+   * True when NO edition grants this module — an EDITION-model display flag (distinct from `bundles`,
+   * the bundle-model membership truth): it keeps the /build + cart edition nudge and the module
+   * detail cross-sell honest while the edition surface is still live. ai-evals is the standing case:
+   * it is NOT in the `@caisson/ai-kit` EDITION members map (so `standaloneOnly`), yet IS a member of
+   * the `@caisson/ai-production` BUNDLE (so `bundles: ["ai-production"]`) — two independently true
+   * facts. Drops when the display flip retires the edition surface (W6.2).
    */
   standaloneOnly?: true;
 }
@@ -106,11 +212,14 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
   // ("Compliance core", "Agent-setup config bundles", "On-device inference", "Dev-loop tooling")
   // were dropped — an edition's core composes its commercial members at runtime, so it has no
   // separable artifact to sell; editions are how you buy composition.
+  // `bundles` is the index-pinned membership (pricing.test.ts); `edition` is the transitional
+  // browse-family the pages still render.
   // ---- Compliance ----
   {
     id: "field-crypto",
     label: "Field encryption",
     amount: 199,
+    bundles: ["compliance", "ai-production", "local-first", "provenance"],
     edition: "compliance",
     blurb:
       "Per-tenant field encryption (HKDF-SHA256): each tenant's ciphertext is sealed under its own derived key, and a cross-tenant read fails to decrypt in the test suite, every run.",
@@ -119,6 +228,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     id: "audit-worm",
     label: "Audit chain + WORM",
     amount: 149,
+    bundles: ["compliance", "provenance"],
     edition: "compliance",
     blurb:
       "Append-only SHA-256 audit chain plus S3 Object-Lock WORM evidence storage. Tamper breaks the link.",
@@ -127,17 +237,19 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     id: "retention-runner",
     label: "Retention runner",
     amount: 199,
+    bundles: ["compliance"],
     edition: "compliance",
     blurb:
       "Policy-driven data retention on a schedule: expiry and legal-hold, enforced automatically.",
   },
   {
-    // Grouped under compliance because that is the edition that composes @caisson/alerting
+    // Grouped under compliance because that is the edition/bundle that composes @caisson/alerting
     // (packages/compliance dependency; ADR-0205) — an ai-kit grouping would let the /build
     // edition nudge sell an upgrade that loses this module.
     id: "alerting",
     label: "Alert pipeline",
     amount: 149,
+    bundles: ["compliance"],
     edition: "compliance",
     blurb:
       "Deduped, rate-capped alert delivery with quiet hours and an audit trail: the SOC 2 CC7.2 alerting control your compliance program can point to.",
@@ -147,18 +259,20 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     id: "ai-meter",
     label: "Token metering",
     amount: 199,
+    bundles: ["ai-production"],
     edition: "ai-kit",
     blurb:
       "PG-atomic token metering with per-tenant spend caps and a circuit breaker that trips before a runaway prompt loop reaches your invoice.",
   },
   {
-    // Browse-family only: @caisson/ai-evals is standalone BY DESIGN (its manifest: "not a base
-    // service or an edition") — the ai-kit edition's registry members map does not include it, so
-    // an edition/bundle purchase never grants it. `standaloneOnly` keeps the upgrade nudge and
-    // every "included in" surface honest.
+    // Bundle-vs-edition split (ADR-0258): @caisson/ai-evals is NOT in the @caisson/ai-kit EDITION
+    // members map (so `standaloneOnly` keeps the edition-model /build + detail cross-sell honest),
+    // but IS a member of the @caisson/ai-production BUNDLE (the fold-in, so `bundles`). Both facts
+    // are true; the display flip (W6.2) retires the edition surface and with it `standaloneOnly`.
     id: "ai-evals",
     label: "Eval harness",
     amount: 199,
+    bundles: ["ai-production"],
     edition: "ai-kit",
     standaloneOnly: true,
     blurb:
@@ -168,6 +282,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     id: "guardrails",
     label: "Guardrails",
     amount: 149,
+    bundles: ["ai-production"],
     edition: "ai-kit",
     blurb:
       "A single guardrail boundary between your app and the model: every call passes through the same PII redaction, moderation, and secret-shape gate.",
@@ -176,6 +291,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     id: "prompt-registry",
     label: "Prompt registry",
     amount: 99,
+    bundles: ["ai-production"],
     edition: "ai-kit",
     blurb:
       "Versioned prompts with rollout history: promote or roll back a prompt by moving an alias pointer, no redeploy required.",
@@ -185,6 +301,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     id: "local-store",
     label: "Local vector store",
     amount: 99,
+    bundles: ["local-first", "agentic-dev"],
     edition: "local-first",
     blurb:
       "Hybrid FTS5 + sqlite-vec search that runs on disk, one file per tenant, with no vector-cloud vendor in the loop.",
@@ -194,6 +311,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     id: "agent-kernel",
     label: "Agent kernel",
     amount: 199,
+    bundles: ["agentic-dev"],
     edition: "agentic-dev",
     blurb:
       "Typed agent/skill/rule schema plus the guarded lifecycle state machine: a failed VERIFY reopens PLAN, and the only path to SHIP runs back through it.",
@@ -202,6 +320,7 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
     id: "agent-runner",
     label: "Agent runner",
     amount: 49,
+    bundles: ["agentic-dev"],
     edition: "agentic-dev",
     blurb:
       "Sandboxed, governed agent execution: spawn a headless coding agent into an isolated worktree and stream back an auditable transcript, with the child's environment built from scratch rather than inherited.",
@@ -211,6 +330,13 @@ export const MODULE_PRICES: readonly ModulePrice[] = [
 /** Every module belonging to `edition`, in catalog order. */
 export function modulesByEdition(edition: EditionId): readonly ModulePrice[] {
   return MODULE_PRICES.filter((m) => m.edition === edition);
+}
+
+/** Every module that is a member of `bundle` (1:N — a module appears under each bundle it belongs
+ *  to), in catalog order. The bundle analog of `modulesByEdition`; membership is the index-pinned
+ *  `bundles[]` (pricing.test.ts). The display flip (W6.2) renders the bundle cards from this. */
+export function modulesByBundle(bundle: BundleId): readonly ModulePrice[] {
+  return MODULE_PRICES.filter((m) => m.bundles.includes(bundle));
 }
 
 /** The cheapest module in the whole catalog — the real floor of the "from $X" per-module anchor
