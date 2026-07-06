@@ -105,3 +105,63 @@ CREATE UNIQUE INDEX credit_event_source_uniq
   ON credit_event (source_event_id, event_type, COALESCE(line_item_id, ''))
   WHERE source_event_id IS NOT NULL;
 `;
+
+/**
+ * Grant-level expiry (ADR-0245/0252): nullable `expires_at` on `credit_event`, populated on
+ * grant rows only (`grant()` sets it application-side, default issue + 12 months, overridable per
+ * grant class). The backfill retro-dates every pre-existing grant row `created_at + 12 months`
+ * (ADR-0252 Decision 4 — the live rows are Paddle-SANDBOX pipeline proofs, not customer money, so
+ * a permanent `NULL = never expires` two-tier ledger is not worth protecting test data).
+ *
+ * SEPARATE migration (ships as the checksum-pinned `0014_credit_expiry.sql`), never an edit to
+ * CREDIT_SCHEMA_SQL / the earlier constants (ADR-0006 append-only). Apply AFTER them everywhere
+ * the table is bootstrapped — `grant()` writes `expires_at` unconditionally (mirrors the
+ * rounding columns' convention, not the caller-gated line-item columns).
+ */
+export const CREDIT_EXPIRY_MIGRATION_SQL = `
+ALTER TABLE credit_event
+  ADD COLUMN expires_at timestamptz;
+UPDATE credit_event
+  SET expires_at = created_at + interval '12 months'
+  WHERE amount > 0;
+`;
+
+/**
+ * FIFO burn materialization + T-30d notice marker (ADR-0252 Decisions 2/6). Ships as the
+ * checksum-pinned `0015_grant_consumption.sql`; apply AFTER CREDIT_EXPIRY_MIGRATION_SQL.
+ *
+ * `grant_consumption` is the append-only join table recording which grant(s) each debit consumed:
+ * the debit path walks unexpired grants in burn order (`created_at ASC, expires_at ASC, id ASC`)
+ * and writes 1..k rows, splitting across grants when one remainder can't cover the debit. A grant's
+ * remaining balance is always `amount - SUM(gc.amount)` over the indexed `grant_event_id` —
+ * never a mutated column (ADR-0007 append-only). Rows are only ever inserted, never updated.
+ *
+ * `credit_expiry_notice` is the per-grant already-notified marker for the T-30d expiry email
+ * (ADR-0252 Decision 6): one row per grant, inserted `ON CONFLICT DO NOTHING`, so the notice
+ * fires exactly once — an append-only marker table, NOT a mutated column on `credit_event`.
+ *
+ * Both carry `account_id` + the standard tenant policy: they are tenant-owned money/PII-adjacent
+ * data, and the fail-closed RLS floor (ADR-0005) binds every tenant table — the ADR-0252 column
+ * list is the minimum, not a licence to skip isolation.
+ */
+export const GRANT_CONSUMPTION_MIGRATION_SQL = `
+CREATE TABLE grant_consumption (
+  id text PRIMARY KEY,
+  account_id text NOT NULL,
+  grant_event_id text NOT NULL,
+  debit_event_id text NOT NULL,
+  amount integer NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT grant_consumption_amount_positive CHECK (amount > 0)
+);
+CREATE INDEX grant_consumption_grant_idx ON grant_consumption (grant_event_id);
+
+CREATE TABLE credit_expiry_notice (
+  grant_event_id text PRIMARY KEY,
+  account_id text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+${buildTenantPolicySql("grant_consumption")}
+${buildTenantPolicySql("credit_expiry_notice")}
+`;

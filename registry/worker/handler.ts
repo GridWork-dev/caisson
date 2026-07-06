@@ -19,13 +19,35 @@ import {
 } from "../schema/registry-index";
 
 /**
- * Per-request entitlement source. Returns the caller's PURCHASED IDS from a verified license, or
- * `null` for an unlicensed/community caller. SHOULD be total, but it need not be: the handler runs it
+ * A resolved license: the caller's PURCHASED IDS plus the signed ADR-0244/0255 per-entitlement
+ * updates windows (`updatesWindows`, `purchasedEntitlementId → ISO instant`). An entitlement id
+ * ABSENT from the map is unbounded — there are never `null` values in the map.
+ */
+export interface ResolvedLicense {
+  readonly entitlements: readonly string[];
+  readonly updatesWindows: Readonly<Record<string, string>>;
+}
+
+/**
+ * What a resolver may return: the bare purchased-id array (the pre-window contract, kept so injected
+ * test doubles stay valid — reads as every entitlement unbounded) or a {@link ResolvedLicense}
+ * carrying the per-entitlement updates windows. The live edge resolver (entitlement-filter.ts) always
+ * returns the object form.
+ */
+export type ResolvedEntitlements = readonly string[] | ResolvedLicense;
+
+/** Narrow the union — `Array.isArray` alone does not narrow a `readonly string[]` union member. */
+const isBareList = (r: ResolvedEntitlements): r is readonly string[] =>
+  Array.isArray(r);
+
+/**
+ * Per-request entitlement source. Returns the caller's resolved entitlements, or `null` for an
+ * unlicensed/community caller. SHOULD be total, but it need not be: the handler runs it
  * INSIDE the fail-safe boundary, so even a throwing resolver degrades to the community (base-only)
  * view, never a 500. When this option is omitted the handler serves the full unfiltered public catalog.
  */
 export interface IndexHandlerOptions {
-  resolveEntitlements?: (request: Request) => readonly string[] | null;
+  resolveEntitlements?: (request: Request) => ResolvedEntitlements | null;
 }
 
 function jsonHeaders(filtering: boolean): Record<string, string> {
@@ -49,26 +71,104 @@ function json(body: unknown, status: number, filtering: boolean): Response {
 }
 
 /**
- * The caller's entitled module-id set for a filtered request: the free base (ADR-0094, always served)
- * ∪ the expansion of the caller's purchased ids. Fail-SAFE: ANY error — a throwing resolver, a
- * malformed token, or a stale entitlement no longer in the index (`expandEntitlements` throws on an
- * unknown id) — degrades to base-only, NEVER a 500. The resolver is called INSIDE the guard so its
- * total-safety does not rely on the injected implementation. `null` purchased ids = community = base.
+ * The gate result: the caller's entitled module ids + a per-module updates-window lookup
+ * (ADR-0255). `windowFor(moduleId)` returns `null` for unbounded (the caller decides applicability —
+ * base modules are never window-filtered regardless of what this returns).
  */
-function entitledModuleSet(
+export interface ResolvedGate {
+  readonly entitled: Set<string>;
+  readonly windowFor: (moduleId: string) => string | null;
+}
+
+const UNBOUNDED = () => null;
+
+/**
+ * The caller's entitled module-id set for a filtered request: the free base (ADR-0094, always served)
+ * ∪ the expansion of the caller's purchased ids — plus, per member module, the MOST FAVORABLE of the
+ * ADR-0244/0255 updates windows among the purchased ids that grant it (unbounded wins; else the max
+ * instant — owning a module à-la-carte and via an edition means the better window applies, ADR-0255
+ * Decision 3). Fail-SAFE: ANY error — a throwing resolver, a malformed token, or a stale entitlement
+ * no longer in the index (`expandEntitlements` throws on an unknown id) — degrades to base-only,
+ * NEVER a 500 (base is never window-filtered, so the degraded window is moot). The resolver is
+ * called INSIDE the guard so its total-safety does not rely on the injected implementation.
+ * `null` resolved = community = base. Shared with the npm surface (npm-routes.ts) — ONE gate math.
+ */
+export function resolveGate(
   index: RegistryIndex,
-  resolve: (request: Request) => readonly string[] | null,
+  resolve: (request: Request) => ResolvedEntitlements | null,
   request: Request,
-): Set<string> {
+): ResolvedGate {
   const entitled = new Set<string>(baseModuleIds(index));
   try {
-    const purchased = resolve(request);
-    if (purchased === null) return entitled;
+    const resolved = resolve(request);
+    if (resolved === null) return { entitled, windowFor: UNBOUNDED };
+    const purchased = isBareList(resolved) ? resolved : resolved.entitlements;
+    const updatesWindows = isBareList(resolved) ? {} : resolved.updatesWindows;
     for (const id of expandEntitlements(index, purchased)) entitled.add(id);
+
+    // Per-module most-favorable window: for each purchased id, find what it grants + its own window
+    // (absent key = unbounded), then fold into the per-module map (unbounded wins; else the max
+    // instant). Every `grantorId` here already passed the batch `expandEntitlements` above, so a
+    // per-id re-expansion cannot newly throw.
+    const moduleWindows = new Map<string, string | null>();
+    for (const grantorId of purchased) {
+      const window = Object.hasOwn(updatesWindows, grantorId)
+        ? (updatesWindows[grantorId] ?? null)
+        : null;
+      for (const memberId of expandEntitlements(index, [grantorId])) {
+        const existing = moduleWindows.get(memberId);
+        if (existing === undefined) {
+          moduleWindows.set(memberId, window);
+        } else if (existing !== null && window !== null) {
+          moduleWindows.set(
+            memberId,
+            Date.parse(window) > Date.parse(existing) ? window : existing,
+          );
+        } else {
+          moduleWindows.set(memberId, null); // either grantor unbounded → unbounded wins
+        }
+      }
+    }
+    return {
+      entitled,
+      windowFor: (moduleId: string) => moduleWindows.get(moduleId) ?? null,
+    };
   } catch {
     // A throwing resolver OR a stale/forged entitlement → keep the safe base-only view (no crash).
+    return { entitled, windowFor: UNBOUNDED };
   }
-  return entitled;
+}
+
+/** One index module entry (the /modules/:id + packument unit the window filter narrows). */
+type ModuleEntry = RegistryIndex["modules"][number];
+
+/**
+ * Narrow a COMMERCIAL module entry to the versions inside the caller's updates window
+ * (ADR-0244/0255): keep `publishedAt <= cutoff`, recompute `latest` to the newest IN-WINDOW version
+ * (the index `latest` if it survived, else the max `publishedAt` survivor). Returns `null` when NO
+ * version is in-window — the caller was never entitled to any published version, indistinguishable
+ * from unentitled (fail-closed, ADR-0076). An unparseable bound filters everything (fail-closed). The
+ * caller decides applicability: base/community modules are NEVER window-filtered (the window
+ * governs entitled commercial pulls only). `cutoff` is the per-module MOST-FAVORABLE ISO instant the
+ * caller (`resolveGate`) already resolved — this function itself has no notion of entitlement ids.
+ */
+export function windowFilterEntry(
+  entry: ModuleEntry,
+  cutoff: string,
+): ModuleEntry | null {
+  const bound = Date.parse(cutoff);
+  const versions = entry.versions.filter(
+    (v) => Date.parse(v.publishedAt) <= bound,
+  );
+  let newest = versions[0];
+  if (newest === undefined) return null;
+  for (const v of versions) {
+    if (Date.parse(v.publishedAt) > Date.parse(newest.publishedAt)) newest = v;
+  }
+  const latest = versions.some((v) => v.version === entry.latest)
+    ? entry.latest
+    : newest.version;
+  return { ...entry, latest, versions };
 }
 
 /**
@@ -87,6 +187,8 @@ export function createIndexHandler(
   const validated = loadRegistryIndex(index);
   const resolve = options.resolveEntitlements;
   const filtering = resolve !== undefined;
+  // The free base is NEVER window-filtered (ADR-0251: the window governs entitled COMMERCIAL pulls).
+  const baseIds = new Set<string>(baseModuleIds(validated));
 
   return (request: Request): Response => {
     if (request.method !== "GET")
@@ -94,17 +196,26 @@ export function createIndexHandler(
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // Entitlement gate (ADR-0008/0071): compute the caller's entitled module set, or `null` when no
-    // resolver is configured (serve everything). The resolver runs inside entitledModuleSet's
-    // fail-safe boundary, so a throw degrades to base-only rather than 500ing the edge.
-    const entitled: Set<string> | null =
-      resolve === undefined
-        ? null
-        : entitledModuleSet(validated, resolve, request);
+    // Entitlement gate (ADR-0008/0071): compute the caller's entitled module set + per-module
+    // updates window, or `null` when no resolver is configured (serve everything). The resolver runs
+    // inside resolveGate's fail-safe boundary, so a throw degrades to base-only rather than 500ing.
+    const gate: ResolvedGate | null =
+      resolve === undefined ? null : resolveGate(validated, resolve, request);
+    const entitled = gate === null ? null : gate.entitled;
+    // Catalog listings apply the same PER-MODULE window math as /modules/:id and the npm surface
+    // (ADR-0255) — a fully-out-of-window module vanishes from the listing and `latest` never
+    // advertises a version the packument/tarball gates would refuse (metadata↔pull consistency).
+    const windowed = (m: ModuleEntry): ModuleEntry | null => {
+      if (gate === null || baseIds.has(m.id)) return m;
+      const cutoff = gate.windowFor(m.id);
+      return cutoff === null ? m : windowFilterEntry(m, cutoff);
+    };
 
     if (path === "/" || path === "") {
       const modules = validated.modules
         .filter((m) => entitled === null || entitled.has(m.id))
+        .map(windowed)
+        .filter((m): m is ModuleEntry => m !== null)
         .map((m) => ({ id: m.id, latest: m.latest }));
       return json(
         { schemaVersion: validated.schemaVersion, modules },
@@ -118,7 +229,10 @@ export function createIndexHandler(
           ? validated
           : {
               ...validated,
-              modules: validated.modules.filter((m) => entitled.has(m.id)),
+              modules: validated.modules
+                .filter((m) => entitled.has(m.id))
+                .map(windowed)
+                .filter((m): m is ModuleEntry => m !== null),
             };
       return json(body, 200, filtering);
     }
@@ -139,7 +253,18 @@ export function createIndexHandler(
       if (entitled !== null && !entitled.has(id)) {
         return json({ error: "unknown_module" }, 404, filtering);
       }
-      const entry = validated.modules.find((m) => m.id === id);
+      let entry = validated.modules.find((m) => m.id === id);
+      // Per-module updates-window filter (ADR-0244/0255): an entitled COMMERCIAL module serves only
+      // versions inside its MOST FAVORABLE window, with `latest` recomputed to the newest in-window
+      // version. Base modules and an unbounded window are untouched (the shared `windowed` helper).
+      // A module with NO in-window version is 404 — same invisibility as unentitled.
+      if (entry !== undefined) {
+        const narrowed = windowed(entry);
+        if (narrowed === null) {
+          return json({ error: "unknown_module" }, 404, filtering);
+        }
+        entry = narrowed;
+      }
       return json(entry, 200, filtering);
     }
     return json({ error: "not_found" }, 404, filtering);

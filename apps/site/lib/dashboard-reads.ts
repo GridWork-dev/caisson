@@ -13,7 +13,8 @@
 // `readUsageEvents` + `readCreditsSummary` stay here: they read BASE-package tables (`@caisson/ai-meter`'s
 // `usage_event`, `@caisson/credits`' `credit_wallet`/`credit_event`) — ordinary composable dependencies,
 // not the separately-deployed services/license tables — so they are not the flagged cross-service coupling.
-import { balance, getLedger } from "@caisson/credits";
+import { balance, expiringSoon, getLedger } from "@caisson/credits";
+import type { ExpiringSoon } from "@caisson/credits";
 import {
   readEntitlementGrants,
   readLicenseGrantRows,
@@ -107,10 +108,13 @@ export async function readCreditsSummary(
 ): Promise<{
   balance: number;
   ledger: Awaited<ReturnType<typeof getLedger>>;
+  /** Unexpired remaining credits expiring within 30 days (ADR-0252 Decision 6a badge read). */
+  expiring: ExpiringSoon;
 }> {
-  const [bal, ledger] = await Promise.all([
+  const [bal, ledger, expiring] = await Promise.all([
     balance(tx, accountId),
     getLedger(tx, accountId),
+    expiringSoon(tx, accountId, 30),
   ]);
-  return { balance: bal, ledger };
+  return { balance: bal, ledger, expiring };
 }

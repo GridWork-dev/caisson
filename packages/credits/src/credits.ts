@@ -30,6 +30,10 @@ export const DEBIT_EVENT_TYPES = [
   // purchase (ADR-0113). It is NOT a spendable-balance debit (no 402 floor): the amount is bounded to
   // the current balance so the wallet never goes negative. Written only via `clawback`, never `debit`.
   "refund_clawback",
+  // The residue burn the expiry sweep writes when a grant passes its `expires_at` with credits left
+  // (ADR-0245/0252). Like refund_clawback it is NOT a spendable-balance debit (bounded to the current
+  // balance, wallet never negative). Written only via `sweepExpiredGrants`, never `debit`.
+  "expiry_debit",
 ] as const;
 export type GrantEventType = (typeof GRANT_EVENT_TYPES)[number];
 export type DebitEventType = (typeof DEBIT_EVENT_TYPES)[number];
@@ -67,12 +71,21 @@ interface CreditInputBase extends IdempotencySource {
 // Discriminated on `eventType` so a `feature` tag is REQUIRED with feature_grant/feature_debit and
 // FORBIDDEN (`feature?: never`) on a legacy specific type — mirroring the DB `credit_event_feature_iff`
 // CHECK at compile time (a typo is a type error too). `feature` stays payload: idempotency is unchanged.
+interface GrantInputBase extends CreditInputBase {
+  /**
+   * When this grant's credits expire (ADR-0245/0252). Omitted → issue time + 12 months, computed
+   * application-side (keeps the 12-month constant out of SQL; a grant class with a different
+   * lifetime passes its own instant per the ADR-0245 carve-out).
+   */
+  expiresAt?: Date;
+}
+
 export type GrantInput =
-  | (CreditInputBase & {
+  | (GrantInputBase & {
       eventType: "purchase" | "sub_allotment" | "topup";
       feature?: never;
     })
-  | (CreditInputBase & { eventType: "feature_grant"; feature: FeatureTag });
+  | (GrantInputBase & { eventType: "feature_grant"; feature: FeatureTag });
 
 export type DebitInput =
   | (CreditInputBase & {
@@ -177,24 +190,27 @@ async function insertEvent(
     idempotencyKey: string | null;
     /** Rounding provenance (ADR-0212) — absent → NULL/NULL (the DB CHECK keeps the pair coherent). */
     rounding?: RoundedMoney<number, Credits> | undefined;
+    /** Grant expiry instant (ADR-0245/0252) — set on grant rows, NULL on debits/clawbacks. */
+    expiresAt?: Date | undefined;
     /** Paddle per-line join key (ADR-0218) — the `txnitm_…` that granted/refunded this row. */
     lineItemId?: string | undefined;
     /** The line's charged minor units (ADR-0218) — the proportional-refund divisor. */
     lineChargedAmount?: number | undefined;
   },
-): Promise<boolean> {
+): Promise<string | null> {
   // ON CONFLICT DO NOTHING: a duplicate idempotency key returns zero rows instead of raising —
-  // the transaction stays usable. `feature` is payload — NOT part of either idempotency index.
+  // the transaction stays usable (null = replay, else the fresh row's id — the FIFO consumption
+  // writer needs the debit event id). `feature` is payload — NOT part of either idempotency index.
   //
-  // The per-line columns are referenced ONLY when a caller supplies them (the Paddle per-line
-  // purchase/refund path, ADR-0218). Every other grant/debit/clawback keeps the exact pre-0218 column
-  // list, so a credit DB bootstrapped without CREDIT_LINE_ITEM_MIGRATION_SQL (ai-meter/ai-kit/cli/base
-  // — they never touch a line item) is untouched: the column reference can't fail on a missing column.
+  // `expires_at` is referenced unconditionally (like the rounding columns): every bootstrap of the
+  // table must apply CREDIT_EXPIRY_MIGRATION_SQL. The per-line columns stay referenced ONLY when a
+  // caller supplies them (the Paddle per-line purchase/refund path, ADR-0218) — a DB bootstrapped
+  // without CREDIT_LINE_ITEM_MIGRATION_SQL (they never touch a line item) is untouched.
   const line =
     row.lineItemId !== undefined || row.lineChargedAmount !== undefined;
   const inserted = await tx.query<{ id: string }>(
-    `INSERT INTO credit_event (id, account_id, event_type, amount, feature, source_event_id, idempotency_key, rounding_raw, rounding_mode${line ? ", line_item_id, line_charged_amount" : ""})
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9${line ? ", $10, $11" : ""})
+    `INSERT INTO credit_event (id, account_id, event_type, amount, feature, source_event_id, idempotency_key, rounding_raw, rounding_mode, expires_at${line ? ", line_item_id, line_charged_amount" : ""})
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10${line ? ", $11, $12" : ""})
      ON CONFLICT DO NOTHING
      RETURNING id`,
     [
@@ -207,10 +223,18 @@ async function insertEvent(
       row.idempotencyKey,
       row.rounding?.raw ?? null,
       row.rounding?.mode ?? null,
+      row.expiresAt ?? null,
       ...(line ? [row.lineItemId ?? null, row.lineChargedAmount ?? null] : []),
     ],
   );
-  return inserted.rows.length > 0;
+  return inserted.rows[0]?.id ?? null;
+}
+
+/** Issue + 12 months (ADR-0245) — the default grant lifetime, computed application-side. */
+function defaultGrantExpiry(): Date {
+  const d = new Date();
+  d.setMonth(d.getMonth() + 12);
+  return d;
 }
 
 /** Grant credits (purchase / subscription allotment / top-up). Idempotent; never double-grants. */
@@ -227,11 +251,12 @@ export async function grant(
     amount: input.amount,
     feature,
     rounding: input.rounding,
+    expiresAt: input.expiresAt ?? defaultGrantExpiry(),
     lineItemId: input.lineItemId,
     lineChargedAmount: input.lineChargedAmount,
     ...idem,
   });
-  if (!fresh)
+  if (fresh === null)
     return { balance: await balance(tx, input.accountId), idempotent: true };
 
   const r = await tx.query<{ balance: number }>(
@@ -244,9 +269,70 @@ export async function grant(
 }
 
 /**
+ * A grant's id + remaining (un-consumed) credits, in FIFO burn order (ADR-0252 Decision 3):
+ * `created_at ASC, expires_at ASC, id ASC` — oldest first; on an issue-time tie (the real
+ * shipped case: ADR-0218 multi-item cart lines share one transaction `created_at`) the
+ * sooner-expiring grant burns first; the UUID id is the final deterministic tie-break (the
+ * `getLedger` precedent). Only unexpired grants (`expires_at > now()`) are returned — an
+ * expired grant's residue is NEVER spendable (it belongs to the expiry sweep). Remaining is
+ * always derived from `grant_consumption` writes, never a mutated column (ADR-0007).
+ */
+async function unexpiredGrantsFifo(
+  tx: TenantExecutor,
+  accountId: string,
+): Promise<{ id: string; remaining: number }[]> {
+  const r = await tx.query<{ id: string; remaining: number }>(
+    `SELECT g.id, (g.amount - COALESCE(SUM(gc.amount), 0))::int AS remaining
+     FROM credit_event g
+     LEFT JOIN grant_consumption gc ON gc.grant_event_id = g.id
+     WHERE g.account_id = $1 AND g.amount > 0 AND g.expires_at > now()
+     GROUP BY g.id, g.amount, g.created_at, g.expires_at
+     HAVING g.amount - COALESCE(SUM(gc.amount), 0) > 0
+     ORDER BY g.created_at ASC, g.expires_at ASC, g.id ASC`,
+    [accountId],
+  );
+  return r.rows;
+}
+
+/** Write one `grant_consumption` row attributing `amount` of `debitEventId` to `grantEventId`. */
+async function insertConsumption(
+  tx: TenantExecutor,
+  row: {
+    accountId: string;
+    grantEventId: string;
+    debitEventId: string;
+    amount: number;
+  },
+): Promise<void> {
+  await tx.query(
+    `INSERT INTO grant_consumption (id, account_id, grant_event_id, debit_event_id, amount)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [
+      randomUUID(),
+      row.accountId,
+      row.grantEventId,
+      row.debitEventId,
+      row.amount,
+    ],
+  );
+}
+
+/**
  * Debit credits before the paid work. Atomic floor: the balance only decrements when it can
  * cover the amount, else 402 and the whole transaction rolls back (no debit recorded).
  * Idempotent on the supplied key/source.
+ *
+ * FIFO materialization (ADR-0245/0252): the debit walks the account's UNEXPIRED grants in burn
+ * order and records which grant(s) it consumed as `grant_consumption` rows, splitting across
+ * grants when one remainder can't cover it. Two floors both apply, both 402:
+ *  - unexpired remaining — a debit never draws from an expired grant, even when the raw wallet
+ *    aggregate is larger (the aggregate may lag the expiry sweep);
+ *  - the wallet aggregate — unchanged debit-before-spend (a refund clawback can pull the wallet
+ *    below the per-grant remainders, since clawback writes no consumption rows; the wallet stays
+ *    the money floor).
+ * Concurrency: the wallet row is locked FOR UPDATE (the `clawback` precedent) BEFORE the FIFO
+ * read, serializing concurrent debits per account so two debits can never both consume the same
+ * grant remainder.
  */
 export async function debit(
   tx: TenantExecutor,
@@ -263,8 +349,35 @@ export async function debit(
     rounding: input.rounding,
     ...idem,
   });
-  if (!fresh)
+  if (fresh === null)
     return { balance: await balance(tx, input.accountId), idempotent: true };
+
+  // Per-account debit serialization — must precede the FIFO read (see the function comment).
+  // A missing wallet row (never granted) locks nothing and falls through to the 402 below.
+  await tx.query(
+    `SELECT balance FROM credit_wallet WHERE account_id = $1 FOR UPDATE`,
+    [input.accountId],
+  );
+
+  const grants = await unexpiredGrantsFifo(tx, input.accountId);
+  let toCover: number = input.amount;
+  for (const g of grants) {
+    if (toCover === 0) break;
+    const take = Math.min(g.remaining, toCover);
+    await insertConsumption(tx, {
+      accountId: input.accountId,
+      grantEventId: g.id,
+      debitEventId: fresh,
+      amount: take,
+    });
+    toCover -= take;
+  }
+  if (toCover > 0) {
+    // Unexpired remaining can't cover it — 402 with the SPENDABLE total (not the raw wallet
+    // aggregate, which may still carry not-yet-swept expired residue). Throwing rolls back the
+    // event + consumption inserts above — a failed debit leaves no trace.
+    throw new InsufficientCreditsError(input.amount, input.amount - toCover);
+  }
 
   const updated = await tx.query<{ balance: number }>(
     `UPDATE credit_wallet SET balance = balance - $2
@@ -273,8 +386,8 @@ export async function debit(
     [input.accountId, input.amount],
   );
   if (updated.rows.length === 0) {
-    // Insufficient: throwing rolls back the surrounding withTenant transaction, undoing the
-    // event insert above — debit-before-spend means a failed debit leaves no trace.
+    // Insufficient wallet aggregate (e.g. a clawback outran the per-grant remainders): same
+    // rollback semantics — nothing recorded.
     throw new InsufficientCreditsError(
       input.amount,
       await balance(tx, input.accountId),
@@ -462,6 +575,12 @@ export interface ClawbackResult {
  * supplied id/key (a re-delivered refund does not double-claw). Append-only (ADR-0007): the clawback is
  * a new compensating entry, not a mutation of the original grant. Run inside `withTenant` so the
  * decrement is RLS-scoped + atomic with the surrounding refund transaction.
+ *
+ * FIFO coherence (ADR-0252): a clawback writes NO `grant_consumption` rows — it reverses a specific
+ * grant's value, not a FIFO spend — so after a clawback the per-grant remainders can sum to MORE than
+ * the wallet. That is safe by construction: `debit` keeps the wallet-aggregate floor as a second 402
+ * gate, and `sweepExpiredGrants` bounds each residue burn to the live balance. The wallet is always
+ * the money floor; consumption rows are the FIFO attribution trail.
  */
 export async function clawback(
   tx: TenantExecutor,
@@ -515,4 +634,213 @@ export async function clawback(
     clawedBack: actual,
     idempotent: false,
   };
+}
+
+export interface ExpiringSoon {
+  /** Sum of unexpired remaining credits whose grant expires within the window. */
+  credits: number;
+  /** ISO-8601 instant of the soonest such expiry; null when nothing is expiring. */
+  soonestExpiresAt: string | null;
+}
+
+/**
+ * The dashboard-badge read (ADR-0252 Decision 6a): unexpired remaining credits expiring within
+ * `withinDays` (default 30). Remaining is derived per grant from `grant_consumption` — the same
+ * waterfall `debit` writes — so the badge matches what a debit could actually still spend.
+ */
+export async function expiringSoon(
+  tx: TenantExecutor,
+  accountId: string,
+  withinDays = 30,
+): Promise<ExpiringSoon> {
+  const cutoff = new Date(Date.now() + withinDays * 24 * 60 * 60 * 1000);
+  const r = await tx.query<{ credits: number; soonest: unknown }>(
+    `SELECT COALESCE(SUM(t.remaining), 0)::int AS credits, MIN(t.expires_at) AS soonest
+     FROM (
+       SELECT (g.amount - COALESCE(SUM(gc.amount), 0))::int AS remaining, g.expires_at
+       FROM credit_event g
+       LEFT JOIN grant_consumption gc ON gc.grant_event_id = g.id
+       WHERE g.account_id = $1 AND g.amount > 0
+         AND g.expires_at > now() AND g.expires_at <= $2
+       GROUP BY g.id, g.amount, g.expires_at
+       HAVING g.amount - COALESCE(SUM(gc.amount), 0) > 0
+     ) t`,
+    [accountId, cutoff],
+  );
+  const row = r.rows[0];
+  const soonest = row?.soonest ?? null;
+  return {
+    credits: row?.credits ?? 0,
+    soonestExpiresAt:
+      soonest === null
+        ? null
+        : soonest instanceof Date
+          ? soonest.toISOString()
+          : String(soonest),
+  };
+}
+
+export interface ExpirySweepResult {
+  /** Grants whose residue was burned by this run (replays and zero-residue grants excluded). */
+  grantsExpired: number;
+  /** Total credits removed from the wallet by this run. */
+  creditsExpired: number;
+}
+
+/**
+ * The idempotent expiry sweep (ADR-0252 Decision 5): for each EXPIRED grant with residue, write
+ * one `expiry_debit` ledger event + a `grant_consumption` row and decrement the wallet — expired
+ * value is consumed by an explicit ledger event, never silently excluded from reads. Idempotent
+ * per grant twice over: consuming the residue zeroes it (a re-run selects nothing), and the
+ * event's idempotency key (`expiry:<grant id>`) absorbs the clawback-drained corner where a burn
+ * was bounded below the residue (the key is spent, so the leftover phantom residue on an already
+ * EXPIRED grant can never double-decrement — and it is invisible to debits and the badge, which
+ * only read unexpired grants). Each burn is bounded to the live balance (`clawback` semantics:
+ * the wallet never goes negative, sum(ledger) stays equal to balance). Run inside `withTenant`.
+ */
+export async function sweepExpiredGrants(
+  tx: TenantExecutor,
+  accountId: string,
+): Promise<ExpirySweepResult> {
+  // Same per-account serialization as `debit`/`clawback`: lock the wallet row first.
+  const locked = await tx.query<{ balance: number }>(
+    `SELECT balance FROM credit_wallet WHERE account_id = $1 FOR UPDATE`,
+    [accountId],
+  );
+  let bal = locked.rows[0]?.balance ?? 0;
+  const expired = await tx.query<{ id: string; residue: number }>(
+    `SELECT g.id, (g.amount - COALESCE(SUM(gc.amount), 0))::int AS residue
+     FROM credit_event g
+     LEFT JOIN grant_consumption gc ON gc.grant_event_id = g.id
+     WHERE g.account_id = $1 AND g.amount > 0 AND g.expires_at <= now()
+     GROUP BY g.id, g.amount, g.created_at, g.expires_at
+     HAVING g.amount - COALESCE(SUM(gc.amount), 0) > 0
+     ORDER BY g.created_at ASC, g.expires_at ASC, g.id ASC`,
+    [accountId],
+  );
+  let grantsExpired = 0;
+  let creditsExpired = 0;
+  for (const g of expired.rows) {
+    const burn = Math.min(g.residue, bal);
+    // An empty wallet leaves the grant's residue un-burned WITHOUT spending its idempotency key —
+    // a later sweep (after the balance recovers) can still close it.
+    if (burn === 0) continue;
+    const eventId = await insertEvent(tx, {
+      accountId,
+      eventType: "expiry_debit",
+      amount: -burn,
+      feature: null,
+      sourceEventId: null,
+      idempotencyKey: `expiry:${g.id}`,
+    });
+    if (eventId === null) continue; // replay — this grant's expiry already landed
+    await insertConsumption(tx, {
+      accountId,
+      grantEventId: g.id,
+      debitEventId: eventId,
+      amount: burn,
+    });
+    const updated = await tx.query<{ balance: number }>(
+      `UPDATE credit_wallet SET balance = balance - $2
+       WHERE account_id = $1 AND balance >= $2
+       RETURNING balance`,
+      [accountId, burn],
+    );
+    if (updated.rows.length === 0) {
+      // Unreachable while the FOR UPDATE lock pins balance >= burn — fail closed (mirrors clawback).
+      throw new ValidationError(
+        "expiry sweep: wallet decrement matched no row despite the row lock",
+      );
+    }
+    bal = updated.rows[0]?.balance ?? bal - burn;
+    grantsExpired += 1;
+    creditsExpired += burn;
+  }
+  return { grantsExpired, creditsExpired };
+}
+
+/**
+ * The minimal structural slice of `@caisson/email`'s `Emailer` port — declared locally so the
+ * credits package needs no email dependency; any real `Emailer` satisfies it.
+ */
+export interface ExpiryNoticeEmailer {
+  send(msg: {
+    to: string;
+    template: string;
+    data: Record<string, unknown>;
+  }): Promise<void>;
+}
+
+export interface ExpiryNoticeInput {
+  /** Where the notice goes — resolved by the caller (credits knows accounts, not inboxes). */
+  recipient: string;
+  emailer: ExpiryNoticeEmailer;
+  /** The CTA link — the buyer credits dashboard. */
+  dashboardUrl: string;
+  /** Notice window in days before expiry (ADR-0252 Decision 6b: 30). */
+  withinDays?: number;
+}
+
+/**
+ * The T-30d expiry-notice sweep (ADR-0252 Decision 6b): for each unexpired grant with remaining
+ * credits expiring within the window that has NOT been noticed, insert the append-only
+ * `credit_expiry_notice` marker (`ON CONFLICT DO NOTHING` — the PK is the grant id) and send the
+ * `credits-expiring` email. Notified-once: the marker row gates the send; a replayed sweep inserts
+ * nothing and sends nothing. The send runs INSIDE the transaction after the marker insert, so a
+ * failed send rolls the marker back and the next sweep retries. Returns the number of notices sent.
+ */
+export async function sweepExpiryNotices(
+  tx: TenantExecutor,
+  accountId: string,
+  input: ExpiryNoticeInput,
+): Promise<number> {
+  const withinDays = input.withinDays ?? 30;
+  const cutoff = new Date(Date.now() + withinDays * 24 * 60 * 60 * 1000);
+  const due = await tx.query<{
+    id: string;
+    remaining: number;
+    expires_at: unknown;
+  }>(
+    `SELECT g.id, (g.amount - COALESCE(SUM(gc.amount), 0))::int AS remaining, g.expires_at
+     FROM credit_event g
+     LEFT JOIN grant_consumption gc ON gc.grant_event_id = g.id
+     WHERE g.account_id = $1 AND g.amount > 0
+       AND g.expires_at > now() AND g.expires_at <= $2
+       AND NOT EXISTS (
+         SELECT 1 FROM credit_expiry_notice n WHERE n.grant_event_id = g.id
+       )
+     GROUP BY g.id, g.amount, g.created_at, g.expires_at
+     HAVING g.amount - COALESCE(SUM(gc.amount), 0) > 0
+     ORDER BY g.created_at ASC, g.expires_at ASC, g.id ASC`,
+    [accountId, cutoff],
+  );
+  let sent = 0;
+  for (const g of due.rows) {
+    const marked = await tx.query<{ grant_event_id: string }>(
+      `INSERT INTO credit_expiry_notice (grant_event_id, account_id)
+       VALUES ($1, $2)
+       ON CONFLICT DO NOTHING
+       RETURNING grant_event_id`,
+      [g.id, accountId],
+    );
+    if (marked.rows.length === 0) continue; // raced/replayed — already noticed
+    const expiresOn = (
+      g.expires_at instanceof Date
+        ? g.expires_at
+        : new Date(String(g.expires_at))
+    )
+      .toISOString()
+      .slice(0, 10);
+    await input.emailer.send({
+      to: input.recipient,
+      template: "credits-expiring",
+      data: {
+        credits: g.remaining,
+        expiresOn,
+        url: input.dashboardUrl,
+      },
+    });
+    sent += 1;
+  }
+  return sent;
 }

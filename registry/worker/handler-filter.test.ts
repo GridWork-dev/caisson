@@ -348,3 +348,163 @@ describe("Worker delivers an edition's COMMERCIAL members via the sentinel — r
     expect(served.sort()).toEqual(realIndex.modules.map((m) => m.id).sort());
   });
 });
+
+describe("updates-window filtering on /modules/:id (ADR-0244/0255)", () => {
+  // A multi-version commercial edition member: two 2026 versions + one 2027 version.
+  const multiVersion = {
+    id: "@caisson/compliance",
+    latest: "2.0.0",
+    versions: ["1.0.0", "1.1.0", "2.0.0"].map((version, i) => ({
+      version,
+      publishedAt:
+        ["2026-01-01", "2026-06-01", "2027-06-01"][i] + "T00:00:00.000Z",
+      gateAttestation: "ci-run-1@deadbeef",
+      manifest: {
+        id: "@caisson/compliance",
+        version,
+        kind: "base",
+        tier: "paid",
+        license: "LicenseRef-Caisson-Commercial",
+        priceCents: 4900,
+        editions: ["compliance"],
+        description: "compliance",
+      },
+    })),
+  };
+  const winIndex = loadRegistryIndex({
+    schemaVersion: 1,
+    modules: [entry("@caisson/kernel", []), multiVersion],
+  });
+  const winHandlerFor = (window: string | null) =>
+    createIndexHandler(winIndex, {
+      resolveEntitlements: () => ({
+        entitlements: ["compliance"],
+        updatesWindows: window === null ? {} : { compliance: window },
+      }),
+    });
+  const WINDOW = "2026-12-31T00:00:00.000Z";
+
+  test("an entitled commercial module serves only IN-WINDOW versions, latest recomputed", async () => {
+    const res = winHandlerFor(WINDOW)(req("/modules/@caisson%2Fcompliance"));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      latest: string;
+      versions: { version: string }[];
+    };
+    expect(body.versions.map((v) => v.version).sort()).toEqual([
+      "1.0.0",
+      "1.1.0",
+    ]);
+    expect(body.latest).toBe("1.1.0"); // NOT the catalog's global 2.0.0
+  });
+
+  test("a null window (absent claim) is UNBOUNDED — full entry served", async () => {
+    const res = winHandlerFor(null)(req("/modules/@caisson%2Fcompliance"));
+    const body = (await res.json()) as {
+      latest: string;
+      versions: { version: string }[];
+    };
+    expect(body.versions.length).toBe(3);
+    expect(body.latest).toBe("2.0.0");
+  });
+
+  test("a module with NO in-window version is 404 — indistinguishable from unentitled", () => {
+    const res = winHandlerFor("2020-01-01T00:00:00.000Z")(
+      req("/modules/@caisson%2Fcompliance"),
+    );
+    expect(res.status).toBe(404);
+  });
+
+  test("BASE modules are never window-filtered", async () => {
+    const res = winHandlerFor("2020-01-01T00:00:00.000Z")(
+      req("/modules/@caisson%2Fkernel"),
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { versions: { version: string }[] };
+    expect(body.versions.length).toBe(1);
+  });
+
+  test("the bare purchased-id array resolver shape still works (pre-window contract = unbounded)", async () => {
+    const arrayHandler = createIndexHandler(winIndex, {
+      resolveEntitlements: () => ["compliance"],
+    });
+    const res = arrayHandler(req("/modules/@caisson%2Fcompliance"));
+    const body = (await res.json()) as { latest: string };
+    expect(body.latest).toBe("2.0.0");
+  });
+
+  test("MOST FAVORABLE (ADR-0255 D3): two grantors' windows → the module serves under the LARGER instant", async () => {
+    // Bought BOTH the compliance edition (older window) AND the bundle (newer window) — both grant
+    // @caisson/compliance. The better (newer, more permissive) window applies.
+    const handler = createIndexHandler(winIndex, {
+      resolveEntitlements: () => ({
+        entitlements: ["compliance", "bundle"],
+        updatesWindows: {
+          compliance: "2026-01-15T00:00:00.000Z", // would allow only 1.0.0
+          bundle: WINDOW, // allows 1.0.0 + 1.1.0 — the more favorable grantor
+        },
+      }),
+    });
+    const res = handler(req("/modules/@caisson%2Fcompliance"));
+    const body = (await res.json()) as {
+      latest: string;
+      versions: { version: string }[];
+    };
+    expect(body.versions.map((v) => v.version).sort()).toEqual([
+      "1.0.0",
+      "1.1.0",
+    ]);
+    expect(body.latest).toBe("1.1.0");
+  });
+
+  test("MOST FAVORABLE (ADR-0255 D3): a grantor with NO key (unbounded) beats a windowed grantor", async () => {
+    // The bundle purchase carries no key for itself (unbounded) even though the compliance edition
+    // purchase has a narrow window — the unbounded grantor wins, serving every version.
+    const handler = createIndexHandler(winIndex, {
+      resolveEntitlements: () => ({
+        entitlements: ["compliance", "bundle"],
+        updatesWindows: { compliance: "2020-01-01T00:00:00.000Z" }, // bundle: no key = unbounded
+      }),
+    });
+    const res = handler(req("/modules/@caisson%2Fcompliance"));
+    const body = (await res.json()) as {
+      latest: string;
+      versions: { version: string }[];
+    };
+    expect(body.versions.length).toBe(3);
+    expect(body.latest).toBe("2.0.0");
+  });
+
+  test("the / catalog listing applies the window — latest never advertises an out-of-window version", async () => {
+    const res = winHandlerFor(WINDOW)(req("/"));
+    const body = (await res.json()) as {
+      modules: { id: string; latest: string }[];
+    };
+    const compliance = body.modules.find((m) => m.id === "@caisson/compliance");
+    expect(compliance?.latest).toBe("1.1.0"); // NOT the catalog's global 2.0.0
+  });
+
+  test("a fully-out-of-window module vanishes from / and /index.json (metadata matches the pull gates)", async () => {
+    const handler = winHandlerFor("2020-01-01T00:00:00.000Z");
+    const root = (await handler(req("/")).json()) as {
+      modules: { id: string }[];
+    };
+    expect(root.modules.map((m) => m.id)).toEqual(["@caisson/kernel"]);
+    const full = (await handler(req("/index.json")).json()) as {
+      modules: { id: string }[];
+    };
+    expect(full.modules.map((m) => m.id)).toEqual(["@caisson/kernel"]);
+  });
+
+  test("/index.json narrows an entitled module's versions to the window", async () => {
+    const res = winHandlerFor(WINDOW)(req("/index.json"));
+    const body = (await res.json()) as {
+      modules: { id: string; versions: { version: string }[] }[];
+    };
+    const compliance = body.modules.find((m) => m.id === "@caisson/compliance");
+    expect(compliance?.versions.map((v) => v.version).sort()).toEqual([
+      "1.0.0",
+      "1.1.0",
+    ]);
+  });
+});

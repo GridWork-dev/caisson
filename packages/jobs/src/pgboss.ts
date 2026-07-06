@@ -67,6 +67,13 @@ export interface PgBossClient {
   offWork(name: string, options?: { id?: string }): Promise<void>;
   /** `null` when the queue has never been created — mapped to all-zero, not an error. */
   getQueue(name: string): Promise<QueueState | null>;
+  /** Native pg-boss cron (ADR-0256) — requires the named queue to already exist. */
+  schedule(
+    name: string,
+    cron: string,
+    data?: object | null,
+    options?: { tz?: string },
+  ): Promise<void>;
 }
 
 export interface PgBossJobQueueConfig {
@@ -77,6 +84,24 @@ export interface PgBossJobQueueConfig {
    * `connectionString` so this driver runs fully offline.
    */
   client?: PgBossClient;
+}
+
+/**
+ * Native pg-boss cron scheduling (ADR-0256) — the one driver capability with no generic-port
+ * equivalent: only pg-boss can tick a cron durably inside Postgres itself, so this stays a
+ * pg-boss-specific addition rather than a hollow port every other driver (in-memory, Trigger.dev)
+ * would have to stub. `schedule(name, cron)` sends a payload into `name`'s queue on the cron tick —
+ * `name` must already be a registered task (the same registry `enqueue`/`work` validate against),
+ * so a typo'd or unregistered name fails the same way a bad `enqueue` call does, before it ever
+ * reaches Postgres.
+ */
+export interface PgBossSchedule {
+  schedule(
+    name: string,
+    cron: string,
+    data?: object | null,
+    options?: { tz?: string },
+  ): Promise<void>;
 }
 
 /**
@@ -112,7 +137,7 @@ export function deriveIdempotentJobId(
 export function createPgBossJobQueue(
   tasks: readonly TaskDefinition<unknown>[],
   config: PgBossJobQueueConfig,
-): JobQueue & JobConsumer & JobLedger {
+): JobQueue & JobConsumer & JobLedger & PgBossSchedule {
   const registry = new Map<string, TaskDefinition<unknown>>(
     tasks.map((task) => [task.name, task]),
   );
@@ -220,6 +245,23 @@ export function createPgBossJobQueue(
         activeCount: queue.activeCount,
         failedCount: queue.failedCount,
       };
+    },
+
+    async schedule(
+      name: string,
+      cron: string,
+      data?: object | null,
+      options?: { tz?: string },
+    ): Promise<void> {
+      const task = registry.get(name);
+      if (task === undefined) {
+        throw new NotFoundError(`No task registered for "${name}"`, {
+          task: name,
+        });
+      }
+      const client = await getClient();
+      await ensureQueue(client, name);
+      await client.schedule(name, cron, data ?? null, options);
     },
   };
 }

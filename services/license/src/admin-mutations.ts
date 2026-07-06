@@ -31,6 +31,7 @@ import {
   creditsGrantedBySource,
   debit,
   grant,
+  sweepExpiredGrants,
 } from "@caisson/credits";
 import { asCredits, NotFoundError, type JsonValue } from "@caisson/kernel";
 import {
@@ -65,6 +66,10 @@ export const ADMIN_MUTATION_PROVISION_SQL = [
   buildAdminWritePolicySql("entitlement_grant"),
   buildAdminWritePolicySql("credit_wallet"),
   buildAdminWritePolicySql("credit_event"),
+  // ADR-0252: `debit()` now materializes FIFO consumption — the admin negative-adjust path writes
+  // `grant_consumption` rows through the same money core, so admin_write needs the write policy on
+  // the join table too. Re-run this provisioning at DEPLOY after the 0015 migration lands.
+  buildAdminWritePolicySql("grant_consumption"),
   // Read-only existence check: `account_member` is the base @caisson/auth table, always
   // carrying at least one row per real account (`ensurePersonalAccount` on first sign-in, ADR-0176) —
   // admin_write needs cross-tenant SELECT on it to reject a comp/adjust to a nonexistent id. This
@@ -418,6 +423,11 @@ export async function adjustCreditsAdmin(
       balanceAfter = r.balance;
       applied = input.deltaCredits;
     } else {
+      // Burn any expired-grant residue FIRST (idempotent, per-grant `expiry:<id>` keys): after the
+      // sweep the wallet aggregate equals the unexpired-spendable total, so the clamp below can
+      // never exceed what `debit`'s FIFO floor will cover (an unswept residue would otherwise make
+      // the whole adjustment throw fail-closed on an amount the aggregate said was available).
+      await sweepExpiredGrants(tx, input.targetAccountId);
       // Clamp the debit to the balance under a row lock so it can never underflow the wallet.
       const locked = await tx.query<{ balance: number }>(
         `SELECT balance FROM credit_wallet WHERE account_id = $1 FOR UPDATE`,

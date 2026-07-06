@@ -21,7 +21,7 @@ edited — supersede with a later ADR).
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
 2. `knowledge/decisions/` — the ADRs themselves. Append-only (`ADR-NNNN-slug.md`, never edited — supersede
-   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0250.** The full
+   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0256.** The full
    catalog — every number, title, and supersession chain — is `docs/adr-index.md`; do NOT restate it here.
 3. `specs/` — locked concept docs; `specs/00-product-spec.md` is the founding spec
 4. `plan.md` / `SUMMARY.md` — build plan + consolidated summary
@@ -173,24 +173,20 @@ Conventional commits, atomic, one logical change each. Scopes: `scaffold` `specs
 — plus the Stage-2 additions: `admin` (`apps/admin` control-plane) `alerting` `retention-runner`
 `tool-exec` `audit-harness` `observability` `platform-reads` `migrate` `pricebook`.
 
-## PR review gate (greptile-gate, path-scoped — PRs #51 + #60, 2026-07-02)
+## PR review gate (in-session SHIP audits — Greptile RETIRED 2026-07-06)
 
-**`greptile-gate` is the required status check** on `main` (alongside `check`, `standards-gate`,
-`registry-index`, `oscal-conformance`); the old blanket `Greptile Review` requirement is retired.
-Greptile auto-review is OFF (`.greptile/config.json` → `skipReview: AUTOMATIC`,
-`triggerOnUpdates: false`) — reviews run **only when the gate @-mentions `@greptileai`**, and it
-does that only for PRs whose diff touches a **security-critical path** (auth · tenancy-rls ·
-field-crypto · audit-worm · billing · credits · ai-meter · license · tool-exec · the CI/review
-config itself; the glob set lives in `.github/workflows/greptile-gate.yml`, keep in sync with
-`.greptile/rules.md`). **PR #60 (2026-07-02)** narrowed the `tooling/` critical-path glob to
-`tooling/standards-gate/src/` (the standards-gate logic only — not the whole tooling tree) and tuned
-the latency: the gate now **waits up to 35 min** for a completed review **inside a 40-min job
-ceiling**. Non-critical PRs (docs, site copy, tests) merge on the ordinary required
-checks alone — the gate passes without burning a review. On a critical PR the gate requires a
-completed review, re-triggers once if critical paths changed since the last-reviewed commit, and
-fails (never silently passes) on timeout. A green gate reflects the confidence score only — still
-resolve every inline P0/P1 finding first. On-demand local review: the gridwork-core `/greptile`
-skill; manual trigger: `gh pr comment <PR> --body "@greptileai"`.
+**Greptile and the path-scoped `greptile-gate` check are RETIRED** (2026-07-06: the Starter plan's
+monthly review limit hit mid-PR-#128 and the operator dropped the vendor — no upgrade, no
+replacement external reviewer). `.github/workflows/greptile-gate.yml` and `.greptile/` are
+deleted; the `/greptile` skill and `@greptileai` mentions no longer function against this repo.
+The review gate is the **in-session SHIP audit lane** per gridwork doctrine: `gw-code-reviewer`
+(opus) + `gw-security-auditor` (fable on the money/license seams this repo is full of) run against
+the branch diff before the PR opens, findings adversarially verified and fixed in-session — the
+lane that caught and fixed 12 findings on PR #128, including three P1 money bugs. CI required
+checks reduce to `check` · `standards-gate` · `registry-index` · `oscal-conformance` (convention:
+the private free-plan repo has no enforced branch protection, so "required" is discipline, not a
+GitHub gate). History: the gate's design lives in git (PRs #51/#60) and the retired
+`greptile-gate.yml` is recoverable from history if a future external reviewer is wired.
 
 ## Issue tracking (Linear)
 
@@ -245,8 +241,8 @@ Engineering lanes (`gw-typescript-pro`, `gw-code-reviewer`, `gw-security-auditor
 - **Linear MCP** → work items only (Linear owns WORK, git owns DECISIONS — §Issue tracking above).
 - **Cookiy MCP** → screeners / synthetic-persona tests / survey research; positioning research only, no PII.
 - **CI** → `runs-on: caisson-amd64` (runscaler scale set on gw-ms-a2; bare name, no extra labels).
-  `oscal-conformance` (Maven) + `deploy-railway` (prod token) stay hosted. Review gate = `greptile-gate`
-  (path-scoped, §PR review gate above).
+  `oscal-conformance` (Maven) + `deploy-railway` (prod token) stay hosted. Review gate = the
+  in-session SHIP audit lane (§PR review gate above — Greptile retired 2026-07-06).
 - **GLM engine lane** (`gw engine glm "<task>"`) → bounded mechanical work on the z.ai subscription;
   sandboxed throwaway worktree, no secrets/MCPs, returns a diff — main thread owns git/PR.
 

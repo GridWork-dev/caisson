@@ -9,6 +9,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@caisson/ui/components";
+import { trackEvent } from "@/lib/analytics";
 import { authClient } from "@/lib/auth-client";
 import {
   type OAuthProviderId,
@@ -16,6 +17,23 @@ import {
   passwordSignInSchema,
   passwordSignUpSchema,
 } from "@/lib/auth-config";
+import { encodeSignupIntentCookie } from "@/lib/signup-intent";
+
+// Docs-funnel signup signal (ADR-0254 gap #12, Option C). There is no server-side "is this a
+// new account" signal available at the client for the magic-link/OAuth flows (better-auth
+// treats them as sign-in-or-create uniformly) — so intent is read from the same
+// create-account toggle the UI already shows the visitor (`passwordMode === "signup"`), which
+// applies uniformly across all three actions below since it's shared component state, not
+// scoped to the password form alone. Cookie codec + full rationale: `@/lib/signup-intent`.
+function setSignupIntentCookie(
+  signupSource: string | undefined,
+  plausibleAlreadyFired: boolean,
+): void {
+  document.cookie = encodeSignupIntentCookie(
+    signupSource,
+    plausibleAlreadyFired,
+  );
+}
 
 const PROVIDER_LABEL: Record<OAuthProviderId, string> = {
   github: "Continue with GitHub",
@@ -43,9 +61,11 @@ type PasswordMode = "signin" | "signup";
 export function LoginForm({
   providers,
   next,
+  signupSource,
 }: {
   providers: OAuthProviderId[];
   next: string;
+  signupSource?: string | undefined;
 }): React.ReactElement {
   const [mode, setMode] = useState<Mode>("magiclink");
   const [passwordMode, setPasswordMode] = useState<PasswordMode>("signin");
@@ -68,6 +88,12 @@ export function LoginForm({
     }
     setStatus("sending");
     setMessage("");
+    // Magic link is sign-in-or-create uniformly — mark signup intent only when the visitor has
+    // told us so via the create-account toggle (see the file-header comment on the ceiling
+    // this accepts). Plausible's `signup_complete` fires later, at the dashboard landing.
+    if (passwordMode === "signup") {
+      setSignupIntentCookie(signupSource, false);
+    }
     const { error } = await authClient.signIn.magicLink({
       email: parsed.data.email,
       callbackURL,
@@ -132,6 +158,12 @@ export function LoginForm({
       setMessage("Could not create that account. Try again.");
       return;
     }
+    // Definite signup — fire Plausible's `signup_complete` right here (there's no immediate
+    // dashboard landing for the password flow; it requires an email-verify round trip first).
+    // `plausibleAlreadyFired: true` tells the eventual dashboard-landing read (post-verify) to
+    // skip re-firing it and only capture PostHog's `account_created`.
+    trackEvent("signup_complete", { source: "password" });
+    setSignupIntentCookie(signupSource, true);
     setStatus("sent");
     setMessage(
       `Check ${parsed.data.email} to verify your account before signing in.`,
@@ -139,6 +171,10 @@ export function LoginForm({
   }
 
   async function onSocial(provider: OAuthProviderId): Promise<void> {
+    // Same intent-toggle signal as magic link — OAuth has no separate signup/signin button set.
+    if (passwordMode === "signup") {
+      setSignupIntentCookie(signupSource, false);
+    }
     await authClient.signIn.social({ provider, callbackURL });
   }
 

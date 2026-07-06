@@ -185,6 +185,44 @@ describe("issueLicense — expiry semantics (perpetual-per-major)", () => {
   });
 });
 
+describe("issueLicense — updatesWindows passthrough (ADR-0244/0255 per-entitlement updates windows)", () => {
+  test("claims carrying an updatesWindows map round-trip through issue → verify", async () => {
+    const token = await issueLicense(devSigner, {
+      ...DEV_CLAIMS,
+      licenseId: VALID_UUID,
+      updatesWindows: { "local-ai": "2027-07-06T00:00:00.000Z" },
+    });
+    const result = verifyDev(token);
+    expect(result.valid).toBe(true);
+    expect(result.claims?.updatesWindows).toEqual({
+      "local-ai": "2027-07-06T00:00:00.000Z",
+    });
+  });
+
+  test("claims WITHOUT the field still issue (pre-window shape preserved — the golden pins it)", async () => {
+    const token = await issueLicense(devSigner, DEV_CLAIMS);
+    expect(verifyDev(token).claims?.updatesWindows).toBeUndefined();
+  });
+
+  test("a malformed updatesWindows value is rejected BEFORE signing", async () => {
+    await expect(
+      issueLicense(devSigner, {
+        ...DEV_CLAIMS,
+        updatesWindows: { "local-ai": "soon" },
+      }),
+    ).rejects.toThrow();
+  });
+
+  test("a null VALUE in the map is rejected BEFORE signing (unbounded = no key, never null)", async () => {
+    await expect(
+      issueLicense(devSigner, {
+        ...DEV_CLAIMS,
+        updatesWindows: { "local-ai": null },
+      }),
+    ).rejects.toThrow();
+  });
+});
+
 describe("issueLicense — strict claims (the issuer never signs a bad shape)", () => {
   test("an unknown tier is rejected BEFORE signing (strict parse)", async () => {
     await expect(

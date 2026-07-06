@@ -40,7 +40,7 @@ import {
 
 export const metadata = buildMetadata({
   title: "Marketplace — Editions",
-  description: `Buy a Caisson module, edition, or the everything bundle — ${MODULE_PRICES.length} modules across four editions, one-time perpetual pricing plus two subscription plans. Compose your own stack or take a full edition; own the source, no renewal gate.`,
+  description: `Buy a Caisson module, edition, or the everything bundle — ${MODULE_PRICES.length} modules across four editions, one-time perpetual pricing plus two subscription plans. Compose your own stack or take a full edition; own the source, no forced renewal.`,
   path: "/marketplace",
 });
 
