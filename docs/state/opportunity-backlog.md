@@ -7,8 +7,8 @@ side: everything consciously NOT built yet, with its recorded reason and revisit
 Nothing here is a decision; locks land as ADRs (`knowledge/decisions/`), forks on
 `docs/state/decisions-and-forks.md`. Items already promoted to execution tracks are marked.
 
-Snapshot context: ADR ceiling **0241** (0239 wave-6 close-out · 0240 local-ai $349 canonical ·
-0241 changeset prose source-gate). The 2026-07-02-PM execution wave's seven tracks LANDED
+Snapshot context: ADR ceiling **0242** (0239 wave-6 close-out · 0240 local-ai $349 canonical ·
+0241 changeset prose source-gate · 0242 visual-audit remediation picker — realized 2026-07-05). The 2026-07-02-PM execution wave's seven tracks LANDED
 (PRs #75–#84 merged) and the §7 launch-runbook DEPLOY block is EXECUTED + live-verified
 (CAISSON-15/16/17/18 Done). Since then (2026-07-03): glossary batch 1 (ADR-0235, PR #99) ·
 the whole-repo audit v2 baseline + remediation specs (ADR-0233, PRs #100/#101 — execution
@@ -21,25 +21,24 @@ push sides + bot env set), the registry Worker redeployed with `registry.caisson
 domain + TARBALLS + REVOCATIONS R2 bindings, the Paddle SANDBOX catalog verified reconciled
 (4 dropped products archived, 19 prices match), and the first live changeset consume run
 (publish.yml pipeline hardened en route: pack-flag fix PR #105 + commit-pathspec fix PR #106).
-Cross-references below to "in-flight" tracks read as merged. Post-wave operator-gated
-residue, in rough priority order: **(1)** registry npm-delivery Task-1/5 — bucket + custom
-domain + Worker DONE (2026-07-03); remaining: a live `bun install` proof once the consume's
-tarball sidecar lands, then a Worker redeploy to inline the new index; **(2)** ~~registry
-Worker redeploy~~ DONE 2026-07-03 (0.2.0 index + REVOCATIONS binding live; the deny-set
-PUBLISHER — `CAISSON_REVOCATIONS_PUT_URL` authed PUT shim on caisson-admin — is still a small
-security-tagged build, edge reads fail-open until then); **(3)** cred-sweep execution
-(ADR-0226 — fresh issuer keypair; MIRROR_PUSH_TOKEN rotation is a MUST, it transited a
-transcript) — **runbook now at `launch-runbook.md` §1.1** (P0 audit spec Task 4; agent-side
-defenses shipped: prod goldens retired, entitlement-token scan gate in the standards-gate + the
-mirror exporter; the value-handling rotation itself remains OPERATOR TO DO); **(4)** caisson-oss
-public flip + first `confirm=publish` npm dispatch (ADR-0222) — **HELD by operator decision
-2026-07-03** and hard-gated on the §1.1 sequencing gate (keypair live + rotations probed + scan
-gate green on a fresh export); **(5)** the WORM lock-mode posture check flagged in launch-runbook §7 (GOVERNANCE
-live vs COMPLIANCE in the runbook text); **(6)** the Mac-mini `gw-macos-arm64` runner sat
-offline during the wave — `native-ext (macos)` queued indefinitely (non-required check, merges
-proceeded); restart the scale set before the next native-ext-sensitive PR. Plus buyer-journey:
-CF-Access-gated content eyeball of the new marketplace/ask-AI surfaces (operator SSO; curl and
-headless probes land on the Access login by design).
+Cross-references below to "in-flight" tracks read as merged. **Residue re-baselined 2026-07-05**
+(site-design-2 close-out; the prior 6-item list is superseded): **(1)** ~~registry npm-delivery
+install proof~~ **DONE 2026-07-03/04** — live `bun install` proof + first live consume ran (two
+pipeline bugs fixed en route, PRs #105/#106); **(2)** ~~deny-set publisher~~ **DONE 2026-07-05** —
+the edge revocation deny-set is FULLY LIVE (R2 + `REVOCATIONS` binding + authed PUT shim +
+`license_revocation` DDL, launch-runbook §8); **(3)** cred-sweep (ADR-0226): the **issuer keypair
+
+- `LICENSE_ISSUE_TOKEN` half is DONE** (rotated ×2 2026-07-05, PRs #117/#118, fp
+  `a170f7a0ab89bab0`); the three web-minted values (`OPENROUTER_API_KEY` / `DISCORD_TOKEN` /
+  `MIRROR_PUSH_TOKEN`) remain **OPERATOR TO DO** (`launch-runbook.md` §1.1); **(4)** caisson-oss
+  public flip + first `confirm=publish` npm dispatch (ADR-0222) — still HELD, gated on the §1.1
+  sequencing gate (now only the three rotations + a fresh-export scan-gate run remain); **(5)** the
+  WORM lock-mode posture — resolved as policy by ADR-0230 (GOVERNANCE pre-launch, COMPLIANCE
+  escalation at the commerce flip); the flip itself rides the launch act; **(6)** ~~Mac-mini
+  runner~~ **RESOLVED 2026-07-04** (org-transfer orphan root-caused; scale set re-registered,
+  `native-ext (macos)` green). Plus buyer-journey: CF-Access-gated content eyeball of the new
+  marketplace/ask-AI surfaces (operator SSO; curl and headless probes land on the Access login by
+  design).
 
 ---
 
@@ -70,15 +69,15 @@ Everything downstream of a successful purchase (license, registry Worker, genera
 Discord role, dashboard 9 views, docs, MCP, support-bot RAG) is real and deployed. The
 open gaps cluster in BUY:
 
-| Gap                                                                                                                                                               | State                                                                                                                                         | Vehicle                                                            |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Production Paddle account / real-money checkout                                                                                                                   | Sandbox only (`launch-runbook.md` P1); nothing purchasable with real money                                                                    | Operator act at launch flip                                        |
-| 14 per-module Paddle price ids are `PLACEHOLDER` strings, and `add-to-cart-button.tsx` has NO guard — a standalone module reaches checkout and fails at Paddle.js | **DONE**: all 14 SANDBOX products/prices created + wired (`purchases.ts`/`catalog.ts` real ids verified 2026-07-02)                           | Landed (production re-create rides the launch flip)                |
-| Compliance edition price re-anchor ($749 launch-sum flag in `package-catalog.md:170-176`)                                                                         | **DONE**: ADR-0227 $799 locked; display merged (PR #76) + Paddle SANDBOX price PATCHed to 79900                                               | Landed                                                             |
-| Paddle MoR-attribution + refund-policy copy on `/legal/terms` + `/legal/privacy`                                                                                  | Missing (`launch-runbook.md` P2) — Paddle requires it before production flip; `/legal/eula` is DONE (ADR-0082's fast-follow framing is stale) | Small copy PR before launch flip                                   |
-| No pre-purchase "ask AI" surface — the support bot is reachable only inside Discord; site offers only ⌘K docs search + email                                      | Structural gap, never specced                                                                                                                 | Candidate: on-site widget or a docs-bot bridge; needs a small spec |
-| Discord privileged intents + channel/role env (P4), bot-token + OpenRouter rotation (P5)                                                                          | Verify-before-launch, not confirmed resolved                                                                                                  | Launch runbook checklist                                           |
-| Doc-staleness nits: `robots.ts` static-export comment, `sitemap.ts` hardcoded lastModified, `dashboard/plan` stale webhook comment                                | Cosmetic                                                                                                                                      | Next doc sweep                                                     |
+| Gap                                                                                                                                                               | State                                                                                                                     | Vehicle                                             |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Production Paddle account / real-money checkout                                                                                                                   | Sandbox only (`launch-runbook.md` P1); nothing purchasable with real money                                                | Operator act at launch flip                         |
+| 14 per-module Paddle price ids are `PLACEHOLDER` strings, and `add-to-cart-button.tsx` has NO guard — a standalone module reaches checkout and fails at Paddle.js | **DONE**: all 14 SANDBOX products/prices created + wired (`purchases.ts`/`catalog.ts` real ids verified 2026-07-02)       | Landed (production re-create rides the launch flip) |
+| Compliance edition price re-anchor ($749 launch-sum flag in `package-catalog.md:170-176`)                                                                         | **DONE**: ADR-0227 $799 locked; display merged (PR #76) + Paddle SANDBOX price PATCHed to 79900                           | Landed                                              |
+| Paddle MoR-attribution + refund-policy copy on `/legal/terms` + `/legal/privacy`                                                                                  | **DONE** — landed PR #61 + the paddle-legal rewrite; render-verified 2026-07-05 (`launch-runbook.md` P2 row)              | Landed                                              |
+| No pre-purchase "ask AI" surface — the support bot is reachable only inside Discord; site offers only ⌘K docs search + email                                      | **DONE** — ask-AI widget shipped (ADR-0234/0236: dual model lanes, both placements, Turnstile, Q-text capture w/ consent) | Landed                                              |
+| Discord privileged intents + channel/role env (P4), bot-token + OpenRouter rotation (P5)                                                                          | Verify-before-launch, not confirmed resolved                                                                              | Launch runbook checklist                            |
+| Doc-staleness nits: `robots.ts` static-export comment, `sitemap.ts` hardcoded lastModified, `dashboard/plan` stale webhook comment                                | Cosmetic                                                                                                                  | Next doc sweep                                      |
 
 ---
 
@@ -158,7 +157,7 @@ All gated on P7 intake (`stage2-kickoff-triage.md:141`); named concretely only i
 | Live OSCAL push (`OscalExportTransport.deliver()` to a real GRC ingest)                                    | Deferred T15/P7 — export/bundle built, transport not                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | Persistent production KMS CMK (field-crypto)                                                               | Deferred to first-customer time (ADR-0221 KMS-2; throwaway CMKs proven live)                                                                                                                                                                                                                                                                                                                                                                                                          |
 | Agentic-Dev Next.js inspector UI                                                                           | Deferred (code gap only — the ADR-0082 §4 site-labeling exception was retired by ADR-0237 rider 2; the site sells the edition live) — substrate (`agent-kernel`/`agent-runner`) is built                                                                                                                                                                                                                                                                                              |
-| Glossary batches 2–3 (~20 of the 32 locked terms)                                                          | ADR-0235 Fork C — batch 1 (12 terms) live via PR #99; later batches are pure data on the shipped renderer, measure indexation between                                                                                                                                                                                                                                                                                                                                                 |
+| ~~Glossary batches 2–3 (~20 of the 32 locked terms)~~                                                      | **DONE 2026-07-05** (PR #121) — all 32 ADR-0235 terms live via the Fork-B adversarial workflow; llms.txt parity included                                                                                                                                                                                                                                                                                                                                                              |
 | Real media for module/edition depth routes (the F2 `media` slot)                                           | ADR-0237 F2 — placeholder brand art shipped in PR #102; "real media later TBD" is the recorded residual                                                                                                                                                                                                                                                                                                                                                                               |
 | ~~macOS `native-ext` CI leg on hosted `macos-latest`~~                                                     | **RESOLVED 2026-07-02** (commit `623d07c`) — the leg moved to the self-hosted `[self-hosted, gw-macos-arm64]` mini runner with a check-first `brew install sqlite` step (`quality.yml`); no hosted `macos-latest` leg remains. Verified green as recently as run `28698099079` (2026-07-04).                                                                                                                                                                                          |
 | Thin surfaces flagged in `build-state.md` gap #4 (`ai-config` 49 loc, `ai-kit` 358 loc, `ai-evals` 1 test) | Present and green but shallow — verify before quoting as feature-complete                                                                                                                                                                                                                                                                                                                                                                                                             |

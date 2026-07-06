@@ -1,5 +1,14 @@
 # Readiness & Backlog — Caisson
 
+> **FINAL BANNER (2026-07-05) — this doc is FROZEN and slated for absorption.** ADR ceiling
+> **0242**; PRs through **#122** merged; `main` is the only branch; full gate green (149 turbo
+> tasks + kernel gate 51 packages). Everything below this banner is a 2026-06-29→07-03 timeline —
+> for current truth read `docs/build-state.md` (header banner) + `docs/state/opportunity-backlog.md`
+> (residue) + `docs/state/launch-runbook.md` (the operator-owed launch acts: Paddle production
+> account, the three §1.1 credential rotations, CF-Access flip). The SOT-expansion program
+> (`outputs/kickoffs/sot-expansion-and-automation.md`) absorbs this doc into a single
+> `docs/state/outstanding-work.md` tracker next session; no further banners land here.
+
 Operator-actionable companion to `docs/build-state.md` (the build-status SOT). Three buckets from
 the **2026-06-29 state investigation** (5-agent fan-out + live Worker smoke-test + on-box gate run):
 **(1)** live-test readiness, **(2)** configuration / secrets checklist, **(3)** prioritized next-work
