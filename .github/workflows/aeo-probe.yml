@@ -64,9 +64,12 @@ jobs:
           POSTHOG_CAPTURE_KEY: ${{ secrets.POSTHOG_CAPTURE_KEY }}
           DATAFORSEO_LOGIN: ${{ secrets.DATAFORSEO_LOGIN }}
           DATAFORSEO_PASSWORD: ${{ secrets.DATAFORSEO_PASSWORD }}
+          # Via env, never interpolated into the script body — a `${{ }}` inside `run:` is a
+          # shell-injection surface for anyone with workflow_dispatch rights.
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: |
           ARGS=""
-          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+          if [ "$DRY_RUN" = "true" ]; then
             ARGS="--dry-run"
           fi
           bun tooling/scripts/aeo-probe.ts $ARGS
