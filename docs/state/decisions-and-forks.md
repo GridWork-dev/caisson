@@ -984,6 +984,13 @@ prompt-registry browser · ai-meter chart · audit-harness viewer), after the ca
 
 **Still OPEN after the G2 round**: the ui-pro component list + docs surface (its own SPEC) ·
 **every price number**
+
+A post-merge scheduling picker (2026-07-05, no ADR — Kickoffs A+B merged as PRs #126/#127) split
+the remaining pool: **Kickoff D** = the catalog program (ui-pro SPEC → pricing pass →
+catalog-rework SPEC → build) · **Kickoff E** = the catalog-independent build wave (checkout-flip
+mechanics built NOW per the operator lock · agent-dev inspector · build-state rework · the
+AI-citation + docs-conversion measurement loops, both un-parked). Parallel worktrees; D owns all
+price numbers; both kickoffs research-first-then-deep-forks by design.
 (a full pricing-revalidation research pass is operator-commissioned: re-validate/adjust all
 displayed prices, price the 3 compliance SKUs and the per-package catalog, and fold in the
 gate/split pricing of the OSS redraw). Brainstorm evidence lands in
