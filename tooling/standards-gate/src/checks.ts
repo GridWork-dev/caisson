@@ -39,12 +39,25 @@ import {
 // checkRlsEquivalence's lazy VALUE import below for the runtime seam).
 import type { buildTenantPolicySql as BuildTenantPolicySqlFn } from "@caisson/tenancy-rls";
 
-/** The four editions (by package name) — the down-only direction is keyed on these until manifests land. */
+/**
+ * The bundle/edition meta-packages (by package name) — the down-only direction is keyed on these.
+ * Hand-copy of the ADR-0257 vocabulary (packages/registry-schema/src/bundle-vocabulary.ts:
+ * BUNDLE_IDS + the legacy LEGACY_ENTITLEMENT_ALIASES keys) — this check runs in the pre-install
+ * fs-only pass, so it cannot value-import the workspace constant; keep the two in sync. Both the
+ * legacy edition names and the new bundle ids are covered during the rename transition.
+ */
 const EDITION_NAMES = new Set([
+  // Legacy edition names (historical kind:"edition" entries stay valid forever, ADR-0257).
   "@caisson/compliance",
   "@caisson/ai-kit",
   "@caisson/local-ai",
   "@caisson/agent-dev",
+  // ADR-0257 bundle ids (compliance keeps its id — shared with the legacy row above).
+  "@caisson/ai-production",
+  "@caisson/local-first",
+  "@caisson/agentic-dev",
+  "@caisson/provenance",
+  "@caisson/everything",
 ]);
 
 // Open-core (ADR-0094/0097). The open Base substrate ships `Apache-2.0`; every OTHER published module
