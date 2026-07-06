@@ -35,11 +35,13 @@ practices the research rejected.
 | 12  | No docs-conversion instrumentation (discover→quickstart→signup)                                                         | **BUILD-ON-TRIGGER: launch flip** — needs public traffic; design the event names with the F8 split-analytics scheme now | Plausible funnel events on docs + dashboard signup as the conversion event                                                                               |
 | 13  | No affiliate / recurring-commission program                                                                             | **PARKED: post-launch, needs traffic first**                                                                            | substrate exists (Discord + subscriptions); revisit at first organic-channel signal                                                                      |
 
-**Build-now set = #3 #4 #5 #6 #7 #8 #10** (all S-effort). #3 rides the SOT session (it edits
-CLAUDE.md, same tree); **#4–#8 + #10 are their own hygiene wave** — one branch, one PR, disjoint
-from the SOT trees, runnable in parallel with the SOT workstreams. #4 is the only row needing real
-judgment: unifying zod means choosing the v3-vs-v4 line per package family, so it leads the wave
-with its own mini-audit (which packages pin which range and why) before the catalog block lands.
+**Build-now set = #3 #4 #5 #6 #7 #8 #10** (all S-effort). #3 rides Kickoff A (it edits
+CLAUDE.md, docs tree); **#4–#8 + #10 are the hygiene wave, owned by Kickoff B**
+(`outputs/kickoffs/KICKOFF-B-hygiene-audit-remediation.md`, 2026-07-05 split-by-tree lock) —
+one branch/PR alongside B's audit-findings remediation, parallel with Kickoff A's doc
+workstreams. #4 is the only row needing real judgment: unifying zod means choosing the
+v3-vs-v4 line per package family, so it leads the wave with its own mini-audit (which packages
+pin which range and why) before the catalog block lands.
 
 ## Do-not-copy ledger (report §3 — recorded ANTI-decisions, do not re-propose)
 
