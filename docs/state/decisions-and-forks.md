@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-06
 status: live
-adr_ceiling: 0254
+adr_ceiling: 0256
 ---
 
 # Decisions & Forks — live board
@@ -1015,3 +1015,13 @@ both forks; it was built lock-and-go in the same session. Research briefs:
 | **W4 — citation tracker**         | Pay-as-you-go only (operator lock, custom answer): OpenRouter probe loop, monthly GHA cron, ~$1.20/run; DataForSEO-class PAYG evaluated for the AI-Overviews leg; NO subscription tracker pre-traffic               | **ADR-0254** |
 | **W4 — citation results sink**    | Both: `docs/gtm/aeo-citation-tracking.md` snapshots (canonical 18-question list included, ships as-is) + `aeo_citation_probe` PostHog events                                                                        | **ADR-0254** |
 | **W4 — docs funnel**              | Split (option C), build now: Plausible cookieless top-of-funnel goals/events + PostHog `account_created` with `?ref=` stitching; PostHog JS stays dashboard-only (F8 intact, option B rejected)                     | **ADR-0254** |
+
+### SHIP-audit picker (same session, post-build)
+
+The fable security audit + opus code review of the merged wave surfaced two fork-class
+findings (everything mechanical was fixed inline, operator rule: no deferrals).
+
+| Fork                               | Decision                                                                                                                                                                                                        | ADR          |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| **Window-claim scope (SEC-1)**     | Per-entitlement windows NOW (operator pick above the accept-and-record rec): `updatesWindows` map keyed by purchased id; per-pair issuer compute; most-favorable-window edge filter; supersedes 0251-D1 in part | **ADR-0255** |
+| **Expiry-sweep scheduler (CR-S1)** | pg-boss inside `services/license`, inert until `CREDIT_EXPIRY_SCHEDULE` (cron env) is armed; daily account tick enqueues sweep + notice with singletonKey dedup — the first in-repo recurring-task precedent    | **ADR-0256** |
