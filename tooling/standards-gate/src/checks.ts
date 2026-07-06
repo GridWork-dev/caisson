@@ -415,8 +415,8 @@ export async function checkManifestPriceAgreement(
 /**
  * Gate #4 — TS-compiler copy-guard (ADR-0101). Flags a source module COPY-PASTED across packages:
  * two `src/**` modules in *different* workspace packages whose code is token-identical. The motivating
- * case is the contrast spot-check that was hand-duplicated (and drifted) across apps/site + apps/studio
- * (ADR-0101 Context) — shared logic belongs in ONE package, imported, not copied.
+ * case is the contrast spot-check that was hand-duplicated (and drifted) across apps/site + the
+ * since-removed apps/studio (ADR-0101 Context) — shared logic belongs in ONE package, imported, not copied.
  *
  * Normalization is done with the TypeScript SCANNER (not a text hash): trivia — all whitespace AND
  * comments — is skipped, so reformatting or a reworded header never hides a copy, and a genuine

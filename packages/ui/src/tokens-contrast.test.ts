@@ -11,7 +11,7 @@ import type { FunctionalTokens, SemanticTheme } from "./tokens/index";
 
 /**
  * WCAG contrast matrix — ADR-0101 gate #2 (the deterministic design-quality gate that REPLACES the
- * hand-transcribed, drifted contrast spot-checks in apps/site + apps/studio). Pairs are derived from
+ * hand-transcribed, drifted contrast spot-checks in apps/site + the since-removed apps/studio). Pairs are derived from
  * the live token objects (not copied hex), so a palette edit is checked automatically in BOTH modes.
  *
  * Thresholds follow the USE: body / secondary text → 4.5:1; large text & non-text UI (eyebrow, the
