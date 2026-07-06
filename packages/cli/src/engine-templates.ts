@@ -104,11 +104,16 @@ function packageOverlay(selection: Selection): JsonObject {
   };
 }
 
-/** The template dirs that compose a selection: `base` is always included, then the edition (if any). */
+/** The template dirs that compose a selection: `base` is always included, then the edition (if
+ *  any), then the deploy-target family (ADR-0268, if any) — new paths only, so it never collides
+ *  with base/edition files; unset composes nothing (byte-identical to pre-ADR-0268 output). */
 function templateDirs(selection: Selection): string[] {
   const dirs = [join(TEMPLATES_ROOT, "base")];
   if (selection.edition) {
     dirs.push(join(TEMPLATES_ROOT, selection.edition));
+  }
+  if (selection.deployTarget) {
+    dirs.push(join(TEMPLATES_ROOT, "deploy", selection.deployTarget));
   }
   return dirs;
 }

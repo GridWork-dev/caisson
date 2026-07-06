@@ -8,6 +8,9 @@
     "registry": "https://registry.npmjs.org/"
   },
   "description": "create-caisson generator: composes a tailored repo from the versioned registry; agent-drivable; codegen-credit metered.",
+  "engines": {
+    "node": ">=20.12.0"
+  },
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -33,6 +36,7 @@
     "@caisson/kernel": "workspace:*",
     "@caisson/migrate": "workspace:*",
     "@caisson/registry-schema": "workspace:*",
+    "@clack/prompts": "^1.7.0",
     "zod": "catalog:"
   },
   "devDependencies": {

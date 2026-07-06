@@ -37,6 +37,27 @@ export {
   S3ArtifactStore,
 } from "./store.s3.ts";
 
+// ADR-0267 — GCS Object Retention Lock backend.
+export {
+  type GcsSendable,
+  type GcsRetentionMode,
+  type GcsArtifactStoreConfig,
+  type GcsServiceAccountCredentials,
+  GcsArtifactStore,
+  createGcsServiceAccountTransport,
+} from "./store.gcs.ts";
+
+// ADR-0267 — R2 backend: S3-compatible data plane + Cloudflare bucket-lock retention plane.
+export {
+  type R2LockCondition,
+  type R2LockRule,
+  type R2LockReader,
+  type R2LockReaderConfig,
+  type R2ArtifactStoreConfig,
+  R2ArtifactStore,
+  createR2LockReader,
+} from "./store.r2.ts";
+
 export {
   MIN_RETENTION_YEARS,
   DEFAULT_RETENTION_YEARS,

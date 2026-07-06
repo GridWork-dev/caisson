@@ -24,6 +24,7 @@
   "dependencies": {
     "@aws-sdk/client-kms": "^3.1075.0",
     "@caisson/kernel": "workspace:*",
+    "@google-cloud/kms": "^5.5.1",
     "drizzle-orm": "catalog:",
     "zod": "catalog:"
   },

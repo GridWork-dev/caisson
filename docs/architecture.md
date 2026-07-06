@@ -1,11 +1,10 @@
 ---
-updated: 2026-07-05
+updated: 2026-07-06
 status: live
 grounds:
   - package.json
   - tooling/standards-gate/src/checks.ts
   - .github/workflows/ci.yml
-  - .github/workflows/greptile-gate.yml
   - infra/terraform/main.tf
   - docs/state/providers.md
 ---

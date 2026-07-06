@@ -276,10 +276,11 @@ export class LocalKmsClient implements KmsClient {
  * file doesn't grow an `@aws-sdk/client-kms` dependency of its own; this export is kept for the
  * original documented-seam name. See `kms-aws.ts`'s header for the exact command mapping.
  *
- * GCP KMS (`encrypt`/`decrypt`/`destroyCryptoKeyVersion`), Azure Key Vault
- * (`wrapKey`/`unwrapKey`/`deleteKey`), and HashiCorp Vault Transit
- * (`/transit/encrypt|decrypt`, delete the key) implement the same three methods and are equally
- * drop-in behind the `KmsClient` port.
+ * GCP Cloud KMS is ALSO wired (ADR-0171 — the same binding pre-authorizes further drivers with no new
+ * ADR): `createGcpKmsClient` in `kms-gcp.ts`, over `encrypt`/`decrypt`/`destroyCryptoKeyVersion` —
+ * see that file's header for its command mapping. Azure Key Vault (`wrapKey`/`unwrapKey`/`deleteKey`)
+ * and HashiCorp Vault Transit (`/transit/encrypt|decrypt`, delete the key) implement the same three
+ * methods and are equally drop-in behind the `KmsClient` port, on demand.
  */
 export function awsKmsClient(config: {
   keyId: string;

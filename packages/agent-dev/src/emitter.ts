@@ -1,10 +1,21 @@
-// src/emitter.ts — the thin, ENGINE-NEUTRAL multi-harness emitter (ADR-0066). Renders
-// ONE typed Caisson schema (agent-kernel `Artifact`s + lifecycle hook bindings) into per-harness
-// config bundles: `.claude/` for Claude Code (agents/skills/rules + a hooks manifest), a single
-// aggregated `AGENTS.md` for Codex, and per-artifact `.cursor/rules/*.mdc` for Cursor. The binding
-// contract VERIFY re-asks (ADR-0066): Claude Code is ONE emit target among several — no harness is the
-// substrate; the same schema fans out to every harness shape. The emitter NEVER runs an LLM, imports a
-// vendor SDK, or reads a credential — it is a pure render plus a guarded write.
+// src/emitter.ts — the thin, ENGINE-NEUTRAL multi-harness emitter (ADR-0066, extended ADR-0264).
+// Renders ONE typed Caisson schema (agent-kernel `Artifact`s + lifecycle hook bindings) into
+// per-harness config bundles: `.claude/` for Claude Code (agents/skills/rules + a hooks manifest),
+// a single aggregated `AGENTS.md` — the universal multi-tool BASE layer Codex, Cursor, Devin, Zed,
+// Gemini CLI, and the Copilot coding agent all read natively (ADR-0264) — per-artifact `.cursor/
+// rules/*.mdc` for Cursor, Devin Desktop (`.devin/rules/`, mirrored to the `.windsurf/rules/` legacy
+// path), GitHub Copilot (`.github/copilot-instructions.md` + per-artifact `.github/instructions/`),
+// and Cline (`.clinerules/`). The binding contract VERIFY re-asks (ADR-0066): Claude Code is ONE emit
+// target among several — no harness is the substrate; the same schema fans out to every harness
+// shape. The emitter NEVER runs an LLM, imports a vendor SDK, or reads a credential — it is a pure
+// render plus a guarded write.
+//
+// ADR-0264 extends the source IR with an optional `activation`/`paths` pair on `RuleArtifact` and
+// `SkillArtifact` (absent ⇒ `always`, today's behavior). A target that cannot represent the source's
+// activation intent (a path scope, a manual-only trigger) NEVER silently degrades: it pushes a
+// specific `EmittedBundle.warnings[]` entry instead. Rendering the WARNINGS is done in
+// `renderHarnessBundles` (the orchestrator) so each per-target render helper below stays a small pure
+// function of its inputs.
 //
 // Two responsibilities, deliberately split:
 //   `renderHarnessBundles` — a PURE, deterministic transform (no clock/randomness/env/fs). Its
@@ -49,9 +60,12 @@ export interface EmittedFile {
   readonly content: string;
 }
 
-/** The full multi-harness bundle: every emitted file (matched against the committed golden tree). */
+/** The full multi-harness bundle: every emitted file (matched against the committed golden tree), plus
+ * every fidelity warning a target raised when it could not represent the source's activation intent
+ * (ADR-0264) — never a silent degrade. Empty when every target fully represents every artifact. */
 export interface EmittedBundle {
   readonly files: readonly EmittedFile[];
+  readonly warnings: readonly string[];
 }
 
 /** A write-path security failure — a path escape or a credential leak refused before any disk write. */
@@ -116,6 +130,40 @@ function numberedSteps(steps: readonly string[]): string {
   return steps.map((step, i) => `${i + 1}. ${step}`).join("\n");
 }
 
+/** Shared prose body for a "rule-like" per-artifact file — every target that renders one file per
+ * artifact (Cursor, Devin/Windsurf, GitHub Copilot per-instruction, Cline) shares this exact wording,
+ * authored once so the cross-target bytes agree. */
+function artifactBody(a: Artifact): string {
+  switch (a.kind) {
+    case "agent":
+      return `# ${a.name} (agent)\n\n${a.description}\n\n- Capabilities: ${a.capabilities.join(", ")}\n- Tools: ${a.tools.join(", ")}\n- When to invoke: ${a.whenToInvoke}\n`;
+    case "skill":
+      return `# ${a.name} (skill)\n\n${a.description}\n\n${numberedSteps(a.steps)}\n`;
+    case "rule":
+      return `# ${a.name} (rule, ${a.severity})\n\n${a.description}\n`;
+    default: {
+      const _exhaustive: never = a;
+      throw new Error(`unknown artifact kind: ${String(_exhaustive)}`);
+    }
+  }
+}
+
+/**
+ * A rule/skill's effective activation for the NEW ADR-0264 targets (Devin/Windsurf, GitHub Copilot,
+ * Cline) — these have no legacy default to preserve, so an absent `activation` resolves to `always`
+ * (unconditionally included, matching the pre-existing Codex `AGENTS.md`/Claude-rule behavior).
+ * Agents are deliberately NOT rendered into these targets (see `renderHarnessBundles`): they carry no
+ * activation field, and none of these tools has a sub-agent concept — only rule/skill activation is
+ * representable here.
+ */
+function resolveActivation(a: RuleArtifact | SkillArtifact): {
+  readonly mode: "always" | "paths" | "manual";
+  readonly paths: readonly string[];
+} {
+  const mode = a.activation ?? "always";
+  return { mode, paths: mode === "paths" ? (a.paths ?? []) : [] };
+}
+
 // ── Claude Code: one file per artifact under `.claude/{agents,skills,rules}/` + a hooks manifest. ───
 
 function claudeAgent(a: AgentArtifact): string {
@@ -167,17 +215,15 @@ function claudeHooks(hooks: readonly EmitHookBinding[]): string {
   return `${JSON.stringify(manifest, null, 2)}\n`;
 }
 
-// ── Codex: ONE aggregated `AGENTS.md` (Codex's single-file convention). Sections render only when
-// non-empty, always in agent → skill → rule order; the leading `\n` on each section/block produces
-// the blank-line separators deterministically. ─────────────────────────────────────────────────────
-
-function codexAgents(
+/** Shared "one aggregated file" section renderer — agent → skill → rule, each section only when
+ * non-empty — reused by both `codexAgents` (AGENTS.md) and `copilotInstructionsFile` (the GitHub
+ * Copilot repo-wide file) so the two aggregate targets agree on structure byte-for-byte. */
+function aggregatedSections(
   agents: readonly AgentArtifact[],
   skills: readonly SkillArtifact[],
   rules: readonly RuleArtifact[],
 ): string {
-  let out =
-    "# AGENTS\n\nGenerated by @caisson/agent-dev from one typed Caisson schema (Codex harness).\n";
+  let out = "";
   if (agents.length > 0) {
     out += "\n## Agents\n";
     for (const a of agents) {
@@ -199,55 +245,155 @@ function codexAgents(
   return out;
 }
 
-// ── Cursor: one MDC project rule per artifact under `.cursor/rules/`. Rules always apply; agent/skill
-// guidance is opt-in (`alwaysApply: false`). ───────────────────────────────────────────────────────
+// ── AGENTS.md: ONE aggregated file — the universal multi-tool BASE layer (ADR-0264 supersedes the
+// prior "Codex harness" framing; Codex, Cursor, Devin, Zed, Gemini CLI, and the Copilot coding agent
+// all read AGENTS.md natively). `codexAgents` stays the private render-function name (API-safe) and
+// its emitted content/path are UNCHANGED by ADR-0264 — only this doc comment + the manifest/index.ts
+// description are reframed.
+function codexAgents(
+  agents: readonly AgentArtifact[],
+  skills: readonly SkillArtifact[],
+  rules: readonly RuleArtifact[],
+): string {
+  return (
+    "# AGENTS\n\nGenerated by @caisson/agent-dev from one typed Caisson schema (Codex harness).\n" +
+    aggregatedSections(agents, skills, rules)
+  );
+}
+
+// ── Cursor: one MDC project rule per artifact under `.cursor/rules/`, deriving `alwaysApply`/`globs`
+// from the rule/skill `activation`/`paths` fields (ADR-0264 — fixes the shipped degrade where
+// cursorRule hardcoded `alwaysApply: true`). All three activation states are representable in
+// Cursor's own convention (Always/Auto-Attached/Manual), so this target never warns. An artifact
+// that omits `activation` entirely keeps its PRE-EXISTING default so already-authored content is
+// byte-unaffected: a rule defaulted to always-applied (the bug this ADR fixes, coincidentally the
+// correct rule default), a skill/agent defaulted to opt-in (`alwaysApply: false`, no globs). ────────
+
+function cursorActivation(
+  legacyDefaultAlwaysApply: boolean,
+  activation: "always" | "paths" | "manual" | undefined,
+  paths: readonly string[] | undefined,
+): { readonly alwaysApply: boolean; readonly globs?: readonly string[] } {
+  if (activation === "paths") return { alwaysApply: false, globs: paths ?? [] };
+  if (activation === "manual") return { alwaysApply: false };
+  if (activation === "always") return { alwaysApply: true };
+  return { alwaysApply: legacyDefaultAlwaysApply };
+}
+
+function cursorFrontmatter(
+  description: string,
+  act: { readonly alwaysApply: boolean; readonly globs?: readonly string[] },
+): string {
+  const globsLine =
+    act.globs !== undefined ? `\nglobs:\n${yamlList(act.globs)}` : "";
+  return `description: ${yamlScalar(description)}\nalwaysApply: ${act.alwaysApply}${globsLine}`;
+}
 
 function cursorAgent(a: AgentArtifact): string {
+  // No activation field on AgentArtifact — preserves the pre-existing opt-in default verbatim.
   return `---
-description: ${yamlScalar(a.description)}
-alwaysApply: false
+${cursorFrontmatter(a.description, { alwaysApply: false })}
 ---
 
-# ${a.name} (agent)
-
-${a.description}
-
-- Capabilities: ${a.capabilities.join(", ")}
-- Tools: ${a.tools.join(", ")}
-- When to invoke: ${a.whenToInvoke}
-`;
+${artifactBody(a)}`;
 }
 
 function cursorSkill(s: SkillArtifact): string {
+  const act = cursorActivation(false, s.activation, s.paths);
   return `---
-description: ${yamlScalar(s.description)}
-alwaysApply: false
+${cursorFrontmatter(s.description, act)}
 ---
 
-# ${s.name} (skill)
-
-${s.description}
-
-${numberedSteps(s.steps)}
-`;
+${artifactBody(s)}`;
 }
 
 function cursorRule(r: RuleArtifact): string {
+  const act = cursorActivation(true, r.activation, r.paths);
   return `---
-description: ${yamlScalar(r.description)}
-alwaysApply: true
+${cursorFrontmatter(r.description, act)}
 ---
 
-# ${r.name} (rule, ${r.severity})
+${artifactBody(r)}`;
+}
 
-${r.description}
-`;
+// ── Devin Desktop (+ legacy Windsurf fallback, ADR-0264): one rule file per rule/skill, mirrored
+// byte-identically under both `.devin/rules/` and `.windsurf/rules/` (Cognition's 2026-06-02
+// rebrand — the legacy path is kept so either installed base picks it up). All three activation
+// states map onto Devin/Windsurf's native `trigger` enum, so this target never warns. ───────────────
+
+function devinContent(a: RuleArtifact | SkillArtifact): string {
+  const { mode, paths } = resolveActivation(a);
+  const trigger =
+    mode === "paths" ? "glob" : mode === "manual" ? "manual" : "always_on";
+  const globsBlock = trigger === "glob" ? `\nglobs:\n${yamlList(paths)}` : "";
+  return `---
+trigger: ${trigger}${globsBlock}
+---
+
+${artifactBody(a)}`;
+}
+
+// ── GitHub Copilot (ADR-0264): a repo-wide aggregate (`.github/copilot-instructions.md`, the same
+// agent → skill → rule aggregation as AGENTS.md) plus one path-scoped instructions file per
+// rule/skill. `applyTo` derives from `paths`; an artifact with no path scope still emits (applyTo:
+// "**", repo-wide) but the caller (`renderHarnessBundles`) records a fidelity warning, since an
+// unscoped Copilot instructions file is a real behavior difference worth flagging, not a silent
+// degrade. ──────────────────────────────────────────────────────────────────────────────────────────
+
+function copilotInstructionsFile(
+  agents: readonly AgentArtifact[],
+  skills: readonly SkillArtifact[],
+  rules: readonly RuleArtifact[],
+): string {
+  return (
+    "# Copilot instructions\n\nGenerated by @caisson/agent-dev from one typed Caisson schema (GitHub Copilot harness; ADR-0264).\n" +
+    aggregatedSections(agents, skills, rules)
+  );
+}
+
+function copilotInstructionFile(
+  a: RuleArtifact | SkillArtifact,
+  applyTo: string,
+): string {
+  return `---
+applyTo: ${yamlScalar(applyTo)}
+---
+
+${artifactBody(a)}`;
+}
+
+// ── Cline (ADR-0264): one rule file per rule/skill under `.clinerules/`, with an OPTIONAL `paths`
+// frontmatter block — Cline has no file-level "manual" convention, so a `manual`-activated artifact
+// is emitted as always-active with a fidelity warning (the caller records it) rather than silently
+// dropping the author's intent. ────────────────────────────────────────────────────────────────────
+
+function clineContent(a: RuleArtifact | SkillArtifact): string {
+  const { mode, paths } = resolveActivation(a);
+  const frontmatter =
+    mode === "paths" ? `---\npaths:\n${yamlList(paths)}\n---\n\n` : "";
+  return `${frontmatter}${artifactBody(a)}`;
+}
+
+/** Claude Code has no scoping mechanism for a rule/skill's `activation`/`paths` (rules always load;
+ * skills already have their own separate `trigger` axis) — `paths` or `manual` on either always
+ * pushes a fidelity warning (ADR-0264, never a silent degrade). */
+function warnIfUnrepresentedByClaudeCode(
+  warnings: string[],
+  a: RuleArtifact | SkillArtifact,
+): void {
+  if (a.activation === "paths" || a.activation === "manual") {
+    warnings.push(
+      `Claude Code: ${a.kind} '${a.name}' uses '${a.activation}' activation, which .claude/${a.kind}s/ has no mechanism to represent — it always loads.`,
+    );
+  }
 }
 
 /**
  * Render one typed schema into the full multi-harness bundle. PURE + deterministic (no fs/clock/env):
- * the same three artifacts fan out to `.claude/`, Codex `AGENTS.md`, and `.cursor/` — proving no
- * single harness is the substrate (ADR-0066). The committed `__golden__/emit/` tree freezes the bytes.
+ * the same artifacts fan out to `.claude/`, `AGENTS.md`, `.cursor/`, Devin/Windsurf, GitHub Copilot,
+ * and Cline — proving no single harness is the substrate (ADR-0066/0264). The committed
+ * `__golden__/emit/` tree freezes the bytes; `warnings[]` is populated in the SAME fixed per-target,
+ * per-artifact order as the files so it stays deterministic and golden-pinnable.
  */
 export function renderHarnessBundles(input: EmitInput): EmittedBundle {
   const agents = input.artifacts.filter(
@@ -259,8 +405,14 @@ export function renderHarnessBundles(input: EmitInput): EmittedBundle {
   const rules = input.artifacts.filter(
     (a): a is RuleArtifact => a.kind === "rule",
   );
+  // Rule/skill artifacts only — the four rule/instruction targets below (Devin/Windsurf, Copilot
+  // per-artifact, Cline) have no sub-agent concept and agents carry no activation field to render.
+  const scopable = input.artifacts.filter(
+    (a): a is RuleArtifact | SkillArtifact => a.kind !== "agent",
+  );
 
   const files: EmittedFile[] = [];
+  const warnings: string[] = [];
 
   // Claude Code — one file per artifact (input order), then the hooks manifest.
   for (const a of input.artifacts) {
@@ -276,12 +428,14 @@ export function renderHarnessBundles(input: EmitInput): EmittedBundle {
           path: `.claude/skills/${a.name}.md`,
           content: claudeSkill(a),
         });
+        warnIfUnrepresentedByClaudeCode(warnings, a);
         break;
       case "rule":
         files.push({
           path: `.claude/rules/${a.name}.md`,
           content: claudeRule(a),
         });
+        warnIfUnrepresentedByClaudeCode(warnings, a);
         break;
       default: {
         const _exhaustive: never = a;
@@ -291,13 +445,13 @@ export function renderHarnessBundles(input: EmitInput): EmittedBundle {
   }
   files.push({ path: ".claude/hooks.json", content: claudeHooks(input.hooks) });
 
-  // Codex — one aggregated AGENTS.md.
+  // AGENTS.md — the universal multi-tool base layer (one aggregated file; ADR-0264 §4).
   files.push({
     path: "AGENTS.md",
     content: codexAgents(agents, skills, rules),
   });
 
-  // Cursor — one .mdc per artifact (input order).
+  // Cursor — one .mdc per artifact (input order); never warns (all 3 activation states representable).
   for (const a of input.artifacts) {
     let content: string;
     switch (a.kind) {
@@ -318,7 +472,43 @@ export function renderHarnessBundles(input: EmitInput): EmittedBundle {
     files.push({ path: `.cursor/rules/${a.name}.mdc`, content });
   }
 
-  return { files };
+  // Devin Desktop + legacy Windsurf fallback — byte-identical content at both paths; never warns.
+  for (const a of scopable) {
+    const content = devinContent(a);
+    files.push({ path: `.devin/rules/${a.name}.md`, content });
+    files.push({ path: `.windsurf/rules/${a.name}.md`, content });
+  }
+
+  // GitHub Copilot — one repo-wide aggregate, then one path-scoped instructions file per artifact.
+  files.push({
+    path: ".github/copilot-instructions.md",
+    content: copilotInstructionsFile(agents, skills, rules),
+  });
+  for (const a of scopable) {
+    const { paths } = resolveActivation(a);
+    const applyTo = paths.length > 0 ? paths.join(",") : "**";
+    files.push({
+      path: `.github/instructions/${a.name}.instructions.md`,
+      content: copilotInstructionFile(a, applyTo),
+    });
+    if (paths.length === 0) {
+      warnings.push(
+        `GitHub Copilot: ${a.kind} '${a.name}' has no path scope declared; .github/instructions/${a.name}.instructions.md applies repo-wide (applyTo: "**").`,
+      );
+    }
+  }
+
+  // Cline — one rule file per artifact; `manual` activation has no file-level Cline equivalent.
+  for (const a of scopable) {
+    files.push({ path: `.clinerules/${a.name}.md`, content: clineContent(a) });
+    if (resolveActivation(a).mode === "manual") {
+      warnings.push(
+        `Cline: ${a.kind} '${a.name}' uses 'manual' activation, which .clinerules/ cannot represent at file level; emitting as always-active.`,
+      );
+    }
+  }
+
+  return { files, warnings };
 }
 
 // ── Write-path security guards ─────────────────────────────────────────────────────────────────────

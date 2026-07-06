@@ -16,6 +16,9 @@ import { NotFoundError, parseStrict, strictObject } from "@caisson/kernel";
  *     resource endpoint);
  *   • `ollama` is OpenAI-API-compatible — it rides the same transport as `local`, the buyer names its
  *     `baseUrl`.
+ *   • `groq` / `mistral` / `together` (ADR-0171 board lock 2026-07-06) are OpenAI-API-compatible
+ *     hosted vendors, each with a hardcoded default `baseUrl` (overridable, like `openrouter`'s) —
+ *     unlike `local`/`ollama` they need no buyer-supplied host.
  * As with every lane, this package only carries env-var NAMES, never a key value.
  */
 const ProviderConfigSchema = strictObject({
@@ -28,6 +31,9 @@ const ProviderConfigSchema = strictObject({
     "bedrock",
     "azure-openai",
     "ollama",
+    "groq",
+    "mistral",
+    "together",
   ]),
   model: z.string().min(1),
   /**
