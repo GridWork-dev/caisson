@@ -309,7 +309,7 @@ export async function revokePurchaseLineGrants(
 // --- Operator comp grants (ADR-0220) ----------------------------------------------------------
 //
 // The admin mutation surface's grant/revoke run as the cross-tenant `admin_write` role
-// (`withAdminWrite`, @caisson/tenancy-rls), NOT `withTenant`/`app` — DB-level separation of
+// (`withAdminWrite`, @caisson/org-controls), NOT `withTenant`/`app` — DB-level separation of
 // operator-write from buyer-runtime (Fork AM-2 = B). Both filter by an explicit `account_id`, so a
 // single call is bounded to exactly one target account (the RLS cross-tenant policy is `WITH CHECK
 // (true)`; the bound is the caller passing one id). `source_kind = 'admin_comp'` keeps a comp

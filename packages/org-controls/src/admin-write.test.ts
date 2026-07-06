@@ -1,18 +1,22 @@
-// The security proof for the cross-tenant admin WRITE seam (ADR-0220, Fork AM-2 = B): the
-// `admin_write` role can INSERT/UPDATE any tenant's row, while the buyer `app` role stays
-// fail-closed tenant-isolated — DB-level separation, not app convention. If the `TO admin_write`
-// scoping ever regressed into `app`, the "app cannot cross tenants" assertions below fail.
+// The security proof for the cross-tenant admin WRITE seam (ADR-0220, Fork AM-2 = B), moved here with
+// the seam it tests (ADR-0257 §1.3). The `admin_write` role can INSERT/UPDATE any tenant's row, while
+// the buyer `app` role stays fail-closed tenant-isolated — DB-level separation, not app convention. If
+// the `TO admin_write` scoping ever regressed into `app`, the "app cannot cross tenants" assertions
+// below fail. `buildTenantPolicySql` + `withTenant` are the still-open @caisson/tenancy-rls floor; the
+// admin-write builders + `withAdminWrite` are the commercial carve under test (./admin-write.ts).
 import { test, expect } from "bun:test";
 import { newTestPg, type TestPg } from "@caisson/testing";
+import {
+  buildTenantPolicySql,
+  withTenant,
+  type Transactor,
+} from "@caisson/tenancy-rls";
 import {
   ADMIN_WRITE_ROLE_BOOTSTRAP_SQL,
   buildAdminSelectPolicySql,
   buildAdminWritePolicySql,
-  buildTenantPolicySql,
   withAdminWrite,
-  withTenant,
-  type Transactor,
-} from "./rls.ts";
+} from "./admin-write.ts";
 
 interface Row {
   id: string;
@@ -128,10 +132,11 @@ test("buildAdminSelectPolicySql grants admin_write cross-tenant SELECT but NOT w
   await tp.close();
 });
 
-test("the per-role guard vets admin_write even after app was vetted on the same db", async () => {
-  // Regression guard for the WeakMap-per-role refactor: withTenant vets `app` first (adding the db
-  // to the guard map), then withAdminWrite must STILL vet `admin_write` — a plain per-db WeakSet
-  // would skip it. Both roles are non-privileged here, so both simply succeed.
+test("org-controls' own role guard vets admin_write even after tenancy-rls vetted app on the same db", async () => {
+  // Regression guard for the carve: `withTenant` (tenancy-rls) and `withAdminWrite` (org-controls) now
+  // keep INDEPENDENT per-role guard WeakMaps. This pins that withAdminWrite still vets `admin_write`
+  // after withTenant vetted `app` on the SAME db — the two guards never share state, so neither can
+  // skip the other's role. Both roles are non-privileged here, so both simply succeed.
   const tp = await seeded();
   const db = tp.pg as unknown as Transactor;
   await withTenant(db, "tenant-a", (tx) => tx.query(`SELECT 1`));

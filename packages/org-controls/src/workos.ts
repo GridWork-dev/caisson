@@ -3,6 +3,10 @@
 // authorization URL and exchanges the callback `code` for the authenticated user's id + email over
 // api.workos.com. apps/site wires these two functions into better-auth's genericOAuth/SSO plugin
 // config in a separate step — this package never imports better-auth.
+//
+// Moved out of the open @caisson/auth into the commercial @caisson/org-controls (ADR-0257 §1.3): SSO
+// is an org-plan surface with zero live consumers on the free base, so it belongs with the paid org
+// module rather than the Apache-2.0 auth substrate.
 import {
   ConfigError,
   InternalError,
