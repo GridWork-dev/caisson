@@ -34,11 +34,17 @@ const resolveDev = makeLicenseEntitlementResolver(() => new Set(), devVerify);
 
 describe("licenseEntitlementResolver (ADR-0010/0071)", () => {
   test("a valid Bearer license resolves to its signed entitlements", () => {
-    expect(resolveDev(reqWith(`Bearer ${DEV_TOKEN}`))).toEqual(["local-ai"]);
+    expect(resolveDev(reqWith(`Bearer ${DEV_TOKEN}`))).toEqual({
+      entitlements: ["local-ai"],
+      updatesUntil: null,
+    });
   });
 
   test("a case-insensitive bearer scheme still resolves", () => {
-    expect(resolveDev(reqWith(`bearer ${DEV_TOKEN}`))).toEqual(["local-ai"]);
+    expect(resolveDev(reqWith(`bearer ${DEV_TOKEN}`))).toEqual({
+      entitlements: ["local-ai"],
+      updatesUntil: null,
+    });
   });
 
   test("no Authorization header → null (community)", () => {
@@ -59,6 +65,21 @@ describe("licenseEntitlementResolver (ADR-0010/0071)", () => {
     ).toBeNull();
   });
 
+  test("a windowed token's signed updatesUntil rides along (ADR-0251)", async () => {
+    const windowedToken = await mintDevToken({
+      entitlements: ["local-ai"],
+      expiry: null,
+      licenseId: LICENSE_ID,
+      major: 1,
+      tier: "pro",
+      updatesUntil: "2027-01-01T00:00:00.000Z",
+    });
+    expect(resolveDev(reqWith(`Bearer ${windowedToken}`))).toEqual({
+      entitlements: ["local-ai"],
+      updatesUntil: "2027-01-01T00:00:00.000Z",
+    });
+  });
+
   test("the DEFAULT baked-key entrypoint REJECTS a dev-signed token (the production bake happened)", () => {
     // The bake pin, proven negatively (mirrors verify.test.ts): if someone wired the dev verifier
     // into the shipped default, this dev token would resolve and this test would catch it.
@@ -71,7 +92,10 @@ describe("licenseEntitlementResolver (ADR-0010/0071)", () => {
 describe("makeLicenseEntitlementResolver — edge revocation gate (ADR-0225 R-4=B)", () => {
   test("an empty deny-set leaves a valid license unchanged", () => {
     const resolve = makeLicenseEntitlementResolver(() => new Set(), devVerify);
-    expect(resolve(reqWith(`Bearer ${DEV_TOKEN}`))).toEqual(["local-ai"]);
+    expect(resolve(reqWith(`Bearer ${DEV_TOKEN}`))).toEqual({
+      entitlements: ["local-ai"],
+      updatesUntil: null,
+    });
   });
 
   test("a REVOKED license id → null (community), exactly like a forged token", () => {
@@ -87,6 +111,9 @@ describe("makeLicenseEntitlementResolver — edge revocation gate (ADR-0225 R-4=
       () => new Set(["99999999-9999-4999-8999-999999999999"]),
       devVerify,
     );
-    expect(resolve(reqWith(`Bearer ${DEV_TOKEN}`))).toEqual(["local-ai"]);
+    expect(resolve(reqWith(`Bearer ${DEV_TOKEN}`))).toEqual({
+      entitlements: ["local-ai"],
+      updatesUntil: null,
+    });
   });
 });

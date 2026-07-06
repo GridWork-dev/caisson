@@ -23,6 +23,16 @@ export {
 export type { PurchaseBookEntry } from "./purchases.ts";
 
 export {
+  RENEWAL_BOOK_VERSION,
+  RENEWAL_BOOK,
+  renewalBookEntrySchema,
+  parseRenewalBook,
+  isRenewalPrice,
+  resolveRenewal,
+} from "./renewals.ts";
+export type { RenewalBookEntry } from "./renewals.ts";
+
+export {
   ACTION_BOOK,
   actionBookSchema,
   parseActionBook,

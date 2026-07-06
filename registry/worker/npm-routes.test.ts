@@ -370,3 +370,147 @@ describe("fail-safe entitlement (never 500)", () => {
     expect(res.status).toBe(200);
   });
 });
+
+describe("updates-window filtering (ADR-0244/0251)", () => {
+  // A multi-version commercial module: 1.0.0 + 1.1.0 published 2026, 2.0.0 published 2027.
+  const multiVersion = {
+    id: "@caisson/field-crypto",
+    latest: "2.0.0",
+    versions: ["1.0.0", "1.1.0", "2.0.0"].map((version, i) => ({
+      version,
+      publishedAt:
+        ["2026-01-01", "2026-06-01", "2027-06-01"][i] + "T00:00:00.000Z",
+      gateAttestation: "ci-run-1@deadbeef",
+      manifest: {
+        id: "@caisson/field-crypto",
+        version,
+        kind: "base",
+        tier: "paid",
+        license: "LicenseRef-Caisson-Commercial",
+        priceCents: 4900,
+        editions: [],
+        description: "field-crypto",
+      },
+    })),
+  };
+  const winIndex = loadRegistryIndex({
+    schemaVersion: 1,
+    modules: [openBase("@caisson/kernel"), multiVersion],
+  });
+  const winSidecar = loadTarballSidecar({
+    tarballs: Object.fromEntries(
+      [
+        ["@caisson/kernel@1.0.0", "kernel/kernel-1.0.0.tgz"],
+        ["@caisson/field-crypto@1.0.0", "field-crypto/field-crypto-1.0.0.tgz"],
+        ["@caisson/field-crypto@1.1.0", "field-crypto/field-crypto-1.1.0.tgz"],
+        ["@caisson/field-crypto@2.0.0", "field-crypto/field-crypto-2.0.0.tgz"],
+      ].map(([name, key]) => [
+        name,
+        {
+          key,
+          shasum: "cccccccccccccccccccccccccccccccccccccccc",
+          integrity: "sha512-windowSRIplaceholder==",
+          size: 1,
+        },
+      ]),
+    ),
+  });
+  // Permissive mock R2 — every key resolves, so a 404 can only come from the window gate.
+  const anyBucket: TarballBucket = {
+    get: () => Promise.resolve({ body: TGZ }),
+  };
+  const winEnv: NpmEnv = { TARBALLS: anyBucket };
+  const winHandlerFor = (updatesUntil: string | null) =>
+    createNpmHandler(winIndex, winSidecar, {
+      resolveEntitlements: () => ({
+        entitlements: ["field-crypto"],
+        updatesUntil,
+      }),
+    });
+  const WINDOW = "2026-12-31T00:00:00.000Z";
+
+  test("the packument serves only IN-WINDOW versions and recomputes dist-tags.latest", async () => {
+    const res = await winHandlerFor(WINDOW)(
+      req("/@caisson%2ffield-crypto", { headers: AUTH }),
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      "dist-tags": { latest: string };
+      versions: Record<string, unknown>;
+    };
+    expect(Object.keys(body.versions).sort()).toEqual(["1.0.0", "1.1.0"]);
+    expect(body["dist-tags"].latest).toBe("1.1.0"); // NOT the catalog's global 2.0.0
+  });
+
+  test("a null window (absent claim) is UNBOUNDED — all versions, catalog latest", async () => {
+    const res = await winHandlerFor(null)(
+      req("/@caisson%2ffield-crypto", { headers: AUTH }),
+    );
+    const body = (await res.json()) as {
+      "dist-tags": { latest: string };
+      versions: Record<string, unknown>;
+    };
+    expect(Object.keys(body.versions).sort()).toEqual([
+      "1.0.0",
+      "1.1.0",
+      "2.0.0",
+    ]);
+    expect(body["dist-tags"].latest).toBe("2.0.0");
+  });
+
+  test("an in-window tarball serves; an OUT-OF-WINDOW tarball 404s before the R2 fetch", async () => {
+    const inWindow = await winHandlerFor(WINDOW)(
+      req("/@caisson/field-crypto/-/field-crypto-1.1.0.tgz", {
+        headers: AUTH,
+      }),
+      winEnv,
+    );
+    expect(inWindow.status).toBe(200);
+    const outOfWindow = await winHandlerFor(WINDOW)(
+      req("/@caisson/field-crypto/-/field-crypto-2.0.0.tgz", {
+        headers: AUTH,
+      }),
+      winEnv,
+    );
+    expect(outOfWindow.status).toBe(404); // the mock R2 would have served it — the window gate said no
+  });
+
+  test("BASE modules are never window-filtered (community pulls stay whole)", async () => {
+    // A window far in the past would filter kernel@1.0.0 out if the filter applied to base.
+    const past = winHandlerFor("2020-01-01T00:00:00.000Z");
+    const pack = await past(req("/@caisson%2fkernel", { headers: AUTH }));
+    const body = (await pack.json()) as { versions: Record<string, unknown> };
+    expect(Object.keys(body.versions)).toEqual(["1.0.0"]);
+    const tarball = await past(
+      req("/@caisson/kernel/-/kernel-1.0.0.tgz", { headers: AUTH }),
+      winEnv,
+    );
+    expect(tarball.status).toBe(200);
+  });
+
+  test("a fully out-of-window entitled module packument is EMPTY (no version resolves)", async () => {
+    const res = await winHandlerFor("2020-01-01T00:00:00.000Z")(
+      req("/@caisson%2ffield-crypto", { headers: AUTH }),
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      "dist-tags": { latest: string };
+      versions: Record<string, unknown>;
+    };
+    expect(Object.keys(body.versions)).toEqual([]);
+    expect(body["dist-tags"].latest).toBe("0.0.0");
+  });
+
+  test("the bare purchased-id array resolver shape still works (pre-0251 contract = unbounded)", async () => {
+    const arrayHandler = createNpmHandler(winIndex, winSidecar, {
+      resolveEntitlements: () => ["field-crypto"],
+    });
+    const res = await arrayHandler(
+      req("/@caisson/field-crypto/-/field-crypto-2.0.0.tgz", {
+        headers: AUTH,
+      }),
+      winEnv,
+    );
+    expect(res.status).toBe(200);
+  });
+});

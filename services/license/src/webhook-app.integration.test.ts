@@ -30,6 +30,7 @@ import { withTenant } from "@caisson/tenancy-rls";
 import { createApp, type IssueAppDeps } from "./app.ts";
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
+  ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   readEntitlements,
 } from "./entitlement-store.ts";
@@ -81,6 +82,7 @@ beforeAll(async () => {
   await tp.exec(GRANT_CONSUMPTION_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
+  await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
   await tp.exec(PROCESSED_EVENT_SCHEMA_SQL);
   provider = createPaddleBilling({ webhookSecret: SECRET, apiKey: "pdl_test" });
 });

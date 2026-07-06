@@ -13,6 +13,7 @@ import { type TestPg, newTestPg } from "@caisson/testing";
 import { withTenant } from "@caisson/tenancy-rls";
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
+  ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   grantEntitlements,
 } from "./entitlement-store.ts";
@@ -64,6 +65,7 @@ beforeAll(async () => {
   tp = await newTestPg();
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
+  await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
 });
 
 afterAll(async () => {

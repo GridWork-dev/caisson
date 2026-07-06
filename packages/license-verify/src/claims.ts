@@ -33,6 +33,13 @@ export const COMMUNITY_TIER: LicenseTier = "community";
  * - `major`        — the product MAJOR version this perpetual license covers (perpetual-per-major:
  *                    valid forever for this major, never auto-extended to a later major).
  * - `expiry`       — ISO-8601 instant the license lapses, or `null` for a perpetual license.
+ * - `updatesUntil` — ISO-8601 instant bounding the ADR-0244 updates window: the registry serves only
+ *                    versions published on or before this instant (per-version filter, ADR-0251).
+ *                    OPTIONAL + nullable: a token WITHOUT the field (pre-0251 issue) or carrying
+ *                    `null` is UNBOUNDED (ADR-0251 Decision 2 — a moot pre-launch grandfather
+ *                    clause; post-flip tokens always carry the field). Distinct from `expiry`:
+ *                    a lapsed window never invalidates the license, it only narrows which
+ *                    versions the registry serves.
  */
 export const licenseClaimsSchema = strictObject({
   licenseId: z.string().uuid(),
@@ -40,6 +47,7 @@ export const licenseClaimsSchema = strictObject({
   entitlements: z.array(z.string().min(1).max(128)).max(256),
   major: z.number().int().nonnegative(),
   expiry: z.string().datetime({ offset: true }).nullable(),
+  updatesUntil: z.string().datetime({ offset: true }).nullable().optional(),
 });
 
 /** The validated, signed license claims. */

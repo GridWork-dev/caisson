@@ -22,6 +22,7 @@ import {
 } from "@caisson/billing";
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
+  ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
 } from "./entitlement-store.ts";
 import { handleBillingWebhook } from "./webhook.ts";
@@ -39,6 +40,7 @@ beforeAll(async () => {
   // table must exist or a future entitlement-bearing event would fail mid-transaction.
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
+  await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
   // The outer webhook-event dedup table (ADR-0229 rows 50+51) — handleBillingWebhook now claims the
   // event via processEvent before granting, so a re-delivery grants + pushes once.
   await tp.exec(PROCESSED_EVENT_SCHEMA_SQL);

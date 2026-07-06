@@ -43,6 +43,7 @@ import { ASK_AI_SPEND_SCHEMA_SQL } from "./ask-ai/spend.ts";
 // tests).
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
+  ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   LICENSE_GRANT_SCHEMA_SQL,
 } from "@caisson/service-license";
@@ -158,6 +159,7 @@ async function bootstrapPglite(): Promise<PGlite> {
   await pg.exec(PROCESSED_EVENT_SCHEMA_SQL);
   await pg.exec(ENTITLEMENT_SCHEMA_SQL);
   await pg.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
+  await pg.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
   await pg.exec(LICENSE_GRANT_SCHEMA_SQL);
   await pg.exec(AI_METER_SCHEMA_SQL);
   await pg.exec(TENANT_AI_CREDENTIAL_SCHEMA_SQL);

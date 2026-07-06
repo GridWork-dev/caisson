@@ -9,7 +9,10 @@ import { type TestPg, newTestPg } from "@caisson/testing";
 import { withTenant } from "@caisson/tenancy-rls";
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
+  ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
+  computeUpdatesUntil,
+  extendUpdatesWindow,
   grantEntitlements,
   readEntitlements,
   revokePurchaseGrants,
@@ -23,6 +26,7 @@ beforeAll(async () => {
   tp = await newTestPg();
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
+  await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
 });
 
 afterAll(async () => {
@@ -302,5 +306,178 @@ describe("entitlement_grant junction (ADR-0113, RLS)", () => {
       readEntitlements(tx, owner),
     );
     expect(ids).toEqual([]); // nothing was written under the owner
+  });
+});
+
+describe("updates window (ADR-0244/0251)", () => {
+  /** Pin a grant's granted_at (superuser bypasses RLS) for deterministic baseline math. */
+  const pinGrantedAt = (acct: string, iso: string) =>
+    tp.query(
+      `UPDATE entitlement_grant SET granted_at = $2 WHERE account_id = $1`,
+      [acct, iso],
+    );
+
+  test("no active one-time grants → null (unbounded; subscription-only untouched, ADR-0244 §4)", async () => {
+    const acct = "acct_win_none";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "in_w0",
+        source: sub("sub_w0"),
+      }),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => computeUpdatesUntil(tx, acct)),
+    ).toBeNull();
+  });
+
+  test("baseline = earliest one_time granted_at + 12 months", async () => {
+    const acct = "acct_win_base";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pay_w1",
+        source: onetime("pay_w1"),
+      }),
+    );
+    await pinGrantedAt(acct, "2026-01-05T00:00:00.000Z");
+    expect(
+      await withTenant(tp.pg, acct, (tx) => computeUpdatesUntil(tx, acct)),
+    ).toBe("2027-01-05T00:00:00.000Z");
+  });
+
+  test("a renewal extends via updates_expires_at, which OVERRIDES the baseline", async () => {
+    const acct = "acct_win_renew";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pay_w2",
+        source: onetime("pay_w2"),
+      }),
+    );
+    await pinGrantedAt(acct, "2026-01-05T00:00:00.000Z");
+    const baseline = await withTenant(tp.pg, acct, (tx) =>
+      computeUpdatesUntil(tx, acct),
+    );
+    const extended = await withTenant(tp.pg, acct, (tx) =>
+      extendUpdatesWindow(tx, {
+        accountId: acct,
+        entitlementId: "compliance",
+        sourceEventId: "pay_renew_1",
+      }),
+    );
+    expect(extended).toBe(1);
+    const after = await withTenant(tp.pg, acct, (tx) =>
+      computeUpdatesUntil(tx, acct),
+    );
+    // GREATEST(now(), granted_at) + 12mo — now() > the pinned 2026-01-05, so the window moved past
+    // the baseline (renewal semantics: +12 months from now for a first renewal, ADR-0251 D5).
+    expect(after).not.toBeNull();
+    expect(Date.parse(after ?? "")).toBeGreaterThan(
+      Date.parse(baseline ?? "0"),
+    );
+
+    // A SECOND renewal stacks: GREATEST(now(), current expiry) + 12mo ≈ +24 months out.
+    await withTenant(tp.pg, acct, (tx) =>
+      extendUpdatesWindow(tx, {
+        accountId: acct,
+        entitlementId: "compliance",
+        sourceEventId: "pay_renew_2",
+      }),
+    );
+    const second = await withTenant(tp.pg, acct, (tx) =>
+      computeUpdatesUntil(tx, acct),
+    );
+    expect(Date.parse(second ?? "")).toBeGreaterThan(Date.parse(after ?? ""));
+  });
+
+  test("extendUpdatesWindow FAILS CLOSED on zero active one_time rows (never mints a grant)", async () => {
+    // No grant at all.
+    await expect(
+      withTenant(tp.pg, "acct_win_nogrant", (tx) =>
+        extendUpdatesWindow(tx, {
+          accountId: "acct_win_nogrant",
+          entitlementId: "compliance",
+          sourceEventId: "pay_bad",
+        }),
+      ),
+    ).rejects.toThrow(/extends no active/);
+
+    // Subscription-only holder: a renewal is a one-time-purchase concept — still fail-closed.
+    const acct = "acct_win_subonly";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "in_sub",
+        source: sub("sub_only"),
+      }),
+    );
+    await expect(
+      withTenant(tp.pg, acct, (tx) =>
+        extendUpdatesWindow(tx, {
+          accountId: acct,
+          entitlementId: "compliance",
+          sourceEventId: "pay_bad2",
+        }),
+      ),
+    ).rejects.toThrow(/extends no active/);
+
+    // A REVOKED one_time grant does not extend either.
+    const acct2 = "acct_win_revoked";
+    await withTenant(tp.pg, acct2, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct2,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pay_r",
+        source: onetime("pay_r"),
+      }),
+    );
+    await withTenant(tp.pg, acct2, (tx) =>
+      revokePurchaseGrants(tx, { accountId: acct2, purchaseId: "pay_r" }),
+    );
+    await expect(
+      withTenant(tp.pg, acct2, (tx) =>
+        extendUpdatesWindow(tx, {
+          accountId: acct2,
+          entitlementId: "compliance",
+          sourceEventId: "pay_bad3",
+        }),
+      ),
+    ).rejects.toThrow(/extends no active/);
+  });
+
+  test("a renewal extends ONLY the named entitlement's rows", async () => {
+    const acct = "acct_win_pair";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance", "local-ai"],
+        sourceEventId: "pay_pair",
+        source: onetime("pay_pair"),
+      }),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      extendUpdatesWindow(tx, {
+        accountId: acct,
+        entitlementId: "compliance",
+        sourceEventId: "pay_renew_pair",
+      }),
+    );
+    const rows = await tp.query<{
+      entitlement_id: string;
+      extended: boolean;
+    }>(
+      `SELECT entitlement_id, (updates_expires_at IS NOT NULL) AS extended
+         FROM entitlement_grant WHERE account_id = $1 ORDER BY entitlement_id`,
+      [acct],
+    );
+    expect(rows).toEqual([
+      { entitlement_id: "compliance", extended: true },
+      { entitlement_id: "local-ai", extended: false },
+    ]);
   });
 });
