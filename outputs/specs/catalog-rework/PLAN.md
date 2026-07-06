@@ -11,12 +11,11 @@ tags: [billing, external-system, security, ui, frontend]
 **Execution mode:** operator approves this PLAN → unattended EXECUTE→VERIFY→SWEEP→SHIP per
 wave (doctrine autonomy line); re-entry gates: VERIFY fail · risk-tag fire · the two
 operator-review diffs called out below (EULA defined term; Paddle big-bang). Every task
-declares `model`; parallel writers take worktree isolation. Merge-latency note: nearly every
-wave lands on the greptile-gate critical path (auth/tenancy-rls/billing/credits/registry/
-standards-gate globs) — budget the up-to-35-min review wait per PR; new package dirs get
-their glob + `.greptile/rules.md` row in the same PR that creates them. Every touched
-`packages/*` dir carries a changeset (private packages included; `git add` the changeset
-before the gate runs).
+declares `model`; parallel writers take worktree isolation. Review note (updated 2026-07-06):
+Greptile is RETIRED — the review gate is the in-session SHIP audit lane (`gw-code-reviewer`
+opus + `gw-security-auditor` fable on the money/license seams every wave here touches); no
+greptile glob/rules rows exist anymore. Every touched `packages/*` dir carries a changeset
+(private packages included; `git add` the changeset before the gate runs).
 
 **Cross-kickoff dependency:** W3 (claims) and any `services/license` edit wait for Kickoff
 E's PR #128 (ADR-0255 `updatesWindows`) to merge. W0–W2 don't touch those files and start
@@ -33,7 +32,7 @@ immediately. If #128 slips, W3 reorders after W4–W6 without unblocking risk.
 | 0.3 | Reconcile hand-copies: standards-gate `EDITION_NAMES`, site `EDITION_IDS` → the constant; re-baseline the 4 `kind:"edition"` fixture/test sites additively                                                                                                        | `bun run check` + standards-gate green                                                     | sonnet (gw-typescript-pro) |
 | 0.4 | Refresh the stale outstanding-work production-Paddle row to the target catalog                                                                                                                                                                                    | `bun run sot`                                                                              | haiku                      |
 
-## W1 — Extractions (5 parallel PRs, worktree-isolated; each: changeset + gate rows + greptile glob)
+## W1 — Extractions (5 parallel PRs, worktree-isolated; each: changeset + gate rows)
 
 | #   | Task                                                                                                                                                                                                                                                                                      | Verify                                                                                               | Route                              |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------- |

@@ -32,7 +32,7 @@ const FAQ_ITEMS = [
   {
     question: "Is the license perpetual?",
     answer:
-      "Yes. The Commercial License is perpetual for the version you purchased. Compliance Updates is an optional subscription that delivers new versions with updated control mappings; it is not required to continue using the version you bought.",
+      "Yes, in two parts. The license itself is perpetual: the version you purchased keeps working, verified offline, for as long as you use it — no expiry, no renewal, no call home. Updates are separate: every purchase includes 12 months of registry updates from your Order date, renewable afterward at a reduced rate. Compliance Updates and the Developer plan are optional subscriptions layered on top for teams that want ongoing framework-mapping updates or credits; none of this changes the perpetual license for the version you already own.",
   },
   {
     question: "Does Caisson claim to be SOC 2 certified or HIPAA certified?",
@@ -226,9 +226,12 @@ export default function LicensePage() {
             <strong>no call home is required</strong> for the perpetual license.
           </li>
           <li style={prose.li}>
-            A Compliance Updates subscription delivers new package versions with
-            updated control mappings as regulations change. This is optional;
-            the perpetual license does not expire.
+            Your purchase includes 12 months of registry-pull updates from your
+            Order date, renewable afterward at a reduced rate; letting it lapse
+            never revokes access to versions already delivered. A Compliance
+            Updates subscription, where purchased, additionally delivers new
+            package versions with updated control mappings as regulations
+            change. Both are optional; the perpetual license does not expire.
           </li>
         </ul>
       </Section>

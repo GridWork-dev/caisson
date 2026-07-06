@@ -1,6 +1,8 @@
-# ADR-0251 — ui-pro SPEC locks: market-line component split, caisson.sh/ui gallery, v1 = full 7, $129–199 standalone band
+# ADR-0259 — ui-pro SPEC locks: market-line component split, caisson.sh/ui gallery, v1 = full 7, $129–199 standalone band
 
 **Status:** accepted · 2026-07-06 (Kickoff D Stage 1 picker, four forks in one round).
+Drafted as ADR-0251 on `feat/catalog-program`; renumbered 0259 at the Kickoff-E merge
+(ADR-0088 second-merger-renumbers — E's 0251-0256 reached `main` first).
 **Extends** ADR-0250 (G2a mandated this SPEC before any ui-pro build); respects ADR-0248 (the
 ratchet — every line move below lands pre-first-publish), ADR-0237 (V1-live posture),
 ADR-0244 (purchase model), ADR-0137/0227/0247 (below-sum edition math left untouched).

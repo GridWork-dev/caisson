@@ -86,7 +86,7 @@ export const BUNDLED_PRICE_BOOK: PriceBook = {
     cachedInputPerMTok: 80_000,
     outputPerMTok: 4_000_000,
   },
-  // CAISSON-23: Sonnet-tier usage was fail-closed (ConfigError, no row) — a metering gap, not a
+  // Sonnet-tier usage was fail-closed (ConfigError, no row) — a metering gap, not a
   // margin call. Verified rates $3.00 / $15.00 per MTok; cachedInputPerMTok mirrors every other
   // Anthropic row here at 10% of input (Anthropic's published prompt-cache-read discount).
   "anthropic/claude-sonnet-4.5": {

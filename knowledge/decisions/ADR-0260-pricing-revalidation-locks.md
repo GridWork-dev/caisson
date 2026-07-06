@@ -1,11 +1,11 @@
-# ADR-0252 — Pricing-revalidation locks: formula-priced bundles, carve/new-SKU first prices, renewal cents, Local-first deferred
+# ADR-0260 — Pricing-revalidation locks: formula-priced bundles, carve/new-SKU first prices, renewal cents, Local-first deferred
 
 **Status:** accepted · 2026-07-06 (Kickoff D Stage 2 picker, three rounds). **Supersedes the
 numbers** of ADR-0227 (Compliance $799 → $1,049) and ADR-0137's edition/Everything figures
 where moved (AI-Production $599 → $629 · Agentic-Dev $249 → $329 · Everything $1,499 → $1,749);
 **applies** ADR-0246 F6 (carve formula-priced), ADR-0247 F3 (0.75 anchor + below-sum
 invariant), ADR-0249 G1 (bundle set + fold-ins), ADR-0244 (renewal band → real cents),
-ADR-0251 (ui-pro band → cents). ADR-0240's Local-first $349 is **not** superseded — that
+ADR-0259 (ui-pro band → cents). ADR-0240's Local-first $349 is **not** superseded — that
 bundle's number is deferred to an operator-commissioned local-ai carve round (a scoped,
 recorded re-open of ADR-0249 G7 for `local-ai` only; G7 stands unless that round locks a
 carve). Evidence: `outputs/research/pricing-revalidation-2026-07.md`. Append-only; supersede

@@ -15,5 +15,6 @@ export type {
   PgBossClient,
   PgBossJob,
   PgBossJobQueueConfig,
+  PgBossSchedule,
 } from "./pgboss.ts";
 export { withAdvisoryXactLock } from "./advisory-lock.ts";

@@ -5,8 +5,9 @@
 //
 // ADR-0044 CLI exception: edition reference apps standardize on Next.js, but this app is a KERNEL
 // DEMO, not a web page — a governed tamper-evident lifecycle + offline retrieval + a multi-harness
-// emit is an inherently headless flow. An optional Next.js inspector over the audited record is
-// deferred (SPEC out-of-scope). See `apps/agent-dev/README.md`.
+// emit is an inherently headless flow. A read-only, localhost-only inspector over the audited
+// record has since SHIPPED (local-dev only) at `./inspector.ts`, under a second narrow ADR-0044
+// deviation (ADR-0243) — see `apps/agent-dev/README.md`.
 export * from "./demo.ts";
 export * from "./runner-demo.ts";
 

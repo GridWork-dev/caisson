@@ -85,7 +85,7 @@ jobs:
       # ALSO skipped on release PRs (ADR-0208 republish): `changeset version` consumes the pending
       # changeset files by design, so a PR that DELETES changesets relative to origin/main is a
       # release PR — its package.json bumps are the consume output, not uncovered package changes.
-      # A deletion is loud in review (and Greptile-gated), so this cannot be gamed silently.
+      # A deletion is loud in review, so this cannot be gamed silently.
       - name: changeset presence (PR only — every package change needs a changeset)
         if: github.ref != 'refs/heads/main'
         run: |

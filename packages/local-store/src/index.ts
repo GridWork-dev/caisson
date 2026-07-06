@@ -5,7 +5,13 @@
 // consuming edition wires; this package only stores and fuses.
 //
 export { LocalStore, RRF_K } from "./store.ts";
-export type { StoreDoc, HybridSearchOptions, SearchHit } from "./store.ts";
+export type {
+  StoreDoc,
+  HybridSearchOptions,
+  SearchHit,
+  ListOptions,
+  ListedDoc,
+} from "./store.ts";
 
 // The file-per-tenant isolation floor (ADR-0073): the resolved path IS the tenant boundary.
 export { tenantDbPath, openTenantDb } from "./tenant-db.ts";

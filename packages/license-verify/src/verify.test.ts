@@ -215,6 +215,31 @@ describe("verifyLicense — fail-safe-to-community (threat TM-LIC)", () => {
     expect(verifyDev(extra).tier).toBe("community");
   });
 
+  test("a malformed updatesWindows value (not an ISO instant) fails strict parsing → community", () => {
+    const bad = mint({
+      entitlements: ["local-ai"],
+      expiry: null,
+      licenseId: VALID_UUID,
+      major: 1,
+      tier: "pro",
+      updatesWindows: { "local-ai": "next-year-sometime" },
+    });
+    expect(verifyDev(bad).tier).toBe("community");
+  });
+
+  test("a null VALUE in the updatesWindows map fails strict parsing → community", () => {
+    // ADR-0255: an unbounded entitlement simply has NO key — null values are never valid.
+    const bad = mint({
+      entitlements: ["local-ai"],
+      expiry: null,
+      licenseId: VALID_UUID,
+      major: 1,
+      tier: "pro",
+      updatesWindows: { "local-ai": null },
+    });
+    expect(verifyDev(bad).tier).toBe("community");
+  });
+
   test("a NON-CANONICAL signed payload → community (canonical conformance)", () => {
     // Sign authentic bytes whose key order is NOT canonical; the signature is genuine but the
     // payload is not `canonicalize(claims)`, so format conformance rejects it.
@@ -234,5 +259,71 @@ describe("verifyLicense — fail-safe-to-community (threat TM-LIC)", () => {
       signature,
     });
     expect(verifyDev(token).tier).toBe("community");
+  });
+});
+
+describe("verifyLicense — updatesWindows claim (ADR-0244/0255 per-entitlement updates windows)", () => {
+  test("a token WITHOUT the field still verifies and reads as unbounded", () => {
+    // The committed golden predates the field — the exact pre-window token class.
+    const result = verifyDev(DEV_TOKEN);
+    expect(result.valid).toBe(true);
+    expect(result.claims?.updatesWindows).toBeUndefined();
+  });
+
+  test("a token carrying updatesWindows verifies and exposes the signed map", () => {
+    const windowed = mint({
+      entitlements: ["local-ai"],
+      expiry: null,
+      licenseId: VALID_UUID,
+      major: 1,
+      tier: "pro",
+      updatesWindows: { "local-ai": "2027-01-01T00:00:00.000Z" },
+    });
+    const result = verifyDev(windowed);
+    expect(result.valid).toBe(true);
+    expect(result.claims?.updatesWindows).toEqual({
+      "local-ai": "2027-01-01T00:00:00.000Z",
+    });
+  });
+
+  test("updatesWindows: null verifies (explicit unbounded)", () => {
+    const unbounded = mint({
+      entitlements: ["local-ai"],
+      expiry: null,
+      licenseId: VALID_UUID,
+      major: 1,
+      tier: "pro",
+      updatesWindows: null,
+    });
+    const result = verifyDev(unbounded);
+    expect(result.valid).toBe(true);
+    expect(result.claims?.updatesWindows).toBeNull();
+  });
+
+  test("an EMPTY map verifies (every entitlement unbounded — no keys)", () => {
+    const empty = mint({
+      entitlements: ["local-ai"],
+      expiry: null,
+      licenseId: VALID_UUID,
+      major: 1,
+      tier: "pro",
+      updatesWindows: {},
+    });
+    const result = verifyDev(empty);
+    expect(result.valid).toBe(true);
+    expect(result.claims?.updatesWindows).toEqual({});
+  });
+
+  test("a LAPSED window never invalidates the license itself (window ≠ expiry)", () => {
+    const lapsed = mint({
+      entitlements: ["local-ai"],
+      expiry: null,
+      licenseId: VALID_UUID,
+      major: 1,
+      tier: "pro",
+      updatesWindows: { "local-ai": "2020-01-01T00:00:00.000Z" },
+    });
+    const result = verifyDev(lapsed, new Date("2026-07-06T00:00:00.000Z"));
+    expect(result.valid).toBe(true); // the registry narrows versions; verify never lapses on it
   });
 });

@@ -18,9 +18,9 @@ export const metadata: Metadata = buildMetadata({
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; ref?: string }>;
 }) {
-  const { next } = await searchParams;
+  const { next, ref } = await searchParams;
   const providers = configuredProviderIds(process.env);
 
   return (
@@ -31,7 +31,11 @@ export default async function LoginPage({
         lede="Get a one-time sign-in link by email, or continue with a connected account. You'll land back on your entitlements, credits, and license."
       />
       <Section eyebrow="Sign in" title="Continue to your dashboard">
-        <LoginForm providers={providers} next={next ?? "/dashboard"} />
+        <LoginForm
+          providers={providers}
+          next={next ?? "/dashboard"}
+          signupSource={ref}
+        />
       </Section>
     </>
   );

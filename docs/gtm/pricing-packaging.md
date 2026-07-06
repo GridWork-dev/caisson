@@ -2,8 +2,8 @@
 updated: 2026-07-06
 status: live
 grounds:
-  - knowledge/decisions/ADR-0251-ui-pro-spec-locks.md
-  - knowledge/decisions/ADR-0252-pricing-revalidation-locks.md
+  - knowledge/decisions/ADR-0259-ui-pro-spec-locks.md
+  - knowledge/decisions/ADR-0260-pricing-revalidation-locks.md
   - outputs/research/pricing-revalidation-2026-07.md
   - knowledge/decisions/ADR-0012-pricing-packaging.md
   - knowledge/decisions/ADR-0095-gtm-offer-structure.md
@@ -31,21 +31,21 @@ compliance-grade modules individually, and one-time-only code products have no r
 
 ## Stage-3 amendments (ADR-0258, 2026-07-06) — three numbers move, two deferred items close
 
-The Stage-3 catalog-rework picker closed ADR-0252's two deferred items and recomputed where the
+The Stage-3 catalog-rework picker closed ADR-0260's two deferred items and recomputed where the
 formula demanded it. **Superseding rows (everything else in the Stage-2 table below stands):**
 
 | SKU                           | Locked (ADR-0258)                                                                                             | Basis                                                                                                                                                                                                                   |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Local-first bundle**        | **$629**                                                                                                      | full 3-way carve: **local-sync $199 · local-inference $249 · local-privacy $99**; 0.75 × $845 member-sum (carves + local-store $99 + field-crypto $199); closes the ADR-0252 deferred round; supersedes ADR-0240's $349 |
+| **Local-first bundle**        | **$629**                                                                                                      | full 3-way carve: **local-sync $199 · local-inference $249 · local-privacy $99**; 0.75 × $845 member-sum (carves + local-store $99 + field-crypto $199); closes the ADR-0260 deferred round; supersedes ADR-0240's $349 |
 | **AI-Production bundle**      | **$739**                                                                                                      | credits ($149) confirmed in the member set (registry-true; ai-kit/ai-meter hard-depend) → 0.75 × $994 recompute                                                                                                         |
-| **Everything bundle**         | **$2,059**                                                                                                    | 0.75 × Σ(1,049 + 739 + 629 + 329 = $2,746); **content = every sellable SKU incl. ui-pro** (only private `brand` excluded; supersedes ADR-0251 §5 on this point)                                                         |
+| **Everything bundle**         | **$2,059**                                                                                                    | 0.75 × Σ(1,049 + 739 + 629 + 329 = $2,746); **content = every sellable SKU incl. ui-pro** (only private `brand` excluded; supersedes ADR-0259 §5 on this point)                                                         |
 | org module                    | **$249** as ONE merged **`org-controls`**                                                                     | ADR-0257 shape call — the $199 standalone branch is dead                                                                                                                                                                |
 | **Renewal cents (moved/new)** | AI **$289** · Local-first **$249** · Everything **$819** · sync **$79** · inference **$99** · privacy **$39** | flat-40% X9 ladder otherwise unchanged                                                                                                                                                                                  |
 
 Below-sum ✓ on all six bundles at lock. Display still flips in one wave (W6/W7 of
 `outputs/specs/catalog-rework/PLAN.md`); Paddle sandbox rebuilds big-bang at W7.
 
-## Stage-2 price locks (ADR-0252, 2026-07-06) — display rides the catalog-rework build
+## Stage-2 price locks (ADR-0260, 2026-07-06) — display rides the catalog-rework build
 
 The pricing-revalidation pass (Kickoff D Stage 2) locked the post-catalog-rework sheet. **These
 numbers are the committed prices for the bundle catalog; the site display flips in one wave with
@@ -70,7 +70,7 @@ above (AI-Production, Local-first, Everything, auth-sso shape, and their renewal
 | auth-sso                    | **$199** standalone / **$249** merged with the rls admin-write carve (Stage 3 decides shape) |
 | credits (post-decouple)     | **$149**                                                                                     | Stigg $399/mo validates; Lago OSS caps                                                                                                                                                                                 |
 | billing-orchestration       | **$99**                                                                                      | Kill Bill/Lago free-OSS ceiling                                                                                                                                                                                        |
-| ui-pro                      | **$129**                                                                                     | inside the ADR-0251 band, low end                                                                                                                                                                                      |
+| ui-pro                      | **$129**                                                                                     | inside the ADR-0259 band, low end                                                                                                                                                                                      |
 | 11 existing modules         | **unchanged**                                                                                | every live-comp verdict "keep"                                                                                                                                                                                         |
 | Subscriptions + top-up      | **unchanged**                                                                                | $1,499/yr · $499/yr · $49/5,000 (margin audited 89.8%, mix-proof)                                                                                                                                                      |
 | **Updates-renewal cents**   | **flat 40% of list, X9-rounded**                                                             | Compliance $419 · AI $249 · Agentic $129 · Everything $699 · Provenance $159 · LF $139 interim · modules 299→$119 · 249→$99 · 199→$79 · 149→$59 · 129→$49 · 99→$39 · 49→$19 — Kickoff E's renewal plumbing wires these |
@@ -203,7 +203,7 @@ The catalog-doctrine round locked 2026-07-05/06: every commercial package indivi
 displayed (ADR-0246 F1b), editions dissolve into the Persona+Provenance bundle set (ADR-0246
 F2b / ADR-0249 G1), the compliance 3-SKU carve is formula-priced (ADR-0246 F6), bundle
 mechanics are 25%-off-sum + snapshot-at-sale + crediting map (ADR-0247), and the Stage-2
-pricing pass (ADR-0252) locked the numbers — see the Stage-2 section at the top of this file.
+pricing pass (ADR-0260) locked the numbers — see the Stage-2 section at the top of this file.
 R3 is thereby closed (the carve exists and is priced).
 
 **Still open after Stage 2 — ALL CLOSED at Stage 3 (ADR-0257/0258, see the amendments section

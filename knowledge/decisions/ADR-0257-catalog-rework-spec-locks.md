@@ -30,7 +30,7 @@ the builds inherit `billing` + `external-system` + `security` + `ui`/`frontend`.
    in the Worker; D owns the per-member join-date filter in registry-schema. Absent key =
    grandfathered/unrestricted on both axes. (Refines the round-1 "enforcement in E" lock
    after E-session reconciliation — recorded here as the binding boundary.)
-3. **Org module = ONE merged `@caisson/org-controls` at $249** (ADR-0252's merged price).
+3. **Org module = ONE merged `@caisson/org-controls` at $249** (ADR-0260's merged price).
    Contents: WorkOS SSO + ONLY the owner-gated multi-user membership surface
    (`listAccountMembers`/`addAccountMember`/`assertCanManageMembers` — the research REFUTED
    the "zero blast radius" whole-file framing; session-resolution stays open) + the FULL

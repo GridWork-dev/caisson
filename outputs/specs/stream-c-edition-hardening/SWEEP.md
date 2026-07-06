@@ -36,8 +36,11 @@ README+AGENTS EU-AI-Act "reserved slot" → struck. `docs/build-state.md` needed
   (P3-24-gated) + the credit-vs-BYOK pricebook policy. Bedrock per-tenant BYOK (multi-part cred).
 - **C5 follow-ups (ADR-0160 deferred)** — local-ai `RentedTransport` drivers for the new providers;
   embedder drivers; the C8 live-transport exercise (operator-sequenced DEPLOY).
-- **C4 GA-promotion** — the Next.js inspector stays deferred (ADR-0082 §4); a worked buyer-wired
-  `Embedder` example is the doc-only embedding-lane close.
+- **C4 GA-promotion** — the local inspector (a read-only, localhost-only `Bun.serve` view, not the
+  Next.js surface earlier drafts assumed) has since SHIPPED per
+  `outputs/specs/deferred-respec/SPEC-agent-dev-inspector.md` / ADR-0243 (ADR-0082 §4 governs only
+  the edition's labeled-roadmap _site copy_, never this technical deferral); a worked buyer-wired
+  `Embedder` example is the remaining doc-only embedding-lane close.
 - **`docs/build-state.md`** — the P2/P3/P4 rows may be upgraded from "partial" toward "shipped" for the
   now-wired surfaces at the integration reconcile (a status-catalog edit, integration-owned).
 

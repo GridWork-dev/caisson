@@ -22,7 +22,7 @@ export default function MarketplaceLayout({
       <Hero
         eyebrow="Marketplace"
         title="One module, one edition, or everything."
-        lede={`${TOTAL === 11 ? "Eleven" : String(TOTAL)} modules compose four editions on the same audited base, priced ${formatUsd(MIN)} to ${formatUsd(MAX)} each. Take a single module for exactly the capability you need, a full edition for the whole thing, or the everything bundle for all four. Own the source — no renewal gate.`}
+        lede={`${TOTAL === 11 ? "Eleven" : String(TOTAL)} modules compose four editions on the same audited base, priced ${formatUsd(MIN)} to ${formatUsd(MAX)} each. Take a single module for exactly the capability you need, a full edition for the whole thing, or the everything bundle for all four. Own the source — no forced renewal.`}
         ctas={<MarketplaceTabs />}
       />
       {children}

@@ -6,7 +6,7 @@ the renewal cents. Evidence: 10-agent workflow `wf_a48a04fe-2de` (5 sonnet prici
 module-comp sweeps, the compliance anchor/WTP memo on the `gw-pricing-analyst` lane, the
 recurring/renewal survey — an opus completeness critic, and 4 gap-fills: a P_C peer hunt, the
 Cookiy funding attempt, a repo-grounded credit-margin audit, and the 3-bundle resolution model).
-Full agent returns: the session workflow journal. **Locks recorded in ADR-0252**; this memo is
+Full agent returns: the session workflow journal. **Locks recorded in ADR-0260**; this memo is
 the evidence record. Nothing here re-opens a lock.
 
 ## 1. Registry-truth corrections (load-bearing)
@@ -39,7 +39,7 @@ Two logics, presented as Round-1 fork options:
 all quote-gated, third-party-reported) stays marketing narrative ("less than 2 months of your
 first Vanta invoice, and you own it forever"), never pricing logic.
 
-## 3. The locked sheet (ADR-0252)
+## 3. The locked sheet (ADR-0260)
 
 **Formula: bundle display = 0.75 × priced-member sum, rounded down to the 9-ending; the
 ADR-0137/0247 below-sum invariant checked per bundle. Everything = 0.75 × Σ(bundle prices),
@@ -60,7 +60,7 @@ recompute-on-move.**
 | auth-sso                                   | **$199** standalone / **$249** merged with rls admin-write org-controls (Stage 3 decides shape) | WorkOS $125/connection/mo context; $0-OSS floor (SSOReady/BoxyHQ)                                                          | new                            |
 | credits (post-decouple)                    | **$149**                                                                                        | Stigg $399/mo validates; Lago free-OSS caps                                                                                | new                            |
 | billing-orchestration                      | **$99**                                                                                         | Kill Bill/Lago free-OSS ceiling                                                                                            | new                            |
-| ui-pro                                     | **$129**                                                                                        | within the ADR-0251 band ($129–199); operator took the low end                                                             | banded Stage 1                 |
+| ui-pro                                     | **$129**                                                                                        | within the ADR-0259 band ($129–199); operator took the low end                                                             | banded Stage 1                 |
 | 11 existing modules                        | **all unchanged**                                                                               | every verdict "keep"; each sits under one month of its cheapest hosted comp                                                | $49–199                        |
 | Compliance-Updates                         | **$1,499/yr** (keep)                                                                            | bracketed by compliance.tf $1,000 / SchemaPilot Pro $1,788                                                                 | —                              |
 | Developer                                  | **$499/yr** (keep)                                                                              | Copilot Pro+ $468 / Cursor Pro+ $720 boundary                                                                              | —                              |

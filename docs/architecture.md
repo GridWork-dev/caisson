@@ -1,11 +1,10 @@
 ---
-updated: 2026-07-05
+updated: 2026-07-06
 status: live
 grounds:
   - package.json
   - tooling/standards-gate/src/checks.ts
   - .github/workflows/ci.yml
-  - .github/workflows/greptile-gate.yml
   - infra/terraform/main.tf
   - docs/state/providers.md
 ---
@@ -81,10 +80,10 @@ backend (production Paddle account is a launch-gate item).
 | ------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `standards-gate`    | `.github/workflows/ci.yml` → `tooling/standards-gate/src/cli.ts` (`checks.ts`) | the SPDX/license authority — AGPL boundary, open-core split, down-only, manifest↔package.json agreement, RLS equivalence, shipped-prose, entitlement-token leaks. Runs pre-install (fs-only) AND post-install (needs `node_modules`) |
 | `check`             | `.github/workflows/ci.yml`                                                     | `turbo run build lint test` (36-pkg tree) + `bun run gate` (`packages/kernel/src/gate.ts`)                                                                                                                                           |
-| `greptile-gate`     | `.github/workflows/greptile-gate.yml`                                          | required check that @-mentions `@greptileai` only when a PR's diff touches a security-critical path (auth/tenancy/crypto/license/billing/credits/tool-exec/CI itself); non-critical PRs merge on the ordinary checks alone           |
 | `registry-index`    | `.github/workflows/ci.yml`                                                     | `registry/index.json` is a byte-identical rebuild from the git-tracked ledger — proves CI (not a hand-edit) produced it                                                                                                              |
 | `oscal-conformance` | `.github/workflows/ci.yml` (hosted, `ubuntu-latest`)                           | NIST OSCAL v1.2.2 JSON→XML→schema round-trip via `oscal-cli` (Maven), for `packages/compliance`                                                                                                                                      |
 
 `standards-gate` + `check` + `registry-index` are the 3 unconditional required checks (ADR-0016);
-`greptile-gate` replaced the blanket Greptile-review requirement (2026-07-02); `oscal-conformance`
+the `greptile-gate` review check was RETIRED with the vendor (2026-07-06 — review is the
+in-session SHIP audit lane per CLAUDE.md §PR review gate); `oscal-conformance`
 runs hosted because `oscal-cli` isn't on the self-hosted `caisson-amd64` fleet.

@@ -87,7 +87,7 @@ const OPEN_BASE_NAMES = new Set([
   // offline license verifier into EVERY generated repo, so all three ship with each buyer and are
   // open Apache-2.0 Base — never gated, never sold à-la-carte. cli→kernel·migrate·registry-schema
   // (the codegen debit is an injected port; the commercial @caisson/credits — flipped by ADR-0249
-  // G5/ADR-0252 — is dev-only), migrate→kernel, license-verify→kernel: all open, so open-only
+  // G5/ADR-0260 — is dev-only), migrate→kernel, license-verify→kernel: all open, so open-only
   // holds (ADR-0094).
   "@caisson/cli",
   "@caisson/migrate",
@@ -389,7 +389,7 @@ export const PRICE_AUTHORITY: Record<string, { cents: number; adr: string }> = {
   "@caisson/compliance": { cents: 79900, adr: "ADR-0227" },
   "@caisson/audit-worm": { cents: 14900, adr: "ADR-0129" },
   "@caisson/local-ai": { cents: 34900, adr: "ADR-0240" },
-  "@caisson/credits": { cents: 14900, adr: "ADR-0252" },
+  "@caisson/credits": { cents: 14900, adr: "ADR-0260" },
 };
 
 /**

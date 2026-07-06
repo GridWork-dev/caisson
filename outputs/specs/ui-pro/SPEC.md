@@ -4,7 +4,7 @@
 stage**; build scheduling lands in the catalog-rework PLAN (Kickoff D Stage 3).
 **Tags:** `ui` `frontend` (the build inherits the standards-gate critical path where it touches
 the license boundary; no `billing`/`security` surface in this SPEC itself).
-**ADR:** ADR-0251 (locks the four forks below; extends ADR-0250 G2a).
+**ADR:** ADR-0259 (locks the four forks below; extends ADR-0250 G2a).
 **Kickoff:** `outputs/kickoffs/KICKOFF-D-catalog-program.md` (Stage 1).
 **Research grounding:** 11-agent workflow 2026-07-05/06 (internal gap survey grounded in
 `apps/site/app/dashboard` + `apps/admin`; Tailwind Plus / MUI X / shadcn-ecosystem /

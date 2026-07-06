@@ -90,7 +90,8 @@ export function CartUpgradeCallout() {
 export function CartTrustNote() {
   return (
     <p className={styles.trust}>
-      One-time perpetual license, billed once — no seat count, no renewal gate.
+      One-time perpetual license, billed once — no seat count, no forced
+      renewal.
     </p>
   );
 }

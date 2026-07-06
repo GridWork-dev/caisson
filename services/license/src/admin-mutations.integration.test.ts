@@ -27,8 +27,10 @@ import { AuditChainStore, LocalArtifactStore } from "@caisson/audit-worm";
 import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
 import {
   CREDIT_LINE_ITEM_MIGRATION_SQL,
+  CREDIT_EXPIRY_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
+  GRANT_CONSUMPTION_MIGRATION_SQL,
   debit,
   grant,
 } from "@caisson/credits";
@@ -57,6 +59,7 @@ import {
 import { applyBillingEvent } from "./apply-billing-event.ts";
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
+  ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   grantEntitlements,
   readEntitlements,
@@ -142,11 +145,14 @@ beforeAll(async () => {
   await tp.exec(ACCOUNT_MEMBER_SCHEMA_SQL);
   await tp.exec(CREDIT_SCHEMA_SQL);
   await tp.exec(CREDIT_ROUNDING_MIGRATION_SQL);
+  await tp.exec(CREDIT_EXPIRY_MIGRATION_SQL);
+  await tp.exec(GRANT_CONSUMPTION_MIGRATION_SQL);
   // ADR-0218 per-line columns — the paid-revoke claw reads `creditsClawedForSource` (line_item_id).
   await tp.exec(CREDIT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   // ADR-0218 line_item_id on entitlement_grant — `grantEntitlements` (the paid-source seeder) needs it.
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
+  await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
   // ADR-0225: the license index (read cross-tenant for the edge deny-set) + the deny-set truth table,
   // created BEFORE ADMIN_MUTATION_PROVISION_SQL (its new license_grant SELECT policy references it).
   await tp.exec(LICENSE_GRANT_SCHEMA_SQL);
@@ -376,6 +382,44 @@ describe("credit adjust (± integer, feature envelope, never negative)", () => {
       [acct],
     );
     expect(bal[0]?.balance).toBe(0);
+  });
+
+  test("negative adjust over un-swept expired residue burns the residue first, then applies", async () => {
+    const acct = await realAccount();
+    // An EXPIRED grant (residue 300) + a live grant (200): wallet aggregate 500, spendable 200.
+    await withTenant(db, acct, async (tx) => {
+      await grant(tx, {
+        accountId: acct,
+        eventType: "feature_grant",
+        feature: "admin_adjust",
+        amount: asCredits(300),
+        idempotencyKey: randomUUID(),
+        expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+      });
+      await grant(tx, {
+        accountId: acct,
+        eventType: "feature_grant",
+        feature: "admin_adjust",
+        amount: asCredits(200),
+        idempotencyKey: randomUUID(),
+      });
+    });
+    // Remove 500: the aggregate says 500, but only 200 is spendable. The adjust path sweeps the
+    // expired residue first (an `expiry_debit` event), then clamps to the swept balance — before
+    // the sweep-first fix this threw InsufficientCreditsError and rolled the whole action back.
+    const r = await adjustCreditsAdmin(deps(), {
+      actorEmail: "op@gridwork.dev",
+      targetAccountId: acct,
+      deltaCredits: -500,
+      reason: "clawback over stale residue",
+    });
+    expect(r.applied).toBe(-200);
+    expect(r.balanceAfter).toBe(0);
+    const ev = await ground<{ event_type: string; n: number }>(
+      `SELECT event_type, count(*)::int AS n FROM credit_event WHERE account_id = $1 GROUP BY event_type`,
+      [acct],
+    );
+    expect(ev.find((e) => e.event_type === "expiry_debit")?.n).toBe(1);
   });
 });
 

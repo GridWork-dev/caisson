@@ -76,7 +76,7 @@ const denySet = makeRevocationDenySet(async (): Promise<unknown> => {
 // (Worker modules are not externally importable) and every shipped call site takes the baked default.
 export const buildLicenseEntitlementResolver = (
   verify?: Parameters<typeof makeLicenseEntitlementResolver>[1],
-): ((request: Request) => readonly string[] | null) =>
+): ReturnType<typeof makeLicenseEntitlementResolver> =>
   makeLicenseEntitlementResolver(denySet.get, verify);
 const licenseEntitlementResolver = buildLicenseEntitlementResolver();
 

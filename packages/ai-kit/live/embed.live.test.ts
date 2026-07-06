@@ -11,8 +11,10 @@
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import { newTestPg, type TestPg } from "@caisson/testing";
 import {
+  CREDIT_EXPIRY_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
+  GRANT_CONSUMPTION_MIGRATION_SQL,
   grant,
 } from "@caisson/credits";
 import { asCredits, asMicroUsdPerCredit } from "@caisson/kernel";
@@ -91,6 +93,8 @@ beforeEach(async () => {
       "tenant_spend_window",
       SPEND_POLICY_TABLE,
       "spend_breaker",
+      "grant_consumption",
+      "credit_expiry_notice",
       "credit_event",
       "credit_wallet",
     ]
@@ -99,6 +103,8 @@ beforeEach(async () => {
   );
   await tp.exec(CREDIT_SCHEMA_SQL);
   await tp.exec(CREDIT_ROUNDING_MIGRATION_SQL);
+  await tp.exec(CREDIT_EXPIRY_MIGRATION_SQL);
+  await tp.exec(GRANT_CONSUMPTION_MIGRATION_SQL);
   await tp.exec(AI_METER_SCHEMA_SQL);
   await withTenant(tp.pg, A, (tx) =>
     grant(tx, {

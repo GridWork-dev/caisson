@@ -17,7 +17,9 @@ export {
   tryRenderEmailTemplate,
 } from "./templates/index.ts";
 export type {
+  CreditsExpiringData,
   EmailTemplateData,
   EmailTemplateId,
   RenderedEmail,
+  TemplateDataMap,
 } from "./templates/index.ts";

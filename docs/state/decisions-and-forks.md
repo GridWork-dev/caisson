@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-06
 status: live
-adr_ceiling: 0258
+adr_ceiling: 0260
 ---
 
 # Decisions & Forks — live board
@@ -982,7 +982,7 @@ packages only for framework-free cores, shared frontends package forbidden · G2
 six S-effort surfaces (audit-worm viewer · license-issue log · local-store search ·
 prompt-registry browser · ai-meter chart · audit-harness viewer), after the catalog-rework SPEC.
 
-**ui-pro SPEC round (2026-07-06, Kickoff D Stage 1) — ADR-0251:** component line =
+**ui-pro SPEC round (2026-07-06, Kickoff D Stage 1) — ADR-0259 (drafted 0251, renumbered at the E-merge):** component line =
 **market-line split** (ui-pro = 7 deep/domain components — DataTable-Pro · Tree-Pro · Ops
 Matrix (absorbs `sku-matrix`) · Audit Timeline · Payload Viewer · Type-to-Confirm · Adv
 Date-Range — a strict leaf: no `packages/*` may depend on it; every table-stakes basic
@@ -992,7 +992,7 @@ gating, build deferred per 0250 G2b · **v1 = full 7** (operator override of the
 price-band input to Stage 2 = **$129–199, anchor $149, standalone-only** (ai-evals pattern —
 no edition/bundle membership). Scope: `outputs/specs/ui-pro/SPEC.md`.
 
-**Pricing-revalidation round (2026-07-06, Kickoff D Stage 2) — ADR-0252:** pricing logic =
+**Pricing-revalidation round (2026-07-06, Kickoff D Stage 2) — ADR-0260 (drafted 0252, renumbered at the E-merge):** pricing logic =
 **sum-of-parts comps-anchored** (Vanta-TCO = narrative, never pricing logic) · bundles
 formula-locked at 0.75 × registry-truth member sums: **Compliance $1,049** (carve P_C $299 ·
 P_F $249 · P_S $199) · **AI-Production $629** · **Agentic-Dev $329** (tool-exec $99) ·
@@ -1018,7 +1018,7 @@ standalone branch dead) · **display = hub-extend + fifth Provenance persona pag
 `outputs/specs/catalog-rework/{SPEC,PLAN}.md`.
 
 **Catalog pricing-consequence round (2026-07-06, Kickoff D Stage 3, round 2) — ADR-0258
-(supersedes ADR-0252 on 3 numbers; supersedes ADR-0251 §5 on Everything content):**
+(supersedes ADR-0260 on 3 numbers; supersedes ADR-0259 §5 on Everything content):**
 **Local-first = full 3-way carve $629** (local-sync $199 · local-inference $249 ·
 local-privacy $99; sum 845; privacy-first extraction order binding) · **credits joins
 AI-Production → recompute $739** (sum 994) · **Everything $2,059 full-catalog content
@@ -1030,8 +1030,9 @@ flip). Below-sum ✓ on all six bundles at lock.
 
 **ADR numbering note (2026-07-06):** Kickoff E's branch (`feat/independent-build-wave`)
 holds 0253–0256 (incl. its own 0255 `updatesWindows` claims rewrite); D files from 0257 up
-by cross-session agreement. The dual-branch 0251/0252 collision renumbers at merge per
-ADR-0088 (second merger renumbers).
+by cross-session agreement. The dual-branch 0251/0252 collision RESOLVED at the merge per
+ADR-0088 (second merger renumbers): D's pair became **0259/0260**; 0261 is reserved for the
+Greptile-retirement ADR.
 
 **Still OPEN after Stage 3**: production Paddle catalog recreation (operator act at the
 commerce flip; sandbox never ports) · optional Cookiy WTP validation (survey 374111 live;
@@ -1050,3 +1051,59 @@ price numbers; both kickoffs research-first-then-deep-forks by design.
 displayed prices, price the 3 compliance SKUs and the per-package catalog, and fold in the
 gate/split pricing of the OSS redraw). Brainstorm evidence lands in
 `outputs/research/catalog-rework-brainstorm-2026-07.md`.
+
+## 2026-07-06 Kickoff-E picker rounds (independent-build-wave session) — 4 lock ADRs
+
+Kickoff E ran research-first (7-agent fan-out over the W1 seams, W3 doc, W4 measurement pair),
+then three picker rounds. W2 (agent-dev inspector) needed no round — ADR-0243 had pre-resolved
+both forks; it was built lock-and-go in the same session. Research briefs:
+`outputs/research/kickoff-e-research-2026-07/`.
+
+| Fork                              | Decision                                                                                                                                                                                                            | ADR          |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| **W1 — window enforcement point** | Claim + edge filter: signed `updatesUntil` on the license claims; Worker + npm surface filter per-version `publishedAt`, recompute `dist-tags.latest`; `/issue` re-mints on window change; absent claim = unbounded | **ADR-0251** |
+| **W1 — renewal SKU shape**        | ONE "Updates Renewal" Paddle product, per-SKU prices (sandbox, placeholder cents — Kickoff D owns numbers); fail-closed `RENEWAL_BOOK`; renewal extends `updates_expires_at` per `(account, entitlement)`           | **ADR-0251** |
+| **W1 — EULA/checkout copy**       | Mixed posture over the 7 contradicting spots: fuller on the two JSON-LD FAQ surfaces, minimal surgical elsewhere; cart badge → "no forced renewal"; no percentage in copy                                           | **ADR-0251** |
+| **W1 — FIFO ledger shape**        | Append-only `grant_consumption` join table + `expires_at` on `credit_event`; sandbox prod rows backfilled `created_at + 12mo`                                                                                       | **ADR-0252** |
+| **W1 — FIFO tie-break**           | `created_at ASC, expires_at ASC, id ASC` (sooner-expiring burns first on the real multi-item-cart tie)                                                                                                              | **ADR-0252** |
+| **W1 — expiry notification**      | Dashboard badge AND T-30d email, both now (operator pick above the badge-only rec — first transactional email template + jobs sweep + notified marker)                                                              | **ADR-0252** |
+| **W3 — build-state rework shape** | Generated per-package counts via a 7th sot check (`checkPackageCountParity`, `--update` suggestions) + banner squash; prose stays hand-written                                                                      | **ADR-0253** |
+| **W4 — citation tracker**         | Pay-as-you-go only (operator lock, custom answer): OpenRouter probe loop, monthly GHA cron, ~$1.20/run; DataForSEO-class PAYG evaluated for the AI-Overviews leg; NO subscription tracker pre-traffic               | **ADR-0254** |
+| **W4 — citation results sink**    | Both: `docs/gtm/aeo-citation-tracking.md` snapshots (canonical 18-question list included, ships as-is) + `aeo_citation_probe` PostHog events                                                                        | **ADR-0254** |
+| **W4 — docs funnel**              | Split (option C), build now: Plausible cookieless top-of-funnel goals/events + PostHog `account_created` with `?ref=` stitching; PostHog JS stays dashboard-only (F8 intact, option B rejected)                     | **ADR-0254** |
+
+### SHIP-audit picker (same session, post-build)
+
+The fable security audit + opus code review of the merged wave surfaced two fork-class
+findings (everything mechanical was fixed inline, operator rule: no deferrals).
+
+| Fork                               | Decision                                                                                                                                                                                                        | ADR          |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| **Window-claim scope (SEC-1)**     | Per-entitlement windows NOW (operator pick above the accept-and-record rec): `updatesWindows` map keyed by purchased id; per-pair issuer compute; most-favorable-window edge filter; supersedes 0251-D1 in part | **ADR-0255** |
+| **Expiry-sweep scheduler (CR-S1)** | pg-boss inside `services/license`, inert until `CREDIT_EXPIRY_SCHEDULE` (cron env) is armed; daily account tick enqueues sweep + notice with singletonKey dedup — the first in-repo recurring-task precedent    | **ADR-0256** |
+
+### Kickoff D ↔ E reconciliation (2026-07-06, binding boundary)
+
+- **Enforcement split:** E = per-VERSION window filter (`publishedAt <= updatesWindows[id]`) in
+  `registry/worker`, never touching `registry-schema`; D = per-MEMBER join-date filter
+  (`entitledSince` vs bundle-member join dates, fail-soft skip) in
+  `registry-schema/entitlements.ts`, never touching the worker's per-version check.
+- **`entitledSince`** is specced by D as a sibling per-purchased-id claim record (absent key =
+  grandfathered/unrestricted — the ADR-0255 posture); reserved by a comment at the claims schema.
+- **Rename surfaces are D's:** the bundle-vocabulary constant + resolve-time alias map (single
+  resolve point in `expandEntitlements`), normalizing the RENEWAL_BOOK lookup through it, the
+  cosmetic sandbox Paddle price names, and appending RENEWAL_BOOK rows for net-new SKUs with real
+  cents. E does not re-key RENEWAL_BOOK.
+- **ADR numbering:** E stops at 0256 (files nothing above it without pinging D); D files from 0257. The dual 0251/0252 collision renumbers at merge per ADR-0088 (second merger renumbers,
+  including supersession links).
+
+### Greptile retired (2026-07-06, operator lock, same session)
+
+Greptile's Starter monthly review limit hit mid-PR-#128 and the operator dropped the vendor
+outright — no plan upgrade, no replacement external reviewer. `greptile-gate.yml` + `.greptile/`
+deleted from the tree (git history keeps them); the review gate is the in-session SHIP audit lane
+(gw-code-reviewer + gw-security-auditor + adversarial verify — CLAUDE.md §PR review gate
+rewritten). Amends the ADR-0177 Greptile-PR-gate lock; the formal ADR is **deferred to the next
+free number** (E's ceiling is frozen at 0256 per the D↔E numbering agreement above — D files it or
+it lands post-merge). Operator follow-ups: uninstall the Greptile GitHub app from `caisson-sh`;
+drop `GREPTILE_API_KEY` at the ADR-0226 credential sweep.

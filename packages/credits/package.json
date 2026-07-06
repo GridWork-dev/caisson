@@ -21,9 +21,11 @@
     "test": "bun test ./src"
   },
   "dependencies": {
+    "@caisson/jobs": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/registry-schema": "workspace:*",
-    "@caisson/tenancy-rls": "workspace:*"
+    "@caisson/tenancy-rls": "workspace:*",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",

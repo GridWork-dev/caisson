@@ -7,6 +7,7 @@ import {
   EMAIL_TEMPLATE_IDS,
   renderEmailTemplate,
   type EmailTemplateId,
+  type TemplateDataMap,
 } from "@caisson/email";
 
 export const metadata: Metadata = {
@@ -14,12 +15,27 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const SAMPLE_URL: Record<EmailTemplateId, string> = {
-  "magic-link": "https://caisson.sh/api/auth/magic-link/verify?token=sample",
-  "password-reset":
-    "https://caisson.sh/api/auth/reset-password/sample?callbackURL=/reset-password",
-  "verify-email": "https://caisson.sh/api/auth/verify-email?token=sample",
+const SAMPLE_DATA: { [K in EmailTemplateId]: TemplateDataMap[K] } = {
+  "magic-link": {
+    url: "https://caisson.sh/api/auth/magic-link/verify?token=sample",
+  },
+  "password-reset": {
+    url: "https://caisson.sh/api/auth/reset-password/sample?callbackURL=/reset-password",
+  },
+  "verify-email": {
+    url: "https://caisson.sh/api/auth/verify-email?token=sample",
+  },
+  "credits-expiring": {
+    credits: 120,
+    expiresOn: "2027-07-06",
+    url: "https://caisson.sh/dashboard/credits",
+  },
 };
+
+// A generic helper keeps `id` and its sample data type-correlated across the map call.
+function renderSample<K extends EmailTemplateId>(id: K) {
+  return renderEmailTemplate(id, SAMPLE_DATA[id]);
+}
 
 export default async function EmailPreviewPage(): Promise<React.ReactElement> {
   if (process.env.NODE_ENV === "production") notFound();
@@ -27,7 +43,7 @@ export default async function EmailPreviewPage(): Promise<React.ReactElement> {
   const rendered = await Promise.all(
     EMAIL_TEMPLATE_IDS.map(async (id) => ({
       id,
-      ...(await renderEmailTemplate(id, { url: SAMPLE_URL[id] })),
+      ...(await renderSample(id)),
     })),
   );
 

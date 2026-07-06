@@ -11,7 +11,7 @@ program: KICKOFF-D-catalog-program (Stage 3)
 **Goal:** dissolve the four editions into the locked Persona+Provenance bundle set as real,
 purchasable catalog objects; execute every G-series carve/flip inside the ADR-0248 ratchet
 window; extract the brand layer; and rework the marketplace display so every commercial
-package is individually priced and displayed (ADR-0246 F1b) — all at the ADR-0252/0258
+package is individually priced and displayed (ADR-0246 F1b) — all at the ADR-0260/0258
 numbers. Evidence: the Stage-3 research pass (7 lanes + 6 gap fills, workflow
 `wf_51c546a1-d3f`, 2026-07-06); forks locked in two operator rounds (ADR-0257/0258).
 
@@ -44,7 +44,7 @@ numbers. Evidence: the Stage-3 research pass (7 lanes + 6 gap fills, workflow
    `buildAdminWritePolicySql`/`withAdminWrite`/`buildAdminSelectPolicySql`/
    `ADMIN_WRITE_ROLE_BOOTSTRAP_SQL`/`ADMIN_WRITE_ROLE`/`AdminWritePolicyOptions` move) + a
    **new entitlement gate on `/dashboard/members`** (live and ungated today — product work,
-   part of this carve). The $199 standalone branch is dead; $249 locked (ADR-0252).
+   part of this carve). The $199 standalone branch is dead; $249 locked (ADR-0260).
 4. **Display = hub-extend + Provenance persona page**: the /marketplace Editions tab becomes
    Bundles (6 cards), the module catalog gains a category facet, Provenance gets a fifth
    persona page on the existing pattern. `pricing.ts`'s 1:1 `edition:` field becomes 1:N
@@ -62,7 +62,7 @@ numbers. Evidence: the Stage-3 research pass (7 lanes + 6 gap fills, workflow
 7. **Everything = $2,059, full-catalog content**: price = 0.75 × Σ(personas 1,049+739+629+329
    = 2,746) = 2,059.5 → **$2,059** (25.0% off ✓; Provenance $0-incremental, strict subset of
    Compliance). **Content = every sellable SKU including ui-pro**; only `@caisson/brand`
-   (private, never sold) is excluded. Supersedes ADR-0251 §5's "no bundle membership" for
+   (private, never sold) is excluded. Supersedes ADR-0259 §5's "no bundle membership" for
    Everything only — ui-pro stays out of the four persona bundles and out of all formula
    inputs. The current `bundleMembers()` (base ∪ edition members over `editions:[]` regardless
    of license) is replaced by an explicit Everything membership rule with a brand/private
@@ -94,16 +94,17 @@ numbers. Evidence: the Stage-3 research pass (7 lanes + 6 gap fills, workflow
 
 | Extraction                             | Source                                                                                                                                                                                                                                                                                                                                                     | New package(s)                                                             | Price      |
 | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ---------- |
-| Compliance 3-SKU carve                 | `packages/compliance` src/{evidence,frameworks,registry}                                                                                                                                                                                                                                                                                                   | `compliance-core` $299 · `frameworks-pack` $249 · `signing-primitive` $199 | ADR-0252   |
+| Compliance 3-SKU carve                 | `packages/compliance` src/{evidence,frameworks,registry}                                                                                                                                                                                                                                                                                                   | `compliance-core` $299 · `frameworks-pack` $249 · `signing-primitive` $199 | ADR-0260   |
 | Org module (G4+G6)                     | `packages/auth` (workos + narrow membership) + `packages/tenancy-rls` (6 admin-write exports; ~35-LOC private role-guard duplicated or API-widened)                                                                                                                                                                                                        | `org-controls`                                                             | $249       |
 | Billing orchestration (G3)             | `packages/billing` (~93% of LOC: provider.ts, events.ts, paddle-events.ts, lemonsqueezy.ts, polar.ts, idempotency.ts) — verify-only files stay open; LemonSqueezy/Polar verify fns extracted to open files for uniformity; `BillingProvider` port + `DomainBillingEvent` stay OPEN (registry-schema precedent; keeps apps/base's free-floor demo building) | `billing-orchestration`                                                    | $99        |
 | Local-ai 3-way carve                   | `packages/local-ai` (privacy → inference repoint → sync)                                                                                                                                                                                                                                                                                                   | `local-sync` $199 · `local-inference` $249 · `local-privacy` $99           | ADR-0258   |
 | cli debit decouple → credits flip (G5) | `packages/cli` meter.ts injection port (`GenerationDeps.debit`, required field); credits→devDependency; apps/base wires the concrete debit                                                                                                                                                                                                                 | `credits` flips commercial                                                 | $149       |
 | Brand extraction (ADR-0250 G2b step 1) | `packages/ui` brand.tsx + 22 bespoke glyphs + app-shell/credential-strip baked defaults; module-registry `registerIcons()` extension point (server-safe, zero call-site edits); dashboard-shell.tsx passes an explicit brand prop (the one live regression site)                                                                                           | `brand` (private, license-issue pattern)                                   | never sold |
-| ui-pro build (ADR-0251)                | new package; 7 components per `outputs/specs/ui-pro/SPEC.md`; floor backfill lands in `ui` same wave                                                                                                                                                                                                                                                       | `ui-pro`                                                                   | $129       |
+| ui-pro build (ADR-0259)                | new package; 7 components per `outputs/specs/ui-pro/SPEC.md`; floor backfill lands in `ui` same wave                                                                                                                                                                                                                                                       | `ui-pro`                                                                   | $129       |
 
-Every new/carved package: changeset per touched dir (private packages included), greptile-gate
-glob + `.greptile/rules.md` row added **in the same PR that creates the package**, standards-gate
+Every new/carved package: changeset per touched dir (private packages included) — the greptile
+glob/rules requirement is RETIRED with the vendor (2026-07-06; review = in-session SHIP audits) —
+plus standards-gate
 license rows (`OPEN_BASE_NAMES` untouched — sources stay open with narrower surfaces; carves are
 new commercial names), PRICE_AUTHORITY row per priced SKU.
 
@@ -144,7 +145,7 @@ membership folds are self-verifying.
 
 - Marketplace hub: Bundles tab (6 cards incl. Everything), category facet on the module
   catalog (~20 SKUs), Provenance persona page (pattern of the existing 4), ui-pro catalog card
-  (the caisson.sh/ui gallery is a separate ADR-0251 build item — a demo surface, not the
+  (the caisson.sh/ui gallery is a separate ADR-0259 build item — a demo surface, not the
   priced listing).
 - `pricing.ts`: 1:N `bundles[]` data model; new numbers per ADR-0258; the membership lint
   extends (never bypassed).
