@@ -1,5 +1,11 @@
 # Kickoff C — Catalog rework: editions as bundles over a sellable package catalog
 
+> **SUPERSEDED same day (2026-07-05):** the operator ran the F1–F8 picker directly in the
+> SOT-expansion session instead — locks landed as **ADR-0246/0247/0248** and the remaining work
+> (brainstorm → follow-up picker → pricing pass → SPEC) continues in that worktree. The tmp-dir
+> session below never runs as written; kept for the record. See
+> `docs/state/decisions-and-forks.md` § "2026-07-05 catalog-rework picker".
+
 **Authored:** 2026-07-05 (SOT-expansion session, after the operator redirected the R3 price
 fork). **Runs:** its own dedicated session, any time after the SOT-expansion PR lands
 `outputs/research/catalog-doctrine-2026-07.md` on `main`. **Type:** spec kickoff — SPEC + PLAN +

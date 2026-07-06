@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-05
 status: live
-adr_ceiling: 0245
+adr_ceiling: 0248
 ---
 
 # Decisions & Forks — live board
@@ -937,3 +937,35 @@ The SPEC §5 fork queue (`outputs/specs/sot-expansion/SPEC.md`) went to the oper
   nothing in that direction is locked yet. R3's price re-lock folds INTO that round (still
   gated against the ADR-0227 $799 anchor + ADR-0238 catalog math); the R3 engineering SPEC is
   queued for its own session after the lock. The three.js signature spike stays parked.
+
+## 2026-07-05 catalog-rework picker (same session, F1–F8 against the doctrine research) — 3 lock ADRs + a brainstorm mandate
+
+The operator ran the F1–F8 queue the same day and opened the round as **brainstorm-class: NOT
+bounded by prior packaging ADRs** (prior ADRs hold until each superseding lock lands). The
+Kickoff-C tmp-dir session is superseded — the picker happened here; remaining work continues in
+this worktree. Locks:
+
+- **ADR-0246 — structure**: F1 = (b) every commercial package individually priced AND displayed
+  (override of the curated-display rec) · F2 = (b) editions dissolve into true bundle objects
+  **plus a bundle-set redesign mandate** (not a 1:1 relabel; candidate sets from the brainstorm,
+  locked at a follow-up picker; the four editions stay displayed until then) · F6 = compliance
+  **3-SKU carve** (core meta · frameworks-pack · signing), bundle price **derived from the F3
+  formula**, exact numbers pending the pricing pass ($799 display stands meanwhile).
+- **ADR-0247 — mechanics**: F3 = (a) ~25%-off-member-sum stays the bundle anchor · F7 = (a)
+  growing bundles are snapshot-at-sale, updates-window-gated (a renewal window delivers later
+  additions — option (b)'s benefit via (a)'s mechanics) · F8 = (a) self-serve upgrade crediting
+  `bundle − owned_retail` off a pre-declared pricebook map.
+- **ADR-0248 — line-drawing doctrine**: F4 = (a) buyer-based open-core standard + **ratchet
+  engaging at first publish** + SPDX-as-boundary, Fair-Source out (the operator's first reply
+  typed (b); corrected to (a) in-round — (a) is the lock) · F5 = (a) split checklist adopted +
+  4 standards-gate checks queued as a code-tree build. **Pre-launch redraw clause:** nothing is
+  published yet, so flipping Apache base packages to commercial and splitting `ui` into a
+  basic-OSS floor + deep commercial design package are in-scope brainstorm candidates — decided
+  per-package at the follow-up picker, one-way after first publish.
+
+**Still OPEN after this round** (feeds the follow-up picker): the bundle SET itself · the
+OSS-line per-package redraws (ui split shapes, base→commercial flips) · **every price number**
+(a full pricing-revalidation research pass is operator-commissioned: re-validate/adjust all
+displayed prices, price the 3 compliance SKUs and the per-package catalog, and fold in the
+gate/split pricing of the OSS redraw). Brainstorm evidence lands in
+`outputs/research/catalog-rework-brainstorm-2026-07.md`.
