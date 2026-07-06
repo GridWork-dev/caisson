@@ -19,6 +19,8 @@
 // territory (never caught inside a task handler).
 import { createPgBossJobQueue, defineTask, type JobQueue } from "@caisson/jobs";
 import { strictObject } from "@caisson/kernel";
+// The admin-write role helpers moved to the commercial @caisson/org-controls carve (ADR-0257 §1.3);
+// only the Transactor type stays in the open @caisson/tenancy-rls base.
 import { withAdminWrite } from "@caisson/org-controls";
 import type { Transactor } from "@caisson/tenancy-rls";
 import {
