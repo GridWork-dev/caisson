@@ -1,10 +1,11 @@
 ---
-updated: 2026-07-05
+updated: 2026-07-06
 status: live
 grounds:
   - knowledge/decisions/ADR-0079-seo-strategy.md
   - knowledge/decisions/ADR-0232-seo-renderer-trigger-glossary-program.md
   - knowledge/decisions/ADR-0235-glossary-program-fork-locks.md
+  - knowledge/decisions/ADR-0254-measurement-pair-citation-loop-docs-funnel.md
   - outputs/research/support-strategy.md
   - docs/state/linear-integration.md
   - docs/state/launch-runbook.md
@@ -28,7 +29,10 @@ maps to the actual Caisson code that satisfies it), so uniqueness is structural,
 (ADR-0079 §2). Docs themselves are the SEO surface — no separate content team, the existing
 Fumadocs tree is the asset (ADR-0079 §3). AI crawlers stay allow-all (blocking measured −73%
 ChatGPT citations for zero Googlebot gain) with Cloudflare Content-Signals as the sanctioned
-middle ground (ADR-0079 §5) — see the unbuilt-items note below.
+middle ground (ADR-0079 §5) — see the unbuilt-items note below. **The measurement side of this
+bet is now wired** (gap #9, ADR-0254, 2026-07-06): a pay-as-you-go probe loop runs the 18-question
+canonical set through OpenRouter monthly and appends dated citation snapshots — see
+`docs/gtm/aeo-citation-tracking.md`.
 
 **Glossary program: the first and only content program pre-committed.** ADR-0232 set the
 build-a-renderer trigger at ~20+ near-identical pages and pre-committed the glossary as the one
@@ -48,8 +52,17 @@ repetitive questions so humans only handle judgment calls (`outputs/research/sup
 **Docs as the funnel, not just the manual.** One content artifact — docs + `llms.txt` — is built
 to serve three jobs at once: the support bot's retrieval corpus, in-Discord answers, and buyers'
 own coding agents reading the repo (`outputs/research/support-strategy.md` "Unifying insight").
-Docs-as-demand-channel is real but its conversion path (discover → quickstart → signup) is
-unmeasured — tracked as gap #12 in `gaps-and-plays.md`.
+Docs-as-demand-channel is real and its conversion path (discover → quickstart → signup) is now
+**instrumented** (gap #12, ADR-0254, 2026-07-06 — split assignment, Option C): Plausible owns
+the top-of-funnel (a `getting-started` page-goal, `docs_cta_click`, `signup_complete` — all
+cookieless extensions of the ADR-0237 F8 event set) and PostHog gains one `account_created`
+capture beside the existing `identify(accountId)` on first `/dashboard` mount, carrying a
+`signup_source` stitched from a `?ref=` param. The PostHog JS client stays dashboard-only (F8
+unchanged). First report artifact: the Plausible goals dashboard for the `caisson.sh` property
+(`https://plausible.io/caisson.sh` — configure the `getting-started` page-goal there,
+dashboard-side, Starter plan; no code change needed for that half). Full design:
+`knowledge/decisions/ADR-0254-measurement-pair-citation-loop-docs-funnel.md` (the same ADR
+that closed gap #9's AI-citation loop, `docs/gtm/aeo-citation-tracking.md`).
 
 ## The support-bot surface
 

@@ -14,13 +14,16 @@ import { PGlite } from "@electric-sql/pglite";
 import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
 import {
   CREDIT_LINE_ITEM_MIGRATION_SQL,
+  CREDIT_EXPIRY_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
+  GRANT_CONSUMPTION_MIGRATION_SQL,
 } from "@caisson/credits";
 import {
   ADMIN_ACTION_LOG_SCHEMA_SQL,
   ADMIN_MUTATION_PROVISION_SQL,
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
+  ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   LICENSE_GRANT_SCHEMA_SQL,
 } from "@caisson/service-license";
@@ -137,12 +140,15 @@ async function bootstrapPglite(): Promise<PGlite> {
   // legacy backfill and the other platformPackage() migrations this bootstrap doesn't apply.
   await pg.exec(CREDIT_SCHEMA_SQL);
   await pg.exec(CREDIT_ROUNDING_MIGRATION_SQL);
+  await pg.exec(CREDIT_EXPIRY_MIGRATION_SQL);
+  await pg.exec(GRANT_CONSUMPTION_MIGRATION_SQL);
   await pg.exec(ENTITLEMENT_SCHEMA_SQL);
   await pg.exec(LICENSE_GRANT_SCHEMA_SQL);
   // CAISSON-9: ADMIN_MUTATION_PROVISION_SQL below SELECT-polices account_member (the admin
   // existence check), so the base auth membership table must exist in the double too.
   await pg.exec(ACCOUNT_MEMBER_SCHEMA_SQL);
   await pg.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
+  await pg.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
   await pg.exec(CREDIT_LINE_ITEM_MIGRATION_SQL);
   for (const table of ADMIN_READ_TABLES) {
     await pg.exec(buildAdminReadPolicySql(table));

@@ -1,246 +1,92 @@
 ---
-updated: 2026-07-05
+updated: 2026-07-06
 status: live
 ---
 
 # Build state & roadmap
 
-> **CURRENT STATE (2026-07-05):** **ADR ceiling is `0242`** (0239–0241 deploy-closeout/wave-6b locks ·
-> 0242 visual-audit remediation picker). Since the 2026-07-03 banner below: the **audit-v2 remediation
-> specs ALL EXECUTED + MERGED** (PRs #110–#115 — incl. the provider-webhook `.strict()` revert lesson
-> and a live Paddle-sim purchase proof), the **wave-6b close-out** landed (9 remaining build-next rows,
-> ADR-0239, ledger terminal), the **ADR-0226 issuer-keypair rotation EXECUTED ×2** (PRs #117/#118,
-> active fingerprint `a170f7a0ab89bab0`; license + Worker redeployed), the **hygiene wave** merged
-> (PR #119 — `@caisson/rate-limit` extraction closes refactor rows R1+R2), the **visual-audit
-> remediation shipped** (PRs #116/#120 + ADR-0242) with the ledger reconciled 2026-07-05 (PR #122 —
-> 82 closed · 125 open · 14 accepted, 221/221 verified), **glossary batches 2–3 shipped** (PR #121 —
-> all 32 ADR-0235 terms live), and the **§8 edge revocation deny-set is FULLY LIVE** (R2 + PUT shim +
-> `license_revocation` DDL, operator-approved). Fleet current: site + docs redeployed 2026-07-05;
-> license/Worker current from the rotation. `main` is the only branch; full gate green (149 turbo
-> tasks + kernel gate 51 packages). Historical banners below are a timeline, not current state.
+## Current state (2026-07-06)
 
-> **PRIOR STATE (2026-07-03):** **ADR ceiling was `0238`.** Since the `0228` execution wave
-> below, the `0229`–`0238` locks landed: wave-6a compliance/billing subset (ADR-0229, PR #92) ·
-> ask-AI widget + question-text capture (ADR-0234/0236, PRs #93/#95) · glossary program batch 1
-> (ADR-0235, PR #99) · site presentation rework locks (ADR-0237, PR #97) · catalog à-la-carte
-> row drop (ADR-0238, PR #98) · and the **whole-repo audit v2 baseline — 941-finding advisory
-> ledger (ADR-0233, PR #100)** at `outputs/audit/ledger.toml` (302 open / 111 open-high;
-> candidates, not verdicts — ~29 refuted round-3 highs may linger from a confirm-filter bug).
-> Open findings are triaged into execution specs at `outputs/specs/audit-v2-remediation/`;
-> roadmap-only buckets + the 6 operator-gated DEPLOY residue items (registry R2 route + Worker
-> redeploy, cred sweep, caisson-oss public flip, WORM posture, mac runner) live in the triage doc
-> and `docs/state/opportunity-backlog.md`. The **site presentation rework is BUILT + MERGED**
-> (PR #102 — unified `/marketplace` hub with 301s, 11 module depth routes on the section-union
-> renderer, nav rebuild, bespoke icon set, full-surface copy rewrite, split analytics; realizes
-> ADR-0237/0238) and **glossary batch 1 is live** (12 of 32 terms, ADR-0235, PR #99). All
-> feature branches merged + deleted — `main` is the only branch. Historical banners below are a
-> timeline, not current state.
+**ADR ceiling is `0254`.** The last full package-build wave landed 2026-07-05 (audit-v2
+remediation ALL merged, wave-6b close-out, issuer-keypair rotation, hygiene wave, visual-audit
+remediation, glossary complete, edge revocation deny-set live — full detail in the changelog
+below); `main` is the only branch, fleet current, full gate green. Since then: the just-merged
+**agent-dev local inspector** (`ADR-0243`, `packages/agent-dev` + `apps/agent-dev` — a real
+package build, reflected in the per-package table below) and a **catalog/pricing/GTM picker-lock
 
-> **EXECUTION WAVE + DEPLOY BLOCK DONE (2026-07-02-LATE):** **ADR ceiling is now `0228`.** PRs
-> #75–#83 merged (locks+backlog ledger · reprice display · cred-sweep prep · error mapping · WORM S3
-> gate · members-fold republish **ADR-0228** · live-harness ADR-0224 · infra truth · **registry
-> self-hosted npm delivery built**, ADR-0223 — Worker npm routes + CI R2 pipeline + generator
-> `.npmrc` flip), #84 admin-v2 purchase-revoke (ADR-0225 + R-4 edge deny-set) in the queue. The §7
-> post-merge **DEPLOY block is EXECUTED + live-verified** (launch-runbook §7 banner has the detail):
-> live migrations `0006`–`0009`, admin mutation surface round-trip PASS (dual logs + `caisson-worm`
-> Object-Lock anchors), CF edge rate-limit 429-proven, Paddle SANDBOX edition prices re-pointed.
-> CAISSON-15/16/17/18 Done. Registry Task-1/5 DEPLOY (R2 bucket + `registry.caisson.sh` route + live
-> install proof) and the registry-Worker redeploy for the 0.2.0/0228 index remain operator-gated.
+- SOT-tooling wave** (`ADR-0244`-`0254` — updates-window/credit-rollover/catalog-bundle/kit-tiering
+  decisions plus the `bun run sot` drift tool itself; specs + decisions, not new package code —
+  see `docs/state/decisions-and-forks.md` for the live fork board, this file does not duplicate it).
 
-> **DEFERRED-RESPEC WAVE MERGED + LIVE-PROOF GREEN (2026-07-02-PM):** **ADR ceiling is now `0224`.**
-> The four build-now deferred-respec items shipped + **MERGED to `main`** (PRs #66–69): **ADR-0218**
-> Paddle per-line partial refund (revoke + clawback, `line_item_id` columns) · **ADR-0219** Cloudflare
-> front rate-limit + WAF (docs-api proxied, Free tier, DEPLOY-gated) · **ADR-0220** admin mutation
-> surface v1 (4 actions, dedicated `admin_write` role, WORM dual-logged) · **ADR-0221** live-seams KMS
-> envelope proof + ONNX disposition (F2-B EgressGuard unification in-slice). Same-day sequels locked
-> (specs merged, build pending): **ADR-0222** distribution (caisson-sh org + `@caisson-sh` scope),
-> **ADR-0223** registry self-hosted npm delivery, **ADR-0224** live-verification harness fork locks.
-> KMS/ONNX were already partially flipped by the ADR-0201 seams stream; the ADR-0221 proof closes them
-> — this doc + `readiness-and-backlog.md` are the F1-A "flip on green" targets, now consistent.
->
-> **Live-proof surface (verified tonight):** As of tonight (2026-07-02, `main` checkout, git clean),
-> the caisson live-proof surface is green end-to-end except the two known infra gaps. **PROVEN LIVE
-> against real cloud endpoints:** (1) WORM S3 audit retention against the real `caisson-worm` bucket
-> (5/5); (2) AWS KMS per-tenant CMK crypto in field-crypto — throwaway CMKs minted, tagged, and
-> scheduled for deletion (6/6); (3) the ai-kit OpenRouter gateway (4/4); (4) the local-ai OpenRouter
-> rented transport (4 pass) plus the ONNX on-device embedding backend via the G1-A throwaway recipe —
-> tamper/self-pin/egress-block legs all green (4/4). The **two known infra gaps** are DEPLOY-class
-> launch items, not code regressions: the persistent production default CMK is deferred to
-> first-customer time (ADR-0221 KMS-2 print-only provisioner), and Paddle is still on the SANDBOX
-> catalog pending the production-account swap (`docs/state/launch-runbook.md` §1 P1/P3; §7 the
-> post-merge DEPLOY block). **Gates:** all local gates green. Live per-package truth unchanged below.
->
-> **Repo home moved to `github.com/caisson-sh/caisson`** (org transfer; runner scale sets recreated,
-> Greptile app reinstalled). `caisson-sh/caisson-oss` created PRIVATE with the first 416-file mirror
-> snapshot pushed; `MIRROR_PUSH_TOKEN` + `NPM_TOKEN` set (publish pipelines armed, gated on a manual
-> `confirm=publish` dispatch). Deferred review findings tracked as Linear CAISSON-5..19.
+**This rework (`ADR-0253`):** the per-package `src / tests / loc` cells below are now
+machine-regenerated by `checkPackageCountParity` (7th check, `tooling/scripts/sot-check.ts`,
+`bun run sot --update`) instead of hand-typed — every cell in the tables below was refreshed off
+real disk truth in this pass, closing the drift the "Honest gaps" prose-patch pattern used to
+paper over. The stacked 24-banner append-only timeline this section replaces is squashed into the
+one-line changelog below (newest first) — no history deleted, just compacted.
 
-> **LIFT-HARVEST SLICE-2 (2026-07-02):** the full remaining harvest program (ADR-0133/0134/0135)
-> built spec-first on `feat/lift-harvest` — **ADR ceiling is now `0217`** (0186 agent-runner +
-> 0210–0217 wave locks, drafted 0204–0211 and renumbered at merge per ADR-0088 — strix/edition-tails
-> claimed 0204–0209 on main first; SPECs under `outputs/specs/harvest-slice2/`). Net-new commercial
-> **`packages/agent-runner`** (sandboxed governed agent runner: from-scratch scrubbed env, ship-blocking
-> leak-guard, `.jsonl` transcript + structured `finalReport`; Agentic-Dev members-fold per the ADR-0178
-> form; registry ledger/index 32→33) plus hardening waves across `ai-config` (lane schema),
-> `ai-kit` (metered `embed()`/`embedMany()` + fetch-deadline floor), `ai-evals` (Wilson-CI gate,
-> Fleiss kappa, eval ledger, exit classifier, reflexivity queue), `guardrails` (secret egress gate on
-> the new kernel `secret-scrub` seam + FTC-4Ps evaluator), `jobs` (idempotency keys + consumer-side
-> `work()`), `mcp-server` (declarative tool manifest + retired-tool ledger), `billing` (envelope
-> verify-then-parse seam tests), `tenancy-rls` (fail-closed `pg_roles` role pre-flight; standards-gate
-> `checkRlsEquivalence` + 7-table overrides ledger), `ai-meter` (MinHash/LSH dedup-before-meter), and
-> kernel **branded money + rounding provenance** (ADR-0212, serialized wave-2). Deferred: lift-sweep
-> #9 hash-at-rest sessions (fights ADR-0015); wave-6 residuals parked. Item-by-item terminal states:
-> `docs/state/harvest-program.md`.
+### Changelog (one line per wave, newest first)
 
-> **STAGE-2 INTEGRATION + DEPLOY (2026-07-01):** the four parallel Stage-2 streams + the deploy-prep
-> branch are folded into **one branch, `integration/stage2`** (Streams A/B/C/D merged). **ADR ceiling
-> is now `0176`.** The live Railway services `caisson-site` (unified marketing + docs + buyer
-> dashboard) and `caisson-license` are **● ONLINE + verified running this code** — site serves routes
-> 200 with correct security headers + Paddle CSP; license `/health` 200, `/issue` gated 401. The live
-> DB is **migrated + verified** (app role NOSUPERUSER/NOBYPASSRLS, 5 tenant tables FORCE-RLS, 4
-> better-auth tables, idempotent). Two live-fixed bugs are on this branch: the Next-standalone
-> `HOSTNAME=0.0.0.0` bind (was a boot 502) and the Paddle-origin CSP. Deploy plumbing:
-> `services/license/deploy.ts` entrypoint + `@caisson/migrate/pg` node-postgres applier +
-> `apps/site/lib/deploy-migrate.ts` orchestrator; the dead Cloudflare-Pages files (`functions/`,
-> `_headers`, `wrangler.jsonc`, `normalize-export`) are removed. What the four streams added is folded
-> into the tables below (new `apps/admin`, `infra/signoz/`, 6 new packages, edition + adapter
-> driver-sets). Stream-A row below (`stream/obs-admin`, ADR ceiling 0143) is now folded into this integration.
->
-> **DEPLOY EXECUTED (2026-07-01):** merged to `main` (`747ea25..c6dbaa5`) and **fully deployed to
-> Railway** (`caisson-prod`, all `railway up`). LIVE: `caisson-site`→caisson.sh + www (200, CF-Access
-> pre-launch gate on) · `caisson-license`→license.caisson.sh (service /health 200; custom-domain cert
-> auto-issuing) · `caisson-admin`→admin.caisson.sh (200, PERMANENT operator CF-Access gate) · `caisson-docs`
-> · `caisson-support-bot` · **SigNoz 5-service stack** provisioned (`railway deploy -t signoz`). DNS
-> cutover applied via terraform (apex/www Pages→Railway, license + admin added, Pages custom-domains
-> detached). **admin PG role** provisioned (`admin` NOLOGIN + `admin_app` non-super login). Registry
-> **Worker redeployed** (serves rebuilt 27→32 index; anon base-set gated). D4 org accounts ACTIVATED.
-> OTLP endpoint wired on the fleet. **Fast-follows:** SigNoz `SIGNOZ_API_KEY` (UI) + ingester TCP-proxy
-> for CF-Worker export; Cloudflare Pages PROJECT deletion (post-soak — custom domains already detached);
-> edition members-fold (open operator fork).
-
-> **STAGE-2 CORRECTION (2026-07-01):** the `feat/dashboard-unified-and-p6-tail` branch is **MERGED to
-> `main`** (PR#33, `747ea25`) — every "built on the integration branch, not merged / not pushed / not
-> yet deployed" claim below is **stale**. The unified `caisson-site` app, store-rework, better-auth
-> sign-in, and CI rewire are on `main`. The live **cutover** (Railway provisioning + DNS + Pages
-> teardown) is the remaining act — plan: `docs/state/stage2-deploy-plan.md`; next-work partition:
-> `docs/state/stage2-kickoff-triage.md`. All 7 services-hardening fixes are also merged (code done).
-
-> **EDITION SEAM-COMPLETION BUILT + PROVIDER CUTOVER DONE (2026-07-01, later same day — supersedes the
-> `0176` ceiling above):** **ADR ceiling is now `0185`.** The provider picker locked **`ADR-0177`/`0178`**:
-> Grafana Cloud is the **sole OTLP sink** — self-hosted **SigNoz is removed** (all 5 Railway SigNoz
-> services deleted; every "SigNoz provisioned" / "SIGNOZ_API_KEY fast-follow" line above is now stale),
-> and the Stage-2 commercial primitives (`alerting`/`retention-runner`/`tool-exec`) are folded into their
-> edition `members` bundles. The **edition seam-completion** picker then locked + BUILT **`ADR-0179`-`0185`**:
-> an OSCAL **v1.2.2** export (JSON canonical + an `oscal-cli` XML converter path) across **all three**
-> frameworks (SOC2/HIPAA/EU-AI-Act — `packages/compliance`, new golden fixtures under
-> `__golden__/oscal-{soc2,hipaa,eu-ai-act}.bundle.json`) with two new collectors (`field-crypto-policy` for
-> HIPAA PHI-at-rest, `ai-risk-register` for EU-AI-Act Art.9); a **FREE BYOK billing policy**
-> (`keySource: 'env'|'tenant'`, tenant-key actions debit 0 credits — `packages/{ai-kit,pricebook}`) plus the
-> buyer-facing key form (`apps/site` `/dashboard/ai-keys`) and an OSCAL attestation wizard
-> (`/dashboard/compliance`); and a manual Bun OTel request-span helper (`packages/observability`
-> `withRequestSpan`, `ADR-0185`) wired into `services/docs` + `services/license` to close the
-> Bun-bypasses-auto-instrumentation gap found at the Grafana cutover (Node/Next services — `apps/site`,
-> `apps/admin` — auto-trace fine). Live-transport un-stubbing (S3 WORM / hosted inference / on-device ONNX)
-> stayed **deferred** at that point (`ADR-0184`) — superseded the same day by `ADR-0201` (see the
-> EDITIONS GO LIVE paragraph below: all three transports now proven live).
-
-> **LIFT slice-1 (task 1) + DEPLOY-class + backlog-P3 DONE (2026-07-01, latest — ceiling `0188`):** merged
-> to `main` @ `84052aa` — PR#35 seam, **PR#36** `@caisson/audit-harness` pipeline completion
-> (`ADR-0188`: scoped `reconcile` fail-loud must-fix + `enumerateSurface`/`report`/`check-scope` +
-> orchestration runbook), **PR#37** backlog-P3 (members `.strict()`; fail-closed demo field-crypto in
-> `local-ai`/`compliance`). **DEPLOY-class executed:** `caisson-license` + `caisson-docs` **redeployed**
-> from `main` (both `/health` 200) → the `withRequestSpan` Bun-OTel spans now emit to the Grafana OTLP sink
-> (endpoint verified provisioned on both); **Cloudflare Pages torn down** (0 Pages projects in the account;
-> DNS on Railway). Remaining housekeeping: 3 detached SigNoz volumes (operator-delete, agent-blocked; see
-> `docs/state/providers.md`). **Next:** the whole-repo multi-model audit (READY, not yet run) → LIFT
-> sellables `ADR-0186`/`0187`.
-
-> **COMMERCE GOES LIVE (2026-07-01, latest — ceiling `0203`):** branch `feature/commerce-goes-live`
-> (PR#41) locked **`ADR-0200`** — Paddle is the SOLE mounted buyer-purchase webhook
-> (`services/license` `POST /webhook`; the Stripe driver stays built but dormant, `ADR-0116`/`0200`) —
-> with corrected Paddle driver semantics verified against developer.paddle.com: a 5-second default
-> signature tolerance (was 300); origin→event mapping (`web`/`api` first subscription charge and
-> `subscription_recurring` renewal are granting `subscription_create`/`subscription_cycle`,
-> `subscription_charge` mid-cycle is non-granting); and idempotency anchored on the Paddle transaction
-> id (`txn_…`) since `invoice_id` is deprecated. **`ADR-0203`** then locked the post-grant Discord role
-> push: `services/license/src/discord-notify.ts` resolves the buyer account's linked Discord users
-> after a granting webhook commits and fires a fire-and-forget `POST /billing-grant` to the support bot
-> (env-pair-gated on `SUPPORT_BOT_URL` + `SUPPORT_BOT_GRANT_TOKEN`; `applyBillingEvent` now returns
-> `{ grantedEntitlements }`); `services/support-bot`'s `billing_grant.py` serves the token-gated
-> endpoint (`health.py` removed); `apps/site` gains an env-gated better-auth Discord OAuth provider, an
-> authed `POST /api/discord/backfill`, and a dashboard plan-page Community section. The Discord ADR was
-> renumbered 0201 → 0203 at merge (editions session took 0201 first; ADR-0088 convention).
->
-> **EDITIONS GO LIVE (2026-07-01, editions-go-live — filed `0187` + `0201`–`0202`; the concurrent
-> commerce session filed `0200` + `0203`, `0186` still reserved for agent-runner):** branch
-> `feature/editions-goes-live` supersedes the `ADR-0184` defer with **`ADR-0201`** — all three live
-> transports are **proven against real infra**: S3 WORM on the provisioned Object-Lock bucket
-> `caisson-worm` (us-east-1, `infra/worm/provision.ts`; real 412 write-once + retention read-back,
-> GOVERNANCE mode), hosted inference via **OpenRouter on both lanes** (the `ai-kit` platform lane moved
-> `openrouter`/`local`/`ollama` to `@ai-sdk/openai-compatible`, fixing the live-only AI-SDK-v5
-> Responses-API default; `local-ai` gained `createOpenRouterRentedTransport`), and an availability-gated
-> **ONNX** proof (`@huggingface/transformers` stays uninstalled). Live proofs live in per-package `live/`
-> dirs (`test:live`, self-skipping — the default suite + CI stay hermetic). **`ADR-0202`** adds WORM
-> **retention escalation**: `extendRetention` (strictly-monotonic) on the `ArtifactStore` port,
-> GOVERNANCE→COMPLIANCE escalation behind the ADR-0051 gate, chain-evidenced via `escalateRetention`
-> (`retention.escalated` on the tenant chain). **`ADR-0187`** (filed from its LIFT reservation) ships the
-> **support-impersonation kernel + dual audit trail** in `@caisson/compliance`: time-bounded
-> reason-required sessions, operator + acting-as-tenant chain records linked by `sessionId`, the
-> `impersonation_session` migration (RLS + column-scoped GRANT), and an impersonation evidence collector
-> cited by both the SOC2 and HIPAA plans.
-
-> **STRIX PENTEST REMEDIATION (2026-07-02 — ceiling `0204`):** branch
-> `fix/security-billing-hardening` (PR#45, merged `2dc44cc`) closed the first Strix pentest's six
-> findings (1 critical, 2 high, 3 medium) per the `ADR-0204` picker locks. BUILT: one shared **SSRF
-> resolve-and-recheck guard** in `@caisson/kernel` (`ssrf.ts` — a literal denylist at the schema
-> boundary, https-only/no-creds/private-loopback-link-local-metadata, plus an async DNS re-check of
-> every resolved A/AAAA against the same ranges immediately before the outbound `fetch`), wired into
-> both the alerting transports and an SSRF-guarded `fetch` injected into the ai-kit custom-baseUrl
-> provider adapters (connect-time IP-pinning was rejected — Bun's `fetch` has no custom-lookup hook to
-> pin a socket while keeping TLS SNI, oven-sh/bun#27890); the `services/docs` + `services/license`
-> per-IP rate-limiters now key on `X-Real-IP` only (Railway's edge-set header, unspoofable off-edge —
-> the client-appendable `X-Forwarded-For` and the deprecated `x-envoy-external-address` are no longer
-> trusted), plus a header-independent service-wide `checkGlobal` cap (default 50x the per-IP burst) as
-> defense-in-depth; `apps/admin` gains a fail-closed **CF-Access-JWT `middleware.ts`** (JWKS-verified
-> via `jose`, `aud` pinned to the admin Access app + `iss` to the team domain, deny-closed on any
-> failure or unreachable JWKS — supersedes `ADR-0140`'s edge-alone posture; activates only once both
-> `CF_ACCESS_TEAM_DOMAIN` + `CF_ACCESS_AUD` are set, unconfigured fails closed in production); the
-> vuln-0006 seat-authz gap was closed on two independent paths reconciled at merge into one owner-only
-> semantics — `POST /api/byok` and the compliance `attest`/`clear` server actions now call
-> `assertCanManageMembers(session.role)` (`packages/auth`, fail-closed for a seat) on the write side,
-> while UI render-gating uses the separately-tested `isOwner(session)` helper
-> (`apps/site/lib/auth.ts`); and the shared `purchase.completed` domain event now carries
-> `lineItems: {priceId, quantity}[]` (was a scalar `priceId`) so the Paddle mapper fulfills every paid
-> line — quantity-honored, still keyed on one Paddle transaction id for refund/clawback idempotency. A
-> regression test locks `subscription_update` as non-granting (already correct at HEAD, was a
-> false-positive finding). **New env (SET + ACTIVE 2026-07-02):** `CF_ACCESS_TEAM_DOMAIN` +
-> `CF_ACCESS_AUD` set on `caisson-admin` and the service redeployed — the admin gate is live
-> (edge 302s to the Access login, verified). **Deferred (flagged, not
-> auto-decided):** partial-refund of one line in a multi-item cart stays full-refund-only (`ADR-0113`
-> policy unchanged); Cloudflare-in-front for the docs/license grey origins and an admin network-layer
-> origin-lock are DEPLOY-class complements, not taken here.
-
-> **EDITION TAILS & OPS HARDENING (2026-07-02, latest — ceiling `0209`):** branch
-> `chore/edition-tails-ops` (PR#46, merged `8e5eb4d`) closed the post-go-live triage backlog per the `ADR-0205`–`0209` picker
-> locks (drafted 0204–0208; the transports ADR renumbered 0204→0209 at merge — the Strix remediation
-> ADR claimed 0204 on main first, ADR-0088). BUILT: `local-ai` **Azure OpenAI + AWS Bedrock
-> RentedTransport drivers** (`ADR-0209` —
-> hand-rolled vector-pinned SigV4 on `node:crypto`, egress-guarded, self-skipping live probes; Ollama
-> out of the rented seam by design); `compliance` **runtime composition** of `alerting` +
-> `retention-runner` (`ADR-0205`, closing the `ADR-0178` manifest-vs-composition gap); `support-bot`
-> **escalations → Linear Triage** as a third best-effort sink (`ADR-0206`, env-gated off via
-> `LINEAR_API_KEY`/`LINEAR_TEAM_ID`/`LINEAR_TRIAGE_STATE_ID`); the `apps/admin` **/ops cockpit rebuilt
-> on the Grafana Cloud Tempo query API** (`ADR-0207` — `GRAFANA_URL`/`GRAFANA_QUERY_TOKEN`/
-> `GRAFANA_TEMPO_DATASOURCE_UID`, env SET + deployed 2026-07-02; zero live SigNoz references remain); **owner-only
-> BYOK + attestation writes** (Strix vuln-0006, `ADR-0208` #1); 7 ai-kit streaming-gateway tests; and
-> the D8(a) FAQ/FeatureGrid kit migration. **The `ADR-0178` members-fold republish EXECUTED
-> ledger/index-only** (`ADR-0208` #5): all pending changesets consumed — editions + base to **0.2.0**,
-> the four Stage-2 primitives to **0.1.1** — 32 entries appended (ledger 64 lines), `index.json`
-> rebuilt, edition member maps hand-pinned (the ai-kit/local-ai `0.0.0` sentinels are gone);
-> `CAISSON_PUBLISH_DRY_RUN` stays `true` (npm publish flip = its own operator act). **The registry
-> Worker was REDEPLOYED 2026-07-02** carrying the 0.2.0 index (public base view: 15 Apache-2.0
-> modules @ 0.2.0, zero drift vs the repo's 32-module index — verified live). Also: branch protection on `main` gained `oscal-conformance` + `enforce_admins` + `strict`;
-> Terraform state defer documented with the R2 `use_lockfile` no-op finding (`ADR-0208` #3).
+- **2026-07-06** — `docs/build-state.md` rework: per-package counts machine-regenerated
+  (`checkPackageCountParity`, `sot-check.ts` 7th check, `ADR-0253`); 24-banner timeline squashed
+  into this changelog.
+- **2026-07-05** — audit-v2 remediation ALL merged (PRs #110-115, incl. the provider-webhook
+  `.strict()` revert lesson + a live Paddle-sim purchase proof); wave-6b close-out (`ADR-0239`,
+  ledger terminal); issuer-keypair rotation executed x2 (PRs #117/#118); hygiene wave (PR #119,
+  `@caisson/rate-limit` extraction); visual-audit remediation (PRs #116/#120, `ADR-0242`, ledger
+  reconciled PR #122 — 82 closed / 125 open / 14 accepted); glossary batches 2-3 complete (PR #121,
+  all 32 `ADR-0235` terms live); §8 edge revocation deny-set FULLY LIVE. ADR ceiling `0242`.
+- **2026-07-03** — wave-6a compliance/billing subset (`ADR-0229`, PR #92); ask-AI widget +
+  question-text capture (`ADR-0234`/`0236`); glossary batch 1 (`ADR-0235`, PR #99); site
+  presentation rework BUILT + MERGED (PR #102, unified `/marketplace` hub, `ADR-0237`/`0238`);
+  catalog a-la-carte row drop (`ADR-0238`); whole-repo audit v2 baseline, 941-finding advisory
+  ledger (`ADR-0233`, PR #100). ADR ceiling `0238`.
+- **2026-07-02-LATE** — PRs #75-83 merged (locks+backlog ledger, reprice display, cred-sweep prep,
+  error mapping, WORM S3 gate, members-fold republish `ADR-0228`, live-harness `ADR-0224`, infra
+  truth, registry self-hosted npm delivery `ADR-0223`); the §7 post-merge DEPLOY block EXECUTED +
+  live-verified (live migrations `0006`-`0009`, admin mutation surface round-trip PASS, CF edge
+  rate-limit 429-proven, Paddle SANDBOX prices re-pointed). ADR ceiling `0228`.
+- **2026-07-02-PM** — deferred-respec wave MERGED (PRs #66-69): `ADR-0218` Paddle per-line partial
+  refund, `ADR-0219` Cloudflare front rate-limit + WAF, `ADR-0220` admin mutation surface v1,
+  `ADR-0221` live-seams KMS/ONNX proof; same-day sequels locked (`ADR-0222` distribution,
+  `ADR-0223` registry npm delivery, `ADR-0224` live-verification harness); repo home moved to
+  `github.com/caisson-sh/caisson`, `caisson-sh/caisson-oss` mirror created PRIVATE. ADR ceiling
+  `0224`.
+- **2026-07-02 (LIFT-harvest slice-2)** — the remaining harvest program (`ADR-0133`/`0134`/`0135`)
+  built: net-new commercial `packages/agent-runner` (sandboxed governed agent runner) plus
+  hardening waves across `ai-config`/`ai-kit`/`ai-evals`/`guardrails`/`jobs`/`mcp-server`/
+  `billing`/`tenancy-rls`/`ai-meter` and kernel branded-money + rounding provenance (`ADR-0212`).
+  ADR ceiling `0217`.
+- **2026-07-01 (Stage-2 integration + deploy)** — the four parallel Stage-2 streams folded into
+  `integration/stage2`; `caisson-site` + `caisson-license` ONLINE on Railway, live DB migrated +
+  verified (FORCE-RLS). ADR ceiling `0176`.
+- **2026-07-01 (DEPLOY executed)** — merged to `main` and fully deployed to Railway (site,
+  license, admin, docs, support-bot, SigNoz); DNS cutover via terraform; admin PG role
+  provisioned; registry Worker redeployed (27->32 index); D4 org accounts ACTIVATED.
+- **2026-07-01 (Stage-2 correction)** — `feat/dashboard-unified-and-p6-tail` MERGED to `main`
+  (PR#33): unified `caisson-site` app, store-rework, better-auth sign-in, CI rewire all landed;
+  live Railway cutover remained the pending act at that point.
+- **2026-07-01 (edition seam-completion + provider cutover)** — `ADR-0177`/`0178` Grafana Cloud
+  is the sole OTLP sink (self-hosted SigNoz removed); `ADR-0179`-`0185` OSCAL v1.2.2 export across
+  all 3 frameworks, free BYOK billing policy, Bun OTel request-span helper. ADR ceiling `0185`.
+- **2026-07-01 (LIFT slice-1 + DEPLOY-class + backlog-P3)** — PR#35 seam + PR#36
+  `@caisson/audit-harness` pipeline (`ADR-0188`) + PR#37 backlog-P3; `caisson-license` +
+  `caisson-docs` redeployed with live Bun-OTel spans; Cloudflare Pages torn down. ADR ceiling
+  `0188`.
+- **2026-07-01 (commerce goes live)** — `ADR-0200` Paddle is the sole mounted buyer-purchase
+  webhook (corrected signature tolerance, origin-to-event mapping, txn-id idempotency);
+  `ADR-0203` post-grant Discord role push. ADR ceiling `0203`.
+- **2026-07-01 (editions go live)** — `ADR-0201` all three live transports proven against real
+  infra (S3 WORM, OpenRouter hosted/rented inference, availability-gated ONNX); `ADR-0202` WORM
+  retention escalation; `ADR-0187` support-impersonation kernel + dual audit trail.
+- **2026-07-02 (Strix pentest remediation)** — PR#45 closed the first pentest's 6 findings
+  (`ADR-0204`): shared SSRF resolve-and-recheck guard in `@caisson/kernel`, `X-Real-IP`-keyed
+  rate-limiting, fail-closed admin CF-Access-JWT middleware, owner-gated BYOK/attestation writes,
+  Paddle multi-item `lineItems` fulfillment.
+- **2026-07-02 (edition tails & ops hardening)** — PR#46 (`ADR-0205`-`0209`): Azure/Bedrock
+  RentedTransport drivers, `compliance` runtime composition of `alerting`+`retention-runner`,
+  support-bot Linear Triage sink, `apps/admin` `/ops` rebuilt on Grafana Tempo, the `ADR-0178`
+  members-fold republish (ledger/index to 0.2.0), registry Worker redeployed with the 0.2.0 index.
 
 Live build status for the Caisson monorepo. **This file OWNS the synthesized build-status
 view** - `plan.md` (the P0-P7 plan) and `SUMMARY.md` (the consolidated job rollup) route here
@@ -364,25 +210,25 @@ source LOC. Counts are the disk truth on `main`, not a quality judgement.
 
 | Package       | src / tests / loc | Verdict          | Owns                                                                                                                                                                                                                                                        |
 | ------------- | ----------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `kernel`      | 13 / 10 / 1427    | **built**        | typed config/schema + error model (`ADR-0019`), SHA-256 chain + append-only version primitives + the ONE credit denomination + cents→credits round-DOWN grant (`ADR-0098`, code-wiring B1)                                                                  |
-| `auth`        | 3 / 1 / 143       | **built**        | session/RLS seam (`ADR-0015`)                                                                                                                                                                                                                               |
-| `tenancy-rls` | 2 / 1 / 75        | **built (thin)** | fail-closed RLS (`ADR-0005`); small by design, the guard is the whole package                                                                                                                                                                               |
-| `billing`     | 8 / 5 / 1247      | **built**        | multi-provider drivers: **Paddle is the sole mounted buyer webhook** (`ADR-0200` — 5s signature tolerance, txn-id idempotency, corrected origin→event semantics); Stripe driver built but dormant (`ADR-0017`/`0116`); LemonSqueezy/Polar drivers env-gated |
-| `credits`     | 3 / 2 / 328       | **built**        | integer wallet + append-only ledger + 402 + idempotency index (`ADR-0007`,`0024`)                                                                                                                                                                           |
-| `ai-config`   | 2 / 1 / 49        | **built (thin)** | provider-agnostic config (`ADR-0011`); minimal surface, verify before extending                                                                                                                                                                             |
-| `mcp-server`  | 3 / 2 / 514       | **built**        | auth-gated buyer MCP (`ADR-0008`) + optional per-account rate-limit hook port (fail-open, `ADR-0112`); `coach.ts` setup-flow is fully implemented — its persistence write is a CI-test-doubled seam (an fs adapter is the live deploy path)                 |
-| `ui`          | 6 / 1 / 381       | **built**        | token floor (`ADR-0042`/`0078`)                                                                                                                                                                                                                             |
-| `jobs`        | 2 / 1 / 73        | **built (thin)** | job seam (`ADR-0018`)                                                                                                                                                                                                                                       |
-| `email`       | 2 / 1 / 82        | **built (thin)** | email seam (`ADR-0018`)                                                                                                                                                                                                                                     |
+| `kernel`      | 18 / 15 / 2033    | **built**        | typed config/schema + error model (`ADR-0019`), SHA-256 chain + append-only version primitives + the ONE credit denomination + cents→credits round-DOWN grant (`ADR-0098`, code-wiring B1)                                                                  |
+| `auth`        | 6 / 3 / 435       | **built**        | session/RLS seam (`ADR-0015`)                                                                                                                                                                                                                               |
+| `tenancy-rls` | 3 / 6 / 403       | **built (thin)** | fail-closed RLS (`ADR-0005`); small by design, the guard is the whole package                                                                                                                                                                               |
+| `billing`     | 9 / 6 / 1677      | **built**        | multi-provider drivers: **Paddle is the sole mounted buyer webhook** (`ADR-0200` — 5s signature tolerance, txn-id idempotency, corrected origin→event semantics); Stripe driver built but dormant (`ADR-0017`/`0116`); LemonSqueezy/Polar drivers env-gated |
+| `credits`     | 4 / 4 / 1174      | **built**        | integer wallet + append-only ledger + 402 + idempotency index (`ADR-0007`,`0024`) + grant-level expiry with FIFO burn via `grant_consumption` + expiry/notice sweeps (`ADR-0252`)                                                                           |
+| `ai-config`   | 2 / 1 / 125       | **built (thin)** | provider-agnostic config (`ADR-0011`); minimal surface, verify before extending                                                                                                                                                                             |
+| `mcp-server`  | 5 / 6 / 1211      | **built**        | auth-gated buyer MCP (`ADR-0008`) + optional per-account rate-limit hook port (fail-open, `ADR-0112`); `coach.ts` setup-flow is fully implemented — its persistence write is a CI-test-doubled seam (an fs adapter is the live deploy path)                 |
+| `ui`          | 9 / 3 / 523       | **built**        | token floor (`ADR-0042`/`0078`)                                                                                                                                                                                                                             |
+| `jobs`        | 5 / 6 / 665       | **built (thin)** | job seam (`ADR-0018`)                                                                                                                                                                                                                                       |
+| `email`       | 6 / 6 / 392       | **built (thin)** | email seam (`ADR-0018`) + first transactional template (`credits-expiring`, `ADR-0252`)                                                                                                                                                                     |
 
 ### Wave-0 substrate (shipped)
 
 | Package                                     | src / tests / loc | Verdict                                 | Owns                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | ------------------------------------------- | ----------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `field-crypto`                              | 13 / 9 / 1319     | **built**                               | per-tenant HKDF + AES-256-GCM + versioned envelope + Drizzle column + KMS seam + crypto-shred/row-AAD (`ADR-0043`,`0045`,`0046`,`0055`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `cli`                                       | 4 / 3 / 340       | **built (full P5 drive, PR#12 merged)** | create-caisson index gate + templated engine + path-safe atomic disk FileSetWriter + `runGeneration` (debit-before-spend → write → audit row) + imports the `@caisson/migrate` assembler/runner (extracted, `ADR-0090`) + compose-time migration bundler `scripts/bundle-migrations.ts` (`ADR-0091`) + runnable bin (git-init post-gen). Full P5 drive on `feature/p5-generator` (`ADR-0004`,`0048`,`0049`,`0068`-`0070`)                                                                                                                                                                                                                                                                  |
-| `migrate`                                   | 4 / 1 / 185       | **built (Apache-2.0 base, ADR-0136)**   | the ONE migration assembler + runner + file-emit, extracted from cli (code-wiring W2, `ADR-0070`/`0090`): `readPackageMigrations`/`assembleSelected`/`emitMigrationFileSet` (IO over the kernel's pure merge) + forward-only idempotent `runMigrations` (fail-closed on checksum drift). cli + compliance import it, never copy it                                                                                                                                                                                                                                                                                                                                                         |
-| `pricebook`                                 | 4 / 3 / —         | **built (commercial base, B1+B2)**      | the ONE commerce price-book (`ADR-0089`): plan-book (stripePriceId→creditsPerCycle **+ `entitlements` purchased ids**, code-wiring B2/`ADR-0071`) + action-book (per-action credit cost) + the kernel-shared cents→credits round-DOWN grant conversion (`ADR-0098`). Fail-closed prototype-safe `resolvePlan`/`resolveActionCost`, append-only/versioned, integer-only. Consumed by `services/license` + the cli codegen-debit path. Also carries the free BYOK credit-vs-key billing policy (`ADR-0182`)                                                                                                                                                                                  |
+| `field-crypto`                              | 15 / 11 / 1535    | **built**                               | per-tenant HKDF + AES-256-GCM + versioned envelope + Drizzle column + KMS seam + crypto-shred/row-AAD (`ADR-0043`,`0045`,`0046`,`0055`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `cli`                                       | 10 / 6 / 1414     | **built (full P5 drive, PR#12 merged)** | create-caisson index gate + templated engine + path-safe atomic disk FileSetWriter + `runGeneration` (debit-before-spend → write → audit row) + imports the `@caisson/migrate` assembler/runner (extracted, `ADR-0090`) + compose-time migration bundler `scripts/bundle-migrations.ts` (`ADR-0091`) + runnable bin (git-init post-gen). Full P5 drive on `feature/p5-generator` (`ADR-0004`,`0048`,`0049`,`0068`-`0070`)                                                                                                                                                                                                                                                                  |
+| `migrate`                                   | 5 / 1 / 255       | **built (Apache-2.0 base, ADR-0136)**   | the ONE migration assembler + runner + file-emit, extracted from cli (code-wiring W2, `ADR-0070`/`0090`): `readPackageMigrations`/`assembleSelected`/`emitMigrationFileSet` (IO over the kernel's pure merge) + forward-only idempotent `runMigrations` (fail-closed on checksum drift). cli + compliance import it, never copy it                                                                                                                                                                                                                                                                                                                                                         |
+| `pricebook`                                 | 6 / 5 / 618       | **built (commercial base, B1+B2)**      | the ONE commerce price-book (`ADR-0089`): plan-book (stripePriceId→creditsPerCycle **+ `entitlements` purchased ids**, code-wiring B2/`ADR-0071`) + action-book (per-action credit cost) + the kernel-shared cents→credits round-DOWN grant conversion (`ADR-0098`). Fail-closed prototype-safe `resolvePlan`/`resolveActionCost`, append-only/versioned, integer-only. Consumed by `services/license` + the cli codegen-debit path. Also carries the free BYOK credit-vs-key billing policy (`ADR-0182`)                                                                                                                                                                                  |
 | `registry-schema` (`packages/`)             | 5 / 5 / —         | **built (open, Apache-2.0)**            | the open registry CONTRACT split out by `ADR-0097` (W1): module-manifest schema + index schema + allowlist helpers + feature-tags (`ADR-0074`) + entitlement-expansion (`ADR-0071`); zod/fs-only, no `@caisson` runtime dep. `credits`/`mcp-server`/`cli` import it; the commercial `@caisson/registry` re-exports it                                                                                                                                                                                                                                                                                                                                                                      |
 | `registry/` (workspace, not in `packages/`) | scripts+worker    | **built (worker LIVE, commercial)**     | the registry SERVICE (`ADR-0097`): CI index builder + ledger + gated publish + `worker/` (LIVE on Cloudflare, `deploy-entry.ts` inlines the index, `caisson-registry.broken-wood-97a9.workers.dev`). **Entitlement filtering wired (code-wiring B2, `ADR-0047`/`0071`):** the worker verifies the caller's Ed25519 license offline (`@caisson/license-verify`, runs under `nodejs_compat`) → serves base ∪ entitled editions; non-entitled module = 404 (invisible); fail-safe to base; filtered responses non-cacheable. Live behavior changes at the next operator-gated DEPLOY. Re-exports `@caisson/registry-schema` via thin `schema/` shims (`ADR-0020`,`0021`,`0047`,`0071`,`0097`) |
 
@@ -427,19 +273,19 @@ index** — the redeploy is DEPLOY-class, PENDING (see the top note).
 
 | Package           | src / tests / loc | Verdict                                     | Reality                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | ----------------- | ----------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `compliance`      | 16 / 11 / 2871    | **substantial**                             | evidence collectors (rls-force, chain-verify, worm-retention), SOC2/HIPAA/EU-AI-Act frameworks, pack-format + Ed25519/RFC-3161 signing, `withTenantCrypto`, migration assembly. **OSCAL v1.2.2 export is now BUILT** — JSON canonical + an `oscal-cli` XML converter path, across all 3 frameworks, with 2 new collectors (`field-crypto-policy` HIPAA, `ai-risk-register` EU-AI-Act). **Support-impersonation kernel + dual audit trail added (`ADR-0187`)**: session lifecycle on the tenant's WORM-anchored chain, `impersonation_session` migration (its first), impersonation collector in the SOC2 + HIPAA plans. **`@caisson/alerting` + `@caisson/retention-runner` now composed at runtime (`ADR-0205`)**: both are real `workspace:*` deps re-exported through `src/index.ts`, closing the manifest-asserts-what-composition-doesn't-deliver gap the ADR-0178 fold left open (mirrors `ADR-0199`'s tool-exec wiring for agent-dev); manifest member-version pins corrected off the `0.0.0` dev sentinel to the real published `0.1.0`. `ADR-0056`-`0058`,`0179`-`0181`,`0187`,`0205` |
-| `audit-worm`      | 7 / 6 / 1302      | **substantial**                             | SHA-256 hash chain store + retention + S3 ObjectLock adapter. **Live S3 path PROVEN (2026-07-01, `ADR-0201`)** against the real `caisson-worm` Object-Lock bucket (`live/store.s3.live.test.ts`, self-skipping; CI stays on the DI stub). **Retention escalation added (`ADR-0202`)**: strictly-monotonic `extendRetention` + gated GOVERNANCE→COMPLIANCE + chain-evidenced `escalateRetention`. `ADR-0006`,`0051`,`0052`,`0054`,`0201`,`0202`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `ai-meter`        | 6 / 3 / 957       | **substantial**                             | PG-atomic token metering + per-tenant spend caps + circuit breaker (`ADR-0060`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `ai-evals`        | 6 / 1 / 800       | **substantial**                             | eval harness + CI gate (`ADR-0062`); thin test coverage (1 file)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `prompt-registry` | 4 / 2 / 582       | **substantial**                             | versioned prompt registry + render (`ADR-0061`); render is fully implemented, golden-fixture-pinned (`src/__golden__/render.json`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `guardrails`      | 4 / 2 / 520       | **substantial**                             | input/output moderation + PII redaction (`ADR-0063`); PII path (mask/hash/reversible-tokenize) is fully implemented, no open seams                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `ai-kit`          | 3 / 2 / 358       | **partial**                                 | inference gateway composing the above (`ADR-0059`); free BYOK billing policy (`keySource: 'env'                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | 'tenant'`, tenant-key actions debit 0 credits, `ADR-0182`); thinnest edition root |
-| `local-ai`        | 14 / 9 / 2209     | **substantial**                             | compute seam + privacy gate + sqlite-vec ANN + offline license + two-way sync. **Rented/hosted inference PROVEN live (2026-07-01, `ADR-0201`)** via the new `createOpenRouterRentedTransport` (egress-guarded, strict-revalidated, metered); On-device **ONNX PROVEN live** (2026-07-02, `ADR-0221`; Bun 1.3.14 + `@huggingface/transformers` 4.2.0, throwaway install, 4/4) via `live/onnx.live.test.ts`, egress now unified onto the shared `EgressGuard` (`model-fetch` sink, F2=B); the peer stays uninstalled. CI stays on `StubInferenceBackend` (`ADR-0064`); now commercial (`ADR-0050`,`0083`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `local-store`     | 8 / 7 / 1043      | **substantial**                             | local canonical store, file-per-tenant (`ADR-0067`,`0073`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `agent-kernel`    | 8 / 7 / 1101      | **substantial**                             | base governed-agent kernel (`ADR-0065`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `agent-dev`       | 7 / 3 / 761       | **substantial**                             | typed agent/skill/rule schema + lifecycle + emitter (`ADR-0066`); roadmap edition per `ADR-0082` §4                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `license-verify`  | 4 / 2 / 272       | **substantial**                             | offline Ed25519 license verify (consumed by local-ai/agent-dev)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `license-issue`   | 3 / 2 / 635       | **built (commercial · private · ADR-0110)** | offline Ed25519 license **issuer** — signs canonicalized claims via a Signer port (default `node:crypto` PKCS8 Ed25519); consumed by `services/license`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `compliance`      | 26 / 21 / 4721    | **substantial**                             | evidence collectors (rls-force, chain-verify, worm-retention), SOC2/HIPAA/EU-AI-Act frameworks, pack-format + Ed25519/RFC-3161 signing, `withTenantCrypto`, migration assembly. **OSCAL v1.2.2 export is now BUILT** — JSON canonical + an `oscal-cli` XML converter path, across all 3 frameworks, with 2 new collectors (`field-crypto-policy` HIPAA, `ai-risk-register` EU-AI-Act). **Support-impersonation kernel + dual audit trail added (`ADR-0187`)**: session lifecycle on the tenant's WORM-anchored chain, `impersonation_session` migration (its first), impersonation collector in the SOC2 + HIPAA plans. **`@caisson/alerting` + `@caisson/retention-runner` now composed at runtime (`ADR-0205`)**: both are real `workspace:*` deps re-exported through `src/index.ts`, closing the manifest-asserts-what-composition-doesn't-deliver gap the ADR-0178 fold left open (mirrors `ADR-0199`'s tool-exec wiring for agent-dev); manifest member-version pins corrected off the `0.0.0` dev sentinel to the real published `0.1.0`. `ADR-0056`-`0058`,`0179`-`0181`,`0187`,`0205` |
+| `audit-worm`      | 8 / 7 / 1646      | **substantial**                             | SHA-256 hash chain store + retention + S3 ObjectLock adapter. **Live S3 path PROVEN (2026-07-01, `ADR-0201`)** against the real `caisson-worm` Object-Lock bucket (`live/store.s3.live.test.ts`, self-skipping; CI stays on the DI stub). **Retention escalation added (`ADR-0202`)**: strictly-monotonic `extendRetention` + gated GOVERNANCE→COMPLIANCE + chain-evidenced `escalateRetention`. `ADR-0006`,`0051`,`0052`,`0054`,`0201`,`0202`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `ai-meter`        | 7 / 4 / 1339      | **substantial**                             | PG-atomic token metering + per-tenant spend caps + circuit breaker (`ADR-0060`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `ai-evals`        | 12 / 7 / 1323     | **substantial**                             | eval harness + CI gate (`ADR-0062`); thin test coverage (1 file)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `prompt-registry` | 4 / 2 / 603       | **substantial**                             | versioned prompt registry + render (`ADR-0061`); render is fully implemented, golden-fixture-pinned (`src/__golden__/render.json`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `guardrails`      | 6 / 4 / 882       | **substantial**                             | input/output moderation + PII redaction (`ADR-0063`); PII path (mask/hash/reversible-tokenize) is fully implemented, no open seams                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `ai-kit`          | 7 / 7 / 1424      | **partial**                                 | inference gateway composing the above (`ADR-0059`); free BYOK billing policy (`keySource: 'env'                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | 'tenant'`, tenant-key actions debit 0 credits, `ADR-0182`); thinnest edition root |
+| `local-ai`        | 18 / 13 / 3063    | **substantial**                             | compute seam + privacy gate + sqlite-vec ANN + offline license + two-way sync. **Rented/hosted inference PROVEN live (2026-07-01, `ADR-0201`)** via the new `createOpenRouterRentedTransport` (egress-guarded, strict-revalidated, metered); On-device **ONNX PROVEN live** (2026-07-02, `ADR-0221`; Bun 1.3.14 + `@huggingface/transformers` 4.2.0, throwaway install, 4/4) via `live/onnx.live.test.ts`, egress now unified onto the shared `EgressGuard` (`model-fetch` sink, F2=B); the peer stays uninstalled. CI stays on `StubInferenceBackend` (`ADR-0064`); now commercial (`ADR-0050`,`0083`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `local-store`     | 8 / 7 / 1051      | **substantial**                             | local canonical store, file-per-tenant (`ADR-0067`,`0073`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `agent-kernel`    | 9 / 8 / 1148      | **substantial**                             | base governed-agent kernel (`ADR-0065`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `agent-dev`       | 7 / 6 / 890       | **substantial**                             | typed agent/skill/rule schema + lifecycle + emitter (`ADR-0066`); roadmap edition per `ADR-0082` §4                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `license-verify`  | 4 / 2 / 321       | **substantial**                             | offline Ed25519 license verify (consumed by local-ai/agent-dev); signed `updatesUntil` window claim (`ADR-0251`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `license-issue`   | 3 / 2 / 244       | **built (commercial · private · ADR-0110)** | offline Ed25519 license **issuer** — signs canonicalized claims via a Signer port (default `node:crypto` PKCS8 Ed25519); consumed by `services/license`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 ### Apps + services
 
@@ -486,24 +332,19 @@ index** — the redeploy is DEPLOY-class, PENDING (see the top note).
    three frameworks, golden-fixture-pinned (`ADR-0179`-`0181`). Grep `un-wired`/`seam` in source headers
    before assuming any OTHER adapter is live — the former S3-ObjectLock/inference stub caveat is closed
    (`ADR-0201` superseded the `ADR-0184` defer; see gap #2).
-4. **Re-verified 2026-07-05 (the "49 loc"/"358 loc"/"1 test file" figures below were stale by
-   roughly one build generation — corrected here, not just re-asserted):**
-   **`ai-config`** is genuinely thin, and that's the whole point of it — 125 src LOC across
-   `config.ts` + `index.ts`: a provider-agnostic lane resolver (`parseAiSettings`/
-   `resolveProvider`) spanning 8 providers, including the two-part Bedrock credential and the
-   Azure OpenAI deployment/`apiVersion`/`baseUrl` trio. 15/15 tests pass in its one test file (185
-   LOC). **`ai-kit` is NOT thin** — 1,424 src LOC across 7 files (`gateway.ts` 624,
-   `embed.ts` 258, `providers.ts` 188, `byok-resolver.ts` 116, `byok-store.ts` 95,
-   `structured-generate.ts` 83, `index.ts` 60) exporting `infer`/`inferStream`/`embed`/
-   `embedMany`/`structuredGenerate`/the BYOK key store + resolver/the live-provider registry.
-   92/92 tests pass across 7 files (2,482 LOC of DI-stubbed, zero-network tests) plus 2
-   self-skipping live-transport suites (328 LOC, `test.skipIf` gated on `OPENROUTER_API_KEY`).
-   **`ai-evals`** was never "1 test file" — 1,323 src LOC across 12 files (the harness, a
+4. **Thinness is a design choice, not a coverage gap, for some packages** — a judgment call the
+   generated counts above can't make on their own. `ai-config` is a provider-agnostic lane
+   resolver (`parseAiSettings`/`resolveProvider`, 8 providers incl. the two-part Bedrock
+   credential and the Azure OpenAI deployment/`apiVersion`/`baseUrl` trio) — deliberately thin,
+   not under-built. `ai-kit` and `ai-evals` are NOT thin despite modest package names: `ai-kit`
+   exports `infer`/`inferStream`/`embed`/`embedMany`/`structuredGenerate`/the BYOK key store +
+   resolver/the live-provider registry (`gateway.ts` is its largest file) plus 2 self-skipping
+   live-transport suites (`test.skipIf` gated on `OPENROUTER_API_KEY`); `ai-evals` carries a
    6-class grader taxonomy, cassette judge record/replay, the regression-vs-baseline gate,
-   Wilson-CI, Fleiss-kappa agreement, a reflexivity queue, a budget-isolated eval-spend ledger),
-   79/79 tests passing across 7 test files (1,014 LOC). All three packages are present, green,
-   and — for `ai-kit`/`ai-evals` — substantive; `ai-config`'s thinness is by design (it's a
-   resolver, not an engine).
+   Wilson-CI, Fleiss-kappa agreement, a reflexivity queue, and a budget-isolated eval-spend
+   ledger. The counts themselves are never manually re-asserted here anymore — the per-package
+   tables above are machine-regenerated (`checkPackageCountParity`, `ADR-0253`); if they ever
+   disagree with this paragraph's characterization, the table is the fresher source.
 5. **Stale upstream claims:** `ADR-0082` §3 ("empty stubs") and `SUMMARY.md` ("editions ... remain")
    both predate PR#11. Do not cite either for build-status; cite this file.
 

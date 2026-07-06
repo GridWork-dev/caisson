@@ -6,6 +6,7 @@
 // edge under `nodejs_compat` — workerd implements node:crypto sign/verify (since 2025-02), so the same
 // verifier the local-ai/agent-dev installs use runs unmodified on the Worker; no WebCrypto fork.
 import { verifyLicense, type VerifiedLicense } from "@caisson/license-verify";
+import type { ResolvedLicense } from "./handler";
 
 // `PREFIX-TIER-base64url(...)` carried after the Bearer scheme. Case-insensitive scheme, one token.
 const BEARER_RE = /^Bearer\s+(\S+)$/i;
@@ -28,8 +29,8 @@ const NO_REVOCATIONS: ReadonlySet<string> = new Set<string>();
 export function makeLicenseEntitlementResolver(
   getDenied: () => ReadonlySet<string>,
   verify: (token: string) => VerifiedLicense = verifyLicense,
-): (request: Request) => readonly string[] | null {
-  return (request: Request): readonly string[] | null => {
+): (request: Request) => ResolvedLicense | null {
+  return (request: Request): ResolvedLicense | null => {
     const header = request.headers.get("authorization");
     if (header === null) return null;
     const match = BEARER_RE.exec(header.trim());
@@ -40,7 +41,13 @@ export function makeLicenseEntitlementResolver(
     // Edge revocation gate: an operator-revoked license id → community. Fail-open lives in getDenied's
     // cache (revocation-list.ts), so a deny-set outage denies nobody rather than blocking every buyer.
     if (getDenied().has(verified.claims.licenseId)) return null;
-    return verified.entitlements;
+    // The signed ADR-0244/0255 per-entitlement updates windows ride along: an absent/null claim —
+    // every pre-window token — normalizes to the empty map = every entitlement unbounded. The
+    // handlers fold this into a per-module MOST FAVORABLE window (handler.ts `resolveGate`).
+    return {
+      entitlements: verified.entitlements,
+      updatesWindows: verified.claims.updatesWindows ?? {},
+    };
   };
 }
 

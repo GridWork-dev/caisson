@@ -12,6 +12,10 @@
 // headless service needs the same Pool→Transactor adapter.
 import type { TenantExecutor, Transactor } from "@caisson/tenancy-rls";
 import { Pool, type PoolClient } from "pg";
+import {
+  loadCreditExpiryScheduleConfig,
+  startCreditExpiryScheduler,
+} from "./credit-expiry-scheduler.ts";
 import { startServer } from "./server.ts";
 
 function nodePgExecutor(client: PoolClient): TenantExecutor {
@@ -63,6 +67,23 @@ if (import.meta.main) {
     );
   }
   const pool = new Pool({ connectionString: url });
+  const db = nodePgTransactor(pool);
   // Bun.serve inside startServer holds the event loop open — the process stays up serving.
-  startServer(nodePgTransactor(pool));
+  startServer(db);
+
+  // ADR-0256: inert until armed — CREDIT_EXPIRY_SCHEDULE unset resolves immediately with zero
+  // pg-boss connection ever opened. Fire-and-forget (never awaited): a slow or failed scheduler
+  // start must never delay or block the webhook/issuer socket already bound above, and the
+  // function's own try/catch means this can never become an unhandled rejection.
+  void startCreditExpiryScheduler({
+    db,
+    connectionString: url,
+    schedule: loadCreditExpiryScheduleConfig(),
+    // ponytail: no @caisson/email driver in this service yet — emailer stays null, so
+    // recipientFor/dashboardUrl below are unreachable (defineCreditExpiryNoticeTask short-circuits
+    // on emailer===null before calling either). Wire a real resolver when this service gains one.
+    emailer: null,
+    recipientFor: async () => null,
+    dashboardUrl: "https://caisson.sh/dashboard/credits",
+  });
 }

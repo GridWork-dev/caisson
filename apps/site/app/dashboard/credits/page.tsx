@@ -15,8 +15,9 @@ export const metadata: Metadata = { title: "Credits" };
 
 export default async function DashboardCreditsPage() {
   const session = await requireDashboardSession("/dashboard/credits");
-  const { balance, ledger } = await readScoped(session.accountId, (tx) =>
-    readCreditsSummary(tx, session.accountId),
+  const { balance, ledger, expiring } = await readScoped(
+    session.accountId,
+    (tx) => readCreditsSummary(tx, session.accountId),
   );
 
   // Reconstruct each entry's running balance from the append-only ledger (oldest-first, as
@@ -57,6 +58,19 @@ export default async function DashboardCreditsPage() {
         icon="wallet"
         tone={balance > 0 ? "positive" : "default"}
       />
+
+      {expiring.credits > 0 && expiring.soonestExpiresAt !== null ? (
+        // Expiring-soon badge (ADR-0245/0252 Decision 6a): unexpired remaining credits whose
+        // grant expires within 30 days. FIFO means they burn first automatically — the copy says
+        // so instead of alarming.
+        <MetricStat
+          label="Expiring within 30 days"
+          value={<MoneyCell value={expiring.credits} unit="credits" />}
+          icon="alert"
+          tone="warning"
+          hint={`Expire ${expiring.soonestExpiresAt.slice(0, 10)} — they burn first automatically; top up or use them.`}
+        />
+      ) : null}
 
       <div>
         <h2

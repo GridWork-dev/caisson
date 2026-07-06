@@ -21,6 +21,7 @@ import { dirname, join } from "node:path";
 import {
   buildCeilingEditSuggestions,
   buildFreshnessEditSuggestions,
+  buildPackageCountEditSuggestions,
   buildTrackerEditSuggestions,
   checkAdrCeilingParity,
   checkArchiveIntegrity,
@@ -28,14 +29,19 @@ import {
   checkDocFreshness,
   checkFrontmatterFreshness,
   checkLiveDocArchiveLink,
+  checkPackageCountParity,
   computeBranchHygiene,
+  computePackageCounts,
+  diffPackageCounts,
   evaluateChangesetOutcome,
   extractAdrCeilingSources,
   extractCeiling,
+  extractDocPackageRows,
   extractTrackerPrRefs,
   findStaleTrackerRefs,
   frontmatterKeyLine,
   maxAdrFromFilenames,
+  type PackageCounts,
   parseFrontmatter,
   parseWorktreeList,
   printEditChecklist,
@@ -647,6 +653,161 @@ describe("check #6 — changeset gate preflight", () => {
   test("skip: bunx/changeset unavailable, never reported as an error", () => {
     const result = evaluateChangesetOutcome({ ok: false, unavailable: true });
     expect(result.status).toBe("skip");
+  });
+});
+
+// ============================================================================================
+// Check #7 — package count parity (pure — fixture disk counts + fixture doc text)
+// ============================================================================================
+
+describe("check #7 — package count parity", () => {
+  test("computePackageCounts splits src vs test files and sums src-only LOC", () => {
+    const counts = computePackageCounts([
+      { isTest: false, lines: 100 },
+      { isTest: false, lines: 50 },
+      { isTest: true, lines: 0 },
+      { isTest: true, lines: 0 },
+    ]);
+    expect(counts).toEqual({ src: 2, tests: 2, loc: 150 });
+  });
+
+  test("extractDocPackageRows reads a 3-tuple src/tests/loc cell, with its 1-based line", () => {
+    const text = [
+      "# doc",
+      "",
+      "| Package  | src / tests / loc | Verdict |",
+      "| -------- | ------------------ | ------- |",
+      "| `kernel` | 13 / 10 / 1427     | built   |",
+    ].join("\n");
+    const rows = extractDocPackageRows(text);
+    expect(rows).toEqual([
+      { pkg: "kernel", line: 5, src: 13, tests: 10, loc: 1427 },
+    ]);
+  });
+
+  test("extractDocPackageRows tolerates trailing annotation text before the next pipe", () => {
+    const text = "| `registry-schema` (`packages/`) | 5 / 5 / — | built |";
+    const rows = extractDocPackageRows(text);
+    expect(rows).toEqual([
+      { pkg: "registry-schema", line: 1, src: 5, tests: 5, loc: null },
+    ]);
+  });
+
+  test("extractDocPackageRows treats an em-dash loc cell as null, not a parse error", () => {
+    const rows = extractDocPackageRows("| `pricebook` | 4 / 3 / — | built |");
+    expect(rows[0]?.loc).toBeNull();
+  });
+
+  test("diffPackageCounts: green when disk matches the doc row exactly", () => {
+    const disk = new Map<string, PackageCounts>([
+      ["kernel", { src: 13, tests: 10, loc: 1427 }],
+    ]);
+    const findings = diffPackageCounts(disk, [
+      { pkg: "kernel", line: 5, src: 13, tests: 10, loc: 1427 },
+    ]);
+    expect(findings).toEqual([]);
+  });
+
+  test("diffPackageCounts: stale when any of src/tests/loc disagree", () => {
+    const disk = new Map<string, PackageCounts>([
+      ["ai-evals", { src: 12, tests: 7, loc: 1323 }],
+    ]);
+    const findings = diffPackageCounts(disk, [
+      { pkg: "ai-evals", line: 433, src: 6, tests: 1, loc: 800 },
+    ]);
+    expect(findings).toEqual([
+      {
+        pkg: "ai-evals",
+        line: 433,
+        kind: "stale",
+        detail:
+          "docs/build-state.md:433 `ai-evals` says 6 / 1 / 800, disk truth is 12 / 7 / 1323",
+      },
+    ]);
+  });
+
+  test("diffPackageCounts: a null doc loc cell never triggers stale on its own", () => {
+    const disk = new Map<string, PackageCounts>([
+      ["pricebook", { src: 4, tests: 3, loc: 523 }],
+    ]);
+    const findings = diffPackageCounts(disk, [
+      { pkg: "pricebook", line: 385, src: 4, tests: 3, loc: null },
+    ]);
+    expect(findings).toEqual([]);
+  });
+
+  test("diffPackageCounts: a disk package with no doc row is missing-row, not a crash", () => {
+    const disk = new Map<string, PackageCounts>([
+      ["rate-limit", { src: 4, tests: 3, loc: 432 }],
+    ]);
+    const findings = diffPackageCounts(disk, []);
+    expect(findings).toEqual([
+      {
+        pkg: "rate-limit",
+        line: 0,
+        kind: "missing-row",
+        detail:
+          "packages/rate-limit: on disk (4 / 3 / 432) but no matching row in docs/build-state.md",
+      },
+    ]);
+  });
+
+  test("diffPackageCounts: a doc row whose package dir is gone is dead-row", () => {
+    const findings = diffPackageCounts(new Map(), [
+      { pkg: "retired-pkg", line: 400, src: 1, tests: 1, loc: 10 },
+    ]);
+    expect(findings).toEqual([
+      {
+        pkg: "retired-pkg",
+        line: 400,
+        kind: "dead-row",
+        detail:
+          "docs/build-state.md:400 `retired-pkg` has a row but packages/retired-pkg no longer exists on disk",
+      },
+    ]);
+  });
+
+  test("checkPackageCountParity: green (missing-row is info, not drift) when nothing is stale/dead", () => {
+    const disk = new Map<string, PackageCounts>([
+      ["kernel", { src: 13, tests: 10, loc: 1427 }],
+      ["rate-limit", { src: 4, tests: 3, loc: 432 }],
+    ]);
+    const doc = "| `kernel` | 13 / 10 / 1427 | built |";
+    const result = checkPackageCountParity(disk, doc);
+    expect(result.status).toBe("green");
+    expect(result.details.some((d) => d.includes("rate-limit"))).toBe(true);
+  });
+
+  test("checkPackageCountParity: drift when a cell is stale", () => {
+    const disk = new Map<string, PackageCounts>([
+      ["ai-evals", { src: 12, tests: 7, loc: 1323 }],
+    ]);
+    const doc = "| `ai-evals` | 6 / 1 / 800 | built |";
+    const result = checkPackageCountParity(disk, doc);
+    expect(result.status).toBe("drift");
+  });
+
+  test("buildPackageCountEditSuggestions emits a corrected cell only for stale rows", () => {
+    const disk = new Map<string, PackageCounts>([
+      ["ai-evals", { src: 12, tests: 7, loc: 1323 }],
+      ["kernel", { src: 13, tests: 10, loc: 1427 }],
+    ]);
+    const doc = [
+      "| `ai-evals` | 6 / 1 / 800 | built |",
+      "| `kernel` | 13 / 10 / 1427 | built |",
+    ].join("\n");
+    const suggestions = buildPackageCountEditSuggestions(
+      disk,
+      doc,
+      "docs/build-state.md",
+    );
+    expect(suggestions).toEqual([
+      {
+        file: "docs/build-state.md",
+        line: 1,
+        suggestion: "`ai-evals` row -> 12 / 7 / 1323",
+      },
+    ]);
   });
 });
 

@@ -9,14 +9,17 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import {
   CREDIT_LINE_ITEM_MIGRATION_SQL,
+  CREDIT_EXPIRY_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
+  GRANT_CONSUMPTION_MIGRATION_SQL,
   debit,
   grant,
 } from "@caisson/credits";
 import { asCredits } from "@caisson/kernel";
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
+  ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   LICENSE_GRANT_SCHEMA_SQL,
   grantEntitlements,
@@ -123,8 +126,11 @@ beforeAll(async () => {
   await tp.exec(CREDIT_SCHEMA_SQL);
   await tp.exec(CREDIT_ROUNDING_MIGRATION_SQL);
   await tp.exec(CREDIT_LINE_ITEM_MIGRATION_SQL);
+  await tp.exec(CREDIT_EXPIRY_MIGRATION_SQL);
+  await tp.exec(GRANT_CONSUMPTION_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
+  await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
   await tp.exec(LICENSE_GRANT_SCHEMA_SQL);
   // The ADR-0141 admin-read policies for every table the preview reads — INCLUDING credit_event
   // (the ADR-0225 addition the claw preview needs) and credit_wallet (the balance ceiling).
