@@ -16,7 +16,7 @@ split + Agentic-Dev inspector** (three.js spike stays deferred).
 
 1. **Picker round FIRST** — the SPEC §5 fork queue (R3 price-relock · inspector Forks A/B ·
    updates-window · credit rollover). Locks → ADRs; anything unlocked stays out of this build.
-2. **Three parallel workstreams** (disjoint trees, one Workflow each or one fan-out):
+2. **Four parallel workstreams** (disjoint trees, one Workflow each or one fan-out):
    - **W1 SOT docs** — `docs/state/outstanding-work.md` (absorb readiness-and-backlog + the
      opportunity-backlog residue, tombstone both) · `docs/deploy/STATE.md` (seed from the
      07-01→07-05 waves) · `docs/architecture.md` (`grounds:` frontmatter) · frontmatter
@@ -24,15 +24,20 @@ split + Agentic-Dev inspector** (three.js spike stays deferred).
    - **W2 `bun run sot`** — `tooling/scripts/sot-check.ts`, the 6 advisory checks + `--update`
      checklist mode (SPEC §2 table). Unit-test each check against a synthetic drift.
    - **W3 GTM** — `docs/gtm/` per the SPEC §3 table (8 files, one agent each + synthesis pass).
-3. **Hygiene riders** (SPEC §4, no forks): bun `catalog:` · renovate · knip · changesets
-   `privatePackages` · Content-Signals header · build-vs-buy page (copy lane).
-4. **Verify goal-backward** against the SPEC's Verify block; full gate + `bun run sot` green;
+   - **W4 repo-improvement hygiene wave** — the build-now rows of
+     `outputs/specs/repo-improvement-program/SPEC.md` (#4 dep catalog with the zod-line
+     mini-audit first · #5 build-vs-buy page via the copy gate · #6 Content-Signals header ·
+     #7 knip advisory · #8 renovate · #10 changesets policy). Own branch/PR; the program spec
+     owns its Verify. Trigger-parked rows (#9 #11 #12 #13) do NOT build this session.
+3. **Verify goal-backward** against the SPEC's Verify block; full gate + `bun run sot` green;
    one PR per workstream or one stacked set — merge on green, then the end-of-session
    convention (run `sot`, wrap) applies for the first time to its own build session.
 
 ## Inputs on disk
 
-- Research: `outputs/research/monorepo-bigpicture-2026-07.md` (gap table drives §4 + two §5 forks).
+- Research: `outputs/research/monorepo-bigpicture-2026-07.md`, executed via
+  `outputs/specs/repo-improvement-program/SPEC.md` (13-gap disposition + do-not-copy ledger; its
+  two revenue-policy forks join the SPEC §5 picker queue).
 - The frozen docs to absorb: `docs/state/readiness-and-backlog.md` (final banner 2026-07-05),
   `docs/state/opportunity-backlog.md` (residue re-baselined 2026-07-05).
 - Archive pattern precedent: the 2026-07-05 sweep (`docs/archive/` + tombstone stubs).
