@@ -31,6 +31,7 @@ import {
   creditsGrantedBySource,
   debit,
   grant,
+  sweepExpiredGrants,
 } from "@caisson/credits";
 import { asCredits, NotFoundError, type JsonValue } from "@caisson/kernel";
 import {
@@ -422,6 +423,11 @@ export async function adjustCreditsAdmin(
       balanceAfter = r.balance;
       applied = input.deltaCredits;
     } else {
+      // Burn any expired-grant residue FIRST (idempotent, per-grant `expiry:<id>` keys): after the
+      // sweep the wallet aggregate equals the unexpired-spendable total, so the clamp below can
+      // never exceed what `debit`'s FIFO floor will cover (an unswept residue would otherwise make
+      // the whole adjustment throw fail-closed on an amount the aggregate said was available).
+      await sweepExpiredGrants(tx, input.targetAccountId);
       // Clamp the debit to the balance under a row lock so it can never underflow the wallet.
       const locked = await tx.query<{ balance: number }>(
         `SELECT balance FROM credit_wallet WHERE account_id = $1 FOR UPDATE`,

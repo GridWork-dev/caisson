@@ -383,6 +383,44 @@ describe("credit adjust (± integer, feature envelope, never negative)", () => {
     );
     expect(bal[0]?.balance).toBe(0);
   });
+
+  test("negative adjust over un-swept expired residue burns the residue first, then applies", async () => {
+    const acct = await realAccount();
+    // An EXPIRED grant (residue 300) + a live grant (200): wallet aggregate 500, spendable 200.
+    await withTenant(db, acct, async (tx) => {
+      await grant(tx, {
+        accountId: acct,
+        eventType: "feature_grant",
+        feature: "admin_adjust",
+        amount: asCredits(300),
+        idempotencyKey: randomUUID(),
+        expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+      });
+      await grant(tx, {
+        accountId: acct,
+        eventType: "feature_grant",
+        feature: "admin_adjust",
+        amount: asCredits(200),
+        idempotencyKey: randomUUID(),
+      });
+    });
+    // Remove 500: the aggregate says 500, but only 200 is spendable. The adjust path sweeps the
+    // expired residue first (an `expiry_debit` event), then clamps to the swept balance — before
+    // the sweep-first fix this threw InsufficientCreditsError and rolled the whole action back.
+    const r = await adjustCreditsAdmin(deps(), {
+      actorEmail: "op@gridwork.dev",
+      targetAccountId: acct,
+      deltaCredits: -500,
+      reason: "clawback over stale residue",
+    });
+    expect(r.applied).toBe(-200);
+    expect(r.balanceAfter).toBe(0);
+    const ev = await ground<{ event_type: string; n: number }>(
+      `SELECT event_type, count(*)::int AS n FROM credit_event WHERE account_id = $1 GROUP BY event_type`,
+      [acct],
+    );
+    expect(ev.find((e) => e.event_type === "expiry_debit")?.n).toBe(1);
+  });
 });
 
 describe("account existence gate on comp grants + credit adjustments (CAISSON-9)", () => {
