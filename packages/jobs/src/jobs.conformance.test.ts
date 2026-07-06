@@ -48,6 +48,9 @@ function fakePgBossClient(): PgBossClient {
     async getQueue() {
       return null;
     },
+    async schedule() {
+      return undefined;
+    },
   };
 }
 
