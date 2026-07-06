@@ -72,6 +72,36 @@ describe("ADR-0077 edition member-version pin map", () => {
     ).toThrow();
   });
 
+  test("a bundle-kind manifest requires a non-empty members pin map too (ADR-0257)", () => {
+    // The ADR-0257 bundle kind composes exactly like an edition: members required, exact pins.
+    // It does NOT declare `editions[]` — the bundle id is the module-id slug.
+    const bundleInput: ModuleManifestInput = {
+      id: "@caisson/provenance",
+      version: "0.1.0",
+      kind: "bundle",
+      tier: "paid",
+      priceCents: 39900,
+      license: "LicenseRef-Caisson-Commercial",
+      members: {
+        "@caisson/audit-worm": "0.1.0",
+        "@caisson/field-crypto": "0.1.0",
+      },
+      description: "Provenance bundle fixture (ADR-0257 members pin map).",
+    };
+    const m = defineModule({ ...bundleInput });
+    expect(m.kind).toBe("bundle");
+    expect(m.editions).toEqual([]);
+    expect(() => defineModule({ ...bundleInput, members: {} })).toThrow(
+      /non-empty members pin map/,
+    );
+    expect(() =>
+      defineModule({
+        ...bundleInput,
+        members: { "@caisson/audit-worm": "latest" },
+      }),
+    ).toThrow();
+  });
+
   test("a non-edition module may omit members (defaults to {}, no refine fires)", () => {
     // `kind: "base"` is not an edition — omitting members is valid (defaults to {}).
     expect(() =>

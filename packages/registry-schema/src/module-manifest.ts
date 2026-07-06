@@ -12,6 +12,12 @@ export const MODULE_KINDS = [
   "edition",
   "primitive",
   "app-template",
+  // ADR-0257: the bundle model. Additive — historical `kind:"edition"` ledger/index entries stay
+  // valid forever. A bundle-kind module is the meta-package for one bundle id (its `@caisson/<slug>`
+  // slug IS the bundle id, per `./bundle-vocabulary`); like an edition it carries a required
+  // non-empty frozen `members` pin map (the refine below), but it does NOT use `editions[]` (that
+  // enum is the closed legacy set — bundles are keyed by id, never by a new editions entry).
+  "bundle",
 ] as const;
 export const COMMERCE_TIERS = ["oss", "paid"] as const;
 export const STABILITY = ["alpha", "beta", "stable"] as const;
@@ -73,7 +79,8 @@ export const ModuleManifest = z
      * Frozen member-version pin map (ADR-0077). For `edition` manifests: maps every bundled module
      * id to its EXACT pinned semver — the generator resolves `edition@x.y.z` to this FROZEN set
      * (never `latest`, never a range; the `semver` regex already rejects both). Non-edition modules
-     * may omit it (defaults to {}). The refine below enforces non-empty for `kind === "edition"`.
+     * may omit it (defaults to {}). The refines below enforce non-empty for `kind === "edition"`
+     * and `kind === "bundle"` (ADR-0257 — a bundle composes exactly like an edition).
      */
     members: z.record(moduleId, semver).default({}),
     entry: relPath.default("src/index.ts"),
@@ -107,6 +114,17 @@ export const ModuleManifest = z
     {
       message:
         "an edition module must declare a non-empty members pin map (ADR-0077)",
+      path: ["members"],
+    },
+  )
+  // ADR-0257: a bundle meta-package composes exactly like an edition — its frozen members pin map
+  // is the authoritative composition, so it must be non-empty (same contract as the edition refine
+  // above; `editions[]` intentionally NOT required — bundles are keyed by their module-id slug).
+  .refine(
+    (m) => (m.kind === "bundle" ? Object.keys(m.members).length > 0 : true),
+    {
+      message:
+        "a bundle module must declare a non-empty members pin map (ADR-0257/0077)",
       path: ["members"],
     },
   )
