@@ -15,21 +15,21 @@ import { CheckoutCta } from "@/components/checkout-cta";
 import { UpdatesForm } from "@/components/waitlist-form";
 import { breadcrumb, faqPage, serializeJsonLd } from "@/lib/jsonld";
 import { buildMetadata } from "@/lib/metadata";
-import { formatPrice, PLAN_PRICES } from "@/lib/pricing";
+import { bundlePrice, formatPrice, PLAN_PRICES } from "@/lib/pricing";
 
 export const metadata = buildMetadata({
   title: "Marketplace — Plans",
   description:
-    "Compliance Updates ($1,499/yr) and the Developer plan ($499/yr) are subscriptions on top of one-time, perpetual modules and editions. No renewal gate on code you already own.",
+    "Compliance Updates ($1,499/yr) and the Developer plan ($499/yr) are subscriptions on top of one-time, perpetual modules and bundles. No renewal gate on code you already own.",
   path: "/marketplace/plans",
 });
 
 // Real buyer questions (ADR-0080 §6) — rendered visibly below and mirrored into FAQPage JSON-LD.
 const PLANS_FAQ = [
   {
-    question: "Do I need a subscription to use an edition or module?",
+    question: "Do I need a subscription to use a bundle or module?",
     answer:
-      "No. Every module and edition is a one-time perpetual license. Compliance Updates and the Developer plan add updates and credits on top; they're not required for the code to run.",
+      "No. Every module and bundle is a one-time perpetual license. Compliance Updates and the Developer plan add updates and credits on top; they're not required for the code to run.",
   },
   {
     question: "What happens to my code if I cancel Compliance Updates?",
@@ -37,14 +37,13 @@ const PLANS_FAQ = [
       "You keep it. Cancelling stops new control-mapping updates and evidence-pack regeneration — it doesn't revoke the audit chain, WORM store, or field-crypto module you already own.",
   },
   {
-    question: "Is Compliance Updates the same as the Compliance edition?",
-    answer:
-      "No. The Compliance edition ($799, one-time) is the codebase. Compliance Updates ($1,499/yr) is the subscription that keeps its framework mappings and evidence packs current as regulations change.",
+    question: "Is Compliance Updates the same as the Compliance bundle?",
+    answer: `No. The Compliance bundle (${bundlePrice("compliance")}, one-time) is the codebase. Compliance Updates ($1,499/yr) is the subscription that keeps its framework mappings and evidence packs current as regulations change.`,
   },
   {
     question: "What do Developer plan credits cover?",
     answer:
-      "A monthly codegen and AI-feature credit allotment, plus entitlement-scoped pulls from the private registry and access to new editions on release.",
+      "A monthly codegen and AI-feature credit allotment, plus entitlement-scoped pulls from the private registry and access to new modules on release.",
   },
 ] as const;
 
@@ -125,9 +124,10 @@ export default function MarketplacePlansPage() {
               className="cs-footnote"
               style={{ display: "block", marginTop: "var(--cs-space-3)" }}
             >
-              Compliance Updates is not the Compliance edition. The edition
-              ($799, one-time) is the code; Compliance Updates ($1,499/yr) is
-              the subscription that keeps its framework mappings current.
+              Compliance Updates is not the Compliance bundle. The bundle (
+              {bundlePrice("compliance")}, one-time) is the code; Compliance
+              Updates ($1,499/yr) is the subscription that keeps its framework
+              mappings current.
             </span>
           </>
         }

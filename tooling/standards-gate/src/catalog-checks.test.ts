@@ -290,9 +290,12 @@ describe("checkReservedIdsStaleness", () => {
   function writeReserved(setLiteral: string, indexedIds: string[]): void {
     const dir = join(root, "packages", "registry-schema", "src");
     mkdirSync(dir, { recursive: true });
+    // The `<string>` generic mirrors the REAL declaration in registry-schema — the parser regex
+    // once required bare `new Set(` and silently no-opped on it (audit P2-2), so the fixture must
+    // exercise the generic form or the test greens a broken parser.
     writeFileSync(
       join(dir, "entitlements.ts"),
-      `export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> = new Set(${setLiteral});\n`,
+      `export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> = new Set<string>(${setLiteral});\n`,
     );
     mkdirSync(join(root, "registry"), { recursive: true });
     writeFileSync(

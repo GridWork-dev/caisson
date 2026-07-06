@@ -223,7 +223,7 @@ async function callOpenRouter(
     if (!res.ok) {
       return { ok: false, error: `HTTP ${String(res.status)}` };
     }
-    const json = await res.json();
+    const json = (await res.json()) as unknown;
     const parsed = ChatCompletionSchema.parse(json);
     return { ok: true, text: parsed.choices[0]?.message.content ?? "" };
   } catch (err) {

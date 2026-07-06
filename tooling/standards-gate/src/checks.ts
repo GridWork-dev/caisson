@@ -651,7 +651,16 @@ export async function checkCatalogParity(root: string): Promise<Finding[]> {
         continue;
       }
       const map = members.get(regId);
-      if (map && !map.has(`@caisson/${m.id}`)) {
+      if (map === undefined) {
+        // A site-listed bundle with NO index entry would pass its membership claims unverified —
+        // error, not skip: all six bundles are indexed, so an absent members map is real drift.
+        findings.push({
+          severity: "error",
+          rule: "catalog-parity",
+          pkg: `@caisson/${m.id}`,
+          message: `apps/site lists @caisson/${m.id} in the ${bundle} bundle but ${regId} has no members map in the registry index — the membership claim cannot be verified; index the bundle or fix bundles[] (ADR-0257).`,
+        });
+      } else if (!map.has(`@caisson/${m.id}`)) {
         findings.push({
           severity: "error",
           rule: "catalog-parity",
@@ -675,10 +684,12 @@ export async function checkCatalogParity(root: string): Promise<Finding[]> {
 }
 
 /** Extract the `RESERVED_MODULE_ENTITLEMENT_IDS` string set from entitlements.ts source (fs-only, so
- *  the check survives the pre-install pass and never drifts from a hand-copy — it reads live source). */
+ *  the check survives the pre-install pass and never drifts from a hand-copy — it reads live source).
+ *  The optional generic matters: the real declaration is `new Set<string>([...])`, and a regex
+ *  requiring bare `new Set(` silently parsed it to [] — a no-op staleness gate (audit P2-2). */
 function parseReservedEntitlementIds(src: string): string[] {
   const block = src.match(
-    /RESERVED_MODULE_ENTITLEMENT_IDS[^=]*=\s*new Set\(\s*\[([\s\S]*?)\]\s*\)/,
+    /RESERVED_MODULE_ENTITLEMENT_IDS[^=]*=\s*new Set(?:<[^>]*>)?\(\s*\[([\s\S]*?)\]\s*\)/,
   );
   if (!block?.[1]) return [];
   return [...block[1].matchAll(/["']([a-z0-9-]+)["']/g)].map(

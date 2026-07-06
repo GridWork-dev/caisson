@@ -65,17 +65,14 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
   // license-only buy — `credits: 0` (no bundled credit pack; carried over from the
   // `compliance_onetime` placeholder's number, SD-6 — operator-deferred, non-final).
   //
-  // REPRICE — Q4 "full below-sum" operator lock (per-edition price CHANGE): the price a buyer is
-  // CHARGED is NOT stored here. This book keys the Paddle price id -> credits + entitlements; the
-  // dollar AMOUNT lives on the Paddle product (dashboard/API), and the site DISPLAY amount is owned
-  // by `apps/site/lib/pricing.ts` (the single display SOT, integer USD — FE-2's tree). So a reprice
-  // is a Paddle-side + site-display change, NOT a pricebook code change — no amount is invented here.
-  // New locked below-sum targets (USD, one-time perpetual), by `purchaseTag` / Paddle price id:
-  //   compliance  -> $749   (pri_01kwd76be2eq96kff5nqw236c0)
-  //   ai-kit      -> $599   (pri_01kwd76c1pgs2csxcj2n0y7vv0)  — unchanged
-  //   local-ai    -> $349   (pri_01kwd76cahy825m14334aqf209)
-  //   agent-dev   -> $249   (pri_01kwd76ck3w8myy4p4f1gj0dcy)
-  //   bundle      -> $1,499 (pri_01kwd76bp60acq51mftvpgr42k)  — below the sum of its parts
+  // PRICING NOTE: the price a buyer is CHARGED is NOT stored here. This book keys the Paddle price
+  // id -> credits + entitlements; the dollar AMOUNT lives on the Paddle product (dashboard/API), and
+  // the site DISPLAY amount is owned by `apps/site/lib/pricing.ts` (the single display SOT, integer
+  // USD) with the cents authority in `upgrades.ts` BUNDLE_RETAIL / SKU_RETAIL (ADR-0258/0260). A
+  // reprice is a Paddle-side + site-display change, NOT a pricebook code change — no amount is
+  // invented here. The four edition rows below and the legacy $1,499 bundle row are RETIRED: their
+  // Paddle products were archived in the W7 catalog big-bang (ADR-0258; the rows stay for webhook
+  // replay of historical events, and the six-bundle rows live in the W7 section further down).
   //
   // The one REAL row below that grants CREDITS, not an entitlement — mirrors the
   // `price_credit_pack_PLACEHOLDER` row at the top of this book (5000 credits, $49, no edition

@@ -24,6 +24,13 @@ none survived in the source docs verbatim. Where a source recorded a concrete re
 a fingerprint, a row count) that value is quoted; where it only recorded a verification claim in
 prose, this entry cites the doc/section that made the claim instead of fabricating a transcript.
 
+**Standing sequence constraint (catalog-program, SHIP-audit F5):** the license claims schema is
+`.strict()`, and the catalog-program wave adds `updatesWindows`/`entitledSince` to signed tokens —
+an old verifier build REJECTS a new token (fail-safe to community/base, but a paying buyer degrades).
+Deploy order for any wave that widens the claims schema: **registry Worker (and any other verifier
+consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the bumped
+`@caisson/license-verify` before it can read new-shape tokens.
+
 ---
 
 ## 2026-07-05 — site-design-2 close-out: issuer-key rotation ×2, edge deny-set live, fleet redeploy

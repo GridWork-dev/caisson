@@ -31,8 +31,7 @@ import { MediaPlaceholder } from "@/components/media-placeholder";
 import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
 import { TrackView } from "@/components/track-view";
 
-const AI_KIT_DESCRIPTION =
-  "A metered infer()/embed() gateway on Vercel AI SDK v5: Postgres-atomic token metering with a per-tenant circuit breaker, typed input/output guardrails, and versioned prompts, composed behind one chokepoint. $599 once, own the source.";
+const AI_KIT_DESCRIPTION = `A metered infer()/embed() gateway on Vercel AI SDK v5: Postgres-atomic token metering with a per-tenant circuit breaker, typed input/output guardrails, and versioned prompts, composed behind one chokepoint. ${bundlePrice("ai-production")} once, own the source.`;
 
 export const metadata = buildMetadata({
   title: "AI Production Kit",

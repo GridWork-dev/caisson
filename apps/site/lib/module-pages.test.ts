@@ -81,7 +81,7 @@ describe("MODULE_PAGES (depth-page records)", () => {
     // any prose field — a composition claim ("ships with the eval harness") would naturally land
     // in `included[].body` or `faq`, not just `sells.note`, so the lint scans every prose string.
     const aiEvals = MODULE_PAGES.find((r) => r.slug === "ai-evals");
-    expect(aiEvals?.sells.note).toContain("no edition includes it");
+    expect(aiEvals?.sells.note).toContain("no persona bundle includes it");
     for (const r of MODULE_PAGES) {
       if (r.slug === "ai-evals") continue;
       for (const text of proseStrings(r)) {
