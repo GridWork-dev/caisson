@@ -153,6 +153,44 @@ describe("ai-config resolver", () => {
     ).toEqual({ defaultLane: "chat", lanes: { chat: ollamaLane } });
   });
 
+  test("groq/mistral/together lanes round-trip (ADR-0171 board lock, hardcoded default baseUrl)", () => {
+    for (const provider of ["groq", "mistral", "together"] as const) {
+      const lane: ProviderConfig = {
+        provider,
+        model: "m",
+        apiKeyEnv: `${provider.toUpperCase()}_API_KEY`,
+      };
+      expect(
+        parseAiSettings({ defaultLane: "chat", lanes: { chat: lane } }),
+      ).toEqual({ defaultLane: "chat", lanes: { chat: lane } });
+    }
+  });
+
+  test("groq/mistral/together lanes missing apiKeyEnv reject (same rule as openai, not bedrock-exempt)", () => {
+    for (const provider of ["groq", "mistral", "together"] as const) {
+      expect(() =>
+        parseAiSettings({
+          defaultLane: "chat",
+          lanes: { chat: { provider, model: "m" } },
+        }),
+      ).toThrow(ValidationError);
+    }
+  });
+
+  test("groq/mistral/together lanes accept an overridden baseUrl", () => {
+    for (const provider of ["groq", "mistral", "together"] as const) {
+      const lane: ProviderConfig = {
+        provider,
+        model: "m",
+        apiKeyEnv: "X",
+        baseUrl: "https://gateway.example.com/v1",
+      };
+      expect(
+        parseAiSettings({ defaultLane: "chat", lanes: { chat: lane } }),
+      ).toEqual({ defaultLane: "chat", lanes: { chat: lane } });
+    }
+  });
+
   test("keySource: tenant round-trips with no apiKeyEnv", () => {
     const tenantLane: ProviderConfig = {
       provider: "openai",
