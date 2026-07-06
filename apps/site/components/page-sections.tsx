@@ -17,8 +17,10 @@ import {
   Icon,
   Section,
   SkuMatrix,
+  StatusChip,
 } from "@/components";
 import { MediaPlaceholder } from "./media-placeholder";
+import { MediaVideo } from "./media-video";
 
 function renderSection(section: PageSection, key: number): ReactNode {
   switch (section.kind) {
@@ -130,15 +132,49 @@ function renderSection(section: PageSection, key: number): ReactNode {
     }
 
     case "media": {
-      // Placeholder media (ADR-0237 F2) — the shared <MediaPlaceholder> (also used by the
-      // hand-authored edition pages) inside an optional Section header.
-      const { kind: _kind, icon, aspect, ...header } = section;
+      // Real media when `src` is set (ADR-0263) — a self-hosted <video>, never a
+      // @remotion/player runtime embed. Otherwise the placeholder (ADR-0237 F2) — the shared
+      // <MediaPlaceholder> (also used by the hand-authored edition pages).
+      const { kind: _kind, icon, aspect, src, poster, ...header } = section;
       return (
         <Section key={key} {...header}>
-          <MediaPlaceholder
-            {...(icon !== undefined ? { icon } : {})}
-            {...(aspect !== undefined ? { aspect } : {})}
-          />
+          {src !== undefined ? (
+            <MediaVideo
+              src={src}
+              {...(aspect !== undefined ? { aspect } : {})}
+              {...(poster !== undefined ? { poster } : {})}
+            />
+          ) : (
+            <MediaPlaceholder
+              {...(icon !== undefined ? { icon } : {})}
+              {...(aspect !== undefined ? { aspect } : {})}
+            />
+          )}
+        </Section>
+      );
+    }
+
+    case "stackCompat": {
+      // The compatibility badge row (ADR-0263) — a flat <StatusChip> wrap, no new primitive.
+      const { kind: _kind, items, ...header } = section;
+      return (
+        <Section key={key} {...header}>
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "var(--cs-space-2)",
+            }}
+          >
+            {items.map((item) => (
+              <StatusChip
+                key={item.label}
+                label={item.label}
+                tone={item.tone ?? "accent"}
+                {...(item.icon !== undefined ? { icon: item.icon } : {})}
+              />
+            ))}
+          </div>
         </Section>
       );
     }

@@ -13,6 +13,7 @@ import type {
   IconName,
   SectionProps,
   SkuMatrixRow,
+  StatusChipTone,
 } from "@caisson/ui/components";
 
 import type { PageMeta } from "./metadata";
@@ -108,17 +109,44 @@ export interface CtaSection {
  * media — the reserved media slot (ADR-0237 F2). Ships as a deliberately-dumb placeholder — the
  * page's mark scaled large at low opacity on a `--cs-surface-2` field over a hairline grid — and
  * the ONLY contract real media must later honor is the `aspect` container (operator directive
- * 2026-07-03: no generative art system, media is produced before launch).
+ * 2026-07-03: no generative art system, media is produced before launch). ADR-0263: when `src` is
+ * set, the renderer arm plays that pre-rendered mp4 instead of the placeholder — a self-hosted
+ * `<video>`, never a `@remotion/player` runtime embed.
  */
 export interface MediaSection {
   kind: "media";
-  /** The mark rendered as placeholder art (decorative; aria-hidden). */
+  /** The mark rendered as placeholder art (decorative; aria-hidden). Ignored once `src` is set. */
   icon?: IconName;
   /** CSS aspect-ratio of the container, e.g. "16 / 9" (default). The one contract. */
   aspect?: string;
+  /** A produced video under /public (ADR-0263) — e.g. "/videos/audit-worm-demo.mp4". */
+  src?: string;
+  /** Optional poster frame for the video (unused by the placeholder path). */
+  poster?: string;
   eyebrow?: string;
   title?: string;
   lede?: ReactNode;
+}
+
+/** One compatibility badge: reuses `<StatusChip>` verbatim (ADR-0263), no new visual component. */
+export interface StackCompatItem {
+  label: string;
+  tone?: StatusChipTone;
+  icon?: IconName;
+}
+
+/**
+ * stackCompat — the "what does this actually work with" badge row (ADR-0263), authored from
+ * `docs/state/compatibility-matrix.md`. A flat `<StatusChip>` row under an optional header; no
+ * new visual primitive, no data fetch — the items are compile-time-static like every other
+ * section (file header note above).
+ */
+export interface StackCompatSection {
+  kind: "stackCompat";
+  eyebrow?: string;
+  title?: string;
+  lede?: ReactNode;
+  items: readonly StackCompatItem[];
 }
 
 /**
@@ -146,6 +174,7 @@ export type PageSection =
   | FaqSection
   | CtaSection
   | MediaSection
+  | StackCompatSection
   | CustomSection;
 
 /** A full page: typed SEO meta + the ordered sections a data file supplies. */

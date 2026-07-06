@@ -60,6 +60,23 @@ export async function generateMetadata(props: Params): Promise<Metadata> {
   });
 }
 
+/**
+ * The stackCompat badge row (ADR-0263), authored from docs/state/compatibility-matrix.md
+ * (2026-07-06 corrected snapshot) — every module page shares one "what this actually plugs into"
+ * row, since Postgres/RLS, billing, email, and jobs are base-level facts true for all of them.
+ * FOLLOW-UP: the "multi-harness emitter" count is mid-change in a sibling track this wave (Kickoff
+ * F W3 target expansion) — true this label up at integration if the target count changes.
+ */
+const STACK_COMPAT_ITEMS = [
+  { label: "Postgres + RLS" },
+  { label: "8 AI lanes" },
+  { label: "multi-harness emitter" },
+  { label: "vendor-neutral OTel" },
+  { label: "4 billing providers" },
+  { label: "5 email drivers" },
+  { label: "pg-boss + Trigger.dev jobs" },
+] as const;
+
 function bodySections(record: ModulePageRecord): readonly PageSection[] {
   return [
     {
@@ -78,7 +95,13 @@ function bodySections(record: ModulePageRecord): readonly PageSection[] {
       label: `${record.artifact.label}: ${record.artifact.file}`,
       code: record.artifact.code,
     },
-    { kind: "media", icon: moduleMark(record.slug) },
+    { kind: "media", icon: moduleMark(record.slug), ...(record.video ?? {}) },
+    {
+      kind: "stackCompat",
+      eyebrow: "Compatibility",
+      title: "What it plugs into",
+      items: STACK_COMPAT_ITEMS,
+    },
     {
       kind: "faq",
       eyebrow: "FAQ",

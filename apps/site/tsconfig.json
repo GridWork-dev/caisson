@@ -15,5 +15,12 @@
     "isolatedModules": true
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "out", ".next", "functions"]
+  "exclude": [
+    "node_modules",
+    "out",
+    ".next",
+    "functions",
+    "remotion",
+    "remotion.config.ts"
+  ]
 }
