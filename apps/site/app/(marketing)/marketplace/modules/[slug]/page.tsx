@@ -78,7 +78,7 @@ function bodySections(record: ModulePageRecord): readonly PageSection[] {
       label: `${record.artifact.label}: ${record.artifact.file}`,
       code: record.artifact.code,
     },
-    { kind: "media", icon: moduleMark(record.slug) },
+    { kind: "media", icon: moduleMark(record.slug), ...(record.video ?? {}) },
     {
       kind: "faq",
       eyebrow: "FAQ",
