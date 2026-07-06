@@ -3,9 +3,10 @@
 Additive to the global gridwork-core surface (security floor, retrieval doctrine, coding
 discipline auto-load from there). This file holds only what is specific to this repo.
 
-**What this repo is:** a productized monorepo library — a composable base + four premium
-editions (Compliance · AI Production Kit · Local-first AI · Agentic-Dev) + a `create-caisson`
-generator + a custom support service. Sold one-time + bundle + per-module + subscription/credits.
+**What this repo is:** a productized monorepo library — a composable base + **six bundles**
+(Compliance · AI-Production · Local-first · Agentic-Dev · Provenance · Everything, ADR-0257/0258;
+the four editions DISSOLVED into these 2026-07-06, legacy ids alias forever) + a `create-caisson`
+generator + a custom support service. Sold one-time + per-module + subscription/credits.
 Full founding spec: `specs/00-product-spec.md`. Built **rebuild-clean** from proven GridWork
 repos — never a port. **Name + positioning LOCKED: Caisson · `@caisson/*` · `caisson.sh`**
 (ADR-0041 name · ADR-0040 hero · ADR-0042 design).
@@ -110,6 +111,23 @@ Paddle SANDBOX edition prices re-pointed (compliance 79900 per ADR-0227). Merge-
 fixed on the way: the turbo bun-node shim breaks `node --check` (cli smoke resolves real node), and
 the license PGlite integration suite got a 30s `setDefaultTimeout` (5s default flakes under runner
 load). Linear CAISSON-15/16/17/18 Done.
+
+**2026-07-05/06 (kickoff waves A/B then the E/F/D triple-merge):** the SOT expansion (PR #126 —
+the `docs/state/` doc set + `bun run sot` drift tool + picker ADR-0243..0250) and Kickoff B
+hygiene (PR #127) landed 07-05; the remaining pool split into three parallel kickoffs that ALL
+merged 2026-07-06: **E** independent-build-wave (PR #128, ADR-0251-0256 — per-entitlement
+updates-window edge enforcement, renewal SKU plumbing, credit FIFO expiry, inspector, generated
+build-state counts, measurement pair), **F** dx-demos-compat (PR #129, ADR-0262-0268 —
+interactive create-caisson + deploy templates, Remotion media, emitter IR-activation + new
+targets, Drizzle/Prisma bridges, GCS/R2 WORM, GCP KMS + named AI lanes), and **D** the catalog
+program (PR #130, ADR-0257-0261 — the **six-bundle catalog rework**: editions DISSOLVED into
+compliance/ai-production/local-first/agentic-dev/provenance/everything at
+$1,049/$739/$629/$329/$399/$2,059, five W1 carve extractions, credits commercial flip, the W7
+Paddle SANDBOX big-bang with editions archived, all 22 modules à-la-carte, legacy entitlement
+ids resolving forever via the single alias point, and the SHIP-audit remediation — notably:
+license tokens sign PURCHASED ids, never the index expansion, or the Worker's purchased-id-keyed
+`updatesWindows` fold goes silently fail-open). Greptile formally retired as ADR-0261. `main`
+single-branch, ceiling 0268, sot green.
 
 ## Engineering invariants (locked, ADR-0002 — apply to all product code)
 
