@@ -742,13 +742,13 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Does buying agent-kernel alone get me the sandboxed agent runner too?",
         answer:
-          "No. agent-kernel ($199) is the schema/FSM/governance/hooks/audit-chain base; running an actual sandboxed agent process is agent-runner ($49), a separate module. Those are the two Agentic-Dev SKUs sold standalone; the $249 Agentic-Dev edition additionally bundles the local hybrid memory, the sandboxed tool-exec gate, and the multi-harness emitter that wire agent-kernel into one governed loop. Buy the modules for your own tooling, or buy the edition for the assembled loop.",
+          "No. agent-kernel ($199) is the schema/FSM/governance/hooks/audit-chain base; running an actual sandboxed agent process is agent-runner ($49), a separate module. Those are the two Agentic-Dev SKUs sold standalone; the $249 Agentic-Dev edition additionally bundles the local hybrid memory, the sandboxed tool-exec gate, and the multi-harness emitter (Claude Code, Cursor, Devin, GitHub Copilot, Cline, plus a universal AGENTS.md base read natively by Codex, Zed, and Gemini CLI — with fidelity warnings whenever a target can't represent an authored activation choice) that wire agent-kernel into one governed loop. Buy the modules for your own tooling, or buy the edition for the assembled loop.",
       },
     ],
     relatedGlossary: ["hash-chain-audit-trail"],
     sells: {
       edition: "agentic-dev",
-      note: "Agent kernel ($199) and agent-runner ($49) are the two Agentic-Dev SKUs sold standalone; the $249 Agentic-Dev edition additionally bundles the local hybrid memory, the sandboxed tool-exec gate, and the multi-harness emitter that wire agent-kernel into one governed loop. Buy the module alone to consume the schema/FSM/governance/hooks/audit-chain from your own tooling, or buy the edition for the assembled loop.",
+      note: "Agent kernel ($199) and agent-runner ($49) are the two Agentic-Dev SKUs sold standalone; the $249 Agentic-Dev edition additionally bundles the local hybrid memory, the sandboxed tool-exec gate, and the multi-harness emitter (Claude Code, Cursor, Devin, GitHub Copilot, Cline, plus a universal AGENTS.md base read natively by Codex, Zed, and Gemini CLI — with fidelity warnings whenever a target can't represent an authored activation choice) that wire agent-kernel into one governed loop. Buy the module alone to consume the schema/FSM/governance/hooks/audit-chain from your own tooling, or buy the edition for the assembled loop.",
     },
   },
   {
