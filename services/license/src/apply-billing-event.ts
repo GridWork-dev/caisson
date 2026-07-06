@@ -73,7 +73,7 @@ export interface AppliedBillingEffect {
    */
   grantedEntitlements: string[];
   /**
-   * Per-line SKU attribution for THIS event's grant (CAISSON-22): the provider price id + the
+   * Per-line SKU attribution for THIS event's grant: the provider price id + the
    * CANONICAL catalog slug (bundle-normalized) actually resolved during the grant, feeding the
    * post-commit PostHog `purchase` capture's cart-composition breakdown. `[]` for a non-granting
    * effect (a gated cycle, a revoke, a refund) or a pure-renewal line (which grants nothing).
@@ -171,7 +171,7 @@ export async function applyBillingEvent(
           continue;
         }
         const purchase = resolvePurchase(line.priceId); // fail-closed on an unknown price id
-        // CAISSON-22: canonical SKU line for the PostHog capture — the legacy purchase tag
+        // Canonical SKU line for the PostHog capture — the legacy purchase tag
         // (`ai-kit`, `bundle`, …) normalized to its bundle id (`ai-production`, `everything`, …).
         skuLines.push({
           priceId: line.priceId,

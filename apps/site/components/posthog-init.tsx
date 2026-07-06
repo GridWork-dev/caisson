@@ -38,7 +38,7 @@ function readAndClearSignupIntentCookie(): SignupIntent | null {
 // lawful basis is the privacy policy accepted at sign-up (authenticated route). `posthog-js` is
 // dynamically imported inside the effect — it reads `window` at import time and throws under SSR.
 //
-// `capture_pageview: false` + a manual `$pageview` per route change (CAISSON-22): posthog-js's
+// `capture_pageview: false` + a manual `$pageview` per route change: posthog-js's
 // bundled `history_change` autocapture does not reliably observe every Next.js App Router client
 // transition (the router can swap routes via an RSC-payload fetch rather than the plain
 // `history.pushState` the autocapture patch listens for) — the symptom is zero pageview signal in

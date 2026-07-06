@@ -4,7 +4,7 @@
 "@caisson/tenancy-rls": minor
 ---
 
-W1 catalog rework (ADR-0257 §1.3): the org module carve into ONE merged commercial package
+The org module carve: ONE merged commercial package
 `@caisson/org-controls` at $249 (tier `paid`, priceCents 24900, `LicenseRef-Caisson-Commercial`).
 It absorbs three surfaces out of the open Base:
 

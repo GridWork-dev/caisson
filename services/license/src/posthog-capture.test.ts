@@ -1,5 +1,5 @@
-// Unit coverage for the SKU-attribution stamping on the server-side PostHog `purchase` capture
-// (CAISSON-22): price ids / canonical product slugs land verbatim, and cart composition classifies
+// Unit coverage for the SKU-attribution stamping on the server-side PostHog `purchase` capture:
+// price ids / canonical product slugs land verbatim, and cart composition classifies
 // bundle-only, modules-only, mixed (edition + module), and lineless carts correctly. The
 // never-throws / config-gate contract is covered end to end by webhook-app.integration.test.ts;
 // this file is the unit check for the classification branch (ponytail: one runnable check per
@@ -37,7 +37,7 @@ function capture(skuLines: PurchaseCapture["skuLines"]): PurchaseCapture {
   };
 }
 
-describe("capturePostHogPurchase — SKU attribution (CAISSON-22)", () => {
+describe("capturePostHogPurchase — SKU attribution", () => {
   test("stamps price ids + canonical product slugs verbatim, in line order", async () => {
     const calls: Array<Record<string, unknown>> = [];
     await capturePostHogPurchase(

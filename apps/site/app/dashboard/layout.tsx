@@ -48,7 +48,7 @@ export default async function DashboardLayout({
       {/* PostHog product analytics — authed dashboard only (never the cookieless marketing site).
           No-op until NEXT_PUBLIC_POSTHOG_KEY is set on the caisson-site service. Suspense is the
           Next.js App Router requirement for PostHogInit's internal useSearchParams (manual
-          $pageview, CAISSON-22) — force-dynamic above does not remove it. */}
+          $pageview) — force-dynamic above does not remove it. */}
       <Suspense fallback={null}>
         <PostHogInit accountId={session.accountId} />
       </Suspense>

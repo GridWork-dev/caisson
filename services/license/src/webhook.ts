@@ -20,7 +20,7 @@ export interface BillingWebhookResult {
    */
   grantedEntitlements: string[];
   /**
-   * Per-line SKU attribution for this delivery's grant (CAISSON-22), threaded from
+   * Per-line SKU attribution for this delivery's grant, threaded from
    * `applyBillingEvent` — `[]` on a re-delivery/no-op, gated identically to `grantedEntitlements`
    * so the post-commit PostHog capture never drifts from the grant either.
    */

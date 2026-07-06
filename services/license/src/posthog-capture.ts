@@ -28,8 +28,8 @@ export function loadPostHogCaptureConfig(
   return { key, host: host.replace(/\/+$/, "") };
 }
 
-/** One granting line of a purchase/cycle — the SKU attribution for the `purchase` event
- *  (CAISSON-22). `productSlug` is the CANONICAL catalog id (a bundle id from `BUNDLE_IDS`, a
+/** One granting line of a purchase/cycle — the SKU attribution for the `purchase` event.
+ *  `productSlug` is the CANONICAL catalog id (a bundle id from `BUNDLE_IDS`, a
  *  `<slug>_module`, or a bare tag like `credit_pack`) — apply-billing-event normalizes the
  *  pricebook's legacy tag through `normalizeEntitlementId` before it lands here, so a legacy
  *  edition tag (`ai-kit`, `local-ai`, …) is stamped as its bundle id (`ai-production`, …) and a
@@ -53,7 +53,7 @@ export interface PurchaseCapture {
   currency: string;
   /** The provider event id — kept as a property for cross-referencing Paddle deliveries. */
   sourceEventId: string;
-  /** Per-line SKU attribution (CAISSON-22), threaded from `applyBillingEvent`. `[]` only for a
+  /** Per-line SKU attribution, threaded from `applyBillingEvent`. `[]` only for a
    *  lineless grant (defensive — a real money capture always fires on a granting line). */
   skuLines: readonly SkuLine[];
 }
@@ -106,7 +106,7 @@ export async function capturePostHogPurchase(
             entitlements: capture.entitlements,
             entitlement_count: capture.entitlements.length,
             source_event_id: capture.sourceEventId,
-            // SKU attribution (CAISSON-22) — revenue broken down by price id / canonical product /
+            // SKU attribution — revenue broken down by price id / canonical product /
             // bundle-vs-à-la-carte in PostHog. `cart_composition` is `undefined` (JSON.stringify
             // drops the key) for a lineless grant.
             price_ids: capture.skuLines.map((line) => line.priceId),

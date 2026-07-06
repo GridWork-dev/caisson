@@ -4,7 +4,7 @@
   "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
   "private": true,
-  "description": "Commercial billing orchestration (ADR-0249 G3): Stripe/Paddle/LemonSqueezy/Polar checkout drivers + provider->DomainBillingEvent parsers + dual-layer webhook idempotency. Raw-body signature verification stays open in @caisson/billing.",
+  "description": "Commercial billing orchestration: Stripe/Paddle/LemonSqueezy/Polar checkout drivers + provider->DomainBillingEvent parsers + dual-layer webhook idempotency. Raw-body signature verification stays open in @caisson/billing.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",

@@ -75,7 +75,7 @@ describe("price-book cost golden (BLESS unset)", () => {
   }
 });
 
-describe("BUNDLED_PRICE_BOOK anthropic/claude-sonnet-4.5 (CAISSON-23)", () => {
+describe("BUNDLED_PRICE_BOOK anthropic/claude-sonnet-4.5", () => {
   test("resolves instead of throwing ConfigError", () => {
     expect(() =>
       resolvePriceEntry(BUNDLED_PRICE_BOOK, "anthropic", "claude-sonnet-4.5"),
