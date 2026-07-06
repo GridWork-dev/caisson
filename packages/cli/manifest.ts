@@ -4,7 +4,9 @@
 // ADR-0136): the generator ships with EVERY buyer's repo, so it joins the open Apache-2.0 set
 // alongside @caisson/migrate + @caisson/license-verify — free `oss` tier, no `priceCents` (the
 // license⟺tier rule requires oss carry no price). The open Base must resolve against open deps only
-// (ADR-0094): credits·kernel·migrate·registry-schema are all Apache-2.0.
+// (ADR-0094): kernel·migrate·registry-schema are all Apache-2.0. The codegen credit debit is an
+// INJECTED port (GenerationDeps.debit, ADR-0249 G5) — the commercial @caisson/credits is a dev-only
+// test fixture, never a runtime dep.
 import pkg from "./package.json";
 import { defineModule } from "@caisson/registry-schema";
 
@@ -15,7 +17,6 @@ export default defineModule({
   tier: "oss",
   license: pkg.license,
   dependencies: [
-    "@caisson/credits",
     "@caisson/kernel",
     "@caisson/migrate",
     "@caisson/registry-schema",

@@ -24,6 +24,7 @@ export {
 } from "./sample-templates.ts";
 
 export {
+  type DebitFn,
   type MeterInput,
   type GenerationDeps,
   type GenerationOutcome,

@@ -1,6 +1,8 @@
 // The codegen credit-debit seam (ADR-0049/0024/0007). Every generation meters a credit DEBIT
 // BEFORE any file is written (debit-before-spend): a short balance returns 402 and nothing is
-// written; a retried generation with the same `idempotencyKey` debits once. The HOSTED buyer MCP
+// written; a retried generation with the same `idempotencyKey` debits once. The debit itself is an
+// INJECTED port (`GenerationDeps.debit`, ADR-0249 G5) — the host supplies `@caisson/credits`'
+// concrete `debit`; the open cli never runtime-imports the commercial package. The HOSTED buyer MCP
 // calls `runGeneration`, minting/accepting one `idempotencyKey` (UUID) per generation. The local
 // `create-caisson` CLI generates FREE — no DB/tenant context on the buyer's machine, so it calls
 // `generate` + the writer directly and never `runGeneration`; its monetization is the license-gated
@@ -8,9 +10,7 @@
 // the debit + the ledger are tenant-scoped (ADR-0005).
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { CreditResult } from "@caisson/credits";
-import { debit } from "@caisson/credits";
-import { asCredits } from "@caisson/kernel";
+import { type Credits, asCredits } from "@caisson/kernel";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 import {
   type ModuleManifest,
@@ -40,11 +40,28 @@ export interface MeterInput {
   amount?: number;
 }
 
-/** Debit one codegen charge. Throws `InsufficientCreditsError` (402) on a short balance. */
+/**
+ * Structural injection port for the credits debit (ADR-0249 G5): matches `@caisson/credits`'
+ * `debit` for the codegen event WITHOUT importing it — the open (Apache-2.0) cli must not
+ * runtime-depend on the commercial credits package. The host (apps/base's composition root)
+ * supplies the concrete `debit` when wiring `runGeneration`.
+ */
+export type DebitFn = (
+  tx: TenantExecutor,
+  input: {
+    accountId: string;
+    amount: Credits;
+    eventType: "codegen_debit";
+    idempotencyKey: string;
+  },
+) => Promise<{ balance: number; idempotent: boolean }>;
+
+/** Debit one codegen charge via the injected port. Throws (402) on a short balance. */
 export function meterGeneration(
+  debit: DebitFn,
   tx: TenantExecutor,
   input: MeterInput,
-): Promise<CreditResult> {
+): ReturnType<DebitFn> {
   return debit(tx, {
     accountId: input.accountId,
     // Mint the brand at this boundary (ADR-0212) — MeterInput.amount stays a plain integer input.
@@ -56,6 +73,8 @@ export function meterGeneration(
 
 export interface GenerationDeps {
   index: RegistryIndex;
+  /** The concrete credits debit (REQUIRED — debit-before-spend must never silently no-op). */
+  debit: DebitFn;
   engine?: GeneratorEngine;
   /** Injected to materialize to disk (re-asserts path safety). Omitted → nothing is written. */
   writeFileSet?: FileSetWriter;
@@ -240,7 +259,7 @@ export async function runGeneration(
     files,
     deps.bundleRoot,
   );
-  const result = await meterGeneration(tx, meter); // debit-before-spend; 402 throws here
+  const result = await meterGeneration(deps.debit, tx, meter); // debit-before-spend; 402 throws here
   // An injected writer/spy still wins; otherwise default to the path-safe disk writer when a target
   // is given. With neither, nothing is written (the file set is returned but not persisted).
   const writer =
