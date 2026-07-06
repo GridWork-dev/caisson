@@ -1,7 +1,7 @@
 ---
-updated: 2026-07-05
+updated: 2026-07-06
 status: live
-adr_ceiling: 0250
+adr_ceiling: 0254
 ---
 
 # Decisions & Forks — live board
@@ -995,3 +995,23 @@ price numbers; both kickoffs research-first-then-deep-forks by design.
 displayed prices, price the 3 compliance SKUs and the per-package catalog, and fold in the
 gate/split pricing of the OSS redraw). Brainstorm evidence lands in
 `outputs/research/catalog-rework-brainstorm-2026-07.md`.
+
+## 2026-07-06 Kickoff-E picker rounds (independent-build-wave session) — 4 lock ADRs
+
+Kickoff E ran research-first (7-agent fan-out over the W1 seams, W3 doc, W4 measurement pair),
+then three picker rounds. W2 (agent-dev inspector) needed no round — ADR-0243 had pre-resolved
+both forks; it was built lock-and-go in the same session. Research briefs:
+`outputs/research/kickoff-e-research-2026-07/`.
+
+| Fork                              | Decision                                                                                                                                                                                                            | ADR          |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| **W1 — window enforcement point** | Claim + edge filter: signed `updatesUntil` on the license claims; Worker + npm surface filter per-version `publishedAt`, recompute `dist-tags.latest`; `/issue` re-mints on window change; absent claim = unbounded | **ADR-0251** |
+| **W1 — renewal SKU shape**        | ONE "Updates Renewal" Paddle product, per-SKU prices (sandbox, placeholder cents — Kickoff D owns numbers); fail-closed `RENEWAL_BOOK`; renewal extends `updates_expires_at` per `(account, entitlement)`           | **ADR-0251** |
+| **W1 — EULA/checkout copy**       | Mixed posture over the 7 contradicting spots: fuller on the two JSON-LD FAQ surfaces, minimal surgical elsewhere; cart badge → "no forced renewal"; no percentage in copy                                           | **ADR-0251** |
+| **W1 — FIFO ledger shape**        | Append-only `grant_consumption` join table + `expires_at` on `credit_event`; sandbox prod rows backfilled `created_at + 12mo`                                                                                       | **ADR-0252** |
+| **W1 — FIFO tie-break**           | `created_at ASC, expires_at ASC, id ASC` (sooner-expiring burns first on the real multi-item-cart tie)                                                                                                              | **ADR-0252** |
+| **W1 — expiry notification**      | Dashboard badge AND T-30d email, both now (operator pick above the badge-only rec — first transactional email template + jobs sweep + notified marker)                                                              | **ADR-0252** |
+| **W3 — build-state rework shape** | Generated per-package counts via a 7th sot check (`checkPackageCountParity`, `--update` suggestions) + banner squash; prose stays hand-written                                                                      | **ADR-0253** |
+| **W4 — citation tracker**         | Pay-as-you-go only (operator lock, custom answer): OpenRouter probe loop, monthly GHA cron, ~$1.20/run; DataForSEO-class PAYG evaluated for the AI-Overviews leg; NO subscription tracker pre-traffic               | **ADR-0254** |
+| **W4 — citation results sink**    | Both: `docs/gtm/aeo-citation-tracking.md` snapshots (canonical 18-question list included, ships as-is) + `aeo_citation_probe` PostHog events                                                                        | **ADR-0254** |
+| **W4 — docs funnel**              | Split (option C), build now: Plausible cookieless top-of-funnel goals/events + PostHog `account_created` with `?ref=` stitching; PostHog JS stays dashboard-only (F8 intact, option B rejected)                     | **ADR-0254** |
