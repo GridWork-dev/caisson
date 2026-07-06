@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-05
 status: live
-adr_ceiling: 0248
+adr_ceiling: 0249
 ---
 
 # Decisions & Forks — live board
@@ -963,8 +963,19 @@ this worktree. Locks:
   basic-OSS floor + deep commercial design package are in-scope brainstorm candidates — decided
   per-package at the follow-up picker, one-way after first publish.
 
-**Still OPEN after this round** (feeds the follow-up picker): the bundle SET itself · the
-OSS-line per-package redraws (ui split shapes, base→commercial flips) · **every price number**
+**G-series follow-up picker (same day, two structured rounds) — ADR-0249:** G1 bundle set =
+**Persona + Provenance** (the four ICP bundles + Everything + a Provenance cross-bundle:
+signing + audit-worm + field-crypto) · G3 `billing` splits (verify open / orchestration
+commercial) · G4 `auth` carves (`workos`+`membership` → commercial) · G5 `credits` =
+**decouple the cli debit gate, then flip** (override) · G6 `tenancy-rls` = **carve the
+admin-write layer** (override; open fail-closed RLS foundation stays the proof point) · G7 the
+three edition metas stay unpriced bundle-glue. **G2 (kit shape) redirected, NOT locked** — the
+operator widened it: a public full-surface customizable/modular kit (possibly a new package off
+`ui`), the internal brand system separate and built ON it, and per-package frontend surfaces as
+build items; grounded options return after the frontend investigation.
+
+**Still OPEN after the G round**: G2 kit/brand/per-package-frontend shape · **every price
+number**
 (a full pricing-revalidation research pass is operator-commissioned: re-validate/adjust all
 displayed prices, price the 3 compliance SKUs and the per-package catalog, and fold in the
 gate/split pricing of the OSS redraw). Brainstorm evidence lands in
