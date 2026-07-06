@@ -897,5 +897,14 @@ PRs #110–#122 all executed under existing locks — no fork was opened or auto
 Open forks unrelated to the go-live sequence, surfaced 2026-07-05 for a future round: the **R3
 compliance god-package split** (price-relock-gated — needs a superseding ADR against the ADR-0227
 $799 anchor before any spec) and the **Agentic-Dev Next.js inspector** (code gap; substrate built).
-The three.js signature spike stays parked. All three are queued in the SOT-expansion kickoff
+The three.js signature spike stays parked. All three are queued in Kickoff A's picker round
 (`outputs/kickoffs/sot-expansion-and-automation.md`), not auto-decided.
+
+A same-day second picker (2026-07-05, three work-organization picks — no ADR, scheduling-class)
+split the outstanding work **by tree** into two parallel kickoffs: **Kickoff A** (docs tree —
+SOT doc set · `bun run sot` · GTM distillation · the fork-queue picker) and **Kickoff B** (code
+tree — the repo-improvement hygiene wave + audit remediation,
+`outputs/kickoffs/KICKOFF-B-hygiene-audit-remediation.md`). The audit pickup is **ALL 264 open
+ledger findings** (91 high · 117 warn · 56 info — un-parks the TRIAGE §3 roadmap-only buckets),
+with **verify-then-fix on all 91 highs** (TRIAGE §5's ~29 possibly-refuted round-3 highs make
+every open-high a candidate, not a verdict).

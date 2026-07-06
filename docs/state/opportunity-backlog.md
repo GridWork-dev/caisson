@@ -167,7 +167,9 @@ All gated on P7 intake (`stage2-kickoff-triage.md:141`); named concretely only i
 
 Program ledger: `outputs/specs/repo-improvement-program/SPEC.md` (13-gap disposition off
 `outputs/research/monorepo-bigpicture-2026-07.md` + the do-not-copy anti-decision list). The
-build-now hygiene wave (#4–#8/#10) and the two revenue-policy forks live there / in the SOT-session
+build-now hygiene wave (#4–#8/#10) is owned by **Kickoff B**
+(`outputs/kickoffs/KICKOFF-B-hygiene-audit-remediation.md`, which also picks up ALL 264 open
+audit-ledger findings per the 2026-07-05 lock); the two revenue-policy forks sit in Kickoff A's
 picker queue; the trigger-parked rows are recorded here per the program convention:
 
 | Item                                                                      | Revisit trigger                                                                                        |
