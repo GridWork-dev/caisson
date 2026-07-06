@@ -51,7 +51,7 @@ const BUNDLE_PRICE_IDS: Record<BundleId, string> = {
  *  the entitlement (ADR-0071/0113); a mismatch fails resolvePurchase closed and a module purchase
  *  grants NOTHING. Keyed by every id `pricing.ts`'s MODULE_PRICES carries; `moduleRealPriceId` below
  *  throws if a future module is added there without a matching row here — the runtime mirror of the
- *  `EDITION_PRICE_IDS` `Record<EditionId, string>` compile-time guard above (module ids aren't a
+ *  `BUNDLE_PRICE_IDS` `Record<BundleId, string>` compile-time guard above (module ids aren't a
  *  closed union, so the check runs at catalog build time instead of at `tsc`). (catalog.test.ts pins
  *  the cross-package invariant against PURCHASE_BOOK.) */
 const MODULE_PRICE_IDS: Record<string, string> = {
