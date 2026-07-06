@@ -394,11 +394,11 @@ export interface R2LockReaderConfig {
   apiToken: string;
 }
 
-// Zod boundary for the third-party response (identity/security.md floor). The condition is a
-// discriminated union, so an unknown `condition.type` (a future Cloudflare retention primitive)
-// FAILS the parse — fail-closed, never a rule this driver silently misjudges. The envelope itself
-// is deliberately NOT `.strict()`: a provider may add fields at any time (the PR #114 lesson) and
-// unknown keys are stripped, not fatal.
+// Zod boundary for the third-party response. The condition is a discriminated union, so an
+// unknown `condition.type` (a future Cloudflare retention primitive) FAILS the parse —
+// fail-closed, never a rule this driver silently misjudges. The envelope itself is deliberately
+// NOT `.strict()`: a provider may add response fields at any time, so unknown keys are stripped,
+// not fatal — strictness belongs on the semantics (the condition), not the envelope.
 const R2LockRuleSchema = z.object({
   id: z.string(),
   enabled: z.boolean(),
