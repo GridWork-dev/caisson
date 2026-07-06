@@ -185,6 +185,30 @@ describe("issueLicense — expiry semantics (perpetual-per-major)", () => {
   });
 });
 
+describe("issueLicense — updatesUntil passthrough (ADR-0244/0251 updates window)", () => {
+  test("claims carrying updatesUntil round-trip through issue → verify", async () => {
+    const token = await issueLicense(devSigner, {
+      ...DEV_CLAIMS,
+      licenseId: VALID_UUID,
+      updatesUntil: "2027-07-06T00:00:00.000Z",
+    });
+    const result = verifyDev(token);
+    expect(result.valid).toBe(true);
+    expect(result.claims?.updatesUntil).toBe("2027-07-06T00:00:00.000Z");
+  });
+
+  test("claims WITHOUT the field still issue (pre-0251 shape preserved — the golden pins it)", async () => {
+    const token = await issueLicense(devSigner, DEV_CLAIMS);
+    expect(verifyDev(token).claims?.updatesUntil).toBeUndefined();
+  });
+
+  test("a malformed updatesUntil is rejected BEFORE signing", async () => {
+    await expect(
+      issueLicense(devSigner, { ...DEV_CLAIMS, updatesUntil: "soon" }),
+    ).rejects.toThrow();
+  });
+});
+
 describe("issueLicense — strict claims (the issuer never signs a bad shape)", () => {
   test("an unknown tier is rejected BEFORE signing (strict parse)", async () => {
     await expect(
