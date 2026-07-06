@@ -1,8 +1,12 @@
 // src/app.ts — the license-ISSUER HTTP router (ADR-0110, implements ADR-0010). A pure
 // `Request → Response` function over injected deps (token, signer, registry index, tenant Transactor)
 // so it is testable without a live socket. Issuance is LAZY + bearer-gated: POST /issue mints a signed
-// license for an account by resolving its server-side entitlements (the EXISTING `resolveAccountEntitlements`
-// inside `withTenant`, RLS-scoped) and signing them via `@caisson/license-issue`. POST /issue is
+// license carrying the account's PURCHASED entitlement ids (the claims contract — every consumer
+// expands them against the index at verification: Worker resolveGate, MCP server). The read is
+// RLS-scoped inside `withTenant` and validated fail-closed via `expandEntitlements` before signing
+// (`@caisson/license-issue`); the expansion is VALIDATION ONLY, never the signed set — signing the
+// expansion would orphan the purchased-id-keyed `updatesWindows`/`entitledSince` maps at the edge
+// (the Worker's window fold matches token entitlements against those keys; audit F2 2026-07-06). POST /issue is
 // IDEMPOTENT per (accountId, major) ("persist & reuse"): the first call mints, signs, and persists the
 // token via `license-grant-store.ts`; every later call for the same (accountId, major) re-serves the
 // STORED token byte-identical — never proliferates fresh perpetual tokens for one purchase — UNLESS
@@ -27,12 +31,16 @@ import {
   licenseTierSchema,
 } from "@caisson/license-verify";
 import { withRequestSpan } from "@caisson/observability";
-import type { RegistryIndex } from "@caisson/registry-schema";
+import {
+  expandEntitlements,
+  type RegistryIndex,
+} from "@caisson/registry-schema";
 import { type Transactor, withTenant } from "@caisson/tenancy-rls";
 import type { DiscordGrantPush } from "./discord-notify.ts";
 import {
   computeEntitledSince,
   computeUpdatesWindows,
+  readEntitlements,
 } from "./entitlement-store.ts";
 import {
   readLicenseGrant,
@@ -41,7 +49,6 @@ import {
 } from "./license-grant-store.ts";
 import type { PurchaseCapture } from "./posthog-capture.ts";
 import { clientIp, type RateBucket, type RateLimiter } from "./rate-limit.ts";
-import { resolveAccountEntitlements } from "./resolve-entitlements.ts";
 import { type BillingWebhookResult, handleBillingWebhook } from "./webhook.ts";
 
 export interface IssueAppDeps {
@@ -59,7 +66,7 @@ export interface IssueAppDeps {
   signer: Signer;
   /** The built registry index — membership truth for entitlement expansion (ADR-0071). */
   index: RegistryIndex;
-  /** The tenant Transactor — `resolveAccountEntitlements` runs inside `withTenant` over it (RLS). */
+  /** The tenant Transactor — the /issue entitlement reads run inside `withTenant` over it (RLS). */
   db: Transactor;
   /**
    * The Paddle Merchant-of-Record billing provider (verify + parse, ADR-0108/0116). `null` when
@@ -163,16 +170,19 @@ function authorized(req: Request, token: string, adminToken: string): boolean {
 }
 
 /**
- * The re-mint-relevant claims carried by a STORED wire token — the per-entitlement `updatesWindows`
- * (ADR-0251 D3 / ADR-0255) AND the per-entitlement `entitledSince` snapshot instants (ADR-0257
- * §1.2). Decode-only (no signature verify — the stored token was minted by THIS service and is
- * re-verified offline by every consumer; the baked verify key here is prod, which a dev/test-signed
- * stored token would fail). An absent/null field (a pre-window / pre-snapshot token) normalizes to
- * the EMPTY map, so a subscription-only account's stored token keeps re-serving byte-identical. A
- * decode/parse failure reads as empty maps — at worst a corrupt stored token is re-served, never
- * re-minted on a read error.
+ * The re-mint-relevant claims carried by a STORED wire token — the signed `entitlements` (sorted
+ * purchased ids) plus the per-entitlement `updatesWindows` (ADR-0251 D3 / ADR-0255) AND
+ * `entitledSince` snapshot instants (ADR-0257 §1.2). Decode-only (no signature verify — the stored
+ * token was minted by THIS service and is re-verified offline by every consumer; the baked verify
+ * key here is prod, which a dev/test-signed stored token would fail). An absent/null map field (a
+ * pre-window / pre-snapshot token) normalizes to the EMPTY map, so a subscription-only account's
+ * stored token keeps re-serving byte-identical. A decode/parse failure reads as empty claims — the
+ * fresh comparison then differs (any entitled account has a non-empty purchased set) and the corrupt
+ * stored token is RE-MINTED in place rather than re-served: a token the verifier would reject helps
+ * nobody, and the grant row stays unique per (account, major).
  */
 function storedRemintClaims(token: string): {
+  entitlements: string[];
   updatesWindows: Record<string, string>;
   entitledSince: Record<string, string>;
 } {
@@ -181,11 +191,12 @@ function storedRemintClaims(token: string): {
       JSON.parse(decodeToken(token).payload) as unknown,
     );
     return {
+      entitlements: [...claims.entitlements].sort(),
       updatesWindows: claims.updatesWindows ?? {},
       entitledSince: claims.entitledSince ?? {},
     };
   } catch {
-    return { updatesWindows: {}, entitledSince: {} };
+    return { entitlements: [], updatesWindows: {}, entitledSince: {} };
   }
 }
 
@@ -273,24 +284,31 @@ export function createApp(
 
       // Idempotent re-serve (persist & reuse), LOOSENED per ADR-0251 Decision 3: a prior /issue for
       // this exact (accountId, major) already minted + stored a token — return it byte-identical
-      // UNLESS the account's freshly computed per-entitlement updates windows (ADR-0244/0255) OR
-      // snapshot-at-sale instants (ADR-0257 §1.2 `entitledSince`) — both DB truth over the active
-      // one_time grants — differ from the stored token's signed maps. A renewal (window) or a
-      // re-purchase that widens the member snapshot (`entitledSince`) must produce a fresh token,
-      // never re-serve the stale claim. Maps compare CANONICALLY (sorted-key JSON, ADR-0255
-      // Decision 4). All reads are RLS-scoped in ONE withTenant — only the caller's own grants.
-      const { existing, updatesWindows, entitledSince } = await withTenant(
-        deps.db,
-        accountId,
-        async (tx) => ({
+      // UNLESS the account's fresh PURCHASED id set, per-entitlement updates windows (ADR-0244/0255)
+      // OR snapshot-at-sale instants (ADR-0257 §1.2 `entitledSince`) — all DB truth over the active
+      // grants — differ from the stored token's signed claims. A new purchase (entitlements), a
+      // renewal (window), or a re-purchase that widens the member snapshot (`entitledSince`) must
+      // produce a fresh token, never re-serve the stale claim. Maps compare CANONICALLY (sorted-key
+      // JSON, ADR-0255 Decision 4); entitlements compare as the sorted id list. All reads are
+      // RLS-scoped in ONE withTenant — only the caller's own grants.
+      const { existing, updatesWindows, entitledSince, purchased } =
+        await withTenant(deps.db, accountId, async (tx) => ({
           existing: await readLicenseGrant(tx, accountId, major),
           updatesWindows: await computeUpdatesWindows(tx, accountId),
           entitledSince: await computeEntitledSince(tx, accountId),
-        }),
-      );
+          purchased: await readEntitlements(tx, accountId),
+        }));
+      // The SIGNED entitlements are the account's PURCHASED ids, sorted — the claims contract every
+      // consumer expands against the index at verification (Worker resolveGate, MCP server). Signing
+      // the EXPANSION instead orphans the purchased-id-keyed `updatesWindows`/`entitledSince` maps:
+      // the Worker's per-id window fold matches token entitlements against those keys, so an
+      // expanded claim made every updates window resolve UNBOUNDED (fail-open — a lapsed buyer kept
+      // receiving every future version; audit F2, 2026-07-06).
+      const entitlements = [...purchased].sort();
       if (existing !== null) {
         const stored = storedRemintClaims(existing.token);
         if (
+          stored.entitlements.join(" ") === entitlements.join(" ") &&
           canonicalMap(stored.updatesWindows) ===
             canonicalMap(updatesWindows) &&
           canonicalMap(stored.entitledSince) === canonicalMap(entitledSince)
@@ -299,15 +317,11 @@ export function createApp(
         }
       }
 
-      // Server-side entitlement truth: resolve the account's purchases → member slugs, RLS-scoped.
-      // A stored purchased id absent from the index fails closed (`expandEntitlements` throws); we map
-      // that to a 422 with a GENERIC message (never echo internal ids).
-      let entitlements: string[];
+      // Fail-closed TM-E VALIDATION only (never the signed set): a stored purchased id absent from
+      // the index — and not reserved — throws; we map that to a 422 with a GENERIC message (never
+      // echo internal ids).
       try {
-        const resolved = await withTenant(deps.db, accountId, (tx) =>
-          resolveAccountEntitlements(tx, accountId, deps.index),
-        );
-        entitlements = [...resolved].sort();
+        expandEntitlements(deps.index, purchased);
       } catch {
         return json({ error: "could not resolve account entitlements" }, 422);
       }

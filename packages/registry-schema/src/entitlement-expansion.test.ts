@@ -107,10 +107,24 @@ describe("per-module bare-slug purchase-id form", () => {
     expect(() => expandEntitlements(index, ["not-a-real-module"])).toThrow();
   });
 
-  test("RESERVED_MODULE_ENTITLEMENT_IDS is empty — alerting/retention-runner graduated to indexed", () => {
-    // Both are now published in the registry index (ADR-0150/0151), so reserving them would
-    // under-grant a buyer who purchased them; the carve-out set is cleared (catalog-rework W5).
-    expect([...RESERVED_MODULE_ENTITLEMENT_IDS]).toEqual([]);
+  test("RESERVED_MODULE_ENTITLEMENT_IDS reserves exactly ui-pro (sold in W7, package unshipped)", () => {
+    // ui-pro has a live PURCHASE_BOOK row + site catalog card but no indexed package yet — reserved
+    // so a ui-pro grant expands to nothing instead of fail-closed-throwing the buyer's whole set.
+    // alerting/retention-runner stay graduated (indexed, ADR-0150/0151).
+    expect([...RESERVED_MODULE_ENTITLEMENT_IDS]).toEqual(["ui-pro"]);
+  });
+
+  test("a reserved ui-pro grant expands to nothing and never poisons sibling entitlements", () => {
+    // The exact TM-E failure the reservation prevents: a buyer holding ui-pro ALONGSIDE another
+    // entitlement must keep the other entitlement's grants — one sold-but-unshipped SKU can never
+    // 422 the account's entire resolution (audit F1, 2026-07-06).
+    expect([...expandEntitlements(index, ["ui-pro"])]).toEqual([]);
+    expect(() =>
+      expandEntitlements(index, ["evidence-pack", "ui-pro"]),
+    ).not.toThrow();
+    expect([...expandEntitlements(index, ["evidence-pack", "ui-pro"])]).toEqual(
+      ["@caisson/evidence-pack"],
+    );
   });
 
   test("a graduated slug now resolves to its real indexed grant, not fail-soft to nothing", () => {

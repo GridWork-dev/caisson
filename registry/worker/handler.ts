@@ -134,8 +134,14 @@ export function resolveGate(
       windowFor: (moduleId: string) => moduleWindows.get(moduleId) ?? null,
     };
   } catch {
-    // A throwing resolver OR a stale/forged entitlement → keep the safe base-only view (no crash).
-    return { entitled, windowFor: UNBOUNDED };
+    // A throwing resolver OR a stale/forged entitlement → a FRESH base-only view (no crash). Never
+    // return the in-progress `entitled` set: expansion mutates it before the window fold, so a
+    // future post-expansion throw would otherwise degrade to commercial modules with UNBOUNDED
+    // windows (a version-window bypass for an entitled caller).
+    return {
+      entitled: new Set<string>(baseModuleIds(index)),
+      windowFor: UNBOUNDED,
+    };
   }
 }
 

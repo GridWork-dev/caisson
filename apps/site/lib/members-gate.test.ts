@@ -10,10 +10,16 @@ import { ENTITLEMENT_SCHEMA_SQL } from "@caisson/service-license";
 import type { Transactor } from "@caisson/tenancy-rls";
 import { accountHoldsOrgControls } from "./members-gate.ts";
 
-let tp: TestPg;
+let tp: TestPg | undefined;
 
 afterEach(async () => {
-  await tp.close();
+  // Idempotent: the assumption-pin test at the bottom runs without a fresh PGlite, so the previous
+  // test's already-closed handle must not throw here.
+  try {
+    await tp?.close();
+  } catch {
+    /* already closed */
+  }
 });
 
 async function freshDb(): Promise<Transactor> {
@@ -28,6 +34,7 @@ async function seedGrant(opts: {
   entitlementId: string;
   status: "active" | "revoked";
 }): Promise<void> {
+  if (tp === undefined) throw new Error("seedGrant called before freshDb");
   const revokedAt = opts.status === "revoked" ? "now()" : "NULL";
   await tp.exec(
     `INSERT INTO entitlement_grant
@@ -84,4 +91,47 @@ describe("accountHoldsOrgControls — deny/allow matrix", () => {
     expect(await accountHoldsOrgControls(db, "acct_a")).toBe(false);
     expect(await accountHoldsOrgControls(db, "acct_b")).toBe(true);
   });
+
+  test("ALLOW: an ACTIVE everything grant (bundle coverage, audit F4)", async () => {
+    // Stored grants are PURCHASED ids — the $2,059 Everything buyer's row says "everything", never
+    // a pre-expanded member list; the gate must honor the by-construction full-catalog rule.
+    const db = await freshDb();
+    await seedGrant({
+      accountId: "acct_a",
+      entitlementId: "everything",
+      status: "active",
+    });
+    expect(await accountHoldsOrgControls(db, "acct_a")).toBe(true);
+  });
+
+  test("ALLOW: a legacy 'bundle' grant resolves through the alias point", async () => {
+    const db = await freshDb();
+    await seedGrant({
+      accountId: "acct_a",
+      entitlementId: "bundle",
+      status: "active",
+    });
+    expect(await accountHoldsOrgControls(db, "acct_a")).toBe(true);
+  });
+
+  test("DENY: a REVOKED everything grant does not count", async () => {
+    const db = await freshDb();
+    await seedGrant({
+      accountId: "acct_a",
+      entitlementId: "everything",
+      status: "revoked",
+    });
+    expect(await accountHoldsOrgControls(db, "acct_a")).toBe(false);
+  });
+});
+
+test("gate assumption pin: org-controls belongs to NO persona bundle", async () => {
+  // The gate short-circuits bundle coverage to the Everything grant only. That is correct exactly
+  // while org-controls sits in no persona bundle (its pricing row carries `bundles: []`, which the
+  // catalog-parity gate pins against the registry index members maps). If this test fails, expand
+  // grants against the index in members-gate.ts instead of widening the shortcut.
+  const { MODULE_PRICES } = await import("./pricing.ts");
+  const orgControls = MODULE_PRICES.find((m) => m.id === "org-controls");
+  expect(orgControls).toBeDefined();
+  expect(orgControls?.bundles).toEqual([]);
 });

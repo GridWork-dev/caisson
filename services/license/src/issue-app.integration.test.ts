@@ -157,8 +157,9 @@ describe("POST /issue (ADR-0110)", () => {
     const verified = verifyLicenseWithKey(body.token, DEV_PUB);
     expect(verified.valid).toBe(true);
     expect(verified.tier).toBe("pro");
-    // The signed entitlements are the account's index-resolved member slugs (server-side truth).
-    expect(verified.entitlements).toEqual(["@caisson/compliance"]);
+    // The signed entitlements are the account's PURCHASED ids (the claims contract — consumers
+    // expand at verification; audit F2 2026-07-06), never the index expansion.
+    expect(verified.entitlements).toEqual(["compliance"]);
     expect(verified.claims?.licenseId).toBe(body.licenseId);
   });
 

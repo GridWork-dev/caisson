@@ -70,13 +70,16 @@ const MODULE_SLUG_RE = /^[a-z0-9-]+$/;
  * in the SAME change that first indexes its package — its bare slug then resolves through the
  * ordinary indexed-module branch below.
  *
- * Currently EMPTY: `alerting` and `retention-runner` graduated — both are published in the registry
- * index (ADR-0150/0151), so their bare slugs resolve through the ordinary indexed-module branch and
- * reserving them any longer would UNDER-grant a buyer who purchased them (the fail-soft carve-out
- * expands them to nothing). The mechanism stays for the next SKU sold before its package ships.
+ * Currently reserved: `ui-pro` — SOLD live since the W7 catalog big-bang (a real PURCHASE_BOOK row
+ * and a site catalog card) while its package ships in a sibling wave. The index carries NO
+ * `@caisson/ui-pro` module entry yet — only the sanctioned 0.0.0 phantom pin inside the everything
+ * members map, which the allowlist guard already excludes from bundle expansion — so without this
+ * reservation a ui-pro purchase would fail-closed-throw and lock the buyer out of every OTHER
+ * entitlement they hold. (`alerting` and `retention-runner` previously graduated out the documented
+ * way: removed here in the change that first indexed their packages.)
  */
 export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> =
-  new Set<string>([]);
+  new Set<string>(["ui-pro"]);
 
 /** Boundary guard (ADR-0021 input-validation): the purchased ids are an array of bounded, non-empty
  *  strings. Classification + fail-closed rejection of unknown values happens below. */
