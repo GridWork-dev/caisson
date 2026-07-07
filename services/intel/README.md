@@ -39,9 +39,10 @@ place of the daemon's internal scheduler, per the operator's preferred substrate
 
 An additive `intel` Postgres schema (`migrations/0001_intel_schema.sql`) — three tables:
 `findings` (the append-with-dedup incident store), `watch_state` (the deterministic-detection
-memory that survives restarts), and `runs` (one row per watcher invocation). It never references
-or alters any commerce/public-schema table. Apply it against `INTEL_DATABASE_URL` as a role that
-holds DML on the `intel` schema and nothing else.
+memory that survives restarts), and `runs` (one row per watcher invocation, pruned past a 90-day
+retention window). It never references or alters any commerce/public-schema table. The runtime
+role is provisioned by `migrations/provision-role.sql` — DML on the `intel` schema, explicitly
+revoked from `public` — see Deploying below for the exact apply order.
 
 ## Environment
 
@@ -49,22 +50,23 @@ Full list mirrored in `.env.example`. Required: `INTEL_DATABASE_URL`. Every othe
 optional and its watcher leg self-skips (fail-soft, not fail-closed) when absent — a missing
 `POSTHOG_API_KEY` disables the `analytics` PostHog leg and the whole `error` watcher, for example.
 
-| var                                                                                                        | default                                 | purpose                                                     |
-| ---------------------------------------------------------------------------------------------------------- | --------------------------------------- | ----------------------------------------------------------- |
-| `INTEL_DATABASE_URL`                                                                                       | — (required)                            | the dedicated Postgres DSN for the `intel` schema           |
-| `INTEL_HEALTHZ_PORT` / `INTEL_HEALTHZ_HOST`                                                                | `8791` / `0.0.0.0`                      | the local health endpoint bind                              |
-| `INTEL_SCHEDULER_ENABLED`                                                                                  | `true`                                  | the internal per-watcher interval scheduler                 |
-| `INTEL_CADENCE_*_MS` (six vars, one per watcher)                                                           | see table above                         | per-watcher interval override                               |
-| `INTEL_COMPETITOR_URLS`                                                                                    | —                                       | comma-separated competitor page list (data, not code)       |
-| `INTEL_GITHUB_ORG`                                                                                         | `caisson-sh`                            | the GitHub org whose public repos are watched               |
-| `GITHUB_TOKEN`                                                                                             | —                                       | raises the GitHub API rate limit; unauthenticated works too |
-| `POSTHOG_API_KEY` / `POSTHOG_API_HOST` / `POSTHOG_PROJECT_ID`                                              | — / `https://us.posthog.com` / `493539` | analytics rollup + error tracking                           |
-| `PLAUSIBLE_API_KEY` / `PLAUSIBLE_API_HOST` / `PLAUSIBLE_SITE_ID`                                           | — / `https://plausible.io` / —          | the Plausible half of the analytics rollup                  |
-| `TG_BRIDGE_ALERT_URL` / `TG_BRIDGE_ALERT_TOKEN`                                                            | —                                       | the operator's Telegram push sink for error alerts          |
-| `LINEAR_API_KEY` / `LINEAR_TEAM_ID`                                                                        | —                                       | auto-filed Linear Triage issues for error alerts            |
-| `INTEL_ALERT_RATE_MAX_PER_WINDOW` / `INTEL_ALERT_TZ` / `INTEL_ALERT_QUIET_START` / `INTEL_ALERT_QUIET_END` | `3` / `UTC` / `0` / `0`                 | the alerting pipeline's rate-cap + quiet-hours policy       |
-| `INTEL_LLM_ENABLED` / `OPENROUTER_API_KEY` / `INTEL_LLM_MODEL`                                             | `false` / — / a small model             | the tier-2 enrichment seam — off unless both are set        |
-| `OTEL_EXPORTER_OTLP_ENDPOINT`                                                                              | —                                       | tracing export; unset is a fully dormant no-op              |
+| var                                                                                                        | default                                 | purpose                                                                                                                                         |
+| ---------------------------------------------------------------------------------------------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `INTEL_DATABASE_URL`                                                                                       | — (required)                            | the dedicated Postgres DSN for the `intel` schema                                                                                               |
+| `INTEL_HEALTHZ_PORT` / `INTEL_HEALTHZ_HOST`                                                                | `8791` / `0.0.0.0`                      | the local health endpoint bind                                                                                                                  |
+| `INTEL_SCHEDULER_ENABLED`                                                                                  | `true`                                  | the internal per-watcher interval scheduler                                                                                                     |
+| `INTEL_MIGRATE_ON_BOOT`                                                                                    | `false`                                 | apply the schema migration at boot — dev/local convenience only; the production runtime role is DML-only and can't run it (see Deploying below) |
+| `INTEL_CADENCE_*_MS` (six vars, one per watcher)                                                           | see table above                         | per-watcher interval override                                                                                                                   |
+| `INTEL_COMPETITOR_URLS`                                                                                    | —                                       | comma-separated competitor page list (data, not code)                                                                                           |
+| `INTEL_GITHUB_ORG`                                                                                         | `caisson-sh`                            | the GitHub org whose public repos are watched                                                                                                   |
+| `GITHUB_TOKEN`                                                                                             | —                                       | raises the GitHub API rate limit; unauthenticated works too                                                                                     |
+| `POSTHOG_API_KEY` / `POSTHOG_API_HOST` / `POSTHOG_PROJECT_ID`                                              | — / `https://us.posthog.com` / `493539` | analytics rollup + error tracking                                                                                                               |
+| `PLAUSIBLE_API_KEY` / `PLAUSIBLE_API_HOST` / `PLAUSIBLE_SITE_ID`                                           | — / `https://plausible.io` / —          | the Plausible half of the analytics rollup                                                                                                      |
+| `TG_BRIDGE_ALERT_URL` / `TG_BRIDGE_ALERT_TOKEN`                                                            | —                                       | the operator's Telegram push sink for error alerts                                                                                              |
+| `LINEAR_API_KEY` / `LINEAR_TEAM_ID`                                                                        | —                                       | auto-filed Linear Triage issues for error alerts                                                                                                |
+| `INTEL_ALERT_RATE_MAX_PER_WINDOW` / `INTEL_ALERT_TZ` / `INTEL_ALERT_QUIET_START` / `INTEL_ALERT_QUIET_END` | `3` / `UTC` / `0` / `0`                 | the alerting pipeline's rate-cap + quiet-hours policy                                                                                           |
+| `INTEL_LLM_ENABLED` / `OPENROUTER_API_KEY` / `INTEL_LLM_MODEL`                                             | `false` / — / a small model             | the tier-2 enrichment seam — off unless both are set                                                                                            |
+| `OTEL_EXPORTER_OTLP_ENDPOINT`                                                                              | —                                       | tracing export; unset is a fully dormant no-op                                                                                                  |
 
 Secrets are never committed. `.env.example` ships placeholders only; the real `.env` file is
 gitignored and lives on the deploy host, injected into the container via `docker-compose.yml`'s
@@ -74,31 +76,51 @@ gitignored and lives on the deploy host, injected into the container via `docker
 
 ```
 bun install
-INTEL_DATABASE_URL=postgres://localhost/intel_dev bun run src/server.ts
+INTEL_DATABASE_URL=postgres://localhost/intel_dev INTEL_MIGRATE_ON_BOOT=true bun run src/server.ts
 ```
 
-The server applies the migration on boot (idempotent), binds `/healthz`, and starts the scheduler.
-With no other env set, every watcher still runs on its cadence — the source-specific legs (GitHub,
-compliance, SOC 2, competitor) work with zero secrets; the PostHog/Plausible/alerting legs
-self-skip until their keys are set.
+`INTEL_MIGRATE_ON_BOOT=true` is the local/dev convenience — it applies the schema migration at
+boot (idempotent) against a superuser-ish local connection. In production the migration is an
+operator step, not a boot step (see Deploying below); leave the flag unset there. The server binds
+`/healthz` and starts the scheduler either way. With no other env set, every watcher still runs on
+its cadence — the source-specific legs (GitHub, compliance, SOC 2, competitor) work with zero
+secrets; the PostHog/Plausible/alerting legs self-skip until their keys are set.
 
 ## Deploying (operator act — not part of this build)
 
-1. Apply `migrations/0001_intel_schema.sql` against `INTEL_DATABASE_URL` as the least-privilege
-   intel role.
+1. **Provision the runtime role, as the database owner/superuser, in order:**
+   `migrations/provision-role.sql` (creates `intel_role`, grants it `intel`-schema-only DML,
+   explicitly revokes `public` schema access) THEN `migrations/0001_intel_schema.sql` (creates
+   the tables — `ALTER DEFAULT PRIVILEGES` from the first file means `intel_role` inherits
+   access automatically as long as the same owner role runs both, back-to-back). Set
+   `INTEL_DATABASE_URL` to a connection string authenticating as `intel_role` — never the
+   admin/app DSN. `INTEL_MIGRATE_ON_BOOT` stays `false` (the default): the daemon's own boot
+   never attempts the schema DDL its runtime role can't perform.
 2. Copy `.env.example` to `.env` on the deploy host, fill in real values, and run
    `docker compose up -d` from this directory (build context is the repo root — see the
    Dockerfile header for why).
-3. Land the sanctioned-loopback bind (`127.0.0.1:8791`) and the egress sinks this service talks to
-   (GitHub, EUR-Lex, the AI Office guidance page, the HHS OCR breach portal, AICPA, the configured
-   competitor URLs, PostHog, Plausible, Linear, OpenRouter when the enrichment seam is armed, and
-   the admin-database write path) in gridwork-core's security-surfaces ledger in the same change
-   that brings the container up — the standing invariant for any new bind or egress sink on the
-   host.
+3. Land the sanctioned-loopback bind (`127.0.0.1:8791`) and every egress sink this service talks
+   to in gridwork-core's security-surfaces ledger in the same change that brings the container
+   up (the standing invariant for any new bind or egress sink on the host) — this list is the
+   authoritative source for that entry:
+   - GitHub API, EUR-Lex, the AI Office guidance page, the HHS OCR breach portal, AICPA
+     (the `compliance`/`soc2`/`github` watchers)
+   - the configured `INTEL_COMPETITOR_URLS` list (`competitor` watcher)
+   - PostHog and Plausible (`analytics` + `error` watchers)
+   - the tg-bridge `/alert` endpoint (`TG_BRIDGE_ALERT_URL`, Bearer-authed outbound push —
+     `error` watcher's tg-bridge sink)
+   - Linear's GraphQL API (`error` watcher's auto-filed Triage issue sink)
+   - OpenRouter, only when `INTEL_LLM_ENABLED=true` (the tier-2 enrichment seam)
+   - the optional OTel/OTLP collector endpoint, when `OTEL_EXPORTER_OTLP_ENDPOINT` is set
+   - the admin-database write path itself (`INTEL_DATABASE_URL`)
 
 ## Testing
 
-`bun test ./src` runs every watcher's tier-1 detection logic, the findings-store dedup contract,
-and the alerting-pipeline wiring against fixtures — no live network calls. Live probes against the
-real external sources are self-skipping `live/*.live.test.ts` files (`bun run test:live`), matching
-the rest of the repo's convention for anything that talks to a real third party.
+`bun test ./src` runs every watcher's tier-1 detection logic (including the empty-response-can't-
+wipe-a-baseline guard), the findings-store dedup contract (`InMemoryStore`, plus a PGlite-backed
+parity test proving `PostgresStore`'s real SQL upsert gives the identical `isNew`/`seen_count`
+semantics), each watcher's `.run()`-level wiring (a mid-fetch throw must leave that source's
+`watch_state` untouched), the alerting-pipeline wiring, and the scheduler's overlap guard +
+never-throws guarantee — all fixture-driven, no live network calls. Live probes against the real
+external sources are self-skipping `live/*.live.test.ts` files (`bun run test:live`), matching the
+rest of the repo's convention for anything that talks to a real third party.
