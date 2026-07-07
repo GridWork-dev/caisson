@@ -1,5 +1,28 @@
 # @caisson/compliance
 
+## 0.5.0
+
+### Minor Changes
+
+- The Compliance package's registry manifest is now a first-class bundle entry at the locked
+  six-bundle catalog price of $1,049, replacing the legacy edition declaration and the earlier
+  $799 price. Nothing changes for existing licenses: historical edition entries stay valid
+  forever, the compliance id keeps resolving exactly as before, and the composed member set is
+  unchanged.
+
+### Patch Changes
+
+- Updated dependencies [8c53ca3]
+- Updated dependencies [8c53ca3]
+- Updated dependencies [8c53ca3]
+- Updated dependencies
+  - @caisson/audit-worm@0.3.0
+  - @caisson/field-crypto@0.3.0
+  - @caisson/tenancy-rls@0.5.0
+  - @caisson/compliance-core@0.2.1
+  - @caisson/signing-primitive@0.2.0
+  - @caisson/retention-runner@0.1.6
+
 ## 0.4.0
 
 ### Minor Changes

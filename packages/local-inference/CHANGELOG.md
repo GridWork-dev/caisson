@@ -1,5 +1,13 @@
 # @caisson/local-inference
 
+## 0.1.1
+
+### Patch Changes
+
+- Added a README to each package describing what it provides, how to install or reference it, and a short usage example built from its real exports. No runtime behavior changed.
+- Updated dependencies
+  - @caisson/local-privacy@0.1.1
+
 ## 0.1.0
 
 ### Minor Changes

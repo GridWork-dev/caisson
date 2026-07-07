@@ -1,5 +1,11 @@
 # @caisson/retention-runner
 
+## 0.1.6
+
+### Patch Changes
+
+- @caisson/jobs@0.4.1
+
 ## 0.1.5
 
 ### Patch Changes
