@@ -34,3 +34,6 @@ docs/session-logs/
 
 # ADR-0223: CI-only tarball staging for R2 upload (never committed)
 registry/.tarball-staging/
+
+# ADR-0275 CI build-evidence pack output (assembled fresh each run, uploaded as an artifact)
+evidence-pack/

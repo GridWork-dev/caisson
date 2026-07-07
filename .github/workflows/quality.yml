@@ -182,3 +182,37 @@ jobs:
           [ -f "$(brew --prefix 2>/dev/null)/opt/sqlite/lib/libsqlite3.dylib" ] || brew install sqlite
       - name: local-store native sqlite-vec ext (vec0 + FTS5 + RRF) on ${{ matrix.platform }}
         run: bun test packages/local-store/src
+
+  # The CI build-provenance evidence pack (ADR-0275). Aggregates the evidence CI already produces —
+  # the standards-gate output, the registry index byte-identity proof, and the registry test run —
+  # into ONE downloadable, manifest'd artifact for a security reviewer's due diligence (feeds the
+  # ADR-0272 evidence page). UNCONDITIONAL (no path-filter): the pack is the provenance for THIS
+  # commit, so it must build on every push and pull request. NOT a required check — a failure here
+  # means the evidence could not be assembled, never that a merge is blocked (this repo has no
+  # enforced branch protection). The heavy proofs (the full turbo suite, the Java oscal-cli NIST
+  # validation) are their own jobs at this same SHA and are REFERENCED by the manifest, not re-run.
+  evidence-pack:
+    runs-on: caisson-amd64
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: "1.3.14"
+      - name: cache bun install
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
+      # Post-install: the standards-gate CLI's external-AGPL + manifest-agreement layers need node_modules.
+      - run: bun install --frozen-lockfile
+      - name: assemble the build-evidence pack (runs the cheap producers + writes the manifest)
+        run: bun registry/scripts/build-evidence-pack.ts
+      - name: upload evidence pack
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-pack-${{ github.sha }}
+          path: evidence-pack/pack
+          if-no-files-found: error
+          retention-days: 90
