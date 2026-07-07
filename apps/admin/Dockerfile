@@ -25,6 +25,13 @@ ENV NODE_ENV=production \
 COPY --from=build /app/apps/admin/.next/standalone ./
 COPY --from=build /app/apps/admin/.next/static ./apps/admin/.next/static
 
+# ADR-0278 F1: the comp-grant boundary reads the built registry index at runtime
+# (loadRegistryIndexFromFile, apps/admin/src/lib/admin-mutations-runtime.ts) via a plain
+# node:fs read of a repo-root-relative path — NOT a JS import, so Next's standalone output-file
+# tracer never picks it up. Copied explicitly (same file services/license/Dockerfile's
+# whole-repo-context build already bakes in for /issue's own pre-sign validation).
+COPY --from=build /app/registry/index.json ./registry/index.json
+
 # Non-root: the standalone server never writes to disk at runtime (no ISR/revalidate — see
 # next.config.ts), so the root-owned, world-readable copies above need no chown. `bun` (uid/gid
 # 1000) is the oven/bun base image's baked-in non-root user.

@@ -33,6 +33,7 @@
         "@caisson/observability": "workspace:*",
         "@caisson/org-controls": "workspace:*",
         "@caisson/platform-reads": "workspace:*",
+        "@caisson/registry-schema": "workspace:*",
         "@caisson/service-license": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
         "@caisson/ui": "workspace:*",
@@ -601,7 +602,7 @@
     },
     "packages/everything": {
       "name": "@caisson/everything",
-      "version": "0.2.1",
+      "version": "0.2.2",
     },
     "packages/field-crypto": {
       "name": "@caisson/field-crypto",

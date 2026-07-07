@@ -16,6 +16,10 @@ import {
   type ArtifactStore,
 } from "@caisson/audit-worm";
 import { fetchWithTimeout } from "@caisson/kernel";
+import {
+  loadRegistryIndexFromFile,
+  type RegistryIndex,
+} from "@caisson/registry-schema";
 import type {
   AdminMutationDeps,
   ReissueProxyResult,
@@ -121,6 +125,27 @@ function denySetPublisher(): AdminMutationDeps["publishDenySet"] {
   };
 }
 
+let cachedIndex: RegistryIndex | undefined;
+
+/**
+ * The built registry index (ADR-0071/0278 F1) — loaded once and cached, the SAME on-disk artifact
+ * `services/license/src/server.ts` loads for `/issue`'s own pre-sign validation. The comp-grant
+ * boundary (`grantEntitlementAdmin`) reads it to reject an unresolvable entitlement id BEFORE any
+ * row is written. `CAISSON_REGISTRY_INDEX_PATH` overrides the default repo-root-relative path; the
+ * default matches where `apps/admin/Dockerfile`'s runtime stage COPYs `registry/index.json` (the
+ * standalone Next build does not trace a raw non-imported file, so the Dockerfile copies it
+ * explicitly rather than relying on output-file-tracing).
+ */
+function registryIndex(): RegistryIndex {
+  if (cachedIndex === undefined) {
+    const path =
+      process.env.CAISSON_REGISTRY_INDEX_PATH?.trim() ||
+      join(process.cwd(), "registry", "index.json");
+    cachedIndex = loadRegistryIndexFromFile(path);
+  }
+  return cachedIndex;
+}
+
 export async function getAdminMutationDeps(): Promise<AdminMutationDeps> {
   const db = await getAdminDb();
   return {
@@ -128,6 +153,7 @@ export async function getAdminMutationDeps(): Promise<AdminMutationDeps> {
     worm: new AuditChainStore({ db, store: wormStore() }),
     issue: issueProxy,
     publishDenySet: denySetPublisher(),
+    index: registryIndex(),
   };
 }
 
