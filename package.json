@@ -2,6 +2,7 @@
   "name": "caisson",
   "private": true,
   "type": "module",
+  "license": "LicenseRef-Caisson-Commercial",
   "workspaces": {
     "packages": [
       "tooling/*",

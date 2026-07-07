@@ -1,5 +1,12 @@
 # @caisson/registry
 
+## 0.0.6
+
+### Patch Changes
+
+- Updated dependencies [8170382]
+  - @caisson/registry-schema@0.4.0
+
 ## 0.0.5
 
 ### Patch Changes

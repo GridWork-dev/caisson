@@ -1,5 +1,21 @@
 # @caisson/app-base
 
+## 0.0.6
+
+### Patch Changes
+
+- Internal hygiene wave: the standards gate's locked-price table moved the Compliance bundle to its
+  current price and gained rows for the two retired alias packages; the four private reference apps
+  and the root manifest now carry an explicit license field; the license service applies the new
+  Developer-plan coverage semantics when computing signed license claims.
+- Updated dependencies [8c53ca3]
+- Updated dependencies
+  - @caisson/tenancy-rls@0.5.0
+  - @caisson/credits@0.4.1
+  - @caisson/mcp-server@0.2.5
+  - @caisson/auth@0.3.1
+  - @caisson/rate-limit@0.1.2
+
 ## 0.0.5
 
 ### Patch Changes

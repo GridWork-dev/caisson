@@ -21,8 +21,9 @@ import {
   type Credits,
 } from "@caisson/kernel";
 
-/** Append-only version stamp — a plan-row change bumps this, never edits it in place (ADR-0006). */
-export const PRICEBOOK_VERSION = "2026-06-30.3";
+/** Append-only version stamp — a plan-row change bumps this, never edits it in place (ADR-0006).
+ *  2026-07-06.1: the developer rows gain `coversOwnedEntitlements: true` (ADR-0269). */
+export const PRICEBOOK_VERSION = "2026-07-06.1";
 
 /** Billing cadence; an annual invoice grants the annual allotment once (ADR-0095). */
 export const planCadenceSchema = z.enum(["month", "year"]);
@@ -52,6 +53,15 @@ export const planBookEntrySchema = strictObject({
   cadence: planCadenceSchema,
   /** Purchased ids this plan entitles the buyer to (editions/bundle/modules) — `[]` for credits-only. */
   entitlements: planEntitlementsSchema,
+  /**
+   * ADR-0269: while this subscription is active, every entitlement the buyer holds via an ACTIVE
+   * `one_time` grant is RE-GRANTED subscription-sourced on each granting invoice (the
+   * Compliance-Updates re-grant mirror, made dynamic) — lifting the per-entitlement updates-window
+   * and member-snapshot gates (ADR-0255 "subscription-sourced access; own `expiry` governs") on
+   * what the buyer ALREADY OWNS. Never a grant of new ids. ABSENT = plain credits/static
+   * entitlements behavior, unchanged (the same absent-key posture the claims maps use).
+   */
+  coversOwnedEntitlements: z.boolean().optional(),
 });
 export type PlanBookEntry = z.infer<typeof planBookEntrySchema>;
 
@@ -65,7 +75,10 @@ export const PLAN_BOOK: Record<string, PlanBookEntry> = {
     planTag: "developer",
     creditsPerCycle: asCredits(1000),
     cadence: "month",
-    entitlements: [], // a credits-only dev plan — grants credits, no edition access
+    entitlements: [], // no NEW ids ever granted (ADR-0269 Decision 3)
+    // ADR-0269: the plan covers the buyer's OWNED entitlements while active — updates + new
+    // members reach them subscription-sourced; copy: "updates as they ship".
+    coversOwnedEntitlements: true,
   },
   price_compliance_updates_annual_PLACEHOLDER: {
     planTag: "compliance_updates",
@@ -83,7 +96,8 @@ export const PLAN_BOOK: Record<string, PlanBookEntry> = {
     planTag: "developer",
     creditsPerCycle: asCredits(1000), // carried over from the monthly placeholder — NOT a rescale (SD-6)
     cadence: "year", // ADR-0106: Developer plan is $499/yr
-    entitlements: [],
+    entitlements: [], // no NEW ids ever granted (ADR-0269 Decision 3)
+    coversOwnedEntitlements: true, // ADR-0269: covers OWNED entitlements while active
   },
   pri_01kwd76cwytyyy4yhd9ch0m935: {
     planTag: "compliance_updates",

@@ -1,5 +1,19 @@
 # @caisson/ui
 
+## 0.5.0
+
+### Minor Changes
+
+- Fixed the package exports so consumers outside the Bun runtime now get real type declarations
+  and compiled JavaScript instead of raw TypeScript source with no build step. The root entry and
+  the tokens entry each resolve to a compiled file under dist for plain Node or bundler consumers,
+  while Bun keeps resolving straight to the TypeScript source for zero-build development. The
+  components barrel and the per-component subpath exports still point at the raw source files
+  directly, since components ship framework-agnostic with co-located stylesheets for a consuming
+  app to transpile itself, and the two stylesheet exports are unchanged. The package now runs a
+  real TypeScript build that emits declaration files into a dist directory, which is already
+  excluded from version control repo-wide.
+
 ## 0.4.0
 
 ### Minor Changes

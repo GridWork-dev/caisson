@@ -30,9 +30,12 @@ import type { TenantExecutor } from "@caisson/tenancy-rls";
 import {
   extendUpdatesWindow,
   grantEntitlements,
+  readOneTimeEntitlements,
+  reconcileCoverageGrants,
   revokePurchaseGrants,
   revokePurchaseLineGrants,
   revokeSubscriptionGrants,
+  upsertSubscriptionGrants,
 } from "./entitlement-store.ts";
 import type { SkuLine } from "./posthog-capture.ts";
 
@@ -112,17 +115,47 @@ export async function applyBillingEvent(
         sourceEventId: ev.invoiceId, // cycle-stable idempotency anchor (ADR-0089 §4)
       });
       // Grant the plan's edition/bundle/module entitlements as SUBSCRIPTION grants (ADR-0071/0109),
-      // keyed on the subscription id so a later subscription.canceled revokes exactly these. Idempotent
-      // per (account, entitlement, subscription) — each renewal re-confirms the same access as a no-op.
-      // A credits-only plan carries `entitlements: []` → no-op.
-      await grantEntitlements(tx, {
+      // keyed on the subscription id so a later subscription.canceled revokes exactly these. Each
+      // granting invoice stamps/EXTENDS the row's coverage horizon (`updates_expires_at = now() +
+      // one cadence` — the instant this payment covers through), so every claim bound the issuer
+      // derives from a subscription grant lapses with the LAST PAID period rather than living
+      // forever in a stale token (audit hardening 2026-07-06). Idempotent per (account,
+      // entitlement, subscription). A credits-only plan carries `entitlements: []` → no-op.
+      await upsertSubscriptionGrants(tx, {
         accountId: ev.accountId,
         entitlementIds: plan.entitlements,
+        subscriptionId: ev.subscriptionId,
         sourceEventId: ev.invoiceId,
-        source: { kind: "subscription", subscriptionId: ev.subscriptionId },
+        cadence: plan.cadence,
       });
+      // ADR-0269: a `coversOwnedEntitlements` plan (Developer) RE-GRANTS, subscription-sourced,
+      // every entitlement the buyer already holds via an active one_time grant — the
+      // Compliance-Updates re-grant mirror made dynamic. While these MIRROR rows (marked
+      // `line_item_id='covered'`) are active with a live horizon, the issuer EXTENDS the pair's
+      // `updatesWindows`/`entitledSince` bounds to the horizon (ADR-0269 Decision 2, hardened);
+      // `subscription.canceled` revokes exactly these rows, a refund's reconcile sweeps a mirror
+      // whose one_time backing is gone, and the one_time gates re-bind at the next re-mint. Ids
+      // bought MID-cycle join at the next granting invoice (the upsert is idempotent per
+      // (account, id, subscription, 'covered')). Read AFTER the static grant above so a plan that
+      // one day carries both shapes can never miss its own grants; one_time reads are unaffected
+      // by it today (Developer grants []).
+      const coveredIds = plan.coversOwnedEntitlements
+        ? await readOneTimeEntitlements(tx, ev.accountId)
+        : [];
+      if (coveredIds.length > 0) {
+        await upsertSubscriptionGrants(tx, {
+          accountId: ev.accountId,
+          entitlementIds: coveredIds,
+          subscriptionId: ev.subscriptionId,
+          sourceEventId: ev.invoiceId,
+          cadence: plan.cadence,
+          coverageMirror: true,
+        });
+      }
       return {
-        grantedEntitlements: [...plan.entitlements],
+        grantedEntitlements: [
+          ...new Set([...plan.entitlements, ...coveredIds]),
+        ],
         skuLines: [
           {
             priceId: ev.priceId,
@@ -221,6 +254,10 @@ export async function applyBillingEvent(
           accountId: ev.accountId,
           purchaseId: ev.paymentId,
         });
+        // ADR-0269 refund reconcile (audit P1 1): a coverage MIRROR whose one_time backing this
+        // refund just revoked must fall with it — otherwise the refunded product stays fully
+        // accessible subscription-sourced for the life of the covering plan.
+        await reconcileCoverageGrants(tx, ev.accountId);
         const granted = await creditsGrantedBySource(
           tx,
           ev.accountId,
@@ -324,6 +361,9 @@ export async function applyBillingEvent(
           }
         }
       }
+      // ADR-0269 refund reconcile (audit P1 1) — same sweep as the whole-transaction branch: any
+      // coverage mirror left without an active one_time backing after the per-line revokes falls.
+      await reconcileCoverageGrants(tx, ev.accountId);
       return NO_EFFECT;
     }
     case "subscription.created": // signup only — granting here would never renew (the X-2 trap)

@@ -5,10 +5,12 @@ The generator that composes a tailored repo from the versioned registry.
 ## Usage
 
 ```
-npx create-caisson --name my-app --edition base --module @caisson/kernel@1.0.0 --out ./my-app
+bunx @caisson-sh/cli@latest --name my-app --edition compliance --module @caisson/kernel@1.0.0 --out ./my-app
 ```
 
-Run `npx create-caisson --help` for the full flag list (`--dry-run`, `--sample <id>`, etc.).
+(`npx create-caisson@latest ...` also works as a secondary install path.)
+
+Run `bunx @caisson-sh/cli@latest --help` for the full flag list (`--dry-run`, `--sample <id>`, etc.).
 
 ## Current scope
 
@@ -27,7 +29,10 @@ of this package yet.
 - **`createFileSetWriter`** — writes the generated file set to disk atomically (temp dir + rename),
   rejecting any path that would escape the target directory.
 - **`create-caisson` CLI** — `--name <slug> --edition <e> --module <id@version> …`; arg-parse, the
-  same allowlist gate, then disk materialization via `createFileSetWriter`.
+  same allowlist gate, then disk materialization via `createFileSetWriter`. `<e>` is one of the six
+  bundle ids (`compliance`, `ai-production`, `local-first`, `agentic-dev`, `provenance`,
+  `everything`) or a legacy edition id (`ai-kit`, `local-ai`, `agent-dev`) — legacy ids resolve to
+  their bundle forever (ADR-0257).
 
 ## Engine seam (ADR-0048)
 

@@ -16,6 +16,7 @@ import {
   type ModuleManifest,
   type RegistryIndex,
   assertKnownVersion,
+  entitlementIdAliasGroup,
 } from "@caisson/registry-schema";
 import {
   type GeneratedFile,
@@ -129,37 +130,72 @@ function manifestFor(
 }
 
 /**
- * Resolve an edition's FROZEN pinned member set (ADR-0077). The edition manifest (the `kind: "edition"`
- * module whose `editions[]` names this edition) carries an exact id→semver `members` map; the
- * generator folds those EXACT pins (never `latest`, never a range) into the buyer's deps. Fail-closed:
- * a missing edition manifest, an empty pin map, or any pin not present in the index THROWS — before
- * the debit, so a non-resolvable edition is never charged.
+ * Resolve a bundle's FROZEN pinned member set (ADR-0077/0257). Two meta forms carry it, mirroring
+ * `expandEntitlements`' union semantics: a first-class `kind:"bundle"` entry whose `@caisson/<slug>`
+ * slug IS the bundle id (PREFERRED — the post-rework truth), else a legacy `kind:"edition"` entry
+ * whose `editions[]` names any spelling in the bundle's alias group (the pre-rework form the three
+ * retired metas still carry). Either way the manifest holds an exact id→semver `members` map; the
+ * generator folds those EXACT pins (never `latest`, never a range) into the buyer's deps.
+ * Fail-closed: no meta entry, an empty pin map, or any pin not present in the index THROWS —
+ * before the debit, so a non-resolvable bundle is never charged.
  */
 function resolveEditionMembers(
   index: RegistryIndex,
   edition: NonNullable<Selection["edition"]>,
 ): Record<string, string> {
-  for (const m of index.modules) {
-    const v =
+  // Every stored spelling of this bundle id — the canonical id plus each legacy edition name
+  // aliasing to it (ADR-0257 single alias point; `compliance` is the identity alias).
+  const spellings = entitlementIdAliasGroup(edition);
+  const bundleModuleId = `@caisson/${edition}`;
+  const latestOf = (
+    m: RegistryIndex["modules"][number],
+  ): ModuleManifest | undefined =>
+    (
       m.versions.find((x) => x.version === m.latest) ??
-      m.versions[m.versions.length - 1];
-    const manifest = v?.manifest;
-    if (manifest?.kind === "edition" && manifest.editions.includes(edition)) {
-      const members = manifest.members;
-      if (Object.keys(members).length === 0) {
-        throw new Error(
-          `edition ${edition} carries an empty member pin map (ADR-0077)`,
-        );
-      }
-      // Every pin must resolve in the index — a bad/absent pin fails closed (never reaches a path).
-      for (const [id, version] of Object.entries(members)) {
-        assertKnownVersion(index, id, version);
-      }
-      return members;
+      m.versions[m.versions.length - 1]
+    )?.manifest;
+  const validated = (
+    members: Record<string, string>,
+  ): Record<string, string> => {
+    // A member id ABSENT from the index entirely is a RESERVED sold-not-yet-published phantom pin
+    // (the everything bundle's `@caisson/ui-pro@0.0.0` sentinel) — SKIPPED, mirroring the
+    // registry-schema allowlist guard that excludes it from `expandEntitlements` (entitlements.ts):
+    // the flagship bundle must compose without it, not fail-closed-throw at the debit seam. A KNOWN
+    // module with an unknown VERSION pin still throws below — a stale pin is a real bug, never skipped.
+    const indexed = new Set(index.modules.map((m) => m.id));
+    const resolvable = Object.fromEntries(
+      Object.entries(members).filter(([id]) => indexed.has(id)),
+    );
+    if (Object.keys(resolvable).length === 0) {
+      throw new Error(
+        `bundle ${edition} carries an empty member pin map (ADR-0077)`,
+      );
+    }
+    // Every pin must resolve in the index — a bad/absent pin fails closed (never reaches a path).
+    for (const [id, version] of Object.entries(resolvable)) {
+      assertKnownVersion(index, id, version);
+    }
+    return resolvable;
+  };
+  // Pass 1: the first-class bundle entry (`hasBundleEntry` preference, ADR-0257).
+  for (const m of index.modules) {
+    const manifest = latestOf(m);
+    if (manifest?.kind === "bundle" && m.id === bundleModuleId) {
+      return validated(manifest.members);
+    }
+  }
+  // Pass 2: the legacy edition meta (retired ids' `editions[]` carry the pre-rework spellings).
+  for (const m of index.modules) {
+    const manifest = latestOf(m);
+    if (
+      manifest?.kind === "edition" &&
+      manifest.editions.some((e) => spellings.includes(e))
+    ) {
+      return validated(manifest.members);
     }
   }
   throw new Error(
-    `no edition manifest for ${JSON.stringify(edition)} in the registry index`,
+    `no bundle or edition manifest for ${JSON.stringify(edition)} in the registry index`,
   );
 }
 

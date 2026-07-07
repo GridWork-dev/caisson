@@ -1,5 +1,5 @@
 // Fixture for checkManifestPriceAgreement: priceCents is a STALE number that has drifted from the
-// PRICE_AUTHORITY lock for @caisson/compliance (79900, ADR-0227) — the gate must fail this. Not a
+// PRICE_AUTHORITY lock for @caisson/compliance (104900, ADR-0258) — the gate must fail this. Not a
 // *.test.ts, so the runner never executes it as a suite; it is loaded only via the test's dynamic
 // import.
 import { defineModule } from "@caisson/registry-schema";

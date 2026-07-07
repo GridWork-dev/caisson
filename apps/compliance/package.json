@@ -1,8 +1,9 @@
 {
   "name": "@caisson/app-compliance",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "private": true,
   "type": "module",
+  "license": "LicenseRef-Caisson-Commercial",
   "description": "The P2 Compliance edition reference app (Next.js App Router, ADR-0044) — a thin wiring shell that runs the compliance leg end to end: seed → encrypt under withTenantCrypto → lock to WORM + chain anchor → emit + validate a deterministic evidence pack → prove an unresolved flag blocks generation. No dashboard.",
   "scripts": {
     "dev": "next dev -p 3040",

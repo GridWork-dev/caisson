@@ -127,7 +127,9 @@ Usage:
 Flags:
   --name <slug>          Project name (a-z, 0-9, kebab slug; max 64 chars)
   --module <id@version>  @caisson module (repeatable; exact semver version)
-  --edition <e>          compliance | ai-kit | local-ai | agent-dev
+  --edition <e>          compliance | ai-production | local-first | agentic-dev | provenance |
+                          everything — the legacy edition ids (ai-kit, local-ai, agent-dev) still
+                          work and resolve to their bundle above (ADR-0257)
   --deploy <target>      Add a deploy config: railway | fly | vercel (default: none)
   --sample <id>          A free, Apache-2.0 evaluation sample (e.g. eu-ai-act-sample) — no
                           --module/--edition; no Caisson license key required to install or run
