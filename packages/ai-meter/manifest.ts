@@ -14,7 +14,12 @@ export default defineModule({
   tier: "paid",
   priceCents: 4900,
   license: pkg.license,
-  dependencies: ["@caisson/kernel", "@caisson/credits", "@caisson/tenancy-rls"],
+  dependencies: [
+    "@caisson/kernel",
+    "@caisson/credits",
+    "@caisson/tenancy-rls",
+    "@caisson/ui",
+  ],
   golden: "src/__golden__",
   description:
     "Metered-inference money path: estimate→reserve→reconcile over the credit ledger + versioned price book + atomic spend window + soft/hard caps + circuit breaker (ADR-0060).",
