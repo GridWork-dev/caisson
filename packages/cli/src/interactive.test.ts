@@ -178,6 +178,29 @@ describe("runWizard", () => {
     expect(selectMock).not.toHaveBeenCalled();
   });
 
+  test("framework (ADR-0287) is carried through untouched — never its own prompt", async () => {
+    resetQueues();
+    textQueue = ["gapfilled-name"];
+    multiselectQueue = [[{ id: "@caisson/kernel", version: "0.3.0" }]];
+
+    const { runWizard } = await import("./interactive.ts");
+    const result = await runWizard(INDEX, {
+      framework: "next",
+      modules: [],
+      pureRun: false,
+    });
+
+    expect(result).toEqual({
+      kind: "licensed",
+      raw: {
+        projectName: "gapfilled-name",
+        modules: [{ id: "@caisson/kernel", version: "0.3.0" }],
+        framework: "next",
+      },
+    });
+    expect(selectMock).not.toHaveBeenCalled();
+  });
+
   test("an already-supplied projectName is never re-prompted", async () => {
     resetQueues();
     multiselectQueue = [[{ id: "@caisson/kernel", version: "0.3.0" }]];

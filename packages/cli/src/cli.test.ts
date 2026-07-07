@@ -91,6 +91,13 @@ describe("parseArgs — the argv contract", () => {
     });
   });
 
+  test("--framework (ADR-0287)", () => {
+    expect(parseArgs(["--framework", "next"])).toEqual({
+      framework: "next",
+      modules: [],
+    });
+  });
+
   test("repeatable --module, last @ split keeps a scoped id intact", () => {
     const raw = parseArgs([
       "--module",
@@ -150,6 +157,11 @@ describe("HELP text", () => {
     expect(HELP).toContain("--deploy <target>");
     expect(HELP).toContain("railway | fly | vercel");
     expect(HELP).toContain("Interactive mode");
+  });
+
+  test("documents --framework (ADR-0287)", () => {
+    expect(HELP).toContain("--framework <target>");
+    expect(HELP).toContain("next");
   });
 
   test("documents the six-bundle vocabulary + the legacy edition aliases (ADR-0257/0258)", () => {
@@ -318,6 +330,46 @@ describe("resolveLicensed — ADR-0262/ADR-0268 arming rule (licensed path)", ()
     expect(resolved).toEqual({
       kind: "licensed",
       raw: { projectName: "wizard-name", edition: "compliance", modules: [] },
+    });
+  });
+
+  test("--framework alone (ADR-0287) arms a non-pure-run gap-fill and is forwarded to the wizard", async () => {
+    let seenFlags:
+      { pureRun: boolean; framework?: string; modules: unknown[] } | undefined;
+    const fakeLoad = mock(async () => ({
+      promptSampleProjectName: async () => {
+        throw new Error("not exercised in this test");
+      },
+      runWizard: async (
+        _index: unknown,
+        flags: { pureRun: boolean; framework?: string; modules: unknown[] },
+      ): Promise<LicensedResolution & { kind: "licensed" }> => {
+        seenFlags = flags;
+        return {
+          kind: "licensed",
+          raw: {
+            projectName: "wizard-name",
+            modules: [],
+            framework: flags.framework,
+          },
+        };
+      },
+      DEFAULT_SAMPLE_ID: "eu-ai-act-sample",
+    }));
+    const resolved = await resolveLicensed(
+      ["--framework", "next"],
+      INDEX,
+      true,
+      fakeLoad as unknown as () => Promise<typeof InteractiveModule>,
+    );
+    expect(seenFlags).toEqual({
+      pureRun: false,
+      framework: "next",
+      modules: [],
+    });
+    expect(resolved).toEqual({
+      kind: "licensed",
+      raw: { projectName: "wizard-name", modules: [], framework: "next" },
     });
   });
 
