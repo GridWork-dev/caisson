@@ -1,0 +1,264 @@
+"use client";
+
+import { useState } from "react";
+
+import { CodeBlock, StatusChip } from "@/components";
+import { MODULE_PAGES } from "@/lib/module-pages";
+
+import styles from "./repo-artifact.module.css";
+
+// The honest-artifact section (ADR-0285 §4 redesign): the marketing IA and the codebase IA are the
+// same object. A color-coded, area-tagged source tree where clicking a code-bearing node reveals the
+// REAL snippet beside it — every path is a real directory, every snippet copied verbatim from the
+// file its header names (the honest-artifact floor, ADR-0082; no screenshots, no mockups). Two
+// snippets (kernel, tenancy-rls) are base packages with no module record and are inlined verbatim;
+// two (audit-worm, field-crypto) reuse the single-sourced depth-page artifact so they can't drift.
+
+type Area = "app" | "pkg" | "tooling" | "svc" | "reg";
+
+interface TreeNode {
+  name: string;
+  area: Area;
+  note?: string;
+  /** Present marks a code-bearing (clickable) node — the key into CODE below. */
+  codeId?: string;
+  children?: readonly TreeNode[];
+}
+
+// The fail-closed RLS policy, verbatim from buildTenantPolicySql() (packages/tenancy-rls/src/rls.ts):
+// no tenant GUC set → NULLIF folds '' to NULL → the USING predicate is NULL → every row is denied.
+const RLS_POLICY_SQL = `ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE invoices FORCE ROW LEVEL SECURITY;
+CREATE POLICY invoices_tenant_isolation ON invoices
+  USING (
+    account_id = NULLIF(current_setting('app.current_account', true), '')
+  );`;
+
+// The chain-link hash, verbatim from packages/kernel/src/audit-chain.ts: SHA-256 over the canonical
+// 2-tuple [prevHash, payload] — tamper any historical row and every hash after it fails to recompute.
+const AUDIT_CHAIN_TS = `export function hashChainLink(
+  prevHash: string | null,
+  payload: JsonValue,
+): string {
+  return createHash("sha256")
+    .update(canonicalize([prevHash, payload]))
+    .digest("hex");
+}`;
+
+interface CodeCard {
+  file: string;
+  label: string;
+  code: string;
+  statusLabel: string;
+  statusTone: "accent" | "success";
+}
+
+/** The single-sourced depth-page artifact for a module id (reused so the two snippets can't drift). */
+function moduleArtifact(slug: string): {
+  file: string;
+  label: string;
+  code: string;
+} {
+  const rec = MODULE_PAGES.find((r) => r.slug === slug);
+  if (!rec) {
+    // The homepage tree only names shipped modules; this guards a future rename.
+    return { file: `packages/${slug}`, label: slug, code: "" };
+  }
+  return {
+    file: rec.artifact.file,
+    label: rec.artifact.label,
+    code: rec.artifact.code,
+  };
+}
+
+const CODE: Record<string, CodeCard> = {
+  rls: {
+    file: "packages/tenancy-rls/src/rls.ts",
+    label: "Fail-closed tenant isolation",
+    code: RLS_POLICY_SQL,
+    statusLabel: "FORCE",
+    statusTone: "accent",
+  },
+  kernel: {
+    file: "packages/kernel/src/audit-chain.ts",
+    label: "The append-only chain link",
+    code: AUDIT_CHAIN_TS,
+    statusLabel: "sha256",
+    statusTone: "accent",
+  },
+  "audit-worm": {
+    ...moduleArtifact("audit-worm"),
+    statusLabel: "verify",
+    statusTone: "success",
+  },
+  "field-crypto": {
+    ...moduleArtifact("field-crypto"),
+    statusLabel: "AEAD",
+    statusTone: "accent",
+  },
+};
+
+const TREE: readonly TreeNode[] = [
+  {
+    name: "apps",
+    area: "app",
+    children: [
+      { name: "site", area: "app", note: "marketing + docs + buyer dashboard" },
+      { name: "admin", area: "app", note: "the control-plane" },
+    ],
+  },
+  {
+    name: "packages",
+    area: "pkg",
+    children: [
+      {
+        name: "kernel",
+        area: "pkg",
+        note: "audit-chain · canonicalize · branded money",
+        codeId: "kernel",
+      },
+      {
+        name: "tenancy-rls",
+        area: "pkg",
+        note: "fail-closed Postgres RLS",
+        codeId: "rls",
+      },
+      {
+        name: "audit-worm",
+        area: "pkg",
+        note: "append-only chain + S3 Object-Lock WORM",
+        codeId: "audit-worm",
+      },
+      {
+        name: "field-crypto",
+        area: "pkg",
+        note: "per-tenant HKDF-SHA256 encryption",
+        codeId: "field-crypto",
+      },
+      { name: "ai-meter", area: "pkg", note: "token metering + spend caps" },
+      { name: "ui", area: "pkg", note: "the Apache-2.0 component base" },
+    ],
+  },
+  {
+    name: "tooling",
+    area: "tooling",
+    children: [
+      {
+        name: "standards-gate",
+        area: "tooling",
+        note: "the one lint / tsconfig / test gate",
+      },
+    ],
+  },
+  {
+    name: "services",
+    area: "svc",
+    children: [
+      { name: "license", area: "svc", note: "the license issuer + verifier" },
+      { name: "docs", area: "svc", note: "the docs RAG service" },
+    ],
+  },
+  {
+    name: "registry",
+    area: "reg",
+    children: [
+      { name: "index.json", area: "reg", note: "the signed module index" },
+      { name: "worker", area: "reg", note: "the edge entitlement filter" },
+    ],
+  },
+];
+
+function TreeRow({
+  node,
+  activeId,
+  onSelect,
+}: {
+  node: TreeNode;
+  activeId: string;
+  onSelect: (id: string) => void;
+}) {
+  const isDir = node.children !== undefined;
+  const clickable = node.codeId !== undefined;
+  const active = clickable && node.codeId === activeId;
+
+  const inner = (
+    <>
+      <span className={styles.name}>
+        {node.name}
+        {isDir ? "/" : ""}
+      </span>
+      {node.note ? <span className={styles.note}>{node.note}</span> : null}
+      {clickable ? <span className={styles.peek}>view →</span> : null}
+    </>
+  );
+
+  return (
+    <li className={styles.item} data-area={node.area}>
+      {clickable ? (
+        <button
+          type="button"
+          className={`${styles.row} ${styles.clickable} ${active ? styles.active : ""}`}
+          aria-pressed={active}
+          onClick={() => onSelect(node.codeId!)}
+        >
+          {inner}
+        </button>
+      ) : (
+        <span className={`${styles.row} ${isDir ? styles.dir : ""}`}>
+          {inner}
+        </span>
+      )}
+      {isDir && node.children && node.children.length > 0 ? (
+        <ul className={styles.list}>
+          {node.children.map((child) => (
+            <TreeRow
+              key={child.name}
+              node={child}
+              activeId={activeId}
+              onSelect={onSelect}
+            />
+          ))}
+        </ul>
+      ) : null}
+    </li>
+  );
+}
+
+export function RepoArtifact() {
+  const [activeId, setActiveId] = useState("rls");
+  const card = CODE[activeId] ?? CODE.rls!;
+
+  return (
+    <div className={styles.grid}>
+      <div className={styles.treeCard}>
+        <span className="cs-card-title">caisson-sh/caisson</span>
+        <p className={styles.hint}>
+          Click a highlighted package to read its real code.
+        </p>
+        <ul className={styles.list} aria-label="Caisson monorepo structure">
+          {TREE.map((node) => (
+            <TreeRow
+              key={node.name}
+              node={node}
+              activeId={activeId}
+              onSelect={setActiveId}
+            />
+          ))}
+        </ul>
+      </div>
+
+      {/* min-width:0 on the grid track (styles.grid) lets the code body scroll INSIDE its own frame
+          instead of blowing the column out (ADR-0285 §4 overflow fix). */}
+      <div className={styles.codeCard}>
+        <CodeBlock
+          frame
+          label={`${card.label}: ${card.file}`}
+          status={
+            <StatusChip tone={card.statusTone} dot label={card.statusLabel} />
+          }
+          code={card.code}
+        />
+      </div>
+    </div>
+  );
+}

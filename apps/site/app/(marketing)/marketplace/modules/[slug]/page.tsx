@@ -6,10 +6,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Card, Hero, MobileBuyBar, StatusChip } from "@/components";
+import { Card, Hero, MobileBuyBar, Section, StatusChip } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
+import { MediaCarousel } from "@/components/media-carousel";
 import { PageSections } from "@/components/page-sections";
 import { TrackView } from "@/components/track-view";
+import { mediaSlides } from "@/lib/media-manifest";
 import { moduleCatalogItem, toCartItem } from "@/lib/catalog";
 import { bundleLabel, bundlePagePath } from "@/components/marketplace";
 import { GLOSSARY_TERMS } from "@/lib/glossary";
@@ -19,7 +21,6 @@ import {
   moduleSoftwareApplication,
   serializeJsonLd,
 } from "@/lib/jsonld";
-import { moduleMark } from "@/lib/marks";
 import { buildMetadata } from "@/lib/metadata";
 import { MODULE_PAGES, type ModulePageRecord } from "@/lib/module-pages";
 import type { PageSection } from "@/lib/page-sections";
@@ -97,7 +98,19 @@ function bodySections(record: ModulePageRecord): readonly PageSection[] {
       label: `${record.artifact.label}: ${record.artifact.file}`,
       code: record.artifact.code,
     },
-    { kind: "media", icon: moduleMark(record.slug), ...(record.video ?? {}) },
+    {
+      // The media carousel (ADR-0285 §3) — the same authored-diagram / video / demo slides the card
+      // viewer shows, rendered here inline via a `custom` node (MediaCarousel is a client island).
+      kind: "custom",
+      node: (
+        <Section eyebrow="Media" title="See it work">
+          <MediaCarousel
+            slides={mediaSlides("module", record.slug)}
+            label={`${record.metaTitle} media`}
+          />
+        </Section>
+      ),
+    },
     {
       kind: "stackCompat",
       eyebrow: "Compatibility",
@@ -219,7 +232,7 @@ export default async function ModuleDepthPage(props: Params) {
   const breadcrumbLd = breadcrumb([
     { name: "Home", path: "/" },
     { name: "Marketplace", path: "/marketplace" },
-    { name: "Modules", path: "/marketplace/modules" },
+    { name: "Modules", path: "/marketplace?type=modules" },
     { name: price.label, path: `/marketplace/modules/${price.id}` },
   ]);
   const appLd = moduleSoftwareApplication(price, {
@@ -255,7 +268,7 @@ export default async function ModuleDepthPage(props: Params) {
           <nav aria-label="Breadcrumb" className="cs-footnote">
             <Link href="/marketplace">Marketplace</Link>
             {" / "}
-            <Link href="/marketplace/modules">Modules</Link>
+            <Link href="/marketplace?type=modules">Modules</Link>
             {" / "}
             <span aria-current="page">{price.label}</span>
           </nav>

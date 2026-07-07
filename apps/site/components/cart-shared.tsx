@@ -18,11 +18,14 @@ import styles from "./cart.module.css";
 // two surfaces differ in depth, not in duplicated JSX (D-5, ADR-0193). The drawer passes
 // density="compact"; /cart passes density="comfortable".
 
-// Cart ids are kind-namespaced (`edition:<slug>` / `module:<slug>` / `bundle`, lib/catalog.ts).
-// Editions have a product page; modules resolve to the catalog; the bundle to the marketplace hub.
+// Cart ids are kind-namespaced (`edition:<slug>` / `module:<slug>` / `bundle:<slug>`, lib/catalog.ts).
+// The cart id IS the marketplace card-viewer deep-link (`?view=<kind>:<slug>`, ADR-0285), so a
+// module/bundle line opens straight to its viewer on the one surface; a legacy edition line links to
+// its product page.
 function itemHref(item: CartItem): string {
   if (item.kind === "edition") return `/${item.id.slice("edition:".length)}`;
-  if (item.kind === "module") return "/marketplace/modules";
+  if (item.kind === "module" || item.kind === "bundle")
+    return `/marketplace?view=${item.id}`;
   return "/marketplace";
 }
 

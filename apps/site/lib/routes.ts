@@ -49,12 +49,11 @@ export const MARKETING_ROUTES: readonly MarketingRoute[] = [
   { path: "/agentic-dev", label: "Agentic-Dev", priority: 0.9, changeFrequency: "weekly", group: "edition", nav: true, footer: "editions" }, // prettier-ignore
   { path: "/provenance", label: "Provenance", priority: 0.9, changeFrequency: "weekly", group: "edition", footer: "editions" }, // prettier-ignore
   { path: "/marketplace", label: "Marketplace", priority: 0.9, changeFrequency: "weekly", group: "product", nav: true, footer: "product" }, // prettier-ignore
-  { path: "/marketplace/modules", label: "Modules", priority: 0.85, changeFrequency: "weekly", group: "product", footer: "product" }, // prettier-ignore
-  { path: "/marketplace/build", label: "Build your stack", priority: 0.8, changeFrequency: "weekly", group: "product", footer: "product" }, // prettier-ignore
   { path: "/marketplace/plans", label: "Plans", priority: 0.85, changeFrequency: "weekly", group: "product", footer: "product" }, // prettier-ignore
   { path: "/glossary", label: "Glossary", priority: 0.7, changeFrequency: "weekly", group: "product", footer: "resources" }, // prettier-ignore
   { path: "/compare", label: "Comparisons", priority: 0.75, changeFrequency: "weekly", group: "product", footer: "resources" }, // prettier-ignore
   { path: "/stack-fit", label: "Stack fit", priority: 0.75, changeFrequency: "weekly", group: "product", footer: "resources" }, // prettier-ignore
+  { path: "/ui", label: "UI Pro showcase", navLabel: "UI Pro", priority: 0.7, changeFrequency: "weekly", group: "product", footer: "resources" }, // prettier-ignore
   { path: "/build-vs-buy", label: "Build vs buy", priority: 0.75, changeFrequency: "weekly", group: "product" }, // prettier-ignore
   { path: "/security", label: "Security", priority: 0.75, changeFrequency: "weekly", group: "trust", footer: "resources" }, // prettier-ignore
   { path: "/evidence", label: "Evidence pack", priority: 0.8, changeFrequency: "weekly", group: "trust", footer: "resources" }, // prettier-ignore
@@ -85,7 +84,10 @@ export function footerRoutes(col: FooterCol): readonly MarketingRoute[] {
   return MARKETING_ROUTES.filter((r) => r.footer === col);
 }
 
-/** The `/marketplace` hub tabs, in display order (ADR-0237 F1). Derived, not re-declared. */
+/** The `/marketplace` tabs, in display order. Now just the unified one-surface Marketplace and the
+ *  standalone Plans page — the ADR-0285 rework folded the former Modules + Build tabs INTO the
+ *  surface (they 301 to /marketplace in next.config.ts); subscriptions stay a separate purchase
+ *  path. Derived from the registry, not re-declared. */
 export const MARKETPLACE_TAB_ROUTES = MARKETING_ROUTES.filter(
   (r) => r.path === "/marketplace" || r.path.startsWith("/marketplace/"),
 );
