@@ -155,6 +155,12 @@
       "integrity": "sha512-47lQLD7e7wYznz2FlKQTv3zVvDB31n1JV3yotAwSeOKbyROPKu52VCpo7J15NlfvJFPj+wc+xu85DpalQdZHBQ==",
       "size": 1401
     },
+    "@caisson/agentic-dev@0.2.1": {
+      "key": "agentic-dev/agentic-dev-0.2.1.tgz",
+      "shasum": "c4960fc1001a80d0f84c676a00d957d9ec63a7d8",
+      "integrity": "sha512-JPMBApF4JjLIjfqpx93VLxRg6h43rvlKXfOobEQD+Z6kLBuSGYJxo9ST6ZMli8w47BqrTAYQMXl10WzUEh4Tpg==",
+      "size": 1627
+    },
     "@caisson/ai-config@0.2.2": {
       "key": "ai-config/ai-config-0.2.2.tgz",
       "shasum": "77fb93d58e7ae4676616e939bf3fd6d633a5ddec",
@@ -405,6 +411,12 @@
       "shasum": "0881e8c3bf874119691266b8f690bc632bfa9890",
       "integrity": "sha512-wCmszuxc5pk/m47s6TuqyMCfrNiKIKwFlMDBo7IXc105eDt2Z/ubmzQSjXfC1/56GWOO8dyModYKMgxY1SKP+Q==",
       "size": 1587
+    },
+    "@caisson/ai-production@0.2.1": {
+      "key": "ai-production/ai-production-0.2.1.tgz",
+      "shasum": "230cafa8302ac0c80c99a2449a0c00a75349101d",
+      "integrity": "sha512-9U+MGthbCOIrNILXfLsqn501oTgdXxxjv5WBjDJjry/ayeXfJOLppFzmA3emG46hKC5i555mDILzRay+N527SQ==",
+      "size": 1803
     },
     "@caisson/alerting@0.1.3": {
       "key": "alerting/alerting-0.1.3.tgz",
@@ -670,9 +682,9 @@
     },
     "@caisson/cli@0.4.0": {
       "key": "cli/cli-0.4.0.tgz",
-      "shasum": "4ae9e1517fdb69f5d8ba7057af7ef8ddbc3e9617",
-      "integrity": "sha512-68irkEutVyiim619dz0ytzJRDlfDXSUj4XJcnGqvM/ceF64vGzhwIe1XaIwUyBqAS5igYr8Rik4UQtvdU2kskg==",
-      "size": 91933,
+      "shasum": "68c05b232ae2dd7aa4247e973e8eedc9d3764dfe",
+      "integrity": "sha512-EaKSqP77KAh6pPOF0ytdpL/lComMrhgbBUaxdGaVYQyMaqASRLBRiYZ6KKPmFpnXb3w+pc5Ty2ksI0nKrbJBSw==",
+      "size": 92919,
       "meta": {
         "dependencies": {
           "@caisson/kernel": "0.4.2",
@@ -898,6 +910,12 @@
       "shasum": "6b656ad19c67d8fe812f57aa52ae1ffa27b1e1a8",
       "integrity": "sha512-AOELR56L/nCYa8EPJyxY8bSY8RTxI4M90Ic5jWOqa/vWbaGUFk2/vYsSAeU8hWsynQy82JbHFuAzU/ZzE0oXeQ==",
       "size": 2156
+    },
+    "@caisson/everything@0.2.1": {
+      "key": "everything/everything-0.2.1.tgz",
+      "shasum": "d8134e0f5025b9f54e4657edb7728c6b7add93f8",
+      "integrity": "sha512-zrXNmBxZIFkQjQWtrPA+fVVcPmSfBD5FpVhIfhA7yjGqOVGLqmfm7Hy5BVL8mbEaJ22STPJ8TpHh0zdY6aWiXA==",
+      "size": 2385
     },
     "@caisson/field-crypto@0.2.2": {
       "key": "field-crypto/field-crypto-0.2.2.tgz",
@@ -1225,6 +1243,12 @@
       "shasum": "45fe67016361453bc338e614607d851ae11b9fe2",
       "integrity": "sha512-R6SACk9zMxnWXL+IbhXFzVL+SWtwc/NHXN9o9HpmNrgbmoxo4aBVGdpvfjlnKJBd0SNMCcLsh9oQljT2iB+yKA==",
       "size": 1489
+    },
+    "@caisson/local-first@0.2.1": {
+      "key": "local-first/local-first-0.2.1.tgz",
+      "shasum": "03411b8412bcb6f4cb782b13f403424db89083dc",
+      "integrity": "sha512-NreLtIJnygFu+BlG1hfvkzrK9VVALTVIxAgdkUqOevPZ5pQHXa3+D24gONB0527ptyMSHIX+9Oqa5JkO5JBBAw==",
+      "size": 1712
     },
     "@caisson/local-inference@0.1.0": {
       "key": "local-inference/local-inference-0.1.0.tgz",
@@ -1689,6 +1713,12 @@
       "shasum": "02d159a68bf21137092256245a117bd5be419b80",
       "integrity": "sha512-tsGH4s6fQmj1bBqW2vtZXfUwVdQdpXV2XgJafl5ZI/a5sK7T1Uu3bAQTn9GNTGPsU2HeM8MC4nI8rqhTYmp7DQ==",
       "size": 1482
+    },
+    "@caisson/provenance@0.2.1": {
+      "key": "provenance/provenance-0.2.1.tgz",
+      "shasum": "c57f79357114158a57066ab39cb0fc51305d10db",
+      "integrity": "sha512-qgBinJICSH91gV83q5MA46UPR6bjybqyaxyF2xWSPbIyetQ5qOSeXTm6v+oQenoN7cV0FneH3Ir77+FBv4whMw==",
+      "size": 1696
     },
     "@caisson/rate-limit@0.1.1": {
       "key": "rate-limit/rate-limit-0.1.1.tgz",

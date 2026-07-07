@@ -557,7 +557,7 @@
     },
     {
       "id": "@caisson/agentic-dev",
-      "latest": "0.2.0",
+      "latest": "0.2.1",
       "versions": [
         {
           "version": "0.2.0",
@@ -587,6 +587,35 @@
           },
           "publishedAt": "2026-07-06T19:31:24Z",
           "gateAttestation": "catalog-w5-members-fold@55e7e16cddfacc0afd41502d1d94a4de82aaf246"
+        },
+        {
+          "version": "0.2.1",
+          "manifest": {
+            "id": "@caisson/agentic-dev",
+            "version": "0.2.1",
+            "kind": "bundle",
+            "editions": [],
+            "tier": "paid",
+            "priceCents": 32900,
+            "license": "LicenseRef-Caisson-Commercial",
+            "dependencies": [],
+            "members": {
+              "@caisson/agentic-dev": "0.2.1",
+              "@caisson/agent-kernel": "0.4.0",
+              "@caisson/agent-runner": "0.1.4",
+              "@caisson/ai-config": "0.3.0",
+              "@caisson/kernel": "0.4.2",
+              "@caisson/local-store": "0.2.4",
+              "@caisson/tool-exec": "0.1.5"
+            },
+            "entry": "src/index.ts",
+            "agents": "AGENTS.md",
+            "golden": null,
+            "stability": "alpha",
+            "description": "Agentic-Dev bundle: composes @caisson/agent-kernel (governed engine-neutral agent lifecycle) + @caisson/agent-runner (sandboxed execution) + @caisson/tool-exec (governed tool-calls) + @caisson/local-store (hybrid memory) + @caisson/ai-config (embedder lane) into one governed agent-build stack."
+          },
+          "publishedAt": "2026-07-07T02:25:31Z",
+          "gateAttestation": "hygiene-audit-fix@316d337af3e663eb0088f6edc535fce247385494"
         }
       ]
     },
@@ -1349,7 +1378,7 @@
     },
     {
       "id": "@caisson/ai-production",
-      "latest": "0.2.0",
+      "latest": "0.2.1",
       "versions": [
         {
           "version": "0.2.0",
@@ -1382,6 +1411,38 @@
           },
           "publishedAt": "2026-07-06T19:31:24Z",
           "gateAttestation": "catalog-w5-members-fold@55e7e16cddfacc0afd41502d1d94a4de82aaf246"
+        },
+        {
+          "version": "0.2.1",
+          "manifest": {
+            "id": "@caisson/ai-production",
+            "version": "0.2.1",
+            "kind": "bundle",
+            "editions": [],
+            "tier": "paid",
+            "priceCents": 73900,
+            "license": "LicenseRef-Caisson-Commercial",
+            "dependencies": [],
+            "members": {
+              "@caisson/ai-production": "0.2.1",
+              "@caisson/ai-config": "0.3.0",
+              "@caisson/ai-meter": "0.3.4",
+              "@caisson/credits": "0.4.1",
+              "@caisson/field-crypto": "0.3.0",
+              "@caisson/guardrails": "0.4.2",
+              "@caisson/kernel": "0.4.2",
+              "@caisson/prompt-registry": "0.2.5",
+              "@caisson/tenancy-rls": "0.5.0",
+              "@caisson/ai-evals": "0.3.1"
+            },
+            "entry": "src/index.ts",
+            "agents": "AGENTS.md",
+            "golden": null,
+            "stability": "alpha",
+            "description": "AI-Production bundle: the metered infer() gateway composing @caisson/prompt-registry + @caisson/ai-meter + @caisson/guardrails + @caisson/ai-config behind the Vercel AI SDK, with the @caisson/ai-evals CI eval harness folded in and the @caisson/credits metering ledger — the enforced chokepoint for every AI feature."
+          },
+          "publishedAt": "2026-07-07T02:25:31Z",
+          "gateAttestation": "hygiene-audit-fix@316d337af3e663eb0088f6edc535fce247385494"
         }
       ]
     },
@@ -2940,7 +3001,7 @@
     },
     {
       "id": "@caisson/everything",
-      "latest": "0.2.0",
+      "latest": "0.2.1",
       "versions": [
         {
           "version": "0.2.0",
@@ -2996,6 +3057,61 @@
           },
           "publishedAt": "2026-07-06T19:31:24Z",
           "gateAttestation": "catalog-w5-members-fold@55e7e16cddfacc0afd41502d1d94a4de82aaf246"
+        },
+        {
+          "version": "0.2.1",
+          "manifest": {
+            "id": "@caisson/everything",
+            "version": "0.2.1",
+            "kind": "bundle",
+            "editions": [],
+            "tier": "paid",
+            "priceCents": 205900,
+            "license": "LicenseRef-Caisson-Commercial",
+            "dependencies": [],
+            "members": {
+              "@caisson/everything": "0.2.1",
+              "@caisson/agent-dev": "0.4.0",
+              "@caisson/agent-kernel": "0.4.0",
+              "@caisson/agent-runner": "0.1.4",
+              "@caisson/agentic-dev": "0.2.1",
+              "@caisson/ai-evals": "0.3.1",
+              "@caisson/ai-kit": "0.4.0",
+              "@caisson/ai-meter": "0.3.4",
+              "@caisson/ai-production": "0.2.1",
+              "@caisson/alerting": "0.1.5",
+              "@caisson/audit-worm": "0.3.0",
+              "@caisson/billing-orchestration": "0.2.1",
+              "@caisson/compliance": "0.5.0",
+              "@caisson/compliance-core": "0.2.1",
+              "@caisson/credits": "0.4.1",
+              "@caisson/field-crypto": "0.3.0",
+              "@caisson/frameworks-pack": "0.2.0",
+              "@caisson/guardrails": "0.4.2",
+              "@caisson/local-ai": "0.2.5",
+              "@caisson/local-first": "0.2.1",
+              "@caisson/local-inference": "0.1.1",
+              "@caisson/local-privacy": "0.1.1",
+              "@caisson/local-store": "0.2.4",
+              "@caisson/local-sync": "0.1.1",
+              "@caisson/org-controls": "0.2.1",
+              "@caisson/platform-reads": "0.1.6",
+              "@caisson/pricebook": "0.5.0",
+              "@caisson/prompt-registry": "0.2.5",
+              "@caisson/provenance": "0.2.1",
+              "@caisson/retention-runner": "0.1.6",
+              "@caisson/signing-primitive": "0.2.0",
+              "@caisson/tool-exec": "0.1.5",
+              "@caisson/ui-pro": "0.0.0"
+            },
+            "entry": "src/index.ts",
+            "agents": "AGENTS.md",
+            "golden": null,
+            "stability": "alpha",
+            "description": "Everything bundle: the whole Caisson commercial catalog in one purchase — Compliance, AI-Production, Local-first, Agentic-Dev, and Provenance plus every standalone module (org-controls, billing-orchestration, ui-pro), at a below-sum price. The open Apache base ships free."
+          },
+          "publishedAt": "2026-07-07T02:25:31Z",
+          "gateAttestation": "hygiene-audit-fix@316d337af3e663eb0088f6edc535fce247385494"
         }
       ]
     },
@@ -4074,7 +4190,7 @@
     },
     {
       "id": "@caisson/local-first",
-      "latest": "0.2.0",
+      "latest": "0.2.1",
       "versions": [
         {
           "version": "0.2.0",
@@ -4105,6 +4221,36 @@
           },
           "publishedAt": "2026-07-06T19:31:24Z",
           "gateAttestation": "catalog-w5-members-fold@55e7e16cddfacc0afd41502d1d94a4de82aaf246"
+        },
+        {
+          "version": "0.2.1",
+          "manifest": {
+            "id": "@caisson/local-first",
+            "version": "0.2.1",
+            "kind": "bundle",
+            "editions": [],
+            "tier": "paid",
+            "priceCents": 62900,
+            "license": "LicenseRef-Caisson-Commercial",
+            "dependencies": [],
+            "members": {
+              "@caisson/local-first": "0.2.1",
+              "@caisson/kernel": "0.4.2",
+              "@caisson/local-store": "0.2.4",
+              "@caisson/license-verify": "0.3.0",
+              "@caisson/field-crypto": "0.3.0",
+              "@caisson/local-privacy": "0.1.1",
+              "@caisson/local-inference": "0.1.1",
+              "@caisson/local-sync": "0.1.1"
+            },
+            "entry": "src/index.ts",
+            "agents": "AGENTS.md",
+            "golden": null,
+            "stability": "alpha",
+            "description": "Local-first bundle: @caisson/local-store hybrid retrieval (sqlite-vec + FTS5 RRF), @caisson/local-sync two-way sync, @caisson/local-inference on-device inference, @caisson/local-privacy zero-egress gate, @caisson/license-verify offline Ed25519, and @caisson/field-crypto at-rest — offline, file-per-tenant, no lock-in."
+          },
+          "publishedAt": "2026-07-07T02:25:31Z",
+          "gateAttestation": "hygiene-audit-fix@316d337af3e663eb0088f6edc535fce247385494"
         }
       ]
     },
@@ -5451,7 +5597,7 @@
     },
     {
       "id": "@caisson/provenance",
-      "latest": "0.2.0",
+      "latest": "0.2.1",
       "versions": [
         {
           "version": "0.2.0",
@@ -5478,6 +5624,32 @@
           },
           "publishedAt": "2026-07-06T19:31:24Z",
           "gateAttestation": "catalog-w5-members-fold@55e7e16cddfacc0afd41502d1d94a4de82aaf246"
+        },
+        {
+          "version": "0.2.1",
+          "manifest": {
+            "id": "@caisson/provenance",
+            "version": "0.2.1",
+            "kind": "bundle",
+            "editions": [],
+            "tier": "paid",
+            "priceCents": 39900,
+            "license": "LicenseRef-Caisson-Commercial",
+            "dependencies": [],
+            "members": {
+              "@caisson/provenance": "0.2.1",
+              "@caisson/signing-primitive": "0.2.0",
+              "@caisson/audit-worm": "0.3.0",
+              "@caisson/field-crypto": "0.3.0"
+            },
+            "entry": "src/index.ts",
+            "agents": "AGENTS.md",
+            "golden": null,
+            "stability": "alpha",
+            "description": "Provenance bundle: per-tenant evidence signing (@caisson/signing-primitive detached Ed25519 + RFC-3161 countersign), an append-only SHA-256 WORM audit chain (@caisson/audit-worm), and at-rest field encryption (@caisson/field-crypto) — the provenance cut of Compliance, sold standalone."
+          },
+          "publishedAt": "2026-07-07T02:25:31Z",
+          "gateAttestation": "hygiene-audit-fix@316d337af3e663eb0088f6edc535fce247385494"
         }
       ]
     },
