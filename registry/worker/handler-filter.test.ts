@@ -16,11 +16,12 @@ import { makeLicenseEntitlementResolver } from "./entitlement-filter";
 import { createIndexHandler } from "./handler";
 
 // A RUNTIME-MINTED dev-key license (documented KAT seed; no committed token string — a real
-// entitlement token is itself the leak, the P0 incident class). Signs entitlements ["local-ai"],
-// pro, non-expiring; drives the REAL verify logic → expand → filter end to end through the
-// injectable verify seam. The production-key bake is pinned negatively in entitlement-filter.test.ts.
+// entitlement token is itself the leak, the P0 incident class). Signs entitlements ["local-first"]
+// (the canonical bundle id — tokens sign PURCHASED ids; the dissolved edition ids were purged,
+// ADR-0270), pro, non-expiring; drives the REAL verify logic → expand → filter end to end through
+// the injectable verify seam. The production-key bake is pinned negatively in entitlement-filter.test.ts.
 const DEV_TOKEN = await mintDevToken({
-  entitlements: ["local-ai"],
+  entitlements: ["local-first"],
   expiry: null,
   licenseId: "22222222-2222-4222-8222-222222222222",
   major: 1,
@@ -86,10 +87,19 @@ describe("Worker entitlement filtering (ADR-0071)", () => {
     expect(await ids(handlerFor(null)(req("/")))).toEqual(["@caisson/kernel"]);
   });
 
-  test("the bundle sees every module", async () => {
-    expect(await ids(handlerFor(["bundle"])(req("/")))).toEqual([
+  test("the everything bundle sees every module", async () => {
+    expect(await ids(handlerFor(["everything"])(req("/")))).toEqual([
       "@caisson/ai-kit",
       "@caisson/compliance",
+      "@caisson/kernel",
+    ]);
+  });
+
+  test("a purged legacy 'bundle' id degrades to the free base, never over-grants (ADR-0270)", async () => {
+    // The dissolved-edition purchase ids and the legacy everything-sentinel no longer alias
+    // (grants are drained at deploy behind a prove-empty gate); an undrained id hits the
+    // fail-closed expansion and the worker fail-safes to base — under-grant, never over-grant.
+    expect(await ids(handlerFor(["bundle"])(req("/")))).toEqual([
       "@caisson/kernel",
     ]);
   });
@@ -198,8 +208,9 @@ describe("Worker entitlement filtering (ADR-0071)", () => {
 });
 
 describe("Worker filtering composed with the REAL license verifier (end-to-end seam)", () => {
-  // An index that actually contains a local-ai member, so the minted token's signed entitlement
-  // (["local-ai"]) expands to a non-empty member set — proving verify → expand → filter end to end.
+  // An index that actually contains a local-ai-edition member, so the minted token's signed
+  // canonical bundle id (["local-first"]) folds that edition's members via the decoupled
+  // EDITION_BUNDLE_ID relation — proving verify → expand → filter end to end.
   const localAiIndex = loadRegistryIndex({
     schemaVersion: 1,
     modules: [
@@ -215,7 +226,7 @@ describe("Worker filtering composed with the REAL license verifier (end-to-end s
     ),
   });
 
-  test("a real dev-signed license sees base ∪ its entitled edition (local-ai), not other editions", async () => {
+  test("a real dev-signed license sees base ∪ its entitled bundle (local-first), not other editions", async () => {
     const res = realHandler(
       new Request("https://registry.caisson.sh/", {
         headers: { authorization: `Bearer ${DEV_TOKEN}` },
@@ -309,8 +320,8 @@ describe("Worker gates COMMERCIAL base-kind modules (ADR-0094/0097 open-core, Q1
     expect(await ids(res)).toEqual(["@caisson/kernel"]); // never field-crypto on error
   });
 
-  test("(e) the bundle still receives the commercial base-kind module (gated, not removed)", async () => {
-    expect(await ids(gatedHandlerFor(["bundle"])(req("/")))).toEqual([
+  test("(e) the everything bundle still receives the commercial base-kind module (gated, not removed)", async () => {
+    expect(await ids(gatedHandlerFor(["everything"])(req("/")))).toEqual([
       "@caisson/ai-kit",
       "@caisson/field-crypto",
       "@caisson/kernel",
@@ -344,8 +355,8 @@ describe("Worker delivers an edition's COMMERCIAL members via the sentinel — r
     expect(served).toContain("@caisson/kernel"); // Apache-2.0 free floor still served
   });
 
-  test("an AI Production Kit sentinel delivers its metered members (ai-meter, guardrails, prompt-registry)", async () => {
-    const served = await ids(realHandlerFor(["ai-kit"])(req("/")));
+  test("an ai-production bundle delivers its metered members (ai-meter, guardrails, prompt-registry)", async () => {
+    const served = await ids(realHandlerFor(["ai-production"])(req("/")));
     for (const id of [
       "@caisson/ai-kit",
       "@caisson/ai-meter",
@@ -354,6 +365,16 @@ describe("Worker delivers an edition's COMMERCIAL members via the sentinel — r
     ]) {
       expect(served).toContain(id);
     }
+  });
+
+  test("a purged legacy 'ai-kit' purchase id under-grants to the meta-package only (ADR-0270)", async () => {
+    // The dissolved edition purchase id no longer aliases to its bundle; it still resolves as the
+    // indexed meta-package it names (served forever, append-only ledger) but never expands to the
+    // former bundle's members — under-grant, never over-grant.
+    const served = await ids(realHandlerFor(["ai-kit"])(req("/")));
+    expect(served).toContain("@caisson/ai-kit");
+    expect(served).not.toContain("@caisson/ai-meter");
+    expect(served).not.toContain("@caisson/guardrails");
   });
 
   test("a Compliance buyer still does NOT receive an unrelated edition's member (ai-kit's ai-meter)", async () => {
@@ -369,9 +390,14 @@ describe("Worker delivers an edition's COMMERCIAL members via the sentinel — r
     expect(served).not.toContain("@caisson/audit-worm"); // no edition-sibling bleed
   });
 
-  test("the bundle still delivers every module in the real index", async () => {
-    const served = await ids(realHandlerFor(["bundle"])(req("/")));
+  test("the everything bundle still delivers every module in the real index", async () => {
+    const served = await ids(realHandlerFor(["everything"])(req("/")));
     expect(served.sort()).toEqual(realIndex.modules.map((m) => m.id).sort());
+  });
+
+  test("a purged legacy 'bundle' id over the real index degrades to the anonymous free floor (ADR-0270)", async () => {
+    const served = await ids(realHandlerFor(["bundle"])(req("/")));
+    expect(served).toEqual(await ids(realHandlerFor(null)(req("/"))));
   });
 });
 
@@ -460,14 +486,14 @@ describe("updates-window filtering on /modules/:id (ADR-0244/0255)", () => {
   });
 
   test("MOST FAVORABLE (ADR-0255 D3): two grantors' windows → the module serves under the LARGER instant", async () => {
-    // Bought BOTH the compliance edition (older window) AND the bundle (newer window) — both grant
+    // Bought BOTH the compliance bundle (older window) AND everything (newer window) — both grant
     // @caisson/compliance. The better (newer, more permissive) window applies.
     const handler = createIndexHandler(winIndex, {
       resolveEntitlements: () => ({
-        entitlements: ["compliance", "bundle"],
+        entitlements: ["compliance", "everything"],
         updatesWindows: {
           compliance: "2026-01-15T00:00:00.000Z", // would allow only 1.0.0
-          bundle: WINDOW, // allows 1.0.0 + 1.1.0 — the more favorable grantor
+          everything: WINDOW, // allows 1.0.0 + 1.1.0 — the more favorable grantor
         },
       }),
     });
@@ -484,12 +510,12 @@ describe("updates-window filtering on /modules/:id (ADR-0244/0255)", () => {
   });
 
   test("MOST FAVORABLE (ADR-0255 D3): a grantor with NO key (unbounded) beats a windowed grantor", async () => {
-    // The bundle purchase carries no key for itself (unbounded) even though the compliance edition
+    // The everything purchase carries no key for itself (unbounded) even though the compliance
     // purchase has a narrow window — the unbounded grantor wins, serving every version.
     const handler = createIndexHandler(winIndex, {
       resolveEntitlements: () => ({
-        entitlements: ["compliance", "bundle"],
-        updatesWindows: { compliance: "2020-01-01T00:00:00.000Z" }, // bundle: no key = unbounded
+        entitlements: ["compliance", "everything"],
+        updatesWindows: { compliance: "2020-01-01T00:00:00.000Z" }, // everything: no key = unbounded
       }),
     });
     const res = handler(req("/modules/@caisson%2Fcompliance"));

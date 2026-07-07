@@ -365,9 +365,16 @@ describe("fail-safe entitlement (never 500)", () => {
     expect(res.status).toBe(401);
   });
 
-  test("the bundle entitles the commercial packument", async () => {
-    const res = await handlerFor(["bundle"])(req("/@caisson%2ffield-crypto"));
+  test("the everything bundle entitles the commercial packument", async () => {
+    const res = await handlerFor(["everything"])(
+      req("/@caisson%2ffield-crypto"),
+    );
     expect(res.status).toBe(200);
+  });
+
+  test("a purged legacy 'bundle' id fails SAFE to bare 401, never over-grants (ADR-0270)", async () => {
+    const res = await handlerFor(["bundle"])(req("/@caisson%2ffield-crypto"));
+    expect(res.status).toBe(401);
   });
 });
 

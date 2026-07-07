@@ -529,7 +529,7 @@ export function createApp(
         "amountTotal" in result.event &&
         result.grantedEntitlements.length > 0
       ) {
-        // CAISSON-27: distinguish a subscription-CYCLE charge from a first purchase. A Paddle
+        // distinguish a subscription-CYCLE charge from a first purchase. A Paddle
         // `transaction.completed` carrying a subscription_id whose subscription already granted
         // maps to `invoice.paid` with `billingReason: "subscription_cycle"` (origin
         // `subscription_recurring`); `subscription_create` (the first charge) and every one-time

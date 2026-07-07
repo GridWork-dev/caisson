@@ -1,4 +1,4 @@
-// The subscription-CYCLE payment receipt (CAISSON-27). A subscription renewal charge
+// The subscription-CYCLE payment receipt. A subscription renewal charge
 // (`invoice.paid` with `billingReason: "subscription_cycle"` — Paddle's `subscription_recurring`
 // origin, a transaction carrying a subscription_id whose subscription already granted) is NOT a
 // first purchase: it re-confirms an existing plan, so it must read as a recurring-payment receipt,

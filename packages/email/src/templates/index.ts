@@ -61,7 +61,7 @@ export interface TemplateDataMap {
   "verify-email": EmailTemplateData;
   "credits-expiring": CreditsExpiringData;
   "purchase-confirmation": PurchaseConfirmationData;
-  // A subscription-cycle receipt (CAISSON-27) shares the purchase-confirmation prop shape — only
+  // A subscription-cycle receipt shares the purchase-confirmation prop shape — only
   // the copy differs.
   "subscription-payment-received": PurchaseConfirmationData;
   "renewal-confirmation": RenewalConfirmationData;
@@ -205,7 +205,7 @@ const TEMPLATES: { [K in EmailTemplateId]: TemplateEntry<K> } = {
   "subscription-payment-received": {
     subject: subscriptionPaymentSubject,
     Component: SubscriptionPaymentEmail,
-    // Same data shape as the purchase receipt — reuse its coercer (CAISSON-27).
+    // Same data shape as the purchase receipt — reuse its coercer.
     coerce: coercePurchaseConfirmation,
   },
   "renewal-confirmation": {

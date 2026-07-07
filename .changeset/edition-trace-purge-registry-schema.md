@@ -2,7 +2,7 @@
 "@caisson/registry-schema": patch
 ---
 
-Edition-trace purge (ADR-0270): narrow the purchased-id alias spine to nothing-but-the-mechanism. The
+Edition-trace purge: narrow the purchased-id alias spine to nothing-but-the-mechanism. The
 four dissolved edition ids (`ai-kit`/`local-ai`/`agent-dev`) and the legacy `bundle` "buy-everything"
 sentinel are removed from `LEGACY_ENTITLEMENT_ALIASES` (zero real buyers hold them) and the `BUNDLE_ID`
 export is deleted. The edition→bundle INDEX-resolution relation moves to the decoupled `EDITION_BUNDLE_ID`
