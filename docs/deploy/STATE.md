@@ -33,6 +33,39 @@ consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the 
 
 ---
 
+## 2026-07-07 — EXECUTED: registry Worker republish for PR #138 (ADR-0271 bundle-only index)
+
+**Operator authorization:** picker lock "Republish bundle-only now (Recommended)", 2026-07-07 third
+sitting. Single service: the registry Worker only (no fleet diff — the change is index data + build
+scripts; the license service reads entitlements, not the index shape).
+
+**Service/SHA:** registry Worker version `aa27cb94-8fef-4c78-a35f-d0d7f2e257c0`, deployed via
+`registry/worker/deploy.sh` from `main` @ `3d23da70` (PR #138). Index 47 → 44 entries: the three
+dissolved edition meta-packages (`@caisson/ai-kit` · `@caisson/local-ai` · `@caisson/agent-dev`)
+delisted via append-only ledger `delist` lines per ADR-0271.
+
+**Gate evidence:** CI ALLGREEN on the PR head incl. `registry-index` byte-identity against the
+44-entry rebuild; SHIP audits both PASS with zero P0/P1 (code review: under-grant computationally
+disproven — every bundle loses exactly its meta id, base floor byte-identical; security: all catch
+paths degrade to a FRESH base floor, signed-ids-not-expansion contract intact).
+
+**Live-verify (pasted):**
+
+```
+$ curl -s https://registry.caisson.sh/index.json | python3 …
+modules: 15
+@caisson/ai-kit absent
+@caisson/local-ai absent
+@caisson/agent-dev absent
+kernel present: True
+```
+
+Anonymous view = the 15-module free base floor, unchanged. The licensed view is a pure function of
+the inlined CI-built index (deploy-entry esbuild-inlines `registry/index.json`) — byte-identity on
+the merge commit is the proof the deployed bundle serves the 44-entry index.
+
+---
+
 ## 2026-07-07 — EXECUTED: post-merge redeploy for PR #133–#136 + ADR-0270 legacy-grant drain
 
 **Operator authorization:** picker answers "Run it now" (fleet redeploy) + "Run with the redeploy"
