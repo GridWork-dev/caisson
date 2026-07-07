@@ -28,7 +28,11 @@ export async function main(argv: readonly string[]): Promise<number> {
 
   const config = loadConfig();
   const store = new PostgresStore(config.databaseUrl);
-  await store.migrate();
+  // Same posture as server.ts: the runtime DSN role is meant to be DML-only
+  // (migrations/provision-role.sql) — migrate() issues DDL the CLI must not assume it can run.
+  if (config.migrateOnBoot) {
+    await store.migrate();
+  }
   try {
     const summary = await runWatcher(watcher, config, store, fetchWithTimeout);
     process.stdout.write(`${JSON.stringify(summary)}\n`);
