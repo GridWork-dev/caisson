@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 
 import { buildMetadata } from "@/lib/metadata";
+import { PADDLE_MOR_DISCLOSURE } from "@/lib/legal";
 import { Card, Section } from "@/components";
 
 export const metadata = buildMetadata({
@@ -196,9 +197,8 @@ export default function TermsPage() {
           Payment processing — Paddle (Merchant of Record)
         </h3>
         <p style={prose.paragraph}>
-          Our order process is conducted by our online reseller Paddle.com.
-          Paddle.com is the Merchant of Record for all our orders. Paddle
-          provides all customer service inquiries and handles returns.
+          {PADDLE_MOR_DISCLOSURE} Paddle provides all customer service inquiries
+          and handles returns.
         </p>
         <p style={prose.paragraph}>
           You purchase a Caisson license from Paddle, and Paddle collects
