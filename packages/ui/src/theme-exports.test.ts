@@ -4,8 +4,8 @@ import { describe, expect, test } from "bun:test";
  * Exports-map resolution guard. `packages/ui/package.json`'s `exports` field is the ONLY thing
  * that decides whether a subpath a consumer imports actually resolves — a new source directory
  * with no matching entry (or a typo'd one) fails at the CONSUMER, not here, unless something
- * self-imports through the real package name the way a real consumer would (the PR#131 class of
- * bug: `@caisson/ui` shipped without an entry a component needed). Self-import via the package's
+ * self-imports through the real package name the way a real consumer would (a known class of
+ * bug: the kit once shipped without an exports entry a component needed). Self-import via the package's
  * own name (`@caisson/ui/...`) exercises the same resolution path bun/node give any consumer.
  */
 describe("@caisson/ui exports map (self-import resolution)", () => {
