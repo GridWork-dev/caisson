@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-07
 status: live
-adr_ceiling: 0278
+adr_ceiling: 0279
 ---
 
 # Decisions & Forks — live board
@@ -1449,3 +1449,35 @@ repercussions, launch gated on LLC+EIN+Paddle account") — LOCKED:**
   SOC 2/PCI-DSS/GDPR crosswalk exports (FedRAMP deferred) · priority-support subscription SKU
   (frame locked, price/SLA operator-owned) · MySQL-compat scoping SPIKE (decision doc, not
   code).
+
+## 2026-07-07 fifth sitting — parallelize + follow-up research picker (ADR-0279)
+
+Four sequencing/posture forks locked while the research-response builders run:
+
+- **Comparison sweep → research memo only.** The competitor-comparison leg lands as a cited
+  memo in `outputs/research/prelaunch-fanout-2026-07/followups/`; the operator reviews before
+  any site content uses it. Comparison pages are a later, separately-audited decision.
+- **Track K — plumb now, price-agnostic** (ADR-0278 execution): SKU/checkout/entitlement
+  plumbing built with the price unset in config, fail-closed (not purchasable until the
+  operator sets price + SLA). The support-tier comparables memo informs that call.
+- **Track E2 — design-memo picker first** (ADR-0274 execution): the eval-verification
+  research produces 2-3 concrete verification-flow designs; the operator picks one BEFORE the
+  fable-lane build starts.
+- **Crosswalk claim posture — mixed by proof level** (**ADR-0279**, refines 0277): assertive
+  "implements control X as documented" ONLY where a live test/CI artifact proves it (proof
+  linkable per row); conservative "maps to / provides evidence toward" + a
+  not-a-certification disclaimer everywhere else. The claim-language memo's floor binds:
+  never "certified/compliant/satisfies" with Caisson as subject (AICPA/PCI SSC/EDPB
+  ineligibility + the FTC accessiBe precedent).
+
+**Follow-up research legs dispatched** (all land in
+`outputs/research/prelaunch-fanout-2026-07/followups/`): competitor-comparison sweep ·
+eval-verification flows (feeds the E2 design picker) · crosswalk claim language (LANDED —
+disclaimer patterns + the five-column shared-responsibility format) · support-SKU +
+design-partner comparables (feeds two operator-owned pricing calls). **Spike M LANDED**
+(`followups/mysql-compat-spike-2026-07-07.md`): RLS is universal across the multi-tenant
+surface — there is no cheap partial MySQL port; ship the honest fit-matrix rows (scenario a),
+treat full parity (6-10 wk, weaker isolation posture) as a later ADR-gated decision. **Track
+L EULA continuity draft LANDED** (`outputs/specs/research-response/eula-continuity-draft.md`,
+variant A "confirmatory self-help" recommended; 12-month/90-day knobs + N stay
+operator-owned) — awaiting operator text approval.
