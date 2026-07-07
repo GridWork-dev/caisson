@@ -16,7 +16,7 @@ export default defineModule({
   tier: "paid",
   priceCents: 4900,
   license: "LicenseRef-Caisson-Commercial",
-  dependencies: ["@caisson/kernel", "@caisson/license-verify"],
+  dependencies: ["@caisson/kernel", "@caisson/license-verify", "@caisson/ui"],
   golden: "src/__golden__",
   description:
     "Ed25519 offline-license issuer (private): signs canonicalize(parse(claims)) into a tessera-format token with a Signer port (default Ed25519Signer over a node:crypto PKCS8 env key; KMS un-wired seam). Byte-identical to @caisson/license-verify's re-derivation; never published.",
