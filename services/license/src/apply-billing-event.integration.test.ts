@@ -1268,7 +1268,7 @@ describe("ADR-0269 — a coversOwnedEntitlements plan (Developer) re-grants owne
     };
   }
 
-  test("the granting invoice re-grants every owned one_time id under the subscription; the pair's window EXTENDS to the coverage horizon; cancel re-binds it", async () => {
+  test("the granting invoice re-grants every owned one_time id under the subscription; the pair's window EXTENDS to the coverage horizon; the paid horizon is grandfathered at cancel", async () => {
     const acct = "acct_dev_covers";
     // The buyer OWNS compliance (one-time buy) whose own window has LAPSED — the coverage
     // horizon is then the pair's live bound (max fold, ADR-0269 D2 hardened).
@@ -1321,8 +1321,16 @@ describe("ADR-0269 — a coversOwnedEntitlements plan (Developer) re-grants owne
       [acct],
     );
     expect(count).toEqual([{ n: 1 }]);
+    // The renewal EXTENDED the horizon on the same row (GREATEST, monotone).
+    const extended = Date.parse(
+      (await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)))
+        .compliance ?? "",
+    );
+    expect(extended).toBeGreaterThanOrEqual(horizon);
 
-    // subscription.canceled revokes exactly the re-grants; the OWNED grant + its window re-bind.
+    // subscription.canceled revokes exactly the re-grants; the OWNED grant survives (refcount)
+    // and the pair KEEPS the paid horizon — a horizon is a fact about money actually received
+    // (covered-period grandfathering, operator-locked 2026-07-06). It stops extending here.
     await withTenant(tp.pg, acct, (tx) =>
       applyBillingEvent(tx, {
         type: "subscription.canceled",
@@ -1335,8 +1343,11 @@ describe("ADR-0269 — a coversOwnedEntitlements plan (Developer) re-grants owne
       await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
     ).toEqual(["compliance"]); // one_time survives (refcount, ADR-0113)
     expect(
-      await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
-    ).toEqual({ compliance: "2026-01-05T00:00:00.000Z" }); // the gate re-binds after coverage ends
+      Date.parse(
+        (await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)))
+          .compliance ?? "",
+      ),
+    ).toBe(extended); // grandfathered — bounded by the last PAID period, never unbounded
   });
 
   test("REFUND during coverage sweeps the mirror — a refunded product never survives subscription-sourced (audit P1 1)", async () => {

@@ -1191,17 +1191,41 @@ behind are done).
 
 ## 2026-07-06 hygiene-package-standards session (Session B of the parallel pair)
 
-**ADR-0269 — Developer plan covers owned entitlements (LOCKED, executed same session):** the
-operator locked the direction ("the plan should actually grant updates, not have its copy walked
-back") in the session kickoff; the shape landed as the recommended subscription-sourced re-grant
-of the buyer's active `one_time` ids on each granting invoice (the Compliance-Updates mirror made
-dynamic) + the pair-level `updatesWindows`/`entitledSince` key drop for subscription-covered
-pairs (implements ADR-0255 §1's stated rule; also fixes the Compliance-Updates owner+subscriber
-gap). "New-edition access" DEFINED as new releases/members of owned bundles while active — never
-new bundle ids, never perpetual. Filed above 0268; ADR-0088 renumber-at-merge applies if the
-parallel site session collides.
+**ADR-0269 — Developer plan covers owned entitlements (LOCKED, executed same session; HARDENED
+by the SHIP audit pre-merge):** the operator locked the direction ("the plan should actually
+grant updates, not have its copy walked back") in the session kickoff; the shape landed as the
+recommended subscription-sourced re-grant of the buyer's active `one_time` ids on each granting
+invoice (the Compliance-Updates mirror made dynamic). The originally-recommended pair-level KEY
+DROP was replaced pre-merge after the fable security audit found it unbounded in perpetual
+offline-verified tokens (two P1s): covered pairs' `updatesWindows`/`entitledSince` now EXTEND to
+a paid coverage horizon (`now() + one plan cadence`, stamped + monotonically extended per
+granting invoice), mirrors carry `line_item_id='covered'` and are refund-reconciled on every
+one_time revoke path. "New-edition access" DEFINED as new releases/members of owned bundles
+while active — never new bundle ids, never unbounded. Filed above 0268; ADR-0088
+renumber-at-merge applies if the parallel site session collides.
+
+**Post-audit picker (2026-07-06, four operator locks):**
+
+1. **S3/S4 residuals → accept + Linear follow-up (LOCKED):** the out-of-order
+   invoice-after-cancel race and Paddle pause-without-cancel dunning stay bounded (≤ 1 paid
+   period) rather than eliminated — no subscription-state tracking built. ONE Linear issue
+   tracks the three residuals: verify the live Paddle dunning config cancels (not pauses) on
+   final failure before launch; the pre-existing static-grant ordering race; a SUBSCRIPTION
+   payment refund does not claw the period's grandfathered horizon. Recorded in ADR-0269 D6.
+2. **Covered-period grandfathering (LOCKED):** a coverage horizon is a PAID fact and persists
+   across the subscription revoke — the bound stops extending at cancel, never shrinks (fresh
+   re-mints and saved stale tokens agree). Implemented in `subscriptionCoverageHorizons` (no
+   status filter); a refunded pair can never keep a horizon (its one_time backing is revoked, so
+   the pair leaves the claim maps entirely).
+3. **No grace period on the horizon (LOCKED):** a late renewal payment briefly withholds
+   gap-published versions, then self-heals retroactively when `invoice.paid` lands — fail-closed,
+   zero tunables.
+4. **`everything` composes silently without reserved `ui-pro` (LOCKED):** hosted generation
+   skips the sold-unpublished phantom pin exactly as `expandEntitlements` does; ui-pro
+   graduates automatically when first indexed. No buyer-facing note, no generation block.
 
 **CAISSON-24 executed:** `@caisson/compliance` manifest flipped to `kind:"bundle"` at 104900 and
-republished (29-entry version-cut wave, index rebuilt); retired-alias metas trued to alias-target
-prices ($739/$329, the `local-ai` convention) with PRICE_AUTHORITY rows. Worker + license-service
-redeploy STAGED (operator act — `docs/deploy/STATE.md` top block).
+republished (34 ledger entries total: the 29-entry version-cut wave + the post-audit 5-bundle
+republish at 0.2.1 truing every canonical bundle's member pins, index rebuilt); retired-alias
+metas trued to alias-target prices ($739/$329, the `local-ai` convention) with PRICE_AUTHORITY
+rows. Worker + license-service redeploy STAGED (operator act — `docs/deploy/STATE.md` top block).

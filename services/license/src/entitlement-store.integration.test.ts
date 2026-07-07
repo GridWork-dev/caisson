@@ -727,7 +727,7 @@ describe("ADR-0269 subscription-covered pairs (horizon-extended claims + the own
     ).toEqual(["compliance", "field-crypto"]);
   });
 
-  test("a subscription-covered pair EXTENDS its keys to the coverage horizon; both re-bind after the subscription revoke", async () => {
+  test("a subscription-covered pair EXTENDS its keys to the coverage horizon; the paid horizon is GRANDFATHERED across the subscription revoke", async () => {
     const acct = "acct_covered";
     await withTenant(tp.pg, acct, (tx) =>
       grantEntitlements(tx, {
@@ -773,19 +773,22 @@ describe("ADR-0269 subscription-covered pairs (horizon-extended claims + the own
       computeEntitledSince(tx, acct),
     );
     expect(Date.parse(since.compliance ?? "")).toBe(horizon);
-    // Revoked (subscription.canceled): the stored one_time bound re-binds UNCHANGED — coverage
-    // never rewrote it, it merely out-folded it while active.
+    // Revoked (subscription.canceled): the PAID horizon persists — a horizon is a fact about
+    // money actually received (covered-period grandfathering, operator-locked 2026-07-06). The
+    // bound stops EXTENDING at cancel; it never shrinks, so a re-mint and a saved stale token
+    // agree. The stored one_time bound underneath is untouched.
     await withTenant(tp.pg, acct, (tx) =>
       revokeSubscriptionGrants(tx, {
         accountId: acct,
         subscriptionId: "sub_cov",
       }),
     );
-    expect(
-      await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
-    ).toEqual({ compliance: "2027-01-05T00:00:00.000Z" });
-    // A LATE out-of-order re-grant after the cancel (audit P2 3) never resurrects the revoked
-    // mirror: the tombstone occupies the key, the pair's bound stays the one_time truth.
+    const afterCancel = await withTenant(tp.pg, acct, (tx) =>
+      computeUpdatesWindows(tx, acct),
+    );
+    expect(Date.parse(afterCancel.compliance ?? "")).toBe(horizon);
+    // A LATE out-of-order re-grant after the cancel (audit P2 3) never resurrects or EXTENDS the
+    // revoked mirror: the tombstone occupies the key, the bound stays the already-paid horizon.
     await withTenant(tp.pg, acct, (tx) =>
       upsertSubscriptionGrants(tx, {
         accountId: acct,
@@ -797,8 +800,11 @@ describe("ADR-0269 subscription-covered pairs (horizon-extended claims + the own
       }),
     );
     expect(
-      await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
-    ).toEqual({ compliance: "2027-01-05T00:00:00.000Z" });
+      Date.parse(
+        (await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)))
+          .compliance ?? "",
+      ),
+    ).toBe(horizon);
   });
 
   test("each granting invoice EXTENDS the horizon monotonically (GREATEST — never shrinks)", async () => {

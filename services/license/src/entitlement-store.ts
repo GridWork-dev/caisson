@@ -529,13 +529,21 @@ export async function reconcileCoverageGrants(
 
 /**
  * The account's per-spelling COVERAGE HORIZONS (ADR-0269, hardened 2026-07-06): for every purchased
- * id backed by an ACTIVE subscription grant that carries a horizon (`updates_expires_at` — stamped
- * by {@link upsertSubscriptionGrants} at each granting invoice), the MAX horizon, expanded to the
+ * id backed by a subscription grant that carries a horizon (`updates_expires_at` — stamped by
+ * {@link upsertSubscriptionGrants} at each granting invoice), the MAX horizon, expanded to the
  * id's full alias group (the `extendUpdatesWindow` W7 convention). The claim computations below
  * fold this into a covered pair's bound instead of DROPPING the key — the original ADR-0269 drop
  * made a covered pair UNBOUNDED in a perpetual offline-verified token, which no cancel could ever
- * claw back (audit P1 2). A legacy subscription row with a NULL `updates_expires_at` (granted
- * before the horizon stamp shipped) contributes nothing until its next renewal stamps it.
+ * claw back (audit P1 2).
+ *
+ * Deliberately NO status filter (operator-locked 2026-07-06 picker — covered-period
+ * grandfathering): a horizon is a PAID fact — the instant an actually-received payment covered
+ * through — so it persists after `subscription.canceled` revokes the row. Cancel means the bound
+ * stops EXTENDING; it never shrinks, so a buyer's fresh re-mint and their saved stale token agree
+ * (no old-token/new-token divergence). A REFUNDED pair can never leak through this: the refund
+ * revokes the one_time backing, so the pair drops out of the claim loops entirely (keys exist
+ * only for active one_time rows). A legacy subscription row with a NULL `updates_expires_at`
+ * (granted before the horizon stamp shipped) contributes nothing until its next renewal stamps it.
  */
 async function subscriptionCoverageHorizons(
   tx: TenantExecutor,
@@ -544,7 +552,7 @@ async function subscriptionCoverageHorizons(
   const r = await tx.query<{ entitlement_id: string; horizon: string | Date }>(
     `SELECT entitlement_id, max(updates_expires_at) AS horizon
        FROM entitlement_grant
-      WHERE account_id = $1 AND source_kind = 'subscription' AND status = 'active'
+      WHERE account_id = $1 AND source_kind = 'subscription'
         AND updates_expires_at IS NOT NULL
       GROUP BY entitlement_id`,
     [accountId],

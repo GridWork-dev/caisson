@@ -59,10 +59,15 @@ plan already re-grants `compliance` as a `source_kind:'subscription'` grant
    surviving cancel, dunning, and out-of-order webhook replays with no revocation path
    (2026-07-06 audit P1; the same bound also caps the out-of-order
    `invoice.paid`-after-`canceled` race and the Paddle pause-without-cancel dunning hole to
-   the period the buyer actually paid for). The stored one_time bound is untouched by any of
-   this — once the subscription stops extending horizons, the first re-mint converges the
-   pair back to it, with lapsed time never resurrected. A revoked subscription grant row is a
-   tombstone on its uniqueness key: a late re-grant can never resurrect it.
+   the period the buyer actually paid for). A horizon is a PAID fact — the instant an
+   actually-received payment covered through — so it is **grandfathered across the
+   subscription revoke** (operator-locked 2026-07-06 picker): cancel means the pair's bound
+   stops EXTENDING, never that it shrinks, so a fresh re-mint and a saved stale token always
+   agree (no old-token/new-token divergence). The stored one_time bound underneath is
+   untouched; a refunded pair can never keep a horizon because the refund revokes its
+   one_time backing and the pair drops out of the claim maps entirely. A revoked
+   subscription grant row is a tombstone on its uniqueness key: a late re-grant can never
+   resurrect or extend it.
 
 3. **"New-edition access on release" is DEFINED as: new releases (versions) of, and new member
    modules joining, the bundles/modules the buyer already owns, while the subscription is
@@ -101,7 +106,12 @@ plan already re-grants `compliance` as a `source_kind:'subscription'` grant
    dunning configuration that pauses instead of cancels: horizons stop extending, coverage
    lapses at the last paid period end. The STATIC-entitlement variant of the ordering race
    (a late first invoice minting a plan's fixed grant after cancel) predates this ADR and
-   stays a platform follow-up.
+   stays a platform follow-up, alongside two more accepted residuals of the same ≤ one-paid-
+   period class: a refund of a SUBSCRIPTION payment (as opposed to a one_time purchase) does
+   not claw back the period's grandfathered horizon, and the live Paddle dunning
+   configuration (cancel vs pause on final payment failure) must be verified before launch.
+   All three are tracked in one Linear follow-up (operator-locked 2026-07-06 picker:
+   accept + file follow-up, no subscription-state tracking built).
 
 Recommended-shape confidence at lock: medium-high (per the kickoff); nothing here was judged
 fork-shaped beyond that recommendation — the mechanism reuses ADR-0255's stated semantics and
