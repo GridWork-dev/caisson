@@ -1,7 +1,7 @@
 // SOC 2 watcher: a monthly content-hash check of the AICPA SOC 2 resources page. Separate from
 // the daily compliance watcher because its cadence is monthly. Baseline-then-change: the first
 // run records the hash silently; a later run emits when the page content moves.
-import { contentHash } from "../detect.ts";
+import { detectionHash } from "../detect.ts";
 import { dedupKey } from "../finding.ts";
 import { fetchText } from "../http.ts";
 import type { Finding } from "../finding.ts";
@@ -15,7 +15,11 @@ export function detectSoc2Change(
   text: string,
   prev: Record<string, string>,
 ): { findings: Finding[]; nextState: Record<string, string> } {
-  const current = contentHash(text);
+  const current = detectionHash(text);
+  if (current === null) {
+    // Empty/challenge/maintenance body — no signal; preserve whatever baseline is stored.
+    return { findings: [], nextState: {} };
+  }
   const before = prev[STATE_KEY];
   const findings: Finding[] = [];
   if (before !== undefined && before !== current) {

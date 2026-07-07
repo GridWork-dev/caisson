@@ -3,7 +3,7 @@
 // Baseline-then-change per URL; the daemon has no opinion on what changed, only that it did.
 // ponytail: whole-page hash — a heavily dynamic page can false-positive; narrow to a CSS-selected
 // region only if a specific competitor's page proves too noisy.
-import { contentHash } from "../detect.ts";
+import { contentHash, detectionHash } from "../detect.ts";
 import { dedupKey } from "../finding.ts";
 import { fetchText } from "../http.ts";
 import type { Finding } from "../finding.ts";
@@ -31,7 +31,10 @@ export function detectCompetitorChanges(
   const nextState: Record<string, string> = {};
   for (const { url, text } of pages) {
     const key = `competitor:${urlKey(url)}:hash`;
-    const current = contentHash(text);
+    const current = detectionHash(text);
+    // Empty/challenge/maintenance body — skip this URL entirely, leaving its stored baseline
+    // untouched, rather than let a blank fetch look like a change on the next real one.
+    if (current === null) continue;
     const before = prev[key];
     if (before !== undefined && before !== current) {
       findings.push({

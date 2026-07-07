@@ -8,9 +8,24 @@ function normalize(text: string): string {
   return text.replace(/\s+/g, " ").trim();
 }
 
-/** Stable sha256 (hex) of the normalized text — the content-hash change signal. */
+/** Stable sha256 (hex) of the normalized text. Always returns a hash, including for empty text —
+ *  used for stable KEY-BUILDING (e.g. `competitor.ts`'s `urlKey`), never directly for change
+ *  detection (see `detectionHash` below for that). */
 export function contentHash(text: string): string {
   return createHash("sha256").update(normalize(text)).digest("hex");
+}
+
+/**
+ * The change-detection hash: empty/whitespace-only text is "no signal", not "the content is now
+ * empty" — returns `null` so a transient 200 with an empty/challenge/maintenance body can never
+ * read as a change nor silently overwrite a stored baseline (the false-flood failure mode: a real
+ * fetch right after would then see every real row/byte as "new"). Every hash-mode detection call
+ * site (compliance's EU AI Act sources, soc2, competitor) goes through this, not `contentHash`
+ * directly, so the guard lives once instead of once per caller.
+ */
+export function detectionHash(text: string): string | null {
+  const normalized = normalize(text);
+  return normalized.length === 0 ? null : contentHash(text);
 }
 
 /**

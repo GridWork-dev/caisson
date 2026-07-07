@@ -5,6 +5,7 @@
 // against stored state emits a finding.
 import {
   contentHash,
+  detectionHash,
   extractTableRows,
   latestAtomTag,
   newItems,
@@ -79,8 +80,11 @@ export function detectComplianceChanges(
   for (const { source, text } of fetched) {
     const key = stateKey(source);
     const current =
-      source.mode === "atom" ? latestAtomTag(text) : contentHash(text);
-    if (current === null) continue; // no signal (empty/unparseable feed)
+      source.mode === "atom" ? latestAtomTag(text) : detectionHash(text);
+    // No signal (empty/unparseable feed, or an empty/challenge/maintenance 200 body) — skip
+    // BOTH the finding and the nextState write, so a transient blank response can never
+    // overwrite a real stored baseline.
+    if (current === null) continue;
     const before = prev[key];
     if (before !== undefined && before !== current) {
       findings.push({
@@ -110,6 +114,12 @@ export function detectHipaaBreaches(
   prev: Record<string, string>,
 ): { findings: Finding[]; nextState: Record<string, string> } {
   const rows = extractTableRows(html);
+  if (rows.length === 0) {
+    // An empty extraction is far more likely a transient/challenge/maintenance response than a
+    // genuinely empty portal — treat as no signal rather than overwrite the baseline (the next
+    // real fetch would otherwise see every existing row as "new", a false flood).
+    return { findings: [], nextState: {} };
+  }
   const ids = rows.map((r) => contentHash(r));
   let previousIds: string[] = [];
   try {

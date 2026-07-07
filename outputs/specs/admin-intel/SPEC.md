@@ -19,7 +19,8 @@ a clearly-marked, env-gated, off-by-default seam.
 
 ## Scope boundary
 
-- Owns: `services/intel/**` + its `migrations/0001_intel_schema.sql` + compose/Dockerfile.
+- Owns: `services/intel/**` + its `migrations/0001_intel_schema.sql` +
+  `migrations/provision-role.sql` + compose/Dockerfile.
 - Never touches: `apps/admin`, `apps/site`, `services/license`, `.github/workflows`,
   `registry/**` (a service is not a sold package — the registry index is untouched).
 - The migration is **additive**: `CREATE SCHEMA intel` + three tables. It never references
@@ -62,6 +63,13 @@ seen_count=findings.seen_count+1, run_id=excluded.run_id, severity/title/body/pa
 refreshed … RETURNING seen_count`. `seen_count === 1` ⇒ newly inserted; `>= 2` ⇒
 reinforced. Append-only in spirit (a finding is never deleted by the daemon).
 
+**HARD REQUIREMENT for the future admin intel page (forward note — not this build):**
+`findings.title` / `findings.body` / `findings.payload` carry attacker/buyer-influenced text
+(an error message, a scraped page fragment, an LLM enrichment paragraph). The page MUST render
+every one of these fields as **plain text only** — never interpreted as Markdown or HTML. Any
+markdown/HTML rendering of stored finding content is a stored-XSS vector on the operator
+control-plane. This constraint binds the page phase; it is not optional design latitude.
+
 ### `intel.watch_state` — the deterministic-detection memory
 
 | column       | type                        | note                                                                                  |
@@ -72,7 +80,12 @@ reinforced. Append-only in spirit (a finding is never deleted by the daemon).
 
 Survives daemon restarts — it is what makes "detect change since last run" real.
 
-### `intel.runs` — one row per watcher invocation
+### `intel.runs` — one row per watcher invocation (90-day retention)
+
+A row per invocation is otherwise unbounded growth (six watchers, cadences from 15m to 30d —
+the 15m error watcher alone is ~35,000 rows/year). `pruneRuns()` deletes rows older than 90 days,
+called best-effort at daemon boot (a failure here logs and never blocks startup — it's a cost
+concern, not an availability one).
 
 | column                       | type                                     | note                              |
 | ---------------------------- | ---------------------------------------- | --------------------------------- |
@@ -87,9 +100,13 @@ Survives daemon restarts — it is what makes "detect change since last run" rea
 
 The tailnet-only box can reach Railway, never the reverse (ADR-0286 §4). The daemon
 therefore **pushes**: direct authed Postgres writes to `intel.*` over a **dedicated DSN**
-(`INTEL_DATABASE_URL`). No inbound API on the daemon accepts findings. The DSN's role must
-own / hold DML on the `intel` schema and nothing else (least privilege — documented in the
-README; the migration makes no role assumption so the operator applies it as that role).
+(`INTEL_DATABASE_URL`). No inbound API on the daemon accepts findings. The DSN's role
+(`intel_role`) holds DML on the `intel` schema and nothing else — **provisioned as an artifact,
+not prose**: `migrations/provision-role.sql` (`CREATE ROLE` + `GRANT`/`ALTER DEFAULT PRIVILEGES`
+on `intel` + explicit `REVOKE ALL ON SCHEMA public`), applied once by the database owner before
+`0001_intel_schema.sql`. An opt-in boot-time self-check (`checkRoleIsolation`, gated behind the
+production `INTEL_MIGRATE_ON_BOOT=false` posture) proves a read against `public.accounts` is
+rejected — belt-and-suspenders on the SQL-level containment, never a hard boot dependency.
 
 The admin app (future page) is a **read-only** consumer of `intel.*`. This SPEC ships the
 producer only.
@@ -131,9 +148,13 @@ from `intel.findings` (recent open error incidents; recent send count in the win
 ## Env surface (Zod `.strict()` at the config boundary)
 
 Required: `INTEL_DATABASE_URL`.
-Ops: `INTEL_HEALTHZ_PORT` (8791), `INTEL_HEALTHZ_HOST` (`0.0.0.0` in-container; compose
-publishes host-loopback only), `INTEL_SCHEDULER_ENABLED` (true).
-Cadences: the six `INTEL_CADENCE_*_MS` above.
+Ops: `INTEL_HEALTHZ_PORT` (8791), `INTEL_HEALTHZ_HOST` (`127.0.0.1` bare-run default; the
+compose env sets `0.0.0.0` explicitly since the container's own bind must be reachable from the
+host's port mapping), `INTEL_SCHEDULER_ENABLED` (true), `INTEL_MIGRATE_ON_BOOT` (false — the
+runtime role is DML-only and can't run schema DDL; applying the migration is an operator step,
+never a boot step, in production).
+Cadences: the six `INTEL_CADENCE_*_MS` above, floored at 1,000ms (`MIN_CADENCE_MS`) — a
+misconfigured near-zero cadence can't spin the scheduler's overlap guard into a tight skip-loop.
 Sources/secrets (all optional; absent ⇒ that leg self-skips, fail-soft):
 `INTEL_COMPETITOR_URLS`, `INTEL_GITHUB_ORG` (`caisson-sh`), `GITHUB_TOKEN`,
 `POSTHOG_API_KEY`, `POSTHOG_API_HOST` (`https://us.posthog.com`), `POSTHOG_PROJECT_ID`
@@ -157,11 +178,14 @@ the shapes we own.
 - Container: Bun, non-root, in-container `HEALTHCHECK` probing `127.0.0.1:PORT/healthz`.
 - `docker-compose.yml` publishes `127.0.0.1:PORT:PORT` (host-loopback only), `restart:
 unless-stopped`, env injected from the host sanitized-mirror file (not committed).
-- DEPLOY (operator act, not this build): apply the migration as the intel role, `compose up`,
-  set env; land rows in gridwork-core `identity/security-surfaces.md` — one sanctioned
-  loopback bind (`127.0.0.1:PORT`) + the egress sinks (GitHub, EUR-Lex, HHS OCR, AICPA,
-  competitor URLs, PostHog, Plausible, Linear, OpenRouter-when-enabled, and the admin-DB
-  write path).
+- DEPLOY (operator act, not this build): provision `intel_role`
+  (`migrations/provision-role.sql`) as the database owner, apply `0001_intel_schema.sql` in the
+  same connecting session, `compose up`, set env (`INTEL_MIGRATE_ON_BOOT` stays `false`); land
+  rows in gridwork-core `identity/security-surfaces.md` — one sanctioned loopback bind
+  (`127.0.0.1:PORT`) + the egress sinks (GitHub, EUR-Lex, HHS OCR, AICPA, competitor URLs,
+  PostHog, Plausible, the tg-bridge `/alert` push, Linear, OpenRouter-when-enabled, the optional
+  OTel/OTLP collector, and the admin-DB write path). See README.md "Deploying" for the full
+  ordered runbook.
 
 ## Verification (goal-backward)
 
