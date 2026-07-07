@@ -3,6 +3,11 @@ import Link from "next/link";
 
 import { buildMetadata } from "@/lib/metadata";
 import { Card, Faq, Section, StatusChip } from "@/components";
+import {
+  basePackagesScoped,
+  baseSubstrateList,
+  baseToolingList,
+} from "@/lib/base-substrate";
 import { faqPage, serializeJsonLd } from "@/lib/jsonld";
 
 export const metadata = buildMetadata({
@@ -112,10 +117,8 @@ export default function LicensePage() {
       <Section eyebrow="Overview" title="The licensing model">
         <p style={prose.paragraph}>
           Caisson ships two tracks. The <strong>Base substrate</strong> (
-          kernel, auth, tenancy-rls, ui, billing, jobs, email, ai-config,
-          mcp-server, registry-schema, observability, rate-limit, and the
-          generator tooling: cli, migrate, license-verify) is{" "}
-          <code className="mono">Apache-2.0</code>, open source, free to use.
+          {baseSubstrateList()}, and the generator tooling: {baseToolingList()})
+          is <code className="mono">Apache-2.0</code>, open source, free to use.
           Every commercial module — the compliance and provenance primitives,
           the local-first and agentic modules, credits, and the registry service
           — and every bundle that composes them ship under a single proprietary
@@ -264,12 +267,7 @@ export default function LicensePage() {
                   fontSize: "var(--cs-text-sm)",
                 }}
               >
-                @caisson/kernel · @caisson/auth · @caisson/tenancy-rls ·
-                @caisson/ui · @caisson/billing · @caisson/jobs · @caisson/email
-                · @caisson/ai-config · @caisson/mcp-server ·
-                @caisson/registry-schema · @caisson/observability ·
-                @caisson/rate-limit · @caisson/cli · @caisson/migrate ·
-                @caisson/license-verify
+                {basePackagesScoped()}
               </span>
               <StatusChip label="Apache-2.0" tone="muted" />
             </div>

@@ -1,8 +1,11 @@
+import Link from "next/link";
+
 import {
   Button,
   Card,
   Faq,
   FeatureGrid,
+  Icon,
   Reveal,
   Section,
   StatusChip,
@@ -10,6 +13,7 @@ import {
 
 import { BundleCatalog } from "@/components/bundle-catalog";
 import { bundlePagePath } from "@/components/marketplace";
+import { BASE_CAPABILITIES, BASE_PACKAGES } from "@/lib/base-substrate";
 import {
   breadcrumb,
   faqPage,
@@ -237,6 +241,50 @@ export default function MarketplaceBundlesPage() {
 
       {/* ===== Interactive bundle cards (client island) — open the purchase pop-out ===== */}
       <BundleCatalog />
+
+      {/* ===== The open base — "batteries included" under the bundle prices (anxiety-relief beat,
+          the SYNTHESIS §6 Tier-1 tile grid; ADR-0094 open-core made visible at purchase time) ===== */}
+      <Reveal>
+        <Section
+          eyebrow="The open base"
+          title="Every bundle sits on this. So can you, for free."
+          lede="Before you weigh a bundle: the audited foundation under all of them is Apache-2.0, open source, and free to use on its own. Buy a bundle and it is a one-time perpetual license — source you own — but the base was always yours."
+          band="surface"
+        >
+          <FeatureGrid cols={3}>
+            {BASE_CAPABILITIES.map((c) => (
+              <Card key={c.title}>
+                <div className="cs-status">
+                  <Icon name={c.icon} size="lg" />
+                  {c.title}
+                </div>
+                <p
+                  className="cs-muted"
+                  style={{ marginTop: "var(--cs-space-3)" }}
+                >
+                  {c.body}
+                </p>
+                <p
+                  className="cs-footnote mono"
+                  style={{
+                    marginTop: "var(--cs-space-4)",
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {c.packages.map((p) => `@caisson/${p}`).join(" · ")}
+                </p>
+              </Card>
+            ))}
+          </FeatureGrid>
+          <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
+            {BASE_PACKAGES.length} packages under Apache-2.0.{" "}
+            <Link href="/legal/license" style={{ color: "var(--cs-link)" }}>
+              See the open / commercial split
+            </Link>
+            .
+          </p>
+        </Section>
+      </Reveal>
 
       {/* ===== FAQ — the redirect + à-la-carte explainers ===== */}
       <script

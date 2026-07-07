@@ -336,6 +336,15 @@ export function modulesByBundle(bundle: BundleId): readonly ModulePrice[] {
   return MODULE_PRICES.filter((m) => m.bundles.includes(bundle));
 }
 
+/** A module's committed price (integer USD) by id — throws on an unknown id rather than rendering a
+ *  silent $0, so a copy string that names a module can read its price from the SOT and can never
+ *  drift. */
+export function moduleAmount(id: string): number {
+  const m = MODULE_PRICES.find((x) => x.id === id);
+  if (m === undefined) throw new Error(`unknown module id: ${id}`);
+  return m.amount;
+}
+
 /** The cheapest module in the whole catalog — the real floor of the "from $X" per-module anchor
  *  below (computed, never hand-duplicated, so the two numbers can't drift). */
 const MODULE_MIN_AMOUNT = Math.min(...MODULE_PRICES.map((m) => m.amount));
