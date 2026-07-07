@@ -15,6 +15,7 @@ import { CheckoutCta } from "@/components/checkout-cta";
 import { UpdatesForm } from "@/components/waitlist-form";
 import { breadcrumb, faqPage, serializeJsonLd } from "@/lib/jsonld";
 import { buildMetadata } from "@/lib/metadata";
+import { baseSubstrateList, baseToolingList } from "@/lib/base-substrate";
 import {
   bundlePrice,
   formatPrice,
@@ -27,8 +28,7 @@ import {
 
 export const metadata = buildMetadata({
   title: "Marketplace — Plans",
-  description:
-    "Compliance Updates ($1,499/yr) and the Developer plan ($499/yr) are subscriptions on top of one-time, perpetual modules and bundles. No renewal gate on code you already own.",
+  description: `Compliance Updates (${planPrice("compliance-updates")}) and the Developer plan (${planPrice("developer")}) are subscriptions on top of one-time, perpetual modules and bundles. No renewal gate on code you already own.`,
   path: "/marketplace/plans",
 });
 
@@ -46,7 +46,7 @@ const PLANS_FAQ = [
   },
   {
     question: "Is Compliance Updates the same as the Compliance bundle?",
-    answer: `No. The Compliance bundle (${bundlePrice("compliance")}, one-time) is the codebase. Compliance Updates ($1,499/yr) is the subscription that keeps its framework mappings and evidence packs current as regulations change.`,
+    answer: `No. The Compliance bundle (${bundlePrice("compliance")}, one-time) is the codebase. Compliance Updates (${planPrice("compliance-updates")}) is the subscription that keeps its framework mappings and evidence packs current as regulations change.`,
   },
   {
     question: "What do Developer plan credits cover?",
@@ -215,8 +215,8 @@ export default function MarketplacePlansPage() {
             >
               Compliance Updates is not the Compliance bundle. The bundle (
               {bundlePrice("compliance")}, one-time) is the code; Compliance
-              Updates ($1,499/yr) is the subscription that keeps its framework
-              mappings current.
+              Updates ({planPrice("compliance-updates")}) is the subscription
+              that keeps its framework mappings current.
             </span>
           </>
         }
@@ -382,13 +382,12 @@ export default function MarketplacePlansPage() {
           title="What's open, what you're paying for."
           lede={
             <>
-              The base substrate — kernel, auth, tenancy-rls, ui, billing,
-              credits, jobs, email, ai-config, mcp-server, registry-schema,
-              observability, and the generator tooling (cli, migrate,
-              license-verify) — is <code className="mono">Apache-2.0</code>,
-              free to use. What you buy above is the six bundles, the commercial
-              modules (field-crypto, audit-worm, and the rest of the catalog),
-              the registry service, and Compliance Updates — under the{" "}
+              The base substrate — {baseSubstrateList()}, and the generator
+              tooling ({baseToolingList()}) — is{" "}
+              <code className="mono">Apache-2.0</code>, free to use. What you
+              buy above is the six bundles, the commercial modules
+              (field-crypto, audit-worm, and the rest of the catalog), the
+              registry service, and Compliance Updates — under the{" "}
               <Link href="/legal/license" className="mono">
                 Commercial License
               </Link>
