@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-02
+updated: 2026-07-07
 status: live
 ---
 
@@ -150,8 +150,14 @@ automatically. The target is the **ADR-0257/0258 six-bundle catalog exactly as t
 big-bang built it (2026-07-06)** — production recreation is a re-run of the same target table with
 production ids swapped in. `apps/site/lib/pricing.ts` (`BUNDLE_PRICES`/`MODULE_PRICES`/`PLAN_PRICES`)
 is the live display SOT and already carries every amount; `packages/pricebook/src/upgrades.ts`
-(`BUNDLE_RETAIL`/`SKU_RETAIL`) is the cents authority. The proven idempotent rebuild script pattern
-(custom_data-keyed create/patch/skip, dry-run → apply → re-run) is in the PR #130 record.
+(`BUNDLE_RETAIL`/`SKU_RETAIL`) is the cents authority. The idempotent rebuild is scripted at
+**`tools/paddle-catalog-recreate.ts`** (CAISSON-31): it derives this exact table from
+`apps/site/lib/pricing.ts` (no hand-typed amounts, so it cannot drift from the site or pricebook),
+prints the create plan on a **dry run (default)**, and creates against the Paddle API with
+`--execute` (reads `PADDLE_API_KEY`, `PADDLE_ENV` switch defaults to `sandbox`), idempotent by
+`custom_data` so a re-run skips existing objects and never duplicates; every product gets
+`tax_category: saas`. `bun tools/paddle-catalog-recreate.ts --self-check` pins the 31-product shape
+and the ADR-0260 numbers. (The earlier ad-hoc rebuild pattern is in the PR #130 record.)
 
 | Product (bundles)  | Price            | Billing               | ADR         |
 | ------------------ | ---------------- | --------------------- | ----------- |
@@ -335,6 +341,39 @@ sandbox-in-production equivalent.
   gate staying up is what actually keeps the public off checkout. Section 3's rollback is the real safety
   net, not this one.
 
+### 2.7 Configure Retain dunning + map the subscription lifecycle to entitlements
+
+> Added 2026-07-07 (D7 Paddle prep, CAISSON-31). This is a **live-doc update to operational
+> procedure**, not an ADR — the runbook records how the flip is run; append-only rules govern
+> `knowledge/decisions/`, not this file.
+
+Only the two annual subscriptions (Compliance-Updates, Developer) have a dunning lifecycle; one-time
+bundle/module purchases do not. Two settings make a failed renewal end in a clean revoke rather than
+a silent access leak.
+
+**a) Retain → Payment recovery → set to Cancel (NOT Pause).** Paddle Production Dashboard → Retain →
+payment-recovery/dunning settings. On the final failed retry Paddle must **cancel** the
+subscription, not pause it. This **cannot be verified in Sandbox** — it is a Production Retain
+config; set it during the flip. Why it is load-bearing: the entitlement-revoke path keys on the
+`subscription.canceled` event (`services/license/src/apply-billing-event.ts` →
+`revokeSubscriptionGrants`). If Retain is left on **Pause**, a non-paying subscription goes
+`status=paused` and **never** fires `subscription.canceled`, so its updates entitlement keeps
+resolving forever — access after non-payment. Cancel is also consistent with the 40%-renewal
+re-purchase design: a canceled sub is not reinstated, the buyer re-purchases.
+
+**b) Subscribe to the lifecycle events (already in §2.5's list) and know the entitlement mapping.**
+Paddle's default is auto-cancel at day 30 after 7 retries: `subscription.past_due` → retries →
+`subscription.canceled`. The mapper's behaviour, grounded in `apply-billing-event.ts`:
+
+| Paddle subscription lifecycle                      | Normalized event                    | Entitlement effect                                                                                                                                                                        |
+| -------------------------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `past_due` (inside the dunning retry window)       | none — deliberately **not** handled | **Still entitled (grace).** No revoke fires while Paddle retries; the buyer keeps updates access through the retry window. Nothing to wire — grace is the _absence_ of a revoke.          |
+| `subscription.canceled` (Retain gives up → Cancel) | `subscription.canceled`             | **Revoke.** `revokeSubscriptionGrants` soft-revokes the grants sourced from this subscription id. An entitlement the buyer _also_ holds via an active one-time grant survives (refcount). |
+| `subscription.updated` (plan change)               | `subscription.updated`              | **No effect** (recorded; the proration grant is the deferred SD-1).                                                                                                                       |
+
+So: let `past_due` run its retries (grace, no action), and let `subscription.canceled` do the
+revoke. Do **not** wire a `past_due` revoke — that would cut a buyer off mid-retry-window.
+
 ---
 
 ## 3. Step 2 — Pricing final-confirm checkpoint (operator-owned, ADR-0106)
@@ -479,20 +518,23 @@ Paddle traffic, since that endpoint was never behind Access in the first place (
 
 ## 5. Full post-flip verification sweep (run all of these once, after §4)
 
-| Check                     | Command / action                                                                                                      | Expect                                                                                              |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Site public               | `curl -sSI https://caisson.sh/`                                                                                       | 200, no Access redirect                                                                             |
-| WWW public                | `curl -sSI https://www.caisson.sh/`                                                                                   | 200, no Access redirect                                                                             |
-| Admin still gated         | `curl -sSI https://admin.caisson.sh/`                                                                                 | Access redirect/403, **unchanged**                                                                  |
-| License health            | `curl https://license.caisson.sh/health`                                                                              | `{"ok":true}`                                                                                       |
-| License issue fail-closed | `curl -X POST https://license.caisson.sh/issue -H "Authorization: Bearer wrong"`                                      | 401                                                                                                 |
-| Webhook fail-closed       | `curl -X POST https://license.caisson.sh/webhook -d '{}'`                                                             | 401                                                                                                 |
-| Paddle env is Production  | Paddle.js overlay on a real checkout click                                                                            | no "Sandbox" watermark                                                                              |
-| Real purchase → grant     | live or throwaway-SKU purchase (§2 verify)                                                                            | webhook 200-delivered, entitlement granted                                                          |
-| Registry entitled-fetch   | `curl -H "Authorization: Bearer <license token>" https://caisson-registry.<subdomain>.workers.dev/modules/<gated id>` | 200 post-purchase, 404 pre-purchase                                                                 |
-| Refund revokes            | refund the test purchase, re-run the registry check                                                                   | back to 404 within a few minutes                                                                    |
-| Discord role grant        | check the buyer's Discord roles post-purchase (if Discord link configured)                                            | edition role + `Customer` role present                                                              |
-| Legal content             | view `caisson.sh/legal/terms` in a browser                                                                            | Paddle MoR attribution + refund policy visible (P2 — **must be resolved before this row can pass**) |
+| Check                       | Command / action                                                                                                      | Expect                                                                                                                       |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Site public                 | `curl -sSI https://caisson.sh/`                                                                                       | 200, no Access redirect                                                                                                      |
+| WWW public                  | `curl -sSI https://www.caisson.sh/`                                                                                   | 200, no Access redirect                                                                                                      |
+| Admin still gated           | `curl -sSI https://admin.caisson.sh/`                                                                                 | Access redirect/403, **unchanged**                                                                                           |
+| License health              | `curl https://license.caisson.sh/health`                                                                              | `{"ok":true}`                                                                                                                |
+| License issue fail-closed   | `curl -X POST https://license.caisson.sh/issue -H "Authorization: Bearer wrong"`                                      | 401                                                                                                                          |
+| Webhook fail-closed         | `curl -X POST https://license.caisson.sh/webhook -d '{}'`                                                             | 401                                                                                                                          |
+| Paddle env is Production    | Paddle.js overlay on a real checkout click                                                                            | no "Sandbox" watermark                                                                                                       |
+| Real purchase → grant       | live or throwaway-SKU purchase (§2 verify)                                                                            | webhook 200-delivered, entitlement granted                                                                                   |
+| Registry entitled-fetch     | `curl -H "Authorization: Bearer <license token>" https://caisson-registry.<subdomain>.workers.dev/modules/<gated id>` | 200 post-purchase, 404 pre-purchase                                                                                          |
+| Refund revokes              | refund the test purchase, re-run the registry check                                                                   | back to 404 within a few minutes                                                                                             |
+| Discord role grant          | check the buyer's Discord roles post-purchase (if Discord link configured)                                            | edition role + `Customer` role present                                                                                       |
+| Legal content               | view `caisson.sh/legal/terms` in a browser                                                                            | Paddle MoR attribution + refund policy visible (P2 — **must be resolved before this row can pass**)                          |
+| Entity + MoR match          | view `caisson.sh/legal/eula` and a checkout overlay                                                                   | seller reads **GridWork Digital LLC** everywhere; the verbatim Paddle MoR sentence shows on Terms + at checkout (CAISSON-31) |
+| Retain = Cancel             | Paddle Production → Retain → payment recovery                                                                         | recovery action is **Cancel**, not Pause (§2.7a) — cannot be checked in Sandbox                                              |
+| Subscription cancel revokes | cancel a test subscription in Paddle, re-run the registry entitled-fetch                                              | the updates entitlement flips to 404 after `subscription.canceled` delivers (§2.7b)                                          |
 
 ---
 
