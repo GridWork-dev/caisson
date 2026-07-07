@@ -670,9 +670,9 @@
     },
     "@caisson/cli@0.4.0": {
       "key": "cli/cli-0.4.0.tgz",
-      "shasum": "3b7e2cc5b8ce9f17eec091df65ff83d34ad15d58",
-      "integrity": "sha512-xC5Vn4l5sQF2jVDPQDOzFxYWtfrNwjJn+TCPZUzh3KAn0NvQv7sHmkVdBZLf+NU2xX7ZfZuDI887QkVvQulwWA==",
-      "size": 16699,
+      "shasum": "4ae9e1517fdb69f5d8ba7057af7ef8ddbc3e9617",
+      "integrity": "sha512-68irkEutVyiim619dz0ytzJRDlfDXSUj4XJcnGqvM/ceF64vGzhwIe1XaIwUyBqAS5igYr8Rik4UQtvdU2kskg==",
+      "size": 91933,
       "meta": {
         "dependencies": {
           "@caisson/kernel": "0.4.2",
@@ -1621,9 +1621,9 @@
     },
     "@caisson/pricebook@0.5.0": {
       "key": "pricebook/pricebook-0.5.0.tgz",
-      "shasum": "6f733c00ceffb3de8e823d4473f2d376d8659317",
-      "integrity": "sha512-3pXaAiraWRW7nObKf4u8toJGLBSzkvCmRFwD/wFmbj3NXXwIYKulYa4yJ0QiHMrvPO2pAW9B9dK+kRDgXEkXhQ==",
-      "size": 27343,
+      "shasum": "c2cdb92d73a035b868135100f8832e9f2af7b1cd",
+      "integrity": "sha512-Y6GKBgWzWazES7i+GH8GMFxy20Hui85HreJSnIgFqiBoYNCe0Ct4zrv9EQYD5U7N9TaVhmWJ7zB70FrPr67mEw==",
+      "size": 63391,
       "meta": {
         "dependencies": {
           "@caisson/kernel": "0.4.2",
