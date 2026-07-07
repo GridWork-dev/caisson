@@ -22,6 +22,14 @@ const SAMPLE: { [K in EmailTemplateId]: TemplateDataMap[K] } = {
     lines: [{ label: "Compliance bundle", amountMinor: 79900 }],
     dashboardUrl: URL,
   },
+  "subscription-payment-received": {
+    buyerName: "Ada",
+    orderId: "txn_cycle_sample",
+    currency: "usd",
+    amountTotalMinor: 149900,
+    lines: [{ label: "Compliance Updates" }],
+    dashboardUrl: URL,
+  },
   "renewal-confirmation": {
     buyerName: "Ada",
     orderId: "ord_ren_sample",
@@ -86,6 +94,29 @@ describe("renderEmailTemplate", () => {
     expect(rendered.html).toContain("Compliance bundle");
     expect(rendered.html).toContain("Total charged");
     expect(rendered.html).toContain("799.00 USD");
+  });
+
+  test("subscription-payment-received: recurring-payment copy, order id + total, NOT the first-purchase heading (CAISSON-27)", async () => {
+    const rendered = await renderEmailTemplate(
+      "subscription-payment-received",
+      {
+        buyerName: "Ada",
+        orderId: "txn_cycle_9",
+        currency: "usd",
+        amountTotalMinor: 149900,
+        lines: [{ label: "Compliance Updates" }],
+        dashboardUrl: URL,
+      },
+    );
+    expect(rendered.subject).toBe(
+      "Your Caisson subscription payment txn_cycle_9 was received",
+    );
+    expect(rendered.html).toContain("Subscription payment received");
+    expect(rendered.html).toContain("txn_cycle_9");
+    expect(rendered.html).toContain("1499.00 USD");
+    // Distinct from the first-purchase receipt — never the "Purchase confirmed" heading.
+    expect(rendered.html).not.toContain("Purchase confirmed");
+    expect(rendered.text).toContain("bunx @caisson-sh/cli@latest");
   });
 
   test("renewal-confirmation: subject + body carry the order id, renewed line, window date, and total (ADR-0251)", async () => {

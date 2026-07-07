@@ -140,6 +140,14 @@ export interface PurchaseEmailNotice {
    * alone). `[]` renders a receipt with the total only.
    */
   lines: readonly PurchaseEmailLine[];
+  /**
+   * CAISSON-27: `true` when this is a subscription-CYCLE charge (`invoice.paid` with
+   * `billingReason: "subscription_cycle"` — a renewal cycle whose subscription already granted),
+   * NOT a first purchase. Selects the `subscription-payment-received` recurring-payment receipt
+   * over the first-buy `purchase-confirmation`. Same data shape either way. Defaults to a first
+   * purchase when omitted.
+   */
+  subscriptionCycle?: boolean;
 }
 
 export interface RenewalEmailNotice {
@@ -177,7 +185,11 @@ export async function notifyPurchaseEmail(
     }
     await emailer.send({
       to: buyer.email,
-      template: "purchase-confirmation",
+      // CAISSON-27: a subscription-cycle charge reads as a recurring-payment receipt, never the
+      // first-purchase copy. Same data payload; only the template (heading/subject/body) differs.
+      template: notice.subscriptionCycle
+        ? "subscription-payment-received"
+        : "purchase-confirmation",
       data: {
         buyerName: buyer.name ?? buyer.email,
         orderId: notice.orderId,

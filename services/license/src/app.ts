@@ -529,6 +529,13 @@ export function createApp(
         "amountTotal" in result.event &&
         result.grantedEntitlements.length > 0
       ) {
+        // CAISSON-27: distinguish a subscription-CYCLE charge from a first purchase. A Paddle
+        // `transaction.completed` carrying a subscription_id whose subscription already granted
+        // maps to `invoice.paid` with `billingReason: "subscription_cycle"` (origin
+        // `subscription_recurring`); `subscription_create` (the first charge) and every one-time
+        // `purchase.completed` stay first-purchase receipts. The mixed-cart rule is unaffected: a
+        // subscription invoice is single-line by design and never carries a renewal-book line, so
+        // this receipt always states its own grand total.
         const notice: PurchaseEmailNotice = {
           accountId: result.event.accountId,
           orderId: result.event.sourceEventId,
@@ -537,6 +544,9 @@ export function createApp(
           lines: result.skuLines.map((line) => ({
             productSlug: line.productSlug,
           })),
+          subscriptionCycle:
+            result.event.type === "invoice.paid" &&
+            result.event.billingReason === "subscription_cycle",
         };
         try {
           void deps.purchaseEmailNotify(notice).catch(() => {

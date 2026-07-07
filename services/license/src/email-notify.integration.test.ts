@@ -157,6 +157,33 @@ describe("notifyPurchaseEmail (never-throws push)", () => {
     ]);
   });
 
+  test("a subscription-cycle notice sends the subscription-payment-received template (CAISSON-27)", async () => {
+    const emailer = createCaptureEmailer();
+    await notifyPurchaseEmail(tp.pg, emailer, {
+      accountId: "acct_org",
+      orderId: "txn_cycle_1",
+      currency: "usd",
+      amountTotalMinor: 149900,
+      lines: [{ productSlug: "compliance-updates" }],
+      subscriptionCycle: true,
+    });
+    expect(emailer.sent).toEqual([
+      {
+        to: "owner@example.test",
+        // The recurring-payment receipt, NOT the first-purchase purchase-confirmation.
+        template: "subscription-payment-received",
+        data: {
+          buyerName: "Ada Owner",
+          orderId: "txn_cycle_1",
+          currency: "usd",
+          amountTotalMinor: 149900,
+          lines: [{ label: "Compliance Updates" }],
+          dashboardUrl: "https://caisson.sh/dashboard",
+        },
+      },
+    ]);
+  });
+
   test("an unresolvable buyer address sends nothing (log-and-drop, not a throw)", async () => {
     const emailer = createCaptureEmailer();
     await notifyPurchaseEmail(tp.pg, emailer, {
