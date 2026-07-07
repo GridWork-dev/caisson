@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-07
 status: live
-adr_ceiling: 0280
+adr_ceiling: 0282
 ---
 
 # Decisions & Forks — live board
@@ -1506,3 +1506,22 @@ operator-owned) — awaiting operator text approval.
   **PR #143 Track E1 demo mode MERGED** (fable P1 dep-confusion fixed with the tokenless
   scope-mapping `.npmrc`; all review P2s folded). The 45-entry Worker republish is
   operator-gated (DEPLOY act) and pending.
+
+**Fifth sitting, third round (same day — wave close-out + deferred-triage picker):**
+
+- **The remaining three wave PRs MERGED:** #144 Track S site wave (stack-fit
+  misclassification P1 + mobile-nav P1 fixed pre-merge) · #145 Track K support-SKU plumbing
+  (price-agnostic fail-closed; docs-corpus F2 fixed) · #146 Track C regime crosswalks (CC7.2
+  overclaim corrected to maps-to pre-merge). Research-response wave: all five PRs on `main`.
+- **Deploy sequence EXECUTED** (operator: "approved on the full deploy sequence of the new
+  code once clean state"): registry Worker republished at the 45-entry index (version
+  `51be4302`, anon floor verified 15 — ui-pro absent) + license/site/docs/support-bot
+  redeployed from `main` @ `09ed1c89`, all probes green. Pre-launch gates stay ON. Evidence:
+  `docs/deploy/STATE.md` top entry.
+- **Deferred/backlog triage picker (operator-locked):** fix packs = BOTH (the ADR-0271
+  registry-delist P2 pack AND the comp-grant allowlist — the fable F1 resolver-bricking
+  follow-up); build-window scope = ALL FOUR (Track V evidence-pack + Track E2 verified-eval
+  AND kit stage 2 (ADR-0250 G2b) AND per-package frontends wave 1 (G2c/G2d) AND the site
+  Tier-1 catalog/copy remainder); **version cut = DEFERRED to the next release wave** (the
+  #142 changeset skew self-reconciles at that cut). Six builders dispatched in parallel
+  worktrees; Track E2 sequenced AFTER Track V merges (fable on the seam).

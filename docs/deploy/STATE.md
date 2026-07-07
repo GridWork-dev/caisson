@@ -33,6 +33,56 @@ consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the 
 
 ---
 
+## 2026-07-07 — EXECUTED: research-response wave deploy (Worker republish + 4-service fleet redeploy)
+
+**Operator authorization:** "approved on the full deploy sequence of the new code once clean state"
+(fifth sitting) — executed after the merge queue drained clean at `main` @ `09ed1c89`.
+
+**Services/SHAs:** registry Worker version `51be4302-9caa-452c-9ae5-ff152e68b2d4` (via
+`registry/worker/deploy.sh`) + `caisson-license` · `caisson-site` · `caisson-docs` ·
+`caisson-support-bot` redeployed via `railway up -y --service <name> --ci` (launch-runbook §2.6),
+all from `main` @ `09ed1c89`. `caisson-admin` intentionally skipped — untouched by this wave.
+
+**WHY (consumed-package diff — the five research-response wave PRs):**
+
+- `4d85f28b` — #142 ui-pro first publish @0.1.0 (index 44 → **45 entries**, RESERVED graduation,
+  `everything@0.2.2` repin) → Worker republish required.
+- `15c50bd6` — #143 E1 demo mode incl. the dep-confusion fix (tokenless
+  `@caisson:registry=https://registry.caisson.sh` scope mapping in the generated `.npmrc`).
+- `6d0a5c56` — #144 Track S site wave (`/stack-fit`, MODULE_DB_POSTURE, mobile-nav fix,
+  pre-launch wording softened) → `caisson-site`.
+- `fb72fdd5` — #145 Track K price-agnostic support-SKU plumbing (structurally unpurchasable;
+  `NULL_AMOUNT_IS_INTENTIONAL` docs-corpus filter) → `caisson-license` + `caisson-docs`.
+- `09ed1c89` — #146 Track C named-regime crosswalks (ADR-0279 proof-level claim posture; CC7.2
+  corrected to maps-to) → docs corpus consumers.
+
+**Live-verify (pasted):**
+
+```
+$ curl -s https://registry.caisson.sh/index.json | python3 …
+anon modules served: 15
+ui-pro present: False
+metas present: []
+kernel present: True
+
+$ curl -s https://license.caisson.sh/health
+{"ok":true}
+
+$ curl -s -o /dev/null -w "site: %{http_code} -> %{redirect_url}\n" https://caisson.sh
+site: 302 -> https://gridworkdev.cloudflareaccess.com/cdn-cgi/access/login/caisson.sh?…
+```
+
+- `caisson-docs` boot log: `[service-docs] serving 246 chunks on :8080` (semantic index rebuilt on
+  boot, OpenRouter qwen3-embedding-8b).
+- `caisson-support-bot` boot log: container started, OTLP telemetry up — **no Discord CF-1015
+  recurrence** this wave.
+- All four `railway up` runs ended `Deploy complete`. Pre-launch gates stay ON (CF-Access
+  `site_gate` verified live above; `PADDLE_ENV=sandbox` unchanged).
+- Note: the anon index serves no per-entry `license` field; the floor proof is the id set itself
+  (exactly the 15 Apache base modules — commercial ui-pro and the three dissolved metas absent).
+
+---
+
 ## 2026-07-07 — EXECUTED: registry Worker republish for PR #138 (ADR-0271 bundle-only index)
 
 **Operator authorization:** picker lock "Republish bundle-only now (Recommended)", 2026-07-07 third
