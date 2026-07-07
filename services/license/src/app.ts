@@ -108,8 +108,8 @@ export interface IssueAppDeps {
    * The post-grant renewal-confirmation email (ADR-0251) — the SIBLING send for a RENEWAL_BOOK
    * line, which grants nothing so it never fires `purchaseEmailNotify`. Same never-`null`,
    * always-wired, detached, never-throw contract. A mixed cart (a new entitlement line + a
-   * renewal line in one event) may fire BOTH `purchaseEmailNotify` and this — accepted v1
-   * behavior, not a bug.
+   * renewal line in one event) fires BOTH `purchaseEmailNotify` and this; only the purchase
+   * receipt carries the whole-event total (this notice's `amountTotalMinor` is omitted there).
    */
   renewalEmailNotify: (notice: RenewalEmailNotice) => Promise<void>;
 }
@@ -553,8 +553,9 @@ export function createApp(
       // Post-commit renewal-confirmation email (ADR-0251): the SIBLING send for a RENEWAL_BOOK
       // line, which grants nothing so it never trips the `grantedEntitlements.length > 0` gate
       // above. Same detached, never-throw contract, gated on `renewedEntitlements` instead. A
-      // mixed cart (a purchase line + a renewal line in one event) may fire BOTH emails — accepted
-      // v1 behavior (IssueAppDeps#renewalEmailNotify doc).
+      // mixed cart (a purchase line + a renewal line in one event) fires BOTH emails — the
+      // purchase receipt states the whole-event total, so THIS notice omits it (two emails each
+      // claiming the full cart total would read as a double charge).
       if (
         result.event !== null &&
         "amountTotal" in result.event &&
@@ -564,7 +565,10 @@ export function createApp(
           accountId: result.event.accountId,
           orderId: result.event.sourceEventId,
           currency: result.event.currency,
-          amountTotalMinor: result.event.amountTotal,
+          amountTotalMinor:
+            result.grantedEntitlements.length > 0
+              ? undefined
+              : result.event.amountTotal,
           lines: result.renewedEntitlements.map((r) => ({
             entitlementId: r.entitlementId,
             newWindowEnd: r.newWindowEnd,

@@ -25,7 +25,10 @@ import {
   resolvePurchase,
   resolveRenewal,
 } from "@caisson/pricebook";
-import { normalizeEntitlementId } from "@caisson/registry-schema";
+import {
+  entitlementIdAliasGroup,
+  normalizeEntitlementId,
+} from "@caisson/registry-schema";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 import {
   computeUpdatesWindows,
@@ -228,7 +231,19 @@ export async function applyBillingEvent(
       if (renewedEntitlementIds.size > 0) {
         const windows = await computeUpdatesWindows(tx, ev.accountId);
         for (const entitlementId of renewedEntitlementIds) {
-          const newWindowEnd = windows[entitlementId];
+          // `windows` keys by the RAW stored grant id, and a pre-catalog buyer's row stores the
+          // legacy id (`ai-kit`, `bundle`, …) while RENEWAL_BOOK surfaces the canonical one — so
+          // fold the alias group, most-favorable bound (ISO strings order lexicographically).
+          let newWindowEnd: string | undefined;
+          for (const key of entitlementIdAliasGroup(entitlementId)) {
+            const bound = windows[key];
+            if (
+              bound !== undefined &&
+              (newWindowEnd === undefined || bound > newWindowEnd)
+            ) {
+              newWindowEnd = bound;
+            }
+          }
           if (newWindowEnd !== undefined) {
             renewedEntitlements.push({ entitlementId, newWindowEnd });
           }

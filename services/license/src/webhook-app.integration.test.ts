@@ -664,6 +664,84 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
     );
   });
 
+  test("a MIXED cart fires BOTH emails, and only the purchase receipt carries the total", async () => {
+    const acct = "acct_txn_ren_mix";
+    // Precondition: an active one-time compliance grant to renew.
+    const baseApp = makeApp(provider);
+    const baseBody = JSON.stringify({
+      event_id: "evt_ren_mix_base",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_ren_mix_base",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: acct },
+        items: [{ price: { id: PRICE_COMPLIANCE_ONETIME } }],
+        details: { totals: { grand_total: "74900" } },
+      },
+    });
+    const baseT = Math.floor(Date.now() / 1000);
+    expect(
+      (await baseApp(webhookReq(baseBody, signed(baseBody, baseT)))).status,
+    ).toBe(200);
+
+    const purchaseNotices: PurchaseEmailNotice[] = [];
+    const renewalNotices: RenewalEmailNotice[] = [];
+    const app = makeApp(
+      provider,
+      loadRateLimitConfig(),
+      null,
+      null,
+      async (notice) => {
+        purchaseNotices.push(notice);
+      },
+      async (notice) => {
+        renewalNotices.push(notice);
+      },
+    );
+    const t = Math.floor(Date.now() / 1000);
+    const body = JSON.stringify({
+      event_id: "evt_ren_mix_1",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_ren_mix_1",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: acct },
+        items: [
+          { price: { id: PRICE_COMPLIANCE_ONETIME } },
+          { price: { id: PRICE_COMPLIANCE_RENEWAL } },
+        ],
+        // A MULTI-line transaction fails closed without per-line `details.line_items` join ids
+        // (billing-orchestration's dropped-paid-line guard) — a real Paddle delivery carries them.
+        details: {
+          totals: { grand_total: "104800" },
+          line_items: [
+            {
+              id: "txnitm_mix_pur",
+              price_id: PRICE_COMPLIANCE_ONETIME,
+              totals: { total: "74900" },
+            },
+            {
+              id: "txnitm_mix_ren",
+              price_id: PRICE_COMPLIANCE_RENEWAL,
+              totals: { total: "29900" },
+            },
+          ],
+        },
+      },
+    });
+    const res = await app(webhookReq(body, signed(body, t)));
+    expect(res.status).toBe(200);
+    // The purchase receipt states the whole-event total; the renewal notice omits it — two
+    // emails each claiming the full cart total would read as a double charge.
+    expect(purchaseNotices.length).toBe(1);
+    expect(purchaseNotices[0]?.amountTotalMinor).toBe(104800);
+    expect(renewalNotices.length).toBe(1);
+    expect(renewalNotices[0]?.amountTotalMinor).toBeUndefined();
+    expect(renewalNotices[0]?.lines[0]?.entitlementId).toBe("compliance");
+  });
+
   test("a THROWING renewal-confirmation emailer never fails the webhook 2xx (money path independent of email)", async () => {
     const acct = "acct_txn_ren_2";
     const baseApp = makeApp(provider);

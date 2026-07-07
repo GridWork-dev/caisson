@@ -138,7 +138,7 @@ describe("notifyPurchaseEmail (never-throws push)", () => {
       orderId: "ord_1",
       currency: "usd",
       amountTotalMinor: 79900,
-      lines: [{ productSlug: "compliance" }],
+      lines: [{ productSlug: "field-crypto" }],
     });
     expect(emailer.sent).toEqual([
       {
@@ -149,7 +149,8 @@ describe("notifyPurchaseEmail (never-throws push)", () => {
           orderId: "ord_1",
           currency: "usd",
           amountTotalMinor: 79900,
-          lines: [{ label: "compliance" }],
+          // The slug humanized for the receipt — never the raw internal id.
+          lines: [{ label: "Field Crypto" }],
           dashboardUrl: "https://caisson.sh/dashboard",
         },
       },
@@ -214,7 +215,7 @@ describe("notifyRenewalEmail (never-throws push, ADR-0251)", () => {
       amountTotalMinor: 29900,
       lines: [
         {
-          entitlementId: "compliance",
+          entitlementId: "ai-production",
           newWindowEnd: "2028-01-15T00:00:00.000Z",
         },
       ],
@@ -228,7 +229,8 @@ describe("notifyRenewalEmail (never-throws push, ADR-0251)", () => {
           orderId: "ord_ren_1",
           currency: "usd",
           amountTotalMinor: 29900,
-          lines: [{ label: "compliance", newWindowEnd: "2028-01-15" }],
+          // The id humanized for the receipt ("ai" upper-cased) — never the raw internal id.
+          lines: [{ label: "AI Production", newWindowEnd: "2028-01-15" }],
           dashboardUrl: "https://caisson.sh/dashboard",
         },
       },

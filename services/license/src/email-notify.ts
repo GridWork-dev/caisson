@@ -100,6 +100,23 @@ export interface PurchaseEmailLine {
   productSlug: string;
 }
 
+/**
+ * Receipt display label for a product slug / entitlement id — title-cased words, the same
+ * rendering the dashboard's `UpdatesWindowCard` applies to these ids ("field-crypto" →
+ * "Field Crypto", "ai-meter" → "AI Meter"). No canonical cross-package label map exists yet;
+ * this humanizes the honest id, never invents a product name.
+ */
+function displayLabel(slug: string): string {
+  return slug
+    .split("-")
+    .map((w) =>
+      w === "ai" || w === "ui"
+        ? w.toUpperCase()
+        : w.charAt(0).toUpperCase() + w.slice(1),
+    )
+    .join(" ");
+}
+
 export interface RenewalEmailLine {
   /** The renewed purchased entitlement id (`RenewedEntitlement.entitlementId`). */
   entitlementId: string;
@@ -131,8 +148,10 @@ export interface RenewalEmailNotice {
   orderId: string;
   /** ISO currency code, e.g. "usd". */
   currency: string;
-  /** Charged grand total, minor units (integer cents, ADR-0007). */
-  amountTotalMinor: number;
+  /** Charged grand total, minor units (integer cents, ADR-0007) — OMITTED on a mixed cart, where
+   *  the purchase receipt already states the whole-event total (repeating it here would read as a
+   *  second full charge). */
+  amountTotalMinor?: number | undefined;
   /** Per-line renewed-entitlement breakdown. `[]` never fires (app.ts gates on non-empty). */
   lines: readonly RenewalEmailLine[];
 }
@@ -164,7 +183,9 @@ export async function notifyPurchaseEmail(
         orderId: notice.orderId,
         currency: notice.currency,
         amountTotalMinor: notice.amountTotalMinor,
-        lines: notice.lines.map((line) => ({ label: line.productSlug })),
+        lines: notice.lines.map((line) => ({
+          label: displayLabel(line.productSlug),
+        })),
         dashboardUrl: DASHBOARD_URL,
       },
     });
@@ -203,7 +224,7 @@ export async function notifyRenewalEmail(
         currency: notice.currency,
         amountTotalMinor: notice.amountTotalMinor,
         lines: notice.lines.map((line) => ({
-          label: line.entitlementId,
+          label: displayLabel(line.entitlementId),
           newWindowEnd: line.newWindowEnd.slice(0, 10),
         })),
         dashboardUrl: DASHBOARD_URL,
