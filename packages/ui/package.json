@@ -22,11 +22,7 @@
       "types": "./dist/tokens/index.d.ts",
       "default": "./dist/tokens/index.js"
     },
-    "./components": {
-      "bun": "./src/components/index.ts",
-      "types": "./dist/components/index.d.ts",
-      "default": "./dist/components/index.js"
-    },
+    "./components": "./src/components/index.ts",
     "./components/*": "./src/components/*",
     "./styles/base.css": "./styles/base.css",
     "./styles/tokens.css": "./styles/tokens.css"

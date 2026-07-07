@@ -1929,9 +1929,9 @@
     },
     "@caisson/ui@0.5.0": {
       "key": "ui/ui-0.5.0.tgz",
-      "shasum": "f6ba5461e2785d5c4e3c1a2b32961ff44eff8dd9",
-      "integrity": "sha512-2BY8BMmvdYoqfd3P+8+cjkLzCXvCC39pT5eNz+5TwqxJ+7aOgszRs6Ko142ElYsL30MfAdgKECDo4Qkr0TJGuw==",
-      "size": 116454,
+      "shasum": "f4fb90c94b1c6b5341b3016e205357bfa642918f",
+      "integrity": "sha512-qqpqernj4Go2qer/V162NPdava/Tfq9eKbOlOdxcQASTdgkcITGiIaTBa9LdEpSKl5pcu+CDmCJb1lhdaWxQ3g==",
+      "size": 118798,
       "meta": {
         "dependencies": {
           "radix-ui": "^1.6.0"
