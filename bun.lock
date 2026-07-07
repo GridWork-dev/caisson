@@ -1260,6 +1260,26 @@
         "typescript": "catalog:",
       },
     },
+    "services/intel": {
+      "name": "@caisson/service-intel",
+      "version": "0.0.1",
+      "dependencies": {
+        "@caisson/alerting": "workspace:*",
+        "@caisson/kernel": "workspace:*",
+        "@caisson/observability": "workspace:*",
+        "pg": "catalog:",
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "@types/bun": "catalog:",
+        "@types/pg": "catalog:",
+        "eslint": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "services/license": {
       "name": "@caisson/service-license",
       "version": "0.0.6",
@@ -1603,6 +1623,8 @@
     "@caisson/retention-runner": ["@caisson/retention-runner@workspace:packages/retention-runner"],
 
     "@caisson/service-docs": ["@caisson/service-docs@workspace:services/docs"],
+
+    "@caisson/service-intel": ["@caisson/service-intel@workspace:services/intel"],
 
     "@caisson/service-license": ["@caisson/service-license@workspace:services/license"],
 
