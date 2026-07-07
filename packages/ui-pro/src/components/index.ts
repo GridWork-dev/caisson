@@ -20,6 +20,14 @@ export { TypeToConfirm } from "./type-to-confirm";
 export type { ConfirmState, TypeToConfirmProps } from "./type-to-confirm";
 export { DateRangePicker } from "./date-range-picker";
 export type { DateRangePickerProps } from "./date-range-picker";
+export { AreaChart, BarChart, LineChart, Sparkline } from "./charts";
+export type { CartesianChartProps, SparklineProps } from "./charts";
+export { CommandPalette } from "./command-palette";
+export type { CommandAction, CommandPaletteProps } from "./command-palette";
+export { DiffViewer } from "./diff-viewer";
+export type { DiffViewerProps } from "./diff-viewer";
+export { KanbanBoard } from "./kanban-board";
+export type { KanbanBoardProps } from "./kanban-board";
 
 // Pure transforms + shared types — exported for direct testing and server-side reuse (the AGENTS
 // contract): the sellable logic behind the interactive components lives in these, not the UI.
@@ -70,3 +78,22 @@ export type {
   PresetOptions,
   RangePreset,
 } from "../lib/date-presets";
+export {
+  areaPath,
+  extent,
+  linearScale,
+  linePath,
+  niceTicks,
+} from "../lib/charts";
+export type { Point } from "../lib/charts";
+export { fuzzyFilter, fuzzyMatch } from "../lib/fuzzy";
+export type { FuzzyMatch } from "../lib/fuzzy";
+export { diffJson, diffLines } from "../lib/diff";
+export type {
+  JsonChange,
+  JsonChangeKind,
+  LineChange,
+  LineOp,
+} from "../lib/diff";
+export { columnCards, moveCard } from "../lib/board";
+export type { BoardCard, BoardColumn, BoardLane } from "../lib/board";

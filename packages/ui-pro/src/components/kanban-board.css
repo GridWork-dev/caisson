@@ -1,0 +1,108 @@
+/* KanbanBoard — DnD columns + swimlanes; every value via --cs-* only (ADR-0099). */
+.cs-kanban {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-4);
+}
+
+.cs-kanban__lane-head {
+  padding: var(--cs-space-1) var(--cs-space-2);
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-xs);
+  font-weight: var(--cs-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--cs-tracking-wide);
+}
+
+.cs-kanban__cols {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(12rem, 1fr);
+  gap: var(--cs-space-3);
+  overflow-x: auto;
+}
+
+.cs-kanban__col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-2);
+  padding: var(--cs-space-2);
+  background: var(--cs-surface-1);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  min-height: 4rem;
+}
+
+.cs-kanban__col[data-over="true"] {
+  border-color: var(--cs-accent);
+  box-shadow: var(--cs-glow-accent);
+}
+
+.cs-kanban__col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cs-space-2);
+  font-size: var(--cs-text-sm);
+  font-weight: var(--cs-weight-medium);
+  color: var(--cs-fg);
+}
+
+.cs-kanban__col-count {
+  color: var(--cs-fg-muted);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+}
+
+.cs-kanban__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-2);
+}
+
+.cs-kanban__card {
+  background: var(--cs-surface-2);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-sm);
+  padding: var(--cs-space-2) var(--cs-space-3);
+  cursor: grab;
+}
+
+.cs-kanban__card:active {
+  cursor: grabbing;
+}
+
+.cs-kanban__card-body {
+  font-size: var(--cs-text-sm);
+  color: var(--cs-fg);
+}
+
+.cs-kanban__moves {
+  display: flex;
+  gap: var(--cs-space-1);
+  margin-top: var(--cs-space-2);
+}
+
+.cs-kanban__moves button {
+  flex: 1;
+  padding: 2px;
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-sm);
+  background: transparent;
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-xs);
+  cursor: pointer;
+}
+
+.cs-kanban__moves button:hover:not(:disabled) {
+  color: var(--cs-fg);
+  border-color: var(--cs-border-strong);
+}
+
+.cs-kanban__moves button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
