@@ -59,6 +59,7 @@ export LINEAR_TRIAGE_STATE_ID=...   # explicit Triage workflow state id passed o
 export CHAT_PLATFORM=discord        # or "slack" — selects the escalation-notify driver (ADR-0287)
 export SLACK_BOT_TOKEN=...          # Slack bot token (chat:write); required when CHAT_PLATFORM=slack
 export SLACK_ESCALATION_CHANNEL_ID=... # Slack channel id escalations post to; required when CHAT_PLATFORM=slack
+export SLACK_ESCALATION_MENTION=...  # Slack mention in SLACK syntax (<!subteam^ID> or <@U…>), NOT Discord's <@&roleId>; unset posts with no ping
 uv run python -m caisson_support_bot
 ```
 

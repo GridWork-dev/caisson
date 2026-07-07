@@ -75,6 +75,13 @@ class Settings(BaseSettings):
         description="The Slack channel id (e.g. 'C0123456789') escalations post to. Required when "
         "chat_platform='slack'.",
     )
+    slack_escalation_mention: str | None = Field(
+        default=None,
+        description="Mention string prepended to a Slack escalation post, in SLACK's own syntax — "
+        "a user-group (`<!subteam^ID>`) or a user (`<@U…>`). NOT Discord's `<@&roleId>` role-mention "
+        "syntax, which renders as dead text in Slack and pings nobody. Unset skips the ping and "
+        "posts to the channel only, matching support_human_role_id's own unset behavior.",
+    )
 
     # --- optional member-management surfaces (ADR-0109; all degrade gracefully when unset) ---
     member_role_id: int | None = Field(

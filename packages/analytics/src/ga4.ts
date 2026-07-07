@@ -52,14 +52,20 @@ export function createGa4Analytics(config: Ga4Config): AnalyticsProvider {
           ...(event.props ?? {}),
           ...(event.url !== undefined ? { page_location: event.url } : {}),
         };
-        const res = await fetchWithTimeout(url, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            client_id: event.distinctId ?? SERVER_CLIENT_ID,
-            events: [{ name: event.name, params }],
-          }),
-        });
+        const res = await fetchWithTimeout(
+          url,
+          {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              client_id: event.distinctId ?? SERVER_CLIENT_ID,
+              events: [{ name: event.name, params }],
+            }),
+          },
+          // Fail-open capture, not a request the caller waits on — shorter than the kernel's 10s
+          // default so a slow ingest endpoint never holds the request path open for a side-effect.
+          { timeoutMs: 2000 },
+        );
         if (!res.ok) {
           report(`GA4 responded ${res.status}`);
         }

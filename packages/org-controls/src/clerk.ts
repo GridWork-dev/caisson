@@ -13,7 +13,10 @@
 //
 // Networkless preferred: pass `jwtKey` (the PEM public key from the Clerk Dashboard) to verify locally
 // on every call; `secretKey` alone falls back to a live JWKS fetch against Clerk's Backend API per
-// verification. Config is injected — this package never reads `CLERK_*` env itself.
+// verification — that live fetch's `iss` validation and its own request timeout are BOTH SDK-owned
+// (`@clerk/backend` internals), not re-implemented here; the networkless `jwtKey` path is preferred
+// specifically because it removes that per-call network dependency entirely. Config is injected —
+// this package never reads `CLERK_*` env itself.
 //
 // Claim mapping (Clerk session-token JWT v2, 2025-04-14 format — the `o` claim is nested, replacing
 // v1's flat `org_id`/`org_role`): `sub` -> userId, `o.id` -> an active Organization's id, `o.rol` ->
@@ -36,7 +39,9 @@ export interface ClerkSessionConfig {
   /** Clerk Secret Key. Enables verification via a live JWKS fetch when `jwtKey` is not supplied. */
   secretKey?: string;
   /** Allowlist of origins the token's `azp` claim must match — Clerk's own subdomain-cookie-leak
-   *  guard, recommended for every production verification. */
+   *  guard. Optional at the type level (the SDK allows an unset check), but the caller — not this
+   *  package — owns the deployment's origin list, so PRODUCTION deployments SHOULD set this; an
+   *  unset `authorizedParties` accepts a valid token minted for any frontend on the Clerk instance. */
   authorizedParties?: string[];
   /** Kernel role assigned when no Clerk Organization is active on the session. Defaults to `"owner"`
    *  — matches `@caisson/auth`'s personal-account convention. */
@@ -104,12 +109,24 @@ export async function verifyClerkSessionClaims(
   // (self-issued) tokens: `typeof` checks at the boundary, never a trusted cast.
   const raw = payload as unknown as Record<string, unknown>;
   const { sub, sid, o } = raw;
-  if (typeof sub !== "string" || typeof sid !== "string") {
+  // Non-empty, not just present: an empty-string sub/sid is a malformed identity, not a valid
+  // (if unusual) one — reject it the same way a missing field is rejected, rather than letting
+  // "" become a real userId/sessionId downstream.
+  if (
+    typeof sub !== "string" ||
+    sub.length === 0 ||
+    typeof sid !== "string" ||
+    sid.length === 0
+  ) {
     throw new AuthnError("Invalid Clerk session token");
   }
   const org: Record<string, unknown> =
     typeof o === "object" && o !== null ? (o as Record<string, unknown>) : {};
-  const organizationId = typeof org.id === "string" ? org.id : undefined;
+  // An empty-string o.id is treated as "no Organization claim" (same as it being absent) rather
+  // than surfaced as a real organizationId — an empty accountId must never reach the mapper below
+  // (and, downstream, RLS).
+  const organizationId =
+    typeof org.id === "string" && org.id.length > 0 ? org.id : undefined;
   const organizationRole = typeof org.rol === "string" ? org.rol : undefined;
   return {
     userId: sub,
@@ -123,6 +140,19 @@ export async function verifyClerkSessionClaims(
  * Pure claims -> kernel `SessionContext` mapper — the testable seam (mirrors `ses.ts`'s
  * `sesSmtpConfig`). `accountId` falls back to the Clerk `userId` when no Organization claim is
  * present, matching `@caisson/auth`'s personal-account convention (`account_id == user_id`).
+ *
+ * Two DIFFERENT branches, two different missing-role postures — do not unify them:
+ *  - Personal account (no `organizationId`): the caller genuinely owns their own account, so
+ *    `personalAccountRole` (default `"owner"`) is correct there — there is no "member" to
+ *    under-privilege.
+ *  - Active Organization with NO role claim: this must fail to LEAST privilege (`"seat"`), never
+ *    `personalAccountRole`. `personalAccountRole` defaults to `"owner"`, and an org account is a
+ *    SHARED tenant — silently granting owner-level (full admin/RLS) rights to every member whose
+ *    token happens to omit `o.rol` (e.g. a buyer's custom Clerk session-token JWT template that
+ *    reshapes `o` without a role field) is a privilege-escalation bug, not a convenience default.
+ *    Matches `mapOrganizationRole`'s own "anything not admin -> seat" posture, and
+ *    `@caisson/auth/jwt.ts`'s requirement that `role` be explicit for a shared account, never
+ *    defaulted.
  */
 export function clerkClaimsToSessionContext(
   claims: ClerkSessionClaims,
@@ -141,7 +171,7 @@ export function clerkClaimsToSessionContext(
     role:
       claims.organizationRole !== undefined
         ? mapOrganizationRole(claims.organizationRole)
-        : personalAccountRole,
+        : "seat",
   };
 }
 

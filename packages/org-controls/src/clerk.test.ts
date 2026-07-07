@@ -87,6 +87,31 @@ describe("verifyClerkSessionClaims", () => {
     ).rejects.toThrow(AuthnError);
   });
 
+  test("throws AuthnError when sub or sid is an empty string, not just absent", async () => {
+    const { verifyClerkSessionClaims } = await import("./clerk.ts");
+
+    verifyTokenImpl = async () => ({ sub: "", sid: "sess_1" });
+    await expect(
+      verifyClerkSessionClaims("tok", { jwtKey: "pem" }),
+    ).rejects.toThrow(AuthnError);
+
+    verifyTokenImpl = async () => ({ sub: "user_1", sid: "" });
+    await expect(
+      verifyClerkSessionClaims("tok", { jwtKey: "pem" }),
+    ).rejects.toThrow(AuthnError);
+  });
+
+  test("an empty-string o.id is treated as no Organization claim, not a real (empty) accountId", async () => {
+    verifyTokenImpl = async () => ({
+      sub: "user_1",
+      sid: "sess_1",
+      o: { id: "", rol: "admin" },
+    });
+    const { verifyClerkSessionClaims } = await import("./clerk.ts");
+    const claims = await verifyClerkSessionClaims("tok", { jwtKey: "pem" });
+    expect(claims.organizationId).toBeUndefined();
+  });
+
   test("never leaks which failure branch fired — both paths throw the same AuthnError message", async () => {
     const { verifyClerkSessionClaims } = await import("./clerk.ts");
 
@@ -168,15 +193,16 @@ describe("clerkClaimsToSessionContext (pure mapper)", () => {
     ).toEqual({ userId: "u1", accountId: "org_1", role: "seat" });
   });
 
-  test("an Organization id with no role falls back to personalAccountRole", async () => {
+  test("an Organization id with no role fails CLOSED to seat, never personalAccountRole (privilege-escalation guard)", async () => {
     const { clerkClaimsToSessionContext } = await import("./clerk.ts");
+    // personalAccountRole passed as "owner" (the default) to prove the org branch does NOT fall
+    // back to it — a missing o.rol must never grant owner-level rights on a shared org account.
     expect(
-      clerkClaimsToSessionContext({
-        userId: "u1",
-        sessionId: "s1",
-        organizationId: "org_1",
-      }),
-    ).toEqual({ userId: "u1", accountId: "org_1", role: "owner" });
+      clerkClaimsToSessionContext(
+        { userId: "u1", sessionId: "s1", organizationId: "org_1" },
+        "owner",
+      ),
+    ).toEqual({ userId: "u1", accountId: "org_1", role: "seat" });
   });
 });
 

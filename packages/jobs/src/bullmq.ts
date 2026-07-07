@@ -18,6 +18,13 @@
 // with that id is unfinished, any subsequent add with the same id is ignored, i.e. at most one
 // queued/active at a time. Distinct concerns, so both can ride one `add`.
 //
+// Retention ceiling on idempotency: BullMQ's jobId de-dup only holds while the job's Redis hash
+// still exists. Once a completed job is removed (the caller's own `removeOnComplete` policy on
+// `Worker`/`Queue`, or a TTL/cleanup sweep) its jobId is free again — a LATE retry reusing the same
+// `idempotencyKey` after that point re-enqueues rather than no-op'ing. This mirrors pg-boss's own
+// archive-retention ceiling (its `ON CONFLICT DO NOTHING` uniqueness only holds until the job row is
+// archived/purged) — "idempotent" here means "within the driver's retention window," not forever.
+//
 // Graceful shutdown: `close()` closes every Worker first (stop claiming), then every Queue (release
 // the Redis connections). Each `work()` handle's `stop()` closes only its own Worker.
 import { Queue, Worker } from "bullmq";

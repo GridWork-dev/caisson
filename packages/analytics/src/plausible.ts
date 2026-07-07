@@ -46,19 +46,26 @@ export function createPlausibleAnalytics(
   return {
     async capture(event: AnalyticsEvent): Promise<void> {
       await captureFailOpen(report, async () => {
-        const res = await fetchWithTimeout(endpoint, {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            "user-agent": userAgent,
+        const res = await fetchWithTimeout(
+          endpoint,
+          {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              "user-agent": userAgent,
+            },
+            body: JSON.stringify({
+              name: event.name,
+              url: event.url ?? `https://${config.domain}/`,
+              domain: config.domain,
+              ...(event.props ? { props: event.props } : {}),
+            }),
           },
-          body: JSON.stringify({
-            name: event.name,
-            url: event.url ?? `https://${config.domain}/`,
-            domain: config.domain,
-            ...(event.props ? { props: event.props } : {}),
-          }),
-        });
+          // A shorter-than-kernel-default timeout: this is a fail-open, best-effort capture, not
+          // a request the caller waits on for correctness — 10s (the kernel default) is too long
+          // to hold a request path open for an analytics side-effect.
+          { timeoutMs: 2000 },
+        );
         if (!res.ok) {
           report(`Plausible responded ${res.status}`);
         }

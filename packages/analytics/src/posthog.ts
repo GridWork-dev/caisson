@@ -47,16 +47,22 @@ export function createPostHogAnalytics(
           ...(event.props ?? {}),
           ...(event.url !== undefined ? { $current_url: event.url } : {}),
         };
-        const res = await fetchWithTimeout(endpoint, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            api_key: config.apiKey,
-            event: event.name,
-            distinct_id: event.distinctId ?? SERVER_DISTINCT_ID,
-            ...(Object.keys(properties).length > 0 ? { properties } : {}),
-          }),
-        });
+        const res = await fetchWithTimeout(
+          endpoint,
+          {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              api_key: config.apiKey,
+              event: event.name,
+              distinct_id: event.distinctId ?? SERVER_DISTINCT_ID,
+              ...(Object.keys(properties).length > 0 ? { properties } : {}),
+            }),
+          },
+          // Fail-open capture, not a request the caller waits on — shorter than the kernel's 10s
+          // default so a slow ingest endpoint never holds the request path open for a side-effect.
+          { timeoutMs: 2000 },
+        );
         if (!res.ok) {
           report(`PostHog responded ${res.status}`);
         }

@@ -145,18 +145,45 @@ def _build_chat_platform(
     """Select the escalation-notify driver per ``settings.chat_platform`` (ADR-0287). The bot's own
     surface (``/ask``, ``#ask-ai``) stays Discord regardless — this only picks where the escalation
     brief posts. Discord is the default and always available (it reuses the live channel the
-    question arrived on); Slack requires a pooled ``httpx`` client plus its two settings, which
-    ``Settings``' own validator already guarantees are set together when configured.
+    question arrived on).
+
+    Slack requires a pooled ``httpx`` client. ``Settings``' own validator already guarantees
+    ``slack_bot_token``/``slack_escalation_channel_id`` are set together with ``chat_platform=
+    'slack'``, so a missing client is the only remaining gap — and it FAILS CLOSED (raises) rather
+    than silently routing the escalation to the live Discord channel instead of the operator's
+    configured Slack channel. An operator who explicitly chose Slack must never see their
+    escalation silently land somewhere else with no warning; ``make_bot`` always supplies a client
+    in production, so this only fires on a bot-wiring bug or an incomplete test construction.
     """
-    if settings.chat_platform == "slack" and http_client is not None:
+    if settings.chat_platform == "slack":
+        if http_client is None:
+            raise RuntimeError(
+                "chat_platform='slack' requires a pooled httpx client, but none was supplied — "
+                "refusing to silently route this escalation to Discord instead. make_bot always "
+                "passes one in production; this indicates a bot-wiring bug."
+            )
         bot_token = settings.slack_bot_token
         channel_id = settings.slack_escalation_channel_id
-        if bot_token is not None and channel_id is not None:
-            return SlackThreadOpener(bot_token=bot_token, channel_id=channel_id, client=http_client)
-    # Discord default, and the degrade-to-Discord fallback when Slack is selected but no pooled
-    # httpx client was supplied (e.g. a test construction that omits it) — never silently drop
-    # every escalation notify.
+        if bot_token is None or channel_id is None:
+            # Unreachable given Settings' fail-closed validator — kept as an explicit narrowing
+            # guard (never an `assert`, which strips under -O) rather than a silent Discord degrade.
+            raise RuntimeError(
+                "chat_platform='slack' but slack_bot_token/slack_escalation_channel_id are unset "
+                "— Settings' validator should have refused construction."
+            )
+        return SlackThreadOpener(bot_token=bot_token, channel_id=channel_id, client=http_client)
     return _DiscordThreadOpener(channel, mention_role_id=settings.support_human_role_id)
+
+
+def _human_mention(settings: Settings) -> str | None:
+    """The platform-appropriate escalation mention (ADR-0287). Discord and Slack use INCOMPATIBLE
+    mention syntaxes — Discord's role-mention `<@&roleId>` posted verbatim into Slack renders as
+    dead text and pings nobody, so the active ``chat_platform`` selects which setting (and which
+    syntax) is used, rather than always emitting the Discord form.
+    """
+    if settings.chat_platform == "slack":
+        return settings.slack_escalation_mention
+    return f"<@&{settings.support_human_role_id}>" if settings.support_human_role_id else None
 
 
 def _escalator_factory(
@@ -167,7 +194,7 @@ def _escalator_factory(
     author: discord.Member | discord.User | None = None,
     http_client: httpx.AsyncClient | None = None,
 ) -> Callable[[], Escalator]:
-    mention = f"<@&{settings.support_human_role_id}>" if settings.support_human_role_id else None
+    mention = _human_mention(settings)
     # ADR-0278 Track K: resolved once per request, from whatever member context the caller has (a
     # bare discord.User — e.g. a DM — carries no roles, so it never signals priority; fail-closed).
     priority = member_has_priority_support(
