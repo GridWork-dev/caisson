@@ -4,6 +4,13 @@
 // id@version. This is the same invariant the CI `registry-index` job enforces with `git diff
 // --exit-code`; pinning it as a test catches a hand-edited or stale index before CI. Reads the real
 // committed files (no fixtures).
+//
+// POSTURE (ADR-0271, recorded so the next reader doesn't over-trust this): this assertion — and the
+// CI job's `git diff --exit-code` — is DETECTION, not PREVENTION. A red run only stops a merge if
+// `registry-index` is ALSO marked a required check with branch protection + CODEOWNERS on
+// registry/index.json + registry/ledger.jsonl (an operator GitHub setting; this repo runs without
+// enforced branch protection today — see the CLAUDE.md PR-review-gate note). A local `bun test` pass
+// proves the index is a faithful rebuild; it proves nothing about who is allowed to land a bad one.
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import {

@@ -535,7 +535,8 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
   // (@caisson/ai-kit, @caisson/local-ai, @caisson/agent-dev) left the served index, so they are
   // ABSENT from every leaf set. That is the ONLY delta — the delist-equality proof showed each
   // bundle's own members map carries every real member. Keyed on the CANONICAL bundle ids the
-  // catalog + grants use.
+  // catalog + grants use. `everything` re-captured again after the ui-pro first publish to pin
+  // @caisson/ui-pro's entry into the explicit leaf set.
   const REAL_INDEX = join(
     dirname(fileURLToPath(import.meta.url)),
     "..",
@@ -587,6 +588,44 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
       "@caisson/kernel",
       "@caisson/local-store",
       "@caisson/tool-exec",
+    ],
+    // Explicit leaf-set pin (not derived — see the "reads the explicit everything rule" test
+    // below for the derived proof) so a silent membership regression in the everything
+    // manifest's `members` map reddens CI directly, not just via a count/size assertion.
+    // @caisson/ui-pro is INDEXED and a member as of its first publish (everything@0.2.2)
+    // — the open Apache base (kernel/tenancy-rls/ai-config/local-store/…) stays absent by design
+    // (it ships free via the Worker's free-view floor, never as a grant).
+    everything: [
+      "@caisson/agent-kernel",
+      "@caisson/agent-runner",
+      "@caisson/agentic-dev",
+      "@caisson/ai-evals",
+      "@caisson/ai-meter",
+      "@caisson/ai-production",
+      "@caisson/alerting",
+      "@caisson/audit-worm",
+      "@caisson/billing-orchestration",
+      "@caisson/compliance",
+      "@caisson/compliance-core",
+      "@caisson/credits",
+      "@caisson/everything",
+      "@caisson/field-crypto",
+      "@caisson/frameworks-pack",
+      "@caisson/guardrails",
+      "@caisson/local-first",
+      "@caisson/local-inference",
+      "@caisson/local-privacy",
+      "@caisson/local-store",
+      "@caisson/local-sync",
+      "@caisson/org-controls",
+      "@caisson/platform-reads",
+      "@caisson/pricebook",
+      "@caisson/prompt-registry",
+      "@caisson/provenance",
+      "@caisson/retention-runner",
+      "@caisson/signing-primitive",
+      "@caisson/tool-exec",
+      "@caisson/ui-pro",
     ],
   };
 

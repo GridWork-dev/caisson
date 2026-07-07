@@ -315,6 +315,13 @@ export type PublishStepResult = {
   appended: number;
   /** Entries already recorded in the ledger (skipped as already published). */
   skippedExisting: number;
+  /**
+   * Workspace manifests skipped because their id is delisted (ADR-0271) — split out from
+   * `skippedExisting` so the summary distinguishes "already published" from "delisted, will
+   * never be (re-)published" (a delisted id gets no tarball-sidecar reconcile either — see the
+   * loop below).
+   */
+  skippedDelisted: number;
   /** New entries found but not appended due to dry-run mode. */
   wouldAppend: number;
   /** Tarball sidecar rows recorded (packed + hashed → tarballs.json; always 0 in dry-run). */
@@ -436,6 +443,7 @@ export async function runPublishStep(
   const loaded: { manifest: ModuleManifest; packageDir: string }[] = [];
   const toAppend: { manifest: ModuleManifest; packageDir: string }[] = [];
   let skippedExisting = 0;
+  let skippedDelisted = 0;
 
   for (const p of manifestPaths) {
     let manifest: ModuleManifest;
@@ -450,11 +458,12 @@ export async function runPublishStep(
     const key = `${manifest.id}@${manifest.version}`;
     if (delistedIds.has(manifest.id)) {
       // Not pushed to `loaded` either: a delisted module gets no tarball-sidecar reconcile — it has
-      // no index entry to serve from.
+      // no index entry to serve from. Counted separately from `skippedExisting` (ADR-0271) — this
+      // id will NEVER be (re-)published, unlike an ordinary already-ledgered skip.
       process.stdout.write(
         `registry/ci-publish-step: delisted — skipped ${key}\n`,
       );
-      skippedExisting++;
+      skippedDelisted++;
       continue;
     }
     loaded.push({ manifest, packageDir: dirname(p) });
@@ -483,6 +492,7 @@ export async function runPublishStep(
     return {
       appended: 0,
       skippedExisting,
+      skippedDelisted,
       wouldAppend: toAppend.length,
       tarballsRecorded: 0,
     };
@@ -523,6 +533,7 @@ export async function runPublishStep(
   return {
     appended: toAppend.length,
     skippedExisting,
+    skippedDelisted,
     wouldAppend: 0,
     tarballsRecorded,
   };

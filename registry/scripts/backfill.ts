@@ -10,6 +10,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { ModuleManifest } from "../schema/module-manifest.ts";
+import { parseLedgerLines } from "./build-index.ts";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -31,6 +32,16 @@ export type BackfillOpts = {
    * dependents). Test-injectable — the real CI caller wraps `appendLedger` here.
    */
   publish: PublisherFn;
+  /**
+   * Raw `registry/ledger.jsonl` text (ADR-0271), parsed here via `parseLedgerLines` to derive
+   * the delisted id set. This driver is dead code today — nothing wires it into CI
+   * (`ci-publish-step.ts` scans manifests directly) — but if it is ever revived, publishing a
+   * delisted module would append a ledger line AFTER that id's delist line, and
+   * `parseLedgerLines` throws on the next rebuild ("publish ... after its delist — delisting is
+   * terminal"). Guarding here means a future caller can't resurrect a delisted module by
+   * accident. Optional; defaults to `""` (no delists) so existing callers are unaffected.
+   */
+  ledgerText?: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -121,10 +132,15 @@ export function topoSort(
  * block dependents that ARE present (the edge is simply omitted from the sort).
  */
 export async function backfill(opts: BackfillOpts): Promise<void> {
-  const { manifests, allowlist, publish } = opts;
+  const { manifests, allowlist, publish, ledgerText = "" } = opts;
+  const { delists } = parseLedgerLines(ledgerText);
+  const delistedIds = new Set(delists.map((d) => d.id));
 
-  // Only consider modules not yet in the registry.
-  const toPublish = manifests.filter((m) => !allowlist.has(m.id));
+  // Only consider modules not yet in the registry AND not delisted (ADR-0271 — see the
+  // `ledgerText` doc above for why a delisted id must never reach `publish`).
+  const toPublish = manifests.filter(
+    (m) => !allowlist.has(m.id) && !delistedIds.has(m.id),
+  );
   if (toPublish.length === 0) return;
 
   const sorted = topoSort(toPublish);
