@@ -72,4 +72,25 @@ describe("diffJson", () => {
       after: "two",
     });
   });
+
+  test("a mixed-case caller redact set still masks (set is lowercased)", () => {
+    // Pre-fix: isRedactedKey lowercases only the payload key, so new Set(["apiKey"])
+    // silently failed to redact.
+    const changes = diffJson(
+      { apiKey: "sk-OLD" },
+      { apiKey: "sk-NEW" },
+      new Set(["apiKey"]),
+    );
+    expect(changes.find((c) => c.path === "$.apiKey")).toBeUndefined();
+  });
+});
+
+describe("diffLines large-input cap", () => {
+  test("past the cell cap it degrades to all-remove/all-add instead of hanging", () => {
+    const big = Array.from({ length: 2_100 }, (_, i) => `line ${i}`).join("\n");
+    const out = diffLines(big, `${big}\nextra`);
+    // 2101 x 2102 cells > 4M -> naive fallback: every before line removed, every after line added.
+    expect(out).toHaveLength(2_100 + 2_101);
+    expect(out.every((l) => l.op !== "same")).toBe(true);
+  });
 });

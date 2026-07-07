@@ -83,16 +83,18 @@ export function DiffViewer(props: DiffViewerProps) {
   } = props;
   const [view, setView] = useState<"split" | "unified">(initialView);
 
+  // Memo on the actual inputs, not the props object — a fresh props identity per render would
+  // otherwise recompute both diffs every time.
+  const { kind, before, after } = props;
+  const redactKeys = props.kind === "json" ? props.redactKeys : undefined;
   const textDiff = useMemo(
-    () => (props.kind === "json" ? null : diffLines(props.before, props.after)),
-    [props],
+    () =>
+      kind === "json" ? null : diffLines(before as string, after as string),
+    [kind, before, after],
   );
   const jsonDiff = useMemo<JsonChange[] | null>(
-    () =>
-      props.kind === "json"
-        ? diffJson(props.before, props.after, props.redactKeys)
-        : null,
-    [props],
+    () => (kind === "json" ? diffJson(before, after, redactKeys) : null),
+    [kind, before, after, redactKeys],
   );
 
   return (

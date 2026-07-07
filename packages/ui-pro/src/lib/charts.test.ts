@@ -52,6 +52,12 @@ describe("niceTicks", () => {
     expect(niceTicks(42, 42)).toEqual([42]);
     expect(niceTicks(NaN, NaN)).toEqual([0]);
   });
+
+  test("a pathological (subnormal) domain neither throws nor hangs", () => {
+    // Pre-fix: decimals ~ 324 -> toFixed RangeError; the loop is also iteration-capped.
+    expect(() => niceTicks(0, Number.MIN_VALUE)).not.toThrow();
+    expect(niceTicks(0, Number.MIN_VALUE).length).toBeLessThanOrEqual(1000);
+  });
 });
 
 describe("path builders", () => {

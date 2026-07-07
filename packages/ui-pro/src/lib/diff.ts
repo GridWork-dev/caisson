@@ -22,14 +22,29 @@ export interface LineChange {
  * Line-based diff of `before` vs `after` via a longest-common-subsequence backtrack. Common lines are
  * `same`; the rest are `remove` (from before) then `add` (from after), in source order.
  *
- * ponytail: O(n·m) DP table — fine for human-scale diffs (configs, payloads, small docs); swap for
- * Myers if you ever diff whole files where n·m stops fitting comfortably in memory.
+ * ponytail: O(n·m) DP table, capped at ~4M cells (≈2k×2k lines) — past that it degrades to a
+ * naive all-remove/all-add diff instead of allocating unboundedly; swap for Myers if huge
+ * mostly-similar inputs ever need a real diff.
  */
 export function diffLines(before: string, after: string): LineChange[] {
   const a = before.split("\n");
   const b = after.split("\n");
   const n = a.length;
   const m = b.length;
+  if ((n + 1) * (m + 1) > 4_000_000) {
+    return [
+      ...a.map<LineChange>((text, i) => ({
+        op: "remove",
+        text,
+        beforeLine: i + 1,
+      })),
+      ...b.map<LineChange>((text, j) => ({
+        op: "add",
+        text,
+        afterLine: j + 1,
+      })),
+    ];
+  }
   // lcs[i][j] = LCS length of a[i..] and b[j..].
   const lcs: number[][] = Array.from({ length: n + 1 }, () =>
     new Array<number>(m + 1).fill(0),
@@ -127,15 +142,19 @@ function walk(
  * Key-path diff of two JSON-serializable values. Objects are compared per key, arrays per index, and
  * every differing leaf becomes an `added`/`removed`/`changed` entry keyed by its root path. When
  * `redactKeys` is supplied, both sides are masked through `redactValue` first, so secret-bearing
- * keys never surface a real value in either pane.
+ * keys never surface a real value in either pane. The set is lowercased here — `isRedactedKey`
+ * lowercases only the payload key, so a mixed-case caller set would otherwise silently not match.
  */
 export function diffJson(
   before: unknown,
   after: unknown,
   redactKeys?: ReadonlySet<string>,
 ): JsonChange[] {
-  const b = redactKeys ? redactValue(before, redactKeys) : before;
-  const a = redactKeys ? redactValue(after, redactKeys) : after;
+  const keys = redactKeys
+    ? new Set([...redactKeys].map((k) => k.toLowerCase()))
+    : undefined;
+  const b = keys ? redactValue(before, keys) : before;
+  const a = keys ? redactValue(after, keys) : after;
   const out: JsonChange[] = [];
   walk(b, a, "$", out);
   return out;

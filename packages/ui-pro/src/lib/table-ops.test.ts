@@ -128,6 +128,13 @@ describe("toCsv", () => {
     // Injection + embedded quote still escapes the quote inside the guard.
     expect(toCsv([['=HYPERLINK("x")']])).toBe(`"'=HYPERLINK(""x"")"`);
   });
+
+  test("neutralizes the OWASP tab and CR trigger variants too", () => {
+    // Pre-fix: "\t=" exported raw and unquoted (tab is not in the quote set), and "\r=" was
+    // quoted by the CR rule but never apostrophe-prefixed — both still open a formula on paste.
+    expect(toCsv([['\t=HYPERLINK("x")']])).toBe(`"'\t=HYPERLINK(""x"")"`);
+    expect(toCsv([["\r=cmd"]])).toBe(`"'\r=cmd"`);
+  });
 });
 
 describe("aggregate large-array safety", () => {

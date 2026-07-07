@@ -65,9 +65,11 @@ export function niceTicks(min: number, max: number, count = 5): number[] {
   const step = niceNum(niceNum(hi - lo, false) / Math.max(1, count - 1), true);
   const start = Math.floor(lo / step) * step;
   const end = Math.ceil(hi / step) * step;
-  const decimals = Math.max(0, -Math.floor(Math.log10(step)));
+  // Guard rails for pathological (subnormal/extreme) domains: toFixed throws past 100 digits,
+  // and a step that underflows relative to the domain would loop forever.
+  const decimals = Math.min(100, Math.max(0, -Math.floor(Math.log10(step))));
   const ticks: number[] = [];
-  for (let v = start; v <= end + step * 0.5; v += step) {
+  for (let v = start; v <= end + step * 0.5 && ticks.length < 1000; v += step) {
     ticks.push(Number(v.toFixed(decimals)));
   }
   return ticks;

@@ -172,7 +172,12 @@ export function CommandPalette({
             <p className="cs-cmdk__empty">{emptyLabel}</p>
           ) : (
             groups.map((group) => (
-              <div className="cs-cmdk__group" key={group.label || "_ungrouped"}>
+              <div
+                className="cs-cmdk__group"
+                key={group.label || "_ungrouped"}
+                role="group"
+                aria-label={group.label || undefined}
+              >
                 {group.label ? (
                   <div className="cs-cmdk__group-label" role="presentation">
                     {group.label}

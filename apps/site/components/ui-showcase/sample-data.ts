@@ -282,7 +282,8 @@ export const WEBHOOK_PAYLOAD = {
       },
     ],
     signature: "whsec_3f9a2c1b7e",
-    apiKey: "sk_live_51Nq8xToad9",
+    // Fixture only — a test-shaped placeholder, never sk_live_* (secret scanners trip on the shape).
+    apiKey: "sk_test_REDACTED_SAMPLE",
   },
 };
 

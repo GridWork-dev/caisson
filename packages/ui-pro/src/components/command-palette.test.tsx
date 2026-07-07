@@ -16,6 +16,7 @@ describe("CommandPalette", () => {
     );
     expect(html).toContain('role="combobox"');
     expect(html).toContain('role="listbox"');
+    expect(html).toContain('role="group"');
     expect(html).toContain('role="option"');
     expect(html).toContain("Grant entitlement");
     expect(html).toContain("Export audit log");
