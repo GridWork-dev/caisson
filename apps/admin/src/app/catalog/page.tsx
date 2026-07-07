@@ -18,13 +18,13 @@ const SURFACES: Surface[] = [
     title: "Foundations",
     desc: "Palette candidates, swatches, contrast read-out.",
     state: "ready",
-    href: "/design/foundations",
+    href: "/catalog/foundations",
   },
   {
     title: "Typography",
     desc: "Type pairings, modular scale, mono specimen.",
     state: "ready",
-    href: "/design/typography",
+    href: "/catalog/typography",
   },
   {
     title: "Voice",
@@ -33,15 +33,21 @@ const SURFACES: Surface[] = [
   },
   {
     title: "Wordmark",
-    desc: "Pressure vessel — the locked mark (ADR-0103). Candidates kept for the record.",
+    desc: "Pressure vessel — the locked mark. Candidates kept for the record.",
     state: "locked",
-    href: "/design/wordmark",
+    href: "/catalog/wordmark",
   },
   {
     title: "Components",
-    desc: "The @caisson/ui kit, rendered live (ADR-0099 recipe).",
+    desc: "Every base-kit, ui-pro, and per-package component, rendered live with sample data.",
     state: "ready",
-    href: "/design/components",
+    href: "/catalog/components",
+  },
+  {
+    title: "Emails",
+    desc: "Every transactional and growth email template, rendered live with a send-test action.",
+    state: "ready",
+    href: "/catalog/emails",
   },
   {
     title: "Signature",
@@ -69,7 +75,7 @@ export default function HubPage() {
   return (
     <div className="shell stack" style={{ gap: "var(--cs-space-12)" }}>
       <section>
-        <p className="eyebrow">caisson · design studio</p>
+        <p className="eyebrow">caisson · catalog</p>
         <h1 className="page-title" style={{ maxWidth: "18ch" }}>
           The foundation, decided in the open.
         </h1>

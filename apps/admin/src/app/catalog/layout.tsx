@@ -1,12 +1,13 @@
 import type { ReactNode } from "react";
 
-import { DesignNav } from "./design-nav";
+import { CatalogNav } from "./catalog-nav";
 
-// The design section (the absorbed studio) gets its own sub-nav under the root AdminNav.
-export default function DesignLayout({ children }: { children: ReactNode }) {
+// The catalog section (the absorbed design studio, now extended with a live component + email
+// catalog) gets its own sub-nav under the root AdminNav.
+export default function CatalogLayout({ children }: { children: ReactNode }) {
   return (
     <>
-      <DesignNav />
+      <CatalogNav />
       {children}
     </>
   );

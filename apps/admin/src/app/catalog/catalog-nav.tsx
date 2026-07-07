@@ -5,35 +5,33 @@ import { usePathname } from "next/navigation";
 
 import { ThemeToggle } from "@caisson/ui/components";
 
-// The design-section sub-nav (the absorbed studio's topbar), rendered under the root AdminNav by
-// design/layout.tsx. Signature is intentionally absent — the four-beat sketches are deferred (the
-// only deferred surface); the route still exists but is unlinked until the direction is reworked.
+// The catalog-section sub-nav (the absorbed design studio's topbar, extended with the live
+// component + email catalog), rendered under the root AdminNav by catalog/layout.tsx. Signature is
+// intentionally absent — the four-beat sketches are deferred (the only deferred surface); the route
+// still exists but is unlinked until the direction is reworked.
 const LINKS = [
-  { href: "/design", label: "Overview" },
-  { href: "/design/foundations", label: "Foundations" },
-  { href: "/design/typography", label: "Typography" },
-  { href: "/design/wordmark", label: "Wordmark" },
-  { href: "/design/components", label: "Components" },
+  { href: "/catalog", label: "Overview" },
+  { href: "/catalog/foundations", label: "Foundations" },
+  { href: "/catalog/typography", label: "Typography" },
+  { href: "/catalog/wordmark", label: "Wordmark" },
+  { href: "/catalog/components", label: "Components" },
+  { href: "/catalog/emails", label: "Emails" },
 ] as const;
 
-export function DesignNav() {
+export function CatalogNav() {
   const pathname = usePathname();
   return (
     <header className="topbar">
       <div className="row" style={{ gap: "1.5rem" }}>
-        <Link
-          href="/design"
-          className="brand"
-          aria-label="Caisson Design System"
-        >
+        <Link href="/catalog" className="brand" aria-label="Caisson Catalog">
           <span className="mark">caisson</span>
-          <span className="sub">/ design</span>
+          <span className="sub">/ catalog</span>
         </Link>
-        <nav className="nav" aria-label="Design sections">
+        <nav className="nav" aria-label="Catalog sections">
           {LINKS.map((l) => {
             const active =
-              l.href === "/design"
-                ? pathname === "/design"
+              l.href === "/catalog"
+                ? pathname === "/catalog"
                 : pathname.startsWith(l.href);
             return (
               <Link

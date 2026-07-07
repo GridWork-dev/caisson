@@ -29,6 +29,8 @@
         "@caisson/auth": "workspace:*",
         "@caisson/brand": "workspace:*",
         "@caisson/credits": "workspace:*",
+        "@caisson/demo-registry": "workspace:*",
+        "@caisson/email": "workspace:*",
         "@caisson/kernel": "workspace:*",
         "@caisson/observability": "workspace:*",
         "@caisson/org-controls": "workspace:*",
@@ -621,6 +623,36 @@
         "@caisson/tsconfig": "workspace:*",
         "eslint": "catalog:",
         "typescript": "catalog:",
+      },
+    },
+    "packages/demo-registry": {
+      "name": "@caisson/demo-registry",
+      "version": "0.1.0",
+      "dependencies": {
+        "@caisson/ai-meter": "workspace:*",
+        "@caisson/audit-harness": "workspace:*",
+        "@caisson/audit-worm": "workspace:*",
+        "@caisson/license-issue": "workspace:*",
+        "@caisson/local-store": "workspace:*",
+        "@caisson/prompt-registry": "workspace:*",
+        "@caisson/ui": "workspace:*",
+        "@caisson/ui-pro": "workspace:*",
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "@types/react": "catalog:",
+        "@types/react-dom": "catalog:",
+        "eslint": "catalog:",
+        "react": "catalog:",
+        "react-dom": "catalog:",
+        "typescript": "catalog:",
+      },
+      "peerDependencies": {
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
       },
     },
     "packages/email": {
@@ -1493,6 +1525,8 @@
     "@caisson/compliance-core": ["@caisson/compliance-core@workspace:packages/compliance-core"],
 
     "@caisson/credits": ["@caisson/credits@workspace:packages/credits"],
+
+    "@caisson/demo-registry": ["@caisson/demo-registry@workspace:packages/demo-registry"],
 
     "@caisson/design-critic": ["@caisson/design-critic@workspace:tooling/design-critic"],
 
