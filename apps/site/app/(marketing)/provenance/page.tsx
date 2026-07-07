@@ -14,6 +14,7 @@ import {
   Terminal,
   type IconName,
 } from "@/components";
+import { TrialPath } from "@/components/trial-path";
 import { MediaPlaceholder } from "@/components/media-placeholder";
 import { requireBundlePage } from "@/lib/bundle-pages";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
@@ -327,6 +328,19 @@ export default function ProvenancePage() {
       <Reveal>
         <Section eyebrow="Questions" title="What an auditor asks first.">
           <Faq items={FAQ} style={{ marginTop: "var(--cs-space-8)" }} />
+        </Section>
+      </Reveal>
+
+      {/* ===== Prove fit in week one (ADR-0272 §3) ===== */}
+      <Reveal>
+        <Section
+          eyebrow="Trial path"
+          title="Prove fit in week one."
+          lede="Don't take the fit on faith — scaffold the audited base and run it on your own stack before you commit."
+        >
+          <div style={{ marginTop: "var(--cs-space-6)" }}>
+            <TrialPath />
+          </div>
         </Section>
       </Reveal>
 

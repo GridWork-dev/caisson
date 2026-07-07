@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 import { Faq, Icon, StatusChip } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { MediaPlaceholder } from "@/components/media-placeholder";
+import { TrialPath } from "@/components/trial-path";
 import { bundlePageRecord } from "@/lib/bundle-pages";
 import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
 import { BUNDLE_MARKS, moduleMark } from "@/lib/marks";
@@ -285,6 +286,9 @@ export function BundlePreviewDialog({
                   ))}
                 </ul>
               ) : null}
+
+              {/* Prove fit in week one (ADR-0272 §3). */}
+              <TrialPath compact />
 
               {/* Collapsed FAQ accordion (native <details>, closed by default). */}
               {record.faq.length > 0 ? <Faq items={record.faq} /> : null}

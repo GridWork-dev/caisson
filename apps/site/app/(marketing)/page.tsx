@@ -656,6 +656,83 @@ export default function HomePage() {
         </Section>
       </Reveal>
 
+      {/* ===== Built in the open — the interim social-proof answer (ADR-0272 §4 / ADR-0273) ===== */}
+      <Reveal>
+        <Section
+          eyebrow="Built in the open"
+          title="No logo wall yet. Here's what you can check instead."
+          lede="We're early — no logo wall to point at yet, and we'd rather say that than fake one. Here's what you can verify instead: the base is open source you can read, the changelog is public, and the source ships to you to audit."
+          band="surface"
+        >
+          <FeatureGrid cols={3}>
+            <Card>
+              <div className="cs-status">
+                <Icon name="check" size="lg" />
+                Open Apache-2.0 Base
+              </div>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                15 base packages — the kernel, auth, tenant isolation, billing,
+                and the generator tooling — ship under Apache-2.0. Read them,
+                audit them, and share them: the base is peer-reviewable by the
+                license every buyer receives it under.
+              </p>
+              <div style={{ marginTop: "var(--cs-space-5)" }}>
+                <Button href="/legal/license" variant="ghost">
+                  What&rsquo;s open
+                </Button>
+              </div>
+            </Card>
+            <Card>
+              <div className="cs-status">
+                <Icon name="git-branch" size="lg" />A public changelog
+              </div>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                Every release is logged in the open, in plain English — what
+                shipped, release by release. No private roadmap you have to take
+                on faith, and the buyer dashboard shows your own live
+                updates-window.
+              </p>
+              <div style={{ marginTop: "var(--cs-space-5)" }}>
+                <Button href="/updates" variant="ghost">
+                  Read the updates
+                </Button>
+              </div>
+            </Card>
+            <Card>
+              <div className="cs-status">
+                <Icon name="users" size="lg" />
+                Be an early reference
+              </div>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                A limited first cohort of design partners gets discounted access
+                in exchange for a citable case study and a direct line to the
+                engineer. A reference partnership — not a waitlist.
+              </p>
+              <div style={{ marginTop: "var(--cs-space-5)" }}>
+                <Button href="/partners" variant="ghost">
+                  Design partners
+                </Button>
+              </div>
+            </Card>
+          </FeatureGrid>
+          <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
+            Handing this to a security review?{" "}
+            <Link href="/evidence" style={{ color: "var(--cs-link)" }}>
+              See the evidence pack
+            </Link>
+          </p>
+        </Section>
+      </Reveal>
+
       {/* ===== Get started ===== */}
       <Reveal>
         <Section
