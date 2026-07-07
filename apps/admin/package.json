@@ -1,6 +1,7 @@
 {
   "name": "@caisson/admin",
   "version": "0.0.5",
+  "license": "LicenseRef-Caisson-Commercial",
   "private": true,
   "type": "module",
   "scripts": {
