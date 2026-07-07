@@ -5,8 +5,29 @@
 // survives a subscription cancel; revokes are soft (status flips, row stays) + idempotent; RLS isolates
 // accounts and refuses a cross-tenant write. Each test uses its own account id — no cross-test cleanup.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { LEGACY_ENTITLEMENT_ALIASES } from "@caisson/registry-schema";
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { withTenant } from "@caisson/tenancy-rls";
+
+/**
+ * Run `body` with a temporary MODULE-RENAME alias installed in the shared spine (ADR-0270 narrowed the
+ * production spine to empty, but the read-back alias fold must survive for the NEXT rename). Injects
+ * `old → current` for the duration, then restores — the surviving-alias stand-in the edition ids used to
+ * be. The store read-backs (`extendUpdatesWindow`, `subscriptionCoverageHorizons`) fold this group in SQL.
+ */
+async function withRenameAlias(
+  old: string,
+  current: string,
+  body: () => Promise<void>,
+): Promise<void> {
+  const spine = LEGACY_ENTITLEMENT_ALIASES as Map<string, string>;
+  spine.set(old, current);
+  try {
+    await body();
+  } finally {
+    spine.delete(old);
+  }
+}
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
@@ -530,38 +551,41 @@ describe("updates windows (ADR-0244/0255 per-entitlement)", () => {
     ).rejects.toThrow(/extends no active/);
   });
 
-  test("a CANONICAL renewal id extends a LEGACY-keyed grant (alias-group convergence)", async () => {
-    // Pre-fold buyers hold grants under the old vocabulary ("ai-kit"); resolveRenewal hands the
-    // fulfillment mapper the canonical id ("ai-production"). The alias-group match bridges the two
-    // spellings — without it every legacy buyer's renewal would fail-closed-throw.
+  test("a renewal under the CURRENT rename spelling extends a grant keyed to the OLD spelling (alias-group convergence)", async () => {
+    // A buyer holds a one_time grant under a module's OLD slug ("mod-old"); a later rename makes the
+    // canonical spelling "mod-new" (the surviving-alias stand-in for what the edition ids used to be,
+    // ADR-0270). The alias-group match bridges the two spellings in SQL — without it the renewal would
+    // fail-closed-throw. The next module rename is exactly this shape.
     const acct = "acct_win_alias";
-    await withTenant(tp.pg, acct, (tx) =>
-      grantEntitlements(tx, {
-        accountId: acct,
-        entitlementIds: ["ai-kit"],
-        sourceEventId: "pay_legacy",
-        source: onetime("pay_legacy"),
-      }),
-    );
-    const extended = await withTenant(tp.pg, acct, (tx) =>
-      extendUpdatesWindow(tx, {
-        accountId: acct,
-        entitlementId: "ai-production",
-        sourceEventId: "pay_renew_alias",
-      }),
-    );
-    expect(extended).toBe(1);
-
-    // The tolerance is a bridge, not a wildcard: an alias-group miss still fails closed.
-    await expect(
-      withTenant(tp.pg, acct, (tx) =>
+    await withRenameAlias("mod-old", "mod-new", async () => {
+      await withTenant(tp.pg, acct, (tx) =>
+        grantEntitlements(tx, {
+          accountId: acct,
+          entitlementIds: ["mod-old"],
+          sourceEventId: "pay_legacy",
+          source: onetime("pay_legacy"),
+        }),
+      );
+      const extended = await withTenant(tp.pg, acct, (tx) =>
         extendUpdatesWindow(tx, {
           accountId: acct,
-          entitlementId: "local-first",
-          sourceEventId: "pay_renew_miss",
+          entitlementId: "mod-new",
+          sourceEventId: "pay_renew_alias",
         }),
-      ),
-    ).rejects.toThrow(/extends no active/);
+      );
+      expect(extended).toBe(1);
+
+      // The tolerance is a bridge, not a wildcard: an alias-group miss still fails closed.
+      await expect(
+        withTenant(tp.pg, acct, (tx) =>
+          extendUpdatesWindow(tx, {
+            accountId: acct,
+            entitlementId: "compliance",
+            sourceEventId: "pay_renew_miss",
+          }),
+        ),
+      ).rejects.toThrow(/extends no active/);
+    });
   });
 
   test("a renewal extends ONLY the named entitlement's rows", async () => {
@@ -1111,38 +1135,40 @@ describe("ADR-0269 subscription-covered pairs (horizon-extended claims + the own
     ).toEqual({ compliance: "2027-01-05T00:00:00.000Z" });
   });
 
-  test("coverage is ALIAS-TOLERANT: a mirror under the canonical bundle id extends a legacy-keyed one_time pair", async () => {
+  test("coverage is ALIAS-TOLERANT: a mirror under the CURRENT rename spelling extends an OLD-keyed one_time pair", async () => {
     const acct = "acct_covered_alias";
-    // Legacy vocabulary one_time buy (pre-0257 rows store `ai-kit`)…
-    await withTenant(tp.pg, acct, (tx) =>
-      grantEntitlements(tx, {
-        accountId: acct,
-        entitlementIds: ["ai-kit"],
-        sourceEventId: "al_ot",
-        source: onetime("al_ot"),
-      }),
-    );
-    await tp.query(
-      `UPDATE entitlement_grant SET granted_at = $2 WHERE account_id = $1`,
-      [acct, "2026-01-05T00:00:00.000Z"],
-    );
-    // …covered by a mirror written under the CANONICAL id (ai-production).
-    await withTenant(tp.pg, acct, (tx) =>
-      upsertSubscriptionGrants(tx, {
-        accountId: acct,
-        entitlementIds: ["ai-production"],
-        subscriptionId: "sub_al",
-        sourceEventId: "al_sub",
-        cadence: "year",
-        coverageMirror: true,
-      }),
-    );
-    const windows = await withTenant(tp.pg, acct, (tx) =>
-      computeUpdatesWindows(tx, acct),
-    );
-    expect(Date.parse(windows["ai-kit"] ?? "")).toBeGreaterThan(
-      Date.parse("2027-01-05T00:00:00.000Z"),
-    );
+    await withRenameAlias("mod-old", "mod-new", async () => {
+      // A one_time buy under the OLD module slug (the surviving-alias stand-in for a pre-rename buyer)…
+      await withTenant(tp.pg, acct, (tx) =>
+        grantEntitlements(tx, {
+          accountId: acct,
+          entitlementIds: ["mod-old"],
+          sourceEventId: "al_ot",
+          source: onetime("al_ot"),
+        }),
+      );
+      await tp.query(
+        `UPDATE entitlement_grant SET granted_at = $2 WHERE account_id = $1`,
+        [acct, "2026-01-05T00:00:00.000Z"],
+      );
+      // …covered by a mirror written under the CURRENT (renamed) spelling.
+      await withTenant(tp.pg, acct, (tx) =>
+        upsertSubscriptionGrants(tx, {
+          accountId: acct,
+          entitlementIds: ["mod-new"],
+          subscriptionId: "sub_al",
+          sourceEventId: "al_sub",
+          cadence: "year",
+          coverageMirror: true,
+        }),
+      );
+      const windows = await withTenant(tp.pg, acct, (tx) =>
+        computeUpdatesWindows(tx, acct),
+      );
+      expect(Date.parse(windows["mod-old"] ?? "")).toBeGreaterThan(
+        Date.parse("2027-01-05T00:00:00.000Z"),
+      );
+    });
   });
 
   test("reconcileCoverageGrants sweeps ONLY the orphaned mirror — backed mirrors and STATIC grants survive", async () => {

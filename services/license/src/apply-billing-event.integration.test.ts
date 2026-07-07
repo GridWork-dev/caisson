@@ -5,7 +5,27 @@
 // cancel never claws back. Each test uses its own account id so no cross-test cleanup is needed.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { ConfigError, asCredits } from "@caisson/kernel";
+import { LEGACY_ENTITLEMENT_ALIASES } from "@caisson/registry-schema";
 import { type TestPg, newTestPg } from "@caisson/testing";
+
+/**
+ * Run `body` with a temporary MODULE-RENAME alias installed in the shared spine (ADR-0270 narrowed the
+ * production spine to empty; the renewal read-back fold must survive for the NEXT rename). Injects
+ * `old → current`, then restores — the surviving-alias stand-in the dissolved edition ids used to be.
+ */
+async function withRenameAlias(
+  old: string,
+  current: string,
+  body: () => Promise<void>,
+): Promise<void> {
+  const spine = LEGACY_ENTITLEMENT_ALIASES as Map<string, string>;
+  spine.set(old, current);
+  try {
+    await body();
+  } finally {
+    spine.delete(old);
+  }
+}
 import {
   CREDIT_LINE_ITEM_MIGRATION_SQL,
   CREDIT_EXPIRY_MIGRATION_SQL,
@@ -1255,37 +1275,41 @@ describe("applyBillingEvent — updates-renewal lines (ADR-0244/0251)", () => {
     ]);
   });
 
-  test("a renewal against a LEGACY-keyed grant row still surfaces renewedEntitlements (alias fold)", async () => {
+  test("a renewal against an OLD-rename-keyed grant row still surfaces renewedEntitlements (alias fold)", async () => {
     const acct = "acct_renewal_legacy";
-    // A pre-ADR-0257 buyer: the grant row stores the LEGACY id (`ai-kit`), while the RENEWAL_BOOK
-    // resolves its renewal price to the canonical `ai-production`. The extension matches via the
-    // alias group; the email-surfacing read-back must fold the same group or the notice silently
-    // drops (windows keys by the RAW stored id — the fable-audit F2 regression).
-    await withTenant(tp.pg, acct, (tx) =>
-      grantEntitlements(tx, {
-        accountId: acct,
-        entitlementIds: ["ai-kit"],
-        sourceEventId: "pay_legacy_base",
-        source: { kind: "one_time", purchaseId: "pay_legacy_base" },
-      }),
-    );
+    // A pre-rename buyer: the grant row stores the OLD module slug, while the renewal price resolves to
+    // the CURRENT canonical id (`ai-production`). ADR-0270 emptied the edition spine, so this exercises
+    // the fold against a surviving-alias STAND-IN (`ai-production-old → ai-production`) — the shape the
+    // next module rename takes. The extension matches via the alias group; the email-surfacing read-back
+    // must fold the same group or the notice silently drops (windows key by the RAW stored id — the
+    // fable-audit F2 regression).
+    await withRenameAlias("ai-production-old", "ai-production", async () => {
+      await withTenant(tp.pg, acct, (tx) =>
+        grantEntitlements(tx, {
+          accountId: acct,
+          entitlementIds: ["ai-production-old"],
+          sourceEventId: "pay_legacy_base",
+          source: { kind: "one_time", purchaseId: "pay_legacy_base" },
+        }),
+      );
 
-    const effect = await withTenant(tp.pg, acct, (tx) =>
-      applyBillingEvent(
-        tx,
-        purchaseCompleted(acct, "pay_legacy_ren", RENEWAL_AI_PRODUCTION_ID),
-      ),
-    );
+      const effect = await withTenant(tp.pg, acct, (tx) =>
+        applyBillingEvent(
+          tx,
+          purchaseCompleted(acct, "pay_legacy_ren", RENEWAL_AI_PRODUCTION_ID),
+        ),
+      );
 
-    const windows = await withTenant(tp.pg, acct, (tx) =>
-      computeUpdatesWindows(tx, acct),
-    );
-    const newWindowEnd = windows["ai-kit"]; // keyed by the raw stored id
-    if (newWindowEnd === undefined)
-      throw new Error("expected a computed window on the legacy row");
-    expect(effect.renewedEntitlements).toEqual([
-      { entitlementId: "ai-production", newWindowEnd },
-    ]);
+      const windows = await withTenant(tp.pg, acct, (tx) =>
+        computeUpdatesWindows(tx, acct),
+      );
+      const newWindowEnd = windows["ai-production-old"]; // keyed by the raw stored id
+      if (newWindowEnd === undefined)
+        throw new Error("expected a computed window on the old-spelling row");
+      expect(effect.renewedEntitlements).toEqual([
+        { entitlementId: "ai-production", newWindowEnd },
+      ]);
+    });
   });
 
   test("a renewal WITHOUT an active grant THROWS (fail-closed — never mints a grant)", async () => {

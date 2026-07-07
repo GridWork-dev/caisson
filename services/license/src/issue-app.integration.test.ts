@@ -571,7 +571,7 @@ describe("POST /issue updates windows (ADR-0244/0255)", () => {
     await withTenant(tp.pg, acct, (tx) =>
       grantEntitlements(tx, {
         accountId: acct,
-        entitlementIds: ["compliance", "local-ai"],
+        entitlementIds: ["compliance", "local-first"],
         sourceEventId: "pay_win_pair",
         source: { kind: "one_time", purchaseId: "pay_win_pair" },
       }),
@@ -582,7 +582,7 @@ describe("POST /issue updates windows (ADR-0244/0255)", () => {
     const beforeWindows =
       verifyLicenseWithKey(before.token, DEV_PUB).claims?.updatesWindows ?? {};
     expect(beforeWindows.compliance).toBeDefined();
-    expect(beforeWindows["local-ai"]).toBeDefined();
+    expect(beforeWindows["local-first"]).toBeDefined();
 
     // Renewing ONLY compliance extends ONLY its window.
     await withTenant(tp.pg, acct, (tx) =>
@@ -600,8 +600,8 @@ describe("POST /issue updates windows (ADR-0244/0255)", () => {
     expect(Date.parse(afterWindows.compliance as string)).toBeGreaterThan(
       Date.parse(beforeWindows.compliance as string),
     );
-    // local-ai's window is BYTE-IDENTICAL — no cross-entitlement coupling (ADR-0255 D2).
-    expect(afterWindows["local-ai"]).toBe(beforeWindows["local-ai"]);
+    // local-first's window is BYTE-IDENTICAL — no cross-entitlement coupling (ADR-0255 D2).
+    expect(afterWindows["local-first"]).toBe(beforeWindows["local-first"]);
   });
 });
 

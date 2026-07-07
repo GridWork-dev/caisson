@@ -91,12 +91,14 @@ describe("resolveAccountEntitlements (ADR-0071)", () => {
     expect([...resolved].sort()).toEqual(["@caisson/compliance"]);
   });
 
-  test("the bundle resolves to every module (base ∪ all editions)", async () => {
+  test("the everything bundle resolves to every module (base ∪ all editions)", async () => {
     const acct = "acct_bundle";
+    // ADR-0270: the legacy `bundle` sentinel is purged; the whole catalog is bought as `everything`,
+    // which on an index without an explicit everything bundle entry derives base ∪ every edition.
     await withTenant(tp.pg, acct, (tx) =>
       grantEntitlements(tx, {
         accountId: acct,
-        entitlementIds: ["bundle"],
+        entitlementIds: ["everything"],
         sourceEventId: "in_b",
         source: { kind: "one_time", purchaseId: "pi_b" },
       }),
