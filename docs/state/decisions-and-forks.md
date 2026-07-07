@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-07
 status: live
-adr_ceiling: 0271
+adr_ceiling: 0278
 ---
 
 # Decisions & Forks — live board
@@ -1403,3 +1403,49 @@ latent red).
   everything-members pin).
 
 **Cookiy key rotation** stays trigger-parked (after quant fills; monitor armed).
+
+## 2026-07-07 fourth sitting — wave merged, deep analysis delivered, research-response picker (ADR-0272–0278)
+
+**Merged this sitting:** PR #139 (ui-pro wave: 4 new components + 3 hardening fixes + `/ui`
+gallery; review P1+5 P2s fixed pre-merge) · PR #140 (two cache-masked main test reds:
+audit-harness container-root coverage + the mcp-server ADR-0270 stale pin; root turbo `test`
+now `dependsOn ^build` — 179/179 cold-sweep proof) · PR #141 (marketplace purchase pop-outs +
+bundle record + two-column nav + cart upsell + search + compare tray; both audits PASS,
+3 P2s fixed + rebase onto post-U main). ADR-0271 delist SHIPPED same sitting: PR #138 merged,
+Worker republished at the 44-entry index (version `aa27cb94`), anon base floor 15 unchanged.
+
+**Cookiy deep analysis delivered** (`outputs/research/prelaunch-fanout-2026-07/cookiy-deep-analysis-2026-07-07.md`):
+all 45 raw transcripts re-analyzed (45 extractions → 4 lenses → accuracy critic). Headline:
+the vendor report's themes are synthetic-derived (4/5 humans never reached the pitch);
+proof-artifact SURFACING is the top action; social proof (~31/40) is the top pre-launch risk;
+Theme 2's maturity axis is fabricated — do not use in positioning.
+
+**Research-response picker round 1 (site/GTM) — LOCKED:**
+
+- **Site surfaces — all four** (ADR-0272): evidence-pack page · stack-fit adapter matrix ·
+  trial-path emphasis · founder-transparency block.
+- **Pricing terms — full rework now** (ADR-0272 §5): post-12-months answer on the pricing
+  page, renewal = security-patch continuity, support-responsiveness line,
+  licensing/redistribution clarity at checkout.
+- **Social proof → design-partner program** (ADR-0273): first-N reference deal, terms
+  prepped now (numbers operator-owned), quiet application surface rides the site wave,
+  launches at the production flip.
+- **Next qual → restructured real-ICP round AFTER quant fills** (trigger-parked): fix the
+  guide (pitch+price by mid-interview, ICP screener tightened), needs Cookiy balance top-up.
+
+**Research-response picker round 2 (product/architecture; operator-opened — "prelaunch, no
+repercussions, launch gated on LLC+EIN+Paddle account") — LOCKED:**
+
+- **Evaluation access — BOTH** (ADR-0274): generator demo mode + time-boxed eval licenses,
+  with the operator's binding anti-exfiltration rider (verified work email/domain, $0-auth
+  card, operator review queue, per-eval source watermarking, fail-closed expiry).
+- **Evidence pack — CI-generated artifact** (ADR-0275): per-bundle threat model + OSCAL
+  crosswalk + coverage + SBOM + attestation; pre-purchase download AND in the tarball;
+  release-gating (an incomplete pack fails CI loud).
+- **Continuity — EULA clause** (ADR-0276): perpetual offline verification + source retention
+  - self-maintenance conversion if patches stop N months; the auto-open-source dead-man was
+    considered and DECLINED.
+- **Product tail — all three** (ADR-0277 crosswalks · ADR-0278 support SKU · a spike):
+  SOC 2/PCI-DSS/GDPR crosswalk exports (FedRAMP deferred) · priority-support subscription SKU
+  (frame locked, price/SLA operator-owned) · MySQL-compat scoping SPIKE (decision doc, not
+  code).
