@@ -6,6 +6,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { semanticCssLines } from "../src/tokens/css-vars";
 import { foundation } from "../src/tokens/foundation";
 import {
   darkTheme,
@@ -17,29 +18,10 @@ import {
 } from "../src/tokens/theme";
 import type { FunctionalTokens, SemanticTheme } from "../src/tokens/types";
 
-/** Semantic role → CSS var suffix. Explicit (not derived) for stable ordering + clean names. */
-const SEMANTIC_VARS: ReadonlyArray<readonly [keyof SemanticTheme, string]> = [
-  ["bg", "bg"],
-  ["surface1", "surface-1"],
-  ["surface2", "surface-2"],
-  ["border", "border"],
-  ["borderStrong", "border-strong"],
-  ["fg", "fg"],
-  ["fgMuted", "fg-muted"],
-  ["accent", "accent"],
-  ["accentHover", "accent-hover"],
-  ["onAccent", "on-accent"],
-  ["accentTint", "accent-tint"],
-  ["focus", "focus"],
-  ["link", "link"],
-  ["glowAccent", "glow-accent"],
-  ["scrim", "scrim"],
-];
-
+// Semantic role -> CSS var suffix mapping lives in ../src/tokens/css-vars.ts (shared with the
+// runtime theme API, ../src/theme/apply-theme.ts) so the two can never drift apart.
 function semanticBlock(theme: SemanticTheme): string {
-  return SEMANTIC_VARS.map(
-    ([key, name]) => `  --cs-${name}: ${theme[key]};`,
-  ).join("\n");
+  return semanticCssLines(theme, 2).join("\n");
 }
 
 // Functional/status tokens are per-mode (the dark set fails AA on light surfaces) — emitted with
