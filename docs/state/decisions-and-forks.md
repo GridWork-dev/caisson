@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-07
 status: live
-adr_ceiling: 0285
+adr_ceiling: 0287
 ---
 
 # Decisions & Forks — live board
@@ -1572,3 +1572,23 @@ operator-owned) — awaiting operator text approval.
   gates on all: site wave (ADR-0285 + annotation fixes) · admin GitHub OAuth (ADR-0283) ·
   unified catalog + emails (ADR-0284, kit stage 3 folded) · Track E2 verified eval licenses
   (ADR-0274/0280, fable at SHIP) + tails (CAISSON-39/42).
+
+**Eighth sitting (same day — Cookiy key truth + intel/catalog research picker):**
+
+- **Cookiy false alarm reversed:** the "quant legs never launched" finding was a
+  wrong-account-key artifact (stale session-pasted key fails SILENTLY with empty-looking
+  states). Verified with the fresh account key: frame test 776545 recruit active 20/60,
+  Van Westendorp 445432 active 14/60, balance $8.25 — both filling. Fresh key set as the sole
+  `COOKIY_API_KEY`, old keys scrubbed from env backups, CAISSON-36 canceled.
+- **F-1 index-parity probe** folded into the running E2 builder (license `/health` gains
+  `indexDigest`, `registry/scripts/index-parity-probe.ts`; admin leg queued behind the admin
+  merge queue) — CAISSON-37.
+- **Admin intelligence layer — LOCKED as ADR-0286** (operator override of the memo's lean
+  default): standing daemon in ONE local container on gw-ms-a2 + dormant wiring + error triage
+  - an admin intel page, findings pushed to the admin Postgres and surfaced on
+    admin.caisson.sh; frameworks = all four + monthly SOC2; scheduling prefers Claude Code
+    Routines/cloud agents, else the local container. Research memo:
+    `outputs/research/admin-intel-catalog-roadmap-memo-2026-07-07.md`.
+- **Catalog wave-1 — LOCKED as ADR-0287:** BOTH in parallel — the S-effort driver batch
+  (analytics port · Slack ChatPlatform · Clerk · BullMQ) and the Next.js starter template.
+- OAuth (ADR-0283) build returned; fable + opus audits running on the diff before its PR.
