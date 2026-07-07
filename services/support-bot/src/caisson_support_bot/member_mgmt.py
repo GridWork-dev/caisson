@@ -85,6 +85,21 @@ def edition_role_id(settings: Settings, edition: str) -> int | None:
     return value if isinstance(value, int) else None
 
 
+def member_has_priority_support(settings: Settings, member: discord.Member | None) -> bool:
+    """``True`` iff ``member`` currently holds the configured priority-support role.
+
+    Fail-closed (ADR-0278 Track K, price-agnostic plumbing): an unset role id, a member with no
+    guild context (e.g. a DM), or the role simply not being held all resolve to ``False`` — the
+    escalation takes the normal lane. Deliberately separate from ``_EDITION_ROLE_ATTR`` /
+    ``editions_for_entitlements``: priority support is a standalone subscription, not an edition —
+    folding it into that map would make a plain ``bundle`` purchase grant it too.
+    """
+    role_id = settings.role_priority_support_id
+    if role_id is None or member is None:
+        return False
+    return any(r.id == role_id for r in member.roles)
+
+
 def role_outranks_bot(role: discord.Role, bot_top_role: discord.Role) -> bool:
     """``True`` when ``role`` is at or above the bot's highest role — the bot cannot manage it.
 

@@ -77,6 +77,17 @@ const FACTS: PricingFacts = {
       from: false,
       note: "Custom procurement, SSO, and support SLAs.",
     },
+    // Priority-support (ADR-0278 Track K): unpriced today, mirroring the live SOT (`pricing.ts`
+    // `PLAN_PRICES`) exactly — a real fixture case, not a hypothetical, since this row already ships
+    // in the SOT ahead of its price.
+    {
+      id: "priority-support",
+      label: "Priority support",
+      amount: null,
+      unit: null,
+      from: false,
+      note: "Response-time commitment: unset.",
+    },
   ],
 };
 
@@ -122,6 +133,36 @@ describe("generatePricingSources", () => {
     const plans = raw("pricing/plans");
     expect(plans).toContain("## Developer plan — $499/yr");
     expect(plans).toContain("## Enterprise — Contact us");
+  });
+
+  // ADR-0278 Track K (fable F2, pre-merge fix): an unpriced row must never reach the public RAG
+  // corpus — a prospect would be handed internal-register config copy ("Response-time commitment:
+  // unset.") as if it were a real answer. Enterprise shares the null-amount shape but is a real,
+  // live "Contact us" CTA, so it must still render — proving the filter is id-scoped, not a blanket
+  // "any null amount disappears" rule that would silently break Enterprise too.
+  test("an unpriced plan (priority-support) is absent from the corpus; Enterprise still renders", () => {
+    const plans = raw("pricing/plans");
+    expect(plans).not.toContain("Priority support");
+    expect(plans).not.toContain("Response-time commitment: unset.");
+    expect(plans).toContain("## Enterprise — Contact us");
+  });
+
+  test("the unpriced plan reappears once the SOT sets a real amount", () => {
+    const priced: PricingFacts = {
+      ...FACTS,
+      plans: FACTS.plans.map((p) =>
+        p.id === "priority-support"
+          ? {
+              ...p,
+              amount: 199,
+              unit: "month" as const,
+              note: "Priority response lane.",
+            }
+          : p,
+      ),
+    };
+    const plans = raw("pricing/plans", priced);
+    expect(plans).toContain("## Priority support — $199/mo");
   });
 
   test("a changed price regenerates the doc (new figure in, old figure out)", () => {

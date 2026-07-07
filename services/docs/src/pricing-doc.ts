@@ -148,6 +148,11 @@ function modulesDoc(facts: PricingFacts): string {
   return lines.join("\n");
 }
 
+/** Row ids the SOT prices as `amount: null` for reasons OTHER than "not yet purchasable" — Enterprise
+ *  is a real, live "Contact us" CTA, not an unpriced/unshippable SKU, so it must survive the
+ *  unpriced-row filter below even though it shares the same null-amount shape. */
+const NULL_AMOUNT_IS_INTENTIONAL: ReadonlySet<string> = new Set(["enterprise"]);
+
 function plansDoc(facts: PricingFacts): string {
   const lines = [
     "---",
@@ -160,7 +165,14 @@ function plansDoc(facts: PricingFacts): string {
     "Beyond the one-time bundles: subscriptions, per-module purchase, and enterprise.",
     "",
   ];
-  for (const plan of facts.plans) {
+  // A row with amount:null is UNPRICED (never purchasable yet, ADR-0278 Track K), not "Contact us
+  // is the price" — emitting it here would put internal-register config copy ("Response-time
+  // commitment: unset.") in front of a prospect on the public RAG corpus. Filtered by the null-amount
+  // predicate, EXCEPT the explicitly-allowlisted ids above that are intentionally price-free.
+  const plans = facts.plans.filter(
+    (p) => p.amount !== null || NULL_AMOUNT_IS_INTENTIONAL.has(p.id),
+  );
+  for (const plan of plans) {
     lines.push(`## ${plan.label} — ${fmtPrice(plan)}`, "", plan.note, "");
   }
   return lines.join("\n");

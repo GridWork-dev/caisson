@@ -27,6 +27,11 @@ describe("pricing corpus (real SOT)", () => {
     // impossible.
     expect(pricing.some((c) => c.text.includes("$1,049"))).toBe(true);
     expect(corpus.pages.some((p) => p.kind === "pricing")).toBe(true);
+    // ADR-0278 Track K (fable F2): the real SOT currently carries an unpriced priority-support row
+    // (`amount: null`) — it must never reach the public corpus with internal "unset" config copy.
+    expect(
+      pricing.some((c) => c.text.includes("Response-time commitment: unset.")),
+    ).toBe(false);
   });
 
   test("the docs-only corpus is unchanged — no pricing chunks without facts", () => {

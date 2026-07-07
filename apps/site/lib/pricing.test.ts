@@ -20,6 +20,8 @@ import {
   PERSONA_BUNDLE_IDS,
   PLAN_PRICES,
   priceById,
+  PRIORITY_SUPPORT_RESPONSE_TIME,
+  prioritySupportResponseTimeCopy,
   renewalAmount,
 } from "./pricing";
 
@@ -138,15 +140,40 @@ describe("renewalAmount (ADR-0260 §5 40%-X9 ladder)", () => {
 });
 
 describe("PLAN_PRICES", () => {
-  test("carries no null-amount rows except Enterprise", () => {
+  test("carries no null-amount rows except Enterprise and priority-support", () => {
     const nullRows = PLAN_PRICES.filter((p) => p.amount === null);
-    expect(nullRows.map((p) => p.id)).toEqual(["enterprise"]);
+    expect(nullRows.map((p) => p.id).sort()).toEqual([
+      "enterprise",
+      "priority-support",
+    ]);
   });
 
   test("carries no one-time bundle row (BUNDLE_PRICES owns the bundles)", () => {
     // The legacy $1,499 "Everything bundle" plan row retired with the W7 flip — a second bundle
     // anchor here would let two different Everything prices render at once.
     expect(PLAN_PRICES.find((p) => p.id === "bundle")).toBeUndefined();
+  });
+
+  // Track K (ADR-0278, price-agnostic plumbing): the priority-support SKU must stay fail-closed —
+  // no price, no unit, so no existing generic renderer (formatPrice's yearly-range math, the cart)
+  // can accidentally treat it as purchasable.
+  test("priority-support carries no price, no unit, and is absent from every checkout surface", () => {
+    const row = priceById("priority-support");
+    expect(row).toBeDefined();
+    expect(row?.amount).toBeNull();
+    expect(row?.unit).toBeNull();
+  });
+});
+
+describe("prioritySupportResponseTimeCopy (ADR-0278 response-time copy surface)", () => {
+  test("the config source is unset (operator-owned; no placeholder number)", () => {
+    expect(PRIORITY_SUPPORT_RESPONSE_TIME).toBeNull();
+  });
+
+  test("renders an honest unset line, never a fabricated commitment or the word SLA", () => {
+    const copy = prioritySupportResponseTimeCopy();
+    expect(copy.toLowerCase()).not.toContain("sla");
+    expect(copy).toBe("Response-time commitment: unset.");
   });
 });
 

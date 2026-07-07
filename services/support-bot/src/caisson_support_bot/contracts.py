@@ -93,3 +93,7 @@ class Ticket(BaseModel):
     status: TicketStatus = TicketStatus.open
     discord_thread_id: int | None = None
     created_at: datetime | None = None
+    # Priority-support routing signal (ADR-0278 Track K): True iff the escalating member held the
+    # configured priority-support Discord role at escalation time. Fail-closed default — no signal
+    # (unset role config, no guild member context, or no role) means the normal lane.
+    priority: bool = False
