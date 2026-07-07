@@ -1,0 +1,420 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useRef } from "react";
+
+import { CodeBlock, Faq, Icon, StatusChip } from "@/components";
+import { AddToCartButton } from "@/components/add-to-cart-button";
+import { MediaCarousel } from "@/components/media-carousel";
+import { bundleLabel, bundlePagePath } from "@/components/marketplace";
+import { TrialPath } from "@/components/trial-path";
+import { bundlePageRecord } from "@/lib/bundle-pages";
+import {
+  bundleCatalogItem,
+  moduleCatalogItem,
+  toCartItem,
+  type CatalogItem,
+} from "@/lib/catalog";
+import { BUNDLE_MARKS, moduleMark } from "@/lib/marks";
+import { mediaSlides, type MediaSlide } from "@/lib/media-manifest";
+import { MODULE_PAGES } from "@/lib/module-pages";
+import { entryByViewId, type SurfaceEntry } from "@/lib/marketplace-surface";
+import { modulePostureGroup } from "@/lib/stack-fit";
+import {
+  bundleModuleSubtotal,
+  bundlePriceById,
+  everythingSavings,
+  formatPrice,
+  formatUsd,
+  isBundleId,
+  moduleCatalogSubtotal,
+  MODULE_PRICES,
+  modulesByBundle,
+} from "@/lib/pricing";
+
+// Universal stack-compat badges — true of every sellable module (TypeScript source, a perpetual
+// one-time license, composed on the shared base). No per-module compat field exists, so these are
+// the honest shared facts, never a fabricated per-module claim (copy law ADR-0080).
+const STACK_COMPAT: readonly string[] = [
+  "TypeScript",
+  "One-time license",
+  "Composes on the base",
+];
+
+/** The normalized view model — the ONE shape the shared chrome renders, adapted from the two data
+ *  shapes (a module's flat `amount` + depth record vs a bundle's `PriceAnchor` + members). */
+interface ViewModel {
+  entry: SurfaceEntry;
+  mark: string;
+  kindLabel: "Module" | "Bundle";
+  priceStr: string;
+  slides: readonly MediaSlide[];
+  cartItem: CatalogItem | undefined;
+  faq: readonly { question: string; answer: string }[];
+  footer: { href: string; label: string } | null;
+  /** Kind-specific body — rendered below the shared media + blurb. */
+  body: React.ReactNode;
+}
+
+function buildViewModel(entry: SurfaceEntry): ViewModel {
+  const slides = mediaSlides(entry.kind, entry.id);
+  if (entry.kind === "module") return moduleViewModel(entry, slides);
+  return bundleViewModel(entry, slides);
+}
+
+function moduleViewModel(
+  entry: SurfaceEntry,
+  slides: readonly MediaSlide[],
+): ViewModel {
+  const m = MODULE_PRICES.find((p) => p.id === entry.id);
+  const record = MODULE_PAGES.find((r) => r.slug === entry.id);
+  const hasDetail = record !== undefined;
+  // The module's honest DB posture (from /stack-fit) shown at the point of purchase (ADR-0285 §2).
+  const posture = modulePostureGroup(entry.id);
+  return {
+    entry,
+    mark: moduleMark(entry.id),
+    kindLabel: "Module",
+    priceStr: formatUsd(entry.amount),
+    slides,
+    cartItem: moduleCatalogItem(entry.id),
+    faq: record?.faq ?? [],
+    footer: hasDetail
+      ? { href: `/marketplace/modules/${entry.id}`, label: "Open full page →" }
+      : null,
+    body: (
+      <>
+        {/* DB posture (single-sourced from /stack-fit) + stack-compat + bundle-membership badges */}
+        <div className="cs-preview-badges">
+          {posture ? (
+            <StatusChip
+              label={posture.heading}
+              icon={posture.icon}
+              tone="accent"
+            />
+          ) : null}
+          {STACK_COMPAT.map((c) => (
+            <StatusChip key={c} label={c} tone="muted" />
+          ))}
+          {m && m.bundles.length === 0 ? (
+            <span
+              className="cs-muted"
+              style={{ fontSize: "var(--cs-text-xs)" }}
+            >
+              Sold standalone — not included in any bundle.
+            </span>
+          ) : (
+            m?.bundles.map((b) => (
+              <Link
+                key={b}
+                href={bundlePagePath(b)}
+                className="cs-chip"
+                style={{ textDecoration: "none" }}
+              >
+                {bundleLabel(b)}
+              </Link>
+            ))
+          )}
+        </div>
+
+        <TrialPath compact />
+
+        {record ? (
+          <>
+            <p className="cs-preview-def">{record.definition}</p>
+            <ul className="cs-preview-list">
+              {record.included.map((item, i) => (
+                <li key={`${entry.id}-${i}`}>
+                  <strong>{item.title}</strong> — {item.body}
+                </li>
+              ))}
+            </ul>
+            <CodeBlock
+              frame
+              code={record.artifact.code}
+              label={`${record.artifact.label}: ${record.artifact.file}`}
+            />
+            {record.faq.length > 0 ? <Faq items={record.faq} /> : null}
+          </>
+        ) : null}
+      </>
+    ),
+  };
+}
+
+function bundleViewModel(
+  entry: SurfaceEntry,
+  slides: readonly MediaSlide[],
+): ViewModel {
+  const anchor = isBundleId(entry.id) ? bundlePriceById(entry.id) : undefined;
+  const record = bundlePageRecord(entry.id);
+  const isEverything = entry.id === "everything";
+  const members = isBundleId(entry.id) ? modulesByBundle(entry.id) : [];
+  const memberSubtotal = isBundleId(entry.id)
+    ? bundleModuleSubtotal(entry.id)
+    : 0;
+  const saves = isEverything
+    ? everythingSavings()
+    : Math.max(0, memberSubtotal - entry.amount);
+
+  return {
+    entry,
+    mark: isBundleId(entry.id) ? BUNDLE_MARKS[entry.id] : "bundle",
+    kindLabel: "Bundle",
+    priceStr: anchor ? formatPrice(anchor) : formatUsd(entry.amount),
+    slides,
+    cartItem: bundleCatalogItem(entry.id),
+    faq: record?.faq ?? [],
+    footer:
+      isBundleId(entry.id) && !isEverything
+        ? {
+            href: bundlePagePath(entry.id),
+            label: `Open the ${bundleLabel(entry.id)} page →`,
+          }
+        : null,
+    body: (
+      <>
+        {record ? <p className="cs-preview-def">{record.definition}</p> : null}
+
+        {/* Pricing ladder — bundle price vs à-la-carte member sum (a real saving, never a
+            fabricated "was" price, ADR-0130). */}
+        <div className="cs-preview-ladder">
+          <span className="cs-num cs-preview-ladder-price">
+            {priceStrOf(entry, anchor)}
+          </span>
+          <span className="cs-tag">One-time · own the source</span>
+          {saves > 0 && (
+            <StatusChip
+              tone="accent"
+              dot
+              label={`Save ${formatUsd(saves)} vs à la carte`}
+            />
+          )}
+        </div>
+
+        {isEverything ? (
+          <p className="cs-muted cs-preview-def">
+            Every à-la-carte module totals {formatUsd(moduleCatalogSubtotal())}.
+            The Everything bundle is the whole commercial catalog — every bundle
+            and every module — for {priceStrOf(entry, anchor)}. One purchase,
+            the whole library.
+          </p>
+        ) : members.length > 0 ? (
+          <ul className="cs-preview-members">
+            {members.map((m) => (
+              <li key={m.id}>
+                <Icon name={moduleMark(m.id)} />
+                <span style={{ flex: 1 }}>{m.label}</span>
+                <span className="cs-num cs-preview-member-price">
+                  {formatUsd(m.amount)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+
+        <TrialPath compact />
+
+        {record && record.faq.length > 0 ? <Faq items={record.faq} /> : null}
+      </>
+    ),
+  };
+}
+
+function priceStrOf(
+  entry: SurfaceEntry,
+  anchor: ReturnType<typeof bundlePriceById>,
+): string {
+  return anchor ? formatPrice(anchor) : formatUsd(entry.amount);
+}
+
+/**
+ * The unified card-viewer dialog (ADR-0285 §1) — ONE dialog serving both kinds over a discriminated
+ * union `{kind, id}` (resolved from the kind-namespaced `viewId`). Merges the two near-identical
+ * preview dialogs' chrome: native `<dialog>` + `showModal()` (focus trap, Escape-to-close,
+ * focus-return), a fixed header, a scrolling body led by the media carousel, and a fixed buy footer.
+ * The data-shape difference (a module's flat price + depth record vs a bundle's PriceAnchor +
+ * members) is normalized in the adapter above; the chrome never forks.
+ */
+export function PreviewDialog({
+  viewId,
+  onClose,
+}: {
+  viewId: string | null;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDialogElement>(null);
+  const entry = viewId ? entryByViewId(viewId) : undefined;
+  const vm = entry ? buildViewModel(entry) : undefined;
+
+  useEffect(() => {
+    const dlg = ref.current;
+    if (!dlg) return;
+    if (vm && !dlg.open) dlg.showModal();
+    else if (!vm && dlg.open) dlg.close();
+  }, [vm]);
+
+  return (
+    <>
+      {/* ponytail: the position/::backdrop/breakpoint rules a <dialog> needs can't ride inline
+       *  styles, so they live in one scoped <style> tag (the module/bundle-dialog precedent this
+       *  merges). max-height (not height) so a record-less entry renders a short card. */}
+      <style>{`
+        .cs-preview-dialog {
+          margin: auto;
+          padding: 0;
+          width: min(92vw, 64rem);
+          max-height: min(90vh, 52rem);
+          border: 0;
+          border-radius: var(--cs-radius-lg);
+          background: var(--cs-surface-1);
+          color: var(--cs-fg);
+          box-shadow: var(--cs-shadow-lg);
+          overflow: hidden;
+        }
+        .cs-preview-dialog::backdrop { background: var(--cs-scrim); }
+        .cs-preview-shell { max-height: inherit; display: flex; flex-direction: column; }
+        .cs-preview-head {
+          display: flex; align-items: flex-start; justify-content: space-between;
+          gap: var(--cs-space-4);
+          padding: var(--cs-space-5) var(--cs-space-6) var(--cs-space-4);
+          border-bottom: 1px solid var(--cs-border);
+        }
+        .cs-preview-close {
+          display: inline-flex; align-items: center; justify-content: center;
+          width: 1.75rem; height: 1.75rem; flex: none; border: 0;
+          border-radius: var(--cs-radius-sm); background: none;
+          color: var(--cs-fg-muted); cursor: pointer;
+        }
+        .cs-preview-body {
+          flex: 1 1 auto; min-height: 0; overflow-y: auto;
+          padding: var(--cs-space-5) var(--cs-space-6);
+          display: grid; gap: var(--cs-space-5);
+        }
+        .cs-preview-foot {
+          padding: var(--cs-space-4) var(--cs-space-6) var(--cs-space-5);
+          border-top: 1px solid var(--cs-border);
+          display: flex; align-items: center; gap: var(--cs-space-4); flex-wrap: wrap;
+        }
+        .cs-preview-badges {
+          display: flex; flex-wrap: wrap; gap: var(--cs-space-2); align-items: center;
+        }
+        .cs-preview-def {
+          margin: 0; font-size: var(--cs-text-sm); line-height: var(--cs-leading-snug);
+        }
+        .cs-preview-list {
+          margin: 0; padding-left: var(--cs-space-5); display: grid; gap: var(--cs-space-3);
+          font-size: var(--cs-text-sm); line-height: var(--cs-leading-snug);
+        }
+        .cs-preview-ladder {
+          display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--cs-space-3);
+        }
+        .cs-preview-ladder-price {
+          font-size: var(--cs-text-2xl); font-family: var(--cs-font-mono);
+          letter-spacing: var(--cs-tracking-tight);
+        }
+        .cs-preview-members {
+          margin: 0; padding: 0; list-style: none; display: grid; gap: var(--cs-space-2);
+        }
+        .cs-preview-members li {
+          display: flex; align-items: baseline; gap: var(--cs-space-2);
+          font-size: var(--cs-text-sm); line-height: var(--cs-leading-snug);
+        }
+        .cs-preview-member-price {
+          font-size: var(--cs-text-xs); color: var(--cs-fg-muted); white-space: nowrap;
+        }
+        @media (max-width: 48rem) {
+          .cs-preview-dialog {
+            width: 100vw; height: 100vh; max-width: 100vw; max-height: 100vh;
+            inset: 0; border-radius: 0;
+          }
+        }
+      `}</style>
+      <dialog
+        ref={ref}
+        className="cs-preview-dialog"
+        aria-labelledby="cs-preview-title"
+        onClose={onClose}
+        onClick={(e) => {
+          if (e.target === ref.current) onClose();
+        }}
+      >
+        {vm ? (
+          <div className="cs-preview-shell">
+            {/* ===== Header (fixed) ===== */}
+            <div className="cs-preview-head">
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "var(--cs-space-2)",
+                    minWidth: 0,
+                  }}
+                >
+                  <Icon name={vm.mark} />
+                  <h2
+                    id="cs-preview-title"
+                    className="cs-card-title"
+                    style={{ margin: 0 }}
+                  >
+                    {vm.entry.label}
+                  </h2>
+                  <StatusChip label={vm.kindLabel} />
+                </div>
+                <div
+                  className="cs-num"
+                  style={{
+                    marginTop: "var(--cs-space-2)",
+                    fontFamily: "var(--cs-font-mono)",
+                    fontSize: "var(--cs-text-lg)",
+                  }}
+                >
+                  {vm.priceStr}
+                </div>
+              </div>
+              <button
+                type="button"
+                aria-label="Close preview"
+                onClick={onClose}
+                className="cs-preview-close"
+              >
+                <Icon name="x" />
+              </button>
+            </div>
+
+            {/* ===== Scroll body ===== */}
+            <div className="cs-preview-body">
+              <MediaCarousel
+                slides={vm.slides}
+                label={`${vm.entry.label} media`}
+              />
+              <p className="cs-muted cs-preview-def">{vm.entry.blurb}</p>
+              {vm.body}
+            </div>
+
+            {/* ===== Footer (fixed) — add to cart + open full page ===== */}
+            <div className="cs-preview-foot">
+              {vm.cartItem ? (
+                <AddToCartButton
+                  variant="primary"
+                  item={toCartItem(vm.cartItem)}
+                  onAdded={onClose}
+                />
+              ) : null}
+              {vm.footer ? (
+                <Link
+                  href={vm.footer.href}
+                  className="cs-muted"
+                  style={{ fontSize: "var(--cs-text-sm)" }}
+                >
+                  {vm.footer.label}
+                </Link>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+      </dialog>
+    </>
+  );
+}

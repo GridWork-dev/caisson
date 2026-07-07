@@ -2,8 +2,8 @@
 // the sibling of `lib/module-pages.ts` for modules. Each of the five hand-authored bundle pages
 // (`/compliance`, `/ai-kit`, `/local-first`, `/agentic-dev`, `/provenance`) reads its hero copy,
 // member list, and FAQ from here so the same content powers both the standalone SEO page and the
-// marketplace pop-out (`components/bundle-preview-dialog.tsx`). The `everything` bundle has no
-// standalone page (its buy path is the marketplace hub); its entry exists only to power the pop-out.
+// marketplace card viewer (`components/preview-dialog.tsx`). The `everything` bundle has no
+// standalone page (its buy path is the marketplace surface); its entry exists only to power the viewer.
 //
 // SCOPE — what lives here vs. what stays in the page: this record holds the content the pop-out
 // REUSES (hero, definition, members, faq) plus the page metadata, so a claim never drifts between
@@ -25,7 +25,8 @@ export interface BundlePageMember {
 }
 
 export interface BundlePageRecord {
-  /** = BundleId — the bundle's stable id and the pop-out query param (`?b=<slug>`). */
+  /** = BundleId — the bundle's stable id and the card-viewer deep-link (`?view=bundle:<slug>`; the
+   *  legacy `?b=<slug>` still resolves as an alias). */
   slug: BundleId;
   /** Short page-title (the `<title>` head, not the H1). */
   metaTitle: string;

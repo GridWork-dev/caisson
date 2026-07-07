@@ -1,10 +1,10 @@
 "use client";
 
-// Live @caisson/ui-pro demo for the ui-pro module pop-out's media slot — two real premium components
-// (the advanced data grid + the hash-chain audit timeline) driven by small sample data, so the buyer
-// sees the actual product, not a placeholder. Loaded via next/dynamic (ssr: false) from
-// module-preview-dialog.tsx so this commercial-tier tree never lands in the shared client bundle.
-// Default export = the shape next/dynamic imports.
+// Live @caisson/ui-pro demo for the ui-pro module's `interactive` media slide — two real premium
+// components (the advanced data grid + the hash-chain audit timeline) driven by small sample data, so
+// the buyer sees the actual product, not a placeholder. Loaded via next/dynamic (ssr: false) from the
+// media carousel so this commercial-tier tree never lands in the shared client bundle. Default
+// export = the shape next/dynamic imports.
 
 import {
   AuditTimeline,

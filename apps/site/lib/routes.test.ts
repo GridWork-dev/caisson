@@ -87,13 +87,23 @@ describe("derived route slices", () => {
     ]);
   });
 
-  test("MARKETPLACE_TAB_ROUTES are the four hub tabs in display order (ADR-0237 F1)", () => {
+  test("MARKETPLACE_TAB_ROUTES are the unified surface + Plans (ADR-0285 folded Modules + Build)", () => {
     expect(MARKETPLACE_TAB_ROUTES.map((r) => r.path)).toEqual([
       "/marketplace",
-      "/marketplace/modules",
-      "/marketplace/build",
       "/marketplace/plans",
     ]);
+  });
+
+  test("the folded Modules + Build tab paths are OUT of the registry (they 301 in next.config.ts)", () => {
+    for (const gone of ["/marketplace/modules", "/marketplace/build"]) {
+      expect(MARKETING_ROUTES.some((r) => r.path === gone)).toBe(false);
+    }
+  });
+
+  test("/ui joins the registry (sitemap + footer) per ADR-0285", () => {
+    const ui = MARKETING_ROUTES.find((r) => r.path === "/ui");
+    expect(ui).toBeDefined();
+    expect(ui?.footer).toBe("resources");
   });
 
   test("footer derivation (ADR-0237): every column non-empty, security.txt page + glossary present", () => {

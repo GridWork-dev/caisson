@@ -1,0 +1,163 @@
+/* Honest-artifact section (ADR-0285 §4) — a color-coded source tree that reveals real code on click.
+ * Token-only color (no raw hex, DESIGN.md §2); theme-aware by cascade. Both grid tracks are
+ * min-width:0 so the code body scrolls inside its own frame rather than blowing the column out. */
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
+  gap: var(--cs-space-5);
+  align-items: start;
+  margin-top: var(--cs-space-8);
+}
+
+@media (max-width: 48rem) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.treeCard {
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-lg);
+  background: var(--cs-surface-1);
+  padding: var(--cs-space-6);
+}
+
+.hint {
+  margin: var(--cs-space-2) 0 var(--cs-space-4);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.codeCard {
+  min-width: 0;
+  position: sticky;
+  top: var(--cs-space-20);
+}
+
+@media (max-width: 48rem) {
+  .codeCard {
+    position: static;
+    top: auto;
+  }
+}
+
+/* ===== Tree ===== */
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-sm);
+  line-height: var(--cs-leading-snug);
+}
+
+/* Nested levels indent with a hairline guide, area-tinted by the child's own [data-area]. */
+.list .list {
+  margin-left: var(--cs-space-2);
+  padding-left: var(--cs-space-4);
+  border-left: 2px solid var(--area);
+}
+
+.item {
+  /* Area accent color as a CSS var each row + guide reads (color-coded by area, ADR-0285 §4). */
+  padding-block: 1px;
+}
+
+.item[data-area="app"] {
+  --area: color-mix(in oklab, var(--cs-link) 60%, var(--cs-border));
+}
+.item[data-area="pkg"] {
+  --area: color-mix(in oklab, var(--cs-accent) 60%, var(--cs-border));
+}
+.item[data-area="tooling"] {
+  --area: color-mix(in oklab, var(--cs-success) 55%, var(--cs-border));
+}
+.item[data-area="svc"] {
+  --area: color-mix(in oklab, var(--cs-warning) 55%, var(--cs-border));
+}
+.item[data-area="reg"] {
+  --area: var(--cs-border-strong);
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--cs-space-2);
+  width: 100%;
+  padding: var(--cs-space-1) var(--cs-space-2);
+  border: 0;
+  border-radius: var(--cs-radius-sm);
+  background: transparent;
+  color: var(--cs-fg-muted);
+  font: inherit;
+  text-align: left;
+}
+
+/* Directory rows carry the area tint on the name + a leading marker. */
+.dir .name {
+  color: var(--cs-fg);
+  font-weight: var(--cs-weight-medium);
+}
+
+.dir::before,
+.clickable::before {
+  content: "";
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 2px;
+  background: var(--area);
+  align-self: center;
+}
+
+.name {
+  color: inherit;
+}
+
+.note {
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-xs);
+  opacity: 0.85;
+}
+
+/* ===== Clickable code nodes ===== */
+.clickable {
+  cursor: pointer;
+  transition:
+    background var(--cs-duration-fast) var(--cs-ease-out),
+    border-color var(--cs-duration-fast) var(--cs-ease-out);
+}
+
+.clickable .name {
+  color: var(--cs-fg);
+  font-weight: var(--cs-weight-medium);
+}
+
+.clickable:hover {
+  background: var(--cs-surface-2);
+}
+
+.clickable:focus-visible {
+  outline: 2px solid var(--cs-accent);
+  outline-offset: 1px;
+}
+
+.active {
+  background: color-mix(in oklab, var(--area) 16%, transparent);
+  box-shadow: inset 2px 0 0 var(--area);
+}
+
+.peek {
+  margin-left: auto;
+  flex: none;
+  color: var(--area);
+  font-size: var(--cs-text-xs);
+  opacity: 0;
+  transition: opacity var(--cs-duration-fast) var(--cs-ease-out);
+}
+
+.clickable:hover .peek,
+.active .peek {
+  opacity: 1;
+}

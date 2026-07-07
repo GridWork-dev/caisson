@@ -4,70 +4,40 @@ import { useEffect, useState } from "react";
 
 import { Button, Card, Icon, StatusChip } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
-import { moduleCatalogItem, toCartItem } from "@/lib/catalog";
-import { moduleMark } from "@/lib/marks";
-import { MODULE_PAGES } from "@/lib/module-pages";
+import { CompareTray, COMPARE_MAX } from "@/components/compare-tray";
 import {
-  type BundleId,
-  formatUsd,
-  MODULE_PRICES,
-  PERSONA_BUNDLE_IDS,
-  type ModulePrice,
-} from "@/lib/pricing";
+  bundleCatalogItem,
+  moduleCatalogItem,
+  toCartItem,
+} from "@/lib/catalog";
+import { BUNDLE_MARKS, moduleMark } from "@/lib/marks";
+import {
+  ALL_ENTRIES,
+  CATEGORIES,
+  categoryLabel,
+  type Category,
+  entryByViewId,
+  inCategory,
+  PRICE_BANDS,
+  type PriceBand,
+  primaryCategory,
+  type SurfaceEntry,
+} from "@/lib/marketplace-surface";
+import { formatUsd, isBundleId } from "@/lib/pricing";
+import { modulePostureGroup } from "@/lib/stack-fit";
 
-import { bundleLabel } from "./marketplace";
+import { PreviewDialog } from "./preview-dialog";
+import { StackRail } from "./stack-rail";
 import styles from "./marketplace.module.css";
-import { COMPARE_MAX, ModuleCompareTray } from "./module-compare";
-import { ModulePreviewDialog } from "./module-preview-dialog";
 
-// Price bands DERIVED from module.amount — no new data field (ADR-0191: facets derive from the
-// existing catalog). The full sellable catalog spans $49–$299 (ADR-0246 F1b, ADR-0258/0260 carve
-// prices); these three bands partition it exactly ($49/$99 → under, $149 → mid, $199+ → up).
-interface PriceBand {
-  id: string;
-  label: string;
-  test: (amount: number) => boolean;
-}
-
-const PRICE_BANDS: readonly PriceBand[] = [
-  { id: "under-100", label: "Under $100", test: (a) => a < 100 },
-  { id: "100-149", label: "$100–149", test: (a) => a >= 100 && a <= 149 },
-  { id: "150-up", label: "$150 and up", test: (a) => a >= 150 },
+type TypeFilter = "all" | "bundles" | "modules";
+const TYPE_OPTIONS: readonly { id: TypeFilter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "bundles", label: "Bundles" },
+  { id: "modules", label: "Modules" },
 ];
 
-// The category facet (catalog-rework W6.2, supersedes the edition facet): the five persona/Provenance
-// bundles a module can belong to, plus a "platform" bucket for the standalone commercial SKUs that no
-// persona bundle grants (org-controls, billing-orchestration, ui-pro — Everything-only, ADR-0258).
-// Categories DERIVE from the module's index-pinned `bundles[]`; no new data field.
-const PLATFORM = "platform" as const;
-type Category = BundleId | typeof PLATFORM;
-const CATEGORIES: readonly Category[] = [...PERSONA_BUNDLE_IDS, PLATFORM];
-
-function categoryLabel(cat: Category): string {
-  return cat === PLATFORM ? "Platform" : bundleLabel(cat);
-}
-
-function inCategory(m: ModulePrice, cat: Category): boolean {
-  return cat === PLATFORM
-    ? m.bundles.length === 0
-    : m.bundles.includes(cat as BundleId);
-}
-
-/** The module's primary category tag — its first bundle, or Platform when no bundle grants it. */
-function primaryCategory(m: ModulePrice): Category {
-  return m.bundles[0] ?? PLATFORM;
-}
-
-// "Has media" = the pop-out shows a real demo: a produced depth-page video, or the ui-pro module's
-// live @caisson/ui-pro component demo. Derived from the existing records — no new data field.
-const MEDIA_SLUGS = new Set(
-  MODULE_PAGES.filter((r) => r.video).map((r) => r.slug),
-);
-function moduleHasMedia(id: string): boolean {
-  return id === "ui-pro" || MEDIA_SLUGS.has(id);
-}
-
-const TOTAL = MODULE_PRICES.length;
+const TOTAL = ALL_ENTRIES.length;
 
 function toggle<T>(set: ReadonlySet<T>, value: T): Set<T> {
   const next = new Set(set);
@@ -77,40 +47,50 @@ function toggle<T>(set: ReadonlySet<T>, value: T): Set<T> {
 }
 
 /**
- * Faceted à-la-carte catalog (ADR-0191, category facet W6.2). Left facet sidebar (category · price
- * band · has-media, AND across facets / OR within a facet) plus a text search, a result grid reusing
- * the module-card treatment, a live region announcing the result count, the purchase pop-out, and the
- * compare tray. Client island — the page shell stays a Server Component and mounts this leaf, passing
- * the set of slugs that have a depth page so a not-yet-built detail link never 404s (`detailSlugs`).
- * The open module is reflected in a `?m=<slug>` query param (History API, no scroll reset) and a
- * `?m=` present on load opens the pop-out.
+ * The one-surface marketplace (ADR-0285 §1) — a single faceted grid over BOTH kinds. Merges the two
+ * former catalogs (modules + bundles) into one card system: a type/category/price/media facet set +
+ * text search, one card-viewer dialog (`PreviewDialog`) over a `{kind,id}` union, one compare tray
+ * extended to both kinds, and the persistent cart-aware stack rail. The open card is reflected in a
+ * `?view=<kind>:<slug>` param (History API, no scroll reset); the legacy `?m=`/`?b=` params still
+ * open the right card on load (aliases). Client island — the page shell stays a Server Component.
  */
-export function ModuleCatalog({
-  detailSlugs = [],
-}: {
-  detailSlugs?: readonly string[];
-}) {
-  const hasDetail = new Set(detailSlugs);
+export function MarketplaceSurface() {
+  const [type, setType] = useState<TypeFilter>("all");
   const [categories, setCategories] = useState<ReadonlySet<Category>>(
     new Set(),
   );
   const [bands, setBands] = useState<ReadonlySet<string>>(new Set());
   const [query, setQuery] = useState("");
   const [demoOnly, setDemoOnly] = useState(false);
-  const [previewId, setPreviewId] = useState<string | null>(null);
+  const [viewId, setViewId] = useState<string | null>(null);
   const [compareIds, setCompareIds] = useState<readonly string[]>([]);
 
-  // Deep-link: open the pop-out on load from ?m=<slug> (read imperatively — no useSearchParams, so
-  // no Suspense boundary), and mirror open/close into the URL without a scroll reset or navigation.
+  // Deep-link on load (read imperatively — no useSearchParams, so no Suspense boundary):
+  //   ?type=bundles|modules   pre-selects the type facet (e.g. a "Browse modules" CTA);
+  //   ?view=<kind>:<slug>     opens that card's viewer, with the legacy ?m=/?b= aliases honored.
   useEffect(() => {
-    const m = new URLSearchParams(window.location.search).get("m");
-    if (m && MODULE_PRICES.some((p) => p.id === m)) setPreviewId(m);
+    const sp = new URLSearchParams(window.location.search);
+    const t = sp.get("type");
+    if (t === "bundles" || t === "modules") setType(t);
+
+    const view = sp.get("view");
+    if (view && entryByViewId(view)) {
+      setViewId(view);
+      return;
+    }
+    const m = sp.get("m");
+    const b = sp.get("b");
+    if (m && entryByViewId(`module:${m}`)) setViewId(`module:${m}`);
+    else if (b && entryByViewId(`bundle:${b}`)) setViewId(`bundle:${b}`);
   }, []);
 
-  const syncPreviewParam = (id: string | null) => {
+  const syncViewParam = (id: string | null) => {
     const sp = new URLSearchParams(window.location.search);
-    if (id) sp.set("m", id);
-    else sp.delete("m");
+    // One param scheme now — drop the legacy aliases as we write the canonical one.
+    sp.delete("m");
+    sp.delete("b");
+    if (id) sp.set("view", id);
+    else sp.delete("view");
     const qs = sp.toString();
     window.history.replaceState(
       null,
@@ -119,12 +99,12 @@ export function ModuleCatalog({
     );
   };
   const openPreview = (id: string) => {
-    setPreviewId(id);
-    syncPreviewParam(id);
+    setViewId(id);
+    syncViewParam(id);
   };
   const closePreview = () => {
-    setPreviewId(null);
-    syncPreviewParam(null);
+    setViewId(null);
+    syncViewParam(null);
   };
 
   const toggleCompare = (id: string) =>
@@ -137,38 +117,75 @@ export function ModuleCatalog({
     );
 
   const q = query.trim().toLowerCase();
-  const matchCategory = (m: ModulePrice) =>
+  const matchType = (e: SurfaceEntry) =>
+    type === "all" || e.kind === (type === "bundles" ? "bundle" : "module");
+  const matchCategory = (e: SurfaceEntry) =>
     categories.size === 0 ||
-    CATEGORIES.some((c) => categories.has(c) && inCategory(m, c));
-  const matchBand = (m: ModulePrice) =>
+    CATEGORIES.some((c) => categories.has(c) && inCategory(e, c));
+  const matchBand = (e: SurfaceEntry) =>
     bands.size === 0 ||
-    PRICE_BANDS.some((b) => bands.has(b.id) && b.test(m.amount));
-  const matchQuery = (m: ModulePrice) =>
-    q === "" || `${m.label} ${m.blurb}`.toLowerCase().includes(q);
-  const matchDemo = (m: ModulePrice) => !demoOnly || moduleHasMedia(m.id);
+    PRICE_BANDS.some((b) => bands.has(b.id) && b.test(e.amount));
+  const matchQuery = (e: SurfaceEntry) =>
+    q === "" || `${e.label} ${e.blurb}`.toLowerCase().includes(q);
+  const matchMedia = (e: SurfaceEntry) => !demoOnly || e.hasMedia;
 
-  // AND across every facet; OR within each.
-  const results = MODULE_PRICES.filter(
-    (m) => matchCategory(m) && matchBand(m) && matchQuery(m) && matchDemo(m),
+  const results = ALL_ENTRIES.filter(
+    (e) =>
+      matchType(e) &&
+      matchCategory(e) &&
+      matchBand(e) &&
+      matchQuery(e) &&
+      matchMedia(e),
   );
 
-  // Per-value counts are CONTEXTUAL: each option shows how many modules it would yield given the
-  // OTHER active filters (never its own group), so a count never contradicts the result set.
+  // Contextual per-value counts — each option shows how many entries it would yield given the OTHER
+  // active facets (never its own group), so a count never contradicts the result set.
+  const typeCount = (t: TypeFilter) =>
+    ALL_ENTRIES.filter(
+      (e) =>
+        (t === "all" || e.kind === (t === "bundles" ? "bundle" : "module")) &&
+        matchCategory(e) &&
+        matchBand(e) &&
+        matchQuery(e) &&
+        matchMedia(e),
+    ).length;
   const categoryCount = (c: Category) =>
-    MODULE_PRICES.filter(
-      (m) => inCategory(m, c) && matchBand(m) && matchQuery(m) && matchDemo(m),
+    ALL_ENTRIES.filter(
+      (e) =>
+        inCategory(e, c) &&
+        matchType(e) &&
+        matchBand(e) &&
+        matchQuery(e) &&
+        matchMedia(e),
     ).length;
-  const bandCount = (b: PriceBand) =>
-    MODULE_PRICES.filter(
-      (m) =>
-        b.test(m.amount) && matchCategory(m) && matchQuery(m) && matchDemo(m),
+  const bandCount = (band: PriceBand) =>
+    ALL_ENTRIES.filter(
+      (e) =>
+        band.test(e.amount) &&
+        matchType(e) &&
+        matchCategory(e) &&
+        matchQuery(e) &&
+        matchMedia(e),
     ).length;
-  const demoCount = MODULE_PRICES.filter(
-    (m) =>
-      moduleHasMedia(m.id) && matchCategory(m) && matchBand(m) && matchQuery(m),
+  const mediaCount = ALL_ENTRIES.filter(
+    (e) =>
+      e.hasMedia &&
+      matchType(e) &&
+      matchCategory(e) &&
+      matchBand(e) &&
+      matchQuery(e),
   ).length;
 
   const chips = [
+    ...(type !== "all"
+      ? [
+          {
+            key: `type:${type}`,
+            label: TYPE_OPTIONS.find((t) => t.id === type)?.label ?? type,
+            remove: () => setType("all"),
+          },
+        ]
+      : []),
     ...[...categories].map((c) => ({
       key: `category:${c}`,
       label: categoryLabel(c),
@@ -180,10 +197,11 @@ export function ModuleCatalog({
       remove: () => setBands((prev) => toggle(prev, id)),
     })),
     ...(demoOnly
-      ? [{ key: "demo", label: "Has demo", remove: () => setDemoOnly(false) }]
+      ? [{ key: "demo", label: "Has media", remove: () => setDemoOnly(false) }]
       : []),
   ];
   const clearAll = () => {
+    setType("all");
     setCategories(new Set());
     setBands(new Set());
     setDemoOnly(false);
@@ -192,14 +210,33 @@ export function ModuleCatalog({
 
   const countLabel =
     results.length === TOTAL
-      ? `${TOTAL} modules`
-      : `Showing ${results.length} of ${TOTAL} modules`;
+      ? `${TOTAL} bundles and modules`
+      : `Showing ${results.length} of ${TOTAL}`;
 
   return (
     <>
-      <div className={styles.layout}>
+      <div className={styles.surface}>
         {/* ===== Facets ===== */}
-        <aside className={styles.facets} aria-label="Filter modules">
+        <aside className={styles.facets} aria-label="Filter the catalog">
+          <fieldset className={styles.fieldset}>
+            <legend className={styles.legend}>Type</legend>
+            {TYPE_OPTIONS.map((t) => (
+              <label key={t.id} className={styles.option}>
+                <input
+                  type="radio"
+                  name="type"
+                  className={styles.checkbox}
+                  checked={type === t.id}
+                  onChange={() => setType(t.id)}
+                />
+                <span className={styles.optionLabel}>{t.label}</span>
+                <span className={`cs-num ${styles.count}`}>
+                  {typeCount(t.id)}
+                </span>
+              </label>
+            ))}
+          </fieldset>
+
           <fieldset className={styles.fieldset}>
             <legend className={styles.legend}>Category</legend>
             {CATEGORIES.map((c) => (
@@ -244,22 +281,21 @@ export function ModuleCatalog({
                 onChange={() => setDemoOnly((v) => !v)}
               />
               <span className={styles.optionLabel}>
-                Has a live demo or video
+                Has a diagram, demo, or video
               </span>
-              <span className={`cs-num ${styles.count}`}>{demoCount}</span>
+              <span className={`cs-num ${styles.count}`}>{mediaCount}</span>
             </label>
           </fieldset>
         </aside>
 
         {/* ===== Results ===== */}
-        <div>
-          {/* Text search over label + blurb. */}
+        <div className={styles.surfaceMain}>
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search modules…"
-            aria-label="Search modules"
+            placeholder="Search bundles and modules…"
+            aria-label="Search bundles and modules"
             className={styles.search}
           />
 
@@ -287,29 +323,28 @@ export function ModuleCatalog({
             </div>
           )}
 
-          {/* Result count — its OWN polite live region (ADR-0194). */}
           <p className={styles.results} role="status" aria-live="polite">
             {countLabel}
           </p>
 
           {results.length === 0 ? (
             <div className={styles.empty}>
-              <p>No modules match those filters.</p>
+              <p>Nothing matches those filters.</p>
               <Button type="button" variant="ghost" onClick={clearAll}>
                 Clear all filters
               </Button>
             </div>
           ) : (
-            <div className="cs-grid cs-grid--3">
-              {results.map((m) => (
-                <ModuleCard
-                  key={m.id}
-                  module={m}
+            <div className="cs-grid cs-grid--2">
+              {results.map((e) => (
+                <SurfaceCard
+                  key={e.viewId}
+                  entry={e}
                   onOpen={openPreview}
-                  compareChecked={compareIds.includes(m.id)}
+                  compareChecked={compareIds.includes(e.viewId)}
                   compareDisabled={
                     compareIds.length >= COMPARE_MAX &&
-                    !compareIds.includes(m.id)
+                    !compareIds.includes(e.viewId)
                   }
                   onToggleCompare={toggleCompare}
                 />
@@ -317,16 +352,15 @@ export function ModuleCatalog({
             </div>
           )}
         </div>
+
+        {/* ===== Stack rail (cart-aware) ===== */}
+        <StackRail />
       </div>
 
-      <ModulePreviewDialog
-        moduleId={previewId}
-        hasDetail={previewId ? hasDetail.has(previewId) : false}
-        onClose={closePreview}
-      />
+      <PreviewDialog viewId={viewId} onClose={closePreview} />
 
-      <ModuleCompareTray
-        ids={compareIds}
+      <CompareTray
+        viewIds={compareIds}
         onRemove={(id) => setCompareIds((prev) => prev.filter((x) => x !== id))}
         onClear={() => setCompareIds([])}
       />
@@ -334,34 +368,41 @@ export function ModuleCatalog({
   );
 }
 
-/** One catalog card — label + mono price + blurb + a buy CTA, plus a category tag and a compare
- *  toggle. Clicking anywhere on the card opens the module purchase pop-out; the card itself is a
- *  full-bleed overlay `<button>` (real button semantics) so keyboard/AT users get the same affordance
- *  as a mouse click. The footer (Add to cart) and the compare checkbox each stay `position: relative`
- *  so they win their own click over the overlay — the "stretched link with escape hatches" pattern,
- *  no nested interactive elements. moduleCatalogItem resolves for every MODULE_PRICES id (W7 wired all
- *  22), so the null arm below is type-narrowing only. */
-function ModuleCard({
-  module: m,
+/** One unified catalog card — bundle or module. Clicking anywhere opens the viewer (a full-bleed
+ *  overlay button for real keyboard/AT semantics); the compare checkbox and the Add-to-cart footer
+ *  stay `position: relative` to win their own click over the overlay (the stretched-link pattern). */
+function SurfaceCard({
+  entry: e,
   onOpen,
   compareChecked,
   compareDisabled,
   onToggleCompare,
 }: {
-  module: ModulePrice;
-  onOpen: (id: string) => void;
+  entry: SurfaceEntry;
+  onOpen: (viewId: string) => void;
   compareChecked: boolean;
   compareDisabled: boolean;
-  onToggleCompare: (id: string) => void;
+  onToggleCompare: (viewId: string) => void;
 }) {
-  const catalogItem = moduleCatalogItem(m.id);
-  const category = primaryCategory(m);
+  const isBundle = e.kind === "bundle";
+  const mark = isBundle
+    ? isBundleId(e.id)
+      ? BUNDLE_MARKS[e.id]
+      : "bundle"
+    : moduleMark(e.id);
+  const catalogItem = isBundle
+    ? bundleCatalogItem(e.id)
+    : moduleCatalogItem(e.id);
+  const eyebrow = isBundle ? "Bundle" : categoryLabel(primaryCategory(e));
+  // A module's honest DB posture, single-sourced from /stack-fit (ADR-0285 §2).
+  const posture = isBundle ? undefined : modulePostureGroup(e.id);
+
   return (
     <Card interactive style={{ position: "relative" }}>
       <button
         type="button"
-        aria-label={`Preview ${m.label} — ${formatUsd(m.amount)}`}
-        onClick={() => onOpen(m.id)}
+        aria-label={`Preview ${e.label} — ${formatUsd(e.amount)}`}
+        onClick={() => onOpen(e.viewId)}
         style={{
           position: "absolute",
           inset: 0,
@@ -382,8 +423,7 @@ function ModuleCard({
           marginBottom: "var(--cs-space-3)",
         }}
       >
-        {/* The module's own bespoke mark (ADR-0237 F6) — the category stays a text tag. */}
-        <Icon name={moduleMark(m.id)} />
+        <Icon name={mark} />
         <span
           className="cs-num"
           style={{
@@ -393,9 +433,14 @@ function ModuleCard({
             letterSpacing: "var(--cs-tracking-wide)",
           }}
         >
-          {categoryLabel(category)}
+          {eyebrow}
         </span>
-        {/* Compare toggle + type chip — position: relative to win the click over the overlay. */}
+        {e.hasMedia && (
+          <span className={styles.mediaTag}>
+            <Icon name="gauge" />
+            demo
+          </span>
+        )}
         <span
           style={{
             marginLeft: "auto",
@@ -419,12 +464,12 @@ function ModuleCard({
               type="checkbox"
               checked={compareChecked}
               disabled={compareDisabled}
-              onChange={() => onToggleCompare(m.id)}
-              aria-label={`Compare ${m.label}`}
+              onChange={() => onToggleCompare(e.viewId)}
+              aria-label={`Compare ${e.label}`}
             />
             Compare
           </label>
-          <StatusChip label="Module" />
+          <StatusChip label={isBundle ? "Bundle" : "Module"} />
         </span>
       </div>
       <div
@@ -435,7 +480,7 @@ function ModuleCard({
           gap: "var(--cs-space-3)",
         }}
       >
-        <span className="cs-card-title">{m.label}</span>
+        <span className="cs-card-title">{e.label}</span>
         <span
           className="cs-num"
           style={{
@@ -444,7 +489,7 @@ function ModuleCard({
             whiteSpace: "nowrap",
           }}
         >
-          {formatUsd(m.amount)}
+          {formatUsd(e.amount)}
         </span>
       </div>
       <p
@@ -455,8 +500,17 @@ function ModuleCard({
           lineHeight: "var(--cs-leading-snug)",
         }}
       >
-        {m.blurb}
+        {e.blurb}
       </p>
+      {posture ? (
+        <div
+          className={styles.mediaTag}
+          style={{ marginTop: "var(--cs-space-3)" }}
+        >
+          <Icon name={posture.icon} />
+          {posture.heading}
+        </div>
+      ) : null}
       <div style={{ marginTop: "var(--cs-space-5)", position: "relative" }}>
         {catalogItem ? (
           <AddToCartButton item={toCartItem(catalogItem)} />

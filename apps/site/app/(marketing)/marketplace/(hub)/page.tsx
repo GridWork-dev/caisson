@@ -1,62 +1,45 @@
 import Link from "next/link";
 
-import {
-  Button,
-  Card,
-  Faq,
-  FeatureGrid,
-  Icon,
-  Reveal,
-  Section,
-  StatusChip,
-} from "@/components";
+import { Card, Faq, FeatureGrid, Icon, Reveal, Section } from "@/components";
 
-import { BundleCatalog } from "@/components/bundle-catalog";
+import { MarketplaceSurface } from "@/components/marketplace-surface";
 import { bundlePagePath } from "@/components/marketplace";
 import { BASE_CAPABILITIES, BASE_PACKAGES } from "@/lib/base-substrate";
 import {
   breadcrumb,
   faqPage,
+  moduleItemList,
   serializeJsonLd,
   softwareApplication,
 } from "@/lib/jsonld";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
-import {
-  bundlePriceById,
-  BUNDLE_PRICES,
-  everythingSavings,
-  formatPrice,
-  formatUsd,
-  MODULE_PRICES,
-  moduleCatalogSubtotal,
-} from "@/lib/pricing";
+import { BUNDLE_PRICES, MODULE_PRICES } from "@/lib/pricing";
 
 export const metadata = buildMetadata({
-  title: "Marketplace — Bundles",
-  description: `Buy a Caisson module, a bundle, or the whole catalog — ${MODULE_PRICES.length} modules composed into six bundles, one-time perpetual pricing. Compose your own stack or take a bundle; own the source, no forced renewal.`,
+  title: "Marketplace",
+  description: `Every Caisson bundle and module on one surface — ${MODULE_PRICES.length} modules composed into six bundles, one-time perpetual pricing. Filter by type, category, or price; preview the media; compare; and build a stack. Own the source, no forced renewal.`,
   path: "/marketplace",
 });
 
-// The hub FAQ — real migration/purchase questions (ADR-0080 §6, no schema-bait), rendered
-// visibly below the cards and mirrored into FAQPage JSON-LD.
+// The unified marketplace surface (ADR-0285): ONE screen for the whole catalog. The good/better/best
+// SEO copy the former Bundles + Modules tabs carried is superseded by the surface itself (which
+// server-renders every bundle and module card); this page keeps the JSON-LD (bundle Offers + the
+// module ItemList + the FAQ), the surface island, the open-base anxiety-relief beat, and the FAQ.
+// Prices + membership all derive from `lib/pricing.ts` — never hand-keyed.
+
 const HUB_FAQ = [
   {
-    question: "What happened to /pricing, /modules, and /build?",
+    question: "Where did the Modules and Build tabs go?",
     answer:
-      "They're tabs here now — Bundles, Modules, and Build, plus a Plans tab for subscriptions and enterprise procurement. Old links redirect automatically.",
+      "They're this one surface now. Filter by type to see just modules or just bundles, add anything to the stack rail on the right to watch the running total, and the builder still points at the bundle that covers your picks for less. Old links redirect here automatically.",
   },
   {
     question: "Can I buy one module without the bundle around it?",
-    answer: `Yes. Each of the ${MODULE_PRICES.length} modules is a standalone one-time purchase — pick what composes onto your base, no bundle required.`,
+    answer: `Yes. Each of the ${MODULE_PRICES.length} modules is a standalone one-time purchase — pick what composes onto your base, no bundle required. Every card previews what ships and opens straight to checkout.`,
   },
 ] as const;
 
-// The Bundles tab — the /marketplace hub root (ADR-0237 F1, catalog-rework W6.2). The good/better/best
-// ladder + FAQ + bundle Offer JSON-LD stay here (server-rendered SEO); the six interactive bundle
-// cards — which open the purchase pop-out instead of navigating — live in the `BundleCatalog` client
-// island below. Prices + membership all derive from `lib/pricing.ts` — never hand-keyed.
-
-export default function MarketplaceBundlesPage() {
+export default function MarketplacePage() {
   const breadcrumbNode = breadcrumb([
     { name: "Home", path: "/" },
     { name: "Marketplace", path: "/marketplace" },
@@ -71,21 +54,17 @@ export default function MarketplaceBundlesPage() {
       price: b,
     }),
   );
-
-  const everything = bundlePriceById("everything");
-  const savings = everythingSavings();
-  // The cheapest persona/Provenance bundle — the "from $X" floor of the bundle ladder.
-  const personaFloor = Math.min(
-    ...BUNDLE_PRICES.filter((b) => b.id !== "everything").map(
-      (b) => b.amount ?? Infinity,
-    ),
-  );
+  const catalogNode = moduleItemList(MODULE_PRICES);
 
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbNode) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(catalogNode) }}
       />
       {bundleNodes.map((node, i) => (
         <script
@@ -95,155 +74,17 @@ export default function MarketplaceBundlesPage() {
         />
       ))}
 
-      {/* ===== How to buy — good/better/best ladder ===== */}
+      {/* ===== The catalog — one surface ===== */}
       <Section
-        eyebrow="Three ways to buy"
-        title="Start small, or take it all."
-        lede="Every module stands alone. Compose your own stack à la carte, step up to a bundle for a whole domain, or take the entire library in the Everything bundle."
+        eyebrow="The catalog"
+        title="Browse the whole library in one place."
+        lede="Six bundles and every à-la-carte module, side by side. Filter by type, category, or price; preview the diagrams and demos; compare up to three; and build a stack on the right — the builder points at the bundle that covers your picks for less."
       >
-        <FeatureGrid cols={3}>
-          <Reveal>
-            <Card>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "baseline",
-                  gap: "var(--cs-space-3)",
-                }}
-              >
-                <span className="cs-card-title">Pick a module</span>
-                <StatusChip label="Module" />
-              </div>
-              <p
-                className="cs-num"
-                style={{
-                  marginTop: "var(--cs-space-3)",
-                  fontSize: "var(--cs-text-2xl)",
-                  fontFamily: "var(--cs-font-mono)",
-                }}
-              >
-                from{" "}
-                {formatUsd(Math.min(...MODULE_PRICES.map((m) => m.amount)))}
-              </p>
-              <p
-                className="cs-muted"
-                style={{
-                  marginTop: "var(--cs-space-3)",
-                  fontSize: "var(--cs-text-sm)",
-                }}
-              >
-                Take exactly the capability you need — field encryption, token
-                metering, on-device search — onto your own base.{" "}
-                {MODULE_PRICES.length} standalone modules, priced for what each
-                one does.
-              </p>
-              <div style={{ marginTop: "var(--cs-space-6)" }}>
-                <Button href="/marketplace/modules" variant="ghost">
-                  Browse modules
-                </Button>
-              </div>
-            </Card>
-          </Reveal>
-
-          <Reveal delay={80}>
-            <Card>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "baseline",
-                  gap: "var(--cs-space-3)",
-                }}
-              >
-                <span className="cs-card-title">Take a bundle</span>
-                <StatusChip label="Bundle" />
-              </div>
-              <p
-                className="cs-num"
-                style={{
-                  marginTop: "var(--cs-space-3)",
-                  fontSize: "var(--cs-text-2xl)",
-                  fontFamily: "var(--cs-font-mono)",
-                }}
-              >
-                from {formatUsd(personaFloor)}
-              </p>
-              <p
-                className="cs-muted"
-                style={{
-                  marginTop: "var(--cs-space-3)",
-                  fontSize: "var(--cs-text-sm)",
-                }}
-              >
-                A whole domain, composed and audited — every module in that
-                bundle plus the shared base, one perpetual license, below the
-                sum of its parts. Own the source and ship it closed.
-              </p>
-              <div style={{ marginTop: "var(--cs-space-6)" }}>
-                <Button href="#bundles" variant="ghost">
-                  See the bundles
-                </Button>
-              </div>
-            </Card>
-          </Reveal>
-
-          <Reveal delay={160}>
-            <Card accent>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "baseline",
-                  gap: "var(--cs-space-3)",
-                }}
-              >
-                <span className="cs-card-title">Everything bundle</span>
-                {savings > 0 && (
-                  <StatusChip
-                    tone="accent"
-                    label={`Save ${formatUsd(savings)}`}
-                    dot
-                  />
-                )}
-              </div>
-              <p
-                className="cs-num"
-                style={{
-                  marginTop: "var(--cs-space-3)",
-                  fontSize: "var(--cs-text-2xl)",
-                  fontFamily: "var(--cs-font-mono)",
-                }}
-              >
-                {everything ? formatPrice(everything) : "—"}
-              </p>
-              <p
-                className="cs-muted"
-                style={{
-                  marginTop: "var(--cs-space-3)",
-                  fontSize: "var(--cs-text-sm)",
-                }}
-              >
-                The whole commercial catalog — every bundle and every à-la-carte
-                module — for {everything ? formatPrice(everything) : "—"} vs{" "}
-                {formatUsd(moduleCatalogSubtotal())} à la carte. One purchase,
-                the whole library.
-              </p>
-              <div style={{ marginTop: "var(--cs-space-6)" }}>
-                <Button href="#everything" variant="ghost">
-                  See what&rsquo;s inside
-                </Button>
-              </div>
-            </Card>
-          </Reveal>
-        </FeatureGrid>
+        <MarketplaceSurface />
       </Section>
 
-      {/* ===== Interactive bundle cards (client island) — open the purchase pop-out ===== */}
-      <BundleCatalog />
-
-      {/* ===== The open base — "batteries included" under the bundle prices (anxiety-relief beat,
-          the SYNTHESIS §6 Tier-1 tile grid; ADR-0094 open-core made visible at purchase time) ===== */}
+      {/* ===== The open base — "batteries included" under the prices (anxiety-relief beat;
+          ADR-0094 open-core made visible at purchase time) ===== */}
       <Reveal>
         <Section
           eyebrow="The open base"
@@ -286,7 +127,7 @@ export default function MarketplaceBundlesPage() {
         </Section>
       </Reveal>
 
-      {/* ===== FAQ — the redirect + à-la-carte explainers ===== */}
+      {/* ===== FAQ ===== */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqPage(HUB_FAQ)) }}

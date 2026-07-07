@@ -3,7 +3,6 @@ import Link from "next/link";
 import {
   Button,
   Card,
-  CredentialStrip,
   Faq,
   Hero,
   Icon,
@@ -11,6 +10,7 @@ import {
   Section,
   type IconName,
 } from "@/components";
+import { ProofChips } from "@/components/proof-chips";
 import {
   breadcrumb,
   faqPage,
@@ -131,7 +131,7 @@ export default function EvidencePage() {
           </>
         }
         credentials={
-          <CredentialStrip
+          <ProofChips
             items={[
               "OSCAL 1.2.2 in CI",
               "Standards gate",
