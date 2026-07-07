@@ -149,6 +149,11 @@ describe("per-module bare-slug purchase-id form", () => {
     expect([...expandEntitlements(real, ["retention-runner"])]).toEqual([
       "@caisson/retention-runner",
     ]);
+    // The headline graduation of this change: a bare ui-pro purchase resolves to the real module
+    // grant against the REAL index that now ships it.
+    expect([...expandEntitlements(real, ["ui-pro"])]).toEqual([
+      "@caisson/ui-pro",
+    ]);
   });
 
   test("a bare slug for an indexed module resolves normally (the graduated path)", () => {
