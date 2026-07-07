@@ -17,9 +17,9 @@
 // linkable test/CI/OSCAL proof backs the class at this commit; evidence produced outside CI (the WORM
 // live-verification harness, ADR-0224) is "maps-to", clearly labelled operator-run. No "compliant"/
 // "certified" claim is made — Caisson is a toolmaker, not an assessed entity. The disclaimer travels
-// INSIDE the artifact and says these checks run on every push/PR — never that they "block merges"
-// (this repo has no enforced branch protection; claiming otherwise would be exactly the overclaim
-// ADR-0279 bans).
+// INSIDE the artifact and says these checks run on pushes to main and on every pull request — never
+// that they "block merges" (this repo has no enforced branch protection; claiming otherwise would be
+// exactly the overclaim ADR-0279 bans).
 //
 // registry/ is a workspace member but this script (like build-index.ts) imports only zod + node
 // built-ins + relative siblings — no @caisson/* — so it runs standalone under `bun` in CI.
@@ -30,7 +30,6 @@ import {
   mkdirSync,
   readFileSync,
   rmSync,
-  statSync,
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
@@ -139,17 +138,16 @@ export function parseEvidencePackManifest(
 /** The disclaimer that travels INSIDE the artifact (ADR-0279 not-a-certification + push/PR framing). */
 export const PACK_DISCLAIMER =
   "Build-provenance evidence for this commit of the Caisson source. Every check listed here runs " +
-  "on every push and pull request to the repository. This is engineering build evidence for a " +
-  "security reviewer's due diligence — not a compliance certification or audit report; Caisson is a " +
-  "toolmaker, not an assessed entity. 'implements' classes are backed by a captured output or a " +
-  "linkable CI job at this commit; 'maps-to' classes reference evidence produced in operator-run " +
-  "sessions (ADR-0224 live-verification), not re-verified inside this pack. This pack covers the " +
-  "whole repository at this commit; per-bundle packs are future work (ADR-0275).";
-
-/** SHA-256 hex of a file's bytes. */
-function hashFile(path: string): string {
-  return createHash("sha256").update(readFileSync(path)).digest("hex");
-}
+  "on pushes to main and on every pull request to the repository. This is engineering build " +
+  "evidence for a security reviewer's due diligence — not a compliance certification or audit " +
+  "report; Caisson is a toolmaker, not an assessed entity. 'implements' classes are backed by a " +
+  "captured output or a linkable CI job at this commit; 'maps-to' classes reference evidence " +
+  "produced in operator-run sessions (ADR-0224 live-verification), not re-verified inside this " +
+  "pack. A 'ci-job' class (package-test-suite, oscal-conformance) is verifiable by filtering the " +
+  "repository's GitHub Actions runs on this manifest's `commit` field — note this pack's own " +
+  "`runUrl` points at the quality workflow run that assembled it, not at ci.yml's run for the same " +
+  "commit. This pack covers the whole repository at this commit; per-bundle packs are future work " +
+  "(ADR-0275).";
 
 /** A class as declared before its files are resolved+hashed (fileNames → files at assembly). */
 export type ClassSpec = Omit<EvidenceClass, "files"> & {
@@ -188,16 +186,21 @@ export function assembleEvidencePack(
     const files: EvidenceFile[] = fileNames.map((name) => {
       const src = join(opts.stagingDir, name);
       // Missing declared evidence is a hole — surface it, never ship a manifest that omits it.
-      let bytes: number;
+      let buf: Buffer;
       try {
-        bytes = statSync(src).size;
+        buf = readFileSync(src);
       } catch {
         throw new Error(
           `evidence-pack: declared file "${name}" for class "${spec.id}" is missing from ${opts.stagingDir} — the producing step did not run or failed (ADR-0275: fail loud, never ship a hole)`,
         );
       }
-      copyFileSync(src, join(opts.outDir, name));
-      return { path: name, sha256: hashFile(src), bytes };
+      // One read → both the copy and the hash/size derive from the same buffer (no re-read).
+      writeFileSync(join(opts.outDir, name), buf);
+      return {
+        path: name,
+        sha256: createHash("sha256").update(buf).digest("hex"),
+        bytes: buf.byteLength,
+      };
     });
     // Parse each class so the superRefine invariants (verified-in-pack⇒file, operator⇒maps-to) hold.
     return evidenceClass.parse({ ...rest, files });
@@ -269,11 +272,15 @@ function produce(
   }
 }
 
-/** The commit SHA, from the CI env or a local `git rev-parse`. */
+/** The commit SHA, from the CI env or a local `git rev-parse`. Throws rather than letting a failed
+ *  git invocation's stderr text reach the manifest's SHA regex (a confusing schema error). */
 function resolveCommit(): string {
   const env = process.env.GITHUB_SHA?.trim();
   if (env && /^[0-9a-f]{7,40}$/.test(env)) return env;
   const r = run(["git", "rev-parse", "HEAD"]);
+  if (r.code !== 0) {
+    throw new Error("evidence-pack: cannot resolve commit SHA");
+  }
   return r.out.trim();
 }
 

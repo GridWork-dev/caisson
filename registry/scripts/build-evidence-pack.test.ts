@@ -77,7 +77,7 @@ describe("assembleEvidencePack", () => {
     expect(manifest.commit).toBe(META.commit);
     expect(manifest.disclaimer).not.toMatch(/block/i); // never claims it blocks merges
     expect(manifest.disclaimer.toLowerCase()).toContain(
-      "every push and pull request",
+      "pushes to main and on every pull request",
     );
   });
 
