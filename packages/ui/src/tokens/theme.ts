@@ -10,8 +10,8 @@ import {
   functionalDark,
   functionalLight,
   typeCandidates,
-} from "./candidates";
-import type { AccentCandidate, SemanticTheme, TypeCandidate } from "./types";
+} from "./candidates.ts";
+import type { AccentCandidate, SemanticTheme, TypeCandidate } from "./types.ts";
 
 const SELECTED_PALETTE = "a";
 const SELECTED_TYPE = "2";

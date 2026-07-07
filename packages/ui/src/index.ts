@@ -1,1 +1,1 @@
-export * from "./tokens/index";
+export * from "./tokens/index.ts";
