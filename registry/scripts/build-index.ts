@@ -30,20 +30,82 @@ export const LedgerEntry = RegistryVersion.extend({
 }).strict();
 export type LedgerEntry = z.infer<typeof LedgerEntry>;
 
-/** Parse the JSONL ledger, skipping blank lines. Parse-or-throw per line (never a cast). */
-export function parseLedger(text: string): LedgerEntry[] {
-  const entries: LedgerEntry[] = [];
+/** A delist line (ADR-0271): an APPEND that removes the module's entry from every future index
+ *  rebuild. The publish lines above it stay in the ledger forever (ADR-0006 append-only) — history
+ *  and tarball provenance are preserved; only the served index surface drops the module. Terminal:
+ *  a later publish line for a delisted id is a ledger error (an explicit re-list mechanism can be
+ *  added when a real need appears — silent resurrection is the failure mode this forbids). */
+export const DelistEntry = z
+  .object({
+    op: z.literal("delist"),
+    id: z.string().regex(MODULE_ID_RE),
+    delistedAt: z.string().datetime(),
+    reason: z.string().min(1),
+  })
+  .strict();
+export type DelistEntry = z.infer<typeof DelistEntry>;
+
+export type ParsedLedger = {
+  publishes: LedgerEntry[];
+  delists: DelistEntry[];
+};
+
+/** Parse the JSONL ledger into publish + delist lines, skipping blanks. Parse-or-throw per line
+ *  (never a cast). Order rules enforced here, where line order is visible: a delist must follow at
+ *  least one publish of its id, an id is delisted at most once, and no publish may follow its
+ *  delist. */
+export function parseLedgerLines(text: string): ParsedLedger {
+  const publishes: LedgerEntry[] = [];
+  const delists: DelistEntry[] = [];
+  const publishedIds = new Set<string>();
+  const delistedIds = new Set<string>();
   const lines = text.split("\n");
   for (let i = 0; i < lines.length; i++) {
     const line = (lines[i] as string).trim();
     if (line.length === 0) continue;
+    let raw: unknown;
     try {
-      entries.push(LedgerEntry.parse(JSON.parse(line)));
+      raw = JSON.parse(line);
+    } catch (e) {
+      throw new Error(`ledger.jsonl line ${i + 1}: ${(e as Error).message}`);
+    }
+    const isDelist =
+      typeof raw === "object" &&
+      raw !== null &&
+      (raw as { op?: unknown }).op === "delist";
+    try {
+      if (isDelist) {
+        const d = DelistEntry.parse(raw);
+        if (!publishedIds.has(d.id)) {
+          throw new Error(`delist of ${d.id} has no prior publish line`);
+        }
+        if (delistedIds.has(d.id)) {
+          throw new Error(`duplicate delist of ${d.id}`);
+        }
+        delistedIds.add(d.id);
+        delists.push(d);
+      } else {
+        const e = LedgerEntry.parse(raw);
+        if (delistedIds.has(e.id)) {
+          throw new Error(
+            `publish of ${e.id}@${e.version} after its delist — delisting is terminal`,
+          );
+        }
+        publishedIds.add(e.id);
+        publishes.push(e);
+      }
     } catch (e) {
       throw new Error(`ledger.jsonl line ${i + 1}: ${(e as Error).message}`);
     }
   }
-  return entries;
+  return { publishes, delists };
+}
+
+/** Parse the JSONL ledger and return the PUBLISH lines only — the view every already-shipped
+ *  consumer (appender, publish step, parity tests) wants. Delist lines are still fully validated
+ *  (shape + order) on this path; they are just not returned. */
+export function parseLedger(text: string): LedgerEntry[] {
+  return parseLedgerLines(text).publishes;
 }
 
 /** Compare two semver strings (x.y.z[-pre][+build]); release > prerelease; numeric core compare.
@@ -72,10 +134,17 @@ export function compareSemver(a: string, b: string): number {
   return ca.pre < cb.pre ? -1 : 1;
 }
 
-/** Build the validated index object from ledger entries (pure — no file IO). */
-export function buildIndex(entries: readonly LedgerEntry[]): RegistryIndex {
+/** Build the validated index object from ledger entries (pure — no file IO). A delisted id keeps
+ *  its publish lines in the ledger but contributes NO index entry (ADR-0271) — it leaves the
+ *  discovery/membership surface entirely. */
+export function buildIndex(
+  entries: readonly LedgerEntry[],
+  delists: readonly DelistEntry[] = [],
+): RegistryIndex {
+  const delisted = new Set(delists.map((d) => d.id));
   const byId = new Map<string, LedgerEntry[]>();
   for (const e of entries) {
+    if (delisted.has(e.id)) continue;
     const list = byId.get(e.id) ?? [];
     list.push(e);
     byId.set(e.id, list);
@@ -116,9 +185,10 @@ export function serializeIndex(index: RegistryIndex): string {
 
 /** Build the index from the on-disk ledger and return its serialized bytes (no write). */
 export function buildIndexFromLedgerFile(ledgerPath = LEDGER_PATH): string {
-  return serializeIndex(
-    buildIndex(parseLedger(readFileSync(ledgerPath, "utf8"))),
+  const { publishes, delists } = parseLedgerLines(
+    readFileSync(ledgerPath, "utf8"),
   );
+  return serializeIndex(buildIndex(publishes, delists));
 }
 
 if (import.meta.main) {

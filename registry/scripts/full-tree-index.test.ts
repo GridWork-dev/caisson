@@ -11,6 +11,7 @@ import {
   LEDGER_PATH,
   buildIndexFromLedgerFile,
   parseLedger,
+  parseLedgerLines,
 } from "./build-index";
 
 describe("full-tree registry backfill (ADR-0021/0111)", () => {
@@ -60,10 +61,39 @@ describe("full-tree registry backfill (ADR-0021/0111)", () => {
     for (const m of index.modules) {
       expect(m.latest).toBe(highest.get(m.id) ?? "MISSING-FROM-LEDGER");
     }
-    // And coverage the other way: every ledgered module appears in the index.
+    // And coverage the other way: every ledgered module appears in the index — EXCEPT a delisted
+    // id, which keeps its publish history but must be ABSENT from the served index (the whole
+    // point of the delist line).
+    const delisted = new Set(
+      parseLedgerLines(readFileSync(LEDGER_PATH, "utf8")).delists.map(
+        (d) => d.id,
+      ),
+    );
     const indexed = new Set(index.modules.map((m) => m.id));
     for (const id of highest.keys()) {
-      expect(indexed.has(id)).toBe(true);
+      expect(indexed.has(id)).toBe(!delisted.has(id));
+    }
+  });
+
+  test("the dissolved edition metas are delisted: publish history kept, no index entry", () => {
+    const { publishes, delists } = parseLedgerLines(
+      readFileSync(LEDGER_PATH, "utf8"),
+    );
+    const index = JSON.parse(readFileSync(INDEX_PATH, "utf8")) as {
+      modules: { id: string }[];
+    };
+    const indexed = new Set(index.modules.map((m) => m.id));
+    const publishedIds = new Set(publishes.map((e) => e.id));
+    const metas = [
+      "@caisson/ai-kit",
+      "@caisson/local-ai",
+      "@caisson/agent-dev",
+    ];
+    const delistedIds = new Set(delists.map((d) => d.id));
+    for (const id of metas) {
+      expect(delistedIds.has(id)).toBe(true); // the delist lines exist
+      expect(publishedIds.has(id)).toBe(true); // history preserved, append-only
+      expect(indexed.has(id)).toBe(false); // gone from the served surface
     }
   });
 

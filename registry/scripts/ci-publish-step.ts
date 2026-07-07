@@ -23,7 +23,7 @@ import {
   INDEX_PATH,
   LEDGER_PATH,
   buildIndexFromLedgerFile,
-  parseLedger,
+  parseLedgerLines,
 } from "./build-index";
 
 // ---------------------------------------------------------------------------
@@ -412,14 +412,17 @@ export async function runPublishStep(
     `registry/ci-publish-step: ${label} run=${runId || "??"} sha=${sha.slice(0, 7) || "??"} at=${publishedAt || "??"}\n`,
   );
 
-  // Parse the existing ledger to identify already-recorded (id@version) pairs.
+  // Parse the existing ledger to identify already-recorded (id@version) pairs and the delisted ids
+  // (ADR-0271): a delisted module still has a workspace manifest, but appending a new publish for it
+  // would be a ledger error (delisting is terminal) — skip it loudly instead of failing the run.
   const rawLedger = existsSync(ledgerPath)
     ? readFileSync(ledgerPath, "utf8")
     : "";
-  const existingEntries = parseLedger(rawLedger);
+  const { publishes: existingEntries, delists } = parseLedgerLines(rawLedger);
   const alreadyPublished = new Set(
     existingEntries.map((e) => `${e.id}@${e.version}`),
   );
+  const delistedIds = new Set(delists.map((d) => d.id));
 
   // Discover all workspace package manifest.ts files.
   const manifestPaths = findManifestPaths(packagesDir);
@@ -444,8 +447,17 @@ export async function runPublishStep(
       );
       continue;
     }
-    loaded.push({ manifest, packageDir: dirname(p) });
     const key = `${manifest.id}@${manifest.version}`;
+    if (delistedIds.has(manifest.id)) {
+      // Not pushed to `loaded` either: a delisted module gets no tarball-sidecar reconcile — it has
+      // no index entry to serve from.
+      process.stdout.write(
+        `registry/ci-publish-step: delisted — skipped ${key}\n`,
+      );
+      skippedExisting++;
+      continue;
+    }
+    loaded.push({ manifest, packageDir: dirname(p) });
     if (alreadyPublished.has(key)) {
       process.stdout.write(
         `registry/ci-publish-step: already in ledger — ${key}\n`,

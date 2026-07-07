@@ -528,11 +528,12 @@ describe("ADR-0257/0270 bundle vocabulary + purchase-alias spine", () => {
 });
 
 describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-fold capture)", () => {
-  // Captured against registry/index.json AFTER the W5 members-fold republish (2026-07-06). ADR-0270 KEEPS
-  // these leaf sets IDENTICAL — the edition→bundle relation moved to the decoupled EDITION_BUNDLE_ID index
-  // map, so buying the canonical bundle id folds the legacy `kind:"edition"` meta-package's members exactly
-  // as the (now-purged) edition purchased id used to. The historical edition meta packages (@caisson/ai-kit,
-  // …) stay served, so they remain in each set. Keyed on the CANONICAL bundle ids the catalog + grants use.
+  // Captured against registry/index.json AFTER the W5 members-fold republish (2026-07-06), then
+  // re-captured after the ADR-0271 delist (2026-07-07): the three dissolved edition meta packages
+  // (@caisson/ai-kit, @caisson/local-ai, @caisson/agent-dev) left the served index, so they are
+  // ABSENT from every leaf set. That is the ONLY delta — the delist-equality proof showed each
+  // bundle's own members map carries every real member. Keyed on the CANONICAL bundle ids the
+  // catalog + grants use.
   const REAL_INDEX = join(
     dirname(fileURLToPath(import.meta.url)),
     "..",
@@ -557,7 +558,6 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
     "ai-production": [
       "@caisson/ai-config",
       "@caisson/ai-evals",
-      "@caisson/ai-kit",
       "@caisson/ai-meter",
       "@caisson/ai-production",
       "@caisson/credits",
@@ -571,7 +571,6 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
       "@caisson/field-crypto",
       "@caisson/kernel",
       "@caisson/license-verify",
-      "@caisson/local-ai",
       "@caisson/local-first",
       "@caisson/local-inference",
       "@caisson/local-privacy",
@@ -579,7 +578,6 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
       "@caisson/local-sync",
     ],
     "agentic-dev": [
-      "@caisson/agent-dev",
       "@caisson/agent-kernel",
       "@caisson/agent-runner",
       "@caisson/agentic-dev",
@@ -592,7 +590,7 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
 
   const realIndex = loadRegistryIndexFromFile(REAL_INDEX);
 
-  test("each canonical bundle id expands to the identical post-fold leaf set (edition members retained)", () => {
+  test("each canonical bundle id expands to the identical post-delist leaf set", () => {
     for (const [bundleId, expected] of Object.entries(BUNDLE_EXPANSIONS)) {
       expect([...expandEntitlements(realIndex, [bundleId])].sort()).toEqual([
         ...expected,
@@ -600,19 +598,21 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
     }
   });
 
-  test("a dissolved edition id resolves ONLY to its indexed meta on the real index (no over-grant)", () => {
-    // Post-purge (ADR-0270): the bare edition ids are not aliases; each resolves to just its still-served
-    // meta package via the ordinary indexed-module branch — a strict subset of its bundle, never a widen.
+  test("a dissolved edition id REJECTS fail-closed on the real index (delisted, no resolution left)", () => {
+    // ADR-0270 purged the alias; ADR-0271 delisted the meta itself. With no index entry to resolve,
+    // the bare edition id is now an unknown purchased id — expandEntitlements throws (fail-closed),
+    // and every consumer's catch degrades it to the free base floor. The bundle sets no longer
+    // contain the metas either (the leaf-set pins above are the positive half of this invariant).
     for (const [edition, bundleId] of [
       ["ai-kit", "ai-production"],
       ["local-ai", "local-first"],
       ["agent-dev", "agentic-dev"],
     ] as const) {
-      expect([...expandEntitlements(realIndex, [edition])]).toEqual([
-        `@caisson/${edition}`,
-      ]);
+      expect(() => expandEntitlements(realIndex, [edition])).toThrow(
+        /unknown purchased entitlement id/,
+      );
       const bundle = expandEntitlements(realIndex, [bundleId]);
-      expect(bundle.has(`@caisson/${edition}`)).toBe(true);
+      expect(bundle.has(`@caisson/${edition}`)).toBe(false);
       expect(bundle.size).toBeGreaterThan(1);
     }
   });
