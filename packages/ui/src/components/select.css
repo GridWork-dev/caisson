@@ -1,0 +1,56 @@
+/* Select — styled native <select> with a CSS caret; values via --cs-* only (ADR-0099). */
+.cs-select {
+  position: relative;
+  display: inline-flex;
+  width: 100%;
+}
+
+.cs-select__control {
+  appearance: none;
+  width: 100%;
+  padding: var(--cs-space-2) var(--cs-space-6) var(--cs-space-2)
+    var(--cs-space-3);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-bg);
+  color: var(--cs-fg);
+  font-size: var(--cs-text-sm);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.cs-select__control:hover {
+  border-color: var(--cs-border-strong);
+}
+
+.cs-select__control:focus-visible {
+  outline: 2px solid var(--cs-focus);
+  outline-offset: 1px;
+}
+
+.cs-select[data-invalid] .cs-select__control {
+  border-color: var(--cs-danger);
+}
+
+/* Caret — a CSS triangle, centered on the trailing edge, non-interactive. */
+.cs-select__caret {
+  position: absolute;
+  top: 50%;
+  right: var(--cs-space-3);
+  width: 0;
+  height: 0;
+  transform: translateY(-25%);
+  border-left: 0.3rem solid transparent;
+  border-right: 0.3rem solid transparent;
+  border-top: 0.35rem solid var(--cs-fg-muted);
+  pointer-events: none;
+}
+
+@media (forced-colors: active) {
+  .cs-select__control {
+    border: 1px solid ButtonText;
+  }
+  .cs-select__caret {
+    border-top-color: ButtonText;
+  }
+}
