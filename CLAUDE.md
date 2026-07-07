@@ -22,7 +22,7 @@ edited — supersede with a later ADR).
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
 2. `knowledge/decisions/` — the ADRs themselves. Append-only (`ADR-NNNN-slug.md`, never edited — supersede
-   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0284** (0270 = the
+   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0285** (0270 = the
    edition-trace purge, license-seam-wave 2026-07-07; 0271 = the bundle-only index delist,
    third-sitting picker 2026-07-07; 0272-0278 = the fourth-sitting research-response picker
    2026-07-07 — site wave · design-partner program · evaluation access · evidence-pack
@@ -31,7 +31,9 @@ edited — supersede with a later ADR).
    0277 · eval-verification hybrid-scoring flow refining 0274 · Postgres-required no-MySQL-lane
    · EULA continuity parameters variant-A/12-month-N refining 0276; 0283-0284 = the
    sixth-sitting locks: admin in-app GitHub OAuth replacing CF-Access · unified component
-   catalog + email consolidation). The full
+   catalog + email consolidation; 0285 = the seventh-sitting marketplace one-surface rework —
+   unified grid + card viewer + stack rail, periphery standalone-but-feeding-cards, media
+   carousel + manifest). The full
    catalog — every number, title, and supersession chain — is `docs/adr-index.md`; do NOT restate it here.
 3. `specs/` — locked concept docs; `specs/00-product-spec.md` is the founding spec
 4. `plan.md` / `SUMMARY.md` — build plan + consolidated summary
