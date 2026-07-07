@@ -386,10 +386,14 @@ export async function checkManifestAgreement(pkgs: Pkg[]): Promise<Finding[]> {
  * reprices a module — `checkManifestPriceAgreement` below fails the gate on any drift from here.
  */
 export const PRICE_AUTHORITY: Record<string, { cents: number; adr: string }> = {
-  "@caisson/compliance": { cents: 79900, adr: "ADR-0227" },
+  // Compliance bundle at the six-bundle price (was 79900/ADR-0227 as an edition; CAISSON-24 flip).
+  "@caisson/compliance": { cents: 104900, adr: "ADR-0258" },
   "@caisson/audit-worm": { cents: 14900, adr: "ADR-0129" },
   // Local-first bundle repriced to the 3-way-carve sum-anchored $629 (was $349/ADR-0240).
   "@caisson/local-ai": { cents: 62900, adr: "ADR-0258" },
+  // Retired-alias metas trued to their alias-target bundle prices (the local-ai convention).
+  "@caisson/ai-kit": { cents: 73900, adr: "ADR-0258" },
+  "@caisson/agent-dev": { cents: 32900, adr: "ADR-0258" },
   "@caisson/credits": { cents: 14900, adr: "ADR-0260" },
   // Catalog-rework carves (all private pre-first-publish; prices locked by the rework pickers).
   "@caisson/org-controls": { cents: 24900, adr: "ADR-0257" },

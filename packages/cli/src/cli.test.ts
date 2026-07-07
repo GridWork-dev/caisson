@@ -150,6 +150,22 @@ describe("HELP text", () => {
     expect(HELP).toContain("railway | fly | vercel");
     expect(HELP).toContain("Interactive mode");
   });
+
+  test("documents the six-bundle vocabulary + the legacy edition aliases (ADR-0257/0258)", () => {
+    for (const bundle of [
+      "compliance",
+      "ai-production",
+      "local-first",
+      "agentic-dev",
+      "provenance",
+      "everything",
+    ]) {
+      expect(HELP).toContain(bundle);
+    }
+    expect(HELP).toContain("ai-kit");
+    expect(HELP).toContain("local-ai");
+    expect(HELP).toContain("agent-dev");
+  });
 });
 
 describe("resolveSampleProjectName — ADR-0262 arming rule (--sample path)", () => {

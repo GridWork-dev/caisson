@@ -1,5 +1,26 @@
 # @caisson/ai-kit-app
 
+## 0.0.6
+
+### Patch Changes
+
+- Internal hygiene wave: the standards gate's locked-price table moved the Compliance bundle to its
+  current price and gained rows for the two retired alias packages; the four private reference apps
+  and the root manifest now carry an explicit license field; the license service applies the new
+  Developer-plan coverage semantics when computing signed license claims.
+- Updated dependencies [8c53ca3]
+- Updated dependencies
+- Updated dependencies [8c53ca3]
+- Updated dependencies
+  - @caisson/ai-config@0.3.0
+  - @caisson/ai-kit@0.4.0
+  - @caisson/tenancy-rls@0.5.0
+  - @caisson/credits@0.4.1
+  - @caisson/mcp-server@0.2.5
+  - @caisson/guardrails@0.4.2
+  - @caisson/ai-meter@0.3.4
+  - @caisson/prompt-registry@0.2.5
+
 ## 0.0.5
 
 ### Patch Changes

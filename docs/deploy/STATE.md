@@ -33,6 +33,28 @@ consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the 
 
 ---
 
+## STAGED — awaiting operator (2026-07-06, hygiene-package-standards session; NOT executed)
+
+The CAISSON-24 compliance republish + the version-cut wave (PR: `chore/hygiene-package-standards`)
+changed `registry/index.json` (29 appended ledger entries incl. `@caisson/compliance@0.5.0` as a
+first-class `kind:"bundle"` entry at 104900) and `services/license` (ADR-0269 Developer-plan
+coverage). Nothing is live until the operator runs, in this order (the standing Worker-first
+sequence constraint above):
+
+1. **Registry Worker** (inlines the rebuilt index at bundle time):
+   `source ~/.gridwork/caisson.env && bash registry/worker/deploy.sh`
+   (needs `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`; the script builds
+   `@caisson/registry-schema` first). Verify: `GET https://registry.caisson.sh/modules/@caisson%2Fcompliance`
+   still `404` anonymously; a compliance-entitled license sees `0.5.0` with `priceCents: 104900`.
+2. **`caisson-license`** (Railway redeploy from the merged `main` — picks up pricebook 0.5.0 +
+   ADR-0269): `railway up` against the `caisson-license` service, then
+   `curl https://license.caisson.sh/health` → `{"ok":true}`.
+3. R2 tarball upload for the 29 new sidecar rows stays behind its own gated publish dispatch
+   (`confirm=publish`), unchanged by this entry.
+
+When executed, replace this block with a real entry + pasted live-verify output per the
+going-forward convention.
+
 ## 2026-07-06/07 — triple-merge deploy: six-bundle catalog live (gated), Worker-first claims rollout
 
 **Operator authorization:** "once like on clean state want to deploy all new code to prod but still

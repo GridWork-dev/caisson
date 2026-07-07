@@ -16,10 +16,10 @@ export default defineModule({
   priceCents: 32900,
   license: pkg.license,
   members: {
-    "@caisson/agentic-dev": "0.2.0",
-    "@caisson/agent-kernel": "0.3.1",
+    "@caisson/agentic-dev": "0.2.1",
+    "@caisson/agent-kernel": "0.4.0",
     "@caisson/agent-runner": "0.1.4",
-    "@caisson/ai-config": "0.2.4",
+    "@caisson/ai-config": "0.3.0",
     "@caisson/kernel": "0.4.2",
     "@caisson/local-store": "0.2.4",
     "@caisson/tool-exec": "0.1.5",

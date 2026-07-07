@@ -1,6 +1,6 @@
 # SPEC — `@caisson/tenancy-rls` role pre-flight guard + RLS migration-equivalence harness
 
-**Status: LOCKED — ADR-0210 (wave lock; extends ADR-0005), harvest slice-2 wave, 2026-07-02 operator picker.** Spec-gated: no code lands until this SPEC is filed (ADR-0133 §4).
+**Status: EXECUTED — ADR-0210 (wave lock; extends ADR-0005), harvest slice-2 wave, 2026-07-02 operator picker, shipped PR #47.**
 
 - **Slice:** harvest slice-2, items #8 (2nd half — role guard) + #7 (2nd half — migration equivalence).
 - **Package:** `@caisson/tenancy-rls` (Base, Apache-2.0, ADR-0094/0097) + `tooling/standards-gate` (harness home, `private: true`).

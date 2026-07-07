@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { loadRegistryIndex } from "@caisson/registry-schema";
+import {
+  BUNDLE_IDS,
+  LEGACY_ENTITLEMENT_ALIASES,
+  loadRegistryIndex,
+} from "@caisson/registry-schema";
 import { matchGolden } from "@caisson/testing";
 import {
   type GeneratorEngine,
@@ -209,6 +213,51 @@ describe("generate — allowlist gate (ADR-0021/0048)", () => {
       "generated-fileset-compliance",
       generate(INDEX, VALID).files,
     );
+  });
+});
+
+describe("generate — six-bundle vocabulary (ADR-0257/0258)", () => {
+  test("every canonical bundle id is accepted and normalizes to itself", () => {
+    for (const id of BUNDLE_IDS) {
+      const selection = validateSelection(INDEX, { ...BASE, edition: id });
+      expect(selection.edition).toBe(id);
+    }
+  });
+
+  test("every legacy edition id is accepted and normalizes to its bundle id", () => {
+    for (const [legacy, bundle] of LEGACY_ENTITLEMENT_ALIASES) {
+      const selection = validateSelection(INDEX, {
+        ...BASE,
+        edition: legacy,
+      });
+      expect(selection.edition).toBe(bundle);
+    }
+  });
+
+  test("a legacy edition id generates the byte-identical composition as its bundle id", () => {
+    for (const [legacy, bundle] of LEGACY_ENTITLEMENT_ALIASES) {
+      if (legacy === bundle) continue; // compliance is its own identity alias — nothing to compare
+      const viaLegacy = generate(INDEX, { ...BASE, edition: legacy }).files;
+      const viaBundle = generate(INDEX, { ...BASE, edition: bundle }).files;
+      expect(viaLegacy).toEqual(viaBundle);
+    }
+  });
+
+  test("a bundle with no dedicated template overlay (provenance/everything) still generates", () => {
+    for (const id of ["provenance", "everything"] as const) {
+      const { files } = generate(INDEX, { ...BASE, edition: id });
+      const pkg = files.find((f) => f.path === "package.json");
+      const parsed = JSON.parse(pkg?.content ?? "{}") as {
+        caissonEdition?: string;
+      };
+      expect(parsed.caissonEdition).toBe(id);
+    }
+  });
+
+  test("an unknown edition id throws", () => {
+    expect(() =>
+      validateSelection(INDEX, { ...BASE, edition: "enterprise" }),
+    ).toThrow(/edition must be one of/);
   });
 });
 

@@ -1,6 +1,6 @@
 # SPEC — `@caisson/audit-harness` pipeline completion + audit driver
 
-**Status: DRAFT — awaiting operator lock (proposed ADR-0188, amends ADR-0134).** No code lands until locked (ADR-0133 §4).
+**Status: EXECUTED — ADR-0188 (amends ADR-0134), shipped PR #40 (whole-repo-audit remediation, 2026-07-01).** Superseded language below ("DRAFT"/"proposed") is historical — kept for the SPEC's own record.
 
 - **Slice:** LIFT slice 1 (build-now; serves the parallel whole-repo audit phase).
 - **Target:** internal `@caisson/audit-harness` (private, unsold) + a Caisson-local audit skill.

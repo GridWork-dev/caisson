@@ -1100,6 +1100,30 @@ function gatherPackageCountCheck(): {
 
 function gatherChangesetCheck(): CheckResult {
   try {
+    // Release-PR exemption — the SAME rule ci.yml's presence gate applies: changesets DELETED
+    // since origin/main mean this branch consumed them (`changeset version`), so `changeset
+    // status` would flag the very packages the cut just released. CI skips; so do we.
+    const deleted = execFileSync(
+      "git",
+      [
+        "diff",
+        "--name-only",
+        "--diff-filter=D",
+        "origin/main...HEAD",
+        "--",
+        ".changeset/*.md",
+      ],
+      { cwd: REPO_ROOT, encoding: "utf8", timeout: 30000 },
+    ).trim();
+    if (deleted !== "") {
+      return {
+        id: "changeset-gate-preflight",
+        status: "green",
+        details: [
+          "release PR (changesets consumed since origin/main) — presence gate skipped, matching ci.yml",
+        ],
+      };
+    }
     const stdout = execFileSync(
       "bunx",
       ["changeset", "status", "--since=origin/main"],

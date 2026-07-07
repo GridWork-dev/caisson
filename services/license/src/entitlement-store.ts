@@ -230,6 +230,26 @@ export async function readEntitlements(
   return r.rows.map((row) => row.entitlement_id);
 }
 
+/**
+ * Read an account's ACTIVE `one_time`-backed purchased ids — the "entitlements the buyer ALREADY
+ * OWNS" read (ADR-0269 Decision 1): the set a `coversOwnedEntitlements` plan re-grants
+ * subscription-sourced on each granting invoice. Deliberately narrower than {@link readEntitlements}:
+ * ids held only via another subscription (borrowed, not bought) or an `admin_comp` row are NOT
+ * owned and never enter the re-grant. Distinct + sorted for a stable result. Run inside `withTenant`.
+ */
+export async function readOneTimeEntitlements(
+  tx: TenantExecutor,
+  accountId: string,
+): Promise<string[]> {
+  const r = await tx.query<{ entitlement_id: string }>(
+    `SELECT DISTINCT entitlement_id FROM entitlement_grant
+     WHERE account_id = $1 AND source_kind = 'one_time' AND status = 'active'
+     ORDER BY entitlement_id`,
+    [accountId],
+  );
+  return r.rows.map((row) => row.entitlement_id);
+}
+
 export interface RevokeSubscriptionInput {
   accountId: string;
   subscriptionId: string;
@@ -402,7 +422,153 @@ export async function revokeAdminComp(
   return r.rows.length;
 }
 
-// --- ADR-0244/0255 updates windows --------------------------------------------------------------
+// --- ADR-0244/0255 updates windows + ADR-0269 subscription coverage ------------------------------
+
+/**
+ * The `line_item_id` sentinel marking an ADR-0269 COVERAGE MIRROR row — a subscription-sourced
+ * re-grant of an entitlement the buyer already owns one_time (`coversOwnedEntitlements`). Real
+ * Paddle line ids are `txnitm_…`, so the sentinel can never collide with a per-line grant, and it
+ * keys mirrors SEPARATELY from a plan's static grant of the same id in the uniqueness index — the
+ * refund reconcile ({@link reconcileCoverageGrants}) sweeps ONLY rows carrying this marker, never
+ * a static subscription grant the buyer is still paying for.
+ */
+export const COVERAGE_MIRROR_LINE_ITEM = "covered";
+
+export interface UpsertSubscriptionGrantsInput {
+  /** The buyer account — MUST equal the transaction's scope. */
+  accountId: string;
+  /** Purchased ids to grant (static plan entitlements or ADR-0269 coverage mirrors). */
+  entitlementIds: readonly string[];
+  /** The subscription backing these grants — the revoke key for `subscription.canceled`. */
+  subscriptionId: string;
+  /** The granting invoice id (audit). */
+  sourceEventId: string;
+  /** The plan's billing cadence — sets the coverage horizon to `now() + one cadence`. */
+  cadence: "month" | "year";
+  /** True → mark the rows as ADR-0269 coverage mirrors (see {@link COVERAGE_MIRROR_LINE_ITEM}). */
+  coverageMirror?: boolean;
+}
+
+/**
+ * Grant/extend subscription-sourced entitlements with a COVERAGE HORIZON (ADR-0269, hardened
+ * 2026-07-06 post-audit): each row is stamped `updates_expires_at = now() + one cadence` — the
+ * instant this invoice's payment covers through — and each subsequent granting invoice EXTENDS the
+ * horizon (GREATEST, monotone) on the still-active row. The horizon is what bounds every claim the
+ * issuer signs for a covered pair (see {@link computeUpdatesWindows}): a canceled, paused, or
+ * dunning-stalled subscription simply stops extending, so stale offline-verified tokens and
+ * out-of-order webhook grants are all bounded by the LAST PAID period — never unbounded (audit
+ * P1s 1–2, P2 3, P3 4, 2026-07-06). A REVOKED row on the key (a prior cancel or refund reconcile)
+ * is never resurrected: the conflict lands, the `WHERE status='active'` guard skips the update, and
+ * no new active row appears — the same tombstone semantics the static plans always had. Returns the
+ * number of rows newly inserted or horizon-extended. Run inside `withTenant`.
+ */
+export async function upsertSubscriptionGrants(
+  tx: TenantExecutor,
+  input: UpsertSubscriptionGrantsInput,
+): Promise<number> {
+  const interval = input.cadence === "year" ? "1 year" : "1 month";
+  const lineItemId = input.coverageMirror ? COVERAGE_MIRROR_LINE_ITEM : null;
+  let touched = 0;
+  for (const entitlementId of input.entitlementIds) {
+    const r = await tx.query<{ id: string }>(
+      `INSERT INTO entitlement_grant
+         (id, account_id, entitlement_id, source_kind, subscription_id, purchase_id,
+          source_event_id, line_item_id, updates_expires_at)
+       VALUES ($1, $2, $3, 'subscription', $4, NULL, $5, $6, now() + $7::interval)
+       ON CONFLICT (account_id, entitlement_id, source_kind, COALESCE(subscription_id, purchase_id), COALESCE(line_item_id, ''))
+       DO UPDATE SET updates_expires_at = GREATEST(
+           COALESCE(entitlement_grant.updates_expires_at, excluded.updates_expires_at),
+           excluded.updates_expires_at)
+         WHERE entitlement_grant.status = 'active'
+       RETURNING id`,
+      [
+        randomUUID(),
+        input.accountId,
+        entitlementId,
+        input.subscriptionId,
+        input.sourceEventId,
+        lineItemId,
+        interval,
+      ],
+    );
+    if (r.rows.length > 0) touched += 1;
+  }
+  return touched;
+}
+
+/**
+ * Revoke every ACTIVE coverage-MIRROR row whose one_time backing is gone (ADR-0269 refund
+ * reconcile — audit P1 1, 2026-07-06): a refunded/admin-revoked purchase must not survive through
+ * its subscription-sourced mirror. Scoped to rows carrying {@link COVERAGE_MIRROR_LINE_ITEM} —
+ * a plan's STATIC grant of the same id (paid for by the subscription itself) is never swept. The
+ * backing check is alias-group-tolerant: a mirror stored under a legacy spelling survives while any
+ * spelling of its group still has an active one_time grant. Idempotent (active-only filter).
+ * Returns the number revoked. Run after every one_time revoke path, in the same transaction.
+ */
+export async function reconcileCoverageGrants(
+  tx: TenantExecutor,
+  accountId: string,
+): Promise<number> {
+  const owned = await readOneTimeEntitlements(tx, accountId);
+  const backed = [
+    ...new Set(owned.flatMap((id) => entitlementIdAliasGroup(id))),
+  ];
+  const r = await tx.query<{ id: string }>(
+    `UPDATE entitlement_grant
+       SET status = 'revoked', revoked_at = now()
+     WHERE account_id = $1
+       AND source_kind = 'subscription'
+       AND line_item_id = $2
+       AND status = 'active'
+       AND NOT (entitlement_id = ANY($3::text[]))
+     RETURNING id`,
+    [accountId, COVERAGE_MIRROR_LINE_ITEM, backed],
+  );
+  return r.rows.length;
+}
+
+/**
+ * The account's per-spelling COVERAGE HORIZONS (ADR-0269, hardened 2026-07-06): for every purchased
+ * id backed by a subscription grant that carries a horizon (`updates_expires_at` — stamped by
+ * {@link upsertSubscriptionGrants} at each granting invoice), the MAX horizon, expanded to the
+ * id's full alias group (the `extendUpdatesWindow` W7 convention). The claim computations below
+ * fold this into a covered pair's bound instead of DROPPING the key — the original ADR-0269 drop
+ * made a covered pair UNBOUNDED in a perpetual offline-verified token, which no cancel could ever
+ * claw back (audit P1 2).
+ *
+ * Deliberately NO status filter (operator-locked 2026-07-06 picker — covered-period
+ * grandfathering): a horizon is a PAID fact — the instant an actually-received payment covered
+ * through — so it persists after `subscription.canceled` revokes the row. Cancel means the bound
+ * stops EXTENDING; it never shrinks, so a buyer's fresh re-mint and their saved stale token agree
+ * (no old-token/new-token divergence). A REFUNDED pair can never leak through this: the refund
+ * revokes the one_time backing, so the pair drops out of the claim loops entirely (keys exist
+ * only for active one_time rows). A legacy subscription row with a NULL `updates_expires_at`
+ * (granted before the horizon stamp shipped) contributes nothing until its next renewal stamps it.
+ */
+async function subscriptionCoverageHorizons(
+  tx: TenantExecutor,
+  accountId: string,
+): Promise<Map<string, number>> {
+  const r = await tx.query<{ entitlement_id: string; horizon: string | Date }>(
+    `SELECT entitlement_id, max(updates_expires_at) AS horizon
+       FROM entitlement_grant
+      WHERE account_id = $1 AND source_kind = 'subscription'
+        AND updates_expires_at IS NOT NULL
+      GROUP BY entitlement_id`,
+    [accountId],
+  );
+  const horizons = new Map<string, number>();
+  for (const row of r.rows) {
+    const horizon = new Date(row.horizon).getTime();
+    for (const spelling of entitlementIdAliasGroup(row.entitlement_id)) {
+      const existing = horizons.get(spelling);
+      if (existing === undefined || horizon > existing) {
+        horizons.set(spelling, horizon);
+      }
+    }
+  }
+  return horizons;
+}
 
 /**
  * Compute the account's PER-ENTITLEMENT updates-window bounds for the signed `updatesWindows`
@@ -410,11 +576,17 @@ export async function revokeAdminComp(
  * `(account, entitlement)` pair, each row's bound is `updates_expires_at` where a renewal set it,
  * else `granted_at + 12 months`, and the pair takes its MOST FAVORABLE (max) row — so a duplicate
  * re-purchase starts a fresh 12 months rather than inheriting the oldest purchase's window, the
- * per-pair mirror of ADR-0255 Decision 3's most-favorable-window rule. Returns a
- * `purchasedEntitlementId → ISO instant` map; EMPTY when the account holds no active one-time
- * grants — an unbounded claim (subscription-only accounts keep their existing expiry semantics,
- * ADR-0244 §4; subscription-sourced entitlements never get a key). Deterministic for a fixed
- * grant set (no `now()`), so the /issue re-mint comparison is stable. Run inside `withTenant`.
+ * per-pair mirror of ADR-0255 Decision 3's most-favorable-window rule. A pair ALSO backed by an
+ * ACTIVE subscription grant carrying a coverage horizon takes the MAX of its own bound and that
+ * horizon (ADR-0269 Decision 2, hardened 2026-07-06 — the key is EXTENDED to the last paid
+ * period's end, never dropped: a dropped key read as unbounded in a perpetual offline-verified
+ * token that no cancel could claw back, audit P1 2). The stored one_time bound is untouched, so
+ * once the subscription stops extending horizons the pair's bound converges back to it at the
+ * next re-mint. Returns a `purchasedEntitlementId → ISO instant` map; EMPTY when the account
+ * holds no active one-time grants — an unbounded claim (subscription-only accounts keep their
+ * existing expiry semantics, ADR-0244 §4; subscription-sourced entitlements never get a key).
+ * Deterministic for a fixed grant set (horizons are STAMPED at grant time, no read-time `now()`),
+ * so the /issue re-mint comparison is stable. Run inside `withTenant`.
  */
 export async function computeUpdatesWindows(
   tx: TenantExecutor,
@@ -431,9 +603,15 @@ export async function computeUpdatesWindows(
       GROUP BY entitlement_id`,
     [accountId],
   );
+  const horizons = await subscriptionCoverageHorizons(tx, accountId);
   const windows: Record<string, string> = {};
   for (const row of r.rows) {
-    windows[row.entitlement_id] = new Date(row.bound).toISOString();
+    const own = new Date(row.bound).getTime();
+    // ADR-0269 (hardened): a subscription-covered pair's bound EXTENDS to the coverage horizon.
+    const horizon = horizons.get(row.entitlement_id);
+    windows[row.entitlement_id] = new Date(
+      horizon !== undefined && horizon > own ? horizon : own,
+    ).toISOString();
   }
   return windows;
 }
@@ -446,10 +624,15 @@ export async function computeUpdatesWindows(
  * entitled to the newer (larger) member snapshot, mirroring the most-favorable rule
  * `computeUpdatesWindows`/ADR-0255 Decision 3 use for windows. A member that joined a bundle AFTER
  * this instant is outside the buyer's snapshot; the per-member filter drops it at the registry-schema
- * resolver (`expandEntitlements`). Returns a `purchasedEntitlementId → ISO instant` map; EMPTY when
- * the account holds no active one-time grants (an unbounded/grandfathered claim — subscription-
- * sourced entitlements never get a key, their own `expiry` governs). Deterministic for a fixed grant
- * set (no `now()`), so the /issue re-mint comparison is stable. Run inside `withTenant`.
+ * resolver (`expandEntitlements`). A pair ALSO backed by an ACTIVE subscription grant carrying a
+ * coverage horizon takes the MAX of its own instant and that horizon (ADR-0269 Decision 2,
+ * hardened 2026-07-06 — while covered, members joining before the last PAID period's end reach the
+ * buyer and stay grandfathered; a dropped key read as fully unbounded in a perpetual token that no
+ * cancel could claw back, audit P1 2). Returns a `purchasedEntitlementId → ISO instant` map; EMPTY
+ * when the account holds no active one-time grants (an unbounded/grandfathered claim —
+ * subscription-sourced entitlements never get a key, their own `expiry` governs). Deterministic
+ * for a fixed grant set (horizons are STAMPED at grant time, no read-time `now()`), so the /issue
+ * re-mint comparison is stable. Run inside `withTenant`.
  */
 export async function computeEntitledSince(
   tx: TenantExecutor,
@@ -465,9 +648,15 @@ export async function computeEntitledSince(
       GROUP BY entitlement_id`,
     [accountId],
   );
+  const horizons = await subscriptionCoverageHorizons(tx, accountId);
   const entitledSince: Record<string, string> = {};
   for (const row of r.rows) {
-    entitledSince[row.entitlement_id] = new Date(row.since).toISOString();
+    const own = new Date(row.since).getTime();
+    // ADR-0269 (hardened): a subscription-covered pair's snapshot EXTENDS to the coverage horizon.
+    const horizon = horizons.get(row.entitlement_id);
+    entitledSince[row.entitlement_id] = new Date(
+      horizon !== undefined && horizon > own ? horizon : own,
+    ).toISOString();
   }
   return entitledSince;
 }

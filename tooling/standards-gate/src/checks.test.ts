@@ -226,7 +226,7 @@ describe("checkManifestPriceAgreement (audit-v2 P1 price-drift guard)", () => {
     expect(f).toHaveLength(1);
     expect(f[0]?.rule).toBe("manifest-price-agreement");
     expect(f[0]?.severity).toBe("error");
-    expect(f[0]?.message).toContain("ADR-0227");
+    expect(f[0]?.message).toContain("ADR-0258");
   });
 
   test("a package not seeded in PRICE_AUTHORITY is out of scope (skipped)", async () => {

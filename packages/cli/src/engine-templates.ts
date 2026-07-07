@@ -30,12 +30,32 @@ export const TEMPLATES_ROOT = join(
   "templates",
 );
 
-/** Human labels for the editions, used in the rendered README/AGENTS prose. */
+/** Human labels for the bundles (ADR-0257/0258), used in the rendered README/AGENTS prose. Keyed
+ *  by the canonical bundle id — `Selection.edition` is normalized to one at the Zod boundary
+ *  (`seam.ts`), so a legacy `--edition ai-kit` invocation renders identically to `ai-production`. */
 const EDITION_LABELS: Record<NonNullable<Selection["edition"]>, string> = {
   compliance: "the Compliance edition",
-  "ai-kit": "the AI Production Kit edition",
-  "local-ai": "the Local-first AI edition",
-  "agent-dev": "the Agentic-Dev edition",
+  "ai-production": "the AI-Production edition",
+  "local-first": "the Local-first edition",
+  "agentic-dev": "the Agentic-Dev edition",
+  provenance: "the Provenance edition",
+  everything: "the Everything edition",
+};
+
+/** Canonical bundle id → its on-disk template overlay directory (sibling of `base` under
+ *  `templates/`). The physical dirs still carry their original legacy slugs — renaming them is a
+ *  content-only follow-up, not required for the vocabulary migration (ADR-0257/0258 renamed the
+ *  buyer-facing id, not the template tree). `provenance` and `everything` are new bundles with no
+ *  dedicated overlay yet: absent from this map, they compose base + the buyer's explicit
+ *  `--module` selection only — identical to an edition-less build except for the recorded
+ *  `caissonEdition`/label. */
+const EDITION_TEMPLATE_DIR: Partial<
+  Record<NonNullable<Selection["edition"]>, string>
+> = {
+  compliance: "compliance",
+  "ai-production": "ai-kit",
+  "local-first": "local-ai",
+  "agentic-dev": "agent-dev",
 };
 
 /** One template directory's worth of raw (pre-token) files, keyed by POSIX-relative path. */
@@ -104,13 +124,17 @@ function packageOverlay(selection: Selection): JsonObject {
   };
 }
 
-/** The template dirs that compose a selection: `base` is always included, then the edition (if
- *  any), then the deploy-target family (ADR-0268, if any) — new paths only, so it never collides
- *  with base/edition files; unset composes nothing (byte-identical to pre-ADR-0268 output). */
+/** The template dirs that compose a selection: `base` is always included, then the edition's
+ *  overlay dir (if it has one — `EDITION_TEMPLATE_DIR`), then the deploy-target family (ADR-0268,
+ *  if any) — new paths only, so it never collides with base/edition files; unset composes nothing
+ *  (byte-identical to pre-ADR-0268 output). */
 function templateDirs(selection: Selection): string[] {
   const dirs = [join(TEMPLATES_ROOT, "base")];
-  if (selection.edition) {
-    dirs.push(join(TEMPLATES_ROOT, selection.edition));
+  const editionDir = selection.edition
+    ? EDITION_TEMPLATE_DIR[selection.edition]
+    : undefined;
+  if (editionDir !== undefined) {
+    dirs.push(join(TEMPLATES_ROOT, editionDir));
   }
   if (selection.deployTarget) {
     dirs.push(join(TEMPLATES_ROOT, "deploy", selection.deployTarget));

@@ -1,5 +1,42 @@
 # @caisson/ai-kit
 
+## 0.4.0
+
+### Minor Changes
+
+- 8c53ca3: field-crypto ships a real GCP Cloud KMS driver (`createGcpKmsClient`) beside
+  the existing AWS driver: injected config, `ConfigError` fail-closed, per-tenant CryptoKey targeting
+  with an `additionalAuthenticatedData` scope binding, and version-scoped crypto-shred via
+  `destroyCryptoKeyVersion`. Registered in the shared `KmsClient` port-conformance suite; a self-skipping
+  `live/kms-gcp.live.test.ts` proves the real adapter stack end to end against a throwaway per-run
+  CryptoKey (GCP KeyRings/CryptoKeys can't be deleted, so the fixture KeyRing is pre-provisioned via
+  `CAISSON_KMS_GCP_KEY_RING`; only the CryptoKey and its primary version are minted/destroyed per run).
+
+  ai-config's provider lane enum gains three named OpenAI-compatible vendors — `groq`, `mistral`,
+  `together` — following the same `apiKeyEnv`-required rule as `openai`/
+  `openrouter`. ai-kit's `providerFor` wires all three over `createOpenAICompatible` with a hardcoded
+  default `baseUrl` per vendor (Groq `https://api.groq.com/openai/v1`, Mistral
+  `https://api.mistral.ai/v1`, Together `https://api.together.xyz/v1`, each overridable), and fails
+  closed when the named `apiKeyEnv` resolves to no value (these are paid vendor APIs, unlike the
+  `local`/`ollama` placeholder key).
+
+### Patch Changes
+
+- The two retired-alias meta packages now advertise their alias target's locked bundle price in
+  the registry manifest ($739 for the AI Production Kit, $329 for Agentic-Dev), replacing the
+  old pre-launch placeholder numbers. Purchasing behavior is unchanged — both ids keep resolving
+  to their bundles exactly as before.
+- Updated dependencies [8c53ca3]
+- Updated dependencies [8c53ca3]
+- Updated dependencies
+  - @caisson/field-crypto@0.3.0
+  - @caisson/ai-config@0.3.0
+  - @caisson/tenancy-rls@0.5.0
+  - @caisson/credits@0.4.1
+  - @caisson/guardrails@0.4.2
+  - @caisson/ai-meter@0.3.4
+  - @caisson/prompt-registry@0.2.5
+
 ## 0.3.1
 
 ### Patch Changes

@@ -1,5 +1,16 @@
 # @caisson/credits
 
+## 0.4.1
+
+### Patch Changes
+
+- Updated dependencies [8170382]
+- Updated dependencies [8c53ca3]
+- Updated dependencies
+  - @caisson/registry-schema@0.4.0
+  - @caisson/tenancy-rls@0.5.0
+  - @caisson/jobs@0.4.1
+
 ## 0.4.0
 
 ### Minor Changes

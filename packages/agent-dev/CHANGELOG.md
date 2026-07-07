@@ -1,5 +1,31 @@
 # @caisson/agent-dev
 
+## 0.4.0
+
+### Minor Changes
+
+- 8c53ca3: `RuleArtifact` and `SkillArtifact` gain an optional `activation` (`always` / `paths` /
+  `manual`) and `paths` (bounded, relative-glob-only) pair, letting an authored rule or skill scope
+  its activation instead of always loading. The multi-harness emitter fixes the shipped Cursor
+  degrade (rules no longer hardcode `alwaysApply: true`) and gains three new targets — Devin Desktop
+  (mirrored to the legacy Windsurf path), GitHub Copilot (repo-wide instructions + per-artifact
+  path-scoped instructions), and Cline — plus an `EmittedBundle.warnings[]` channel that fires a
+  specific, actionable warning whenever a target cannot represent the source's activation intent
+  instead of silently degrading it. The emitted `AGENTS.md` is reframed as the universal multi-tool
+  base layer (Codex, Cursor, Devin, Zed, Gemini CLI, and the Copilot coding agent all read it
+  natively) — its emitted content and path are unchanged.
+
+### Patch Changes
+
+- The two retired-alias meta packages now advertise their alias target's locked bundle price in
+  the registry manifest ($739 for the AI Production Kit, $329 for Agentic-Dev), replacing the
+  old pre-launch placeholder numbers. Purchasing behavior is unchanged — both ids keep resolving
+  to their bundles exactly as before.
+- Updated dependencies [8c53ca3]
+- Updated dependencies [8c53ca3]
+  - @caisson/agent-kernel@0.4.0
+  - @caisson/ai-config@0.3.0
+
 ## 0.3.0
 
 ### Minor Changes

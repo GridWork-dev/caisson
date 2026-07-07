@@ -4,7 +4,11 @@
  * Mood anchor: a pressurized steel caisson in cold harbor water — wet dark steel, one instrument
  * light, holds under load. Strategy: Restrained (one accent ≤10%, semantic-first).
  */
-import type { AccentCandidate, FunctionalTokens, TypeCandidate } from "./types";
+import type {
+  AccentCandidate,
+  FunctionalTokens,
+  TypeCandidate,
+} from "./types.ts";
 
 /** Functional/status set — per mode. The dark set inherits-down onto the near-white light surfaces
  *  and fails WCAG AA there, so light gets its own darkened set. Same across every palette; never

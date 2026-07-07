@@ -1,5 +1,11 @@
 # @caisson/license-issue
 
+## 0.0.6
+
+### Patch Changes
+
+- Added a README to each package describing what it provides, how to install or reference it, and a short usage example built from its real exports. No runtime behavior changed.
+
 ## 0.0.5
 
 ### Patch Changes
