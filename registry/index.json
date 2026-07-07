@@ -1033,6 +1033,35 @@
       ]
     },
     {
+      "id": "@caisson/analytics",
+      "latest": "0.1.0",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "manifest": {
+            "id": "@caisson/analytics",
+            "version": "0.1.0",
+            "kind": "base",
+            "editions": [],
+            "tier": "oss",
+            "priceCents": null,
+            "license": "Apache-2.0",
+            "dependencies": [
+              "@caisson/kernel"
+            ],
+            "members": {},
+            "entry": "src/index.ts",
+            "agents": "AGENTS.md",
+            "golden": null,
+            "stability": "alpha",
+            "description": "Provider-agnostic server-side analytics port: a vendor-neutral AnalyticsProvider interface with a capture driver for tests and Plausible, PostHog, and GA4 drivers for production; fail-open by design."
+          },
+          "publishedAt": "2026-07-07T21:59:42Z",
+          "gateAttestation": "catalog-driver-batch@b1a2378757973dbb84718b0086cb44aa83f88a79"
+        }
+      ]
+    },
+    {
       "id": "@caisson/audit-worm",
       "latest": "0.3.0",
       "versions": [
