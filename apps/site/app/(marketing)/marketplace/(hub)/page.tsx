@@ -255,7 +255,7 @@ export default function MarketplaceBundlesPage() {
             {BASE_CAPABILITIES.map((c) => (
               <Card key={c.title}>
                 <div className="cs-status">
-                  <Icon name={c.icon} size="lg" aria-label={c.title} />
+                  <Icon name={c.icon} size="lg" />
                   {c.title}
                 </div>
                 <p
