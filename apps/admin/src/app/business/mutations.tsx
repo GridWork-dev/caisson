@@ -4,8 +4,9 @@
 // revoke-purchase, the last added by ADR-0225), each behind a type-to-confirm gate (retype the
 // target account id to arm the destructive submit —
 // the security floor's input-validation-at-the-boundary rule, made visible). Each form POSTs to its
-// CF-Access-gated route (`/api/admin/...`); the middleware supplies the verified actor, so the client
-// never sends one. The money/license blast radius is why the confirm gate is mandatory, not cosmetic.
+// GitHub-OAuth-gated route (`/api/admin/...`, ADR-0283); the route re-verifies the session itself, so
+// the client never sends an actor. The money/license blast radius is why the confirm gate is
+// mandatory, not cosmetic.
 import { useState, type ReactNode } from "react";
 
 type Result =

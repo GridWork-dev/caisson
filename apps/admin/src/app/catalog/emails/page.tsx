@@ -1,8 +1,8 @@
 // Every branded email template, rendered with sample data — absorbs the former dev-only site
 // preview page (superseded: this surface adds the send-test-to-operator action and lives behind the
-// same CF-Access gate as the rest of admin, so it works in every environment, not just dev). Server
-// Component: `renderEmailTemplate` runs server-side via `@react-email/render`; only the send button
-// is a client island.
+// same GitHub-OAuth gate (ADR-0283) as the rest of admin, so it works in every environment, not
+// just dev). Server Component: `renderEmailTemplate` runs server-side via `@react-email/render`;
+// only the send button is a client island.
 import {
   EMAIL_TEMPLATE_IDS,
   renderEmailTemplate,

@@ -1,6 +1,6 @@
 // Runtime wiring for the ADR-0220 mutation surface: it assembles the injected `AdminMutationDeps`
-// (@caisson/service-license owns the orchestration + dual-log; apps/admin owns the CF-Access gate,
-// the DB seam, and this provisioning). Three pieces:
+// (@caisson/service-license owns the orchestration + dual-log; apps/admin owns the auth gate
+// (ADR-0283), the DB seam, and this provisioning). Three pieces:
 //   - db   — the admin `Transactor` (ADR-0141 `getAdminDb`); the connecting role must be able to
 //            `SET ROLE admin_write` (mutations), `app` (the WORM chain's withTenant), and `admin`
 //            (reads). Provisioned on the Railway PG at DEPLOY.
