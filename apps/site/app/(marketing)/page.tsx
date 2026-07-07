@@ -12,6 +12,10 @@ import {
 } from "@/components";
 import { DualDoorHero } from "@/components/dual-door-hero";
 import { FileTree, type FileNode } from "@/components/file-tree";
+import {
+  IsolationDiagram,
+  LifecycleDiagram,
+} from "@/components/isolation-diagrams";
 import Link from "next/link";
 
 import { serializeJsonLd, softwareApplication } from "@/lib/jsonld";
@@ -276,6 +280,58 @@ export default function HomePage() {
               />
             </div>
           </FeatureGrid>
+        </Section>
+      </Reveal>
+
+      {/* ===== Architecture-isolation + data-lifecycle diagram pair (D4b) — drawn to real behaviour ===== */}
+      <Reveal>
+        <Section
+          eyebrow="How the guarantees hold"
+          title="The boundary and the evidence trail, drawn to real behaviour."
+          lede="Two diagrams of shipped behaviour — the fail-closed isolation boundary and the write-to-verify evidence lifecycle. Nothing aspirational: this is what the RLS, audit-chain, and WORM modules already do."
+          band="surface"
+        >
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--cs-space-12)",
+              marginTop: "var(--cs-space-8)",
+            }}
+          >
+            <div>
+              <h3 className="cs-card-title">
+                Per-tenant isolation, fail-closed
+              </h3>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-2)", maxWidth: "60ch" }}
+              >
+                Tenant context sets one Postgres GUC; the FORCE policy denies
+                any row that doesn&apos;t match it. A query that never set the
+                context returns nothing, never everything.
+              </p>
+              <div style={{ marginTop: "var(--cs-space-6)" }}>
+                <IsolationDiagram />
+              </div>
+            </div>
+            <div>
+              <h3 className="cs-card-title">
+                Evidence lifecycle, write to verify
+              </h3>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-2)", maxWidth: "60ch" }}
+              >
+                Every privileged write joins the append-only chain, anchors to
+                WORM under S3 Object-Lock, and stays verifiable and exportable
+                as an evidence pack.
+              </p>
+              <div style={{ marginTop: "var(--cs-space-6)" }}>
+                <LifecycleDiagram />
+              </div>
+            </div>
+          </div>
         </Section>
       </Reveal>
 

@@ -1,0 +1,132 @@
+/* Architecture-isolation + data-lifecycle diagram pair (D4b) — hand-authored CSS diagrams, NO
+ * charting/graph dependency. Both depict SHIPPED behaviour only (ADR-0080 honesty floor): the real
+ * fail-closed RLS boundary and the real evidence lifecycle. Values via --cs-* tokens only, so
+ * light/dark "just works" by cascade. Meaning is carried by labels, never colour alone (WCAG AA):
+ * the accent on the deny cell / boundary reinforces text that already states "denied". */
+
+/* ===== Shared cell ===== */
+.cell {
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-surface-1);
+  padding: var(--cs-space-4);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  line-height: var(--cs-leading-snug);
+  text-align: center;
+}
+
+.cellHead {
+  color: var(--cs-fg);
+  font-weight: var(--cs-weight-medium);
+}
+
+.cellSub {
+  margin-top: var(--cs-space-2);
+  color: var(--cs-fg-muted);
+}
+
+/* ===== Diagram 1 — per-tenant RLS isolation ===== */
+.iso {
+  display: grid;
+  gap: var(--cs-space-3);
+}
+
+.isoRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--cs-space-4);
+}
+
+/* The FORCE boundary every query crosses — one band across all three lanes. */
+.boundary {
+  border: 1px solid var(--cs-accent);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-accent-tint);
+  padding: var(--cs-space-3) var(--cs-space-4);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  line-height: var(--cs-leading-snug);
+  color: var(--cs-fg);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* The load-bearing deny lane — the no-context query returns nothing. */
+.deny {
+  border-color: var(--cs-accent);
+}
+
+.denyText {
+  color: var(--cs-accent);
+  font-weight: var(--cs-weight-medium);
+}
+
+.arrows {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--cs-space-4);
+  color: var(--cs-fg-muted);
+  text-align: center;
+  font-size: var(--cs-text-sm);
+}
+
+/* ===== Diagram 2 — evidence data lifecycle (an ordered sequence) ===== */
+.flow {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--cs-space-6);
+  align-items: stretch;
+}
+
+.stage {
+  position: relative;
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-surface-1);
+  padding: var(--cs-space-4);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  line-height: var(--cs-leading-snug);
+}
+
+.stageHead {
+  color: var(--cs-fg);
+  font-weight: var(--cs-weight-medium);
+}
+
+.stageSub {
+  margin-top: var(--cs-space-2);
+  color: var(--cs-fg-muted);
+}
+
+/* Connector between stages — a → that sits in the gap before every stage after the first. */
+.stage:not(:first-child)::before {
+  content: "→";
+  position: absolute;
+  left: calc(-1 * var(--cs-space-6));
+  top: 50%;
+  width: var(--cs-space-6);
+  transform: translateY(-50%);
+  text-align: center;
+  color: var(--cs-fg-muted);
+}
+
+/* Stack to one column below the md rung; the connector rotates to a downward ↓ in the vertical gap. */
+@media (max-width: 48rem) {
+  .flow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stage:not(:first-child)::before {
+    content: "↓";
+    left: 50%;
+    top: calc(-1 * var(--cs-space-6));
+    width: var(--cs-space-6);
+    height: var(--cs-space-6);
+    transform: translateX(-50%);
+  }
+}
