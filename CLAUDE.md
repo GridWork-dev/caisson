@@ -27,7 +27,8 @@ edited — supersede with a later ADR).
    third-sitting picker 2026-07-07; 0272-0278 = the fourth-sitting research-response picker
    2026-07-07 — site wave · design-partner program · evaluation access · evidence-pack
    artifact · EULA continuity clause · named-regime crosswalks · priority-support SKU;
-   0279 = the fifth-sitting crosswalk claim posture, mixed-by-proof-level, refines 0277). The full
+   0279-0280 = the fifth-sitting locks: crosswalk claim posture mixed-by-proof-level refining
+   0277, and the eval-verification hybrid-scoring flow refining 0274). The full
    catalog — every number, title, and supersession chain — is `docs/adr-index.md`; do NOT restate it here.
 3. `specs/` — locked concept docs; `specs/00-product-spec.md` is the founding spec
 4. `plan.md` / `SUMMARY.md` — build plan + consolidated summary

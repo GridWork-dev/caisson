@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-07
 status: live
-adr_ceiling: 0279
+adr_ceiling: 0280
 ---
 
 # Decisions & Forks — live board
@@ -1462,7 +1462,11 @@ Four sequencing/posture forks locked while the research-response builders run:
   operator sets price + SLA). The support-tier comparables memo informs that call.
 - **Track E2 — design-memo picker first** (ADR-0274 execution): the eval-verification
   research produces 2-3 concrete verification-flow designs; the operator picks one BEFORE the
-  fable-lane build starts.
+  fable-lane build starts. RESOLVED same sitting: **hybrid scoring locked (ADR-0280,
+  refines + supersedes-in-part 0274)** — free pre-gate (MX/domain-age/disposable-list), risk
+  score with auto-reject/auto-approve/borderline-to-review-queue, card leg = Paddle free-trial
+  card-on-file (no $0-auth primitive exists at Paddle), card-fingerprint reuse alerts,
+  thresholds as config. E2 still builds LAST in the wave.
 - **Crosswalk claim posture — mixed by proof level** (**ADR-0279**, refines 0277): assertive
   "implements control X as documented" ONLY where a live test/CI artifact proves it (proof
   linkable per row); conservative "maps to / provides evidence toward" + a
