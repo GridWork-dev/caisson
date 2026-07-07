@@ -1,0 +1,30 @@
+/* ConfirmDialog — layout + danger-toned confirm action; values via --cs-* only (ADR-0099). */
+.cs-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-5);
+  max-width: 26rem;
+}
+
+.cs-confirm__message {
+  margin: 0;
+  color: var(--cs-fg-muted);
+  line-height: var(--cs-leading-normal);
+}
+
+.cs-confirm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--cs-space-3);
+}
+
+/* Destructive confirm — a danger fill rather than the accent slot. */
+.cs-confirm .cs-button[data-tone="danger"] {
+  background: var(--cs-danger);
+  border-color: var(--cs-danger);
+  color: var(--cs-on-accent);
+}
+
+.cs-confirm .cs-button[data-tone="danger"]:hover:not(:disabled) {
+  filter: brightness(1.08);
+}

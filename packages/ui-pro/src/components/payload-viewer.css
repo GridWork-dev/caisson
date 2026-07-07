@@ -1,0 +1,131 @@
+/* PayloadViewer — redaction-aware JSON tree; values via --cs-* only (ADR-0099). */
+.cs-payload {
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-lg);
+  background: var(--cs-bg);
+  overflow: hidden;
+}
+
+.cs-payload__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--cs-space-2) var(--cs-space-4);
+  border-bottom: 1px solid var(--cs-border);
+  background: var(--cs-surface-1);
+}
+
+.cs-payload__title {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  letter-spacing: var(--cs-tracking-wide);
+  text-transform: uppercase;
+  color: var(--cs-fg-muted);
+}
+
+.cs-payload__copy {
+  padding: var(--cs-space-1) var(--cs-space-3);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-bg);
+  color: var(--cs-fg);
+  font-size: var(--cs-text-xs);
+  cursor: pointer;
+}
+
+.cs-payload__copy[data-copied] {
+  color: var(--cs-success);
+  border-color: var(--cs-success);
+}
+
+.cs-payload__copy:focus-visible,
+.cs-payload__toggle:focus-visible {
+  outline: 2px solid var(--cs-focus);
+  outline-offset: 1px;
+}
+
+.cs-payload__tree {
+  padding: var(--cs-space-3) var(--cs-space-4);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-sm);
+  line-height: var(--cs-leading-snug);
+  overflow-x: auto;
+}
+
+.cs-payload__row {
+  white-space: nowrap;
+}
+
+.cs-payload__toggle {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--cs-space-1);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.cs-payload__twisty {
+  width: 0.75rem;
+  color: var(--cs-fg-muted);
+}
+
+.cs-payload__key {
+  color: var(--cs-fg-muted);
+}
+
+.cs-payload__summary {
+  color: var(--cs-fg-muted);
+}
+
+.cs-payload__string {
+  color: var(--cs-success);
+}
+
+.cs-payload__number {
+  color: var(--cs-accent);
+}
+
+.cs-payload__boolean {
+  color: var(--cs-warning);
+}
+
+.cs-payload__null {
+  color: var(--cs-fg-muted);
+  font-style: italic;
+}
+
+.cs-payload__redacted {
+  padding: 0 var(--cs-space-1);
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-danger);
+  color: var(--cs-on-accent);
+  font-style: italic;
+}
+
+.cs-payload__raw {
+  border-top: 1px solid var(--cs-border);
+}
+
+.cs-payload__raw > summary {
+  padding: var(--cs-space-2) var(--cs-space-4);
+  cursor: pointer;
+  font-size: var(--cs-text-sm);
+  color: var(--cs-fg-muted);
+}
+
+.cs-payload__raw[open] > summary {
+  border-bottom: 1px solid var(--cs-border);
+}
+
+@media (forced-colors: active) {
+  .cs-payload {
+    border: 1px solid CanvasText;
+  }
+  .cs-payload__redacted {
+    outline: 1px solid CanvasText;
+  }
+}

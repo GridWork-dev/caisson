@@ -1,0 +1,107 @@
+/* Toast + region — transient notifications; values via --cs-* only, tone via [data-tone] (ADR-0099). */
+.cs-toast-region {
+  position: fixed;
+  right: var(--cs-space-5);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-3);
+  max-width: min(24rem, calc(100vw - var(--cs-space-6)));
+  pointer-events: none;
+}
+
+.cs-toast-region[data-placement="bottom"] {
+  bottom: var(--cs-space-5);
+}
+
+.cs-toast-region[data-placement="top"] {
+  top: var(--cs-space-5);
+}
+
+.cs-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--cs-space-3);
+  padding: var(--cs-space-3) var(--cs-space-4);
+  border: 1px solid var(--cs-border);
+  border-left: 3px solid var(--cs-border-strong);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-bg);
+  color: var(--cs-fg);
+  box-shadow: var(--cs-shadow-md);
+  pointer-events: auto;
+}
+
+.cs-toast[data-tone="info"] {
+  border-left-color: var(--cs-info);
+}
+.cs-toast[data-tone="success"] {
+  border-left-color: var(--cs-success);
+}
+.cs-toast[data-tone="warning"] {
+  border-left-color: var(--cs-warning);
+}
+.cs-toast[data-tone="danger"] {
+  border-left-color: var(--cs-danger);
+}
+
+.cs-toast__icon {
+  flex: none;
+  margin-top: 0.1rem;
+}
+
+.cs-toast[data-tone="info"] .cs-toast__icon {
+  color: var(--cs-info);
+}
+.cs-toast[data-tone="success"] .cs-toast__icon {
+  color: var(--cs-success);
+}
+.cs-toast[data-tone="warning"] .cs-toast__icon {
+  color: var(--cs-warning);
+}
+.cs-toast[data-tone="danger"] .cs-toast__icon {
+  color: var(--cs-danger);
+}
+
+.cs-toast__content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.cs-toast__title {
+  margin: 0 0 var(--cs-space-1);
+  font-weight: var(--cs-weight-semibold);
+  font-size: var(--cs-text-sm);
+}
+
+.cs-toast__message {
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-sm);
+  line-height: var(--cs-leading-snug);
+}
+
+.cs-toast__dismiss {
+  flex: none;
+  display: inline-flex;
+  padding: var(--cs-space-1);
+  border: 0;
+  border-radius: var(--cs-radius-sm);
+  background: none;
+  color: var(--cs-fg-muted);
+  cursor: pointer;
+}
+
+.cs-toast__dismiss:hover {
+  color: var(--cs-fg);
+}
+
+.cs-toast__dismiss:focus-visible {
+  outline: 2px solid var(--cs-focus);
+  outline-offset: 1px;
+}
+
+@media (forced-colors: active) {
+  .cs-toast {
+    border: 1px solid CanvasText;
+  }
+}

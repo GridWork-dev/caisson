@@ -61,6 +61,68 @@
   padding: var(--cs-space-2) var(--cs-space-3);
 }
 
+/* Toolbar + search (the free-line filter). */
+.cs-table__toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--cs-space-3) var(--cs-space-4);
+  border-bottom: 1px solid var(--cs-border);
+}
+
+.cs-table__search {
+  min-width: 12rem;
+  padding: var(--cs-space-2) var(--cs-space-3);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-bg);
+  color: var(--cs-fg);
+  font-size: var(--cs-text-sm);
+}
+
+.cs-table__search:focus-visible {
+  outline: 2px solid var(--cs-focus);
+  outline-offset: 1px;
+}
+
+/* Sort header control. */
+.cs-table__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cs-space-2);
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.cs-table th[data-numeric] .cs-table__sort {
+  justify-content: flex-end;
+}
+
+.cs-table__sort-arrow {
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-xs);
+}
+
+.cs-table__sort[data-active] .cs-table__sort-arrow {
+  color: var(--cs-accent);
+}
+
+.cs-table__sort:focus-visible {
+  outline: 2px solid var(--cs-focus);
+  outline-offset: 2px;
+}
+
+.cs-table__pager {
+  padding: var(--cs-space-3) var(--cs-space-4);
+  border-top: 1px solid var(--cs-border);
+}
+
 /* Forced-colors (Windows high-contrast) — keep the bordered chrome visible. */
 @media (forced-colors: active) {
   .cs-table-wrap {
