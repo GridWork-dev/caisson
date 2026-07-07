@@ -271,12 +271,12 @@ describe("longInterval (CAISSON-49 — no 32-bit clamp)", () => {
       return armed.length as unknown as ReturnType<typeof setTimeout>;
     };
     let fired = 0;
-    // eslint-disable-next-line prefer-const -- h is referenced inside the callback before assignment completes
-    let h: { clear: () => void };
-    h = longInterval(
+    // Holder so the callback can reach its own handle before longInterval() returns (TDZ).
+    const handle: { current: { clear: () => void } | null } = { current: null };
+    handle.current = longInterval(
       () => {
         fired += 1;
-        h.clear();
+        handle.current?.clear();
       },
       1_000,
       fakeSetTimeout,
