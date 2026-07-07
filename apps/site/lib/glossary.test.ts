@@ -4,12 +4,13 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { GLOSSARY_TERMS, glossaryPageSpec } from "./glossary";
 
-// Data-lint (glossary SPEC Task 5 verify) — all ADR-0235 batches have shipped, so this pins the
-// SPEC's exact gate: GLOSSARY_TERMS.length === 32. Adding a term requires a new operator lock
-// (Fork A: "never add without a new lock"), so a drift in either direction is a bug.
+// Data-lint (glossary SPEC Task 5 verify). ADR-0235 locked the first 32 terms; the AEO program
+// (CAISSON-29 / D5, 2026-07-07) added 3 long-tail explainers (WORM-for-SaaS, OSCAL-export-from-TS,
+// multi-tenant-RLS-for-compliance) as the new operator lock Fork A requires ("never add without a
+// new lock"). This pins the current total; a drift in either direction is a bug.
 describe("GLOSSARY_TERMS — data lint", () => {
-  test("all 32 locked terms ship (SPEC Task 5 gate, ADR-0235 Fork A)", () => {
-    expect(GLOSSARY_TERMS.length).toBe(32);
+  test("all 35 locked terms ship (SPEC Task 5 gate, ADR-0235 Fork A + CAISSON-29)", () => {
+    expect(GLOSSARY_TERMS.length).toBe(35);
   });
 
   test("every slug is unique", () => {
