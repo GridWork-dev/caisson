@@ -9,12 +9,14 @@
 // webhook — and uses PGlite in tests; there is no in-repo production Postgres pool). The deploy entrypoint
 // supplies a Neon-backed Transactor; the signing key → KMS swap (un-wired Signer seam) is the same
 // operator-gated DEPLOY concern as the docs-service real-embedder seam.
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { BillingProvider } from "@caisson/billing";
 import { createPaddleBilling } from "@caisson/billing-orchestration";
 import { Ed25519Signer } from "@caisson/license-issue";
 import { initObservability } from "@caisson/observability";
-import { loadRegistryIndexFromFile } from "@caisson/registry-schema";
+import { loadRegistryIndex } from "@caisson/registry-schema";
 import type { Transactor } from "@caisson/tenancy-rls";
 import { createApp } from "./app.ts";
 import {
@@ -22,6 +24,8 @@ import {
   loadDiscordNotifyConfig,
   notifyDiscordGrant,
 } from "./discord-notify.ts";
+import { loadEvalSignalsConfig, resolveDomainSignals } from "./eval-signals.ts";
+import { loadEvalConfig } from "./eval-verification.ts";
 import {
   notifyPurchaseEmail,
   notifyRenewalEmail,
@@ -73,9 +77,17 @@ export function startServer(
   const adminToken = process.env.ADMIN_ISSUE_TOKEN ?? "";
   // Throws ConfigError if CAISSON_LICENSE_SIGNING_KEY is missing/malformed/non-Ed25519 (never echoes it).
   const signer = Ed25519Signer.fromEnv();
-  const index = loadRegistryIndexFromFile(
-    options.indexPath ?? defaultIndexPath(),
-  );
+  // Read the index BYTES once so the /health parity digest (the F-1 index-parity residual) is over the exact bytes this
+  // service loaded — the same file the registry Worker + admin bake, so a drifted copy shows as a
+  // digest mismatch. sha256 first-12-hex matches `registry/scripts/index-parity-probe.ts#indexDigest12`.
+  const indexPath = options.indexPath ?? defaultIndexPath();
+  const indexBytes = readFileSync(indexPath);
+  const index = loadRegistryIndex(JSON.parse(indexBytes.toString("utf8")));
+  const indexDigest = createHash("sha256")
+    .update(indexBytes)
+    .digest("hex")
+    .slice(0, 12);
+  const indexEntries = index.modules.length;
 
   // Paddle Merchant-of-Record webhook provider (ADR-0108/0116). It verifies the `Paddle-Signature` HMAC
   // over the raw body; the apiKey is only used by the (unexercised) checkout path, so a webhook-only
@@ -154,6 +166,24 @@ export function startServer(
     );
   }
 
+  // Evaluation-access surface (ADR-0274 §2 / ADR-0280). Config is Zod-validated from env with
+  // fail-closed-safe defaults (a bad threshold fails startup closed). The signals resolver is
+  // config-gated: with EVAL_RDAP_URL / EVAL_ENRICHMENT_URL unset there is NO outbound HTTP — the
+  // scorer runs on MX (DNS) alone and every non-obvious applicant lands in the review queue
+  // (fail-toward-manual). The eval tables are provisioned at the operator-gated admin DEPLOY; if
+  // they are absent, /eval/* returns 500 on a DB miss (the routes are always wired here — the null
+  // gate in app.ts exists for a deliberately eval-less deploy, which this default one is not).
+  const evalConfig = loadEvalConfig();
+  const evalSignalsConfig = loadEvalSignalsConfig();
+  if (
+    evalSignalsConfig.rdapBaseUrl.length === 0 &&
+    evalSignalsConfig.enrichmentUrl.length === 0
+  ) {
+    process.stderr.write(
+      "[service-license] EVAL_RDAP_URL/EVAL_ENRICHMENT_URL unset — eval scoring uses MX only (borderline → review queue)\n",
+    );
+  }
+
   // `||` not `??`: a blank PORT="" must fall back to the default, not coerce to Number("")=0 (ephemeral).
   const port = Number(process.env.PORT || DEFAULT_PORT);
   const handler = createApp({
@@ -168,6 +198,13 @@ export function startServer(
     posthogCapture,
     purchaseEmailNotify,
     renewalEmailNotify,
+    indexDigest,
+    indexEntries,
+    eval: {
+      config: evalConfig,
+      resolveSignals: (domain: string) =>
+        resolveDomainSignals(domain, evalSignalsConfig),
+    },
   });
   const server = Bun.serve({ port, fetch: handler });
   process.stderr.write(

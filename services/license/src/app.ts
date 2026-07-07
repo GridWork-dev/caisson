@@ -23,7 +23,7 @@
 import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import type { BillingProvider } from "@caisson/billing";
-import { AuthnError } from "@caisson/kernel";
+import { AuthnError, ConflictError } from "@caisson/kernel";
 import { issueLicense, type Signer } from "@caisson/license-issue";
 import {
   decodeToken,
@@ -31,11 +31,23 @@ import {
   licenseTierSchema,
 } from "@caisson/license-verify";
 import { withRequestSpan } from "@caisson/observability";
+import { withAdminWrite } from "@caisson/org-controls";
 import {
   expandEntitlements,
   type RegistryIndex,
 } from "@caisson/registry-schema";
 import { type Transactor, withTenant } from "@caisson/tenancy-rls";
+import {
+  createEvalApplication,
+  readEvalApplication,
+  recordIssuedEval,
+} from "./eval-store.ts";
+import {
+  type DomainSignals,
+  type EvalConfig,
+  extractDomain,
+  scoreApplication,
+} from "./eval-verification.ts";
 import type { DiscordGrantPush } from "./discord-notify.ts";
 import type {
   PurchaseEmailNotice,
@@ -112,6 +124,32 @@ export interface IssueAppDeps {
    * receipt carries the whole-event total (this notice's `amountTotalMinor` is omitted there).
    */
   renewalEmailNotify: (notice: RenewalEmailNotice) => Promise<void>;
+  /**
+   * Index-parity probe surface (the F-1 index-parity residual: three independently-baked copies of
+   * registry/index.json can drift). The sha256 (first 12 hex) of the index.json BYTES this service
+   * loaded at boot, plus the entry count — echoed additively on GET /health. Absent ⇒ /health keeps
+   * its bare `{ ok: true }` shape (existing probes grep it). server.ts always supplies both.
+   */
+  indexDigest?: string;
+  indexEntries?: number;
+  /**
+   * The evaluation-access surface (ADR-0274 §2 / ADR-0280 verified time-boxed eval licenses).
+   * `null`/absent ⇒ POST /eval/* returns 404 (a deploy without the eval tables provisioned simply
+   * does not serve them; /issue + /webhook are unaffected). server.ts always wires it.
+   */
+  eval?: EvalAppDeps | null;
+}
+
+/** Injected dependencies for the eval-access routes. */
+export interface EvalAppDeps {
+  /** Verification thresholds (ADR-0274/0280) — from `loadEvalConfig`. */
+  config: EvalConfig;
+  /**
+   * Resolve a domain's verification signals (MX / age / enrichment). INJECTED so scoring is
+   * network-free in tests and config-gated in prod (`eval-signals.ts#resolveDomainSignals`). Every
+   * failure resolves to an `undefined` field (uncertainty → review), never a pass.
+   */
+  resolveSignals: (domain: string) => Promise<DomainSignals>;
 }
 
 /**
@@ -132,6 +170,28 @@ const IssueBody = z
     tier: licenseTierSchema,
     major: z.number().int().nonnegative(),
     expiry: z.string().datetime({ offset: true }).nullable(),
+  })
+  .strict();
+
+/**
+ * POST /eval/apply body (ADR-0280). `.strict()` rejects unknown fields. `email` is the applicant's
+ * WORK email (Zod-validated + bounded); the domain is derived server-side (never trusted from the
+ * caller). `entitlements` is the purchased-id scope to evaluate (validated against the registry
+ * index at /eval/issue). `accountId` is the buyer account (from a verified session upstream).
+ */
+const EvalApplyBody = z
+  .object({
+    accountId: z.string().trim().min(1).max(256),
+    email: z.string().trim().email().max(320),
+    entitlements: z.array(z.string().trim().min(1).max(128)).min(1).max(64),
+  })
+  .strict();
+
+/** POST /eval/issue body. `.strict()`. `evalId` is the application id; `major` the license major. */
+const EvalIssueBody = z
+  .object({
+    evalId: z.string().uuid(),
+    major: z.number().int().nonnegative(),
   })
   .strict();
 
@@ -273,9 +333,15 @@ export function createApp(
     const method = req.method.toUpperCase();
 
     if (pathname === "/health") {
-      return method === "GET"
-        ? json({ ok: true })
-        : text("method not allowed", 405);
+      if (method !== "GET") return text("method not allowed", 405);
+      // Additive: `ok` stays first + always present (existing probes grep it). The index digest +
+      // entry count ride alongside for the CAISSON-37 parity probe when server.ts supplies them.
+      return json({
+        ok: true,
+        ...(deps.indexDigest !== undefined
+          ? { indexDigest: deps.indexDigest, indexEntries: deps.indexEntries }
+          : {}),
+      });
     }
 
     if (pathname === "/issue") {
@@ -416,6 +482,203 @@ export function createApp(
           ? { token: winner.token, licenseId: winner.licenseId }
           : { token, licenseId: claims.licenseId },
       );
+    }
+
+    // ADR-0274 §2 / ADR-0280 — the verified time-boxed eval-license surface. Both routes are
+    // bearer-gated (server-to-server; the apps/site "request an evaluation" surface proxies /apply,
+    // holding the bearer) and rate-limited under the same "issue" bucket. The store runs cross-tenant
+    // (`withAdminWrite`) because the anti-abuse invariants (one active eval per domain, a global cap,
+    // card-fingerprint reuse) are inherently cross-account.
+    if (pathname === "/eval/apply") {
+      if (method !== "POST") return text("method not allowed", 405);
+      const evalDeps = deps.eval;
+      if (evalDeps === null || evalDeps === undefined)
+        return json({ error: "not found" }, 404);
+      const limited = rateLimited("issue", req);
+      if (limited !== null) return limited;
+      if (!authorized(req, deps.token, deps.adminToken ?? ""))
+        return json({ error: "unauthorized" }, 401);
+
+      let raw: unknown;
+      try {
+        raw = await req.json();
+      } catch {
+        return json({ error: "invalid JSON body" }, 400);
+      }
+      const parsed = EvalApplyBody.safeParse(raw);
+      if (!parsed.success) {
+        return json(
+          { error: "invalid eval application", issues: parsed.error.issues },
+          400,
+        );
+      }
+      const { accountId, email, entitlements } = parsed.data;
+      // Derive the domain server-side; a structurally invalid work email is a hard 400 (no row).
+      const domain = extractDomain(email);
+      if (domain === null) return json({ error: "invalid work email" }, 400);
+
+      // Resolve signals (may hit the network — bounded by the resolver's own per-lookup timeout),
+      // then score. A resolver failure surfaces as an `undefined` signal (uncertainty → review),
+      // never a throw here (`resolveDomainSignals` never throws) — but guard anyway.
+      let signals: DomainSignals;
+      try {
+        signals = await evalDeps.resolveSignals(domain);
+      } catch {
+        signals = {
+          mx: undefined,
+          ageDays: undefined,
+          enrichmentRisk: undefined,
+        };
+      }
+      const score = scoreApplication(email, signals, evalDeps.config);
+      const status =
+        score.decision === "auto_approve"
+          ? "approved"
+          : score.decision === "auto_reject"
+            ? "rejected"
+            : "pending_review";
+
+      try {
+        const created = await withAdminWrite(deps.db, (tx) =>
+          createEvalApplication(
+            tx,
+            {
+              accountId,
+              email,
+              domain,
+              entitlements,
+              status,
+              risk: score.risk,
+              reason: score.reason,
+            },
+            evalDeps.config,
+          ),
+        );
+        return json({
+          evalId: created.id,
+          decision: score.decision,
+          status: created.status,
+          risk: score.risk,
+        });
+      } catch (err) {
+        if (err instanceof ConflictError) {
+          // domain-active / global-cap — a generic non-leaking message; 409.
+          return json(
+            {
+              error:
+                err.message === "global-cap"
+                  ? "evaluation capacity reached — try again later"
+                  : "an active evaluation already exists for this domain",
+            },
+            409,
+          );
+        }
+        process.stderr.write("[service-license] eval apply failed\n");
+        return json({ error: "eval application failed" }, 500);
+      }
+    }
+
+    if (pathname === "/eval/issue") {
+      if (method !== "POST") return text("method not allowed", 405);
+      const evalDeps = deps.eval;
+      if (evalDeps === null || evalDeps === undefined)
+        return json({ error: "not found" }, 404);
+      const limited = rateLimited("issue", req);
+      if (limited !== null) return limited;
+      if (!authorized(req, deps.token, deps.adminToken ?? ""))
+        return json({ error: "unauthorized" }, 401);
+
+      let raw: unknown;
+      try {
+        raw = await req.json();
+      } catch {
+        return json({ error: "invalid JSON body" }, 400);
+      }
+      const parsed = EvalIssueBody.safeParse(raw);
+      if (!parsed.success) {
+        return json(
+          { error: "invalid eval issue request", issues: parsed.error.issues },
+          400,
+        );
+      }
+      const { evalId, major } = parsed.data;
+
+      const application = await withAdminWrite(deps.db, (tx) =>
+        readEvalApplication(tx, evalId),
+      );
+      if (application === null) return json({ error: "eval not found" }, 404);
+      // Idempotent re-serve: an already-issued eval returns its stored token byte-identical.
+      if (
+        application.status === "issued" &&
+        application.licenseToken !== null &&
+        application.licenseId !== null
+      ) {
+        return json({
+          token: application.licenseToken,
+          licenseId: application.licenseId,
+          expiry: application.windowEnd,
+        });
+      }
+      // FAIL-CLOSED: a license is minted ONLY for an operator/auto-approved eval whose card-on-file
+      // leg validated (ADR-0280). Anything else (pending_review, rejected, revoked, expired, or
+      // approved-but-card-unvalidated) is not issuable.
+      if (application.status !== "approved" || !application.cardValidated) {
+        return json({ error: "eval not issuable" }, 409);
+      }
+
+      // Validate the eval scope against the index (fail-closed, VALIDATION only — the SIGNED
+      // entitlements are the purchased ids, never the expansion, the repo invariant). A generic 422.
+      try {
+        expandEntitlements(deps.index, application.entitlements);
+      } catch {
+        return json({ error: "could not resolve eval entitlements" }, 422);
+      }
+
+      const windowEnd = new Date(
+        Date.now() + evalDeps.config.windowDays * 86_400_000,
+      ).toISOString();
+      const claims = {
+        licenseId: randomUUID(),
+        tier: "pro" as const,
+        entitlements: [...application.entitlements].sort(),
+        major,
+        // The eval's fail-closed lever: a short signed expiry the verifier enforces offline — an
+        // expired eval degrades to the community floor everywhere, no revocation round-trip needed.
+        expiry: windowEnd,
+        // Eval licenses carry no purchased-id windows/snapshots (those are one-time-grant concepts).
+        updatesWindows: {},
+        entitledSince: {},
+      };
+      let token: string;
+      try {
+        token = await issueLicense(deps.signer, claims);
+      } catch {
+        return json({ error: "signing failed" }, 500);
+      }
+
+      try {
+        // Atomically transition approved+card-validated → issued. The UPDATE's WHERE re-checks the
+        // gate, so a concurrent revoke between the read above and here fails closed (ConflictError).
+        const issued = await withAdminWrite(deps.db, (tx) =>
+          recordIssuedEval(tx, {
+            evalId,
+            licenseId: claims.licenseId,
+            licenseToken: token,
+            windowEnd,
+          }),
+        );
+        return json({
+          token,
+          licenseId: claims.licenseId,
+          expiry: issued.windowEnd,
+        });
+      } catch (err) {
+        if (err instanceof ConflictError) {
+          return json({ error: "eval not issuable" }, 409);
+        }
+        process.stderr.write("[service-license] eval issue failed\n");
+        return json({ error: "eval issue failed" }, 500);
+      }
     }
 
     if (pathname === "/webhook") {
