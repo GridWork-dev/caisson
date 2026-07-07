@@ -143,8 +143,12 @@ export function getAuth(): AuthInstance | null {
     cached = null;
     return cached;
   }
+  const pool = new Pool({ connectionString: url });
+  pool.on("error", (err) => {
+    process.stderr.write(`[apps/site] idle pg client error: ${err.message}\n`);
+  });
   cached = createAuth({
-    database: new Pool({ connectionString: url }),
+    database: pool,
     secret,
     emailer: resolveEmailer(),
     baseURL: process.env.BETTER_AUTH_URL?.trim(),
