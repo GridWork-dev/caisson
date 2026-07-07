@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import type { ReactElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 import { GLOSSARY_TERMS, glossaryPageSpec } from "./glossary";
 
@@ -83,5 +85,16 @@ describe("glossaryPageSpec — the ordered section builder", () => {
       const spec = glossaryPageSpec(term);
       expect(spec.meta.path).toBe(`/glossary/${term.slug}`);
     }
+  });
+
+  test("hero.ctas carries a visible Glossary breadcrumb back to /glossary", () => {
+    const term = GLOSSARY_TERMS[0]!;
+    const hero = glossaryPageSpec(term).sections[0];
+    if (hero?.kind !== "hero") throw new Error("expected a hero section");
+    const html = renderToStaticMarkup(hero.ctas as ReactElement);
+    expect(html).toContain('aria-label="Breadcrumb"');
+    expect(html).toContain('href="/glossary"');
+    expect(html).toContain("Glossary");
+    expect(html).toContain(term.term);
   });
 });

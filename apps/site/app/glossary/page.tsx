@@ -66,19 +66,23 @@ export default function GlossaryHubPage() {
       />
 
       {CLUSTER_ORDER.map((cluster) => {
-        const terms = GLOSSARY_TERMS.filter((t) => t.cluster === cluster);
+        const terms = GLOSSARY_TERMS.filter((t) => t.cluster === cluster).sort(
+          (a, b) => a.term.localeCompare(b.term),
+        );
         if (terms.length === 0) return null;
         return (
-          <Section key={cluster} title={CLUSTER_LABELS[cluster]}>
+          <Section
+            key={cluster}
+            title={
+              <>
+                {CLUSTER_LABELS[cluster]}{" "}
+                <span className="cs-muted">({terms.length})</span>
+              </>
+            }
+          >
             <ul
-              style={{
-                listStyle: "none",
-                padding: 0,
-                margin: 0,
-                display: "flex",
-                flexDirection: "column",
-                gap: "var(--cs-space-2)",
-              }}
+              className="cs-grid cs-grid--3"
+              style={{ listStyle: "none", padding: 0, margin: 0 }}
             >
               {terms.map((t) => (
                 <li key={t.slug}>
