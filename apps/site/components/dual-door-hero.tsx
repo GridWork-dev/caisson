@@ -1,0 +1,110 @@
+import { Button, CodeBlock, StatusChip, Terminal } from "@/components";
+import { bundlePrice, BUNDLE_PRICES, MODULE_PRICES } from "@/lib/pricing";
+
+import styles from "./dual-door-hero.module.css";
+
+// Dual-door hero (D1 lock, 2026-07-07 research-synthesis picker) — the correct rendering of the
+// ADR-0040 two-layer frame: compliance is the sharp wedge (the LEAD door, accent identity),
+// production the umbrella (the SECONDARY door into the six bundles). Server component — the doors
+// are real links, no interactivity. Replaces the compliance-only <Hero> on `/`.
+//
+// Door sub-claims are honest + mechanism-named now (ADR-0080). They are refinable from the Cookiy
+// frame-test (survey 287453) in a later copy-only pass — a swap of these two strings, no rebuild.
+
+// Build facts for the production door chip — computed, never hand-typed, so they can't drift from
+// the catalog (ADR-0080: no invented numbers; every figure is a real build fact).
+const BUNDLE_COUNT = BUNDLE_PRICES.length;
+const MODULE_COUNT = MODULE_PRICES.length;
+
+export function DualDoorHero() {
+  return (
+    <section className="cs-section" data-flush="">
+      <div className="cs-container">
+        <span className="cs-eyebrow">One audited base — two ways in</span>
+        <h1 className="cs-display" style={{ marginTop: "var(--cs-space-5)" }}>
+          Audit-ready and production-hard from commit one.
+        </h1>
+        <p
+          className="cs-lede"
+          style={{ marginTop: "var(--cs-space-5)", maxWidth: "60ch" }}
+        >
+          Fail-closed Postgres RLS, S3 Object-Lock WORM, and an append-only
+          audit chain sit on the same base as token metering, on-device
+          inference, and signed provenance. Pick the door that fits — the base
+          underneath is the same.
+        </p>
+
+        {/* Two doors: Compliance leads (accent), production is the secondary umbrella door. */}
+        <div className={styles.doors}>
+          {/* ponytail: door sub-claim copy is Cookiy-287453-refinable later (string swap, no rebuild). */}
+          <div className={styles.door} data-lead>
+            <span className={styles.kicker}>Building something regulated?</span>
+            <StatusChip
+              className={styles.chip}
+              tone="accent"
+              dot
+              label={`Compliance · ${bundlePrice("compliance")}`}
+            />
+            <p className={styles.claim}>
+              The compliance wedge: fail-closed RLS, WORM evidence storage, an
+              append-only audit chain, per-tenant field encryption, and a SOC 2
+              / HIPAA evidence-pack generator you run — never a certification we
+              claim.
+            </p>
+            <div className={styles.cta}>
+              <Button href="/compliance" variant="primary">
+                Open the Compliance bundle
+              </Button>
+            </div>
+          </div>
+
+          <div className={styles.door}>
+            <span className={styles.kicker}>Building for production?</span>
+            <StatusChip
+              className={styles.chip}
+              tone="muted"
+              dot
+              label={`${BUNDLE_COUNT} bundles · ${MODULE_COUNT} modules`}
+            />
+            <p className={styles.claim}>
+              Six composable bundles on one base: token metering and spend caps,
+              on-device inference behind a privacy egress gate, a governed-agent
+              kernel, and cryptographic provenance. Compose what you need —
+              never a fork.
+            </p>
+            <div className={styles.cta}>
+              <Button href="/#bundles" variant="ghost">
+                Explore the six bundles
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Supporting honest artifact (ADR-0104 static hero): the real cross-tenant denial + the
+            real install line — the denial carries the claim, no diagram standing in for behaviour. */}
+        <div className={styles.artifact}>
+          <Terminal
+            label="psql — cross-tenant read"
+            status={<StatusChip tone="accent" dot label="denied" />}
+          >
+            <span className="cs-tok-muted">
+              -- tenant context was never set
+            </span>
+            {
+              "\n$ SELECT count(*) FROM invoices;\n\n count\n-------\n     0\n(1 row)"
+            }
+          </Terminal>
+          <CodeBlock
+            label="install"
+            code={
+              <>
+                <span className="cs-tok-muted">$</span> bunx{" "}
+                <span className="cs-tok-accent">@caisson-sh/cli</span>@latest
+              </>
+            }
+          />
+        </div>
+      </div>
+    </section>
+  );
+}

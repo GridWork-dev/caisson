@@ -2,17 +2,15 @@ import {
   Button,
   Card,
   CodeBlock,
-  CredentialStrip,
   EditionCard,
   FeatureGrid,
-  Hero,
   Icon,
   Reveal,
   Section,
   SkuMatrix,
   StatusChip,
-  Terminal,
 } from "@/components";
+import { DualDoorHero } from "@/components/dual-door-hero";
 import Link from "next/link";
 
 import { serializeJsonLd, softwareApplication } from "@/lib/jsonld";
@@ -33,15 +31,16 @@ import {
 
 export const metadata = buildMetadata({
   description:
-    "Fail-closed Postgres RLS, S3 Object-Lock WORM, and an append-only audit chain — wired and tested before your first customer, not backfilled after your first audit.",
+    "One audited Postgres base for regulated and production SaaS — fail-closed RLS, S3 Object-Lock WORM, an append-only audit chain, and six composable bundles you compose, never fork.",
   path: "/",
 });
 
 // Umbrella SoftwareApplication node — no priceId (the home node is the product line, not a SKU).
+// Describes the two-door umbrella (ADR-0040): the compliance wedge under a production-rigor layer.
 const homeJsonLd = softwareApplication({
   name: "Caisson",
   description:
-    "Compliance-grade infrastructure for regulated SaaS — fail-closed Postgres RLS, S3 Object-Lock WORM, an append-only audit chain, and an evidence-pack generator.",
+    "Composable infrastructure for regulated and production SaaS on one audited Postgres base — fail-closed RLS, S3 Object-Lock WORM, an append-only audit chain, token metering, on-device inference, and signed provenance, in six bundles.",
   url: SITE_URL,
 });
 
@@ -102,63 +101,8 @@ export default function HomePage() {
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(homeJsonLd) }}
       />
 
-      {/* ===== Hero — split layout, the denial carries the claim ===== */}
-      <Hero
-        eyebrow="Compliance-grade infrastructure for regulated SaaS"
-        title="Fail-closed by construction."
-        lede="Fail-closed Postgres RLS, S3 Object-Lock WORM, and an append-only audit chain — wired and tested before your first customer, not backfilled after your first audit."
-        ctas={
-          <>
-            <Button href="/marketplace" variant="primary">
-              Get started
-            </Button>
-            <Button href="/docs" variant="ghost">
-              Read the docs
-            </Button>
-          </>
-        }
-        credentials={
-          <CredentialStrip
-            items={["SOC 2", "HIPAA", "GDPR", "EU AI Act"]}
-            note="Evidence packs you generate — never &lsquo;we are certified.&rsquo;"
-          />
-        }
-        artifact={
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "var(--cs-space-4)",
-            }}
-          >
-            {/* The denial, as code-as-proof (ADR-0104 hero = static): a query that never set
-                the tenant context returns nothing, never everything. */}
-            <Terminal
-              label="psql — cross-tenant read"
-              status={<StatusChip tone="accent" dot label="denied" />}
-            >
-              <span className="cs-tok-muted">
-                -- tenant context was never set
-              </span>
-              {
-                "\n$ SELECT count(*) FROM invoices;\n\n count\n-------\n     0\n(1 row)"
-              }
-            </Terminal>
-            <CodeBlock
-              label="install"
-              code={
-                <>
-                  <span className="cs-tok-muted">$</span> bunx{" "}
-                  <span className="cs-tok-accent">@caisson-sh/cli</span>@latest
-                </>
-              }
-            />
-            {/* Signature slot — RESERVED + blank (ADR-0103/0104). The marketing signature is
-                deferred-for-rework; a future three.js / CSS-SVG studio-candidate spike mounts
-                here. Intentionally renders nothing until then (no fabricated placeholder). */}
-          </div>
-        }
-      />
+      {/* ===== Dual-door hero (D1) — compliance wedge (lead) + production umbrella (secondary) ===== */}
+      <DualDoorHero />
 
       {/* ===== The umbrella / named enemy ===== */}
       <Reveal>
@@ -342,9 +286,11 @@ export default function HomePage() {
         </Section>
       </Reveal>
 
-      {/* ===== Bundles — featured-lead hierarchy, one accent ===== */}
+      {/* ===== Bundles — featured-lead hierarchy, one accent. id="bundles" is the production
+          door's target from the dual-door hero (D1). ===== */}
       <Reveal>
         <Section
+          id="bundles"
           eyebrow="Bundles"
           title="Six bundles, one audited base."
           lede="Compliance leads; every bundle — Provenance and the whole-catalog Everything included — draws from the same audited base, never a fork."
