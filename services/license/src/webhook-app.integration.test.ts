@@ -28,6 +28,10 @@ import {
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { withTenant } from "@caisson/tenancy-rls";
 import { createApp, type IssueAppDeps } from "./app.ts";
+import type {
+  PurchaseEmailNotice,
+  RenewalEmailNotice,
+} from "./email-notify.ts";
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
@@ -49,6 +53,7 @@ const SECRET = "pdl_ntfset_webhook_route_secret";
 const PRICE_COMPLIANCE_ONETIME = "pri_01kwd76be2eq96kff5nqw236c0"; // -> entitlement "compliance"
 const PRICE_DEVELOPER_SUB = "pri_01kwd76d64rz2ecm090pt4nq5q"; // -> 1000 credits/cycle, no entitlement
 const PRICE_CREDIT_PACK = "price_credit_pack_PLACEHOLDER"; // -> 5000 credits, no entitlement
+const PRICE_COMPLIANCE_RENEWAL = "pri_01kwvz6kzh4h43aec3r5rs5je4"; // RENEWAL_BOOK -> renews "compliance"
 
 function signed(body: string, t: number): string {
   const sig = createHmac("sha256", SECRET).update(`${t}:${body}`).digest("hex");
@@ -95,6 +100,8 @@ function makeApp(
   limiterConfig: RateLimitConfig = loadRateLimitConfig(),
   discordNotify: IssueAppDeps["discordNotify"] = null,
   posthogCapture: IssueAppDeps["posthogCapture"] = null,
+  purchaseEmailNotify: IssueAppDeps["purchaseEmailNotify"] = async () => {},
+  renewalEmailNotify: IssueAppDeps["renewalEmailNotify"] = async () => {},
 ): (req: Request) => Promise<Response> {
   return createApp({
     token: "unused-issue-token",
@@ -105,6 +112,8 @@ function makeApp(
     limiter: new TokenBucketLimiter(limiterConfig),
     discordNotify,
     posthogCapture,
+    purchaseEmailNotify,
+    renewalEmailNotify,
   });
 }
 
@@ -499,6 +508,243 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
     const res = await app(webhookReq(body, signed(body, t)));
     expect(res.status).toBe(200);
     expect(captures).toEqual([]);
+  });
+
+  test("a granting purchase fires the DETACHED purchase-confirmation email with the order + line", async () => {
+    const notices: PurchaseEmailNotice[] = [];
+    const app = makeApp(
+      provider,
+      loadRateLimitConfig(),
+      null,
+      null,
+      async (notice) => {
+        notices.push(notice); // records synchronously before its first await — visible right after app()
+      },
+    );
+    const acct = "acct_txn_em_1";
+    const t = Math.floor(Date.now() / 1000);
+    const body = JSON.stringify({
+      event_id: "evt_em_1",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_em_1",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: acct },
+        items: [{ price: { id: PRICE_COMPLIANCE_ONETIME } }],
+        details: { totals: { grand_total: "74900" } },
+      },
+    });
+    const res = await app(webhookReq(body, signed(body, t)));
+    expect(res.status).toBe(200);
+    expect(notices).toEqual([
+      {
+        accountId: acct,
+        orderId: "evt_em_1",
+        currency: "usd",
+        amountTotalMinor: 74900,
+        lines: [{ productSlug: "compliance" }],
+      },
+    ]);
+  });
+
+  test("a THROWING purchase-confirmation emailer never fails the webhook 2xx (money path independent of email)", async () => {
+    const app = makeApp(provider, loadRateLimitConfig(), null, null, () => {
+      throw new Error("email transport exploded synchronously");
+    });
+    const acct = "acct_txn_em_2";
+    const t = Math.floor(Date.now() / 1000);
+    const body = JSON.stringify({
+      event_id: "evt_em_2",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_em_2",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: acct },
+        items: [{ price: { id: PRICE_COMPLIANCE_ONETIME } }],
+        details: { totals: { grand_total: "74900" } },
+      },
+    });
+    const res = await app(webhookReq(body, signed(body, t)));
+    expect(res.status).toBe(200); // the grant committed; email failure is log-and-drop
+    const entitlements = await withTenant(tp.pg, acct, (tx) =>
+      readEntitlements(tx, acct),
+    );
+    expect(entitlements).toEqual(["compliance"]);
+  });
+
+  test("a non-granting event (subscription.canceled) fires NO purchase-confirmation email", async () => {
+    const notices: PurchaseEmailNotice[] = [];
+    const app = makeApp(
+      provider,
+      loadRateLimitConfig(),
+      null,
+      null,
+      async (notice) => {
+        notices.push(notice);
+      },
+    );
+    const t = Math.floor(Date.now() / 1000);
+    const body = JSON.stringify({
+      event_id: "evt_em_cancel",
+      event_type: "subscription.canceled",
+      data: {
+        id: "sub_em_cancel",
+        custom_data: { account_id: "acct_txn_em_1" },
+      },
+    });
+    const res = await app(webhookReq(body, signed(body, t)));
+    expect(res.status).toBe(200);
+    expect(notices).toEqual([]);
+  });
+
+  test("a renewal-only event fires the DETACHED renewal-confirmation email, NOT the purchase-confirmation email (ADR-0251)", async () => {
+    const acct = "acct_txn_ren_1";
+    // Precondition: an active one-time compliance grant to renew.
+    const baseApp = makeApp(provider);
+    const baseBody = JSON.stringify({
+      event_id: "evt_ren_base_1",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_ren_base_1",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: acct },
+        items: [{ price: { id: PRICE_COMPLIANCE_ONETIME } }],
+        details: { totals: { grand_total: "74900" } },
+      },
+    });
+    const baseT = Math.floor(Date.now() / 1000);
+    const baseRes = await baseApp(
+      webhookReq(baseBody, signed(baseBody, baseT)),
+    );
+    expect(baseRes.status).toBe(200);
+
+    const purchaseNotices: PurchaseEmailNotice[] = [];
+    const renewalNotices: RenewalEmailNotice[] = [];
+    const app = makeApp(
+      provider,
+      loadRateLimitConfig(),
+      null,
+      null,
+      async (notice) => {
+        purchaseNotices.push(notice);
+      },
+      async (notice) => {
+        renewalNotices.push(notice); // records synchronously before its first await
+      },
+    );
+    const t = Math.floor(Date.now() / 1000);
+    const body = JSON.stringify({
+      event_id: "evt_ren_1",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_ren_1",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: acct },
+        items: [{ price: { id: PRICE_COMPLIANCE_RENEWAL } }],
+        details: { totals: { grand_total: "29900" } },
+      },
+    });
+    const res = await app(webhookReq(body, signed(body, t)));
+    expect(res.status).toBe(200);
+    expect(purchaseNotices).toEqual([]); // a renewal grants nothing → no purchase receipt
+    expect(renewalNotices.length).toBe(1);
+    expect(renewalNotices[0]?.accountId).toBe(acct);
+    expect(renewalNotices[0]?.orderId).toBe("evt_ren_1");
+    expect(renewalNotices[0]?.currency).toBe("usd");
+    expect(renewalNotices[0]?.amountTotalMinor).toBe(29900);
+    expect(renewalNotices[0]?.lines.length).toBe(1);
+    expect(renewalNotices[0]?.lines[0]?.entitlementId).toBe("compliance");
+    // A full ISO instant (computeUpdatesWindows' `.toISOString()`), post-extension DB truth.
+    expect(renewalNotices[0]?.lines[0]?.newWindowEnd).toMatch(
+      /^\d{4}-\d{2}-\d{2}T/,
+    );
+  });
+
+  test("a THROWING renewal-confirmation emailer never fails the webhook 2xx (money path independent of email)", async () => {
+    const acct = "acct_txn_ren_2";
+    const baseApp = makeApp(provider);
+    const baseBody = JSON.stringify({
+      event_id: "evt_ren_base_2",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_ren_base_2",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: acct },
+        items: [{ price: { id: PRICE_COMPLIANCE_ONETIME } }],
+        details: { totals: { grand_total: "74900" } },
+      },
+    });
+    const baseT = Math.floor(Date.now() / 1000);
+    const baseRes = await baseApp(
+      webhookReq(baseBody, signed(baseBody, baseT)),
+    );
+    expect(baseRes.status).toBe(200);
+
+    const app = makeApp(
+      provider,
+      loadRateLimitConfig(),
+      null,
+      null,
+      async () => {},
+      () => {
+        throw new Error("email transport exploded synchronously");
+      },
+    );
+    const t = Math.floor(Date.now() / 1000);
+    const body = JSON.stringify({
+      event_id: "evt_ren_2",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_ren_2",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: acct },
+        items: [{ price: { id: PRICE_COMPLIANCE_RENEWAL } }],
+        details: { totals: { grand_total: "29900" } },
+      },
+    });
+    const res = await app(webhookReq(body, signed(body, t)));
+    expect(res.status).toBe(200); // the window extension committed; email failure is log-and-drop
+    const entitlements = await withTenant(tp.pg, acct, (tx) =>
+      readEntitlements(tx, acct),
+    );
+    expect(entitlements).toEqual(["compliance"]);
+  });
+
+  test("a non-renewal purchase does NOT fire the renewal-confirmation email", async () => {
+    const renewalNotices: RenewalEmailNotice[] = [];
+    const app = makeApp(
+      provider,
+      loadRateLimitConfig(),
+      null,
+      null,
+      async () => {},
+      async (notice) => {
+        renewalNotices.push(notice);
+      },
+    );
+    const acct = "acct_txn_ren_3";
+    const t = Math.floor(Date.now() / 1000);
+    const body = JSON.stringify({
+      event_id: "evt_ren_3",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_ren_3",
+        subscription_id: null,
+        currency_code: "usd",
+        custom_data: { account_id: acct },
+        items: [{ price: { id: PRICE_COMPLIANCE_ONETIME } }],
+        details: { totals: { grand_total: "74900" } },
+      },
+    });
+    const res = await app(webhookReq(body, signed(body, t)));
+    expect(res.status).toBe(200);
+    expect(renewalNotices).toEqual([]);
   });
 
   test("a per-IP flood on /issue is capped with 429 (limiter runs before the bearer check)", async () => {

@@ -16,6 +16,7 @@ import {
   loadCreditExpiryScheduleConfig,
   startCreditExpiryScheduler,
 } from "./credit-expiry-scheduler.ts";
+import { recipientFor, resolveEmailer } from "./email-notify.ts";
 import { startServer } from "./server.ts";
 
 function nodePgExecutor(client: PoolClient): TenantExecutor {
@@ -79,11 +80,11 @@ if (import.meta.main) {
     db,
     connectionString: url,
     schedule: loadCreditExpiryScheduleConfig(),
-    // ponytail: no @caisson/email driver in this service yet — emailer stays null, so
-    // recipientFor/dashboardUrl below are unreachable (defineCreditExpiryNoticeTask short-circuits
-    // on emailer===null before calling either). Wire a real resolver when this service gains one.
-    emailer: null,
-    recipientFor: async () => null,
+    // The real @caisson/email transport (email-notify.ts) — Resend when RESEND_API_KEY is set, the
+    // capture driver otherwise. `recipientFor` resolves the buyer's address the same way the
+    // post-purchase confirmation does (account_member → better-auth's user table).
+    emailer: resolveEmailer(),
+    recipientFor: (accountId) => recipientFor(db, accountId),
     dashboardUrl: "https://caisson.sh/dashboard/credits",
   });
 }

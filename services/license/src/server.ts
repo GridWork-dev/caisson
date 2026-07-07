@@ -23,6 +23,13 @@ import {
   notifyDiscordGrant,
 } from "./discord-notify.ts";
 import {
+  notifyPurchaseEmail,
+  notifyRenewalEmail,
+  resolveEmailer,
+  type PurchaseEmailNotice,
+  type RenewalEmailNotice,
+} from "./email-notify.ts";
+import {
   capturePostHogPurchase,
   loadPostHogCaptureConfig,
   type PurchaseCapture,
@@ -130,6 +137,23 @@ export function startServer(
     );
   }
 
+  // Post-grant purchase-confirmation email: ALWAYS wired, unlike discordNotify/posthogCapture —
+  // resolveEmailer() falls back to the in-memory capture driver when RESEND_API_KEY is unset, so
+  // an unconfigured deploy never crashes and never silently hits the network (mirrors
+  // apps/site/lib/auth-server.ts's own resolveEmailer).
+  const emailer = resolveEmailer();
+  const purchaseEmailNotify = (notice: PurchaseEmailNotice): Promise<void> =>
+    notifyPurchaseEmail(db, emailer, notice);
+  // Post-grant renewal-confirmation email (ADR-0251): the SIBLING send for a RENEWAL_BOOK line,
+  // sharing the SAME emailer instance (Resend or the capture driver) — no separate env gate.
+  const renewalEmailNotify = (notice: RenewalEmailNotice): Promise<void> =>
+    notifyRenewalEmail(db, emailer, notice);
+  if ((process.env.RESEND_API_KEY?.trim() ?? "") === "") {
+    process.stderr.write(
+      "[service-license] RESEND_API_KEY unset — purchase confirmation emails are captured, not sent\n",
+    );
+  }
+
   // `||` not `??`: a blank PORT="" must fall back to the default, not coerce to Number("")=0 (ephemeral).
   const port = Number(process.env.PORT || DEFAULT_PORT);
   const handler = createApp({
@@ -142,6 +166,8 @@ export function startServer(
     limiter,
     discordNotify,
     posthogCapture,
+    purchaseEmailNotify,
+    renewalEmailNotify,
   });
   const server = Bun.serve({ port, fetch: handler });
   process.stderr.write(

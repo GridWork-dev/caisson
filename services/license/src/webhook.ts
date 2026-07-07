@@ -7,7 +7,10 @@ import type { BillingProvider, DomainBillingEvent } from "@caisson/billing";
 import { processEvent } from "@caisson/billing-orchestration";
 import { InternalError } from "@caisson/kernel";
 import { type Transactor, withTenant } from "@caisson/tenancy-rls";
-import { applyBillingEvent } from "./apply-billing-event.ts";
+import {
+  applyBillingEvent,
+  type RenewedEntitlement,
+} from "./apply-billing-event.ts";
 import type { SkuLine } from "./posthog-capture.ts";
 
 export interface BillingWebhookResult {
@@ -25,6 +28,12 @@ export interface BillingWebhookResult {
    * so the post-commit PostHog capture never drifts from the grant either.
    */
   skuLines: SkuLine[];
+  /**
+   * The entitlements this delivery's renewal line(s) extended, threaded from `applyBillingEvent` —
+   * `[]` on a re-delivery/no-op/non-renewal event, gated identically to `grantedEntitlements` so a
+   * replayed delivery never re-fires the post-commit renewal-confirmation email.
+   */
+  renewedEntitlements: RenewedEntitlement[];
 }
 
 /**
@@ -49,7 +58,13 @@ export async function handleBillingWebhook(
   signatureHeader: string,
 ): Promise<BillingWebhookResult> {
   const event = provider.verifyAndParse(rawBody, signatureHeader);
-  if (event === null) return { event, grantedEntitlements: [], skuLines: [] };
+  if (event === null)
+    return {
+      event,
+      grantedEntitlements: [],
+      skuLines: [],
+      renewedEntitlements: [],
+    };
   if (event.accountId === "") {
     process.stderr.write(
       `[service-license] ALERT: verified ${event.type} (sourceEventId=${event.sourceEventId}) has no resolvable account_id — purchase unattributed, NOT granted\n`,
@@ -64,12 +79,11 @@ export async function handleBillingWebhook(
   // skips the grant, and leaves grantedEntitlements empty — so the post-commit Discord push (ADR-0203,
   // gated on grantedEntitlements.length > 0 in app.ts) is skipped too, closing the re-push gap. The
   // claim + grant commit or roll back together, so a failed grant is retried cleanly next delivery.
-  const { grantedEntitlements, skuLines } = await withTenant(
-    pg,
-    event.accountId,
-    async (tx) => {
+  const { grantedEntitlements, skuLines, renewedEntitlements } =
+    await withTenant(pg, event.accountId, async (tx) => {
       let granted: string[] = [];
       let lines: SkuLine[] = [];
+      let renewed: RenewedEntitlement[] = [];
       const { alreadyProcessed } = await processEvent(
         tx,
         event.sourceEventId,
@@ -77,12 +91,16 @@ export async function handleBillingWebhook(
           const effect = await applyBillingEvent(tx, event);
           granted = effect.grantedEntitlements;
           lines = effect.skuLines;
+          renewed = effect.renewedEntitlements;
         },
       );
       return alreadyProcessed
-        ? { grantedEntitlements: [], skuLines: [] }
-        : { grantedEntitlements: granted, skuLines: lines };
-    },
-  );
-  return { event, grantedEntitlements, skuLines };
+        ? { grantedEntitlements: [], skuLines: [], renewedEntitlements: [] }
+        : {
+            grantedEntitlements: granted,
+            skuLines: lines,
+            renewedEntitlements: renewed,
+          };
+    });
+  return { event, grantedEntitlements, skuLines, renewedEntitlements };
 }

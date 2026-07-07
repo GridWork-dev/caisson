@@ -31,3 +31,15 @@ Merchant-of-Record billing webhook + idempotent credit grants. Commercial servic
   entitlement via `@caisson/license-issue`.
 - The HTTP transport (`src/server.ts`, `Bun.serve`) — serves `POST /webhook` (billing), `POST /issue`
   (license issuance), and `/health` over `handleBillingWebhook` and the issuer above.
+- `email-notify.ts` — the `@caisson/email` wiring for this service. `resolveEmailer()` builds the
+  Resend driver when `RESEND_API_KEY` is set (`RESEND_FROM` optional, defaults to
+  `Caisson <no-reply@caisson.sh>`), the in-memory capture driver otherwise — same env vars and
+  default as `apps/site/lib/auth-server.ts`'s own `resolveEmailer`, so an unconfigured deploy never
+  crashes and never silently hits the network. `findBuyerEmail`/`recipientFor` resolve the buyer's
+  notification address the same way `notifyDiscordGrant` resolves Discord identity
+  (`account_member` → personal-account fallback → better-auth's `user` table). Two consumers:
+  `notifyPurchaseEmail` fires the `purchase-confirmation` receipt post-webhook-commit (same
+  detached, never-throws contract as `notifyDiscordGrant` — always wired, unlike the Discord/
+  PostHog pushes, since an unset `RESEND_API_KEY` just falls back to the capture driver); the
+  ADR-0252/0256 credit-expiry T-30d notice (`credit-expiry-scheduler.ts`, wired in `deploy.ts`)
+  reuses the same resolver.

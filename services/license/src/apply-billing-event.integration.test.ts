@@ -21,6 +21,7 @@ import type { DomainBillingEvent } from "@caisson/billing";
 import { parseStripeEvent } from "@caisson/billing-orchestration";
 import { applyBillingEvent } from "./apply-billing-event.ts";
 import {
+  computeUpdatesWindows,
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
@@ -1178,6 +1179,18 @@ describe("applyBillingEvent — updates-renewal lines (ADR-0244/0251)", () => {
     );
     expect(effect.grantedEntitlements).toEqual([]); // nothing granted → no Discord/PostHog push
 
+    // The renewal surfaces its own signal for the post-commit renewal-confirmation email —
+    // the SAME window `computeUpdatesWindows` would return for the next /issue.
+    const windows = await withTenant(tp.pg, acct, (tx) =>
+      computeUpdatesWindows(tx, acct),
+    );
+    const newWindowEnd = windows.compliance;
+    if (newWindowEnd === undefined)
+      throw new Error("expected a computed window");
+    expect(effect.renewedEntitlements).toEqual([
+      { entitlementId: "compliance", newWindowEnd },
+    ]);
+
     // No credits landed, no second grant row — the ORIGINAL row gained updates_expires_at.
     expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(0);
     const rows = await tp.query<{ n: number }>(
@@ -1210,8 +1223,18 @@ describe("applyBillingEvent — updates-renewal lines (ADR-0244/0251)", () => {
         ]),
       ),
     );
-    // The purchase line granted; the renewal line stayed out of the push list.
+    // The purchase line granted; the renewal line stayed out of the push list, but IS surfaced
+    // in its own renewedEntitlements signal (the mixed-cart both-emails case, app.ts).
     expect(effect.grantedEntitlements).toEqual(["field-crypto"]);
+    const windows = await withTenant(tp.pg, acct, (tx) =>
+      computeUpdatesWindows(tx, acct),
+    );
+    const newWindowEnd = windows.compliance;
+    if (newWindowEnd === undefined)
+      throw new Error("expected a computed window");
+    expect(effect.renewedEntitlements).toEqual([
+      { entitlementId: "compliance", newWindowEnd },
+    ]);
     expect(
       await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
     ).toEqual(["compliance", "field-crypto"]);

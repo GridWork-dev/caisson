@@ -28,6 +28,7 @@ import {
 import { normalizeEntitlementId } from "@caisson/registry-schema";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 import {
+  computeUpdatesWindows,
   extendUpdatesWindow,
   grantEntitlements,
   revokePurchaseGrants,
@@ -65,6 +66,15 @@ function proportionalClaw(
 // the new plan's full allotment, avoiding a double-grant. Any other reason (manual, etc.) grants nothing.
 const GRANTING_REASONS = new Set(["subscription_create", "subscription_cycle"]);
 
+export interface RenewedEntitlement {
+  /** The purchased entitlement id (RENEWAL_BOOK `renewsEntitlement`) whose updates window this
+   *  event's renewal line extended. */
+  entitlementId: string;
+  /** The POST-extension updates-window end, ISO instant (DB truth via `computeUpdatesWindows`,
+   *  never recomputed from the extension formula — one source of truth for the bound). */
+  newWindowEnd: string;
+}
+
 export interface AppliedBillingEffect {
   /**
    * The purchased entitlement ids THIS event application granted (`[]` when nothing granted —
@@ -79,11 +89,20 @@ export interface AppliedBillingEffect {
    * effect (a gated cycle, a revoke, a refund) or a pure-renewal line (which grants nothing).
    */
   skuLines: SkuLine[];
+  /**
+   * The entitlements THIS event's renewal line(s) extended the updates window for (`[]` for any
+   * non-purchase event, or a purchase with no renewal line) — surfacing only, feeding the
+   * post-commit renewal-confirmation email. A renewal grants nothing, so it never appears in
+   * `grantedEntitlements`; this is the renewal's own signal, computed from DB truth AFTER
+   * `extendUpdatesWindow` committed (same tx), never by re-deriving the extension formula here.
+   */
+  renewedEntitlements: RenewedEntitlement[];
 }
 
 const NO_EFFECT: AppliedBillingEffect = {
   grantedEntitlements: [],
   skuLines: [],
+  renewedEntitlements: [],
 };
 
 /**
@@ -129,6 +148,7 @@ export async function applyBillingEvent(
             productSlug: normalizeEntitlementId(plan.planTag),
           },
         ],
+        renewedEntitlements: [], // a subscription cycle never carries a renewal-book line
       };
     }
     case "purchase.completed": {
@@ -152,6 +172,7 @@ export async function applyBillingEvent(
       // `grantedEntitlements` returns the DISTINCT union for the Discord push (an entitlement is binary).
       const grantedEntitlements = new Set<string>();
       const skuLines: SkuLine[] = [];
+      const renewedEntitlementIds = new Set<string>();
       for (const line of ev.lineItems) {
         // Updates-RENEWAL line (ADR-0244/0251): a renewal SKU grants NO entitlement and NO credits —
         // it EXTENDS the buyer's updates window on the entitlement it renews (+12 months, per
@@ -168,6 +189,7 @@ export async function applyBillingEvent(
             entitlementId: renewal.renewsEntitlement,
             sourceEventId: ev.paymentId,
           });
+          renewedEntitlementIds.add(renewal.renewsEntitlement);
           continue;
         }
         const purchase = resolvePurchase(line.priceId); // fail-closed on an unknown price id
@@ -199,7 +221,24 @@ export async function applyBillingEvent(
         });
         for (const e of purchase.entitlements) grantedEntitlements.add(e);
       }
-      return { grantedEntitlements: [...grantedEntitlements], skuLines };
+      // Read the renewed window(s) back from DB truth AFTER every line committed (one query for
+      // the whole cart, not one per renewal line) — `computeUpdatesWindows` already takes the
+      // MOST FAVORABLE bound per entitlement, so this is the SAME value the next /issue would sign.
+      const renewedEntitlements: RenewedEntitlement[] = [];
+      if (renewedEntitlementIds.size > 0) {
+        const windows = await computeUpdatesWindows(tx, ev.accountId);
+        for (const entitlementId of renewedEntitlementIds) {
+          const newWindowEnd = windows[entitlementId];
+          if (newWindowEnd !== undefined) {
+            renewedEntitlements.push({ entitlementId, newWindowEnd });
+          }
+        }
+      }
+      return {
+        grantedEntitlements: [...grantedEntitlements],
+        skuLines,
+        renewedEntitlements,
+      };
     }
     case "subscription.canceled":
       // IMMEDIATE revoke (ADR-0113): soft-revoke every grant backed by this subscription. An entitlement

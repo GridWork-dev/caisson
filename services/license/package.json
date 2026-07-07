@@ -24,6 +24,7 @@
     "@caisson/billing": "workspace:*",
     "@caisson/billing-orchestration": "workspace:*",
     "@caisson/credits": "workspace:*",
+    "@caisson/email": "workspace:*",
     "@caisson/jobs": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/license-issue": "workspace:*",
