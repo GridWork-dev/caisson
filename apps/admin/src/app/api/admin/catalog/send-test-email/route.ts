@@ -21,6 +21,9 @@ import {
   isEmailTemplateId,
 } from "@/app/catalog/emails/sample-data";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 const Body = z.object({ templateId: z.string().min(1).max(64) }).strict();
 
 function resolveEmailer(): Emailer | CaptureEmailer {
