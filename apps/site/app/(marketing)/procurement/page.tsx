@@ -48,9 +48,9 @@ const FAQ_ITEMS = [
       "The Compliance bundle covers the technical controls in SOC 2 CC6.1 (logical access), CC7.2 (change detection, stored evidence), and HIPAA §164.312(a)(1) (access control), §164.312(b) (audit controls), §164.312(c)(1) (integrity), and §164.312(a)(2)(iv) (encryption/decryption). The organizational and administrative controls remain the operator's responsibility.",
   },
   {
-    question: "Who is the seller: Caisson Software LLC or Paddle?",
+    question: "Who is the seller: GridWork Digital LLC or Paddle?",
     answer:
-      "Both, in different roles. Paddle.com is the merchant of record: it's the seller on your transaction, it collects payment, calculates and remits tax, and issues your receipt. Caisson Software LLC, based in Atlanta, Georgia, is the licensor: it owns the Caisson source and grants you the license under the Commercial License Agreement. Your receipt comes from Paddle; your software rights come from Caisson.",
+      "Both, in different roles. Paddle.com is the merchant of record: it's the seller on your transaction, it collects payment, calculates and remits tax, and issues your receipt. GridWork Digital LLC, based in Atlanta, Georgia, is the licensor: it owns the Caisson source and grants you the license under the Commercial License Agreement. Your receipt comes from Paddle; your software rights come from Caisson.",
   },
   {
     question: "Is the license a one-time purchase or a subscription?",
@@ -71,7 +71,7 @@ const FAQ_ITEMS = [
     question:
       "Can you provide a W-9 or entity documentation for our vendor file?",
     answer:
-      "Yes. Email admin@caisson.sh with your organization name and we'll send a completed W-9 and Caisson Software LLC's entity details.",
+      "Yes. Email admin@caisson.sh with your organization name and we'll send a completed W-9 and GridWork Digital LLC's entity details.",
   },
   {
     question: "How do I report a vulnerability?",
@@ -202,7 +202,7 @@ export default function ProcurementPage() {
         title="The entity and the licensing relationship."
       >
         <p className="cs-lede">
-          Caisson is licensed to you by Caisson Software LLC, based in Atlanta,
+          Caisson is licensed to you by GridWork Digital LLC, based in Atlanta,
           Georgia. That&rsquo;s the party behind the software: it owns the
           source, grants the license, and stands behind it under the Commercial
           License Agreement (the EULA). See the EULA for the entity&rsquo;s full
@@ -294,7 +294,7 @@ export default function ProcurementPage() {
             },
             {
               label: "W-9 and entity documents",
-              body: "Email admin@caisson.sh with your organization name and we'll send a completed W-9 and Caisson Software LLC's entity details for your vendor file.",
+              body: "Email admin@caisson.sh with your organization name and we'll send a completed W-9 and GridWork Digital LLC's entity details for your vendor file.",
             },
             {
               label: "Vulnerability reporting",

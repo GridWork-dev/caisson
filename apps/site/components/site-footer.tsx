@@ -49,7 +49,7 @@ export function SiteFooter() {
             Compliance-grade infrastructure for regulated SaaS.
           </p>
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-4)" }}>
-            © {new Date().getFullYear()} Caisson Software LLC
+            © {new Date().getFullYear()} GridWork Digital LLC
           </p>
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-2)" }}>
             Base substrate is{" "}

@@ -137,7 +137,7 @@ export function buildNurtureFollowUp({
           <tr>
             <td style="padding-top:32px;border-top:1px solid ${C.border};">
               <p style="margin:0 0 4px 0;font-size:12px;color:${C.fgMuted};">
-                Caisson Software LLC · <a href="https://caisson.sh" style="color:${C.fgMuted};">caisson.sh</a>
+                GridWork Digital LLC · <a href="https://caisson.sh" style="color:${C.fgMuted};">caisson.sh</a>
               </p>
               <p style="margin:0;font-size:12px;color:${C.fgMuted};">
                 You're on the ${editionLabel} early-access list at ${escapeHtml(email)}.

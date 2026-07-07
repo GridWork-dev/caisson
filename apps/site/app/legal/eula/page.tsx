@@ -6,7 +6,7 @@ import { Card, Section } from "@/components";
 export const metadata = buildMetadata({
   title: "EULA",
   description:
-    "The binding Caisson End User License Agreement (EULA) — the Commercial License Agreement governing your purchase and use of Caisson software. Caisson Software LLC, governed by the laws of Georgia, USA.",
+    "The binding Caisson End User License Agreement (EULA) — the Commercial License Agreement governing your purchase and use of Caisson software. GridWork Digital LLC, governed by the laws of Georgia, USA.",
   path: "/legal/eula",
 });
 
@@ -84,7 +84,7 @@ export default function EulaPage() {
       <Section eyebrow="Parties" title="Parties and definitions">
         <p style={prose.paragraph}>
           This End User License Agreement (&ldquo;Agreement&rdquo; or
-          &ldquo;EULA&rdquo;) is between Caisson Software LLC, a Georgia limited
+          &ldquo;EULA&rdquo;) is between GridWork Digital LLC, a Georgia limited
           liability company (&ldquo;Caisson,&rdquo; &ldquo;we,&rdquo; or
           &ldquo;us&rdquo;), and the individual or entity that purchases a
           Caisson software license (&ldquo;Licensee&rdquo; or
@@ -333,7 +333,7 @@ export default function EulaPage() {
         </p>
         <p style={prose.paragraph}>
           The Caisson name, wordmark, glyph, and associated marks are the
-          property of Caisson Software LLC. This Agreement does not grant you
+          property of GridWork Digital LLC. This Agreement does not grant you
           any right to use those trademarks, except to state, accurately, that
           Your Products are built with Caisson.
         </p>
@@ -391,7 +391,7 @@ export default function EulaPage() {
           courts.
         </p>
         <p style={prose.paragraph}>
-          Caisson Software LLC is a limited liability company organized under
+          GridWork Digital LLC is a limited liability company organized under
           the laws of the State of Georgia, based in Atlanta, Georgia.
         </p>
       </Section>
@@ -426,7 +426,7 @@ export default function EulaPage() {
           terms:
         </p>
         <p style={{ marginTop: "var(--cs-space-4)", ...prose.paragraph }}>
-          Caisson Software LLC
+          GridWork Digital LLC
           <br />
           Atlanta, Georgia, USA
           <br />
