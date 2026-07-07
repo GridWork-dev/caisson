@@ -14,7 +14,7 @@ export default defineModule({
   tier: "paid",
   priceCents: 4900,
   license: pkg.license,
-  dependencies: ["@caisson/kernel", "@caisson/tenancy-rls"],
+  dependencies: ["@caisson/kernel", "@caisson/tenancy-rls", "@caisson/ui"],
   golden: "src/__golden__",
   description:
     "Append-only versioned prompts + name@version / name@alias addressing + a mutable alias pointer + injection-safe templating (ADR-0061).",

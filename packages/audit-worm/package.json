@@ -9,17 +9,19 @@
   },
   "description": "Write-once (WORM) artifact store with an S3 Object-Lock backend, a SHA-256 append-only audit chain with a trusted WORM anchor, and an append-only locked-version database with a derived current version.",
   "files": [
-    "dist"
+    "dist",
+    "src/ui"
   ],
   "exports": {
     ".": {
       "bun": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    }
+    },
+    "./ui": "./src/ui/index.ts"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.ui.json",
     "lint": "eslint src",
     "test": "bun test ./src",
     "test:live": "bun test ./live"
@@ -30,11 +32,32 @@
     "@caisson/tenancy-rls": "workspace:*",
     "zod": "catalog:"
   },
+  "peerDependencies": {
+    "@caisson/ui": "workspace:^",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@caisson/ui": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
+    "@caisson/ui": "workspace:*",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "eslint": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
     "typescript": "catalog:"
   }
 }

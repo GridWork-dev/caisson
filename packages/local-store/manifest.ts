@@ -15,7 +15,7 @@ export default defineModule({
   tier: "paid",
   priceCents: 4900,
   license: pkg.license,
-  dependencies: ["@caisson/kernel"],
+  dependencies: ["@caisson/kernel", "@caisson/ui"],
   golden: "src/__golden__",
   description:
     "Local hybrid retrieval: sqlite-vec (vec0) + FTS5 + RRF (RRF_K=60) with an always-available FTS path and FTS-only degrade, plus the file-per-tenant isolation floor; embedding is an injected seam, consumed edition→base (local-ai, agent-dev).",
