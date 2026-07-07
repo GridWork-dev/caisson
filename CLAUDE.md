@@ -22,11 +22,12 @@ edited — supersede with a later ADR).
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
 2. `knowledge/decisions/` — the ADRs themselves. Append-only (`ADR-NNNN-slug.md`, never edited — supersede
-   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0271** (D's
-   Stage-1/2 locks drafted 0251/0252, renumbered 0259/0260 at the Kickoff-E merge; 0261 =
-   the Greptile-retirement ADR; 0262-0268 = Kickoff F dx-demos-compat; 0269 = the
+   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0278** (0269 = the
    Developer-plan owned-entitlements coverage, hygiene session 2026-07-06; 0270 = the
-   edition-trace purge, license-seam-wave 2026-07-07; 0271 = the bundle-only index delist, third-sitting picker 2026-07-07). The full
+   edition-trace purge, license-seam-wave 2026-07-07; 0271 = the bundle-only index delist,
+   third-sitting picker 2026-07-07; 0272-0278 = the fourth-sitting research-response picker
+   2026-07-07 — site wave · design-partner program · evaluation access · evidence-pack
+   artifact · EULA continuity clause · named-regime crosswalks · priority-support SKU). The full
    catalog — every number, title, and supersession chain — is `docs/adr-index.md`; do NOT restate it here.
 3. `specs/` — locked concept docs; `specs/00-product-spec.md` is the founding spec
 4. `plan.md` / `SUMMARY.md` — build plan + consolidated summary
