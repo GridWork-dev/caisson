@@ -28,7 +28,7 @@ export const rootGraph = {
       "@type": "Organization",
       "@id": ORG_ID,
       name: SITE_NAME,
-      legalName: "GridWork Digital LLC",
+      legalName: "Caisson Software LLC",
       url: SITE_URL,
       description:
         "Compliance-grade infrastructure for regulated SaaS — fail-closed Postgres RLS, S3 Object-Lock WORM, and an append-only audit chain.",

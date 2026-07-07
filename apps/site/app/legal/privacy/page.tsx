@@ -337,7 +337,7 @@ export default function PrivacyPage() {
       {/* Contact */}
       <Section eyebrow="Contact" title="Get in touch" band="tint">
         <p style={prose.paragraph}>
-          GridWork Digital LLC
+          Caisson Software LLC
           <br />
           Atlanta, Georgia, USA
           <br />

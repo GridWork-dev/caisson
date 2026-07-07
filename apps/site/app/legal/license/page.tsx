@@ -328,7 +328,7 @@ export default function LicensePage() {
           negotiation:
         </p>
         <p style={{ marginTop: "var(--cs-space-4)", ...prose.paragraph }}>
-          GridWork Digital LLC
+          Caisson Software LLC
           <br />
           Atlanta, Georgia, USA
           <br />
