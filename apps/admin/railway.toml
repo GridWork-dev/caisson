@@ -12,9 +12,10 @@
 # Service env vars (set in the Railway service — NEVER committed; every surface no-ops when unset):
 #   ADMIN_AUTH_DATABASE_URL       (Postgres DSN for admin's OWN better-auth tables — ADR-0283; a normal
 #                                  writable role, NEVER the CAISSON_ADMIN_DB_URL read-only `admin` role
-#                                  below, and NEVER the buyer-auth DB apps/site uses. Migrated by the
-#                                  preDeployCommand below BEFORE the app serves — better-auth does not
-#                                  create its own tables at runtime.)
+#                                  below, and NEVER the buyer-auth DB apps/site uses. Migrated at server
+#                                  boot by the instrumentation.register() hook BEFORE the app serves —
+#                                  see the [deploy] note below, CAISSON-48 — better-auth does not create
+#                                  its own tables at runtime.)
 #   ADMIN_BETTER_AUTH_SECRET      (better-auth session-signing secret — ADR-0283; sign-in unavailable without it)
 #   ADMIN_GITHUB_CLIENT_ID        (the dedicated admin GitHub OAuth app's client id — ADR-0283)
 #   ADMIN_GITHUB_CLIENT_SECRET    (the dedicated admin GitHub OAuth app's client secret — ADR-0283)

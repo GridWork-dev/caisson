@@ -143,8 +143,10 @@ export interface SchedulerHandle {
  *  (2_147_483_647 ms ≈ 24.8 days) to **1 ms** — silently turning a long cadence (soc2's 30-day) into
  *  a tight loop that hammers the upstream (CAISSON-49). `longInterval` re-arms a chained `setTimeout`
  *  in ceiling-bounded chunks so a cadence of ANY length fires at its true interval; for a sub-ceiling
- *  delay it arms exactly once per period, identical to `setInterval`. Timer fns are injectable so the
- *  chunking is unit-testable without real clocks. */
+ *  delay it arms exactly once per period, matching `setInterval` semantics — including that `clear()`
+ *  called from inside the callback stops it, and a throwing callback does not silently kill the
+ *  interval (the next period still re-arms). Timer fns are injectable so the chunking is unit-testable
+ *  without real clocks. */
 export const MAX_TIMER_DELAY_MS = 2_147_483_647;
 
 export function longInterval(
@@ -160,21 +162,29 @@ export function longInterval(
   // cadences upstream, so this is a defensive guard, not a live path.
   const interval = Number.isFinite(delayMs) && delayMs >= 1 ? delayMs : 1_000;
   let timer: ReturnType<typeof setTimeout>;
+  let stopped = false;
   const arm = (remaining: number): void => {
     const chunk = Math.min(remaining, MAX_TIMER_DELAY_MS);
     timer = setTimeoutImpl(() => {
+      if (stopped) return; // clear() may have fired between arming and this tick
       const left = remaining - chunk;
       if (left > 0) {
         arm(left);
       } else {
-        cb();
-        arm(interval);
+        // A throw from cb must not kill the interval (setInterval keeps ticking); the finally
+        // re-arms the next period unless the callback itself called clear().
+        try {
+          cb();
+        } finally {
+          if (!stopped) arm(interval);
+        }
       }
     }, chunk);
   };
   arm(interval);
   return {
     clear(): void {
+      stopped = true;
       clearTimeoutImpl(timer);
     },
   };

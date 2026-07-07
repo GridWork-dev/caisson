@@ -243,16 +243,69 @@ describe("longInterval (CAISSON-49 — no 32-bit clamp)", () => {
     expect(armed[1]).toBe(5_000); // re-armed for the next period
   });
 
-  test("clear() cancels the pending timer", () => {
-    let cleared = 0;
+  test("clear() cancels the LATEST timer handle, even after a re-arm", () => {
+    let nextHandle = 0;
+    const cleared: number[] = [];
+    const fns: Array<() => void> = [];
+    const fakeSetTimeout = (fn: () => void) => {
+      fns.push(fn);
+      return ++nextHandle as unknown as ReturnType<typeof setTimeout>;
+    };
     const h = longInterval(
       () => {},
       1_000,
-      () => 7 as unknown as ReturnType<typeof setTimeout>,
-      () => (cleared += 1),
+      fakeSetTimeout,
+      (t) => cleared.push(t as unknown as number),
     );
+    fns[0]?.(); // fires cb + re-arms → the live handle is now #2, not #1
     h.clear();
-    expect(cleared).toBe(1);
+    expect(cleared).toEqual([2]); // the re-armed handle is the one cancelled
+  });
+
+  test("clear() called from inside the callback stops the interval (no re-arm)", () => {
+    const fns: Array<() => void> = [];
+    const armed: number[] = [];
+    const fakeSetTimeout = (fn: () => void, ms: number) => {
+      fns.push(fn);
+      armed.push(ms);
+      return armed.length as unknown as ReturnType<typeof setTimeout>;
+    };
+    let fired = 0;
+    // eslint-disable-next-line prefer-const -- h is referenced inside the callback before assignment completes
+    let h: { clear: () => void };
+    h = longInterval(
+      () => {
+        fired += 1;
+        h.clear();
+      },
+      1_000,
+      fakeSetTimeout,
+      () => {},
+    );
+    fns[0]?.(); // cb fires, calls clear() from inside
+    expect(fired).toBe(1);
+    expect(armed.length).toBe(1); // never re-armed — clear() from the callback stuck
+  });
+
+  test("a throwing callback does not kill the interval (setInterval keeps ticking)", () => {
+    const fns: Array<() => void> = [];
+    const armed: number[] = [];
+    const fakeSetTimeout = (fn: () => void, ms: number) => {
+      fns.push(fn);
+      armed.push(ms);
+      return armed.length as unknown as ReturnType<typeof setTimeout>;
+    };
+    longInterval(
+      () => {
+        throw new Error("tick boom");
+      },
+      1_000,
+      fakeSetTimeout,
+      () => {},
+    );
+    // The throw propagates out of the timer callback, but the finally re-arms the next period first.
+    expect(() => fns[0]?.()).toThrow("tick boom");
+    expect(armed[1]).toBe(1_000); // re-armed despite the throw
   });
 });
 

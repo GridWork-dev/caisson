@@ -16,19 +16,27 @@ export async function register(): Promise<void> {
   // `bun apps/admin/src/lib/admin-deploy-migrate.ts` can't be found. `register()` ships in
   // standalone and Next awaits it before serving, so a fresh ADMIN_AUTH_DATABASE_URL is migrated
   // before the first OAuth callback (which would otherwise 500 on relation-does-not-exist and lock
-  // the operator out). Env-gated (no-op in dev/CI where the URL is unset), idempotent, and
-  // catch-logged so a transient DB blip at boot doesn't wedge startup — the migrator re-attempts on
-  // the next restart (Railway ON_FAILURE), and the tables, once created, persist.
+  // the operator out). Env-gated (no-op in dev/CI where the URL is unset) and idempotent.
+  //
+  // On failure we do NOT rethrow (a hard throw here risks crash-looping the whole control-plane,
+  // taking /ops down with it) — instead we mark the boot unhealthy so `/healthz` fails closed. That
+  // makes Railway keep the last-good deploy rather than promote one whose auth 500s, and surfaces a
+  // visible failed-deploy instead of a silent lockout; a later deploy/restart re-runs the idempotent
+  // migration once the DB is reachable. See admin-boot-state.ts.
   const adminAuthDbUrl = process.env.ADMIN_AUTH_DATABASE_URL?.trim();
   if (adminAuthDbUrl !== undefined && adminAuthDbUrl.length > 0) {
+    const { markAuthMigrationFailed, markAuthMigrationOk } =
+      await import("./lib/admin-boot-state.ts");
     try {
       const { ensureAdminAuthTables } =
         await import("./lib/admin-deploy-migrate.ts");
       await ensureAdminAuthTables(adminAuthDbUrl);
+      markAuthMigrationOk();
     } catch (err) {
+      markAuthMigrationFailed();
       process.stderr.write(
-        `[admin] better-auth migration failed at boot (auth routes 500 until it succeeds; ` +
-          `retried on next restart): ${err instanceof Error ? err.message : String(err)}\n`,
+        `[admin] better-auth migration failed at boot — /healthz will report unhealthy so this ` +
+          `deploy is not promoted; re-run a deploy once the DB is reachable: ${err instanceof Error ? err.message : String(err)}\n`,
       );
     }
   }
