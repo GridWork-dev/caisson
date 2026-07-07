@@ -1268,20 +1268,24 @@ describe("ADR-0269 — a coversOwnedEntitlements plan (Developer) re-grants owne
     };
   }
 
-  test("the granting invoice re-grants every owned one_time id under the subscription; the pair's window key drops; cancel re-binds it", async () => {
+  test("the granting invoice re-grants every owned one_time id under the subscription; the pair's window EXTENDS to the coverage horizon; cancel re-binds it", async () => {
     const acct = "acct_dev_covers";
-    // The buyer OWNS compliance (one-time buy) → a one_time-derived window exists.
+    // The buyer OWNS compliance (one-time buy) whose own window has LAPSED — the coverage
+    // horizon is then the pair's live bound (max fold, ADR-0269 D2 hardened).
     await withTenant(tp.pg, acct, (tx) =>
       applyBillingEvent(
         tx,
         purchaseCompleted(acct, "pay_own", ONETIME_EDITION_ID),
       ),
     );
+    await tp.query(
+      `UPDATE entitlement_grant SET granted_at = $2
+        WHERE account_id = $1 AND source_kind = 'one_time'`,
+      [acct, "2025-01-05T00:00:00.000Z"],
+    );
     expect(
-      Object.keys(
-        await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
-      ),
-    ).toEqual(["compliance"]);
+      await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
+    ).toEqual({ compliance: "2026-01-05T00:00:00.000Z" });
 
     // Developer invoice.paid → the owned id is RE-GRANTED subscription-sourced (the
     // Compliance-Updates mirror made dynamic) and reported in grantedEntitlements.
@@ -1298,10 +1302,14 @@ describe("ADR-0269 — a coversOwnedEntitlements plan (Developer) re-grants owne
       { source_kind: "one_time", status: "active" },
       { source_kind: "subscription", status: "active" },
     ]);
-    // Covered → no window key is signed (subscription-sourced access, ADR-0255 §1 / ADR-0269 D2).
-    expect(
-      await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
-    ).toEqual({});
+    // Covered → the signed window EXTENDS to the paid-through horizon (monthly cadence here):
+    // present, bounded by the LAST PAID period — never a dropped/unbounded key (audit P1 2).
+    const covered = await withTenant(tp.pg, acct, (tx) =>
+      computeUpdatesWindows(tx, acct),
+    );
+    const horizon = Date.parse(covered.compliance ?? "");
+    expect(horizon).toBeGreaterThan(Date.now() + 25 * 86_400_000);
+    expect(horizon).toBeLessThan(Date.now() + 40 * 86_400_000);
 
     // A later cycle is idempotent per (account, id, subscription) — no duplicate rows.
     await withTenant(tp.pg, acct, (tx) =>
@@ -1327,10 +1335,42 @@ describe("ADR-0269 — a coversOwnedEntitlements plan (Developer) re-grants owne
       await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
     ).toEqual(["compliance"]); // one_time survives (refcount, ADR-0113)
     expect(
-      Object.keys(
-        await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
+      await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
+    ).toEqual({ compliance: "2026-01-05T00:00:00.000Z" }); // the gate re-binds after coverage ends
+  });
+
+  test("REFUND during coverage sweeps the mirror — a refunded product never survives subscription-sourced (audit P1 1)", async () => {
+    const acct = "acct_dev_refund";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pay_ref", ONETIME_EDITION_ID),
       ),
-    ).toEqual(["compliance"]); // the gate re-binds after coverage ends
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, developerInvoice(acct, "in_ref1", "sub_ref")),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]);
+    // Full refund of the backing purchase: BOTH the one_time grant and its coverage mirror fall.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, refundCompleted(acct, "pay_ref")),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual([]);
+    expect(
+      await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
+    ).toEqual({});
+    // The NEXT cycle's dynamic read finds nothing owned — the mirror never re-mints.
+    const after = await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, developerInvoice(acct, "in_ref2", "sub_ref")),
+    );
+    expect(after.grantedEntitlements).toEqual([]);
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual([]);
   });
 
   test("an id bought MID-cycle joins at the NEXT granting invoice", async () => {
@@ -1350,14 +1390,17 @@ describe("ADR-0269 — a coversOwnedEntitlements plan (Developer) re-grants owne
     expect(
       await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
     ).not.toEqual({}); // not yet covered — joins at the next cycle
-    // …joins at cycle 2.
+    // …joins at cycle 2. The pair's key stays PRESENT — a fresh purchase's own 12-month bound
+    // already exceeds the monthly coverage horizon, so the max fold leaves it untouched.
     const second = await withTenant(tp.pg, acct, (tx) =>
       applyBillingEvent(tx, developerInvoice(acct, "in_mc2", "sub_mc")),
     );
     expect(second.grantedEntitlements).toEqual(["compliance"]);
     expect(
-      await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
-    ).toEqual({});
+      Object.keys(
+        await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
+      ),
+    ).toEqual(["compliance"]);
   });
 
   test("a plan WITHOUT the flag (Compliance-Updates) never re-grants other owned ids", async () => {

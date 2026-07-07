@@ -63,6 +63,7 @@ import {
   ENTITLEMENT_SCHEMA_SQL,
   grantEntitlements,
   readEntitlements,
+  upsertSubscriptionGrants,
 } from "./entitlement-store.ts";
 import {
   LICENSE_GRANT_SCHEMA_SQL,
@@ -755,6 +756,43 @@ describe("paid purchase revoke — R-2/R-3 source-scoped one-time revoke (ADR-02
     );
     expect(logRows).toEqual([{ action: "purchase_revoke" }]);
     expect(await worm.load(wormAnchorAccount(acct))).toHaveLength(1);
+  });
+
+  test("revoke sweeps an ADR-0269 coverage MIRROR with its backing purchase; a STATIC subscription grant survives", async () => {
+    const acct = await realAccount();
+    const purchaseId = `pay_${randomUUID()}`;
+    const subId = `sub_${randomUUID()}`;
+    await seedOneTimeGrant(acct, purchaseId, ["local-ai"]);
+    // The Developer-plan coverage mirror of the owned id (line_item_id='covered') plus a STATIC
+    // plan grant of a DIFFERENT id under the same subscription.
+    await withTenant(db, acct, (tx) =>
+      upsertSubscriptionGrants(tx, {
+        accountId: acct,
+        entitlementIds: ["local-ai"],
+        subscriptionId: subId,
+        sourceEventId: `in_${subId}`,
+        cadence: "year",
+        coverageMirror: true,
+      }),
+    );
+    await seedSubscriptionGrant(acct, subId, ["compliance"]);
+
+    const r = await revokePurchaseAdmin(deps(), {
+      actorEmail: "op@gridwork.dev",
+      targetAccountId: acct,
+      purchaseId,
+      clawUnspentCredits: false,
+      revokeEdgeAccess: false,
+    });
+    expect(r.revoked).toBe(1); // the one_time row; the mirror falls via the reconcile
+    // local-ai is GONE despite its subscription-sourced mirror (audit P1 1); compliance stays.
+    expect(r.after).toEqual(["compliance"]);
+    const mirror = await ground<{ status: string }>(
+      `SELECT status FROM entitlement_grant
+        WHERE account_id = $1 AND entitlement_id = 'local-ai' AND source_kind = 'subscription'`,
+      [acct],
+    );
+    expect(mirror).toEqual([{ status: "revoked" }]);
   });
 
   test("a subscription-source target is REJECTED — v2 revokes one-time purchases ONLY (R-3=A)", async () => {

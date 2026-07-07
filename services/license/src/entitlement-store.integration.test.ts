@@ -17,9 +17,11 @@ import {
   grantEntitlements,
   readEntitlements,
   readOneTimeEntitlements,
+  reconcileCoverageGrants,
   revokePurchaseGrants,
   revokePurchaseLineGrants,
   revokeSubscriptionGrants,
+  upsertSubscriptionGrants,
 } from "./entitlement-store.ts";
 
 let tp: TestPg;
@@ -682,7 +684,7 @@ describe("snapshot-at-sale entitledSince (ADR-0257 §1.2)", () => {
   });
 });
 
-describe("ADR-0269 subscription-covered pairs (windows/entitledSince drop + the owned read)", () => {
+describe("ADR-0269 subscription-covered pairs (horizon-extended claims + the owned read + reconcile)", () => {
   test("readOneTimeEntitlements returns ONLY active one_time ids — never subscription, admin_comp, or revoked rows", async () => {
     const acct = "acct_owned_read";
     await withTenant(tp.pg, acct, (tx) =>
@@ -725,7 +727,7 @@ describe("ADR-0269 subscription-covered pairs (windows/entitledSince drop + the 
     ).toEqual(["compliance", "field-crypto"]);
   });
 
-  test("a subscription-covered pair carries NO updatesWindows/entitledSince key; both re-bind after the subscription revoke", async () => {
+  test("a subscription-covered pair EXTENDS its keys to the coverage horizon; both re-bind after the subscription revoke", async () => {
     const acct = "acct_covered";
     await withTenant(tp.pg, acct, (tx) =>
       grantEntitlements(tx, {
@@ -748,24 +750,31 @@ describe("ADR-0269 subscription-covered pairs (windows/entitledSince drop + the 
         await withTenant(tp.pg, acct, (tx) => computeEntitledSince(tx, acct)),
       ),
     ).toEqual(["compliance"]);
-    // Covered (the Developer-plan re-grant shape): the pair's keys DROP — subscription-sourced
-    // access, the token's own expiry governs (ADR-0255 §1 / ADR-0269 D2).
+    // Covered (the Developer-plan re-grant shape, ANNUAL cadence): the pair's keys EXTEND to the
+    // coverage horizon (now + 1 year) — present, bounded, never dropped (the drop read as
+    // unbounded in a perpetual offline token no cancel could claw back; audit P1 2, 2026-07-06).
     await withTenant(tp.pg, acct, (tx) =>
-      grantEntitlements(tx, {
+      upsertSubscriptionGrants(tx, {
         accountId: acct,
         entitlementIds: ["compliance"],
+        subscriptionId: "sub_cov",
         sourceEventId: "cov_sub",
-        source: sub("sub_cov"),
+        cadence: "year",
+        coverageMirror: true,
       }),
     );
-    expect(
-      await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
-    ).toEqual({});
-    expect(
-      await withTenant(tp.pg, acct, (tx) => computeEntitledSince(tx, acct)),
-    ).toEqual({});
+    const covered = await withTenant(tp.pg, acct, (tx) =>
+      computeUpdatesWindows(tx, acct),
+    );
+    const horizon = Date.parse(covered.compliance ?? "");
+    expect(horizon).toBeGreaterThan(Date.parse("2027-01-05T00:00:00.000Z"));
+    expect(horizon).toBeGreaterThan(Date.now() + 360 * 86_400_000);
+    const since = await withTenant(tp.pg, acct, (tx) =>
+      computeEntitledSince(tx, acct),
+    );
+    expect(Date.parse(since.compliance ?? "")).toBe(horizon);
     // Revoked (subscription.canceled): the stored one_time bound re-binds UNCHANGED — coverage
-    // never rewrote it, it merely stopped being signed.
+    // never rewrote it, it merely out-folded it while active.
     await withTenant(tp.pg, acct, (tx) =>
       revokeSubscriptionGrants(tx, {
         accountId: acct,
@@ -775,9 +784,99 @@ describe("ADR-0269 subscription-covered pairs (windows/entitledSince drop + the 
     expect(
       await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
     ).toEqual({ compliance: "2027-01-05T00:00:00.000Z" });
+    // A LATE out-of-order re-grant after the cancel (audit P2 3) never resurrects the revoked
+    // mirror: the tombstone occupies the key, the pair's bound stays the one_time truth.
+    await withTenant(tp.pg, acct, (tx) =>
+      upsertSubscriptionGrants(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        subscriptionId: "sub_cov",
+        sourceEventId: "cov_sub_late",
+        cadence: "year",
+        coverageMirror: true,
+      }),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
+    ).toEqual({ compliance: "2027-01-05T00:00:00.000Z" });
   });
 
-  test("coverage is ALIAS-TOLERANT: a subscription grant under the canonical bundle id covers a legacy-keyed one_time pair", async () => {
+  test("each granting invoice EXTENDS the horizon monotonically (GREATEST — never shrinks)", async () => {
+    const acct = "acct_horizon_ext";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "ext_ot",
+        source: onetime("ext_ot"),
+      }),
+    );
+    await tp.query(
+      `UPDATE entitlement_grant SET granted_at = $2 WHERE account_id = $1`,
+      [acct, "2020-01-05T00:00:00.000Z"], // lapsed own window — the horizon is the live bound
+    );
+    const mirror = (sourceEventId: string, cadence: "month" | "year") =>
+      withTenant(tp.pg, acct, (tx) =>
+        upsertSubscriptionGrants(tx, {
+          accountId: acct,
+          entitlementIds: ["compliance"],
+          subscriptionId: "sub_ext",
+          sourceEventId,
+          cadence,
+          coverageMirror: true,
+        }),
+      );
+    await mirror("ext_inv_1", "month");
+    const first = Date.parse(
+      (await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)))
+        .compliance ?? "",
+    );
+    expect(first).toBeGreaterThan(Date.now() + 25 * 86_400_000);
+    await mirror("ext_inv_2", "year");
+    const second = Date.parse(
+      (await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)))
+        .compliance ?? "",
+    );
+    expect(second).toBeGreaterThan(first);
+    // A replay stamping an EARLIER horizon (month after year) never shrinks the bound.
+    await mirror("ext_inv_3", "month");
+    expect(
+      Date.parse(
+        (await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)))
+          .compliance ?? "",
+      ),
+    ).toBe(second);
+  });
+
+  test("a legacy NULL-horizon subscription row lifts NOTHING (no unbounded coverage from pre-stamp rows)", async () => {
+    const acct = "acct_null_horizon";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "nh_ot",
+        source: onetime("nh_ot"),
+      }),
+    );
+    await tp.query(
+      `UPDATE entitlement_grant SET granted_at = $2 WHERE account_id = $1`,
+      [acct, "2026-01-05T00:00:00.000Z"],
+    );
+    // A pre-horizon subscription grant (grantEntitlements — updates_expires_at NULL).
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "nh_sub",
+        source: sub("sub_nh"),
+      }),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
+    ).toEqual({ compliance: "2027-01-05T00:00:00.000Z" });
+  });
+
+  test("coverage is ALIAS-TOLERANT: a mirror under the canonical bundle id extends a legacy-keyed one_time pair", async () => {
     const acct = "acct_covered_alias";
     // Legacy vocabulary one_time buy (pre-0257 rows store `ai-kit`)…
     await withTenant(tp.pg, acct, (tx) =>
@@ -788,20 +887,136 @@ describe("ADR-0269 subscription-covered pairs (windows/entitledSince drop + the 
         source: onetime("al_ot"),
       }),
     );
-    // …covered by a subscription grant written under the CANONICAL id (ai-production).
+    await tp.query(
+      `UPDATE entitlement_grant SET granted_at = $2 WHERE account_id = $1`,
+      [acct, "2026-01-05T00:00:00.000Z"],
+    );
+    // …covered by a mirror written under the CANONICAL id (ai-production).
+    await withTenant(tp.pg, acct, (tx) =>
+      upsertSubscriptionGrants(tx, {
+        accountId: acct,
+        entitlementIds: ["ai-production"],
+        subscriptionId: "sub_al",
+        sourceEventId: "al_sub",
+        cadence: "year",
+        coverageMirror: true,
+      }),
+    );
+    const windows = await withTenant(tp.pg, acct, (tx) =>
+      computeUpdatesWindows(tx, acct),
+    );
+    expect(Date.parse(windows["ai-kit"] ?? "")).toBeGreaterThan(
+      Date.parse("2027-01-05T00:00:00.000Z"),
+    );
+  });
+
+  test("reconcileCoverageGrants sweeps ONLY the orphaned mirror — backed mirrors and STATIC grants survive", async () => {
+    const acct = "acct_reconcile";
+    // Purchase P1 backs compliance; P2 backs field-crypto; both mirrored under the Developer sub.
     await withTenant(tp.pg, acct, (tx) =>
       grantEntitlements(tx, {
         accountId: acct,
-        entitlementIds: ["ai-production"],
-        sourceEventId: "al_sub",
-        source: sub("sub_al"),
+        entitlementIds: ["compliance"],
+        sourceEventId: "rc_p1",
+        source: onetime("rc_p1"),
       }),
     );
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["field-crypto"],
+        sourceEventId: "rc_p2",
+        source: onetime("rc_p2"),
+      }),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      upsertSubscriptionGrants(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance", "field-crypto"],
+        subscriptionId: "sub_rc",
+        sourceEventId: "rc_inv",
+        cadence: "year",
+        coverageMirror: true,
+      }),
+    );
+    // A STATIC plan grant of compliance under a DIFFERENT subscription (paid for on its own).
+    await withTenant(tp.pg, acct, (tx) =>
+      upsertSubscriptionGrants(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        subscriptionId: "sub_static",
+        sourceEventId: "rc_static_inv",
+        cadence: "year",
+      }),
+    );
+    // Refund P1 → its one_time row falls; the reconcile must fell ONLY compliance's MIRROR.
+    await withTenant(tp.pg, acct, (tx) =>
+      revokePurchaseGrants(tx, { accountId: acct, purchaseId: "rc_p1" }),
+    );
+    const swept = await withTenant(tp.pg, acct, (tx) =>
+      reconcileCoverageGrants(tx, acct),
+    );
+    expect(swept).toBe(1);
+    // compliance stays entitled through the STATIC grant; field-crypto through P2 + its mirror.
     expect(
-      await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
-    ).toEqual({});
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance", "field-crypto"]);
+    // field-crypto's pair still carries the horizon (its mirror survived, backed by P2).
+    const windows = await withTenant(tp.pg, acct, (tx) =>
+      computeUpdatesWindows(tx, acct),
+    );
+    expect(Object.keys(windows)).toEqual(["field-crypto"]);
+    expect(Date.parse(windows["field-crypto"] ?? "")).toBeGreaterThan(
+      Date.now() + 360 * 86_400_000,
+    );
+    // Idempotent: a second reconcile sweeps nothing.
     expect(
-      await withTenant(tp.pg, acct, (tx) => computeEntitledSince(tx, acct)),
-    ).toEqual({});
+      await withTenant(tp.pg, acct, (tx) => reconcileCoverageGrants(tx, acct)),
+    ).toBe(0);
+  });
+
+  test("reconcile is REFCOUNT-aware: a mirror survives while ANY sibling purchase still backs its id", async () => {
+    const acct = "acct_reconcile_refcount";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["ai-meter"],
+        sourceEventId: "rr_p1",
+        source: onetime("rr_p1"),
+      }),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["ai-meter"],
+        sourceEventId: "rr_p2",
+        source: onetime("rr_p2"),
+      }),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      upsertSubscriptionGrants(tx, {
+        accountId: acct,
+        entitlementIds: ["ai-meter"],
+        subscriptionId: "sub_rr",
+        sourceEventId: "rr_inv",
+        cadence: "year",
+        coverageMirror: true,
+      }),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      revokePurchaseGrants(tx, { accountId: acct, purchaseId: "rr_p1" }),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => reconcileCoverageGrants(tx, acct)),
+    ).toBe(0); // rr_p2 still backs ai-meter — the mirror stands
+    await withTenant(tp.pg, acct, (tx) =>
+      revokePurchaseGrants(tx, { accountId: acct, purchaseId: "rr_p2" }),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => reconcileCoverageGrants(tx, acct)),
+    ).toBe(1); // last backing gone → the mirror falls with it
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual([]);
   });
 });
