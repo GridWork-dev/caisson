@@ -1368,3 +1368,38 @@ New OPEN forks surfaced by the wave (operator-owned, not decided):
 Deploy-order note for the redeploy gate: Worker (verifier) FIRST per the standing claims-schema
 constraint, license second (its preDeployCommand applies migration 0017 — a refund/renewal webhook
 against the old DB shape rolls back on the missing `renewal_extension` relation), site last.
+
+## 2026-07-07 third sitting — deploy executed, two picker rounds, showcase+marketplace wave armed
+
+The PENDING redeploy EXECUTED (Worker 4c6c61fa → ADR-0270 drain proven empty → license
+migration-0017/v17 → site; docs/deploy/STATE.md EXECUTED entry). Hygiene list executed:
+merged remote branches pruned, apps/studio leftover cleared, standards-gate turbo cache
+soundness fix (PR #137 merged — the unsound-cache class that hid the ui-pro version-gap
+latent red).
+
+**Picker round 1 (open questions) — LOCKED:**
+
+- **Bundle-only index republish → LOCKED "now"** (ADR-0271): delist the 3 edition
+  meta-package entries at a dedicated republish + Worker redeploy, not folded into a later
+  rebuild. Ledger append-only; tarballs serve forever.
+- **Paddle production catalog timing → after the D2/D3 quant picker.** The production
+  ACCOUNT application proceeds independently; recreation is scripted and waits for the
+  Cookiy quant fills (frame 19/60, VW 10/60 at lock time).
+- **CAISSON-25 dunning verify → simulate in sandbox now.** One Paddle-sim
+  transaction.payment_failed against the live sandbox webhook this session.
+
+**Picker round 2 (build scope) — LOCKED, SPEC `outputs/specs/uipro-showcase-marketplace/SPEC.md`:**
+
+- **Marketplace pop-out**: full purchase card for BOTH modules and bundles on the
+  marketplace page (media + definition + what-ships + artifact + stack-compat + FAQ +
+  add-to-cart); standalone pages remain as SEO/AEO spokes; bundle pages extract into a
+  shared `lib/bundle-pages.ts` record. Operator rider: the nav bundles dropdown becomes a
+  two-column layout (full bundle list | marketplace pages).
+- **Marketplace extras — all four**: cart-aware bundle upsell · module-grid search +
+  filters · live ui-pro demos in the pop-out · compare tray.
+- **ui-pro expansion — all four**: charts pack · command palette · DiffViewer · kanban
+  board; plus the 3 hardening fixes. The **first-publish trigger fires when this wave
+  merges** (still its own atomic 3-part act: index entry + RESERVED drop +
+  everything-members pin).
+
+**Cookiy key rotation** stays trigger-parked (after quant fills; monitor armed).
