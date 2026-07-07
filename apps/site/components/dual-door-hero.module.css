@@ -1,0 +1,75 @@
+/* Dual-door hero (D1, ADR-0040 two-layer frame) — site-local composition. One umbrella frame, two
+ * doors: Compliance leads (accent identity), production is the secondary door. Values via --cs-*
+ * tokens only; theme-aware by cascade (no light/dark branching). */
+
+.doors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--cs-space-5);
+  margin-top: var(--cs-space-10);
+}
+
+/* Stack to one column on tablet/below (lg rung, ADR-0100 ladder). minmax(0,1fr) so the single
+ * track may shrink below its content's min-content width (phone-width overflow guard). */
+@media (max-width: 48rem) {
+  .doors {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.door {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-lg);
+  background: var(--cs-surface-1);
+  padding: var(--cs-space-8);
+}
+
+/* The lead (Compliance) door carries the accent identity — the wedge is not an equal peer. */
+.door[data-lead] {
+  border-color: var(--cs-accent);
+  background: var(--cs-accent-tint);
+  box-shadow: var(--cs-glow-accent);
+}
+
+.kicker {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-sm);
+  font-weight: var(--cs-weight-medium);
+  letter-spacing: var(--cs-tracking-tight);
+  color: var(--cs-fg);
+}
+
+.chip {
+  margin-top: var(--cs-space-4);
+}
+
+.claim {
+  margin-top: var(--cs-space-4);
+  color: var(--cs-fg-muted);
+  line-height: var(--cs-leading-relaxed);
+  max-width: 46ch;
+}
+
+/* Push the CTA to the card floor so the two doors' buttons align regardless of claim length. */
+.cta {
+  margin-top: auto;
+  padding-top: var(--cs-space-6);
+}
+
+/* Supporting honest-artifact strip below the doors (ADR-0104 static hero): the real cross-tenant
+ * denial + the real install line. Two columns on desktop, stacked on mobile. */
+.artifact {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: var(--cs-space-5);
+  align-items: start;
+  margin-top: var(--cs-space-10);
+}
+
+@media (max-width: 48rem) {
+  .artifact {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

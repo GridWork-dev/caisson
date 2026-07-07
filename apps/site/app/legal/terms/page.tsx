@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 
 import { buildMetadata } from "@/lib/metadata";
+import { PADDLE_MOR_DISCLOSURE } from "@/lib/legal";
 import { Card, Section } from "@/components";
 
 export const metadata = buildMetadata({
@@ -196,9 +197,8 @@ export default function TermsPage() {
           Payment processing — Paddle (Merchant of Record)
         </h3>
         <p style={prose.paragraph}>
-          Our order process is conducted by our online reseller Paddle.com.
-          Paddle.com is the Merchant of Record for all our orders. Paddle
-          provides all customer service inquiries and handles returns.
+          {PADDLE_MOR_DISCLOSURE} Paddle provides all customer service inquiries
+          and handles returns.
         </p>
         <p style={prose.paragraph}>
           You purchase a Caisson license from Paddle, and Paddle collects
@@ -222,38 +222,16 @@ export default function TermsPage() {
 
         <h3 style={prose.h3}>Refund policy</h3>
         <p style={prose.paragraph}>
-          Consumers in the EU, EEA, United Kingdom, and Switzerland have a
-          statutory right to withdraw from a purchase within 14 days of the
-          transaction and receive a full refund, in accordance with
-          Paddle&apos;s{" "}
-          <a
-            href="https://www.paddle.com/legal/buyer-terms"
-            rel="noreferrer"
-            style={{ color: "var(--cs-accent)" }}
-          >
-            buyer terms
-          </a>{" "}
-          and{" "}
-          <a
-            href="https://www.paddle.com/legal/refund-policy"
-            rel="noreferrer"
-            style={{ color: "var(--cs-accent)" }}
-          >
-            Refund Policy
-          </a>
-          . This statutory right applies to consumer purchases; business
-          purchases are not covered by it.
+          Every Caisson purchase comes with a 14-day money-back guarantee.
+          Request a refund within 14 days of your purchase, for any reason, and
+          you receive a full refund. The guarantee is unconditional: it applies
+          whether or not you have downloaded, installed, or used the Software,
+          and to every buyer regardless of location or of whether you buy as a
+          consumer or a business.
         </p>
         <p style={prose.paragraph}>
-          Caisson is downloadable software delivered for immediate use. If you
-          begin downloading, installing, or using the Software during the 14-day
-          period, having consented at checkout to immediate access, the
-          statutory withdrawal right no longer applies to that purchase — this
-          waiver is presented to you by Paddle as part of checkout.
-        </p>
-        <p style={prose.paragraph}>
-          Paddle is the Merchant of Record and executes every approved refund:
-          an approved refund is returned to your original payment method, where
+          Paddle is the Merchant of Record and executes every refund: an
+          approved refund is returned to your original payment method, where
           possible, within 14 days of approval. To request a refund, contact us
           at{" "}
           <a
@@ -270,9 +248,7 @@ export default function TermsPage() {
           >
             paddle.net
           </a>
-          . Outside the statutory withdrawal period, refund requests are
-          reviewed on a case-by-case basis consistent with Paddle&apos;s buyer
-          terms.
+          .
         </p>
         <p style={prose.paragraph}>
           An approved refund revokes the license entitlement granted by the
