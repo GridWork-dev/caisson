@@ -1,8 +1,9 @@
-// ADR-0071 entitlement-expansion resolver — golden-first (ADR-0013). RED until the resolver lands:
-// this file imports `expandEntitlements` / `BUNDLE_ID` from `./entitlements`, which does not exist
-// yet, so the file fails to resolve its import and the suite is RED — proving the fixture + golden
-// precede the logic. The follow-up `feat(registry): entitlement-expansion resolver` commit makes it
-// green with `BLESS` unset.
+// ADR-0071 entitlement-expansion resolver — golden-first (ADR-0013). Originally RED-until-resolver;
+// the golden fixture + expectations precede the logic. ADR-0270 (edition-trace purge) re-baselined the
+// golden onto the canonical six-bundle vocabulary: the dissolved edition ids (`ai-kit`/`local-ai`/
+// `agent-dev`) and the `bundle` sentinel are no longer purchasable/normalizable ids, so every case buys
+// a canonical bundle id (they resolve to the SAME member sets via the decoupled EDITION_BUNDLE_ID index
+// relation on this edition-tagged fixture).
 //
 // The fixed input index lives at `__golden__/entitlement-expansion.index.json` (a synthetic, valid
 // RegistryIndex with editions tagged across base + the four editions, incl. one module shared by two
@@ -20,13 +21,17 @@ import {
   normalizeEntitlementId,
 } from "./bundle-vocabulary";
 import {
-  BUNDLE_ID,
   RESERVED_MODULE_ENTITLEMENT_IDS,
   baseModuleIds,
   expandEntitlements,
   expandEntitlementsFromFile,
 } from "./entitlements";
 import { loadRegistryIndex, loadRegistryIndexFromFile } from "./registry-index";
+
+/** The canonical whole-catalog bundle id (ADR-0257) — the `everything` bundle. On an index WITHOUT an
+ *  explicit `@caisson/everything` bundle entry (this suite's fixture) it derives base ∪ every edition's
+ *  members, the behavior the legacy `bundle` sentinel had before ADR-0270 purged that sentinel. */
+const EVERYTHING = "everything" as const;
 
 const FIXTURE_INDEX = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -39,11 +44,11 @@ const index = loadRegistryIndexFromFile(FIXTURE_INDEX);
  *  multi-purchase / dedup combinations. The produced member set is sorted for a stable golden. */
 const CASES: ReadonlyArray<{ readonly purchased: readonly string[] }> = [
   { purchased: ["compliance"] },
-  { purchased: ["ai-kit"] },
-  { purchased: ["local-ai"] },
-  { purchased: [BUNDLE_ID] },
+  { purchased: ["ai-production"] },
+  { purchased: ["local-first"] },
+  { purchased: [EVERYTHING] },
   { purchased: ["@caisson/credits"] },
-  { purchased: ["ai-kit", "local-ai"] },
+  { purchased: ["ai-production", "local-first"] },
   { purchased: ["compliance", "@caisson/kernel"] },
   // Bare package-slug per-module purchase-id form (no `@caisson/` prefix) — resolves
   // the same indexed module the full-id form above does.
@@ -62,8 +67,8 @@ describe("ADR-0071 entitlement expansion (golden-first, ADR-0013)", () => {
     matchGolden(import.meta.url, "entitlement-expansion", produced);
   });
 
-  test("the bundle equals base + every edition's members (index-derived, never token-baked)", () => {
-    const bundle = [...expandEntitlements(index, [BUNDLE_ID])].sort();
+  test("the everything bundle equals base + every edition's members (index-derived, never token-baked)", () => {
+    const bundle = [...expandEntitlements(index, [EVERYTHING])].sort();
     // base (editions[] === []) ∪ each edition's members == every module in the index.
     const everything = index.modules.map((m) => m.id).sort();
     expect(bundle).toEqual(everything);
@@ -214,17 +219,17 @@ describe("baseModuleIds (ADR-0094/0097 — the free, always-served OPEN substrat
     expect(base).not.toContain("@caisson/credits");
   });
 
-  test("base ⊆ the bundle (bundle = base ∪ all editions)", () => {
-    const bundle = expandEntitlements(index, [BUNDLE_ID]);
+  test("base ⊆ the everything bundle (everything = base ∪ all editions)", () => {
+    const bundle = expandEntitlements(index, [EVERYTHING]);
     for (const id of baseModuleIds(index)) expect(bundle.has(id)).toBe(true);
   });
 
   test("a commercial base-kind module stays bundle-deliverable + à-la-carte (gated, not removed)", () => {
     // credits is commercial base: excluded from the FREE floor, but an entitled bundle OR bare-slug
     // buyer still receives it — the license gate is on the free-view floor only, never on expansion.
-    expect(expandEntitlements(index, [BUNDLE_ID]).has("@caisson/credits")).toBe(
-      true,
-    );
+    expect(
+      expandEntitlements(index, [EVERYTHING]).has("@caisson/credits"),
+    ).toBe(true);
     expect([...expandEntitlements(index, ["credits"])]).toEqual([
       "@caisson/credits",
     ]);
@@ -334,8 +339,8 @@ describe("edition expansion reads the ADR-0077 members map (commercial members w
   });
 });
 
-describe("ADR-0257 bundle vocabulary + legacy-alias resolution", () => {
-  test("the locked bundle-id set and alias map match ADR-0257 exactly", () => {
+describe("ADR-0257/0270 bundle vocabulary + purchase-alias spine", () => {
+  test("the locked bundle-id set is the six bundles and the alias spine is EMPTY (ADR-0270 purge)", () => {
     expect([...BUNDLE_IDS]).toEqual([
       "compliance",
       "ai-production",
@@ -344,18 +349,15 @@ describe("ADR-0257 bundle vocabulary + legacy-alias resolution", () => {
       "provenance",
       "everything",
     ]);
-    expect([...LEGACY_ENTITLEMENT_ALIASES.entries()]).toEqual([
-      ["compliance", "compliance"],
-      ["ai-kit", "ai-production"],
-      ["local-ai", "local-first"],
-      ["agent-dev", "agentic-dev"],
-      ["bundle", "everything"],
-    ]);
+    // ADR-0270: the four edition ids + the `bundle` sentinel were removed — zero real buyers held them.
+    // The spine is narrowed to nothing-but-the-mechanism (a future module rename plugs one entry in here).
+    expect([...LEGACY_ENTITLEMENT_ALIASES.entries()]).toEqual([]);
   });
 
-  test("normalizeEntitlementId maps legacy ids and passes everything else through", () => {
-    expect(normalizeEntitlementId("ai-kit")).toBe("ai-production");
-    expect(normalizeEntitlementId("bundle")).toBe("everything");
+  test("normalizeEntitlementId is identity over the emptied spine (edition ids no longer map)", () => {
+    // Post-purge every id passes through unchanged — the dissolved edition ids are NOT aliases anymore.
+    expect(normalizeEntitlementId("ai-kit")).toBe("ai-kit");
+    expect(normalizeEntitlementId("bundle")).toBe("bundle");
     expect(normalizeEntitlementId("compliance")).toBe("compliance");
     expect(normalizeEntitlementId("credits")).toBe("credits");
     expect(normalizeEntitlementId("@caisson/kernel")).toBe("@caisson/kernel");
@@ -365,40 +367,64 @@ describe("ADR-0257 bundle vocabulary + legacy-alias resolution", () => {
     expect(normalizeEntitlementId("__proto__")).toBe("__proto__");
   });
 
-  test("entitlementIdAliasGroup returns every stored spelling of one entitlement", () => {
-    // Canonical id in, legacy spellings out (the read-side reverse the renewal path matches on).
-    expect([...entitlementIdAliasGroup("ai-production")].sort()).toEqual([
-      "ai-kit",
-      "ai-production",
-    ]);
-    expect([...entitlementIdAliasGroup("everything")].sort()).toEqual([
-      "bundle",
-      "everything",
-    ]);
-    // A legacy id normalizes first — same group either way in.
-    expect([...entitlementIdAliasGroup("ai-kit")].sort()).toEqual([
-      "ai-kit",
-      "ai-production",
-    ]);
-    // The identity alias must not duplicate.
+  test("entitlementIdAliasGroup is a singleton group over the emptied spine", () => {
+    // No surviving alias → every id is its own group. (A future rename makes a group non-trivial again;
+    // the mechanism test below proves that path against an injected fake rename.)
+    expect(entitlementIdAliasGroup("ai-production")).toEqual(["ai-production"]);
+    expect(entitlementIdAliasGroup("everything")).toEqual(["everything"]);
     expect(entitlementIdAliasGroup("compliance")).toEqual(["compliance"]);
-    // Module slugs and unknown ids pass through as singleton groups.
     expect(entitlementIdAliasGroup("field-crypto")).toEqual(["field-crypto"]);
     expect(entitlementIdAliasGroup("__proto__")).toEqual(["__proto__"]);
   });
 
-  test("each legacy purchased id expands to the IDENTICAL leaf set its new bundle id does", () => {
-    for (const [legacy, bundleId] of LEGACY_ENTITLEMENT_ALIASES) {
-      expect([...expandEntitlements(index, [legacy])].sort()).toEqual(
-        [...expandEntitlements(index, [bundleId])].sort(),
-      );
+  test("the alias mechanism SURVIVES for the next module rename (ADR-0270 §9.3, fake-entry injection)", () => {
+    // The load-bearing guarantee, tested independently of the now-empty edition data: a hypothetical
+    // future module rename `old-widget → new-widget` must resolve through the SINGLE point + fold on the
+    // read-side group. Inject it directly into the shared map (a real Map behind the ReadonlyMap type),
+    // assert, then restore — proving the purge kept the mechanism, not just the (emptied) data.
+    const map = LEGACY_ENTITLEMENT_ALIASES as Map<string, string>;
+    map.set("old-widget", "new-widget");
+    try {
+      expect(normalizeEntitlementId("old-widget")).toBe("new-widget");
+      expect(normalizeEntitlementId("unrenamed-slug")).toBe("unrenamed-slug");
+      expect([...entitlementIdAliasGroup("new-widget")].sort()).toEqual([
+        "new-widget",
+        "old-widget",
+      ]);
+      // A caller holding the OLD spelling normalizes to the new one at the single point.
+      expect([...entitlementIdAliasGroup("old-widget")].sort()).toEqual([
+        "new-widget",
+        "old-widget",
+      ]);
+    } finally {
+      map.delete("old-widget");
+    }
+    expect(LEGACY_ENTITLEMENT_ALIASES.size).toBe(0); // restored to the narrowed production spine
+  });
+
+  test("a dissolved edition id resolves ONLY to its still-indexed meta package (no over-grant)", () => {
+    // ADR-0270 §9.4 (honest form): `@caisson/ai-kit` stays a served `kind:"edition"` artifact (the ledger
+    // is append-only, the index republish is deferred), so a bare `ai-kit` purchased id resolves through
+    // the ordinary indexed-module branch to JUST that meta package — never the whole former edition. That
+    // is an UNDER-grant (fail-safe), and the drain (§4) proves no grant row carries it, so it is moot in
+    // production. It is emphatically NOT the everything/ai-production expansion.
+    expect([...expandEntitlements(index, ["ai-kit"])]).toEqual([
+      "@caisson/ai-kit",
+    ]);
+    const aiProduction = expandEntitlements(index, ["ai-production"]);
+    expect(aiProduction.size).toBeGreaterThan(1);
+    // The dissolved id grants a strict subset of its former bundle — no widening anywhere.
+    for (const id of expandEntitlements(index, ["ai-kit"])) {
+      expect(aiProduction.has(id)).toBe(true);
     }
   });
 
-  test("the everything bundle id equals the legacy bundle sentinel (derived full-catalog fallback)", () => {
-    expect([...expandEntitlements(index, ["everything"])].sort()).toEqual(
-      [...expandEntitlements(index, [BUNDLE_ID])].sort(),
-    );
+  test("everything derives base ∪ every edition on an index without an explicit bundle entry", () => {
+    // The fixture carries no `@caisson/everything` bundle entry, so `everything` takes the derived
+    // full-catalog fallback (base ∪ every edition's members) — the behavior the retired `bundle` sentinel
+    // had, now reached only via the canonical id.
+    const everything = [...expandEntitlements(index, [EVERYTHING])].sort();
+    expect(everything).toEqual(index.modules.map((m) => m.id).sort());
   });
 
   test("a KNOWN bundle id with no index presence expands to nothing (fail-soft, edition semantics)", () => {
@@ -411,10 +437,13 @@ describe("ADR-0257 bundle vocabulary + legacy-alias resolution", () => {
     ).toEqual(["@caisson/credits"]);
   });
 
-  test("TM-E pin: an unknown id still fails closed AFTER alias normalization", () => {
-    // Normalization must never widen the accepted-id surface: unknown ids throw exactly as before.
+  test("TM-E pin: an unknown id still fails closed, and one bad id rejects the whole set", () => {
+    // The emptied spine must never widen the accepted-id surface: a genuinely unknown id throws, and a
+    // valid id alongside it does not rescue the expansion (one bad id rejects the whole set).
     expect(() => expandEntitlements(index, ["not-a-bundle"])).toThrow();
-    expect(() => expandEntitlements(index, ["ai-kit", "garbage"])).toThrow();
+    expect(() =>
+      expandEntitlements(index, ["ai-production", "garbage"]),
+    ).toThrow();
     expect(() =>
       expandEntitlements(index, ["everything-else-entirely"]),
     ).toThrow();
@@ -495,19 +524,15 @@ describe("ADR-0257 bundle vocabulary + legacy-alias resolution", () => {
     expect(
       [...expandEntitlements(withEverything, ["everything"])].sort(),
     ).toEqual(["@caisson/credits"]);
-    // The legacy sentinel rides the same alias → same explicit rule.
-    expect([...expandEntitlements(withEverything, [BUNDLE_ID])].sort()).toEqual(
-      ["@caisson/credits"],
-    );
   });
 });
 
-describe("ADR-0257 alias round-trip against the REAL registry index (post-fold capture)", () => {
-  // Captured against registry/index.json AFTER the W5 members-fold republish (2026-07-06): the
-  // compliance edition folded its three carve SKUs and local-ai its three carve modules, so the
-  // pre-change sets were consciously re-baselined here (the growth the pre-fold capture predicted).
-  // Each legacy purchased id must keep expanding to this exact leaf set — renaming without the
-  // alias 422s the server path and silently downgrades the Worker path.
+describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-fold capture)", () => {
+  // Captured against registry/index.json AFTER the W5 members-fold republish (2026-07-06). ADR-0270 KEEPS
+  // these leaf sets IDENTICAL — the edition→bundle relation moved to the decoupled EDITION_BUNDLE_ID index
+  // map, so buying the canonical bundle id folds the legacy `kind:"edition"` meta-package's members exactly
+  // as the (now-purged) edition purchased id used to. The historical edition meta packages (@caisson/ai-kit,
+  // …) stay served, so they remain in each set. Keyed on the CANONICAL bundle ids the catalog + grants use.
   const REAL_INDEX = join(
     dirname(fileURLToPath(import.meta.url)),
     "..",
@@ -516,7 +541,7 @@ describe("ADR-0257 alias round-trip against the REAL registry index (post-fold c
     "registry",
     "index.json",
   );
-  const PRE_CHANGE_EXPANSIONS: Readonly<Record<string, readonly string[]>> = {
+  const BUNDLE_EXPANSIONS: Readonly<Record<string, readonly string[]>> = {
     compliance: [
       "@caisson/alerting",
       "@caisson/audit-worm",
@@ -529,7 +554,7 @@ describe("ADR-0257 alias round-trip against the REAL registry index (post-fold c
       "@caisson/signing-primitive",
       "@caisson/tenancy-rls",
     ],
-    "ai-kit": [
+    "ai-production": [
       "@caisson/ai-config",
       "@caisson/ai-evals",
       "@caisson/ai-kit",
@@ -542,7 +567,7 @@ describe("ADR-0257 alias round-trip against the REAL registry index (post-fold c
       "@caisson/prompt-registry",
       "@caisson/tenancy-rls",
     ],
-    "local-ai": [
+    "local-first": [
       "@caisson/field-crypto",
       "@caisson/kernel",
       "@caisson/license-verify",
@@ -553,7 +578,7 @@ describe("ADR-0257 alias round-trip against the REAL registry index (post-fold c
       "@caisson/local-store",
       "@caisson/local-sync",
     ],
-    "agent-dev": [
+    "agentic-dev": [
       "@caisson/agent-dev",
       "@caisson/agent-kernel",
       "@caisson/agent-runner",
@@ -567,28 +592,37 @@ describe("ADR-0257 alias round-trip against the REAL registry index (post-fold c
 
   const realIndex = loadRegistryIndexFromFile(REAL_INDEX);
 
-  test("each legacy id expands to the identical post-fold leaf set", () => {
-    for (const [legacy, expected] of Object.entries(PRE_CHANGE_EXPANSIONS)) {
-      expect([...expandEntitlements(realIndex, [legacy])].sort()).toEqual([
+  test("each canonical bundle id expands to the identical post-fold leaf set (edition members retained)", () => {
+    for (const [bundleId, expected] of Object.entries(BUNDLE_EXPANSIONS)) {
+      expect([...expandEntitlements(realIndex, [bundleId])].sort()).toEqual([
         ...expected,
       ]);
     }
   });
 
-  test("each legacy id and its new bundle id expand identically on the real index", () => {
-    for (const [legacy, bundleId] of LEGACY_ENTITLEMENT_ALIASES) {
-      expect([...expandEntitlements(realIndex, [legacy])].sort()).toEqual(
-        [...expandEntitlements(realIndex, [bundleId])].sort(),
-      );
+  test("a dissolved edition id resolves ONLY to its indexed meta on the real index (no over-grant)", () => {
+    // Post-purge (ADR-0270): the bare edition ids are not aliases; each resolves to just its still-served
+    // meta package via the ordinary indexed-module branch — a strict subset of its bundle, never a widen.
+    for (const [edition, bundleId] of [
+      ["ai-kit", "ai-production"],
+      ["local-ai", "local-first"],
+      ["agent-dev", "agentic-dev"],
+    ] as const) {
+      expect([...expandEntitlements(realIndex, [edition])]).toEqual([
+        `@caisson/${edition}`,
+      ]);
+      const bundle = expandEntitlements(realIndex, [bundleId]);
+      expect(bundle.has(`@caisson/${edition}`)).toBe(true);
+      expect(bundle.size).toBeGreaterThan(1);
     }
   });
 
-  test("the legacy bundle sentinel reads the explicit everything rule on the real index", () => {
+  test("the everything bundle id reads the explicit everything rule on the real index", () => {
     // Post-fold semantics: the indexed @caisson/everything bundle entry's explicit members map wins
     // over the derived full-catalog scan. The grant is that map filtered to indexed ids — the
     // pre-publish ui-pro pin is allowlist-guarded until it ships — and the open Apache base is
     // deliberately absent (it ships free via the Worker's free-view floor, never as a grant).
-    const bundle = [...expandEntitlements(realIndex, [BUNDLE_ID])].sort();
+    const bundle = [...expandEntitlements(realIndex, [EVERYTHING])].sort();
     const everythingEntry = realIndex.modules.find(
       (m) => m.id === "@caisson/everything",
     );

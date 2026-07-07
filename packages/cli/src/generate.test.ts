@@ -1,9 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  BUNDLE_IDS,
-  LEGACY_ENTITLEMENT_ALIASES,
-  loadRegistryIndex,
-} from "@caisson/registry-schema";
+import { BUNDLE_IDS, loadRegistryIndex } from "@caisson/registry-schema";
 import { matchGolden } from "@caisson/testing";
 import {
   type GeneratorEngine,
@@ -224,22 +220,13 @@ describe("generate — six-bundle vocabulary (ADR-0257/0258)", () => {
     }
   });
 
-  test("every legacy edition id is accepted and normalizes to its bundle id", () => {
-    for (const [legacy, bundle] of LEGACY_ENTITLEMENT_ALIASES) {
-      const selection = validateSelection(INDEX, {
-        ...BASE,
-        edition: legacy,
-      });
-      expect(selection.edition).toBe(bundle);
-    }
-  });
-
-  test("a legacy edition id generates the byte-identical composition as its bundle id", () => {
-    for (const [legacy, bundle] of LEGACY_ENTITLEMENT_ALIASES) {
-      if (legacy === bundle) continue; // compliance is its own identity alias — nothing to compare
-      const viaLegacy = generate(INDEX, { ...BASE, edition: legacy }).files;
-      const viaBundle = generate(INDEX, { ...BASE, edition: bundle }).files;
-      expect(viaLegacy).toEqual(viaBundle);
+  test("a dissolved edition id is REJECTED — the generator is six-bundle-only (ADR-0270)", () => {
+    // ADR-0270 purged the edition purchase ids and emptied the alias spine, so the generator no longer
+    // accepts a legacy `--edition ai-kit`: the input set is exactly the six canonical bundles now.
+    for (const legacy of ["ai-kit", "local-ai", "agent-dev", "bundle"]) {
+      expect(() =>
+        validateSelection(INDEX, { ...BASE, edition: legacy }),
+      ).toThrow();
     }
   });
 

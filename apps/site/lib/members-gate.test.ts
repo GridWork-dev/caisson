@@ -104,14 +104,17 @@ describe("accountHoldsOrgControls — deny/allow matrix", () => {
     expect(await accountHoldsOrgControls(db, "acct_a")).toBe(true);
   });
 
-  test("ALLOW: a legacy 'bundle' grant resolves through the alias point", async () => {
+  test("DENY: an undrained legacy 'bundle' grant no longer resolves (ADR-0270)", async () => {
+    // The dissolved-edition aliases were purged (ADR-0270): legacy rows are drained to canonical
+    // ids at deploy behind a prove-empty gate, so a raw 'bundle' row surviving in the DB is an
+    // operational error — the gate under-grants (fail-closed), never silently expands it.
     const db = await freshDb();
     await seedGrant({
       accountId: "acct_a",
       entitlementId: "bundle",
       status: "active",
     });
-    expect(await accountHoldsOrgControls(db, "acct_a")).toBe(true);
+    expect(await accountHoldsOrgControls(db, "acct_a")).toBe(false);
   });
 
   test("DENY: a REVOKED everything grant does not count", async () => {

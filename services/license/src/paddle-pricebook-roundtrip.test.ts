@@ -45,12 +45,23 @@ function subscriptionTransactionCompleted(
 }
 
 describe("REAL Paddle one-time price ids round-trip (parsePaddleEvent -> resolvePurchase)", () => {
+  // ADR-0270 repointed the four archived-edition + bundle-sentinel rows to canonical bundle ids —
+  // a historical sandbox replay now resolves the CANONICAL id, never a dissolved edition id.
   const oneTimeCases: Array<{ priceId: string; entitlements: string[] }> = [
     { priceId: "pri_01kwd76be2eq96kff5nqw236c0", entitlements: ["compliance"] },
-    { priceId: "pri_01kwd76bp60acq51mftvpgr42k", entitlements: ["bundle"] },
-    { priceId: "pri_01kwd76c1pgs2csxcj2n0y7vv0", entitlements: ["ai-kit"] },
-    { priceId: "pri_01kwd76cahy825m14334aqf209", entitlements: ["local-ai"] },
-    { priceId: "pri_01kwd76ck3w8myy4p4f1gj0dcy", entitlements: ["agent-dev"] },
+    { priceId: "pri_01kwd76bp60acq51mftvpgr42k", entitlements: ["everything"] },
+    {
+      priceId: "pri_01kwd76c1pgs2csxcj2n0y7vv0",
+      entitlements: ["ai-production"],
+    },
+    {
+      priceId: "pri_01kwd76cahy825m14334aqf209",
+      entitlements: ["local-first"],
+    },
+    {
+      priceId: "pri_01kwd76ck3w8myy4p4f1gj0dcy",
+      entitlements: ["agentic-dev"],
+    },
   ];
 
   for (const { priceId, entitlements } of oneTimeCases) {

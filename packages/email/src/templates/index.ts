@@ -27,6 +27,10 @@ import {
   type RenewalConfirmationData,
   type RenewalConfirmationLine,
 } from "./renewal-confirmation.tsx";
+import {
+  SubscriptionPaymentEmail,
+  subscriptionPaymentSubject,
+} from "./subscription-payment.tsx";
 import { VerifyEmailEmail, VERIFY_EMAIL_SUBJECT } from "./verify-email.tsx";
 
 export type EmailTemplateId =
@@ -35,6 +39,7 @@ export type EmailTemplateId =
   | "verify-email"
   | "credits-expiring"
   | "purchase-confirmation"
+  | "subscription-payment-received"
   | "renewal-confirmation";
 
 export interface EmailTemplateData {
@@ -56,6 +61,9 @@ export interface TemplateDataMap {
   "verify-email": EmailTemplateData;
   "credits-expiring": CreditsExpiringData;
   "purchase-confirmation": PurchaseConfirmationData;
+  // A subscription-cycle receipt shares the purchase-confirmation prop shape — only
+  // the copy differs.
+  "subscription-payment-received": PurchaseConfirmationData;
   "renewal-confirmation": RenewalConfirmationData;
 }
 
@@ -194,6 +202,12 @@ const TEMPLATES: { [K in EmailTemplateId]: TemplateEntry<K> } = {
     Component: PurchaseConfirmationEmail,
     coerce: coercePurchaseConfirmation,
   },
+  "subscription-payment-received": {
+    subject: subscriptionPaymentSubject,
+    Component: SubscriptionPaymentEmail,
+    // Same data shape as the purchase receipt — reuse its coercer.
+    coerce: coercePurchaseConfirmation,
+  },
   "renewal-confirmation": {
     subject: renewalConfirmationSubject,
     Component: RenewalConfirmationEmail,
@@ -208,6 +222,7 @@ export const EMAIL_TEMPLATE_IDS: readonly EmailTemplateId[] = [
   "verify-email",
   "credits-expiring",
   "purchase-confirmation",
+  "subscription-payment-received",
   "renewal-confirmation",
 ];
 

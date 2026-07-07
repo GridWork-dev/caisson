@@ -1089,6 +1089,7 @@
       "version": "0.0.6",
       "dependencies": {
         "@caisson/license-verify": "workspace:*",
+        "@caisson/pricebook": "workspace:*",
         "@caisson/registry-schema": "workspace:*",
         "zod": "catalog:",
       },

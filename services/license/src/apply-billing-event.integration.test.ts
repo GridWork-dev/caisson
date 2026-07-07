@@ -5,7 +5,27 @@
 // cancel never claws back. Each test uses its own account id so no cross-test cleanup is needed.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { ConfigError, asCredits } from "@caisson/kernel";
+import { LEGACY_ENTITLEMENT_ALIASES } from "@caisson/registry-schema";
 import { type TestPg, newTestPg } from "@caisson/testing";
+
+/**
+ * Run `body` with a temporary MODULE-RENAME alias installed in the shared spine (ADR-0270 narrowed the
+ * production spine to empty; the renewal read-back fold must survive for the NEXT rename). Injects
+ * `old → current`, then restores — the surviving-alias stand-in the dissolved edition ids used to be.
+ */
+async function withRenameAlias(
+  old: string,
+  current: string,
+  body: () => Promise<void>,
+): Promise<void> {
+  const spine = LEGACY_ENTITLEMENT_ALIASES as Map<string, string>;
+  spine.set(old, current);
+  try {
+    await body();
+  } finally {
+    spine.delete(old);
+  }
+}
 import {
   CREDIT_LINE_ITEM_MIGRATION_SQL,
   CREDIT_EXPIRY_MIGRATION_SQL,
@@ -24,6 +44,7 @@ import {
   computeUpdatesWindows,
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
+  RENEWAL_EXTENSION_SCHEMA_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   grantEntitlements,
   readEntitlements,
@@ -137,6 +158,7 @@ beforeAll(async () => {
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
+  await tp.exec(RENEWAL_EXTENSION_SCHEMA_SQL);
 });
 
 afterAll(async () => {
@@ -1253,37 +1275,41 @@ describe("applyBillingEvent — updates-renewal lines (ADR-0244/0251)", () => {
     ]);
   });
 
-  test("a renewal against a LEGACY-keyed grant row still surfaces renewedEntitlements (alias fold)", async () => {
+  test("a renewal against an OLD-rename-keyed grant row still surfaces renewedEntitlements (alias fold)", async () => {
     const acct = "acct_renewal_legacy";
-    // A pre-ADR-0257 buyer: the grant row stores the LEGACY id (`ai-kit`), while the RENEWAL_BOOK
-    // resolves its renewal price to the canonical `ai-production`. The extension matches via the
-    // alias group; the email-surfacing read-back must fold the same group or the notice silently
-    // drops (windows keys by the RAW stored id — the fable-audit F2 regression).
-    await withTenant(tp.pg, acct, (tx) =>
-      grantEntitlements(tx, {
-        accountId: acct,
-        entitlementIds: ["ai-kit"],
-        sourceEventId: "pay_legacy_base",
-        source: { kind: "one_time", purchaseId: "pay_legacy_base" },
-      }),
-    );
+    // A pre-rename buyer: the grant row stores the OLD module slug, while the renewal price resolves to
+    // the CURRENT canonical id (`ai-production`). ADR-0270 emptied the edition spine, so this exercises
+    // the fold against a surviving-alias STAND-IN (`ai-production-old → ai-production`) — the shape the
+    // next module rename takes. The extension matches via the alias group; the email-surfacing read-back
+    // must fold the same group or the notice silently drops (windows key by the RAW stored id — the
+    // fable-audit F2 regression).
+    await withRenameAlias("ai-production-old", "ai-production", async () => {
+      await withTenant(tp.pg, acct, (tx) =>
+        grantEntitlements(tx, {
+          accountId: acct,
+          entitlementIds: ["ai-production-old"],
+          sourceEventId: "pay_legacy_base",
+          source: { kind: "one_time", purchaseId: "pay_legacy_base" },
+        }),
+      );
 
-    const effect = await withTenant(tp.pg, acct, (tx) =>
-      applyBillingEvent(
-        tx,
-        purchaseCompleted(acct, "pay_legacy_ren", RENEWAL_AI_PRODUCTION_ID),
-      ),
-    );
+      const effect = await withTenant(tp.pg, acct, (tx) =>
+        applyBillingEvent(
+          tx,
+          purchaseCompleted(acct, "pay_legacy_ren", RENEWAL_AI_PRODUCTION_ID),
+        ),
+      );
 
-    const windows = await withTenant(tp.pg, acct, (tx) =>
-      computeUpdatesWindows(tx, acct),
-    );
-    const newWindowEnd = windows["ai-kit"]; // keyed by the raw stored id
-    if (newWindowEnd === undefined)
-      throw new Error("expected a computed window on the legacy row");
-    expect(effect.renewedEntitlements).toEqual([
-      { entitlementId: "ai-production", newWindowEnd },
-    ]);
+      const windows = await withTenant(tp.pg, acct, (tx) =>
+        computeUpdatesWindows(tx, acct),
+      );
+      const newWindowEnd = windows["ai-production-old"]; // keyed by the raw stored id
+      if (newWindowEnd === undefined)
+        throw new Error("expected a computed window on the old-spelling row");
+      expect(effect.renewedEntitlements).toEqual([
+        { entitlementId: "ai-production", newWindowEnd },
+      ]);
+    });
   });
 
   test("a renewal WITHOUT an active grant THROWS (fail-closed — never mints a grant)", async () => {
@@ -1302,6 +1328,108 @@ describe("applyBillingEvent — updates-renewal lines (ADR-0244/0251)", () => {
       [acct],
     );
     expect((rows[0] as { n: number }).n).toBe(0);
+  });
+
+  test("refunding a renewal transaction UN-EXTENDS the window back to the original purchase window (ADR-0251 Consequences)", async () => {
+    const acct = "acct_renewal_refund";
+    // Original one-time compliance buy, window pinned for a deterministic baseline (2027-01-05).
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pay_rf_base", ONETIME_EDITION_ID),
+      ),
+    );
+    await tp.query(
+      `UPDATE entitlement_grant SET granted_at = $2 WHERE account_id = $1`,
+      [acct, "2026-01-05T00:00:00.000Z"],
+    );
+    // Renewal (its own transaction) extends the window +12 months.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pay_rf_ren", RENEWAL_COMPLIANCE_ID),
+      ),
+    );
+    expect(
+      (await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)))
+        .compliance,
+    ).toBe("2028-01-05T00:00:00.000Z");
+
+    // Refund the RENEWAL transaction (its paymentId). It granted no entitlement/credits, so the
+    // revoke/claw are no-ops — the un-extend is the whole effect. The ORIGINAL grant stays active.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, refundCompleted(acct, "pay_rf_ren", true)),
+    );
+    expect(
+      (await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)))
+        .compliance,
+    ).toBe("2027-01-05T00:00:00.000Z"); // back to the original purchase window, never below it
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]); // the original purchase is untouched — buyer keeps the module
+
+    // A REDELIVERED refund (distinct event id, same payment) never double-shrinks (idempotent latch).
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, {
+        ...refundCompleted(acct, "pay_rf_ren", true),
+        sourceEventId: "evt_refund_pay_rf_ren_again",
+      }),
+    );
+    expect(
+      (await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)))
+        .compliance,
+    ).toBe("2027-01-05T00:00:00.000Z");
+  });
+
+  test("a per-line refund of a mixed cart's renewal line un-extends ONLY that renewal (sibling purchase line untouched)", async () => {
+    const acct = "acct_renewal_refund_line";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pay_rfl_base", ONETIME_EDITION_ID),
+      ),
+    );
+    await tp.query(
+      `UPDATE entitlement_grant SET granted_at = $2
+        WHERE account_id = $1 AND entitlement_id = 'compliance'`,
+      [acct, "2026-01-05T00:00:00.000Z"],
+    );
+    // Mixed cart: a module purchase line + a compliance-renewal line.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompletedMulti(acct, "pay_rfl_mix", [
+          { priceId: MODULE_ID, quantity: 1, itemId: "txnitm_mod" },
+          {
+            priceId: RENEWAL_COMPLIANCE_ID,
+            quantity: 1,
+            itemId: "txnitm_ren",
+          },
+        ]),
+      ),
+    );
+    expect(
+      (await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)))
+        .compliance,
+    ).toBe("2028-01-05T00:00:00.000Z");
+
+    // Per-line FULL refund of ONLY the renewal line → un-extend compliance; field-crypto stays.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        refundPerLine(acct, "pay_rfl_mix", "adj_rfl", [
+          { itemId: "txnitm_ren", amountRefunded: 0, fullyRefunded: true },
+        ]),
+      ),
+    );
+    expect(
+      (await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)))
+        .compliance,
+    ).toBe("2027-01-05T00:00:00.000Z");
+    // The purchased module line is unaffected — still entitled.
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance", "field-crypto"]);
   });
 });
 

@@ -18,10 +18,10 @@ describe("RENEWAL_BOOK (ADR-0251)", () => {
     });
   });
 
-  test("a legacy edition renewal row resolves to its canonical bundle id (alias-normalized)", () => {
-    // ai-kit → ai-production, local-ai → local-first, agent-dev → agentic-dev, bundle → everything:
-    // the single alias point expandEntitlements uses, applied on the renewal lookup so a legacy row
-    // keeps resolving to the id the catalog + grants converge on (ADR-0257).
+  test("the four repointed bundle renewal rows resolve to their canonical id (ADR-0270 repoint)", () => {
+    // These rows were REPOINTED from the dissolved edition ids to canonical bundle ids by the ADR-0270
+    // edition-trace purge, so they store — and resolveRenewal returns — the canonical id directly (no
+    // alias normalization; the spine is empty). The id the catalog + grants converge on.
     expect(
       resolveRenewal("pri_01kwvz6m46s5tj4k2a09kcaf9s").renewsEntitlement,
     ).toBe("ai-production");
@@ -36,13 +36,13 @@ describe("RENEWAL_BOOK (ADR-0251)", () => {
     ).toBe("everything");
   });
 
-  test("a module renewal row and a canonical bundle-id row pass through unchanged (identity alias)", () => {
-    // A bare module slug is not a legacy edition alias — it resolves to itself.
+  test("a module renewal row and a canonical bundle-id row resolve to their stored id verbatim", () => {
+    // resolveRenewal returns the stored `renewsEntitlement` as-is (ADR-0270 dropped the normalize step).
+    // A bare module slug resolves to itself.
     expect(
       resolveRenewal("pri_01kwvz6mf22rqfrx6reh4b88sm").renewsEntitlement,
     ).toBe("field-crypto");
-    // A row already written in the new bundle vocabulary (as W7's net-new rows will be) is identity —
-    // normalization never double-maps a canonical id.
+    // A canonical bundle-id row (every row post-ADR-0270) resolves to that id verbatim.
     const newIdBook = {
       pri_01test000000000000000000new: { renewsEntitlement: "provenance" },
     };
