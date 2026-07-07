@@ -44,7 +44,7 @@ export interface MarketingRoute {
 export const MARKETING_ROUTES: readonly MarketingRoute[] = [
   { path: "", label: "Home", priority: 1.0, changeFrequency: "weekly", group: "home" }, // prettier-ignore
   { path: "/compliance", label: "Compliance", priority: 0.9, changeFrequency: "weekly", group: "edition", nav: true, footer: "editions" }, // prettier-ignore
-  { path: "/ai-kit", label: "AI Production Kit", priority: 0.9, changeFrequency: "weekly", group: "edition", nav: true, footer: "editions" }, // prettier-ignore
+  { path: "/ai-kit", label: "AI-Production", priority: 0.9, changeFrequency: "weekly", group: "edition", nav: true, footer: "editions" }, // prettier-ignore
   { path: "/local-first", label: "Local-first AI", navLabel: "Local-first", priority: 0.9, changeFrequency: "weekly", group: "edition", nav: true, footer: "editions" }, // prettier-ignore
   { path: "/agentic-dev", label: "Agentic-Dev", priority: 0.9, changeFrequency: "weekly", group: "edition", nav: true, footer: "editions" }, // prettier-ignore
   { path: "/provenance", label: "Provenance", priority: 0.9, changeFrequency: "weekly", group: "edition", footer: "editions" }, // prettier-ignore
@@ -55,7 +55,7 @@ export const MARKETING_ROUTES: readonly MarketingRoute[] = [
   { path: "/glossary", label: "Glossary", priority: 0.7, changeFrequency: "weekly", group: "product", footer: "resources" }, // prettier-ignore
   { path: "/build-vs-buy", label: "Build vs buy", priority: 0.75, changeFrequency: "weekly", group: "product" }, // prettier-ignore
   { path: "/security", label: "Security", priority: 0.75, changeFrequency: "weekly", group: "trust", footer: "resources" }, // prettier-ignore
-  { path: "/changelog", label: "Changelog", priority: 0.7, changeFrequency: "weekly", group: "trust", footer: "resources" }, // prettier-ignore
+  { path: "/updates", label: "Updates", priority: 0.7, changeFrequency: "weekly", group: "trust", footer: "resources" }, // prettier-ignore
   { path: "/procurement", label: "Security & procurement", priority: 0.7, changeFrequency: "weekly", group: "trust", footer: "resources" }, // prettier-ignore
   { path: "/frameworks/eu-ai-act", label: "EU AI Act", priority: 0.75, changeFrequency: "weekly", group: "framework" }, // prettier-ignore
   { path: "/legal/privacy", label: "Privacy policy", priority: 0.4, changeFrequency: "weekly", group: "legal", footer: "legal" }, // prettier-ignore
