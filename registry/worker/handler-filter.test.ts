@@ -358,21 +358,24 @@ describe("Worker delivers an edition's COMMERCIAL members via the sentinel — r
   test("an ai-production bundle delivers its metered members (ai-meter, guardrails, prompt-registry)", async () => {
     const served = await ids(realHandlerFor(["ai-production"])(req("/")));
     for (const id of [
-      "@caisson/ai-kit",
       "@caisson/ai-meter",
       "@caisson/guardrails",
       "@caisson/prompt-registry",
     ]) {
       expect(served).toContain(id);
     }
+    // The delisted edition meta contributes no served entry (ADR-0271); the bundle's own members
+    // map carries every real member (delist-equality proof, 2026-07-07).
+    expect(served).not.toContain("@caisson/ai-kit");
   });
 
-  test("a purged legacy 'ai-kit' purchase id under-grants to the meta-package only (ADR-0270)", async () => {
-    // The dissolved edition purchase id no longer aliases to its bundle; it still resolves as the
-    // indexed meta-package it names (served forever, append-only ledger) but never expands to the
-    // former bundle's members — under-grant, never over-grant.
+  test("a purged legacy 'ai-kit' purchase id degrades to the free base floor (ADR-0270 + 0271)", async () => {
+    // ADR-0270 purged the alias (no bundle expansion) and ADR-0271 delisted the meta-package
+    // itself (no index entry left to resolve). The id now fail-safes to the anonymous base floor,
+    // exactly like the purged legacy 'bundle' id — under-grant, never over-grant.
     const served = await ids(realHandlerFor(["ai-kit"])(req("/")));
-    expect(served).toContain("@caisson/ai-kit");
+    expect(served).toContain("@caisson/kernel"); // the free floor still serves
+    expect(served).not.toContain("@caisson/ai-kit");
     expect(served).not.toContain("@caisson/ai-meter");
     expect(served).not.toContain("@caisson/guardrails");
   });
