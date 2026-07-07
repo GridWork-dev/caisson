@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-07
 status: live
-adr_ceiling: 0282
+adr_ceiling: 0284
 ---
 
 # Decisions & Forks — live board
@@ -1525,3 +1525,22 @@ operator-owned) — awaiting operator text approval.
   Tier-1 catalog/copy remainder); **version cut = DEFERRED to the next release wave** (the
   #142 changeset skew self-reconciles at that cut). Six builders dispatched in parallel
   worktrees; Track E2 sequenced AFTER Track V merges (fable on the seam).
+
+**Sixth sitting (same day — admin incident + reposition picker):**
+
+- **admin.caisson.sh 502 ROOT-CAUSED + FIXED LIVE:** the `HOSTNAME=0.0.0.0` Railway
+  variable had been lost — Next standalone bound to the container hostname, Railway's
+  proxy got refused, and the CF-Access 302 masked the origin failure from unauthenticated
+  probes. Variable restored + admin redeployed (log now shows `Network: http://0.0.0.0:8080`);
+  the durable fix (ENV in `apps/admin/Dockerfile` + `CAISSON_REGISTRY_INDEX_PATH`) rides
+  the comp-grant PR.
+- **Admin auth reposition — LOCKED as ADR-0283** (operator: GitHub sign-in, gridwork-dev):
+  in-app GitHub OAuth via better-auth replaces CF-Access on `admin.caisson.sh`; allowlist
+  pins the gridwork-dev GitHub NUMERIC user id; fail-closed middleware; flip order is
+  code-live-first, gate-drop-second. `security`/`auth` tags → fable at SHIP.
+- **Unified catalog + email consolidation — LOCKED as ADR-0284:** one shared component-demo
+  registry feeding both the site `/ui` page and a FULL admin catalog (34 base + 11 pro
+  components + all email templates with sample-data previews and send-test); the two
+  plain-HTML growth emails migrate into `packages/email`; aggressive graduation of site
+  compositions into ui-pro REJECTED this wave. Builds queue behind the current merge wave
+  (they read kit stage-2 + the merged admin tree).
