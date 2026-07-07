@@ -124,6 +124,26 @@ describe("registry index builder (ADR-0021/0047)", () => {
     ).toThrow(/line 2/);
   });
 
+  test("a delist reason over 500 chars is rejected (bound, not free-text)", () => {
+    expect(() =>
+      parseLedgerLines(
+        jsonl(pub("@caisson/gone", "0.1.0"), {
+          ...delist("@caisson/gone"),
+          reason: "x".repeat(501),
+        }),
+      ),
+    ).toThrow(/line 2/);
+    // Exactly at the bound is still valid.
+    expect(() =>
+      parseLedgerLines(
+        jsonl(pub("@caisson/gone", "0.1.0"), {
+          ...delist("@caisson/gone"),
+          reason: "x".repeat(500),
+        }),
+      ),
+    ).not.toThrow();
+  });
+
   test("buildIndex picks the highest semver as latest and sorts modules by id", () => {
     const mk = (id: string, version: string) => ({
       id,

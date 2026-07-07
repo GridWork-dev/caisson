@@ -217,6 +217,42 @@ describe("backfill driver (ADR-0021/0069)", () => {
       expect(called).toBe(false);
     });
 
+    test("a delisted id (ADR-0271) is skipped even when absent from the allowlist", async () => {
+      // A delisted module still has a workspace manifest (append-only ledger), but a revived
+      // backfill must never publish it again — parseLedgerLines throws on the next rebuild if a
+      // publish line follows a delist line for the same id.
+      const kernel = mk("@caisson/kernel", []);
+      const gone = mk("@caisson/gone", []);
+      const published: string[] = [];
+      const publish: PublisherFn = (m) => {
+        published.push(m.id);
+      };
+      const ledgerText = [
+        JSON.stringify({
+          id: "@caisson/gone",
+          version: gone.version,
+          manifest: gone,
+          publishedAt: "2026-01-01T00:00:00.000Z",
+          gateAttestation: "ci-0001@deadbee",
+        }),
+        JSON.stringify({
+          op: "delist",
+          id: "@caisson/gone",
+          delistedAt: "2026-01-02T00:00:00.000Z",
+          reason: "test delist",
+        }),
+      ].join("\n");
+
+      await backfill({
+        manifests: [gone, kernel],
+        allowlist: new Set(),
+        publish,
+        ledgerText,
+      });
+
+      expect(published).toEqual(["@caisson/kernel"]);
+    });
+
     test("async publisher is awaited before the next call", async () => {
       // Verify sequential ordering even when publish returns a Promise.
       const a = mk("@caisson/a-module", []);

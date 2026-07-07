@@ -253,6 +253,36 @@ describe("ci-publish-step (ADR-0021/0069)", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  test("dry-run: delisted ids (ADR-0271) count separately from skippedExisting", async () => {
+    // The real committed ledger carries delist lines for @caisson/ai-kit/local-ai/agent-dev, and
+    // their manifest.ts files still exist on disk (append-only — a delist removes only the index
+    // entry, never the workspace package). Scanning the REAL packagesDir against the REAL ledger
+    // exercises the split without any synthetic fixture.
+    const dir = tmpDir("skip-delisted");
+    const ledgerPath = join(dir, "ledger.jsonl");
+    const indexPath = join(dir, "index.json");
+    try {
+      const committedLedger = readFileSync(LEDGER_PATH, "utf8");
+      writeFileSync(ledgerPath, committedLedger);
+      writeFileSync(indexPath, readFileSync(INDEX_PATH, "utf8"));
+
+      const result = await runPublishStep({
+        runId: "ci-test-skip-delisted",
+        sha: "aa11bb22cc33dd44",
+        publishedAt: "2026-07-07T00:00:00.000Z",
+        dryRun: true,
+        ledgerPath,
+        indexPath,
+      });
+
+      // The 3 dissolved edition metas are delisted, not "already published".
+      expect(result.skippedDelisted).toBe(3);
+      expect(result.appended).toBe(0);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------

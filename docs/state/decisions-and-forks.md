@@ -1381,7 +1381,10 @@ latent red).
 
 - **Bundle-only index republish → LOCKED "now"** (ADR-0271): delist the 3 edition
   meta-package entries at a dedicated republish + Worker redeploy, not folded into a later
-  rebuild. Ledger append-only; tarballs serve forever.
+  rebuild. Ledger append-only; tarball bytes stay R2-retained, but a delisted id returns 401/404 (never 200)
+  through the gated npm surface (`npm-routes.ts` resolves every GET against `index.json`
+  membership) — "serve forever" means retained-in-R2, not reachable; doc-accuracy
+  correction, P2 pack, 2026-07-07.
 - **Paddle production catalog timing → after the D2/D3 quant picker.** The production
   ACCOUNT application proceeds independently; recreation is scripted and waits for the
   Cookiy quant fills (frame 19/60, VW 10/60 at lock time).

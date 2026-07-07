@@ -40,7 +40,7 @@ export const DelistEntry = z
     op: z.literal("delist"),
     id: z.string().regex(MODULE_ID_RE),
     delistedAt: z.string().datetime(),
-    reason: z.string().min(1),
+    reason: z.string().min(1).max(500),
   })
   .strict();
 export type DelistEntry = z.infer<typeof DelistEntry>;
