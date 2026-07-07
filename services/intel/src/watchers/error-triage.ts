@@ -34,22 +34,37 @@ export function severityForCount(count: number): Severity {
   return "info";
 }
 
+// group.fingerprint and group.name are buyer/attacker-influenced strings (a raw exception
+// message can echo whatever the request that triggered it contained) — every one of them is
+// bounded before it reaches dedupKey()/the finding body. An unbounded input here is exactly what
+// makes parseFinding's strict length caps (finding.ts: body ≤10,000, dedupKey ≤300) throw, and a
+// thrown parseFinding used to abort the WHOLE persist batch (fixed independently in scheduler.ts —
+// this bound and that resilience are complementary, not substitutes for each other).
+const MAX_FINGERPRINT_CHARS = 200;
+const MAX_ERROR_BODY_CHARS = 5_000;
+
 /** Stable finding for a group at its current magnitude — a spike into a new magnitude is a new row. */
 export function errorGroupToFinding(group: ErrorGroup): Finding {
+  const fingerprint = group.fingerprint.slice(0, MAX_FINGERPRINT_CHARS);
   const key = dedupKey(
     "error",
-    group.fingerprint,
+    fingerprint,
     `mag${String(magnitude(group.occurrences))}`,
   );
+  const body =
+    `Error group "${group.name}" has ${String(group.occurrences)} occurrences.${group.url !== undefined ? ` ${group.url}` : ""}`.slice(
+      0,
+      MAX_ERROR_BODY_CHARS,
+    );
   return {
     source: "error",
     kind: "error_group",
     severity: severityForCount(group.occurrences),
     title: `Error: ${group.name}`.slice(0, 300),
-    body: `Error group "${group.name}" has ${String(group.occurrences)} occurrences.${group.url !== undefined ? ` ${group.url}` : ""}`,
+    body,
     dedupKey: key,
     payload: {
-      fingerprint: group.fingerprint,
+      fingerprint,
       occurrences: group.occurrences,
       ...(group.url !== undefined ? { url: group.url } : {}),
     },
@@ -67,7 +82,10 @@ export function errorGroupToAlertEvent(
     severity: finding.severity,
     tenantId: "operator",
     recipient: "operator",
-    dedupeKey: finding.dedupKey,
+    // finding.dedupKey can be up to 300 chars (finding.ts); AlertEventSchema.dedupeKey caps at
+    // 200 (@caisson/alerting) — slice defensively so a long-but-legal finding key never trips
+    // that schema's own strict parse.
+    dedupeKey: finding.dedupKey.slice(0, 200),
     title: finding.title.slice(0, 200),
     body: finding.body.slice(0, 5000),
     createdAt: nowMs,
@@ -94,7 +112,11 @@ export async function triageErrors(
   const openIncidents: OpenIncident[] = (
     await deps.store.openIncidentKeys("error", nowMs - DEDUP_WINDOW_MS)
   ).map((dedupeKey) => ({ dedupeKey }));
-  let delivered = await deps.store.countNewFindings(
+  // Seeds the rate-cap counter from NEW findings (first_seen in-window), not literal alert
+  // deliveries — a finding persists even when its alert was held (quiet hours) or suppressed
+  // (dedup), so this over-approximates the true send count. Fail-safe direction only: it can
+  // only make the cap trip EARLIER (more conservative, biasing toward digest), never later.
+  let deliveredCount = await deps.store.countNewFindings(
     "error",
     nowMs - RATE_WINDOW_MS,
   );
@@ -103,11 +125,10 @@ export async function triageErrors(
 
   for (const group of groups) {
     const finding = errorGroupToFinding(group);
-    findings.push(finding);
     const event = errorGroupToAlertEvent(group, finding, nowMs);
     const result = await processAlert(event, {
       openIncidents,
-      recentCount: delivered,
+      recentCount: deliveredCount,
       ratePolicy: deps.ratePolicy,
       recipientTz: deps.recipientTz,
       quietPolicy: deps.quietPolicy,
@@ -115,8 +136,16 @@ export async function triageErrors(
       channels: deps.channels,
       auditSink,
     });
-    if (result.outcome === "delivered") {
-      delivered += 1;
+    const wasDelivered = result.outcome === "delivered";
+    // `delivered` rides in payload (jsonb, not schema-locked) rather than a new Finding field —
+    // it's the signal the scheduler's enrichment gate uses to skip an LLM call on a re-observed,
+    // not-freshly-alerted group (armed-seam correctness: no token on a non-change).
+    findings.push({
+      ...finding,
+      payload: { ...finding.payload, delivered: wasDelivered },
+    });
+    if (wasDelivered) {
+      deliveredCount += 1;
       openIncidents.push({ dedupeKey: event.dedupeKey });
     }
   }
