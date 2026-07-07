@@ -35,6 +35,15 @@
  */
 import assert from "node:assert/strict";
 
+// Root tools/ scripts are linted by the root eslint pass (no-console); match the
+// tooling/scripts/sot-check.ts convention of writing straight to stdio.
+function out(...parts: unknown[]): void {
+  process.stdout.write(parts.map(String).join(" ") + "\n");
+}
+function errOut(...parts: unknown[]): void {
+  process.stderr.write(parts.map(String).join(" ") + "\n");
+}
+
 import {
   BUNDLE_PRICES,
   MODULE_PRICES,
@@ -315,10 +324,8 @@ function fmtUsd(cents: number): string {
 
 function printPlan(plan: PlanProduct[]): void {
   const priceCount = plan.reduce((n, p) => n + p.prices.length, 0);
-  console.log(`\nCaisson → Paddle catalog plan   [env: ${paddleEnv()}]`);
-  console.log(
-    `${plan.length} products (tax_category=saas), ${priceCount} prices\n`,
-  );
+  out(`\nCaisson → Paddle catalog plan   [env: ${paddleEnv()}]`);
+  out(`${plan.length} products (tax_category=saas), ${priceCount} prices\n`);
   const groups: Record<ProductKind, string> = {
     bundle: "BUNDLES",
     module: "MODULES",
@@ -333,33 +340,31 @@ function printPlan(plan: PlanProduct[]): void {
   ] as ProductKind[]) {
     const rows = plan.filter((p) => p.kind === kind);
     if (rows.length === 0) continue;
-    console.log(`${groups[kind]}`);
+    out(`${groups[kind]}`);
     for (const prod of rows) {
-      console.log(`  ${prod.name}  [caisson_id=${prod.caissonId}]`);
+      out(`  ${prod.name}  [caisson_id=${prod.caissonId}]`);
       for (const pr of prod.prices) {
         const cadence = pr.billingInterval
           ? `/${pr.billingInterval}`
           : "one-time";
-        console.log(
+        out(
           `      ${pr.key.padEnd(26)} ${fmtUsd(pr.amountCents).padStart(11)}${cadence === "one-time" ? "  one-time" : cadence.padStart(10)}  (${pr.amountCents})`,
         );
       }
     }
-    console.log("");
+    out("");
   }
-  console.log(
+  out(
     "Dry run — nothing created. Re-run with --execute (PADDLE_API_KEY set) to create.",
   );
-  console.log(
+  out(
     "Idempotent: existing products/prices are matched by custom_data and skipped.\n",
   );
 }
 
 async function execute(plan: PlanProduct[]): Promise<void> {
   const apiKey = requireApiKey();
-  console.log(
-    `\nExecuting against Paddle [${paddleEnv()}] — ${paddleBase()}\n`,
-  );
+  out(`\nExecuting against Paddle [${paddleEnv()}] — ${paddleBase()}\n`);
   const existing = await listExistingProducts(apiKey);
   let createdProducts = 0;
   let createdPrices = 0;
@@ -368,24 +373,24 @@ async function execute(plan: PlanProduct[]): Promise<void> {
     let productId: string;
     if (found) {
       productId = found.id;
-      console.log(`skip product   ${prod.caissonId} (${productId})`);
+      out(`skip product   ${prod.caissonId} (${productId})`);
     } else {
       productId = await createProduct(apiKey, prod);
       createdProducts += 1;
-      console.log(`create product ${prod.caissonId} (${productId})`);
+      out(`create product ${prod.caissonId} (${productId})`);
     }
     const haveKeys = existingPriceKeys(found);
     for (const price of prod.prices) {
       if (haveKeys.has(price.key)) {
-        console.log(`  skip price   ${price.key}`);
+        out(`  skip price   ${price.key}`);
         continue;
       }
       await createPrice(apiKey, productId, price);
       createdPrices += 1;
-      console.log(`  create price ${price.key}  ${fmtUsd(price.amountCents)}`);
+      out(`  create price ${price.key}  ${fmtUsd(price.amountCents)}`);
     }
   }
-  console.log(
+  out(
     `\nDone. Created ${createdProducts} products, ${createdPrices} prices (existing were skipped).\n`,
   );
 }
@@ -446,7 +451,7 @@ function selfCheck(): void {
   );
   assert.equal(subCents("developer"), 49900, "developer = $499/yr");
 
-  console.log(
+  out(
     "self-check OK — 31 products, money math pinned to the runbook §2.2 catalog.",
   );
 }
@@ -467,7 +472,7 @@ async function main(): Promise<void> {
 
 if (import.meta.main) {
   main().catch((err: unknown) => {
-    console.error(err instanceof Error ? err.message : String(err));
+    errOut(err instanceof Error ? err.message : String(err));
     process.exit(1);
   });
 }
