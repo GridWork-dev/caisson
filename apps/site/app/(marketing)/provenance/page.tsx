@@ -197,7 +197,7 @@ export default function ProvenancePage() {
         lede={record.hero.lede}
         ctas={
           <>
-            <Button href="/marketplace#bundles" variant="primary">
+            <Button href="/marketplace?type=bundles" variant="primary">
               See the bundles
             </Button>
             <Button href="/docs" variant="ghost">
@@ -384,7 +384,7 @@ export default function ProvenancePage() {
               the framework mappings.
             </p>
             <div className="cs-cta-row">
-              <Button href="/marketplace/modules" variant="primary">
+              <Button href="/marketplace?type=modules" variant="primary">
                 Browse the modules
               </Button>
               <Button href="/compliance" variant="ghost">

@@ -199,7 +199,7 @@ export default function StackFitPage() {
             retention-runner needs Postgres transitively — it schedules through
             the pg-boss job queue.{" "}
             <Link
-              href="/marketplace/modules"
+              href="/marketplace?type=modules"
               style={{ color: "var(--cs-link)" }}
             >
               Browse every module

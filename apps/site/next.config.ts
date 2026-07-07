@@ -23,22 +23,27 @@ const config: NextConfig = {
   // @caisson/ui-pro is the same raw-.tsx-plus-co-located-.css delivery — the /ui showcase renders it.
   transpilePackages: ["@caisson/ui", "@caisson/brand", "@caisson/ui-pro"],
   turbopack: { root: monorepoRoot },
-  // ADR-0237 F1: the three old commerce routes fold into the /marketplace hub. Permanent 301s
-  // preserve SEO equity; the registry (lib/routes.ts), sitemap, nav, and footer emit only the
-  // canonical hub routes in the same change, so these are the ONLY surviving references to the
-  // old paths. Fragments survive redirects client-side (#editions still lands), but internal
-  // links are swept to the new paths directly.
+  // ADR-0237 F1 + ADR-0285: the commerce routes fold into the ONE /marketplace surface. The
+  // original /pricing · /modules · /build 301 there; the ADR-0285 rework additionally folds the
+  // former Modules + Build TABS (/marketplace/modules · /marketplace/build) into the same surface
+  // and re-points the old /modules · /build chains straight at /marketplace (no double hop). The
+  // module DEPTH pages (/marketplace/modules/<slug>) and Plans (/marketplace/plans) stay live and
+  // are unaffected — these sources match the exact tab paths only. The registry (lib/routes.ts),
+  // sitemap, nav, and footer emit only the surviving routes in the same change. Fragments survive
+  // redirects client-side; internal links are swept to the new paths directly.
   async redirects() {
     return [
       { source: "/pricing", destination: "/marketplace", permanent: true },
+      { source: "/modules", destination: "/marketplace", permanent: true },
+      { source: "/build", destination: "/marketplace", permanent: true },
       {
-        source: "/modules",
-        destination: "/marketplace/modules",
+        source: "/marketplace/modules",
+        destination: "/marketplace",
         permanent: true,
       },
       {
-        source: "/build",
-        destination: "/marketplace/build",
+        source: "/marketplace/build",
+        destination: "/marketplace",
         permanent: true,
       },
       // 2026-07-06 operator lock: /changelog absorbed into the dedicated /updates surface —

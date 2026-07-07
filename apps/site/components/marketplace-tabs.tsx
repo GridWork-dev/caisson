@@ -6,22 +6,21 @@ import { usePathname } from "next/navigation";
 import { MARKETPLACE_TAB_ROUTES } from "@/lib/routes";
 import styles from "./marketplace-tabs.module.css";
 
-// The /marketplace hub tab bar (ADR-0237 F1): four URL-addressable tabs derived from the route
-// registry. These are LINKS to sibling pages, not a same-page tab widget, so the correct a11y
-// shape is a nav landmark with aria-current="page" — role=tablist would promise arrow-key
-// same-page switching the pattern doesn't have (WCAG 2.2 AA floor, ADR-0194).
+// The /marketplace tab bar (ADR-0285): the unified Marketplace surface and the standalone Plans
+// page, derived from the route registry. These are LINKS to sibling pages, not a same-page tab
+// widget, so the correct a11y shape is a nav landmark with aria-current="page" — role=tablist would
+// promise arrow-key same-page switching the pattern doesn't have (WCAG 2.2 AA floor, ADR-0194).
 export function MarketplaceTabs() {
   const pathname = usePathname();
   return (
     <div className={styles.scrollFade}>
       <nav aria-label="Marketplace sections" className={styles.tabs}>
         {MARKETPLACE_TAB_ROUTES.map((r) => {
-          // The hub root is the Bundles tab; deeper tabs match on their own path.
+          // The surface root matches exactly; the Plans tab matches on its own path.
           const active =
             r.path === "/marketplace"
               ? pathname === "/marketplace"
               : pathname.startsWith(r.path);
-          const label = r.path === "/marketplace" ? "Bundles" : r.label;
           return (
             <Link
               key={r.path}
@@ -29,7 +28,7 @@ export function MarketplaceTabs() {
               className={styles.tab}
               aria-current={active ? "page" : undefined}
             >
-              {label}
+              {r.label}
             </Link>
           );
         })}

@@ -489,7 +489,7 @@ export default function MarketplacePlansPage() {
               marginTop: "var(--cs-space-6)",
             }}
           >
-            <Button href="/marketplace#bundles" variant="primary">
+            <Button href="/marketplace?type=bundles" variant="primary">
               See the bundles
             </Button>
             <Button href="/docs" variant="ghost">

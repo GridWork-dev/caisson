@@ -27,6 +27,48 @@
   cursor: pointer;
 }
 
+/* ==================== one-surface grid (ADR-0285) ==================== */
+/* Three zones: facets · the unified bundle+module results · the sticky cart-aware stack rail. */
+.surface {
+  display: grid;
+  grid-template-columns: 13rem minmax(0, 1fr) 21rem;
+  gap: var(--cs-space-8);
+  align-items: start;
+  margin-top: var(--cs-space-8);
+}
+
+.surfaceMain {
+  min-width: 0;
+}
+
+/* Collapse to a single column below the lg rung — facets + rail un-stick and stack. */
+@media (max-width: 68rem) {
+  .surface {
+    grid-template-columns: 1fr;
+    gap: var(--cs-space-6);
+  }
+  .surface .facets,
+  .surface .rail {
+    position: static;
+    top: auto;
+  }
+}
+
+/* The demo/media tag on a card — subtle, muted, mono. */
+.mediaTag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cs-space-1);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.mediaTag svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
 /* ======================= /modules catalog ======================= */
 .layout {
   display: grid;

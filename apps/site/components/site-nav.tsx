@@ -27,9 +27,9 @@ import styles from "./site-nav.module.css";
 
 // The Marketplace panel carries two card groups under one trigger: "Bundles" — the five
 // persona/Provenance bundle cards plus the whole-catalog Everything bundle — and "Marketplace" —
-// the remaining hub tabs (Modules, Build your stack, Plans). Every card resolves its price from
-// the bundle/plan anchor — no copy invented here. The /ai-kit route maps to the ai-production
-// bundle id.
+// the one unified surface, Plans, and the periphery (Compare, Stack fit, UI Pro). The former
+// Modules + Build tabs folded into the surface (ADR-0285). Every card resolves its price from the
+// bundle/plan anchor — no copy invented here. The /ai-kit route maps to the ai-production bundle id.
 const MARKETPLACE_PANEL: NavPanelSpec = {
   label: "Marketplace",
   lede: "One audited base. Six bundles, à la carte modules, or a stack you compose yourself.",
@@ -55,7 +55,7 @@ const MARKETPLACE_PANEL: NavPanelSpec = {
         (() => {
           const everything = bundlePriceById("everything");
           return {
-            href: "/marketplace#everything",
+            href: "/marketplace?view=bundle:everything",
             label: "Everything",
             note: everything?.note ?? "",
             price: everything ? formatPrice(everything) : "—",
@@ -70,21 +70,9 @@ const MARKETPLACE_PANEL: NavPanelSpec = {
         {
           href: "/marketplace",
           label: "Marketplace",
-          note: "The whole catalog — bundles and modules.",
+          note: "Every bundle and module on one surface — filter, compare, build a stack.",
+          price: `from ${planPrice("module")}`,
           icon: "bundle",
-        },
-        {
-          href: "/marketplace/modules",
-          label: "Modules",
-          note: "Every standalone module, à la carte.",
-          price: planPrice("module"),
-          icon: "boxes",
-        },
-        {
-          href: "/marketplace/build",
-          label: "Build your stack",
-          note: "Compose module by module, live total.",
-          icon: "terminal",
         },
         {
           href: "/marketplace/plans",
@@ -96,7 +84,7 @@ const MARKETPLACE_PANEL: NavPanelSpec = {
         {
           href: "/compare",
           label: "Compare",
-          note: "Bundles and modules, side by side.",
+          note: "Caisson vs the alternatives — competitor comparisons, side by side.",
           icon: "scale",
         },
         {
@@ -162,10 +150,8 @@ const MOBILE_LINKS: readonly { href: string; label: string }[] = [
     href: r.path,
     label: r.navLabel ?? r.label,
   })),
-  { href: "/marketplace#everything", label: "Everything" },
+  { href: "/marketplace?view=bundle:everything", label: "Everything" },
   { href: "/marketplace", label: "Marketplace" },
-  { href: "/marketplace/modules", label: "Modules" },
-  { href: "/marketplace/build", label: "Build your stack" },
   { href: "/marketplace/plans", label: "Plans" },
   { href: "/compare", label: "Compare" },
   { href: "/stack-fit", label: "Stack fit" },
