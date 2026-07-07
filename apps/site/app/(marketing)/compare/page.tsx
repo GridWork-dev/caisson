@@ -9,9 +9,9 @@ import { breadcrumb, serializeJsonLd } from "@/lib/jsonld";
 import { buildMetadata } from "@/lib/metadata";
 
 export const metadata = buildMetadata({
-  title: "Caisson vs the SaaS boilerplates",
+  title: "Caisson vs the alternatives",
   description:
-    "Honest, dated comparisons of Caisson against the popular SaaS boilerplates and starter kits — what each ships, what it doesn't, and when to pick which.",
+    "Honest, dated comparisons of Caisson against the SaaS boilerplates, the compliance-automation (GRC) platforms, and building it in-house — what each does, what it doesn't, and when to pick which.",
   path: "/compare",
 });
 
@@ -30,8 +30,8 @@ export default function CompareHubPage() {
 
       <Hero
         eyebrow="Comparisons"
-        title="Caisson vs the SaaS boilerplates"
-        lede="The starter kits ship auth, billing, and a landing page fast. Caisson ships the compliance and tenant-isolation substrate they mostly leave to you — fail-closed RLS with isolation tests, a WORM audit trail, and SOC 2 / HIPAA / EU AI Act evidence packs. Each page below is an honest, dated line between the two."
+        title="Caisson vs the alternatives"
+        lede="Three honest frames. The SaaS boilerplates ship auth, billing, and a landing page fast but leave the compliance and tenant-isolation substrate to you. The compliance-automation (GRC) platforms monitor your stack and run the audit — Caisson is the code that implements the controls they inspect. And building it in-house is months of load-bearing work. Each page below draws the honest, dated line."
         ctas={
           <Button href="/compliance" variant="primary">
             Explore the Compliance bundle
@@ -42,8 +42,8 @@ export default function CompareHubPage() {
       <Reveal>
         <Section
           eyebrow="The honest frame"
-          title="Where a kit ends and Caisson begins"
-          lede={`Every competitor fact on these pages was read from the vendor's live site on ${ACCESSED} and stamped with that date. What a kit is genuinely better at stays in — a comparison that overclaims is worse than no page.`}
+          title="Where each alternative ends and Caisson begins"
+          lede={`Every competitor fact on these pages was read from the vendor's live site on ${ACCESSED} and stamped with that date. What a competitor is genuinely better at stays in — a comparison that overclaims is worse than no page. With the GRC platforms the job is to draw the own-vs-rent line honestly, not to declare a winner.`}
         >
           <FeatureGrid cols={2}>
             {COMPARISONS.map((c) => (

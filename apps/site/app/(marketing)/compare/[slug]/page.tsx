@@ -204,7 +204,7 @@ export default async function ComparePage(props: Params) {
         <Section
           eyebrow="Side by side"
           title="An honest comparison"
-          lede={`Where ${c.competitor} has a capability, it is marked. Caisson is the compliance and tenant-isolation substrate; the kit wins the rows it wins.`}
+          lede={`Where ${c.competitor} has a capability, it is marked. Caisson is the compliance and tenant-isolation substrate; ${c.competitor} wins the rows it wins.`}
         >
           <ComparisonTable competitor={c.competitor} rows={c.rows} />
         </Section>
