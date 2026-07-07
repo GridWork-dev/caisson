@@ -92,7 +92,7 @@ export function LifecycleDiagram() {
       <li className={styles.stage}>
         <div className={styles.stageHead}>3 · WORM anchor</div>
         <div className={styles.stageSub}>
-          S3 Object-Lock COMPLIANCE — no overwrite, no delete
+          S3 Object-Lock GOVERNANCE retention, COMPLIANCE-upgradable
         </div>
       </li>
       <li className={styles.stage}>
