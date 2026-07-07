@@ -1,6 +1,6 @@
 # SPEC — `@caisson/ai-meter` pre-call MinHash/LSH dedup-before-meter gate
 
-**Status: LOCKED — ADR-0217, harvest slice-2 wave, 2026-07-02 operator picker.**
+**Status: EXECUTED — ADR-0217, harvest slice-2 wave, 2026-07-02 operator picker, shipped PR #47.**
 
 - **Package:** `packages/ai-meter` (`LicenseRef-Caisson-Commercial`, `paid` tier, `kind: primitive`
   base — never an edition, ADR-0003).

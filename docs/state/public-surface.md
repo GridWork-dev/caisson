@@ -1,11 +1,12 @@
 ---
-updated: 2026-07-05
+updated: 2026-07-06
 status: live
 ---
 
 # Public vs commercial package surface
 
-Dated **2026-07-02**. This file OWNS the **npm-distribution-reality** view: for every
+Dated **2026-07-02**, §2 refreshed **2026-07-06** for the six-bundle catalog rework
+(ADR-0257/0258 — supersedes the edition-era §2 below). This file OWNS the **npm-distribution-reality** view: for every
 `packages/*` module — is it Apache-2.0 or `LicenseRef-Caisson-Commercial`, and where does the
 code actually land today versus where the plan says it lands. `docs/state/package-catalog.md`
 owns the license/price/sold-as catalog and `docs/state/public-surface-minimization.md` owns the
@@ -54,42 +55,51 @@ PR #119). Total: 16.
 
 ## 2. COMMERCIAL / private set (20 `packages/*` + the registry service)
 
-Every row below carries `license: "LicenseRef-Caisson-Commercial"`. "How a buyer gets it" covers
-only rows that are actually sold; internal-only rows say so plainly — carrying the commercial
-license does not by itself mean a buyer ever receives the code.
+Every row below carries `license: "LicenseRef-Caisson-Commercial"`. Bundle membership and pricing
+are `docs/state/package-catalog.md`'s job (§2b, the "Sellable catalog" tables) — cited here, not
+restated. Internal-only rows say so plainly — carrying the commercial license does not by itself
+mean a buyer ever receives the code.
 
-### Edition meta-packages (sold as a bundle, ADR-0137 below-sum pricing)
+### Bundle meta-packages (six-bundle catalog rework, ADR-0257/0258, 2026-07-06)
 
-| Package               | Edition           | How a buyer gets it                                                                                                                                                                                    |
-| --------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `@caisson/compliance` | Compliance        | Paddle checkout → `entitlement_grant` → license token → `create-caisson --edition compliance` (ADR-0092) or license-keyed registry pull (ADR-0136), both delivering the edition's frozen `members` set |
-| `@caisson/ai-kit`     | AI Production Kit | same, `--edition ai-kit`                                                                                                                                                                               |
-| `@caisson/local-ai`   | Local-first AI    | same, `--edition local-ai`                                                                                                                                                                             |
-| `@caisson/agent-dev`  | Agentic-Dev       | same, `--edition agent-dev`                                                                                                                                                                            |
+The four persona **editions DISSOLVED into six bundles** 2026-07-06. **Compliance kept its existing
+package id** (`@caisson/compliance`); its manifest flipped to `kind:"bundle"` at 104900 in the
+CAISSON-24 republish (2026-07-06, hygiene-package-standards session) — historical `kind:"edition"`
+ledger entries stay valid forever, ADR-0257 §1 forbids only the ledger REWRITE, never a newly
+appended version. The other five bundles are fresh `kind:"bundle"` meta-packages. Prices (full
+detail: `package-catalog.md` §2b): **Compliance $1,049 · AI-Production $739 · Local-first $629 ·
+Agentic-Dev $329 · Provenance $399 · Everything $2,059.**
 
-### Edition members (delivered by the edition purchase — entitlement expansion, ADR-0071/0077)
+| Package                  | Bundle                                                               | How a buyer gets it                                                                                                                                                        |
+| ------------------------ | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@caisson/compliance`    | Compliance (kept id; `kind:"bundle"` since the CAISSON-24 republish) | Paddle checkout → `entitlement_grant` → license token → `create-caisson --edition compliance` or license-keyed registry pull, delivering the bundle's frozen `members` set |
+| `@caisson/ai-production` | AI-Production (new `kind:"bundle"`)                                  | same, `--edition ai-production`                                                                                                                                            |
+| `@caisson/local-first`   | Local-first (new `kind:"bundle"`)                                    | same, `--edition local-first`                                                                                                                                              |
+| `@caisson/agentic-dev`   | Agentic-Dev (new `kind:"bundle"`)                                    | same, `--edition agentic-dev`                                                                                                                                              |
+| `@caisson/provenance`    | Provenance (net-new, `kind:"bundle"`)                                | same, `--edition provenance` — composite of 3 Compliance-carve members, no edition-era equivalent                                                                          |
+| `@caisson/everything`    | Everything (new `kind:"bundle"`)                                     | same, `--edition everything` — every bundle and every à la carte module, one purchase                                                                                      |
 
-Per the frozen `members` map in `registry/index.json` (0.2.0):
+(The generator's `--edition` flag accepts all six bundle ids AND the legacy edition ids — the
+legacy spellings normalize through the single alias point; the flag name predates the vocabulary.)
 
-| Package                     | Edition                                                    | How a buyer gets it                                                                                                                                                                                                                                            |
-| --------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@caisson/field-crypto`     | Compliance, AI Production Kit, Local-first (shared member) | Per-tenant HKDF+AES-256-GCM field encryption — bundled with any of the three edition purchases above, or à la carte (ADR-0129)                                                                                                                                 |
-| `@caisson/audit-worm`       | Compliance                                                 | WORM artifact store + SHA-256 audit chain — bundled with Compliance, or à la carte                                                                                                                                                                             |
-| `@caisson/alerting`         | Compliance                                                 | SOC2 CC7.2 multi-channel alerting pipeline — bundled with Compliance (ADR-0205 runtime composition), or à la carte                                                                                                                                             |
-| `@caisson/retention-runner` | Compliance                                                 | CCPA/GDPR erasure runner — bundled with Compliance (ADR-0205), or à la carte                                                                                                                                                                                   |
-| `@caisson/ai-meter`         | AI Production Kit                                          | Metered-inference money path — bundled with AI Production Kit, or à la carte                                                                                                                                                                                   |
-| `@caisson/guardrails`       | AI Production Kit                                          | Content-safety/PII layer — bundled with AI Production Kit, or à la carte                                                                                                                                                                                       |
-| `@caisson/prompt-registry`  | AI Production Kit                                          | Append-only versioned prompts — bundled with AI Production Kit, or à la carte                                                                                                                                                                                  |
-| `@caisson/local-store`      | Local-first, Agentic-Dev (shared member)                   | sqlite-vec + FTS5 hybrid retrieval — bundled with either edition, or à la carte                                                                                                                                                                                |
-| `@caisson/agent-kernel`     | Agentic-Dev                                                | Engine-neutral agent/skill/rule kernel — bundled with Agentic-Dev, or à la carte                                                                                                                                                                               |
-| `@caisson/tool-exec`        | Agentic-Dev                                                | Governed sandboxed tool-call primitive (ADR-0153/0199) — bundled with Agentic-Dev, or à la carte                                                                                                                                                               |
-| `@caisson/agent-runner`     | Agentic-Dev (designated, ADR-0186)                         | Sandboxed governed agent runner. **Not yet in the frozen `members` map** in `registry/index.json` (0.2.0) — a known lag between the ADR-0186 lock and the next index snapshot, not a contradiction; folded into the Agentic-Dev SKU per ADR-0186 F5 either way |
+**Retired edition ids** — `@caisson/ai-kit` (superseded by AI-Production), `@caisson/agent-dev`
+(superseded by Agentic-Dev), `@caisson/local-ai` (superseded by Local-first) — are kept for
+existing-buyer resolution only, never sold new; all three keep their `kind:"edition"` manifests
+(prices trued to their alias targets — $739/$329/$629 — per the local-ai convention, 2026-07-06).
+Per ADR-0257 §1, every pre-rework `kind:"edition"` registry manifest and ledger entry **stays
+valid forever** (never migrated), and the four legacy edition purchase ids keep resolving forever
+through the single alias map in `expandEntitlements` (`packages/registry-schema/src/entitlements.ts`
 
-### Standalone commercial — sold à la carte, not an edition member
+- `bundle-vocabulary.ts`) — no existing buyer's access changes.
 
-| Package             | Tier      | How a buyer gets it                                                                                              |
-| ------------------- | --------- | ---------------------------------------------------------------------------------------------------------------- |
-| `@caisson/ai-evals` | primitive | Not present in any edition's `members` map — à la carte only (ADR-0129), same purchase→entitlement→delivery path |
+### Bundle members + à la carte modules (delivered by purchase — entitlement expansion)
+
+Distribution mechanics are unchanged from the edition era: every member/primitive package is
+delivered bundled with its parent bundle purchase(s), or à la carte on its own purchase, through
+the same purchase → entitlement → delivery path as the bundle meta-packages above. The full priced
+module ↔ bundle membership table (all 22 à la carte SKUs — including moves the rework made, e.g.
+`@caisson/ai-evals` joining the AI-Production bundle where it was previously standalone-only) is
+`docs/state/package-catalog.md` §2b; not restated here.
 
 ### Internal-only — never distributed to a buyer
 

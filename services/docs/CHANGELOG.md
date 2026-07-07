@@ -1,5 +1,11 @@
 # @caisson/service-docs
 
+## 0.0.6
+
+### Patch Changes
+
+- @caisson/rate-limit@0.1.2
+
 ## 0.0.5
 
 ### Patch Changes

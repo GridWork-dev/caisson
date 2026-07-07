@@ -1,16 +1,16 @@
-export { foundation } from "./foundation";
-export type { Foundation } from "./foundation";
+export { foundation } from "./foundation.ts";
+export type { Foundation } from "./foundation.ts";
 export {
   accentCandidates,
   functional,
   functionalDark,
   functionalLight,
   typeCandidates,
-} from "./candidates";
-export { darkTheme, lightTheme, fonts, selected } from "./theme";
+} from "./candidates.ts";
+export { darkTheme, lightTheme, fonts, selected } from "./theme.ts";
 export type {
   AccentCandidate,
   FunctionalTokens,
   SemanticTheme,
   TypeCandidate,
-} from "./types";
+} from "./types.ts";

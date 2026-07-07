@@ -1,25 +1,24 @@
-// Registry manifest (ADR-0020/0021). Loaded by the monorepo's build-standards check; must agree with
-// package.json on id/version/license/dependencies (the gate fails the build on drift). `kind:
-// "edition"` — this is the Compliance EDITION (the hero, ADR-0040), a composition of base packages,
-// never a fork (ADR-0003); it names its own edition membership in `editions`. Paid +
-// LicenseRef-Caisson-Commercial under the open-core model (ADR-0094/0097, amends ADR-0050): base is
-// Apache-2.0; editions/primitives/cli/registry stay commercial.
+// Registry manifest (ADR-0020/0021/0257). Loaded by the monorepo's build-standards check; must agree
+// with package.json on id/version/license/dependencies (the gate fails the build on drift). `kind:
+// "bundle"` — the Compliance persona BUNDLE (the hero, ADR-0040), the six-bundle catalog's one bundle
+// that KEEPS its legacy id (`compliance` is the identity alias, ADR-0257 §1); the historical
+// `kind:"edition"` ledger entries stay valid forever. Unlike the four meta-only persona bundles this
+// package carries real composition code, so `dependencies` stays populated (down-only, ADR-0003).
+// Paid + LicenseRef-Caisson-Commercial under the open-core model (ADR-0094/0097, amends ADR-0050).
 //
-// `priceCents: 79900` is the canonical Compliance edition price ($799, ADR-0227 — supersedes the
-// earlier $749); it must stay a positive integer (ADR-0007). Evidence generation is FREE in v1 (no
-// @caisson/credits dependency): the edition composes the WORM/crypto primitives directly.
-// Dependencies are DOWN-ONLY (ADR-0003): the edition imports base/primitive packages, never the
-// reverse.
+// `priceCents: 104900` is the locked Compliance bundle price ($1,049, ADR-0258 — supersedes the
+// ADR-0227 $799 edition price); it must stay a positive integer (ADR-0007). Evidence generation is
+// FREE in v1 (no @caisson/credits dependency): the bundle composes the WORM/crypto primitives
+// directly.
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
 export default defineModule({
   id: "@caisson/compliance",
   version: pkg.version,
-  kind: "edition",
-  editions: ["compliance"],
+  kind: "bundle",
   tier: "paid",
-  priceCents: 79900,
+  priceCents: 104900,
   license: pkg.license,
   // Must mirror package.json's @caisson/* deps exactly (the gate fails on drift). @caisson/migrate is
   // the base migration assembler/runner the edition COMPOSES at build/test time (ADR-0090).
@@ -48,19 +47,19 @@ export default defineModule({
   // and the full-tree-index guard test asserts every pin resolves to a real published ledger version
   // (never the "0.0.0" dev sentinel).
   members: {
-    "@caisson/compliance": "0.4.0",
+    "@caisson/compliance": "0.5.0",
     // The three compliance carve SKUs folded into the Compliance bundle
     // (members-fold republish, third wave).
-    "@caisson/compliance-core": "0.2.0",
+    "@caisson/compliance-core": "0.2.1",
     "@caisson/frameworks-pack": "0.2.0",
     "@caisson/signing-primitive": "0.2.0",
-    "@caisson/audit-worm": "0.2.4",
-    "@caisson/field-crypto": "0.2.4",
-    "@caisson/tenancy-rls": "0.4.0",
+    "@caisson/audit-worm": "0.3.0",
+    "@caisson/field-crypto": "0.3.0",
+    "@caisson/tenancy-rls": "0.5.0",
     "@caisson/kernel": "0.4.2",
     // Operational-compliance primitives folded into the Compliance bundle (ADR-0178).
     "@caisson/alerting": "0.1.5",
-    "@caisson/retention-runner": "0.1.5",
+    "@caisson/retention-runner": "0.1.6",
   },
   golden: "src/__golden__",
   description:

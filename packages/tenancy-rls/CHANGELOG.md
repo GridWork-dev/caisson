@@ -1,5 +1,18 @@
 # @caisson/tenancy-rls
 
+## 0.5.0
+
+### Minor Changes
+
+- 8c53ca3: Added a Drizzle bridge (queryDrizzle/execDrizzle over any `.toSQL()`-shaped query) and a Prisma bridge (createPrismaBridge over a structural $queryRawUnsafe/$executeRawUnsafe facade), both feeding the unmodified TenantExecutor port inside withTenant. Neither adds a runtime dependency on drizzle-orm or @prisma/client.
+
+### Patch Changes
+
+- The Supabase transactor now attaches an error listener to its connection pool at construction.
+  Previously, an idle pooled connection dying (a network blip, a server-side termination) emitted
+  an unhandled error event that crashed the host process; the pool now logs the error to stderr
+  and survives, dialing a fresh connection on the next checkout.
+
 ## 0.4.0
 
 ### Minor Changes

@@ -1,6 +1,6 @@
 # SPEC — Support-impersonation kernel with dual audit trail
 
-**Status: DRAFT — awaiting operator lock (proposed ADR-0187).** No code lands until this SPEC + its ADR are locked (ADR-0133 §4).
+**Status: EXECUTED — ADR-0187, shipped PR #42 (editions-go-live session, 2026-07-01).** Superseded language below ("DRAFT"/"proposed") is historical — kept for the SPEC's own record.
 
 - **Slice:** LIFT slice 1 (build-now, revenue-additive sellable).
 - **Edition:** Compliance.

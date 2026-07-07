@@ -20,6 +20,10 @@ export {
   ENTITLEMENT_ADMIN_COMP_MIGRATION_SQL,
   grantEntitlements,
   readEntitlements,
+  readOneTimeEntitlements,
+  upsertSubscriptionGrants,
+  reconcileCoverageGrants,
+  COVERAGE_MIRROR_LINE_ITEM,
   revokeSubscriptionGrants,
   revokePurchaseGrants,
   revokePurchaseLineGrants,
@@ -31,6 +35,7 @@ export {
 export type {
   GrantEntitlementsInput,
   GrantSource,
+  UpsertSubscriptionGrantsInput,
   RevokeSubscriptionInput,
   RevokePurchaseInput,
   RevokePurchaseLineInput,

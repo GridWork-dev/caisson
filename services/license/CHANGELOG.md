@@ -1,5 +1,31 @@
 # @caisson/service-license
 
+## 0.0.6
+
+### Patch Changes
+
+- Internal hygiene wave: the standards gate's locked-price table moved the Compliance bundle to its
+  current price and gained rows for the two retired alias packages; the four private reference apps
+  and the root manifest now carry an explicit license field; the license service applies the new
+  Developer-plan coverage semantics when computing signed license claims.
+- Updated dependencies [8c53ca3]
+- Updated dependencies [8170382]
+- Updated dependencies
+- Updated dependencies
+- Updated dependencies [8c53ca3]
+- Updated dependencies
+- Updated dependencies [8170382]
+  - @caisson/audit-worm@0.3.0
+  - @caisson/registry-schema@0.4.0
+  - @caisson/license-issue@0.0.6
+  - @caisson/pricebook@0.5.0
+  - @caisson/tenancy-rls@0.5.0
+  - @caisson/credits@0.4.1
+  - @caisson/billing-orchestration@0.2.1
+  - @caisson/jobs@0.4.1
+  - @caisson/org-controls@0.2.1
+  - @caisson/rate-limit@0.1.2
+
 ## 0.0.5
 
 ### Patch Changes

@@ -44,6 +44,7 @@ import { insertAdminActionLog, type AdminAction } from "./admin-audit-log.ts";
 import {
   grantAdminComp,
   readEntitlements,
+  reconcileCoverageGrants,
   revokeAdminComp,
   revokePurchaseGrants,
 } from "./entitlement-store.ts";
@@ -596,6 +597,11 @@ export async function revokePurchaseAdmin(
       accountId: input.targetAccountId,
       purchaseId: input.purchaseId,
     });
+    // ADR-0269 coverage reconcile (audit P1 1, same sweep as the refund webhook): an operator
+    // revoke must also fell any coverage MIRROR the revoked purchase was backing — scoped to
+    // `line_item_id='covered'` rows only, so R-3's "subscriptions are structurally un-revocable
+    // here" still holds for every STATIC subscription grant.
+    await reconcileCoverageGrants(tx, input.targetAccountId);
 
     // R-1 = A: claw the purchase's STILL-OUTSTANDING credits, bounded two ways, never Paddle.
     let clawedBack = 0;

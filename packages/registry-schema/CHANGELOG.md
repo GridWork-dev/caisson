@@ -1,5 +1,11 @@
 # @caisson/registry-schema
 
+## 0.4.0
+
+### Minor Changes
+
+- 8170382: Add `entitlementIdAliasGroup` — the read-side reverse of `normalizeEntitlementId`, returning every stored spelling (canonical id plus legacy aliases) of one entitlement so renewal fulfillment can match grants written under the pre-fold vocabulary.
+
 ## 0.3.0
 
 ### Minor Changes

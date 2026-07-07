@@ -1,8 +1,7 @@
 # SPEC — `@caisson/ai-evals` (eval-science depth: exit-classifier + Wilson-CI + reflexivity + Fleiss-kappa)
 
-**Status: LOCKED — ADR-0210 (asymmetry: harden-in-place) + ADR-0214 (eval-science depth), harvest
-slice-2 wave, 2026-07-02 operator picker.** Spec-gated: no code lands until this SPEC + its ADR are
-filed (ADR-0133 §4).
+**Status: EXECUTED — ADR-0210 (asymmetry: harden-in-place) + ADR-0214 (eval-science depth), harvest
+slice-2 wave, 2026-07-02 operator picker, shipped PR #47.**
 
 - **Slice:** harvest slice-2 (lift-sweep ranks #5, #11, #15 + gridwork-core exit-classifier).
 - **Edition:** AI Production Kit (unchanged — ADR-0210 locks the flagged asymmetry to HARDEN IN

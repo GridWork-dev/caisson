@@ -1,7 +1,7 @@
 # SPEC — `@caisson/guardrails` (egress secret-gate + FTC-4Ps presentation guardrail)
 
-**Status: LOCKED — ADR-0215 (egress secret-gate + FTC-4Ps), harvest slice-2 wave,
-2026-07-02 operator picker; hardens in place per ADR-0210 lock 1.**
+**Status: EXECUTED — ADR-0215 (egress secret-gate + FTC-4Ps), harvest slice-2 wave,
+2026-07-02 operator picker; hardens in place per ADR-0210 lock 1; shipped PR #47.**
 
 - **Package:** `packages/guardrails` (`kind: primitive`, `tier: paid`,
   `LicenseRef-Caisson-Commercial`, AI Production Kit). No edition/license/tier change —

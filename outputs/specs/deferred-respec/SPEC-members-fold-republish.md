@@ -5,6 +5,10 @@ tags: [infra, external-system, billing]
 slug: members-fold-republish
 ---
 
+> **SUPERSEDED (2026-07-06) — see `knowledge/decisions/ADR-0228-members-fold-republish-second-wave.md`.**
+> This gated republish executed as ADR-0228 (members-fold republish, second wave). The draft
+> status and body below are kept verbatim as the pre-lock record — do not action them directly.
+
 # SPEC — Members-fold republish (agent-runner → Agentic-Dev index snapshot)
 
 **Status: draft — operator lock required.** This SPEC is a review artifact only — it does NOT

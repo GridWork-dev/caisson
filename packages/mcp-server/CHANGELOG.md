@@ -1,5 +1,14 @@
 # @caisson/mcp-server
 
+## 0.2.5
+
+### Patch Changes
+
+- Updated dependencies [8170382]
+- Updated dependencies [8c53ca3]
+  - @caisson/registry-schema@0.4.0
+  - @caisson/ai-config@0.3.0
+
 ## 0.2.4
 
 ### Patch Changes

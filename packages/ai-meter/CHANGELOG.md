@@ -1,5 +1,14 @@
 # @caisson/ai-meter
 
+## 0.3.4
+
+### Patch Changes
+
+- Updated dependencies [8c53ca3]
+- Updated dependencies
+  - @caisson/tenancy-rls@0.5.0
+  - @caisson/credits@0.4.1
+
 ## 0.3.3
 
 ### Patch Changes
