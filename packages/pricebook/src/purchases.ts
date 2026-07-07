@@ -25,7 +25,7 @@ import { planEntitlementsSchema } from "./plans.ts";
 const NO_CREDITS = asCredits(0);
 
 /** Append-only version stamp — a purchase-row change bumps this, never edits it in place (ADR-0006). */
-export const PURCHASE_BOOK_VERSION = "2026-07-06.1";
+export const PURCHASE_BOOK_VERSION = "2026-07-07.1";
 
 export const purchaseBookEntrySchema = strictObject({
   /** Stable internal purchase tag (NOT the Stripe id) — survives a price-id rotation. */
@@ -70,9 +70,10 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
   // the site DISPLAY amount is owned by `apps/site/lib/pricing.ts` (the single display SOT, integer
   // USD) with the cents authority in `upgrades.ts` BUNDLE_RETAIL / SKU_RETAIL (ADR-0258/0260). A
   // reprice is a Paddle-side + site-display change, NOT a pricebook code change — no amount is
-  // invented here. The four edition rows below and the legacy $1,499 bundle row are RETIRED: their
-  // Paddle products were archived in the W7 catalog big-bang (ADR-0258; the rows stay for webhook
-  // replay of historical events, and the six-bundle rows live in the W7 section further down).
+  // invented here. The four archived-edition rows below and the legacy $1,499 bundle row are RETIRED:
+  // their Paddle products were archived in the W7 catalog big-bang (ADR-0258). ADR-0270 repointed their
+  // `entitlements` to canonical six-bundle ids (edition-trace purge); the rows stay for replay of any
+  // historical sandbox event, and the six-bundle rows live in the W7 section further down.
   //
   // The one REAL row below that grants CREDITS, not an entitlement — mirrors the
   // `price_credit_pack_PLACEHOLDER` row at the top of this book (5000 credits, $49, no edition
@@ -83,33 +84,35 @@ export const PURCHASE_BOOK: Record<string, PurchaseBookEntry> = {
     credits: asCredits(5000),
     entitlements: [],
   },
-  // ENTITLEMENT-ID NOTE: `purchaseTag`/`entitlements` mirror the registry edition id `agent-dev`
-  // (`packages/registry-schema/src/module-manifest.ts` EDITIONS); the marketing route/label
-  // `/agentic-dev`/"Agentic-Dev" deliberately differ from the entitlement id.
+  // ADR-0270 (edition-trace purge): these five archived-edition/bundle-sentinel sandbox rows were
+  // REPOINTED from the dissolved edition ids (`ai-kit`/`local-ai`/`agent-dev`/`bundle`) to the canonical
+  // six-bundle ids. Their Paddle products are archived (no new transactions); the rows survive only for
+  // replay of any historical sandbox event, and a replay now mints the CANONICAL id — the same id the
+  // live W7 rows below and the renewal/expansion paths converge on. No edition id is minted anywhere.
   pri_01kwd76be2eq96kff5nqw236c0: {
     purchaseTag: "compliance",
     credits: NO_CREDITS,
     entitlements: ["compliance"],
   },
   pri_01kwd76bp60acq51mftvpgr42k: {
-    purchaseTag: "bundle",
+    purchaseTag: "everything",
     credits: NO_CREDITS,
-    entitlements: ["bundle"], // the BUNDLE_ID sentinel — base ∪ every edition (entitlements.ts)
+    entitlements: ["everything"], // was the legacy `bundle` sentinel (ADR-0270 repoint)
   },
   pri_01kwd76c1pgs2csxcj2n0y7vv0: {
-    purchaseTag: "ai-kit",
+    purchaseTag: "ai-production",
     credits: NO_CREDITS,
-    entitlements: ["ai-kit"],
+    entitlements: ["ai-production"], // was `ai-kit` (ADR-0270 repoint)
   },
   pri_01kwd76cahy825m14334aqf209: {
-    purchaseTag: "local-ai",
+    purchaseTag: "local-first",
     credits: NO_CREDITS,
-    entitlements: ["local-ai"],
+    entitlements: ["local-first"], // was `local-ai` (ADR-0270 repoint)
   },
   pri_01kwd76ck3w8myy4p4f1gj0dcy: {
-    purchaseTag: "agent-dev",
+    purchaseTag: "agentic-dev",
     credits: NO_CREDITS,
-    entitlements: ["agent-dev"], // see the ENTITLEMENT-ID NOTE above
+    entitlements: ["agentic-dev"], // was `agent-dev` (ADR-0270 repoint)
   },
 
   // ---- Per-module à-la-carte PLACEHOLDER rows (sell every commercial module
