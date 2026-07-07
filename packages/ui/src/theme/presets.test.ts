@@ -62,6 +62,27 @@ describe("preset registry (ADR-0250 G2b)", () => {
     ).toThrow();
   });
 
+  test("registerPreset rejects a CSS-injection token value (contains })", () => {
+    expect(() =>
+      registerPreset({
+        id: "bad-injection",
+        name: "Bad",
+        dark: {
+          ...getPreset("caisson")!.dark,
+          accent: "red } body { display: none } .x {",
+        },
+        light: getPreset("caisson")!.light,
+      }),
+    ).toThrow();
+  });
+
+  test("getPreset returns a frozen preset (built-ins can't be corrupted)", () => {
+    const preset = getPreset("caisson")!;
+    expect(Object.isFrozen(preset)).toBe(true);
+    expect(Object.isFrozen(preset.dark)).toBe(true);
+    expect(Object.isFrozen(preset.light)).toBe(true);
+  });
+
   test("re-registering the same id with a DIFFERENT shape throws (no silent overwrite)", () => {
     registerPreset({
       id: "reregister-test",

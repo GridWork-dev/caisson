@@ -5,26 +5,31 @@ import { createTheme } from "./create-theme.ts";
 /** Minimal Document stand-in — just enough surface for `applyTheme`'s
  *  getElementById/createElement/head.appendChild calls. Lets the DOM-writing path be tested
  *  without a real browser DOM (bun test has none by default). */
-class FakeStyleElement {
+class FakeElement {
   id = "";
   textContent: string | null = null;
+  constructor(readonly tagName: string) {}
 }
 
 class FakeDocument {
-  readonly appended: FakeStyleElement[] = [];
-  private readonly registry = new Map<string, FakeStyleElement>();
+  readonly appended: FakeElement[] = [];
+  private readonly registry = new Map<string, FakeElement>();
   readonly head = {
-    appendChild: (el: FakeStyleElement): FakeStyleElement => {
+    appendChild: (el: FakeElement): FakeElement => {
       this.registry.set(el.id, el);
       this.appended.push(el);
       return el;
     },
   };
-  getElementById(id: string): FakeStyleElement | null {
+  /** Seed a pre-existing non-style element under an id (the reuse-guard test). */
+  seed(el: FakeElement): void {
+    this.registry.set(el.id, el);
+  }
+  getElementById(id: string): FakeElement | null {
     return this.registry.get(id) ?? null;
   }
-  createElement(_tagName: string): FakeStyleElement {
-    return new FakeStyleElement();
+  createElement(tagName: string): FakeElement {
+    return new FakeElement(tagName.toUpperCase());
   }
 }
 
@@ -45,6 +50,20 @@ describe("theme CSS-var emission (pure, ADR-0250 G2b)", () => {
     expect(css).toContain(`--cs-accent: ${theme.dark.accent};`);
     expect(css).toContain('[data-theme="light"] {');
     expect(css).toContain(`--cs-accent: ${theme.light.accent};`);
+  });
+
+  test("themeToCssText emits the OS-seed prong so it wins for unpinned light-OS users", () => {
+    // Regression for the two-prong bug: without the @media OS-seed block, the base tokens.css
+    // `:root:not([data-theme="dark"])` rule (specificity 0,2,0) outranks a bare `:root` override
+    // (0,1,0), so applyTheme is a silent no-op for every unpinned light-OS visitor. The override
+    // MUST emit the same three prongs as the generated stylesheet.
+    const theme = createTheme({ preset: "pressure" });
+    const css = themeToCssText(theme);
+    expect(css).toContain("@media (prefers-color-scheme: light) {");
+    expect(css).toContain(':root:not([data-theme="dark"]) {');
+    // the OS-seed prong carries the LIGHT tokens
+    const mediaBlock = css.slice(css.indexOf("@media"));
+    expect(mediaBlock).toContain(`--cs-accent: ${theme.light.accent};`);
   });
 });
 
@@ -87,5 +106,21 @@ describe("applyTheme (SSR-safe, ADR-0250 G2b)", () => {
     expect(doc.appended.length).toBe(2);
     expect(doc.getElementById("theme-a")?.textContent).toBe(themeToCssText(a));
     expect(doc.getElementById("theme-b")?.textContent).toBe(themeToCssText(b));
+  });
+
+  test("does not clobber a non-<style> element sharing the styleId", () => {
+    const doc = new FakeDocument();
+    const div = new FakeElement("DIV");
+    div.id = "cs-theme-override";
+    div.textContent = "important page content";
+    doc.seed(div);
+
+    const theme = createTheme();
+    applyTheme(theme, { target: doc as unknown as Document });
+
+    // the div is untouched; a fresh <style> is appended instead
+    expect(div.textContent).toBe("important page content");
+    const appended = doc.appended.find((el) => el.tagName === "STYLE");
+    expect(appended?.textContent).toBe(themeToCssText(theme));
   });
 });

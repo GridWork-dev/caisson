@@ -49,6 +49,16 @@ describe("createTheme (ADR-0250 G2b)", () => {
     ).toThrow();
   });
 
+  test("a CSS-injection override value (contains }) is rejected", () => {
+    // These values are interpolated raw into a <style> block by applyTheme; a `}` would break out
+    // of the rule and inject arbitrary CSS. The token-value regex must reject it.
+    expect(() =>
+      createTheme({
+        overrides: { dark: { accent: "red } body { display: none } .x {" } },
+      }),
+    ).toThrow();
+  });
+
   test("createTheme composes with a caller-registered custom preset", () => {
     registerPreset({
       id: "create-theme-custom",

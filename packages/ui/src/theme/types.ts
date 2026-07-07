@@ -6,25 +6,36 @@
 import { z } from "zod";
 import type { SemanticTheme } from "../tokens/types.ts";
 
-/** Every `SemanticTheme` value is a CSS colour/box-shadow string — non-empty, nothing else
- *  assumed (the token contract intentionally stays string-typed, not a parsed colour). */
+/**
+ * A single token value: a CSS colour/box-shadow string, non-empty, with the CSS-injection chars
+ * denied. These values are interpolated RAW into a `<style>` block by `applyTheme`, so a value
+ * containing `}` (or `<`/`>`/`;`) could break out of its rule and inject arbitrary CSS. No legit
+ * OKLCH colour or box-shadow value needs any of `{ } < > ;` (commas, parens, slashes, spaces,
+ * digits, dots all pass). Bounding it here covers BOTH registerPreset and createTheme overrides,
+ * since the override schema derives from this one.
+ */
+const tokenValue = z
+  .string()
+  .min(1)
+  .regex(/^[^{}<>;]*$/, "token value must not contain any of: { } < > ;");
+
 const semanticThemeSchema = z
   .object({
-    bg: z.string().min(1),
-    surface1: z.string().min(1),
-    surface2: z.string().min(1),
-    border: z.string().min(1),
-    borderStrong: z.string().min(1),
-    fg: z.string().min(1),
-    fgMuted: z.string().min(1),
-    accent: z.string().min(1),
-    accentHover: z.string().min(1),
-    onAccent: z.string().min(1),
-    accentTint: z.string().min(1),
-    focus: z.string().min(1),
-    link: z.string().min(1),
-    glowAccent: z.string().min(1),
-    scrim: z.string().min(1),
+    bg: tokenValue,
+    surface1: tokenValue,
+    surface2: tokenValue,
+    border: tokenValue,
+    borderStrong: tokenValue,
+    fg: tokenValue,
+    fgMuted: tokenValue,
+    accent: tokenValue,
+    accentHover: tokenValue,
+    onAccent: tokenValue,
+    accentTint: tokenValue,
+    focus: tokenValue,
+    link: tokenValue,
+    glowAccent: tokenValue,
+    scrim: tokenValue,
   })
   .strict();
 

@@ -22,16 +22,26 @@ export const DEFAULT_PRESET_ID = "caisson";
 
 const registry = new Map<string, ThemePreset>();
 
+/** Freeze a parsed preset + its nested `dark`/`light` maps so getPreset/listPresets can't hand a
+ *  consumer a live handle to corrupt a built-in. Two levels deep is the whole shape. */
+function freezePreset(preset: ThemePreset): ThemePreset {
+  Object.freeze(preset.dark);
+  Object.freeze(preset.light);
+  return Object.freeze(preset);
+}
+
 for (const candidate of accentCandidates) {
   const id = BUILTIN_SLUGS[candidate.id];
   registry.set(
     id,
-    themePresetSchema.parse({
-      id,
-      name: candidate.name,
-      dark: candidate.dark,
-      light: candidate.light,
-    }),
+    freezePreset(
+      themePresetSchema.parse({
+        id,
+        name: candidate.name,
+        dark: candidate.dark,
+        light: candidate.light,
+      }),
+    ),
   );
 }
 
@@ -44,12 +54,14 @@ for (const candidate of accentCandidates) {
 export function registerPreset(preset: ThemePreset): void {
   const parsed = themePresetSchema.parse(preset);
   const existing = registry.get(parsed.id);
+  // Equality relies on Zod normalizing key order + every field being required (no optionals) so
+  // two equal shapes stringify identically. Revisit if optional token fields are ever added.
   if (existing && JSON.stringify(existing) !== JSON.stringify(parsed)) {
     throw new Error(
       `Preset "${parsed.id}" is already registered with a different shape — pick a new id.`,
     );
   }
-  registry.set(parsed.id, parsed);
+  registry.set(parsed.id, freezePreset(parsed));
 }
 
 export function getPreset(id: string): ThemePreset | undefined {
