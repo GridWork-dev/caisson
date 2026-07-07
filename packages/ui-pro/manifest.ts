@@ -5,9 +5,9 @@
 // runtime dependency is that floor (`@caisson/ui`); nothing else in the tree may depend back on this
 // package (the leaf-law boundary, ADR-0259).
 //
-// `priceCents: 4900` is the pre-launch placeholder the pricing pass replaces (a positive integer is
-// required to validate; the live catalog price is owned by the storefront and the price book, not
-// this number).
+// `priceCents: 12900` is trued to the live catalog ($129 standalone, inside ADR-0259's $129–199
+// band); the storefront and the price book own the selling price, and this number must agree with
+// them.
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest.ts";
 
@@ -16,9 +16,9 @@ export default defineModule({
   version: pkg.version,
   kind: "primitive",
   tier: "paid",
-  priceCents: 4900,
+  priceCents: 12900,
   license: pkg.license,
   dependencies: ["@caisson/ui"],
   description:
-    "Premium data-ops and compliance UI components layered on the open @caisson/ui base: an advanced data grid, a virtualized tree, an operations matrix, a hash-chain audit timeline, a redaction-aware payload viewer, a type-to-confirm dialog, and an advanced date-range picker.",
+    "Premium data-ops and compliance UI components layered on the open @caisson/ui base: an advanced data grid, a virtualized tree, an operations matrix, a hash-chain audit timeline, a redaction-aware payload viewer, a type-to-confirm dialog, an advanced date-range picker, a dependency-free charts pack, a command palette, a redaction-aware diff viewer, and a kanban board.",
 });
