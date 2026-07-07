@@ -98,6 +98,7 @@ const baseConfig: Config = {
   healthzPort: 8791,
   healthzHost: "0.0.0.0",
   schedulerEnabled: false,
+  migrateOnBoot: false,
   cadenceComplianceMs: 1,
   cadenceSoc2Ms: 1,
   cadenceCompetitorMs: 1,
