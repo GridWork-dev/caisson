@@ -37,6 +37,7 @@ describe("licenseEntitlementResolver (ADR-0010/0071)", () => {
     expect(resolveDev(reqWith(`Bearer ${DEV_TOKEN}`))).toEqual({
       entitlements: ["local-ai"],
       updatesWindows: {},
+      entitledSince: {},
     });
   });
 
@@ -44,6 +45,7 @@ describe("licenseEntitlementResolver (ADR-0010/0071)", () => {
     expect(resolveDev(reqWith(`bearer ${DEV_TOKEN}`))).toEqual({
       entitlements: ["local-ai"],
       updatesWindows: {},
+      entitledSince: {},
     });
   });
 
@@ -77,6 +79,7 @@ describe("licenseEntitlementResolver (ADR-0010/0071)", () => {
     expect(resolveDev(reqWith(`Bearer ${windowedToken}`))).toEqual({
       entitlements: ["local-ai"],
       updatesWindows: { "local-ai": "2027-01-01T00:00:00.000Z" },
+      entitledSince: {},
     });
   });
 
@@ -95,6 +98,7 @@ describe("makeLicenseEntitlementResolver — edge revocation gate (ADR-0225 R-4=
     expect(resolve(reqWith(`Bearer ${DEV_TOKEN}`))).toEqual({
       entitlements: ["local-ai"],
       updatesWindows: {},
+      entitledSince: {},
     });
   });
 
@@ -114,6 +118,7 @@ describe("makeLicenseEntitlementResolver — edge revocation gate (ADR-0225 R-4=
     expect(resolve(reqWith(`Bearer ${DEV_TOKEN}`))).toEqual({
       entitlements: ["local-ai"],
       updatesWindows: {},
+      entitledSince: {},
     });
   });
 });

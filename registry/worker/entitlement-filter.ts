@@ -44,9 +44,13 @@ export function makeLicenseEntitlementResolver(
     // The signed ADR-0244/0255 per-entitlement updates windows ride along: an absent/null claim —
     // every pre-window token — normalizes to the empty map = every entitlement unbounded. The
     // handlers fold this into a per-module MOST FAVORABLE window (handler.ts `resolveGate`).
+    // The ADR-0257 §1.2 `entitledSince` snapshot-at-sale instants ride along the SAME way (the
+    // member-set axis): absent/null → the empty map = every bundle grandfathered (no member
+    // filtering). `resolveGate` folds it with the pricebook membership timeline at expansion.
     return {
       entitlements: verified.entitlements,
       updatesWindows: verified.claims.updatesWindows ?? {},
+      entitledSince: verified.claims.entitledSince ?? {},
     };
   };
 }

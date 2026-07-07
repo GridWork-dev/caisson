@@ -10,7 +10,10 @@
 // fail-closed posture as the buyer MCP, ADR-0076). When no resolver is injected the handler serves the
 // full PUBLIC catalog unfiltered (the Wave-0 contract; handler.test.ts pins it). The Ed25519 verify
 // that drives the resolver lives in entitlement-filter.ts; deploy-entry.ts wires it for the live edge.
+import { bundleMembershipTimeline } from "@caisson/pricebook";
 import {
+  BUNDLE_IDS,
+  type EntitlementSnapshot,
   type RegistryIndex,
   assertKnownModule,
   baseModuleIds,
@@ -19,13 +22,32 @@ import {
 } from "../schema/registry-index";
 
 /**
+ * The full bundle-membership TIMELINE (ADR-0247 F7 / ADR-0257 §1.2), built ONCE from
+ * `@caisson/pricebook` — the DATA half of the snapshot-at-sale member filter. `@caisson/registry-schema`
+ * (the open Apache base) never depends "up" on the commercial pricebook that owns this data, so the
+ * gate INJECTS it here (the D side of the D/E boundary — E owns the per-version window at this edge;
+ * D owns this per-member join-date filter). Static, so it is computed once at module load.
+ */
+const MEMBERSHIP_TIMELINE: Record<
+  string,
+  Readonly<Record<string, string>>
+> = Object.fromEntries(
+  BUNDLE_IDS.map((id) => [id, bundleMembershipTimeline(id)]),
+);
+
+/**
  * A resolved license: the caller's PURCHASED IDS plus the signed ADR-0244/0255 per-entitlement
- * updates windows (`updatesWindows`, `purchasedEntitlementId → ISO instant`). An entitlement id
- * ABSENT from the map is unbounded — there are never `null` values in the map.
+ * updates windows (`updatesWindows`, `purchasedEntitlementId → ISO instant`) and the ADR-0257 §1.2
+ * `entitledSince` snapshot-at-sale instants (the member-set axis). An entitlement id ABSENT from a
+ * map is unbounded/grandfathered — there are never `null` values in either map.
  */
 export interface ResolvedLicense {
   readonly entitlements: readonly string[];
   readonly updatesWindows: Readonly<Record<string, string>>;
+  // Optional: an absent map (an older resolver, or a test double that doesn't exercise the member
+  // axis) reads as every bundle grandfathered — the same fail-soft default the schema filter uses.
+  // The live edge resolver (entitlement-filter.ts) always sets it.
+  readonly entitledSince?: Readonly<Record<string, string>>;
 }
 
 /**
@@ -104,18 +126,28 @@ export function resolveGate(
     if (resolved === null) return { entitled, windowFor: UNBOUNDED };
     const purchased = isBareList(resolved) ? resolved : resolved.entitlements;
     const updatesWindows = isBareList(resolved) ? {} : resolved.updatesWindows;
-    for (const id of expandEntitlements(index, purchased)) entitled.add(id);
+    // ADR-0257 §1.2 snapshot-at-sale: fold the caller's signed `entitledSince` with the pricebook
+    // membership timeline so a bundle member that joined AFTER the buyer's sale instant is dropped
+    // (fail-soft — an absent key grandfathers the bundle). A bare-list resolver double carries no
+    // snapshot → the empty map = no member filtering (the pre-snapshot contract).
+    const snapshot: EntitlementSnapshot = {
+      entitledSince: isBareList(resolved) ? {} : (resolved.entitledSince ?? {}),
+      membershipTimeline: MEMBERSHIP_TIMELINE,
+    };
+    for (const id of expandEntitlements(index, purchased, snapshot))
+      entitled.add(id);
 
     // Per-module most-favorable window: for each purchased id, find what it grants + its own window
     // (absent key = unbounded), then fold into the per-module map (unbounded wins; else the max
     // instant). Every `grantorId` here already passed the batch `expandEntitlements` above, so a
-    // per-id re-expansion cannot newly throw.
+    // per-id re-expansion cannot newly throw. The SAME snapshot filters each per-id expansion, so a
+    // snapshot-excluded member never gets a window entry (it is not in `entitled` either).
     const moduleWindows = new Map<string, string | null>();
     for (const grantorId of purchased) {
       const window = Object.hasOwn(updatesWindows, grantorId)
         ? (updatesWindows[grantorId] ?? null)
         : null;
-      for (const memberId of expandEntitlements(index, [grantorId])) {
+      for (const memberId of expandEntitlements(index, [grantorId], snapshot)) {
         const existing = moduleWindows.get(memberId);
         if (existing === undefined) {
           moduleWindows.set(memberId, window);

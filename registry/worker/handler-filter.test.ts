@@ -534,3 +534,56 @@ describe("updates-window filtering on /modules/:id (ADR-0244/0255)", () => {
     ]);
   });
 });
+
+describe("snapshot-at-sale member filter (ADR-0257 §1.2 — the wired D-axis)", () => {
+  // A compliance bundle whose members carry REAL pricebook join dates: audit-worm joined at
+  // GENESIS (2026-06-01), compliance-core at the catalog rework (2026-07-06). The Worker injects
+  // the pricebook membership timeline at expansion, so a buyer's signed `entitledSince` filters it.
+  const snapIndex = loadRegistryIndex({
+    schemaVersion: 1,
+    modules: [
+      entry("@caisson/kernel", []),
+      entry("@caisson/audit-worm", ["compliance"]),
+      entry("@caisson/compliance-core", ["compliance"]),
+    ],
+  });
+  const handlerSince = (since: string) =>
+    createIndexHandler(snapIndex, {
+      resolveEntitlements: () => ({
+        entitlements: ["compliance"],
+        updatesWindows: {},
+        entitledSince: { compliance: since },
+      }),
+    });
+
+  test("a buyer whose entitledSince PREDATES a member's join does NOT get that member (404)", () => {
+    // Bought 2026-06-15 — after audit-worm's GENESIS join, before compliance-core's rework join.
+    const handler = handlerSince("2026-06-15T00:00:00.000Z");
+    // The pre-existing member is served …
+    expect(handler(req("/modules/@caisson%2Faudit-worm")).status).toBe(200);
+    // … the LATER-added member is invisible (404 — indistinguishable from unentitled, ADR-0076).
+    expect(handler(req("/modules/@caisson%2Fcompliance-core")).status).toBe(
+      404,
+    );
+  });
+
+  test("a buyer who purchased AFTER the member joined DOES get it (expanded)", () => {
+    const handler = handlerSince("2026-07-10T00:00:00.000Z"); // after the catalog-rework join
+    expect(handler(req("/modules/@caisson%2Fcompliance-core")).status).toBe(
+      200,
+    );
+    expect(handler(req("/modules/@caisson%2Faudit-worm")).status).toBe(200);
+  });
+
+  test("absent entitledSince grandfathers every member (fail-soft — no snapshot data)", () => {
+    const handler = createIndexHandler(snapIndex, {
+      resolveEntitlements: () => ({
+        entitlements: ["compliance"],
+        updatesWindows: {},
+      }),
+    });
+    expect(handler(req("/modules/@caisson%2Fcompliance-core")).status).toBe(
+      200,
+    );
+  });
+});

@@ -182,4 +182,62 @@ describe("resolveAccountEntitlements (ADR-0071)", () => {
       "@caisson/audit-worm",
     ]);
   });
+
+  test("a member added AFTER the buyer's entitledSince is snapshot-filtered out; a later buyer gets it (ADR-0257 §1.2 wiring)", async () => {
+    // A compliance bundle whose members carry REAL pricebook join dates: audit-worm joined at
+    // GENESIS (2026-06-01), compliance-core at the catalog rework (2026-07-06). The gate injects
+    // the pricebook timeline + the buyer's `entitledSince` (= their grant's granted_at).
+    const snapIndex = loadRegistryIndex({
+      schemaVersion: 1,
+      modules: [
+        entry("@caisson/kernel", []),
+        entry("@caisson/audit-worm", ["compliance"]),
+        entry("@caisson/compliance-core", ["compliance"]),
+      ],
+    });
+
+    // EARLY buyer — bought 2026-06-15, before compliance-core joined the bundle.
+    const early = "acct_snap_early";
+    await withTenant(tp.pg, early, (tx) =>
+      grantEntitlements(tx, {
+        accountId: early,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pi_early",
+        source: { kind: "one_time", purchaseId: "pi_early" },
+      }),
+    );
+    await tp.query(
+      `UPDATE entitlement_grant SET granted_at = $2 WHERE account_id = $1`,
+      [early, "2026-06-15T00:00:00.000Z"],
+    );
+    expect(
+      [
+        ...(await withTenant(tp.pg, early, (tx) =>
+          resolveAccountEntitlements(tx, early, snapIndex),
+        )),
+      ].sort(),
+    ).toEqual(["@caisson/audit-worm"]); // compliance-core joined later → NOT expanded
+
+    // LATE buyer — bought 2026-07-10, after compliance-core joined → gets it.
+    const late = "acct_snap_late";
+    await withTenant(tp.pg, late, (tx) =>
+      grantEntitlements(tx, {
+        accountId: late,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pi_late",
+        source: { kind: "one_time", purchaseId: "pi_late" },
+      }),
+    );
+    await tp.query(
+      `UPDATE entitlement_grant SET granted_at = $2 WHERE account_id = $1`,
+      [late, "2026-07-10T00:00:00.000Z"],
+    );
+    expect(
+      [
+        ...(await withTenant(tp.pg, late, (tx) =>
+          resolveAccountEntitlements(tx, late, snapIndex),
+        )),
+      ].sort(),
+    ).toEqual(["@caisson/audit-worm", "@caisson/compliance-core"]);
+  });
 });
