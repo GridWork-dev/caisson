@@ -46,7 +46,6 @@ const BAR_TRACK: CSSProperties = {
 /** One metered-inference actual — a `usage_event` row in display shape (camelCase, integer units). */
 export interface UsageEventDatum {
   model: string;
-  provider?: string;
   inputTokens: number;
   outputTokens: number;
   cachedInputTokens?: number;
@@ -60,6 +59,7 @@ export interface ModelUsage {
   calls: number;
   inputTokens: number;
   outputTokens: number;
+  cachedInputTokens: number;
   credits: number;
   costMicroUsd: number;
 }
@@ -75,12 +75,14 @@ export function aggregateByModel(
       calls: 0,
       inputTokens: 0,
       outputTokens: 0,
+      cachedInputTokens: 0,
       credits: 0,
       costMicroUsd: 0,
     };
     cur.calls += 1;
     cur.inputTokens += e.inputTokens;
     cur.outputTokens += e.outputTokens;
+    cur.cachedInputTokens += e.cachedInputTokens ?? 0;
     cur.credits += e.credits;
     cur.costMicroUsd += e.costMicroUsd;
     byModel.set(e.model, cur);
@@ -110,7 +112,7 @@ export function UsageChart({ events, loading, className }: UsageChartProps) {
   const totalCostMicro = models.reduce((s, m) => s + m.costMicroUsd, 0);
   const totalCalls = models.reduce((s, m) => s + m.calls, 0);
   const totalTokens = models.reduce(
-    (s, m) => s + m.inputTokens + m.outputTokens,
+    (s, m) => s + m.inputTokens + m.outputTokens + m.cachedInputTokens,
     0,
   );
   const maxCredits = models.reduce((m, x) => Math.max(m, x.credits), 0);

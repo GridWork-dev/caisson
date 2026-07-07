@@ -9,6 +9,7 @@ const events: UsageEventDatum[] = [
     model: "gpt-x",
     inputTokens: 100,
     outputTokens: 50,
+    cachedInputTokens: 25,
     costMicroUsd: 30_000,
     credits: 3,
   },
@@ -36,6 +37,7 @@ describe("aggregateByModel — pure fold, credits-descending", () => {
     expect(gptx.calls).toBe(2);
     expect(gptx.credits).toBe(5);
     expect(gptx.inputTokens).toBe(300);
+    expect(gptx.cachedInputTokens).toBe(25); // folds the one event carrying cache reads
     expect(gptx.costMicroUsd).toBe(50_000);
   });
   test("empty input folds to no rows", () => {
