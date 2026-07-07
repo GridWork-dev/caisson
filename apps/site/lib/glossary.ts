@@ -2144,6 +2144,20 @@ function relatedTermsSection(term: GlossaryTerm): PageSection | undefined {
   };
 }
 
+/** breadcrumbNav — the on-page "Glossary / <term>" trail mirroring the JSON-LD breadcrumb the
+ *  route already emits. Reuses <Hero>'s `ctas` slot the same way the module depth page's
+ *  breadcrumb does (marketplace/modules/[slug]/page.tsx), with `cs-link` (not a bare `<a>`) so
+ *  the link reads as interactive under the `a { color: inherit }` reset (base.css). */
+function breadcrumbNav(term: GlossaryTerm) {
+  return createElement(
+    "nav",
+    { "aria-label": "Breadcrumb", className: "cs-footnote" },
+    createElement("a", { href: "/glossary", className: "cs-link" }, "Glossary"),
+    " / ",
+    createElement("span", { "aria-current": "page" }, term.term),
+  );
+}
+
 /**
  * Builder: GlossaryTerm -> the standard ordered PageSection[] + PageMeta (glossary SPEC §Per-page
  * data shape). One CALLER of the generic `<PageSections>` renderer — the standard order lives
@@ -2156,6 +2170,7 @@ export function glossaryPageSpec(term: GlossaryTerm): PageSpec {
       eyebrow: "Glossary",
       title: term.term,
       lede: term.definition,
+      ctas: breadcrumbNav(term),
     },
     {
       // No `title` here on purpose: the H1 (hero, above) already carries the term name and its

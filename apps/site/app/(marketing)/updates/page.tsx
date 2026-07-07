@@ -1,27 +1,27 @@
-import { Button, Section, Card, StatusChip, Reveal } from "@/components";
+import { Button, Section, Card, StatusChip, Reveal, Icon } from "@/components";
 import { buildMetadata } from "@/lib/metadata";
 import { serializeJsonLd, techArticle, breadcrumb } from "@/lib/jsonld";
 import { CHANGELOG_ENTRIES, FEED_RSS_URL } from "@/lib/changelog";
 import { UpdatesForm } from "@/components/waitlist-form";
 
 export const metadata = buildMetadata({
-  title: "Changelog",
+  title: "Updates",
   description:
-    "Caisson changelog: every base-substrate, kernel, and module release, dated and versioned, with the control clause cited where a change covers one.",
-  path: "/changelog",
+    "Caisson updates: every base-substrate, kernel, and module release, dated and versioned, plus how to follow along.",
+  path: "/updates",
   type: "article",
 });
 
-export default function ChangelogPage() {
+export default function UpdatesPage() {
   const ldArticle = techArticle({
-    headline: "Caisson changelog",
+    headline: "Caisson updates",
     description:
       "The single-source record of every base-substrate, kernel, and module release, dated and versioned.",
-    url: "https://caisson.sh/changelog",
+    url: "https://caisson.sh/updates",
   });
   const ldBreadcrumb = breadcrumb([
     { name: "Caisson", path: "/" },
-    { name: "Changelog", path: "/changelog" },
+    { name: "Updates", path: "/updates" },
   ]);
 
   return (
@@ -40,10 +40,21 @@ export default function ChangelogPage() {
         flush
         as="h1"
         eyebrow="Release history"
-        title="Changelog"
-        lede="The single-source record of every base-substrate, kernel, and module release — dated, versioned, and tagged by what changed."
+        title="Updates"
+        lede="Every Caisson release — dated, versioned, and tagged by what changed — plus a way to follow along."
       >
-        <div style={{ marginTop: "var(--cs-space-5)" }}>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "flex-start",
+            gap: "var(--cs-space-6)",
+            marginTop: "var(--cs-space-5)",
+          }}
+        >
+          <div style={{ flex: "1 1 20rem" }}>
+            <UpdatesForm source="updates" />
+          </div>
           <Button
             href={FEED_RSS_URL}
             external
@@ -53,6 +64,37 @@ export default function ChangelogPage() {
             RSS feed
           </Button>
         </div>
+
+        <ul
+          style={{
+            listStyle: "none",
+            padding: 0,
+            margin: 0,
+            marginTop: "var(--cs-space-6)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--cs-space-2)",
+          }}
+        >
+          {[
+            "Release notes for every base-substrate and kernel version",
+            "Notable module and bundle changes as they ship",
+          ].map((item) => (
+            <li
+              key={item}
+              style={{
+                display: "flex",
+                gap: "var(--cs-space-2)",
+                alignItems: "flex-start",
+                color: "var(--cs-fg-muted)",
+                fontSize: "var(--cs-text-sm)",
+              }}
+            >
+              <Icon name="check" aria-hidden />
+              {item}
+            </li>
+          ))}
+        </ul>
       </Section>
 
       {/* ===== Entries ===== */}
@@ -142,18 +184,6 @@ export default function ChangelogPage() {
             </Reveal>
           ))}
         </div>
-      </Section>
-
-      {/* ===== Subscribe nudge ===== */}
-      <Section band="tint" eyebrow="Stay current">
-        <p className="cs-muted" style={{ marginBottom: "var(--cs-space-5)" }}>
-          Pull the{" "}
-          <a href={FEED_RSS_URL} style={{ color: "var(--cs-link)" }}>
-            RSS feed
-          </a>{" "}
-          into a reader, or leave your email below.
-        </p>
-        <UpdatesForm source="changelog" />
       </Section>
     </>
   );

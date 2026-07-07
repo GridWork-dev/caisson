@@ -102,8 +102,8 @@ export default function EulaPage() {
           </li>
           <li style={prose.li}>
             <strong>&ldquo;Entitlement&rdquo;</strong> means the record of which
-            modules and editions you are licensed to access, verified by a
-            signed Ed25519 offline license key.
+            modules and bundles you are licensed to access, verified by a signed
+            Ed25519 offline license key.
           </li>
           <li style={prose.li}>
             <strong>&ldquo;Order&rdquo;</strong> means the purchase transaction
@@ -183,7 +183,7 @@ export default function EulaPage() {
       >
         <p style={prose.paragraph}>
           Your Order generates an Entitlement record and a signed Ed25519
-          offline license key covering the modules and editions purchased. The
+          offline license key covering the modules and bundles purchased. The
           key is verified locally at install time and, for license-gated
           features, at runtime; no call home is required to exercise the
           perpetual license.
@@ -216,12 +216,13 @@ export default function EulaPage() {
           of updates from your Order date &mdash; registry access to any
           entitled-package version published in that window, plus everything
           already delivered. After that window, you may renew updates access for
-          another 12 months at a reduced rate, or let it lapse; non-renewal
-          never affects the perpetual license for versions already delivered. An
-          Updates Subscription, where purchased, is billed on a recurring basis
-          until cancelled and grants access to new versions of your entitled
-          packages published while it is active; it is optional and does not
-          affect the perpetual license for versions already delivered.
+          another 12 months at 40% of the then-current list price, or let it
+          lapse; non-renewal never affects the perpetual license for versions
+          already delivered. An Updates Subscription, where purchased, is billed
+          on a recurring basis until cancelled and grants access to new versions
+          of your entitled packages published while it is active; it is optional
+          and does not affect the perpetual license for versions already
+          delivered.
         </p>
       </Section>
 
@@ -399,7 +400,7 @@ export default function EulaPage() {
       <Section eyebrow="Agreement" title="Entire agreement" band="tint">
         <p style={prose.paragraph}>
           This Agreement, together with your Order confirmation and any
-          applicable module- or edition-specific terms referenced in your
+          applicable module- or bundle-specific terms referenced in your
           Entitlement, constitutes the entire agreement between you and Caisson
           regarding the Software, and supersedes all prior or contemporaneous
           understandings regarding its subject matter. Where the plain-language

@@ -25,11 +25,61 @@ export interface NavCard {
   icon?: IconName;
 }
 
+/** A named sub-list inside a panel (e.g. the merged Marketplace panel's "Bundles" / "Marketplace"
+ *  groups) — used instead of a flat `cards` list when a panel has more than one card family. */
+export interface NavCardGroup {
+  heading: string;
+  cards: readonly NavCard[];
+}
+
 export interface NavPanelSpec {
   label: string;
   lede?: string;
-  cards: readonly NavCard[];
+  /** A single flat card list, no sub-heading (e.g. Resources). Mutually exclusive with `groups`. */
+  cards?: readonly NavCard[];
+  /** Two or more headed card groups inside one panel (e.g. Marketplace's Bundles | Marketplace). */
+  groups?: readonly NavCardGroup[];
   foot?: readonly { href: string; label: string; desc: string }[];
+}
+
+function CardList({
+  cards,
+  pathname,
+}: {
+  cards: readonly NavCard[];
+  pathname: string;
+}) {
+  return (
+    <ul className={styles.cards}>
+      {cards.map((c) => (
+        <li key={c.href}>
+          <Link
+            href={c.href}
+            className={styles.card}
+            aria-current={
+              pathname === c.href ||
+              (c.href !== "/" && pathname.startsWith(`${c.href}/`))
+                ? "page"
+                : undefined
+            }
+          >
+            {c.icon && (
+              <span className={styles.cardIcon} aria-hidden="true">
+                <Icon name={c.icon} />
+              </span>
+            )}
+            <span className={styles.cardBody}>
+              <span className={styles.cardHead}>
+                <span className={styles.cardName}>{c.label}</span>
+                {c.price && <span className={styles.cardPrice}>{c.price}</span>}
+              </span>
+              <span className={styles.cardNote}>{c.note}</span>
+            </span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 function Chevron() {
@@ -89,7 +139,9 @@ export function NavPanels({ panels }: { panels: readonly NavPanelSpec[] }) {
       {panels.map((panel, i) => {
         const open = openIndex === i;
         const panelId = `${baseId}-panel-${i}`;
-        const onSurface = panel.cards.some((c) => pathname.startsWith(c.href));
+        const allCards =
+          panel.cards ?? panel.groups?.flatMap((g) => g.cards) ?? [];
+        const onSurface = allCards.some((c) => pathname.startsWith(c.href));
         return (
           <div key={panel.label} className={styles.wrap}>
             <button
@@ -113,39 +165,34 @@ export function NavPanels({ panels }: { panels: readonly NavPanelSpec[] }) {
 
             {/* Kept in the DOM so aria-controls resolves; `hidden` drops it from the a11y tree +
                 tab order when closed. */}
-            <div id={panelId} className={styles.panel} hidden={!open}>
+            <div
+              id={panelId}
+              className={styles.panel}
+              hidden={!open}
+              style={
+                panel.groups
+                  ? { maxHeight: "calc(100vh - 6rem)", overflowY: "auto" }
+                  : undefined
+              }
+            >
               {panel.lede && <p className={styles.lede}>{panel.lede}</p>}
-              <ul className={styles.cards}>
-                {panel.cards.map((c) => (
-                  <li key={c.href}>
-                    <Link
-                      href={c.href}
-                      className={styles.card}
-                      aria-current={
-                        pathname === c.href ||
-                        (c.href !== "/" && pathname.startsWith(`${c.href}/`))
-                          ? "page"
-                          : undefined
-                      }
-                    >
-                      {c.icon && (
-                        <span className={styles.cardIcon} aria-hidden="true">
-                          <Icon name={c.icon} />
-                        </span>
-                      )}
-                      <span className={styles.cardBody}>
-                        <span className={styles.cardHead}>
-                          <span className={styles.cardName}>{c.label}</span>
-                          {c.price && (
-                            <span className={styles.cardPrice}>{c.price}</span>
-                          )}
-                        </span>
-                        <span className={styles.cardNote}>{c.note}</span>
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              {panel.cards && (
+                <CardList cards={panel.cards} pathname={pathname} />
+              )}
+              {panel.groups?.map((g) => (
+                <div
+                  key={g.heading}
+                  style={{ display: "grid", gap: "var(--cs-space-2)" }}
+                >
+                  <p
+                    className={styles.lede}
+                    style={{ fontWeight: "var(--cs-weight-semibold)" }}
+                  >
+                    {g.heading}
+                  </p>
+                  <CardList cards={g.cards} pathname={pathname} />
+                </div>
+              ))}
               {panel.foot && (
                 <div className={styles.foot}>
                   {panel.foot.map((f) => (

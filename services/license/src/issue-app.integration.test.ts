@@ -112,6 +112,8 @@ beforeAll(async () => {
     limiter: new TokenBucketLimiter(loadRateLimitConfig()),
     discordNotify: null,
     posthogCapture: null,
+    purchaseEmailNotify: async () => {},
+    renewalEmailNotify: async () => {},
   });
 });
 afterAll(async () => {
@@ -367,6 +369,8 @@ describe("POST /issue admin-scoped credential (ADR-0220)", () => {
       limiter: new TokenBucketLimiter(loadRateLimitConfig()),
       discordNotify: null,
       posthogCapture: null,
+      purchaseEmailNotify: async () => {},
+      renewalEmailNotify: async () => {},
     });
   });
 

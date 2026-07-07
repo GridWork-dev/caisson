@@ -80,6 +80,51 @@ export async function readEntitlementGrants(
 }
 
 /**
+ * `readUpdatesWindows`'s extra `entitlement_grant` column beyond `ENTITLEMENT_GRANT_SELECT_COLUMNS`:
+ * `updates_expires_at` is added by a separate ALTER TABLE migration
+ * (`ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL` in `@caisson/service-license`), not the base
+ * `ENTITLEMENT_SCHEMA_SQL` CREATE TABLE the columns-contract test's DDL parser covers — so this
+ * column isn't asserted there; `updates-window.integration.test.ts` exercises the live column
+ * directly on PGlite instead.
+ */
+export const UPDATES_WINDOW_READ_COLUMNS = [
+  ...ENTITLEMENT_GRANT_READ_COLUMNS,
+  "updates_expires_at",
+] as const;
+
+/**
+ * Mirrors `services/license`'s `computeUpdatesWindows` EXACTLY (ADR-0244/0255: same table, same
+ * one_time-only sourcing, same purchased-id keying, same most-favorable/max-bound fold) — the LIVE
+ * read the buyer dashboard uses in place of decoding the last-issued license token, which goes
+ * stale after a renewal extends the DB row without a re-issue. Returns a `purchasedEntitlementId ->
+ * ISO instant` map; EMPTY when the account holds no active one-time grants (subscription-sourced
+ * entitlements never get a key — their own license expiry governs, ADR-0244 §4). Run inside
+ * `withTenant`.
+ *
+ * Deliberately does NOT import `@caisson/service-license`'s query function — the read is
+ * re-expressed as raw SQL against the known table shape so this package stays a leaf (schema
+ * coupling only, never the service's runtime).
+ */
+export async function readUpdatesWindows(
+  tx: TenantExecutor,
+  accountId: string,
+): Promise<Record<string, string>> {
+  const r = await tx.query<{ entitlement_id: string; bound: unknown }>(
+    `SELECT entitlement_id,
+            max(COALESCE(updates_expires_at, granted_at + interval '12 months')) AS bound
+       FROM entitlement_grant
+      WHERE account_id = $1 AND source_kind = 'one_time' AND status = 'active'
+      GROUP BY entitlement_id`,
+    [accountId],
+  );
+  const windows: Record<string, string> = {};
+  for (const row of r.rows) {
+    windows[row.entitlement_id] = toIsoString(row.bound);
+  }
+  return windows;
+}
+
+/**
  * The `license_grant` columns these reads depend on (the SELECT list plus `account_id`, the RLS
  * scope predicate). Exported so the columns-contract test can assert every one is present in
  * `@caisson/service-license`'s `LICENSE_GRANT_SCHEMA_SQL`.

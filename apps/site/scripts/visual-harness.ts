@@ -42,7 +42,7 @@ const STATIC_ROUTES: readonly string[] = [
   "/local-first",
   "/agentic-dev",
   "/procurement",
-  "/changelog",
+  "/updates",
   "/security",
   "/cart",
   "/marketplace",

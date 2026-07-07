@@ -87,12 +87,14 @@ export interface CreditExpirySchedulerDeps {
   /** `loadCreditExpiryScheduleConfig`'s result — `null`/blank means inert. */
   schedule: string | null | undefined;
   /**
-   * Driver-gated emailer (ADR-0252 posture): `null` when no email driver is configured. This
-   * service has no `@caisson/email` wiring today, so callers pass `null` — the notice task then
-   * records nothing sent and the sweep still burns residue.
+   * Driver-gated emailer (ADR-0252 posture): `null` when no email driver is configured. `deploy.ts`
+   * wires the real `email-notify.ts#resolveEmailer()` transport (Resend or capture, never null); a
+   * caller may still pass `null` explicitly (e.g. a test) to prove the notice task then records
+   * nothing sent while the sweep still burns residue.
    */
   emailer: ExpiryNoticeEmailer | null;
-  /** Resolve an account's notification address; unreachable while `emailer` is `null`. */
+  /** Resolve an account's notification address (`email-notify.ts#recipientFor`); unreachable while
+   *  `emailer` is `null`. */
   recipientFor: (accountId: string) => Promise<string | null>;
   /** The notice email's CTA link — the buyer credits dashboard. */
   dashboardUrl: string;

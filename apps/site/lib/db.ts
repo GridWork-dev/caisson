@@ -184,6 +184,11 @@ export async function getDb(): Promise<Transactor> {
   const url = process.env.DATABASE_URL;
   if (url !== undefined && url.length > 0) {
     const pool = new Pool({ connectionString: url });
+    pool.on("error", (err) => {
+      process.stderr.write(
+        `[apps/site] idle pg client error: ${err.message}\n`,
+      );
+    });
     // The canonical Drizzle handle (ADR-0115's named driver) — unused by the raw-SQL Transactor
     // below, kept as the forward seam for a future schema-based read. Constructing it eagerly
     // also fails fast on a malformed `DATABASE_URL` shape at boot rather than at first query.

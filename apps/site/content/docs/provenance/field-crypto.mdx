@@ -46,10 +46,9 @@ const keys: FieldKeyProvider = new AwsKmsKeyProvider({
 });
 ```
 
-<Callout type="warn" title="Adapters: AWS today, others are a seam">
-  The AWS KMS adapter is shipped. GCP, Azure, and HashiCorp Vault adapters are
-  roadmap — the `FieldKeyProvider` port is stable, so they slot in without
-  touching call sites.
+<Callout type="info" title="AWS KMS ships today">
+  The AWS KMS adapter ships today. The `FieldKeyProvider` port is stable, so
+  other KMS adapters slot in without touching call sites.
 </Callout>
 
 <Callout type="info" title="Reference docs at GA">
