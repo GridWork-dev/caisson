@@ -37,6 +37,7 @@ import {
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   LICENSE_GRANT_SCHEMA_SQL,
+  RENEWAL_EXTENSION_SCHEMA_SQL,
 } from "@caisson/service-license";
 import { getMigrations } from "better-auth/db/migration";
 import { Pool } from "pg";
@@ -140,6 +141,15 @@ export function platformPackage(): PackageMigrations {
       {
         name: "0016_entitlement_updates_window.sql",
         sql: ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
+      },
+      // ADR-0251: the renewal-EXTENSION ledger (one row per renewal line at purchase time) that
+      // `extendUpdatesWindow` INSERTs on every renewal-SKU line and `reverseRenewalExtensions`
+      // SELECTs on EVERY refund. Without this table, the first refund/renewal event against a
+      // deployed DB hits a missing relation and rolls back the whole withTenant tx. Tenant-owned +
+      // fail-closed FORCE-RLS via buildTenantPolicySql. New table (not an edit to a frozen constant).
+      {
+        name: "0017_renewal_extension.sql",
+        sql: RENEWAL_EXTENSION_SCHEMA_SQL,
       },
     ],
   };

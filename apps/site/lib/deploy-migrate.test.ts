@@ -42,13 +42,13 @@ afterAll(async () => {
 test("platform migrations apply in order then are idempotent", async () => {
   const first = await runPlatformMigrations(pgliteApplier(tp));
   expect(first.applied).toEqual([
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
   ]);
 
   const second = await runPlatformMigrations(pgliteApplier(tp));
   expect(second.applied).toEqual([]);
   expect(second.skipped).toEqual([
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
   ]);
 });
 
@@ -166,11 +166,23 @@ test("0015 creates the grant_consumption + credit_expiry_notice tables with the 
   expect(idx).toEqual([{ indexname: "grant_consumption_grant_idx" }]);
 });
 
+test("0017 creates the ADR-0251 renewal_extension ledger with FORCE RLS (refund/renewal handlers depend on it)", async () => {
+  const rows = await tp.query<{ relname: string; force: boolean }>(
+    `SELECT relname, relforcerowsecurity AS force FROM pg_class
+     WHERE relname = 'renewal_extension' AND relkind = 'r'`,
+  );
+  expect(rows).toEqual([{ relname: "renewal_extension", force: true }]);
+  const idx = await tp.query<{ indexname: string }>(
+    `SELECT indexname FROM pg_indexes WHERE tablename = 'renewal_extension' AND indexname = 'renewal_extension_uniq'`,
+  );
+  expect(idx).toEqual([{ indexname: "renewal_extension_uniq" }]);
+});
+
 test("every composed tenant table ships FORCE row-level security", async () => {
   const rows = await tp.query<{ relname: string; force: boolean }>(
     `SELECT relname, relforcerowsecurity AS force FROM pg_class
-     WHERE relname IN ('credit_wallet','credit_event','entitlement_grant','license_grant','usage_event','account_member','grant_consumption','credit_expiry_notice')`,
+     WHERE relname IN ('credit_wallet','credit_event','entitlement_grant','license_grant','usage_event','account_member','grant_consumption','credit_expiry_notice','renewal_extension')`,
   );
-  expect(rows.length).toBeGreaterThanOrEqual(8);
+  expect(rows.length).toBeGreaterThanOrEqual(9);
   expect(rows.every((r) => r.force)).toBe(true);
 });
