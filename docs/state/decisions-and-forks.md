@@ -1284,3 +1284,30 @@ Five outcomes from the post-merge picker + the operator's research directive:
    The 7-leg live-web research fanout (TurboStarter · UI reference · positioning · pricing market
    · Paddle prod truth · AEO citation · launch channels) ran this session; synthesis lands in
    `outputs/research/`.
+
+## 2026-07-07 research-synthesis picker (four operator locks off the 17-leg fanout)
+
+Synthesis: `outputs/research/prelaunch-fanout-2026-07/SYNTHESIS.md` (decision menu D1–D8).
+Operator locks:
+
+1. **D1 Positioning → DUAL-DOOR HERO (LOCKED).** Compliance stays the hero wedge; `/` gets a
+   first-scroll split — "Building something regulated?" → Compliance vs "Building for
+   production?" → the five bundles/Everything. Compliance-specific acquisition repoints at the
+   existing `/compliance` route. Supersedes the compliance-only hero execution (the ADR-0040
+   two-layer frame stays; this is its correct rendering). The Cookiy frame-test (survey 287453)
+   data still lands and informs the door copy, not the direction. → Linear CAISSON-28.
+2. **D4 UI wave → TOP-3 FIRST (LOCKED):** real file-tree + code bento · architecture-isolation +
+   data-lifecycle diagram pair · bundle-builder calculator. The rest of the Tier-1 catalog +
+   copy sweeps queue behind them. Rides the same site kickoff as the dual-door build.
+3. **D5/D6 GTM → AEO content program + affiliate program ARMED (LOCKED);** newsletter budget and
+   the full 90-day sequence NOT yet armed (revisit at launch). AEO scope: 15–20 comparison pages,
+   Product/FAQPage schema on bundle pages, crawlability audit, directory listings, 3 niche
+   explainers. Affiliate: 30%→50% tiers, Paddle-side config + terms page. → CAISSON-29/30.
+4. **D7 Paddle prep → FULL PREP (LOCKED, execution operator-gated):** pre-fix the four documented
+   rejection causes on the site (unconditional refund copy · entity-name match · verbatim MoR
+   sentence · support-as-software framing), build the scripted catalog-recreation tool from the
+   sandbox catalog, update the launch runbook with Retain=CANCEL + the past_due-grace/
+   canceled-revoke webhook mapping. Verification submission stays the operator's act. → CAISSON-31.
+
+D2/D3 (seat allowance at $629/$739 · compliance/everything price level) deliberately HELD for the
+Cookiy WTP data. D8 (/updates roadmap block vs V1-live posture) stays an open fork — not adopted.
