@@ -438,10 +438,12 @@ describe("ADR-0076 tool-registration seam (per-tool entitlement gating)", () => 
   });
 });
 
-describe("ADR-0257 bundle vocabulary through the server gate (legacy aliases keep resolving)", () => {
-  // The buyer MCP consumes `expandEntitlements` — the single ADR-0257 alias point — so a legacy
-  // purchased id ("ai-kit") and its new bundle id ("ai-production") must gate identically, and a
-  // first-class kind:"bundle" index entry must expand via its members map exactly like an edition.
+describe("ADR-0257/0270 bundle vocabulary through the server gate", () => {
+  // The buyer MCP consumes `expandEntitlements` — the single ADR-0257 alias point. Post
+  // edition-trace purge (ADR-0270) the alias map is EMPTY: a dissolved edition id ("ai-kit")
+  // resolves only as its still-indexed meta-package, never its member fold; the new bundle id
+  // ("ai-production") folds members via `membersOfBundle`, and a first-class kind:"bundle" index
+  // entry expands via its members map exactly like an edition.
   const bundleIndex = loadRegistryIndex({
     schemaVersion: 1,
     modules: [
@@ -481,12 +483,12 @@ describe("ADR-0257 bundle vocabulary through the server gate (legacy aliases kee
       {
         token: "tok_acct_l_000000000000",
         accountId: "acct_legacy",
-        entitlements: ["ai-kit"], // legacy purchased id — must never 422/downgrade (ADR-0257)
+        entitlements: ["ai-kit"], // dissolved edition id — resolves ONLY as its indexed meta (ADR-0270)
       },
       {
         token: "tok_acct_n_111111111111",
         accountId: "acct_new",
-        entitlements: ["ai-production"], // the new bundle id — same leaf set via the alias map
+        entitlements: ["ai-production"], // the new bundle id — folds members via membersOfBundle
       },
       {
         token: "tok_acct_p_222222222222",
@@ -498,19 +500,35 @@ describe("ADR-0257 bundle vocabulary through the server gate (legacy aliases kee
     onGenerate: async () => ({ generationId: "gen_b" }),
   });
 
-  test("a legacy purchased id and its new bundle id gate the generate path identically", async () => {
-    // The generate gate is the server's `expandEntitlements` consumer (ADR-0071) — both tokens
-    // must resolve @caisson/gateway (an ai-kit member) through the ADR-0257 alias map.
-    const legacy = srv.authenticate("tok_acct_l_000000000000");
+  test("the new bundle id folds the member set through the generate gate (ADR-0257)", async () => {
+    // The generate gate is the server's `expandEntitlements` consumer (ADR-0071): "ai-production"
+    // resolves @caisson/gateway through the edition-member derivation in `membersOfBundle`.
     const modern = srv.authenticate("tok_acct_n_111111111111");
-    for (const s of [legacy, modern]) {
-      expect(
-        await srv.handleToolCall(s, "generate", {
-          projectName: "my-app",
-          modules: [{ id: "@caisson/gateway", version: "0.1.0" }],
-        }),
-      ).toEqual({ generationId: "gen_b" });
-    }
+    expect(
+      await srv.handleToolCall(modern, "generate", {
+        projectName: "my-app",
+        modules: [{ id: "@caisson/gateway", version: "0.1.0" }],
+      }),
+    ).toEqual({ generationId: "gen_b" });
+  });
+
+  test("a dissolved edition id no longer folds members — only its indexed meta resolves (ADR-0270)", async () => {
+    // Post-purge, "ai-kit" grants exactly the still-indexed @caisson/ai-kit meta-package; its
+    // member fold is gone, so a member module is DENIED fail-closed. (On the real index ADR-0271
+    // delists the meta too and the bare id throws — pinned in registry-schema's expansion tests.)
+    const legacy = srv.authenticate("tok_acct_l_000000000000");
+    expect(
+      await srv.handleToolCall(legacy, "generate", {
+        projectName: "my-app",
+        modules: [{ id: "@caisson/ai-kit", version: "0.1.0" }],
+      }),
+    ).toEqual({ generationId: "gen_b" });
+    await expect(
+      srv.handleToolCall(legacy, "generate", {
+        projectName: "my-app",
+        modules: [{ id: "@caisson/gateway", version: "0.1.0" }],
+      }),
+    ).rejects.toBeInstanceOf(EntitlementError);
   });
 
   test('a kind:"bundle" entitlement expands via its members map (edition parity)', async () => {

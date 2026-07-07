@@ -6,7 +6,7 @@
       "outputs": ["dist/**", "migrations-bundle/**"]
     },
     "lint": {},
-    "test": {},
+    "test": { "dependsOn": ["^build"] },
     "test:live": { "cache": false },
     "eval": {}
   }
