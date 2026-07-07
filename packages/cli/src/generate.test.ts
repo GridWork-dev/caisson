@@ -177,6 +177,12 @@ describe("generate — allowlist gate (ADR-0021/0048)", () => {
     ).toThrow();
   });
 
+  test("Zod .strict() rejects an unknown framework (ADR-0287)", () => {
+    expect(() =>
+      validateSelection(INDEX, { ...VALID, framework: "remix" }),
+    ).toThrow();
+  });
+
   test("a duplicate module id (same id, two versions) is rejected", () => {
     const engine = spyEngine();
     expect(() =>
@@ -273,6 +279,112 @@ describe("generate — deploy templates (ADR-0268)", () => {
   }
 });
 
+describe("generate — framework templates (ADR-0287)", () => {
+  // Paths that only exist in the Next.js starter — none of these may appear in an unset-framework
+  // (byte-identical) compose.
+  const FRAMEWORK_FILES = new Set([
+    "next.config.ts",
+    "next-env.d.ts",
+    "src/proxy.ts",
+    "src/lib/auth.ts",
+    "src/lib/db.ts",
+    "src/lib/email.ts",
+    "src/lib/jobs.ts",
+    "src/lib/ai.ts",
+    "src/app/layout.tsx",
+    "src/app/page.tsx",
+    "src/app/api/me/route.ts",
+    "src/app/api/billing/webhook/route.ts",
+    "src/app/actions/notes.ts",
+    "src/app/actions/notify.ts",
+  ]);
+
+  test("an unset framework composes NO Next.js files — byte-identical to pre-ADR-0287 output", () => {
+    const { files } = generate(INDEX, BASE);
+    const paths = files.map((f) => f.path);
+    for (const f of files) {
+      expect(FRAMEWORK_FILES.has(f.path)).toBe(false);
+    }
+    // The existing BASE golden (asserted above) already pins the full path list byte-for-byte;
+    // this is an explicit ADR-0287 regression lock alongside it (mirrors the ADR-0268 deploy lock).
+    expect(paths).toEqual([
+      ".github/workflows/ci.yml",
+      ".gitignore",
+      ".npmrc",
+      "AGENTS.md",
+      "README.md",
+      "eslint.config.js",
+      "package.json",
+      "src/__golden__/smoke.json",
+      "src/golden.test.ts",
+      "tsconfig.json",
+    ]);
+    expect(generate(INDEX, BASE).files).toEqual(files);
+  });
+
+  test("framework=next composes the Next.js starter + matches its golden", () => {
+    const { files } = generate(INDEX, { ...BASE, framework: "next" });
+    matchGolden(import.meta.url, "generated-fileset-framework-next", files);
+  });
+
+  test("framework=next overrides base's tsconfig/README/AGENTS/.gitignore (root-file collision)", () => {
+    const { files } = generate(INDEX, { ...BASE, framework: "next" });
+    const tsconfig = files.find((f) => f.path === "tsconfig.json");
+    expect(tsconfig?.content).toContain('"plugins": [{ "name": "next" }]');
+    const readme = files.find((f) => f.path === "README.md");
+    expect(readme?.content).toContain("Next.js App Router");
+  });
+
+  test("framework=next's package.json fragment deep-merges with base + the module overlay", () => {
+    const { files } = generate(INDEX, { ...BASE, framework: "next" });
+    const pkg = files.find((f) => f.path === "package.json");
+    const parsed = JSON.parse(pkg?.content ?? "{}") as {
+      scripts?: Record<string, string>;
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+    };
+    // base's scripts survive (lint/test); the framework fragment adds dev/build/start.
+    expect(parsed.scripts).toMatchObject({
+      lint: "eslint .",
+      test: "bun test ./src",
+      dev: "next dev",
+      build: "next build",
+      start: "next start",
+    });
+    // the buyer's explicit --module selection is present alongside the framework's own deps.
+    expect(parsed.dependencies).toMatchObject({
+      "@caisson/credits": "0.2.0",
+      "@caisson/field-crypto": "0.1.0",
+      next: "^16.2.9",
+      "@caisson/kernel": "^0.4.2",
+    });
+    expect(parsed.devDependencies).toMatchObject({
+      typescript: "^5.6.0",
+      "@types/react": "^19.2.0",
+    });
+  });
+
+  test("a co-selected deployTarget composes alongside framework=next (base+framework+deploy)", () => {
+    const { files } = generate(INDEX, {
+      ...BASE,
+      framework: "next",
+      deployTarget: "railway",
+    });
+    const paths = files.map((f) => f.path);
+    expect(paths).toContain("Dockerfile");
+    expect(paths).toContain("railway.toml");
+    expect(paths).toContain("src/proxy.ts");
+    const pkg = files.find((f) => f.path === "package.json");
+    const parsed = JSON.parse(pkg?.content ?? "{}") as {
+      scripts?: Record<string, string>;
+    };
+    // the shared deploy Dockerfile runs `bun run build`/`bun run start` — the framework fragment's
+    // scripts make those resolve to `next build`/`next start`.
+    expect(parsed.scripts?.build).toBe("next build");
+    expect(parsed.scripts?.start).toBe("next start");
+  });
+});
+
 describe("generate — ADR-0072 buyer-repo boundary", () => {
   // Paths that would only appear if a monorepo-internal surface leaked into a buyer repo.
   const FORBIDDEN_PATH = [
@@ -299,6 +411,7 @@ describe("generate — ADR-0072 buyer-repo boundary", () => {
   for (const [name, sel] of [
     ["base", BASE],
     ["compliance", VALID],
+    ["framework-next", { ...BASE, framework: "next" }],
   ] as const) {
     test(`emits NONE of the monorepo-internal surfaces (${name})`, () => {
       const { files } = generate(INDEX, sel);
