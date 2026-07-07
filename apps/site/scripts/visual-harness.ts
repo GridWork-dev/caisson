@@ -11,7 +11,7 @@
  * `data-theme` override after navigation so a slow/cached init script can't leave the wrong mode.
  *
  * Dashboard routes (`/dashboard/*`) are NOT included — they require an authenticated session this
- * harness doesn't establish. `/preview/emails` IS included since it's reachable in dev.
+ * harness doesn't establish.
  *
  * Usage:
  *   bun run scripts/visual-harness.ts [--base-url http://localhost:3000] [--out screenshots]
@@ -60,7 +60,6 @@ const STATIC_ROUTES: readonly string[] = [
   "/login",
   "/forgot-password",
   "/reset-password",
-  "/preview/emails",
 ];
 
 export function allRoutes(): readonly string[] {

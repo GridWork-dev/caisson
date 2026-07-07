@@ -17,10 +17,10 @@ interface Section {
 
 const SECTIONS: Section[] = [
   {
-    title: "Design system",
-    desc: "Token foundations, type, wordmark, and the live @caisson/ui kit (the absorbed studio).",
+    title: "Catalog",
+    desc: "Token foundations, type, wordmark, the full live component kit, and every email template.",
     state: "ready",
-    href: "/design",
+    href: "/catalog",
   },
   {
     title: "Ops & observability",
@@ -63,9 +63,9 @@ export default function OverviewPage() {
         </h1>
         <p className="lede">
           Ops, business state, the live architecture, the decisions record, and
-          the design system — the four surfaces you used to toggle between,
-          collapsed behind one Access-gated app that is also the source of truth
-          it describes.
+          the catalog — the four surfaces you used to toggle between, collapsed
+          behind one Access-gated app that is also the source of truth it
+          describes.
         </p>
       </section>
 

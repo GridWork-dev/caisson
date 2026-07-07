@@ -18,6 +18,8 @@
     "@caisson/auth": "workspace:*",
     "@caisson/brand": "workspace:*",
     "@caisson/credits": "workspace:*",
+    "@caisson/demo-registry": "workspace:*",
+    "@caisson/email": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/observability": "workspace:*",
     "@caisson/org-controls": "workspace:*",

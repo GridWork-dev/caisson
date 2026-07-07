@@ -1,0 +1,49 @@
+import { describe, expect, test } from "bun:test";
+import {
+  CATALOG_ENTRIES,
+  entriesByPackage,
+  entriesByTier,
+  getCatalogEntry,
+  listPackages,
+} from "./registry.ts";
+
+describe("CATALOG_ENTRIES", () => {
+  test("loads without throwing and every id is unique", () => {
+    // A duplicate/invalid entry throws at module load (see registry.ts's `validate`) — reaching
+    // this line at all is half the assertion; the Set check below is the other half.
+    const ids = new Set(CATALOG_ENTRIES.map((e) => e.id));
+    expect(ids.size).toBe(CATALOG_ENTRIES.length);
+  });
+
+  test("covers the base kit, ui-pro, and per-package tiers", () => {
+    expect(entriesByTier("apache-base").length).toBeGreaterThanOrEqual(30);
+    expect(entriesByTier("ui-pro").length).toBe(11);
+    expect(entriesByTier("per-package-ui").length).toBe(6);
+  });
+
+  test("getCatalogEntry resolves a known id and misses cleanly", () => {
+    expect(getCatalogEntry("ui.button")?.name).toBe("Button");
+    expect(getCatalogEntry("does.not-exist")).toBeUndefined();
+  });
+
+  test("listPackages enumerates every owning package once", () => {
+    const packages = listPackages();
+    expect(new Set(packages).size).toBe(packages.length);
+    expect(packages).toContain("@caisson/ui");
+    expect(packages).toContain("@caisson/ui-pro");
+    expect(packages).toContain("@caisson/audit-worm");
+  });
+
+  test("every entry declares at least one variant and a non-empty description", () => {
+    for (const e of CATALOG_ENTRIES) {
+      expect(e.variants.length).toBeGreaterThan(0);
+      expect(e.description.length).toBeGreaterThan(0);
+    }
+  });
+
+  test("entriesByPackage filters correctly", () => {
+    const uiEntries = entriesByPackage("@caisson/ui");
+    expect(uiEntries.every((e) => e.package === "@caisson/ui")).toBe(true);
+    expect(uiEntries.length).toBeGreaterThanOrEqual(30);
+  });
+});

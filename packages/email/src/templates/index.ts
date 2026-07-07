@@ -12,6 +12,11 @@ import {
 } from "./credits-expiring.tsx";
 import { MagicLinkEmail, MAGIC_LINK_SUBJECT } from "./magic-link.tsx";
 import {
+  NurtureFollowUpEmail,
+  nurtureSubject,
+  type NurtureFollowUpData,
+} from "./nurture-follow-up.tsx";
+import {
   PasswordResetEmail,
   PASSWORD_RESET_SUBJECT,
 } from "./password-reset.tsx";
@@ -32,6 +37,11 @@ import {
   subscriptionPaymentSubject,
 } from "./subscription-payment.tsx";
 import { VerifyEmailEmail, VERIFY_EMAIL_SUBJECT } from "./verify-email.tsx";
+import {
+  WaitlistWelcomeEmail,
+  waitlistWelcomeSubject,
+  type WaitlistWelcomeData,
+} from "./waitlist-welcome.tsx";
 
 export type EmailTemplateId =
   | "magic-link"
@@ -40,7 +50,9 @@ export type EmailTemplateId =
   | "credits-expiring"
   | "purchase-confirmation"
   | "subscription-payment-received"
-  | "renewal-confirmation";
+  | "renewal-confirmation"
+  | "waitlist-welcome"
+  | "nurture-follow-up";
 
 export interface EmailTemplateData {
   url: string;
@@ -48,10 +60,12 @@ export interface EmailTemplateData {
 
 export type {
   CreditsExpiringData,
+  NurtureFollowUpData,
   PurchaseConfirmationData,
   PurchaseConfirmationLine,
   RenewalConfirmationData,
   RenewalConfirmationLine,
+  WaitlistWelcomeData,
 };
 
 /** Per-template prop shapes — `renderEmailTemplate` is typed against this map. */
@@ -65,6 +79,8 @@ export interface TemplateDataMap {
   // the copy differs.
   "subscription-payment-received": PurchaseConfirmationData;
   "renewal-confirmation": RenewalConfirmationData;
+  "waitlist-welcome": WaitlistWelcomeData;
+  "nurture-follow-up": NurtureFollowUpData;
 }
 
 export interface RenderedEmail {
@@ -82,6 +98,17 @@ interface TemplateEntry<K extends EmailTemplateId> {
 
 function coerceUrl(data: Record<string, unknown>): EmailTemplateData | null {
   return typeof data.url === "string" ? { url: data.url } : null;
+}
+
+/** Shared coercer for the two growth-email shapes: a bounded email + an optional bundle label. */
+function coerceEmailBundle(
+  data: Record<string, unknown>,
+): { email: string; bundle?: string } | null {
+  if (typeof data.email !== "string") return null;
+  if (data.bundle === undefined) return { email: data.email };
+  return typeof data.bundle === "string"
+    ? { email: data.email, bundle: data.bundle }
+    : null;
 }
 
 function coercePurchaseLine(line: unknown): PurchaseConfirmationLine | null {
@@ -213,6 +240,16 @@ const TEMPLATES: { [K in EmailTemplateId]: TemplateEntry<K> } = {
     Component: RenewalConfirmationEmail,
     coerce: coerceRenewalConfirmation,
   },
+  "waitlist-welcome": {
+    subject: waitlistWelcomeSubject,
+    Component: WaitlistWelcomeEmail,
+    coerce: coerceEmailBundle,
+  },
+  "nurture-follow-up": {
+    subject: nurtureSubject,
+    Component: NurtureFollowUpEmail,
+    coerce: coerceEmailBundle,
+  },
 };
 
 /** Stable display order for the dev preview route. */
@@ -224,6 +261,8 @@ export const EMAIL_TEMPLATE_IDS: readonly EmailTemplateId[] = [
   "purchase-confirmation",
   "subscription-payment-received",
   "renewal-confirmation",
+  "waitlist-welcome",
+  "nurture-follow-up",
 ];
 
 /** Render one template + its plain-text fallback from the SAME element (never drift). */
