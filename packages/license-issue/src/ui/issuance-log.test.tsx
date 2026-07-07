@@ -54,4 +54,9 @@ describe("licenseStatus — perpetual vs. dated", () => {
       ),
     ).toBe("active");
   });
+  test("malformed expiry fails closed to expired", () => {
+    expect(licenseStatus({ ...records[1]!, expiry: "not-a-date" }, now)).toBe(
+      "expired",
+    );
+  });
 });

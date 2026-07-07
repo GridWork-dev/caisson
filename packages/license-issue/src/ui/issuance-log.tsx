@@ -42,7 +42,9 @@ export function licenseStatus(
 ): EntitlementStatus {
   if (record.expiry === null) return "active";
   const at = Date.parse(record.expiry);
-  return Number.isNaN(at) || at > now ? "active" : "expired";
+  // Fail CLOSED, mirroring @caisson/license-verify: an unparseable or elapsed expiry reads expired,
+  // never active — a malformed date must never present as a live license.
+  return !Number.isNaN(at) && at > now ? "active" : "expired";
 }
 
 function shortId(id: string): string {
