@@ -470,6 +470,67 @@ describe("runGeneration — edition pin resolution (ADR-0077)", () => {
     expect(deps?.["@caisson/credits"]).toBe("0.2.0"); // the bundle's pin, not the legacy meta's
   });
 
+  // The real everything-bundle shape: its members map carries the RESERVED sold-not-yet-published
+  // `@caisson/ui-pro@0.0.0` phantom pin (no index entry at all). The resolver must SKIP it — the
+  // same allowlist posture `expandEntitlements` takes — so the flagship bundle's metered path
+  // composes and debits instead of fail-closed-throwing (2026-07-06 audit P2). A KNOWN module
+  // with a bad VERSION pin still throws (the `editionIndex("9.9.9")` test above).
+  test("a RESERVED phantom member pin (no index entry) is skipped — the everything bundle still generates + debits", async () => {
+    await grantSome(5);
+    const spy = writerSpy();
+    const index = loadRegistryIndex({
+      schemaVersion: 1,
+      modules: [
+        {
+          id: "@caisson/field-crypto",
+          latest: "0.1.0",
+          versions: [mkManifest("@caisson/field-crypto", "0.1.0", "primitive")],
+        },
+        {
+          id: "@caisson/credits",
+          latest: "0.2.0",
+          versions: [mkManifest("@caisson/credits", "0.2.0", "primitive")],
+        },
+        {
+          id: "@caisson/everything",
+          latest: "0.2.0",
+          versions: [
+            mkManifest("@caisson/everything", "0.2.0", "bundle", {
+              members: {
+                "@caisson/credits": "0.2.0",
+                "@caisson/ui-pro": "0.0.0", // reserved: sold, unpublished, absent from the index
+              },
+            }),
+          ],
+        },
+      ],
+    });
+    const outcome = await withTenant(tp.pg, ACCOUNT, (tx) =>
+      runGeneration(
+        tx,
+        { index, debit, writeFileSet: spy.writer },
+        {
+          projectName: "acme-everything",
+          edition: "everything" as const,
+          modules: [{ id: "@caisson/field-crypto", version: "0.1.0" }],
+        },
+        { accountId: ACCOUNT, idempotencyKey: "everything-1" },
+      ),
+    );
+    const pkg = outcome.files.find((f) => f.path === "package.json");
+    const deps = (
+      JSON.parse(pkg?.content ?? "{}") as {
+        dependencies?: Record<string, string>;
+      }
+    ).dependencies;
+    expect(deps?.["@caisson/credits"]).toBe("0.2.0"); // the resolvable member folds in
+    expect(deps?.["@caisson/ui-pro"]).toBeUndefined(); // the phantom never reaches the deps
+    expect(spy.calls).toBe(1);
+    expect(await withTenant(tp.pg, ACCOUNT, (tx) => balance(tx, ACCOUNT))).toBe(
+      4,
+    ); // debited exactly once — the path is LIVE, not throwing
+  });
+
   test("a legacy edition meta still resolves when no bundle entry exists (pass-2 fallback)", async () => {
     await grantSome(5);
     const spy = writerSpy();
