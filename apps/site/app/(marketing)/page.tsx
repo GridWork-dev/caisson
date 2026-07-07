@@ -16,6 +16,7 @@ import {
   IsolationDiagram,
   LifecycleDiagram,
 } from "@/components/isolation-diagrams";
+import { StackBuilder } from "@/components/stack-builder";
 import Link from "next/link";
 
 import { serializeJsonLd, softwareApplication } from "@/lib/jsonld";
@@ -586,6 +587,24 @@ export default function HomePage() {
               </Link>
             </p>
           </div>
+        </Section>
+      </Reveal>
+
+      {/* ===== Bundle-builder calculator (D4c) — the embedded StackBuilder, prices from the SOT ===== */}
+      <Reveal>
+        <Section
+          eyebrow="Bundle builder"
+          title="Build your own stack — watch the running total."
+          lede="Pick the modules you need and see the total. When your picks total more than a bundle covers, the builder points at the cheaper path — the arithmetic, not a fabricated discount. Every figure reads from the committed catalog."
+        >
+          <div style={{ marginTop: "var(--cs-space-8)" }}>
+            <StackBuilder />
+          </div>
+          <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
+            <Link href="/marketplace/build" style={{ color: "var(--cs-link)" }}>
+              Open the configurator on its own page
+            </Link>
+          </p>
         </Section>
       </Reveal>
 
