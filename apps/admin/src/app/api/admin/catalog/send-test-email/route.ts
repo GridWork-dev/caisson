@@ -11,10 +11,10 @@ import {
 } from "@caisson/email";
 import { z } from "zod";
 import {
-  actorEmail,
   json,
   mutationErrorResponse,
   parseBody,
+  requireAdmin,
 } from "@/lib/admin-route";
 import {
   EMAIL_SAMPLE_DATA,
@@ -42,7 +42,7 @@ function isCaptureEmailer(e: Emailer | CaptureEmailer): e is CaptureEmailer {
 }
 
 export async function POST(req: Request): Promise<Response> {
-  const actor = actorEmail(req);
+  const actor = await requireAdmin(req);
   if (actor === null) return json({ error: "unauthorized" }, 401);
 
   const parsed = await parseBody(req, Body);
