@@ -1,0 +1,82 @@
+{
+  "regime": "gdpr",
+  "title": "GDPR — Caisson technical-measures crosswalk",
+  "regimeRevision": "GDPR — Regulation (EU) 2016/679",
+  "crosswalkVersion": "2026.1",
+  "disclaimer": {
+    "notACertification": "This crosswalk is not a certification, attestation, or compliance validation. Caisson ships technical controls that run inside your own systems; for this regime Caisson is not an assessed, certified, or compliant entity — you are. No regulatory seal, logo, or badge is claimed or implied.",
+    "noComplianceGuarantee": "These mappings are not designed to, and do not, ensure your compliance with any standard or framework, and it is your responsibility to ensure any such compliance. Using this crosswalk neither replaces your own efforts to achieve compliance nor guarantees that you will pass any assessment.",
+    "claimLegend": "'maps to' means a Caisson mechanism addresses the same security domain as the requirement; it is not an assertion that the requirement is satisfied. 'implements' is used only where a live test or CI artifact in the Caisson repository proves the named technical control, and each such row links that proof. Neither claim covers the full requirement — see each row's buyer-responsibility column.",
+    "scopeBoundary": "This crosswalk covers only the technical controls the compliance bundle ships. Organizational, administrative, and physical controls — policy, personnel, vendor and access management, incident response, your own data classification and configuration, and the independent assessment itself — remain your responsibility. A requirement not listed here is not covered by Caisson.",
+    "regimeSpecific": "Under the EDPB's guidance a standalone software product cannot be GDPR-certified — certification applies to a controller's or processor's processing operations, not to a shipped library. Caisson provides mechanisms that help you, as controller or processor, meet obligations that fall on you; 'GDPR compliant' is never claimed for Caisson or any module.",
+    "regimeRevision": "GDPR — Regulation (EU) 2016/679"
+  },
+  "rows": [
+    {
+      "claim": "maps-to",
+      "control": "Art. 5(1)(e)",
+      "summary": "Personal data is kept in identifiable form no longer than necessary for the purpose (storage limitation).",
+      "mechanism": "@caisson/retention-runner — scheduled, per-target erasure sweeps, backed by the audit-worm retention floor that prevents a window from being silently shortened.",
+      "evidence": "Erasure-run and schedule tests in packages/retention-runner.",
+      "buyerResponsibility": "Defining the retention periods and lawful basis for each data category, and which records are in scope for erasure."
+    },
+    {
+      "claim": "maps-to",
+      "control": "Art. 5(2)",
+      "summary": "The controller can demonstrate compliance with the data-protection principles (accountability).",
+      "mechanism": "@caisson/audit-worm — a tamper-evident, hash-chained record, exportable through the signed evidence pack (OSCAL) as demonstrable evidence.",
+      "evidence": "The audit chain plus the compliance-bundle evidence-pack export.",
+      "buyerResponsibility": "The accountability record for YOUR processing — your policies, DPIAs, lawful-basis documentation, and the demonstration itself to a supervisory authority."
+    },
+    {
+      "claim": "implements",
+      "control": "Art. 17",
+      "summary": "A data subject can obtain erasure of their personal data (the right to be forgotten).",
+      "mechanism": "@caisson/field-crypto — crypto-shred destroys a subject's governing key so their ciphertext is irreversibly unrecoverable, selectively (other subjects still decrypt) and irreversibly (re-provisioning a shredded scope is refused); @caisson/retention-runner drives the sweep and writes a reason-tagged audit row per run.",
+      "evidence": "The crypto-shred tests prove selective, irreversible erasure with a PII-free audit record; the retention-runner tests prove per-target isolation and one audit row per run.",
+      "buyerResponsibility": "Identifying the data subject's records, honoring the Art. 17(3) exemptions (legal obligation, freedom of expression, etc.), verifying the request, and triggering the erasure.",
+      "proof": {
+        "kind": "test",
+        "path": "packages/field-crypto/src/crypto-shred.test.ts",
+        "note": "crypto-shred renders ciphertext unrecoverable, selectively and irreversibly; the audit payload commits the fact of erasure with no PII."
+      }
+    },
+    {
+      "claim": "maps-to",
+      "control": "Art. 25",
+      "summary": "Data protection is built into processing by design and applied by default.",
+      "mechanism": "The compliance bundle's composition — fail-closed tenant RLS (@caisson/tenancy-rls), field-level encryption (@caisson/field-crypto), and an append-only audit chain (@caisson/audit-worm) — provides data-protection-by-design mechanisms.",
+      "evidence": "The tenancy-rls, field-crypto, and audit-worm test suites.",
+      "buyerResponsibility": "The design decisions for your processing: your DPIA, the default settings you choose, data minimization, and the technical-and-organizational-measures assessment for your system."
+    },
+    {
+      "claim": "maps-to",
+      "control": "Art. 30",
+      "summary": "The controller or processor maintains a record of its processing activities.",
+      "mechanism": "@caisson/audit-worm — the immutable activity chain contributes evidence toward the processing record.",
+      "evidence": "The audit chain and its verify path in packages/audit-worm.",
+      "buyerResponsibility": "Maintaining the Article 30 register itself — purposes of processing, categories of data and recipients, transfers, and retention — which is your documentation duty, not a Caisson artifact."
+    },
+    {
+      "claim": "implements",
+      "control": "Art. 32(1)(a)",
+      "summary": "Personal data is protected by appropriate measures including pseudonymization and encryption.",
+      "mechanism": "@caisson/field-crypto — per-field AEAD encryption of personal data at rest, bound to its tenant/column/row by additional authenticated data, so a relocated or cross-tenant ciphertext fails to authenticate and an old key version still decrypts after rotation.",
+      "evidence": "The encrypt-field tests prove round-trip encryption plus cross-row, cross-column, and cross-tenant relocation failures and tamper detection.",
+      "buyerResponsibility": "Selecting which fields hold personal data and are encrypted, your key-custody and rotation policy, and encryption in transit (TLS) at your boundary.",
+      "proof": {
+        "kind": "test",
+        "path": "packages/field-crypto/src/encrypt-field.test.ts",
+        "note": "row-bound AAD: cross-row, cross-column, and cross-tenant relocations fail to authenticate; a tampered envelope is rejected."
+      }
+    },
+    {
+      "claim": "maps-to",
+      "control": "Art. 32(1)(b)",
+      "summary": "Processing systems maintain the ongoing confidentiality of personal data.",
+      "mechanism": "@caisson/tenancy-rls — fail-closed FORCE ROW LEVEL SECURITY isolating each tenant's data at the database layer.",
+      "evidence": "The force-RLS and tenant-guard tests in packages/tenancy-rls.",
+      "buyerResponsibility": "The full confidentiality/integrity/availability/resilience posture Art. 32(1)(b)–(c) require — availability and disaster recovery, resilience, and the regular testing of your measures under Art. 32(1)(d)."
+    }
+  ]
+}
