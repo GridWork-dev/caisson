@@ -1,0 +1,107 @@
+import type { IconName } from "@caisson/ui/components";
+
+// The Apache-2.0 open Base substrate — the SINGLE list every surface that names it reads from
+// (ADR-0094 open-core). The binding truth is the SPDX `license` field in each package's
+// package.json (`Apache-2.0` for these, `LicenseRef-Caisson-Commercial` for everything else);
+// the /legal/license page is the human summary this mirrors.
+//
+// Why this file exists: two prose lists (the plans and modules pages) had drifted `credits` INTO
+// the free base and dropped `rate-limit` OUT of it. `credits` is a paid commercial module — naming
+// it as free-Apache is a real misrepresentation. One const kills that drift class, and
+// `base-substrate.test.ts` fails if any commercial SKU ever re-enters this list.
+
+/** The 12 substrate packages — the runtime/base half of the open set. */
+export const BASE_SUBSTRATE_PACKAGES = [
+  "kernel",
+  "auth",
+  "tenancy-rls",
+  "ui",
+  "billing",
+  "jobs",
+  "email",
+  "ai-config",
+  "mcp-server",
+  "registry-schema",
+  "observability",
+  "rate-limit",
+] as const;
+
+/** The generator tooling — called out separately in prose ("…and the generator tooling: …"). */
+export const BASE_GENERATOR_TOOLING = [
+  "cli",
+  "migrate",
+  "license-verify",
+] as const;
+
+/** All 15 Apache-2.0 base packages, substrate then tooling. */
+export const BASE_PACKAGES = [
+  ...BASE_SUBSTRATE_PACKAGES,
+  ...BASE_GENERATOR_TOOLING,
+] as const;
+
+/** Bare comma list of the substrate packages, for prose ("kernel, auth, tenancy-rls, …"). */
+export function baseSubstrateList(): string {
+  return BASE_SUBSTRATE_PACKAGES.join(", ");
+}
+
+/** Bare comma list of the generator tooling ("cli, migrate, license-verify"). */
+export function baseToolingList(): string {
+  return BASE_GENERATOR_TOOLING.join(", ");
+}
+
+/** Scoped, middot-joined list of every base package ("@caisson/kernel · @caisson/auth · …"). */
+export function basePackagesScoped(): string {
+  return BASE_PACKAGES.map((p) => `@caisson/${p}`).join(" · ");
+}
+
+/**
+ * A grouped "batteries included" capability — the home of the open-base anxiety-relief beat (the
+ * SYNTHESIS §6 Tier-1 tile grid). Every id in `packages` is a real Apache-2.0 base package; the
+ * tiles PARTITION `BASE_PACKAGES` (each package named exactly once), asserted in the test.
+ */
+export interface BaseCapability {
+  icon: IconName;
+  title: string;
+  body: string;
+  /** The base packages this tile represents — honest, a subset of `BASE_PACKAGES`. */
+  packages: readonly string[];
+}
+
+export const BASE_CAPABILITIES: readonly BaseCapability[] = [
+  {
+    icon: "database",
+    title: "Multi-tenant Postgres, fail-closed",
+    body: "Row-level security with FORCE on the audited kernel: a query that never set the tenant context returns nothing, never everything. The same isolation every commercial bundle composes onto.",
+    packages: ["tenancy-rls", "kernel"],
+  },
+  {
+    icon: "lock",
+    title: "Auth and the open component base",
+    body: "Session and credential handling, plus the @caisson/ui component base the marketing site and buyer dashboard both render with — not a bolt-on you wire up later.",
+    packages: ["auth", "ui"],
+  },
+  {
+    icon: "wallet",
+    title: "Billing, jobs, and email",
+    body: "A billing-provider port, a background-job runner, and transactional email — the operational plumbing every SaaS needs standing before it ships its first feature.",
+    packages: ["billing", "jobs", "email"],
+  },
+  {
+    icon: "server",
+    title: "AI config and an MCP server",
+    body: "Provider-agnostic AI configuration and a Model Context Protocol server, so agent tooling has somewhere to connect on day one.",
+    packages: ["ai-config", "mcp-server"],
+  },
+  {
+    icon: "gauge",
+    title: "The registry contract and observability",
+    body: "The signed-registry schema, OpenTelemetry observability, and rate limiting — the same operational spine the commercial services run on, in the open.",
+    packages: ["registry-schema", "observability", "rate-limit"],
+  },
+  {
+    icon: "terminal",
+    title: "The generator, migrations, and license verify",
+    body: "Scaffold the whole base in one command, run migrations, and verify licenses offline. The create-caisson tooling ships open — you own the generator, not just the output.",
+    packages: ["cli", "migrate", "license-verify"],
+  },
+];

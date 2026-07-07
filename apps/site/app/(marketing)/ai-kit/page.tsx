@@ -10,7 +10,9 @@ import { BUNDLE_MARKS, moduleMark } from "@/lib/marks";
 import {
   bundlePrice,
   formatUsd,
+  moduleAmount,
   MODULE_PRICES,
+  planPrice,
   priceById,
 } from "@/lib/pricing";
 import {
@@ -296,7 +298,9 @@ export default function AiKitPage() {
                 style={{ marginTop: "var(--cs-space-3)" }}
               >
                 The composed modules are also sold individually: prompt-registry
-                from $99, guardrails from $149, ai-meter from $199;
+                from {formatUsd(moduleAmount("prompt-registry"))}, guardrails
+                from {formatUsd(moduleAmount("guardrails"))}, ai-meter from{" "}
+                {formatUsd(moduleAmount("ai-meter"))};
                 {modulePrice && modulePrice.amount !== null ? (
                   <>
                     {" "}
@@ -316,8 +320,8 @@ export default function AiKitPage() {
                 className="cs-muted"
                 style={{ marginTop: "var(--cs-space-3)" }}
               >
-                $499/yr adds credits, framework updates, and private-registry
-                pulls on top of any license you own.
+                {planPrice("developer")} adds credits, framework updates, and
+                private-registry pulls on top of any license you own.
               </p>
             </Card>
           </FeatureGrid>
