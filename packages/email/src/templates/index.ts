@@ -1,7 +1,8 @@
 // The template registry (ADR-0018): every `Emailer` driver renders through `renderEmailTemplate`
 // so HTML and the plain-text fallback are generated from the SAME React component and never
 // drift. The three auth templates take one bounded, no-PII prop — a one-time action URL; the
-// `credits-expiring` billing notice (ADR-0252) adds a per-template data shape, so the registry is
+// `credits-expiring` billing notice (ADR-0252) and the `purchase-confirmation` receipt (services/
+// license's post-webhook-commit send) each add a per-template data shape, so the registry is
 // keyed by a `TemplateDataMap` rather than one shared prop type.
 import { render } from "@react-email/render";
 import {
@@ -14,16 +15,39 @@ import {
   PasswordResetEmail,
   PASSWORD_RESET_SUBJECT,
 } from "./password-reset.tsx";
+import {
+  PurchaseConfirmationEmail,
+  purchaseConfirmationSubject,
+  type PurchaseConfirmationData,
+  type PurchaseConfirmationLine,
+} from "./purchase-confirmation.tsx";
+import {
+  RenewalConfirmationEmail,
+  renewalConfirmationSubject,
+  type RenewalConfirmationData,
+  type RenewalConfirmationLine,
+} from "./renewal-confirmation.tsx";
 import { VerifyEmailEmail, VERIFY_EMAIL_SUBJECT } from "./verify-email.tsx";
 
 export type EmailTemplateId =
-  "magic-link" | "password-reset" | "verify-email" | "credits-expiring";
+  | "magic-link"
+  | "password-reset"
+  | "verify-email"
+  | "credits-expiring"
+  | "purchase-confirmation"
+  | "renewal-confirmation";
 
 export interface EmailTemplateData {
   url: string;
 }
 
-export type { CreditsExpiringData };
+export type {
+  CreditsExpiringData,
+  PurchaseConfirmationData,
+  PurchaseConfirmationLine,
+  RenewalConfirmationData,
+  RenewalConfirmationLine,
+};
 
 /** Per-template prop shapes — `renderEmailTemplate` is typed against this map. */
 export interface TemplateDataMap {
@@ -31,6 +55,8 @@ export interface TemplateDataMap {
   "password-reset": EmailTemplateData;
   "verify-email": EmailTemplateData;
   "credits-expiring": CreditsExpiringData;
+  "purchase-confirmation": PurchaseConfirmationData;
+  "renewal-confirmation": RenewalConfirmationData;
 }
 
 export interface RenderedEmail {
@@ -48,6 +74,84 @@ interface TemplateEntry<K extends EmailTemplateId> {
 
 function coerceUrl(data: Record<string, unknown>): EmailTemplateData | null {
   return typeof data.url === "string" ? { url: data.url } : null;
+}
+
+function coercePurchaseLine(line: unknown): PurchaseConfirmationLine | null {
+  if (typeof line !== "object" || line === null) return null;
+  const { label, amountMinor } = line as Record<string, unknown>;
+  if (typeof label !== "string") return null;
+  if (amountMinor === undefined) return { label };
+  return typeof amountMinor === "number" && Number.isInteger(amountMinor)
+    ? { label, amountMinor }
+    : null;
+}
+
+function coerceRenewalLine(line: unknown): RenewalConfirmationLine | null {
+  if (typeof line !== "object" || line === null) return null;
+  const { label, newWindowEnd } = line as Record<string, unknown>;
+  return typeof label === "string" && typeof newWindowEnd === "string"
+    ? { label, newWindowEnd }
+    : null;
+}
+
+function coerceRenewalConfirmation(
+  data: Record<string, unknown>,
+): RenewalConfirmationData | null {
+  if (
+    typeof data.buyerName !== "string" ||
+    typeof data.orderId !== "string" ||
+    typeof data.currency !== "string" ||
+    typeof data.amountTotalMinor !== "number" ||
+    !Number.isInteger(data.amountTotalMinor) ||
+    typeof data.dashboardUrl !== "string" ||
+    !Array.isArray(data.lines)
+  ) {
+    return null;
+  }
+  const lines: RenewalConfirmationLine[] = [];
+  for (const raw of data.lines) {
+    const line = coerceRenewalLine(raw);
+    if (line === null) return null;
+    lines.push(line);
+  }
+  return {
+    buyerName: data.buyerName,
+    orderId: data.orderId,
+    currency: data.currency,
+    amountTotalMinor: data.amountTotalMinor,
+    lines,
+    dashboardUrl: data.dashboardUrl,
+  };
+}
+
+function coercePurchaseConfirmation(
+  data: Record<string, unknown>,
+): PurchaseConfirmationData | null {
+  if (
+    typeof data.buyerName !== "string" ||
+    typeof data.orderId !== "string" ||
+    typeof data.currency !== "string" ||
+    typeof data.amountTotalMinor !== "number" ||
+    !Number.isInteger(data.amountTotalMinor) ||
+    typeof data.dashboardUrl !== "string" ||
+    !Array.isArray(data.lines)
+  ) {
+    return null;
+  }
+  const lines: PurchaseConfirmationLine[] = [];
+  for (const raw of data.lines) {
+    const line = coercePurchaseLine(raw);
+    if (line === null) return null;
+    lines.push(line);
+  }
+  return {
+    buyerName: data.buyerName,
+    orderId: data.orderId,
+    currency: data.currency,
+    amountTotalMinor: data.amountTotalMinor,
+    lines,
+    dashboardUrl: data.dashboardUrl,
+  };
 }
 
 const TEMPLATES: { [K in EmailTemplateId]: TemplateEntry<K> } = {
@@ -77,6 +181,16 @@ const TEMPLATES: { [K in EmailTemplateId]: TemplateEntry<K> } = {
         ? { credits: data.credits, expiresOn: data.expiresOn, url: data.url }
         : null,
   },
+  "purchase-confirmation": {
+    subject: purchaseConfirmationSubject,
+    Component: PurchaseConfirmationEmail,
+    coerce: coercePurchaseConfirmation,
+  },
+  "renewal-confirmation": {
+    subject: renewalConfirmationSubject,
+    Component: RenewalConfirmationEmail,
+    coerce: coerceRenewalConfirmation,
+  },
 };
 
 /** Stable display order for the dev preview route. */
@@ -85,6 +199,8 @@ export const EMAIL_TEMPLATE_IDS: readonly EmailTemplateId[] = [
   "password-reset",
   "verify-email",
   "credits-expiring",
+  "purchase-confirmation",
+  "renewal-confirmation",
 ];
 
 /** Render one template + its plain-text fallback from the SAME element (never drift). */
