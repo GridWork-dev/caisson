@@ -280,9 +280,9 @@ export function ModulePreviewDialog({
                       gap: "var(--cs-space-3)",
                     }}
                   >
-                    {record.included.map((item) => (
+                    {record.included.map((item, i) => (
                       <li
-                        key={item.title}
+                        key={`${m.id}-${i}`}
                         style={{
                           fontSize: "var(--cs-text-sm)",
                           lineHeight: "var(--cs-leading-snug)",

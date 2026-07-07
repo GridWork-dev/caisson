@@ -4,7 +4,12 @@
 import { describe, expect, test } from "bun:test";
 
 import { BUNDLE_PAGES, bundlePageRecord } from "./bundle-pages";
-import { BUNDLE_PRICES, MODULE_PRICES, modulesByBundle } from "./pricing";
+import {
+  bundlePrice,
+  BUNDLE_PRICES,
+  MODULE_PRICES,
+  modulesByBundle,
+} from "./pricing";
 
 describe("BUNDLE_PAGES (bundle content records)", () => {
   test("every priced bundle has exactly one record (bijection with BUNDLE_PRICES)", () => {
@@ -53,6 +58,25 @@ describe("BUNDLE_PAGES (bundle content records)", () => {
         .map((m) => `${r.slug} -> ${m.id}`),
     );
     expect(unknown).toEqual([]);
+  });
+
+  test("every $-figure in a metaDescription IS that bundle's live price (single-source law)", () => {
+    // A record embedding a price must interpolate `bundlePrice(slug)`, never hand-type a literal —
+    // a reprice in pricing.ts that leaves a stale figure here fails loudly. Records with no price
+    // in their metaDescription pass vacuously.
+    const violations = BUNDLE_PAGES.flatMap((r) => {
+      const live = bundlePrice(r.slug);
+      return (r.metaDescription.match(/\$[\d,]+/g) ?? [])
+        .filter((figure) => figure !== live)
+        .map((figure) => `${r.slug}: ${figure} != ${live}`);
+    });
+    expect(violations).toEqual([]);
+    // And the two records that DO embed their price stay pinned to it.
+    for (const slug of ["ai-production", "local-first"] as const) {
+      expect(bundlePageRecord(slug)?.metaDescription).toContain(
+        bundlePrice(slug),
+      );
+    }
   });
 
   test("provenance members mirror modulesByBundle ids + labels (rendered from the record)", () => {

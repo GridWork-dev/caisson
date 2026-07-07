@@ -13,7 +13,7 @@
 // data record would trade byte-identical SEO output for zero reuse. Keep every claim true-to-built
 // (ADR-0082) and V1-live (ADR-0237 rider 2).
 
-import type { BundleId } from "./pricing";
+import { type BundleId, bundlePrice } from "./pricing";
 
 /** One composed member of a bundle — the id (a MODULE_PRICES id or a base-package slug), its display
  *  name as the page renders it, and the customer-facing one-liner. Priced/linked state is derived by
@@ -139,8 +139,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
   {
     slug: "ai-production",
     metaTitle: "AI Production Kit",
-    metaDescription:
-      "A metered infer()/embed() gateway on Vercel AI SDK v5: Postgres-atomic token metering with a per-tenant circuit breaker, typed input/output guardrails, and versioned prompts, composed behind one chokepoint. $739 once, own the source.",
+    metaDescription: `A metered infer()/embed() gateway on Vercel AI SDK v5: Postgres-atomic token metering with a per-tenant circuit breaker, typed input/output guardrails, and versioned prompts, composed behind one chokepoint. ${bundlePrice("ai-production")} once, own the source.`,
     hero: {
       eyebrow: "AI-Production bundle",
       title: "One gateway between your code and the model.",
@@ -195,8 +194,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
   {
     slug: "local-first",
     metaTitle: "Local-first AI",
-    metaDescription:
-      "Local-first AI composes on-device ONNX inference, a zero-egress privacy gate, offline sync, and hybrid sqlite-vec + FTS5 search into one Caisson bundle ($629 one-time, own the source).",
+    metaDescription: `Local-first AI composes on-device ONNX inference, a zero-egress privacy gate, offline sync, and hybrid sqlite-vec + FTS5 search into one Caisson bundle (${bundlePrice("local-first")} one-time, own the source).`,
     hero: {
       eyebrow: "Local-first AI · Own the source",
       title: "Your data never leaves the device.",
@@ -262,8 +260,9 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
       {
         question:
           "Can I buy just the vector store instead of the whole bundle?",
-        answer:
-          "Yes. @caisson/local-store is also sold standalone for $99 — as are on-device inference ($249), the sync engine ($199), and the privacy gate ($99). The full Local-first AI bundle (all seven composed packages, own the source) is $629 one-time.",
+        // ponytail: the $99/$249/$199 figures are MODULE prices (single-sourced checks cover
+        // metaDescription; the review scoped FAQ interpolation to bundle-price literals only).
+        answer: `Yes. @caisson/local-store is also sold standalone for $99 — as are on-device inference ($249), the sync engine ($199), and the privacy gate ($99). The full Local-first AI bundle (all seven composed packages, own the source) is ${bundlePrice("local-first")} one-time.`,
       },
     ],
   },

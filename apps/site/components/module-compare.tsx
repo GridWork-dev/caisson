@@ -257,8 +257,8 @@ export function ModuleCompareTray({
                           fontSize: "var(--cs-text-sm)",
                         }}
                       >
-                        {c.ships.map((s) => (
-                          <li key={s}>{s}</li>
+                        {c.ships.map((s, i) => (
+                          <li key={`${c.id}-${i}`}>{s}</li>
                         ))}
                       </ul>
                     ) : (
