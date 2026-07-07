@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { createOverlapGuard, isEnrichable, runWatcher } from "./scheduler.ts";
+import {
+  createOverlapGuard,
+  isEnrichable,
+  longInterval,
+  MAX_TIMER_DELAY_MS,
+  runWatcher,
+} from "./scheduler.ts";
 import { InMemoryStore } from "./store.ts";
 import type { Store } from "./store.ts";
 import type { Fetcher } from "./http.ts";
@@ -156,6 +162,150 @@ describe("runWatcher", () => {
     const summary = await runWatcher(watcher, config, store, noopFetch);
     expect(summary.status).toBe("error");
     expect(summary.error).toBe("upstream down");
+  });
+});
+
+describe("longInterval (CAISSON-49 — no 32-bit clamp)", () => {
+  const SOC2_30_DAY_MS = 30 * 24 * 60 * 60 * 1_000; // 2_592_000_000 — over the 32-bit ceiling
+
+  test("a delay over the 32-bit ceiling is chunked to the ceiling, never clamped to 1ms", () => {
+    const armed: number[] = [];
+    const fakeSetTimeout = (_fn: () => void, ms: number) => {
+      armed.push(ms);
+      return 0 as unknown as ReturnType<typeof setTimeout>;
+    };
+    // A raw setInterval(SOC2_30_DAY_MS) clamps to 1ms and tight-loops. longInterval arms the first
+    // chunk at the ceiling instead — the exact regression CAISSON-49 fixes.
+    const h = longInterval(
+      () => {},
+      SOC2_30_DAY_MS,
+      fakeSetTimeout,
+      () => {},
+    );
+    expect(armed[0]).toBe(MAX_TIMER_DELAY_MS);
+    expect(armed[0]).toBeGreaterThan(1);
+    h.clear();
+  });
+
+  test("the remainder is armed after the first ceiling chunk fires (full period preserved)", () => {
+    const fns: Array<() => void> = [];
+    const armed: number[] = [];
+    const fakeSetTimeout = (fn: () => void, ms: number) => {
+      fns.push(fn);
+      armed.push(ms);
+      return 0 as unknown as ReturnType<typeof setTimeout>;
+    };
+    longInterval(
+      () => {},
+      SOC2_30_DAY_MS,
+      fakeSetTimeout,
+      () => {},
+    );
+    expect(armed[0]).toBe(MAX_TIMER_DELAY_MS);
+    fns[0]?.(); // fire the ceiling chunk
+    expect(armed[1]).toBe(SOC2_30_DAY_MS - MAX_TIMER_DELAY_MS);
+    expect(armed[1]).toBeGreaterThan(0);
+  });
+
+  test("a normal sub-ceiling delay is armed once, as-is (identical to setInterval)", () => {
+    const armed: number[] = [];
+    const fakeSetTimeout = (_fn: () => void, ms: number) => {
+      armed.push(ms);
+      return 0 as unknown as ReturnType<typeof setTimeout>;
+    };
+    const h = longInterval(
+      () => {},
+      1_000,
+      fakeSetTimeout,
+      () => {},
+    );
+    expect(armed).toEqual([1_000]);
+    h.clear();
+  });
+
+  test("cb fires and the full interval re-arms once a sub-ceiling period elapses", () => {
+    let fired = 0;
+    const fns: Array<() => void> = [];
+    const armed: number[] = [];
+    const fakeSetTimeout = (fn: () => void, ms: number) => {
+      fns.push(fn);
+      armed.push(ms);
+      return 0 as unknown as ReturnType<typeof setTimeout>;
+    };
+    longInterval(
+      () => (fired += 1),
+      5_000,
+      fakeSetTimeout,
+      () => {},
+    );
+    fns[0]?.(); // the period elapses
+    expect(fired).toBe(1);
+    expect(armed[1]).toBe(5_000); // re-armed for the next period
+  });
+
+  test("clear() cancels the LATEST timer handle, even after a re-arm", () => {
+    let nextHandle = 0;
+    const cleared: number[] = [];
+    const fns: Array<() => void> = [];
+    const fakeSetTimeout = (fn: () => void) => {
+      fns.push(fn);
+      return ++nextHandle as unknown as ReturnType<typeof setTimeout>;
+    };
+    const h = longInterval(
+      () => {},
+      1_000,
+      fakeSetTimeout,
+      (t) => cleared.push(t as unknown as number),
+    );
+    fns[0]?.(); // fires cb + re-arms → the live handle is now #2, not #1
+    h.clear();
+    expect(cleared).toEqual([2]); // the re-armed handle is the one cancelled
+  });
+
+  test("clear() called from inside the callback stops the interval (no re-arm)", () => {
+    const fns: Array<() => void> = [];
+    const armed: number[] = [];
+    const fakeSetTimeout = (fn: () => void, ms: number) => {
+      fns.push(fn);
+      armed.push(ms);
+      return armed.length as unknown as ReturnType<typeof setTimeout>;
+    };
+    let fired = 0;
+    // Holder so the callback can reach its own handle before longInterval() returns (TDZ).
+    const handle: { current: { clear: () => void } | null } = { current: null };
+    handle.current = longInterval(
+      () => {
+        fired += 1;
+        handle.current?.clear();
+      },
+      1_000,
+      fakeSetTimeout,
+      () => {},
+    );
+    fns[0]?.(); // cb fires, calls clear() from inside
+    expect(fired).toBe(1);
+    expect(armed.length).toBe(1); // never re-armed — clear() from the callback stuck
+  });
+
+  test("a throwing callback does not kill the interval (setInterval keeps ticking)", () => {
+    const fns: Array<() => void> = [];
+    const armed: number[] = [];
+    const fakeSetTimeout = (fn: () => void, ms: number) => {
+      fns.push(fn);
+      armed.push(ms);
+      return armed.length as unknown as ReturnType<typeof setTimeout>;
+    };
+    longInterval(
+      () => {
+        throw new Error("tick boom");
+      },
+      1_000,
+      fakeSetTimeout,
+      () => {},
+    );
+    // The throw propagates out of the timer callback, but the finally re-arms the next period first.
+    expect(() => fns[0]?.()).toThrow("tick boom");
+    expect(armed[1]).toBe(1_000); // re-armed despite the throw
   });
 });
 

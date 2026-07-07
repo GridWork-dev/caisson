@@ -1,5 +1,6 @@
-// The internal scheduler — the default runner (ADR-0286 §5). One `setInterval` per watcher at
-// its configured cadence, each independently invocable via `runWatcher` (the same function the
+// The internal scheduler — the default runner (ADR-0286 §5). One `longInterval` per watcher at
+// its configured cadence (see `longInterval` for why NOT a raw `setInterval` — CAISSON-49), each
+// independently invocable via `runWatcher` (the same function the
 // CLI drives per-leg). `createOverlapGuard` is the real defense the header used to only claim:
 // a watcher whose fetch fan-out ever runs longer than its own cadence skips the next tick rather
 // than piling up concurrent runs against the same watch_state keys (a concurrent read-modify-write
@@ -138,6 +139,57 @@ export interface SchedulerHandle {
   stop(): void;
 }
 
+/** `setInterval`/`setTimeout` clamp any delay above the signed-32-bit millisecond ceiling
+ *  (2_147_483_647 ms ≈ 24.8 days) to **1 ms** — silently turning a long cadence (soc2's 30-day) into
+ *  a tight loop that hammers the upstream (CAISSON-49). `longInterval` re-arms a chained `setTimeout`
+ *  in ceiling-bounded chunks so a cadence of ANY length fires at its true interval; for a sub-ceiling
+ *  delay it arms exactly once per period, matching `setInterval` semantics — including that `clear()`
+ *  called from inside the callback stops it, and a throwing callback does not silently kill the
+ *  interval (the next period still re-arms). Timer fns are injectable so the chunking is unit-testable
+ *  without real clocks. */
+export const MAX_TIMER_DELAY_MS = 2_147_483_647;
+
+export function longInterval(
+  cb: () => void,
+  delayMs: number,
+  setTimeoutImpl: (
+    fn: () => void,
+    ms: number,
+  ) => ReturnType<typeof setTimeout> = setTimeout,
+  clearTimeoutImpl: (t: ReturnType<typeof setTimeout>) => void = clearTimeout,
+): { clear: () => void } {
+  // A non-finite or non-positive delay would busy-loop; clamp to a 1s floor. Config validates
+  // cadences upstream, so this is a defensive guard, not a live path.
+  const interval = Number.isFinite(delayMs) && delayMs >= 1 ? delayMs : 1_000;
+  let timer: ReturnType<typeof setTimeout>;
+  let stopped = false;
+  const arm = (remaining: number): void => {
+    const chunk = Math.min(remaining, MAX_TIMER_DELAY_MS);
+    timer = setTimeoutImpl(() => {
+      if (stopped) return; // clear() may have fired between arming and this tick
+      const left = remaining - chunk;
+      if (left > 0) {
+        arm(left);
+      } else {
+        // A throw from cb must not kill the interval (setInterval keeps ticking); the finally
+        // re-arms the next period unless the callback itself called clear().
+        try {
+          cb();
+        } finally {
+          if (!stopped) arm(interval);
+        }
+      }
+    }, chunk);
+  };
+  arm(interval);
+  return {
+    clear(): void {
+      stopped = true;
+      clearTimeoutImpl(timer);
+    },
+  };
+}
+
 /**
  * Wraps `runWatcher` so a still-in-flight run for a given watcher causes the next call to skip
  * (return `null`) rather than run concurrently — the overlap guard. Exported standalone (not
@@ -194,13 +246,13 @@ export function startScheduler(
 
   const timers = WATCHERS.map((watcher) => {
     fire(watcher);
-    return setInterval(() => {
-      fire(watcher);
-    }, watcher.cadenceMs(config));
+    // `longInterval`, NOT `setInterval` — a raw setInterval clamps any cadence over ~24.8 days to
+    // 1ms and tight-loops (CAISSON-49); soc2's 30-day cadence is exactly such a case.
+    return longInterval(() => fire(watcher), watcher.cadenceMs(config));
   });
   return {
     stop(): void {
-      for (const t of timers) clearInterval(t);
+      for (const t of timers) t.clear();
     },
   };
 }
