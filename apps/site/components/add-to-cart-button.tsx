@@ -9,6 +9,9 @@ import { useCart } from "./cart-provider";
 export interface AddToCartButtonProps {
   item: CartItem;
   variant?: "primary" | "ghost";
+  /** Fired after the item lands in the cart — e.g. the module preview dialog closes itself so the
+   *  opened cart drawer isn't stacked under it. */
+  onAdded?: (() => void) | undefined;
 }
 
 /**
@@ -19,6 +22,7 @@ export interface AddToCartButtonProps {
 export function AddToCartButton({
   item,
   variant = "ghost",
+  onAdded,
 }: AddToCartButtonProps) {
   const { items, addItem } = useCart();
   const inCart = items.some((i) => i.id === item.id);
@@ -34,6 +38,7 @@ export function AddToCartButton({
           item: item.id,
           amount: String(item.amount),
         });
+        onAdded?.();
       }}
     >
       {inCart ? "In cart" : "Add to cart"}

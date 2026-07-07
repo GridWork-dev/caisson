@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 
-import { Button, Icon } from "@/components";
+import { Icon } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { moduleCatalogItem, toCartItem } from "@/lib/catalog";
 import { moduleMark } from "@/lib/marks";
@@ -257,24 +257,16 @@ export function ModulePreviewDialog({
                 flexWrap: "wrap",
               }}
             >
+              {/* moduleCatalogItem resolves for every MODULE_PRICES id (MODULE_CATALOG is a
+               *  straight map of it, and moduleRealPriceId throws at build otherwise) — the null
+               *  arm is type-narrowing only, never a rendered state. */}
               {catalogItem ? (
-                <span onClick={onClose} style={{ display: "contents" }}>
-                  <AddToCartButton
-                    variant="primary"
-                    item={toCartItem(catalogItem)}
-                  />
-                </span>
-              ) : (
-                <Button
-                  href={
-                    m.bundles[0] ? bundlePagePath(m.bundles[0]) : "/marketplace"
-                  }
-                  variant="ghost"
-                  size="sm"
-                >
-                  Learn more →
-                </Button>
-              )}
+                <AddToCartButton
+                  variant="primary"
+                  item={toCartItem(catalogItem)}
+                  onAdded={onClose}
+                />
+              ) : null}
               {hasDetail ? (
                 <Link
                   href={`/marketplace/modules/${m.id}`}

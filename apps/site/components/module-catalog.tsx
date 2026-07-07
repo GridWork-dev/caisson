@@ -14,7 +14,7 @@ import {
   type ModulePrice,
 } from "@/lib/pricing";
 
-import { bundleLabel, bundlePagePath } from "./marketplace";
+import { bundleLabel } from "./marketplace";
 import styles from "./marketplace.module.css";
 import { ModulePreviewDialog } from "./module-preview-dialog";
 
@@ -223,10 +223,9 @@ export function ModuleCatalog({
  *  anywhere on the card opens the large module-preview dialog (`module-preview-dialog.tsx`); the
  *  card itself is a full-bleed overlay `<button>` (real button semantics, not a `div[role]`) so
  *  keyboard/AT users get the same affordance as a mouse click. The footer stays `position:
- *  relative` so its own controls (Add to cart / Learn more) win the click over the overlay — the
- *  "stretched link with an escape hatch" pattern, no nested interactive elements. A module that is
- *  Paddle-wired shows Add to cart; a not-yet-wired carve/standalone SKU (W7 wires it) shows a Learn
- *  more link to the bundle that grants it (never a fabricated "coming soon", ADR-0237 rider 2). */
+ *  relative` so its own Add to cart wins the click over the overlay — the "stretched link with an
+ *  escape hatch" pattern, no nested interactive elements. moduleCatalogItem resolves for every
+ *  MODULE_PRICES id (W7 Paddle-wired all 22), so the null arm below is type-narrowing only. */
 function ModuleCard({
   module: m,
   onOpen,
@@ -236,8 +235,6 @@ function ModuleCard({
 }) {
   const catalogItem = moduleCatalogItem(m.id);
   const category = primaryCategory(m);
-  const bundlePath =
-    category === PLATFORM ? "/marketplace" : bundlePagePath(category);
   return (
     <Card interactive style={{ position: "relative" }}>
       <button
@@ -315,11 +312,7 @@ function ModuleCard({
       <div style={{ marginTop: "var(--cs-space-5)", position: "relative" }}>
         {catalogItem ? (
           <AddToCartButton item={toCartItem(catalogItem)} />
-        ) : (
-          <Button href={bundlePath} variant="ghost" size="sm">
-            Learn more →
-          </Button>
-        )}
+        ) : null}
       </div>
     </Card>
   );

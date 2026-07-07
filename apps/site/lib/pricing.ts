@@ -383,9 +383,10 @@ export function renewalAmount(entitlementId: string): number | null {
     null;
   if (list === null) return null;
   // Flat 40%, then floor to the nearest whole-dollar point ending in 9 (X9, ADR-0260 §5).
-  let n = Math.floor((list * RENEWAL_RATE_PERCENT) / 100);
-  while (n % 10 !== 9) n -= 1;
-  return n;
+  // Closed-form: below $9 no X9 point exists (a sub-$23 list price), so stay number-free —
+  // the Paddle overlay remains the authoritative display for such a row (ADR-0130).
+  const n = Math.floor((list * RENEWAL_RATE_PERCENT) / 100);
+  return n < 9 ? null : n - ((n - 9) % 10);
 }
 
 /** Purchase structures beyond the one-time bundles (`BUNDLE_PRICES` owns those — incl. the

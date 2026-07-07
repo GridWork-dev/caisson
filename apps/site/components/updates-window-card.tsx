@@ -66,7 +66,9 @@ export function UpdatesWindowCard({
       status = "pending";
       statusLabel = "Expiring soon";
     }
-    hint = `Updates through ${expiresAt.toLocaleDateString("en-US", { dateStyle: "medium" })}.`;
+    // timeZone pinned: this SSRs in the server's TZ and hydrates in the client's — an unpinned
+    // format can differ by a day near a UTC boundary (hydration text mismatch).
+    hint = `Updates through ${expiresAt.toLocaleDateString("en-US", { dateStyle: "medium", timeZone: "UTC" })}.`;
   }
 
   const showRenew =
