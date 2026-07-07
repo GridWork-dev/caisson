@@ -1381,7 +1381,7 @@ latent red).
 
 - **Bundle-only index republish → LOCKED "now"** (ADR-0271): delist the 3 edition
   meta-package entries at a dedicated republish + Worker redeploy, not folded into a later
-  rebuild. Ledger append-only; tarball bytes stay R2-retained, but a delisted id 404s
+  rebuild. Ledger append-only; tarball bytes stay R2-retained, but a delisted id returns 401/404 (never 200)
   through the gated npm surface (`npm-routes.ts` resolves every GET against `index.json`
   membership) — "serve forever" means retained-in-R2, not reachable; doc-accuracy
   correction, P2 pack, 2026-07-07.
