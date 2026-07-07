@@ -60,7 +60,7 @@ const FAQ_ITEMS = [
   {
     question: "What's the refund policy?",
     answer:
-      "Buyers in the EU, EEA, UK, and Switzerland get a statutory 14-day withdrawal right under Paddle's buyer terms. Because Caisson is downloadable software delivered for immediate use, that right ends once you consent to immediate access at checkout and then download, install, or use it. Outside that window, refund requests are reviewed case by case. Email admin@caisson.sh with your order number, or contact Paddle directly at paddle.net. An approved refund revokes the entitlement it granted and returns unused credits; a multi-item order can be refunded line by line.",
+      "Every purchase comes with an unconditional 14-day money-back guarantee. Request a refund within 14 days for any reason — whether or not you've downloaded or used the software, and regardless of location or consumer/business status — and you get a full refund. Email admin@caisson.sh with your order number, or contact Paddle directly at paddle.net. Paddle, as merchant of record, returns the payment to your original method. An approved refund revokes the entitlement it granted and returns unused credits; a multi-item order can be refunded line by line.",
   },
   {
     question: "How do I request security documentation?",
@@ -245,17 +245,16 @@ export default function ProcurementPage() {
           and doesn&rsquo;t call home to stay valid.
         </p>
         <p className="cs-muted" style={{ marginTop: "var(--cs-space-4)" }}>
-          Refunds: consumers in the EU, EEA, UK, and Switzerland have a
-          statutory 14-day withdrawal right under Paddle&rsquo;s buyer terms.
-          Because Caisson is downloadable software delivered for immediate use,
-          consenting to immediate access at checkout and then downloading,
-          installing, or using it ends that statutory right for that purchase.
-          Outside the statutory window, refund requests are reviewed case by
-          case under Paddle&rsquo;s buyer terms. An approved refund revokes the
-          entitlement it granted and returns unused credits; access and credits
-          already used aren&rsquo;t clawed back. If one order covered more than
-          one bundle or module, tell us which line item you&rsquo;re refunding:
-          they&rsquo;re refundable individually.
+          Refunds: every purchase comes with an unconditional 14-day money-back
+          guarantee. Request a refund within 14 days for any reason and you get
+          a full refund &mdash; whether or not you&rsquo;ve downloaded or used
+          the software, and regardless of location or consumer/business status.
+          Paddle, as merchant of record, returns the payment to your original
+          method. An approved refund revokes the entitlement it granted and
+          returns unused credits; access and credits already used aren&rsquo;t
+          clawed back. If one order covered more than one bundle or module, tell
+          us which line item you&rsquo;re refunding: they&rsquo;re refundable
+          individually.
         </p>
         <div style={{ marginTop: "var(--cs-space-6)" }}>
           <Button href="/legal/terms" variant="ghost">

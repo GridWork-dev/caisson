@@ -207,9 +207,14 @@ export default function EulaPage() {
           Fees are as displayed on caisson.sh at the time of your Order and are
           processed through our merchant of record, who handles payment
           collection, tax calculation, and remittance for your jurisdiction. All
-          fees are exclusive of taxes unless stated otherwise, and are
-          non-refundable except as required by applicable law or as Caisson
-          agrees in writing.
+          fees are exclusive of taxes unless stated otherwise. Every purchase is
+          covered by an unconditional 14-day money-back guarantee: request a
+          refund within 14 days for any reason and the merchant of record
+          returns your payment. See the{" "}
+          <a href="/legal/terms" style={{ color: "var(--cs-accent)" }}>
+            Terms of Use
+          </a>{" "}
+          for the full refund policy.
         </p>
         <p style={prose.paragraph}>
           The perpetual license fee is a one-time charge that includes 12 months
