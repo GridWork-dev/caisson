@@ -5,104 +5,101 @@ import { Wordmark } from "@caisson/brand";
 
 import { CartTrigger } from "./cart-trigger";
 import { MobileNav } from "./mobile-nav";
+import { NavAccount } from "./nav-account";
 import { NavPanels, type NavPanelSpec } from "./nav-panels";
 import { NavSearchTrigger } from "./nav-search-trigger";
 import { Button } from "./button";
 import { BUNDLE_MARKS } from "@/lib/marks";
 import {
-  BUNDLE_PRICES,
   bundlePriceById,
   formatPrice,
-  formatUsd,
   isBundleId,
   planPrice,
 } from "@/lib/pricing";
-
-// Cheapest persona/Provenance bundle — computed, never hand-duplicated (the "from $X" bundle anchor).
-const BUNDLE_MIN = Math.min(
-  ...BUNDLE_PRICES.filter((b) => b.id !== "everything").map(
-    (b) => b.amount ?? Infinity,
-  ),
-);
 import { EDITION_ROUTES } from "@/lib/routes";
 import styles from "./site-nav.module.css";
 
-// Server component. ADR-0237 F3 arrangement: logo left → CENTERED trigger row (the three F4
-// card panels: Editions / Marketplace / Resources) → right utility cluster (search · cart ·
-// Get started · theme). The shell renders as RSC; the panel trio (NavPanels), the theme toggle,
-// and the mobile drawer ship as client islands. Everything derives from the canonical route
-// registry (lib/routes.ts) + the single pricing source (lib/pricing.ts).
+// Server component. ADR-0237 F3 arrangement: logo left → CENTERED trigger row (the two card
+// panels, Marketplace / Resources) + search → right utility cluster (cart · theme · Get started ·
+// account). The shell renders as RSC; the panel duo (NavPanels), the search/account islands, the
+// theme toggle, and the mobile drawer ship as client islands. Everything derives from the
+// canonical route registry (lib/routes.ts) + the single pricing source (lib/pricing.ts).
 
-// Panel 1 — Bundles: the five persona/Provenance bundle cards (label from the registry, note + price
-// from the pricing source — no copy invented here) + marketplace on-ramps in the foot. Every card
-// resolves its price from the bundle anchor; the /ai-kit route maps to the ai-production bundle id.
-const BUNDLES_PANEL: NavPanelSpec = {
-  label: "Bundles",
-  lede: "One audited base. Six bundles — or compose your own.",
-  cards: EDITION_ROUTES.map((r) => {
-    const slug = r.path.slice(1);
-    const bundleId = slug === "ai-kit" ? "ai-production" : slug;
-    const anchor = isBundleId(bundleId) ? bundlePriceById(bundleId) : undefined;
-    return {
-      href: r.path,
-      label: r.navLabel ?? r.label,
-      note: anchor?.note ?? "",
-      price: anchor ? formatPrice(anchor) : "—",
-      // The bundle's bespoke waterline mark (ADR-0237 F6).
-      icon: isBundleId(bundleId) ? BUNDLE_MARKS[bundleId] : "audit-chain",
-    };
-  }),
+// The Marketplace panel carries two card groups under one trigger: "Bundles" — the five
+// persona/Provenance bundle cards plus the whole-catalog Everything bundle — and "Marketplace" —
+// the remaining hub tabs (Modules, Build your stack, Plans). Every card resolves its price from
+// the bundle/plan anchor — no copy invented here. The /ai-kit route maps to the ai-production
+// bundle id.
+const MARKETPLACE_PANEL: NavPanelSpec = {
+  label: "Marketplace",
+  lede: "One audited base. Six bundles, à la carte modules, or a stack you compose yourself.",
+  groups: [
+    {
+      heading: "Bundles",
+      cards: [
+        ...EDITION_ROUTES.map((r) => {
+          const slug = r.path.slice(1);
+          const bundleId = slug === "ai-kit" ? "ai-production" : slug;
+          const anchor = isBundleId(bundleId)
+            ? bundlePriceById(bundleId)
+            : undefined;
+          return {
+            href: r.path,
+            label: r.navLabel ?? r.label,
+            note: anchor?.note ?? "",
+            price: anchor ? formatPrice(anchor) : "—",
+            // The bundle's bespoke waterline mark (ADR-0237 F6).
+            icon: isBundleId(bundleId) ? BUNDLE_MARKS[bundleId] : "audit-chain",
+          };
+        }),
+        (() => {
+          const everything = bundlePriceById("everything");
+          return {
+            href: "/marketplace#everything",
+            label: "Everything",
+            note: everything?.note ?? "",
+            price: everything ? formatPrice(everything) : "—",
+            icon: BUNDLE_MARKS.everything,
+          };
+        })(),
+      ],
+    },
+    {
+      heading: "Marketplace",
+      cards: [
+        {
+          href: "/marketplace/modules",
+          label: "Modules",
+          note: "Every standalone module, à la carte.",
+          price: planPrice("module"),
+          icon: "boxes",
+        },
+        {
+          href: "/marketplace/build",
+          label: "Build your stack",
+          note: "Compose module by module, live total.",
+          icon: "terminal",
+        },
+        {
+          href: "/marketplace/plans",
+          label: "Plans",
+          note: "Subscriptions that keep it current.",
+          price: `from ${planPrice("developer")}`,
+          icon: "plan-tier",
+        },
+      ],
+    },
+  ],
   foot: [
     {
       href: "/marketplace",
       label: "Compare the bundles",
       desc: "Side-by-side, plus the Everything bundle.",
     },
-    {
-      href: "/marketplace/build",
-      label: "Build your stack",
-      desc: "Compose your own stack, module by module.",
-    },
   ],
 };
 
-// Panel 2 — Marketplace: the four hub tabs as cards (ADR-0237 F1), each with the F4 card grammar
-// (icon + label + one-liner + price where the surface has one).
-const MARKETPLACE_PANEL: NavPanelSpec = {
-  label: "Marketplace",
-  lede: "Buy a module, a bundle, or everything.",
-  cards: [
-    {
-      href: "/marketplace",
-      label: "Bundles",
-      note: "Compare the six bundles side by side.",
-      price: `from ${formatUsd(BUNDLE_MIN)}`,
-      icon: "caisson",
-    },
-    {
-      href: "/marketplace/modules",
-      label: "Modules",
-      note: "Every standalone module, à la carte.",
-      price: planPrice("module"),
-      icon: "boxes",
-    },
-    {
-      href: "/marketplace/build",
-      label: "Build your stack",
-      note: "Compose module by module, live total.",
-      icon: "terminal",
-    },
-    {
-      href: "/marketplace/plans",
-      label: "Plans",
-      note: "Subscriptions that keep it current.",
-      price: `from ${planPrice("developer")}`,
-      icon: "plan-tier",
-    },
-  ],
-};
-
-// Panel 3 — Resources (ADR-0237 F4): Docs · Glossary · Changelog · Security. No prices.
+// Panel 2 — Resources (ADR-0237 F4): Docs · Glossary · Updates · Security. No prices.
 const RESOURCES_PANEL: NavPanelSpec = {
   label: "Resources",
   cards: [
@@ -119,8 +116,8 @@ const RESOURCES_PANEL: NavPanelSpec = {
       icon: "file-check",
     },
     {
-      href: "/changelog",
-      label: "Changelog",
+      href: "/updates",
+      label: "Updates",
       note: "What shipped, release by release.",
       icon: "git-branch",
     },
@@ -133,19 +130,16 @@ const RESOURCES_PANEL: NavPanelSpec = {
   ],
 };
 
-const PANELS: readonly NavPanelSpec[] = [
-  BUNDLES_PANEL,
-  MARKETPLACE_PANEL,
-  RESOURCES_PANEL,
-];
+const PANELS: readonly NavPanelSpec[] = [MARKETPLACE_PANEL, RESOURCES_PANEL];
 
-// The mobile drawer lists every destination flat (no disclosure): the bundle personas, the four
-// marketplace tabs, then the resource surfaces.
+// The mobile drawer lists every destination flat (no disclosure): the bundle personas + Everything,
+// the marketplace tabs, then the resource surfaces — mirrors the merged Marketplace panel's groups.
 const MOBILE_LINKS: readonly { href: string; label: string }[] = [
   ...EDITION_ROUTES.map((r) => ({
     href: r.path,
     label: r.navLabel ?? r.label,
   })),
+  { href: "/marketplace#everything", label: "Everything" },
   { href: "/marketplace", label: "Marketplace" },
   { href: "/marketplace/modules", label: "Modules" },
   { href: "/marketplace/build", label: "Build your stack" },
@@ -166,19 +160,20 @@ export function SiteNav() {
         <Wordmark />
       </Link>
 
-      {/* Centered trigger row — the three card panels. Hidden below 900px (the drawer takes
-          over). */}
+      {/* Centered trigger row — the two card panels + search. Hidden below 900px (the drawer
+          takes over). */}
       <div className={styles.navCenter}>
         <NavPanels panels={PANELS} />
+        <NavSearchTrigger />
       </div>
 
-      {/* Right utility cluster (F3): search · cart · Get started · theme. The cart stays visible
+      {/* Right utility cluster (F3): cart · theme · Get started · account. The cart stays visible
           below 900px too (rendered again inside the compact cluster, not gated). */}
       <div className={styles.navUtils}>
-        <NavSearchTrigger />
         <CartTrigger />
-        <Button href={GET_STARTED.href}>{GET_STARTED.label}</Button>
         <ThemeToggle />
+        <Button href={GET_STARTED.href}>{GET_STARTED.label}</Button>
+        <NavAccount />
       </div>
 
       {/* Compact cluster below 900px: cart + hamburger (the drawer carries search + CTA). */}

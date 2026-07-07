@@ -1,9 +1,12 @@
 /* ADR-0237 F3 nav zones. Above 900px `.cs-nav` (global.css) is a 3-column grid
-   [logo | centered triggers | utility cluster]; at/below 900px it falls back to flex and the
-   compact cluster (cart + hamburger) takes over. */
+   [logo | centered triggers + search | utility cluster]; at/below 900px it falls back to flex and
+   the compact cluster (cart + hamburger) takes over. */
 
 .navCenter {
   justify-self: center;
+  display: flex;
+  align-items: center;
+  gap: var(--cs-space-6);
 }
 
 .navUtils {
