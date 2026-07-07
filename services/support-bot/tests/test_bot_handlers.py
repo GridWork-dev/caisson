@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
-from caisson_support_bot.bot import format_answer, handle_question
+from unittest.mock import AsyncMock, MagicMock
+
+import discord
+
+from caisson_support_bot.bot import _escalator_factory, format_answer, handle_question
+from caisson_support_bot.config import Settings
 from caisson_support_bot.contracts import AnswerResult
 from caisson_support_bot.escalation import Escalator, InMemoryTicketStore
 from caisson_support_bot.inference import FakeInference
 from caisson_support_bot.rag import SENTINEL, RagPipeline
 
-from .conftest import FakeRetriever, FakeThreadOpener, chunk
+from .conftest import FakeRetriever, FakeThreadOpener, chunk, sample_brief
 
 
 def test_format_answer_appends_deduped_sources_footer() -> None:
@@ -83,3 +88,52 @@ async def test_handle_question_empty_input_prompts() -> None:
     )
     assert "Ask me" in out
     assert store.tickets == []  # no escalation on an empty prompt
+
+
+def _settings(**overrides: object) -> Settings:
+    return Settings(
+        discord_token="x-discord",
+        openrouter_api_key="x-openrouter",
+        docs_service_url="https://docs.test",  # type: ignore[arg-type]
+        docs_service_token="x-docs",
+        **overrides,  # type: ignore[arg-type]
+    )
+
+
+def _mock_channel() -> discord.abc.Messageable:
+    # No `create_thread` on the spec ⇒ _DiscordThreadOpener falls back to a plain send (mirrors
+    # test_bot_mentions.py's not-thread-capable fixture) — the escalation path under test here is
+    # the priority signal, not thread creation.
+    channel = MagicMock(spec=["send"])
+    channel.send = AsyncMock()
+    return channel
+
+
+async def test_escalator_factory_flags_priority_when_author_holds_the_role() -> None:
+    # ADR-0278 Track K: _escalator_factory resolves the priority signal ONCE per request from
+    # whatever member context the caller (bot.py's /ask or #ask-ai listener) hands it.
+    settings = _settings(role_priority_support_id=999)
+    holder = MagicMock(spec=discord.Member)
+    holder.roles = [MagicMock(id=999)]
+
+    factory = _escalator_factory(settings, None, _mock_channel(), author=holder)
+    ticket = await factory().escalate(sample_brief())
+    assert ticket.priority is True
+
+
+async def test_escalator_factory_normal_lane_when_role_unheld_or_no_member_context() -> None:
+    settings = _settings(role_priority_support_id=999)
+    non_holder = MagicMock(spec=discord.Member)
+    non_holder.roles = [MagicMock(id=1)]
+
+    ticket = await _escalator_factory(
+        settings, None, _mock_channel(), author=non_holder
+    )().escalate(sample_brief())
+    assert ticket.priority is False
+
+    # A bare discord.User (e.g. a DM) carries no guild roles — never a priority signal.
+    dm_author = MagicMock(spec=discord.User)
+    ticket = await _escalator_factory(settings, None, _mock_channel(), author=dm_author)().escalate(
+        sample_brief()
+    )
+    assert ticket.priority is False

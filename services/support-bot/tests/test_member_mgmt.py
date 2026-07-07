@@ -16,6 +16,7 @@ from caisson_support_bot.member_mgmt import (
     grant_edition,
     may_moderate,
     member_can_manage_role,
+    member_has_priority_support,
     role_outranks_bot,
     toggle_role,
     welcome_member,
@@ -66,6 +67,28 @@ def test_edition_role_id_maps_and_handles_unknown() -> None:
     assert edition_role_id(settings, "local-ai") is None  # configured None (canonical id, ADR-0203)
     assert edition_role_id(settings, "local-first") is None  # pre-ADR-0203 slug — no longer mapped
     assert edition_role_id(settings, "nope") is None  # unknown slug
+
+
+def _member_with_roles(*role_ids: int) -> discord.Member:
+    return cast(
+        discord.Member,
+        SimpleNamespace(roles=[SimpleNamespace(id=rid) for rid in role_ids]),
+    )
+
+
+def test_member_has_priority_support_fail_closed_paths() -> None:
+    # ADR-0278 Track K: every unset/unknown edge resolves to False, never a guess.
+    configured = _settings(role_priority_support_id=999)
+    unconfigured = _settings(role_priority_support_id=None)
+
+    assert member_has_priority_support(unconfigured, _member_with_roles(999)) is False  # unset role
+    assert member_has_priority_support(configured, None) is False  # no member context (e.g. a DM)
+    assert member_has_priority_support(configured, _member_with_roles(1, 2)) is False  # lacks role
+
+
+def test_member_has_priority_support_true_when_role_held() -> None:
+    configured = _settings(role_priority_support_id=999)
+    assert member_has_priority_support(configured, _member_with_roles(1, 999)) is True
 
 
 def test_role_outranks_bot() -> None:

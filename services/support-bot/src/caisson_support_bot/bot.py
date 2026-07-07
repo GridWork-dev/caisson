@@ -19,7 +19,7 @@ from .config import Settings
 from .contracts import AnswerResult
 from .escalation import Escalator, IssueTracker, ThreadOpener, TicketStore
 from .linear_client import LinearIssueTracker
-from .member_mgmt import add_persistent_views, register_member_commands
+from .member_mgmt import add_persistent_views, member_has_priority_support, register_member_commands
 from .rag import RagPipeline
 
 # Discord hard-caps a message at 2000 chars; keep headroom for the sources footer.
@@ -141,15 +141,25 @@ def _escalator_factory(
     store: TicketStore | None,
     channel: discord.abc.Messageable,
     issue_tracker: IssueTracker | None = None,
+    author: discord.Member | discord.User | None = None,
 ) -> Callable[[], Escalator]:
     mention = f"<@&{settings.support_human_role_id}>" if settings.support_human_role_id else None
+    # ADR-0278 Track K: resolved once per request, from whatever member context the caller has (a
+    # bare discord.User — e.g. a DM — carries no roles, so it never signals priority; fail-closed).
+    priority = member_has_priority_support(
+        settings, author if isinstance(author, discord.Member) else None
+    )
 
     def make() -> Escalator:
         opener: ThreadOpener = _DiscordThreadOpener(
             channel, mention_role_id=settings.support_human_role_id
         )
         return Escalator(
-            store=store, thread_opener=opener, issue_tracker=issue_tracker, human_mention=mention
+            store=store,
+            thread_opener=opener,
+            issue_tracker=issue_tracker,
+            human_mention=mention,
+            priority=priority,
         )
 
     return make
@@ -205,6 +215,7 @@ def make_bot(
                 store,
                 interaction.channel,  # type: ignore[arg-type]
                 issue_tracker,
+                author=interaction.user,
             ),
             max_chars=settings.max_question_chars,
         )
@@ -221,7 +232,7 @@ def make_bot(
                 question=message.content,
                 pipeline=pipeline,
                 escalator_factory=_escalator_factory(
-                    settings, store, message.channel, issue_tracker
+                    settings, store, message.channel, issue_tracker, author=message.author
                 ),
                 max_chars=settings.max_question_chars,
             )

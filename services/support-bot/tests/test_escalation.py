@@ -98,11 +98,48 @@ async def test_postgres_store_uses_parameterized_sql() -> None:
     # the injection payload travels as a bound parameter, never concatenated into the SQL text.
     assert "DROP TABLE" not in query
     assert any("DROP TABLE" in str(a) for a in args)
+    assert args[5] is False  # default, unset priority — bound, not baked into the query text.
 
 
 def test_schema_is_idempotent_create() -> None:
     assert "CREATE TABLE IF NOT EXISTS support_ticket" in SUPPORT_TICKET_SCHEMA
     assert "ai_brief" in SUPPORT_TICKET_SCHEMA
+
+
+def test_schema_adds_priority_column_idempotently_for_an_already_deployed_table() -> None:
+    # ADR-0278 Track K: an already-deployed table has no `priority` column — CREATE TABLE IF NOT
+    # EXISTS no-ops on it, so the column must arrive via a replay-safe ALTER instead.
+    assert "ALTER TABLE support_ticket ADD COLUMN IF NOT EXISTS priority" in SUPPORT_TICKET_SCHEMA
+
+
+async def test_escalator_priority_tags_thread_title_body_and_linear_issue() -> None:
+    store = InMemoryTicketStore()
+    opener = FakeThreadOpener()
+    tracker = FakeIssueTracker()
+    esc = Escalator(store=store, thread_opener=opener, issue_tracker=tracker, priority=True)
+
+    ticket = await esc.escalate(sample_brief())
+
+    assert ticket.priority is True
+    assert store.tickets[0].priority is True
+    title, body = opener.opened[0]
+    assert title.startswith("Priority: ")
+    assert "Priority support escalation" in body
+    assert "SLA" not in body  # best-effort framing only, never a contractual word (ADR-0278)
+    issue_title, _description = tracker.created[0]
+    assert issue_title.startswith("Priority support escalation:")
+
+
+async def test_escalator_defaults_to_normal_lane_no_priority_signal() -> None:
+    store = InMemoryTicketStore()
+    opener = FakeThreadOpener()
+    esc = Escalator(store=store, thread_opener=opener)  # no priority= passed (fail-closed default)
+
+    ticket = await esc.escalate(sample_brief())
+
+    assert ticket.priority is False
+    title, _body = opener.opened[0]
+    assert title.startswith("Support: ")
 
 
 async def test_escalator_files_a_linear_issue_alongside_thread_and_ticket() -> None:
