@@ -1,0 +1,38 @@
+{
+  "name": "@caisson/service-intel",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "license": "LicenseRef-Caisson-Commercial",
+  "description": "Standing intelligence daemon for the operator control plane. Watches compliance frameworks, competitor pages, GitHub traction, product analytics, and production errors; detects change cheaply and deterministically, then appends durable findings to the admin database's intel schema. Error signal additionally routes through the alerting pipeline to the operator's Telegram bridge and an auto-filed issue.",
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "bun test ./src",
+    "test:live": "bun test ./live",
+    "start": "bun run src/server.ts"
+  },
+  "dependencies": {
+    "@caisson/alerting": "workspace:*",
+    "@caisson/kernel": "workspace:*",
+    "@caisson/observability": "workspace:*",
+    "pg": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "@types/bun": "catalog:",
+    "@types/pg": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:"
+  }
+}

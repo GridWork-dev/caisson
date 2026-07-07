@@ -10,7 +10,8 @@
       "apps/*",
       "registry",
       "services/license",
-      "services/docs"
+      "services/docs",
+      "services/intel"
     ],
     "catalog": {
       "zod": "^3.23.8",
