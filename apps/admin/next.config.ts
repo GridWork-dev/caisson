@@ -14,7 +14,21 @@ const config: NextConfig = {
   reactStrictMode: true,
   images: { unoptimized: true },
   // @caisson/ui ships raw TS (exports point at src/*.ts); Next transpiles it (ADR-0042 token floor).
-  transpilePackages: ["@caisson/ui", "@caisson/brand"],
+  // The catalog page (apps/admin/src/app/catalog/components) renders live demos from the shared
+  // demo registry, which in turn imports ui-pro + every per-package `./ui` surface it demos —
+  // those ship raw TSX too and need the same transpile treatment to reach the client bundle.
+  transpilePackages: [
+    "@caisson/ui",
+    "@caisson/brand",
+    "@caisson/ui-pro",
+    "@caisson/demo-registry",
+    "@caisson/audit-worm",
+    "@caisson/license-issue",
+    "@caisson/local-store",
+    "@caisson/prompt-registry",
+    "@caisson/ai-meter",
+    "@caisson/audit-harness",
+  ],
   turbopack: { root: monorepoRoot },
   // Security-floor response headers (identity/security.md), same values as apps/site/next.config.ts —
   // admin.caisson.sh is a LIVE served surface and carries no documented embedding feature.
