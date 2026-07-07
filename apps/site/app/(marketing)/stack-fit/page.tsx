@@ -163,7 +163,7 @@ export default function StackFitPage() {
               return (
                 <Card key={g.posture}>
                   <div className="cs-status">
-                    <Icon name={g.icon} />
+                    <Icon name={g.icon} size="lg" />
                     {g.heading}
                   </div>
                   <p

@@ -21,7 +21,9 @@ export type DbPosture = "postgres" | "sqlite" | "none";
  * retention-runner is `postgres` transitively (it schedules through @caisson/jobs → pg-boss).
  */
 export const MODULE_DB_POSTURE: Record<string, DbPosture> = {
-  // Postgres — tenant-isolation / metering / ledger, built on tenancy-rls (or the job queue).
+  // Postgres — tenant-isolation / metering / ledger built on tenancy-rls (or the job queue), plus
+  // the modules that ship their own RLS'd Postgres tables (field-crypto: the field_keys
+  // key-version store; alerting: the alert_audit trail).
   "audit-worm": "postgres",
   "ai-meter": "postgres",
   "prompt-registry": "postgres",
@@ -29,12 +31,12 @@ export const MODULE_DB_POSTURE: Record<string, DbPosture> = {
   "org-controls": "postgres",
   "billing-orchestration": "postgres",
   "retention-runner": "postgres",
+  "field-crypto": "postgres",
+  alerting: "postgres",
   // SQLite / on-device — no server database.
   "local-store": "sqlite",
   "local-sync": "sqlite",
   // No database of its own — crypto, in-process logic, on-device inference, or injected-handle logic.
-  "field-crypto": "none",
-  alerting: "none",
   "ai-evals": "none",
   guardrails: "none",
   "agent-kernel": "none",
@@ -61,7 +63,7 @@ export const POSTURE_GROUPS: readonly PostureGroup[] = [
     posture: "postgres",
     icon: "database",
     heading: "Requires Postgres",
-    note: "Built on the fail-closed RLS base (or the pg-boss job queue). The tenant-isolation, metering, and ledger modules are Postgres by design — that is where the isolation guarantee lives.",
+    note: "Built on the fail-closed RLS base or the pg-boss job queue, or shipping their own RLS'd Postgres tables (field-crypto's key-version store, alerting's audit trail). Postgres by design — that is where the isolation guarantee lives.",
   },
   {
     posture: "sqlite",

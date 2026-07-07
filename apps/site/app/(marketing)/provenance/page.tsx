@@ -331,6 +331,19 @@ export default function ProvenancePage() {
         </Section>
       </Reveal>
 
+      {/* ===== Prove fit in week one (ADR-0272 §3) ===== */}
+      <Reveal>
+        <Section
+          eyebrow="Trial path"
+          title="Prove fit in week one."
+          lede="Don't take the fit on faith — scaffold the audited base and run it on your own stack before you commit."
+        >
+          <div style={{ marginTop: "var(--cs-space-6)" }}>
+            <TrialPath />
+          </div>
+        </Section>
+      </Reveal>
+
       {/* ===== How it ships ===== */}
       <Reveal>
         <Section
@@ -379,19 +392,6 @@ export default function ProvenancePage() {
               </Button>
             </div>
           </Card>
-        </Section>
-      </Reveal>
-
-      {/* ===== Prove fit in week one (ADR-0272 §3) ===== */}
-      <Reveal>
-        <Section
-          eyebrow="Trial path"
-          title="Prove fit in week one."
-          lede="Don't take the fit on faith — scaffold the audited base and run it on your own stack before you commit."
-        >
-          <div style={{ marginTop: "var(--cs-space-6)" }}>
-            <TrialPath />
-          </div>
         </Section>
       </Reveal>
     </>

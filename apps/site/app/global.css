@@ -322,6 +322,10 @@ kbd,
   background: var(--cs-bg);
   border-bottom: 1px solid var(--cs-border);
   box-shadow: var(--cs-shadow-lg);
+  /* The link list outgrew a short phone viewport — cap the drawer below the 3.5rem nav bar and
+     scroll it, so the bottom entries stay reachable. */
+  max-height: calc(100vh - 3.5rem);
+  overflow-y: auto;
 }
 
 .cs-nav-mobile a {

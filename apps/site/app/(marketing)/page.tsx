@@ -661,7 +661,7 @@ export default function HomePage() {
         <Section
           eyebrow="Built in the open"
           title="No logo wall yet. Here's what you can check instead."
-          lede="Caisson is pre-launch, so there are no customer logos to show — and we'd rather say that than fake them. What you can verify today: the base is open source you can read, the changelog is public, and the source ships to you to audit."
+          lede="We're early — no logo wall to point at yet, and we'd rather say that than fake one. Here's what you can verify instead: the base is open source you can read, the changelog is public, and the source ships to you to audit."
           band="surface"
         >
           <FeatureGrid cols={3}>

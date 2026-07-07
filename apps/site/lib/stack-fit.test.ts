@@ -25,6 +25,27 @@ describe("MODULE_DB_POSTURE", () => {
       expect(typeof id).toBe("string");
     }
   });
+
+  test("the Postgres-by-design set is pinned postgres (a regression to 'none' is a public misclaim)", () => {
+    // Verified against the package sources: field-crypto ships the field_keys key-version tables
+    // (src/migrations/0001/0002 + PgKeyVersionStore), alerting ships the alert_audit tables,
+    // audit-worm/org-controls build on RLS'd tables, retention-runner schedules via pg-boss.
+    for (const id of [
+      "audit-worm",
+      "field-crypto",
+      "alerting",
+      "retention-runner",
+      "org-controls",
+    ]) {
+      expect(MODULE_DB_POSTURE[id]).toBe("postgres");
+    }
+  });
+
+  test("the on-device modules are pinned sqlite", () => {
+    for (const id of ["local-store", "local-sync"]) {
+      expect(MODULE_DB_POSTURE[id]).toBe("sqlite");
+    }
+  });
 });
 
 describe("POSTURE_GROUPS + STACK_AXES", () => {
