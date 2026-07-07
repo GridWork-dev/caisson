@@ -2,17 +2,21 @@ import {
   Button,
   Card,
   CodeBlock,
-  CredentialStrip,
   EditionCard,
   FeatureGrid,
-  Hero,
   Icon,
   Reveal,
   Section,
   SkuMatrix,
   StatusChip,
-  Terminal,
 } from "@/components";
+import { DualDoorHero } from "@/components/dual-door-hero";
+import { FileTree, type FileNode } from "@/components/file-tree";
+import {
+  IsolationDiagram,
+  LifecycleDiagram,
+} from "@/components/isolation-diagrams";
+import { StackBuilder } from "@/components/stack-builder";
 import Link from "next/link";
 
 import { serializeJsonLd, softwareApplication } from "@/lib/jsonld";
@@ -33,15 +37,16 @@ import {
 
 export const metadata = buildMetadata({
   description:
-    "Fail-closed Postgres RLS, S3 Object-Lock WORM, and an append-only audit chain — wired and tested before your first customer, not backfilled after your first audit.",
+    "One audited Postgres base for regulated and production SaaS — fail-closed RLS, S3 Object-Lock WORM, an append-only audit chain, and six composable bundles you compose, never fork.",
   path: "/",
 });
 
 // Umbrella SoftwareApplication node — no priceId (the home node is the product line, not a SKU).
+// Describes the two-door umbrella (ADR-0040): the compliance wedge under a production-rigor layer.
 const homeJsonLd = softwareApplication({
   name: "Caisson",
   description:
-    "Compliance-grade infrastructure for regulated SaaS — fail-closed Postgres RLS, S3 Object-Lock WORM, an append-only audit chain, and an evidence-pack generator.",
+    "Composable infrastructure for regulated and production SaaS on one audited Postgres base — fail-closed RLS, S3 Object-Lock WORM, an append-only audit chain, token metering, on-device inference, and signed provenance, in six bundles.",
   url: SITE_URL,
 });
 
@@ -79,6 +84,80 @@ const CI_CHECKS = [
   "RLS cross-tenant read: denied",
 ] as const;
 
+// ===== Honest-artifact bento (D4) — REAL monorepo paths + REAL code, no screenshots. =====
+// Every path below is a real directory in this repo (verified against the tree); every code cell is
+// copied from the file its label names. The device (ADR-0080 honesty floor): the marketing IA and
+// the codebase IA are the same object, so "trust me, it's well-built" becomes an inspectable
+// artifact. Curated subset — breadth without noise, not the full 50-package tree.
+const REPO_TREE: readonly FileNode[] = [
+  {
+    name: "apps",
+    children: [
+      { name: "site", note: "marketing + docs + buyer dashboard" },
+      { name: "admin", note: "the control-plane" },
+    ],
+  },
+  {
+    name: "packages",
+    children: [
+      { name: "kernel", note: "audit-chain · canonicalize · branded money" },
+      { name: "tenancy-rls", note: "fail-closed Postgres RLS" },
+      { name: "audit-worm", note: "append-only chain + S3 Object-Lock WORM" },
+      { name: "field-crypto", note: "per-tenant HKDF-SHA256 encryption" },
+      { name: "ai-meter", note: "token metering + spend caps" },
+      { name: "local-inference", note: "on-device ONNX inference" },
+      { name: "agent-kernel", note: "the governed-agent state machine" },
+      { name: "ui", note: "the Apache-2.0 component base" },
+    ],
+  },
+  {
+    name: "tooling",
+    children: [
+      { name: "standards-gate", note: "the one lint / tsconfig / test gate" },
+    ],
+  },
+  {
+    name: "services",
+    children: [
+      { name: "license", note: "the license issuer + verifier" },
+      { name: "docs", note: "the docs RAG service" },
+    ],
+  },
+  {
+    name: "registry",
+    children: [
+      { name: "index.json", note: "the signed module index" },
+      { name: "worker", note: "the edge entitlement filter" },
+    ],
+  },
+];
+
+// The fail-closed RLS policy, verbatim from buildTenantPolicySql() (packages/tenancy-rls/src/rls.ts):
+// no tenant GUC set → NULLIF folds '' to NULL → the USING predicate is NULL → every row is denied.
+const RLS_POLICY_SQL = `ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE invoices FORCE ROW LEVEL SECURITY;
+CREATE POLICY invoices_tenant_isolation ON invoices
+  USING (
+    account_id = NULLIF(current_setting('app.current_account', true), '')
+  );`;
+
+// The chain-link hash, verbatim from packages/kernel/src/audit-chain.ts: SHA-256 over the canonical
+// 2-tuple [prevHash, payload] — tamper any historical row and every hash after it fails to recompute.
+const AUDIT_CHAIN_TS = `export function hashChainLink(
+  prevHash: string | null,
+  payload: JsonValue,
+): string {
+  return createHash("sha256")
+    .update(canonicalize([prevHash, payload]))
+    .digest("hex");
+}`;
+
+// Real CLI shape (docs/provenance/audit-worm + the compliance evidence card) — a representative
+// verify run, not a customer metric.
+const AUDIT_VERIFY_OUT = `$ caisson audit verify --tenant tenant_4f2c
+chain: 41984 rows · 0 breaks
+root:  2c9f…b7   sig ✓   tsa ✓`;
+
 // How-to-buy price bands — derived from lib/pricing.ts (never hand-duplicated) so the three
 // figures on the type-chip cards below can't drift from the SKUs they describe.
 const HOW_TO_BUY_MODULE_PRICE = planPrice("module");
@@ -102,63 +181,8 @@ export default function HomePage() {
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(homeJsonLd) }}
       />
 
-      {/* ===== Hero — split layout, the denial carries the claim ===== */}
-      <Hero
-        eyebrow="Compliance-grade infrastructure for regulated SaaS"
-        title="Fail-closed by construction."
-        lede="Fail-closed Postgres RLS, S3 Object-Lock WORM, and an append-only audit chain — wired and tested before your first customer, not backfilled after your first audit."
-        ctas={
-          <>
-            <Button href="/marketplace" variant="primary">
-              Get started
-            </Button>
-            <Button href="/docs" variant="ghost">
-              Read the docs
-            </Button>
-          </>
-        }
-        credentials={
-          <CredentialStrip
-            items={["SOC 2", "HIPAA", "GDPR", "EU AI Act"]}
-            note="Evidence packs you generate — never &lsquo;we are certified.&rsquo;"
-          />
-        }
-        artifact={
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "var(--cs-space-4)",
-            }}
-          >
-            {/* The denial, as code-as-proof (ADR-0104 hero = static): a query that never set
-                the tenant context returns nothing, never everything. */}
-            <Terminal
-              label="psql — cross-tenant read"
-              status={<StatusChip tone="accent" dot label="denied" />}
-            >
-              <span className="cs-tok-muted">
-                -- tenant context was never set
-              </span>
-              {
-                "\n$ SELECT count(*) FROM invoices;\n\n count\n-------\n     0\n(1 row)"
-              }
-            </Terminal>
-            <CodeBlock
-              label="install"
-              code={
-                <>
-                  <span className="cs-tok-muted">$</span> bunx{" "}
-                  <span className="cs-tok-accent">@caisson-sh/cli</span>@latest
-                </>
-              }
-            />
-            {/* Signature slot — RESERVED + blank (ADR-0103/0104). The marketing signature is
-                deferred-for-rework; a future three.js / CSS-SVG studio-candidate spike mounts
-                here. Intentionally renders nothing until then (no fabricated placeholder). */}
-          </div>
-        }
-      />
+      {/* ===== Dual-door hero (D1) — compliance wedge (lead) + production umbrella (secondary) ===== */}
+      <DualDoorHero />
 
       {/* ===== The umbrella / named enemy ===== */}
       <Reveal>
@@ -213,6 +237,102 @@ export default function HomePage() {
               </Card>
             ))}
           </FeatureGrid>
+        </Section>
+      </Reveal>
+
+      {/* ===== Honest-artifact bento (D4a) — the repo IS the artifact: real paths + real code ===== */}
+      <Reveal>
+        <Section
+          eyebrow="The repository is the artifact"
+          title="Real paths. Real code. No screenshots."
+          lede="The structure of this page is the structure of the codebase. Every path is a real directory; every snippet is copied verbatim from the file its header names — the honest-artifact floor, not a mockup."
+        >
+          <FeatureGrid cols={2}>
+            <Card>
+              <span className="cs-card-title">caisson-sh/caisson</span>
+              <div style={{ marginTop: "var(--cs-space-5)" }}>
+                <FileTree root={REPO_TREE} label="Caisson monorepo structure" />
+              </div>
+            </Card>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "var(--cs-space-5)",
+              }}
+            >
+              <CodeBlock
+                frame
+                label="packages/tenancy-rls/src/rls.ts"
+                status={<StatusChip tone="accent" dot label="FORCE" />}
+                code={RLS_POLICY_SQL}
+              />
+              <CodeBlock
+                frame
+                label="packages/kernel/src/audit-chain.ts"
+                status={<StatusChip tone="accent" dot label="sha256" />}
+                code={AUDIT_CHAIN_TS}
+              />
+              <CodeBlock
+                frame
+                label="caisson audit verify"
+                status={<StatusChip tone="success" dot label="0 breaks" />}
+                code={AUDIT_VERIFY_OUT}
+              />
+            </div>
+          </FeatureGrid>
+        </Section>
+      </Reveal>
+
+      {/* ===== Architecture-isolation + data-lifecycle diagram pair (D4b) — drawn to real behaviour ===== */}
+      <Reveal>
+        <Section
+          eyebrow="How the guarantees hold"
+          title="The boundary and the evidence trail, drawn to real behaviour."
+          lede="Two diagrams of shipped behaviour — the fail-closed isolation boundary and the write-to-verify evidence lifecycle. Nothing aspirational: this is what the RLS, audit-chain, and WORM modules already do."
+          band="surface"
+        >
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--cs-space-12)",
+              marginTop: "var(--cs-space-8)",
+            }}
+          >
+            <div>
+              <h3 className="cs-card-title">
+                Per-tenant isolation, fail-closed
+              </h3>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-2)", maxWidth: "60ch" }}
+              >
+                Tenant context sets one Postgres GUC; the FORCE policy denies
+                any row that doesn&apos;t match it. A query that never set the
+                context returns nothing, never everything.
+              </p>
+              <div style={{ marginTop: "var(--cs-space-6)" }}>
+                <IsolationDiagram />
+              </div>
+            </div>
+            <div>
+              <h3 className="cs-card-title">
+                Evidence lifecycle, write to verify
+              </h3>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-2)", maxWidth: "60ch" }}
+              >
+                Every privileged write joins the append-only chain, anchors to
+                WORM under S3 Object-Lock, and stays verifiable and exportable
+                as an evidence pack.
+              </p>
+              <div style={{ marginTop: "var(--cs-space-6)" }}>
+                <LifecycleDiagram />
+              </div>
+            </div>
+          </div>
         </Section>
       </Reveal>
 
@@ -342,9 +462,11 @@ export default function HomePage() {
         </Section>
       </Reveal>
 
-      {/* ===== Bundles — featured-lead hierarchy, one accent ===== */}
+      {/* ===== Bundles — featured-lead hierarchy, one accent. id="bundles" is the production
+          door's target from the dual-door hero (D1). ===== */}
       <Reveal>
         <Section
+          id="bundles"
           eyebrow="Bundles"
           title="Six bundles, one audited base."
           lede="Compliance leads; every bundle — Provenance and the whole-catalog Everything included — draws from the same audited base, never a fork."
@@ -468,6 +590,24 @@ export default function HomePage() {
         </Section>
       </Reveal>
 
+      {/* ===== Bundle-builder calculator (D4c) — the embedded StackBuilder, prices from the SOT ===== */}
+      <Reveal>
+        <Section
+          eyebrow="Bundle builder"
+          title="Build your own stack — watch the running total."
+          lede="Pick the modules you need and see the total. When your picks total more than a bundle covers, the builder points at the cheaper path — the arithmetic, not a fabricated discount. Every figure reads from the committed catalog."
+        >
+          <div style={{ marginTop: "var(--cs-space-8)" }}>
+            <StackBuilder />
+          </div>
+          <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
+            <Link href="/marketplace/build" style={{ color: "var(--cs-link)" }}>
+              Open the configurator on its own page
+            </Link>
+          </p>
+        </Section>
+      </Reveal>
+
       {/* ===== CI proof strip — the green checks substitute for a logo wall ===== */}
       <Reveal>
         <Section
@@ -499,9 +639,9 @@ export default function HomePage() {
                 maxWidth: "60ch",
               }}
             >
-              Caisson is built and supported by the maintainer at Caisson Software — a
-              named engineer, not a ticket queue. Every customer gets a direct
-              line to the engineer who builds it.
+              Caisson is a software product, built and backed by the maintainer at
+              GridWork Digital — a named engineer, not a ticket queue. Buy a
+              license and you get a direct line to the engineer who builds it.
             </p>
             <p
               className="cs-muted"

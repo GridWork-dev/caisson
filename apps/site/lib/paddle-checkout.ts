@@ -80,6 +80,11 @@ export async function openCartCheckout(
       quantity: item.quantity ?? 1,
     })),
     customData: { account_id: accountId },
+    // Surface the business-name + tax/VAT-ID field so EU B2B buyers can enter a VAT number and get
+    // the reverse-charge treatment at checkout rather than a post-purchase revision. `showAddTaxId`
+    // defaults to `true` in Paddle.js, but we set it explicitly so the behaviour is pinned here and
+    // survives a future default change (Paddle checkout settings, `showAddTaxId`).
+    settings: { showAddTaxId: true },
   });
   return true;
 }

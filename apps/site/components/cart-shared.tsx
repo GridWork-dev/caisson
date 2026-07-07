@@ -7,6 +7,7 @@ import { Icon } from "@caisson/ui/components";
 import { Button } from "@/components";
 import { cartSubtotal, cartUpgrade, type CartItem } from "@/lib/cart";
 import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
+import { PADDLE_MOR_DISCLOSURE } from "@/lib/legal";
 import { formatUsd } from "@/lib/pricing";
 
 import { useCart } from "./cart-provider";
@@ -87,12 +88,16 @@ export function CartUpgradeCallout() {
   );
 }
 
-/** The one-time-license reassurance line, shared so the drawer and /cart say it identically. */
+/** The one-time-license reassurance line + the verbatim Paddle MoR disclosure, shared so the
+ *  drawer, /cart, and the checkout panel all say them identically. */
 export function CartTrustNote() {
   return (
-    <p className={styles.trust}>
-      One-time perpetual license, billed once — no seat count, no forced
-      renewal.
-    </p>
+    <>
+      <p className={styles.trust}>
+        One-time perpetual license, billed once — no seat count, no forced
+        renewal.
+      </p>
+      <p className={styles.trust}>{PADDLE_MOR_DISCLOSURE}</p>
+    </>
   );
 }

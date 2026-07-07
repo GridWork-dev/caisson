@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@caisson/ui/components";
 
+import { PADDLE_MOR_DISCLOSURE } from "@/lib/legal";
 import { openCartCheckout } from "@/lib/paddle-checkout";
 import { formatUsd } from "@/lib/pricing";
 
@@ -121,6 +122,8 @@ export function CartCheckoutPanel({ accountId }: CartCheckoutPanelProps) {
           >
             {opening ? "Opening…" : "Pay now"}
           </Button>
+
+          <p className="cs-footnote">{PADDLE_MOR_DISCLOSURE}</p>
         </>
       )}
     </div>
