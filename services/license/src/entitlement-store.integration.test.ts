@@ -10,6 +10,7 @@ import { withTenant } from "@caisson/tenancy-rls";
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
+  RENEWAL_EXTENSION_SCHEMA_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   computeEntitledSince,
   computeUpdatesWindows,
@@ -18,6 +19,7 @@ import {
   readEntitlements,
   readOneTimeEntitlements,
   reconcileCoverageGrants,
+  reverseRenewalExtensions,
   revokePurchaseGrants,
   revokePurchaseLineGrants,
   revokeSubscriptionGrants,
@@ -31,6 +33,7 @@ beforeAll(async () => {
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
+  await tp.exec(RENEWAL_EXTENSION_SCHEMA_SQL);
 });
 
 afterAll(async () => {
@@ -590,6 +593,232 @@ describe("updates windows (ADR-0244/0255 per-entitlement)", () => {
       { entitlement_id: "compliance", extended: true },
       { entitlement_id: "local-ai", extended: false },
     ]);
+  });
+});
+
+describe("renewal-extension ledger + reverse (un-extend, ADR-0251 Consequences)", () => {
+  const pinGrantedAt = (acct: string, iso: string) =>
+    tp.query(
+      `UPDATE entitlement_grant SET granted_at = $2 WHERE account_id = $1`,
+      [acct, iso],
+    );
+  const ledgerStatuses = async (acct: string) =>
+    (
+      await tp.query<{ status: string }>(
+        `SELECT status FROM renewal_extension WHERE account_id = $1 ORDER BY line_item_id`,
+        [acct],
+      )
+    ).map((r) => r.status);
+  const windowOf = (acct: string) =>
+    withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct));
+
+  test("extendUpdatesWindow records a renewal_extension row keyed to the purchase + line", async () => {
+    const acct = "acct_ren_ledger";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pay_rl",
+        source: onetime("pay_rl"),
+      }),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      extendUpdatesWindow(tx, {
+        accountId: acct,
+        entitlementId: "compliance",
+        sourceEventId: "pay_ren_rl",
+        lineItemId: "txnitm_rl",
+      }),
+    );
+    const rows = await tp.query<{
+      entitlement_id: string;
+      purchase_id: string;
+      line_item_id: string;
+      status: string;
+    }>(
+      `SELECT entitlement_id, purchase_id, line_item_id, status FROM renewal_extension WHERE account_id = $1`,
+      [acct],
+    );
+    expect(rows).toEqual([
+      {
+        entitlement_id: "compliance",
+        purchase_id: "pay_ren_rl",
+        line_item_id: "txnitm_rl",
+        status: "active",
+      },
+    ]);
+  });
+
+  test("reverse un-extends the window back to the original purchase window (mid-window renewal)", async () => {
+    const acct = "acct_ren_rev";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pay_rev",
+        source: onetime("pay_rev"),
+      }),
+    );
+    await pinGrantedAt(acct, "2026-01-05T00:00:00.000Z"); // baseline window end = 2027-01-05
+    await withTenant(tp.pg, acct, (tx) =>
+      extendUpdatesWindow(tx, {
+        accountId: acct,
+        entitlementId: "compliance",
+        sourceEventId: "pay_ren_rev",
+        lineItemId: "txnitm_rev",
+      }),
+    );
+    expect((await windowOf(acct)).compliance).toBe("2028-01-05T00:00:00.000Z");
+
+    const n = await withTenant(tp.pg, acct, (tx) =>
+      reverseRenewalExtensions(tx, {
+        accountId: acct,
+        purchaseId: "pay_ren_rev",
+      }),
+    );
+    expect(n).toBe(1);
+    // Exactly back to the original purchase window — never below it.
+    expect((await windowOf(acct)).compliance).toBe("2027-01-05T00:00:00.000Z");
+    expect(await ledgerStatuses(acct)).toEqual(["reversed"]);
+  });
+
+  test("a second refund event does not double-shrink (idempotent latch)", async () => {
+    const acct = "acct_ren_idem";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pay_idem",
+        source: onetime("pay_idem"),
+      }),
+    );
+    await pinGrantedAt(acct, "2026-01-05T00:00:00.000Z");
+    await withTenant(tp.pg, acct, (tx) =>
+      extendUpdatesWindow(tx, {
+        accountId: acct,
+        entitlementId: "compliance",
+        sourceEventId: "pay_ren_idem",
+        lineItemId: "txnitm_idem",
+      }),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      reverseRenewalExtensions(tx, {
+        accountId: acct,
+        purchaseId: "pay_ren_idem",
+      }),
+    );
+    const afterFirst = (await windowOf(acct)).compliance;
+    // A SECOND refund delivery (distinct event) finds only a latched row → reverses nothing.
+    const second = await withTenant(tp.pg, acct, (tx) =>
+      reverseRenewalExtensions(tx, {
+        accountId: acct,
+        purchaseId: "pay_ren_idem",
+      }),
+    );
+    expect(second).toBe(0);
+    expect((await windowOf(acct)).compliance).toBe(afterFirst); // no double-shrink
+    expect(afterFirst).toBe("2027-01-05T00:00:00.000Z");
+  });
+
+  test("reversing ONE of two stacked renewals removes exactly one interval (never below baseline)", async () => {
+    const acct = "acct_ren_stack";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pay_stack",
+        source: onetime("pay_stack"),
+      }),
+    );
+    await pinGrantedAt(acct, "2026-01-05T00:00:00.000Z"); // baseline 2027-01-05
+    // Two renewals from two distinct purchases → +24 months total (2029-01-05).
+    for (const pay of ["pay_ren_stack_a", "pay_ren_stack_b"]) {
+      await withTenant(tp.pg, acct, (tx) =>
+        extendUpdatesWindow(tx, {
+          accountId: acct,
+          entitlementId: "compliance",
+          sourceEventId: pay,
+        }),
+      );
+    }
+    expect((await windowOf(acct)).compliance).toBe("2029-01-05T00:00:00.000Z");
+    // Refund only the second renewal purchase → drop exactly one 12-month interval.
+    await withTenant(tp.pg, acct, (tx) =>
+      reverseRenewalExtensions(tx, {
+        accountId: acct,
+        purchaseId: "pay_ren_stack_b",
+      }),
+    );
+    expect((await windowOf(acct)).compliance).toBe("2028-01-05T00:00:00.000Z");
+  });
+
+  test("per-line reversal un-extends ONLY the refunded line's renewal", async () => {
+    const acct = "acct_ren_line";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pay_line",
+        source: onetime("pay_line"),
+      }),
+    );
+    await pinGrantedAt(acct, "2026-01-05T00:00:00.000Z"); // baseline 2027-01-05
+    // ONE purchase carrying TWO renewal lines for the same entitlement → +24 months.
+    for (const line of ["txnitm_a", "txnitm_b"]) {
+      await withTenant(tp.pg, acct, (tx) =>
+        extendUpdatesWindow(tx, {
+          accountId: acct,
+          entitlementId: "compliance",
+          sourceEventId: "pay_ren_line",
+          lineItemId: line,
+        }),
+      );
+    }
+    expect((await windowOf(acct)).compliance).toBe("2029-01-05T00:00:00.000Z");
+    // A per-line full refund of ONLY txnitm_a reverses one interval; txnitm_b stays.
+    await withTenant(tp.pg, acct, (tx) =>
+      reverseRenewalExtensions(tx, {
+        accountId: acct,
+        purchaseId: "pay_ren_line",
+        lineItemIds: ["txnitm_a"],
+      }),
+    );
+    expect((await windowOf(acct)).compliance).toBe("2028-01-05T00:00:00.000Z");
+    expect(await ledgerStatuses(acct)).toEqual(["reversed", "active"]);
+  });
+
+  test("a renewal on a LAPSED window reverses to at-or-above the original purchase window (floor holds)", async () => {
+    const acct = "acct_ren_lapsed";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pay_lapsed",
+        source: onetime("pay_lapsed"),
+      }),
+    );
+    // Original purchase long ago — its 12-month window is already lapsed (baseline 2025-01-05).
+    await pinGrantedAt(acct, "2024-01-05T00:00:00.000Z");
+    await withTenant(tp.pg, acct, (tx) =>
+      extendUpdatesWindow(tx, {
+        accountId: acct,
+        entitlementId: "compliance",
+        sourceEventId: "pay_ren_lapsed",
+        lineItemId: "txnitm_lapsed",
+      }),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      reverseRenewalExtensions(tx, {
+        accountId: acct,
+        purchaseId: "pay_ren_lapsed",
+      }),
+    );
+    // The floor (granted_at + 12mo = 2025-01-05) is never breached — a lapsed-window reversal may
+    // over-restore toward now() (documented ceiling, favors the buyer), but never below baseline.
+    const after = (await windowOf(acct)).compliance as string;
+    expect(Date.parse(after)).toBeGreaterThanOrEqual(
+      Date.parse("2025-01-05T00:00:00.000Z"),
+    );
   });
 });
 

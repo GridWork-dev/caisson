@@ -24,6 +24,7 @@ import {
   computeUpdatesWindows,
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
+  RENEWAL_EXTENSION_SCHEMA_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   grantEntitlements,
   readEntitlements,
@@ -137,6 +138,7 @@ beforeAll(async () => {
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
+  await tp.exec(RENEWAL_EXTENSION_SCHEMA_SQL);
 });
 
 afterAll(async () => {
@@ -1302,6 +1304,108 @@ describe("applyBillingEvent — updates-renewal lines (ADR-0244/0251)", () => {
       [acct],
     );
     expect((rows[0] as { n: number }).n).toBe(0);
+  });
+
+  test("refunding a renewal transaction UN-EXTENDS the window back to the original purchase window (ADR-0251 Consequences)", async () => {
+    const acct = "acct_renewal_refund";
+    // Original one-time compliance buy, window pinned for a deterministic baseline (2027-01-05).
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pay_rf_base", ONETIME_EDITION_ID),
+      ),
+    );
+    await tp.query(
+      `UPDATE entitlement_grant SET granted_at = $2 WHERE account_id = $1`,
+      [acct, "2026-01-05T00:00:00.000Z"],
+    );
+    // Renewal (its own transaction) extends the window +12 months.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pay_rf_ren", RENEWAL_COMPLIANCE_ID),
+      ),
+    );
+    expect(
+      (await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)))
+        .compliance,
+    ).toBe("2028-01-05T00:00:00.000Z");
+
+    // Refund the RENEWAL transaction (its paymentId). It granted no entitlement/credits, so the
+    // revoke/claw are no-ops — the un-extend is the whole effect. The ORIGINAL grant stays active.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, refundCompleted(acct, "pay_rf_ren", true)),
+    );
+    expect(
+      (await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)))
+        .compliance,
+    ).toBe("2027-01-05T00:00:00.000Z"); // back to the original purchase window, never below it
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]); // the original purchase is untouched — buyer keeps the module
+
+    // A REDELIVERED refund (distinct event id, same payment) never double-shrinks (idempotent latch).
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, {
+        ...refundCompleted(acct, "pay_rf_ren", true),
+        sourceEventId: "evt_refund_pay_rf_ren_again",
+      }),
+    );
+    expect(
+      (await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)))
+        .compliance,
+    ).toBe("2027-01-05T00:00:00.000Z");
+  });
+
+  test("a per-line refund of a mixed cart's renewal line un-extends ONLY that renewal (sibling purchase line untouched)", async () => {
+    const acct = "acct_renewal_refund_line";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pay_rfl_base", ONETIME_EDITION_ID),
+      ),
+    );
+    await tp.query(
+      `UPDATE entitlement_grant SET granted_at = $2
+        WHERE account_id = $1 AND entitlement_id = 'compliance'`,
+      [acct, "2026-01-05T00:00:00.000Z"],
+    );
+    // Mixed cart: a module purchase line + a compliance-renewal line.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompletedMulti(acct, "pay_rfl_mix", [
+          { priceId: MODULE_ID, quantity: 1, itemId: "txnitm_mod" },
+          {
+            priceId: RENEWAL_COMPLIANCE_ID,
+            quantity: 1,
+            itemId: "txnitm_ren",
+          },
+        ]),
+      ),
+    );
+    expect(
+      (await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)))
+        .compliance,
+    ).toBe("2028-01-05T00:00:00.000Z");
+
+    // Per-line FULL refund of ONLY the renewal line → un-extend compliance; field-crypto stays.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        refundPerLine(acct, "pay_rfl_mix", "adj_rfl", [
+          { itemId: "txnitm_ren", amountRefunded: 0, fullyRefunded: true },
+        ]),
+      ),
+    );
+    expect(
+      (await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)))
+        .compliance,
+    ).toBe("2027-01-05T00:00:00.000Z");
+    // The purchased module line is unaffected — still entitled.
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance", "field-crypto"]);
   });
 });
 

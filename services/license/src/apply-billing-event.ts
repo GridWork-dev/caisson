@@ -36,6 +36,7 @@ import {
   grantEntitlements,
   readOneTimeEntitlements,
   reconcileCoverageGrants,
+  reverseRenewalExtensions,
   revokePurchaseGrants,
   revokePurchaseLineGrants,
   revokeSubscriptionGrants,
@@ -224,6 +225,9 @@ export async function applyBillingEvent(
             accountId: ev.accountId,
             entitlementId: renewal.renewsEntitlement,
             sourceEventId: ev.paymentId,
+            // Record the LINE so a per-line refund of this exact renewal can un-extend it
+            // (ADR-0251 Consequences). A whole-transaction refund reverses by paymentId regardless.
+            lineItemId: line.itemId,
           });
           renewedEntitlementIds.add(renewal.renewsEntitlement);
           continue;
@@ -312,6 +316,13 @@ export async function applyBillingEvent(
         // refund just revoked must fall with it — otherwise the refunded product stays fully
         // accessible subscription-sourced for the life of the covering plan.
         await reconcileCoverageGrants(tx, ev.accountId);
+        // ADR-0251 renewal un-extend: if THIS refunded transaction was a renewal purchase, reverse
+        // the updates-window extension(s) it granted (all lines — a whole-transaction full refund).
+        // A refund of the original purchase (not a renewal) matches no ledger row → no-op.
+        await reverseRenewalExtensions(tx, {
+          accountId: ev.accountId,
+          purchaseId: ev.paymentId,
+        });
         const granted = await creditsGrantedBySource(
           tx,
           ev.accountId,
@@ -364,6 +375,10 @@ export async function applyBillingEvent(
         (await creditsGrantedBySource(tx, ev.accountId, ev.paymentId)) -
           (await creditsClawedForSource(tx, ev.accountId, ev.paymentId)),
       );
+      // The FULLY-refunded line ids of this adjustment — a renewal line among them un-extends its
+      // updates window after the loop (ADR-0251). A dollar-partial refund never un-extends (a
+      // renewal SKU is all-or-nothing), so only `type:'full'` items enter here.
+      const fullyRefundedItemIds: string[] = [];
       for (const item of ev.items) {
         const ledger = await lineCreditLedger(tx, ev.accountId, item.itemId);
         const remaining = Math.min(
@@ -372,6 +387,7 @@ export async function applyBillingEvent(
         );
         const key = `${ev.adjustmentId}:${item.itemId}`;
         if (item.fullyRefunded) {
+          fullyRefundedItemIds.push(item.itemId);
           await revokePurchaseLineGrants(tx, {
             accountId: ev.accountId,
             purchaseId: ev.paymentId,
@@ -418,6 +434,16 @@ export async function applyBillingEvent(
       // ADR-0269 refund reconcile (audit P1 1) — same sweep as the whole-transaction branch: any
       // coverage mirror left without an active one_time backing after the per-line revokes falls.
       await reconcileCoverageGrants(tx, ev.accountId);
+      // ADR-0251 renewal un-extend (per-line): reverse the window extension of any FULLY-refunded
+      // renewal line. Scoped to the refunded lines so a sibling non-renewal line's window is
+      // untouched; a line that was not a renewal matches no ledger row → no-op.
+      if (fullyRefundedItemIds.length > 0) {
+        await reverseRenewalExtensions(tx, {
+          accountId: ev.accountId,
+          purchaseId: ev.paymentId,
+          lineItemIds: fullyRefundedItemIds,
+        });
+      }
       return NO_EFFECT;
     }
     case "subscription.created": // signup only — granting here would never renew (the X-2 trap)

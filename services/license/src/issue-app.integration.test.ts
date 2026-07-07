@@ -27,6 +27,7 @@ import { createApp } from "./app.ts";
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
+  RENEWAL_EXTENSION_SCHEMA_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   extendUpdatesWindow,
   grantEntitlements,
@@ -99,6 +100,7 @@ beforeAll(async () => {
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
+  await tp.exec(RENEWAL_EXTENSION_SCHEMA_SQL);
   await tp.exec(LICENSE_GRANT_SCHEMA_SQL);
   // provider: null — these tests exercise POST /issue only; /webhook is covered in
   // webhook-app.integration.test.ts. A null provider makes /webhook fail closed (401), not these routes.
