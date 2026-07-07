@@ -1,4 +1,5 @@
 import { Button, CodeBlock, StatusChip, Terminal } from "@/components";
+import { ProofChips } from "@/components/proof-chips";
 import { bundlePrice, BUNDLE_PRICES, MODULE_PRICES } from "@/lib/pricing";
 
 import styles from "./dual-door-hero.module.css";
@@ -81,7 +82,9 @@ export function DualDoorHero() {
         </div>
 
         {/* Supporting honest artifact (ADR-0104 static hero): the real cross-tenant denial + the
-            real install line — the denial carries the claim, no diagram standing in for behaviour. */}
+            real install line — the denial carries the claim, no diagram standing in for behaviour.
+            Both terminals are framed, so the two cards carry matching elevation (ADR-0285 §4); the
+            install column fills to the psql terminal's height with a proof-chip row. */}
         <div className={styles.artifact}>
           <Terminal
             label="psql — cross-tenant read"
@@ -94,15 +97,22 @@ export function DualDoorHero() {
               "\n$ SELECT count(*) FROM invoices;\n\n count\n-------\n     0\n(1 row)"
             }
           </Terminal>
-          <CodeBlock
-            label="install"
-            code={
-              <>
-                <span className="cs-tok-muted">$</span> bunx{" "}
-                <span className="cs-tok-accent">@caisson-sh/cli</span>@latest
-              </>
-            }
-          />
+          <div className={styles.artifactRight}>
+            <CodeBlock
+              frame
+              label="install"
+              status={<StatusChip tone="success" dot label="ready" />}
+              code={
+                <>
+                  <span className="cs-tok-muted">$</span> bunx{" "}
+                  <span className="cs-tok-accent">@caisson-sh/cli</span>@latest
+                </>
+              }
+            />
+            <ProofChips
+              items={["Apache-2.0 base", "Postgres + RLS", "One-time license"]}
+            />
+          </div>
         </div>
       </div>
     </section>

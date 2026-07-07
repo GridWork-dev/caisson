@@ -41,8 +41,15 @@
   color: var(--cs-fg);
 }
 
-.chip {
+/* Bolder standout chip (ADR-0285 §4): the door price/count chip reads as a headline stat, not a
+ * quiet footnote. `span.chip` (0,1,1) reliably wins over the kit's `.cs-chip` base (0,1,0) regardless
+ * of stylesheet order. */
+span.chip {
   margin-top: var(--cs-space-4);
+  padding: var(--cs-space-2) var(--cs-space-4);
+  font-size: var(--cs-text-sm);
+  font-weight: var(--cs-weight-semibold);
+  letter-spacing: var(--cs-tracking-tight);
 }
 
 .claim {
@@ -59,13 +66,26 @@
 }
 
 /* Supporting honest-artifact strip below the doors (ADR-0104 static hero): the real cross-tenant
- * denial + the real install line. Two columns on desktop, stacked on mobile. */
+ * denial + the real install line. Two columns on desktop, stacked on mobile. `align-items: stretch`
+ * so the install column fills to the psql terminal's height (ADR-0285 §4 — no large empty region). */
 .artifact {
   display: grid;
   grid-template-columns: 1.4fr 1fr;
   gap: var(--cs-space-5);
-  align-items: start;
+  align-items: stretch;
   margin-top: var(--cs-space-10);
+}
+
+/* The install column: the framed install line (matching the psql terminal's elevation) over a
+ * proof-chip row that fills the remaining height. */
+.artifactRight {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-4);
+}
+
+.artifactRight :first-child {
+  flex: 1 1 auto;
 }
 
 @media (max-width: 48rem) {
