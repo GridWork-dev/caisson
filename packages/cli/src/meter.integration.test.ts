@@ -303,7 +303,7 @@ describe("runGeneration — disk materialization + audit row", () => {
 const mkManifest = (
   id: string,
   version: string,
-  kind: "primitive" | "edition",
+  kind: "primitive" | "edition" | "bundle",
   extra: { editions?: string[]; members?: Record<string, string> } = {},
 ) => ({
   version,
@@ -403,6 +403,120 @@ describe("runGeneration — edition pin resolution (ADR-0077)", () => {
       5,
     ); // never charged
     expect(await genCount(ACCOUNT)).toBe(0);
+  });
+
+  // ADR-0257: a first-class `kind:"bundle"` entry resolves the pin map; when a legacy edition
+  // meta ALSO matches (its `editions[]` spelling aliases to the same bundle id), the bundle entry
+  // is PREFERRED — the same union + preference `expandEntitlements` uses. Guards the seam the
+  // six-bundle CLI vocabulary migration exposed: post-rework indexes carry bundle-kind metas the
+  // old edition-only scan could never match (a fail-closed throw for every canonical bundle id).
+  test("a kind:bundle entry resolves member pins, preferred over a legacy alias meta", async () => {
+    await grantSome(5);
+    const spy = writerSpy();
+    const index = loadRegistryIndex({
+      schemaVersion: 1,
+      modules: [
+        {
+          id: "@caisson/field-crypto",
+          latest: "0.1.0",
+          versions: [mkManifest("@caisson/field-crypto", "0.1.0", "primitive")],
+        },
+        {
+          id: "@caisson/credits",
+          latest: "0.2.0",
+          versions: [mkManifest("@caisson/credits", "0.2.0", "primitive")],
+        },
+        // The legacy meta (`editions: ["ai-kit"]` aliases to ai-production) pins credits@9.9.9 —
+        // an UNRESOLVABLE pin, so any accidental legacy-first match fails the test loudly.
+        {
+          id: "@caisson/ai-kit",
+          latest: "0.1.0",
+          versions: [
+            mkManifest("@caisson/ai-kit", "0.1.0", "edition", {
+              editions: ["ai-kit"],
+              members: { "@caisson/credits": "9.9.9" },
+            }),
+          ],
+        },
+        {
+          id: "@caisson/ai-production",
+          latest: "0.2.0",
+          versions: [
+            mkManifest("@caisson/ai-production", "0.2.0", "bundle", {
+              members: { "@caisson/credits": "0.2.0" },
+            }),
+          ],
+        },
+      ],
+    });
+    const outcome = await withTenant(tp.pg, ACCOUNT, (tx) =>
+      runGeneration(
+        tx,
+        { index, debit, writeFileSet: spy.writer },
+        {
+          projectName: "acme-bundle",
+          edition: "ai-production" as const,
+          modules: [{ id: "@caisson/field-crypto", version: "0.1.0" }],
+        },
+        { accountId: ACCOUNT, idempotencyKey: "bundle-1" },
+      ),
+    );
+    const pkg = outcome.files.find((f) => f.path === "package.json");
+    const deps = (
+      JSON.parse(pkg?.content ?? "{}") as {
+        dependencies?: Record<string, string>;
+      }
+    ).dependencies;
+    expect(deps?.["@caisson/credits"]).toBe("0.2.0"); // the bundle's pin, not the legacy meta's
+  });
+
+  test("a legacy edition meta still resolves when no bundle entry exists (pass-2 fallback)", async () => {
+    await grantSome(5);
+    const spy = writerSpy();
+    const index = loadRegistryIndex({
+      schemaVersion: 1,
+      modules: [
+        {
+          id: "@caisson/field-crypto",
+          latest: "0.1.0",
+          versions: [mkManifest("@caisson/field-crypto", "0.1.0", "primitive")],
+        },
+        {
+          id: "@caisson/credits",
+          latest: "0.2.0",
+          versions: [mkManifest("@caisson/credits", "0.2.0", "primitive")],
+        },
+        {
+          id: "@caisson/ai-kit",
+          latest: "0.1.0",
+          versions: [
+            mkManifest("@caisson/ai-kit", "0.1.0", "edition", {
+              editions: ["ai-kit"],
+              members: { "@caisson/credits": "0.2.0" },
+            }),
+          ],
+        },
+      ],
+    });
+    const outcome = await withTenant(tp.pg, ACCOUNT, (tx) =>
+      runGeneration(
+        tx,
+        { index, debit, writeFileSet: spy.writer },
+        {
+          projectName: "acme-legacy",
+          edition: "ai-production" as const, // the canonical id a legacy `ai-kit` flag normalizes to
+          modules: [{ id: "@caisson/field-crypto", version: "0.1.0" }],
+        },
+        { accountId: ACCOUNT, idempotencyKey: "legacy-1" },
+      ),
+    );
+    const pkg = outcome.files.find((f) => f.path === "package.json");
+    const deps = (
+      JSON.parse(pkg?.content ?? "{}") as {
+        dependencies?: Record<string, string>;
+      }
+    ).dependencies;
+    expect(deps?.["@caisson/credits"]).toBe("0.2.0");
   });
 });
 
