@@ -125,9 +125,13 @@ function packageOverlay(selection: Selection): JsonObject {
 }
 
 /** The template dirs that compose a selection: `base` is always included, then the edition's
- *  overlay dir (if it has one — `EDITION_TEMPLATE_DIR`), then the deploy-target family (ADR-0268,
- *  if any) — new paths only, so it never collides with base/edition files; unset composes nothing
- *  (byte-identical to pre-ADR-0268 output). */
+ *  overlay dir (if it has one — `EDITION_TEMPLATE_DIR`), then the framework starter (ADR-0287, if
+ *  any), then the deploy-target family (ADR-0268, if any). Framework is composed BEFORE deploy so
+ *  a framework's own `package.json` fragment (its `build`/`start` scripts) is what a co-selected
+ *  deploy Dockerfile's generic `bun run build`/`bun run start` actually runs. Both are additive —
+ *  a framework's root-file overrides (tsconfig.json/README.md/etc.) win over base/edition on path
+ *  collision, and deploy only ever adds NEW paths — so unset composes nothing (byte-identical to
+ *  pre-ADR-0268/pre-ADR-0287 output). */
 function templateDirs(selection: Selection): string[] {
   const dirs = [join(TEMPLATES_ROOT, "base")];
   const editionDir = selection.edition
@@ -135,6 +139,9 @@ function templateDirs(selection: Selection): string[] {
     : undefined;
   if (editionDir !== undefined) {
     dirs.push(join(TEMPLATES_ROOT, editionDir));
+  }
+  if (selection.framework) {
+    dirs.push(join(TEMPLATES_ROOT, "framework", selection.framework));
   }
   if (selection.deployTarget) {
     dirs.push(join(TEMPLATES_ROOT, "deploy", selection.deployTarget));

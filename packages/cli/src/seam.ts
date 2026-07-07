@@ -59,6 +59,11 @@ const Edition = z.string().transform((value, ctx): BundleId => {
  *  `templates/deploy/<target>/` directory the engine composes on top of base (+ edition). */
 export const DEPLOY_TARGETS = ["railway", "fly", "vercel"] as const;
 
+/** ADR-0287 — the framework starter targets a generated repo may optionally compose. Each maps to a
+ *  `templates/framework/<target>/` directory: a wired app on the base substrate (auth/tenancy/
+ *  billing/jobs/email/ai-config wiring demonstrated), same opt-in shape as `DEPLOY_TARGETS`. */
+export const FRAMEWORK_TARGETS = ["next"] as const;
+
 const ModuleSelection = z
   .object({
     id: z.string(),
@@ -84,6 +89,8 @@ export const Selection = z
     modules: z.array(ModuleSelection).min(1),
     /** ADR-0268 — optional; unset composes no deploy files (byte-identical to pre-ADR-0268 output). */
     deployTarget: z.enum(DEPLOY_TARGETS).optional(),
+    /** ADR-0287 — optional; unset composes no framework files (byte-identical to pre-ADR-0287 output). */
+    framework: z.enum(FRAMEWORK_TARGETS).optional(),
   })
   .strict()
   // One id at two versions makes package.json deps (last-wins) disagree with the README (lists
@@ -117,4 +124,5 @@ export interface RawSelection {
   edition?: string;
   modules: { id: string; version: string }[];
   deployTarget?: string;
+  framework?: string;
 }
