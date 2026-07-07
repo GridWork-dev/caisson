@@ -33,11 +33,13 @@ builder = "DOCKERFILE"
 dockerfilePath = "apps/admin/Dockerfile"
 
 [deploy]
-# Ensure admin's OWN better-auth tables exist BEFORE the app serves (ADR-0283) — mirrors
-# services/license/railway.toml's preDeployCommand wiring the site's platform migration. Without
-# this, the FIRST OAuth callback against a fresh ADMIN_AUTH_DATABASE_URL hits relation-does-not-
-# exist and locks the operator out of their own control-plane. Idempotent + forward-only.
-preDeployCommand = "bun apps/admin/src/lib/admin-deploy-migrate.ts"
+# admin's OWN better-auth tables (ADR-0283) are ensured at server boot by the Next
+# instrumentation.register() hook (apps/admin/src/instrumentation.ts) — NOT a preDeployCommand.
+# CAISSON-48: the standalone runtime image copies only .next/standalone (strips src/), so a
+# `bun apps/admin/src/lib/admin-deploy-migrate.ts` preDeployCommand can never find the script and is
+# a silent no-op — unlike services/license (a plain Bun image that keeps src/, where that pattern
+# works). register() ships in standalone and Next awaits it before serving, so a fresh
+# ADMIN_AUTH_DATABASE_URL is migrated before the first OAuth callback. Idempotent + forward-only.
 healthcheckPath = "/healthz"
 healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"
