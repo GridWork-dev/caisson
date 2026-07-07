@@ -13,10 +13,9 @@
 // flip. Cents live in Paddle (and the site display SOT), NEVER here — Kickoff D owns every number.
 import { z } from "zod";
 import { ConfigError, parseStrict, strictObject } from "@caisson/kernel";
-import { normalizeEntitlementId } from "@caisson/registry-schema";
 
 /** Append-only version stamp — a renewal-row change bumps this, never edits it in place (ADR-0006). */
-export const RENEWAL_BOOK_VERSION = "2026-07-06.3";
+export const RENEWAL_BOOK_VERSION = "2026-07-07.1";
 
 export const renewalBookEntrySchema = strictObject({
   /** The purchased id (edition/bundle/module slug) whose updates window this price renews. */
@@ -31,12 +30,14 @@ export type RenewalBookEntry = z.infer<typeof renewalBookEntrySchema>;
  * NOTHING and the webhook 500s for a retry).
  */
 export const RENEWAL_BOOK: Record<string, RenewalBookEntry> = {
-  // Editions + bundle (the ADR-0246 catalog).
+  // The five original bundle rows (the ADR-0246 catalog). ADR-0270 (edition-trace purge) REPOINTED the
+  // four archived-edition + bundle-sentinel rows from the dissolved edition ids to canonical bundle ids —
+  // so every row now stores the canonical id directly and resolveRenewal no longer normalizes.
   pri_01kwvz6kzh4h43aec3r5rs5je4: { renewsEntitlement: "compliance" },
-  pri_01kwvz6m46s5tj4k2a09kcaf9s: { renewsEntitlement: "ai-kit" },
-  pri_01kwvz6m791c1xb4wxbedzf9nt: { renewsEntitlement: "local-ai" },
-  pri_01kwvz6m9tr49rstw0x7s8nk5h: { renewsEntitlement: "agent-dev" },
-  pri_01kwvz6mcfzgjemqa72czdfkmq: { renewsEntitlement: "bundle" },
+  pri_01kwvz6m46s5tj4k2a09kcaf9s: { renewsEntitlement: "ai-production" },
+  pri_01kwvz6m791c1xb4wxbedzf9nt: { renewsEntitlement: "local-first" },
+  pri_01kwvz6m9tr49rstw0x7s8nk5h: { renewsEntitlement: "agentic-dev" },
+  pri_01kwvz6mcfzgjemqa72czdfkmq: { renewsEntitlement: "everything" },
   // The 11 à-la-carte modules (bare package slugs — the PURCHASE_BOOK entitlement-id convention).
   pri_01kwvz6mf22rqfrx6reh4b88sm: { renewsEntitlement: "field-crypto" },
   pri_01kwvz6mhkreqepryq96s2wk7n: { renewsEntitlement: "audit-worm" },
@@ -50,10 +51,9 @@ export const RENEWAL_BOOK: Record<string, RenewalBookEntry> = {
   pri_01kwvz6na9hp9gg1b0709exekp: { renewsEntitlement: "alerting" },
   pri_01kwvz6nd2yv34z083cpxamkqy: { renewsEntitlement: "retention-runner" },
   // The W7 catalog big-bang additions (ADR-0258 §5, created 2026-07-06): the Provenance bundle +
-  // the eleven carve/new module SKUs. The five legacy-keyed edition/bundle rows above already
-  // cover the other five bundles through the resolve-time alias normalization; their placeholder
-  // cents were trued Paddle-side in the same sweep. Cents per ADR-0260 §5 / ADR-0258 §4 live in
-  // Paddle only, never here.
+  // the eleven carve/new module SKUs. The five original bundle rows above (repointed to canonical
+  // ids by ADR-0270) cover the other five bundles directly; their placeholder cents were trued
+  // Paddle-side in the same sweep. Cents per ADR-0260 §5 / ADR-0258 §4 live in Paddle only, never here.
   pri_01kwwqa4k2z4wx3b53nacbpd7w: { renewsEntitlement: "provenance" },
   pri_01kwwqa4n21y7ah006yb9q07r1: { renewsEntitlement: "compliance-core" },
   pri_01kwwqa4qc77j5f1pn61811ent: { renewsEntitlement: "frameworks-pack" },
@@ -93,13 +93,11 @@ export function isRenewalPrice(
  * Resolve a provider price id to its renewal entry, fail-closed: an unknown id THROWS
  * (ADR-0089 §6 posture — never a guessed extension).
  *
- * `renewsEntitlement` is NORMALIZED through the bundle alias map on read (ADR-0257): a row keyed to a
- * legacy edition/bundle-sentinel id (`ai-kit`/`local-ai`/`agent-dev`/`bundle`) resolves to its
- * canonical bundle id (`ai-production`/`local-first`/`agentic-dev`/`everything`), the same single alias
- * point `expandEntitlements` uses. The stored book stays append-only (ADR-0006 — legacy rows are never
- * edited in place); normalizing at the lookup keeps every legacy renewal row resolving to the id the
- * catalog and its grants converge on, regardless of which vocabulary the row was written in. A module
- * slug or an already-canonical bundle id passes through unchanged (identity alias).
+ * Every row stores a CANONICAL id (ADR-0270 repointed the four archived-edition + bundle-sentinel rows,
+ * so no renewal row is keyed to a dissolved edition id anymore). The resolve-time bundle-alias normalization
+ * is therefore a no-op and was DROPPED (ADR-0270). The read-side alias fold for a FUTURE module rename lives
+ * where a stored grant id is consumed — `extendUpdatesWindow`'s `entitlementIdAliasGroup` — not here, since
+ * this reads config rows, not grant state.
  */
 export function resolveRenewal(
   priceId: string,
@@ -109,8 +107,5 @@ export function resolveRenewal(
   if (entry === undefined) {
     throw new ConfigError(`no renewal-book entry for price id ${priceId}`);
   }
-  return {
-    ...entry,
-    renewsEntitlement: normalizeEntitlementId(entry.renewsEntitlement),
-  };
+  return entry;
 }

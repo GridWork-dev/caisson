@@ -10,7 +10,7 @@
   },
   {
     "purchased": [
-      "ai-kit"
+      "ai-production"
     ],
     "members": [
       "@caisson/ai-kit",
@@ -19,7 +19,7 @@
   },
   {
     "purchased": [
-      "local-ai"
+      "local-first"
     ],
     "members": [
       "@caisson/inference",
@@ -28,7 +28,7 @@
   },
   {
     "purchased": [
-      "bundle"
+      "everything"
     ],
     "members": [
       "@caisson/agent-dev",
@@ -51,8 +51,8 @@
   },
   {
     "purchased": [
-      "ai-kit",
-      "local-ai"
+      "ai-production",
+      "local-first"
     ],
     "members": [
       "@caisson/ai-kit",

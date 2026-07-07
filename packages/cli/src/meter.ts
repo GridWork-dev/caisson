@@ -16,7 +16,7 @@ import {
   type ModuleManifest,
   type RegistryIndex,
   assertKnownVersion,
-  entitlementIdAliasGroup,
+  legacyEditionNamesFor,
 } from "@caisson/registry-schema";
 import {
   type GeneratedFile,
@@ -143,9 +143,10 @@ function resolveEditionMembers(
   index: RegistryIndex,
   edition: NonNullable<Selection["edition"]>,
 ): Record<string, string> {
-  // Every stored spelling of this bundle id — the canonical id plus each legacy edition name
-  // aliasing to it (ADR-0257 single alias point; `compliance` is the identity alias).
-  const spellings = entitlementIdAliasGroup(edition);
+  // The legacy edition names that map to this bundle id — the decoupled INDEX-resolution relation
+  // (ADR-0270 moved this off the purchase-alias spine; `compliance` maps to itself). Pass 2 matches a
+  // legacy `kind:"edition"` meta whose `editions[]` names one of these.
+  const editionNames = legacyEditionNamesFor(edition);
   const bundleModuleId = `@caisson/${edition}`;
   const latestOf = (
     m: RegistryIndex["modules"][number],
@@ -189,7 +190,7 @@ function resolveEditionMembers(
     const manifest = latestOf(m);
     if (
       manifest?.kind === "edition" &&
-      manifest.editions.some((e) => spellings.includes(e))
+      manifest.editions.some((e) => editionNames.includes(e))
     ) {
       return validated(manifest.members);
     }

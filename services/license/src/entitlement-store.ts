@@ -132,6 +132,40 @@ export const ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL = `
 ALTER TABLE entitlement_grant ADD COLUMN updates_expires_at timestamptz;
 `;
 
+// ADR-0251 (Consequences — "refund of a renewal (un-extend) has no handler"): the renewal-EXTENSION
+// ledger. A renewal SKU grants no entitlement + no credits (so there is no grant row / credit row to
+// find on refund) — it only bumps `updates_expires_at` on the RENEWED pair's active one_time grant.
+// A refund event carries the line's `txnitm_` id but NOT its price id, so without a record there is
+// no way to know a refunded line was a renewal, nor to reverse exactly it. This table records ONE row
+// per renewal line at purchase time — keyed to the renewal purchase's transaction id + the line's
+// `txnitm_` — so `refund.completed` can find it and un-extend the window idempotently (the row
+// LATCHES `active → reversed`, so a redelivered or sibling refund event never double-shrinks). SEPARATE
+// migration (never an edit to a frozen constant, ADR-0006 append-only); ships as the numbered
+// `0017_renewal_extension.sql` platform migration (0016 is the updates-window column). Tenant-owned +
+// fail-closed RLS like every other table here. Pre-launch there is no live renewal data, so the table
+// is created empty.
+export const RENEWAL_EXTENSION_SCHEMA_SQL = `
+CREATE TABLE renewal_extension (
+  id text PRIMARY KEY,
+  account_id text NOT NULL,
+  entitlement_id text NOT NULL,
+  purchase_id text NOT NULL,
+  line_item_id text NOT NULL DEFAULT '',
+  status text NOT NULL DEFAULT 'active',
+  extended_at timestamptz NOT NULL DEFAULT now(),
+  reversed_at timestamptz,
+  CONSTRAINT renewal_extension_status CHECK (status IN ('active', 'reversed')),
+  CONSTRAINT renewal_extension_reversed_iff CHECK (
+    (status = 'reversed') = (reversed_at IS NOT NULL)
+  )
+);
+
+CREATE UNIQUE INDEX renewal_extension_uniq
+  ON renewal_extension (account_id, entitlement_id, purchase_id, line_item_id);
+
+${buildTenantPolicySql("renewal_extension")}
+`;
+
 /** The provenance of a grant: a recurring subscription, or a one-time (non-subscription) purchase. */
 export type GrantSource =
   | { kind: "subscription"; subscriptionId: string }
@@ -666,8 +700,13 @@ export interface ExtendUpdatesWindowInput {
   accountId: string;
   /** The renewed purchased id (RENEWAL_BOOK `renewsEntitlement`). */
   entitlementId: string;
-  /** The renewal purchase's billing event id — audit context for the fail-closed throw. */
+  /** The renewal purchase's transaction id — BOTH the fail-closed-throw audit context AND the
+   *  `renewal_extension` ledger's `purchase_id` (the join key a later refund reverses on). */
   sourceEventId: string;
+  /** The renewal LINE's Paddle `txnitm_` id (ADR-0218 per-line join key) — recorded so a per-line
+   *  refund can un-extend exactly this renewal. Omitted / "" for a single-line renewal or a driver
+   *  with no per-line data; a whole-transaction refund reverses by `purchase_id` alone regardless. */
+  lineItemId?: string;
 }
 
 /**
@@ -709,5 +748,96 @@ export async function extendUpdatesWindow(
       `renewal ${input.sourceEventId} extends no active one_time grant for entitlement ${input.entitlementId}`,
     );
   }
+  // Record the extension so a later refund can un-extend exactly it (ADR-0251 Consequences). Keyed on
+  // (account, entitlement, purchase, line) — ON CONFLICT DO NOTHING so a redelivery (already blocked
+  // by the outer processEvent claim) can never write a second row. The stored `entitlement_id` is the
+  // CANONICAL renewsEntitlement; the reversal alias-folds it back onto legacy-keyed grant rows, same
+  // as the extend UPDATE above.
+  await tx.query(
+    `INSERT INTO renewal_extension
+       (id, account_id, entitlement_id, purchase_id, line_item_id)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (account_id, entitlement_id, purchase_id, line_item_id) DO NOTHING`,
+    [
+      randomUUID(),
+      input.accountId,
+      input.entitlementId,
+      input.sourceEventId,
+      input.lineItemId ?? "",
+    ],
+  );
   return r.rows.length;
+}
+
+export interface ReverseRenewalExtensionsInput {
+  /** The buyer account — MUST equal the `withTenant` scope. */
+  accountId: string;
+  /** The refunded transaction id — the `renewal_extension.purchase_id` written at renewal time
+   *  (`refund.completed`'s `paymentId` joins back to it, ADR-0108/0113). */
+  purchaseId: string;
+  /** When set (a per-line full refund), reverse ONLY the renewal lines whose `txnitm_` is in this
+   *  set; omitted (a whole-transaction full refund) reverses EVERY active renewal extension from the
+   *  purchase. A dollar-partial refund never reverses (a renewal SKU is all-or-nothing — the caller
+   *  passes only fully-refunded line ids). */
+  lineItemIds?: readonly string[];
+}
+
+/**
+ * Un-extend the updates window a refunded renewal SKU had granted (ADR-0251 Consequences —
+ * previously an unbuilt follow-up). For each ACTIVE `renewal_extension` ledger row this refund
+ * matches, shrink the renewed pair's active one_time grant rows by ONE renewal interval (12 months),
+ * FLOORED at the original purchase window (`granted_at + 12 months`) so the window can never dip
+ * BELOW what the buyer originally bought — then LATCH the ledger row `reversed`, so a redelivered or
+ * sibling refund event (e.g. a partial then a whole-transaction adjustment) never double-shrinks it
+ * (idempotent). Alias-tolerant: the ledger's canonical `entitlement_id` matches legacy-keyed grant
+ * rows via the alias group (the extend/window-read convention). Returns the number of extensions
+ * reversed. Run inside `withTenant`.
+ *
+ * // ponytail: the shrink subtracts a FIXED 12 months rather than restoring a stored pre-value.
+ * // Exact whenever the renewal was bought while the window was still live (the common case:
+ * // `updates_expires_at - 12mo` == the prior end). A renewal bought on a LAPSED window over-restores
+ * // by the lapse gap (favoring the buyer, always ≥ baseline) — accepted rather than storing per-row
+ * // before/after; upgrade to a stored pre-value only if lapsed-then-refunded exactness ever matters.
+ */
+export async function reverseRenewalExtensions(
+  tx: TenantExecutor,
+  input: ReverseRenewalExtensionsInput,
+): Promise<number> {
+  const rows =
+    input.lineItemIds === undefined
+      ? await tx.query<{ id: string; entitlement_id: string }>(
+          `SELECT id, entitlement_id FROM renewal_extension
+             WHERE account_id = $1 AND purchase_id = $2 AND status = 'active'`,
+          [input.accountId, input.purchaseId],
+        )
+      : await tx.query<{ id: string; entitlement_id: string }>(
+          `SELECT id, entitlement_id FROM renewal_extension
+             WHERE account_id = $1 AND purchase_id = $2 AND status = 'active'
+               AND line_item_id = ANY($3::text[])`,
+          [input.accountId, input.purchaseId, [...input.lineItemIds]],
+        );
+  let reversed = 0;
+  for (const row of rows.rows) {
+    // Shrink the pair's window back one renewal interval, never below the original purchase window.
+    // A revoked/absent grant (the original purchase itself was refunded) matches nothing — the
+    // window is moot, but the ledger row is still latched below so the reversal is idempotent.
+    await tx.query(
+      `UPDATE entitlement_grant
+         SET updates_expires_at = GREATEST(
+               granted_at + interval '12 months',
+               updates_expires_at - interval '12 months')
+       WHERE account_id = $1
+         AND entitlement_id = ANY($2::text[])
+         AND source_kind = 'one_time'
+         AND status = 'active'
+         AND updates_expires_at IS NOT NULL`,
+      [input.accountId, entitlementIdAliasGroup(row.entitlement_id)],
+    );
+    await tx.query(
+      `UPDATE renewal_extension SET status = 'reversed', reversed_at = now() WHERE id = $1`,
+      [row.id],
+    );
+    reversed += 1;
+  }
+  return reversed;
 }

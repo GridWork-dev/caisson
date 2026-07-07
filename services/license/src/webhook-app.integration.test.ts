@@ -35,6 +35,7 @@ import type {
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
+  RENEWAL_EXTENSION_SCHEMA_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   readEntitlements,
 } from "./entitlement-store.ts";
@@ -51,6 +52,7 @@ const SECRET = "pdl_ntfset_webhook_route_secret";
 // (credits: 0); the only one-time row carrying credits is the credit-pack PLACEHOLDER, so the credit-grant
 // path is exercised through that — no single price-book row carries BOTH credits and an entitlement.
 const PRICE_COMPLIANCE_ONETIME = "pri_01kwd76be2eq96kff5nqw236c0"; // -> entitlement "compliance"
+const PRICE_COMPLIANCE_UPDATES_SUB = "pri_01kwd76cwytyyy4yhd9ch0m935"; // sub plan -> grants "compliance"
 const PRICE_DEVELOPER_SUB = "pri_01kwd76d64rz2ecm090pt4nq5q"; // -> 1000 credits/cycle, no entitlement
 const PRICE_CREDIT_PACK = "price_credit_pack_PLACEHOLDER"; // -> 5000 credits, no entitlement
 const PRICE_COMPLIANCE_RENEWAL = "pri_01kwvz6kzh4h43aec3r5rs5je4"; // RENEWAL_BOOK -> renews "compliance"
@@ -88,6 +90,7 @@ beforeAll(async () => {
   await tp.exec(ENTITLEMENT_SCHEMA_SQL);
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
+  await tp.exec(RENEWAL_EXTENSION_SCHEMA_SQL);
   await tp.exec(PROCESSED_EVENT_SCHEMA_SQL);
   provider = createPaddleBilling({ webhookSecret: SECRET, apiKey: "pdl_test" });
 });
@@ -544,8 +547,86 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
         currency: "usd",
         amountTotalMinor: 74900,
         lines: [{ productSlug: "compliance" }],
+        // A one-time purchase is never a subscription cycle (CAISSON-27).
+        subscriptionCycle: false,
       },
     ]);
+  });
+
+  test("a subscription-CYCLE invoice fires the receipt with subscriptionCycle=true (CAISSON-27)", async () => {
+    const notices: PurchaseEmailNotice[] = [];
+    const app = makeApp(
+      provider,
+      loadRateLimitConfig(),
+      null,
+      null,
+      async (notice) => {
+        notices.push(notice);
+      },
+    );
+    const acct = "acct_txn_cycle_1";
+    const t = Math.floor(Date.now() / 1000);
+    // A subscription-linked transaction whose origin is `subscription_recurring` maps to
+    // invoice.paid with billingReason "subscription_cycle" — the renewal-cycle receipt, not a
+    // first-purchase one. The compliance_updates plan grants "compliance", so the gate fires.
+    const body = JSON.stringify({
+      event_id: "evt_cycle_1",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_cycle_1",
+        subscription_id: "sub_cycle_1",
+        origin: "subscription_recurring",
+        currency_code: "usd",
+        custom_data: { account_id: acct },
+        items: [{ price: { id: PRICE_COMPLIANCE_UPDATES_SUB } }],
+        details: { totals: { grand_total: "149900" } },
+      },
+    });
+    const res = await app(webhookReq(body, signed(body, t)));
+    expect(res.status).toBe(200);
+    expect(notices).toEqual([
+      {
+        accountId: acct,
+        orderId: "evt_cycle_1",
+        currency: "usd",
+        amountTotalMinor: 149900,
+        lines: [{ productSlug: "compliance_updates" }],
+        subscriptionCycle: true,
+      },
+    ]);
+  });
+
+  test("a first subscription charge (subscription_create) fires the receipt with subscriptionCycle=false (CAISSON-27)", async () => {
+    const notices: PurchaseEmailNotice[] = [];
+    const app = makeApp(
+      provider,
+      loadRateLimitConfig(),
+      null,
+      null,
+      async (notice) => {
+        notices.push(notice);
+      },
+    );
+    const acct = "acct_txn_first_sub_1";
+    const t = Math.floor(Date.now() / 1000);
+    // origin "web" -> billingReason "subscription_create": the FIRST charge reads as a first
+    // purchase, never the recurring-payment variant.
+    const body = JSON.stringify({
+      event_id: "evt_first_sub_1",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_first_sub_1",
+        subscription_id: "sub_first_1",
+        origin: "web",
+        currency_code: "usd",
+        custom_data: { account_id: acct },
+        items: [{ price: { id: PRICE_COMPLIANCE_UPDATES_SUB } }],
+        details: { totals: { grand_total: "149900" } },
+      },
+    });
+    const res = await app(webhookReq(body, signed(body, t)));
+    expect(res.status).toBe(200);
+    expect(notices[0]?.subscriptionCycle).toBe(false);
   });
 
   test("a THROWING purchase-confirmation emailer never fails the webhook 2xx (money path independent of email)", async () => {

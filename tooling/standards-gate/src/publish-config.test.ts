@@ -7,6 +7,7 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { RESERVED_MODULE_ENTITLEMENT_IDS } from "@caisson/registry-schema";
 
 const ROOT = join(import.meta.dir, "..", "..", "..");
 const PKGS = join(ROOT, "packages");
@@ -87,6 +88,9 @@ describe("publish-readiness flip (ADR-0111)", () => {
     // 2026-07-03 third-wave consume broke the ADR-0228 second-wave pins). The durable ADR-0111
     // invariant is wave-independent: a published package.json version must exist as a ledger
     // entry, so a hand-bumped version (or a consume whose ledger append failed) fails loudly.
+    // A SOLD-but-unpublished package (its bare slug sits in RESERVED_MODULE_ENTITLEMENT_IDS) is
+    // exempt until its first publish — the reservation drops in the same change that lands the
+    // index/ledger entry, so this exemption self-expires and the guard re-arms automatically.
     const ledgered = new Set(
       readFileSync(join(ROOT, "registry", "ledger.jsonl"), "utf8")
         .split("\n")
@@ -98,6 +102,12 @@ describe("publish-readiness flip (ADR-0111)", () => {
     );
     const off = published
       .filter((p) => !ledgered.has(`${p.pj.name}@${p.pj.version}`))
+      .filter(
+        (p) =>
+          !RESERVED_MODULE_ENTITLEMENT_IDS.has(
+            p.pj.name.replace(/^@caisson\//, ""),
+          ),
+      )
       .map((p) => `${p.pj.name}@${p.pj.version}`);
     expect(off).toEqual([]);
   });

@@ -41,10 +41,10 @@ import type { buildTenantPolicySql as BuildTenantPolicySqlFn } from "@caisson/te
 
 /**
  * The bundle/edition meta-packages (by package name) — the down-only direction is keyed on these.
- * Hand-copy of the ADR-0257 vocabulary (packages/registry-schema/src/bundle-vocabulary.ts:
- * BUNDLE_IDS + the legacy LEGACY_ENTITLEMENT_ALIASES keys) — this check runs in the pre-install
- * fs-only pass, so it cannot value-import the workspace constant; keep the two in sync. Both the
- * legacy edition names and the new bundle ids are covered during the rename transition.
+ * Hand-copy of the ADR-0257 bundle ids + the historical `kind:"edition"` meta-package names, which stay
+ * served forever (ADR-0006 append-only ledger; ADR-0270 purged the edition PURCHASE ids but keeps the
+ * index/ledger machinery). This check runs in the pre-install fs-only pass, so it cannot value-import the
+ * workspace constant; keep this set in sync with the shipped edition + bundle meta-packages.
  */
 const EDITION_NAMES = new Set([
   // Legacy edition names (historical kind:"edition" entries stay valid forever, ADR-0257).

@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@caisson/license-verify": "workspace:*",
+    "@caisson/pricebook": "workspace:*",
     "@caisson/registry-schema": "workspace:*",
     "zod": "catalog:"
   },

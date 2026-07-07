@@ -22,14 +22,13 @@ async function loadBundleManifest(slug: string): Promise<ModuleManifest> {
 }
 
 const SPECS = [
-  { id: "provenance", legacy: "provenance", slug: "provenance" },
-  { id: "ai-production", legacy: "ai-kit", slug: "ai-production" },
-  { id: "local-first", legacy: "local-ai", slug: "local-first" },
-  { id: "agentic-dev", legacy: "agent-dev", slug: "agentic-dev" },
-  { id: "everything", legacy: "bundle", slug: "everything" },
+  { id: "provenance", slug: "provenance" },
+  { id: "ai-production", slug: "ai-production" },
+  { id: "local-first", slug: "local-first" },
+  { id: "agentic-dev", slug: "agentic-dev" },
+  { id: "everything", slug: "everything" },
 ] as const satisfies ReadonlyArray<{
   id: BundleId;
-  legacy: string;
   slug: string;
 }>;
 
@@ -92,19 +91,12 @@ function indexWithBundle(m: ModuleManifest): RegistryIndex {
 }
 
 describe("ADR-0257/0258 bundle manifests expand to their frozen members map", () => {
-  for (const { id, legacy, slug } of SPECS) {
+  for (const { id, slug } of SPECS) {
     test(`${id} expands to exactly its members map (index-derived, allowlist-guarded)`, () => {
       const m = mf(slug);
       const expected = Object.keys(m.members).sort();
       expect([...expandEntitlements(indexWithBundle(m), [id])].sort()).toEqual(
         expected,
-      );
-    });
-
-    test(`${id}: the legacy purchased id "${legacy}" resolves to the identical member set (alias)`, () => {
-      const index = indexWithBundle(mf(slug));
-      expect([...expandEntitlements(index, [legacy])].sort()).toEqual(
-        [...expandEntitlements(index, [id])].sort(),
       );
     });
   }
