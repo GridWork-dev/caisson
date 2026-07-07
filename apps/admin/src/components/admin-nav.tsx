@@ -5,15 +5,15 @@ import { usePathname } from "next/navigation";
 
 import { ThemeToggle } from "@caisson/ui/components";
 
-// Top-level control-plane sections (ADR-0138): ops/observability, business admin, live
-// architecture, the decisions SOT board, and the absorbed design system.
+// Top-level control-plane sections: ops/observability, business admin, live architecture, the
+// decisions SOT board, and the absorbed design studio + component/email catalog.
 const LINKS = [
   { href: "/", label: "Overview" },
   { href: "/ops", label: "Ops" },
   { href: "/business", label: "Business" },
   { href: "/architecture", label: "Architecture" },
   { href: "/decisions", label: "Decisions" },
-  { href: "/design", label: "Design" },
+  { href: "/catalog", label: "Catalog" },
 ] as const;
 
 export function AdminNav() {
