@@ -1,0 +1,139 @@
+/* DiffViewer — text + JSON before/after; every value via --cs-* only (ADR-0099). */
+.cs-diff {
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  overflow: hidden;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+}
+
+.cs-diff__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cs-space-3);
+  padding: var(--cs-space-2) var(--cs-space-3);
+  background: var(--cs-surface-1);
+  border-bottom: 1px solid var(--cs-border);
+  font-family: var(--cs-font-sans);
+}
+
+.cs-diff__labels {
+  display: flex;
+  gap: var(--cs-space-6);
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-xs);
+  font-weight: var(--cs-weight-medium);
+}
+
+.cs-diff__views {
+  display: inline-flex;
+  gap: var(--cs-space-1);
+}
+
+.cs-diff__view-btn {
+  padding: 2px var(--cs-space-2);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-sm);
+  background: transparent;
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-xs);
+  cursor: pointer;
+}
+
+.cs-diff__view-btn[data-active="true"] {
+  background: var(--cs-accent-tint);
+  color: var(--cs-fg);
+  border-color: var(--cs-accent);
+}
+
+.cs-diff__grid {
+  overflow-x: auto;
+}
+
+.cs-diff__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.cs-diff__cell {
+  display: flex;
+  gap: var(--cs-space-2);
+  padding: 1px var(--cs-space-2);
+  white-space: pre-wrap;
+  word-break: break-word;
+  border-top: 1px solid var(--cs-border);
+}
+
+.cs-diff__cell:first-child {
+  border-right: 1px solid var(--cs-border);
+}
+
+.cs-diff__cell code,
+.cs-diff__uline code {
+  color: var(--cs-fg);
+}
+
+.cs-diff__ln,
+.cs-diff__path {
+  flex: none;
+  color: var(--cs-fg-muted);
+  user-select: none;
+}
+
+.cs-diff__ln {
+  min-width: 2.5ch;
+  text-align: right;
+}
+
+.cs-diff__uline {
+  display: flex;
+  gap: var(--cs-space-2);
+  padding: 1px var(--cs-space-2);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.cs-diff__sign {
+  flex: none;
+  width: 1ch;
+  color: var(--cs-fg-muted);
+}
+
+.cs-diff__json-change {
+  padding: var(--cs-space-1) 0;
+  border-top: 1px solid var(--cs-border);
+}
+
+.cs-diff__json-change .cs-diff__path {
+  display: block;
+  padding: 0 var(--cs-space-2);
+  font-family: var(--cs-font-sans);
+}
+
+/* op tinting — success/danger tokens carry through light/dark. */
+[data-op="add"] {
+  background: color-mix(in oklab, var(--cs-success) 14%, transparent);
+}
+[data-op="remove"] {
+  background: color-mix(in oklab, var(--cs-danger) 14%, transparent);
+}
+[data-op="empty"] {
+  background: var(--cs-surface-1);
+}
+
+.cs-diff__empty {
+  margin: 0;
+  padding: var(--cs-space-4);
+  color: var(--cs-fg-muted);
+  font-family: var(--cs-font-sans);
+}
+
+@media (forced-colors: active) {
+  [data-op="add"] {
+    outline: 1px solid CanvasText;
+  }
+  [data-op="remove"] {
+    outline: 1px dashed CanvasText;
+  }
+}

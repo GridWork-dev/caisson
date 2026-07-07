@@ -1,0 +1,58 @@
+/* Charts pack — dependency-free SVG; every value via --cs-* only (ADR-0099). */
+.cs-chart {
+  max-width: 100%;
+  height: auto;
+  font-family: var(--cs-font-sans);
+}
+
+.cs-chart__grid {
+  stroke: var(--cs-border);
+  stroke-width: 1;
+}
+
+.cs-chart__tick,
+.cs-chart__xlabel {
+  fill: var(--cs-fg-muted);
+  font-size: 10px;
+}
+
+.cs-chart__tick {
+  text-anchor: end;
+}
+
+.cs-chart__line {
+  fill: none;
+  stroke: var(--cs-accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.cs-chart__dot {
+  fill: var(--cs-accent);
+}
+
+.cs-chart__area {
+  fill: var(--cs-accent);
+  opacity: 0.18;
+  stroke: none;
+}
+
+.cs-chart__bar {
+  fill: var(--cs-accent);
+}
+
+.cs-sparkline {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+@media (forced-colors: active) {
+  .cs-chart__line {
+    stroke: CanvasText;
+  }
+  .cs-chart__bar,
+  .cs-chart__dot {
+    fill: CanvasText;
+  }
+}

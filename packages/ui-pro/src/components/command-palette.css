@@ -1,0 +1,78 @@
+/* CommandPalette — ⌘K menu; every value via --cs-* only (ADR-0099). */
+.cs-cmdk {
+  display: flex;
+  flex-direction: column;
+  min-width: min(92vw, 34rem);
+  max-height: 60vh;
+}
+
+.cs-cmdk__input {
+  width: 100%;
+  padding: var(--cs-space-3) var(--cs-space-4);
+  border: 0;
+  border-bottom: 1px solid var(--cs-border);
+  background: transparent;
+  color: var(--cs-fg);
+  font-family: var(--cs-font-sans);
+  font-size: var(--cs-text-base);
+  outline: none;
+}
+
+.cs-cmdk__input::placeholder {
+  color: var(--cs-fg-muted);
+}
+
+.cs-cmdk__list {
+  overflow-y: auto;
+  padding: var(--cs-space-2);
+}
+
+.cs-cmdk__group + .cs-cmdk__group {
+  margin-top: var(--cs-space-2);
+}
+
+.cs-cmdk__group-label {
+  padding: var(--cs-space-1) var(--cs-space-3);
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-xs);
+  font-weight: var(--cs-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--cs-tracking-wide);
+}
+
+.cs-cmdk__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cs-space-3);
+  padding: var(--cs-space-2) var(--cs-space-3);
+  border-radius: var(--cs-radius-sm);
+  color: var(--cs-fg);
+  font-size: var(--cs-text-sm);
+  cursor: pointer;
+}
+
+.cs-cmdk__option[data-active="true"] {
+  background: var(--cs-accent-tint);
+}
+
+.cs-cmdk__option-hint {
+  flex: none;
+  color: var(--cs-fg-muted);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+}
+
+.cs-cmdk__empty {
+  margin: 0;
+  padding: var(--cs-space-5);
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-sm);
+  text-align: center;
+}
+
+@media (forced-colors: active) {
+  .cs-cmdk__option[data-active="true"] {
+    outline: 2px solid CanvasText;
+  }
+}

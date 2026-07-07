@@ -83,6 +83,15 @@ describe("previousPeriod", () => {
       end: "2026-06-30",
     });
   });
+
+  test("returns null for an empty or malformed range instead of throwing RangeError", () => {
+    // Pre-fix these hit `new Date("Invalid").toISOString()` → RangeError, crashing the picker.
+    expect(previousPeriod({ start: "", end: "" })).toBeNull();
+    expect(previousPeriod({ start: "2026-07-01", end: "" })).toBeNull();
+    expect(
+      previousPeriod({ start: "not-a-date", end: "2026-07-07" }),
+    ).toBeNull();
+  });
 });
 
 describe("standardPresets", () => {

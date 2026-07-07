@@ -97,11 +97,17 @@ export function billingCycle(ref: Date, anchorDay = 1): DateRange {
   };
 }
 
-/** The equal-length period immediately BEFORE `range` — the default comparison window. */
-export function previousPeriod(range: DateRange): DateRange {
+/**
+ * The equal-length period immediately BEFORE `range` — the default comparison window. Returns
+ * `null` when either bound is missing or unparseable: a malformed/empty range would otherwise
+ * produce an Invalid Date whose `.toISOString()` throws a RangeError. Callers thread the result
+ * straight into `onComparisonChange` (which takes `DateRange | null`), so null is a safe no-op.
+ */
+export function previousPeriod(range: DateRange): DateRange | null {
   const day = 24 * 60 * 60 * 1000;
   const start = new Date(`${range.start}T00:00:00Z`).getTime();
   const end = new Date(`${range.end}T00:00:00Z`).getTime();
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
   const lengthDays = Math.round((end - start) / day) + 1;
   const prevEnd = new Date(start - day);
   const prevStart = new Date(prevEnd.getTime() - (lengthDays - 1) * day);
