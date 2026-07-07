@@ -413,6 +413,20 @@
         "typescript": "catalog:",
       },
     },
+    "packages/analytics": {
+      "name": "@caisson/analytics",
+      "version": "0.1.0",
+      "dependencies": {
+        "@caisson/kernel": "workspace:*",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "eslint": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "packages/audit-harness": {
       "name": "@caisson/audit-harness",
       "version": "0.1.1",
@@ -1467,6 +1481,8 @@
     "@caisson/ai-production": ["@caisson/ai-production@workspace:packages/ai-production"],
 
     "@caisson/alerting": ["@caisson/alerting@workspace:packages/alerting"],
+
+    "@caisson/analytics": ["@caisson/analytics@workspace:packages/analytics"],
 
     "@caisson/app-agent-dev": ["@caisson/app-agent-dev@workspace:apps/agent-dev"],
 

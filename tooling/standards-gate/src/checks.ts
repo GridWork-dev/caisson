@@ -96,6 +96,10 @@ const OPEN_BASE_NAMES = new Set([
   // a per-account store that was marooned in a commercial service): generic infra, no commercial
   // secret, open Base alongside kernel/tenancy-rls.
   "@caisson/rate-limit",
+  // Server-side analytics port (ADR-0287): a vendor-neutral AnalyticsProvider with $0-secret
+  // Plausible/PostHog/GA4 drivers — generic infra with no commercial IP, the same open-Base posture
+  // as email/jobs. Not sold à-la-carte (never enters the sellable registry index).
+  "@caisson/analytics",
 ]);
 
 // A registry-module candidate is a `packages/` member. `apps/` are reference applications (the
