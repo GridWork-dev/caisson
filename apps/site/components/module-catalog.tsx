@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 
 import { Button, Card, Icon, StatusChip } from "@/components";
@@ -17,6 +16,7 @@ import {
 
 import { bundleLabel, bundlePagePath } from "./marketplace";
 import styles from "./marketplace.module.css";
+import { ModulePreviewDialog } from "./module-preview-dialog";
 
 // Price bands DERIVED from module.amount — no new data field (ADR-0191: facets derive from the
 // existing catalog). The full sellable catalog spans $49–$299 (ADR-0246 F1b, ADR-0258/0260 carve
@@ -82,6 +82,7 @@ export function ModuleCatalog({
     new Set(),
   );
   const [bands, setBands] = useState<ReadonlySet<string>>(new Set());
+  const [previewId, setPreviewId] = useState<string | null>(null);
 
   const matchCategory = (m: ModulePrice) =>
     categories.size === 0 ||
@@ -123,115 +124,138 @@ export function ModuleCatalog({
       : `Showing ${results.length} of ${TOTAL} modules`;
 
   return (
-    <div className={styles.layout}>
-      {/* ===== Facets ===== */}
-      <aside className={styles.facets} aria-label="Filter modules">
-        <fieldset className={styles.fieldset}>
-          <legend className={styles.legend}>Category</legend>
-          {CATEGORIES.map((c) => (
-            <label key={c} className={styles.option}>
-              <input
-                type="checkbox"
-                className={styles.checkbox}
-                checked={categories.has(c)}
-                onChange={() => setCategories((prev) => toggle(prev, c))}
-              />
-              <span className={styles.optionLabel}>{categoryLabel(c)}</span>
-              <span className={`cs-num ${styles.count}`}>
-                {categoryCount(c)}
-              </span>
-            </label>
-          ))}
-        </fieldset>
+    <>
+      <div className={styles.layout}>
+        {/* ===== Facets ===== */}
+        <aside className={styles.facets} aria-label="Filter modules">
+          <fieldset className={styles.fieldset}>
+            <legend className={styles.legend}>Category</legend>
+            {CATEGORIES.map((c) => (
+              <label key={c} className={styles.option}>
+                <input
+                  type="checkbox"
+                  className={styles.checkbox}
+                  checked={categories.has(c)}
+                  onChange={() => setCategories((prev) => toggle(prev, c))}
+                />
+                <span className={styles.optionLabel}>{categoryLabel(c)}</span>
+                <span className={`cs-num ${styles.count}`}>
+                  {categoryCount(c)}
+                </span>
+              </label>
+            ))}
+          </fieldset>
 
-        <fieldset className={styles.fieldset}>
-          <legend className={styles.legend}>Price</legend>
-          {PRICE_BANDS.map((b) => (
-            <label key={b.id} className={styles.option}>
-              <input
-                type="checkbox"
-                className={styles.checkbox}
-                checked={bands.has(b.id)}
-                onChange={() => setBands((prev) => toggle(prev, b.id))}
-              />
-              <span className={styles.optionLabel}>{b.label}</span>
-              <span className={`cs-num ${styles.count}`}>{bandCount(b)}</span>
-            </label>
-          ))}
-        </fieldset>
-      </aside>
+          <fieldset className={styles.fieldset}>
+            <legend className={styles.legend}>Price</legend>
+            {PRICE_BANDS.map((b) => (
+              <label key={b.id} className={styles.option}>
+                <input
+                  type="checkbox"
+                  className={styles.checkbox}
+                  checked={bands.has(b.id)}
+                  onChange={() => setBands((prev) => toggle(prev, b.id))}
+                />
+                <span className={styles.optionLabel}>{b.label}</span>
+                <span className={`cs-num ${styles.count}`}>{bandCount(b)}</span>
+              </label>
+            ))}
+          </fieldset>
+        </aside>
 
-      {/* ===== Results ===== */}
-      <div>
-        {chips.length > 0 && (
-          <div className={styles.chips}>
-            {chips.map((c) => (
+        {/* ===== Results ===== */}
+        <div>
+          {chips.length > 0 && (
+            <div className={styles.chips}>
+              {chips.map((c) => (
+                <button
+                  key={c.key}
+                  type="button"
+                  className={styles.chip}
+                  onClick={c.remove}
+                  aria-label={`Remove ${c.label} filter`}
+                >
+                  {c.label}
+                  <Icon name="x" />
+                </button>
+              ))}
               <button
-                key={c.key}
                 type="button"
-                className={styles.chip}
-                onClick={c.remove}
-                aria-label={`Remove ${c.label} filter`}
+                className={styles.clearAll}
+                onClick={clearAll}
               >
-                {c.label}
-                <Icon name="x" />
+                Clear all
               </button>
-            ))}
-            <button
-              type="button"
-              className={styles.clearAll}
-              onClick={clearAll}
-            >
-              Clear all
-            </button>
-          </div>
-        )}
+            </div>
+          )}
 
-        {/* Result count — its OWN polite live region (ADR-0194). */}
-        <p className={styles.results} role="status" aria-live="polite">
-          {countLabel}
-        </p>
+          {/* Result count — its OWN polite live region (ADR-0194). */}
+          <p className={styles.results} role="status" aria-live="polite">
+            {countLabel}
+          </p>
 
-        {results.length === 0 ? (
-          <div className={styles.empty}>
-            <p>No modules match those filters.</p>
-            <Button type="button" variant="ghost" onClick={clearAll}>
-              Clear all filters
-            </Button>
-          </div>
-        ) : (
-          <div className="cs-grid cs-grid--3">
-            {results.map((m) => (
-              <ModuleCard
-                key={m.id}
-                module={m}
-                hasDetail={hasDetail.has(m.id)}
-              />
-            ))}
-          </div>
-        )}
+          {results.length === 0 ? (
+            <div className={styles.empty}>
+              <p>No modules match those filters.</p>
+              <Button type="button" variant="ghost" onClick={clearAll}>
+                Clear all filters
+              </Button>
+            </div>
+          ) : (
+            <div className="cs-grid cs-grid--3">
+              {results.map((m) => (
+                <ModuleCard key={m.id} module={m} onOpen={setPreviewId} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+      <ModulePreviewDialog
+        moduleId={previewId}
+        hasDetail={previewId ? hasDetail.has(previewId) : false}
+        onClose={() => setPreviewId(null)}
+      />
+    </>
   );
 }
 
-/** One catalog card — label + mono price + blurb + a buy CTA, plus a category tag. A module that is
+/** One catalog card — label + mono price + blurb + a buy CTA, plus a category tag. Clicking
+ *  anywhere on the card opens the large module-preview dialog (`module-preview-dialog.tsx`); the
+ *  card itself is a full-bleed overlay `<button>` (real button semantics, not a `div[role]`) so
+ *  keyboard/AT users get the same affordance as a mouse click. The footer stays `position:
+ *  relative` so its own controls (Add to cart / Learn more) win the click over the overlay — the
+ *  "stretched link with an escape hatch" pattern, no nested interactive elements. A module that is
  *  Paddle-wired shows Add to cart; a not-yet-wired carve/standalone SKU (W7 wires it) shows a Learn
- *  more link to the bundle that grants it (never a fabricated "coming soon", ADR-0237 rider 2). The
- *  title links to the depth page only when one exists (`hasDetail`). */
+ *  more link to the bundle that grants it (never a fabricated "coming soon", ADR-0237 rider 2). */
 function ModuleCard({
   module: m,
-  hasDetail,
+  onOpen,
 }: {
   module: ModulePrice;
-  hasDetail: boolean;
+  onOpen: (id: string) => void;
 }) {
   const catalogItem = moduleCatalogItem(m.id);
   const category = primaryCategory(m);
   const bundlePath =
     category === PLATFORM ? "/marketplace" : bundlePagePath(category);
   return (
-    <Card>
+    <Card interactive style={{ position: "relative" }}>
+      <button
+        type="button"
+        aria-label={`Preview ${m.label} — ${formatUsd(m.amount)}`}
+        onClick={() => onOpen(m.id)}
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          margin: 0,
+          padding: 0,
+          border: 0,
+          background: "transparent",
+          cursor: "pointer",
+        }}
+      />
       <div
         style={{
           display: "flex",
@@ -266,17 +290,7 @@ function ModuleCard({
           gap: "var(--cs-space-3)",
         }}
       >
-        {hasDetail ? (
-          <Link
-            href={`/marketplace/modules/${m.id}`}
-            className="cs-card-title"
-            style={{ textDecoration: "none" }}
-          >
-            {m.label}
-          </Link>
-        ) : (
-          <span className="cs-card-title">{m.label}</span>
-        )}
+        <span className="cs-card-title">{m.label}</span>
         <span
           className="cs-num"
           style={{
@@ -298,7 +312,7 @@ function ModuleCard({
       >
         {m.blurb}
       </p>
-      <div style={{ marginTop: "var(--cs-space-5)" }}>
+      <div style={{ marginTop: "var(--cs-space-5)", position: "relative" }}>
         {catalogItem ? (
           <AddToCartButton item={toCartItem(catalogItem)} />
         ) : (
