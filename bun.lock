@@ -208,6 +208,7 @@
         "@caisson/service-license": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
         "@caisson/ui": "workspace:*",
+        "@caisson/ui-pro": "workspace:*",
         "@electric-sql/pglite": "catalog:",
         "@orama/orama": "^3.1.18",
         "@paddle/paddle-js": "^1.4.2",

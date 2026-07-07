@@ -20,7 +20,8 @@ const config: NextConfig = {
   // (no incremental behavior change from the static-export era; revisit at DEPLOY).
   images: { unoptimized: true },
   // @caisson/ui ships raw TS (exports point at src/*.ts); Next transpiles it (ADR-0042 token floor).
-  transpilePackages: ["@caisson/ui", "@caisson/brand"],
+  // @caisson/ui-pro is the same raw-.tsx-plus-co-located-.css delivery — the /ui showcase renders it.
+  transpilePackages: ["@caisson/ui", "@caisson/brand", "@caisson/ui-pro"],
   turbopack: { root: monorepoRoot },
   // ADR-0237 F1: the three old commerce routes fold into the /marketplace hub. Permanent 301s
   // preserve SEO equity; the registry (lib/routes.ts), sitemap, nav, and footer emit only the
