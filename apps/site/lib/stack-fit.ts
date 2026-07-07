@@ -79,6 +79,16 @@ export const POSTURE_GROUPS: readonly PostureGroup[] = [
   },
 ];
 
+/** The DB-posture group for a module id, or undefined for an unmapped id — the single-source the
+ *  marketplace cards + viewer read so a module's honest database classification (from /stack-fit)
+ *  shows at the point of purchase, not only on the standalone page (ADR-0285 §2). */
+export function modulePostureGroup(id: string): PostureGroup | undefined {
+  const posture = MODULE_DB_POSTURE[id];
+  return posture
+    ? POSTURE_GROUPS.find((g) => g.posture === posture)
+    : undefined;
+}
+
 export interface StackAxis {
   icon: IconName;
   /** The axis the buyer is checking. */

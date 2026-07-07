@@ -19,6 +19,7 @@ import { BUNDLE_MARKS, moduleMark } from "@/lib/marks";
 import { mediaSlides, type MediaSlide } from "@/lib/media-manifest";
 import { MODULE_PAGES } from "@/lib/module-pages";
 import { entryByViewId, type SurfaceEntry } from "@/lib/marketplace-surface";
+import { modulePostureGroup } from "@/lib/stack-fit";
 import {
   bundleModuleSubtotal,
   bundlePriceById,
@@ -68,6 +69,8 @@ function moduleViewModel(
   const m = MODULE_PRICES.find((p) => p.id === entry.id);
   const record = MODULE_PAGES.find((r) => r.slug === entry.id);
   const hasDetail = record !== undefined;
+  // The module's honest DB posture (from /stack-fit) shown at the point of purchase (ADR-0285 §2).
+  const posture = modulePostureGroup(entry.id);
   return {
     entry,
     mark: moduleMark(entry.id),
@@ -81,8 +84,15 @@ function moduleViewModel(
       : null,
     body: (
       <>
-        {/* Stack-compat + bundle-membership badges */}
+        {/* DB posture (single-sourced from /stack-fit) + stack-compat + bundle-membership badges */}
         <div className="cs-preview-badges">
+          {posture ? (
+            <StatusChip
+              label={posture.heading}
+              icon={posture.icon}
+              tone="accent"
+            />
+          ) : null}
           {STACK_COMPAT.map((c) => (
             <StatusChip key={c} label={c} tone="muted" />
           ))}

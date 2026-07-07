@@ -24,6 +24,7 @@ import {
   type SurfaceEntry,
 } from "@/lib/marketplace-surface";
 import { formatUsd, isBundleId } from "@/lib/pricing";
+import { modulePostureGroup } from "@/lib/stack-fit";
 
 import { PreviewDialog } from "./preview-dialog";
 import { StackRail } from "./stack-rail";
@@ -393,6 +394,8 @@ function SurfaceCard({
     ? bundleCatalogItem(e.id)
     : moduleCatalogItem(e.id);
   const eyebrow = isBundle ? "Bundle" : categoryLabel(primaryCategory(e));
+  // A module's honest DB posture, single-sourced from /stack-fit (ADR-0285 §2).
+  const posture = isBundle ? undefined : modulePostureGroup(e.id);
 
   return (
     <Card interactive style={{ position: "relative" }}>
@@ -499,6 +502,15 @@ function SurfaceCard({
       >
         {e.blurb}
       </p>
+      {posture ? (
+        <div
+          className={styles.mediaTag}
+          style={{ marginTop: "var(--cs-space-3)" }}
+        >
+          <Icon name={posture.icon} />
+          {posture.heading}
+        </div>
+      ) : null}
       <div style={{ marginTop: "var(--cs-space-5)", position: "relative" }}>
         {catalogItem ? (
           <AddToCartButton item={toCartItem(catalogItem)} />
