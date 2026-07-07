@@ -1,17 +1,17 @@
-// ADR-0220 action 4 — license reissue (re-serve a lost key). CF-Access-gated, one target account,
-// Zod `.strict()` body. v1 re-serves the buyer's EXISTING token for (account, major) via the
-// server-side `/issue` proxy under the DISTINCT admin credential; a (account, major) with no stored
-// grant 404s (true key rotation is a deferred follow-up). Dual-logged.
+// ADR-0220 action 4 — license reissue (re-serve a lost key). GitHub-OAuth-gated (ADR-0283), one
+// target account, Zod `.strict()` body. v1 re-serves the buyer's EXISTING token for (account,
+// major) via the server-side `/issue` proxy under the DISTINCT admin credential; a (account,
+// major) with no stored grant 404s (true key rotation is a deferred follow-up). Dual-logged.
 import {
   ReissueLicenseBody,
   reissueLicenseAdmin,
 } from "@caisson/service-license";
 import {
-  actorEmail,
   json,
   mutationErrorResponse,
   mutationResponse,
   parseBody,
+  requireAdmin,
 } from "@/lib/admin-route";
 import {
   getAdminMutationDeps,
@@ -22,7 +22,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request): Promise<Response> {
-  const actor = actorEmail(req);
+  const actor = await requireAdmin(req);
   if (actor === null) return json({ error: "unauthorized" }, 401);
   const parsed = await parseBody(req, ReissueLicenseBody);
   if (!parsed.ok) return parsed.response;

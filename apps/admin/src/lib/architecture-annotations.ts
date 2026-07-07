@@ -176,7 +176,7 @@ const BOUNDARIES: readonly TrustBoundary[] = [
     id: "operator",
     label: "Operator control-plane",
     intent:
-      "CF-Access-gated, operator-only (ADR-0140). No buyer ever reaches this.",
+      "GitHub OAuth + numeric-id allowlist, operator-only (ADR-0283). No buyer ever reaches this.",
     members: ["admin"],
   },
   {

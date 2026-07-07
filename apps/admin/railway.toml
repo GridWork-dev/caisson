@@ -12,7 +12,9 @@
 # Service env vars (set in the Railway service — NEVER committed; every surface no-ops when unset):
 #   ADMIN_AUTH_DATABASE_URL       (Postgres DSN for admin's OWN better-auth tables — ADR-0283; a normal
 #                                  writable role, NEVER the CAISSON_ADMIN_DB_URL read-only `admin` role
-#                                  below, and NEVER the buyer-auth DB apps/site uses)
+#                                  below, and NEVER the buyer-auth DB apps/site uses. Migrated by the
+#                                  preDeployCommand below BEFORE the app serves — better-auth does not
+#                                  create its own tables at runtime.)
 #   ADMIN_BETTER_AUTH_SECRET      (better-auth session-signing secret — ADR-0283; sign-in unavailable without it)
 #   ADMIN_GITHUB_CLIENT_ID        (the dedicated admin GitHub OAuth app's client id — ADR-0283)
 #   ADMIN_GITHUB_CLIENT_SECRET    (the dedicated admin GitHub OAuth app's client secret — ADR-0283)
@@ -31,6 +33,11 @@ builder = "DOCKERFILE"
 dockerfilePath = "apps/admin/Dockerfile"
 
 [deploy]
+# Ensure admin's OWN better-auth tables exist BEFORE the app serves (ADR-0283) — mirrors
+# services/license/railway.toml's preDeployCommand wiring the site's platform migration. Without
+# this, the FIRST OAuth callback against a fresh ADMIN_AUTH_DATABASE_URL hits relation-does-not-
+# exist and locks the operator out of their own control-plane. Idempotent + forward-only.
+preDeployCommand = "bun apps/admin/src/lib/admin-deploy-migrate.ts"
 healthcheckPath = "/healthz"
 healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"

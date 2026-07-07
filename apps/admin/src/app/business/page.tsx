@@ -19,9 +19,9 @@ import { AdminMutations } from "./mutations";
 
 // Business admin (ADR-0141 read cockpit + ADR-0220 mutation surface): a cross-tenant view over the
 // Railway PG. Reads run through `readAdmin` (the read-only `admin` role); the four operator mutations
-// (grant · revoke · adjust · reissue) run through the CF-Access-gated `/api/admin/*` routes as the
-// separate `admin_write` role, each dual-logged (WORM + the `admin_action_log` browsed below). When
-// `CAISSON_ADMIN_DB_URL` is unset the view renders a clean "not configured" state.
+// (grant · revoke · adjust · reissue) run through the GitHub-OAuth-gated (ADR-0283) `/api/admin/*`
+// routes as the separate `admin_write` role, each dual-logged (WORM + the `admin_action_log` browsed
+// below). When `CAISSON_ADMIN_DB_URL` is unset the view renders a clean "not configured" state.
 export const dynamic = "force-dynamic";
 
 const EMPTY = {
@@ -168,7 +168,8 @@ export default async function BusinessPage() {
       <section className="stack" style={{ gap: "var(--cs-space-3)" }}>
         <h2 className="section-title">Operator mutations (ADR-0220)</h2>
         <p className="muted" style={{ fontSize: "0.85em" }}>
-          Each action is CF-Access-gated, bounded to one target account,
+          Each action is gated by GitHub sign-in restricted to the operator
+          numeric-id allowlist (ADR-0283), bounded to one target account,
           dual-logged (WORM + the action log below), and behind a
           type-to-confirm gate. No raw SQL against production.
         </p>

@@ -14,11 +14,12 @@
 //
 // The allowlist gate (ADR-0283): `databaseHooks.account.create.before` rejects linking ANY GitHub
 // account whose NUMERIC id (`account.accountId` — the raw provider id GitHub issues, never the
-// username/login) isn't in `getAllowedGithubIds()`. This fires once, at account-CREATION time, so
-// an unauthorized GitHub account can never get a user/account row in the database at all —
-// "session never created". The complementary "session ... destroyed" half (re-checking the
-// CURRENT allowlist on every already-authenticated request, so narrowing the allowlist after the
-// fact still takes effect) lives in `admin-session.ts`'s `verifyAdminSession`.
+// username/login) isn't in `getAllowedGithubIds()`. This fires at account-CREATION time; better-
+// auth may still leave an orphan `user` row from the same aborted sign-up (no `account` row links
+// it to any provider), but that user can never SIGN IN — no linked GitHub account means every
+// session check denies. The complementary "session ... destroyed" half (re-checking the CURRENT
+// allowlist on every already-authenticated request, so narrowing the allowlist after the fact
+// still takes effect) lives in `admin-session.ts`'s `verifyAdminSession`.
 import { Pool } from "pg";
 import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";

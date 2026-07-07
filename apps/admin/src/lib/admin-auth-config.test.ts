@@ -48,11 +48,11 @@ describe("isAllowedGithubId", () => {
     expect(isAllowedGithubId("123456", new Set())).toBe(false);
   });
 
-  test("a non-numeric id is never allowed, even if it collides with a raw set entry", () => {
+  test("isAllowedGithubId itself does not re-validate numeric shape — the parser owns that guarantee", () => {
     expect(isAllowedGithubId("gridwork-dev", new Set(["gridwork-dev"]))).toBe(
-      // parseAllowedGithubIds would never have produced this entry — isAllowedGithubId itself
-      // does not re-validate numeric shape, so this documents that the numeric-only guarantee
-      // lives in the parser, not here; a caller MUST feed it a parser-produced Set.
+      // parseAllowedGithubIds would never have produced this entry — this documents that the
+      // numeric-only guarantee lives in the parser, not here; a caller MUST feed this function a
+      // parser-produced Set, never a raw hand-built one.
       true,
     );
   });

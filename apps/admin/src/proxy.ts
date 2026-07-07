@@ -1,7 +1,7 @@
-// App-wide auth gate (ADR-0283 — supersedes the CF-Access-JWT middleware of ADR-0204/Strix
-// vuln-0003, itself superseding ADR-0140's edge-alone posture). apps/admin renders cross-tenant
-// business data and ships no other auth, so EVERY route must be gated — a per-page check would
-// leave siblings open (same reasoning as the file this replaces).
+// App-wide auth gate (ADR-0283 — supersedes the CF-Access-JWT middleware of ADR-0204, itself
+// superseding ADR-0140's edge-alone posture). apps/admin renders cross-tenant business data and
+// ships no other auth, so EVERY route must be gated — a per-page check would leave siblings open
+// (same reasoning as the file this replaces).
 //
 // Named `proxy.ts` (not `middleware.ts`): Next 16 deprecated `middleware.ts` in favor of
 // `proxy.ts`, which defaults to the Node.js runtime (no `export const runtime` — Next throws if
@@ -17,8 +17,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { verifyAdminSession } from "@/lib/admin-session";
 
 export const config = {
+  // Anchored, not prefix-matched: `(?:/|$)` after each excluded segment so `/loginboard` or
+  // `/api/authz` are NOT accidentally un-gated (a bare `login|api/auth` alternation would match
+  // any pathname merely STARTING with those letters).
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|healthz|login|api/auth).*)",
+    "/((?!_next/|favicon\\.ico|healthz(?:/|$)|login(?:/|$)|api/auth(?:/|$)).*)",
   ],
 };
 

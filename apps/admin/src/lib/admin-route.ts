@@ -1,11 +1,14 @@
 // Shared plumbing for the ADR-0220 operator mutation routes. Every route is gated by the app's
 // proxy gate (`src/proxy.ts`, ADR-0283 — supersedes the CF-Access-JWT middleware of ADR-0204),
-// which threads the VERIFIED actor email as `x-admin-actor` — a route trusts that header because
-// the gate `set`s it (replacing any inbound spoof) only after a successful better-auth session +
-// GitHub-numeric-id-allowlist check (`verifyAdminSession`). A route reached without a verified
-// actor (dev with admin sign-in unconfigured, or a misconfigured matcher) fails closed to 401 here.
+// which threads the verified actor email as `x-admin-actor` for logging continuity. Per the
+// security floor ("middleware is not a substitute for route-level checks"), a route's OWN auth
+// decision never trusts that header — `requireAdmin` below re-runs the real better-auth session +
+// GitHub-numeric-id-allowlist check directly (`verifyAdminSession`), so a route reached by any
+// bypass of the proxy (a misconfigured matcher, a future internal caller) still fails closed on
+// its own.
 import { toErrorResponse } from "@caisson/kernel";
 import { ZodError } from "zod";
+import { verifyAdminSession } from "./admin-session.ts";
 
 export function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -46,7 +49,7 @@ export function mutationResponse(result: { worm: "ok" | "failed" }): Response {
 
 /**
  * Map a caught mutation error to its real HTTP shape (kernel's `toErrorResponse`, ADR-0019): a
- * `CaissonError` (e.g. CAISSON-9's `NotFoundError` on a nonexistent target account) keeps its real
+ * `CaissonError` (e.g. a `NotFoundError` on a nonexistent target account) keeps its real
  * `code`/`httpStatus`, instead of every thrown value collapsing to a generic 500. Routed through this
  * module's own `json()` so the security headers stay on every response, not just the 200 path.
  */
@@ -55,10 +58,15 @@ export function mutationErrorResponse(err: unknown): Response {
   return json(body, status);
 }
 
-/** The verified operator actor email (ADR-0283), or null when the request carries no verified actor. */
-export function actorEmail(req: Request): string | null {
-  const actor = req.headers.get("x-admin-actor")?.trim() ?? "";
-  return actor === "" ? null : actor;
+/**
+ * Route-level session verification (ADR-0283, security-floor "middleware is not a substitute").
+ * Re-verifies the request's better-auth session + GitHub-allowlist directly — the SAME check the
+ * proxy gate already ran — rather than trusting the `x-admin-actor` header it threads. Returns the
+ * verified actor email, or null when the request carries no verified session.
+ */
+export async function requireAdmin(req: Request): Promise<string | null> {
+  const actor = await verifyAdminSession(req);
+  return actor?.email ?? null;
 }
 
 /** Parse a JSON body with a Zod `.strict()` schema; returns the value or a 400 Response. */
