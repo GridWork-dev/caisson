@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-07
 status: live
-adr_ceiling: 0284
+adr_ceiling: 0285
 ---
 
 # Decisions & Forks — live board
@@ -1547,3 +1547,28 @@ operator-owned) — awaiting operator text approval.
   plain-HTML growth emails migrate into `packages/email`; aggressive graduation of site
   compositions into ui-pro REJECTED this wave. Builds queue behind the current merge wave
   (they read kit stage-2 + the merged admin tree).
+
+**Seventh sitting (same day — triage-wave close-out + screenshot-recon picker):**
+
+- **The six triage-window builds all MERGED:** #147 registry-delist P2 pack · #148 Track V
+  evidence-pack CI artifact (ADR-0275) · #149 kit stage-2 runtime theming (three-prong
+  cascade P1 fixed pre-merge) · #150 site Tier-1 remainder (credits-as-free P1 fixed) ·
+  #151 comp-grant allowlist + the durable admin HOSTNAME/index-path Dockerfile fixes ·
+  #152 per-package frontends wave 1 (license-seam fail-closed W2 + transitive React walk
+  fixed pre-merge; shipped-prose gate fix en route). All through the in-session SHIP audit
+  lane (fable on the two license seams). `registry/index.json` unchanged — no Worker
+  republish needed.
+- **Deploys EXECUTED (operator-approved):** caisson-site, then caisson-license
+  (`/health` `{"ok":true}`) and caisson-admin (`Network: http://0.0.0.0:8080` — the durable
+  HOSTNAME fix is now the deployed image) from merged `main`. Pre-launch gates stay ON.
+- **Marketplace one-surface rework — LOCKED as ADR-0285** (operator-annotated screenshots +
+  recon round): `/marketplace` becomes ONE screen (unified bundle+module grid, one card-viewer
+  dialog over both kinds, compare tray for both, Build-your-stack dissolved into a cart-aware
+  "Your stack" rail); Plans stays separate; **periphery custom-lock:** `/compare`, `/stack-fit`,
+  `/ui` stay standalone visible routes whose content single-sources into the marketplace cards;
+  media = carousel + per-module manifest (diagram | image | interactive | video), initial
+  authored diagram set, filetree redesign in the same pack.
+- **Next wave ARMED — all four tracks** (operator multi-select), parallel worktrees, audits +
+  gates on all: site wave (ADR-0285 + annotation fixes) · admin GitHub OAuth (ADR-0283) ·
+  unified catalog + emails (ADR-0284, kit stage 3 folded) · Track E2 verified eval licenses
+  (ADR-0274/0280, fable at SHIP) + tails (CAISSON-39/42).

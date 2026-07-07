@@ -33,6 +33,36 @@ consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the 
 
 ---
 
+## 2026-07-07 — EXECUTED: triage-window wave deploy (site + license + admin; no Worker republish)
+
+**Why:** PRs #147–#152 merged to `main` (head at deploy time: site from `11cb4c30`, license/admin
+from `11cb4c30`/`1bc677a4` — #152 touched packages only). Consumed diffs: caisson-site ← #150
+site Tier-1 (incl. the credits-advertised-as-free fix); caisson-license ← #151 comp-grant
+allowlist (`assertGrantableEntitlementIds`); caisson-admin ← #151 durable Dockerfile fixes
+(`ENV HOSTNAME=0.0.0.0` + `CAISSON_REGISTRY_INDEX_PATH=/app/registry/index.json` — the 502
+class + the standalone-chdir index-path class both closed at the image layer).
+`registry/index.json` byte-unchanged vs the deployed `51be4302` Worker — **no Worker republish**.
+
+**Operator authorization:** deploys of license + admin explicitly approved this sitting ("approved
+on the 2 deploys"); site rode the earlier merge-and-clean-state authorization.
+
+**Live-verify (pasted):**
+
+- caisson-site: `railway up` → `Deploy complete`; gate probe →
+  `302 https://gridworkdev.cloudflareaccess.com/cdn-cgi/access/login/caisson.sh?kid=a999e511…`
+  (pre-launch `site_gate` ON, expected)
+- caisson-license: `railway up --ci` → `Deploy complete`; `curl https://license.caisson.sh/health`
+  → `{"ok":true}`
+- caisson-admin: `railway up --ci` → `Deploy complete`; boot log →
+  `▲ Next.js 16.2.9` · `- Network: http://0.0.0.0:8080` · `[observability] OTel SDK started
+(service=admin)`; edge probe → `302` (CF-Access `admin_gate` still ON pending ADR-0283)
+
+**Context:** earlier the same day admin.caisson.sh 502'd — root cause: the `HOSTNAME=0.0.0.0`
+Railway variable was lost (suspect: env-sync prune, Linear CAISSON-38), Next standalone bound to
+the container hostname and Railway's proxy got refused, masked at the edge by the CF-Access 302.
+Fixed live (`railway variables --set` + redeploy) before this wave; the Dockerfile ENV makes the
+fix survive future env drift.
+
 ## 2026-07-07 — EXECUTED: research-response wave deploy (Worker republish + 4-service fleet redeploy)
 
 **Operator authorization:** "approved on the full deploy sequence of the new code once clean state"
