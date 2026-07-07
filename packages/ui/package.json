@@ -22,6 +22,11 @@
       "types": "./dist/tokens/index.d.ts",
       "default": "./dist/tokens/index.js"
     },
+    "./theme": {
+      "bun": "./src/theme/index.ts",
+      "types": "./dist/theme/index.d.ts",
+      "default": "./dist/theme/index.js"
+    },
     "./components": "./src/components/index.ts",
     "./components/*": "./src/components/*",
     "./styles/base.css": "./styles/base.css",
@@ -34,7 +39,8 @@
     "gen:tokens": "bun run scripts/gen-tokens-css.ts"
   },
   "dependencies": {
-    "radix-ui": "^1.6.0"
+    "radix-ui": "^1.6.0",
+    "zod": "catalog:"
   },
   "peerDependencies": {
     "lucide-react": "^1.21.0",

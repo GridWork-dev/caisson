@@ -601,7 +601,7 @@
     },
     "packages/everything": {
       "name": "@caisson/everything",
-      "version": "0.2.1",
+      "version": "0.2.2",
     },
     "packages/field-crypto": {
       "name": "@caisson/field-crypto",
@@ -1038,6 +1038,7 @@
       "version": "0.5.0",
       "dependencies": {
         "radix-ui": "^1.6.0",
+        "zod": "catalog:",
       },
       "devDependencies": {
         "@caisson/eslint-config": "workspace:*",
