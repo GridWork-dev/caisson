@@ -2092,6 +2092,190 @@ export const GLOSSARY_TERMS: readonly GlossaryTerm[] = [
       "llm-cost-control",
     ],
   },
+  // ---- AEO long-tail explainers (CAISSON-29 / D5) — use-case/how-to angles distinct from the
+  // definitional terms above (worm-audit-log · oscal · row-level-security). Each cites a REAL,
+  // different package entry point and cross-links to its definitional sibling, so the pair reads as
+  // a topic cluster, not two thin near-duplicates. ----
+  {
+    slug: "worm-audit-logs-for-saas",
+    term: "WORM audit logs for SaaS",
+    cluster: "compliance",
+    definition:
+      "WORM audit logs for a SaaS are tamper-evident activity records your application appends but can never rewrite — enforced by storage, not app convention. Caisson's @caisson/audit-worm gives each tenant a hash-chained log and mints a write-once S3 Object-Lock anchor on every append, so a single call from a request handler records the event and its integrity proof together.",
+    artifact: {
+      label:
+        "AuditChainStore — one append() call records the event AND mints its WORM anchor, tenant-scoped",
+      lang: "ts",
+      code: '// One store per process; each request appends under the caller\'s tenant id.\nconst audit = new AuditChainStore({ db, store: s3WormStore });\n\n// In a request handler — one call records the event AND mints a fresh WORM anchor,\n// both inside the same tenant-scoped transaction (never a separate anchoring job).\nconst { entry, anchor } = await audit.append(accountId, {\n  action: "invoice.exported",\n  actor: session.userId,\n  target: invoiceId,\n});\n// A truncate-then-replay for entry.seq collides on the write-once anchor key -> ConflictError.',
+    },
+    properties: [
+      {
+        title: "One call, two independent guarantees",
+        body: "append() writes the chain entry and mints the length-keyed WORM anchor over the result before it returns — in the same transaction. You never run a separate nightly anchoring job that could be skipped, and the DB grant (no UPDATE/DELETE) and the write-once object are two controls, so neither has to hold alone.",
+      },
+      {
+        title: "Tenant-scoped by construction",
+        body: "Every append runs inside withTenant behind a per-tenant advisory lock, so a forgotten tenant filter can't cross-write another tenant's chain and two concurrent appends can't fork the chain at the same length.",
+      },
+      {
+        title: "Real WORM storage, not a boolean",
+        body: "The store is an S3 Object-Lock bucket (a local write-once store in dev); the anchor lands via a conditional write-once PUT, so a truncate-then-replay hits the existing immutable object and throws ConflictError instead of silently overwriting the tip.",
+      },
+      {
+        title: "A six-year retention floor by default",
+        body: "Each anchor carries a retain-until date computed from the audit-worm retention floor (six years, matching HIPAA §164.316(b)(2) and SEC 17a-4), and retention only ever extends — evidence can't be disposed early.",
+      },
+    ],
+    faq: [
+      {
+        question: "How do I add a tamper-evident audit log to my SaaS?",
+        answer:
+          "Construct an AuditChainStore with your Postgres transactor and a WORM object store, then call append(accountId, event) from each request handler you want on the record. That one call hash-chains the entry and writes a write-once anchor to WORM storage, so both the log and its integrity proof land together — no separate service or nightly job.",
+      },
+      {
+        question:
+          "Do I need a blockchain or a third-party service for WORM audit logging?",
+        answer:
+          "No. Caisson's audit-worm runs on your own Postgres plus an S3 Object-Lock bucket you already control. The chain is a SHA-256 hash chain; the immutability comes from the database withholding UPDATE/DELETE and S3 refusing to overwrite a write-once key — no external ledger and no vendor in the trust path.",
+      },
+      {
+        question:
+          "Does a WORM audit log make my SaaS SOC 2 or HIPAA compliant?",
+        answer:
+          "No — it ships the technical control SOC 2 CC7.2 and HIPAA 164.312(b) check for (a tamper-evident, immutable record of activity) and generates the evidence an auditor examines. Compliance is your assessor's conclusion across people, process, and technology; the log is one input to it, never a certification.",
+      },
+      {
+        question: "Where do the audit entries actually live?",
+        answer:
+          "The entries are rows in an append-only audit_chain_entry table (the app role holds SELECT + INSERT only, never UPDATE/DELETE), and each append also writes a small length-keyed anchor object — {length, tipHash, genesisHash} — to your WORM bucket. Reads verify the DB chain against that trusted anchor.",
+      },
+    ],
+    sells: {
+      edition: "Compliance",
+      ctaLabel: "See how the Compliance bundle ships WORM audit logging",
+      ctaHref: "/compliance",
+    },
+    related: ["worm-audit-log", "s3-object-lock", "soc2-audit-log"],
+  },
+  {
+    slug: "oscal-export-typescript",
+    term: "OSCAL export from a TypeScript stack",
+    cluster: "compliance",
+    definition:
+      "OSCAL export from a TypeScript stack means generating NIST's machine-readable assessment documents — Security Assessment Results, POA&M, and Assessment Plan — directly from your Node codebase, no Java re-keying. Caisson's Compliance bundle authors OSCAL v1.2.2 JSON from a signed evidence-pack manifest with assembleOscalEvidenceBundle, deterministic given a pinned clock and id seam, and emits an XML sibling through NIST's own oscal-cli.",
+    artifact: {
+      label:
+        "assembleOscalEvidenceBundle — manifest -> signed AP + SAR + POA&M as a path->bytes map",
+      lang: "ts",
+      code: "// From an evidence-pack manifest — authors the OSCAL Assessment Plan, SAR, and POA&M,\n// then signs the manifest. Pin the `now` + `newId` seams for byte-identical output.\nconst bundle = await assembleOscalEvidenceBundle(manifest, signer, {\n  now: () => runAt,\n  newId: seededUuid,\n});\n\n// bundle.files is a { relativePath -> canonical UTF-8 bytes } map — write it straight out:\n//   ./assessment-plan/soc2.json  ./sar.json  ./poam.json  ./manifest.json  ./manifest.sig\nfor (const [path, bytes] of Object.entries(bundle.files)) {\n  await writeFile(join(outDir, path), bytes);\n}",
+    },
+    properties: [
+      {
+        title: "Native TypeScript/JSON, no Java re-key",
+        body: "The Assessment Plan, SAR, and POA&M are authored in TypeScript against the NIST OSCAL v1.2.2 schema; JSON is the canonical, byte-stable output your Node build emits directly, so a GRC tool or FedRAMP reviewer ingests it without a human re-keying a PDF.",
+      },
+      {
+        title: "Deterministic given a pinned seam",
+        body: "The wall-clock now and the UUID source newId are injected; pin them and the same evidence pack canonicalizes to byte-identical OSCAL every run — so the export is safe to diff and re-verify in CI, not a fresh blob each time.",
+      },
+      {
+        title: "Satisfied/not-satisfied is derived, gaps recorded not guessed",
+        body: "Each control's OSCAL finding maps from the evidence pack's own readiness — a not-satisfied finding's remarks is the flagged evidence's recorded reason (gapReason), never an inferred explanation — and a clean pack ships the single truthful no-open-items POA&M entry the schema requires.",
+      },
+      {
+        title: "An XML sibling from NIST's own converter",
+        body: "When XML is required, it's produced by shelling out to NIST's oscal-cli converter, never a hand-rolled serializer — so the XML validates against the same conformance target (v1.2.2) the JSON does.",
+      },
+    ],
+    faq: [
+      {
+        question: "Can I generate OSCAL from a Node or TypeScript codebase?",
+        answer:
+          "Yes. Caisson's Compliance bundle authors OSCAL v1.2.2 documents in TypeScript and emits canonical JSON straight from your build — assembleOscalEvidenceBundle turns a signed evidence-pack manifest into the Assessment Plan, SAR, and POA&M as a path-to-bytes map you write to disk or a bucket. No Java toolchain and no manual re-keying.",
+      },
+      {
+        question: "What OSCAL version does the export target?",
+        answer:
+          "OSCAL v1.2.2, locked (ADR-0179) as the single oscal-cli validate conformance target. JSON is the canonical, byte-stable output; the optional XML sibling is produced by shelling out to NIST's own oscal-cli converter so both validate against the same version.",
+      },
+      {
+        question: "Does exporting OSCAL mean I'm FedRAMP or SOC 2 authorized?",
+        answer:
+          "No. The OSCAL bundle is the evidence assessment and gap register — satisfied/not-satisfied per control, POA&M items for any gap — in the format FedRAMP and GRC tools expect. It ships the technical readiness picture the framework requires; the authorization decision is your assessor's, not the export's.",
+      },
+      {
+        question: "Is the OSCAL output stable enough to diff in CI?",
+        answer:
+          "Yes, once you pin the injected now and newId seams. The documents are id-sorted and canonicalized, so identical evidence produces byte-identical OSCAL — a property CI can re-verify and a reviewer can independently reproduce, rather than a fresh non-deterministic blob per run.",
+      },
+    ],
+    sells: {
+      edition: "Compliance",
+      ctaLabel: "See how the Compliance bundle ships OSCAL evidence export",
+      ctaHref: "/compliance",
+    },
+    related: ["oscal", "audit-evidence-bundle", "control-to-code-mapping"],
+  },
+  {
+    slug: "multi-tenant-rls-compliance",
+    term: "Multi-tenant RLS for compliance",
+    cluster: "security",
+    definition:
+      "Multi-tenant RLS for compliance is enforcing tenant isolation inside Postgres itself — a row-level-security policy the database applies to every query — so a forgotten WHERE clause can't leak another tenant's data. Caisson's @caisson/tenancy-rls makes it fail-closed: FORCE row-level security plus a withTenant wrapper mean an unscoped query returns zero rows, and the isolation ships as a test.",
+    artifact: {
+      label:
+        "withTenant — the sole entry point: bind the tenant GUC, drop to the non-superuser app role, fail closed",
+      lang: "ts",
+      code: '// The sole entry point for a tenant query. Skip it and the policy predicate sees no bound\n// tenant -> zero rows returned, never another tenant\'s data (fail-closed by construction).\nexport async function withTenant<T>(\n  db: Transactor,\n  accountId: string,\n  fn: (tx: TenantExecutor) => Promise<T>,\n): Promise<T> {\n  if (accountId.length === 0) {\n    throw new TenancyError("Refusing to run a tenant query without an account id");\n  }\n  return db.transaction(async (tx) => {\n    await tx.query(`SELECT set_config($1, $2, true)`, [TENANT_GUC, accountId]);\n    await ensureRoleGuard(db, tx, "app"); // refuses a SUPERUSER / BYPASSRLS role\n    await tx.exec(`SET LOCAL ROLE app`);\n    return fn(tx);\n  });\n}',
+    },
+    properties: [
+      {
+        title: "FORCE RLS, not just ENABLE",
+        body: "Plain ENABLE ROW LEVEL SECURITY still lets the table owner bypass the policy. buildTenantPolicySql always emits FORCE ROW LEVEL SECURITY too, so the isolation applies even to the owning connection — only a genuine superuser or BYPASSRLS role escapes it.",
+      },
+      {
+        title: "withTenant is the sole entry point",
+        body: "withTenant binds the tenant GUC, verifies then drops to the non-superuser app role, and runs your callback. A code path that forgets it never sets the GUC, so the policy predicate compares against null and the query returns nothing — a leak becomes zero rows, not another tenant's data.",
+      },
+      {
+        title: "The role is verified, not assumed",
+        body: "ensureRoleGuard queries pg_roles once per connection and throws before SET ROLE if the app role turns out to be SUPERUSER or BYPASSRLS — a misconfigured role can't silently reopen cross-tenant access with no runtime signal.",
+      },
+      {
+        title: "The control is also the evidence",
+        body: "A cross-tenant read returning zero rows is an assertion in the test suite that runs every build, and the RLS-force evidence collector turns that live check into a pass/flag input for the SOC 2 CC6.x / HIPAA 164.312(a) evidence pack — the isolation proves itself.",
+      },
+    ],
+    faq: [
+      {
+        question: "How do I isolate tenants for SOC 2 or HIPAA in Postgres?",
+        answer:
+          "Put the isolation in the database, not just the app: give every tenant table a row-level-security policy comparing its account_id to a session GUC, add FORCE ROW LEVEL SECURITY so even the table owner is bound, and route every query through a wrapper that sets the GUC and drops to a non-superuser role. Caisson's tenancy-rls ships exactly this, fail-closed.",
+      },
+      {
+        question:
+          "Is application-level tenant filtering enough for a compliance audit?",
+        answer:
+          "It's the control most likely to fail: one forgotten WHERE clause leaks every tenant's rows, and there's no engine-level backstop. Row-level security moves the predicate into Postgres so it applies to every SELECT, UPDATE, and DELETE regardless of the query — an auditor can see the isolation is enforced by the database, not by hoping every query got it right.",
+      },
+      {
+        question: "Does RLS alone make me SOC 2 or HIPAA compliant?",
+        answer:
+          "No. RLS ships the technical access control SOC 2 CC6.x and HIPAA 164.312(a) require and generates the isolation proof as a test, but that one control isn't compliance. The Compliance bundle composes it with the audit chain, WORM evidence, and OSCAL mapping into the full evidence pack an audit needs.",
+      },
+      {
+        question: "What happens if my connection pooler resets the tenant GUC?",
+        answer:
+          "The policy read is wrapped in NULLIF(current_setting(...), '') so a pooled connection that resets the custom GUC to an empty string is treated as no tenant bound — the predicate matches nothing and the query returns zero rows. A pooler quirk degrades to fail-closed, never to a cross-tenant read.",
+      },
+    ],
+    sells: {
+      edition: "Compliance",
+      ctaLabel: "See how the Compliance bundle turns RLS into audit evidence",
+      ctaHref: "/compliance",
+    },
+    related: ["row-level-security", "multi-tenant-isolation", "fail-closed"],
+  },
 ];
 
 /** Resolve a term's curated `related` slugs against GLOSSARY_TERMS, dropping anything that
