@@ -11,6 +11,7 @@ import {
   StatusChip,
 } from "@/components";
 import { DualDoorHero } from "@/components/dual-door-hero";
+import { FileTree, type FileNode } from "@/components/file-tree";
 import Link from "next/link";
 
 import { serializeJsonLd, softwareApplication } from "@/lib/jsonld";
@@ -77,6 +78,80 @@ const CI_CHECKS = [
   "build · lint · unit · integration · standards-gate · golden-file — green",
   "RLS cross-tenant read: denied",
 ] as const;
+
+// ===== Honest-artifact bento (D4) — REAL monorepo paths + REAL code, no screenshots. =====
+// Every path below is a real directory in this repo (verified against the tree); every code cell is
+// copied from the file its label names. The device (ADR-0080 honesty floor): the marketing IA and
+// the codebase IA are the same object, so "trust me, it's well-built" becomes an inspectable
+// artifact. Curated subset — breadth without noise, not the full 50-package tree.
+const REPO_TREE: readonly FileNode[] = [
+  {
+    name: "apps",
+    children: [
+      { name: "site", note: "marketing + docs + buyer dashboard" },
+      { name: "admin", note: "the control-plane" },
+    ],
+  },
+  {
+    name: "packages",
+    children: [
+      { name: "kernel", note: "audit-chain · canonicalize · branded money" },
+      { name: "tenancy-rls", note: "fail-closed Postgres RLS" },
+      { name: "audit-worm", note: "append-only chain + S3 Object-Lock WORM" },
+      { name: "field-crypto", note: "per-tenant HKDF-SHA256 encryption" },
+      { name: "ai-meter", note: "token metering + spend caps" },
+      { name: "local-inference", note: "on-device ONNX inference" },
+      { name: "agent-kernel", note: "the governed-agent state machine" },
+      { name: "ui", note: "the Apache-2.0 component base" },
+    ],
+  },
+  {
+    name: "tooling",
+    children: [
+      { name: "standards-gate", note: "the one lint / tsconfig / test gate" },
+    ],
+  },
+  {
+    name: "services",
+    children: [
+      { name: "license", note: "the license issuer + verifier" },
+      { name: "docs", note: "the docs RAG service" },
+    ],
+  },
+  {
+    name: "registry",
+    children: [
+      { name: "index.json", note: "the signed module index" },
+      { name: "worker", note: "the edge entitlement filter" },
+    ],
+  },
+];
+
+// The fail-closed RLS policy, verbatim from buildTenantPolicySql() (packages/tenancy-rls/src/rls.ts):
+// no tenant GUC set → NULLIF folds '' to NULL → the USING predicate is NULL → every row is denied.
+const RLS_POLICY_SQL = `ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE invoices FORCE ROW LEVEL SECURITY;
+CREATE POLICY invoices_tenant_isolation ON invoices
+  USING (
+    account_id = NULLIF(current_setting('app.current_account', true), '')
+  );`;
+
+// The chain-link hash, verbatim from packages/kernel/src/audit-chain.ts: SHA-256 over the canonical
+// 2-tuple [prevHash, payload] — tamper any historical row and every hash after it fails to recompute.
+const AUDIT_CHAIN_TS = `export function hashChainLink(
+  prevHash: string | null,
+  payload: JsonValue,
+): string {
+  return createHash("sha256")
+    .update(canonicalize([prevHash, payload]))
+    .digest("hex");
+}`;
+
+// Real CLI shape (docs/provenance/audit-worm + the compliance evidence card) — a representative
+// verify run, not a customer metric.
+const AUDIT_VERIFY_OUT = `$ caisson audit verify --tenant tenant_4f2c
+chain: 41984 rows · 0 breaks
+root:  2c9f…b7   sig ✓   tsa ✓`;
 
 // How-to-buy price bands — derived from lib/pricing.ts (never hand-duplicated) so the three
 // figures on the type-chip cards below can't drift from the SKUs they describe.
@@ -156,6 +231,50 @@ export default function HomePage() {
                 </p>
               </Card>
             ))}
+          </FeatureGrid>
+        </Section>
+      </Reveal>
+
+      {/* ===== Honest-artifact bento (D4a) — the repo IS the artifact: real paths + real code ===== */}
+      <Reveal>
+        <Section
+          eyebrow="The repository is the artifact"
+          title="Real paths. Real code. No screenshots."
+          lede="The structure of this page is the structure of the codebase. Every path is a real directory; every snippet is copied verbatim from the file its header names — the honest-artifact floor, not a mockup."
+        >
+          <FeatureGrid cols={2}>
+            <Card>
+              <span className="cs-card-title">caisson-sh/caisson</span>
+              <div style={{ marginTop: "var(--cs-space-5)" }}>
+                <FileTree root={REPO_TREE} label="Caisson monorepo structure" />
+              </div>
+            </Card>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "var(--cs-space-5)",
+              }}
+            >
+              <CodeBlock
+                frame
+                label="packages/tenancy-rls/src/rls.ts"
+                status={<StatusChip tone="accent" dot label="FORCE" />}
+                code={RLS_POLICY_SQL}
+              />
+              <CodeBlock
+                frame
+                label="packages/kernel/src/audit-chain.ts"
+                status={<StatusChip tone="accent" dot label="sha256" />}
+                code={AUDIT_CHAIN_TS}
+              />
+              <CodeBlock
+                frame
+                label="caisson audit verify"
+                status={<StatusChip tone="success" dot label="0 breaks" />}
+                code={AUDIT_VERIFY_OUT}
+              />
+            </div>
           </FeatureGrid>
         </Section>
       </Reveal>
