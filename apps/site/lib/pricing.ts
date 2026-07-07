@@ -367,6 +367,27 @@ export function everythingSavings(): number {
   return Math.max(0, moduleCatalogSubtotal() - everything.amount);
 }
 
+/** Updates-renewal rate: a 12-month per-entitlement renewal costs a flat 40% of the
+ *  then-current list price, floored to the nearest X9 price point (ADR-0260 §5 ladder:
+ *  $199→$79 · $149→$59 · $129→$49 · $99→$39 · $49→$19). The Paddle renewal price rows carry
+ *  the exact cents `renewalAmount` yields — display and charge never drift. */
+export const RENEWAL_RATE_PERCENT = 40;
+
+/** Renewal display price for a purchased entitlement id (module or bundle), whole USD.
+ *  Returns null for ids with no list price (unknown/legacy ids stay number-free — the Paddle
+ *  overlay remains the authoritative display for those, never a fabricated figure, ADR-0130). */
+export function renewalAmount(entitlementId: string): number | null {
+  const list =
+    MODULE_PRICES.find((m) => m.id === entitlementId)?.amount ??
+    BUNDLE_PRICES.find((b) => b.id === entitlementId)?.amount ??
+    null;
+  if (list === null) return null;
+  // Flat 40%, then floor to the nearest whole-dollar point ending in 9 (X9, ADR-0260 §5).
+  let n = Math.floor((list * RENEWAL_RATE_PERCENT) / 100);
+  while (n % 10 !== 9) n -= 1;
+  return n;
+}
+
 /** Purchase structures beyond the one-time bundles (`BUNDLE_PRICES` owns those — incl. the
  *  Everything bundle that replaced the retired $1,499 edition-era row). */
 export const PLAN_PRICES: readonly PriceAnchor[] = [
