@@ -6,7 +6,14 @@
 // `Cf-Access-Jwt-Assertion` signed by the admin Access application's JWKS, with the `aud` claim pinned to
 // THIS app. The site + admin Access apps share one `@gridwork.dev` email policy, so a signature-only
 // check would accept a site-issued JWT — the `aud` pin is load-bearing, not optional.
-import { createRemoteJWKSet, jwtVerify } from "jose";
+import {
+  createRemoteJWKSet,
+  jwtVerify,
+  type JWK,
+  type JWTVerifyGetKey,
+  type JWTVerifyOptions,
+  type KeyLike,
+} from "jose";
 
 export interface AccessConfig {
   /** The Cloudflare Access team domain, e.g. `gridwork.cloudflareaccess.com` (the JWKS + issuer root). */
@@ -57,7 +64,10 @@ export function extractAccessToken(req: Request): string | null {
 
 // Per-team-domain cached JWKS. `createRemoteJWKSet` caches keys and refreshes on an unknown `kid`
 // (with a cooldown), so this makes at most one network fetch per key-rotation, not one per request.
-type KeyResolver = Parameters<typeof jwtVerify>[1];
+// Mirrors jose's real `jwtVerify` key parameter (the raw-key overload plus the dynamic getKey-function
+// overload) explicitly — `Parameters<typeof jwtVerify>[1]` alone resolves to only the LAST overload
+// (the getKey function), which silently excludes the raw-key case the tests inject a local key with.
+type KeyResolver = KeyLike | Uint8Array | JWK | JWTVerifyGetKey;
 const jwksByDomain = new Map<string, KeyResolver>();
 function jwksFor(teamDomain: string): KeyResolver {
   let jwks = jwksByDomain.get(teamDomain);
@@ -87,17 +97,23 @@ export async function verifyAccessJwt(
   token: string,
   cfg: AccessConfig,
   keyResolver: KeyResolver = jwksFor(cfg.teamDomain),
-  options: Parameters<typeof jwtVerify>[2] = {},
+  options: JWTVerifyOptions = {},
 ): Promise<AccessIdentity> {
   // `options` is spread FIRST so the security-critical pins (issuer / audience / RS256) can never be
   // overridden by a caller — it only supplies extras like `currentDate` (used by tests for a
   // deterministic clock) or `clockTolerance`.
-  const { payload } = await jwtVerify(token, keyResolver, {
+  const verifyOptions: JWTVerifyOptions = {
     ...options,
     issuer: `https://${cfg.teamDomain}`,
     audience: cfg.aud,
     algorithms: ["RS256"],
-  });
+  };
+  // `jwtVerify` is overloaded on the key-vs-getKey shape of its 2nd arg; a union-typed `keyResolver`
+  // doesn't resolve to either overload on its own, so narrow on `typeof` (same call either branch).
+  const { payload } =
+    typeof keyResolver === "function"
+      ? await jwtVerify(token, keyResolver, verifyOptions)
+      : await jwtVerify(token, keyResolver, verifyOptions);
   const email = typeof payload.email === "string" ? payload.email.trim() : "";
   if (email === "") {
     // Fail closed: the CF-Access identity carries no email (misconfigured IdP claim mapping) — a
