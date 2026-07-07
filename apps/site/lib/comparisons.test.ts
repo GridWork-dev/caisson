@@ -6,8 +6,10 @@ import { ACCESSED, COMPARISONS, findComparison } from "./comparisons";
 // from them). These invariants guard the honesty floor (ADR-0080) and the spoke wiring: a typo'd
 // slug is a 404, a missing accessed date is an unstamped claim, an empty faq is a missing FAQPage.
 
-// The Group-A target slugs from docs/gtm/comparison-targets.md this stage builds.
+// The full 20-target slug list from docs/gtm/comparison-targets.md: Group A boilerplates + the free
+// create-t3-app scaffold, Group B compliance-automation (GRC) platforms, and Group C build-in-house.
 const EXPECTED_SLUGS = [
+  // Group A — SaaS boilerplates / starter kits
   "shipfast",
   "makerkit",
   "supastarter",
@@ -18,10 +20,22 @@ const EXPECTED_SLUGS = [
   "shipixen",
   "saasrock",
   "divjoy",
+  "create-t3-app",
+  // Group B — compliance-automation (GRC) platforms
+  "vanta",
+  "drata",
+  "secureframe",
+  "sprinto",
+  "scytale",
+  "thoropass",
+  "delve",
+  "comp-ai",
+  // Group C — build in-house
+  "build-in-house",
 ] as const;
 
 describe("COMPARISONS registry", () => {
-  test("covers exactly the ten Group-A targets", () => {
+  test("covers exactly the twenty comparison targets", () => {
     expect(COMPARISONS.map((c) => c.slug).sort()).toEqual(
       [...EXPECTED_SLUGS].sort(),
     );

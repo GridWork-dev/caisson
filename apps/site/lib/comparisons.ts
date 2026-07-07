@@ -10,11 +10,18 @@
 // hardcoded here: the template reads them from the pricing display SOT (lib/pricing.ts) so a number
 // can't drift. Six-bundle vocabulary only; V1-live posture (no roadmap/"coming soon").
 //
-// SCOPE: Group A of docs/gtm/comparison-targets.md — the SaaS boilerplates / starter kits. The
-// honest frame across all ten: these ship auth + billing + a landing page fast; Caisson ships the
-// compliance and tenant-isolation substrate they mostly leave to you (fail-closed RLS with isolation
-// tests, a WORM + hash-chained audit trail, SOC 2 / HIPAA / EU AI Act evidence packs with OSCAL
-// export, per-tenant field encryption). A team picking a kit AND facing an audit is the buyer.
+// SCOPE: all 20 targets of docs/gtm/comparison-targets.md, in three honest frames.
+//  • Group A — SaaS boilerplates / starter kits (+ the free create-t3-app scaffold): they ship auth +
+//    billing + a landing page fast; Caisson ships the compliance and tenant-isolation substrate they
+//    leave to you (fail-closed RLS with isolation tests, a WORM + hash-chained audit trail, evidence
+//    packs with OSCAL export, per-tenant field encryption). A team picking a kit AND facing an audit.
+//  • Group B — compliance-automation (GRC) platforms (Vanta / Drata / Secureframe / Sprinto / Scytale
+//    / Thoropass / Delve / Comp AI): NOT head-to-head. They MONITOR your stack and run the audit
+//    workflow; Caisson is the CODE that implements the controls they inspect. The page draws the
+//    honest own-vs-rent line and says the two compose — it never declares a winner.
+//  • Group C — build it in-house: the build-vs-buy math, sourced from Caisson's own committed
+//    /build-vs-buy analysis (no vendor to scrape); the $80k / 6-9-month figure is the industry cost of
+//    a first SOC 2, labeled as such (ADR-0080 §4), never a Caisson quote.
 
 /** The single date every competitor fact on these pages was verified against the live vendor site. */
 export const ACCESSED = "2026-07-07";
@@ -79,6 +86,19 @@ const SUBSTRATE = {
   evidence: "SOC 2 / HIPAA / EU AI Act evidence packs + OSCAL export",
   fieldCrypto: "Per-tenant field encryption (envelope, per-tenant key)",
   signing: "Detached evidence signing (Ed25519 + RFC-3161)",
+} as const;
+
+// Shared row labels for the Group-B compliance-automation (GRC) platforms. These platforms MONITOR
+// your stack and run the audit workflow; Caisson is the controls IN your codebase they inspect —
+// so the honest split is "different category", not a knock, and the platform wins its rows. The
+// competitor cell is `true` for a real GRC platform; Caisson's cell is `false` or a short note.
+// Kept as a helper so the eight platform records stay legible (same pattern as SUBSTRATE).
+const GRC = {
+  monitor: "Continuous stack/cloud monitoring + automated evidence collection",
+  auditWorkflow:
+    "Runs the audit workflow (evidence-for-auditor, questionnaires)",
+  trustCenter: "Hosted Trust Center for prospects",
+  tprm: "Third-party / vendor risk management (TPRM)",
 } as const;
 
 export const COMPARISONS: readonly Comparison[] = [
@@ -941,6 +961,894 @@ export const COMPARISONS: readonly Comparison[] = [
         question: "Can I use Divjoy and Caisson together?",
         answer:
           "Yes. Scaffold the React front end with Divjoy's generator, then build the compliant backend — tenancy, RLS isolation, audit, and evidence — with Caisson. Divjoy addresses the front-end layer; Caisson addresses the regulated backend.",
+      },
+    ],
+  },
+  // ---------------------------------------------------------------------------------------------
+  // Group A tail — a free typesafe stack scaffold.
+  {
+    slug: "create-t3-app",
+    competitor: "Create T3 App",
+    competitorUrl: "https://create.t3.gg",
+    category: "Free typesafe Next.js stack scaffold (T3)",
+    metaTitle: "Caisson vs Create T3 App",
+    metaDescription:
+      "Create T3 App scaffolds a free, typesafe full-stack Next.js app; Caisson is the regulated backend it deliberately leaves out — fail-closed RLS with isolation tests, a WORM audit trail, and SOC 2 / HIPAA / OSCAL evidence packs. An honest, dated comparison.",
+    answer:
+      "Pick Create T3 App to start a full-stack, typesafe Next.js app for free: it wires Next.js, TypeScript, Tailwind, tRPC, Prisma or Drizzle, and NextAuth.js — and, by design, only the typesafe core. Pick Caisson when that app has to carry regulated data through an audit: it ships fail-closed Postgres RLS with isolation tests, a WORM + hash-chained audit trail, per-tenant field encryption, and SOC 2 / HIPAA / EU AI Act evidence packs. create-t3-app scaffolds the foundation; Caisson is the compliance and tenancy substrate it says up front it does not include.",
+    heroLede:
+      "Create T3 App is the free, typesafe scaffold — deliberately only the core. Caisson is the compliance and tenant-isolation substrate it leaves to you. Here is the honest line.",
+    competitorPrice: "Free (open-source, MIT)",
+    competitorLicense:
+      "MIT open-source; you own all generated code. No purchase.",
+    competitorFacts: [
+      "A CLI scaffold for the T3 stack: Next.js, TypeScript, Tailwind CSS, tRPC, Prisma or Drizzle ORM, and NextAuth.js — you pick which pieces.",
+      "Explicitly NOT an all-inclusive template — its stated design is to scaffold only the typesafe core and have you bring your own libraries.",
+      "No billing, no multi-tenancy, and no compliance tooling — those are outside its scope by design.",
+      "Free and MIT-licensed with a large community and Discord, verified 2026-07-07.",
+    ],
+    competitorStrengths: [
+      {
+        title: "Best-in-class typesafety, for free",
+        body: "create-t3-app's end-to-end type safety — tRPC from client to server, typed all the way down — is a genuinely excellent free foundation. For a TypeScript team that wants the typesafe core and nothing it didn't ask for, it is the gold-standard start.",
+      },
+      {
+        title: "Deliberately minimal, huge community",
+        body: "Its whole philosophy is to add only what you need, which keeps the scaffold clean, and it is backed by one of the largest communities in the ecosystem. That restraint and support are real, honest advantages.",
+      },
+    ],
+    caissonLine: [
+      {
+        title: "A scaffold of the core, not a product substrate",
+        body: "create-t3-app is upfront that it is not an all-inclusive template — it does not ship billing, multi-tenancy, or any compliance tooling. Caisson is precisely that substrate: tenancy, billing, and the compliance modules as audited packages on a standard Postgres app.",
+      },
+      {
+        title: "Composable packages onto exactly this stack",
+        body: "Caisson installs onto a plain Next.js + Postgres app — the same shape create-t3-app scaffolds — so you add fail-closed RLS with isolation tests, a WORM audit trail, and evidence packs without leaving the stack you started on.",
+      },
+    ],
+    rows: [
+      {
+        label: "Stack",
+        caisson: "Next.js + Postgres",
+        competitor: "Next.js + Prisma / Drizzle",
+      },
+      { label: "Typesafe API", caisson: "REST/typed", competitor: "tRPC" },
+      { label: "Auth", caisson: true, competitor: "NextAuth.js wiring" },
+      { label: "Billing / subscriptions", caisson: true, competitor: false },
+      { label: "Organization multi-tenancy", caisson: true, competitor: false },
+      { label: SUBSTRATE.rls, caisson: true, competitor: false },
+      { label: SUBSTRATE.worm, caisson: true, competitor: false },
+      { label: SUBSTRATE.evidence, caisson: true, competitor: false },
+      { label: SUBSTRATE.fieldCrypto, caisson: true, competitor: false },
+      {
+        label: "License / price",
+        caisson: "One-time perpetual",
+        competitor: "Free (MIT)",
+      },
+    ],
+    whenPickCompetitor:
+      "You want a free, minimal, typesafe Next.js starting point and will add product features — billing, tenancy, compliance — yourself.",
+    whenPickCaisson:
+      "You need the regulated backend — tenancy, billing, database-enforced isolation with tests, and audit evidence — as maintained packages rather than hand-rolled.",
+    whenBoth:
+      "Scaffold the app with create-t3-app, then add Caisson's tenancy, billing, and Compliance packages onto the same Next.js + Postgres codebase.",
+    faq: [
+      {
+        question: "Is Caisson an alternative to create-t3-app?",
+        answer:
+          "Only partly — they sit at different layers. create-t3-app scaffolds a free, typesafe Next.js core and stops there by design; Caisson supplies the tenancy, billing, and compliance substrate on top. A team can scaffold with create-t3-app and adopt Caisson's packages for the regulated backend without changing stacks.",
+      },
+      {
+        question: "Does create-t3-app include compliance or multi-tenancy?",
+        answer:
+          "No. As of 2026-07-07 create-t3-app is explicit that it scaffolds only the typesafe core — Next.js, tRPC, an ORM, and auth wiring — and expects you to bring the rest. Multi-tenant RLS, a WORM audit trail, and evidence packs are outside its scope and are Caisson's core.",
+      },
+      {
+        question: "create-t3-app is free — why pay for Caisson?",
+        answer:
+          "Its price is its honest strength for the scaffold. What it doesn't include is the compliance and tenant-isolation substrate — fail-closed RLS with isolation tests, a WORM audit trail, field encryption, and OSCAL evidence packs — which is the maintained, tested code you would pay Caisson for. Caisson's own Base substrate is also open (Apache-2.0).",
+      },
+    ],
+  },
+  // ---------------------------------------------------------------------------------------------
+  // Group B — compliance automation (GRC) platforms. NOT head-to-head: they MONITOR your stack and
+  // run the audit workflow; Caisson is the controls in your codebase they inspect. The honest frame
+  // is own-vs-rent + compose, and each page says so. Prices: none of these publish public self-serve
+  // pricing (all "book a demo"), verified 2026-07-07 — a true, scraped fact, not an invented number.
+  {
+    slug: "vanta",
+    competitor: "Vanta",
+    competitorUrl: "https://www.vanta.com",
+    category: "Compliance automation platform (GRC SaaS)",
+    metaTitle: "Caisson vs Vanta",
+    metaDescription:
+      "Vanta is the market-leading GRC platform that monitors your stack and automates the audit; Caisson is the code that implements the controls it looks for — fail-closed RLS, a WORM audit trail, and OSCAL evidence packs you own. An honest, dated comparison.",
+    answer:
+      "These aren't head-to-head — they solve different halves, and the honest answer is often both. Vanta is the category-leading GRC platform: it connects to your stack, continuously monitors it, automates evidence collection, and runs the audit workflow — a subscription that watches whatever you built. Caisson is the code that implements the technical controls Vanta looks for: fail-closed Postgres RLS with isolation tests, a WORM + hash-chained audit trail, per-tenant field encryption, and OSCAL evidence packs — one-time, in your own codebase. Vanta proves your posture; Caisson makes the controls real.",
+    heroLede:
+      "Vanta monitors your stack and runs the audit. Caisson is the controls in your codebase it inspects. These compose — here is the honest line, own vs rent.",
+    competitorPrice: "No public self-serve pricing — quote-based (book a demo)",
+    competitorLicense: "Annual SaaS subscription (recurring).",
+    competitorFacts: [
+      "The market-leading GRC / trust platform, advertising 16,000+ customers on its live site (verified 2026-07-07).",
+      "Continuous monitoring and automated evidence collection across your whole stack — cloud, HR, devices, and vendors — not just your application.",
+      "Covers SOC 2, ISO 27001, HIPAA, GDPR, NIST AI RMF, ISO 42001, HITRUST, and FedRAMP, with a Trust Center, questionnaire automation, and third-party risk.",
+      "Connects to your infrastructure and watches it; it does not ship the application code that implements the controls.",
+    ],
+    competitorStrengths: [
+      {
+        title: "Continuous, org-wide monitoring as a managed program",
+        body: "Vanta's reach goes far beyond an app: it integrates across cloud, HR, device, and vendor systems and continuously monitors them, flagging drift the moment it happens. Caisson does not do continuous org-wide monitoring — for that, Vanta is genuinely the leader.",
+      },
+      {
+        title: "The whole audit workflow, run for you",
+        body: "Auditor coordination, a hosted Trust Center, automated questionnaires, and the broadest framework catalog turn the audit from a fire drill into a managed program. That operational layer is real and is not something a code library provides.",
+      },
+    ],
+    caissonLine: [
+      {
+        title: "Vanta watches the controls; Caisson is the controls",
+        body: "A monitor inspects code it didn't write. Caisson ships the technical controls themselves — fail-closed RLS with isolation tests, a hash-chained audit trail, WORM storage, and an evidence-pack generator — as source in your codebase, wired and CI-tested before the assessor asks.",
+      },
+      {
+        title: "Own vs rent, and not a substitute",
+        body: "Caisson is a one-time perpetual license you own the source of; Vanta is a subscription. And Caisson does not monitor your HR, devices, or vendors or manage your auditor — it is the earlier layer, the controls a platform grades.",
+      },
+    ],
+    rows: [
+      {
+        label: GRC.monitor,
+        caisson: "from your own app code",
+        competitor: true,
+      },
+      { label: GRC.auditWorkflow, caisson: false, competitor: true },
+      { label: GRC.trustCenter, caisson: false, competitor: true },
+      { label: GRC.tprm, caisson: false, competitor: true },
+      { label: SUBSTRATE.rls, caisson: true, competitor: false },
+      { label: SUBSTRATE.worm, caisson: true, competitor: false },
+      { label: SUBSTRATE.evidence, caisson: true, competitor: false },
+      { label: SUBSTRATE.fieldCrypto, caisson: true, competitor: false },
+      {
+        label: "License model",
+        caisson: "One-time perpetual, own the source",
+        competitor: "Annual subscription",
+      },
+    ],
+    whenPickCompetitor:
+      "You need continuous org-wide monitoring, an auditor and Trust Center workflow, questionnaire automation, and vendor risk — the audit program run as a service.",
+    whenPickCaisson:
+      "You want the technical controls — RLS with isolation tests, a WORM audit trail, and OSCAL evidence — as code you own and test in CI, one-time, rather than rented monitoring of code you still have to write.",
+    whenBoth:
+      "The common reality: implement the controls with Caisson and monitor the rest of your stack plus run the audit with Vanta — the evidence Caisson emits from your own code feeds the platform.",
+    faq: [
+      {
+        question: "Is Caisson a Vanta alternative?",
+        answer:
+          "Not directly — they operate at different layers and most teams that use one can use both. Vanta is a GRC platform that monitors your stack and runs the audit workflow; Caisson is the code that implements the technical controls Vanta inspects. Caisson doesn't replace continuous monitoring or your auditor, and Vanta doesn't ship the RLS, audit chain, or evidence generator that live in your codebase.",
+      },
+      {
+        question: "Does Caisson replace Vanta's continuous monitoring?",
+        answer:
+          "No. Caisson is not a monitoring service — it is the controls themselves, as source you own. It generates OSCAL-exportable evidence from your own code, but it does not watch your cloud, HR, devices, or vendors the way Vanta does. For continuous org-wide monitoring, Vanta (or a peer) is the right tool, and Caisson feeds it evidence.",
+      },
+      {
+        question: "Own vs rent — how do the costs compare?",
+        answer:
+          "Vanta is an annual subscription that renews for as long as you need to stay audit-ready; its live site lists no public self-serve price and is quote-based as of 2026-07-07. Caisson's Compliance bundle is a one-time perpetual license — see the licensing section for the live figure — and you own the source. They cover different costs: rented monitoring versus owned controls.",
+      },
+    ],
+  },
+  // ---------------------------------------------------------------------------------------------
+  {
+    slug: "drata",
+    competitor: "Drata",
+    competitorUrl: "https://drata.com",
+    category: "Compliance automation platform (GRC SaaS)",
+    metaTitle: "Caisson vs Drata",
+    metaDescription:
+      "Drata automates compliance with continuous monitoring, control cross-mapping, and an audit hub; Caisson is the code that implements the controls it collects evidence from — fail-closed RLS, a WORM audit trail, and OSCAL packs you own. An honest, dated comparison.",
+    answer:
+      "Different layers, and often both. Drata is a deep GRC automation platform: continuous control monitoring, automatic control cross-mapping across frameworks, evidence collection, a Trust Center, and questionnaire automation — a subscription that keeps you continuously audit-ready. Caisson is the code that implements the controls Drata monitors: fail-closed Postgres RLS with isolation tests, a WORM + hash-chained audit trail, per-tenant field encryption, and OSCAL evidence packs — one-time, in your own codebase. Drata proves and cross-maps your posture; Caisson is the posture, as source.",
+    heroLede:
+      "Drata automates and cross-maps your compliance program. Caisson is the controls in your codebase it collects from. These compose — here is the honest line.",
+    competitorPrice: "No public self-serve pricing — quote-based (get started)",
+    competitorLicense: "Annual SaaS subscription (recurring).",
+    competitorFacts: [
+      "A GRC / trust-management platform advertising 8,500+ customers and a 4.8 G2 rating on its live site (verified 2026-07-07).",
+      "Continuous monitoring, automated evidence collection, and control cross-mapping so one control maps across multiple frameworks and stays audit-ready.",
+      "A Trust Center, questionnaire automation, and third-party risk management, increasingly driven by autonomous AI agents.",
+      "Connects to your stack and collects evidence from it; it does not ship the application controls that produce that evidence.",
+    ],
+    competitorStrengths: [
+      {
+        title: "Deep automation and control cross-mapping",
+        body: "Drata's strength is breadth of automation: map a control once and reuse it across frameworks, with continuous monitoring and guided remediation. For a team scaling from one framework to several, that cross-mapping is a genuine time-saver Caisson does not attempt.",
+      },
+      {
+        title: "A full audit hub and Trust Center",
+        body: "Evidence collection, an audit hub, a Trust Center, and questionnaire automation run the ongoing program. That operational layer — the workflow around an audit — is real and is not what a code library provides.",
+      },
+    ],
+    caissonLine: [
+      {
+        title: "Drata collects the evidence; Caisson produces it",
+        body: "Drata pulls evidence from the systems you built. Caisson is those systems' controls — fail-closed RLS with isolation tests, a hash-chained audit trail, and an evidence-pack generator — as source you own, CI-tested on every push, emitting OSCAL evidence a platform can ingest.",
+      },
+      {
+        title: "One-time, and not a substitute",
+        body: "Caisson is a one-time perpetual license you own the source of; Drata is a subscription. Caisson does not cross-map frameworks across your org or manage your auditor — it is the earlier layer, the implemented controls.",
+      },
+    ],
+    rows: [
+      {
+        label: GRC.monitor,
+        caisson: "from your own app code",
+        competitor: true,
+      },
+      { label: GRC.auditWorkflow, caisson: false, competitor: true },
+      { label: GRC.trustCenter, caisson: false, competitor: true },
+      { label: GRC.tprm, caisson: false, competitor: true },
+      { label: SUBSTRATE.rls, caisson: true, competitor: false },
+      { label: SUBSTRATE.worm, caisson: true, competitor: false },
+      { label: SUBSTRATE.evidence, caisson: true, competitor: false },
+      { label: SUBSTRATE.fieldCrypto, caisson: true, competitor: false },
+      {
+        label: "License model",
+        caisson: "One-time perpetual, own the source",
+        competitor: "Annual subscription",
+      },
+    ],
+    whenPickCompetitor:
+      "You need continuous monitoring, control cross-mapping across many frameworks, an audit hub, and a Trust Center — the audit program automated and run for you.",
+    whenPickCaisson:
+      "You want the implemented controls — RLS with isolation tests, a WORM audit trail, and OSCAL evidence — as code you own and test in CI, one-time.",
+    whenBoth:
+      "Implement the controls with Caisson and automate the program with Drata — Caisson emits the OSCAL evidence Drata would otherwise collect from your stack.",
+    faq: [
+      {
+        question: "Is Caisson a Drata alternative?",
+        answer:
+          "They sit at different layers and commonly coexist. Drata is a GRC platform that monitors your stack and cross-maps controls across frameworks; Caisson is the code that implements the controls it collects evidence from. Caisson doesn't replace Drata's monitoring or audit hub, and Drata doesn't ship the RLS, audit chain, or evidence generator that live in your codebase.",
+      },
+      {
+        question: "Does Caisson do control cross-mapping like Drata?",
+        answer:
+          "Caisson ships framework mappings as code — SOC 2, HIPAA, and EU AI Act controls with OSCAL export — so the evidence packs render against named clauses. It does not run continuous, org-wide control cross-mapping across your whole stack the way Drata's platform does; that program-level automation is Drata's strength, and Caisson feeds it evidence.",
+      },
+      {
+        question: "How do the pricing models differ?",
+        answer:
+          "Drata is an annual subscription with no public self-serve price, quote-based as of 2026-07-07. Caisson's Compliance bundle is a one-time perpetual license — the live figure is in the licensing section — where you own the source. One rents automation of your program; the other is the owned controls underneath it.",
+      },
+    ],
+  },
+  // ---------------------------------------------------------------------------------------------
+  {
+    slug: "secureframe",
+    competitor: "Secureframe",
+    competitorUrl: "https://secureframe.com",
+    category: "Compliance automation platform (GRC SaaS)",
+    metaTitle: "Caisson vs Secureframe",
+    metaDescription:
+      "Secureframe automates multi-framework compliance — including CMMC/defense — with continuous monitoring and AI remediation; Caisson is the code that implements the controls it checks: fail-closed RLS, a WORM audit trail, and OSCAL packs you own. An honest, dated comparison.",
+    answer:
+      "Different halves of the same problem. Secureframe is a multi-framework GRC platform: automated evidence collection, continuous monitoring, personnel and vendor and asset management, AI remediation, and a defense-focused CMMC track — a subscription that manages the compliance program. Caisson is the code that implements the technical controls Secureframe verifies: fail-closed Postgres RLS with isolation tests, a WORM + hash-chained audit trail, per-tenant field encryption, and OSCAL evidence packs — one-time, in your codebase. Secureframe runs the program; Caisson is the controls it inspects.",
+    heroLede:
+      "Secureframe manages a multi-framework compliance program. Caisson is the controls in your codebase it verifies. These compose — here is the honest line.",
+    competitorPrice:
+      "No public self-serve pricing — quote-based (schedule a demo)",
+    competitorLicense: "Annual SaaS subscription (recurring).",
+    competitorFacts: [
+      "A GRC platform advertising 6,000+ customers on its live site (verified 2026-07-07), with automated evidence collection and continuous monitoring.",
+      "Broad framework coverage — SOC 2, ISO 27001, HIPAA, PCI DSS, GDPR, NIST — plus a purpose-built CMMC / defense (Secureframe Defense) track for the Defense Industrial Base.",
+      "Personnel management, vendor management, vendor access, and asset inventory, with AI-assisted remediation and risk (Comply AI).",
+      "Connects to your stack to test and monitor it; it does not ship the application controls it checks for.",
+    ],
+    competitorStrengths: [
+      {
+        title: "Broad framework coverage as a managed service",
+        body: "Secureframe's range — from SOC 2 and ISO 27001 to a dedicated CMMC track for defense contractors — plus continuous monitoring and expert support is a genuine, wide-coverage program Caisson does not attempt to run.",
+      },
+      {
+        title: "Org-wide management: people, vendors, assets",
+        body: "Personnel, vendor, and asset management with AI-assisted remediation covers the organizational side of compliance — the parts outside the application entirely. That breadth is real and is not what a code library delivers.",
+      },
+    ],
+    caissonLine: [
+      {
+        title: "Secureframe checks the controls; Caisson implements them",
+        body: "Its automated tests inspect the systems you built. Caisson is those controls — fail-closed RLS with isolation tests, a hash-chained audit trail, WORM storage, and an evidence-pack generator — as source you own, CI-tested, emitting OSCAL evidence the platform can ingest.",
+      },
+      {
+        title: "Framework mappings as code you own, one-time",
+        body: "Secureframe delivers framework coverage as a subscription service; Caisson delivers SOC 2 / HIPAA / EU AI Act mappings as code with OSCAL export, one-time and owned. It does not manage your personnel, vendors, or auditor — it is the earlier, implemented layer.",
+      },
+    ],
+    rows: [
+      {
+        label: GRC.monitor,
+        caisson: "from your own app code",
+        competitor: true,
+      },
+      { label: GRC.auditWorkflow, caisson: false, competitor: true },
+      {
+        label: "Personnel / vendor / asset management",
+        caisson: false,
+        competitor: true,
+      },
+      { label: GRC.tprm, caisson: false, competitor: true },
+      { label: SUBSTRATE.rls, caisson: true, competitor: false },
+      { label: SUBSTRATE.worm, caisson: true, competitor: false },
+      { label: SUBSTRATE.evidence, caisson: true, competitor: false },
+      { label: SUBSTRATE.fieldCrypto, caisson: true, competitor: false },
+      {
+        label: "License model",
+        caisson: "One-time perpetual, own the source",
+        competitor: "Annual subscription",
+      },
+    ],
+    whenPickCompetitor:
+      "You need a managed multi-framework program with continuous monitoring, personnel/vendor/asset management, or a CMMC / defense track — compliance run as a service across your org.",
+    whenPickCaisson:
+      "You want the implemented technical controls — RLS with isolation tests, a WORM audit trail, and OSCAL evidence — as code you own and test in CI, one-time.",
+    whenBoth:
+      "Implement the controls with Caisson and run the org-wide program with Secureframe — Caisson emits the evidence Secureframe would otherwise collect from your application.",
+    faq: [
+      {
+        question: "Is Caisson a Secureframe alternative?",
+        answer:
+          "They address different layers and often coexist. Secureframe is a GRC platform that monitors your stack, manages personnel and vendors, and runs a multi-framework program; Caisson is the code that implements the technical controls it checks. Caisson doesn't manage your org or replace continuous monitoring, and Secureframe doesn't ship the RLS, audit chain, or evidence generator in your codebase.",
+      },
+      {
+        question: "Does Caisson cover CMMC or defense like Secureframe?",
+        answer:
+          "No. Secureframe's CMMC / defense track is a purpose-built program for the Defense Industrial Base, which Caisson does not offer. Caisson ships SOC 2, HIPAA, and EU AI Act mappings with OSCAL export as code you own; for CMMC-specific program management, Secureframe (or a peer) is the fit, and Caisson can supply implemented controls beneath it.",
+      },
+      {
+        question: "How do the two price?",
+        answer:
+          "Secureframe is an annual subscription with no public self-serve price, quote-based as of 2026-07-07. Caisson's Compliance bundle is a one-time perpetual license — see the licensing section for the live figure — with the source owned. One rents program management; the other is the owned controls underneath.",
+      },
+    ],
+  },
+  // ---------------------------------------------------------------------------------------------
+  {
+    slug: "sprinto",
+    competitor: "Sprinto",
+    competitorUrl: "https://sprinto.com",
+    category: "Compliance automation platform (GRC SaaS)",
+    metaTitle: "Caisson vs Sprinto",
+    metaDescription:
+      "Sprinto is a startup-focused autonomous trust platform that scopes and runs your first SOC 2; Caisson is the code that implements the controls it monitors — fail-closed RLS, a WORM audit trail, and OSCAL packs you own. An honest, dated comparison.",
+    answer:
+      "Different layers, and a startup often wants both. Sprinto is an autonomous trust platform aimed at fast-moving startups: it scopes your SOC 2, ISO 27001, or HIPAA program, connects to your systems, closes gaps, and runs continuous compliance across 200+ frameworks — a subscription acting as your compliance operator. Caisson is the code that implements the controls Sprinto monitors: fail-closed Postgres RLS with isolation tests, a WORM + hash-chained audit trail, per-tenant field encryption, and OSCAL evidence packs — one-time, in your codebase. Sprinto runs the program; Caisson is the controls it validates.",
+    heroLede:
+      "Sprinto is the guided first-compliance operator for startups. Caisson is the controls in your codebase it monitors. These compose — here is the honest line.",
+    competitorPrice: "No public self-serve pricing — quote-based (book a demo)",
+    competitorLicense: "Annual SaaS subscription (recurring).",
+    competitorFacts: [
+      "An autonomous trust / GRC platform advertising 3,000+ companies from Series A to enterprise (verified 2026-07-07), positioned as a startup's first compliance operator.",
+      "Scopes and runs SOC 2, ISO 27001, and HIPAA programs across 200+ frameworks, connecting to your systems and closing gaps with continuous monitoring.",
+      "Autonomous third-party risk management and AI governance — it detects change, determines risk, and acts, with you approving decisions.",
+      "Connects to and monitors your systems; it does not ship the application controls it checks.",
+    ],
+    competitorStrengths: [
+      {
+        title: "A guided first-SOC-2 operator for startups",
+        body: "Sprinto's positioning is genuine leverage for an early team with no compliance owner: it scopes the program, connects to your systems, and drives you to audit readiness. For getting a first SOC 2 fast without hiring, that guided-operator model is a real strength.",
+      },
+      {
+        title: "Continuous program automation and AI governance",
+        body: "Continuous monitoring, autonomous TPRM, and AI-governance coverage across 200+ frameworks keep the program running as you scale. That ongoing operational layer is not something a code library provides.",
+      },
+    ],
+    caissonLine: [
+      {
+        title: "Sprinto runs the program; Caisson is the controls",
+        body: "Sprinto monitors and closes gaps in the systems you built. Caisson is those controls — fail-closed RLS with isolation tests, a hash-chained audit trail, WORM storage, and an evidence-pack generator — shipped pre-wired in code and CI-tested on every push, before a platform grades them.",
+      },
+      {
+        title: "One-time and owned, not a subscription operator",
+        body: "Caisson is a one-time perpetual license you own the source of; Sprinto is a subscription that runs your program. Caisson does not scope your org, monitor vendors, or manage your auditor — it is the implemented layer beneath the operator.",
+      },
+    ],
+    rows: [
+      {
+        label: GRC.monitor,
+        caisson: "from your own app code",
+        competitor: true,
+      },
+      { label: GRC.auditWorkflow, caisson: false, competitor: true },
+      { label: GRC.trustCenter, caisson: false, competitor: true },
+      { label: GRC.tprm, caisson: false, competitor: true },
+      { label: SUBSTRATE.rls, caisson: true, competitor: false },
+      { label: SUBSTRATE.worm, caisson: true, competitor: false },
+      { label: SUBSTRATE.evidence, caisson: true, competitor: false },
+      { label: SUBSTRATE.fieldCrypto, caisson: true, competitor: false },
+      {
+        label: "License model",
+        caisson: "One-time perpetual, own the source",
+        competitor: "Annual subscription",
+      },
+    ],
+    whenPickCompetitor:
+      "You are an early team with no compliance owner and want a guided operator to scope and run your first SOC 2 / ISO 27001, with continuous monitoring and vendor risk handled for you.",
+    whenPickCaisson:
+      "You want the implemented controls — RLS with isolation tests, a WORM audit trail, and OSCAL evidence — as code you own and test in CI, one-time.",
+    whenBoth:
+      "Let Sprinto scope and run the program while Caisson implements the controls in your app — the OSCAL evidence Caisson emits is what Sprinto validates and presents.",
+    faq: [
+      {
+        question: "Is Caisson a Sprinto alternative?",
+        answer:
+          "They work at different layers and a startup often uses both. Sprinto is a platform that scopes and runs your compliance program and monitors your systems; Caisson is the code that implements the controls it validates. Caisson doesn't scope your org or replace continuous monitoring, and Sprinto doesn't ship the RLS, audit chain, or evidence generator that live in your codebase.",
+      },
+      {
+        question: "Does Caisson get me my first SOC 2 like Sprinto?",
+        answer:
+          "Not on its own. Caisson ships the technical controls and generates the evidence a SOC 2 requires, wired and tested from day one — but it does not scope your program, coordinate your auditor, or manage organizational controls. Sprinto runs that program; Caisson makes the technical evidence real for it to present. You still need an audit.",
+      },
+      {
+        question: "How do the pricing models compare?",
+        answer:
+          "Sprinto is an annual subscription with no public self-serve price, quote-based as of 2026-07-07. Caisson's Compliance bundle is a one-time perpetual license — the live figure is in the licensing section — with the source owned. One rents a running program; the other is the owned controls it runs on.",
+      },
+    ],
+  },
+  // ---------------------------------------------------------------------------------------------
+  {
+    slug: "scytale",
+    competitor: "Scytale",
+    competitorUrl: "https://scytale.ai",
+    category: "Compliance automation platform (GRC SaaS)",
+    metaTitle: "Caisson vs Scytale",
+    metaDescription:
+      "Scytale is an AI GRC platform with human experts across 80+ frameworks, continuous monitoring, and built-in pentesting; Caisson is the code that implements the controls it monitors — fail-closed RLS, a WORM audit trail, and OSCAL packs you own. An honest, dated comparison.",
+    answer:
+      "Different layers, frequently both. Scytale is an AI GRC platform paired with human experts: it automates compliance across 80+ frameworks with seamless cross-mapping, continuous control monitoring, a Trust Center, and even a built-in penetration-testing model — a subscription that runs your program end to end. Caisson is the code that implements the controls Scytale monitors: fail-closed Postgres RLS with isolation tests, a WORM + hash-chained audit trail, per-tenant field encryption, and OSCAL evidence packs — one-time, in your codebase. Scytale gives you framework breadth and experts; Caisson gives you implementation depth you own.",
+    heroLede:
+      "Scytale is broad-framework AI GRC with human experts. Caisson is the controls in your codebase it monitors. These compose — here is the honest line.",
+    competitorPrice: "No public self-serve pricing — quote-based (book a demo)",
+    competitorLicense: "Annual SaaS subscription (recurring).",
+    competitorFacts: [
+      "An AI GRC platform advertising 1,000+ companies and a 4.8 rating (verified 2026-07-07), pairing automation with dedicated human GRC experts.",
+      "Supports 80+ security, privacy, and AI frameworks — SOC 2, ISO 27001, ISO 42001, HIPAA, PCI DSS, GDPR, CMMC — with built-in control cross-mapping.",
+      "Agentic GRC that collects evidence and monitors controls continuously, plus a Trust Center and an integrated offensive-security / penetration-testing model.",
+      "Connects to and monitors your stack; it does not ship the application controls it evaluates.",
+    ],
+    competitorStrengths: [
+      {
+        title: "Broad framework coverage plus human experts",
+        body: "Scytale's 80+ frameworks with cross-mapping, backed by dedicated GRC experts, is a wide, guided program. For a team that wants many frameworks and hands-on expert help, that breadth-plus-service combination is a genuine strength Caisson does not offer.",
+      },
+      {
+        title: "Built-in penetration testing",
+        body: "An integrated offensive-security / pentesting model inside the compliance platform is a distinctive capability — an end-to-end automated testing cycle most GRC tools leave to a separate vendor. That is real and outside a code library's scope.",
+      },
+    ],
+    caissonLine: [
+      {
+        title: "Scytale monitors the controls; Caisson implements them",
+        body: "Its agents collect evidence from the systems you built. Caisson is those controls — fail-closed RLS with isolation tests, a hash-chained audit trail, WORM storage, and an evidence-pack generator — as source you own, CI-tested, emitting OSCAL evidence a platform can ingest.",
+      },
+      {
+        title: "Depth of implementation, owned one-time",
+        body: "Scytale sells framework breadth and expert service as a subscription; Caisson ships the depth — the actual RLS, audit, and evidence code — one-time and owned. It does not run pentests, provide GRC experts, or manage your auditor; it is the implemented layer beneath.",
+      },
+    ],
+    rows: [
+      {
+        label: GRC.monitor,
+        caisson: "from your own app code",
+        competitor: true,
+      },
+      { label: GRC.auditWorkflow, caisson: false, competitor: true },
+      {
+        label: "Built-in penetration testing",
+        caisson: false,
+        competitor: true,
+      },
+      { label: GRC.trustCenter, caisson: false, competitor: true },
+      { label: SUBSTRATE.rls, caisson: true, competitor: false },
+      { label: SUBSTRATE.worm, caisson: true, competitor: false },
+      { label: SUBSTRATE.evidence, caisson: true, competitor: false },
+      { label: SUBSTRATE.fieldCrypto, caisson: true, competitor: false },
+      {
+        label: "License model",
+        caisson: "One-time perpetual, own the source",
+        competitor: "Annual subscription",
+      },
+    ],
+    whenPickCompetitor:
+      "You want breadth across many frameworks with hands-on human experts, cross-mapping, and built-in penetration testing — a guided program run as a service.",
+    whenPickCaisson:
+      "You want the implemented controls — RLS with isolation tests, a WORM audit trail, and OSCAL evidence — as code you own and test in CI, one-time.",
+    whenBoth:
+      "Run the multi-framework program and pentests with Scytale while Caisson implements the controls in your app — Caisson emits the OSCAL evidence Scytale monitors and presents.",
+    faq: [
+      {
+        question: "Is Caisson a Scytale alternative?",
+        answer:
+          "They sit at different layers and commonly coexist. Scytale is an AI GRC platform with human experts that monitors your stack across 80+ frameworks; Caisson is the code that implements the controls it monitors. Caisson doesn't provide experts, pentesting, or continuous monitoring, and Scytale doesn't ship the RLS, audit chain, or evidence generator in your codebase.",
+      },
+      {
+        question: "Does Caisson include penetration testing like Scytale?",
+        answer:
+          "No. Scytale's integrated offensive-security / pentesting model is a platform capability Caisson does not offer. Caisson ships the technical controls and OSCAL evidence as code you own; for penetration testing and multi-framework program management, Scytale (or a peer) is the fit, and Caisson supplies the implemented controls beneath it.",
+      },
+      {
+        question: "How do the two price?",
+        answer:
+          "Scytale is an annual subscription with no public self-serve price, quote-based as of 2026-07-07. Caisson's Compliance bundle is a one-time perpetual license — see the licensing section for the live figure — with the source owned. One rents breadth and expertise; the other is the owned depth underneath.",
+      },
+    ],
+  },
+  // ---------------------------------------------------------------------------------------------
+  {
+    slug: "thoropass",
+    competitor: "Thoropass",
+    competitorUrl: "https://thoropass.com",
+    category: "Compliance platform + in-house auditor (GRC SaaS)",
+    metaTitle: "Caisson vs Thoropass",
+    metaDescription:
+      "Thoropass bundles the compliance software AND the auditor under one roof, with AI-driven evidence collection; Caisson is the code that implements the controls the audit examines — fail-closed RLS, a WORM audit trail, and OSCAL packs you own. An honest, dated comparison.",
+    answer:
+      "Different layers, and a natural pairing. Thoropass is distinctive among GRC platforms: it bundles the compliance software AND the audit itself under one roof — in-house auditors plus AI-driven evidence collection across SOC 2, ISO 27001, HIPAA, PCI DSS, and HITRUST. Caisson is the code that implements the controls that audit examines: fail-closed Postgres RLS with isolation tests, a WORM + hash-chained audit trail, per-tenant field encryption, and OSCAL evidence packs — one-time, in your codebase. Thoropass gives you the audit path end to end; Caisson gives you the controls the auditor inspects.",
+    heroLede:
+      "Thoropass bundles the software and the auditor in one place. Caisson is the controls in your codebase the audit examines. These compose — here is the honest line.",
+    competitorPrice:
+      "No public self-serve pricing — quote-based (start your audit)",
+    competitorLicense:
+      "Annual SaaS subscription + audit engagement (recurring).",
+    competitorFacts: [
+      "A compliance platform trusted by 1,000+ organizations (verified 2026-07-07) that combines audit software with in-house audit experts — the auditor and the tooling under one roof.",
+      "Covers SOC 2, ISO 27001, GDPR, PCI DSS, HITRUST, and HIPAA with real-time control views and automated validation.",
+      "AI-powered evidence collection paired with an auditor-led model — the assurance team performs the audit, not just the prep.",
+      "Runs the audit and collects evidence from your stack; it does not ship the application controls the audit examines.",
+    ],
+    competitorStrengths: [
+      {
+        title: "The auditor and the software in one place",
+        body: "Thoropass's differentiator is genuine: it bundles in-house auditors with the compliance tooling, so audit prep and the audit itself live under one roof. For a team that wants a single accountable path to a signed report, that is a real advantage no code library offers.",
+      },
+      {
+        title: "Auditor-led, AI-powered evidence collection",
+        body: "Experienced assurance partners plus AI-driven evidence collection reduce the lift on your team and shorten the cycle. That end-to-end audit service is real and is well outside what Caisson provides.",
+      },
+    ],
+    caissonLine: [
+      {
+        title: "Thoropass audits the controls; Caisson implements them",
+        body: "Its auditors and agents examine the systems you built. Caisson is those controls — fail-closed RLS with isolation tests, a hash-chained audit trail, WORM storage, and an evidence-pack generator — as source you own, CI-tested, emitting OSCAL evidence an auditor can review.",
+      },
+      {
+        title: "Own the evidence pipeline, one-time",
+        body: "Thoropass sells the audit path and evidence collection as a service; Caisson ships the evidence pipeline itself — the code that produces byte-stable OSCAL packs — one-time and owned. It does not perform your audit or sign your report; it is the implemented layer the auditor inspects.",
+      },
+    ],
+    rows: [
+      {
+        label: GRC.monitor,
+        caisson: "from your own app code",
+        competitor: true,
+      },
+      {
+        label: "In-house auditor / signed audit engagement",
+        caisson: false,
+        competitor: true,
+      },
+      { label: GRC.auditWorkflow, caisson: false, competitor: true },
+      { label: SUBSTRATE.rls, caisson: true, competitor: false },
+      { label: SUBSTRATE.worm, caisson: true, competitor: false },
+      { label: SUBSTRATE.evidence, caisson: true, competitor: false },
+      { label: SUBSTRATE.fieldCrypto, caisson: true, competitor: false },
+      { label: SUBSTRATE.signing, caisson: true, competitor: false },
+      {
+        label: "License model",
+        caisson: "One-time perpetual, own the source",
+        competitor: "Subscription + audit engagement",
+      },
+    ],
+    whenPickCompetitor:
+      "You want a single accountable path to a signed audit — the compliance software and the auditor bundled, with evidence collection handled for you.",
+    whenPickCaisson:
+      "You want the implemented controls and evidence pipeline — RLS with isolation tests, a WORM audit trail, and OSCAL evidence — as code you own and test in CI, one-time.",
+    whenBoth:
+      "Implement the controls with Caisson and take the audit path with Thoropass — the OSCAL evidence Caisson emits is what Thoropass's auditors examine and validate.",
+    faq: [
+      {
+        question: "Is Caisson a Thoropass alternative?",
+        answer:
+          "They operate at different layers and pair naturally. Thoropass bundles the audit software and the auditor and collects evidence from your stack; Caisson is the code that implements the controls the audit examines. Caisson does not perform or sign an audit, and Thoropass does not ship the RLS, audit chain, or evidence generator that live in your codebase.",
+      },
+      {
+        question: "Does Caisson replace the auditor Thoropass provides?",
+        answer:
+          "No. Caisson ships the technical controls and generates the evidence an audit requires, but the audit itself, the auditor, and the signed report stay separate — Thoropass's in-house auditors are exactly that service. No codebase can certify you. Caisson makes the technical evidence real and ready before the assessor asks.",
+      },
+      {
+        question: "How do the two price?",
+        answer:
+          "Thoropass is a subscription plus an audit engagement, with no public self-serve price, quote-based as of 2026-07-07. Caisson's Compliance bundle is a one-time perpetual license — the live figure is in the licensing section — with the source owned. One is the audit path as a service; the other is the owned controls the audit examines.",
+      },
+    ],
+  },
+  // ---------------------------------------------------------------------------------------------
+  {
+    slug: "delve",
+    competitor: "Delve",
+    competitorUrl: "https://delve.co",
+    category: "AI-native compliance platform (GRC SaaS)",
+    metaTitle: "Caisson vs Delve",
+    metaDescription:
+      "Delve is an AI-native compliance platform whose agents auto-collect evidence with expert Slack support; Caisson is the code that implements the controls it evaluates — fail-closed RLS, a WORM audit trail, and deterministic OSCAL packs you own. An honest, dated comparison.",
+    answer:
+      "Different layers, often paired. Delve is an AI-native compliance platform: autonomous agents gather screenshot evidence, fill out security questionnaires, and scan your infrastructure daily, backed by 1:1 Slack support from security experts — a subscription positioned as a compliance partner. Caisson is the code that implements the controls Delve evaluates: fail-closed Postgres RLS with isolation tests, a WORM + hash-chained audit trail, per-tenant field encryption, and deterministic OSCAL evidence packs — one-time, in your codebase. Delve collects evidence with AI; Caisson produces deterministic evidence from your own code.",
+    heroLede:
+      "Delve's AI agents collect your evidence and answer questionnaires. Caisson is the controls in your codebase they evaluate. These compose — here is the honest line.",
+    competitorPrice: "No public self-serve pricing — quote-based (book a demo)",
+    competitorLicense: "Annual SaaS subscription (recurring).",
+    competitorFacts: [
+      "An AI-native compliance platform whose autonomous agents auto-collect evidence, take screenshots, fill security questionnaires, and scan infrastructure daily (verified 2026-07-07).",
+      "Covers SOC 2, HIPAA, GDPR, ISO 27001, and FedRAMP, and customizes controls to your team, integrations, and risk tolerance.",
+      "Positions itself as a compliance partner, not just software — 1:1 Slack support with security experts responding in minutes, plus a free trust center.",
+      "Connects to and scans your infrastructure; it does not ship the application controls it evaluates.",
+    ],
+    competitorStrengths: [
+      {
+        title: "AI-native evidence collection with expert support",
+        body: "Delve's autonomous agents handling screenshots, questionnaires, and daily scans — backed by fast 1:1 expert Slack support — is a genuinely modern, low-lift onboarding. For a team that wants compliance busywork off their plate quickly, that AI-plus-human model is a real strength.",
+      },
+      {
+        title: "Customized controls and a partner posture",
+        body: "Tailoring controls to your stack and risk tolerance, with experts on hand, is more hands-on than a pure self-serve tool. That partner posture is real and is not what a code library provides.",
+      },
+    ],
+    caissonLine: [
+      {
+        title: "Delve collects evidence; Caisson produces it deterministically",
+        body: "Delve's agents gather evidence from the systems you built, screenshot by screenshot. Caisson is those controls — fail-closed RLS with isolation tests, a hash-chained audit trail, and an evidence-pack generator that emits byte-stable OSCAL — as source you own, CI-tested on every push, so the evidence is reproducible rather than re-collected.",
+      },
+      {
+        title: "Deterministic, owned, one-time",
+        body: "AI-collected evidence is only as reproducible as the run that gathered it; Caisson's evidence packs are deterministic and versioned in your repo. And Caisson is one-time and owned, not a subscription — it does not monitor your org or manage your auditor.",
+      },
+    ],
+    rows: [
+      {
+        label: GRC.monitor,
+        caisson: "from your own app code",
+        competitor: true,
+      },
+      {
+        label: "AI agents auto-collect evidence + answer questionnaires",
+        caisson: "deterministic OSCAL packs",
+        competitor: true,
+      },
+      { label: GRC.trustCenter, caisson: false, competitor: true },
+      { label: GRC.auditWorkflow, caisson: false, competitor: true },
+      { label: SUBSTRATE.rls, caisson: true, competitor: false },
+      { label: SUBSTRATE.worm, caisson: true, competitor: false },
+      { label: SUBSTRATE.evidence, caisson: true, competitor: false },
+      { label: SUBSTRATE.fieldCrypto, caisson: true, competitor: false },
+      {
+        label: "License model",
+        caisson: "One-time perpetual, own the source",
+        competitor: "Annual subscription",
+      },
+    ],
+    whenPickCompetitor:
+      "You want AI agents to collect evidence and answer questionnaires with fast expert support — compliance busywork taken off your plate as a service.",
+    whenPickCaisson:
+      "You want the implemented controls and deterministic, reproducible evidence — RLS with isolation tests, a WORM audit trail, and byte-stable OSCAL packs — as code you own and test in CI, one-time.",
+    whenBoth:
+      "Let Delve run evidence collection and expert support while Caisson implements the controls in your app — the deterministic OSCAL evidence Caisson emits is stronger source material for Delve's agents to present.",
+    faq: [
+      {
+        question: "Is Caisson a Delve alternative?",
+        answer:
+          "They sit at different layers and can be used together. Delve is an AI-native platform whose agents collect evidence and scan your stack; Caisson is the code that implements the controls it evaluates. Caisson doesn't run AI evidence-collection agents or provide expert support, and Delve doesn't ship the RLS, audit chain, or evidence generator that live in your codebase.",
+      },
+      {
+        question:
+          "How is Caisson's evidence different from Delve's AI collection?",
+        answer:
+          "Delve's agents gather evidence from your systems — screenshots, questionnaire answers, scans. Caisson's evidence-pack generator produces deterministic, byte-stable OSCAL packs from your own code, versioned in your repo and re-runnable in CI. One is AI-collected and re-gathered per run; the other is reproducible and owned. They can feed each other.",
+      },
+      {
+        question: "How do the two price?",
+        answer:
+          "Delve is an annual subscription with no public self-serve price, quote-based as of 2026-07-07. Caisson's Compliance bundle is a one-time perpetual license — see the licensing section for the live figure — with the source owned. One rents AI-driven collection; the other is the owned controls that produce the evidence.",
+      },
+    ],
+  },
+  // ---------------------------------------------------------------------------------------------
+  // The closest philosophical comparable — both open-source, dev-owned. The honest distinction is
+  // platform-vs-library, monitors-vs-implements, and AGPLv3-copyleft-vs-Apache-permissive. Write it
+  // fairly: Comp AI is a real, capable open-source GRC platform.
+  {
+    slug: "comp-ai",
+    competitor: "Comp AI",
+    competitorUrl: "https://www.trycomp.ai",
+    category: "Open-source compliance automation platform (GRC)",
+    metaTitle: "Caisson vs Comp AI",
+    metaDescription:
+      "Comp AI is an open-source (AGPLv3) GRC platform you self-host to monitor your stack and collect evidence; Caisson is an Apache-2.0 infrastructure library that implements the controls a platform inspects — fail-closed RLS, a WORM audit trail, and OSCAL packs. An honest, dated comparison.",
+    answer:
+      "This is the closest philosophical comparable, and the honest distinction is platform vs library. Comp AI is an open-source (AGPLv3) GRC platform — self-hostable on Bun and Postgres, with 580+ integrations and AI agents that automate evidence collection and continuous monitoring across SOC 2, ISO 27001, HIPAA, and GDPR. Caisson is an Apache-2.0 infrastructure library you compose into your app: fail-closed Postgres RLS with isolation tests, a WORM + hash-chained audit trail, per-tenant field encryption, and OSCAL evidence packs — the controls a platform like Comp AI inspects. Comp AI is the compliance program you run; Caisson is the controls in the app it watches.",
+    heroLede:
+      "Comp AI is an open-source GRC platform you run. Caisson is an Apache-2.0 library that implements the controls a platform inspects. Both are dev-owned — here is the honest line.",
+    competitorPrice:
+      "Self-host: free, no license fee (AGPLv3) · managed cloud: quote-based",
+    competitorLicense:
+      "Open-core — the platform is AGPLv3 (a network-deployed derivative must be open-sourced); managed cloud is commercial.",
+    competitorFacts: [
+      "An open-source, AI-native GRC platform (github.com/trycompai/comp), self-hostable on Node 20+, Bun 1.1.36+, and PostgreSQL 15+ (verified 2026-07-07).",
+      "580+ integrations with AI agents that automate evidence collection, policy generation, and continuous monitoring across SOC 2, ISO 27001, HIPAA, GDPR, and FedRAMP; advertises 830+ companies.",
+      "1:1 Slack support with in-house experts and a live Trust Center to share compliance status with prospects.",
+      "Self-host has no license fee; the platform is AGPLv3 (copyleft), and managed cloud is a commercial, quote-based subscription.",
+    ],
+    competitorStrengths: [
+      {
+        title: "A genuinely open-source GRC platform you can self-host",
+        body: "Comp AI is a real, capable compliance platform whose code is open and self-hostable at no license fee — AI agents, 580+ integrations, continuous monitoring, and a Trust Center. For a team that wants to run its own dev-owned compliance program, that is a strong, honest offering Caisson does not replicate.",
+      },
+      {
+        title: "Automates the program end to end",
+        body: "Evidence collection, policy generation, continuous monitoring, and expert Slack support cover the whole compliance program. That operational breadth — running the audit workflow — is not what an infrastructure library does.",
+      },
+    ],
+    caissonLine: [
+      {
+        title:
+          "Platform vs library — Comp AI runs the program, Caisson is the controls",
+        body: "Comp AI is a platform you deploy to monitor your stack and collect evidence; Caisson is a library you compose into the app itself — fail-closed RLS with isolation tests, a hash-chained audit trail, WORM storage, and an evidence-pack generator. It is the code the platform inspects, not a second platform.",
+      },
+      {
+        title: "Apache-2.0 permissive vs AGPLv3 copyleft",
+        body: "Both are open-source, but the licenses differ where it matters: Caisson's Base is Apache-2.0 (permissive — no copyleft obligation on your product), while Comp AI's platform is AGPLv3, which requires open-sourcing a network-deployed derivative. For a commercial SaaS, that distinction is worth a legal read.",
+      },
+    ],
+    rows: [
+      {
+        label: GRC.monitor,
+        caisson: "from your own app code",
+        competitor: true,
+      },
+      { label: GRC.auditWorkflow, caisson: false, competitor: true },
+      { label: GRC.trustCenter, caisson: false, competitor: true },
+      {
+        label: "Form factor",
+        caisson: "Library you compose into your app",
+        competitor: "Platform you deploy",
+      },
+      {
+        label: "Open-source license",
+        caisson: "Apache-2.0 base (permissive)",
+        competitor: "AGPLv3 (copyleft)",
+      },
+      { label: SUBSTRATE.rls, caisson: true, competitor: false },
+      { label: SUBSTRATE.worm, caisson: true, competitor: false },
+      { label: SUBSTRATE.evidence, caisson: true, competitor: false },
+      { label: SUBSTRATE.fieldCrypto, caisson: true, competitor: false },
+    ],
+    whenPickCompetitor:
+      "You want to run your own open-source, self-hosted GRC platform — monitoring, evidence collection, and a Trust Center — and are comfortable with the AGPLv3 obligation.",
+    whenPickCaisson:
+      "You want the implemented controls — RLS with isolation tests, a WORM audit trail, and OSCAL evidence — as an Apache-2.0 library composed into your app, one-time and owned.",
+    whenBoth:
+      "Self-host Comp AI to run the program and use Caisson to implement the controls in your app — a fully dev-owned stack where Caisson emits the evidence Comp AI monitors and presents.",
+    faq: [
+      {
+        question: "Is Caisson a Comp AI alternative?",
+        answer:
+          "Partly, but they are different form factors. Comp AI is an open-source GRC platform you deploy to monitor your stack and run the audit workflow; Caisson is an infrastructure library you compose into the application itself. Caisson doesn't run continuous monitoring or a Trust Center, and Comp AI doesn't ship the RLS, audit chain, or field encryption that live inside your app. Many dev-owned teams would use both.",
+      },
+      {
+        question: "Both are open-source — what's the licensing difference?",
+        answer:
+          "It's the copyleft boundary. Comp AI's platform is AGPLv3, so a network-deployed derivative must be open-sourced — worth a legal review if you build a product on its codebase. Caisson's Base substrate is Apache-2.0 (permissive, no copyleft obligation on your product); its compliance modules are commercial one-time licenses. Same open-source spirit, materially different obligations for a commercial SaaS.",
+      },
+      {
+        question: "Does Caisson monitor my stack like Comp AI?",
+        answer:
+          "No. Caisson is not a monitoring platform — it is the controls as code you own, and it emits OSCAL-exportable evidence from your own app. Continuous monitoring, integrations, and the Trust Center are Comp AI's job. If you want a self-hosted program to watch your stack, run Comp AI; if you want the controls implemented in the app it watches, use Caisson.",
+      },
+    ],
+  },
+  // ---------------------------------------------------------------------------------------------
+  // Group C — build it yourself. No vendor to scrape: the honest source is Caisson's own committed
+  // /build-vs-buy analysis (competitorUrl), whose $80k / 6-9-month figure is the industry cost of a
+  // first SOC 2 (labeled as such, not a Caisson quote — ADR-0080 §4). No invented numbers.
+  {
+    slug: "build-in-house",
+    competitor: "building it in-house",
+    competitorUrl: "https://caisson.sh/build-vs-buy",
+    category: "The do-it-yourself path",
+    metaTitle: "Caisson vs building it in-house",
+    metaDescription:
+      "Build the compliance substrate yourself or own Caisson's source: an honest build-vs-buy look at fail-closed RLS, a WORM audit trail, a hash-chained audit log, and OSCAL export — the person-months to get them right vs a one-time perpetual license you still own.",
+    answer:
+      "The real default competitor is your own backlog. Building the compliance substrate yourself means writing fail-closed RLS, a tamper-evident audit chain, WORM evidence storage, and an evidence-pack generator from scratch — the load-bearing parts a regulated-SaaS team has to get exactly right the first time; the industry cost of a first SOC 2 built from zero is about $80k and 6–9 months. Caisson ships those controls as source you own, wired and CI-tested from day one, for a one-time perpetual license — and the Apache-2.0 base means you still own and can read every line. Build it if the domain is unusual enough that no library fits; own Caisson if you'd otherwise rebuild what already exists, tested.",
+    heroLede:
+      "Building the compliance substrate yourself is real work — months of it. Here is the honest build-vs-buy line, and where owning Caisson's source fits.",
+    competitorPrice:
+      "Your engineering time (industry: ~$80k, 6–9 months for a first SOC 2)",
+    competitorLicense: "You own everything you write; no purchase.",
+    competitorFacts: [
+      "The load-bearing controls to build from scratch: fail-closed RLS, a tamper-evident audit chain, WORM evidence storage, and an evidence-pack generator.",
+      "The industry cost of a first SOC 2 built from scratch is about $80k and 6–9 months — an industry figure, not a Caisson quote.",
+      "Retrofitting RLS, WORM, and an audit chain into a live database is months more than greenfielding them.",
+      "You still need an audit and your organizational controls — no codebase makes you compliant on its own.",
+    ],
+    competitorStrengths: [
+      {
+        title: "Exact fit and total control",
+        body: "Building it yourself means the controls fit your domain precisely, with no unused surface, and you understand every line because you wrote it. For a team with the security-engineering time and an unusual model, that control is a genuine advantage.",
+      },
+      {
+        title: "No license cost, no vendor dependency",
+        body: "There is nothing to buy and no third party in the loop. If your constraint is a zero software budget and full autonomy over the implementation, rolling your own is an honest, valid choice.",
+      },
+    ],
+    caissonLine: [
+      {
+        title: "The load-bearing parts are the easy ones to get subtly wrong",
+        body: "A missed RLS policy is a silent cross-tenant leak; an audit log that isn't truly append-only isn't evidence. Caisson ships these with isolation tests that assert a cross-tenant read fails and a hash-chain verifier that detects tamper — running in CI on every push, not just the day you wrote them.",
+      },
+      {
+        title: "You still own the source",
+        body: "Caisson isn't the opposite of owning your code. The Base substrate is Apache-2.0 and you get the source — you are buying the months of load-bearing work already done and tested, then extending it yourself, not renting a black box.",
+      },
+    ],
+    rows: [
+      {
+        label: "Exact fit to your domain model",
+        caisson: "partial",
+        competitor: true,
+      },
+      { label: "No software license cost", caisson: false, competitor: true },
+      {
+        label: "Wired and CI-tested on day one",
+        caisson: true,
+        competitor: false,
+      },
+      { label: SUBSTRATE.rls, caisson: true, competitor: "you build it" },
+      { label: SUBSTRATE.worm, caisson: true, competitor: "you build it" },
+      { label: SUBSTRATE.evidence, caisson: true, competitor: "you build it" },
+      {
+        label: "Maintained + framework-mapping updates",
+        caisson: true,
+        competitor: false,
+      },
+      {
+        label: "You own and can read every line",
+        caisson: true,
+        competitor: true,
+      },
+    ],
+    whenPickCompetitor:
+      "You have the security-engineering time, an unusual domain no library fits, and compliance is far enough out that months of build cost is acceptable.",
+    whenPickCaisson:
+      "You'd otherwise spend months rebuilding fail-closed RLS, WORM, a hash-chained audit trail, and OSCAL export that already exist, tested — and you still want to own and read the source.",
+    whenBoth:
+      "Own the load-bearing substrate from Caisson and build the domain-specific controls yourself on top — the Apache-2.0 base and full source mean it is not all-or-nothing.",
+    faq: [
+      {
+        question: "Isn't building it myself cheaper than buying Caisson?",
+        answer:
+          "Rarely, once you count the time. Building the controls from scratch runs about $80k and 6–9 months for a first SOC 2 — an industry figure, not a Caisson quote. The Compliance bundle is a one-time perpetual license (see the licensing section for the live figure) with the controls wired and tested on day one, and you still own the source. Retrofitting into a live database costs months more.",
+      },
+      {
+        question: "If I buy Caisson, do I still own my code?",
+        answer:
+          "Yes. Caisson's Base substrate is Apache-2.0 and you get the source — owning Caisson is not the opposite of owning your code. You are buying the months of load-bearing work already done and tested, then extending it yourself. Nothing is a black box, and nothing you bought stops working if you let an optional updates plan lapse.",
+      },
+      {
+        question: "Does either option make me compliant?",
+        answer:
+          "No — neither a hand-built substrate nor Caisson makes you SOC 2 or HIPAA compliant on its own. Both ship the technical controls; the audit itself and your organizational controls — HR, vendor management, incident response — stay yours. Caisson makes the technical evidence real, testable, and ready before the assessor asks; the compliance determination stays with your team and auditor.",
       },
     ],
   },
