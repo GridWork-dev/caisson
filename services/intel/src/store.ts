@@ -34,7 +34,29 @@ export interface Store {
     findingsCount: number,
     error?: string,
   ): Promise<void>;
+  /** Delete run-ledger rows older than the retention window — the housekeeping step that keeps
+   *  intel.runs (one row per watcher invocation, unbounded otherwise) from growing forever. */
+  pruneRuns(): Promise<void>;
+  /** Proves the connecting DSN role is actually isolated from commerce/public-schema tables —
+   *  resolves `true` when a read against `public.accounts` is REJECTED (isolation holds) and
+   *  `false` when it SUCCEEDS (the alarm case: the role can read commerce data). An opt-in
+   *  self-check, not a hard boot dependency — see server.ts. */
+  checkRoleIsolation(): Promise<boolean>;
   close(): Promise<void>;
+}
+
+/** Run-ledger retention window (intel.runs P3 housekeeping — unbounded growth otherwise). */
+const RUN_RETENTION_DAYS = 90;
+
+/** The minimal shape both `pg.Pool` and `PGlite` structurally satisfy — the seam that lets
+ *  `PostgresStore` run against a real Postgres connection string in production and against an
+ *  embedded PGlite instance in tests (the store-parity gate: a test passing against InMemoryStore
+ *  must also pass against the real SQL this class issues). */
+export interface PgQueryable {
+  query<T = Record<string, unknown>>(
+    sql: string,
+    params?: unknown[],
+  ): Promise<{ rows: T[] }>;
 }
 
 // ── in-memory store (tests) ────────────────────────────────────────────────────────────────
@@ -109,6 +131,12 @@ export class InMemoryStore implements Store {
   finishRun(): Promise<void> {
     return Promise.resolve();
   }
+  pruneRuns(): Promise<void> {
+    return Promise.resolve();
+  }
+  checkRoleIsolation(): Promise<boolean> {
+    return Promise.resolve(true);
+  }
   close(): Promise<void> {
     return Promise.resolve();
   }
@@ -116,17 +144,31 @@ export class InMemoryStore implements Store {
 
 // ── Postgres store (production) ──────────────────────────────────────────────────────────────
 export class PostgresStore implements Store {
-  private readonly pool: Pool;
-  constructor(connectionString: string) {
-    this.pool = new Pool({ connectionString });
+  private readonly client: PgQueryable;
+  /** `pg.Pool` needs an explicit `.end()`; an injected test client (PGlite) is closed by its own
+   *  caller (`TestPg.close()`), so this is a no-op in that path. */
+  private readonly onClose: () => Promise<void>;
+
+  /** Production: `new PostgresStore(connectionString)` opens a real `pg.Pool`. Tests: inject any
+   *  `PgQueryable` (e.g. a PGlite instance via `@caisson/testing`'s `newTestPg().pg`) so the exact
+   *  SQL this class issues runs against a real embedded Postgres — the store-parity gate. */
+  constructor(connectionStringOrClient: string | PgQueryable) {
+    if (typeof connectionStringOrClient === "string") {
+      const pool = new Pool({ connectionString: connectionStringOrClient });
+      this.client = pool;
+      this.onClose = () => pool.end();
+    } else {
+      this.client = connectionStringOrClient;
+      this.onClose = () => Promise.resolve();
+    }
   }
 
   async upsertFinding(finding: Finding, runId: string): Promise<UpsertResult> {
     const f = parseFinding(finding);
-    const res = await this.pool.query<{ seen_count: number }>(
+    const res = await this.client.query<{ seen_count: number }>(
       `INSERT INTO intel.findings
          (id, source, kind, severity, title, body, dedup_key, run_id, payload)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)
+       VALUES ($1::uuid,$2,$3,$4,$5,$6,$7,$8::uuid,$9::jsonb)
        ON CONFLICT (dedup_key) DO UPDATE SET
          last_seen  = now(),
          seen_count = intel.findings.seen_count + 1,
@@ -154,7 +196,7 @@ export class PostgresStore implements Store {
 
   async getWatchState(keys: string[]): Promise<Record<string, string>> {
     if (keys.length === 0) return {};
-    const res = await this.pool.query<{ key: string; value: string }>(
+    const res = await this.client.query<{ key: string; value: string }>(
       `SELECT key, value FROM intel.watch_state WHERE key = ANY($1::text[])`,
       [keys],
     );
@@ -166,7 +208,7 @@ export class PostgresStore implements Store {
   async setWatchState(entries: Record<string, string>): Promise<void> {
     const keys = Object.keys(entries);
     if (keys.length === 0) return;
-    await this.pool.query(
+    await this.client.query(
       `INSERT INTO intel.watch_state (key, value)
        SELECT * FROM unnest($1::text[], $2::text[])
        ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = now()`,
@@ -178,7 +220,7 @@ export class PostgresStore implements Store {
     source: FindingSource,
     sinceEpochMs: number,
   ): Promise<string[]> {
-    const res = await this.pool.query<{ dedup_key: string }>(
+    const res = await this.client.query<{ dedup_key: string }>(
       `SELECT dedup_key FROM intel.findings
        WHERE source = $1 AND last_seen >= to_timestamp($2 / 1000.0)`,
       [source, sinceEpochMs],
@@ -190,7 +232,7 @@ export class PostgresStore implements Store {
     source: FindingSource,
     sinceEpochMs: number,
   ): Promise<number> {
-    const res = await this.pool.query<{ n: string }>(
+    const res = await this.client.query<{ n: string }>(
       `SELECT count(*)::text AS n FROM intel.findings
        WHERE source = $1 AND first_seen >= to_timestamp($2 / 1000.0)`,
       [source, sinceEpochMs],
@@ -200,7 +242,7 @@ export class PostgresStore implements Store {
 
   async startRun(watcher: string): Promise<string> {
     const id = crypto.randomUUID();
-    await this.pool.query(
+    await this.client.query(
       `INSERT INTO intel.runs (id, watcher) VALUES ($1, $2)`,
       [id, watcher],
     );
@@ -213,7 +255,7 @@ export class PostgresStore implements Store {
     findingsCount: number,
     error?: string,
   ): Promise<void> {
-    await this.pool.query(
+    await this.client.query(
       `UPDATE intel.runs
        SET finished_at = now(), status = $2, findings_count = $3, error = $4
        WHERE id = $1`,
@@ -221,16 +263,33 @@ export class PostgresStore implements Store {
     );
   }
 
-  /** Apply the additive intel-schema migration (idempotent — every statement is IF NOT EXISTS). */
+  async pruneRuns(): Promise<void> {
+    await this.client.query(
+      `DELETE FROM intel.runs WHERE started_at < now() - interval '${String(RUN_RETENTION_DAYS)} days'`,
+    );
+  }
+
+  async checkRoleIsolation(): Promise<boolean> {
+    try {
+      await this.client.query(`SELECT 1 FROM public.accounts LIMIT 1`);
+      return false; // the query SUCCEEDED — the role can read commerce data. Isolation FAILED.
+    } catch {
+      return true; // expected: permission denied (or the table isn't visible) — isolation holds.
+    }
+  }
+
+  /** Apply the additive intel-schema migration (idempotent — every statement is IF NOT EXISTS).
+   *  Requires DDL privileges the runtime intel_role deliberately does NOT hold — see
+   *  migrations/provision-role.sql and the INTEL_MIGRATE_ON_BOOT gate in server.ts/cli.ts. */
   async migrate(): Promise<void> {
     const sql = readFileSync(
       join(import.meta.dir, "../migrations/0001_intel_schema.sql"),
       "utf8",
     );
-    await this.pool.query(sql);
+    await this.client.query(sql);
   }
 
   async close(): Promise<void> {
-    await this.pool.end();
+    await this.onClose();
   }
 }
