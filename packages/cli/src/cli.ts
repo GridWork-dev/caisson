@@ -32,13 +32,14 @@ import { createFileSetWriter } from "./writer.ts";
 /**
  * Parse argv into a RAW selection (validated downstream by Zod `.strict()` — never trusted here).
  * Flags: `--name <slug>`, `--edition <e>`, `--module <id@version>` (repeatable),
- * `--deploy <railway|fly|vercel>` (ADR-0268).
+ * `--deploy <railway|fly|vercel>` (ADR-0268), `--framework <next>` (ADR-0287).
  */
 export function parseArgs(argv: readonly string[]): unknown {
   const modules: { id: string; version: string }[] = [];
   let projectName: string | undefined;
   let edition: string | undefined;
   let deployTarget: string | undefined;
+  let framework: string | undefined;
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
     const value = argv[i + 1];
@@ -50,6 +51,9 @@ export function parseArgs(argv: readonly string[]): unknown {
       i++;
     } else if (flag === "--deploy") {
       deployTarget = value;
+      i++;
+    } else if (flag === "--framework") {
+      framework = value;
       i++;
     } else if (flag === "--module") {
       // Split on the LAST "@" so a scoped id (@caisson/x) keeps its leading "@".
@@ -71,6 +75,7 @@ export function parseArgs(argv: readonly string[]): unknown {
     ...(edition !== undefined ? { edition } : {}),
     modules,
     ...(deployTarget !== undefined ? { deployTarget } : {}),
+    ...(framework !== undefined ? { framework } : {}),
   };
 }
 
@@ -125,7 +130,7 @@ create-caisson — scaffold a repo from the Caisson registry
 
 Usage:
   create-caisson --name <slug> --module <id@version> [--module …] \\
-    [--edition <e>] [--deploy <target>] [--out <dir>] [--dry-run]
+    [--edition <e>] [--deploy <target>] [--framework <target>] [--out <dir>] [--dry-run]
   create-caisson --sample <id> --name <slug> [--out <dir>] [--dry-run]
   create-caisson --demo --name <slug> [--out <dir>] [--dry-run]
   create-caisson                              # interactive first-run (TTY only)
@@ -137,6 +142,9 @@ Flags:
                           everything — the legacy edition ids (ai-kit, local-ai, agent-dev) still
                           work and resolve to their bundle above (ADR-0257)
   --deploy <target>      Add a deploy config: railway | fly | vercel (default: none)
+  --framework <target>   Add a framework starter: next — a wired Next.js App-Router app
+                          demonstrating auth/tenancy/billing/jobs/email/ai-config wiring on the
+                          base substrate (default: none)
   --sample <id>          A free, Apache-2.0 evaluation sample (e.g. eu-ai-act-sample) — no
                           --module/--edition; no Caisson license key required to install or run
   --demo                 Generate against the FULL catalog, with every commercial module replaced
@@ -318,11 +326,14 @@ export async function resolveLicensed(
   // "pure run" = zero selection flags at all — arms the licensed-vs-sample mode question and the
   // optional deploy step (ADR-0262/ADR-0268) inside the wizard; a partial invocation (e.g.
   // `--edition` alone) still gap-fills the missing required fields, but skips both of those.
+  // `--framework` (ADR-0287) is flag-only, same as `--edition` — never its own wizard question,
+  // just carried through untouched so a TTY invocation that DID pass it doesn't silently drop it.
   const anySelectionFlag =
     rawFromFlags.projectName !== undefined ||
     rawFromFlags.edition !== undefined ||
     rawFromFlags.modules.length > 0 ||
-    rawFromFlags.deployTarget !== undefined;
+    rawFromFlags.deployTarget !== undefined ||
+    rawFromFlags.framework !== undefined;
 
   const { runWizard, DEFAULT_SAMPLE_ID } = await loadInteractive();
   const wizard = await runWizard(index, {
@@ -335,6 +346,9 @@ export async function resolveLicensed(
     modules: rawFromFlags.modules,
     ...(rawFromFlags.deployTarget !== undefined
       ? { deployTarget: rawFromFlags.deployTarget }
+      : {}),
+    ...(rawFromFlags.framework !== undefined
+      ? { framework: rawFromFlags.framework }
       : {}),
     pureRun: !anySelectionFlag,
   });

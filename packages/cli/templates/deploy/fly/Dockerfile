@@ -5,7 +5,8 @@
 # The port your server listens on inside the container must match `internal_port` in the
 # sibling `fly.toml` — update both together.
 #
-# STARTER SCAFFOLD: the generated repo ships a library harness, not a server — point CMD at your
+# If you generated with `--framework next` (or another framework), `bun run start` and the `start`
+# script are already wired — deploy as-is. If you generated the bare library base, point CMD at your
 # actual entrypoint (and add a `start` script to package.json) before deploying.
 FROM oven/bun:1.3.14-slim
 WORKDIR /app

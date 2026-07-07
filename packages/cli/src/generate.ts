@@ -22,6 +22,7 @@ import {
 // unchanged. The declarations live in `seam.ts` to keep engine implementations off a build cycle.
 export {
   DEPLOY_TARGETS,
+  FRAMEWORK_TARGETS,
   type GeneratedFile,
   type GeneratedFileSet,
   type GeneratorEngine,

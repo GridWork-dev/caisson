@@ -57,6 +57,10 @@ export interface WizardFlags {
   readonly edition?: string;
   readonly modules: readonly ModuleChoice[];
   readonly deployTarget?: string;
+  /** ADR-0287 — flag-only, same as `edition`: never its own wizard question, carried through to
+   *  the final raw output untouched so it isn't dropped when a partial TTY invocation still
+   *  gap-fills the missing required fields. */
+  readonly framework?: string;
   /** true only when ZERO selection flags were passed at all — arms the licensed-vs-sample mode
    *  question and the optional deploy step. A partial licensed invocation (e.g. `--edition` alone)
    *  still gap-fills the missing required fields, but skips both of those. */
@@ -141,6 +145,7 @@ export async function runWizard(
       ...(flags.edition !== undefined ? { edition: flags.edition } : {}),
       modules,
       ...(deployTarget !== undefined ? { deployTarget } : {}),
+      ...(flags.framework !== undefined ? { framework: flags.framework } : {}),
     },
   };
 }
