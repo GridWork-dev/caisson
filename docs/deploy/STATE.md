@@ -33,6 +33,29 @@ consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the 
 
 ---
 
+## 2026-07-07 — PENDING: post-merge redeploy for PR #133–#136 — NOT YET EXECUTED
+
+**This is a PLAN, not a record** — no live-verify output exists yet. The four-track wave (PR #133
+site-design-4 · #134 aeo-program · #135 ui-pro · #136 license-seam) merged to `main` at `9a81dd7a`;
+nothing serves it until this ordered, operator-gated sequence runs:
+
+1. **DB migration `0017_renewal_extension` BEFORE the license redeploy** — applied automatically by
+   `caisson-license`'s preDeployCommand (`apps/site/lib/deploy-migrate.ts`); without it the next
+   `refund.completed` / renewal `purchase.completed` rolls back its `withTenant` transaction on the
+   missing relation. Bless with the CAISSON-16 read-only checksum-drift check first.
+2. **Registry Worker redeploy** — entitledSince-filtered `resolveGate`, the new `@caisson/pricebook`
+   dep, the emptied `LEGACY_ENTITLEMENT_ALIASES` (verifier-first per the standing constraint above).
+3. **`caisson-license` redeploy** — renewal_extension writes, subscription-cycle receipt split,
+   alias narrowing (step 1 rides this deploy's preDeployCommand).
+4. **`caisson-site` redeploy** — dual-door hero, honest-artifact bento, `/affiliates`, 20-page
+   `/compare`, AEO robots/schema, members-gate purge fix.
+5. **Drain the legacy edition grant rows** (ADR-0270 §4): read-only enumerate → STOP if any real
+   buyer → run `services/license/scripts/drain-legacy-edition-grants.sql` as the superuser deploy
+   role (not the app role) → re-enumerate to prove empty.
+
+`apps/admin` has no diff across #133–#136 — no admin redeploy needed. Pre-launch posture unchanged
+(CF-Access ON, `PADDLE_ENV=sandbox`).
+
 ## 2026-07-07 — staged #131+#132 redeploy EXECUTED: Worker + license + site + admin, expiry scheduler armed, admin re-provision
 
 **Operator authorization:** "full deploy sequence approved run all" (2026-07-07 session resume).

@@ -79,18 +79,20 @@ Agentic-Dev $329 · Provenance $399 · Everything $2,059.**
 | `@caisson/provenance`    | Provenance (net-new, `kind:"bundle"`)                                | same, `--edition provenance` — composite of 3 Compliance-carve members, no edition-era equivalent                                                                          |
 | `@caisson/everything`    | Everything (new `kind:"bundle"`)                                     | same, `--edition everything` — every bundle and every à la carte module, one purchase                                                                                      |
 
-(The generator's `--edition` flag accepts all six bundle ids AND the legacy edition ids — the
-legacy spellings normalize through the single alias point; the flag name predates the vocabulary.)
+(The generator's `--edition` flag accepts ONLY the six canonical bundle ids — the legacy edition
+spellings were purged by ADR-0270 (2026-07-07) and are rejected; the flag name predates the
+vocabulary.)
 
 **Retired edition ids** — `@caisson/ai-kit` (superseded by AI-Production), `@caisson/agent-dev`
-(superseded by Agentic-Dev), `@caisson/local-ai` (superseded by Local-first) — are kept for
-existing-buyer resolution only, never sold new; all three keep their `kind:"edition"` manifests
-(prices trued to their alias targets — $739/$329/$629 — per the local-ai convention, 2026-07-06).
-Per ADR-0257 §1, every pre-rework `kind:"edition"` registry manifest and ledger entry **stays
-valid forever** (never migrated), and the four legacy edition purchase ids keep resolving forever
-through the single alias map in `expandEntitlements` (`packages/registry-schema/src/entitlements.ts`
-
-- `bundle-vocabulary.ts`) — no existing buyer's access changes.
+(superseded by Agentic-Dev), `@caisson/local-ai` (superseded by Local-first) — are never sold new;
+all three keep their `kind:"edition"` manifests (prices trued to their bundle targets —
+$739/$329/$629 — per the local-ai convention, 2026-07-06). Per ADR-0257 §1, every pre-rework
+`kind:"edition"` registry manifest and ledger entry **stays valid forever** (never migrated). The
+legacy purchase ids themselves no longer resolve — ADR-0270 emptied the alias map
+(`packages/registry-schema/src/bundle-vocabulary.ts`), gated on zero real buyers with live grants
+drained to canonical ids at deploy; the edition→bundle fold for index expansion runs through the
+decoupled `legacyEditionNamesFor`/`EDITION_BUNDLE_ID` relation
+(`packages/registry-schema/src/entitlements.ts`).
 
 ### Bundle members + à la carte modules (delivered by purchase — entitlement expansion)
 

@@ -182,17 +182,20 @@ Everything's 22 member modules are every row in §2b's à-la-carte table below �
 
 ### Commercial — retired legacy edition packages (no longer sold; registry ledger kept forever)
 
-The Paddle big-bang (ADR-0258 §5) retired all four edition products in one sweep; each legacy purchased
-id keeps resolving forever through the single alias map (`LEGACY_ENTITLEMENT_ALIASES`,
-`packages/registry-schema/src/bundle-vocabulary.ts`, ADR-0257). `compliance` needed no alias (the
-bundle kept its id — see the Compliance section above); the three packages below are genuinely
-superseded by a differently-named sibling bundle package.
+The Paddle big-bang (ADR-0258 §5) retired all four edition products in one sweep; the edition-trace
+purge (**ADR-0270**, 2026-07-07) then removed the legacy purchase ids entirely —
+`LEGACY_ENTITLEMENT_ALIASES` (`packages/registry-schema/src/bundle-vocabulary.ts`) is now EMPTY
+(kept as the mechanism for a future module rename), gated on zero real buyers with live rows
+drained at deploy. What stays served forever (ADR-0006 append-only) is the ledger/index entries
+for the three edition meta-packages below, folded into their bundles through the decoupled
+`EDITION_BUNDLE_ID` map (`packages/registry-schema/src/entitlements.ts`). `compliance` kept its id
+(never a purge target — see the Compliance section above).
 
-| Package     | License    | Sold as                                                                                 | Superseded by        | Build status | Note                                                                                                                                                                                           |
-| ----------- | ---------- | --------------------------------------------------------------------------------------- | -------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ai-kit`    | Commercial | **retired** — no Paddle product; legacy id `ai-kit` aliases to `ai-production` forever  | AI-Production bundle | partial      | `priceCents: 73900` ($739) trued to the alias-target bundle price (2026-07-06, the `local-ai` convention; PRICE_AUTHORITY row added) — the ADR-0249 G7 placeholder exception no longer applies |
-| `agent-dev` | Commercial | **retired** — no Paddle product; legacy id `agent-dev` aliases to `agentic-dev` forever | Agentic-Dev bundle   | substantial  | `priceCents: 32900` ($329) trued to the alias-target bundle price (2026-07-06, the `local-ai` convention; PRICE_AUTHORITY row added) — the ADR-0249 G7 placeholder exception no longer applies |
-| `local-ai`  | Commercial | **retired** — no Paddle product; legacy id `local-ai` aliases to `local-first` forever  | Local-first bundle   | substantial  | `priceCents: 62900` ($629) IS trued to the new bundle number — the ADR-0249 G7 "stays unpriced" exception no longer covers `local-ai` after its 3-way carve (ADR-0258 §1)                      |
+| Package     | License    | Sold as                                                                                                                                                                | Superseded by        | Build status | Note                                                                                                                                                                                           |
+| ----------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ai-kit`    | Commercial | **retired** — no Paddle product; purchase id `ai-kit` purged (ADR-0270, unresolvable); ledger entry served forever, folded into AI-Production via `EDITION_BUNDLE_ID`  | AI-Production bundle | partial      | `priceCents: 73900` ($739) trued to the alias-target bundle price (2026-07-06, the `local-ai` convention; PRICE_AUTHORITY row added) — the ADR-0249 G7 placeholder exception no longer applies |
+| `agent-dev` | Commercial | **retired** — no Paddle product; purchase id `agent-dev` purged (ADR-0270, unresolvable); ledger entry served forever, folded into Agentic-Dev via `EDITION_BUNDLE_ID` | Agentic-Dev bundle   | substantial  | `priceCents: 32900` ($329) trued to the alias-target bundle price (2026-07-06, the `local-ai` convention; PRICE_AUTHORITY row added) — the ADR-0249 G7 placeholder exception no longer applies |
+| `local-ai`  | Commercial | **retired** — no Paddle product; purchase id `local-ai` purged (ADR-0270, unresolvable); ledger entry served forever, folded into Local-first via `EDITION_BUNDLE_ID`  | Local-first bundle   | substantial  | `priceCents: 62900` ($629) IS trued to the new bundle number — the ADR-0249 G7 "stays unpriced" exception no longer covers `local-ai` after its 3-way carve (ADR-0258 §1)                      |
 
 ### Commercial — bundle-only substrate (never a standalone SKU)
 
@@ -248,9 +251,9 @@ open Base substrate (§1's first table). Remaining bundle-only commercial rows:
 math pin against. They supersede every earlier edition-era figure: **ADR-0227**'s Compliance $799 →
 **ADR-0258**'s $1,049; **ADR-0137**'s AI Production Kit $599 / Agentic-Dev $249 / Local-first AI $349 /
 Everything Bundle $1,499 → **ADR-0258/0260**'s $739 / $329 / $629 / $2,059. **Editions are RETIRED**
-(dissolved into bundles, ADR-0257) — the four legacy edition purchase ids keep resolving forever through
-the single alias map in `expandEntitlements` (`packages/registry-schema/src/entitlements.ts` +
-`bundle-vocabulary.ts`), so no existing buyer's access changes.
+(dissolved into bundles, ADR-0257) and their purchase ids **purged** (ADR-0270, 2026-07-07) after
+proving zero real buyers held them — the alias map (`bundle-vocabulary.ts`) is empty, sandbox/test
+grants drain to canonical ids at deploy, and no real buyer's access changed.
 
 ### Bundles
 

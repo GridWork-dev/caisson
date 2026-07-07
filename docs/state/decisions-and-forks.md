@@ -1337,3 +1337,34 @@ Four outcomes:
    entitledSince gate wiring) · ui-pro build wave (ADR-0259). The staged #131/#132 deploy block
    EXECUTED first this session (docs/deploy/STATE.md 2026-07-07 entry), so site-design-4 builds
    against a current production baseline.
+
+## 2026-07-07 build-wave landed (second sitting — all four tracks merged)
+
+The armed four-track wave EXECUTED as parallel worktree workflows (24 agents, adversarial
+review chains) and merged serially through the in-session SHIP-audit lane: **PR #133**
+site-design-4 (D1 dual-door hero + D4 honest-artifact patterns + `/affiliates` + the CAISSON-31
+Paddle-readiness fixes — the seller entity reads **Caisson Software LLC** per the legal SOT after
+an in-branch revert of a stale-instruction rename) · **PR #134** AEO program (CAISSON-29 complete:
+crawlability audit, AI-crawler robots group, glossary 32→35, `/compare` hub + 20 pages) ·
+**PR #135** ui-pro (ADR-0259 built; NOT published) · **PR #136** license-seam (edition-trace purge
+**ADR-0270**, subscription-cycle receipt, renewal-refund un-extend + migration 0017, entitledSince
+at both gates). Linear CAISSON-26..31 all Done. Nothing is DEPLOYED yet — the ordered redeploy is
+an open operator gate (`docs/deploy/STATE.md` PENDING entry).
+
+New OPEN forks surfaced by the wave (operator-owned, not decided):
+
+- **Bundle-only index republish** — retire the three edition meta-packages from the SERVED
+  registry index (a superseding ledger/index append, never an edit — ADR-0006). Separate from the
+  ADR-0270 purchase-alias purge, which deliberately left them served. Until taken,
+  `legacyEditionNamesFor`/`fullCatalogMembers` and the CLI pass-2 fallback stay live by design.
+- **ui-pro first-publish timing** — publishing takes ONE atomic 3-part change (registry index
+  entry + drop `ui-pro` from `RESERVED_MODULE_ENTITLEMENT_IDS` + flip the everything-members pin
+  off `0.0.0`); landing partial or out of order under-entitles paying buyers or over-widens
+  everything. Also gated on 3 confirmed pre-publish hardening findings (tracker §2 row).
+- **Cookiy key rotation timing** — the working API key was pasted into a session transcript;
+  rotate after the quant legs (776545 frame / 445432 VW) finish filling, or now if research is
+  deprioritized. Qual leg is complete (5/5), combined report saved.
+
+Deploy-order note for the redeploy gate: Worker (verifier) FIRST per the standing claims-schema
+constraint, license second (its preDeployCommand applies migration 0017 — a refund/renewal webhook
+against the old DB shape rolls back on the missing `renewal_extension` relation), site last.
