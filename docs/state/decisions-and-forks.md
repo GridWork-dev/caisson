@@ -1256,3 +1256,31 @@ fail-soft) · kit stage 2 + wave-1 `./ui` frontends (unblocked) · **(new, minor
 subscription `invoice.paid` cycles reuse the "Purchase confirmed" email wording — fable
 informational; dedicated cycle-receipt wording is an operator call · marketing signature slot
 stays parked.
+
+## 2026-07-06 research-kickoff picker (Session A, post-merge — pre-launch research program armed)
+
+Five outcomes from the post-merge picker + the operator's research directive:
+
+1. **Grandfathering fork → RESOLVED as the edition-trace purge (Linear CAISSON-26).** Instead of
+   grandfathering machinery for pre-existing edition buyers, the operator locked: **delete all
+   trace of the editions + stale legacy code now** — zero real buyers exist, so churn is free, and
+   this cleanup class is only free before the launch sequence. Supersedes-in-part the alias-forever
+   posture (ADR-0257/0258); the ADR lands with the purge PR. The purge spec must separate edition
+   aliases (removable) from module-rename/carve aliases (load-bearing) — fable-audit class.
+2. **Subscription-cycle receipt wording → LOCKED: dedicated wording** (Linear CAISSON-27, the
+   fable informational from the #132 audit). Small build, not deploy-blocking.
+3. **Cookiy WTP → RUN.** Operator commits a **$100 pre-launch research budget** (balance today
+   $1.20). Survey 374111 (Compliance-bundle Van Westendorp) needs one patch before recruitment:
+   its updates-subscription question still says "$1,499/year" — stale vs the ADR-0260 renewal
+   model (Developer plan + 40%-of-list renewal SKUs).
+4. **Positioning re-examination OPENED (operator, DO NOT auto-decide):** compliance stays the hero
+   WEDGE, but the framing of the larger scope — the full production codebase/feature starter —
+   is under research and may pivot. Prior positioning ADRs (ADR-0040 lineage + site-posture locks)
+   are **challengeable inputs** for this research program only; nothing is re-locked until the
+   operator picks from the research synthesis.
+5. **Competitor/UI reference program armed:** operator screenshots (getRoman.ai compliance-led
+   marketing ×4, "Analyse" MCP-native feature cards, TurboStarter bento/free-tools/demo-dropdown
+   ×3) seed a UI-reference extraction leg; a TurboStarter deep-dive + gap map is commissioned.
+   The 7-leg live-web research fanout (TurboStarter · UI reference · positioning · pricing market
+   · Paddle prod truth · AEO citation · launch channels) ran this session; synthesis lands in
+   `outputs/research/`.
