@@ -7,6 +7,10 @@
 // `--sample <id>` is a SEPARATE, parallel path: a free Apache-2.0 evaluation sample
 // (e.g. `eu-ai-act-sample`) carries no module selection, so it never touches the registry allowlist
 // or `generate()` — it goes straight through `materializeSample` (`sample-templates.ts`).
+//
+// `--demo` (ADR-0274 §1 / Track E1) is a THIRD parallel path: full-catalog generation with every
+// commercial module replaced by a watermarked stub (`generateDemo`, `demo.ts`) — same `--name`-only
+// argv contract as `--sample`, no license, no license-service call.
 import { execFile as execFileCb } from "node:child_process";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,6 +18,7 @@ import {
   type RegistryIndex,
   loadRegistryIndexFromFile,
 } from "@caisson/registry-schema";
+import { type DemoModuleSummary, generateDemo } from "./demo.ts";
 import {
   type GeneratedFileSet,
   type RawSelection,
@@ -122,6 +127,7 @@ Usage:
   create-caisson --name <slug> --module <id@version> [--module …] \\
     [--edition <e>] [--deploy <target>] [--out <dir>] [--dry-run]
   create-caisson --sample <id> --name <slug> [--out <dir>] [--dry-run]
+  create-caisson --demo --name <slug> [--out <dir>] [--dry-run]
   create-caisson                              # interactive first-run (TTY only)
 
 Flags:
@@ -133,14 +139,17 @@ Flags:
   --deploy <target>      Add a deploy config: railway | fly | vercel (default: none)
   --sample <id>          A free, Apache-2.0 evaluation sample (e.g. eu-ai-act-sample) — no
                           --module/--edition; no Caisson license key required to install or run
+  --demo                 Generate against the FULL catalog, with every commercial module replaced
+                          by a watermarked stub (see DEMO.md in the generated repo) — no
+                          --module/--edition, no license, never for production
   --out <dir>            Output directory (defaults to <projectName>)
   --dry-run              Print the file plan without writing anything to disk
   --help, -h             Show this help
 
 Interactive mode: run with no flags in a terminal (TTY) and create-caisson prompts for the
-missing pieces — a licensed module/edition build vs the free sample, project name, and modules.
-Any flag you DO pass is never re-prompted; supply every required flag (or pipe stdin) to skip
-prompts entirely.
+missing pieces — a licensed module/edition build vs the free sample vs the full-catalog demo,
+project name, and modules. Any flag you DO pass is never re-prompted; supply every required flag
+(or pipe stdin) to skip prompts entirely.
 
 Before running the installer (non-sample path), add NODE_AUTH_TOKEN (your Caisson license key) to
 .npmrc. See the generated README for the full setup steps — or https://caisson.sh/docs.
@@ -204,6 +213,27 @@ function printSampleNextSteps(projectName: string, targetDir: string): void {
   );
 }
 
+/** Next-steps for the full-catalog DEMO path (ADR-0274 §1) — no license key: every commercial
+ *  module in the generation is a local stub, not an installable dependency. */
+function printDemoNextSteps(
+  projectName: string,
+  targetDir: string,
+  modules: readonly DemoModuleSummary[],
+): void {
+  const stubbed = modules.filter((m) => m.tier === "paid").length;
+  process.stdout.write(
+    `\ncreate-caisson: generated "${projectName}" (demo — ${stubbed} of ${modules.length} ` +
+      `catalog modules stubbed) → ${targetDir}\n` +
+      `\nNext steps:\n` +
+      `  1. cd ${targetDir}\n` +
+      `  2. bun install   # public npm only — no Caisson license key needed\n` +
+      `  3. bun run build && bun test\n` +
+      `  4. See DEMO.md for the full catalog + which modules are stubs\n` +
+      `\nGet a license at https://caisson.sh to swap the stubs for the real modules.\n` +
+      `Docs: https://caisson.sh/docs\n`,
+  );
+}
+
 /**
  * ADR-0262 gap-fill for the `--sample` path: it carries no module selection, so a missing
  * project name is the only thing the wizard ever fills in here. Prompts ONLY when `isTTY` is
@@ -227,16 +257,38 @@ export async function resolveSampleProjectName(
   return promptSampleProjectName();
 }
 
-/** What the licensed (non-`--sample`) path resolved to: either a raw Selection ready for
- *  `generate()`, or — when the pure-run wizard's mode question picked the free sample instead
- *  (ADR-0262) — a sample id + project name for the exact same sample flow the `--sample` flag
- *  path uses. */
+/**
+ * ADR-0274 gap-fill for the `--demo` path: identical shape to `resolveSampleProjectName` — a
+ * missing project name is the only thing ever prompted for (demo mode carries no module
+ * selection; it always composes the full catalog). Reuses the SAME `parseSampleArgs`
+ * `{ --name only }` argv contract and the same `promptSampleProjectName` prompt.
+ */
+export async function resolveDemoProjectName(
+  selectionArgs: readonly string[],
+  isTTY: boolean,
+  loadInteractive: () => Promise<typeof InteractiveModule> = () =>
+    import("./interactive.ts"),
+): Promise<string> {
+  const { projectName } = parseSampleArgs(selectionArgs);
+  if (projectName !== undefined) return projectName;
+  if (!isTTY) {
+    throw new Error("--demo requires --name <slug>");
+  }
+  const { promptSampleProjectName } = await loadInteractive();
+  return promptSampleProjectName();
+}
+
+/** What the licensed (non-`--sample`, non-`--demo`) path resolved to: either a raw Selection
+ *  ready for `generate()`, or — when the pure-run wizard's mode question picked the free sample or
+ *  the full-catalog demo instead (ADR-0262/ADR-0274) — the project name for that flow's exact
+ *  same generation path (`--sample`/`--demo` flag entry points). */
 export type LicensedResolution =
   | {
       readonly kind: "sample";
       readonly sampleId: string;
       readonly projectName: string;
     }
+  | { readonly kind: "demo"; readonly projectName: string }
   | { readonly kind: "licensed"; readonly raw: unknown };
 
 /**
@@ -292,6 +344,9 @@ export async function resolveLicensed(
       projectName: wizard.projectName,
     };
   }
+  if (wizard.kind === "demo") {
+    return { kind: "demo", projectName: wizard.projectName };
+  }
   return { kind: "licensed", raw: wizard.raw };
 }
 
@@ -325,15 +380,51 @@ async function generateSample(
   printSampleNextSteps(projectName, targetDir);
 }
 
+/**
+ * Materialize the full-catalog DEMO end-to-end (ADR-0274 §1): print the dry-run plan (exits) or
+ * write to disk, git init, print next steps. Shared by the `--demo` flag path and the interactive
+ * wizard's "demo" branch, mirroring `generateSample`'s shape exactly.
+ */
+async function generateDemoProject(
+  projectName: string,
+  opts: { out: string | undefined; dryRun: boolean },
+): Promise<void> {
+  const index = loadRegistryIndexFromFile(resolveIndexPath());
+  const {
+    projectName: resolvedName,
+    files,
+    modules,
+  } = generateDemo(index, { projectName });
+  const targetDir = opts.out ?? resolvedName;
+  const stubbed = modules.filter((m) => m.tier === "paid").length;
+
+  if (opts.dryRun) {
+    process.stdout.write(
+      `create-caisson: dry-run — ${files.length} files for ` +
+        `"${resolvedName}" (demo: ${stubbed} of ${modules.length} modules stubbed)\n`,
+    );
+    for (const f of files) {
+      process.stdout.write(`  ${f.path}\n`);
+    }
+    process.exit(0);
+  }
+
+  const write = createFileSetWriter();
+  await write(targetDir, files);
+  await tryGitInit(targetDir);
+  printDemoNextSteps(resolvedName, targetDir, modules);
+}
+
 if (import.meta.main) {
   void (async () => {
     const argv = process.argv.slice(2);
 
-    // Extract --help / --dry-run / --out / --sample before passing the remainder to parseArgs.
-    // Flag-value pairs for --name / --edition / --module flow through untouched.
+    // Extract --help / --dry-run / --out / --sample / --demo before passing the remainder to
+    // parseArgs. Flag-value pairs for --name / --edition / --module flow through untouched.
     const selectionArgs: string[] = [];
     let out: string | undefined;
     let sample: string | undefined;
+    let demo = false;
     let dryRun = false;
     let help = false;
 
@@ -343,6 +434,8 @@ if (import.meta.main) {
         help = true;
       } else if (flag === "--dry-run") {
         dryRun = true;
+      } else if (flag === "--demo") {
+        demo = true;
       } else if (flag === "--out") {
         const next = argv[i + 1];
         if (next === undefined) {
@@ -372,6 +465,13 @@ if (import.meta.main) {
         process.exit(0);
       }
 
+      if (sample !== undefined && demo) {
+        process.stderr.write(
+          "create-caisson: --sample and --demo are mutually exclusive\n",
+        );
+        process.exit(1);
+      }
+
       // Arming rule (ADR-0262): interactive prompts run ONLY when stdin is a TTY, and only for
       // Selection fields still missing after argv is parsed — a fully-specified invocation (or
       // non-TTY stdin, e.g. CI/piped) resolves below with `./interactive.ts` never imported, so
@@ -387,6 +487,12 @@ if (import.meta.main) {
         return;
       }
 
+      if (demo) {
+        const projectName = await resolveDemoProjectName(selectionArgs, isTTY);
+        await generateDemoProject(projectName, { out, dryRun });
+        return;
+      }
+
       const index = loadRegistryIndexFromFile(resolveIndexPath());
       const resolved = await resolveLicensed(selectionArgs, index, isTTY);
 
@@ -395,6 +501,11 @@ if (import.meta.main) {
           out,
           dryRun,
         });
+        return;
+      }
+
+      if (resolved.kind === "demo") {
+        await generateDemoProject(resolved.projectName, { out, dryRun });
         return;
       }
 

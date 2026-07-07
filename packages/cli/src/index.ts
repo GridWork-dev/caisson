@@ -25,6 +25,14 @@ export {
   materializeSample,
 } from "./sample-templates.ts";
 
+// Generator DEMO MODE (ADR-0274 §1 / Track E1) — the full catalog, commercial modules stubbed +
+// watermarked from registry metadata only. Never touches commercial source, never license-gated.
+export {
+  type DemoModuleSummary,
+  DEMO_WATERMARK,
+  generateDemo,
+} from "./demo.ts";
+
 export {
   type DebitFn,
   type MeterInput,

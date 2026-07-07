@@ -14,6 +14,7 @@ import {
   type LicensedResolution,
   parseArgs,
   parseSampleArgs,
+  resolveDemoProjectName,
   resolveLicensed,
   resolveSampleProjectName,
   runCli,
@@ -166,6 +167,11 @@ describe("HELP text", () => {
     expect(HELP).toContain("local-ai");
     expect(HELP).toContain("agent-dev");
   });
+
+  test("documents --demo (ADR-0274 §1)", () => {
+    expect(HELP).toContain("--demo");
+    expect(HELP).toContain("no license");
+  });
 });
 
 describe("resolveSampleProjectName — ADR-0262 arming rule (--sample path)", () => {
@@ -197,6 +203,44 @@ describe("resolveSampleProjectName — ADR-0262 arming rule (--sample path)", ()
       DEFAULT_SAMPLE_ID: "eu-ai-act-sample",
     }));
     const name = await resolveSampleProjectName(
+      [],
+      true,
+      fakeLoad as unknown as () => Promise<typeof InteractiveModule>,
+    );
+    expect(name).toBe("prompted-name");
+    expect(fakeLoad).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("resolveDemoProjectName — ADR-0274 arming rule (--demo path)", () => {
+  test("projectName already given → returns it, interactive.ts NEVER loaded (even if isTTY)", async () => {
+    forbiddenImport.mockClear();
+    const name = await resolveDemoProjectName(
+      ["--name", "acme"],
+      /* isTTY */ true,
+      forbiddenImport,
+    );
+    expect(name).toBe("acme");
+    expect(forbiddenImport).not.toHaveBeenCalled();
+  });
+
+  test("projectName missing + non-TTY → throws a clear error, interactive.ts NEVER loaded", async () => {
+    forbiddenImport.mockClear();
+    await expect(
+      resolveDemoProjectName([], /* isTTY */ false, forbiddenImport),
+    ).rejects.toThrow(/--demo requires --name/);
+    expect(forbiddenImport).not.toHaveBeenCalled();
+  });
+
+  test("projectName missing + isTTY → prompts via the injected interactive module", async () => {
+    const fakeLoad = mock(async () => ({
+      promptSampleProjectName: async () => "prompted-name",
+      runWizard: async () => {
+        throw new Error("not exercised in this test");
+      },
+      DEFAULT_SAMPLE_ID: "eu-ai-act-sample",
+    }));
+    const name = await resolveDemoProjectName(
       [],
       true,
       fakeLoad as unknown as () => Promise<typeof InteractiveModule>,
@@ -302,6 +346,26 @@ describe("resolveLicensed — ADR-0262/ADR-0268 arming rule (licensed path)", ()
       projectName: "picked-sample",
     });
   });
+
+  test("zero selection flags at all → the wizard may resolve to the demo branch (ADR-0274)", async () => {
+    const fakeLoad = mock(async () => ({
+      promptSampleProjectName: async () => {
+        throw new Error("not exercised in this test");
+      },
+      runWizard: async () => ({
+        kind: "demo" as const,
+        projectName: "picked-demo",
+      }),
+      DEFAULT_SAMPLE_ID: "eu-ai-act-sample",
+    }));
+    const resolved = await resolveLicensed(
+      [],
+      INDEX,
+      true,
+      fakeLoad as unknown as () => Promise<typeof InteractiveModule>,
+    );
+    expect(resolved).toEqual({ kind: "demo", projectName: "picked-demo" });
+  });
 });
 
 describe("end-to-end: a real non-interactive invocation never touches a TTY-only prompt", () => {
@@ -356,5 +420,73 @@ describe("end-to-end: a real non-interactive invocation never touches a TTY-only
     ]);
     expect(exitCode).toBe(1);
     expect(stderr).toBe("create-caisson: --sample requires --name <slug>\n");
+  });
+
+  test("--demo against the REAL registry index dry-runs: no license, commercial ids stubbed (ADR-0274)", async () => {
+    const registryPath = fileURLToPath(
+      new URL("../../../registry/index.json", import.meta.url),
+    );
+    const index = (
+      await import("@caisson/registry-schema")
+    ).loadRegistryIndexFromFile(registryPath);
+    const paidCount = index.modules.filter(
+      (m) =>
+        m.versions.find((v) => v.version === m.latest)?.manifest.tier ===
+        "paid",
+    ).length;
+
+    const proc = Bun.spawn(
+      [
+        "bun",
+        "run",
+        fileURLToPath(new URL("./cli.ts", import.meta.url)),
+        "--demo",
+        "--name",
+        "acme-demo",
+        "--dry-run",
+      ],
+      {
+        env: { ...process.env, CAISSON_REGISTRY_INDEX: registryPath },
+        stdin: "ignore",
+        stdout: "pipe",
+        stderr: "pipe",
+      },
+    );
+    const [stdout, stderr, exitCode] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ]);
+    expect(exitCode).toBe(0);
+    expect(stderr).toBe("");
+    expect(stdout).toContain(
+      `${paidCount} of ${index.modules.length} modules stubbed`,
+    );
+    expect(stdout).toContain("DEMO.md");
+    expect(stdout).not.toContain(".npmrc");
+  });
+
+  test("--demo and --sample together fail fast with a clear error", async () => {
+    const proc = Bun.spawn(
+      [
+        "bun",
+        "run",
+        fileURLToPath(new URL("./cli.ts", import.meta.url)),
+        "--demo",
+        "--sample",
+        "eu-ai-act-sample",
+        "--name",
+        "acme",
+      ],
+      { stdin: "ignore", stdout: "pipe", stderr: "pipe" },
+    );
+    const [stderr, exitCode] = await Promise.all([
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ]);
+    expect(exitCode).toBe(1);
+    expect(stderr).toBe(
+      "create-caisson: --sample and --demo are mutually exclusive\n",
+    );
   });
 });

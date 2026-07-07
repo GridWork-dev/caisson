@@ -65,14 +65,15 @@ export interface WizardFlags {
 
 export type WizardResult =
   | { readonly kind: "sample"; readonly projectName: string }
+  | { readonly kind: "demo"; readonly projectName: string }
   | { readonly kind: "licensed"; readonly raw: RawSelection };
 
 /**
- * Run the interactive first-run wizard. `pureRun` gates two things, both per ADR-0262/ADR-0268:
- * the first "licensed build vs free sample" question (equal-weight, neither preselected), and the
- * trailing optional "add deploy config?" step. Everything else — the project-name text prompt and
- * the module multiselect — fires whenever the corresponding field is still missing, regardless of
- * `pureRun`.
+ * Run the interactive first-run wizard. `pureRun` gates two things, both per ADR-0262/ADR-0268
+ * (the mode question also gained the ADR-0274 §1 demo choice): the first "what to generate"
+ * question (equal-weight, neither preselected), and the trailing optional "add deploy config?"
+ * step. Everything else — the project-name text prompt and the module multiselect — fires
+ * whenever the corresponding field is still missing, regardless of `pureRun`.
  */
 export async function runWizard(
   index: RegistryIndex,
@@ -85,14 +86,19 @@ export async function runWizard(
         options: [
           { value: "licensed", label: "A licensed module/edition build" },
           { value: "sample", label: "The free sample (no license needed)" },
+          {
+            value: "demo",
+            label:
+              "The full catalog, commercial modules as stubs (no license needed)",
+          },
         ],
       }),
     );
-    if (mode === "sample") {
+    if (mode === "sample" || mode === "demo") {
       const projectName = ensure(
         await text({ message: "Project name", validate: validateProjectName }),
       );
-      return { kind: "sample", projectName };
+      return { kind: mode, projectName };
     }
   }
 
