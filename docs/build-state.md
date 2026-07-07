@@ -249,7 +249,7 @@ source LOC. Counts are the disk truth on `main`, not a quality judgement.
 | `mcp-server`  | 5 / 6 / 1215      | **built**        | auth-gated buyer MCP (`ADR-0008`) + optional per-account rate-limit hook port (fail-open, `ADR-0112`); `coach.ts` setup-flow is fully implemented — its persistence write is a CI-test-doubled seam (an fs adapter is the live deploy path)                 |
 | `ui`          | 9 / 3 / 549       | **built**        | token floor (`ADR-0042`/`0078`) + the component kit + table-stakes backfill (data-table sort/filter/pagination, dialog/drawer, confirm, toast, select, copy-field, pagination, detail-list)                                                                 |
 | `jobs`        | 5 / 6 / 665       | **built (thin)** | job seam (`ADR-0018`)                                                                                                                                                                                                                                       |
-| `email`       | 6 / 6 / 516       | **built (thin)** | email seam (`ADR-0018`) + transactional templates (`credits-expiring` `ADR-0252`, `purchase-confirmation`, `renewal-confirmation`)                                                                                                                          |
+| `email`       | 6 / 6 / 531       | **built (thin)** | email seam (`ADR-0018`) + transactional templates (`credits-expiring` `ADR-0252`, `purchase-confirmation`, `subscription-payment-received` `CAISSON-27`, `renewal-confirmation`)                                                                            |
 
 ### Wave-0 substrate (shipped)
 
