@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-07
 status: live
-adr_ceiling: 0287
+adr_ceiling: 0289
 ---
 
 # Decisions & Forks — live board
@@ -1592,3 +1592,52 @@ operator-owned) — awaiting operator text approval.
 - **Catalog wave-1 — LOCKED as ADR-0287:** BOTH in parallel — the S-effort driver batch
   (analytics port · Slack ChatPlatform · Clerk · BullMQ) and the Next.js starter template.
 - OAuth (ADR-0283) build returned; fable + opus audits running on the diff before its PR.
+
+## 2026-07-07 ninth sitting — seven-PR wave merged + deployed, admin OAuth live, deferred picker (ADR-0288–0289)
+
+The eighth-sitting armed tracks all landed as a **seven-PR wave, merged serially green+audited**
+(in-session SHIP audit lane: opus review + fable on money/license/auth seams, findings fixed
+pre-merge):
+
+- **#153** catalog + emails (ADR-0284) · **#154** marketplace one-surface (ADR-0285) · **#155**
+  admin GitHub OAuth (ADR-0283) · **#156** E2 eval licenses (ADR-0274/0280) · **#157** Next.js
+  starter template (ADR-0287) · **#158** admin intel daemon (ADR-0286) · **#159** catalog driver
+  batch (ADR-0287).
+- Audit catches worth recording: E2 fable FAIL→fixed (anonymous eval token foreclosed the binding
+  ADR-0274 anti-exfiltration rider → added a signed `eval` claim discriminator; scope ceiling;
+  registrable-domain uniqueness) then fable **re-verified PASS**; Clerk fable FAIL→fixed
+  (org-missing-role defaulted to `owner` — fail-open escalation → defaults to `seat`); intel opus×2
+  - fable (scheduler overlap guard, runWatcher never-throws, empty-200 baseline-wipe, least-priv
+    role artifact); a new-oss-package **ledger/index gate** (analytics needed a real published entry
+    via `appendLedger` + `build-index`, not RESERVED/private).
+
+**DEPLOY executed (operator-approved):** `caisson-site` (marketplace+emails), `caisson-license`
+(E2 `/health` indexDigest, live `42817dcc9a2e`/45 entries), and `caisson-admin` all redeployed
+from `main`. **Admin OAuth flip completed end-to-end:** GitHub OAuth app created · dedicated
+`admin_auth` Postgres database (isolated from commerce — better-auth's own tables) · six `ADMIN_*`
+vars set · migration run (see CAISSON-48: the `preDeployCommand` is a no-op on the Next standalone
+image, migration run manually) · sign-in verified · **CF-Access `admin_gate` destroyed via
+`terraform apply` (2 destroyed, `site_gate` untouched)** — admin.caisson.sh now gated solely by the
+GitHub-numeric-id allowlist. No Worker republish (index unchanged by the wave; the driver batch's
+analytics entry is manifest-only, npm tarball stays behind `confirm=publish`).
+
+**Ninth-sitting picker locks (over the deferred-item round of the research memo):**
+
+- **D2/D3 bundle price levels ($629/$739 seat allowance · compliance/everything point) → HOLD
+  RE-AFFIRMED** for the Cookiy WTP quant close (surveys funded + filling; no ADR — a deferral).
+- **Priority-support SKU → LOCKED as ADR-0288:** **$999/yr · next-business-day** first response
+  (between Developer $499 and Compliance-Updates $1,499; ~2× dev anchor); forward grandfather.
+  Executes ADR-0278; unblocks CAISSON-42 (Paddle SANDBOX 99900, prod price at the catalog-recreation act).
+- **Eval-delivery leg → LOCKED as ADR-0289:** build the full leg **next** (watermark → card
+  callback → admin review queue), with the **binding watermark-before-issuance order** (issuance
+  stays 409-dark until per-eval tarball watermarking is live, keyed on the E2 `eval` claim).
+  Refines ADR-0274/0280; sequenced after the admin merge queue drains.
+- **Deferred bucket → ARMED into the next wave:** the hardening trio (ADR-0269 residuals ·
+  clawback read-then-claw concurrency guard · shared migration-chain package for a real admin
+  PGlite parity gate) · ops nits (lost-HOSTNAME root-cause · site-design-2 stash) · the real
+  support-escalation inbound (draft answer + feed back through docs-RAG). Held: everything else in Triage.
+
+**Still open (unchanged):** D2/D3 pricing (quant-gated) · grandfathering policy (operator-owned) ·
+the eval-delivery build (ADR-0289, next wave) · the intel container box-deploy (operator-gated,
+this session's final act) · CAISSON-48 admin migration fix · the admin intel page (queued behind
+the admin merge queue).

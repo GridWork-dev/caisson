@@ -33,6 +33,53 @@ consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the 
 
 ---
 
+## 2026-07-07 — EXECUTED: ninth-sitting seven-PR wave deploy + admin OAuth flip (site + license + admin; no Worker republish)
+
+**Services/SHAs:** `main@a0aa9a3c` (PRs #153–159 merged serially, all in-session SHIP-audited).
+Redeployed `caisson-site`, `caisson-license`, `caisson-admin` via `railway up --service <s> --ci`.
+`caisson-docs`/`caisson-support-bot` unchanged this wave — not redeployed.
+
+**WHY:** site = marketplace one-surface rework + email consolidation (#154/#153); license = E2 eval
+scoring + the F-1 `/health` indexDigest parity leg (#156); admin = the ADR-0283 CF-Access→GitHub-OAuth
+flip + the unified component catalog (#155/#153).
+
+**Live-verify (pasted):**
+
+- `curl https://license.caisson.sh/health` → `{"ok":true,"indexDigest":"42817dcc9a2e","indexEntries":45}`
+- `curl -so/dev/null -w %{http_code} https://caisson.sh/marketplace` → `302` (CF-Access `site_gate`, expected — pre-launch).
+- `curl https://admin.caisson.sh` → `307 -> https://admin.caisson.sh/login?next=%2F` (better-auth own login — **CF-Access gone**); `/login` → `200`.
+
+**Admin OAuth flip — completed end to end (operator-gated, sign-in operator-verified):**
+
+1. GitHub OAuth app "Caisson Admin" created (client id `Ov23li2yV6PG6Ll3oepd`; callback
+   `https://admin.caisson.sh/api/auth/callback/github`).
+2. **Dedicated `admin_auth` database** created on the Railway Postgres (`CREATE DATABASE admin_auth`) —
+   better-auth's own tables (`user`/`session`/`account`/`verification`) live isolated from commerce
+   (the config forbids `CAISSON_ADMIN_DB_URL` / the site auth DB to avoid the org-`account` collision).
+3. Six `ADMIN_*` vars set on `caisson-admin`: `ADMIN_AUTH_DATABASE_URL` (internal host, `admin_auth`
+   db, postgres role — better-auth needs table-DDL rights to migrate), `ADMIN_GITHUB_CLIENT_ID/SECRET`,
+   `ADMIN_GITHUB_ALLOWED_USER_IDS=265439716` (GridWork-dev numeric id), `ADMIN_BETTER_AUTH_SECRET`
+   (32-byte), `ADMIN_BETTER_AUTH_URL=https://admin.caisson.sh`.
+4. **Migration gotcha (CAISSON-48):** the `preDeployCommand = bun apps/admin/src/lib/admin-deploy-migrate.ts`
+   is a **no-op on the Next standalone image** (runtime stage copies `.next/standalone`, not `src/`) —
+   first deploy served with no tables (`relation "verification" does not exist`). Mitigated by running
+   the migration manually from the box against the `admin_auth` PUBLIC url (`cd apps/admin && bun
+src/lib/admin-deploy-migrate.ts`) → `account`/`session`/`user`/`verification` created. Filed
+   CAISSON-48 for the proper standalone-compatible fix.
+5. Operator verified GitHub sign-in works.
+6. **`terraform apply` removed the CF-Access `admin_gate`** — `Plan: 0 to add, 0 to change, 2 to
+destroy` (the admin_gate access application + policy); `site_gate` refreshed, **untouched**.
+   admin.caisson.sh is now gated solely by the GitHub-numeric-id allowlist.
+
+**No Worker republish:** `registry/index.json` byte-unchanged by the wave; the driver batch's
+`@caisson/analytics@0.1.0` ledger/index entry is manifest-only (npm tarball stays behind the manual
+`confirm=publish` dispatch).
+
+**Still pending (this session's final act):** the intel container (ADR-0286) box-deploy on gw-ms-a2 +
+the gridwork-core `identity/security-surfaces.md` rows.
+
+---
+
 ## 2026-07-07 — EXECUTED: triage-window wave deploy (site + license + admin; no Worker republish)
 
 **Why:** PRs #147–#152 merged to `main` (head at deploy time: site from `11cb4c30`, license/admin
