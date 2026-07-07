@@ -15,7 +15,7 @@ tailored codebase by pulling versioned module sources from the Caisson registry.
 compositions of the same audited base — the generator composes, it never forks.
 
 ```bash
-bun create caisson@latest my-app
+bunx @caisson-sh/cli@latest my-app
 cd my-app
 bun install
 ```
@@ -32,7 +32,7 @@ the same tree. The CLI and the buyer's AI agent read from the one registry — t
 drifting source.
 
 ```bash
-$ bun create caisson@latest my-app
+$ bunx @caisson-sh/cli@latest my-app
 resolved  11 modules from registry @ 2026.6.0
 scaffold  compliance edition + base substrate -> ./my-app
 metered   11 codegen-credits

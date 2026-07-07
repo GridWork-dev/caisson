@@ -162,8 +162,8 @@ export default async function DashboardPlanPage() {
           </h2>
           <p className="cs-muted" style={{ marginBottom: "var(--cs-space-3)" }}>
             {discordLinked
-              ? "Discord is connected — purchases grant your edition roles automatically."
-              : "Connect Discord to receive your edition roles in the Caisson server."}
+              ? "Discord is connected — purchases grant your bundle roles automatically."
+              : "Connect Discord to receive your bundle roles in the Caisson server."}
           </p>
           <DiscordConnect linked={discordLinked} />
         </div>

@@ -346,7 +346,7 @@ export default function LocalFirstPage() {
         <Section
           eyebrow="Zero egress by default"
           title="The only mode is local-only."
-          lede="The privacy policy is a closed schema, not a toggle: the only mode is local-only, and there is no hosted mode to accidentally flip, because the enum does not have one — widening it takes an ADR and a schema change, not a config edit. An allowlist is the sole way a host becomes reachable, and only two sink kinds are sanctioned: the model-download host for first-run ONNX fetches, and the rented-backend host for the opt-in hosted lane. Leave the allowlist empty and egress is zero — the air-gap default."
+          lede="The privacy policy is a closed schema, not a toggle: the only mode is local-only, and there is no hosted mode to accidentally flip, because the enum does not have one — widening it takes a deliberate code change, not a config edit. An allowlist is the sole way a host becomes reachable, and only two sink kinds are sanctioned: the model-download host for first-run ONNX fetches, and the rented-backend host for the opt-in hosted lane. Leave the allowlist empty and egress is zero — the air-gap default."
         />
       </Reveal>
 
@@ -434,7 +434,7 @@ export default function LocalFirstPage() {
         <Section
           eyebrow="Who it's for, and how it ships"
           title="Own the source. Run it on your machine."
-          lede="This bundle is for teams that cannot send data off the device — regulated data kept local, air-gapped deployments, embedded and edge tooling, or a product that should not need a network call to work at all. It ships the way every Caisson bundle ships: npx create-caisson@latest scaffolds the base, then you add Local-first AI. Two of its composed packages — kernel and license-verify — are Apache-2.0; local-store, field-crypto, local-inference, local-privacy, and local-sync are the commercial layer the bundle license covers."
+          lede="This bundle is for teams that cannot send data off the device — regulated data kept local, air-gapped deployments, embedded and edge tooling, or a product that should not need a network call to work at all. It ships the way every Caisson bundle ships: bunx @caisson-sh/cli@latest scaffolds the base, then you add Local-first AI. Two of its composed packages — kernel and license-verify — are Apache-2.0; local-store, field-crypto, local-inference, local-privacy, and local-sync are the commercial layer the bundle license covers."
           band="tint"
         />
       </Reveal>
@@ -457,8 +457,8 @@ export default function LocalFirstPage() {
             status={<StatusChip tone="muted" label="scaffold" />}
           >
             <span className="cs-tok-muted">{"$ "}</span>
-            {"bun create "}
-            <span className="cs-tok-accent">{"caisson"}</span>
+            {"bunx "}
+            <span className="cs-tok-accent">{"@caisson-sh/cli"}</span>
             {"@latest"}
           </Terminal>
           <div

@@ -78,7 +78,7 @@ export default async function DashboardOverviewPage() {
             title="No entitlements yet"
             description={
               <>
-                Purchase an edition from the{" "}
+                Purchase a bundle from the{" "}
                 <Link href="/dashboard/plan">Plan</Link> view to get started.
               </>
             }

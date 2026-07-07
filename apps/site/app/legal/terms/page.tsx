@@ -103,7 +103,7 @@ export default function TermsPage() {
         <h3 style={prose.h3}>Commercial product</h3>
         <p style={prose.paragraph}>
           Caisson is a commercially available software library. Prices shown on
-          the site are the current listed prices for each edition and module. A
+          the site are the current listed prices for each bundle and module. A
           purchase grants you a{" "}
           <a href="/legal/license" style={{ color: "var(--cs-accent)" }}>
             LicenseRef-Caisson-Commercial
@@ -278,7 +278,7 @@ export default function TermsPage() {
           An approved refund revokes the license entitlement granted by the
           refunded purchase and returns any unused credits it granted; access
           already exercised and credits already spent are not affected. If a
-          single order covered more than one edition or module, tell us which
+          single order covered more than one bundle or module, tell us which
           item you are refunding — individual line items can be refunded on
           their own.
         </p>

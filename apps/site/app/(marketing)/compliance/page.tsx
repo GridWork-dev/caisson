@@ -221,7 +221,7 @@ const FAQ: readonly { question: string; answer: string }[] = [
   {
     question: "Do I own the source?",
     answer:
-      "Yes. The one-time Compliance license is perpetual — you own the source for the base, the composed packages, and the evidence-pack generator. An optional Compliance Updates subscription tracks framework drift so the control mappings stay current.",
+      "Yes. The one-time Compliance license is perpetual — you own the source for the base, the composed packages, and the evidence-pack generator, and it includes 12 months of published framework-mapping updates from your purchase date. An optional Compliance Updates subscription keeps those updates flowing automatically after that; a per-entitlement renewal is the other way to extend the window.",
   },
 ];
 
@@ -542,9 +542,9 @@ export default function CompliancePage() {
               className="cs-muted"
               style={{ marginTop: "var(--cs-space-4)", maxWidth: "60ch" }}
             >
-              A one-time, perpetual license: bun create caisson@latest scaffolds
-              the base with tenancy-rls fail-closed and the standards gate
-              passing, and the five evidence collectors — RLS-force,
+              A one-time, perpetual license: bunx @caisson-sh/cli@latest
+              scaffolds the base with tenancy-rls fail-closed and the standards
+              gate passing, and the five evidence collectors — RLS-force,
               chain-verify, WORM-retention, field-crypto-policy, and the
               impersonation collector — are already wired into the SOC 2, HIPAA,
               and EU-AI-Act evidence packs. The pack format includes an OSCAL
@@ -573,7 +573,7 @@ export default function CompliancePage() {
             label="shell"
             status={<StatusChip label="ready" tone="success" dot />}
           >
-            {`$ bun create caisson@latest\n`}
+            {`$ bunx @caisson-sh/cli@latest\n`}
             <span className="cs-tok-accent">{`✓ scaffold complete\n`}</span>
             <span className="cs-tok-accent">{`✓ tenancy-rls: fail-closed\n`}</span>
             <span className="cs-tok-accent">{`✓ standards gate: passing\n`}</span>
