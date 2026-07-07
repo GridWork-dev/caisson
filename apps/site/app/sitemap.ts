@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { source } from "@/lib/source";
+import { COMPARISONS } from "@/lib/comparisons";
 import { GLOSSARY_TERMS } from "@/lib/glossary";
 import { MODULE_PAGES } from "@/lib/module-pages";
 import { MARKETING_ROUTES } from "@/lib/routes";
@@ -52,5 +53,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }));
 
-  return [...marketing, ...docs, ...glossary, ...modules];
+  // "Caisson vs X" comparison spokes derive from COMPARISONS the same way glossary/modules do — the
+  // /compare hub is a MARKETING_ROUTES entry (emitted above); the spokes never touch that list.
+  const comparisons: MetadataRoute.Sitemap = COMPARISONS.map((c) => ({
+    url: `${BASE}/compare/${c.slug}`,
+    lastModified: BUILT_AT,
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
+  }));
+
+  return [...marketing, ...docs, ...glossary, ...modules, ...comparisons];
 }

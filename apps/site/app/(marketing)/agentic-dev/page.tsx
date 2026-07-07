@@ -16,7 +16,12 @@ import {
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { MediaPlaceholder } from "@/components/media-placeholder";
 import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
-import { breadcrumb, serializeJsonLd, softwareApplication } from "@/lib/jsonld";
+import {
+  breadcrumb,
+  faqPage,
+  serializeJsonLd,
+  softwareApplication,
+} from "@/lib/jsonld";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import { BUNDLE_MARKS, moduleMark } from "@/lib/marks";
 import {
@@ -240,6 +245,11 @@ export default function AgenticDevPage() {
     { name: "Agentic-Dev", path: "/agentic-dev" },
   ]);
 
+  // FAQPage mirrors the FAQS rendered visibly below (the <Faq> section) — only emitted because the
+  // questions render on the page (jsonld.ts faqPage contract). The other five bundle pages already
+  // carry this; this closes the one bundle-schema gap the AEO audit found (CAISSON-29).
+  const faqLd = faqPage(FAQS);
+
   return (
     <>
       <TrackView item="bundle:agentic-dev" />
@@ -250,6 +260,10 @@ export default function AgenticDevPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(bcLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqLd) }}
       />
 
       {/* ===== Hero ===== */}
