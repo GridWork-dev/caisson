@@ -1,0 +1,279 @@
+/* DataTablePro — advanced grid chrome; values via --cs-* only, variants via [data-*] (ADR-0099). */
+.cs-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-3);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-lg);
+  background: var(--cs-bg);
+}
+
+.cs-grid__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--cs-space-3);
+  padding: var(--cs-space-3) var(--cs-space-4);
+  border-bottom: 1px solid var(--cs-border);
+}
+
+.cs-grid__tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cs-space-3);
+}
+
+.cs-grid__tool {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cs-space-2);
+}
+
+.cs-grid__tool-label {
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--cs-tracking-wide);
+}
+
+/* Filter builder. */
+.cs-grid__filters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-2);
+}
+
+.cs-grid__filter-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cs-space-2);
+}
+
+.cs-grid__filter-add .cs-select {
+  width: auto;
+  min-width: 8rem;
+}
+
+.cs-grid__filter-value {
+  padding: var(--cs-space-2) var(--cs-space-3);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-bg);
+  color: var(--cs-fg);
+  font-size: var(--cs-text-sm);
+  min-width: 8rem;
+}
+
+.cs-grid__filter-value:focus-visible {
+  outline: 2px solid var(--cs-focus);
+  outline-offset: 1px;
+}
+
+.cs-grid__filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cs-space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cs-grid__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cs-space-2);
+  padding: var(--cs-space-1) var(--cs-space-2);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-sm);
+  background: var(--cs-surface-1);
+  font-size: var(--cs-text-xs);
+}
+
+.cs-grid__chip button {
+  border: 0;
+  background: none;
+  color: var(--cs-fg-muted);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.cs-grid__chip button:hover {
+  color: var(--cs-danger);
+}
+
+/* Columns disclosure. */
+.cs-grid__columns > summary {
+  cursor: pointer;
+  padding: var(--cs-space-2) var(--cs-space-3);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-surface-1);
+  font-size: var(--cs-text-sm);
+  list-style: none;
+}
+
+.cs-grid__col-menu {
+  position: absolute;
+  z-index: 20;
+  margin-top: var(--cs-space-1);
+  padding: var(--cs-space-2);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-bg);
+  box-shadow: var(--cs-shadow-md);
+  list-style: none;
+  min-width: 12rem;
+}
+
+.cs-grid__col-menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cs-space-4);
+  padding: var(--cs-space-1) var(--cs-space-2);
+  font-size: var(--cs-text-sm);
+}
+
+.cs-grid__pin {
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-xs);
+}
+
+/* Scroll + table. */
+.cs-grid__scroll {
+  overflow: auto;
+}
+
+.cs-grid__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--cs-text-sm);
+}
+
+.cs-grid__table th,
+.cs-grid__table td {
+  padding: var(--cs-space-4);
+  border-bottom: 1px solid var(--cs-border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.cs-grid[data-dense] .cs-grid__table th,
+.cs-grid[data-dense] .cs-grid__table td {
+  padding: var(--cs-space-2) var(--cs-space-3);
+}
+
+.cs-grid__table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  letter-spacing: var(--cs-tracking-wide);
+  text-transform: uppercase;
+  color: var(--cs-fg-muted);
+  font-weight: var(--cs-weight-medium);
+  background: var(--cs-surface-1);
+}
+
+.cs-grid__table th[data-numeric],
+.cs-grid__table td[data-numeric] {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.cs-grid__table td[data-pinned],
+.cs-grid__table th[data-pinned] {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--cs-surface-1);
+}
+
+.cs-grid__table thead th[data-pinned] {
+  z-index: 3;
+}
+
+.cs-grid__table tbody tr:hover td {
+  background: var(--cs-surface-1);
+}
+
+.cs-grid__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cs-space-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.cs-grid__table th[data-numeric] .cs-grid__sort {
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.cs-grid__sort-arrow {
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-xs);
+}
+
+.cs-grid__sort[data-active] .cs-grid__sort-arrow {
+  color: var(--cs-accent);
+}
+
+.cs-grid__sort:focus-visible,
+.cs-grid__columns > summary:focus-visible {
+  outline: 2px solid var(--cs-focus);
+  outline-offset: 2px;
+}
+
+/* Grouping. */
+.cs-grid__group-head th {
+  background: var(--cs-surface-2);
+  font-family: var(--cs-font-sans);
+  text-transform: none;
+  letter-spacing: var(--cs-tracking-normal);
+}
+
+.cs-grid__group-name {
+  font-weight: var(--cs-weight-semibold);
+  color: var(--cs-fg);
+}
+
+.cs-grid__group-count,
+.cs-grid__group-agg {
+  margin-left: var(--cs-space-4);
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.cs-grid__empty {
+  padding: var(--cs-space-8);
+  text-align: center;
+  color: var(--cs-fg-muted);
+}
+
+.cs-grid__status {
+  margin: 0;
+  padding: var(--cs-space-2) var(--cs-space-4) var(--cs-space-3);
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (forced-colors: active) {
+  .cs-grid,
+  .cs-grid__table th,
+  .cs-grid__table td {
+    border-color: CanvasText;
+  }
+}

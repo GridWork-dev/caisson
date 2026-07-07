@@ -1,0 +1,65 @@
+/* DetailList — semantic <dl> key/value rows; values via --cs-* only (ADR-0099). */
+.cs-detail {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-3);
+}
+
+.cs-detail__row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-1);
+}
+
+.cs-detail[data-layout="columns"] .cs-detail__row {
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--cs-space-4);
+  padding-bottom: var(--cs-space-3);
+  border-bottom: 1px solid var(--cs-border);
+}
+
+.cs-detail[data-layout="columns"] .cs-detail__row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.cs-detail__term {
+  color: var(--cs-fg-muted);
+  font-size: var(--cs-text-xs);
+  letter-spacing: var(--cs-tracking-wide);
+  text-transform: uppercase;
+}
+
+.cs-detail[data-layout="columns"] .cs-detail__term {
+  text-transform: none;
+  letter-spacing: var(--cs-tracking-normal);
+  font-size: var(--cs-text-sm);
+}
+
+.cs-detail__value {
+  margin: 0;
+  color: var(--cs-fg);
+  font-size: var(--cs-text-sm);
+}
+
+.cs-detail__value[data-mono] {
+  font-family: var(--cs-font-mono);
+}
+
+.cs-detail__link {
+  color: var(--cs-link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.cs-detail__link:hover {
+  color: var(--cs-accent);
+}
+
+.cs-detail__link:focus-visible {
+  outline: 2px solid var(--cs-focus);
+  outline-offset: 2px;
+}
