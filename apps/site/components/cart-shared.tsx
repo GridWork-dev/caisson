@@ -6,6 +6,7 @@ import { Icon } from "@caisson/ui/components";
 
 import { Button } from "@/components";
 import { cartSubtotal, cartUpgrade, type CartItem } from "@/lib/cart";
+import { applyBundleUpsell, bestBundleUpsell } from "@/lib/cart-upsell";
 import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
 import { PADDLE_MOR_DISCLOSURE } from "@/lib/legal";
 import { formatUsd } from "@/lib/pricing";
@@ -60,18 +61,52 @@ export function CartLineItem({
   );
 }
 
-/** The honest bundle nudge — shown on both surfaces exactly when the Everything bundle would cover
- *  the cart for less than its current subtotal (`cartUpgrade`). "Switch" replaces the cart with the
- *  single bundle line, since the bundle is a strict superset of everything the cart could hold. */
+/** The honest bundle nudge, shown on both surfaces (drawer + /cart). A persona/Provenance-bundle
+ *  upsell wins when the cart already holds ≥ 60% of a bundle's price in its member modules
+ *  (`bestBundleUpsell`); the one-click swap removes just those member lines and adds the bundle.
+ *  Otherwise it falls back to the whole-catalog Everything nudge (`cartUpgrade`), which replaces the
+ *  cart with the single bundle line (a strict superset). `replaceCart` — not clear()+addItem — so the
+ *  in-place swap doesn't pop the modal drawer on /cart. All math is integer USD (ADR-0007). */
 export function CartUpgradeCallout() {
   const { items, replaceCart } = useCart();
+
+  // Persona/Provenance bundle upsell first (member-overlap ≥ 60% of the bundle price).
+  const persona = bestBundleUpsell(items);
+  if (persona) {
+    const bundleItem = bundleCatalogItem(persona.bundleId);
+    if (bundleItem) {
+      const swap = () =>
+        replaceCart(applyBundleUpsell(items, persona, toCartItem(bundleItem)));
+      const deltaText =
+        persona.delta > 0
+          ? `add ${formatUsd(persona.delta)} for everything in it`
+          : persona.delta < 0
+            ? `save ${formatUsd(-persona.delta)}`
+            : "for the same price";
+      const countText =
+        persona.memberCount === 1
+          ? "1 module in your cart is part of"
+          : `${persona.memberCount} modules in your cart are part of`;
+      return (
+        <div className={styles.upgrade}>
+          <p className={styles.upgradeText}>
+            {countText} the {persona.bundleLabel} bundle — get the whole bundle
+            for {formatUsd(persona.bundlePrice)} and {deltaText}.
+          </p>
+          <Button type="button" variant="primary" onClick={swap}>
+            Switch to the {persona.bundleLabel} bundle
+          </Button>
+        </div>
+      );
+    }
+  }
+
+  // Fallback: the whole-catalog Everything nudge.
   const everything = bundleCatalogItem("everything");
   if (everything === undefined) return null;
   const upgrade = cartUpgrade(items, toCartItem(everything));
   if (upgrade === undefined) return null;
 
-  // The bundle is a strict superset, so switching REPLACES the cart with the single bundle line.
-  // replaceCart (not clear()+addItem) so this in-place swap doesn't pop the modal drawer on /cart.
   const switchToBundle = () => replaceCart([upgrade.bundle]);
 
   return (

@@ -17,6 +17,7 @@ import {
 } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { MediaPlaceholder } from "@/components/media-placeholder";
+import { requireBundlePage } from "@/lib/bundle-pages";
 import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import {
@@ -29,10 +30,14 @@ import { BUNDLE_MARKS, moduleMark } from "@/lib/marks";
 import { bundlePrice, formatUsd, MODULE_PRICES } from "@/lib/pricing";
 import { TrackView } from "@/components/track-view";
 
+// Hero copy, member list, and FAQ read from the shared bundle content record (lib/bundle-pages.ts),
+// the SOT this page shares with the marketplace pop-out. Bespoke sections below (the controls,
+// honesty boundary, terminals, pricing ladder) stay page-local — page-unique, not pop-out-reused.
+const record = requireBundlePage("compliance");
+
 export const metadata = buildMetadata({
-  title: "Compliance",
-  description:
-    "Fail-closed Postgres RLS, S3 Object-Lock WORM, an append-only audit chain, per-tenant field encryption, alerting, and a retention runner — composed into one bundle and shipped with a SOC 2 / HIPAA evidence-pack generator. Caisson ships the technical controls and generates the evidence; the certification is your auditor's.",
+  title: record.metaTitle,
+  description: record.metaDescription,
   path: "/compliance",
 });
 
@@ -44,75 +49,10 @@ const BASE_MEMBER_ICON: Record<string, IconName> = {
   migrate: "database",
 };
 
-// The bundle's real composed packages (record: edition-compliance.json memberModules) — icon +
-// name + one-liner, priced via a StatusChip when the package is also sold standalone
-// (`MODULE_PRICES`), linking to its module depth page; base packages render unpriced.
-const MEMBER_MODULES: readonly {
-  id: string;
-  name: string;
-  oneLiner: string;
-}[] = [
-  {
-    id: "kernel",
-    name: "Kernel",
-    oneLiner:
-      "Typed config/schema, the SHA-256 chain primitive, and append-only versioning that the rest of the bundle builds on.",
-  },
-  {
-    id: "tenancy-rls",
-    name: "Tenancy RLS",
-    oneLiner:
-      "Fail-closed row-level security — every tenant table enables AND forces RLS, so a query with no tenant context returns nothing.",
-  },
-  {
-    id: "field-crypto",
-    name: "Field encryption",
-    oneLiner:
-      "Per-tenant field encryption via HKDF-SHA256 + AES-256-GCM; a leaked tenant key exposes one tenant, never the table.",
-  },
-  {
-    id: "audit-worm",
-    name: "Audit chain + WORM",
-    oneLiner:
-      "Append-only SHA-256 audit chain plus an S3 Object-Lock WORM adapter — evidence storage tampering breaks the chain and is provable.",
-  },
-  {
-    id: "migrate",
-    name: "Migrate",
-    oneLiner:
-      "The one migration assembler and runner: forward-only, idempotent, and fails closed on checksum drift.",
-  },
-  {
-    id: "alerting",
-    name: "Alert pipeline",
-    oneLiner:
-      "Deduped, rate-capped alert delivery with quiet hours and an audit trail — the SOC 2 CC7.2 alerting control.",
-  },
-  {
-    id: "retention-runner",
-    name: "Retention runner",
-    oneLiner:
-      "Policy-driven data retention on a schedule — expiry and legal-hold, enforced automatically, not by a recurring calendar reminder.",
-  },
-  {
-    id: "compliance-core",
-    name: "Compliance core",
-    oneLiner:
-      "The RLS-force evidence collector, isolation tests, and the SOC 2 / HIPAA evidence-pack generator that maps live controls to named clauses.",
-  },
-  {
-    id: "frameworks-pack",
-    name: "Frameworks pack",
-    oneLiner:
-      "SOC 2, HIPAA, and EU AI Act control mappings with OSCAL v1.2.2 export — the clause-to-control catalog the evidence packs render against.",
-  },
-  {
-    id: "signing-primitive",
-    name: "Signing primitive",
-    oneLiner:
-      "Detached Ed25519 + RFC-3161 signing over evidence bundles and audit roots — a signature a third party can verify without your keys.",
-  },
-];
+// The bundle's real composed packages — read from the shared bundle content record. Priced via a
+// StatusChip when a member is also sold standalone (`MODULE_PRICES`), linking to its module depth
+// page; base packages render unpriced.
+const MEMBER_MODULES = record.members;
 
 function MemberModuleCard({
   id,
@@ -206,24 +146,8 @@ const CONTROLS: readonly {
   },
 ];
 
-// Visible FAQ (rendered below) — the same items feed the FAQPage JSON-LD (record: edition-compliance.json).
-const FAQ: readonly { question: string; answer: string }[] = [
-  {
-    question: "Does Caisson make us SOC 2 or HIPAA certified?",
-    answer:
-      "No. Caisson ships the technical controls those frameworks require and generates the evidence to prove them. Certification comes from an auditor assessing your whole program — the organizational controls and the audit itself remain yours.",
-  },
-  {
-    question: "Which packages does the bundle actually compose?",
-    answer:
-      "Ten real workspace dependencies, wired at runtime and re-exported through the bundle's own entry point: kernel, tenancy-rls, field-crypto, audit-worm, migrate, alerting, retention-runner, compliance-core, frameworks-pack, and signing-primitive. Nothing on this page is a manifest claim without composed code behind it.",
-  },
-  {
-    question: "Do I own the source?",
-    answer:
-      "Yes. The one-time Compliance license is perpetual — you own the source for the base, the composed packages, and the evidence-pack generator, and it includes 12 months of published framework-mapping updates from your purchase date. An optional Compliance Updates subscription keeps those updates flowing automatically after that; a per-entitlement renewal is the other way to extend the window.",
-  },
-];
+// Visible FAQ (rendered below) — the same items feed the FAQPage JSON-LD; read from the record.
+const FAQ = record.faq;
 
 // Cart-ready CatalogItem for the peak-intent buy CTAs below (ADR-0192 single add-to-cart buy-verb).
 const _catalogItem = bundleCatalogItem("compliance");
@@ -255,8 +179,7 @@ export default function CompliancePage() {
           __html: serializeJsonLd(
             softwareApplication({
               name: "Caisson Compliance",
-              description:
-                "Fail-closed Postgres RLS, S3 Object-Lock WORM, an append-only audit chain, per-tenant field encryption, alerting, and a retention runner — composed into one bundle and shipped with a SOC 2 / HIPAA evidence-pack generator. Caisson ships the technical controls and generates the evidence; the certification is your auditor's.",
+              description: record.metaDescription,
               url: `${SITE_URL}/compliance`,
               priceId: "compliance",
             }),
@@ -283,9 +206,9 @@ export default function CompliancePage() {
 
       {/* ===== Hero ===== */}
       <Hero
-        eyebrow="Compliance-grade infrastructure for regulated SaaS"
-        title="Audit-ready from the first commit."
-        lede="Compliance composes ten packages into one bundle: tenant isolation that fails closed, evidence that can't be overwritten, and a tamper-evident log that proves it. Own the source, wire it in before your first customer, and hand an auditor an artifact instead of a slide deck."
+        eyebrow={record.hero.eyebrow}
+        title={record.hero.title}
+        lede={record.hero.lede}
         ctas={
           <>
             {bundleCartItem && (
