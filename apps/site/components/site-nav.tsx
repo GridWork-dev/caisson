@@ -68,6 +68,12 @@ const MARKETPLACE_PANEL: NavPanelSpec = {
       heading: "Marketplace",
       cards: [
         {
+          href: "/marketplace",
+          label: "Marketplace",
+          note: "The whole catalog — bundles and modules.",
+          icon: "bundle",
+        },
+        {
           href: "/marketplace/modules",
           label: "Modules",
           note: "Every standalone module, à la carte.",
@@ -87,14 +93,19 @@ const MARKETPLACE_PANEL: NavPanelSpec = {
           price: `from ${planPrice("developer")}`,
           icon: "plan-tier",
         },
+        {
+          href: "/compare",
+          label: "Compare",
+          note: "Bundles and modules, side by side.",
+          icon: "scale",
+        },
+        {
+          href: "/ui",
+          label: "UI Pro showcase",
+          note: "The premium component layer, live.",
+          icon: "dashboard",
+        },
       ],
-    },
-  ],
-  foot: [
-    {
-      href: "/marketplace",
-      label: "Compare the bundles",
-      desc: "Side-by-side, plus the Everything bundle.",
     },
   ],
 };
@@ -144,6 +155,8 @@ const MOBILE_LINKS: readonly { href: string; label: string }[] = [
   { href: "/marketplace/modules", label: "Modules" },
   { href: "/marketplace/build", label: "Build your stack" },
   { href: "/marketplace/plans", label: "Plans" },
+  { href: "/compare", label: "Compare" },
+  { href: "/ui", label: "UI Pro showcase" },
   { href: "/docs", label: "Docs" },
   { href: "/glossary", label: "Glossary" },
 ];

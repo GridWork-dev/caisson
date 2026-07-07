@@ -82,6 +82,23 @@
   font-size: var(--cs-text-xs);
 }
 
+.search {
+  width: 100%;
+  max-width: 24rem;
+  padding: var(--cs-space-2) var(--cs-space-3);
+  margin-bottom: var(--cs-space-4);
+  font: inherit;
+  color: var(--cs-fg);
+  background: var(--cs-surface-1);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+}
+
+.search:focus-visible {
+  outline: 2px solid var(--cs-accent);
+  outline-offset: 1px;
+}
+
 .chips {
   display: flex;
   flex-wrap: wrap;

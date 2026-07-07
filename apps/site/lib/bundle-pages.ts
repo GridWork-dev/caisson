@@ -1,0 +1,411 @@
+// The bundle content record — the shared, typed SOT for the six bundles' reusable page content,
+// the sibling of `lib/module-pages.ts` for modules. Each of the five hand-authored bundle pages
+// (`/compliance`, `/ai-kit`, `/local-first`, `/agentic-dev`, `/provenance`) reads its hero copy,
+// member list, and FAQ from here so the same content powers both the standalone SEO page and the
+// marketplace pop-out (`components/bundle-preview-dialog.tsx`). The `everything` bundle has no
+// standalone page (its buy path is the marketplace hub); its entry exists only to power the pop-out.
+//
+// SCOPE — what lives here vs. what stays in the page: this record holds the content the pop-out
+// REUSES (hero, definition, members, faq) plus the page metadata, so a claim never drifts between
+// the page and the pop-out. Each page's PAGE-UNIQUE bespoke prose — the "what it composes" and
+// "who it's for" narratives, the colored-token hero/terminal artifacts, and the pricing-ladder
+// cards — stays inline in the page: it is not pop-out-reused, and shattering that bespoke JSX into a
+// data record would trade byte-identical SEO output for zero reuse. Keep every claim true-to-built
+// (ADR-0082) and V1-live (ADR-0237 rider 2).
+
+import type { BundleId } from "./pricing";
+
+/** One composed member of a bundle — the id (a MODULE_PRICES id or a base-package slug), its display
+ *  name as the page renders it, and the customer-facing one-liner. Priced/linked state is derived by
+ *  the page (a member with a MODULE_PRICES row shows its price and links to its depth page). */
+export interface BundlePageMember {
+  id: string;
+  name: string;
+  oneLiner: string;
+}
+
+export interface BundlePageRecord {
+  /** = BundleId — the bundle's stable id and the pop-out query param (`?b=<slug>`). */
+  slug: BundleId;
+  /** Short page-title (the `<title>` head, not the H1). */
+  metaTitle: string;
+  /** The meta description — reused verbatim as the SoftwareApplication JSON-LD description. */
+  metaDescription: string;
+  /** Hero eyebrow / title / lede — the page's `<Hero>` reads these; the credentials + artifact
+   *  stay inline (page-unique, colored-token JSX). */
+  hero: { eyebrow: string; title: string; lede: string };
+  /** 40-70 word "what it is" for the pop-out (mirrors ModulePageRecord.definition). */
+  definition: string;
+  /** The bundle's composed members, in the order the page renders them (includes base packages that
+   *  have no standalone SKU — those render unpriced and unlinked). */
+  members: readonly BundlePageMember[];
+  /** Visible FAQ — also the source of the page's FAQPage JSON-LD. */
+  faq: readonly { question: string; answer: string }[];
+}
+
+export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
+  {
+    slug: "compliance",
+    metaTitle: "Compliance",
+    metaDescription:
+      "Fail-closed Postgres RLS, S3 Object-Lock WORM, an append-only audit chain, per-tenant field encryption, alerting, and a retention runner — composed into one bundle and shipped with a SOC 2 / HIPAA evidence-pack generator. Caisson ships the technical controls and generates the evidence; the certification is your auditor's.",
+    hero: {
+      eyebrow: "Compliance-grade infrastructure for regulated SaaS",
+      title: "Audit-ready from the first commit.",
+      lede: "Compliance composes ten packages into one bundle: tenant isolation that fails closed, evidence that can't be overwritten, and a tamper-evident log that proves it. Own the source, wire it in before your first customer, and hand an auditor an artifact instead of a slide deck.",
+    },
+    definition:
+      "Compliance composes ten @caisson/* packages into one bundle: fail-closed tenant isolation, an append-only audit chain over S3 Object-Lock WORM, per-tenant field encryption, alerting, a retention runner, and the evidence-pack generator that maps live controls to named SOC 2 and HIPAA clauses. Own the source, and wire it in before your first customer shares a row.",
+    members: [
+      {
+        id: "kernel",
+        name: "Kernel",
+        oneLiner:
+          "Typed config/schema, the SHA-256 chain primitive, and append-only versioning that the rest of the bundle builds on.",
+      },
+      {
+        id: "tenancy-rls",
+        name: "Tenancy RLS",
+        oneLiner:
+          "Fail-closed row-level security — every tenant table enables AND forces RLS, so a query with no tenant context returns nothing.",
+      },
+      {
+        id: "field-crypto",
+        name: "Field encryption",
+        oneLiner:
+          "Per-tenant field encryption via HKDF-SHA256 + AES-256-GCM; a leaked tenant key exposes one tenant, never the table.",
+      },
+      {
+        id: "audit-worm",
+        name: "Audit chain + WORM",
+        oneLiner:
+          "Append-only SHA-256 audit chain plus an S3 Object-Lock WORM adapter — evidence storage tampering breaks the chain and is provable.",
+      },
+      {
+        id: "migrate",
+        name: "Migrate",
+        oneLiner:
+          "The one migration assembler and runner: forward-only, idempotent, and fails closed on checksum drift.",
+      },
+      {
+        id: "alerting",
+        name: "Alert pipeline",
+        oneLiner:
+          "Deduped, rate-capped alert delivery with quiet hours and an audit trail — the SOC 2 CC7.2 alerting control.",
+      },
+      {
+        id: "retention-runner",
+        name: "Retention runner",
+        oneLiner:
+          "Policy-driven data retention on a schedule — expiry and legal-hold, enforced automatically, not by a recurring calendar reminder.",
+      },
+      {
+        id: "compliance-core",
+        name: "Compliance core",
+        oneLiner:
+          "The RLS-force evidence collector, isolation tests, and the SOC 2 / HIPAA evidence-pack generator that maps live controls to named clauses.",
+      },
+      {
+        id: "frameworks-pack",
+        name: "Frameworks pack",
+        oneLiner:
+          "SOC 2, HIPAA, and EU AI Act control mappings with OSCAL v1.2.2 export — the clause-to-control catalog the evidence packs render against.",
+      },
+      {
+        id: "signing-primitive",
+        name: "Signing primitive",
+        oneLiner:
+          "Detached Ed25519 + RFC-3161 signing over evidence bundles and audit roots — a signature a third party can verify without your keys.",
+      },
+    ],
+    faq: [
+      {
+        question: "Does Caisson make us SOC 2 or HIPAA certified?",
+        answer:
+          "No. Caisson ships the technical controls those frameworks require and generates the evidence to prove them. Certification comes from an auditor assessing your whole program — the organizational controls and the audit itself remain yours.",
+      },
+      {
+        question: "Which packages does the bundle actually compose?",
+        answer:
+          "Ten real workspace dependencies, wired at runtime and re-exported through the bundle's own entry point: kernel, tenancy-rls, field-crypto, audit-worm, migrate, alerting, retention-runner, compliance-core, frameworks-pack, and signing-primitive. Nothing on this page is a manifest claim without composed code behind it.",
+      },
+      {
+        question: "Do I own the source?",
+        answer:
+          "Yes. The one-time Compliance license is perpetual — you own the source for the base, the composed packages, and the evidence-pack generator, and it includes 12 months of published framework-mapping updates from your purchase date. An optional Compliance Updates subscription keeps those updates flowing automatically after that; a per-entitlement renewal is the other way to extend the window.",
+      },
+    ],
+  },
+  {
+    slug: "ai-production",
+    metaTitle: "AI Production Kit",
+    metaDescription:
+      "A metered infer()/embed() gateway on Vercel AI SDK v5: Postgres-atomic token metering with a per-tenant circuit breaker, typed input/output guardrails, and versioned prompts, composed behind one chokepoint. $739 once, own the source.",
+    hero: {
+      eyebrow: "AI-Production bundle",
+      title: "One gateway between your code and the model.",
+      lede: "infer() and embed() are the only door to a model in this kit: every call resolves a versioned prompt, reserves against a per-tenant spend cap, crosses a guardrail on the way in and out, and reconciles usage in the same Postgres transaction as the result. Vercel AI SDK v5 sits behind it; your route handler calls infer(lane, input) and never touches a provider SDK directly.",
+    },
+    definition:
+      "The AI-Production bundle puts one metered gateway between your code and the model: infer() and embed() resolve a versioned prompt, reserve against a per-tenant spend cap, cross input and output guardrails, and reconcile usage in the same Postgres transaction as the result — Vercel AI SDK v5 behind one fail-closed chokepoint.",
+    members: [
+      {
+        id: "prompt-registry",
+        name: "Prompt registry",
+        oneLiner:
+          "Versioned prompts with rollout history: promote or roll back a prompt by moving an alias pointer, no redeploy required.",
+      },
+      {
+        id: "ai-meter",
+        name: "Token metering",
+        oneLiner:
+          "PG-atomic token metering with per-tenant spend caps and a circuit breaker: a runaway prompt loop trips the breaker before it runs your bill up.",
+      },
+      {
+        id: "guardrails",
+        name: "Guardrails",
+        oneLiner:
+          "Input and output guardrails wired once, at the model boundary, instead of copy-pasted into every call site.",
+      },
+      {
+        id: "ai-config",
+        name: "AI config",
+        oneLiner:
+          "Provider-agnostic config resolver plus a buyer settings file: the lane-to-provider mapping infer() reads to pick a model. Base substrate, composed in at no separate module price.",
+      },
+    ],
+    faq: [
+      {
+        question: "What does token metering actually prevent?",
+        answer:
+          "A runaway loop, a misconfigured agent, or a single burst of traffic can multiply your API invoice by 10x before you see it. Usage writes in the same Postgres transaction as the result (an atomic increment), so concurrent calls can never double-count or drop a charge. Crossing the cap opens the circuit breaker and returns HTTP 402 before the next model call fires.",
+      },
+      {
+        question: "What happens when a tenant hits their spend cap?",
+        answer:
+          "The breaker opens. The next model call returns HTTP 402 with a structured error body, the same as any other payment-required response in your API. The window resets on the configured interval. No partial responses, no silent overages.",
+      },
+      {
+        question: "Can I use my own provider key instead of the platform lane?",
+        answer:
+          "Yes. BYOK resolves a tenant's own encrypted provider key ahead of the shared lane, written through the same per-tenant field-crypto boundary the rest of the platform uses. A BYOK-backed call debits zero credits, since the tenant is paying the model provider directly.",
+      },
+    ],
+  },
+  {
+    slug: "local-first",
+    metaTitle: "Local-first AI",
+    metaDescription:
+      "Local-first AI composes on-device ONNX inference, a zero-egress privacy gate, offline sync, and hybrid sqlite-vec + FTS5 search into one Caisson bundle ($629 one-time, own the source).",
+    hero: {
+      eyebrow: "Local-first AI · Own the source",
+      title: "Your data never leaves the device.",
+      lede: "The compute seam runs inference on-device by default; the privacy gate makes a hosted call an explicit opt-in, not a default you discover in a network trace. Vector search, sync, and license verification all run against local files — nothing round-trips to a vendor unless you allow it in writing.",
+    },
+    definition:
+      "Local-first AI composes on-device ONNX inference, a default-deny privacy egress gate, offline two-way sync, and hybrid sqlite-vec + FTS5 search into one bundle. Inference runs on-device by default; a hosted call is an explicit opt-in, never a default you discover in a network trace. Own the source.",
+    members: [
+      {
+        id: "local-store",
+        name: "@caisson/local-store",
+        oneLiner:
+          "Hybrid retrieval: sqlite-vec ANN plus FTS5, merged by Reciprocal-Rank-Fusion, with an FTS-only fallback if the vector leg fails.",
+      },
+      {
+        id: "license-verify",
+        name: "@caisson/license-verify",
+        oneLiner:
+          "Offline Ed25519 license verification: checks the signature on the device, fails safe to the community tier if it cannot verify.",
+      },
+      {
+        id: "field-crypto",
+        name: "@caisson/field-crypto",
+        oneLiner:
+          "Per-tenant field encryption: HKDF key derivation plus AES-256-GCM, sealed at rest under a key a different tenant's file cannot open.",
+      },
+      {
+        id: "local-inference",
+        name: "@caisson/local-inference",
+        oneLiner:
+          "The InferenceBackend seam over a MiniLM-class ONNX model via transformers.js, SHA-256 hash-verified before use — on-device by default.",
+      },
+      {
+        id: "local-privacy",
+        name: "@caisson/local-privacy",
+        oneLiner:
+          "A default-deny egress boundary every payload crosses before it can leave the process — an empty allowlist means zero egress.",
+      },
+      {
+        id: "local-sync",
+        name: "@caisson/local-sync",
+        oneLiner:
+          "Two-way offline sync: changesets, tombstones, a logical clock, and a reconcile pass with a convergence test.",
+      },
+      {
+        id: "kernel",
+        name: "@caisson/kernel",
+        oneLiner:
+          "The governance kernel underneath every bundle: typed config, the shared error model, and security primitives.",
+      },
+    ],
+    faq: [
+      {
+        question: 'Does "own the source" rule out hosted inference?',
+        answer:
+          "No. The compute seam supports opt-in rented transports (OpenRouter, Azure OpenAI, and AWS Bedrock) behind the same InferenceBackend interface used on-device. They are off by default; the privacy policy's allowlist is the only way any of those hosts becomes reachable.",
+      },
+      {
+        question: "What does the on-device model need to run?",
+        answer:
+          "The ONNX backend runs a MiniLM-class model via transformers.js. The @huggingface/transformers runtime is an optional peer you install yourself — it is not bundled in the package — and the model weights are first-run-fetched and SHA-256 hash-verified before use. Air-gapped buyers pre-seed the cache and run fully offline.",
+      },
+      {
+        question:
+          "Can I buy just the vector store instead of the whole bundle?",
+        answer:
+          "Yes. @caisson/local-store is also sold standalone for $99 — as are on-device inference ($249), the sync engine ($199), and the privacy gate ($99). The full Local-first AI bundle (all seven composed packages, own the source) is $629 one-time.",
+      },
+    ],
+  },
+  {
+    slug: "agentic-dev",
+    metaTitle: "Agentic-Dev",
+    metaDescription:
+      "A governed-agent kernel for TypeScript codebases: typed agent/skill/rule schema, a guarded 7-act lifecycle, a sandboxed agent runner with a from-scratch scrubbed env, local hybrid memory, and a default-deny tool-exec gate. Own the source.",
+    hero: {
+      eyebrow: "Agentic-Dev bundle",
+      title:
+        "A governed agent lifecycle, plus a sandboxed runner to execute it.",
+      lede: "Agents declare their model lane, their tools, and their blast radius up front. A lifecycle state machine refuses to advance a run that failed verify. And when it's time to actually spawn an agent, the runner builds its child environment from scratch — never a spread of your process env — so a credential you never intended to hand over cannot leak into the sandbox.",
+    },
+    definition:
+      "The Agentic-Dev bundle is a governed-agent kernel plus a sandboxed runner to execute it: a typed agent/skill/rule schema, a guarded 7-act lifecycle that reopens PLAN when VERIFY fails, local hybrid memory, and a default-deny tool-exec gate — with a child environment built from scratch so a credential can't leak into the sandbox.",
+    members: [
+      {
+        id: "agent-kernel",
+        name: "Agent kernel",
+        oneLiner:
+          "Typed agent/skill/rule schema plus the guarded 7-act lifecycle FSM and hooks dispatcher — one of the bundle's composed pieces, alongside local memory and the tool-exec gate.",
+      },
+      {
+        id: "agent-runner",
+        name: "Agent runner",
+        oneLiner:
+          "Spawns a headless coding agent as a detached subprocess in an isolated worktree with a from-scratch scrubbed env, streaming an auditable transcript.",
+      },
+      {
+        id: "local-store",
+        name: "Local hybrid memory",
+        oneLiner:
+          "Per-tenant vec0 + FTS5 recall with reciprocal-rank fusion and an FTS-only offline floor; no memory item is ever a secret.",
+      },
+      {
+        id: "tool-exec",
+        name: "Sandboxed tool-exec gate",
+        oneLiner:
+          "Default-deny allowlist over Zod-strict argv schemas and execFile arg-arrays — an agent never reaches a shell.",
+      },
+    ],
+    faq: [
+      {
+        question: "What's actually running when an agent executes?",
+        answer:
+          "@caisson/agent-runner spawns the agent CLI as a detached subprocess in an isolated worktree with a child environment built from scratch — never a spread of your process env — plus a fixed non-secret passthrough allowlist and only the target provider's key. Every run streams a durable .jsonl transcript and resolves to a structured report of tool calls, files touched, and the final result.",
+      },
+      {
+        question: "Can I buy just the kernel or just the runner?",
+        answer:
+          "Yes. The agent kernel and the agent runner are both purchasable à la carte onto your existing Caisson base. The full Agentic-Dev bundle also composes local hybrid memory (sold standalone under the Local-first bundle, not Agentic-Dev) and the tool-exec gate (no standalone SKU at all).",
+      },
+      {
+        question: "Does the runner or the kernel ever hold a credential?",
+        answer:
+          "No. Construction of the three pieces the bundle factory composes — kernel, memory, tool-exec gate — holds no credential and makes no network or LLM call. The agent runner ships as its own package alongside the bundle; its buildEngineEnv() step is the one place a secret could reach a spawned process, and a ship-blocking leak-guard test attacks it with a polluted parent env and asserts the exact child env key set.",
+      },
+    ],
+  },
+  {
+    slug: "provenance",
+    metaTitle: "Provenance",
+    metaDescription:
+      "Cryptographic provenance for regulated data: detached Ed25519 + RFC-3161 signing, an append-only SHA-256 WORM audit chain, and per-tenant field encryption — the three primitives that prove a record wasn't tampered with. Own the source.",
+    hero: {
+      eyebrow: "Cryptographic provenance",
+      title: "Prove the record wasn't tampered with.",
+      lede: "Provenance composes three primitives into one bundle: detached signing that a third party verifies without your keys, an append-only audit chain where a single altered row breaks every link after it, and per-tenant field encryption sealed at rest. Own the source, and hand an auditor a signature instead of a promise.",
+    },
+    definition:
+      "Provenance composes three cryptographic primitives into one bundle: detached Ed25519 + RFC-3161 signing a third party can verify without your keys, an append-only SHA-256 audit chain where one altered row breaks every link after it, and per-tenant field encryption sealed at rest. The proof travels with the artifact.",
+    // Provenance renders its members from `modulesByBundle("provenance")`; the ids/names below match
+    // that catalog order and those labels exactly, and the one-liners are the page's customer copy.
+    members: [
+      {
+        id: "field-crypto",
+        name: "Field encryption",
+        oneLiner:
+          "Per-tenant field encryption via HKDF-SHA256 + AES-256-GCM — a leaked tenant key exposes one tenant, never the table.",
+      },
+      {
+        id: "audit-worm",
+        name: "Audit chain + WORM",
+        oneLiner:
+          "An append-only SHA-256 audit chain plus an S3 Object-Lock WORM adapter: tamper with a historical row and every link after it breaks, provably.",
+      },
+      {
+        id: "signing-primitive",
+        name: "Signing primitive",
+        oneLiner:
+          "Detached Ed25519 + RFC-3161 signing over an evidence bundle or an audit root — a signature a third party verifies without ever touching your keys.",
+      },
+    ],
+    faq: [
+      {
+        question: "How is Provenance different from Compliance?",
+        answer:
+          "Provenance is the cryptographic core — signing, the WORM audit chain, and field encryption — the three primitives that prove a record is authentic and untampered. Compliance wraps those in the full regulated-SaaS stack: fail-closed RLS, the evidence-pack generator, the framework mappings, alerting, and retention. Every Provenance module is also in Compliance, so Compliance owners already have it.",
+      },
+      {
+        question: "Which packages does the bundle compose?",
+        answer:
+          "Three real workspace dependencies: @caisson/signing-primitive (detached Ed25519 + RFC-3161), @caisson/audit-worm (the SHA-256 audit chain plus the S3 Object-Lock adapter), and @caisson/field-crypto (per-tenant HKDF-SHA256 + AES-256-GCM). Nothing on this page is a manifest claim without composed code behind it.",
+      },
+      {
+        question: "Can a third party verify a signature without my keys?",
+        answer:
+          "Yes. Signatures are detached Ed25519 with an RFC-3161 timestamp: a verifier checks the artifact against your public key and the timestamp authority, with no access to the signing key. The audit-chain root and WORM retention are likewise independently checkable.",
+      },
+    ],
+  },
+  {
+    slug: "everything",
+    metaTitle: "Everything",
+    metaDescription:
+      "The Everything bundle — every Caisson bundle and every à-la-carte module, composed on the same audited base, in one perpetual purchase.",
+    hero: {
+      eyebrow: "Everything bundle",
+      title: "The whole catalog, one purchase.",
+      lede: "The Everything bundle is exactly what it says: every commercial bundle and every à-la-carte module — the full sellable catalog, composed on the same audited base.",
+    },
+    definition:
+      "The Everything bundle is the whole commercial catalog — every bundle and every à-la-carte module, composed on the same audited base, in one perpetual purchase. Only the private brand layer is excluded.",
+    // The Everything bundle is the whole catalog by construction; the pop-out renders its catalog
+    // savings ladder rather than a fixed member list, so this stays empty.
+    members: [],
+    faq: [],
+  },
+];
+
+/** The bundle content record for a bundle id, or `undefined` for an unknown id. */
+export function bundlePageRecord(slug: string): BundlePageRecord | undefined {
+  return BUNDLE_PAGES.find((b) => b.slug === slug);
+}
+
+/** The record for a known bundle id — throws (a build-time bug) if one is missing, so a page never
+ *  threads a `?`-guard for a record the BUNDLE_PAGES bijection guarantees. */
+export function requireBundlePage(slug: BundleId): BundlePageRecord {
+  const record = bundlePageRecord(slug);
+  if (record === undefined) {
+    throw new Error(`bundle-pages.ts: no content record for bundle "${slug}"`);
+  }
+  return record;
+}

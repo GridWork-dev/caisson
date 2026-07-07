@@ -28,14 +28,17 @@ import {
 } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { MediaPlaceholder } from "@/components/media-placeholder";
+import { requireBundlePage } from "@/lib/bundle-pages";
 import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
 import { TrackView } from "@/components/track-view";
 
-const AI_KIT_DESCRIPTION = `A metered infer()/embed() gateway on Vercel AI SDK v5: Postgres-atomic token metering with a per-tenant circuit breaker, typed input/output guardrails, and versioned prompts, composed behind one chokepoint. ${bundlePrice("ai-production")} once, own the source.`;
+// Hero copy, member list, and FAQ read from the shared bundle content record (lib/bundle-pages.ts);
+// the bespoke sections below stay page-local.
+const record = requireBundlePage("ai-production");
 
 export const metadata = buildMetadata({
-  title: "AI Production Kit",
-  description: AI_KIT_DESCRIPTION,
+  title: record.metaTitle,
+  description: record.metaDescription,
   path: "/ai-kit",
 });
 
@@ -46,24 +49,8 @@ const modulePrice = priceById("module");
 const _catalogItem = bundleCatalogItem("ai-production");
 const bundleCartItem = _catalogItem ? toCartItem(_catalogItem) : undefined;
 
-// FAQ items — answer-first (ADR-0080 §6); also rendered as faqPage JSON-LD. Record: edition-ai-kit.json.
-const FAQ_ITEMS = [
-  {
-    question: "What does token metering actually prevent?",
-    answer:
-      "A runaway loop, a misconfigured agent, or a single burst of traffic can multiply your API invoice by 10x before you see it. Usage writes in the same Postgres transaction as the result (an atomic increment), so concurrent calls can never double-count or drop a charge. Crossing the cap opens the circuit breaker and returns HTTP 402 before the next model call fires.",
-  },
-  {
-    question: "What happens when a tenant hits their spend cap?",
-    answer:
-      "The breaker opens. The next model call returns HTTP 402 with a structured error body, the same as any other payment-required response in your API. The window resets on the configured interval. No partial responses, no silent overages.",
-  },
-  {
-    question: "Can I use my own provider key instead of the platform lane?",
-    answer:
-      "Yes. BYOK resolves a tenant's own encrypted provider key ahead of the shared lane, written through the same per-tenant field-crypto boundary the rest of the platform uses. A BYOK-backed call debits zero credits, since the tenant is paying the model provider directly.",
-  },
-] as const;
+// FAQ items — answer-first (ADR-0080 §6); also rendered as faqPage JSON-LD. Read from the record.
+const FAQ_ITEMS = record.faq;
 
 // Base substrate predates the F6 sellable-module mark set — ai-config never got a standalone SKU or
 // a bespoke mark, so it resolves through this local map (matches the compliance/agentic-dev pages'
@@ -72,39 +59,10 @@ const BASE_MEMBER_ICON: Record<string, IconName> = {
   "ai-config": "gauge",
 };
 
-// The bundle's real composed packages (record: edition-ai-kit.json memberModules) — icon + name +
-// one-liner, priced via a StatusChip when the package is also sold standalone (`MODULE_PRICES`),
-// linking to its module depth page; ai-config is base substrate and renders unpriced.
-const MEMBER_MODULES: readonly {
-  id: string;
-  name: string;
-  oneLiner: string;
-}[] = [
-  {
-    id: "prompt-registry",
-    name: "Prompt registry",
-    oneLiner:
-      "Versioned prompts with rollout history: promote or roll back a prompt by moving an alias pointer, no redeploy required.",
-  },
-  {
-    id: "ai-meter",
-    name: "Token metering",
-    oneLiner:
-      "PG-atomic token metering with per-tenant spend caps and a circuit breaker: a runaway prompt loop trips the breaker before it runs your bill up.",
-  },
-  {
-    id: "guardrails",
-    name: "Guardrails",
-    oneLiner:
-      "Input and output guardrails wired once, at the model boundary, instead of copy-pasted into every call site.",
-  },
-  {
-    id: "ai-config",
-    name: "AI config",
-    oneLiner:
-      "Provider-agnostic config resolver plus a buyer settings file: the lane-to-provider mapping infer() reads to pick a model. Base substrate, composed in at no separate module price.",
-  },
-];
+// The bundle's real composed packages — read from the shared bundle content record. Priced via a
+// StatusChip when a member is also sold standalone (`MODULE_PRICES`), linking to its module depth
+// page; ai-config is base substrate and renders unpriced.
+const MEMBER_MODULES = record.members;
 
 function MemberModuleCard({
   id,
@@ -176,7 +134,7 @@ export default function AiKitPage() {
   // JSON-LD nodes
   const appNode = softwareApplication({
     name: "Caisson AI-Production",
-    description: AI_KIT_DESCRIPTION,
+    description: record.metaDescription,
     url: "https://caisson.sh/ai-kit",
     priceId: "ai-production",
   });
@@ -209,18 +167,9 @@ export default function AiKitPage() {
 
       {/* ===== Hero: one gateway between your code and the model ===== */}
       <Hero
-        eyebrow="AI-Production bundle"
-        title="One gateway between your code and the model."
-        lede={
-          <>
-            infer() and embed() are the only door to a model in this kit: every
-            call resolves a versioned prompt, reserves against a per-tenant
-            spend cap, crosses a guardrail on the way in and out, and reconciles
-            usage in the same Postgres transaction as the result. Vercel AI SDK
-            v5 sits behind it; your route handler calls infer(lane, input) and
-            never touches a provider SDK directly.
-          </>
-        }
+        eyebrow={record.hero.eyebrow}
+        title={record.hero.title}
+        lede={record.hero.lede}
         ctas={
           <>
             {bundleCartItem && (

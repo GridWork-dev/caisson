@@ -15,6 +15,7 @@ import {
 } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { MediaPlaceholder } from "@/components/media-placeholder";
+import { requireBundlePage } from "@/lib/bundle-pages";
 import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
 import {
   breadcrumb,
@@ -34,12 +35,13 @@ import {
 } from "@/lib/pricing";
 import { TrackView } from "@/components/track-view";
 
-const AGENTIC_DEV_DESCRIPTION =
-  "A governed-agent kernel for TypeScript codebases: typed agent/skill/rule schema, a guarded 7-act lifecycle, a sandboxed agent runner with a from-scratch scrubbed env, local hybrid memory, and a default-deny tool-exec gate. Own the source.";
+// Hero copy, member list, and FAQ read from the shared bundle content record (lib/bundle-pages.ts);
+// the bespoke sections below stay page-local.
+const record = requireBundlePage("agentic-dev");
 
 export const metadata = buildMetadata({
-  title: "Agentic-Dev",
-  description: AGENTIC_DEV_DESCRIPTION,
+  title: record.metaTitle,
+  description: record.metaDescription,
   path: "/agentic-dev",
 });
 
@@ -85,39 +87,10 @@ const BASE_MEMBER_ICON: Record<string, IconName> = {
   "tool-exec": "terminal",
 };
 
-// The bundle's real composed packages (record: edition-agent-dev.json memberModules) — icon +
-// name + one-liner, priced via a StatusChip when the package is also sold standalone
-// (`MODULE_PRICES`), linking to its module depth page; tool-exec has no standalone SKU at all.
-const MEMBER_MODULES: readonly {
-  id: string;
-  name: string;
-  oneLiner: string;
-}[] = [
-  {
-    id: "agent-kernel",
-    name: "Agent kernel",
-    oneLiner:
-      "Typed agent/skill/rule schema plus the guarded 7-act lifecycle FSM and hooks dispatcher — one of the bundle's composed pieces, alongside local memory and the tool-exec gate.",
-  },
-  {
-    id: "agent-runner",
-    name: "Agent runner",
-    oneLiner:
-      "Spawns a headless coding agent as a detached subprocess in an isolated worktree with a from-scratch scrubbed env, streaming an auditable transcript.",
-  },
-  {
-    id: "local-store",
-    name: "Local hybrid memory",
-    oneLiner:
-      "Per-tenant vec0 + FTS5 recall with reciprocal-rank fusion and an FTS-only offline floor; no memory item is ever a secret.",
-  },
-  {
-    id: "tool-exec",
-    name: "Sandboxed tool-exec gate",
-    oneLiner:
-      "Default-deny allowlist over Zod-strict argv schemas and execFile arg-arrays — an agent never reaches a shell.",
-  },
-];
+// The bundle's real composed packages — read from the shared bundle content record. Priced via a
+// StatusChip when a member is also sold standalone (`MODULE_PRICES`), linking to its module depth
+// page; tool-exec has no standalone SKU at all.
+const MEMBER_MODULES = record.members;
 
 function MemberModuleCard({
   id,
@@ -164,24 +137,8 @@ function MemberModuleCard({
   );
 }
 
-/* ---------- FAQ (AI retrieval; also visible on page) — record: edition-agent-dev.json ---------- */
-const FAQS = [
-  {
-    question: "What's actually running when an agent executes?",
-    answer:
-      "@caisson/agent-runner spawns the agent CLI as a detached subprocess in an isolated worktree with a child environment built from scratch — never a spread of your process env — plus a fixed non-secret passthrough allowlist and only the target provider's key. Every run streams a durable .jsonl transcript and resolves to a structured report of tool calls, files touched, and the final result.",
-  },
-  {
-    question: "Can I buy just the kernel or just the runner?",
-    answer:
-      "Yes. The agent kernel and the agent runner are both purchasable à la carte onto your existing Caisson base. The full Agentic-Dev bundle also composes local hybrid memory (sold standalone under the Local-first bundle, not Agentic-Dev) and the tool-exec gate (no standalone SKU at all).",
-  },
-  {
-    question: "Does the runner or the kernel ever hold a credential?",
-    answer:
-      "No. Construction of the three pieces the bundle factory composes — kernel, memory, tool-exec gate — holds no credential and makes no network or LLM call. The agent runner ships as its own package alongside the bundle; its buildEngineEnv() step is the one place a secret could reach a spawned process, and a ship-blocking leak-guard test attacks it with a polluted parent env and asserts the exact child env key set.",
-  },
-];
+/* ---------- FAQ (AI retrieval; also visible on page) — read from the record ---------- */
+const FAQS = record.faq;
 
 /* ---------- Hero artifact ---------- */
 const AgentDeclaration = (
@@ -235,7 +192,7 @@ const RunnerSpawn = (
 export default function AgenticDevPage() {
   const appLd = softwareApplication({
     name: "Caisson Agentic-Dev",
-    description: AGENTIC_DEV_DESCRIPTION,
+    description: record.metaDescription,
     url: `${SITE_URL}/agentic-dev`,
     priceId: "agentic-dev",
   });
@@ -268,18 +225,9 @@ export default function AgenticDevPage() {
 
       {/* ===== Hero ===== */}
       <Hero
-        eyebrow="Agentic-Dev bundle"
-        title="A governed agent lifecycle, plus a sandboxed runner to execute it."
-        lede={
-          <>
-            Agents declare their model lane, their tools, and their blast radius
-            up front. A lifecycle state machine refuses to advance a run that
-            failed verify. And when it&apos;s time to actually spawn an agent,
-            the runner builds its child environment from scratch — never a
-            spread of your process env — so a credential you never intended to
-            hand over cannot leak into the sandbox.
-          </>
-        }
+        eyebrow={record.hero.eyebrow}
+        title={record.hero.title}
+        lede={record.hero.lede}
         ctas={
           <>
             {bundleCartItem && (
