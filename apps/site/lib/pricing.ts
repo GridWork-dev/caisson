@@ -389,6 +389,26 @@ export function renewalAmount(entitlementId: string): number | null {
   return n < 9 ? null : n - ((n - 9) % 10);
 }
 
+/** Priority-support response-time commitment (ADR-0278 Track K, price-agnostic plumbing, fifth-sitting
+ *  picker 2026-07-07): the ONE config source every surface describing the SKU reads from, so the
+ *  number never drifts and — while `null` — never invents one. Operator-owned: `null` until the
+ *  response-time terms are locked alongside the price (ADR-0278 §Decision — "Price and SLA numbers
+ *  are operator-owned"). A plain business-days/hours STRING, not a numeric field, so it can carry
+ *  best-effort framing without a formatter re-inventing the wording. */
+export const PRIORITY_SUPPORT_RESPONSE_TIME: string | null = null;
+
+/** Honest response-time line for the priority-support SKU (ADR-0278: response-time, not resolution-
+ *  time; business-days phrasing; never the word "SLA" — that implies a contractual remedy this
+ *  one-person operation doesn't commit to). `null` config renders a plain unset line rather than a
+ *  fabricated number (the same no-placeholder discipline the price itself follows). Internal/config
+ *  copy only today — no page renders this SKU yet (ADR-0278 Consequences: the pricing page's existing
+ *  support-responsiveness line keeps describing the included tier only until this SKU ships a price). */
+export function prioritySupportResponseTimeCopy(): string {
+  return PRIORITY_SUPPORT_RESPONSE_TIME === null
+    ? "Response-time commitment: unset."
+    : `Target response time: ${PRIORITY_SUPPORT_RESPONSE_TIME} (best-effort).`;
+}
+
 /** Purchase structures beyond the one-time bundles (`BUNDLE_PRICES` owns those — incl. the
  *  Everything bundle that replaced the retired $1,499 edition-era row). */
 export const PLAN_PRICES: readonly PriceAnchor[] = [
@@ -415,6 +435,22 @@ export const PLAN_PRICES: readonly PriceAnchor[] = [
     unit: "year",
     from: false,
     note: "Credits, updates, and private-registry access for active builders.",
+  },
+  {
+    // Priority-support subscription SKU (ADR-0278 Track K, price-agnostic). `amount: null` is a
+    // fail-closed GATE, not a display choice: unlike the six bundles / à-la-carte modules, this id is
+    // never wired into `catalog.ts`'s `BUNDLE_PRICE_IDS`/`MODULE_PRICE_IDS` cart maps, and it carries
+    // no `@caisson/pricebook` PLAN_BOOK row (no real Paddle price id exists — no Paddle product has
+    // been created, per the picker lock: no Paddle API calls this track) — so there is no cart entry,
+    // no `/dashboard/plan` row (that page reads `PLAN_BOOK` directly), and no webhook resolution path.
+    // The operator sets this price AND `PRIORITY_SUPPORT_RESPONSE_TIME` above together before the SKU
+    // becomes purchasable anywhere (ADR-0278 §Decision).
+    id: "priority-support",
+    label: "Priority support",
+    amount: null,
+    unit: null,
+    from: false,
+    note: prioritySupportResponseTimeCopy(),
   },
   {
     id: "enterprise",
