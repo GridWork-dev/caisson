@@ -1,4 +1,4 @@
-// registry/scripts/index-parity-probe.ts — the F-1 index-parity probe (CAISSON-37).
+// registry/scripts/index-parity-probe.ts — the F-1 index-parity probe.
 //
 // THE RESIDUAL: registry/index.json is baked independently into THREE runtime surfaces — the license
 // service image, the deployed registry Worker, and the admin image — plus the git-tracked repo file.

@@ -1,6 +1,7 @@
 // Pure verification-scoring tests (ADR-0280). No network, no DB — the fail-closed decision logic.
 import { describe, expect, test } from "bun:test";
 import {
+  MAX_EVAL_MODULE_IDS,
   type DomainSignals,
   type EvalConfig,
   extractDomain,
@@ -8,6 +9,7 @@ import {
   isFreeMailDomain,
   loadEvalConfig,
   scoreApplication,
+  validateEvalScope,
 } from "./eval-verification.ts";
 
 const CONFIG: EvalConfig = {
@@ -28,22 +30,48 @@ const ALL_UNKNOWN: DomainSignals = {
 };
 
 describe("extractDomain", () => {
-  test("normalizes a valid work email to its lowercased domain", () => {
+  // Note (F3, ADR-0274 "one active eval per org domain"): extractDomain returns the REGISTRABLE
+  // domain (eTLD+1) via tldts, not the raw FQDN — a bare "acme.io" address already IS its own
+  // registrable domain (single label + suffix), so these simple cases are unaffected by the rework.
+  test("normalizes a valid work email to its lowercased REGISTRABLE domain", () => {
     expect(extractDomain("Alice@Example.COM")).toBe("example.com");
     expect(extractDomain("  bob@acme.io ")).toBe("acme.io");
   });
-  test("rejects structurally invalid addresses", () => {
+  test("rejects structurally invalid addresses, and addresses whose domain has no recognizable public suffix", () => {
     for (const bad of [
       "no-at-sign",
       "a@b@c.com",
       "@example.com",
       "user@",
-      "user@nodot",
-      "user@.com",
+      "user@nodot", // single label, no suffix to anchor a registrable domain
+      "user@.com", // leading dot — no registrable label before the suffix
       "a b@example.com",
     ]) {
       expect(extractDomain(bad)).toBeNull();
     }
+  });
+
+  test("F3: reduces a subdomain to its registrable domain (eTLD+1) — collapses the org's eval slot", () => {
+    expect(extractDomain("dev@a.corp.com")).toBe("corp.com");
+    expect(extractDomain("dev@b.corp.com")).toBe("corp.com");
+    expect(extractDomain("dev@corp.com")).toBe("corp.com");
+    // Same registrable domain from three different FQDNs — all three must collide on ONE domain
+    // slot at the eval-store uniqueness check, defeating the subdomain-varying multi-eval bypass.
+    expect(extractDomain("dev@a.corp.com")).toBe(extractDomain("dev@corp.com"));
+  });
+
+  test("F3: a multi-label public suffix (.co.uk) reduces correctly — never a naive last-two-labels split", () => {
+    // A naive "last two labels" split would wrongly reduce both to "co.uk" (a public SUFFIX, not a
+    // registrable domain) — tldts's maintained public-suffix-list data gets this right.
+    expect(extractDomain("dev@corp.co.uk")).toBe("corp.co.uk");
+    expect(extractDomain("dev@sub.corp.co.uk")).toBe("corp.co.uk");
+    expect(extractDomain("dev@corp.co.uk")).not.toBe("co.uk");
+  });
+
+  test("F3: distinct organizations' registrable domains never collide", () => {
+    expect(extractDomain("dev@corp-a.com")).not.toBe(
+      extractDomain("dev@corp-b.com"),
+    );
   });
 });
 
@@ -173,5 +201,44 @@ describe("loadEvalConfig", () => {
   });
   test("rejects a non-positive threshold", () => {
     expect(() => loadEvalConfig({ EVAL_WINDOW_DAYS: "0" })).toThrow();
+  });
+});
+
+describe("validateEvalScope (F2 scope ceiling)", () => {
+  test('the full catalog ("everything") is never an eval scope, even alone', () => {
+    expect(validateEvalScope(["everything"])).not.toBeNull();
+  });
+
+  test("more than one bundle id is rejected", () => {
+    expect(validateEvalScope(["compliance", "ai-production"])).not.toBeNull();
+  });
+
+  test("a bundle mixed with any other id is rejected", () => {
+    expect(validateEvalScope(["compliance", "@caisson/kernel"])).not.toBeNull();
+  });
+
+  test("a single bundle id, alone, is allowed", () => {
+    expect(validateEvalScope(["compliance"])).toBeNull();
+    expect(validateEvalScope(["ai-production"])).toBeNull();
+  });
+
+  test(`a module-only set up to ${String(MAX_EVAL_MODULE_IDS)} ids is allowed`, () => {
+    const ids = Array.from(
+      { length: MAX_EVAL_MODULE_IDS },
+      (_, i) => `@caisson/mod-${String(i)}`,
+    );
+    expect(validateEvalScope(ids)).toBeNull();
+  });
+
+  test(`a module-only set over ${String(MAX_EVAL_MODULE_IDS)} ids is rejected`, () => {
+    const ids = Array.from(
+      { length: MAX_EVAL_MODULE_IDS + 1 },
+      (_, i) => `@caisson/mod-${String(i)}`,
+    );
+    expect(validateEvalScope(ids)).not.toBeNull();
+  });
+
+  test("a single module id (no bundle) is allowed", () => {
+    expect(validateEvalScope(["@caisson/kernel"])).toBeNull();
   });
 });

@@ -347,11 +347,14 @@ export async function revokeEval(
   evalId: string,
   reason: string | null = "eval-revoked",
 ): Promise<boolean> {
-  const r = await tx.query<{ license_id: string | null }>(
+  // RETURNING both license_id AND account_id in the SAME UPDATE (IN-03) — the row already carries
+  // its own account_id, so a second SELECT (readEvalApplication) to fetch it back is redundant
+  // (and, between the UPDATE and a separate read, would be racing a theoretical concurrent write).
+  const r = await tx.query<{ license_id: string | null; account_id: string }>(
     `UPDATE eval_application
         SET status = 'revoked'
       WHERE id = $1 AND status IN ('pending_review','approved','issued')
-      RETURNING license_id`,
+      RETURNING license_id, account_id`,
     [evalId],
   );
   const row = r.rows[0];
@@ -360,12 +363,11 @@ export async function revokeEval(
     // Kill the offline token at the edge immediately (the deny-set the Worker reads). The eval's
     // account id anchors the row like any other revocation; no admin_action_id (this is not an
     // apps/admin purchase_revoke action).
-    const app = await readEvalApplication(tx, evalId);
     await tx.query(
       `INSERT INTO license_revocation (license_id, account_id, admin_action_id, reason)
        VALUES ($1, $2, NULL, $3)
        ON CONFLICT (license_id) DO NOTHING`,
-      [row.license_id, app?.accountId ?? "", reason],
+      [row.license_id, row.account_id, reason],
     );
   }
   return true;

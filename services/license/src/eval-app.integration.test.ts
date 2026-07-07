@@ -477,6 +477,11 @@ describe("HTTP /eval/apply + /eval/issue", () => {
     expect(okVerify.valid).toBe(true);
     expect(okVerify.tier).toBe("pro");
     expect(okVerify.entitlements).toContain("@caisson/compliance");
+    // F1: the eval discriminator round-trips end to end — /eval/issue is the ONLY signer of this
+    // claim, and the verifier surfaces it so downstream (watermarking, no-redistribution) can key
+    // on a real signed flag instead of inferring "is this eval" from the short expiry alone.
+    expect(okVerify.eval).toBe(true);
+    expect(okVerify.claims?.eval).toBe(true);
     expect(verifyLicenseWithKey(token, DEV_PUB, after).valid).toBe(false);
 
     // Idempotent re-serve: a second issue returns the byte-identical stored token.
@@ -490,6 +495,86 @@ describe("HTTP /eval/apply + /eval/issue", () => {
       issueReq({ evalId: "00000000-0000-4000-8000-000000000000", major: 1 }),
     );
     expect(res.status).toBe(404);
+  });
+
+  // F2 — the scope ceiling is enforced at the HTTP boundary, before any signal lookup or store
+  // write (a 400, and no row is created — a repeat of the same request never trips the domain
+  // uniqueness conflict, proving nothing was persisted).
+  test('apply rejects "everything" as an eval scope (400, no row created)', async () => {
+    const d = freshDomain();
+    const res = await app(
+      applyReq({
+        accountId: "acct-scope",
+        email: `dev@${d}`,
+        entitlements: ["everything"],
+      }),
+    );
+    expect(res.status).toBe(400);
+    // No row was created for this domain — a second identical request also 400s, never 409.
+    const again = await app(
+      applyReq({
+        accountId: "acct-scope",
+        email: `dev@${d}`,
+        entitlements: ["everything"],
+      }),
+    );
+    expect(again.status).toBe(400);
+  });
+
+  test("apply rejects more than one bundle id as an eval scope (400)", async () => {
+    const res = await app(
+      applyReq({
+        accountId: "acct-scope",
+        email: `dev@${freshDomain()}`,
+        entitlements: ["compliance", "ai-production"],
+      }),
+    );
+    expect(res.status).toBe(400);
+  });
+
+  test("apply rejects a bundle mixed with a module id (400)", async () => {
+    const res = await app(
+      applyReq({
+        accountId: "acct-scope",
+        email: `dev@${freshDomain()}`,
+        entitlements: ["compliance", "@caisson/compliance"],
+      }),
+    );
+    expect(res.status).toBe(400);
+  });
+
+  test("apply accepts a single bundle id as an eval scope (200)", async () => {
+    const res = await app(
+      applyReq({
+        accountId: "acct-scope",
+        email: `dev@${freshDomain()}`,
+        entitlements: ["compliance"],
+      }),
+    );
+    expect(res.status).toBe(200);
+  });
+
+  // F3 — subdomain variants of the SAME registrable domain collide on one active-eval slot; a
+  // request under the bare registrable domain is indistinguishable from one under a subdomain.
+  test("F3: a.sub and b.sub of the same registrable domain collide (one active eval per org)", async () => {
+    const rand = Math.random().toString(36).slice(2, 10);
+    const org = `${rand}-org.io`;
+    const first = await app(
+      applyReq({
+        accountId: "acct-sub-a",
+        email: `dev@a.${org}`,
+        entitlements: EVAL_SCOPE,
+      }),
+    );
+    expect(first.status).toBe(200);
+    const second = await app(
+      applyReq({
+        accountId: "acct-sub-b",
+        email: `dev@b.${org}`,
+        entitlements: EVAL_SCOPE,
+      }),
+    );
+    expect(second.status).toBe(409);
   });
 });
 

@@ -47,6 +47,7 @@ import {
   type EvalConfig,
   extractDomain,
   scoreApplication,
+  validateEvalScope,
 } from "./eval-verification.ts";
 import type { DiscordGrantPush } from "./discord-notify.ts";
 import type {
@@ -335,7 +336,7 @@ export function createApp(
     if (pathname === "/health") {
       if (method !== "GET") return text("method not allowed", 405);
       // Additive: `ok` stays first + always present (existing probes grep it). The index digest +
-      // entry count ride alongside for the CAISSON-37 parity probe when server.ts supplies them.
+      // entry count ride alongside for the F-1 index-parity drift probe when server.ts supplies them.
       return json({
         ok: true,
         ...(deps.indexDigest !== undefined
@@ -513,7 +514,13 @@ export function createApp(
         );
       }
       const { accountId, email, entitlements } = parsed.data;
-      // Derive the domain server-side; a structurally invalid work email is a hard 400 (no row).
+      // Scope ceiling (fail-closed shape check, before any signal lookup): an eval is never the full
+      // catalog or a multi-bundle grant — see validateEvalScope for the exact allowed shapes.
+      const scopeError = validateEvalScope(entitlements);
+      if (scopeError !== null) return json({ error: scopeError }, 400);
+      // Derive the domain server-side; a structurally invalid/unresolvable work email is a hard 400
+      // (no row) — extractDomain reduces to the REGISTRABLE domain (eTLD+1, F3), so a.corp.com and
+      // b.corp.com collide on the same one-active-eval-per-domain slot rather than each minting one.
       const domain = extractDomain(email);
       if (domain === null) return json({ error: "invalid work email" }, 400);
 
@@ -603,6 +610,10 @@ export function createApp(
       }
       const { evalId, major } = parsed.data;
 
+      // TRUST BOUNDARY: like /issue, this is a server-to-server, bearer-gated contract — evalId is
+      // trusted as-is, with no independent evalId→session/account binding check here. When a public
+      // apps/site proxy surface fronts this route, it must bind the eval to the caller's session
+      // before forwarding evalId (mirroring /issue's own documented tier-trust boundary above).
       const application = await withAdminWrite(deps.db, (tx) =>
         readEvalApplication(tx, evalId),
       );
@@ -648,6 +659,11 @@ export function createApp(
         // Eval licenses carry no purchased-id windows/snapshots (those are one-time-grant concepts).
         updatesWindows: {},
         entitledSince: {},
+        // The anti-exfiltration discriminator (ADR-0274/0280) — THIS is the ONLY signer of `eval:
+        // true` anywhere in the service; the paid /issue path above never sets this key, so paid
+        // claims stay byte-for-byte unchanged. Downstream (tarball watermarking, no-redistribution
+        // enforcement) keys off this flag rather than inferring "is this eval" from expiry alone.
+        eval: true as const,
       };
       let token: string;
       try {
