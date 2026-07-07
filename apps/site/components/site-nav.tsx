@@ -100,6 +100,12 @@ const MARKETPLACE_PANEL: NavPanelSpec = {
           icon: "scale",
         },
         {
+          href: "/stack-fit",
+          label: "Stack fit",
+          note: "Does it fit your stack — the honest adapter matrix.",
+          icon: "server",
+        },
+        {
           href: "/ui",
           label: "UI Pro showcase",
           note: "The premium component layer, live.",
@@ -110,7 +116,7 @@ const MARKETPLACE_PANEL: NavPanelSpec = {
   ],
 };
 
-// Panel 2 — Resources (ADR-0237 F4): Docs · Glossary · Updates · Security. No prices.
+// Panel 2 — Resources (ADR-0237 F4): Docs · Glossary · Updates · Security · Evidence. No prices.
 const RESOURCES_PANEL: NavPanelSpec = {
   label: "Resources",
   cards: [
@@ -138,6 +144,12 @@ const RESOURCES_PANEL: NavPanelSpec = {
       note: "Disclosure policy and the shipped controls.",
       icon: "shield",
     },
+    {
+      href: "/evidence",
+      label: "Evidence pack",
+      note: "The shipped proof artifacts, for your security reviewer.",
+      icon: "evidence-pack",
+    },
   ],
 };
 
@@ -156,9 +168,11 @@ const MOBILE_LINKS: readonly { href: string; label: string }[] = [
   { href: "/marketplace/build", label: "Build your stack" },
   { href: "/marketplace/plans", label: "Plans" },
   { href: "/compare", label: "Compare" },
+  { href: "/stack-fit", label: "Stack fit" },
   { href: "/ui", label: "UI Pro showcase" },
   { href: "/docs", label: "Docs" },
   { href: "/glossary", label: "Glossary" },
+  { href: "/evidence", label: "Evidence pack" },
 ];
 
 // Primary CTA destination — "Get started" points at the getting-started guide (label matches

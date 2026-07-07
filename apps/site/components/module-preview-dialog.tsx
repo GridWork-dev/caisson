@@ -8,6 +8,7 @@ import { CodeBlock, Faq, Icon, StatusChip } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { MediaPlaceholder } from "@/components/media-placeholder";
 import { MediaVideo } from "@/components/media-video";
+import { TrialPath } from "@/components/trial-path";
 import { moduleCatalogItem, toCartItem } from "@/lib/catalog";
 import { moduleMark } from "@/lib/marks";
 import { MODULE_PAGES } from "@/lib/module-pages";
@@ -259,6 +260,9 @@ export function ModulePreviewDialog({
                   ))
                 )}
               </div>
+
+              {/* Prove fit in week one (ADR-0272 §3) — shown for every module, record or not. */}
+              <TrialPath compact />
 
               {/* Definition + what-ships (record only) */}
               {record ? (
