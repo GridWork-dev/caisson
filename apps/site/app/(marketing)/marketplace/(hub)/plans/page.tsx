@@ -15,7 +15,15 @@ import { CheckoutCta } from "@/components/checkout-cta";
 import { UpdatesForm } from "@/components/waitlist-form";
 import { breadcrumb, faqPage, serializeJsonLd } from "@/lib/jsonld";
 import { buildMetadata } from "@/lib/metadata";
-import { bundlePrice, formatPrice, PLAN_PRICES } from "@/lib/pricing";
+import {
+  bundlePrice,
+  formatPrice,
+  formatUsd,
+  planPrice,
+  PLAN_PRICES,
+  RENEWAL_RATE_PERCENT,
+  renewalAmount,
+} from "@/lib/pricing";
 
 export const metadata = buildMetadata({
   title: "Marketplace — Plans",
@@ -45,6 +53,17 @@ const PLANS_FAQ = [
     answer:
       "A monthly codegen and AI-feature credit allotment, plus package updates and entitlement-scoped pulls from the private registry while the plan is active.",
   },
+  {
+    question: "What happens after 12 months?",
+    answer: `The source you bought is yours forever — a perpetual license does not expire, stop working, or phone home, and license checks verify offline for good. Only new updates lapse after month 12: renew a single entitlement for another 12 months at a flat ${RENEWAL_RATE_PERCENT}% of the then-current list price, or keep security patches and updates flowing with the Developer plan (${planPrice(
+      "developer",
+    )}). Either way, the code you already own is never touched.`,
+  },
+  {
+    question: "How responsive is support, and is there an SLA?",
+    answer:
+      "Support is email and Discord with a business-days response, included with every license — a real person reads it. There is no separate paid support-SLA tier to buy today; enterprise procurement can arrange custom terms.",
+  },
 ] as const;
 
 // The Plans tab (ADR-0237 F1): the recurring SKUs — subscriptions + enterprise — plus the
@@ -63,7 +82,7 @@ const SUB_META: readonly SubMeta[] = [
       "Auto-updating control mappings — SOC 2, HIPAA, EU AI Act",
       "Evidence-pack regeneration on every framework revision",
       "New-framework slots as regulations land",
-      "Compliance support SLA",
+      "Compliance support — email and Discord, business-days response",
     ],
   },
   {
@@ -73,7 +92,7 @@ const SUB_META: readonly SubMeta[] = [
       "Monthly codegen + AI-feature credit allotment",
       "Package updates while your subscription is active",
       "Private-registry pulls, entitlement-scoped",
-      "Priority developer support",
+      "Developer support — email and Discord, business-days response",
     ],
   },
 ] as const;
@@ -85,6 +104,8 @@ export default function MarketplacePlansPage() {
     { name: "Plans", path: "/marketplace/plans" },
   ]);
   const enterprise = PLAN_PRICES.find((p) => p.id === "enterprise");
+  // A worked renewal example, computed from the SOT (ADR-0260 §5 40%-X9 ladder) — never a literal.
+  const complianceRenewal = renewalAmount("compliance");
 
   return (
     <>
@@ -110,6 +131,73 @@ export default function MarketplacePlansPage() {
           </>
         }
       />
+
+      {/* ===== After 12 months — the terms answer the research names as the top objection ===== */}
+      <Reveal>
+        <Section
+          id="after-twelve-months"
+          band="tint"
+          eyebrow="The one question everyone asks"
+          title="What happens after 12 months?"
+          lede="The honest answer, up front: the source is yours forever, and only new updates are optional after the first year. Nothing you already own expires, breaks, or gets held hostage to a renewal."
+        >
+          <FeatureGrid cols={3}>
+            <Card>
+              <div className="cs-status">
+                <Icon name="check" size="lg" />
+                The source is yours, forever
+              </div>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                A one-time license is perpetual. The code you bought does not
+                expire, stop working, or phone home — license checks verify
+                offline, for good. Non-payment can never brick what you already
+                own.
+              </p>
+            </Card>
+            <Card>
+              <div className="cs-status">
+                <Icon name="shield" size="lg" />
+                Your patches keep coming
+              </div>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                The worry is abandonware — a bundle that goes stale after year
+                one. The Developer plan ({planPrice("developer")}) is the
+                answer: security patches and updates keep flowing while it is
+                active. It is continuity insurance, not a gate on code you own.
+              </p>
+            </Card>
+            <Card>
+              <div className="cs-status">
+                <Icon name="plan-tier" size="lg" />
+                Renew one entitlement, or don&rsquo;t
+              </div>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                After the 12 months of included updates, renew a single
+                entitlement for another year at a flat {RENEWAL_RATE_PERCENT}%
+                of list —{" "}
+                {complianceRenewal !== null ? (
+                  <>
+                    the Compliance bundle ({bundlePrice("compliance")}) renews
+                    at {formatUsd(complianceRenewal)}
+                  </>
+                ) : (
+                  <>a fraction of the list price</>
+                )}
+                . Skip it and you keep every version already delivered.
+              </p>
+            </Card>
+          </FeatureGrid>
+        </Section>
+      </Reveal>
 
       {/* ===== Subscription plans ===== */}
       <Section
@@ -308,6 +396,59 @@ export default function MarketplacePlansPage() {
             </>
           }
         />
+      </Reveal>
+
+      {/* ===== Terms near checkout — redistribution + support clarity (ADR-0272 §5) ===== */}
+      <Reveal>
+        <Section
+          id="terms"
+          eyebrow="Before you buy"
+          title="What the license lets you do — and how support works."
+        >
+          <FeatureGrid cols={2}>
+            <Card>
+              <div className="cs-status">
+                <Icon name="scale" size="lg" />
+                Licensing and redistribution
+              </div>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                Your license is for internal use in the products you build and
+                sell — unlimited. Your customers use your product; they do not
+                receive the Caisson source. You may not redistribute, resell, or
+                republish the source as a kit, boilerplate, or competing
+                library.
+              </p>
+              <div style={{ marginTop: "var(--cs-space-5)" }}>
+                <Button href="/legal/eula" variant="ghost">
+                  Read the EULA
+                </Button>
+              </div>
+            </Card>
+            <Card>
+              <div className="cs-status">
+                <Icon name="check" size="lg" />
+                Support and refunds
+              </div>
+              <p
+                className="cs-muted"
+                style={{ marginTop: "var(--cs-space-3)" }}
+              >
+                Support is email and Discord with a business-days response,
+                included with every license — no separate SLA tier to buy today.
+                Every purchase carries a 14-day money-back guarantee through
+                Paddle, our merchant of record.
+              </p>
+              <div style={{ marginTop: "var(--cs-space-5)" }}>
+                <Link href="/legal/license" className="mono">
+                  What&rsquo;s open, what&rsquo;s commercial
+                </Link>
+              </div>
+            </Card>
+          </FeatureGrid>
+        </Section>
       </Reveal>
 
       {/* ===== FAQ ===== */}

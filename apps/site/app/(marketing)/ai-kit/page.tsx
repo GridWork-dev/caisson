@@ -26,6 +26,7 @@ import {
   Terminal,
   type IconName,
 } from "@/components";
+import { TrialPath } from "@/components/trial-path";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { MediaPlaceholder } from "@/components/media-placeholder";
 import { requireBundlePage } from "@/lib/bundle-pages";
@@ -344,6 +345,19 @@ export default function AiKitPage() {
           <Faq items={FAQ_ITEMS} style={{ marginTop: "var(--cs-space-6)" }} />
         </Reveal>
       </Section>
+
+      {/* ===== Prove fit in week one (ADR-0272 §3) ===== */}
+      <Reveal>
+        <Section
+          eyebrow="Trial path"
+          title="Prove fit in week one."
+          lede="Don't take the fit on faith — scaffold the audited base and run it on your own stack before you commit."
+        >
+          <div style={{ marginTop: "var(--cs-space-6)" }}>
+            <TrialPath />
+          </div>
+        </Section>
+      </Reveal>
 
       {/* ===== Get started ===== */}
       <Section eyebrow="Get started">
