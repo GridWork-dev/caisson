@@ -11,9 +11,48 @@
 // generator-contract names so every `@caisson/cli` importer of `GeneratedFile`/`GeneratedFileSet` is
 // unchanged; `@caisson/migrate` is a down-only base dependency, no cycle.
 import type { EmittedFile, EmittedFileSet } from "@caisson/migrate";
+import {
+  BUNDLE_IDS,
+  type BundleId,
+  isBundleId,
+  LEGACY_ENTITLEMENT_ALIASES,
+  normalizeEntitlementId,
+} from "@caisson/registry-schema";
 import { z } from "zod";
 
-const EDITIONS = ["compliance", "ai-kit", "local-ai", "agent-dev"] as const;
+/** Every raw `--edition`/wizard input this CLI accepts: the six canonical bundle ids (ADR-0257/
+ *  ADR-0258) plus every legacy purchased-id alias `@caisson/registry-schema` already knows about
+ *  (`ai-kit`/`local-ai`/`agent-dev`/`bundle` — `compliance` is its own identity alias). Read off the
+ *  single exported alias point — never hand-roll a second bundle list or a second alias map here. */
+const EDITION_INPUT_IDS: ReadonlySet<string> = new Set<string>([
+  ...BUNDLE_IDS,
+  ...LEGACY_ENTITLEMENT_ALIASES.keys(),
+]);
+
+/** A buyer's `--edition`/wizard choice, normalized to the canonical bundle id at the parse boundary
+ *  via `normalizeEntitlementId` — the same single alias point `expandEntitlements` uses (ADR-0257).
+ *  Every legacy edition id and the legacy `bundle` sentinel resolve here forever, so a legacy and a
+ *  new-vocabulary invocation produce the byte-identical downstream composition. */
+const Edition = z.string().transform((value, ctx): BundleId => {
+  if (!EDITION_INPUT_IDS.has(value)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `edition must be one of: ${[...EDITION_INPUT_IDS].sort().join(", ")}`,
+    });
+    return z.NEVER;
+  }
+  const normalized = normalizeEntitlementId(value);
+  if (!isBundleId(normalized)) {
+    // Unreachable: every member of EDITION_INPUT_IDS is either a bundle id or a legacy alias whose
+    // target is always a bundle id (bundle-vocabulary.ts) — fail closed rather than silently coerce.
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `unresolvable edition: ${value}`,
+    });
+    return z.NEVER;
+  }
+  return normalized;
+});
 
 /** ADR-0268 — the deploy-template targets a generated repo may optionally compose. Each maps to a
  *  `templates/deploy/<target>/` directory the engine composes on top of base (+ edition). */
@@ -40,7 +79,7 @@ export const ProjectName = z
 export const Selection = z
   .object({
     projectName: ProjectName,
-    edition: z.enum(EDITIONS).optional(),
+    edition: Edition.optional(),
     modules: z.array(ModuleSelection).min(1),
     /** ADR-0268 — optional; unset composes no deploy files (byte-identical to pre-ADR-0268 output). */
     deployTarget: z.enum(DEPLOY_TARGETS).optional(),

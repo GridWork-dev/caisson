@@ -1,5 +1,33 @@
 # @caisson/cli
 
+## 0.4.0
+
+### Minor Changes
+
+- 8c53ca3: `create-caisson` now supports an interactive first run: run it in a terminal with no flags (or
+  only some of them) and it prompts for whatever is still missing — starting with a choice between
+  a licensed module/edition build and the free sample, then the project name, and finally which
+  modules to include. Any flag you already pass is never re-prompted, and piping input or running
+  in a non-interactive shell (CI, scripts) behaves exactly as before with no prompts at all.
+
+  Generated projects can now also request a starter deploy configuration for Railway, Fly.io, or
+  Vercel via `--deploy <target>` (or the matching step in interactive mode). Leaving it unset
+  generates the exact same files as before.
+
+- `create-caisson`'s `--edition` flag now accepts the six-bundle catalog vocabulary
+  (`compliance`, `ai-production`, `local-first`, `agentic-dev`, `provenance`, `everything`), read
+  directly off `@caisson/registry-schema`'s single alias point so the generator never falls behind
+  the catalog again. The four legacy edition ids (`ai-kit`, `local-ai`, `agent-dev`, `compliance`)
+  keep working forever and normalize to their bundle id, producing the byte-identical generated
+  project either way. The README's stated install command is also corrected to the locked canonical
+  `bunx @caisson-sh/cli@latest` (the previous `npx create-caisson` form remains a working secondary
+  path).
+
+### Patch Changes
+
+- Updated dependencies [8170382]
+  - @caisson/registry-schema@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes
