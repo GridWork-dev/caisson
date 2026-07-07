@@ -1,11 +1,13 @@
 /**
- * Entitlement-expansion resolver (ADR-0071). Commerce sells the library three ways at once
- * (ADR-0012): whole editions, one bundle, and per-module à-la-carte. The ADR-0008 buyer-MCP gate,
- * however, checks a FLAT set of bare module slugs — it has no notion of an edition or a bundle. This
- * resolver turns a purchased bundle / edition / module id into the member-module slug set the gate
- * consumes. ADR-0257 renames the editions to the persona bundle vocabulary (`./bundle-vocabulary`);
- * the resolve-time alias map inside `expandEntitlements` is the SINGLE alias point keeping every
- * legacy purchased id resolving forever.
+ * Entitlement-expansion resolver (ADR-0071). Commerce sells the library two ways (ADR-0257/0258): one of
+ * six bundles, and per-module à-la-carte. The ADR-0008 buyer-MCP gate, however, checks a FLAT set of bare
+ * module slugs — it has no notion of a bundle. This resolver turns a purchased bundle / module id into the
+ * member-module slug set the gate consumes. ADR-0257 dissolved the four editions into the persona bundle
+ * vocabulary (`./bundle-vocabulary`); ADR-0270 then purged the edition purchase ids entirely (zero real
+ * buyers). The resolve-time `normalizeEntitlementId` call inside `expandEntitlements` is the SINGLE
+ * purchase-alias point — narrowed to the module-rename mechanism (empty today) — keeping any future renamed
+ * purchased id resolving forever. The legacy `kind:"edition"` index/ledger entries stay served forever; a
+ * bundle's expansion still folds their members via the decoupled `EDITION_BUNDLE_ID` index relation.
  *
  * The registry INDEX is the single source of truth for membership (ADR-0071 binding): an edition's
  * members = every manifest whose `editions[]` contains that edition; the bundle's members = base
@@ -21,9 +23,9 @@
  * same as the long-supported full `@caisson/<slug>` module-id form, plus a fail-SOFT carve-out for a
  * module that is SOLD but not yet published (`RESERVED_MODULE_ENTITLEMENT_IDS`, below).
  *
- * Security (threat TM-E — over-expansion): the expansion is fail-closed. An unknown purchased id (not
- * the bundle sentinel, not a known edition, not an indexed module, not a reserved future-module slug)
- * THROWS rather than silently granting or silently dropping; one bad id rejects the whole expansion.
+ * Security (threat TM-E — over-expansion): the expansion is fail-closed. An unknown purchased id (not a
+ * bundle id, not an indexed module, not a reserved future-module slug) THROWS rather than silently granting
+ * or silently dropping; one bad id rejects the whole expansion.
  * No `timingSafeEqual` is used here on purpose — purchased ids, edition names, and module slugs are
  * PUBLIC catalog identifiers, not secrets, so there is no timing side-channel to close. The
  * timing-safe entitlement compare lives at the per-tool buyer-MCP gate (ADR-0076), where a caller's
@@ -44,16 +46,24 @@ import {
   type RegistryIndex,
 } from "./registry-index";
 
-/**
- * The legacy bundle sentinel — "buy everything" (ADR-0012's "base + all editions"). Kept for the
- * purchased ids already in the books/tokens; it normalizes to the `everything` bundle id at the
- * single alias point inside `expandEntitlements` (ADR-0257) and keeps resolving forever.
- *
- * @deprecated new purchase rows use the `everything` bundle id (`./bundle-vocabulary`).
- */
-export const BUNDLE_ID = "bundle" as const;
-
 type Edition = (typeof EDITIONS)[number];
+
+/**
+ * The edition→bundle INDEX-RESOLUTION relation (ADR-0257/0077). DECOUPLED from the purchased-id alias
+ * spine (`./bundle-vocabulary` `LEGACY_ENTITLEMENT_ALIASES`, narrowed to empty by ADR-0270): the historical
+ * `kind:"edition"` ledger/index entries stay served forever (ADR-0006 append-only; the operator-gated
+ * bundle-only index republish is a separate decision), so a bundle purchase must still resolve the members
+ * its legacy edition meta-package contributes. This is index machinery, NOT a purchase alias — an edition id
+ * is no longer a purchasable/normalizable id (ADR-0270), it is only a served artifact. `legacyEditionNamesFor`
+ * + `fullCatalogMembers` read THIS map; the single purchase-alias point in `expandEntitlements` reads the
+ * (now-empty) spine. Both live-index and legacy tokens keep their exact member sets.
+ */
+const EDITION_BUNDLE_ID: ReadonlyMap<Edition, BundleId> = new Map([
+  ["compliance", "compliance"],
+  ["ai-kit", "ai-production"],
+  ["local-ai", "local-first"],
+  ["agent-dev", "agentic-dev"],
+]);
 const MODULE_ID_RE = /^@caisson\/[a-z0-9-]+$/;
 /** Bare package-slug form (no `@caisson/` prefix) — the per-module purchase-id convention. Same
  *  character class as the slug half of `MODULE_ID_RE`. */
@@ -160,11 +170,13 @@ function latestManifest(
   return version.manifest;
 }
 
-/** The legacy edition names that alias to `bundleId` (the reverse of the ADR-0257 alias map) — the
- *  historical `kind:"edition"` index entries and self-declared `editions[]` memberships stay
- *  resolvable under the new bundle ids forever. */
-function legacyEditionNamesFor(bundleId: BundleId): readonly Edition[] {
-  return EDITIONS.filter((e) => normalizeEntitlementId(e) === bundleId);
+/** The legacy edition names that map to `bundleId` (the reverse of `EDITION_BUNDLE_ID`) — the historical
+ *  `kind:"edition"` index entries and self-declared `editions[]` memberships stay resolvable under the new
+ *  bundle ids forever. Reads the decoupled index-resolution map, NOT the purchase alias spine (ADR-0270).
+ *  Exported for the generator's edition-pin resolver (`@caisson/cli` `resolveEditionMembers` pass-2), which
+ *  must resolve a bundle id to its legacy edition meta's frozen pins the same way `membersOfBundle` does. */
+export function legacyEditionNamesFor(bundleId: BundleId): readonly Edition[] {
+  return EDITIONS.filter((e) => EDITION_BUNDLE_ID.get(e) === bundleId);
 }
 
 /**
@@ -291,20 +303,21 @@ export function baseModuleIds(index: RegistryIndex): readonly string[] {
 function fullCatalogMembers(index: RegistryIndex): string[] {
   const out = new Set<string>(baseMembers(index));
   for (const edition of EDITIONS) {
-    const bundleId = normalizeEntitlementId(edition);
-    if (!isBundleId(bundleId)) continue; // unreachable — every legacy edition aliases to a bundle id
+    const bundleId = EDITION_BUNDLE_ID.get(edition);
+    if (bundleId === undefined) continue; // unreachable — every edition maps to a bundle (ADR-0270 index reln)
     for (const id of membersOfBundle(index, bundleId)) out.add(id);
   }
   return [...out];
 }
 
 /**
- * Expand a buyer's purchased ids (bundles — new ids or legacy edition/bundle-sentinel aliases — /
- * à-la-carte module slugs, either the full `@caisson/<slug>` module-id form or the bare `<slug>`
- * per-module purchase-id form) into the flat member-module slug set the ADR-0008/0021 allowlist
- * gate checks. Membership is read from `index` ONLY (ADR-0071). This loop's `normalizeEntitlementId`
- * call is the SINGLE alias point (ADR-0257): legacy purchased ids resolve here forever, on every
- * path (server resolver, Worker, MCP gate) — no caller pre-normalizes. Fail-closed: an unknown
+ * Expand a buyer's purchased ids (bundle ids / à-la-carte module slugs, either the full `@caisson/<slug>`
+ * module-id form or the bare `<slug>` per-module purchase-id form) into the flat member-module slug set the
+ * ADR-0008/0021 allowlist gate checks. Membership is read from `index` ONLY (ADR-0071). This loop's
+ * `normalizeEntitlementId` call is the SINGLE purchase-alias point (ADR-0257/0270): a renamed purchased id
+ * resolves here forever, on every path (server resolver, Worker, MCP gate) — no caller pre-normalizes. The
+ * dissolved edition ids are NOT aliases anymore (ADR-0270 purge); they resolve, if at all, only as their
+ * still-indexed `@caisson/<edition>` meta-package. Fail-closed: an unknown
  * purchased id throws (TM-E) — EXCEPT a reserved future-module slug
  * (`RESERVED_MODULE_ENTITLEMENT_IDS`), which expands to nothing rather than throwing (fail-soft:
  * the module is sold but not yet published, never a substitute grant). A KNOWN bundle id with no
@@ -329,13 +342,14 @@ export function expandEntitlements(
   const members = new Set<string>();
 
   for (const purchased of ids) {
-    // ADR-0257 single alias point: legacy ids (ai-kit/local-ai/agent-dev/bundle/compliance) map to
-    // the new bundle vocabulary; everything else passes through untouched.
+    // Single purchase-alias point (ADR-0257/0270): a renamed purchased id maps to its current spelling;
+    // everything else passes through untouched. The map is EMPTY post edition-trace purge (ADR-0270) —
+    // this call stays as the one point the next module rename plugs into; no caller pre-normalizes.
     const id = normalizeEntitlementId(purchased);
     if (isBundleId(id)) {
-      // `everything` prefers its explicit indexed bundle entry (W5's replacement rule); until that
-      // entry lands it falls back to the derived full-catalog rule — identical to the legacy
-      // `bundle` sentinel's expansion.
+      // `everything` prefers its explicit indexed bundle entry (the W5 members-fold rule); until that
+      // entry lands it falls back to the derived full-catalog rule (base ∪ every legacy edition's
+      // members).
       const expanded =
         id === "everything" && !hasBundleEntry(index, id)
           ? fullCatalogMembers(index)
@@ -357,8 +371,8 @@ export function expandEntitlements(
         continue; // reserved (sold, not yet published) — grants nothing yet; never throws (TM-E carve-out)
       }
     }
-    // Fail closed (TM-E): not a bundle (new id or legacy alias), not an indexed module, and not a
-    // reserved future-module slug → never grant.
+    // Fail closed (TM-E): not a bundle id, not an indexed module, and not a reserved future-module
+    // slug → never grant.
     throw new Error(
       `unknown purchased entitlement id (not a bundle, a legacy edition alias, an indexed module, or a reserved future module): ${JSON.stringify(
         purchased,
