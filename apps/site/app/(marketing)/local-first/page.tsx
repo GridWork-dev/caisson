@@ -15,6 +15,7 @@ import {
 } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { MediaPlaceholder } from "@/components/media-placeholder";
+import { requireBundlePage } from "@/lib/bundle-pages";
 import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import {
@@ -27,12 +28,13 @@ import { BUNDLE_MARKS, moduleMark } from "@/lib/marks";
 import { bundlePrice, formatUsd, MODULE_PRICES } from "@/lib/pricing";
 import { TrackView } from "@/components/track-view";
 
-const LOCAL_FIRST_DESCRIPTION =
-  "Local-first AI composes on-device ONNX inference, a zero-egress privacy gate, offline sync, and hybrid sqlite-vec + FTS5 search into one Caisson bundle ($629 one-time, own the source).";
+// Hero copy, member list, and FAQ read from the shared bundle content record (lib/bundle-pages.ts);
+// the bespoke sections below stay page-local.
+const record = requireBundlePage("local-first");
 
 export const metadata = buildMetadata({
-  title: "Local-first AI",
-  description: LOCAL_FIRST_DESCRIPTION,
+  title: record.metaTitle,
+  description: record.metaDescription,
   path: "/local-first",
 });
 
@@ -44,7 +46,7 @@ const bundleCartItem = _catalogItem ? toCartItem(_catalogItem) : undefined;
 
 const ldApp = softwareApplication({
   name: "Caisson Local-first AI",
-  description: LOCAL_FIRST_DESCRIPTION,
+  description: record.metaDescription,
   url: PAGE_URL,
   priceId: "local-first",
 });
@@ -86,58 +88,10 @@ const BASE_MEMBER_ICON: Record<string, IconName> = {
   "license-verify": "key",
 };
 
-// The bundle's real composed packages (record: edition-local-ai.json memberModules — keyed by
-// `name` there, e.g. "@caisson/local-store"; the id is that name with the scope stripped). Priced
-// via a StatusChip when the package is also sold standalone (`MODULE_PRICES`), linking to its
-// module depth page; kernel and license-verify are Apache-2.0 base and render unpriced.
-const MEMBER_MODULES: readonly {
-  id: string;
-  name: string;
-  oneLiner: string;
-}[] = [
-  {
-    id: "local-store",
-    name: "@caisson/local-store",
-    oneLiner:
-      "Hybrid retrieval: sqlite-vec ANN plus FTS5, merged by Reciprocal-Rank-Fusion, with an FTS-only fallback if the vector leg fails.",
-  },
-  {
-    id: "license-verify",
-    name: "@caisson/license-verify",
-    oneLiner:
-      "Offline Ed25519 license verification: checks the signature on the device, fails safe to the community tier if it cannot verify.",
-  },
-  {
-    id: "field-crypto",
-    name: "@caisson/field-crypto",
-    oneLiner:
-      "Per-tenant field encryption: HKDF key derivation plus AES-256-GCM, sealed at rest under a key a different tenant's file cannot open.",
-  },
-  {
-    id: "local-inference",
-    name: "@caisson/local-inference",
-    oneLiner:
-      "The InferenceBackend seam over a MiniLM-class ONNX model via transformers.js, SHA-256 hash-verified before use — on-device by default.",
-  },
-  {
-    id: "local-privacy",
-    name: "@caisson/local-privacy",
-    oneLiner:
-      "A default-deny egress boundary every payload crosses before it can leave the process — an empty allowlist means zero egress.",
-  },
-  {
-    id: "local-sync",
-    name: "@caisson/local-sync",
-    oneLiner:
-      "Two-way offline sync: changesets, tombstones, a logical clock, and a reconcile pass with a convergence test.",
-  },
-  {
-    id: "kernel",
-    name: "@caisson/kernel",
-    oneLiner:
-      "The governance kernel underneath every bundle: typed config, the shared error model, and security primitives.",
-  },
-];
+// The bundle's real composed packages — read from the shared bundle content record. Priced via a
+// StatusChip when a member is also sold standalone (`MODULE_PRICES`), linking to its module depth
+// page; kernel and license-verify are Apache-2.0 base and render unpriced.
+const MEMBER_MODULES = record.members;
 
 function MemberModuleCard({
   id,
@@ -184,24 +138,8 @@ function MemberModuleCard({
   );
 }
 
-// Record: edition-local-ai.json faq.
-const FAQ_ITEMS = [
-  {
-    question: 'Does "own the source" rule out hosted inference?',
-    answer:
-      "No. The compute seam supports opt-in rented transports (OpenRouter, Azure OpenAI, and AWS Bedrock) behind the same InferenceBackend interface used on-device. They are off by default; the privacy policy's allowlist is the only way any of those hosts becomes reachable.",
-  },
-  {
-    question: "What does the on-device model need to run?",
-    answer:
-      "The ONNX backend runs a MiniLM-class model via transformers.js. The @huggingface/transformers runtime is an optional peer you install yourself — it is not bundled in the package — and the model weights are first-run-fetched and SHA-256 hash-verified before use. Air-gapped buyers pre-seed the cache and run fully offline.",
-  },
-  {
-    question: "Can I buy just the vector store instead of the whole bundle?",
-    answer:
-      "Yes. @caisson/local-store is also sold standalone for $99 — as are on-device inference ($249), the sync engine ($199), and the privacy gate ($99). The full Local-first AI bundle (all seven composed packages, own the source) is $629 one-time.",
-  },
-] as const;
+// Visible FAQ — also the source of the FAQPage JSON-LD; read from the record.
+const FAQ_ITEMS = record.faq;
 
 const ldFaq = faqPage(
   FAQ_ITEMS.map((f) => ({ question: f.question, answer: f.answer })),
@@ -227,9 +165,9 @@ export default function LocalFirstPage() {
 
       {/* ===== Hero ===== */}
       <Hero
-        eyebrow="Local-first AI · Own the source"
-        title="Your data never leaves the device."
-        lede="The compute seam runs inference on-device by default; the privacy gate makes a hosted call an explicit opt-in, not a default you discover in a network trace. Vector search, sync, and license verification all run against local files — nothing round-trips to a vendor unless you allow it in writing."
+        eyebrow={record.hero.eyebrow}
+        title={record.hero.title}
+        lede={record.hero.lede}
         ctas={
           <>
             {bundleCartItem && (

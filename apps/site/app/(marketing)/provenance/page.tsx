@@ -15,6 +15,7 @@ import {
   type IconName,
 } from "@/components";
 import { MediaPlaceholder } from "@/components/media-placeholder";
+import { requireBundlePage } from "@/lib/bundle-pages";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import {
   breadcrumb,
@@ -31,12 +32,13 @@ import {
 } from "@/lib/pricing";
 import { TrackView } from "@/components/track-view";
 
-const PROVENANCE_DESCRIPTION =
-  "Cryptographic provenance for regulated data: detached Ed25519 + RFC-3161 signing, an append-only SHA-256 WORM audit chain, and per-tenant field encryption — the three primitives that prove a record wasn't tampered with. Own the source.";
+// Hero copy, member list, and FAQ read from the shared bundle content record (lib/bundle-pages.ts);
+// the bespoke controls + pricing sections below stay page-local.
+const record = requireBundlePage("provenance");
 
 export const metadata = buildMetadata({
-  title: "Provenance",
-  description: PROVENANCE_DESCRIPTION,
+  title: record.metaTitle,
+  description: record.metaDescription,
   path: "/provenance",
 });
 
@@ -59,18 +61,15 @@ const MEMBER_DETAIL: ReadonlySet<string> = new Set([
   "audit-worm",
 ]);
 
-// One-liner per member (customer-facing, not the internal README).
-const MEMBER_ONELINER: Record<string, string> = {
-  "signing-primitive":
-    "Detached Ed25519 + RFC-3161 signing over an evidence bundle or an audit root — a signature a third party verifies without ever touching your keys.",
-  "audit-worm":
-    "An append-only SHA-256 audit chain plus an S3 Object-Lock WORM adapter: tamper with a historical row and every link after it breaks, provably.",
-  "field-crypto":
-    "Per-tenant field encryption via HKDF-SHA256 + AES-256-GCM — a leaked tenant key exposes one tenant, never the table.",
-};
-
-function MemberCard({ id, label }: { id: string; label: string }) {
-  const oneLiner = MEMBER_ONELINER[id] ?? "";
+function MemberCard({
+  id,
+  label,
+  oneLiner,
+}: {
+  id: string;
+  label: string;
+  oneLiner: string;
+}) {
   const price = MEMBERS.find((m) => m.id === id);
   const card = (
     <Card interactive={MEMBER_DETAIL.has(id)}>
@@ -139,23 +138,7 @@ const CONTROLS: readonly {
   },
 ];
 
-const FAQ: readonly { question: string; answer: string }[] = [
-  {
-    question: "How is Provenance different from Compliance?",
-    answer:
-      "Provenance is the cryptographic core — signing, the WORM audit chain, and field encryption — the three primitives that prove a record is authentic and untampered. Compliance wraps those in the full regulated-SaaS stack: fail-closed RLS, the evidence-pack generator, the framework mappings, alerting, and retention. Every Provenance module is also in Compliance, so Compliance owners already have it.",
-  },
-  {
-    question: "Which packages does the bundle compose?",
-    answer:
-      "Three real workspace dependencies: @caisson/signing-primitive (detached Ed25519 + RFC-3161), @caisson/audit-worm (the SHA-256 audit chain plus the S3 Object-Lock adapter), and @caisson/field-crypto (per-tenant HKDF-SHA256 + AES-256-GCM). Nothing on this page is a manifest claim without composed code behind it.",
-  },
-  {
-    question: "Can a third party verify a signature without my keys?",
-    answer:
-      "Yes. Signatures are detached Ed25519 with an RFC-3161 timestamp: a verifier checks the artifact against your public key and the timestamp authority, with no access to the signing key. The audit-chain root and WORM retention are likewise independently checkable.",
-  },
-];
+const FAQ = record.faq;
 
 export default function ProvenancePage() {
   const heroArtifact = (
@@ -181,7 +164,7 @@ export default function ProvenancePage() {
           __html: serializeJsonLd(
             softwareApplication({
               name: "Caisson Provenance",
-              description: PROVENANCE_DESCRIPTION,
+              description: record.metaDescription,
               url: PAGE_URL,
               ...(bundle ? { price: bundle } : {}),
             }),
@@ -208,9 +191,9 @@ export default function ProvenancePage() {
 
       {/* ===== Hero ===== */}
       <Hero
-        eyebrow="Cryptographic provenance"
-        title="Prove the record wasn't tampered with."
-        lede="Provenance composes three primitives into one bundle: detached signing that a third party verifies without your keys, an append-only audit chain where a single altered row breaks every link after it, and per-tenant field encryption sealed at rest. Own the source, and hand an auditor a signature instead of a promise."
+        eyebrow={record.hero.eyebrow}
+        title={record.hero.title}
+        lede={record.hero.lede}
         ctas={
           <>
             <Button href="/marketplace#bundles" variant="primary">
@@ -256,8 +239,13 @@ export default function ProvenancePage() {
           lede="Each member is a real workspace dependency — not a manifest claim. Each is also sold standalone, so you can take exactly the primitive you need."
         >
           <FeatureGrid cols={3}>
-            {MEMBERS.map((m) => (
-              <MemberCard key={m.id} id={m.id} label={m.label} />
+            {record.members.map((m) => (
+              <MemberCard
+                key={m.id}
+                id={m.id}
+                label={m.name}
+                oneLiner={m.oneLiner}
+              />
             ))}
           </FeatureGrid>
         </Section>

@@ -57,6 +57,27 @@
   box-shadow: var(--cs-shadow-lg);
 }
 
+/* Two-column marketplace panel: bundles | marketplace pages. Collapses to one column on a narrow
+   viewport (the desktop dropdown only shows ≥900px; the drawer owns mobile). */
+.groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--cs-space-5);
+  align-items: start;
+}
+
+.group {
+  display: grid;
+  gap: var(--cs-space-2);
+  min-width: 0;
+}
+
+@media (max-width: 40rem) {
+  .groups {
+    grid-template-columns: 1fr;
+  }
+}
+
 .lede {
   margin: 0;
   font-size: var(--cs-text-sm);

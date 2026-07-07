@@ -141,7 +141,13 @@ export function NavPanels({ panels }: { panels: readonly NavPanelSpec[] }) {
         const panelId = `${baseId}-panel-${i}`;
         const allCards =
           panel.cards ?? panel.groups?.flatMap((g) => g.cards) ?? [];
-        const onSurface = allCards.some((c) => pathname.startsWith(c.href));
+        // Same path-boundary predicate as CardList's aria-current: exact match or a true child
+        // segment — a bare startsWith would light the trigger for sibling routes sharing a prefix.
+        const onSurface = allCards.some(
+          (c) =>
+            pathname === c.href ||
+            (c.href !== "/" && pathname.startsWith(`${c.href}/`)),
+        );
         return (
           <div key={panel.label} className={styles.wrap}>
             <button
@@ -171,7 +177,11 @@ export function NavPanels({ panels }: { panels: readonly NavPanelSpec[] }) {
               hidden={!open}
               style={
                 panel.groups
-                  ? { maxHeight: "calc(100vh - 6rem)", overflowY: "auto" }
+                  ? {
+                      maxHeight: "calc(100vh - 6rem)",
+                      overflowY: "auto",
+                      width: "min(40rem, 92vw)",
+                    }
                   : undefined
               }
             >
@@ -179,20 +189,21 @@ export function NavPanels({ panels }: { panels: readonly NavPanelSpec[] }) {
               {panel.cards && (
                 <CardList cards={panel.cards} pathname={pathname} />
               )}
-              {panel.groups?.map((g) => (
-                <div
-                  key={g.heading}
-                  style={{ display: "grid", gap: "var(--cs-space-2)" }}
-                >
-                  <p
-                    className={styles.lede}
-                    style={{ fontWeight: "var(--cs-weight-semibold)" }}
-                  >
-                    {g.heading}
-                  </p>
-                  <CardList cards={g.cards} pathname={pathname} />
+              {panel.groups && (
+                <div className={styles.groups}>
+                  {panel.groups.map((g) => (
+                    <div key={g.heading} className={styles.group}>
+                      <p
+                        className={styles.lede}
+                        style={{ fontWeight: "var(--cs-weight-semibold)" }}
+                      >
+                        {g.heading}
+                      </p>
+                      <CardList cards={g.cards} pathname={pathname} />
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
               {panel.foot && (
                 <div className={styles.foot}>
                   {panel.foot.map((f) => (

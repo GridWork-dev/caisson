@@ -3,13 +3,12 @@ import {
   Card,
   Faq,
   FeatureGrid,
-  Icon,
   Reveal,
   Section,
   StatusChip,
-  type IconName,
 } from "@/components";
 
+import { BundleCatalog } from "@/components/bundle-catalog";
 import { bundlePagePath } from "@/components/marketplace";
 import {
   breadcrumb,
@@ -19,8 +18,6 @@ import {
 } from "@/lib/jsonld";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import {
-  type BundleId,
-  bundleModuleSubtotal,
   bundlePriceById,
   BUNDLE_PRICES,
   everythingSavings,
@@ -28,7 +25,6 @@ import {
   formatUsd,
   MODULE_PRICES,
   moduleCatalogSubtotal,
-  modulesByBundle,
 } from "@/lib/pricing";
 
 export const metadata = buildMetadata({
@@ -51,32 +47,10 @@ const HUB_FAQ = [
   },
 ] as const;
 
-// The Bundles tab — the /marketplace hub root (ADR-0237 F1, catalog-rework W6.2). Six bundle cards
-// (the five persona/Provenance bundles + the whole-catalog Everything), the good/better/best ladder,
-// and the à-la-carte pointer. Modules/Build/Plans live on their sibling tabs. Prices + membership all
-// derive from `lib/pricing.ts` (ADR-0257 vocabulary · ADR-0258/0260 numbers) — never hand-keyed.
-
-// One accent-free domain glyph per bundle (DESIGN.md §5 / ADR-0078 §5). Personas reuse their edition
-// marks; Provenance takes the WORM/audit glyph; Everything the bundle glyph.
-const BUNDLE_ICON: Record<BundleId, IconName> = {
-  compliance: "edition-compliance",
-  "ai-production": "edition-ai-kit",
-  "local-first": "edition-local-ai",
-  "agentic-dev": "edition-agent-dev",
-  provenance: "audit-chain",
-  everything: "bundle",
-};
-
-// One-line positioning per bundle beyond the price note — what the bundle is FOR (copywriting; the
-// price + members come from the pricing lib).
-const BUNDLE_TAGLINE: Record<BundleId, string> = {
-  compliance: "For regulated SaaS that has to pass the audit.",
-  "ai-production": "For AI features that have to survive production.",
-  "local-first": "For data that can't leave the device.",
-  "agentic-dev": "For teams shipping governed coding agents.",
-  provenance: "For anyone who has to prove a record wasn't tampered with.",
-  everything: "For the team that wants the whole library, one purchase.",
-};
+// The Bundles tab — the /marketplace hub root (ADR-0237 F1, catalog-rework W6.2). The good/better/best
+// ladder + FAQ + bundle Offer JSON-LD stay here (server-rendered SEO); the six interactive bundle
+// cards — which open the purchase pop-out instead of navigating — live in the `BundleCatalog` client
+// island below. Prices + membership all derive from `lib/pricing.ts` — never hand-keyed.
 
 export default function MarketplaceBundlesPage() {
   const breadcrumbNode = breadcrumb([
@@ -261,210 +235,8 @@ export default function MarketplaceBundlesPage() {
         </FeatureGrid>
       </Section>
 
-      {/* ===== Persona + Provenance bundle cards ===== */}
-      <Section
-        id="bundles"
-        eyebrow="Bundles"
-        title="Six bundles, one audited base."
-        lede="Each bundle is a composition of the same substrate — never a fork. Compliance is the front door; every bundle is priced below the sum of the modules it composes."
-      >
-        <FeatureGrid cols={2}>
-          {BUNDLE_PRICES.filter((b) => b.id !== "everything").map((b, i) => {
-            const members = modulesByBundle(b.id);
-            const memberSubtotal = bundleModuleSubtotal(b.id);
-            const saves =
-              b.amount !== null ? Math.max(0, memberSubtotal - b.amount) : 0;
-            return (
-              <Reveal key={b.id} delay={i * 60}>
-                <div id={b.id}>
-                  <Card accent={b.id === "compliance"}>
-                    {/* Header: glyph + name + type chip (ADR-0237 F5). */}
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "baseline",
-                        gap: "var(--cs-space-3)",
-                      }}
-                    >
-                      <span
-                        className="cs-card-title"
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "var(--cs-space-2)",
-                        }}
-                      >
-                        <Icon name={BUNDLE_ICON[b.id]} />
-                        {b.label}
-                      </span>
-                      <StatusChip label="Bundle" />
-                    </div>
-
-                    <p
-                      className="cs-muted"
-                      style={{
-                        marginTop: "var(--cs-space-2)",
-                        fontSize: "var(--cs-text-sm)",
-                      }}
-                    >
-                      {BUNDLE_TAGLINE[b.id]}
-                    </p>
-
-                    {/* Price — committed, no fabricated "was" compare (honesty floor, ADR-0130). */}
-                    <div
-                      style={{
-                        marginTop: "var(--cs-space-4)",
-                        display: "flex",
-                        alignItems: "baseline",
-                        gap: "var(--cs-space-3)",
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <p
-                        className="cs-num"
-                        style={{
-                          fontSize: "var(--cs-text-2xl)",
-                          fontFamily: "var(--cs-font-mono)",
-                          letterSpacing: "var(--cs-tracking-tight)",
-                        }}
-                      >
-                        {formatPrice(b)}
-                      </p>
-                      {saves > 0 && (
-                        <StatusChip
-                          tone="accent"
-                          label={`Save ${formatUsd(saves)} vs à la carte`}
-                        />
-                      )}
-                    </div>
-
-                    <ul
-                      style={{
-                        margin: "var(--cs-space-5) 0 0",
-                        padding: 0,
-                        listStyle: "none",
-                        display: "grid",
-                        gap: "var(--cs-space-2)",
-                      }}
-                    >
-                      {members.map((m) => (
-                        <li
-                          key={m.id}
-                          className="cs-muted"
-                          style={{
-                            display: "flex",
-                            alignItems: "baseline",
-                            gap: "var(--cs-space-2)",
-                            fontSize: "var(--cs-text-sm)",
-                            lineHeight: "var(--cs-leading-snug)",
-                          }}
-                        >
-                          <Icon name="check" />
-                          <span style={{ flex: 1 }}>{m.label}</span>
-                          <span
-                            className="cs-num"
-                            style={{
-                              fontSize: "var(--cs-text-xs)",
-                              color: "var(--cs-fg-muted)",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {formatUsd(m.amount)}
-                          </span>
-                        </li>
-                      ))}
-                      <li
-                        className="cs-muted"
-                        style={{
-                          display: "flex",
-                          gap: "var(--cs-space-2)",
-                          fontSize: "var(--cs-text-sm)",
-                          lineHeight: "var(--cs-leading-snug)",
-                        }}
-                      >
-                        <Icon name="check" />
-                        <span>The Apache-2.0 base substrate</span>
-                      </li>
-                    </ul>
-
-                    <div
-                      style={{
-                        marginTop: "var(--cs-space-6)",
-                        display: "flex",
-                        gap: "var(--cs-space-2)",
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <Button href={bundlePagePath(b.id)} variant="ghost">
-                        Learn more →
-                      </Button>
-                    </div>
-                  </Card>
-                </div>
-              </Reveal>
-            );
-          })}
-        </FeatureGrid>
-      </Section>
-
-      {/* ===== Everything bundle — the whole catalog ===== */}
-      <Reveal>
-        <Section
-          id="everything"
-          eyebrow="Everything"
-          title="The whole catalog, one purchase."
-          lede="The Everything bundle is exactly what it says: every commercial bundle and every à-la-carte module — the full sellable catalog, composed on the same audited base."
-          band="tint"
-        >
-          <Card accent className="cs-elevate-md">
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                alignItems: "baseline",
-                gap: "var(--cs-space-3)",
-              }}
-            >
-              <span
-                className="cs-num"
-                style={{
-                  fontSize: "var(--cs-text-3xl)",
-                  fontWeight: "var(--cs-weight-semibold)",
-                  letterSpacing: "var(--cs-tracking-tight)",
-                }}
-              >
-                {everything ? formatPrice(everything) : "—"}
-              </span>
-              <span className="cs-tag">One-time · own the source</span>
-              {savings > 0 && (
-                <StatusChip
-                  tone="accent"
-                  label={`Save ${formatUsd(savings)} vs à la carte`}
-                  dot
-                />
-              )}
-            </div>
-            <p
-              className="cs-muted"
-              style={{ marginTop: "var(--cs-space-4)", maxWidth: "60ch" }}
-            >
-              Every one of the {MODULE_PRICES.length} sellable modules à la
-              carte totals {formatUsd(moduleCatalogSubtotal())}. The Everything
-              bundle is the whole commercial catalog — including the platform
-              modules no persona bundle carries (org controls, billing
-              orchestration, UI Pro) — for{" "}
-              {everything ? formatPrice(everything) : "—"}. Only the private
-              brand layer is excluded. One purchase, the whole library.
-            </p>
-            <div className="cs-cta-row">
-              <Button href="/marketplace/modules" variant="primary">
-                Browse the full catalog
-              </Button>
-            </div>
-          </Card>
-        </Section>
-      </Reveal>
+      {/* ===== Interactive bundle cards (client island) — open the purchase pop-out ===== */}
+      <BundleCatalog />
 
       {/* ===== FAQ — the redirect + à-la-carte explainers ===== */}
       <script
