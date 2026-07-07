@@ -58,10 +58,10 @@ export const planBookEntrySchema = strictObject({
    * `one_time` grant is RE-GRANTED subscription-sourced on each granting invoice (the
    * Compliance-Updates re-grant mirror, made dynamic) — lifting the per-entitlement updates-window
    * and member-snapshot gates (ADR-0255 "subscription-sourced access; own `expiry` governs") on
-   * what the buyer ALREADY OWNS. Never a grant of new ids. Default false = plain credits/static
-   * entitlements behavior, unchanged.
+   * what the buyer ALREADY OWNS. Never a grant of new ids. ABSENT = plain credits/static
+   * entitlements behavior, unchanged (the same absent-key posture the claims maps use).
    */
-  coversOwnedEntitlements: z.boolean().default(false),
+  coversOwnedEntitlements: z.boolean().optional(),
 });
 export type PlanBookEntry = z.infer<typeof planBookEntrySchema>;
 
