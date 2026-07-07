@@ -32,21 +32,45 @@ const boolFlag = (dflt: boolean) =>
 const positiveInt = (dflt: number) =>
   z.coerce.number().int().positive().default(dflt);
 
+// A watcher whose fetch fan-out takes longer than its own cadence is exactly what the scheduler's
+// overlap guard (scheduler.ts) exists to handle — this floor is a second, independent line of
+// defense: a misconfigured near-zero cadence can't spin the guard itself into a tight skip-loop.
+const MIN_CADENCE_MS = 1_000;
+const cadenceMs = (dflt: number) =>
+  z.coerce.number().int().min(MIN_CADENCE_MS).default(dflt);
+
 const nonEmpty = z.string().trim().min(1);
+
+/** Every entry must be a real, https URL — fails the whole config closed on a malformed list
+ *  entry rather than silently dropping it (an operator typo should be loud, not swallowed). */
+const httpsUrl = z.string().refine((u) => {
+  try {
+    return new URL(u).protocol === "https:";
+  } catch {
+    return false;
+  }
+}, "must be an https URL");
 
 const ConfigSchema = strictObject({
   databaseUrl: nonEmpty,
 
   healthzPort: positiveInt(8791),
-  healthzHost: z.string().trim().min(1).default("0.0.0.0"),
+  // Local-run default is loopback-only; the container's compose env explicitly sets 0.0.0.0
+  // (.env.example) so the in-container bind still reaches Docker's healthcheck / port mapping.
+  healthzHost: z.string().trim().min(1).default("127.0.0.1"),
   schedulerEnabled: boolFlag(true),
+  // Off by default: the runtime DSN is meant to be a DML-only least-privilege role (see
+  // migrations/provision-role.sql) that can't run the schema DDL migrate() issues. The operator
+  // applies the migration once, out-of-band, as an owning role; this flag is an explicit opt-in
+  // convenience for a first local/dev boot, never the production posture.
+  migrateOnBoot: boolFlag(false),
 
-  cadenceComplianceMs: positiveInt(DAY),
-  cadenceSoc2Ms: positiveInt(30 * DAY),
-  cadenceCompetitorMs: positiveInt(DAY),
-  cadenceGithubMs: positiveInt(12 * HOUR),
-  cadenceAnalyticsMs: positiveInt(DAY),
-  cadenceErrorMs: positiveInt(15 * 60_000),
+  cadenceComplianceMs: cadenceMs(DAY),
+  cadenceSoc2Ms: cadenceMs(30 * DAY),
+  cadenceCompetitorMs: cadenceMs(DAY),
+  cadenceGithubMs: cadenceMs(12 * HOUR),
+  cadenceAnalyticsMs: cadenceMs(DAY),
+  cadenceErrorMs: cadenceMs(15 * 60_000),
 
   competitorUrls: z
     .string()
@@ -56,7 +80,8 @@ const ConfigSchema = strictObject({
         .split(",")
         .map((s) => s.trim())
         .filter((s) => s.length > 0),
-    ),
+    )
+    .pipe(z.array(httpsUrl)),
   githubOrg: z.string().trim().min(1).default("caisson-sh"),
   githubToken: z.string().trim().optional(),
 
@@ -92,6 +117,7 @@ export function loadConfig(env: Env = process.env): Config {
     healthzPort: env.INTEL_HEALTHZ_PORT,
     healthzHost: env.INTEL_HEALTHZ_HOST,
     schedulerEnabled: env.INTEL_SCHEDULER_ENABLED,
+    migrateOnBoot: env.INTEL_MIGRATE_ON_BOOT,
     cadenceComplianceMs: env.INTEL_CADENCE_COMPLIANCE_MS,
     cadenceSoc2Ms: env.INTEL_CADENCE_SOC2_MS,
     cadenceCompetitorMs: env.INTEL_CADENCE_COMPETITOR_MS,
