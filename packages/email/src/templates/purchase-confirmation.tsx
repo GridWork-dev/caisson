@@ -64,8 +64,8 @@ export function PurchaseConfirmationEmail(
       </EmailBody>
       <EmailButton href={data.dashboardUrl} label="View your dashboard" />
       <EmailBody>
-        Pull your license and modules with npx create-caisson using the account
-        on your dashboard. Full terms are in the Caisson EULA at
+        Pull your license and modules with bunx @caisson-sh/cli@latest using the
+        account on your dashboard. Full terms are in the Caisson EULA at
         https://caisson.sh/legal/eula.
       </EmailBody>
     </EmailLayout>

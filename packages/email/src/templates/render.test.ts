@@ -70,7 +70,8 @@ describe("renderEmailTemplate", () => {
     expect(rendered.html).toContain("ord_42");
     expect(rendered.html).toContain("Compliance bundle");
     expect(rendered.html).toContain("799.00 USD");
-    expect(rendered.text).toContain("create-caisson");
+    // The install command every other surface teaches (the create-caisson name is retired).
+    expect(rendered.text).toContain("bunx @caisson-sh/cli@latest");
   });
 
   test("purchase-confirmation: a line with no per-line amount renders its label alone", async () => {
@@ -103,7 +104,21 @@ describe("renderEmailTemplate", () => {
     expect(rendered.html).toContain("Compliance bundle");
     expect(rendered.html).toContain("2028-01-15");
     expect(rendered.html).toContain("299.00 USD");
-    expect(rendered.text).toContain("create-caisson");
+    expect(rendered.text).toContain("bunx @caisson-sh/cli@latest");
+  });
+
+  test("renewal-confirmation: an omitted total (mixed cart) renders no 'Total charged' line", async () => {
+    // On a mixed cart the purchase receipt owns the whole-event total; a second email repeating
+    // it would read as a double charge.
+    const rendered = await renderEmailTemplate("renewal-confirmation", {
+      buyerName: "Ada",
+      orderId: "ord_ren_43",
+      currency: "usd",
+      lines: [{ label: "Compliance", newWindowEnd: "2028-01-15" }],
+      dashboardUrl: URL,
+    });
+    expect(rendered.html).toContain("2028-01-15");
+    expect(rendered.html).not.toContain("Total charged");
   });
 });
 

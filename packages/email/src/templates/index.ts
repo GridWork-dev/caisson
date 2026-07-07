@@ -97,12 +97,20 @@ function coerceRenewalLine(line: unknown): RenewalConfirmationLine | null {
 function coerceRenewalConfirmation(
   data: Record<string, unknown>,
 ): RenewalConfirmationData | null {
+  // amountTotalMinor is OPTIONAL (omitted on a mixed cart — the purchase receipt owns the total),
+  // but when present it must be an integer (ADR-0007).
+  const amountTotalMinor = data.amountTotalMinor;
+  if (
+    amountTotalMinor !== undefined &&
+    (typeof amountTotalMinor !== "number" ||
+      !Number.isInteger(amountTotalMinor))
+  ) {
+    return null;
+  }
   if (
     typeof data.buyerName !== "string" ||
     typeof data.orderId !== "string" ||
     typeof data.currency !== "string" ||
-    typeof data.amountTotalMinor !== "number" ||
-    !Number.isInteger(data.amountTotalMinor) ||
     typeof data.dashboardUrl !== "string" ||
     !Array.isArray(data.lines)
   ) {
@@ -118,7 +126,7 @@ function coerceRenewalConfirmation(
     buyerName: data.buyerName,
     orderId: data.orderId,
     currency: data.currency,
-    amountTotalMinor: data.amountTotalMinor,
+    amountTotalMinor,
     lines,
     dashboardUrl: data.dashboardUrl,
   };

@@ -22,8 +22,10 @@ export interface RenewalConfirmationData {
   orderId: string;
   /** ISO currency code, e.g. "usd". */
   currency: string;
-  /** The charged grand total, minor units (integer cents, ADR-0007). */
-  amountTotalMinor: number;
+  /** The charged grand total, minor units (integer cents, ADR-0007) — OMITTED on a mixed cart,
+   *  where the purchase-confirmation receipt already states the (whole-event) total and repeating
+   *  it here would read as a second full charge. */
+  amountTotalMinor?: number | undefined;
   /** Per-line renewal breakdown. */
   lines: readonly RenewalConfirmationLine[];
   /** The buyer dashboard — license + registry access. */
@@ -45,7 +47,11 @@ export function RenewalConfirmationEmail(
 ): React.ReactElement {
   return (
     <EmailLayout
-      preview={`Renewal ${data.orderId} — ${formatMinor(data.amountTotalMinor, data.currency)}`}
+      preview={
+        data.amountTotalMinor === undefined
+          ? `Renewal ${data.orderId}`
+          : `Renewal ${data.orderId} — ${formatMinor(data.amountTotalMinor, data.currency)}`
+      }
       heading="Renewal confirmed"
     >
       <EmailBody>
@@ -57,14 +63,16 @@ export function RenewalConfirmationEmail(
           {line.label} — updates through {line.newWindowEnd}
         </EmailBody>
       ))}
-      <EmailBody>
-        Total charged: {formatMinor(data.amountTotalMinor, data.currency)}
-      </EmailBody>
+      {data.amountTotalMinor === undefined ? null : (
+        <EmailBody>
+          Total charged: {formatMinor(data.amountTotalMinor, data.currency)}
+        </EmailBody>
+      )}
       <EmailButton href={data.dashboardUrl} label="View your dashboard" />
       <EmailBody>
-        Your updates window has been extended. Pull the latest with npx
-        create-caisson using the account on your dashboard. Full terms are in
-        the Caisson EULA at https://caisson.sh/legal/eula.
+        Your updates window has been extended. Pull the latest with bunx
+        @caisson-sh/cli@latest using the account on your dashboard. Full terms
+        are in the Caisson EULA at https://caisson.sh/legal/eula.
       </EmailBody>
     </EmailLayout>
   );
