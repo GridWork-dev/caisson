@@ -1,4 +1,4 @@
-// @caisson/local-store/ui — the local-store search surface (ADR-0250 G2c/G2d wave-1). Headless +
+// @caisson/local-store/ui — the local-store search surface (ADR-0250 G2c/G2d). Headless +
 // controlled: the HOST owns the query state and runs `LocalStore.hybridSearch` (or `.list`), then
 // hands the ranked hits here. This surface opens no tenant DB and calls no embedder — it only
 // renders the query box + the results it is given. Composes the `@caisson/ui` floor; SSR-safe.

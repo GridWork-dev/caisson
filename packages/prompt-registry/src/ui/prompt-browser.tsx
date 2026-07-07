@@ -1,4 +1,4 @@
-// @caisson/prompt-registry/ui — the prompt browser (ADR-0250 G2c/G2d wave-1). A headless-data-in
+// @caisson/prompt-registry/ui — the prompt browser (ADR-0250 G2c/G2d). A headless-data-in
 // surface: it renders the `PromptVersion` rows the host resolved via `listVersions`/`getVersion` (no
 // tenant executor, no DB). Composes the `@caisson/ui` floor; presentational + SSR-safe.
 import type { CSSProperties } from "react";

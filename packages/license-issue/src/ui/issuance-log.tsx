@@ -1,4 +1,4 @@
-// @caisson/license-issue/ui — the admin-side issuance log (ADR-0250 G2c/G2d wave-1). A
+// @caisson/license-issue/ui — the admin-side issuance log (ADR-0250 G2c/G2d). A
 // headless-data-in surface: it renders the issued-license records the admin issuer service HANDS
 // it (no signing key, no DB, no fetch — this is the read side, never the issue side). Composes the
 // `@caisson/ui` floor; presentational + SSR-safe. `@caisson/license-issue` is private/unpublished —

@@ -1,4 +1,4 @@
-// @caisson/audit-harness/ui — the audit matrix viewer (ADR-0250 G2c/G2d wave-1). A headless-data-in
+// @caisson/audit-harness/ui — the audit matrix viewer (ADR-0250 G2c/G2d). A headless-data-in
 // surface: it renders the reconciled `Finding` ledger + the `CoverageRow` grid the harness produced
 // (no run, no filesystem). Pivots coverage into a domain × dimension matrix (latest round wins),
 // then lists the findings. `@caisson/audit-harness` is private tooling — this surface ships only

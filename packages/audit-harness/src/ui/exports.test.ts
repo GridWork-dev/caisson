@@ -1,5 +1,5 @@
-// Exports-map + React-isolation contract (ADR-0250 G2c; the PR#131 "missing exports entry breaks
-// consumers" lesson). Proves the `./ui` subpath is wired AND that the package ROOT stays
+// Exports-map + React-isolation contract (ADR-0250 G2c; a known class of bug: an exports-map entry a component needs can go missing and break consumers).
+// Proves the `./ui` subpath is wired AND that the package ROOT stays
 // framework-free: importing `@caisson/<pkg>` must pull no React. The React check is TRANSITIVE — it
 // walks every module reachable from the root barrel (excluding the optional `./ui` tree) and asserts
 // none imports react / react-dom / @caisson/ui, so a React import hidden a re-export deep can't slip.

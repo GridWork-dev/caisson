@@ -1,4 +1,4 @@
-// @caisson/audit-worm/ui — the audit-chain viewer (ADR-0250 G2c/G2d wave-1). An embeddable,
+// @caisson/audit-worm/ui — the audit-chain viewer (ADR-0250 G2c/G2d). An embeddable,
 // headless-data-in surface: it renders the chain entries + the kernel's verification verdict it is
 // HANDED (no DB connection, no fetch). Composes the `@caisson/ui` floor (Section · MetricStat ·
 // DataTable · StatusChip · EmptyState) — brand + a11y come from the kit, this file only maps the
