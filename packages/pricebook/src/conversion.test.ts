@@ -26,6 +26,8 @@ const goldenSchema = z.object({
       creditsPerCycle: z.number().int().positive(),
       cadence: z.enum(["month", "year"]),
       entitlements: z.array(z.string()),
+      // ADR-0269: present (true) only on the developer rows — absent = plain plan.
+      coversOwnedEntitlements: z.boolean().optional(),
     }),
   ),
   centsToCredits: z.array(

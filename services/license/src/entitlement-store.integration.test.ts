@@ -16,6 +16,7 @@ import {
   extendUpdatesWindow,
   grantEntitlements,
   readEntitlements,
+  readOneTimeEntitlements,
   revokePurchaseGrants,
   revokePurchaseLineGrants,
   revokeSubscriptionGrants,
@@ -678,5 +679,129 @@ describe("snapshot-at-sale entitledSince (ADR-0257 §1.2)", () => {
       computeEntitledSince(tx, acct),
     );
     expect(Object.keys(since)).toEqual(["compliance"]);
+  });
+});
+
+describe("ADR-0269 subscription-covered pairs (windows/entitledSince drop + the owned read)", () => {
+  test("readOneTimeEntitlements returns ONLY active one_time ids — never subscription, admin_comp, or revoked rows", async () => {
+    const acct = "acct_owned_read";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance", "field-crypto"],
+        sourceEventId: "own_1",
+        source: onetime("own_1"),
+      }),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["local-ai"],
+        sourceEventId: "own_sub",
+        source: sub("sub_own"),
+      }),
+    );
+    // An operator comp (admin_comp) — inserted superuser-side; comps are NOT "owned" (ADR-0269 D1).
+    await tp.query(
+      `INSERT INTO entitlement_grant
+         (id, account_id, entitlement_id, source_kind, subscription_id, purchase_id, source_event_id)
+       VALUES ('comp_own', $1, 'audit-worm', 'admin_comp', NULL, NULL, 'own_comp')`,
+      [acct],
+    );
+    // A revoked one_time buy drops out.
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["ai-meter"],
+        sourceEventId: "own_2",
+        source: onetime("own_2"),
+      }),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      revokePurchaseGrants(tx, { accountId: acct, purchaseId: "own_2" }),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readOneTimeEntitlements(tx, acct)),
+    ).toEqual(["compliance", "field-crypto"]);
+  });
+
+  test("a subscription-covered pair carries NO updatesWindows/entitledSince key; both re-bind after the subscription revoke", async () => {
+    const acct = "acct_covered";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "cov_ot",
+        source: onetime("cov_ot"),
+      }),
+    );
+    await tp.query(
+      `UPDATE entitlement_grant SET granted_at = $2 WHERE account_id = $1`,
+      [acct, "2026-01-05T00:00:00.000Z"],
+    );
+    // Uncovered: the one_time-derived window + snapshot instant are signed.
+    expect(
+      await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
+    ).toEqual({ compliance: "2027-01-05T00:00:00.000Z" });
+    expect(
+      Object.keys(
+        await withTenant(tp.pg, acct, (tx) => computeEntitledSince(tx, acct)),
+      ),
+    ).toEqual(["compliance"]);
+    // Covered (the Developer-plan re-grant shape): the pair's keys DROP — subscription-sourced
+    // access, the token's own expiry governs (ADR-0255 §1 / ADR-0269 D2).
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "cov_sub",
+        source: sub("sub_cov"),
+      }),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
+    ).toEqual({});
+    expect(
+      await withTenant(tp.pg, acct, (tx) => computeEntitledSince(tx, acct)),
+    ).toEqual({});
+    // Revoked (subscription.canceled): the stored one_time bound re-binds UNCHANGED — coverage
+    // never rewrote it, it merely stopped being signed.
+    await withTenant(tp.pg, acct, (tx) =>
+      revokeSubscriptionGrants(tx, {
+        accountId: acct,
+        subscriptionId: "sub_cov",
+      }),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
+    ).toEqual({ compliance: "2027-01-05T00:00:00.000Z" });
+  });
+
+  test("coverage is ALIAS-TOLERANT: a subscription grant under the canonical bundle id covers a legacy-keyed one_time pair", async () => {
+    const acct = "acct_covered_alias";
+    // Legacy vocabulary one_time buy (pre-0257 rows store `ai-kit`)…
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["ai-kit"],
+        sourceEventId: "al_ot",
+        source: onetime("al_ot"),
+      }),
+    );
+    // …covered by a subscription grant written under the CANONICAL id (ai-production).
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["ai-production"],
+        sourceEventId: "al_sub",
+        source: sub("sub_al"),
+      }),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
+    ).toEqual({});
+    expect(
+      await withTenant(tp.pg, acct, (tx) => computeEntitledSince(tx, acct)),
+    ).toEqual({});
   });
 });

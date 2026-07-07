@@ -24,6 +24,7 @@ import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
+  computeUpdatesWindows,
   readEntitlements,
 } from "./entitlement-store.ts";
 
@@ -1243,5 +1244,146 @@ describe("applyBillingEvent — updates-renewal lines (ADR-0244/0251)", () => {
       [acct],
     );
     expect((rows[0] as { n: number }).n).toBe(0);
+  });
+});
+
+describe("ADR-0269 — a coversOwnedEntitlements plan (Developer) re-grants owned ids subscription-sourced", () => {
+  /** A Developer-plan invoice on a chosen subscription id (the placeholder row carries
+   *  coversOwnedEntitlements: true, ADR-0269 D1). */
+  function developerInvoice(
+    accountId: string,
+    invoiceId: string,
+    subscriptionId: string,
+  ): DomainBillingEvent {
+    return {
+      type: "invoice.paid",
+      sourceEventId: `evt_${invoiceId}`,
+      accountId,
+      amountTotal: 49900,
+      currency: "usd",
+      subscriptionId,
+      priceId: PLAN_ID,
+      billingReason: "subscription_cycle",
+      invoiceId,
+    };
+  }
+
+  test("the granting invoice re-grants every owned one_time id under the subscription; the pair's window key drops; cancel re-binds it", async () => {
+    const acct = "acct_dev_covers";
+    // The buyer OWNS compliance (one-time buy) → a one_time-derived window exists.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pay_own", ONETIME_EDITION_ID),
+      ),
+    );
+    expect(
+      Object.keys(
+        await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
+      ),
+    ).toEqual(["compliance"]);
+
+    // Developer invoice.paid → the owned id is RE-GRANTED subscription-sourced (the
+    // Compliance-Updates mirror made dynamic) and reported in grantedEntitlements.
+    const effect = await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, developerInvoice(acct, "in_dev1", "sub_dev")),
+    );
+    expect(effect.grantedEntitlements).toEqual(["compliance"]);
+    const rows = await tp.query<{ source_kind: string; status: string }>(
+      `SELECT source_kind, status FROM entitlement_grant
+        WHERE account_id = $1 AND entitlement_id = 'compliance' ORDER BY source_kind`,
+      [acct],
+    );
+    expect(rows).toEqual([
+      { source_kind: "one_time", status: "active" },
+      { source_kind: "subscription", status: "active" },
+    ]);
+    // Covered → no window key is signed (subscription-sourced access, ADR-0255 §1 / ADR-0269 D2).
+    expect(
+      await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
+    ).toEqual({});
+
+    // A later cycle is idempotent per (account, id, subscription) — no duplicate rows.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, developerInvoice(acct, "in_dev2", "sub_dev")),
+    );
+    const count = await tp.query<{ n: number }>(
+      `SELECT count(*)::int AS n FROM entitlement_grant
+        WHERE account_id = $1 AND entitlement_id = 'compliance' AND source_kind = 'subscription'`,
+      [acct],
+    );
+    expect(count).toEqual([{ n: 1 }]);
+
+    // subscription.canceled revokes exactly the re-grants; the OWNED grant + its window re-bind.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, {
+        type: "subscription.canceled",
+        sourceEventId: "evt_dev_cancel",
+        accountId: acct,
+        subscriptionId: "sub_dev",
+      }),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]); // one_time survives (refcount, ADR-0113)
+    expect(
+      Object.keys(
+        await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
+      ),
+    ).toEqual(["compliance"]); // the gate re-binds after coverage ends
+  });
+
+  test("an id bought MID-cycle joins at the NEXT granting invoice", async () => {
+    const acct = "acct_dev_midcycle";
+    // Cycle 1: nothing owned → the plan re-grants nothing (credits only).
+    const first = await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, developerInvoice(acct, "in_mc1", "sub_mc")),
+    );
+    expect(first.grantedEntitlements).toEqual([]);
+    // Mid-cycle one-time buy…
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pay_mc", ONETIME_EDITION_ID),
+      ),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
+    ).not.toEqual({}); // not yet covered — joins at the next cycle
+    // …joins at cycle 2.
+    const second = await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, developerInvoice(acct, "in_mc2", "sub_mc")),
+    );
+    expect(second.grantedEntitlements).toEqual(["compliance"]);
+    expect(
+      await withTenant(tp.pg, acct, (tx) => computeUpdatesWindows(tx, acct)),
+    ).toEqual({});
+  });
+
+  test("a plan WITHOUT the flag (Compliance-Updates) never re-grants other owned ids", async () => {
+    const acct = "acct_noflag";
+    // The buyer owns a credit pack (no entitlement) and pays a Compliance-Updates invoice —
+    // only the plan's own static `compliance` grant lands; no dynamic re-grant of anything else.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, purchaseCompleted(acct, "pay_nf", CREDIT_PACK_ID)),
+    );
+    const effect = await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        invoicePaid(acct, "in_nf", { priceId: EDITION_PLAN_ID }),
+      ),
+    );
+    expect(effect.grantedEntitlements).toEqual(["compliance"]);
+    const kinds = await tp.query<{
+      entitlement_id: string;
+      source_kind: string;
+    }>(
+      `SELECT entitlement_id, source_kind FROM entitlement_grant
+        WHERE account_id = $1 ORDER BY entitlement_id`,
+      [acct],
+    );
+    expect(kinds).toEqual([
+      { entitlement_id: "compliance", source_kind: "subscription" },
+    ]);
   });
 });

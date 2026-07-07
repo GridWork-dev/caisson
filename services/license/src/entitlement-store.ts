@@ -230,6 +230,26 @@ export async function readEntitlements(
   return r.rows.map((row) => row.entitlement_id);
 }
 
+/**
+ * Read an account's ACTIVE `one_time`-backed purchased ids — the "entitlements the buyer ALREADY
+ * OWNS" read (ADR-0269 Decision 1): the set a `coversOwnedEntitlements` plan re-grants
+ * subscription-sourced on each granting invoice. Deliberately narrower than {@link readEntitlements}:
+ * ids held only via another subscription (borrowed, not bought) or an `admin_comp` row are NOT
+ * owned and never enter the re-grant. Distinct + sorted for a stable result. Run inside `withTenant`.
+ */
+export async function readOneTimeEntitlements(
+  tx: TenantExecutor,
+  accountId: string,
+): Promise<string[]> {
+  const r = await tx.query<{ entitlement_id: string }>(
+    `SELECT DISTINCT entitlement_id FROM entitlement_grant
+     WHERE account_id = $1 AND source_kind = 'one_time' AND status = 'active'
+     ORDER BY entitlement_id`,
+    [accountId],
+  );
+  return r.rows.map((row) => row.entitlement_id);
+}
+
 export interface RevokeSubscriptionInput {
   accountId: string;
   subscriptionId: string;
@@ -405,12 +425,40 @@ export async function revokeAdminComp(
 // --- ADR-0244/0255 updates windows --------------------------------------------------------------
 
 /**
+ * The purchased ids ALSO backed by an ACTIVE subscription grant, expanded to their full alias
+ * groups (ADR-0269 Decision 2, alias tolerance per the `extendUpdatesWindow` W7 convention): while
+ * a subscription backs an entitlement, its access is subscription-sourced — the token's own
+ * `expiry` claim governs (ADR-0255 §1), so the pair carries NO `updatesWindows`/`entitledSince`
+ * key. Both claim computations below drop covered keys through this one read.
+ */
+async function subscriptionCoveredIds(
+  tx: TenantExecutor,
+  accountId: string,
+): Promise<Set<string>> {
+  const r = await tx.query<{ entitlement_id: string }>(
+    `SELECT DISTINCT entitlement_id FROM entitlement_grant
+      WHERE account_id = $1 AND source_kind = 'subscription' AND status = 'active'`,
+    [accountId],
+  );
+  const covered = new Set<string>();
+  for (const row of r.rows) {
+    for (const spelling of entitlementIdAliasGroup(row.entitlement_id)) {
+      covered.add(spelling);
+    }
+  }
+  return covered;
+}
+
+/**
  * Compute the account's PER-ENTITLEMENT updates-window bounds for the signed `updatesWindows`
  * claim (ADR-0255 Decision 2), from DB truth over the ACTIVE one_time grants: per
  * `(account, entitlement)` pair, each row's bound is `updates_expires_at` where a renewal set it,
  * else `granted_at + 12 months`, and the pair takes its MOST FAVORABLE (max) row — so a duplicate
  * re-purchase starts a fresh 12 months rather than inheriting the oldest purchase's window, the
- * per-pair mirror of ADR-0255 Decision 3's most-favorable-window rule. Returns a
+ * per-pair mirror of ADR-0255 Decision 3's most-favorable-window rule. A pair ALSO backed by an
+ * ACTIVE subscription grant carries NO key (ADR-0269 Decision 2 — subscription-sourced access,
+ * the token's own `expiry` governs; the stored one_time bound is untouched and re-binds at the
+ * first re-mint after the subscription's grants are revoked). Returns a
  * `purchasedEntitlementId → ISO instant` map; EMPTY when the account holds no active one-time
  * grants — an unbounded claim (subscription-only accounts keep their existing expiry semantics,
  * ADR-0244 §4; subscription-sourced entitlements never get a key). Deterministic for a fixed
@@ -431,8 +479,10 @@ export async function computeUpdatesWindows(
       GROUP BY entitlement_id`,
     [accountId],
   );
+  const covered = await subscriptionCoveredIds(tx, accountId);
   const windows: Record<string, string> = {};
   for (const row of r.rows) {
+    if (covered.has(row.entitlement_id)) continue; // ADR-0269: subscription-covered — no key
     windows[row.entitlement_id] = new Date(row.bound).toISOString();
   }
   return windows;
@@ -446,7 +496,10 @@ export async function computeUpdatesWindows(
  * entitled to the newer (larger) member snapshot, mirroring the most-favorable rule
  * `computeUpdatesWindows`/ADR-0255 Decision 3 use for windows. A member that joined a bundle AFTER
  * this instant is outside the buyer's snapshot; the per-member filter drops it at the registry-schema
- * resolver (`expandEntitlements`). Returns a `purchasedEntitlementId → ISO instant` map; EMPTY when
+ * resolver (`expandEntitlements`). A pair ALSO backed by an ACTIVE subscription grant carries NO
+ * key (ADR-0269 Decision 2 — while covered, new members reach the buyer; the gate re-binds at the
+ * first re-mint after the subscription lapses). Returns a `purchasedEntitlementId → ISO instant`
+ * map; EMPTY when
  * the account holds no active one-time grants (an unbounded/grandfathered claim — subscription-
  * sourced entitlements never get a key, their own `expiry` governs). Deterministic for a fixed grant
  * set (no `now()`), so the /issue re-mint comparison is stable. Run inside `withTenant`.
@@ -465,8 +518,10 @@ export async function computeEntitledSince(
       GROUP BY entitlement_id`,
     [accountId],
   );
+  const covered = await subscriptionCoveredIds(tx, accountId);
   const entitledSince: Record<string, string> = {};
   for (const row of r.rows) {
+    if (covered.has(row.entitlement_id)) continue; // ADR-0269: subscription-covered — no key
     entitledSince[row.entitlement_id] = new Date(row.since).toISOString();
   }
   return entitledSince;

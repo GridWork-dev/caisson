@@ -1,5 +1,22 @@
 # @caisson/pricebook
 
+## 0.5.0
+
+### Minor Changes
+
+- Plan-book entries gain an optional boolean field marking a subscription plan as covering the
+  buyer's already-owned entitlements while the subscription is active. The Developer plan rows
+  now carry it: each billing cycle re-grants everything the buyer holds from one-time purchases
+  as subscription-sourced access, so updates and newly added bundle members keep flowing while
+  the plan is active and stop at cancellation. Plans without the field behave exactly as before;
+  the pricebook version stamp bumps accordingly.
+- 8170382: Append the W7 sandbox catalog rows: 17 one-time purchase rows (11 carve/new module SKUs plus the six bundles keyed to canonical bundle ids) and 12 renewal rows (the Provenance bundle plus the eleven carve/new SKUs). Both book versions bump; existing rows untouched (append-only).
+
+### Patch Changes
+
+- Updated dependencies [8170382]
+  - @caisson/registry-schema@0.4.0
+
 ## 0.4.0
 
 ### Minor Changes

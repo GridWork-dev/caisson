@@ -30,6 +30,7 @@ import type { TenantExecutor } from "@caisson/tenancy-rls";
 import {
   extendUpdatesWindow,
   grantEntitlements,
+  readOneTimeEntitlements,
   revokePurchaseGrants,
   revokePurchaseLineGrants,
   revokeSubscriptionGrants,
@@ -121,8 +122,30 @@ export async function applyBillingEvent(
         sourceEventId: ev.invoiceId,
         source: { kind: "subscription", subscriptionId: ev.subscriptionId },
       });
+      // ADR-0269: a `coversOwnedEntitlements` plan (Developer) RE-GRANTS, subscription-sourced,
+      // every entitlement the buyer already holds via an active one_time grant — the
+      // Compliance-Updates re-grant mirror made dynamic. While these subscription rows are active
+      // the issuer drops the pair's `updatesWindows`/`entitledSince` keys (subscription-sourced
+      // access, own `expiry` governs — ADR-0255 §1); `subscription.canceled` revokes exactly these
+      // rows and the one_time gates re-bind at the next re-mint. Ids bought MID-cycle join at the
+      // next granting invoice (grantEntitlements is idempotent per (account, id, subscription)).
+      // Read AFTER the static grant above so a plan that one day carries both shapes can never
+      // miss its own grants; one_time reads are unaffected by it today (Developer grants []).
+      const coveredIds = plan.coversOwnedEntitlements
+        ? await readOneTimeEntitlements(tx, ev.accountId)
+        : [];
+      if (coveredIds.length > 0) {
+        await grantEntitlements(tx, {
+          accountId: ev.accountId,
+          entitlementIds: coveredIds,
+          sourceEventId: ev.invoiceId,
+          source: { kind: "subscription", subscriptionId: ev.subscriptionId },
+        });
+      }
       return {
-        grantedEntitlements: [...plan.entitlements],
+        grantedEntitlements: [
+          ...new Set([...plan.entitlements, ...coveredIds]),
+        ],
         skuLines: [
           {
             priceId: ev.priceId,
