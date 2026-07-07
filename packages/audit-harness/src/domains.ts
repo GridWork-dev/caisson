@@ -158,6 +158,15 @@ export function deriveDomains(root: string = REPO_ROOT): Domain[] {
     for (const name of readDirs(join(root, container))) {
       domains.push(unitDomain(container, name, "internal-only"));
     }
+    // Loose files at the container root (e.g. tools/paddle-catalog-recreate.ts) — the per-dir unit
+    // derivation above never sees them; swept by a container-root domain. Longest-root match keeps
+    // each unit's own domain owning its subtree.
+    domains.push({
+      id: `${container}-root`,
+      roots: [container],
+      globs: [`${container}/*`],
+      class: "internal-only",
+    });
   }
 
   // registry/{worker,scripts,schema} — the registry SERVICE (internal), not the re-exported open schema pkg.
