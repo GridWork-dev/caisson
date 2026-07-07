@@ -157,7 +157,7 @@ export interface AccountRevokePreview {
  * (the read-only `admin` role): one read of every ACTIVE grant drives both the source list AND the
  * per-source refcount-survival split (computed in JS — no N+1 SQL), plus the reused credit helpers
  * for the exact claw the mutation would run and the held-license set the edge deny-set would carry.
- * Read-only — it never writes; the actual revoke is the CF-Access-gated mutation route.
+ * Read-only — it never writes; the actual revoke is the GitHub-OAuth-gated mutation route (ADR-0283).
  */
 export async function previewAccountPurchaseRevokes(
   tx: TenantExecutor,

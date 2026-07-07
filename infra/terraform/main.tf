@@ -83,10 +83,10 @@ resource "cloudflare_dns_record" "license_railway_verify" {
   comment = "Railway custom-domain ownership (license) — managed by Terraform"
 }
 
-# --- admin.caisson.sh → caisson-admin on Railway (PROXIED — CF-Access is the SOLE auth, ADR-0140) ---
-# The operator control-plane (ADR-0138). Proxied/orange so the permanent operator Access app in
-# access.tf gates it; the app carries no auth code. Unlike the pre-launch site gate (removed at
-# go-live), the admin gate is permanent.
+# --- admin.caisson.sh → caisson-admin on Railway (PROXIED — kept orange for CF's WAF/DDoS edge) ---
+# The operator control-plane (ADR-0138), gated by its OWN in-app GitHub OAuth + numeric-id
+# allowlist (ADR-0283 — supersedes the CF-Access-alone posture of ADR-0140; the app is its own
+# gate now, no separate Access application/policy for admin.caisson.sh in access.tf).
 resource "cloudflare_dns_record" "admin" {
   zone_id = var.cloudflare_zone_id
   name    = "admin.${var.zone_name}"
