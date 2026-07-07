@@ -669,12 +669,24 @@ function bestStackUpgrade(
 }
 
 /** Summarize a selected set of module ids into a running total + the best upgrade nudge. Unknown or
- *  duplicate ids are ignored (each SKU is a one-time license, never a quantity). */
-export function buildStackSummary(moduleIds: readonly string[]): StackSummary {
+ *  duplicate ids are ignored (each SKU is a one-time license, never a quantity). When
+ *  `ownedBundleIds` is given (bundles already in the cart), the nudge is suppressed if one of them
+ *  already covers every selected module — stacking a second covering bundle would be pure overpay. */
+export function buildStackSummary(
+  moduleIds: readonly string[],
+  ownedBundleIds: readonly string[] = [],
+): StackSummary {
   const ids = new Set(moduleIds);
   const lineItems = MODULE_PRICES.filter((m) => ids.has(m.id));
   const total = lineItems.reduce((sum, m) => sum + m.amount, 0);
-  const upgrade = bestStackUpgrade(lineItems, total);
+  const alreadyCovered = ownedBundleIds.some(
+    (b) =>
+      b === "everything" ||
+      lineItems.every((m) => m.bundles.some((covering) => covering === b)),
+  );
+  const upgrade = alreadyCovered
+    ? undefined
+    : bestStackUpgrade(lineItems, total);
   return {
     lineItems,
     moduleCount: lineItems.length,

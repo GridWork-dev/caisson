@@ -228,6 +228,20 @@ describe("buildStackSummary (compose-a-stack math, ADR-0191)", () => {
     expect(s.upgrade?.saves).toBe(moduleCatalogSubtotal() - 2059);
   });
 
+  test("an owned covering bundle suppresses the nudge (never stack a second covering bundle)", () => {
+    // Everything covers any selection by construction; the ai-production bundle covers its own
+    // members — in both cases nudging again would be pure overpay on top of the owned bundle.
+    const ids = modulesByBundle("ai-production").map((m) => m.id);
+    expect(buildStackSummary(ids, ["everything"]).upgrade).toBeUndefined();
+    expect(buildStackSummary(ids, ["ai-production"]).upgrade).toBeUndefined();
+  });
+
+  test("an owned NON-covering bundle leaves the nudge intact", () => {
+    const ids = modulesByBundle("ai-production").map((m) => m.id);
+    const s = buildStackSummary(ids, ["local-first"]);
+    expect(s.upgrade?.target).toBe("ai-production");
+  });
+
   test("empty and unknown ids are ignored", () => {
     expect(buildStackSummary([]).total).toBe(0);
     expect(buildStackSummary([]).upgrade).toBeUndefined();

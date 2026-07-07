@@ -25,7 +25,10 @@ export function StackRail() {
   const moduleSlugs = items
     .filter((i) => i.kind === "module")
     .map((i) => slugOf(i.id, "module"));
-  const summary = buildStackSummary(moduleSlugs);
+  const bundleSlugs = items
+    .filter((i) => i.kind === "bundle")
+    .map((i) => slugOf(i.id, "bundle"));
+  const summary = buildStackSummary(moduleSlugs, bundleSlugs);
   const { upgrade } = summary;
 
   // Swap the covered modules for the covering bundle: drop every module line (the upgrade only

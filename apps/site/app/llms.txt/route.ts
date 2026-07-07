@@ -15,7 +15,7 @@ export const dynamic = "force-static";
 const PREAMBLE = [
   "# Caisson",
   "",
-  "> Compliance-grade infrastructure for regulated SaaS. A composable Apache-2.0 base plus six persona bundles, sold one-time with per-module and bundle options.",
+  "> Compliance-grade infrastructure for regulated SaaS. A composable Apache-2.0 base plus six bundles, sold one-time with per-module and bundle options.",
   "",
   "## Marketplace",
   "",

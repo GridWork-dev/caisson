@@ -71,7 +71,7 @@ const MARKETPLACE_PANEL: NavPanelSpec = {
           href: "/marketplace",
           label: "Marketplace",
           note: "Every bundle and module on one surface — filter, compare, build a stack.",
-          price: `from ${planPrice("module")}`,
+          price: planPrice("module"),
           icon: "bundle",
         },
         {

@@ -232,7 +232,7 @@ export default async function ModuleDepthPage(props: Params) {
   const breadcrumbLd = breadcrumb([
     { name: "Home", path: "/" },
     { name: "Marketplace", path: "/marketplace" },
-    { name: "Modules", path: "/marketplace/modules" },
+    { name: "Modules", path: "/marketplace?type=modules" },
     { name: price.label, path: `/marketplace/modules/${price.id}` },
   ]);
   const appLd = moduleSoftwareApplication(price, {
@@ -268,7 +268,7 @@ export default async function ModuleDepthPage(props: Params) {
           <nav aria-label="Breadcrumb" className="cs-footnote">
             <Link href="/marketplace">Marketplace</Link>
             {" / "}
-            <Link href="/marketplace/modules">Modules</Link>
+            <Link href="/marketplace?type=modules">Modules</Link>
             {" / "}
             <span aria-current="page">{price.label}</span>
           </nav>
