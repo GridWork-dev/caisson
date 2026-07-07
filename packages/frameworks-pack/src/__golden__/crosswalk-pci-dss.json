@@ -48,9 +48,9 @@
       "claim": "implements",
       "control": "Req 10.3.2",
       "summary": "Audit log files are protected so that they cannot be modified after they are written.",
-      "mechanism": "@caisson/audit-worm — an append-only, hash-chained log anchored to a trusted tip, backed by write-once WORM object storage (a conditional GOVERNANCE Object-Lock write; a re-lock of an existing key fails as an existence conflict).",
+      "mechanism": "@caisson/audit-worm — an append-only, hash-chained log anchored to a trusted tip, so modification, truncation, or rewriting after the fact is detectable; production deployments back the log with a write-once object store (e.g. S3 Object-Lock in GOVERNANCE mode).",
       "evidence": "The tamper-evidence integration tests prove modification, truncation, and rewrite are all detected against the trusted tip.",
-      "buyerResponsibility": "Routing your cardholder-data-environment audit events into the store, and your log-review process. Object-Lock retention on your bucket must be configured per your policy.",
+      "buyerResponsibility": "Routing your cardholder-data-environment audit events into the store, and your log-review process. Configuring and retaining a write-once backing store (e.g. Object-Lock retention on your bucket) is your deployment choice.",
       "proof": {
         "kind": "test",
         "path": "packages/audit-worm/src/chain-store.integration.test.ts",

@@ -32,13 +32,13 @@
       "claim": "implements",
       "control": "Art. 17",
       "summary": "A data subject can obtain erasure of their personal data (the right to be forgotten).",
-      "mechanism": "@caisson/field-crypto — crypto-shred destroys a subject's governing key so their ciphertext is irreversibly unrecoverable, selectively (other subjects still decrypt) and irreversibly (re-provisioning a shredded scope is refused); @caisson/retention-runner drives the sweep and writes a reason-tagged audit row per run.",
-      "evidence": "The crypto-shred tests prove selective, irreversible erasure with a PII-free audit record; the retention-runner tests prove per-target isolation and one audit row per run.",
-      "buyerResponsibility": "Identifying the data subject's records, honoring the Art. 17(3) exemptions (legal obligation, freedom of expression, etc.), verifying the request, and triggering the erasure.",
+      "mechanism": "@caisson/field-crypto — crypto-shred destroys a subject's governing key so their ciphertext is irreversibly unrecoverable, selectively (other subjects still decrypt) and irreversibly (re-provisioning a shredded scope is refused); @caisson/retention-runner schedules the erasure sweep across targets.",
+      "evidence": "The crypto-shred tests prove the field-level erasure primitive is selective, irreversible, and produces a PII-free audit record.",
+      "buyerResponsibility": "Identifying the data subject's records, honoring the Art. 17(3) exemptions (legal obligation, freedom of expression, etc.), verifying the request, triggering the erasure, and covering any personal data your system holds outside field-crypto-encrypted columns.",
       "proof": {
         "kind": "test",
         "path": "packages/field-crypto/src/crypto-shred.test.ts",
-        "note": "crypto-shred renders ciphertext unrecoverable, selectively and irreversibly; the audit payload commits the fact of erasure with no PII."
+        "note": "crypto-shred is selective, irreversible, and leaves a PII-free audit record — the field-level erasure primitive Art. 17 depends on."
       }
     },
     {

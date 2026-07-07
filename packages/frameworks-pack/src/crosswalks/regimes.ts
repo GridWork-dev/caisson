@@ -22,8 +22,8 @@ import {
 const CROSSWALK_VERSION = "2026.1";
 
 /**
- * SOC 2 — 2017 Trust Services Criteria (Common Criteria + Confidentiality). Two `implements` rows: the
- * tamper-evident audit log (audit-worm) and confidential-data disposal (field-crypto crypto-shred).
+ * SOC 2 — 2017 Trust Services Criteria (Common Criteria + Confidentiality). One `implements` row:
+ * confidential-data disposal (field-crypto crypto-shred).
  */
 export const soc2Crosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
   regime: "soc2",
@@ -52,7 +52,7 @@ export const soc2Crosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
       claim: "maps-to",
       control: "CC6.6",
       summary:
-        "Access from outside the system boundary is authenticated before protected resources are reached.",
+        "The entity implements logical access security measures to protect the system against threats from sources outside its boundaries, including authenticating external access before protected resources are reached.",
       mechanism:
         "@caisson/auth — session and JWT verification (built-auth integration) gating requests at the application boundary.",
       evidence: "JWT/session verification tests in packages/auth.",
@@ -63,7 +63,7 @@ export const soc2Crosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
       claim: "maps-to",
       control: "CC7.1",
       summary:
-        "The system is monitored to detect anomalies, configuration drift, and new vulnerabilities.",
+        "The entity uses detection and monitoring procedures to identify configuration changes that introduce new vulnerabilities and susceptibility to newly discovered vulnerabilities.",
       mechanism:
         "@caisson/alerting — a rule-driven alerting pipeline that raises signals on defined conditions.",
       evidence: "Alerting pipeline and channel tests in packages/alerting.",
@@ -71,29 +71,24 @@ export const soc2Crosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
         "Deciding what to monitor, defining alert thresholds and routing, vulnerability scanning of your own deployment, and acting on the alerts raised.",
     },
     {
-      claim: "implements",
+      claim: "maps-to",
       control: "CC7.2",
       summary:
-        "Security-relevant events are recorded in a log that cannot be altered or deleted after the fact.",
+        "The entity monitors system components and their operation for anomalies indicative of malicious acts, natural disasters, and errors, and analyzes anomalies to determine whether they represent security events.",
       mechanism:
-        "@caisson/audit-worm — an append-only, hash-chained audit log anchored to a trusted tip, so interior tampering, tail truncation, and same-length rewrites are all detected.",
+        "@caisson/audit-worm provides the tamper-evident, hash-chained record a monitoring and anomaly-analysis program draws on; @caisson/alerting can raise signals against events written to it. Neither package performs the anomaly analysis itself.",
       evidence:
-        "The tamper-evidence integration tests prove a broken chain is caught at the tampered index and that the WORM anchor outlives a dropped tail.",
+        "The audit chain in packages/audit-worm and the alerting pipeline in packages/alerting.",
       buyerResponsibility:
-        "Emitting the security-relevant events your system generates into the log, and your log-review cadence and monitoring process.",
-      proof: {
-        kind: "test",
-        path: "packages/audit-worm/src/chain-store.integration.test.ts",
-        note: "tamper evidence: interior tamper, tail truncation, and same-root rewrite are all caught by the trusted tip.",
-      },
+        "Building and operating the actual monitoring and anomaly-analysis program: defining what counts as an anomaly, analyzing events for security significance, and configuring and reviewing alerting rules.",
     },
     {
       claim: "maps-to",
       control: "C1.1",
       summary:
-        "Confidential information is protected against unauthorized access throughout its lifecycle.",
+        "The entity identifies and maintains confidential information to meet its confidentiality objectives — classifying what counts as confidential and safeguarding it appropriately.",
       mechanism:
-        "@caisson/field-crypto — per-field AEAD encryption at rest with row-bound additional authenticated data, so a relocated ciphertext fails authentication rather than decrypting elsewhere.",
+        "@caisson/field-crypto — per-field AEAD encryption at rest with row-bound additional authenticated data safeguards confidential fields once identified; a relocated ciphertext fails authentication rather than decrypting elsewhere.",
       evidence:
         "Row-bound encryption tests in packages/field-crypto (encrypt-field, envelope, isolation).",
       buyerResponsibility:
@@ -186,11 +181,11 @@ export const pciDssCrosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
       summary:
         "Audit log files are protected so that they cannot be modified after they are written.",
       mechanism:
-        "@caisson/audit-worm — an append-only, hash-chained log anchored to a trusted tip, backed by write-once WORM object storage (a conditional GOVERNANCE Object-Lock write; a re-lock of an existing key fails as an existence conflict).",
+        "@caisson/audit-worm — an append-only, hash-chained log anchored to a trusted tip, so modification, truncation, or rewriting after the fact is detectable; production deployments back the log with a write-once object store (e.g. S3 Object-Lock in GOVERNANCE mode).",
       evidence:
         "The tamper-evidence integration tests prove modification, truncation, and rewrite are all detected against the trusted tip.",
       buyerResponsibility:
-        "Routing your cardholder-data-environment audit events into the store, and your log-review process. Object-Lock retention on your bucket must be configured per your policy.",
+        "Routing your cardholder-data-environment audit events into the store, and your log-review process. Configuring and retaining a write-once backing store (e.g. Object-Lock retention on your bucket) is your deployment choice.",
       proof: {
         kind: "test",
         path: "packages/audit-worm/src/chain-store.integration.test.ts",
@@ -256,15 +251,15 @@ export const gdprCrosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
       summary:
         "A data subject can obtain erasure of their personal data (the right to be forgotten).",
       mechanism:
-        "@caisson/field-crypto — crypto-shred destroys a subject's governing key so their ciphertext is irreversibly unrecoverable, selectively (other subjects still decrypt) and irreversibly (re-provisioning a shredded scope is refused); @caisson/retention-runner drives the sweep and writes a reason-tagged audit row per run.",
+        "@caisson/field-crypto — crypto-shred destroys a subject's governing key so their ciphertext is irreversibly unrecoverable, selectively (other subjects still decrypt) and irreversibly (re-provisioning a shredded scope is refused); @caisson/retention-runner schedules the erasure sweep across targets.",
       evidence:
-        "The crypto-shred tests prove selective, irreversible erasure with a PII-free audit record; the retention-runner tests prove per-target isolation and one audit row per run.",
+        "The crypto-shred tests prove the field-level erasure primitive is selective, irreversible, and produces a PII-free audit record.",
       buyerResponsibility:
-        "Identifying the data subject's records, honoring the Art. 17(3) exemptions (legal obligation, freedom of expression, etc.), verifying the request, and triggering the erasure.",
+        "Identifying the data subject's records, honoring the Art. 17(3) exemptions (legal obligation, freedom of expression, etc.), verifying the request, triggering the erasure, and covering any personal data your system holds outside field-crypto-encrypted columns.",
       proof: {
         kind: "test",
         path: "packages/field-crypto/src/crypto-shred.test.ts",
-        note: "crypto-shred renders ciphertext unrecoverable, selectively and irreversibly; the audit payload commits the fact of erasure with no PII.",
+        note: "crypto-shred is selective, irreversible, and leaves a PII-free audit record — the field-level erasure primitive Art. 17 depends on.",
       },
     },
     {

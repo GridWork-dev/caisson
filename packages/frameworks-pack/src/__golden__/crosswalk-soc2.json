@@ -23,7 +23,7 @@
     {
       "claim": "maps-to",
       "control": "CC6.6",
-      "summary": "Access from outside the system boundary is authenticated before protected resources are reached.",
+      "summary": "The entity implements logical access security measures to protect the system against threats from sources outside its boundaries, including authenticating external access before protected resources are reached.",
       "mechanism": "@caisson/auth — session and JWT verification (built-auth integration) gating requests at the application boundary.",
       "evidence": "JWT/session verification tests in packages/auth.",
       "buyerResponsibility": "Multi-factor authentication policy, network boundary and WAF/firewall controls, credential lifecycle, and any federation with your own IdP."
@@ -31,29 +31,24 @@
     {
       "claim": "maps-to",
       "control": "CC7.1",
-      "summary": "The system is monitored to detect anomalies, configuration drift, and new vulnerabilities.",
+      "summary": "The entity uses detection and monitoring procedures to identify configuration changes that introduce new vulnerabilities and susceptibility to newly discovered vulnerabilities.",
       "mechanism": "@caisson/alerting — a rule-driven alerting pipeline that raises signals on defined conditions.",
       "evidence": "Alerting pipeline and channel tests in packages/alerting.",
       "buyerResponsibility": "Deciding what to monitor, defining alert thresholds and routing, vulnerability scanning of your own deployment, and acting on the alerts raised."
     },
     {
-      "claim": "implements",
+      "claim": "maps-to",
       "control": "CC7.2",
-      "summary": "Security-relevant events are recorded in a log that cannot be altered or deleted after the fact.",
-      "mechanism": "@caisson/audit-worm — an append-only, hash-chained audit log anchored to a trusted tip, so interior tampering, tail truncation, and same-length rewrites are all detected.",
-      "evidence": "The tamper-evidence integration tests prove a broken chain is caught at the tampered index and that the WORM anchor outlives a dropped tail.",
-      "buyerResponsibility": "Emitting the security-relevant events your system generates into the log, and your log-review cadence and monitoring process.",
-      "proof": {
-        "kind": "test",
-        "path": "packages/audit-worm/src/chain-store.integration.test.ts",
-        "note": "tamper evidence: interior tamper, tail truncation, and same-root rewrite are all caught by the trusted tip."
-      }
+      "summary": "The entity monitors system components and their operation for anomalies indicative of malicious acts, natural disasters, and errors, and analyzes anomalies to determine whether they represent security events.",
+      "mechanism": "@caisson/audit-worm provides the tamper-evident, hash-chained record a monitoring and anomaly-analysis program draws on; @caisson/alerting can raise signals against events written to it. Neither package performs the anomaly analysis itself.",
+      "evidence": "The audit chain in packages/audit-worm and the alerting pipeline in packages/alerting.",
+      "buyerResponsibility": "Building and operating the actual monitoring and anomaly-analysis program: defining what counts as an anomaly, analyzing events for security significance, and configuring and reviewing alerting rules."
     },
     {
       "claim": "maps-to",
       "control": "C1.1",
-      "summary": "Confidential information is protected against unauthorized access throughout its lifecycle.",
-      "mechanism": "@caisson/field-crypto — per-field AEAD encryption at rest with row-bound additional authenticated data, so a relocated ciphertext fails authentication rather than decrypting elsewhere.",
+      "summary": "The entity identifies and maintains confidential information to meet its confidentiality objectives — classifying what counts as confidential and safeguarding it appropriately.",
+      "mechanism": "@caisson/field-crypto — per-field AEAD encryption at rest with row-bound additional authenticated data safeguards confidential fields once identified; a relocated ciphertext fails authentication rather than decrypting elsewhere.",
       "evidence": "Row-bound encryption tests in packages/field-crypto (encrypt-field, envelope, isolation).",
       "buyerResponsibility": "Classifying which data is confidential, selecting which columns are encrypted, and your key-custody and rotation policy."
     },

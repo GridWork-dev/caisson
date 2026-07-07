@@ -148,10 +148,14 @@ describe("every authored crosswalk is honest and well-formed", () => {
       test("no row uses forbidden certification/compliance vocabulary in its own prose (copy law)", () => {
         // Caisson is never the grammatical subject of "compliant/certified/satisfies" (memo §a/§b,
         // ADR-0080). The neutral "maps to / implements a technical control" register holds in the data.
+        // (regimeSpecificDisclaimer is exempt — it legitimately uses these words in NEGATED form, e.g.
+        // "does not make you PCI DSS compliant"; that text is checked for the negation instead, below.)
         const forbidden = /\b(certified|compliant|satisfies)\b/i;
+        expect(cw.title).not.toMatch(forbidden);
         for (const row of cw.rows) {
           expect(row.summary).not.toMatch(forbidden);
           expect(row.mechanism).not.toMatch(forbidden);
+          expect(row.evidence).not.toMatch(forbidden);
           expect(row.buyerResponsibility).not.toMatch(forbidden);
         }
       });
