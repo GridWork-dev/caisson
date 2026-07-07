@@ -33,6 +33,51 @@ consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the 
 
 ---
 
+## 2026-07-06/07 — triple-merge deploy: six-bundle catalog live (gated), Worker-first claims rollout
+
+**Operator authorization:** "once like on clean state want to deploy all new code to prod but still
+gated not go live sequence" (2026-07-06 session). Pre-launch posture UNCHANGED: CF-Access
+`site_gate` stays ON, `PADDLE_ENV=sandbox` stays on `caisson-license` (verified below), no go-live
+step executed.
+
+**Services/SHAs:** registry Worker + all 5 Railway services redeployed from `main` @ `08ee90dd`
+(= PR #128 Kickoff E + PR #129 Kickoff F + PR #130 Kickoff D catalog program + the post-merge
+reconcile). Deploy ORDER honored the standing constraint above: **Worker first** (version
+`1630b709-a8af-4126-b3fc-5c57ac489b7c`), license service after — no token re-mint can now meet an
+old verifier.
+
+**WHY (consumed-package diff):** the catalog program rewired the whole commerce surface
+(six-bundle pricebook + purchased-id token claims + alias-group renewals + the reworked site
+display), E added the updates-window edge filter + credit expiry, F added CLI/emitters/WORM
+drivers; `services/docs` regenerates its pricing corpus from the new bundle SOT.
+
+**Live-verify evidence (pasted):**
+
+- Registry Worker anon surface (the six-bundle index at the edge):
+  `GET https://registry.caisson.sh/` → **15 anon modules** (ai-config, auth, billing, cli, email,
+  jobs, kernel, license-verify, mcp-server, migrate, observability, rate-limit, registry-schema,
+  tenancy-rls, ui) — **`credits` correctly ABSENT** (commercial per ADR-0258 §2);
+  `GET /modules/@caisson%2Fcompliance` → `404` · `GET /modules/@caisson%2Feverything` → `404`
+  (fail-closed, invisible) · `GET /index.json` → `200`.
+- `caisson-license` → `curl https://license.caisson.sh/health` → `{"ok":true}` HTTP 200;
+  deployment `0022d863` SUCCESS; `railway variables` → `PADDLE_ENV=sandbox`.
+- `caisson-site` → `https://caisson.sh` → HTTP 302 →
+  `https://gridworkdev.cloudflareaccess.com/cdn-cgi/access/login/caisson.sh?...` (pre-launch gate
+  ON); deployment `eb173a16` SUCCESS.
+- `caisson-admin` → HTTP 302 → `.../access/login/admin.caisson.sh?...` (permanent operator gate);
+  deployment `c4893708` SUCCESS.
+- `caisson-docs` → `/health` 502 during the ~40s boot-time corpus rebuild, then **HTTP 200**; logs:
+  `[service-docs] semantic index built (OpenRouter qwen3-embedding-8b, 1024-dim)` ·
+  `[service-docs] serving 227 chunks on :8080` (the regenerated bundle-pricing corpus); deployment
+  `453f812c` SUCCESS.
+- `caisson-support-bot` → deployment `2e296b8c` SUCCESS, Railway Online (no public hostname).
+
+**Not done (by design, this act):** CF-Access flip, Paddle production credentials/catalog, Worker
+npm-delivery R2 activation (`CAISSON_PUBLISH_DRY_RUN` untouched) — all remain operator-gated
+launch acts per `docs/state/launch-runbook.md`.
+
+---
+
 ## 2026-07-05 — site-design-2 close-out: issuer-key rotation ×2, edge deny-set live, fleet redeploy
 
 **Services:** `caisson-license`, registry Worker (rotation, both live-verified), `caisson-site`,
