@@ -79,6 +79,14 @@ class Settings(BaseSettings):
         default=None, description="Local-first AI edition role id."
     )
     role_agentic_id: int | None = Field(default=None, description="Agentic-Dev edition role id.")
+    role_priority_support_id: int | None = Field(
+        default=None,
+        description="Priority-support subscription role id (ADR-0278 Track K, price-agnostic "
+        "plumbing). Deliberately NOT in the edition role map — a bundle purchase must never grant "
+        "it. Grant/revoke it with the existing /role-add and /role-remove commands; escalation "
+        "priority routing reads it fail-closed (unset, or the member lacks the role, → normal "
+        "lane). Wiring a live billing signal is deferred until the operator sets a price.",
+    )
     self_assign_roles: list[SelfAssignRole] = Field(
         default_factory=list,
         description="Self-assignable roles for /post-roles buttons; JSON list of {role_id,label}.",
