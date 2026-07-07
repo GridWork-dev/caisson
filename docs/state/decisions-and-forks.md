@@ -1311,3 +1311,25 @@ Operator locks:
 
 D2/D3 (seat allowance at $629/$739 · compliance/everything price level) deliberately HELD for the
 Cookiy WTP data. D8 (/updates roadmap block vs V1-live posture) stays an open fork — not adopted.
+
+## 2026-07-07 resume picker (second sitting — deploy + wave-arm session)
+
+Four outcomes:
+
+1. **D8 → DEFERRED TO POST-LAUNCH (operator).** The /updates roadmap block stays un-adopted and
+   the fork stays OPEN with a named trigger: revisit once real buyers exist and a roadmap carries
+   external evidence value. FULL V1-live posture (ADR-0237 rider 2) unchanged meanwhile.
+2. **D2/D3 → HOLD RE-AFFIRMED** for the Cookiy WTP data (the paid run fires this session);
+   displayed prices stay $1,049/$2,059 et al. until the post-WTP round.
+3. **Cookiy research → FUNDED + GO.** The $100 top-up landed 2026-07-06 (Stripe checkout, +$2
+   welcome credit); operator supplied a fresh API key in-session (the prior key bound the MCP to
+   an unfunded account — rotate the pasted key after the research program wraps). Full paid
+   sequence armed: synthetics ($0) → frame test N=60 (287453) → VW v2 N=60 (211341) → 3
+   qualitative interviews.
+4. **Wave scope → ALL FOUR tracks armed** for this session's parallel/waved execution: site
+   cluster (CAISSON-28 dual-door + top-3 patterns · CAISSON-30 affiliate terms · CAISSON-31
+   Paddle site fixes + catalog tool + runbook delta) · AEO program (CAISSON-29) · license-seam
+   cluster (CAISSON-26 purge · CAISSON-27 receipt wording · renewal-refund un-extend ·
+   entitledSince gate wiring) · ui-pro build wave (ADR-0259). The staged #131/#132 deploy block
+   EXECUTED first this session (docs/deploy/STATE.md 2026-07-07 entry), so site-design-4 builds
+   against a current production baseline.
