@@ -116,4 +116,33 @@ describe("toCsv", () => {
     ]);
     expect(csv).toBe('team,note\r\nAcme,"a,b"\r\nBeta,"say ""hi"""');
   });
+
+  test("neutralizes leading formula triggers with a quoted leading apostrophe", () => {
+    // Pre-fix each of these exported live: =/+/-/@ open a formula in Excel/Sheets.
+    expect(toCsv([["=1+2"]])).toBe(`"'=1+2"`);
+    expect(toCsv([["+cmd"]])).toBe(`"'+cmd"`);
+    expect(toCsv([["-2+3"]])).toBe(`"'-2+3"`);
+    expect(toCsv([["@SUM(A1)"]])).toBe(`"'@SUM(A1)"`);
+    // A trigger char mid-field is fine — only a LEADING one is dangerous.
+    expect(toCsv([["a=b"]])).toBe("a=b");
+    // Injection + embedded quote still escapes the quote inside the guard.
+    expect(toCsv([['=HYPERLINK("x")']])).toBe(`"'=HYPERLINK(""x"")"`);
+  });
+
+  test("neutralizes the OWASP tab and CR trigger variants too", () => {
+    // Pre-fix: "\t=" exported raw and unquoted (tab is not in the quote set), and "\r=" was
+    // quoted by the CR rule but never apostrophe-prefixed — both still open a formula on paste.
+    expect(toCsv([['\t=HYPERLINK("x")']])).toBe(`"'\t=HYPERLINK(""x"")"`);
+    expect(toCsv([["\r=cmd"]])).toBe(`"'\r=cmd"`);
+  });
+});
+
+describe("aggregate large-array safety", () => {
+  test("min/max over 200k rows does not throw (no arg-limit spread)", () => {
+    const big = Array.from({ length: 200_000 }, (_, i) => ({ n: i }));
+    // Math.min(...nums) blows the call-argument limit (RangeError) around ~125k elements.
+    expect(() => aggregate(big, (r) => r.n, "min")).not.toThrow();
+    expect(aggregate(big, (r) => r.n, "min")).toBe(0);
+    expect(aggregate(big, (r) => r.n, "max")).toBe(199_999);
+  });
 });
