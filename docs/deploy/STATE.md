@@ -33,23 +33,34 @@ consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the 
 
 ---
 
-## STAGED — awaiting operator (2026-07-06, hygiene-package-standards session; NOT executed)
+## STAGED — awaiting operator (2026-07-06, PR #131 + PR #132 merges; NOT executed)
 
-The CAISSON-24 compliance republish + the version-cut wave (PR: `chore/hygiene-package-standards`)
-changed `registry/index.json` (29 appended ledger entries incl. `@caisson/compliance@0.5.0` as a
-first-class `kind:"bundle"` entry at 104900) and `services/license` (ADR-0269 Developer-plan
-coverage). Nothing is live until the operator runs, in this order (the standing Worker-first
-sequence constraint above):
+**PR #131** (`chore/hygiene-package-standards`, merged `15ff1f32`) changed `registry/index.json`
+(29 appended ledger entries incl. `@caisson/compliance@0.5.0` as a first-class `kind:"bundle"`
+entry at 104900) and `services/license` (ADR-0269 Developer-plan coverage). **PR #132**
+(`feat/site-design-3`, merged `b8fe8731`) additionally changed `services/license` (commerce
+lifecycle emails + the alias-folded renewal read-back), `apps/site` (six-bundle homepage +
+merged nav, module preview modal, `/updates` absorbing `/changelog`, dashboard updates-window +
+40%-X9 renewal display), and `apps/admin` (the pg-pool idle-error 502 guard). Currently-live
+SHAs predate both PRs: site `eb173a16` · admin `c4893708` · license `0022d863`. Nothing is live
+until the operator runs:
 
-1. **Registry Worker** (inlines the rebuilt index at bundle time):
-   `source ~/.gridwork/caisson.env && bash registry/worker/deploy.sh`
+1. **Registry Worker** (inlines the rebuilt index at bundle time — required FIRST by #131's
+   ADR-0269 claims widening per the standing sequence constraint above; #132 touches no Worker
+   surface): `source ~/.gridwork/caisson.env && bash registry/worker/deploy.sh`
    (needs `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`; the script builds
    `@caisson/registry-schema` first). Verify: `GET https://registry.caisson.sh/modules/@caisson%2Fcompliance`
    still `404` anonymously; a compliance-entitled license sees `0.5.0` with `priceCents: 104900`.
-2. **`caisson-license`** (Railway redeploy from the merged `main` — picks up pricebook 0.5.0 +
-   ADR-0269): `railway up` against the `caisson-license` service, then
+2. **`caisson-license`** — ONE Railway redeploy from merged `main` covers both PRs (pricebook
+   0.5.0 + ADR-0269 coverage from #131, lifecycle emails + renewal read-back from #132):
+   `railway up` against the `caisson-license` service, then
    `curl https://license.caisson.sh/health` → `{"ok":true}`.
-3. R2 tarball upload for the 29 new sidecar rows stays behind its own gated publish dispatch
+3. **`caisson-site`** — `railway up` against `caisson-site` (no ordering constraint vs the
+   Worker): six-bundle homepage/nav/modal, `/updates` (verify `/changelog` → 301 → `/updates`),
+   dashboard updates-window card + renewal pricing.
+4. **`caisson-admin`** — `railway up` against `caisson-admin` (no ordering constraint): the
+   pg-pool idle-error guard. Verify the dashboard loads twice ~10 min apart without a 502.
+5. R2 tarball upload for the 29 new sidecar rows stays behind its own gated publish dispatch
    (`confirm=publish`), unchanged by this entry.
 
 When executed, replace this block with a real entry + pasted live-verify output per the

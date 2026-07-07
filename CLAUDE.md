@@ -127,8 +127,14 @@ $1,049/$739/$629/$329/$399/$2,059, five W1 carve extractions, credits commercial
 Paddle SANDBOX big-bang with editions archived, all 22 modules à-la-carte, legacy entitlement
 ids resolving forever via the single alias point, and the SHIP-audit remediation — notably:
 license tokens sign PURCHASED ids, never the index expansion, or the Worker's purchased-id-keyed
-`updatesWindows` fold goes silently fail-open). Greptile formally retired as ADR-0261. `main`
-single-branch, ceiling 0268, sot green.
+`updatesWindows` fold goes silently fail-open). Greptile formally retired as ADR-0261. The same
+day closed with two more merges: **PR #131** hygiene + package standards (CAISSON-24
+compliance→bundle republish + the 14-changeset version cut, ADR-0269 Developer-plan
+owned-entitlements coverage, `@caisson/ui` exports fix, the pg-pool idle-error guard, CLI
+six-bundle vocabulary) and **PR #132** site-design-3 (six-bundle homepage + merged marketplace
+nav, module preview modal, `/updates` absorbing `/changelog`, commerce lifecycle emails +
+dashboard live updates-window with the ADR-0260 §5 40%-X9 renewal display, admin pg-pool 502
+fix) — both through the in-session SHIP audit lane. `main` single-branch, ceiling 0269, sot green.
 
 ## Engineering invariants (locked, ADR-0002 — apply to all product code)
 
