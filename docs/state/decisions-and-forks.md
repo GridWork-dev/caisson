@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-06
 status: live
-adr_ceiling: 0268
+adr_ceiling: 0269
 ---
 
 # Decisions & Forks — live board
@@ -1188,3 +1188,20 @@ grandfathering policy (operator-owned) · optional Cookiy WTP validation · the 
 build (its SKU sells today under the reserved-id fail-soft; unreserve at first publish) · kit
 stage 2 + wave-1 `./ui` frontends (now UNBLOCKED — the catalog-rework waves they were sequenced
 behind are done).
+
+## 2026-07-06 hygiene-package-standards session (Session B of the parallel pair)
+
+**ADR-0269 — Developer plan covers owned entitlements (LOCKED, executed same session):** the
+operator locked the direction ("the plan should actually grant updates, not have its copy walked
+back") in the session kickoff; the shape landed as the recommended subscription-sourced re-grant
+of the buyer's active `one_time` ids on each granting invoice (the Compliance-Updates mirror made
+dynamic) + the pair-level `updatesWindows`/`entitledSince` key drop for subscription-covered
+pairs (implements ADR-0255 §1's stated rule; also fixes the Compliance-Updates owner+subscriber
+gap). "New-edition access" DEFINED as new releases/members of owned bundles while active — never
+new bundle ids, never perpetual. Filed above 0268; ADR-0088 renumber-at-merge applies if the
+parallel site session collides.
+
+**CAISSON-24 executed:** `@caisson/compliance` manifest flipped to `kind:"bundle"` at 104900 and
+republished (29-entry version-cut wave, index rebuilt); retired-alias metas trued to alias-target
+prices ($739/$329, the `local-ai` convention) with PRICE_AUTHORITY rows. Worker + license-service
+redeploy STAGED (operator act — `docs/deploy/STATE.md` top block).
