@@ -3,11 +3,11 @@
 "@caisson/mcp-server": patch
 ---
 
-Coverage-gate completeness and stale-pin fixes for two cache-masked main reds: the audit-harness
-domain partition now sweeps loose files at the tooling/infra/tools container roots (a
-`<container>-root` domain each — `tools/paddle-catalog-recreate.ts` was git-tracked but unclaimed),
-and its test task is uncacheable (it reads the whole git tree, which turbo cannot hash). The
-mcp-server gate test is re-pinned from the superseded ADR-0257 "legacy id folds members" promise to
-the ADR-0270 purge semantics (a dissolved edition id resolves only as its indexed meta; members are
-denied fail-closed). The root turbo `test` task now depends on `^build` so a dependency package's
-change invalidates dependents' test caches.
+Audit coverage and gate-test correctness fixes. The audit-harness domain partition now sweeps
+loose files at the tooling, infra, and tools container roots into a per-container root domain,
+so a script added directly under one of those directories can no longer escape the coverage
+gate; its test task is also marked uncacheable because the gate reads the whole repository tree.
+The MCP server's entitlement gate test is re-pinned to the current catalog vocabulary: a
+dissolved edition id resolves only as its indexed meta-package and no longer grants that
+edition's member modules, which are denied fail-closed; the current bundle ids remain the way a
+purchase grants its member set.
