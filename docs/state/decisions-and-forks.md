@@ -1,7 +1,7 @@
 ---
-updated: 2026-07-06
+updated: 2026-07-07
 status: live
-adr_ceiling: 0269
+adr_ceiling: 0270
 ---
 
 # Decisions & Forks — live board
@@ -1261,12 +1261,16 @@ stays parked.
 
 Five outcomes from the post-merge picker + the operator's research directive:
 
-1. **Grandfathering fork → RESOLVED as the edition-trace purge (Linear CAISSON-26).** Instead of
-   grandfathering machinery for pre-existing edition buyers, the operator locked: **delete all
+1. **Grandfathering fork → RESOLVED + EXECUTED as the edition-trace purge (Linear CAISSON-26, ADR-0270).**
+   Instead of grandfathering machinery for pre-existing edition buyers, the operator locked: **delete all
    trace of the editions + stale legacy code now** — zero real buyers exist, so churn is free, and
    this cleanup class is only free before the launch sequence. Supersedes-in-part the alias-forever
-   posture (ADR-0257/0258); the ADR lands with the purge PR. The purge spec must separate edition
-   aliases (removable) from module-rename/carve aliases (load-bearing) — fable-audit class.
+   posture (ADR-0257/0258). **DONE (ADR-0270, license-seam-wave):** the purchase-alias spine narrowed to
+   empty, the edition→bundle INDEX relation decoupled (member sets byte-identical), the pricebook/renewal
+   mint sites repointed to canonical bundle ids, and the idempotent grant-drain script shipped
+   (`services/license/scripts/drain-legacy-edition-grants.sql`, run manually at DEPLOY behind the §4
+   prove-empty gate). The spec separated edition aliases (removable) from module-rename/carve aliases
+   (load-bearing) — fable-audit class.
 2. **Subscription-cycle receipt wording → LOCKED: dedicated wording** (Linear CAISSON-27, the
    fable informational from the #132 audit). Small build, not deploy-blocking.
 3. **Cookiy WTP → RUN.** Operator commits a **$100 pre-launch research budget** (balance today
