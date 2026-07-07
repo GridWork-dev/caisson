@@ -33,6 +33,7 @@
         "@caisson/observability": "workspace:*",
         "@caisson/org-controls": "workspace:*",
         "@caisson/platform-reads": "workspace:*",
+        "@caisson/registry-schema": "workspace:*",
         "@caisson/service-license": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
         "@caisson/ui": "workspace:*",

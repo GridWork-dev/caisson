@@ -34,8 +34,13 @@ import {
   debit,
   grant,
 } from "@caisson/credits";
-import { asCredits, NotFoundError } from "@caisson/kernel";
+import { asCredits, NotFoundError, ValidationError } from "@caisson/kernel";
 import { ADMIN_WRITE_ROLE_BOOTSTRAP_SQL } from "@caisson/org-controls";
+import {
+  LEGACY_ENTITLEMENT_ALIASES,
+  loadRegistryIndex,
+  type RegistryIndex,
+} from "@caisson/registry-schema";
 import {
   withTenant,
   type TenantExecutor,
@@ -114,8 +119,43 @@ const okIssue: AdminMutationDeps["issue"] = async (req) => ({
   licenseId: `lic-${req.major}`,
 });
 
+// A minimal indexed base module entry (mirrors resolve-entitlements.integration.test.ts's `entry`).
+// Untyped (flows into `loadRegistryIndex`'s Zod `.parse`, which takes `unknown` and fills every
+// defaulted field) — no `as RegistryIndex[...]` cast fighting the assertion's overlap check.
+function entry(id: string) {
+  return {
+    id,
+    latest: "1.0.0",
+    versions: [
+      {
+        version: "1.0.0",
+        publishedAt: "2026-01-01T00:00:00.000Z",
+        gateAttestation: "ci-run-1@deadbeef",
+        manifest: {
+          id,
+          version: "1.0.0",
+          kind: "base",
+          tier: "oss",
+          license: "Apache-2.0",
+          priceCents: null,
+          editions: [],
+          description: id,
+        },
+      },
+    ],
+  };
+}
+
+// `ai-kit` is the only non-bundle id any test grants (the pre-existing "compliance"+"ai-kit" grant
+// below) — indexed here as its served legacy-edition meta-package's bare slug (ADR-0278 F1: the new
+// grant-boundary allowlist reads this same index, so it must carry every id a test grants).
+const TEST_INDEX: RegistryIndex = loadRegistryIndex({
+  schemaVersion: 1,
+  modules: [entry("@caisson/ai-kit")],
+});
+
 function deps(overrides: Partial<AdminMutationDeps> = {}): AdminMutationDeps {
-  return { db, worm, issue: okIssue, ...overrides };
+  return { db, worm, issue: okIssue, index: TEST_INDEX, ...overrides };
 }
 
 async function ground<T = Record<string, unknown>>(
@@ -299,6 +339,77 @@ describe("entitlement grant/revoke (admin_comp, dual-logged)", () => {
       [b],
     );
     expect(bRows[0]?.n).toBe(0);
+  });
+
+  // ADR-0278 F1: the comp-grant boundary must reject an id `expandEntitlements` cannot resolve
+  // BEFORE any row lands — an unvetted typo written here would fail-closed-throw the target
+  // account's ENTIRE entitlement expansion on its next `/issue`/dashboard read (TM-E, account-wide).
+  test("an unknown entitlement id is rejected (400-mapped ValidationError) and writes NO row", async () => {
+    const acct = await realAccount();
+    await expect(
+      grantEntitlementAdmin(deps(), {
+        actorEmail: "op@gridwork.dev",
+        targetAccountId: acct,
+        entitlementIds: ["compliance", "not-a-real-entitlement"],
+      }),
+    ).rejects.toThrow(ValidationError);
+    const rows = await ground<{ n: number }>(
+      `SELECT count(*)::int AS n FROM entitlement_grant WHERE account_id = $1`,
+      [acct],
+    );
+    expect(rows[0]?.n).toBe(0); // rejected before the transaction opened — not even a rollback
+    const logRows = await ground<{ n: number }>(
+      `SELECT count(*)::int AS n FROM admin_action_log WHERE target_account_id = $1`,
+      [acct],
+    );
+    expect(logRows[0]?.n).toBe(0);
+  });
+
+  test("a known bundle id is grantable even absent from the index (bundle ids are unconditional)", async () => {
+    // "compliance" is a locked BUNDLE_IDS entry (bundle-vocabulary.ts) with no index entry in
+    // TEST_INDEX — expandEntitlements never throws for a known bundle id regardless of index
+    // presence (it just expands to no members), so the grant boundary must accept it.
+    const acct = await realAccount();
+    const g = await grantEntitlementAdmin(deps(), {
+      actorEmail: "op@gridwork.dev",
+      targetAccountId: acct,
+      entitlementIds: ["compliance"],
+    });
+    expect(g.after).toEqual(["compliance"]);
+  });
+
+  test("a known indexed module id is grantable in both the bare-slug and full @caisson/<slug> form", async () => {
+    const acct = await realAccount();
+    const g = await grantEntitlementAdmin(deps(), {
+      actorEmail: "op@gridwork.dev",
+      targetAccountId: acct,
+      entitlementIds: ["ai-kit", "@caisson/ai-kit"],
+    });
+    // Both spellings resolve to the SAME stored id (grantAdminComp writes the operator-supplied
+    // string as-is) — asserting only that neither is rejected and the bare-slug row landed.
+    expect(g.after).toContain("ai-kit");
+  });
+
+  test("a legacy alias id is grantable — resolved through the SAME normalizeEntitlementId point expandEntitlements uses", async () => {
+    // The production LEGACY_ENTITLEMENT_ALIASES map is empty post ADR-0270 (no live alias to grant
+    // against), so this proves the MECHANISM the same way entitlement-expansion.test.ts's
+    // fake-entry-injection test does: inject a real alias into the shared map, assert the grant
+    // boundary accepts the OLD spelling (because it calls expandEntitlements, which normalizes
+    // through this exact map), then restore.
+    const map = LEGACY_ENTITLEMENT_ALIASES as Map<string, string>;
+    map.set("old-ai-kit-slug", "ai-kit");
+    try {
+      const acct = await realAccount();
+      const g = await grantEntitlementAdmin(deps(), {
+        actorEmail: "op@gridwork.dev",
+        targetAccountId: acct,
+        entitlementIds: ["old-ai-kit-slug"],
+      });
+      expect(g.after).toEqual(["old-ai-kit-slug"]);
+    } finally {
+      map.delete("old-ai-kit-slug");
+    }
+    expect(LEGACY_ENTITLEMENT_ALIASES.size).toBe(0); // restored to the narrowed production spine
   });
 });
 

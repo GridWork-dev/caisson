@@ -16,6 +16,10 @@ import {
   type ArtifactStore,
 } from "@caisson/audit-worm";
 import { fetchWithTimeout } from "@caisson/kernel";
+import {
+  loadRegistryIndexFromFile,
+  type RegistryIndex,
+} from "@caisson/registry-schema";
 import type {
   AdminMutationDeps,
   ReissueProxyResult,
@@ -121,6 +125,31 @@ function denySetPublisher(): AdminMutationDeps["publishDenySet"] {
   };
 }
 
+let cachedIndex: RegistryIndex | undefined;
+
+/**
+ * The built registry index (ADR-0071/0278 F1), loaded once and cached. The comp-grant boundary
+ * (`grantEntitlementAdmin`) reads it to reject an unresolvable entitlement id BEFORE any row is
+ * written. `CAISSON_REGISTRY_INDEX_PATH` — set by `apps/admin/Dockerfile`'s runtime ENV to
+ * `/app/registry/index.json` — is read FIRST and is what production actually uses: Next's generated
+ * standalone `server.js` calls `process.chdir(__dirname)` on boot (cwd becomes `/app/apps/admin`),
+ * so the `process.cwd()`-relative fallback below resolves to a path that does not exist in the
+ * runtime image and only serves local `bun dev`/tests run from the repo root. This is NOT the same
+ * mechanism `services/license/src/server.ts` uses for `/issue`'s own pre-sign validation — that
+ * service resolves the index via `import.meta.dir`-relative path math over its own unbundled
+ * source, which is cwd-independent by construction and has no chdir footgun; it is not a precedent
+ * for cwd-relative resolution here.
+ */
+export function registryIndex(): RegistryIndex {
+  if (cachedIndex === undefined) {
+    const path =
+      process.env.CAISSON_REGISTRY_INDEX_PATH?.trim() ||
+      join(process.cwd(), "registry", "index.json");
+    cachedIndex = loadRegistryIndexFromFile(path);
+  }
+  return cachedIndex;
+}
+
 export async function getAdminMutationDeps(): Promise<AdminMutationDeps> {
   const db = await getAdminDb();
   return {
@@ -128,6 +157,12 @@ export async function getAdminMutationDeps(): Promise<AdminMutationDeps> {
     worm: new AuditChainStore({ db, store: wormStore() }),
     issue: issueProxy,
     publishDenySet: denySetPublisher(),
+    // Lazy getter, not a resolved value (ADR-0278 I-1): a missing/corrupt baked index must not 500
+    // every mutation type — only `grantEntitlementAdmin` ever reads `deps.index`, so a broken index
+    // file surfaces there (the un-bricking lever: revoke/adjust/reissue/purchase-revoke stay live).
+    get index(): RegistryIndex {
+      return registryIndex();
+    },
   };
 }
 
