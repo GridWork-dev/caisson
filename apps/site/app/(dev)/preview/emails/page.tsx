@@ -38,6 +38,14 @@ const SAMPLE_DATA: { [K in EmailTemplateId]: TemplateDataMap[K] } = {
     lines: [{ label: "Compliance bundle", amountMinor: 104900 }],
     dashboardUrl: "https://caisson.sh/dashboard",
   },
+  "subscription-payment-received": {
+    buyerName: "Sample Buyer",
+    orderId: "txn_01cycle",
+    currency: "usd",
+    amountTotalMinor: 149900,
+    lines: [{ label: "Compliance Updates" }],
+    dashboardUrl: "https://caisson.sh/dashboard",
+  },
   "renewal-confirmation": {
     buyerName: "Sample Buyer",
     orderId: "txn_01sample",
