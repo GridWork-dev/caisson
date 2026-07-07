@@ -13,6 +13,11 @@ import {
 } from "./index.ts";
 import { createTriggerJobQueue, type TriggerClient } from "./trigger-driver.ts";
 import { createPgBossJobQueue, type PgBossClient } from "./pgboss.ts";
+import {
+  createBullMqJobQueue,
+  type BullMqQueueClient,
+  type BullMqWorkerClient,
+} from "./bullmq.ts";
 
 const payloadSchema = strictObject({ ok: z.boolean() });
 
@@ -54,6 +59,31 @@ function fakePgBossClient(): PgBossClient {
   };
 }
 
+function fakeBullMqQueue(): BullMqQueueClient {
+  return {
+    async add() {
+      return { id: "job_fake" };
+    },
+    async getJobCounts() {
+      return { waiting: 0, active: 0, failed: 0 };
+    },
+    async upsertJobScheduler() {
+      return undefined;
+    },
+    async close() {
+      return undefined;
+    },
+  };
+}
+
+function fakeBullMqWorker(): BullMqWorkerClient {
+  return {
+    async close() {
+      return undefined;
+    },
+  };
+}
+
 const drivers: ReadonlyArray<{ name: string; queue: JobQueue & JobConsumer }> =
   [
     {
@@ -74,6 +104,16 @@ const drivers: ReadonlyArray<{ name: string; queue: JobQueue & JobConsumer }> =
       queue: createPgBossJobQueue(
         [defineTask(taskName, payloadSchema, async () => {})],
         { client: fakePgBossClient() },
+      ),
+    },
+    {
+      name: "bullmq",
+      queue: createBullMqJobQueue(
+        [defineTask(taskName, payloadSchema, async () => {})],
+        {
+          queueFactory: () => fakeBullMqQueue(),
+          workerFactory: () => fakeBullMqWorker(),
+        },
       ),
     },
   ];

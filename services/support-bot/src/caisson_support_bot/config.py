@@ -8,7 +8,9 @@ role, the Postgres DSN) degrade gracefully when unset.
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from typing import Literal
+
+from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -55,6 +57,30 @@ class Settings(BaseSettings):
     support_human_role_id: int | None = Field(
         default=None,
         description="Role id tagged on escalation; a plain mention is skipped when unset.",
+    )
+
+    # --- escalation ChatPlatform selection (ADR-0287) ---
+    chat_platform: Literal["discord", "slack"] = Field(
+        default="discord",
+        description="Which ChatPlatform drives Escalator's human-notify thread. The bot's own "
+        "surface (/ask, #ask-ai) stays Discord regardless — this only selects where the escalation "
+        "brief posts. 'slack' requires slack_bot_token and slack_escalation_channel_id.",
+    )
+    slack_bot_token: str | None = Field(
+        default=None,
+        description="Slack bot token (chat:write scope). Required when chat_platform='slack'.",
+    )
+    slack_escalation_channel_id: str | None = Field(
+        default=None,
+        description="The Slack channel id (e.g. 'C0123456789') escalations post to. Required when "
+        "chat_platform='slack'.",
+    )
+    slack_escalation_mention: str | None = Field(
+        default=None,
+        description="Mention string prepended to a Slack escalation post, in SLACK's own syntax — "
+        "a user-group (`<!subteam^ID>`) or a user (`<@U…>`). NOT Discord's `<@&roleId>` role-mention "
+        "syntax, which renders as dead text in Slack and pings nobody. Unset skips the ping and "
+        "posts to the channel only, matching support_human_role_id's own unset behavior.",
     )
 
     # --- optional member-management surfaces (ADR-0109; all degrade gracefully when unset) ---
@@ -135,6 +161,19 @@ class Settings(BaseSettings):
         if v.scheme != "https" and v.host not in ("127.0.0.1", "localhost"):
             raise ValueError("docs_service_url must be https (or loopback for local dev)")
         return v
+
+    @model_validator(mode="after")
+    def _chat_platform_slack_requires_its_settings(self) -> Settings:
+        # Fail closed at construction (matching every other config-gated surface here): choosing
+        # chat_platform='slack' without its two settings would silently build a Slack driver that
+        # can never post, dropping every escalation notify. Refuse to start instead.
+        if self.chat_platform == "slack" and (
+            not self.slack_bot_token or not self.slack_escalation_channel_id
+        ):
+            raise ValueError(
+                "chat_platform='slack' requires both slack_bot_token and slack_escalation_channel_id"
+            )
+        return self
 
     @property
     def docs_query_url(self) -> str:

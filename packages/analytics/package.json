@@ -1,13 +1,13 @@
 {
-  "name": "@caisson/jobs",
-  "version": "0.4.1",
+  "name": "@caisson/analytics",
+  "version": "0.1.0",
   "type": "module",
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "description": "Provider-agnostic background-job queue port + in-memory test driver. Billing/credit side-effects are enqueued, never inline; Trigger.dev is the production driver.",
+  "description": "Provider-agnostic server-side analytics port: a vendor-neutral AnalyticsProvider interface with a capture driver for tests and Plausible, PostHog, and GA4 drivers for production. Fail-open by design — a capture never throws into the caller.",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -21,12 +21,7 @@
     "test": "bun test ./src"
   },
   "dependencies": {
-    "@caisson/kernel": "workspace:*",
-    "@caisson/tenancy-rls": "workspace:*",
-    "@trigger.dev/sdk": "^4.4.6",
-    "bullmq": "^5.60.0",
-    "pg-boss": "^12.18.3",
-    "zod": "catalog:"
+    "@caisson/kernel": "workspace:*"
   },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",

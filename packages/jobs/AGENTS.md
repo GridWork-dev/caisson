@@ -5,12 +5,16 @@ Provides the provider-agnostic background-job queue port: enqueue interface, in-
 ## Key surface
 
 - Import the `JobQueue` port and enqueue billing/credit side-effects through it — never process them inline in a request handler.
-- Use the in-memory driver in tests (`createInMemoryQueue(tasks)`); swap in the Trigger.dev driver
-  in production via `createTriggerJobQueue(tasks, config)` — same `tasks` registry, dependency-injected
-  `config` (`secretKey`/`apiUrl` sourced from `TRIGGER_SECRET_KEY`/`TRIGGER_API_URL` by the caller,
-  never a module constant). `defineTask` maps to a real Trigger.dev `task()` (the deploy-side
-  worker); `enqueue` maps to `tasks.trigger()`. Inject a fake `client` via `config.client` in tests
-  — the package's own test suite never touches the network.
+- Use the in-memory driver in tests (`createInMemoryQueue(tasks)`); swap in a production driver via
+  `createTriggerJobQueue` / `createPgBossJobQueue` / `createBullMqJobQueue(tasks, config)` — same
+  `tasks` registry, dependency-injected `config` (secrets sourced from env by the caller, never a
+  module constant). `defineTask` maps to a real Trigger.dev `task()` (the deploy-side worker);
+  `enqueue` maps to `tasks.trigger()` / `boss.send()` / `queue.add()` per driver. Inject a fake
+  `client`/`queueFactory`+`workerFactory` in tests — the package's own test suite never touches the
+  network.
+- `createBullMqJobQueue`'s worker-building capability is resolved LAZILY (only when `work()` is
+  actually called) — an enqueue-only caller never needs a `connection`/`workerFactory` just to
+  construct the queue. Construction only requires a way to build the `Queue` half.
 - Job payloads are validated with `z.object().strict()` at the enqueue boundary.
 - Idempotency keys (`crypto.randomUUID()`) are required for every enqueue call.
 

@@ -4,6 +4,11 @@ Commercial org/operator module (ADR-0257 §1.3). Import surface:
 
 - `createWorkosSsoProvider(config)` → `{ authorizationUrl, exchangeCode }`. Inject config; the
   package never reads `WORKOS_*` env.
+- `createClerkSessionVerifier(config)` → `{ verifySession(token) }` resolving a kernel
+  `SessionContext`; `verifyClerkSessionClaims` (throws `AuthnError`) and `clerkClaimsToSessionContext`
+  (pure) are the two composed halves, exported separately for direct testing. Inject `jwtKey` or
+  `secretKey`; the package never reads `CLERK_*` env. The org-claim mapping is a stateless,
+  best-effort signal — it does not consult `account_member`.
 - `listAccountMembers(db, accountId)` / `addAccountMember(db, actorRole, accountId, userId, role?)`
   / `assertCanManageMembers(role)` — the owner-gated MANAGE surface. Owner-only writes; `actorRole`
   comes from the verified session, never a request param.

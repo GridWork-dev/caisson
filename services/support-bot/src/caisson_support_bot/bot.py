@@ -15,9 +15,10 @@ import httpx
 from discord import app_commands
 from discord.ext import commands
 
+from .chat_slack import SlackThreadOpener
 from .config import Settings
 from .contracts import AnswerResult
-from .escalation import Escalator, IssueTracker, ThreadOpener, TicketStore
+from .escalation import ChatPlatform, Escalator, IssueTracker, TicketStore
 from .linear_client import LinearIssueTracker
 from .member_mgmt import add_persistent_views, member_has_priority_support, register_member_commands
 from .rag import RagPipeline
@@ -79,7 +80,7 @@ async def handle_question(
 
 
 class _DiscordThreadOpener:
-    """ThreadOpener bound to a specific channel; opens a public thread and posts the brief. Best-effort.
+    """ChatPlatform bound to a specific channel; opens a public thread and posts the brief. Best-effort.
 
     ``body`` embeds user-controlled text (the escalated question, RAG-considered sources) plus, when
     configured, the support-role ping. The bot-wide ``AllowedMentions.none()`` default (set on the
@@ -136,14 +137,64 @@ def _linear_issue_tracker(
     )
 
 
+def _build_chat_platform(
+    settings: Settings,
+    channel: discord.abc.Messageable,
+    http_client: httpx.AsyncClient | None,
+) -> ChatPlatform:
+    """Select the escalation-notify driver per ``settings.chat_platform`` (ADR-0287). The bot's own
+    surface (``/ask``, ``#ask-ai``) stays Discord regardless — this only picks where the escalation
+    brief posts. Discord is the default and always available (it reuses the live channel the
+    question arrived on).
+
+    Slack requires a pooled ``httpx`` client. ``Settings``' own validator already guarantees
+    ``slack_bot_token``/``slack_escalation_channel_id`` are set together with ``chat_platform=
+    'slack'``, so a missing client is the only remaining gap — and it FAILS CLOSED (raises) rather
+    than silently routing the escalation to the live Discord channel instead of the operator's
+    configured Slack channel. An operator who explicitly chose Slack must never see their
+    escalation silently land somewhere else with no warning; ``make_bot`` always supplies a client
+    in production, so this only fires on a bot-wiring bug or an incomplete test construction.
+    """
+    if settings.chat_platform == "slack":
+        if http_client is None:
+            raise RuntimeError(
+                "chat_platform='slack' requires a pooled httpx client, but none was supplied — "
+                "refusing to silently route this escalation to Discord instead. make_bot always "
+                "passes one in production; this indicates a bot-wiring bug."
+            )
+        bot_token = settings.slack_bot_token
+        channel_id = settings.slack_escalation_channel_id
+        if bot_token is None or channel_id is None:
+            # Unreachable given Settings' fail-closed validator — kept as an explicit narrowing
+            # guard (never an `assert`, which strips under -O) rather than a silent Discord degrade.
+            raise RuntimeError(
+                "chat_platform='slack' but slack_bot_token/slack_escalation_channel_id are unset "
+                "— Settings' validator should have refused construction."
+            )
+        return SlackThreadOpener(bot_token=bot_token, channel_id=channel_id, client=http_client)
+    return _DiscordThreadOpener(channel, mention_role_id=settings.support_human_role_id)
+
+
+def _human_mention(settings: Settings) -> str | None:
+    """The platform-appropriate escalation mention (ADR-0287). Discord and Slack use INCOMPATIBLE
+    mention syntaxes — Discord's role-mention `<@&roleId>` posted verbatim into Slack renders as
+    dead text and pings nobody, so the active ``chat_platform`` selects which setting (and which
+    syntax) is used, rather than always emitting the Discord form.
+    """
+    if settings.chat_platform == "slack":
+        return settings.slack_escalation_mention
+    return f"<@&{settings.support_human_role_id}>" if settings.support_human_role_id else None
+
+
 def _escalator_factory(
     settings: Settings,
     store: TicketStore | None,
     channel: discord.abc.Messageable,
     issue_tracker: IssueTracker | None = None,
     author: discord.Member | discord.User | None = None,
+    http_client: httpx.AsyncClient | None = None,
 ) -> Callable[[], Escalator]:
-    mention = f"<@&{settings.support_human_role_id}>" if settings.support_human_role_id else None
+    mention = _human_mention(settings)
     # ADR-0278 Track K: resolved once per request, from whatever member context the caller has (a
     # bare discord.User — e.g. a DM — carries no roles, so it never signals priority; fail-closed).
     priority = member_has_priority_support(
@@ -151,9 +202,7 @@ def _escalator_factory(
     )
 
     def make() -> Escalator:
-        opener: ThreadOpener = _DiscordThreadOpener(
-            channel, mention_role_id=settings.support_human_role_id
-        )
+        opener = _build_chat_platform(settings, channel, http_client)
         return Escalator(
             store=store,
             thread_opener=opener,
@@ -216,6 +265,7 @@ def make_bot(
                 interaction.channel,  # type: ignore[arg-type]
                 issue_tracker,
                 author=interaction.user,
+                http_client=http_client,
             ),
             max_chars=settings.max_question_chars,
         )
@@ -232,7 +282,12 @@ def make_bot(
                 question=message.content,
                 pipeline=pipeline,
                 escalator_factory=_escalator_factory(
-                    settings, store, message.channel, issue_tracker, author=message.author
+                    settings,
+                    store,
+                    message.channel,
+                    issue_tracker,
+                    author=message.author,
+                    http_client=http_client,
                 ),
                 max_chars=settings.max_question_chars,
             )

@@ -1,10 +1,12 @@
-"""Escalation: AI brief → Discord thread + human tag + persisted support_ticket (ADR-0009/0105).
+"""Escalation: AI brief → chat-platform thread + human tag + persisted support_ticket (ADR-0009/0105).
 
 Every unresolved question carries an AI brief (ADR-0009 binding). The operator chose **both** sinks:
-a community-native Discord thread tagging a human, AND a durable ``support_ticket`` row (the
-``ai_brief`` carrier). Both sit behind ports so the orchestration is testable without Discord or
-Postgres: ``ThreadOpener`` (bot.py supplies a discord-backed impl; tests a fake) and ``TicketStore``
-(``InMemoryTicketStore`` for tests, ``PostgresTicketStore`` via asyncpg for deploy).
+a community-native chat-platform thread tagging a human, AND a durable ``support_ticket`` row (the
+``ai_brief`` carrier). Both sit behind ports so the orchestration is testable without a live chat
+gateway or Postgres: ``ChatPlatform`` (ADR-0287 — bot.py supplies a Discord-backed impl in
+``_DiscordThreadOpener`` and a Slack-backed impl in ``chat_slack.SlackThreadOpener``, config-selected;
+tests inject a fake) and ``TicketStore`` (``InMemoryTicketStore`` for tests, ``PostgresTicketStore``
+via asyncpg for deploy).
 
 A third, best-effort sink files a Linear Triage issue for the same brief (ADR-0206):
 ``IssueTracker`` (``linear_client.LinearIssueTracker`` for deploy; tests a fake). v1 is log-only for
@@ -41,8 +43,15 @@ def format_brief(brief: Brief) -> str:
 
 
 @runtime_checkable
-class ThreadOpener(Protocol):
-    """Open a handoff thread and return its id (or None if threads are unavailable)."""
+class ChatPlatform(Protocol):
+    """Open a handoff thread and return its id (or None if threads/ids are unavailable).
+
+    The minimal chat-vendor seam ``Escalator`` needs (ADR-0287): post the escalation message and,
+    where the platform supports it, thread/reply it. Implementations are Discord- and
+    Slack-specific (``bot.py``'s ``_DiscordThreadOpener``, ``chat_slack.SlackThreadOpener``);
+    ``Escalator`` depends only on this port. Best-effort by construction — a concrete impl owns
+    catching its own failures, same as ``IssueTracker`` below.
+    """
 
     async def open_thread(self, *, title: str, body: str) -> int | None: ...
 
@@ -58,7 +67,7 @@ class TicketStore(Protocol):
 class IssueTracker(Protocol):
     """File a Linear Triage issue for an escalation; returns its URL, or None on failure.
 
-    Best-effort like ``ThreadOpener``: a concrete impl owns catching its own failures — Linear
+    Best-effort like ``ChatPlatform``: a concrete impl owns catching its own failures — Linear
     being down must never break escalation (ADR-0206).
     """
 
@@ -137,7 +146,7 @@ class Escalator:
         self,
         *,
         store: TicketStore | None = None,
-        thread_opener: ThreadOpener | None = None,
+        thread_opener: ChatPlatform | None = None,
         issue_tracker: IssueTracker | None = None,
         human_mention: str | None = None,
         priority: bool = False,
@@ -160,6 +169,12 @@ class Escalator:
         if self._human_mention:
             body = f"{self._human_mention}\n\n{body}"
 
+        # `thread_id` stays Discord-shaped (a `bigint`-column-typed numeric snowflake) — the Slack
+        # driver always resolves this to None (see `chat_slack.py`'s module docstring): Slack's own
+        # message timestamp is a decimal STRING, not an int, and widening this column to a
+        # platform-neutral id is a schema migration out of scope for a driver addition. The
+        # escalation still posts and the ticket still persists either way; only the audit-trail id
+        # goes unset when the active ChatPlatform is Slack.
         thread_id: int | None = None
         if self._opener is not None:
             prefix = "Priority: " if self._priority else "Support: "

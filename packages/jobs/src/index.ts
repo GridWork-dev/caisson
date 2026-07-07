@@ -17,4 +17,14 @@ export type {
   PgBossJobQueueConfig,
   PgBossSchedule,
 } from "./pgboss.ts";
+export { createBullMqJobQueue } from "./bullmq.ts";
+export type {
+  BullMqAddOptions,
+  BullMqJobData,
+  BullMqJobQueueConfig,
+  BullMqQueueClient,
+  BullMqSchedule,
+  BullMqShutdown,
+  BullMqWorkerClient,
+} from "./bullmq.ts";
 export { withAdvisoryXactLock } from "./advisory-lock.ts";
