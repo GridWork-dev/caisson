@@ -374,6 +374,13 @@ Paddle's default is auto-cancel at day 30 after 7 retries: `subscription.past_du
 So: let `past_due` run its retries (grace, no action), and let `subscription.canceled` do the
 revoke. Do **not** wire a `past_due` revoke — that would cut a buyer off mid-retry-window.
 
+_Revoke-path live proof (2026-07-07, CAISSON-25 item 1):_ a simulated `subscription.canceled`
+delivery (Paddle simulator, throwaway tenant id, real HMAC) against the live sandbox webhook
+returned `200 {"ok":true}` end-to-end. The destination deliberately does not subscribe to
+`transaction.payment_failed` (the mapper treats it as an unmapped no-op), so the whole dunning
+outcome rides `subscription.canceled` — confirming (a) as the single load-bearing config. The
+Production Retain check itself remains a flip-time act.
+
 ---
 
 ## 3. Step 2 — Pricing final-confirm checkpoint (operator-owned, ADR-0106)
