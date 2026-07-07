@@ -1,7 +1,7 @@
 # SPEC — `@caisson/kernel` branded money + rounding provenance
 
-**Status: LOCKED — ADR-0212, harvest slice-2 wave, 2026-07-02 operator picker.** Builds as the
-SERIALIZED wave-2 of the session (cross-package API thread), after wave-1 lands. Wardfile B3.
+**Status: EXECUTED — ADR-0212, harvest slice-2 wave, 2026-07-02 operator picker, shipped PR #47.**
+Built as the SERIALIZED wave-2 of the session (cross-package API thread), after wave-1 landed. Wardfile B3.
 
 ## Goal (WHAT + WHY)
 

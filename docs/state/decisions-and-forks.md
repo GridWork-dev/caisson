@@ -529,6 +529,13 @@ second-merger-renumbers) — **ceiling now 0203**. The board's own interim "ADR-
 `adapter-expansion.md`'s proposed 0119-0128 range remain unresolved against each other (flagged there
 already) — this session's numbers do not touch that range and do not resolve that pre-existing flag.
 
+**2026-07-06 clarification (no renumbering — ceiling stays the current live number in `docs/adr-index.md`):**
+`adapter-expansion.md`'s side of this is resolved — its 0119-0128 pencils were retired and shipped under
+real numbers (ADR-0170-0176 etc., per `docs/adr-index.md`; see that file's own 2026-07-06 reconcile
+block). The board's own "ADR-0119" (Railway provisioning topology, row above) is the only piece still
+outstanding — it has never been filed as a real ADR despite the Railway deploy having since happened;
+when it is filed it takes whatever number is next off the live ceiling, not literally 0119.
+
 ## Closed by the 2026-07-01 edition seam-completion picker (operator-locked)
 
 Seven forks surfaced by the **edition seam-completion** initiative (SPECs under

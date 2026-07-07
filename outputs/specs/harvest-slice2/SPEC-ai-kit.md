@@ -1,6 +1,6 @@
 # SPEC — `@caisson/ai-kit` (deadline-bound transports + metered embeddings)
 
-**Status: LOCKED — ADR-0213 (metered embeddings surface) + ADR-0210 (harden-in-place), harvest slice-2 wave, 2026-07-02 operator picker.**
+**Status: EXECUTED — ADR-0213 (metered embeddings surface) + ADR-0210 (harden-in-place), harvest slice-2 wave, 2026-07-02 operator picker, shipped PR #47.**
 
 **Package:** `packages/ai-kit` (commercial AI Production Kit edition; `kind: "edition"`, down-only per ADR-0003).
 **Type:** HARDEN (fetch-deadline floor gap) + EXTEND (`embed()`/`embedMany()` through the existing gateway chokepoint).

@@ -100,6 +100,10 @@ pattern) — never a fork of the port contract.
 
 ### 1A. Email multi-driver — `Emailer` → **ADR-0119**
 
+_(2026-07-06: this `0119` pencil was never filed — the real lock shipped as **ADR-0170**; see
+the reconcile block at the top of this doc and `docs/state/decisions-and-forks.md`'s ADR-0119
+clarification note for the unrelated, still-unfiled board placeholder that also used this number.)_
+
 - Add **SMTP-generic** (nodemailer-style, universal catch-all — any buyer mail host) + **AWS SES**
   (cheap enterprise scale) + Postmark (transactional reliability).
 - Drivers: `packages/email/src/{smtp,ses,postmark}.ts`; env-gated factories; `EMAIL_DRIVER` selector

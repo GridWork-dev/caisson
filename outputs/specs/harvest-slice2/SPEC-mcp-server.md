@@ -1,6 +1,6 @@
 # SPEC — `@caisson/mcp-server` tool manifest + retirement ledger
 
-**Status: LOCKED — ADR-0216, harvest slice-2 wave, 2026-07-02 operator picker.**
+**Status: EXECUTED — ADR-0216, harvest slice-2 wave, 2026-07-02 operator picker, shipped PR #47.**
 
 - **Package:** `packages/mcp-server` (Apache-2.0, `oss` tier, base — never an edition, ADR-0003).
 - **Source (pattern, not port):** gridwork-core's `McpManifestSchema` governance shape, role
