@@ -15,9 +15,10 @@ import httpx
 from discord import app_commands
 from discord.ext import commands
 
+from .chat_slack import SlackThreadOpener
 from .config import Settings
 from .contracts import AnswerResult
-from .escalation import Escalator, IssueTracker, ThreadOpener, TicketStore
+from .escalation import ChatPlatform, Escalator, IssueTracker, TicketStore
 from .linear_client import LinearIssueTracker
 from .member_mgmt import add_persistent_views, member_has_priority_support, register_member_commands
 from .rag import RagPipeline
@@ -79,7 +80,7 @@ async def handle_question(
 
 
 class _DiscordThreadOpener:
-    """ThreadOpener bound to a specific channel; opens a public thread and posts the brief. Best-effort.
+    """ChatPlatform bound to a specific channel; opens a public thread and posts the brief. Best-effort.
 
     ``body`` embeds user-controlled text (the escalated question, RAG-considered sources) plus, when
     configured, the support-role ping. The bot-wide ``AllowedMentions.none()`` default (set on the
@@ -136,12 +137,35 @@ def _linear_issue_tracker(
     )
 
 
+def _build_chat_platform(
+    settings: Settings,
+    channel: discord.abc.Messageable,
+    http_client: httpx.AsyncClient | None,
+) -> ChatPlatform:
+    """Select the escalation-notify driver per ``settings.chat_platform`` (ADR-0287). The bot's own
+    surface (``/ask``, ``#ask-ai``) stays Discord regardless — this only picks where the escalation
+    brief posts. Discord is the default and always available (it reuses the live channel the
+    question arrived on); Slack requires a pooled ``httpx`` client plus its two settings, which
+    ``Settings``' own validator already guarantees are set together when configured.
+    """
+    if settings.chat_platform == "slack" and http_client is not None:
+        bot_token = settings.slack_bot_token
+        channel_id = settings.slack_escalation_channel_id
+        if bot_token is not None and channel_id is not None:
+            return SlackThreadOpener(bot_token=bot_token, channel_id=channel_id, client=http_client)
+    # Discord default, and the degrade-to-Discord fallback when Slack is selected but no pooled
+    # httpx client was supplied (e.g. a test construction that omits it) — never silently drop
+    # every escalation notify.
+    return _DiscordThreadOpener(channel, mention_role_id=settings.support_human_role_id)
+
+
 def _escalator_factory(
     settings: Settings,
     store: TicketStore | None,
     channel: discord.abc.Messageable,
     issue_tracker: IssueTracker | None = None,
     author: discord.Member | discord.User | None = None,
+    http_client: httpx.AsyncClient | None = None,
 ) -> Callable[[], Escalator]:
     mention = f"<@&{settings.support_human_role_id}>" if settings.support_human_role_id else None
     # ADR-0278 Track K: resolved once per request, from whatever member context the caller has (a
@@ -151,9 +175,7 @@ def _escalator_factory(
     )
 
     def make() -> Escalator:
-        opener: ThreadOpener = _DiscordThreadOpener(
-            channel, mention_role_id=settings.support_human_role_id
-        )
+        opener = _build_chat_platform(settings, channel, http_client)
         return Escalator(
             store=store,
             thread_opener=opener,
@@ -216,6 +238,7 @@ def make_bot(
                 interaction.channel,  # type: ignore[arg-type]
                 issue_tracker,
                 author=interaction.user,
+                http_client=http_client,
             ),
             max_chars=settings.max_question_chars,
         )
@@ -232,7 +255,12 @@ def make_bot(
                 question=message.content,
                 pipeline=pipeline,
                 escalator_factory=_escalator_factory(
-                    settings, store, message.channel, issue_tracker, author=message.author
+                    settings,
+                    store,
+                    message.channel,
+                    issue_tracker,
+                    author=message.author,
+                    http_client=http_client,
                 ),
                 max_chars=settings.max_question_chars,
             )

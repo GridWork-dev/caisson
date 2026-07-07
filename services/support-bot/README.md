@@ -22,14 +22,20 @@ Discord (/ask slash + #ask-ai listener)
         ▼
    resolved? ──yes──▶ reply with answer + source citations
         │
-        └──no──▶ Escalator: build AI brief ─▶ open thread + tag @support
+        └──no──▶ Escalator: build AI brief ─▶ ChatPlatform.open_thread (tag @support)
                                             ├▶ TicketStore (Postgres support_ticket.ai_brief)
                                             └▶ IssueTracker (Linear Triage issue, best-effort)
 ```
 
-The pipeline, clients, and stores sit behind ports (`Inference`, `TicketStore`) so CI runs hermetic:
-`FakeInference` + `InMemoryTicketStore` + httpx `MockTransport`. **Live secrets + cloud deploy are the
-operator-gated seam.**
+The pipeline, clients, and stores sit behind ports (`Inference`, `TicketStore`, `ChatPlatform`) so CI
+runs hermetic: `FakeInference` + `InMemoryTicketStore` + httpx `MockTransport`. **Live secrets + cloud
+deploy are the operator-gated seam.**
+
+**ChatPlatform (ADR-0287):** the bot's own surface (`/ask`, `#ask-ai`) stays Discord — only the
+escalation-notify thread is driver-selected. `chat_platform=discord` (default) reuses the live
+Discord channel the question arrived on; `chat_platform=slack` posts via Slack's Web API to a fixed
+escalation channel instead (`SlackThreadOpener`, `chat_slack.py`), config-gated fail-closed by
+`Settings`.
 
 ## Run locally
 
@@ -50,6 +56,9 @@ export GUILD_ID=...                 # pins billing grants to the Caisson guild (
 export LINEAR_API_KEY=...           # Linear personal API key; all 3 LINEAR_* must be set together or the sink stays off
 export LINEAR_TEAM_ID=...           # the CAISSON team issueCreate files the Triage issue under
 export LINEAR_TRIAGE_STATE_ID=...   # explicit Triage workflow state id passed on every issueCreate
+export CHAT_PLATFORM=discord        # or "slack" — selects the escalation-notify driver (ADR-0287)
+export SLACK_BOT_TOKEN=...          # Slack bot token (chat:write); required when CHAT_PLATFORM=slack
+export SLACK_ESCALATION_CHANNEL_ID=... # Slack channel id escalations post to; required when CHAT_PLATFORM=slack
 uv run python -m caisson_support_bot
 ```
 
