@@ -54,6 +54,23 @@ export const COMMUNITY_TIER: LicenseTier = "community";
  *                    existing token). Never null VALUES in the map. Each consumer reads the ONE
  *                    field it needs — never destructures the whole claims shape — so a new sibling
  *                    key never breaks another reader.
+ * - `eval`          — the anti-exfiltration discriminator (ADR-0274/0280 verified time-boxed eval
+ *                    licenses): `true` on, and ONLY on, a license minted by the eval-issuance path
+ *                    (`services/license` `/eval/issue`) — never a paid `/issue` token. Downstream
+ *                    consumers (tarball watermarking, no-redistribution enforcement) key off this
+ *                    flag rather than inferring "is this eval" from `expiry` alone. `z.literal(true)`
+ *                    (not `z.boolean()`): the shape is present-and-true or ABSENT — there is no
+ *                    `eval:false` variant to canonicalize. OPTIONAL so a paid claims object that
+ *                    never sets the key stays byte-for-byte UNCHANGED (the signer omits the key
+ *                    entirely; `canonicalize` never emits an absent key). COMPATIBILITY: adding this
+ *                    optional field cannot break parsing an OLD token (it simply lacks the key). The
+ *                    one accepted asymmetry is the reverse — a STALE verifier build (predating this
+ *                    field) holds the pre-field `.strict()` shape and rejects a NEW eval token's
+ *                    extra `eval` key as unknown, fail-closing it to `community`. That is intentional
+ *                    and safe: an eval token simply reads as unlicensed on outdated tooling, the same
+ *                    fail-safe-to-community contract this module already guarantees for every other
+ *                    malformed-claim case. A paid token is never affected either way — it never
+ *                    carries the key.
  */
 export const licenseClaimsSchema = strictObject({
   licenseId: z.string().uuid(),
@@ -75,6 +92,7 @@ export const licenseClaimsSchema = strictObject({
     )
     .nullable()
     .optional(),
+  eval: z.literal(true).optional(),
 });
 
 /** The validated, signed license claims. */

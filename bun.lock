@@ -1267,6 +1267,7 @@
         "@caisson/registry-schema": "workspace:*",
         "@caisson/tenancy-rls": "workspace:*",
         "pg": "catalog:",
+        "tldts": "^7.4.5",
       },
       "devDependencies": {
         "@caisson/auth": "workspace:*",

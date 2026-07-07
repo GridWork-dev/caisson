@@ -14,7 +14,7 @@
 // token. Ed25519 is deterministic (RFC 8032), so the dev seed reproduces the codec golden
 // byte-for-byte.
 import { describe, expect, test } from "bun:test";
-import { canonicalize } from "@caisson/kernel";
+import { canonicalize, strictObject } from "@caisson/kernel";
 import {
   type KeyObject,
   createHash,
@@ -22,6 +22,7 @@ import {
   createPublicKey,
   sign as cryptoSign,
 } from "node:crypto";
+import { z } from "zod";
 import { encodeToken } from "./token.ts";
 import { verifyLicense, verifyLicenseWithKey } from "./verify.ts";
 
@@ -366,5 +367,119 @@ describe("verifyLicense — updatesWindows claim (ADR-0244/0255 per-entitlement 
     });
     const result = verifyDev(lapsed, new Date("2026-07-06T00:00:00.000Z"));
     expect(result.valid).toBe(true); // the registry narrows versions; verify never lapses on it
+  });
+});
+
+describe("verifyLicense — eval discriminator (ADR-0274/0280 anti-exfiltration claim)", () => {
+  test("a token WITHOUT the eval field verifies as NOT eval (paid/legacy shape, backward compat)", () => {
+    // The committed golden predates the field entirely — the exact paid-token class.
+    const result = verifyDev(DEV_TOKEN);
+    expect(result.valid).toBe(true);
+    expect(result.eval).toBe(false);
+    expect(result.claims?.eval).toBeUndefined();
+  });
+
+  test("a token carrying eval:true round-trips: mint → verify → the flag is visible", () => {
+    const evalToken = mint({
+      entitlements: ["compliance"],
+      expiry: "2099-01-01T00:00:00.000Z",
+      licenseId: VALID_UUID,
+      major: 1,
+      tier: "pro",
+      eval: true,
+    });
+    const result = verifyDev(evalToken);
+    expect(result.valid).toBe(true);
+    expect(result.eval).toBe(true);
+    expect(result.claims?.eval).toBe(true);
+  });
+
+  test("every fail-safe path resolves eval:false, never true (absent token)", () => {
+    expect(verifyLicense(null).eval).toBe(false);
+    expect(verifyLicense(undefined).eval).toBe(false);
+    expect(verifyLicense("not-a-token").eval).toBe(false);
+  });
+
+  test("a tampered eval token fails safe to community — eval:false, not eval:true (never escalates)", () => {
+    const evalToken = mint({
+      entitlements: ["compliance"],
+      expiry: "2099-01-01T00:00:00.000Z",
+      licenseId: VALID_UUID,
+      major: 1,
+      tier: "pro",
+      eval: true,
+    });
+    const tampered =
+      evalToken.slice(0, -1) + (evalToken.endsWith("A") ? "B" : "A");
+    const result = verifyDev(tampered);
+    expect(result.valid).toBe(false);
+    expect(result.eval).toBe(false);
+  });
+
+  test("eval:false is not a valid shape — z.literal(true) rejects it (present-or-absent only)", () => {
+    const bad = mint({
+      entitlements: ["compliance"],
+      expiry: null,
+      licenseId: VALID_UUID,
+      major: 1,
+      tier: "pro",
+      eval: false,
+    });
+    expect(verifyDev(bad).tier).toBe("community");
+  });
+
+  test("documented compatibility trade-off: a STALE pre-eval-field strict schema rejects a NEW eval token", () => {
+    // Mirrors the shipped licenseClaimsSchema's exact pre-eval-field shape (the strict object this
+    // module carried before the `eval` claim was added). A stale verifier build holding this OLD
+    // schema treats the new token's `eval` key as an unknown field and fails strict parsing — the
+    // token reads as community on outdated tooling. This is the accepted, documented asymmetry
+    // (ADR-0274/0280): intentional and safe because a paid token never carries the key either way.
+    const preEvalFieldSchema = strictObject({
+      licenseId: z.string().uuid(),
+      tier: z.enum(["community", "pro"]),
+      entitlements: z.array(z.string().min(1).max(128)).max(256),
+      major: z.number().int().nonnegative(),
+      expiry: z.string().datetime({ offset: true }).nullable(),
+      updatesWindows: z
+        .record(
+          z.string().trim().min(1).max(128),
+          z.string().datetime({ offset: true }),
+        )
+        .nullable()
+        .optional(),
+      entitledSince: z
+        .record(
+          z.string().trim().min(1).max(128),
+          z.string().datetime({ offset: true }),
+        )
+        .nullable()
+        .optional(),
+    });
+    const evalClaims = {
+      licenseId: VALID_UUID,
+      tier: "pro",
+      entitlements: ["compliance"],
+      major: 1,
+      expiry: "2099-01-01T00:00:00.000Z",
+      eval: true,
+    };
+    // The CURRENT (post-fix) verifier accepts it fine.
+    expect(verifyDev(mint(evalClaims)).valid).toBe(true);
+    // The OLD strict shape rejects the extra `eval` key — proving the fail-closed asymmetry is real,
+    // not just asserted in a comment.
+    expect(preEvalFieldSchema.safeParse(evalClaims).success).toBe(false);
+
+    // And the reverse never happens: a PAID token (no eval key at all) parses fine under the OLD
+    // schema too — the compatibility break is one-directional (new eval tokens on old tooling),
+    // never paid tokens on old OR new tooling.
+    const paidClaims = {
+      licenseId: VALID_UUID,
+      tier: "pro",
+      entitlements: ["compliance"],
+      major: 1,
+      expiry: null,
+    };
+    expect(preEvalFieldSchema.safeParse(paidClaims).success).toBe(true);
+    expect(verifyDev(mint(paidClaims)).valid).toBe(true);
   });
 });

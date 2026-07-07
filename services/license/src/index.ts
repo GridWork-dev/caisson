@@ -68,6 +68,11 @@ export {
   readDenySet,
 } from "./license-revocation-store.ts";
 export type { RecordLicenseRevocationsInput } from "./license-revocation-store.ts";
+// The eval-application table (ADR-0274/0280 verified time-boxed eval licenses). Schema ONLY — the
+// operator-gated DEPLOY provisioning path (mirroring how LICENSE_GRANT_SCHEMA_SQL /
+// LICENSE_REVOCATION_SCHEMA_SQL are consumed) applies this; the store functions stay internal
+// because nothing outside this service writes eval_application rows.
+export { EVAL_APPLICATION_SCHEMA_SQL } from "./eval-store.ts";
 export {
   ADMIN_MUTATION_PROVISION_SQL,
   GrantEntitlementBody,

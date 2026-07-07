@@ -52,15 +52,24 @@ export interface VerifiedLicense {
   readonly tier: LicenseTier;
   /** Unlocked module / edition slugs — the signed entitlements when valid, else empty. */
   readonly entitlements: readonly string[];
+  /**
+   * True when the signed claims carry the ADR-0274/0280 eval discriminator — a time-boxed
+   * evaluation license, not a paid purchase. Always `false` on every fail-safe path and on a
+   * paid/legacy token (which never carries the `eval` claim). Downstream consumers (tarball
+   * watermarking, the Worker, npm delivery) key traceability/no-redistribution enforcement on
+   * this flag.
+   */
+  readonly eval: boolean;
   /** The full signed claims when valid; `null` on every fail-safe path. */
   readonly claims: LicenseClaims | null;
 }
 
-/** The free fall-back every failure resolves to — no entitlements, no claims. */
+/** The free fall-back every failure resolves to — no entitlements, no claims, not an eval. */
 const COMMUNITY: VerifiedLicense = {
   valid: false,
   tier: COMMUNITY_TIER,
   entitlements: [],
+  eval: false,
   claims: null,
 };
 
@@ -133,6 +142,7 @@ export function verifyLicenseWithKey(
       valid: true,
       tier: claims.tier,
       entitlements: claims.entitlements,
+      eval: claims.eval === true,
       claims,
     };
   } catch {
