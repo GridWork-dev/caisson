@@ -1,16 +1,38 @@
 ---
-updated: 2026-07-06
+updated: 2026-07-07
 status: live
 ---
 
 # Adapter / driver expansion — buildout roadmap
 
-Status: **partially shipped, reconciled 2026-07-06** · authored 2026-06-30 (operator directed
+Status: **partially shipped, reconciled 2026-07-07** · authored 2026-06-30 (operator directed
 full buildout of all tiers + un-wired seams). Source: the 2026-06-30 external-provider
 inventory. This is a roadmap doc (under `docs/state/`); each port-family expansion locks an
 **ADR** in `knowledge/decisions/` before code, per the spec-first cadence. The 0119+ ADR
 numbers penciled below were **never used** — the actual locks landed under other numbers
 (see the reconcile block).
+
+## 2026-07-07 reconcile (ADR-0287 S-effort driver batch — read this before quoting a row it touches)
+
+Four rows below flip to SHIPPED same-day, closing out most of what the 2026-07-06 reconcile still
+listed "genuinely open":
+
+- **Analytics port (§1D) → SHIPPED** (`packages/analytics`, ADR-0287): the port this row's
+  original scope called for — `AnalyticsProvider.capture(event)` with a capture (test) driver plus
+  Plausible / PostHog / GA4 production drivers, fail-open by design. `apps/site`'s own
+  client-side Plausible/PostHog page-tracking init is unrelated and unchanged (this is a
+  server-side event-capture port, not a browser snippet).
+- **`SessionProvider` Clerk (§1C) → SHIPPED** (`packages/org-controls/src/clerk.ts`, ADR-0287):
+  verifies a Clerk session JWT (v2) against Clerk's JWKS, networkless when a public key is
+  configured, then maps the claims onto the kernel's session shape — stateless, alongside the
+  existing WorkOS SSO transport. Auth0/Okta still open.
+- **`JobQueue` BullMQ (§2B) → SHIPPED** (`packages/jobs/src/bullmq.ts`, ADR-0287): a Redis-backed
+  driver joining Trigger.dev + pg-boss + in-memory behind the same port. Inngest still open.
+- **Chat Slack (Tier 3) → SHIPPED** (`services/support-bot/src/caisson_support_bot/chat_slack.py`,
+  ADR-0287): the `ChatPlatform` port this row called for (renamed from `ThreadOpener`, a same-file
+  2-line rename with zero blast radius) plus a Slack Web API driver, config-selected
+  (`chat_platform=discord|slack`). Scope is the escalation-notify seam only — the bot's `/ask`
+  slash command + `#ask-ai` listener stay Discord-native. Telegram still open.
 
 ## 2026-07-06 reconcile (ADR-0265 doc-correction pass — read this before quoting any row)
 
@@ -33,9 +55,9 @@ framing is stale for these rows:
   mandatory). The corrected lock is **ADR-0267**: GCS Bucket Lock + an R2 driver on
   Cloudflare's bucket-locks API, fail-closed when the bucket rule can't satisfy the requested
   retention.
-- Still genuinely open beyond the above: GCS/Azure Blob (now locked via ADR-0267 for GCS),
-  BullMQ/Inngest, Clerk/Auth0, Azure KV/Vault KMS, Slack/Telegram chat (deferred again at the
-  Kickoff-F round, QA-path-only whenever it returns), analytics port (1D scope).
+- Still genuinely open beyond the above (2026-07-06 snapshot; see the 2026-07-07 reconcile above
+  for what since shipped): GCS/Azure Blob (now locked via ADR-0267 for GCS), BullMQ/Inngest,
+  Clerk/Auth0, Azure KV/Vault KMS, Slack/Telegram chat, analytics port (1D scope).
 - Launch gating for every transport row now lives in `docs/state/live-transport-checklist.md`
   (ADR-0265, enterprise-ready sweep).
 
@@ -82,13 +104,13 @@ pattern) — never a fork of the port contract.
 | ------------------------------ | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | `Emailer`                      | `packages/email/src/email.ts:15`                                                  | Resend (`:53`), Capture (test)                                                                        | **SMTP-generic**, **AWS SES**, Postmark                                                                                                 | 1        |
 | `KmsClient` + license `Signer` | `packages/field-crypto/src/kms.ts:30` · `packages/license-issue/src/signer.ts:47` | Local; **AWS KMS SHIPPED + live-proven** (`kms-aws.ts`, ADR-0171 — the "throws" note is pre-Stream-D) | GCP KMS (locked, Kickoff-F wave), Azure Key Vault, Vault                                                                                | 1 (seam) |
-| `SessionProvider`              | `packages/auth/src/session.ts:17`                                                 | better-auth only                                                                                      | **WorkOS** (SAML/SCIM SSO), Clerk, Auth0/Okta                                                                                           | 1        |
-| Analytics (no port — **bug**)  | `apps/site/app/layout.tsx:61` (hardcoded `data-domain`)                           | Plausible, hardcoded                                                                                  | **Make a port + env-gate**; add PostHog, GA4                                                                                            | 1        |
+| `SessionProvider`              | `packages/auth/src/session.ts:17`                                                 | better-auth; **WorkOS** SSO + **Clerk** session-verification (`org-controls/src/{workos,clerk}.ts`)   | Auth0/Okta                                                                                                                              | 1        |
+| `AnalyticsProvider`            | `packages/analytics/src/analytics.ts:27`                                          | Capture (test); **Plausible, PostHog, GA4** (`analytics/src/{plausible,posthog,ga4}.ts`, ADR-0287)    | (fully coded — this was the 1D scope)                                                                                                   | 1        |
 | `ArtifactStore`                | `packages/audit-worm/src/store.ts:35`                                             | S3 (`store.s3.ts`), Local                                                                             | GCS Bucket Lock + R2 bucket-locks per **ADR-0267** (the old "R2 S3-compat ~trivial" claim was WRONG — no Object Lock on R2), Azure Blob | 2        |
-| `JobQueue`                     | `packages/jobs/src/queue.ts:26`                                                   | Trigger.dev (`trigger-driver.ts:52`), InMemory                                                        | **pg-boss** (Postgres-native, zero new infra), BullMQ/Redis, Inngest                                                                    | 2        |
+| `JobQueue`                     | `packages/jobs/src/queue.ts:26`                                                   | Trigger.dev (`trigger-driver.ts:52`), pg-boss, **BullMQ** (`bullmq.ts`, ADR-0287), InMemory           | Inngest                                                                                                                                 | 2        |
 | AI inference                   | `packages/ai-config/src/config.ts:11` · `packages/ai-kit/src/providers.ts:20`     | openai, anthropic, google, openrouter, local                                                          | **AWS Bedrock**, **Azure OpenAI**, **Ollama**                                                                                           | 2        |
 | `BillingProvider`              | `packages/billing/src/provider.ts:23`                                             | Stripe (`:38`), Paddle (`:109`)                                                                       | LemonSqueezy, Polar                                                                                                                     | 3        |
-| Chat (support-bot, no port)    | `services/support-bot/.../bot.py`                                                 | Discord                                                                                               | **Slack**, Telegram                                                                                                                     | 3        |
+| `ChatPlatform` (support-bot)   | `services/support-bot/.../escalation.py:44`                                       | Discord (`bot.py`), **Slack** (`chat_slack.py`, ADR-0287) — escalation-notify only, config-selected   | Telegram; a Slack-native slash-command/listener surface                                                                                 | 3        |
 | MCP transport                  | `packages/mcp-server/src/stdio.ts:24`                                             | stdio only                                                                                            | **HTTP/SSE transport** (remote MCP)                                                                                                     | 3        |
 | Observability                  | `packages/observability/src/observability.ts:79`                                  | OTLP/HTTP single                                                                                      | OTLP/gRPC option (already backend-swappable via endpoint)                                                                               | 3        |
 | `Transactor` (DB)              | `packages/tenancy-rls/src/rls.ts:21`                                              | node-postgres/Neon (inject), PGlite (test), sqlite (local-first)                                      | Supabase explicit; Neon-serverless-HTTP **only if** RLS-tx model allows (needs TCP tx — careful)                                        | 3        |
@@ -119,18 +141,23 @@ clarification note for the unrelated, still-unfiled board placeholder that also 
   WORM + signed licenses are **dev-only today** (`LocalKmsClient`). Real KMS = enterprise-credible.
 - Highest revenue-risk gap; do first within Tier 1.
 
-### 1C. Enterprise auth / SSO — `SessionProvider` → **ADR-0121**
+### 1C. Enterprise auth / SSO — `SessionProvider` → **ADR-0121** (WorkOS) / **ADR-0287** (Clerk)
 
-- Add **WorkOS** driver (SAML + SCIM + directory sync) — enterprise/compliance buyers _require_ SSO.
-  Optionally Clerk (dev-friendly) + Auth0/Okta.
-- Keep better-auth as the default OSS driver; SSO is the commercial/enterprise lane.
+- **WorkOS driver → SHIPPED** (SAML + SCIM + directory sync, `org-controls/src/workos.ts`).
+- **Clerk driver → SHIPPED 2026-07-07** (`org-controls/src/clerk.ts`, ADR-0287): session-token
+  verification (JWT v2) against Clerk's JWKS, networkless when a public key is configured;
+  stateless claims mapping onto the kernel's session shape — a Clerk Organization maps to an
+  account/role, a personal session falls back to the product's own single-user convention.
+- Still open: Auth0/Okta. Better-auth stays the default OSS driver; SSO is the commercial lane.
 
-### 1D. Analytics port + env-gate (fixes a live bug) → **ADR-0122**
+### 1D. Analytics port + env-gate (fixes a live bug) → **ADR-0122** (env-gate) / **ADR-0287** (port)
 
-- The env-gate is **DONE** (`apps/site/components/plausible-init.tsx` reads
-  `NEXT_PUBLIC_PLAUSIBLE_DOMAIN`, no-ops when unset — `936f54f`, same day this row was
-  authored). Still open: this ADR's actual scope, an analytics **port** so PostHog / GA4 are
-  swappable, not just Plausible — roadmap, not built.
+- The env-gate **DONE** (`apps/site/components/plausible-init.tsx` reads
+  `NEXT_PUBLIC_PLAUSIBLE_DOMAIN`, no-ops when unset — `936f54f`).
+- The port **SHIPPED 2026-07-07** (`packages/analytics`, ADR-0287): `AnalyticsProvider.capture`
+  with a capture (test) driver plus Plausible / PostHog / GA4 production drivers — server-side
+  event capture, fail-open by design. This is a distinct surface from `apps/site`'s own
+  client-side Plausible/PostHog page-tracking init, which is unchanged.
 
 ---
 
@@ -144,10 +171,14 @@ clarification note for the unrelated, still-unfiled board placeholder that also 
   bucket-locks API** (fail-closed when the bucket rule can't satisfy `retainUntil`); Azure
   Blob immutable-storage later. Lets buyers avoid AWS; R2 stays cheap-egress.
 
-### 2B. Jobs — `JobQueue` → **ADR-0124**
+### 2B. Jobs — `JobQueue` → **ADR-0124** (pg-boss) / **ADR-0287** (BullMQ)
 
-- **pg-boss** (runs on the Postgres the buyer already has — lowest-friction self-host, no new infra) +
-  BullMQ/Redis (Redis shops) + Inngest (serverless). Trigger.dev stays the managed default.
+- **pg-boss → SHIPPED** (runs on the Postgres the buyer already has — lowest-friction self-host,
+  no new infra).
+- **BullMQ/Redis → SHIPPED 2026-07-07** (`packages/jobs/src/bullmq.ts`, ADR-0287): Redis shops.
+  Idempotent retries map to a native job id; overlap-safety maps to BullMQ's Simple-Mode
+  deduplication; cron scheduling maps to a job scheduler.
+- Still open: Inngest (serverless). Trigger.dev stays the managed default.
 
 ### 2C. Inference backends → **ADR-0125**
 
@@ -159,7 +190,10 @@ clarification note for the unrelated, still-unfiled board placeholder that also 
 ## Tier 3 — nice-to-have
 
 - **Billing** (ADR-0126): LemonSqueezy / Polar MoR alternatives to Paddle.
-- **Chat** (ADR-0127): Slack + Telegram support-bot drivers (extract a `ChatPlatform` port first).
+- **Chat** (ADR-0127 pencil / **ADR-0287** actual lock): the `ChatPlatform` port extraction +
+  **Slack driver → SHIPPED 2026-07-07** (`chat_slack.py`) — escalation-notify only, config-selected
+  (`chat_platform=discord|slack`); the bot's `/ask`/`#ask-ai` surface stays Discord-native. Telegram
+  still open.
 - **MCP HTTP transport** (ADR-0128): SSE/HTTP transport beside stdio for remote MCP.
 - **Observability**: OTLP/gRPC exporter option (already swappable via `OTEL_EXPORTER_OTLP_ENDPOINT`).
 - **DB**: explicit Supabase driver; Neon-serverless-HTTP **only if** reconcilable with the
@@ -169,12 +203,12 @@ clarification note for the unrelated, still-unfiled board placeholder that also 
 
 ## Build waves (proposed execution order)
 
-| Wave  | Items                                                                | Effort | Gate                                          |
-| ----- | -------------------------------------------------------------------- | ------ | --------------------------------------------- |
-| **A** | 1A email (SMTP+SES) · 2A R2 storage · 2B pg-boss · 1D analytics port | S      | lands fast, no infra deps                     |
-| **B** | 1B KMS wiring (AWS first) · 1C WorkOS SSO                            | M      | edition-critical; needs AWS/WorkOS test creds |
-| **C** | 2C Bedrock/Azure/Ollama inference · storage GCS/Azure · jobs BullMQ  | M      | —                                             |
-| **D** | Tier 3 (billing/chat/MCP-http/db)                                    | M      | lowest priority                               |
+| Wave  | Items                                                                | Effort | Gate                                                                                           |
+| ----- | -------------------------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
+| **A** | 1A email (SMTP+SES) · 2A R2 storage · 2B pg-boss · 1D analytics port | S      | lands fast, no infra deps — **DONE**                                                           |
+| **B** | 1B KMS wiring (AWS first) · 1C WorkOS SSO                            | M      | edition-critical; needs AWS/WorkOS test creds — **DONE**                                       |
+| **C** | 2C Bedrock/Azure/Ollama inference · storage GCS/Azure · jobs BullMQ  | M      | — **DONE** (BullMQ shipped 2026-07-07, ADR-0287)                                               |
+| **D** | Tier 3 (billing/chat/MCP-http/db)                                    | M      | lowest priority — **Chat/Slack shipped 2026-07-07 (ADR-0287); billing/MCP-http/db still open** |
 
 Each wave: lock its ADR(s) → build drivers in worktree-isolated parallel agents → port-conformance +
 round-trip tests → integrate → gate. Drivers are inert (env-gated) until the operator supplies creds,
