@@ -142,6 +142,19 @@ describe("runWizard", () => {
     expect(multiselectMock).not.toHaveBeenCalled();
   });
 
+  test("pure run + demo mode: only prompts the project name — no modules/deploy question (ADR-0274)", async () => {
+    resetQueues();
+    selectQueue = ["demo"];
+    textQueue = ["demo-app"];
+
+    const { runWizard } = await import("./interactive.ts");
+    const result = await runWizard(INDEX, { modules: [], pureRun: true });
+
+    expect(result).toEqual({ kind: "demo", projectName: "demo-app" });
+    expect(selectMock).toHaveBeenCalledTimes(1); // the mode question only
+    expect(multiselectMock).not.toHaveBeenCalled();
+  });
+
   test("a partial invocation (edition given) gap-fills name+modules WITHOUT the mode/deploy questions", async () => {
     resetQueues();
     textQueue = ["gapfilled-name"];
