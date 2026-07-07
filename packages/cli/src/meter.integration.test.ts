@@ -498,7 +498,7 @@ describe("runGeneration — edition pin resolution (ADR-0077)", () => {
             mkManifest("@caisson/everything", "0.2.0", "bundle", {
               members: {
                 "@caisson/credits": "0.2.0",
-                "@caisson/ui-pro": "0.0.0", // reserved: sold, unpublished, absent from the index
+                "@caisson/ui-pro": "0.0.0", // pre-publish phantom-pin shape: absent from THIS fixture index
               },
             }),
           ],

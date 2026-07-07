@@ -80,16 +80,15 @@ const MODULE_SLUG_RE = /^[a-z0-9-]+$/;
  * in the SAME change that first indexes its package — its bare slug then resolves through the
  * ordinary indexed-module branch below.
  *
- * Currently reserved: `ui-pro` — SOLD live since the W7 catalog big-bang (a real PURCHASE_BOOK row
- * and a site catalog card) while its package ships in a sibling wave. The index carries NO
- * `@caisson/ui-pro` module entry yet — only the sanctioned 0.0.0 phantom pin inside the everything
- * members map, which the allowlist guard already excludes from bundle expansion — so without this
- * reservation a ui-pro purchase would fail-closed-throw and lock the buyer out of every OTHER
- * entitlement they hold. (`alerting` and `retention-runner` previously graduated out the documented
- * way: removed here in the change that first indexed their packages.)
+ * Currently reserved: NONE. `ui-pro` graduated the documented way 2026-07-07 — removed here in the
+ * same change that first indexed `@caisson/ui-pro@0.1.0` and repinned the everything members map off
+ * the 0.0.0 sentinel (everything@0.2.2); its bare slug now resolves through the ordinary
+ * indexed-module branch below. (`alerting` and `retention-runner` graduated the same way earlier.)
+ * The mechanism stays: the next sold-before-published SKU adds its slug here in the same commit that
+ * creates its purchase row.
  */
 export const RESERVED_MODULE_ENTITLEMENT_IDS: ReadonlySet<string> =
-  new Set<string>(["ui-pro"]);
+  new Set<string>([]);
 
 /** Boundary guard (ADR-0021 input-validation): the purchased ids are an array of bounded, non-empty
  *  strings. Classification + fail-closed rejection of unknown values happens below. */

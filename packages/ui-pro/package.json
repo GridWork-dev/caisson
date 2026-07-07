@@ -7,7 +7,7 @@
     "access": "restricted",
     "registry": "https://npm.pkg.github.com"
   },
-  "description": "Premium data-ops and compliance UI components layered on the open @caisson/ui base: an advanced data grid, a virtualized tree, an operations matrix, a hash-chain audit timeline, a redaction-aware payload viewer, a type-to-confirm dialog, and an advanced date-range picker.",
+  "description": "Premium data-ops and compliance UI components layered on the open @caisson/ui base: an advanced data grid, a virtualized tree, an operations matrix, a hash-chain audit timeline, a redaction-aware payload viewer, a type-to-confirm dialog, an advanced date-range picker, a dependency-free charts pack, a command palette, a redaction-aware diff viewer, and a kanban board.",
   "sideEffects": [
     "*.css"
   ],

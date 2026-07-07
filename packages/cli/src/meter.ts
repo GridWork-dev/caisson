@@ -158,11 +158,12 @@ function resolveEditionMembers(
   const validated = (
     members: Record<string, string>,
   ): Record<string, string> => {
-    // A member id ABSENT from the index entirely is a RESERVED sold-not-yet-published phantom pin
-    // (the everything bundle's `@caisson/ui-pro@0.0.0` sentinel) — SKIPPED, mirroring the
-    // registry-schema allowlist guard that excludes it from `expandEntitlements` (entitlements.ts):
-    // the flagship bundle must compose without it, not fail-closed-throw at the debit seam. A KNOWN
-    // module with an unknown VERSION pin still throws below — a stale pin is a real bug, never skipped.
+    // A member id ABSENT from the index entirely is a sold-not-yet-published phantom pin (the
+    // shape ui-pro's `0.0.0` sentinel took before its 2026-07-07 first publish) — SKIPPED,
+    // mirroring the registry-schema allowlist guard that excludes it from `expandEntitlements`
+    // (entitlements.ts): the flagship bundle must compose without it, not fail-closed-throw at the
+    // debit seam. A KNOWN module with an unknown VERSION pin still throws below — a stale pin is a
+    // real bug, never skipped.
     const indexed = new Set(index.modules.map((m) => m.id));
     const resolvable = Object.fromEntries(
       Object.entries(members).filter(([id]) => indexed.has(id)),

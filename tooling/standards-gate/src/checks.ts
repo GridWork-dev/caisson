@@ -405,6 +405,8 @@ export const PRICE_AUTHORITY: Record<string, { cents: number; adr: string }> = {
   "@caisson/local-inference": { cents: 24900, adr: "ADR-0258" },
   "@caisson/local-privacy": { cents: 9900, adr: "ADR-0258" },
   "@caisson/tool-exec": { cents: 9900, adr: "ADR-0260" },
+  // ui-pro first publish (2026-07-07): trued to the live catalog $129 standalone (ADR-0259 band).
+  "@caisson/ui-pro": { cents: 12900, adr: "ADR-0259" },
 };
 
 /**
