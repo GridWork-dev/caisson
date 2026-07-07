@@ -33,12 +33,21 @@ import {
   grant,
   sweepExpiredGrants,
 } from "@caisson/credits";
-import { asCredits, NotFoundError, type JsonValue } from "@caisson/kernel";
+import {
+  asCredits,
+  NotFoundError,
+  ValidationError,
+  type JsonValue,
+} from "@caisson/kernel";
 import {
   buildAdminSelectPolicySql,
   buildAdminWritePolicySql,
   withAdminWrite,
 } from "@caisson/org-controls";
+import {
+  expandEntitlements,
+  type RegistryIndex,
+} from "@caisson/registry-schema";
 import type { TenantExecutor, Transactor } from "@caisson/tenancy-rls";
 import { insertAdminActionLog, type AdminAction } from "./admin-audit-log.ts";
 import {
@@ -93,6 +102,16 @@ export interface ReissueProxyResult {
 export interface AdminMutationDeps {
   /** The admin Postgres transactor (a role that can `SET ROLE admin_write` + `app`). */
   db: Transactor;
+  /**
+   * The built registry index (ADR-0071/0278 F1) — the SAME membership truth
+   * `expandEntitlements`/`resolveAccountEntitlements` read at every entitlement expansion. The
+   * comp-grant boundary (`grantEntitlementAdmin`) validates every operator-supplied id against it
+   * BEFORE writing a row: `expandEntitlements` is fail-closed-THROWS on an unknown purchased id, so
+   * an un-vetted typo written to `entitlement_grant` would brick every future `/issue` and dashboard
+   * read for the WHOLE target account (TM-E, account-wide — not just the bad id). Loaded the same
+   * way `services/license/src/server.ts` loads it for `/issue`'s own pre-sign validation.
+   */
+  index: RegistryIndex;
   /** The per-tenant WORM chain the tamper-evident audit half appends to (@caisson/audit-worm). */
   worm: AuditChainStore;
   /**
@@ -309,6 +328,41 @@ async function assertAccountExists(
   }
 }
 
+/**
+ * Fail closed on an entitlement id the comp-grant boundary cannot resolve (ADR-0278 F1). Reuses
+ * `expandEntitlements` itself, one id at a time, rather than a hand-maintained allowlist: the
+ * accepted set is always exactly what the index/alias/reserved-id truth would later resolve — a
+ * bundle id (`isBundleId`), an indexed module (`@caisson/<slug>` or the bare slug), a reserved
+ * sold-not-yet-published slug (`RESERVED_MODULE_ENTITLEMENT_IDS`), or a legacy alias that
+ * `normalizeEntitlementId` maps to one of those — with zero risk of drifting from the expansion it
+ * gates, because it IS that expansion. Runs BEFORE `withAdminWrite` opens, so a bad id never reaches
+ * the transaction (never even a rolled-back write attempt) and the error names the offending id.
+ */
+const UNKNOWN_ENTITLEMENT_ID_PREFIX = "unknown purchased entitlement id";
+
+function assertGrantableEntitlementIds(
+  index: RegistryIndex,
+  entitlementIds: readonly string[],
+): void {
+  for (const id of entitlementIds) {
+    try {
+      expandEntitlements(index, [id]);
+    } catch (err) {
+      // ADR-0278 I-2: only expandEntitlements' OWN fail-closed rejection (TM-E, the message this
+      // module throws for an id that is not a bundle/module/reserved/alias) is the expected "bad
+      // operator input" case — map it to a clean 400 naming the id. Anything else (a malformed/
+      // corrupt built index, e.g. `latestManifest`'s "carries no versions") is an INDEX-INTEGRITY
+      // bug, not an operator typo; re-throw it as-is so it surfaces honestly instead of being
+      // mislabeled "unknown entitlement id" and hiding the real failure.
+      const message = err instanceof Error ? err.message : String(err);
+      if (!message.startsWith(UNKNOWN_ENTITLEMENT_ID_PREFIX)) throw err;
+      throw new ValidationError(`unknown entitlement id: ${id}`, {
+        entitlementId: id,
+      });
+    }
+  }
+}
+
 export interface EntitlementMutationResult {
   targetAccountId: string;
   before: string[];
@@ -323,6 +377,9 @@ export async function grantEntitlementAdmin(
   deps: AdminMutationDeps,
   input: GrantEntitlementInput,
 ): Promise<EntitlementMutationResult> {
+  // Reject an unresolvable id BEFORE the transaction opens (ADR-0278 F1) — never write a grant that
+  // would fail-closed-throw the target account's ENTIRE entitlement expansion on its next read.
+  assertGrantableEntitlementIds(deps.index, input.entitlementIds);
   const result = await withAdminWrite(deps.db, async (tx) => {
     await assertAccountExists(tx, input.targetAccountId);
     const before = await readEntitlements(tx, input.targetAccountId);
