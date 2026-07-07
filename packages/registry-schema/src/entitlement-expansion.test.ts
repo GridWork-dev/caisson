@@ -112,23 +112,20 @@ describe("per-module bare-slug purchase-id form", () => {
     expect(() => expandEntitlements(index, ["not-a-real-module"])).toThrow();
   });
 
-  test("RESERVED_MODULE_ENTITLEMENT_IDS reserves exactly ui-pro (sold in W7, package unshipped)", () => {
-    // ui-pro has a live PURCHASE_BOOK row + site catalog card but no indexed package yet — reserved
-    // so a ui-pro grant expands to nothing instead of fail-closed-throwing the buyer's whole set.
-    // alerting/retention-runner stay graduated (indexed, ADR-0150/0151).
-    expect([...RESERVED_MODULE_ENTITLEMENT_IDS]).toEqual(["ui-pro"]);
+  test("RESERVED_MODULE_ENTITLEMENT_IDS is empty — ui-pro graduated at its first publish", () => {
+    // ui-pro published 2026-07-07 (@caisson/ui-pro@0.1.0 indexed; everything@0.2.2 repins it off
+    // the 0.0.0 sentinel) and left the reservation in the SAME change — the documented graduation
+    // path alerting/retention-runner took (ADR-0150/0151). The mechanism stays for the next
+    // sold-before-published SKU.
+    expect([...RESERVED_MODULE_ENTITLEMENT_IDS]).toEqual([]);
   });
 
-  test("a reserved ui-pro grant expands to nothing and never poisons sibling entitlements", () => {
-    // The exact TM-E failure the reservation prevents: a buyer holding ui-pro ALONGSIDE another
-    // entitlement must keep the other entitlement's grants — one sold-but-unshipped SKU can never
-    // 422 the account's entire resolution (audit F1, 2026-07-06).
-    expect([...expandEntitlements(index, ["ui-pro"])]).toEqual([]);
-    expect(() =>
-      expandEntitlements(index, ["evidence-pack", "ui-pro"]),
-    ).not.toThrow();
-    expect([...expandEntitlements(index, ["evidence-pack", "ui-pro"])]).toEqual(
-      ["@caisson/evidence-pack"],
+  test("with the reservation gone, an unindexed ui-pro fails closed like any unknown id", () => {
+    // This FIXTURE index carries no @caisson/ui-pro entry, and post-graduation no fail-soft
+    // carve-out remains — the TM-E fail-closed throw applies to any index that doesn't ship it.
+    // The REAL index resolves it (real-index suite below).
+    expect(() => expandEntitlements(index, ["ui-pro"])).toThrow(
+      /unknown purchased entitlement id/,
     );
   });
 
@@ -619,9 +616,10 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
 
   test("the everything bundle id reads the explicit everything rule on the real index", () => {
     // Post-fold semantics: the indexed @caisson/everything bundle entry's explicit members map wins
-    // over the derived full-catalog scan. The grant is that map filtered to indexed ids — the
-    // pre-publish ui-pro pin is allowlist-guarded until it ships — and the open Apache base is
-    // deliberately absent (it ships free via the Worker's free-view floor, never as a grant).
+    // over the derived full-catalog scan. The grant is that map filtered to indexed ids — since the
+    // ui-pro first publish (everything@0.2.2) that includes @caisson/ui-pro at its real version —
+    // and the open Apache base is deliberately absent (it ships free via the Worker's free-view
+    // floor, never as a grant).
     const bundle = [...expandEntitlements(realIndex, [EVERYTHING])].sort();
     const everythingEntry = realIndex.modules.find(
       (m) => m.id === "@caisson/everything",
@@ -636,7 +634,7 @@ describe("ADR-0257/0270 bundle expansion against the REAL registry index (post-f
     expect(expected.length).toBeGreaterThan(20);
     expect(bundle).toEqual(expected);
     expect(bundle).not.toContain("@caisson/kernel");
-    expect(bundle).not.toContain("@caisson/ui-pro");
+    expect(bundle).toContain("@caisson/ui-pro");
   });
 });
 
