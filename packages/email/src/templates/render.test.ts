@@ -38,16 +38,25 @@ const SAMPLE: { [K in EmailTemplateId]: TemplateDataMap[K] } = {
     lines: [{ label: "Compliance bundle", newWindowEnd: "2027-07-06" }],
     dashboardUrl: URL,
   },
+  "waitlist-welcome": { email: "founder@acme.com", bundle: "Compliance" },
+  "nurture-follow-up": { email: "cto@acme.com", bundle: "Compliance" },
 };
 
 describe("renderEmailTemplate", () => {
   for (const id of EMAIL_TEMPLATE_IDS) {
-    test(`${id}: html and text both carry the action url, subject is non-empty`, async () => {
-      const rendered = await renderEmailTemplate(id, SAMPLE[id]);
+    test(`${id}: html and text carry the expected link, subject is non-empty`, async () => {
+      const data = SAMPLE[id];
+      const rendered = await renderEmailTemplate(id, data);
       expect(rendered.subject.length).toBeGreaterThan(0);
-      expect(rendered.html).toContain(URL);
       expect(rendered.html).toContain("Caisson");
-      expect(rendered.text).toContain(URL);
+      // Most templates carry the sample one-time action/dashboard URL; the two growth emails link
+      // a fixed docs URL instead (neither `url` nor `dashboardUrl` — see their own tests below).
+      const expectedUrl =
+        "url" in data || "dashboardUrl" in data
+          ? URL
+          : "https://caisson.sh/docs";
+      expect(rendered.html).toContain(expectedUrl);
+      expect(rendered.text).toContain(expectedUrl);
       // The HTML and text fallback are rendered from the SAME element — never drift.
       expect(rendered.text).not.toContain("<html");
     });
@@ -150,6 +159,55 @@ describe("renderEmailTemplate", () => {
     });
     expect(rendered.html).toContain("2028-01-15");
     expect(rendered.html).not.toContain("Total charged");
+  });
+
+  test("waitlist-welcome: subject + body carry the bundle label and recipient", async () => {
+    const rendered = await renderEmailTemplate("waitlist-welcome", {
+      email: "founder@acme.com",
+      bundle: "Compliance",
+    });
+    expect(rendered.subject).toBe(
+      "You're on the Caisson Compliance early-access list",
+    );
+    expect(rendered.html).toContain("founder@acme.com");
+    expect(rendered.html).toContain("Caisson Compliance");
+  });
+
+  test("waitlist-welcome: an omitted bundle reads as the general Caisson list", async () => {
+    const rendered = await renderEmailTemplate("waitlist-welcome", {
+      email: "founder@acme.com",
+    });
+    expect(rendered.subject).toBe("You're on the Caisson early-access list");
+  });
+
+  test("nurture-follow-up: subject + body carry the bundle label and recipient", async () => {
+    const rendered = await renderEmailTemplate("nurture-follow-up", {
+      email: "cto@acme.com",
+      bundle: "Compliance",
+    });
+    expect(rendered.subject).toBe(
+      "What Caisson Compliance ships — and what it doesn't",
+    );
+    expect(rendered.html).toContain("cto@acme.com");
+    expect(rendered.html).toContain("fail-closed");
+  });
+
+  // Guards the security-floor fix an earlier standalone-HTML version of these two templates
+  // needed (a buyer-supplied email reaching raw HTML unescaped): react-email/JSX auto-escapes
+  // every text child, so a script-shaped email must render as inert text, never live markup.
+  test("waitlist-welcome + nurture-follow-up: a script-shaped email never renders unescaped", async () => {
+    const maliciousEmail = "<script>alert(1)</script>@evil.com";
+    const welcome = await renderEmailTemplate("waitlist-welcome", {
+      email: maliciousEmail,
+    });
+    expect(welcome.html).not.toContain("<script>alert(1)</script>");
+    expect(welcome.html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
+
+    const nurture = await renderEmailTemplate("nurture-follow-up", {
+      email: maliciousEmail,
+    });
+    expect(nurture.html).not.toContain("<script>alert(1)</script>");
+    expect(nurture.html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
   });
 });
 
