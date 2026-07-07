@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   title: "Caisson · Admin",
   description:
     "The operator control-plane: ops, business admin, live architecture, decisions, and the design system.",
-  // Operator-only surface (CF-Access-gated, ADR-0140) — never index.
+  // Operator-only surface (GitHub OAuth + numeric-id allowlist, ADR-0283) — never index.
   robots: { index: false, follow: false },
 };
 

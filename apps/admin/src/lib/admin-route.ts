@@ -1,8 +1,9 @@
-// Shared plumbing for the ADR-0220 operator mutation routes. Every route is gated by the CF-Access
-// middleware (ADR-0204), which threads the VERIFIED actor email as `x-admin-actor` — a route trusts
-// that header because the middleware `set`s it (replacing any inbound spoof) only after a successful
-// `verifyAccessJwt`. A route reached without a verified actor (dev with CF-Access unconfigured, or a
-// misconfigured matcher) fails closed to 401 here.
+// Shared plumbing for the ADR-0220 operator mutation routes. Every route is gated by the app's
+// proxy gate (`src/proxy.ts`, ADR-0283 — supersedes the CF-Access-JWT middleware of ADR-0204),
+// which threads the VERIFIED actor email as `x-admin-actor` — a route trusts that header because
+// the gate `set`s it (replacing any inbound spoof) only after a successful better-auth session +
+// GitHub-numeric-id-allowlist check (`verifyAdminSession`). A route reached without a verified
+// actor (dev with admin sign-in unconfigured, or a misconfigured matcher) fails closed to 401 here.
 import { toErrorResponse } from "@caisson/kernel";
 import { ZodError } from "zod";
 
@@ -54,7 +55,7 @@ export function mutationErrorResponse(err: unknown): Response {
   return json(body, status);
 }
 
-/** The verified CF-Access actor email, or null when the request carries no verified actor. */
+/** The verified operator actor email (ADR-0283), or null when the request carries no verified actor. */
 export function actorEmail(req: Request): string | null {
   const actor = req.headers.get("x-admin-actor")?.trim() ?? "";
   return actor === "" ? null : actor;

@@ -1,12 +1,25 @@
 # Railway service config — apps/admin (@caisson/admin), the operator control-plane at
-# admin.caisson.sh (ADR-0138). CF-Access-gated operator-only (ADR-0140) — the edge is the sole
-# auth; the app carries no auth code.
+# admin.caisson.sh (ADR-0138). Gated by its OWN in-app GitHub OAuth + numeric-id allowlist
+# (ADR-0283 — supersedes the ADR-0140/ADR-0204 CF-Access-JWT posture: the app is now its own gate,
+# not the edge alone). CF-Access may still front the edge in parallel during the ADR-0283 rollout
+# window (code-live-first, gate-drop-second — see the runbook in the ADR); the app no longer
+# depends on it either way.
 #
 # Dashboard settings for THIS service (the build context must be the repo root, see Dockerfile):
 #   Root Directory       = /                      (repo root — the Docker build context)
 #   Config-as-code path  = apps/admin/railway.toml (this file)
 #
 # Service env vars (set in the Railway service — NEVER committed; every surface no-ops when unset):
+#   ADMIN_AUTH_DATABASE_URL       (Postgres DSN for admin's OWN better-auth tables — ADR-0283; a normal
+#                                  writable role, NEVER the CAISSON_ADMIN_DB_URL read-only `admin` role
+#                                  below, and NEVER the buyer-auth DB apps/site uses)
+#   ADMIN_BETTER_AUTH_SECRET      (better-auth session-signing secret — ADR-0283; sign-in unavailable without it)
+#   ADMIN_GITHUB_CLIENT_ID        (the dedicated admin GitHub OAuth app's client id — ADR-0283)
+#   ADMIN_GITHUB_CLIENT_SECRET    (the dedicated admin GitHub OAuth app's client secret — ADR-0283)
+#   ADMIN_GITHUB_ALLOWED_USER_IDS (comma-separated GitHub NUMERIC user ids — ADR-0283; NEVER usernames,
+#                                  which are renameable/re-registerable. Missing/blank = deny all, fail-closed)
+#   ADMIN_BETTER_AUTH_URL         (optional — the public base URL better-auth issues OAuth redirects
+#                                  against; only needed if request-based inference is unreliable behind Railway)
 #   CAISSON_ADMIN_DB_URL          (the read-only `admin` Postgres role DSN — ADR-0141; cross-tenant reads)
 #   OTEL_EXPORTER_OTLP_ENDPOINT   (the Grafana Cloud OTLP gateway — ADR-0177; observability no-ops without it)
 #   OTEL_EXPORTER_OTLP_HEADERS    (Basic auth for the OTLP gateway — ADR-0177)
