@@ -32,7 +32,7 @@ const FAQ_ITEMS = [
   {
     question: "Is the license perpetual?",
     answer:
-      "Yes, in two parts. The license itself is perpetual: the version you purchased keeps working, verified offline, for as long as you use it — no expiry, no renewal, no call home. Updates are separate: every purchase includes 12 months of registry updates from your Order date, renewable afterward at a reduced rate. An optional Updates Subscription can layer on top for teams that want continuous access to new package versions across their entitled modules; none of this changes the perpetual license for the version you already own.",
+      "Yes, in two parts. The license itself is perpetual: the version you purchased keeps working, verified offline, for as long as you use it — no expiry, no renewal, no call home. Updates are separate: every purchase includes 12 months of registry updates from your Order date, renewable afterward at 40% of the then-current list price per year. An optional Updates Subscription can layer on top for teams that want continuous access to new package versions across their entitled modules; none of this changes the perpetual license for the version you already own.",
   },
   {
     question: "Does Caisson claim to be SOC 2 certified or HIPAA certified?",
@@ -224,11 +224,12 @@ export default function LicensePage() {
           </li>
           <li style={prose.li}>
             Your purchase includes 12 months of registry-pull updates from your
-            Order date, renewable afterward at a reduced rate; letting it lapse
-            never revokes access to versions already delivered. An Updates
-            Subscription, where purchased, additionally delivers new versions of
-            your entitled packages while it is active. Both are optional; the
-            perpetual license does not expire.
+            Order date, renewable afterward at 40% of the then-current list
+            price per year; letting it lapse never revokes access to versions
+            already delivered. An Updates Subscription, where purchased,
+            additionally delivers new versions of your entitled packages while
+            it is active. Both are optional; the perpetual license does not
+            expire.
           </li>
         </ul>
       </Section>

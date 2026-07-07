@@ -77,7 +77,7 @@ describe("<PageSections> — exhaustive switch renderer", () => {
     expect(html).toContain("Art. 12");
   });
 
-  test("codeArtifact → framed <CodeBlock>", () => {
+  test("codeArtifact → framed <CodeBlock> inside a .cs-container", () => {
     const html = renderToStaticMarkup(
       <PageSections
         sections={[
@@ -91,6 +91,10 @@ describe("<PageSections> — exhaustive switch renderer", () => {
     );
     expect(html).toContain("cs-terminal");
     expect(html).toContain("await verifyChain(db)");
+    expect(html).toContain("cs-container");
+    expect(html.indexOf("cs-container")).toBeLessThan(
+      html.indexOf("cs-terminal"),
+    );
   });
 
   test("comparison → <SkuMatrix>", () => {

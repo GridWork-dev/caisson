@@ -79,7 +79,11 @@ function renderSection(section: PageSection, key: number): ReactNode {
 
     case "codeArtifact": {
       const { kind: _kind, ...codeBlockProps } = section;
-      return <CodeBlock key={key} {...codeBlockProps} frame />;
+      return (
+        <Section key={key}>
+          <CodeBlock {...codeBlockProps} frame />
+        </Section>
+      );
     }
 
     case "comparison": {

@@ -37,6 +37,10 @@ import {
 } from "@caisson/registry-schema";
 import { type Transactor, withTenant } from "@caisson/tenancy-rls";
 import type { DiscordGrantPush } from "./discord-notify.ts";
+import type {
+  PurchaseEmailNotice,
+  RenewalEmailNotice,
+} from "./email-notify.ts";
 import {
   computeEntitledSince,
   computeUpdatesWindows,
@@ -93,6 +97,21 @@ export interface IssueAppDeps {
    * (the injected implementation — `capturePostHogPurchase` — never throws).
    */
   posthogCapture: ((capture: PurchaseCapture) => Promise<void>) | null;
+  /**
+   * The post-grant purchase-confirmation email. Unlike `discordNotify`/`posthogCapture` this is
+   * never `null` — `server.ts` always wires `email-notify.ts#resolveEmailer()` (Resend or the
+   * capture driver), so email is always "sent" somewhere. Same detached, never-throw contract as
+   * `discordNotify` (the injected implementation — `notifyPurchaseEmail` — never throws).
+   */
+  purchaseEmailNotify: (notice: PurchaseEmailNotice) => Promise<void>;
+  /**
+   * The post-grant renewal-confirmation email (ADR-0251) — the SIBLING send for a RENEWAL_BOOK
+   * line, which grants nothing so it never fires `purchaseEmailNotify`. Same never-`null`,
+   * always-wired, detached, never-throw contract. A mixed cart (a new entitlement line + a
+   * renewal line in one event) fires BOTH `purchaseEmailNotify` and this; only the purchase
+   * receipt carries the whole-event total (this notice's `amountTotalMinor` is omitted there).
+   */
+  renewalEmailNotify: (notice: RenewalEmailNotice) => Promise<void>;
 }
 
 /**
@@ -497,6 +516,73 @@ export function createApp(
         } catch {
           process.stderr.write(
             "[service-license] posthog capture threw (ignored)\n",
+          );
+        }
+      }
+      // Post-commit purchase-confirmation email: same detached, never-throw contract as the
+      // Discord push / PostHog capture above, gated identically (a granting, money-carrying,
+      // non-re-delivery event only). Unlike those two, `purchaseEmailNotify` is never null
+      // (server.ts always wires a real-or-capture `@caisson/email` transport) — the gate below is
+      // what decides WHEN to send, not whether email is configured.
+      if (
+        result.event !== null &&
+        "amountTotal" in result.event &&
+        result.grantedEntitlements.length > 0
+      ) {
+        const notice: PurchaseEmailNotice = {
+          accountId: result.event.accountId,
+          orderId: result.event.sourceEventId,
+          currency: result.event.currency,
+          amountTotalMinor: result.event.amountTotal,
+          lines: result.skuLines.map((line) => ({
+            productSlug: line.productSlug,
+          })),
+        };
+        try {
+          void deps.purchaseEmailNotify(notice).catch(() => {
+            process.stderr.write(
+              "[service-license] purchase confirmation email rejected (ignored)\n",
+            );
+          });
+        } catch {
+          process.stderr.write(
+            "[service-license] purchase confirmation email threw (ignored)\n",
+          );
+        }
+      }
+      // Post-commit renewal-confirmation email (ADR-0251): the SIBLING send for a RENEWAL_BOOK
+      // line, which grants nothing so it never trips the `grantedEntitlements.length > 0` gate
+      // above. Same detached, never-throw contract, gated on `renewedEntitlements` instead. A
+      // mixed cart (a purchase line + a renewal line in one event) fires BOTH emails — the
+      // purchase receipt states the whole-event total, so THIS notice omits it (two emails each
+      // claiming the full cart total would read as a double charge).
+      if (
+        result.event !== null &&
+        "amountTotal" in result.event &&
+        result.renewedEntitlements.length > 0
+      ) {
+        const notice: RenewalEmailNotice = {
+          accountId: result.event.accountId,
+          orderId: result.event.sourceEventId,
+          currency: result.event.currency,
+          amountTotalMinor:
+            result.grantedEntitlements.length > 0
+              ? undefined
+              : result.event.amountTotal,
+          lines: result.renewedEntitlements.map((r) => ({
+            entitlementId: r.entitlementId,
+            newWindowEnd: r.newWindowEnd,
+          })),
+        };
+        try {
+          void deps.renewalEmailNotify(notice).catch(() => {
+            process.stderr.write(
+              "[service-license] renewal confirmation email rejected (ignored)\n",
+            );
+          });
+        } catch {
+          process.stderr.write(
+            "[service-license] renewal confirmation email threw (ignored)\n",
           );
         }
       }

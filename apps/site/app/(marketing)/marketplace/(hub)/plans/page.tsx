@@ -29,7 +29,7 @@ const PLANS_FAQ = [
   {
     question: "Do I need a subscription to use a bundle or module?",
     answer:
-      "No. Every module and bundle is a one-time perpetual license. Compliance Updates and the Developer plan add updates and credits on top; they're not required for the code to run.",
+      "No. Every module and bundle is a one-time perpetual license that includes 12 months of updates from your purchase date, renewable per entitlement afterward at 40% of the then-current list price per year. Compliance Updates and the Developer plan add active-subscription updates and credits on top; they're not required for the code to run.",
   },
   {
     question: "What happens to my code if I cancel Compliance Updates?",
@@ -43,7 +43,7 @@ const PLANS_FAQ = [
   {
     question: "What do Developer plan credits cover?",
     answer:
-      "A monthly codegen and AI-feature credit allotment, plus entitlement-scoped pulls from the private registry and access to new modules on release.",
+      "A monthly codegen and AI-feature credit allotment, plus package updates and entitlement-scoped pulls from the private registry while the plan is active.",
   },
 ] as const;
 
@@ -71,9 +71,8 @@ const SUB_META: readonly SubMeta[] = [
     audience: "For the team building on the base every week.",
     includes: [
       "Monthly codegen + AI-feature credit allotment",
-      "Framework and module updates as they ship",
+      "Package updates while your subscription is active",
       "Private-registry pulls, entitlement-scoped",
-      "New-edition access on release",
       "Priority developer support",
     ],
   },
@@ -101,11 +100,13 @@ export default function MarketplacePlansPage() {
         lede={
           <>
             Modules, bundles, and the Everything bundle: pay once, own a
-            perpetual license, ship it closed. The price never recurs. The two
-            plans on this tab: pay yearly for the things that only make sense as
-            a subscription — frameworks that change under you, credits that
-            reset, a registry that keeps publishing. Stopping a plan stops new
-            updates and credits. It does not revoke code you already have.
+            perpetual license, ship it closed. The price never recurs, and it
+            includes 12 months of updates from your purchase date — renewable
+            per entitlement after that, at 40% of list per year. The two plans
+            on this tab: pay yearly for the things that only make sense as a
+            subscription — frameworks that change under you, credits that reset,
+            a registry that keeps publishing. Stopping a plan stops new updates
+            and credits. It does not revoke code you already have.
           </>
         }
       />
@@ -328,15 +329,15 @@ export default function MarketplacePlansPage() {
           id="get-started"
           eyebrow="Get started"
           title="Start building on the audited substrate."
-          lede="The base is built and tested. Pick a module or an edition, scaffold a project, and own the source from day one."
+          lede="The base is built and tested. Pick a module or a bundle, scaffold a project, and own the source from day one."
         >
           <div style={{ marginTop: "var(--cs-space-6)" }}>
             <Terminal
-              label="bun create caisson@latest"
+              label="bunx @caisson-sh/cli@latest"
               status={<StatusChip label="ready" tone="success" dot />}
             >
               {
-                "$ bun create caisson@latest\n✓ Caisson base substrate\n  initialized\n✓ Fail-closed RLS (FORCE)\n  + cross-tenant\n  isolation tests\n✓ Append-only audit chain —\n  SHA-256 verified\n✓ Field encryption —\n  per-tenant DEK\n  (HKDF-SHA256)\n✓ Standards gate —\n  lint · test · golden-file"
+                "$ bunx @caisson-sh/cli@latest\n✓ Caisson base substrate\n  initialized\n✓ Fail-closed RLS (FORCE)\n  + cross-tenant\n  isolation tests\n✓ Append-only audit chain —\n  SHA-256 verified\n✓ Field encryption —\n  per-tenant DEK\n  (HKDF-SHA256)\n✓ Standards gate —\n  lint · test · golden-file"
               }
             </Terminal>
           </div>
@@ -348,8 +349,8 @@ export default function MarketplacePlansPage() {
               marginTop: "var(--cs-space-6)",
             }}
           >
-            <Button href="/marketplace#editions" variant="primary">
-              See the editions
+            <Button href="/marketplace#bundles" variant="primary">
+              See the bundles
             </Button>
             <Button href="/docs" variant="ghost">
               Read the docs

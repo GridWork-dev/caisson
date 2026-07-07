@@ -21,10 +21,11 @@ import type { DomainBillingEvent } from "@caisson/billing";
 import { parseStripeEvent } from "@caisson/billing-orchestration";
 import { applyBillingEvent } from "./apply-billing-event.ts";
 import {
+  computeUpdatesWindows,
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
-  computeUpdatesWindows,
+  grantEntitlements,
   readEntitlements,
 } from "./entitlement-store.ts";
 
@@ -1159,6 +1160,8 @@ describe("applyBillingEvent — Paddle per-line partial refund (ADR-0218)", () =
 
 describe("applyBillingEvent — updates-renewal lines (ADR-0244/0251)", () => {
   const RENEWAL_COMPLIANCE_ID = "pri_01kwvz6kzh4h43aec3r5rs5je4"; // the live sandbox compliance-renewal price
+  // The legacy-keyed sandbox renewal row (`renewsEntitlement: "ai-kit"` → canonical "ai-production").
+  const RENEWAL_AI_PRODUCTION_ID = "pri_01kwvz6m46s5tj4k2a09kcaf9s";
   const MODULE_ID = "price_field_crypto_module_PLACEHOLDER"; // grants "field-crypto", 0 credits
 
   test("a renewal line EXTENDS the window — no new grant, no credits, no push", async () => {
@@ -1178,6 +1181,18 @@ describe("applyBillingEvent — updates-renewal lines (ADR-0244/0251)", () => {
       ),
     );
     expect(effect.grantedEntitlements).toEqual([]); // nothing granted → no Discord/PostHog push
+
+    // The renewal surfaces its own signal for the post-commit renewal-confirmation email —
+    // the SAME window `computeUpdatesWindows` would return for the next /issue.
+    const windows = await withTenant(tp.pg, acct, (tx) =>
+      computeUpdatesWindows(tx, acct),
+    );
+    const newWindowEnd = windows.compliance;
+    if (newWindowEnd === undefined)
+      throw new Error("expected a computed window");
+    expect(effect.renewedEntitlements).toEqual([
+      { entitlementId: "compliance", newWindowEnd },
+    ]);
 
     // No credits landed, no second grant row — the ORIGINAL row gained updates_expires_at.
     expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(0);
@@ -1211,8 +1226,18 @@ describe("applyBillingEvent — updates-renewal lines (ADR-0244/0251)", () => {
         ]),
       ),
     );
-    // The purchase line granted; the renewal line stayed out of the push list.
+    // The purchase line granted; the renewal line stayed out of the push list, but IS surfaced
+    // in its own renewedEntitlements signal (the mixed-cart both-emails case, app.ts).
     expect(effect.grantedEntitlements).toEqual(["field-crypto"]);
+    const windows = await withTenant(tp.pg, acct, (tx) =>
+      computeUpdatesWindows(tx, acct),
+    );
+    const newWindowEnd = windows.compliance;
+    if (newWindowEnd === undefined)
+      throw new Error("expected a computed window");
+    expect(effect.renewedEntitlements).toEqual([
+      { entitlementId: "compliance", newWindowEnd },
+    ]);
     expect(
       await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
     ).toEqual(["compliance", "field-crypto"]);
@@ -1225,6 +1250,39 @@ describe("applyBillingEvent — updates-renewal lines (ADR-0244/0251)", () => {
     expect(rows).toEqual([
       { entitlement_id: "compliance", set: true },
       { entitlement_id: "field-crypto", set: false },
+    ]);
+  });
+
+  test("a renewal against a LEGACY-keyed grant row still surfaces renewedEntitlements (alias fold)", async () => {
+    const acct = "acct_renewal_legacy";
+    // A pre-ADR-0257 buyer: the grant row stores the LEGACY id (`ai-kit`), while the RENEWAL_BOOK
+    // resolves its renewal price to the canonical `ai-production`. The extension matches via the
+    // alias group; the email-surfacing read-back must fold the same group or the notice silently
+    // drops (windows keys by the RAW stored id — the fable-audit F2 regression).
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["ai-kit"],
+        sourceEventId: "pay_legacy_base",
+        source: { kind: "one_time", purchaseId: "pay_legacy_base" },
+      }),
+    );
+
+    const effect = await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pay_legacy_ren", RENEWAL_AI_PRODUCTION_ID),
+      ),
+    );
+
+    const windows = await withTenant(tp.pg, acct, (tx) =>
+      computeUpdatesWindows(tx, acct),
+    );
+    const newWindowEnd = windows["ai-kit"]; // keyed by the raw stored id
+    if (newWindowEnd === undefined)
+      throw new Error("expected a computed window on the legacy row");
+    expect(effect.renewedEntitlements).toEqual([
+      { entitlementId: "ai-production", newWindowEnd },
     ]);
   });
 

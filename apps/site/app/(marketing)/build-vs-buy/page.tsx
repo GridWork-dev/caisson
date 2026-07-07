@@ -443,7 +443,7 @@ const result = verifyChain(entries, anchor);
         </p>
         <div style={{ marginBottom: "var(--cs-space-5)" }}>
           <Terminal label="scaffold a Caisson project">
-            bun create caisson@latest
+            bunx @caisson-sh/cli@latest
           </Terminal>
         </div>
         <div className="cs-cta-row">

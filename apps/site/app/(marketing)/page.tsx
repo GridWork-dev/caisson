@@ -18,8 +18,13 @@ import Link from "next/link";
 import { serializeJsonLd, softwareApplication } from "@/lib/jsonld";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import {
+  bundlePrice,
   BUNDLE_PRICES,
+  everythingSavings,
   formatUsd,
+  MODULE_PRICES,
+  moduleCatalogSubtotal,
+  modulesByBundle,
   PLAN_PRICES,
   planPrice,
   SKU_COLUMNS,
@@ -143,8 +148,8 @@ export default function HomePage() {
               label="install"
               code={
                 <>
-                  <span className="cs-tok-muted">$</span> bun create{" "}
-                  <span className="cs-tok-accent">caisson</span>@latest
+                  <span className="cs-tok-muted">$</span> bunx{" "}
+                  <span className="cs-tok-accent">@caisson-sh/cli</span>@latest
                 </>
               }
             />
@@ -285,9 +290,10 @@ export default function HomePage() {
                 className="cs-muted"
                 style={{ marginTop: "var(--cs-space-3)" }}
               >
-                Compliance, AI Production, Local-first, Agentic-Dev, or
-                Provenance — each bundle composes the same audited base. Never a
-                fork.
+                Compliance, AI-Production, Local-first, Agentic-Dev, or
+                Provenance — each composes the same audited base, never a fork.
+                Everything takes the whole catalog at{" "}
+                {bundlePrice("everything")}.
               </p>
               <div style={{ marginTop: "var(--cs-space-6)" }}>
                 <Button href="/marketplace" variant="ghost">
@@ -341,7 +347,7 @@ export default function HomePage() {
         <Section
           eyebrow="Bundles"
           title="Six bundles, one audited base."
-          lede="Compliance leads. Every bundle draws from the same audited base — never a fork. Provenance and the whole-catalog Everything bundle round out the six; see them all, plus every module sold on its own, in the marketplace."
+          lede="Compliance leads; every bundle — Provenance and the whole-catalog Everything included — draws from the same audited base, never a fork."
           band="surface"
         >
           <div
@@ -353,7 +359,13 @@ export default function HomePage() {
               href="/compliance"
               name="Compliance"
               icon="fail-closed"
-              status={<StatusChip tone="accent" dot label="Bundle · Hero" />}
+              status={
+                <StatusChip
+                  tone="accent"
+                  dot
+                  label={`${bundlePrice("compliance")} · ${modulesByBundle("compliance").length} modules`}
+                />
+              }
               line="Fail-closed RLS, S3 WORM, append-only audit chain, per-tenant field encryption, and a SOC 2 / HIPAA evidence-pack generator."
               proof="ALTER TABLE evidence FORCE ROW LEVEL SECURITY;"
             />
@@ -361,7 +373,13 @@ export default function HomePage() {
               href="/ai-kit"
               name="AI-Production"
               icon="gauge"
-              status={<StatusChip tone="muted" dot label="Bundle · #2" />}
+              status={
+                <StatusChip
+                  tone="muted"
+                  dot
+                  label={`${bundlePrice("ai-production")} · ${modulesByBundle("ai-production").length} modules`}
+                />
+              }
               line="The production-rigor layer cheap AI boilerplate skips: token metering, spend caps, a circuit breaker, versioned prompts, and guardrails."
               proof="breaker open: tenant spend cap hit"
             />
@@ -370,7 +388,11 @@ export default function HomePage() {
               name="Local-first AI"
               icon="cpu"
               status={
-                <StatusChip tone="muted" dot label="Bundle · Self-host" />
+                <StatusChip
+                  tone="muted"
+                  dot
+                  label={`${bundlePrice("local-first")} · ${modulesByBundle("local-first").length} modules`}
+                />
               }
               line="Compute seam, privacy gate, and on-device vector search. Your data never leaves the device. Own the source."
               proof="egress: blocked at the privacy gate"
@@ -379,9 +401,46 @@ export default function HomePage() {
               href="/agentic-dev"
               name="Agentic-Dev"
               icon="git-branch"
-              status={<StatusChip tone="muted" dot label="Bundle · #4" />}
+              status={
+                <StatusChip
+                  tone="muted"
+                  dot
+                  label={`${bundlePrice("agentic-dev")} · ${modulesByBundle("agentic-dev").length} modules`}
+                />
+              }
               line="The governed-agent kernel: typed agent/skill/rule schema, a lifecycle state machine, and a hooks dispatcher."
               proof="agent · skill · rule — typed, validated, hooked"
+            />
+            <EditionCard
+              href="/provenance"
+              name="Provenance"
+              icon="audit-chain"
+              status={
+                <StatusChip
+                  tone="muted"
+                  dot
+                  label={`${bundlePrice("provenance")} · ${modulesByBundle("provenance").length} modules`}
+                />
+              }
+              line="Detached Ed25519 + RFC-3161 signing, an append-only audit chain where one altered row breaks every link after it, and per-tenant field encryption."
+              proof="caisson evidence verify pack.json  →  sig ✓ · tsa ✓ · root 2c9f…b7"
+            />
+            <EditionCard
+              // Whole-catalog closer spans the row like the Compliance lead, but stays a
+              // neutral surface — `lead`'s accent identity belongs to the hero card alone.
+              style={{ gridColumn: "1 / -1" }}
+              href="/marketplace#everything"
+              name="Everything"
+              icon="bundle"
+              status={
+                <StatusChip
+                  tone="muted"
+                  dot
+                  label={`${bundlePrice("everything")} · all ${MODULE_PRICES.length} modules`}
+                />
+              }
+              line="Every bundle and every module, including the platform capabilities no persona bundle carries — one purchase, the whole library."
+              proof={`save ${formatUsd(everythingSavings())} vs ${formatUsd(moduleCatalogSubtotal())} à la carte`}
             />
           </div>
         </Section>
@@ -479,8 +538,8 @@ export default function HomePage() {
               label="install"
               code={
                 <>
-                  <span className="cs-tok-muted">$</span> bun create{" "}
-                  <span className="cs-tok-accent">caisson</span>@latest
+                  <span className="cs-tok-muted">$</span> bunx{" "}
+                  <span className="cs-tok-accent">@caisson-sh/cli</span>@latest
                 </>
               }
             />

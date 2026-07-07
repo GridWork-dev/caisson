@@ -40,6 +40,14 @@ const config: NextConfig = {
         destination: "/marketplace/build",
         permanent: true,
       },
+      // 2026-07-06 operator lock: /changelog absorbed into the dedicated /updates surface —
+      // one route, changelog integrated. Permanent 301s preserve SEO equity/RSS subscribers.
+      { source: "/changelog", destination: "/updates", permanent: true },
+      {
+        source: "/changelog/rss.xml",
+        destination: "/updates/rss.xml",
+        permanent: true,
+      },
     ];
   },
   // Security headers — the CSP/HSTS/X-Frame floor the (now-deleted) Cloudflare Pages public/_headers

@@ -205,6 +205,11 @@ async function main(): Promise<void> {
     );
   }
   const pool = new Pool({ connectionString: url });
+  pool.on("error", (err) => {
+    process.stderr.write(
+      `[deploy-migrate] idle pg client error: ${err.message}\n`,
+    );
+  });
   try {
     const result = await runPlatformMigrations(pgMigrationApplier(pool));
     process.stdout.write(

@@ -20,6 +20,7 @@ import {
   PERSONA_BUNDLE_IDS,
   PLAN_PRICES,
   priceById,
+  renewalAmount,
 } from "./pricing";
 
 describe("MODULE_PRICES", () => {
@@ -103,6 +104,36 @@ describe("formatPrice / formatUsd", () => {
   test("formatUsd renders a bare integer with thousands separators", () => {
     expect(formatUsd(299)).toBe("$299");
     expect(formatUsd(2999)).toBe("$2,999");
+  });
+});
+
+describe("renewalAmount (ADR-0260 §5 40%-X9 ladder)", () => {
+  test("matches the locked ladder points", () => {
+    // The ADR's worked examples: $199→$79 · $149→$59 · $129→$49 · $99→$39 · $49→$19, plus the
+    // six bundle prices ($1,049→$419 · $739→$289 · $629→$249 · $329→$129 · $399→$159 · $2,059→$819).
+    expect(renewalAmount("ai-meter")).toBe(79); // $199
+    expect(renewalAmount("guardrails")).toBe(59); // $149
+    expect(renewalAmount("prompt-registry")).toBe(39); // $99
+    expect(renewalAmount("compliance")).toBe(419); // $1,049
+    expect(renewalAmount("everything")).toBe(819); // $2,059
+  });
+
+  test("every catalog entry yields a positive integer ending in 9, at most 40% of list", () => {
+    for (const p of [...MODULE_PRICES, ...BUNDLE_PRICES]) {
+      if (p.amount === null) continue;
+      const r = renewalAmount(p.id);
+      expect(r).not.toBeNull();
+      expect(Number.isInteger(r)).toBe(true);
+      expect((r ?? 0) % 10).toBe(9);
+      expect(r ?? 0).toBeLessThanOrEqual(Math.floor((p.amount * 40) / 100));
+      // Floor to the NEAREST X9: adding 10 must overshoot 40% of list.
+      expect((r ?? 0) + 10).toBeGreaterThan(Math.floor((p.amount * 40) / 100));
+    }
+  });
+
+  test("unknown ids stay number-free (null)", () => {
+    expect(renewalAmount("not-a-real-sku")).toBeNull();
+    expect(renewalAmount("")).toBeNull();
   });
 });
 

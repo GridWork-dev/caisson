@@ -14,6 +14,22 @@ const SAMPLE: { [K in EmailTemplateId]: TemplateDataMap[K] } = {
   "password-reset": { url: URL },
   "verify-email": { url: URL },
   "credits-expiring": { credits: 120, expiresOn: "2027-07-06", url: URL },
+  "purchase-confirmation": {
+    buyerName: "Ada",
+    orderId: "ord_sample",
+    currency: "usd",
+    amountTotalMinor: 79900,
+    lines: [{ label: "Compliance bundle", amountMinor: 79900 }],
+    dashboardUrl: URL,
+  },
+  "renewal-confirmation": {
+    buyerName: "Ada",
+    orderId: "ord_ren_sample",
+    currency: "usd",
+    amountTotalMinor: 29900,
+    lines: [{ label: "Compliance bundle", newWindowEnd: "2027-07-06" }],
+    dashboardUrl: URL,
+  },
 };
 
 describe("renderEmailTemplate", () => {
@@ -40,6 +56,70 @@ describe("renderEmailTemplate", () => {
     expect(rendered.html).toContain("2027-07-06");
     expect(rendered.text).toContain("burn first");
   });
+
+  test("purchase-confirmation: subject + body carry the order id, line items, and total", async () => {
+    const rendered = await renderEmailTemplate("purchase-confirmation", {
+      buyerName: "Ada",
+      orderId: "ord_42",
+      currency: "usd",
+      amountTotalMinor: 79900,
+      lines: [{ label: "Compliance bundle", amountMinor: 79900 }],
+      dashboardUrl: URL,
+    });
+    expect(rendered.subject).toBe("Your Caisson order ord_42 is confirmed");
+    expect(rendered.html).toContain("ord_42");
+    expect(rendered.html).toContain("Compliance bundle");
+    expect(rendered.html).toContain("799.00 USD");
+    // The install command every other surface teaches (the create-caisson name is retired).
+    expect(rendered.text).toContain("bunx @caisson-sh/cli@latest");
+  });
+
+  test("purchase-confirmation: a line with no per-line amount renders its label alone", async () => {
+    const rendered = await renderEmailTemplate("purchase-confirmation", {
+      buyerName: "Ada",
+      orderId: "ord_43",
+      currency: "usd",
+      amountTotalMinor: 79900,
+      lines: [{ label: "Compliance bundle" }],
+      dashboardUrl: URL,
+    });
+    expect(rendered.html).toContain("Compliance bundle");
+    expect(rendered.html).toContain("Total charged");
+    expect(rendered.html).toContain("799.00 USD");
+  });
+
+  test("renewal-confirmation: subject + body carry the order id, renewed line, window date, and total (ADR-0251)", async () => {
+    const rendered = await renderEmailTemplate("renewal-confirmation", {
+      buyerName: "Ada",
+      orderId: "ord_ren_42",
+      currency: "usd",
+      amountTotalMinor: 29900,
+      lines: [{ label: "Compliance bundle", newWindowEnd: "2028-01-15" }],
+      dashboardUrl: URL,
+    });
+    expect(rendered.subject).toBe(
+      "Your Caisson renewal ord_ren_42 is confirmed",
+    );
+    expect(rendered.html).toContain("ord_ren_42");
+    expect(rendered.html).toContain("Compliance bundle");
+    expect(rendered.html).toContain("2028-01-15");
+    expect(rendered.html).toContain("299.00 USD");
+    expect(rendered.text).toContain("bunx @caisson-sh/cli@latest");
+  });
+
+  test("renewal-confirmation: an omitted total (mixed cart) renders no 'Total charged' line", async () => {
+    // On a mixed cart the purchase receipt owns the whole-event total; a second email repeating
+    // it would read as a double charge.
+    const rendered = await renderEmailTemplate("renewal-confirmation", {
+      buyerName: "Ada",
+      orderId: "ord_ren_43",
+      currency: "usd",
+      lines: [{ label: "Compliance", newWindowEnd: "2028-01-15" }],
+      dashboardUrl: URL,
+    });
+    expect(rendered.html).toContain("2028-01-15");
+    expect(rendered.html).not.toContain("Total charged");
+  });
 });
 
 describe("tryRenderEmailTemplate", () => {
@@ -58,5 +138,53 @@ describe("tryRenderEmailTemplate", () => {
     );
     // The auth templates still gate on url presence.
     expect(await tryRenderEmailTemplate("magic-link", { nope: 1 })).toBe(null);
+  });
+
+  test("purchase-confirmation: renders from free-form driver data, falls back to null on a bad line shape", async () => {
+    const rendered = await tryRenderEmailTemplate("purchase-confirmation", {
+      buyerName: "Ada",
+      orderId: "ord_42",
+      currency: "usd",
+      amountTotalMinor: 79900,
+      lines: [{ label: "Compliance bundle", amountMinor: 79900 }],
+      dashboardUrl: URL,
+    });
+    expect(rendered?.subject).toBe("Your Caisson order ord_42 is confirmed");
+
+    expect(
+      await tryRenderEmailTemplate("purchase-confirmation", {
+        buyerName: "Ada",
+        orderId: "ord_42",
+        currency: "usd",
+        amountTotalMinor: 79900,
+        lines: [{ label: "Compliance bundle", amountMinor: 799.5 }],
+        dashboardUrl: URL,
+      }),
+    ).toBe(null);
+  });
+
+  test("renewal-confirmation: renders from free-form driver data, falls back to null on a bad line shape", async () => {
+    const rendered = await tryRenderEmailTemplate("renewal-confirmation", {
+      buyerName: "Ada",
+      orderId: "ord_ren_42",
+      currency: "usd",
+      amountTotalMinor: 29900,
+      lines: [{ label: "Compliance bundle", newWindowEnd: "2028-01-15" }],
+      dashboardUrl: URL,
+    });
+    expect(rendered?.subject).toBe(
+      "Your Caisson renewal ord_ren_42 is confirmed",
+    );
+
+    expect(
+      await tryRenderEmailTemplate("renewal-confirmation", {
+        buyerName: "Ada",
+        orderId: "ord_ren_42",
+        currency: "usd",
+        amountTotalMinor: 29900,
+        lines: [{ label: "Compliance bundle" }], // missing newWindowEnd
+        dashboardUrl: URL,
+      }),
+    ).toBe(null);
   });
 });

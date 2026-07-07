@@ -334,8 +334,8 @@ export default function AiKitPage() {
               >
                 The gateway, all four composed modules, and future patch
                 releases, in your own repo as TypeScript source. Scaffold it in
-                with bun create caisson@latest, or add it to an existing Caisson
-                base.
+                with bunx @caisson-sh/cli@latest, or add it to an existing
+                Caisson base.
               </p>
             </Card>
 
@@ -412,7 +412,7 @@ export default function AiKitPage() {
           label="terminal"
           status={<StatusChip label="ready" tone="success" dot />}
         >
-          {"$ bun create caisson@latest\n"}
+          {"$ bunx @caisson-sh/cli@latest\n"}
         </Terminal>
         <div
           style={{

@@ -30,6 +30,22 @@ const SAMPLE_DATA: { [K in EmailTemplateId]: TemplateDataMap[K] } = {
     expiresOn: "2027-07-06",
     url: "https://caisson.sh/dashboard/credits",
   },
+  "purchase-confirmation": {
+    buyerName: "Sample Buyer",
+    orderId: "txn_01sample",
+    currency: "usd",
+    amountTotalMinor: 104900,
+    lines: [{ label: "Compliance bundle", amountMinor: 104900 }],
+    dashboardUrl: "https://caisson.sh/dashboard",
+  },
+  "renewal-confirmation": {
+    buyerName: "Sample Buyer",
+    orderId: "txn_01sample",
+    currency: "usd",
+    amountTotalMinor: 41900,
+    lines: [{ label: "Compliance bundle", newWindowEnd: "2028-07-06" }],
+    dashboardUrl: "https://caisson.sh/dashboard",
+  },
 };
 
 // A generic helper keeps `id` and its sample data type-correlated across the map call.

@@ -1,5 +1,5 @@
-// RSS 2.0 feed for the Caisson changelog — force-static so it emits at build time.
-// Content-Type: application/xml. Entries are shared with the /changelog page via
+// RSS 2.0 feed for the Caisson updates page — force-static so it emits at build time.
+// Content-Type: application/xml. Entries are shared with the /updates page via
 // lib/changelog.ts — add an entry there and it appears in both surfaces.
 export const dynamic = "force-static";
 

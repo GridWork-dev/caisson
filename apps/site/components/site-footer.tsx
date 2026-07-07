@@ -23,7 +23,7 @@ const EXTRAS: Record<FooterCol, { href: string; label: string }[]> = {
 };
 
 const HEADINGS: Record<FooterCol, string> = {
-  editions: "Editions",
+  editions: "Bundles",
   product: "Marketplace",
   resources: "Resources",
   legal: "Legal",
@@ -56,7 +56,7 @@ export function SiteFooter() {
             <Link href="/legal/license" className="cs-link">
               Apache-2.0
             </Link>
-            , free to use. Editions and modules are commercial.
+            , free to use. Bundles and modules are commercial.
           </p>
           <div style={{ marginTop: "var(--cs-space-6)" }}>
             <div

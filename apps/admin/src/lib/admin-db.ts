@@ -169,6 +169,11 @@ export async function getAdminDb(): Promise<Transactor> {
   const url = process.env.CAISSON_ADMIN_DB_URL;
   if (url !== undefined && url.length > 0) {
     const pool = new Pool({ connectionString: url });
+    pool.on("error", (err) => {
+      process.stderr.write(
+        `[apps/admin] idle pg client error: ${err.message}\n`,
+      );
+    });
     globalDb.caissonAdminTransactor = nodePgTransactor(pool);
     return globalDb.caissonAdminTransactor;
   }

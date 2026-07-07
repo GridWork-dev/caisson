@@ -44,9 +44,9 @@ grants), and `subscription_charge` is a mid-cycle one-time charge that must not 
 allotment (non-granting). Idempotency anchors on the Paddle **transaction id** (`txn_…`) — stable
 across redeliveries — rather than `invoice_id`, which Paddle documents as deprecated.
 
-**LemonSqueezy** and **Polar** are two more MoR drivers behind the same port (ADR-0175), for
-products where the buyer wants one of those rails instead. Both are dormant until you supply that
-provider's credentials — nothing is imported or constructed unless you configure it.
+**LemonSqueezy** and **Polar** are two more MoR drivers behind the same port, for products where the
+buyer wants one of those rails instead. Both are dormant until you supply that provider's
+credentials — nothing is imported or constructed unless you configure it.
 
 ```ts
 import { verifyLemonSqueezyWebhook } from "@caisson/billing";

@@ -94,7 +94,7 @@ export default function AgenticDevOpengraphImage() {
           paddingTop: 28,
         }}
       >
-        <span>An edition on the audited Caisson base · own the source</span>
+        <span>A bundle on the audited Caisson base · own the source</span>
         <span style={{ background: C.surface, padding: "8px 16px" }}>
           caisson.sh/agentic-dev
         </span>

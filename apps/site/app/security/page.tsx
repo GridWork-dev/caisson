@@ -44,7 +44,7 @@ const PRODUCT_CONTROLS: ReadonlyArray<{
   {
     icon: "shield",
     label: "Resolve-and-recheck SSRF guard",
-    body: `packages/kernel's ssrf.ts stops DNS rebinding on every buyer- or config-supplied URL — the alerting webhook transports and the ai-kit provider baseUrl both route through it (ADR-0204). assertSafePublicUrl rejects non-https, credentials-in-URL, and a literal private/loopback/link-local/metadata host at the config boundary; assertResolvedHostPublic then resolves the hostname and re-checks every returned A/AAAA record against the same denylist immediately before the outbound fetch, so a public name that DNS-rebinds to 127.0.0.1 or 169.254.169.254 is caught where a literal-only check can't see it. ssrfGuardedFetch forces redirect: "error" — only the original host is re-checked, so a followed redirect could otherwise carry the request past the guard.`,
+    body: `packages/kernel's ssrf.ts stops DNS rebinding on every buyer- or config-supplied URL — the alerting webhook transports and the ai-kit provider baseUrl both route through it. assertSafePublicUrl rejects non-https, credentials-in-URL, and a literal private/loopback/link-local/metadata host at the config boundary; assertResolvedHostPublic then resolves the hostname and re-checks every returned A/AAAA record against the same denylist immediately before the outbound fetch, so a public name that DNS-rebinds to 127.0.0.1 or 169.254.169.254 is caught where a literal-only check can't see it. ssrfGuardedFetch forces redirect: "error" — only the original host is re-checked, so a followed redirect could otherwise carry the request past the guard.`,
   },
   {
     icon: "worm",
@@ -82,7 +82,7 @@ const SITE_POSTURE: ReadonlyArray<{
   {
     icon: "shield",
     title: "Admin gated by a fail-closed CF-Access JWT check",
-    body: "apps/admin renders cross-tenant business data and ships no other auth, so ADR-0204 added an app-wide middleware.ts that validates Cf-Access-Jwt-Assertion against the admin Access application's JWKS, pins the aud claim to the admin app specifically (the site and admin Access apps share one email policy, so a signature-only check would accept a site token), and denies with a 403 on any failure — expired token, wrong aud/iss, unreachable JWKS, or a request that reached the raw Railway origin directly, bypassing the Cloudflare edge entirely. In production, an unconfigured gate also denies: both CF_ACCESS_TEAM_DOMAIN and CF_ACCESS_AUD must be set before the app serves a single route.",
+    body: "apps/admin renders cross-tenant business data and ships no other auth, so an app-wide middleware validates Cf-Access-Jwt-Assertion against the admin Access application's JWKS, pins the aud claim to the admin app specifically (the site and admin Access apps share one email policy, so a signature-only check would accept a site token), and denies with a 403 on any failure — expired token, wrong aud/iss, unreachable JWKS, or a request that reached the raw Railway origin directly, bypassing the Cloudflare edge entirely. In production, an unconfigured gate also denies: both CF_ACCESS_TEAM_DOMAIN and CF_ACCESS_AUD must be set before the app serves a single route.",
   },
   {
     icon: "gauge",
@@ -123,7 +123,7 @@ const FAQ: ReadonlyArray<{ question: string; answer: string }> = [
     question:
       "What stops a DNS-rebinding attack against a webhook or provider URL I configure?",
     answer:
-      "packages/kernel's ssrf.ts resolves the hostname and re-checks every returned IP against a private/loopback/link-local/metadata denylist immediately before the outbound fetch, and forces the request to fail on any redirect. A literal-only check (the pre-ADR-0204 state) can't see a name that resolves into private space after the fact; the resolve-and-recheck design closes that gap for both the alerting transports and the ai-kit provider baseUrl.",
+      "packages/kernel's ssrf.ts resolves the hostname and re-checks every returned IP against a private/loopback/link-local/metadata denylist immediately before the outbound fetch, and forces the request to fail on any redirect. A literal-only check can't see a name that resolves into private space after the fact; the resolve-and-recheck design closes that gap for both the alerting transports and the ai-kit provider baseUrl.",
   },
   {
     question:

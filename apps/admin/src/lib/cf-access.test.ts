@@ -4,7 +4,7 @@
 // not open admin). A local RS256 keypair stands in for Cloudflare's JWKS; the public key is injected as
 // the resolver, exercising the exact `jwtVerify` path the middleware runs against the remote JWKS.
 import { describe, expect, test } from "bun:test";
-import { SignJWT, generateKeyPair } from "jose";
+import { SignJWT, generateKeyPair, type KeyLike } from "jose";
 import {
   accessConfig,
   extractAccessToken,
@@ -21,7 +21,7 @@ const { publicKey, privateKey } = await generateKeyPair("RS256");
 const attacker = await generateKeyPair("RS256");
 
 async function sign(
-  key: CryptoKey,
+  key: KeyLike,
   claims: {
     aud?: string;
     iss?: string;
