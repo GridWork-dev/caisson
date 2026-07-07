@@ -1,0 +1,69 @@
+{
+  "regime": "soc2",
+  "title": "SOC 2 Trust Services Criteria — Caisson technical-control crosswalk",
+  "regimeRevision": "SOC 2 — 2017 Trust Services Criteria (with the 2022 revised points of focus)",
+  "crosswalkVersion": "2026.1",
+  "disclaimer": {
+    "notACertification": "This crosswalk is not a certification, attestation, or compliance validation. Caisson ships technical controls that run inside your own systems; for this regime Caisson is not an assessed, certified, or compliant entity — you are. No regulatory seal, logo, or badge is claimed or implied.",
+    "noComplianceGuarantee": "These mappings are not designed to, and do not, ensure your compliance with any standard or framework, and it is your responsibility to ensure any such compliance. Using this crosswalk neither replaces your own efforts to achieve compliance nor guarantees that you will pass any assessment.",
+    "claimLegend": "'maps to' means a Caisson mechanism addresses the same security domain as the requirement; it is not an assertion that the requirement is satisfied. 'implements' is used only where a live test or CI artifact in the Caisson repository proves the named technical control, and each such row links that proof. Neither claim covers the full requirement — see each row's buyer-responsibility column.",
+    "scopeBoundary": "This crosswalk covers only the technical controls the compliance bundle ships. Organizational, administrative, and physical controls — policy, personnel, vendor and access management, incident response, your own data classification and configuration, and the independent assessment itself — remain your responsibility. A requirement not listed here is not covered by Caisson.",
+    "regimeSpecific": "SOC 2 is an attestation, not a certification — no entity is 'SOC 2 certified.' Caisson holds no SOC 2 report on itself and displays no AICPA logo. This crosswalk maps the technical controls the CC-series criteria call for; the examination of your system remains between you and your CPA firm.",
+    "regimeRevision": "SOC 2 — 2017 Trust Services Criteria (with the 2022 revised points of focus)"
+  },
+  "rows": [
+    {
+      "claim": "maps-to",
+      "control": "CC6.1",
+      "summary": "Logical access to protected information assets is restricted to authorized users and processes.",
+      "mechanism": "@caisson/tenancy-rls — Postgres FORCE ROW LEVEL SECURITY with a fail-closed tenant boundary (a missing tenant scope denies as a 404, never widens access).",
+      "evidence": "Tenant-isolation tests and the RLS provisioning generator in packages/tenancy-rls.",
+      "buyerResponsibility": "Your identity provider and user-authentication configuration, network and endpoint controls, the authorization/least-privilege model above the data layer, and periodic access recertification."
+    },
+    {
+      "claim": "maps-to",
+      "control": "CC6.6",
+      "summary": "The entity implements logical access security measures to protect the system against threats from sources outside its boundaries, including authenticating external access before protected resources are reached.",
+      "mechanism": "@caisson/auth — session and JWT verification (built-auth integration) gating requests at the application boundary.",
+      "evidence": "JWT/session verification tests in packages/auth.",
+      "buyerResponsibility": "Multi-factor authentication policy, network boundary and WAF/firewall controls, credential lifecycle, and any federation with your own IdP."
+    },
+    {
+      "claim": "maps-to",
+      "control": "CC7.1",
+      "summary": "The entity uses detection and monitoring procedures to identify configuration changes that introduce new vulnerabilities and susceptibility to newly discovered vulnerabilities.",
+      "mechanism": "@caisson/alerting — a rule-driven alerting pipeline that raises signals on defined conditions.",
+      "evidence": "Alerting pipeline and channel tests in packages/alerting.",
+      "buyerResponsibility": "Deciding what to monitor, defining alert thresholds and routing, vulnerability scanning of your own deployment, and acting on the alerts raised."
+    },
+    {
+      "claim": "maps-to",
+      "control": "CC7.2",
+      "summary": "The entity monitors system components and their operation for anomalies indicative of malicious acts, natural disasters, and errors, and analyzes anomalies to determine whether they represent security events.",
+      "mechanism": "@caisson/audit-worm provides the tamper-evident, hash-chained record a monitoring and anomaly-analysis program draws on; @caisson/alerting can raise signals against events written to it. Neither package performs the anomaly analysis itself.",
+      "evidence": "The audit chain in packages/audit-worm and the alerting pipeline in packages/alerting.",
+      "buyerResponsibility": "Building and operating the actual monitoring and anomaly-analysis program: defining what counts as an anomaly, analyzing events for security significance, and configuring and reviewing alerting rules."
+    },
+    {
+      "claim": "maps-to",
+      "control": "C1.1",
+      "summary": "The entity identifies and maintains confidential information to meet its confidentiality objectives — classifying what counts as confidential and safeguarding it appropriately.",
+      "mechanism": "@caisson/field-crypto — per-field AEAD encryption at rest with row-bound additional authenticated data safeguards confidential fields once identified; a relocated ciphertext fails authentication rather than decrypting elsewhere.",
+      "evidence": "Row-bound encryption tests in packages/field-crypto (encrypt-field, envelope, isolation).",
+      "buyerResponsibility": "Classifying which data is confidential, selecting which columns are encrypted, and your key-custody and rotation policy."
+    },
+    {
+      "claim": "implements",
+      "control": "C1.2",
+      "summary": "Confidential information is disposed of so that it can no longer be recovered.",
+      "mechanism": "@caisson/field-crypto — crypto-shred renders a subject's ciphertext irreversibly unrecoverable by destroying its governing key, selectively (other subjects still decrypt) and irreversibly (re-provisioning a shredded scope is refused), while the append-only audit chain still verifies over the committed ciphertext.",
+      "evidence": "The crypto-shred tests prove ciphertext becomes unrecoverable, the disposal is selective and irreversible, and the audit record commits the fact of erasure with no PII.",
+      "buyerResponsibility": "Defining the retention schedule that triggers disposal, and identifying which records reach end-of-life (the retention-runner schedules the sweep).",
+      "proof": {
+        "kind": "test",
+        "path": "packages/field-crypto/src/crypto-shred.test.ts",
+        "note": "crypto-shred is selective, irreversible, and leaves the committed-ciphertext chain verifiable."
+      }
+    }
+  ]
+}

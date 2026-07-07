@@ -12,3 +12,9 @@ export * from "./registry/control.ts";
 export * from "./frameworks/soc2-tsc.ts";
 export * from "./frameworks/hipaa-security.ts";
 export * from "./frameworks/eu-ai-act.ts";
+
+// --- Named-regime crosswalks (ADR-0277 data + ADR-0279 claim posture) — the buyer-facing five-column
+// SOC 2 / PCI DSS / GDPR mapping with a machine-readable claim level, a required proof pointer for
+// every assertive row, and the disclaimer embedded in the export artifact.
+export * from "./crosswalks/regime-crosswalk.ts";
+export * from "./crosswalks/regimes.ts";
