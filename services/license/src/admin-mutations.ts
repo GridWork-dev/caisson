@@ -338,6 +338,8 @@ async function assertAccountExists(
  * gates, because it IS that expansion. Runs BEFORE `withAdminWrite` opens, so a bad id never reaches
  * the transaction (never even a rolled-back write attempt) and the error names the offending id.
  */
+const UNKNOWN_ENTITLEMENT_ID_PREFIX = "unknown purchased entitlement id";
+
 function assertGrantableEntitlementIds(
   index: RegistryIndex,
   entitlementIds: readonly string[],
@@ -345,7 +347,15 @@ function assertGrantableEntitlementIds(
   for (const id of entitlementIds) {
     try {
       expandEntitlements(index, [id]);
-    } catch {
+    } catch (err) {
+      // ADR-0278 I-2: only expandEntitlements' OWN fail-closed rejection (TM-E, the message this
+      // module throws for an id that is not a bundle/module/reserved/alias) is the expected "bad
+      // operator input" case — map it to a clean 400 naming the id. Anything else (a malformed/
+      // corrupt built index, e.g. `latestManifest`'s "carries no versions") is an INDEX-INTEGRITY
+      // bug, not an operator typo; re-throw it as-is so it surfaces honestly instead of being
+      // mislabeled "unknown entitlement id" and hiding the real failure.
+      const message = err instanceof Error ? err.message : String(err);
+      if (!message.startsWith(UNKNOWN_ENTITLEMENT_ID_PREFIX)) throw err;
       throw new ValidationError(`unknown entitlement id: ${id}`, {
         entitlementId: id,
       });

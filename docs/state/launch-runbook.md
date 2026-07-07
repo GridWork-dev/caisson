@@ -570,6 +570,14 @@ Paddle traffic, since that endpoint was never behind Access in the first place (
 - **Do NOT assume the Discord privileged-intents / rotate-creds items (P4/P5) are already done** — this
   session found them flagged-but-unconfirmed in `docs/state/go-live-legal-and-entity.md`. Verify, don't
   trust the doc's age.
+- **Any registry-index republish that REMOVES an entry (a delist, a reserved-id removal) MUST rebuild
+  - redeploy `apps/admin` in the SAME act.** Three independently-baked copies of `registry/index.json`
+    exist (the `apps/admin` runtime image, the `services/license` runtime image, the registry Worker's
+    served artifact, ADR-0271) — if only the read-side (Worker/license) is rebuilt, a stale `apps/admin`
+    image still accepts a comp-grant id the newer index no longer resolves, and `expandEntitlements`
+    fail-closed-throws the WHOLE target account's entitlement expansion on its next read (ADR-0278 F1,
+    the same brick class the comp-grant allowlist exists to prevent — this audit finding is the residual
+    it does not close). A pure ADD (a new module/bundle) is safe to skip — only a REMOVAL creates the gap.
 - **Rollback command to memorize** (put the gate back right now, no other changes):
   ```bash
   cd infra/terraform && git checkout -- access.tf && terraform apply
