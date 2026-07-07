@@ -1485,3 +1485,24 @@ treat full parity (6-10 wk, weaker isolation posture) as a later ADR-gated decis
 L EULA continuity draft LANDED** (`outputs/specs/research-response/eula-continuity-draft.md`,
 variant A "confirmatory self-help" recommended; 12-month/90-day knobs + N stay
 operator-owned) — awaiting operator text approval.
+
+**Fifth sitting, second round (same day):**
+
+- **MySQL — no lane, LOCKED as ADR-0281** (the Spike M fork; operator: "there's no port"):
+  Postgres-required stated as a security property; the honest stack-fit rows are the buyer
+  answer; revisiting is demand-driven only and must name the weaker isolation posture.
+- **EULA continuity — variant A + N=12, LOCKED as ADR-0282** (the Track L fork):
+  confirmatory self-help, 12-month general patch-cessation trigger, 90-day successor window;
+  escrow (variant C) is the sanctioned later upgrade; final wording approval at the EULA
+  release stays operator-owned.
+- **Trial-path CTA — resolved by rationale (no code change):** the reviewer flagged
+  `bunx @caisson-sh/cli@latest` as 404ing (npm publish behind the manual gate). Operator:
+  leave the command — the site is CF-Access-gated pre-launch and the publish fires in the
+  go-live sequence, so the command is true before anyone public sees it. The go-live runbook
+  ordering (npm publish BEFORE the site gate drops) is now load-bearing for this claim.
+- **Homepage "pre-launch" wording — soften** (keeps ADR-0272's transparency intent inside
+  ADR-0237's V1-live posture): "We're early — no logo wall to point at yet."
+- **PR #142 ui-pro first publish MERGED** (both audits PASS, six review P2s fixed pre-merge);
+  **PR #143 Track E1 demo mode MERGED** (fable P1 dep-confusion fixed with the tokenless
+  scope-mapping `.npmrc`; all review P2s folded). The 45-entry Worker republish is
+  operator-gated (DEPLOY act) and pending.
