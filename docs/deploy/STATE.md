@@ -33,28 +33,45 @@ consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the 
 
 ---
 
-## 2026-07-07 — PENDING: post-merge redeploy for PR #133–#136 — NOT YET EXECUTED
+## 2026-07-07 — EXECUTED: post-merge redeploy for PR #133–#136 + ADR-0270 legacy-grant drain
 
-**This is a PLAN, not a record** — no live-verify output exists yet. The four-track wave (PR #133
-site-design-4 · #134 aeo-program · #135 ui-pro · #136 license-seam) merged to `main` at `9a81dd7a`;
-nothing serves it until this ordered, operator-gated sequence runs:
+**Operator authorization:** picker answers "Run it now" (fleet redeploy) + "Run with the redeploy"
+(drain), 2026-07-07 session. Pre-launch posture UNCHANGED: CF-Access `site_gate` ON (302 verified
+below), `PADDLE_ENV=sandbox` on `caisson-license`.
 
-1. **DB migration `0017_renewal_extension` BEFORE the license redeploy** — applied automatically by
-   `caisson-license`'s preDeployCommand (`apps/site/lib/deploy-migrate.ts`); without it the next
-   `refund.completed` / renewal `purchase.completed` rolls back its `withTenant` transaction on the
-   missing relation. Bless with the CAISSON-16 read-only checksum-drift check first.
-2. **Registry Worker redeploy** — entitledSince-filtered `resolveGate`, the new `@caisson/pricebook`
-   dep, the emptied `LEGACY_ENTITLEMENT_ALIASES` (verifier-first per the standing constraint above).
-3. **`caisson-license` redeploy** — renewal_extension writes, subscription-cycle receipt split,
-   alias narrowing (step 1 rides this deploy's preDeployCommand).
-4. **`caisson-site` redeploy** — dual-door hero, honest-artifact bento, `/affiliates`, 20-page
-   `/compare`, AEO robots/schema, members-gate purge fix.
-5. **Drain the legacy edition grant rows** (ADR-0270 §4): read-only enumerate → STOP if any real
-   buyer → run `services/license/scripts/drain-legacy-edition-grants.sql` as the superuser deploy
-   role (not the app role) → re-enumerate to prove empty.
+**Services/SHAs:** registry Worker (version `4c6c61fa-d6ca-45b8-9c63-24ccd85ae2b3`) +
+`caisson-license` + `caisson-site` deployed from `main` @ `c27a0a27` (covers PR #133 `70607f6f` ·
+#134 `3ae944af` · #135 `b7e58a8d` · #136 `9a81dd7a`). `apps/admin` had no diff across the wave —
+no admin redeploy. Order executed (verifier-first per the standing constraint): **Worker → drain →
+license → site**.
 
-`apps/admin` has no diff across #133–#136 — no admin redeploy needed. Pre-launch posture unchanged
-(CF-Access ON, `PADDLE_ENV=sandbox`).
+**WHY (consumed-package diff):** #136 — emptied `LEGACY_ENTITLEMENT_ALIASES` + decoupled
+`EDITION_BUNDLE_ID` fold (ADR-0270), entitledSince-filtered `resolveGate`, subscription-cycle
+receipt split, renewal-refund un-extend (migration `0017_renewal_extension`); #133/#134 —
+dual-door hero, honest-artifact bento, `/affiliates`, 20-page `/compare`, AEO robots/schema,
+members-gate purge fix (`apps/site`); #135 ui-pro is in-repo only (publish HELD, ADR-0259 reserved
+slug — nothing to serve).
+
+**Drain (ADR-0270 §4):** read-only enumerate returned **zero** legacy edition grant rows (no real
+buyers, as gated); the DO block in `services/license/scripts/drain-legacy-edition-grants.sql` then
+ran as the superuser deploy role for the formal proof — NOTICE `drain complete: zero legacy
+edition grant rows remain` (0 migrated, 0 duplicates across all four legacy→canonical pairs).
+
+**Live-verify evidence (pasted):**
+
+- Worker: `bunx wrangler deploy` → version `4c6c61fa-d6ca-45b8-9c63-24ccd85ae2b3`; `GET
+/index.json` → `200`; `GET /modules/@caisson%2Fcompliance` → `404` anon (fail-closed); anon base
+  set = 15 oss modules.
+- `caisson-license`: `railway up --ci` → `Deploy complete`; `curl https://license.caisson.sh/health`
+  → `{"ok":true}`; preDeployCommand applied `0017_renewal_extension` — `schema_version` row
+  `17 | t` (checksum ok); RLS policy `renewal_extension_tenant_isolation | {public}` present.
+- `caisson-site`: `railway up --ci` → `Deploy complete` (image
+  `sha256:9f77c7e834b543c1512b3e6f08323f67110cc410accf24b6b5d088d89bcc847e`); `https://caisson.sh/`
+  → `302 → gridworkdev.cloudflareaccess.com/.../login/caisson.sh` (pre-launch gate ON).
+
+**Not done (by design, this act):** R2 tarball publish stays behind `confirm=publish` dispatch;
+ui-pro first-publish HELD for the hardening + gallery wave (operator picker); CF-Access flip and
+Paddle production remain launch-gate acts per `docs/state/launch-runbook.md`.
 
 ## 2026-07-07 — staged #131+#132 redeploy EXECUTED: Worker + license + site + admin, expiry scheduler armed, admin re-provision
 
