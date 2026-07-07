@@ -214,7 +214,9 @@ function printSampleNextSteps(projectName: string, targetDir: string): void {
 }
 
 /** Next-steps for the full-catalog DEMO path (ADR-0274 §1) — no license key: every commercial
- *  module in the generation is a local stub, not an installable dependency. */
+ *  module in the generation is a local stub, not an installable dependency. The open Apache base
+ *  installs from the Caisson registry (`.npmrc` scope mapping, no auth token) — NOT public npm,
+ *  which does not hold the `@caisson` scope (F1). */
 function printDemoNextSteps(
   projectName: string,
   targetDir: string,
@@ -226,7 +228,7 @@ function printDemoNextSteps(
       `catalog modules stubbed) → ${targetDir}\n` +
       `\nNext steps:\n` +
       `  1. cd ${targetDir}\n` +
-      `  2. bun install   # public npm only — no Caisson license key needed\n` +
+      `  2. bun install   # the open Apache base installs from the Caisson registry, no license key needed\n` +
       `  3. bun run build && bun test\n` +
       `  4. See DEMO.md for the full catalog + which modules are stubs\n` +
       `\nGet a license at https://caisson.sh to swap the stubs for the real modules.\n` +
@@ -438,7 +440,10 @@ if (import.meta.main) {
         demo = true;
       } else if (flag === "--out") {
         const next = argv[i + 1];
-        if (next === undefined) {
+        // A value starting with "--" is another flag, not a directory — e.g. `--sample --demo`
+        // would otherwise greedily swallow "--demo" as the value and silently skip its own flag
+        // (code review P2-5).
+        if (next === undefined || next.startsWith("--")) {
           process.stderr.write("create-caisson: --out requires a directory\n");
           process.exit(1);
         }
@@ -446,7 +451,7 @@ if (import.meta.main) {
         i++;
       } else if (flag === "--sample") {
         const next = argv[i + 1];
-        if (next === undefined) {
+        if (next === undefined || next.startsWith("--")) {
           process.stderr.write(
             "create-caisson: --sample requires a template id\n",
           );

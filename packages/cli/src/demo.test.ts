@@ -1,16 +1,22 @@
 // Composition tests for generator DEMO MODE (ADR-0274 §1 / Track E1). Mirrors the fixture-index
 // pattern `generate.test.ts` uses (a hand-built RegistryIndex — never the live registry — so the
-// suite stays independent of catalog churn). Four concerns, per the SPEC:
+// suite stays independent of catalog churn). Covers the original SPEC concerns plus the
+// fable-security (F1-F3) and code-review (P2-1/2/4/5) fix pass:
 //  (a) demo mode generates with a commercial module id present, with no license.
 //  (b) the emitted commercial-module files are watermarked stubs, never real commercial source.
 //  (c) free/base (oss) modules are unaffected — they install exactly like a licensed build.
-//  (d) non-demo generation is byte-for-byte unchanged (a pure add, no shared-state leak).
+//  (d) non-demo generation is unchanged (a pure add, no shared-state leak).
+//  F1: `.npmrc` is a tokenless Caisson-registry scope mapping, never public npm / deleted.
+//  F2: a hostile module description can't break out of the stub's block comment.
+//  F3/P2-2: the stub Proxy is `in`/`Object.keys`/nested-read/await/JSON.stringify safe.
+//  P2-1: README/AGENTS no longer imply every listed module is installed / a real dependency.
+//  P2-4: `stripPaidDependencies` sweeps all four dependency-map fields, not just `dependencies`.
 import { describe, expect, test } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadRegistryIndex } from "@caisson/registry-schema";
-import { DEMO_WATERMARK, generateDemo } from "./demo.ts";
+import { DEMO_WATERMARK, generateDemo, stripPaidDependencies } from "./demo.ts";
 import { generate } from "./generate.ts";
 
 const manifest = (
@@ -102,6 +108,23 @@ const INDEX = loadRegistryIndex({
   ],
 });
 
+/** Write `content` to a real temp `.ts` file and import it — proves the stub is valid TS Bun's
+ *  own loader accepts, not just that it contains the right substrings. Caller owns cleanup via
+ *  the returned `cleanup()`. */
+async function importStub(
+  content: string,
+  filename = "stub.ts",
+): Promise<{
+  mod: { default: Record<string, unknown> };
+  cleanup: () => Promise<void>;
+}> {
+  const dir = await mkdtemp(join(tmpdir(), "caisson-demo-stub-"));
+  const file = join(dir, filename);
+  await writeFile(file, content, "utf8");
+  const mod = (await import(file)) as { default: Record<string, unknown> };
+  return { mod, cleanup: () => rm(dir, { recursive: true, force: true }) };
+}
+
 describe("generateDemo — (a) demo mode composes with commercial module ids, no license", () => {
   test("the catalog includes every registry module, oss and paid alike", () => {
     const { modules } = generateDemo(INDEX, { projectName: "acme-demo" });
@@ -115,15 +138,22 @@ describe("generateDemo — (a) demo mode composes with commercial module ids, no
     expect(modules.filter((m) => m.tier === "oss").length).toBe(2);
   });
 
-  test("no commercial-registry auth is required — .npmrc is dropped entirely", () => {
+  test("F1: .npmrc is a TOKENLESS Caisson-registry scope mapping, never deleted, never public npm", () => {
     const { files } = generateDemo(INDEX, { projectName: "acme-demo" });
-    expect(files.find((f) => f.path === ".npmrc")).toBeUndefined();
+    const npmrc = files.find((f) => f.path === ".npmrc");
+    expect(npmrc).toBeDefined();
+    expect(npmrc?.content).toBe(
+      "@caisson:registry=https://registry.caisson.sh\n",
+    );
+    expect(npmrc?.content).not.toContain("_authToken");
+    expect(npmrc?.content).not.toContain("CAISSON_LICENSE_TOKEN");
   });
 
   test("no generated file references CAISSON_LICENSE_TOKEN — the base README's stale licensed-install line is swapped", () => {
     const { files } = generateDemo(INDEX, { projectName: "acme-demo" });
     const readme = files.find((f) => f.path === "README.md");
-    expect(readme?.content).toContain("no license needed");
+    expect(readme?.content).toContain("no license key needed");
+    expect(readme?.content).toContain("registry.caisson.sh");
     for (const f of files) {
       expect(f.content).not.toContain("CAISSON_LICENSE_TOKEN");
     }
@@ -158,7 +188,7 @@ describe("generateDemo — (b) commercial modules are watermarked stubs, never r
     expect(parsed.dependencies?.["@caisson/audit-worm"]).toBeUndefined();
   });
 
-  test("a stub file carries the CAISSON DEMO STUB marker + the registry metadata it was derived from", () => {
+  test("a stub file carries the CAISSON DEMO STUB marker + the registry metadata it was derived from, never a real-source marker", () => {
     const { files } = generateDemo(INDEX, { projectName: "acme-demo" });
     const stub = files.find((f) => f.path === "src/demo-stubs/field-crypto.ts");
     expect(stub?.content).toContain("CAISSON DEMO STUB");
@@ -168,74 +198,145 @@ describe("generateDemo — (b) commercial modules are watermarked stubs, never r
       "Field-level envelope encryption for regulated data.",
     );
     expect(stub?.content).toContain("@caisson/kernel"); // its declared dependency
+    // The generator's ONLY input is the registry index — no real implementation keyword can
+    // possibly appear (there is nothing else to derive content from).
+    expect(stub?.content).not.toMatch(/import\s+.*from\s+["']\.\.?\//);
   });
 
   test("a stub throws at call time for any property, never returning real behavior", async () => {
     const { files } = generateDemo(INDEX, { projectName: "acme-demo" });
     const stub = files.find((f) => f.path === "src/demo-stubs/field-crypto.ts");
     expect(stub).toBeDefined();
-    // Write the ACTUAL generated content to a real .ts file and import it — proves the stub is
-    // valid TS that Bun's own loader accepts, and that invoking it throws with the marker, not
-    // that it merely contains the right substring.
-    const dir = await mkdtemp(join(tmpdir(), "caisson-demo-stub-"));
-    const file = join(dir, "field-crypto.ts");
+    const { mod, cleanup } = await importStub(
+      stub?.content ?? "",
+      "field-crypto.ts",
+    );
     try {
-      await writeFile(file, stub?.content ?? "", "utf8");
-      const mod = (await import(file)) as {
-        // A named property (not an index signature) — sidesteps noUncheckedIndexedAccess, and
-        // matches exactly what's under test: the stub's `encryptField` property access.
-        default: { encryptField: (...args: unknown[]) => never };
-      };
-      expect(() => mod.default.encryptField()).toThrow(/CAISSON DEMO STUB/);
-      expect(() => mod.default.encryptField()).toThrow(
-        /@caisson\/field-crypto/,
-      );
+      const encryptField = mod.default["encryptField"] as (
+        ...args: unknown[]
+      ) => never;
+      expect(() => encryptField()).toThrow(/CAISSON DEMO STUB/);
+      expect(() => encryptField()).toThrow(/@caisson\/field-crypto/);
     } finally {
-      await rm(dir, { recursive: true, force: true });
+      await cleanup();
     }
   });
 
-  test("stub content never contains a real-source marker — it is a synthesis from metadata only", () => {
+  test("F2: a hostile description containing */ cannot break out of the block comment", async () => {
+    // Module id deliberately does NOT contain "pwn" — the marker message legitimately embeds the
+    // module id/path, so a module id containing the injection payload would make `.not.toThrow`
+    // match the wrong thing for the wrong reason.
+    const hostile = loadRegistryIndex({
+      schemaVersion: 1,
+      modules: [
+        {
+          id: "@caisson/hostile-desc",
+          latest: "0.1.0",
+          versions: [
+            version(
+              "0.1.0",
+              "@caisson/hostile-desc",
+              "paid",
+              '*/ throw new Error("INJECTED"); /*',
+            ),
+          ],
+        },
+      ],
+    });
+    const { files } = generateDemo(hostile, { projectName: "acme-demo" });
+    const stub = files.find((f) => f.path === "src/demo-stubs/hostile-desc.ts");
+    expect(stub).toBeDefined();
+    if (stub === undefined) throw new Error("unreachable");
+    // The raw `*/` sequence must not survive verbatim in the emitted content — if it did, the
+    // import below would either throw a raw "INJECTED" Error (comment broke out) or a syntax
+    // error (the injected `throw`/`/*` landed somewhere invalid), never the clean marker throw.
+    expect(stub.content).not.toContain('*/ throw new Error("INJECTED")');
+    const { mod, cleanup } = await importStub(stub.content, "hostile-desc.ts");
+    try {
+      const anyProp = mod.default["anything"] as (...args: unknown[]) => never;
+      expect(() => anyProp()).toThrow(/CAISSON DEMO STUB/);
+      expect(() => anyProp()).not.toThrow(/INJECTED/);
+    } finally {
+      await cleanup();
+    }
+  });
+
+  test("F3/P2-2: `in` reports true for any property (never a silent false negative)", async () => {
     const { files } = generateDemo(INDEX, { projectName: "acme-demo" });
-    const stub = files.find((f) => f.path === "src/demo-stubs/audit-worm.ts");
-    // The generator's ONLY input is the registry index (id/description/dependencies) — assert the
-    // stub is exactly the synthesized template, not a hand-authored or copied implementation.
-    expect(stub?.content).toBe(`/**
- * CAISSON DEMO STUB — NOT FOR PRODUCTION
- *
- * Stand-in for the commercial module below. 'create-caisson --demo' never reads or downloads
- * Caisson's commercial source; every export here is synthesized from public registry metadata
- * and throws at call time. Get a license at https://caisson.sh to install the real module.
- *
- * Module:       @caisson/audit-worm
- * Description:  Write-once-read-many audit anchoring.
- * Dependencies: (none)
- */
+    const stub = files.find((f) => f.path === "src/demo-stubs/field-crypto.ts");
+    const { mod, cleanup } = await importStub(
+      stub?.content ?? "",
+      "field-crypto.ts",
+    );
+    try {
+      expect("anythingAtAll" in mod.default).toBe(true);
+    } finally {
+      await cleanup();
+    }
+  });
 
-function demoStub(moduleId: string): Record<string, unknown> {
-  return new Proxy(
-    {},
-    {
-      get(_target: object, prop: string | symbol): unknown {
-        if (typeof prop !== "string") return undefined;
-        return (..._args: unknown[]): never => {
-          throw new Error(
-            "CAISSON DEMO STUB: " +
-              moduleId +
-              "." +
-              prop +
-              "() is not implemented — this is a demo scaffold, not the licensed module. Get a " +
-              "license at https://caisson.sh",
-          );
-        };
-      },
-    },
-  ) as Record<string, unknown>;
-}
+  test("F3/P2-2: Object.keys(stub) does not throw (empty — the real shape is genuinely unknown)", async () => {
+    const { files } = generateDemo(INDEX, { projectName: "acme-demo" });
+    const stub = files.find((f) => f.path === "src/demo-stubs/field-crypto.ts");
+    const { mod, cleanup } = await importStub(
+      stub?.content ?? "",
+      "field-crypto.ts",
+    );
+    try {
+      expect(() => Object.keys(mod.default)).not.toThrow();
+      expect(Object.keys(mod.default)).toEqual([]);
+      expect(() => ({ ...mod.default })).not.toThrow();
+    } finally {
+      await cleanup();
+    }
+  });
 
-/** Every import from this module resolves here — every call throws the CAISSON DEMO STUB marker. */
-export default demoStub("@caisson/audit-worm");
-`);
+  test("F3/P2-2: nested-read-then-call throws with the marker (no silent undefined)", async () => {
+    const { files } = generateDemo(INDEX, { projectName: "acme-demo" });
+    const stub = files.find((f) => f.path === "src/demo-stubs/field-crypto.ts");
+    const { mod, cleanup } = await importStub(
+      stub?.content ?? "",
+      "field-crypto.ts",
+    );
+    try {
+      const nested = mod.default["config"] as Record<string, unknown>;
+      expect(nested).toBeDefined();
+      const value = nested["value"] as (...args: unknown[]) => never;
+      expect(value).toBeDefined();
+      expect(() => value()).toThrow(/CAISSON DEMO STUB/);
+      expect(() => value()).toThrow(/@caisson\/field-crypto\.config\.value/);
+    } finally {
+      await cleanup();
+    }
+  });
+
+  test("F3/P2-2: await on the stub resolves (never mistaken for a thenable / unhandled rejection)", async () => {
+    const { files } = generateDemo(INDEX, { projectName: "acme-demo" });
+    const stub = files.find((f) => f.path === "src/demo-stubs/field-crypto.ts");
+    const { mod, cleanup } = await importStub(
+      stub?.content ?? "",
+      "field-crypto.ts",
+    );
+    try {
+      const resolved = await mod.default;
+      expect(resolved).toBe(mod.default);
+    } finally {
+      await cleanup();
+    }
+  });
+
+  test("F3/P2-2: JSON.stringify(stub) does not throw", async () => {
+    const { files } = generateDemo(INDEX, { projectName: "acme-demo" });
+    const stub = files.find((f) => f.path === "src/demo-stubs/field-crypto.ts");
+    const { mod, cleanup } = await importStub(
+      stub?.content ?? "",
+      "field-crypto.ts",
+    );
+    try {
+      expect(() => JSON.stringify(mod.default)).not.toThrow();
+    } finally {
+      await cleanup();
+    }
   });
 
   test("README.md, AGENTS.md, and a root DEMO.md all carry the not-for-production watermark", () => {
@@ -249,6 +350,31 @@ export default demoStub("@caisson/audit-worm");
     // DEMO.md enumerates the whole catalog, oss AND stubbed.
     expect(demoDoc?.content).toContain("@caisson/field-crypto");
     expect(demoDoc?.content).toContain("@caisson/kernel");
+  });
+
+  test("P2-1: README/AGENTS no longer imply every listed module is installed", () => {
+    const { files } = generateDemo(INDEX, { projectName: "acme-demo" });
+    const readme = files.find((f) => f.path === "README.md");
+    const agents = files.find((f) => f.path === "AGENTS.md");
+    for (const doc of [readme, agents]) {
+      expect(doc?.content).toContain("## Installed modules");
+      expect(doc?.content).toContain("DEMO STUBS, not installed dependencies");
+    }
+  });
+
+  test("P2-1: AGENTS.md's false versioned-dependencies claim is neutralized (pinned demo variant)", () => {
+    const { files } = generateDemo(INDEX, { projectName: "acme-demo" });
+    const agents = files.find((f) => f.path === "AGENTS.md");
+    expect(agents?.content).not.toContain(
+      "The installed `@caisson/*` modules are versioned dependencies, not vendored source",
+    );
+    expect(agents?.content).toContain(
+      "Free (oss) `@caisson/*` modules are versioned dependencies — upgrade via `package.json`.",
+    );
+    expect(agents?.content).toContain(
+      "Every commercial module is a LOCAL STUB under `src/demo-stubs/` (editable source, not a",
+    );
+    expect(agents?.content).toContain("see `DEMO.md`");
   });
 });
 
@@ -276,19 +402,73 @@ describe("generateDemo — (d) non-demo generation is unchanged (regression)", (
     modules: [{ id: "@caisson/kernel", version: "0.1.0" }],
   };
 
-  test("a plain generate() call still carries .npmrc and no demo artifacts", () => {
+  test("a plain generate() call still carries the licensed .npmrc (with authToken) and no demo artifacts", () => {
     // Run demo generation FIRST, on the same shared index, to prove it mutates nothing shared.
     generateDemo(INDEX, { projectName: "acme-demo" });
     const { files } = generate(INDEX, BASE);
-    expect(files.find((f) => f.path === ".npmrc")).toBeDefined();
+    const npmrc = files.find((f) => f.path === ".npmrc");
+    expect(npmrc?.content).toContain("CAISSON_LICENSE_TOKEN");
     expect(files.find((f) => f.path === "DEMO.md")).toBeUndefined();
     expect(
       files.find((f) => f.path === "src/demo-stubs/kernel.ts"),
     ).toBeUndefined();
     const readme = files.find((f) => f.path === "README.md");
     expect(readme?.content).not.toContain(DEMO_WATERMARK);
+    expect(readme?.content).not.toContain("DEMO STUBS, not installed");
     const pkg = files.find((f) => f.path === "package.json");
     const parsed = JSON.parse(pkg?.content ?? "{}") as Record<string, unknown>;
     expect(parsed["caissonDemo"]).toBeUndefined();
+  });
+});
+
+describe("stripPaidDependencies — P2-4: sweeps ALL FOUR dependency-map fields", () => {
+  test("a paid id is removed from dependencies, devDependencies, peerDependencies, AND optionalDependencies", () => {
+    const pkg = JSON.stringify({
+      name: "acme-demo",
+      dependencies: { "@caisson/kernel": "0.1.0", "@caisson/paid-a": "1.0.0" },
+      devDependencies: { "@caisson/paid-b": "1.0.0", eslint: "^9.0.0" },
+      peerDependencies: { "@caisson/paid-c": "1.0.0" },
+      optionalDependencies: { "@caisson/paid-d": "1.0.0" },
+    });
+    const paidIds = new Set([
+      "@caisson/paid-a",
+      "@caisson/paid-b",
+      "@caisson/paid-c",
+      "@caisson/paid-d",
+    ]);
+    const result = JSON.parse(stripPaidDependencies(pkg, paidIds)) as {
+      dependencies: Record<string, string>;
+      devDependencies: Record<string, string>;
+      peerDependencies: Record<string, string>;
+      optionalDependencies: Record<string, string>;
+      caissonDemo: boolean;
+    };
+
+    expect(result.dependencies).toEqual({ "@caisson/kernel": "0.1.0" });
+    expect(result.devDependencies).toEqual({ eslint: "^9.0.0" });
+    expect(result.peerDependencies).toEqual({});
+    expect(result.optionalDependencies).toEqual({});
+    expect(result.caissonDemo).toBe(true);
+
+    // Guard: no paid id survives ANYWHERE in the four fields.
+    const allDeps = {
+      ...result.dependencies,
+      ...result.devDependencies,
+      ...result.peerDependencies,
+      ...result.optionalDependencies,
+    };
+    for (const paidId of paidIds) {
+      expect(allDeps[paidId]).toBeUndefined();
+    }
+  });
+
+  test("a field absent from the input package.json stays absent in the output (no empty-object injection)", () => {
+    const pkg = JSON.stringify({ name: "acme-demo", dependencies: {} });
+    const result = JSON.parse(
+      stripPaidDependencies(pkg, new Set(["@caisson/x"])),
+    ) as Record<string, unknown>;
+    expect("peerDependencies" in result).toBe(false);
+    expect("optionalDependencies" in result).toBe(false);
+    expect("devDependencies" in result).toBe(false);
   });
 });

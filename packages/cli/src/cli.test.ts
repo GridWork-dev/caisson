@@ -463,7 +463,9 @@ describe("end-to-end: a real non-interactive invocation never touches a TTY-only
       `${paidCount} of ${index.modules.length} modules stubbed`,
     );
     expect(stdout).toContain("DEMO.md");
-    expect(stdout).not.toContain(".npmrc");
+    // F1: .npmrc is emitted (tokenless scope mapping) — never deleted, never absent (demo.test.ts
+    // pins the exact tokenless content; this just locks the file plan includes it).
+    expect(stdout).toContain(".npmrc");
   });
 
   test("--demo and --sample together fail fast with a clear error", async () => {
@@ -488,5 +490,28 @@ describe("end-to-end: a real non-interactive invocation never touches a TTY-only
     expect(stderr).toBe(
       "create-caisson: --sample and --demo are mutually exclusive\n",
     );
+  });
+
+  test('P2-5: --sample immediately followed by --demo does NOT greedily swallow "--demo" as the template id', async () => {
+    const proc = Bun.spawn(
+      [
+        "bun",
+        "run",
+        fileURLToPath(new URL("./cli.ts", import.meta.url)),
+        "--sample",
+        "--demo",
+        "--name",
+        "acme",
+      ],
+      { stdin: "ignore", stdout: "pipe", stderr: "pipe" },
+    );
+    const [stderr, exitCode] = await Promise.all([
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ]);
+    expect(exitCode).toBe(1);
+    // Before the fix this produced "unknown sample template id: --demo" — a misleading error from
+    // --sample silently consuming the NEXT flag as its value.
+    expect(stderr).toBe("create-caisson: --sample requires a template id\n");
   });
 });
