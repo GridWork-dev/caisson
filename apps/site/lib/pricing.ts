@@ -400,9 +400,11 @@ export const PRIORITY_SUPPORT_RESPONSE_TIME: string | null = null;
 /** Honest response-time line for the priority-support SKU (ADR-0278: response-time, not resolution-
  *  time; business-days phrasing; never the word "SLA" — that implies a contractual remedy this
  *  one-person operation doesn't commit to). `null` config renders a plain unset line rather than a
- *  fabricated number (the same no-placeholder discipline the price itself follows). Internal/config
- *  copy only today — no page renders this SKU yet (ADR-0278 Consequences: the pricing page's existing
- *  support-responsiveness line keeps describing the included tier only until this SKU ships a price). */
+ *  fabricated number (the same no-placeholder discipline the price itself follows). No live site page
+ *  renders this SKU yet (ADR-0278 Consequences: the pricing page's existing support-responsiveness
+ *  line keeps describing the included tier only until this SKU ships a price) — `services/docs`'
+ *  `plansDoc` filters this row out of the public RAG corpus by the same `amount === null` gate, for
+ *  the identical reason: no invented commitment on a prospect-facing surface. */
 export function prioritySupportResponseTimeCopy(): string {
   return PRIORITY_SUPPORT_RESPONSE_TIME === null
     ? "Response-time commitment: unset."
