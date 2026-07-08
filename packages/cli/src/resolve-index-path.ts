@@ -1,7 +1,8 @@
-// Registry-index PATH RESOLUTION (ADR-0004/0092, delivery-path fix G3). Pure — only
-// node:fs/node:url — so this module carries ZERO workspace imports and runs standalone from a
-// real `node_modules/@caisson/cli` install with no other package resolvable, exactly like the
-// simulated-installed-layout test in `resolve-index-path.test.ts` proves.
+// Registry-index PATH RESOLUTION (ADR-0004/0092). Pure — only node:fs/node:url — so this module
+// carries ZERO workspace imports and runs standalone from a real `node_modules/@caisson/cli`
+// install with no other package resolvable, exactly like the simulated-installed-layout test in
+// `resolve-index-path.test.ts` proves. Fixes a real-install bug where the generator could not
+// find its module registry once installed from npm outside this monorepo.
 //
 // Priority:
 //  1. `CAISSON_REGISTRY_INDEX` env override (CI / local dev overrides).

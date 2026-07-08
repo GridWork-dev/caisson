@@ -1,6 +1,7 @@
 // `create-caisson` entry (ADR-0004). Parses --name/--edition/--module/--out/--dry-run/--help (or a
-// leading bare positional as the project name, e.g. `create-caisson my-app` — G2), validates the
-// selection against the registry ALLOWLIST, materializes to disk via the path-safe FileSetWriter,
+// leading bare positional as the project name, e.g. `create-caisson my-app` — the advertised
+// quickstart form), validates the selection against the registry ALLOWLIST, materializes to disk
+// via the path-safe FileSetWriter,
 // runs `git init` in the output directory (fail-soft), and prints a next-steps block to stdout. The
 // registry index is resolved via `resolveIndexPath()` (`./resolve-index-path.ts`, cwd-independent)
 // with an env override for CI / local overrides.
@@ -35,7 +36,7 @@ import { createFileSetWriter } from "./writer.ts";
  * Flags: `--name <slug>`, `--edition <e>`, `--module <id@version>` (repeatable),
  * `--deploy <railway|fly|vercel>` (ADR-0268), `--framework <next>` (ADR-0287). A leading BARE
  * positional (any token not starting with `-`) is also accepted as the project name — e.g.
- * `create-caisson my-app` (G2, the advertised `bunx create-caisson my-app` quickstart) — exactly
+ * `create-caisson my-app`, the advertised `bunx create-caisson my-app` quickstart — exactly
  * equivalent to `--name my-app`; an explicit `--name` always wins on conflict, regardless of argv
  * order, since it is folded in last below. Only the first bare token is ever taken as positional; a
  * second one still fails closed as an unknown argument.
