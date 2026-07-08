@@ -250,9 +250,12 @@ export function RepoArtifact() {
       {/* min-width:0 on the grid track (styles.grid) lets the code body scroll INSIDE its own frame
           instead of blowing the column out (ADR-0285 §4 overflow fix). */}
       <div className={styles.codeCard}>
+        {/* The chrome-bar header is the file path alone — a clean editor-tab identifier. The human
+            descriptor (`card.label`) was joined on with a colon, making an over-long header pill;
+            it already reads in the selected tree row's note, so the path carries the header. */}
         <CodeBlock
           frame
-          label={`${card.label}: ${card.file}`}
+          label={card.file}
           status={
             <StatusChip tone={card.statusTone} dot label={card.statusLabel} />
           }
