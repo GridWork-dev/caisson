@@ -9,7 +9,7 @@
 //   • no key (CI / local / offline) → the deterministic FTS5 floor alone: a natural-language sentence
 //     with no exact match returns [] rather than a confidently-wrong chunk.
 import { initObservability } from "@caisson/observability";
-import { createApp } from "./app.ts";
+import { createApp, SECURITY_HEADERS } from "./app.ts";
 import { buildCorpus, loadPricingFacts } from "./corpus.ts";
 import { DocsIndex } from "./index-store.ts";
 import { renderLlmsFull, renderLlmsTxt } from "./llms-txt.ts";
@@ -19,10 +19,35 @@ import type { DocChunk } from "./types.ts";
 
 const DEFAULT_PORT = 8788;
 
+const WARMUP_HEADERS: Record<string, string> = {
+  ...SECURITY_HEADERS,
+  "content-type": "application/json",
+  "Cache-Control": "no-store",
+};
+
+/** Served on every route while the corpus/index is still building. A real listener answering a
+ * deterministic 503 replaces what used to be nothing bound to the port yet — the gap a Railway
+ * redeploy of a growing corpus actually hit: the fronting proxy sees a refused/reset connection
+ * and reports it as a 502 for the whole boot-embedding phase, indistinguishable from a crash. */
+function warmupHandler(req: Request): Response {
+  const path = new URL(req.url).pathname;
+  const body =
+    path === "/health"
+      ? { ok: false, warming: true }
+      : { error: "service warming up" };
+  return new Response(JSON.stringify(body), {
+    status: 503,
+    headers: WARMUP_HEADERS,
+  });
+}
+
 /**
  * Build the retrieval index. Wires the live OpenRouter embedder when OPENROUTER_API_KEY is set (hybrid
  * semantic + FTS5), else the deterministic FTS5 floor. A throw while building the vector leg (provider
  * outage, bad key, dim drift) is caught and degraded to the floor — a degraded answer beats a crash-loop.
+ * (Per-chunk embed failures never reach this throw at all — DocsIndex.build degrades those internally,
+ * both on individual failure and once its own embed-phase deadline passes; this catch covers a hard
+ * failure before/outside that loop, e.g. the store itself failing to open.)
  */
 async function buildIndex(chunks: DocChunk[]): Promise<DocsIndex> {
   const key = process.env.OPENROUTER_API_KEY ?? "";
@@ -32,6 +57,9 @@ async function buildIndex(chunks: DocChunk[]): Promise<DocsIndex> {
     );
     return DocsIndex.build(chunks);
   }
+  process.stderr.write(
+    `[service-docs] embedding ${String(chunks.length)} chunks (OpenRouter qwen3-embedding-8b)...\n`,
+  );
   try {
     const index = await DocsIndex.build(
       chunks,
@@ -69,6 +97,15 @@ export async function startServer(): Promise<{
   const port = Number(process.env.PORT || DEFAULT_PORT);
   const origin = process.env.DOCS_SITE_ORIGIN;
 
+  // Bind the port BEFORE the (potentially minutes-long, on a large/degraded-provider corpus) build
+  // below, so a health check or the fronting proxy sees a real, immediate 503 the whole time instead
+  // of a refused connection reported upstream as a 502. `.reload()` swaps in the real handler in
+  // place once ready — no restart, no port gap.
+  const server = Bun.serve({ port, fetch: warmupHandler });
+  process.stderr.write(
+    `[service-docs] listening on :${server.port} (warming up)\n`,
+  );
+
   // ADR-0234 F4: fold the pricing/edition/module facts into the corpus, rendered from the pricebook/
   // catalog source of truth. Fail-soft — a missing/malformed SOT degrades to the docs-only corpus
   // (a pricing gap is better than a crash-loop), matching the embedder-degrade posture below.
@@ -88,7 +125,7 @@ export async function startServer(): Promise<{
   // present-but-invalid limit fails startup closed rather than serving with a silently-wrong budget.
   const limiter = new TokenBucketLimiter(loadRateLimitConfig());
   const handler = createApp({ index, llmsTxt, llmsFull, token, limiter });
-  const server = Bun.serve({ port, fetch: handler });
+  server.reload({ fetch: handler });
   process.stderr.write(
     `[service-docs] serving ${corpus.chunks.length} chunks on :${server.port}\n`,
   );

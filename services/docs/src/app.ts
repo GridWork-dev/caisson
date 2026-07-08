@@ -27,7 +27,9 @@ const QuerySchema = z
   })
   .strict();
 
-const SECURITY_HEADERS: Record<string, string> = {
+// Exported: server.ts's pre-ready warmup handler serves this same header set (its 503 is a real
+// production response on the wire during every cold boot, not exempt from the security floor).
+export const SECURITY_HEADERS: Record<string, string> = {
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
   "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
@@ -138,11 +140,19 @@ export function createApp(deps: AppDeps): (req: Request) => Promise<Response> {
     }
     if (pathname === "/query") {
       if (method !== "POST") return text("method not allowed", 405);
-      // Rate-gate BEFORE auth: an unauthenticated flood is the cost-DoS vector we are capping.
-      const limited = rateLimited("query", req);
+      // Rate-gate BEFORE the expensive retrieval work below: an unauthenticated flood is the
+      // cost-DoS vector we are capping, and EVERY request — authorized or not — is still
+      // charged some bucket here (auth never exempts a caller from rate-limiting). A caller
+      // presenting the correct Bearer is charged the bigger "trustedQuery" lane instead of the
+      // tight anonymous one (G22 follow-up: the support-bot funnels its whole Discord
+      // community through one shared egress IP, so the anonymous per-IP budget was
+      // collectively squeezing many distinct real users). The Bearer check itself is a cheap
+      // O(1) hash compare, not the resource this ordering protects, so doing it before the
+      // rate gate doesn't reopen the cost-DoS the ordering guards against.
+      const isAuthorized = authorized(req, deps.token);
+      const limited = rateLimited(isAuthorized ? "trustedQuery" : "query", req);
       if (limited !== null) return limited;
-      if (!authorized(req, deps.token))
-        return json({ error: "unauthorized" }, 401);
+      if (!isAuthorized) return json({ error: "unauthorized" }, 401);
 
       let raw: unknown;
       try {
