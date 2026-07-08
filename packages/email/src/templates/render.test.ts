@@ -14,6 +14,11 @@ const SAMPLE: { [K in EmailTemplateId]: TemplateDataMap[K] } = {
   "password-reset": { url: URL },
   "verify-email": { url: URL },
   "credits-expiring": { credits: 120, expiresOn: "2027-07-06", url: URL },
+  "updates-window-expiring": {
+    entitlementId: "compliance",
+    expiresOn: "2027-07-06",
+    url: URL,
+  },
   "purchase-confirmation": {
     buyerName: "Ada",
     orderId: "ord_sample",
@@ -36,6 +41,11 @@ const SAMPLE: { [K in EmailTemplateId]: TemplateDataMap[K] } = {
     currency: "usd",
     amountTotalMinor: 29900,
     lines: [{ label: "Compliance bundle", newWindowEnd: "2027-07-06" }],
+    dashboardUrl: URL,
+  },
+  "access-revoked": {
+    buyerName: "Ada",
+    reason: "refund",
     dashboardUrl: URL,
   },
   "waitlist-welcome": { email: "founder@acme.com", bundle: "Compliance" },
@@ -72,6 +82,20 @@ describe("renderEmailTemplate", () => {
     expect(rendered.html).toContain("120");
     expect(rendered.html).toContain("2027-07-06");
     expect(rendered.text).toContain("burn first");
+  });
+
+  test("updates-window-expiring: dynamic subject and body carry the label + date (G24)", async () => {
+    const rendered = await renderEmailTemplate("updates-window-expiring", {
+      entitlementId: "field-crypto",
+      expiresOn: "2027-08-01",
+      url: URL,
+    });
+    expect(rendered.subject).toBe(
+      "Your Field Crypto updates window ends 2027-08-01",
+    );
+    expect(rendered.html).toContain("Field Crypto");
+    expect(rendered.html).toContain("2027-08-01");
+    expect(rendered.text).toContain("keeps working");
   });
 
   test("purchase-confirmation: subject + body carry the order id, line items, and total", async () => {
@@ -159,6 +183,30 @@ describe("renderEmailTemplate", () => {
     });
     expect(rendered.html).toContain("2028-01-15");
     expect(rendered.html).not.toContain("Total charged");
+  });
+
+  test("access-revoked: refund copy, subject + heading distinct from a cancel (G27)", async () => {
+    const rendered = await renderEmailTemplate("access-revoked", {
+      buyerName: "Ada",
+      reason: "refund",
+      dashboardUrl: URL,
+    });
+    expect(rendered.subject).toBe("Your Caisson refund has been processed");
+    expect(rendered.html).toContain("Refund processed");
+    expect(rendered.html).toContain("refund has been processed");
+  });
+
+  test("access-revoked: subscription-canceled copy is distinct from a refund (G27)", async () => {
+    const rendered = await renderEmailTemplate("access-revoked", {
+      buyerName: "Ada",
+      reason: "subscription_canceled",
+      dashboardUrl: URL,
+    });
+    expect(rendered.subject).toBe(
+      "Your Caisson subscription has been canceled",
+    );
+    expect(rendered.html).toContain("Subscription canceled");
+    expect(rendered.html).not.toContain("Refund processed");
   });
 
   test("waitlist-welcome: subject + body carry the bundle label and recipient", async () => {

@@ -349,6 +349,26 @@ export function parsePaddleEvent(
         // The canceled object IS the subscription, so its own `id` is the subscription id.
         subscriptionId: readString(obj.id),
       };
+    case "adjustment.created": {
+      // ADR-0294: a chargeback/dispute — fired ONLY on `action: 'chargeback'` (Paddle's bank-
+      // initiated dispute, distinct from a merchant/buyer-initiated refund, whose `action` is
+      // `'refund'` and settles via the adjustment.updated case below). Unlike a refund, a
+      // chargeback has no merchant approval step to wait on, so this alerts immediately on
+      // creation rather than waiting for a terminal status — an operator wants to know AS SOON AS
+      // a dispute lands, not after it settles. A non-chargeback `adjustment.created` (a refund's
+      // own pending_approval creation) is a deliberate no-op here — that flow is handled entirely
+      // by adjustment.updated below, unchanged.
+      if (readString(obj.action) !== "chargeback") return null;
+      return {
+        type: "chargeback.detected",
+        sourceEventId: event.event_id,
+        accountId,
+        // The disputed transaction id — the same join key a refund's paymentId would carry.
+        paymentId: readString(obj.transaction_id),
+        amountDisputed: readAdjustmentTotal(obj),
+        currency: readString(obj.currency_code, "usd"),
+      };
+    }
     case "adjustment.updated": {
       // A refund settles via adjustment.updated: created as `pending_approval`, then Paddle moves it to
       // `approved`/`rejected` (ADR-0108/0113). Act ONLY on an approved refund — a pending or rejected

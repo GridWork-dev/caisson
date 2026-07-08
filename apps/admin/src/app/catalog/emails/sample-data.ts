@@ -22,6 +22,11 @@ export const EMAIL_SAMPLE_DATA: { [K in EmailTemplateId]: TemplateDataMap[K] } =
       expiresOn: "2027-07-06",
       url: "https://caisson.sh/dashboard/credits",
     },
+    "updates-window-expiring": {
+      entitlementId: "compliance",
+      expiresOn: "2027-08-06",
+      url: "https://caisson.sh/dashboard/license",
+    },
     "purchase-confirmation": {
       buyerName: "Sample Buyer",
       orderId: "txn_01sample",
@@ -44,6 +49,11 @@ export const EMAIL_SAMPLE_DATA: { [K in EmailTemplateId]: TemplateDataMap[K] } =
       currency: "usd",
       amountTotalMinor: 41900,
       lines: [{ label: "Compliance bundle", newWindowEnd: "2028-07-06" }],
+      dashboardUrl: "https://caisson.sh/dashboard",
+    },
+    "access-revoked": {
+      buyerName: "Sample Buyer",
+      reason: "refund",
       dashboardUrl: "https://caisson.sh/dashboard",
     },
     "waitlist-welcome": {

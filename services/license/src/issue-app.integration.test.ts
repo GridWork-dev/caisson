@@ -125,6 +125,8 @@ beforeAll(async () => {
     posthogCapture: null,
     purchaseEmailNotify: async () => {},
     renewalEmailNotify: async () => {},
+    revokeEmailNotify: async () => {},
+    chargebackAlert: async () => {},
   });
 });
 afterAll(async () => {
@@ -382,6 +384,8 @@ describe("POST /issue admin-scoped credential (ADR-0220)", () => {
       posthogCapture: null,
       purchaseEmailNotify: async () => {},
       renewalEmailNotify: async () => {},
+      revokeEmailNotify: async () => {},
+      chargebackAlert: async () => {},
     });
   });
 

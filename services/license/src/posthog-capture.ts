@@ -56,6 +56,15 @@ export interface PurchaseCapture {
   /** Per-line SKU attribution, threaded from `applyBillingEvent`. `[]` only for a
    *  lineless grant (defensive — a real money capture always fires on a granting line). */
   skuLines: readonly SkuLine[];
+  /**
+   * G33 (audit 2026-07-07) — `true` when this is a subscription-CYCLE charge (`invoice.paid` with
+   * `billingReason: "subscription_cycle"`), NOT a first purchase. Threaded from the SAME
+   * computation `email-notify.ts#PurchaseEmailNotice.subscriptionCycle` already makes, so a
+   * Developer-plan (`coversOwnedEntitlements`) renewal cycle no longer re-lists the buyer's whole
+   * owned set as a fresh "purchase" with full cycle revenue in PostHog's analytics — SKU
+   * attribution (`skuLines`) is unaffected either way. Defaults to a first purchase when omitted.
+   */
+  subscriptionCycle?: boolean;
 }
 
 /** Cart-composition bucket for a set of canonical SKU slugs. `"mixed"` when the cart spans more
@@ -112,6 +121,8 @@ export async function capturePostHogPurchase(
             price_ids: capture.skuLines.map((line) => line.priceId),
             product_slugs: capture.skuLines.map((line) => line.productSlug),
             cart_composition: cartComposition(capture.skuLines),
+            // G33: distinguishes a Developer-plan renewal cycle from a first purchase.
+            subscription_cycle: capture.subscriptionCycle ?? false,
           },
         }),
       },

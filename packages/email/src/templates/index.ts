@@ -6,6 +6,11 @@
 // keyed by a `TemplateDataMap` rather than one shared prop type.
 import { render } from "@react-email/render";
 import {
+  AccessRevokedEmail,
+  accessRevokedSubject,
+  type AccessRevokedData,
+} from "./access-revoked.tsx";
+import {
   CreditsExpiringEmail,
   creditsExpiringSubject,
   type CreditsExpiringData,
@@ -36,6 +41,11 @@ import {
   SubscriptionPaymentEmail,
   subscriptionPaymentSubject,
 } from "./subscription-payment.tsx";
+import {
+  UpdatesWindowExpiringEmail,
+  updatesWindowExpiringSubject,
+  type UpdatesWindowExpiringData,
+} from "./updates-window-expiring.tsx";
 import { VerifyEmailEmail, VERIFY_EMAIL_SUBJECT } from "./verify-email.tsx";
 import {
   WaitlistWelcomeEmail,
@@ -48,9 +58,11 @@ export type EmailTemplateId =
   | "password-reset"
   | "verify-email"
   | "credits-expiring"
+  | "updates-window-expiring"
   | "purchase-confirmation"
   | "subscription-payment-received"
   | "renewal-confirmation"
+  | "access-revoked"
   | "waitlist-welcome"
   | "nurture-follow-up";
 
@@ -59,12 +71,14 @@ export interface EmailTemplateData {
 }
 
 export type {
+  AccessRevokedData,
   CreditsExpiringData,
   NurtureFollowUpData,
   PurchaseConfirmationData,
   PurchaseConfirmationLine,
   RenewalConfirmationData,
   RenewalConfirmationLine,
+  UpdatesWindowExpiringData,
   WaitlistWelcomeData,
 };
 
@@ -74,11 +88,13 @@ export interface TemplateDataMap {
   "password-reset": EmailTemplateData;
   "verify-email": EmailTemplateData;
   "credits-expiring": CreditsExpiringData;
+  "updates-window-expiring": UpdatesWindowExpiringData;
   "purchase-confirmation": PurchaseConfirmationData;
   // A subscription-cycle receipt shares the purchase-confirmation prop shape — only
   // the copy differs.
   "subscription-payment-received": PurchaseConfirmationData;
   "renewal-confirmation": RenewalConfirmationData;
+  "access-revoked": AccessRevokedData;
   "waitlist-welcome": WaitlistWelcomeData;
   "nurture-follow-up": NurtureFollowUpData;
 }
@@ -181,6 +197,15 @@ function coercePurchaseConfirmation(
   ) {
     return null;
   }
+  // Optional (ADR-0292): present only when the driver's caller resolved a fresh mint for this
+  // delivery — absent renders the receipt without the license block, `unknown`-typed (e.g. `null`,
+  // a number) fails the coercer closed rather than passing a bad value to the render. Spread in
+  // conditionally (never `licenseToken: undefined`) — `exactOptionalPropertyTypes` distinguishes
+  // "key absent" from "key present with an undefined value" and the target type demands the former.
+  const { licenseToken } = data;
+  if (licenseToken !== undefined && typeof licenseToken !== "string") {
+    return null;
+  }
   const lines: PurchaseConfirmationLine[] = [];
   for (const raw of data.lines) {
     const line = coercePurchaseLine(raw);
@@ -193,6 +218,25 @@ function coercePurchaseConfirmation(
     currency: data.currency,
     amountTotalMinor: data.amountTotalMinor,
     lines,
+    dashboardUrl: data.dashboardUrl,
+    ...(licenseToken !== undefined ? { licenseToken } : {}),
+  };
+}
+
+/** G27 — the revoke/refund notice coercer. `reason` is a closed two-value enum. */
+function coerceAccessRevoked(
+  data: Record<string, unknown>,
+): AccessRevokedData | null {
+  if (
+    typeof data.buyerName !== "string" ||
+    typeof data.dashboardUrl !== "string" ||
+    (data.reason !== "subscription_canceled" && data.reason !== "refund")
+  ) {
+    return null;
+  }
+  return {
+    buyerName: data.buyerName,
+    reason: data.reason,
     dashboardUrl: data.dashboardUrl,
   };
 }
@@ -224,6 +268,20 @@ const TEMPLATES: { [K in EmailTemplateId]: TemplateEntry<K> } = {
         ? { credits: data.credits, expiresOn: data.expiresOn, url: data.url }
         : null,
   },
+  "updates-window-expiring": {
+    subject: updatesWindowExpiringSubject,
+    Component: UpdatesWindowExpiringEmail,
+    coerce: (data) =>
+      typeof data.entitlementId === "string" &&
+      typeof data.expiresOn === "string" &&
+      typeof data.url === "string"
+        ? {
+            entitlementId: data.entitlementId,
+            expiresOn: data.expiresOn,
+            url: data.url,
+          }
+        : null,
+  },
   "purchase-confirmation": {
     subject: purchaseConfirmationSubject,
     Component: PurchaseConfirmationEmail,
@@ -239,6 +297,11 @@ const TEMPLATES: { [K in EmailTemplateId]: TemplateEntry<K> } = {
     subject: renewalConfirmationSubject,
     Component: RenewalConfirmationEmail,
     coerce: coerceRenewalConfirmation,
+  },
+  "access-revoked": {
+    subject: accessRevokedSubject,
+    Component: AccessRevokedEmail,
+    coerce: coerceAccessRevoked,
   },
   "waitlist-welcome": {
     subject: waitlistWelcomeSubject,
@@ -258,9 +321,11 @@ export const EMAIL_TEMPLATE_IDS: readonly EmailTemplateId[] = [
   "password-reset",
   "verify-email",
   "credits-expiring",
+  "updates-window-expiring",
   "purchase-confirmation",
   "subscription-payment-received",
   "renewal-confirmation",
+  "access-revoked",
   "waitlist-welcome",
   "nurture-follow-up",
 ];

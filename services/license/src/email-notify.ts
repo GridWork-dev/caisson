@@ -148,6 +148,14 @@ export interface PurchaseEmailNotice {
    * purchase when omitted.
    */
   subscriptionCycle?: boolean;
+  /**
+   * ADR-0292 — the buyer's signed license token, when the post-commit webhook-push mint succeeded
+   * for this delivery. Omitted (never sent) when the mint failed (logged separately as an operator
+   * ALERT) — the receipt still sends either way; a missing token is recoverable on the buyer's next
+   * dashboard visit, a missing receipt is not. Not a secret (see `license-grant-store.ts`): already
+   * independently offline-verifiable via the public key.
+   */
+  licenseToken?: string;
 }
 
 export interface RenewalEmailNotice {
@@ -199,6 +207,7 @@ export async function notifyPurchaseEmail(
           label: displayLabel(line.productSlug),
         })),
         dashboardUrl: DASHBOARD_URL,
+        licenseToken: notice.licenseToken,
       },
     });
   } catch (err) {
@@ -245,6 +254,48 @@ export async function notifyRenewalEmail(
   } catch (err) {
     process.stderr.write(
       `[service-license] renewal confirmation email failed for account ${notice.accountId}: ${err instanceof Error ? err.message : String(err)}\n`,
+    );
+  }
+}
+
+export interface RevokeEmailNotice {
+  accountId: string;
+  /** What triggered the revoke — selects the `access-revoked` template's copy. */
+  reason: "subscription_canceled" | "refund";
+}
+
+/**
+ * Fire the post-commit revoke/refund notice (G27, buyer-lifecycle audit 2026-07-07). Same
+ * never-throws, detached contract as `notifyPurchaseEmail`/`notifyRenewalEmail` — a subscription
+ * cancel or a refund revokes grants but neither ever fires a receipt, so this closes the "buyer
+ * finds entitlements silently gone" gap. Fired only when `applyBillingEvent` reports an ACTUAL
+ * revoke for this delivery (see `RevokeNotice`), never on a redelivery.
+ */
+export async function notifyRevokeEmail(
+  db: Transactor,
+  emailer: Emailer,
+  notice: RevokeEmailNotice,
+): Promise<void> {
+  try {
+    const buyer = await findBuyerEmail(db, notice.accountId);
+    if (buyer === null) {
+      process.stderr.write(
+        `[service-license] revoke notice email skipped: no resolvable buyer address for account ${notice.accountId}\n`,
+      );
+      return;
+    }
+    await emailer.send({
+      to: buyer.email,
+      template: "access-revoked",
+      data: {
+        buyerName: buyer.name ?? buyer.email,
+        reason: notice.reason,
+        dashboardUrl: DASHBOARD_URL,
+      },
+    });
+  } catch (err) {
+    process.stderr.write(
+      `[service-license] revoke notice email failed for account ${notice.accountId}: ${err instanceof Error ? err.message : String(err)}\n`,
     );
   }
 }
