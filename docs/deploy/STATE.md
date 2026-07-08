@@ -33,6 +33,54 @@ consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the 
 
 ---
 
+## 2026-07-08 — EXECUTED: full-fleet redeploy — the eleventh-sitting wave (26 commits, PRs #161–#177)
+
+**Operator authorization:** "want you to do full deploy sequence with the new code", 2026-07-08
+session (the whole merged buyer-lifecycle wave plus #161–#164 was undeployed).
+
+**Services/SHAs:** `main@2ff49b04`. Five Railway services redeployed via `railway up` (all
+deployments SUCCESS): `caisson-license`, `caisson-site`, `caisson-admin`, `caisson-docs`,
+`caisson-support-bot`. `caisson-intel` NOT redeployed (its only delta since `55b3d486` is a
+test file). Registry Worker republished (version `1a9cb273-b7d9-41ef-8861-a3b11add0341`) — the
+repo index had gained `@caisson/analytics` (PR #159 driver batch) since the Worker's last
+publish; add-only, so no same-act admin rebuild required (and admin already baked the 46-entry
+index). Anon floor 15→16 modules (`@caisson/analytics` is Apache-2.0 — verified in its
+package.json before accepting the count). Pre-launch posture UNCHANGED: CF-Access `site_gate`
+ON, `PADDLE_ENV=sandbox`.
+
+**F5 ordering pre-check:** claims schema unchanged — `packages/license-verify/src/claims.ts`
+0-line diff `55b3d486..HEAD`, `license-verify` + `registry/index.json` byte-identical over the
+wave — so no verifier-first ordering applied.
+
+**Live-verify evidence (pasted):**
+
+- `caisson-license` `/health` → `{"ok":true,"indexDigest":"864c83b1a203","indexEntries":46}`
+- `caisson.sh` → `302` to `gridworkdev.cloudflareaccess.com/cdn-cgi/access/login/caisson.sh?…`
+  (pre-launch gate ON); `www.caisson.sh` → `302`
+- `caisson-admin` `/healthz` → `{"ok":true,"indexDigest":"864c83b1a203","indexEntries":46} [200]`
+  (fail-closed gate: 200 proves the boot migration ran)
+- `caisson-docs` `/health` → `{"ok":true,"chunks":255} [200]` — after a **~10-minute 502
+  warmup window** (boot-time corpus embed over OpenRouter; the corpus has grown past the
+  railway.toml comment's "60–90s cold boot" expectation). Boot hardening (bounded embedder
+  retry so the FTS-degrade path can fire + boot progress logging) queued in the same-day fix
+  wave.
+- `caisson-support-bot`: Railway healthcheck-gated SUCCESS (`healthcheckPath = "/health"`,
+  30s timeout) — the deploy cannot go SUCCESS without the probe passing.
+- Worker anon `index.json` → `{"schemaVersion":1,"count":16}` modules.
+
+**Incident (operator action needed):** while listing domains, `railway domain --service
+caisson-support-bot` — which CREATES a domain when none exists (the no-subcommand legacy
+behavior) — minted `caisson-support-bot-production.up.railway.app`. The deletion
+(`railway domain delete …`) was classifier-blocked in auto mode. The domain serves nothing
+(the bot's `/health` answers Railway's internal probe; no routes are meant to be public), but
+it is an unsanctioned published surface until deleted.
+
+**Local note:** the Worker bundle build required a fresh `bun install` on the main checkout
+first (`tooling/testing`'s new jsdom/react-dom deps from the merged wave; the stale
+`node_modules` failed `@caisson/registry-schema`'s dependency build).
+
+---
+
 ## 2026-07-07 — EXECUTED: bug-fix redeploy — intel (soc2 tight-loop) + admin (migration-in-instrumentation)
 
 **Operator authorization:** picker "Both now (recommended)", 2026-07-07 session (redeploy of the two
