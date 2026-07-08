@@ -10,6 +10,12 @@
 // in compiled dist (bundler moduleResolution) — the separately-tracked "publishability / ESM-extension"
 // fork (P5-deferred). This smoke therefore asserts shebang + `node --check` (load-validity), not a
 // full run; the bin WIRING is what publish-readiness owns.
+//
+// Also asserts at the PACK LAYER (WR-01): npm/bun unconditionally strip a file literally named
+// `.npmrc` from a published tarball regardless of `files` config — every other assertion for this
+// file (generation-plan tests in cli.test.ts/generate.test.ts/demo.test.ts) reads the SOURCE
+// template tree directly and would stay green even if the packed tarball silently dropped it. The
+// real regression only shows up in what `bun pm pack` actually ships, so it is asserted here.
 import { describe, expect, test } from "bun:test";
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
@@ -17,6 +23,7 @@ import { delimiter, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url)); // packages/cli/scripts
+const PKG_ROOT = join(HERE, "..");
 const CLI_DIST = join(HERE, "..", "dist", "cli.js");
 const built = existsSync(CLI_DIST);
 
@@ -48,6 +55,24 @@ describe("create-caisson npx bin smoke (ADR-0092/0111)", () => {
           stdio: "pipe",
         }),
       ).not.toThrow();
+    },
+  );
+
+  test.skipIf(!built)(
+    "the packed tarball ships templates/base/npmrc — never a literal .npmrc (WR-01)",
+    () => {
+      const output = execFileSync("bun", ["pm", "pack", "--dry-run"], {
+        cwd: PKG_ROOT,
+        encoding: "utf8",
+      });
+      const packedPaths = output
+        .split("\n")
+        .filter((line) => line.startsWith("packed "))
+        .map((line) => line.replace(/^packed\s+\S+\s+/, ""));
+      expect(packedPaths).toContain("templates/base/npmrc");
+      // A regression guard: if the template source is ever renamed back to a literal `.npmrc`,
+      // npm/bun's packer silently drops it and this line would go missing from the tarball too.
+      expect(packedPaths).not.toContain("templates/base/.npmrc");
     },
   );
 });
