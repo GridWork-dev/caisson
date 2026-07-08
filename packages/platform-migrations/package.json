@@ -1,0 +1,32 @@
+{
+  "name": "@caisson/platform-migrations",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "LicenseRef-Caisson-Commercial",
+  "description": "The ONE ordered platform migration chain (CAISSON-21). Extracted from apps/site/lib/deploy-migrate.ts's platformPackage(), which used to be the sole owner, hand-mirrored by apps/admin's PGlite bootstrap by SQL-constant name — a drift class that already bit once (CAISSON-11). Both consumers now assemble/apply the SAME ordered array via `platformMigrationsPackage`/`applyAll`, so a new migration lands for both or neither. Never published — private, internal engineering plumbing.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "bun test ./src"
+  },
+  "dependencies": {
+    "@caisson/ai-meter": "workspace:*",
+    "@caisson/auth": "workspace:*",
+    "@caisson/billing-orchestration": "workspace:*",
+    "@caisson/credits": "workspace:*",
+    "@caisson/kernel": "workspace:*",
+    "@caisson/migrate": "workspace:*",
+    "@caisson/service-license": "workspace:*"
+  },
+  "devDependencies": {
+    "@caisson/eslint-config": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "eslint": "catalog:",
+    "typescript": "catalog:"
+  }
+}
