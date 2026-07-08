@@ -14,16 +14,101 @@ description: Install the base, wire a tenant, and run the standards gate.
 - **Postgres** (Neon over HTTP is the reference host; the data layer is swappable).
 - A Postgres database you can run migrations against.
 
+## Get your license key
+
+A license is issued automatically the first time you complete a purchase — find it at
+[`/dashboard/license`](/dashboard/license): one offline-verifiable Ed25519 token per major
+version, with a copy-token button. Verify it anytime, offline, with `verifyLicense()` from
+`@caisson/license-verify` — no network call required.
+
 ## Install
 
 ```bash
-bunx @caisson-sh/cli@latest my-app
+bunx @caisson-sh/cli@latest
+```
+
+With no flags, `create-caisson` runs **interactively** in a terminal (TTY): it prompts for a
+licensed build vs. the free Apache-2.0 sample vs. the full-catalog demo, then your project name
+and module selection. A scripted, non-interactive run needs an explicit `--name` and at least one
+`--module <id@version>` — `--edition <bundle>` narrows the prompt list but does not replace
+`--module`. Run `bunx @caisson-sh/cli@latest --help` for the full flag reference.
+
+**Free, no license key:** `--sample` and `--demo` need no module selection and no
+`CAISSON_LICENSE_TOKEN`. `--sample` installs only public-npm Apache-2.0 packages; `--demo`
+composes the full catalog with every commercial module replaced by a local stub, and its
+generated `.npmrc` still maps `@caisson:registry` to `registry.caisson.sh` — tokenless, since that
+registry serves the open module set to an unauthenticated request.
+
+```bash
+bunx @caisson-sh/cli@latest --demo --name my-app   # full catalog, commercial modules stubbed
 cd my-app
 bun install
 ```
 
-The generator scaffolds the base substrate and the bundles you select. Generation is metered as
-codegen-credits; your AI agent can drive it through the MCP server.
+**Licensed install:** every other generated project ships a `.npmrc` pointing `@caisson:registry`
+at `registry.caisson.sh` with the auth token read from `CAISSON_LICENSE_TOKEN` — export your
+dashboard license key under that name before `bun install`.
+
+```bash
+export CAISSON_LICENSE_TOKEN=<the token from /dashboard/license>
+bun install
+```
+
+## Point your AI agent at Caisson
+
+Two ways a coding agent (Claude Code, Cursor, or anything that can run a terminal command) can
+drive Caisson — pick the one that matches how much wiring you want to do.
+
+### Shell out to the CLI (zero setup)
+
+`create-caisson` is a plain CLI — an agent that can run a terminal command invokes it exactly like
+you would by hand:
+
+```bash
+bunx @caisson-sh/cli@latest --name my-app --edition compliance --module <id@version>
+```
+
+Repeat `--module` per module; run `--help` for the current registry ids and versions. No extra
+wiring beyond the `CAISSON_LICENSE_TOKEN` you already export for `bun install`.
+
+### Wire the MCP server (tool-native)
+
+`@caisson/mcp-server` is a published Apache-2.0 package — it is not a scaffold default, so add it
+to your generated project first:
+
+```bash
+bun add @caisson/mcp-server
+```
+
+It is an auth-gated, entitlement-scoped MCP server exposing `list_modules`, `describe_module`, and
+`generate` as tools, so an agent calls them natively instead of shelling out. Host it locally over
+stdio with `runStdioServer` — one process per buyer session, the same pattern Claude Desktop /
+Claude Code use for any local stdio MCP server:
+
+```ts
+import { runStdioServer } from "@caisson/mcp-server";
+
+// Illustrative: mcpOptions (registry index + issued tokens + the onGenerate host hook) is your
+// own wiring — see the McpServerOptions type exported by @caisson/mcp-server for the exact shape.
+await runStdioServer({ mcp: mcpOptions, bearer: process.env.CAISSON_MCP_TOKEN! });
+```
+
+Then point your agent's `.mcp.json` at that process:
+
+```jsonc
+{
+  "mcpServers": {
+    "caisson": {
+      "command": "bun",
+      "args": ["run", "./mcp-server.ts"],
+      "env": { "CAISSON_MCP_TOKEN": "${CAISSON_MCP_TOKEN}" },
+    },
+  },
+}
+```
+
+The full tool catalog, entitlement scoping, and the network-reachable HTTP transport
+(`runHttpServer`) for a hosted deployment are in [MCP server](/docs/base/mcp-server).
 
 ## Wire a tenant
 

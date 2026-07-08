@@ -108,15 +108,28 @@ describe("generatePricingSources", () => {
     const bundles = raw("pricing/bundles");
     expect(bundles).toContain("## Compliance — $1,049");
     expect(bundles).toContain("## AI-Production — $739");
-    expect(bundles).toContain("Includes: Field encryption ($199)");
+    expect(bundles).toContain(
+      "- **Field encryption** (`field-crypto`, $199): Per-tenant field encryption (HKDF-SHA256).",
+    );
+  });
+
+  // CAISSON-43: the RAG corpus must be able to answer "what's in bundle X" from this chunk alone —
+  // the module id (for `--module`/`generate`) and a one-line description, not just a price list.
+  test("names each module's id and one-line description alongside its price", () => {
+    const bundles = raw("pricing/bundles");
+    expect(bundles).toContain("`field-crypto`");
+    expect(bundles).toContain("`ai-meter`");
+    expect(bundles).toContain(
+      "PG-atomic token metering with per-tenant spend caps.",
+    );
   });
 
   test("the Everything bundle includes every module (the explicit full-catalog rule)", () => {
     const bundles = raw("pricing/bundles");
     const everything = bundles.slice(bundles.indexOf("## Everything"));
-    expect(everything).toContain("Org controls ($249)");
-    expect(everything).toContain("Field encryption ($199)");
-    expect(everything).toContain("Token metering ($149)");
+    expect(everything).toContain("**Org controls** (`org-controls`, $249)");
+    expect(everything).toContain("**Field encryption** (`field-crypto`, $199)");
+    expect(everything).toContain("**Token metering** (`ai-meter`, $149)");
   });
 
   test("renders each module's price and owning bundles, incl. the standalone line", () => {
