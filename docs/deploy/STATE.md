@@ -64,9 +64,9 @@ cache: 0 hits / 75 misses (/data/embed-cache.json)`, warm-boot proof came back `
   embedding calls.
 - **Vault parity (pasted):** `vault-parity-check: clean — vault and caisson.env agree on names.`
   with `--rotated-after 2026-07-08` — 126 names, 7 non-env exclusions printed by title, exit 0.
-- **Cost verdict recorded (runbook 1.1):** the credit exhaustion was ~~92 tracked frontier-model
-  calls (~~$0.81 avg) on the PAL lanes, not embeddings; per-service keys make future burn
-  attributable per consumer.
+- **Cost verdict recorded (runbook 1.1):** the credit exhaustion was about 92 tracked
+  frontier-model calls (about $0.81 avg) on the PAL lanes, not embeddings; per-service keys
+  make future burn attributable per consumer.
 
 ---
 
