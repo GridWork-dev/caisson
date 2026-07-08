@@ -1,13 +1,15 @@
-// Unit coverage for the ADR-0256 credit-expiry scheduler. Three things matter here, none of which
-// need a live pg-boss (pg-boss needs real Postgres; PGlite cannot back it — construction stays
-// behind the env gate in every test below):
+// Unit coverage for the ADR-0256 credit-expiry scheduler (extended G24, buyer-lifecycle audit
+// 2026-07-07). Three things matter here, none of which need a live pg-boss (pg-boss needs real
+// Postgres; PGlite cannot back it — construction stays behind the env gate in every test below):
 //   1. the wallet-account enumerator + tick fan-out are correct against a REAL PGlite (RLS applies
-//      for real, via the same `admin_write` policy the admin mutation surface already provisions);
+//      for real, via the same `admin_write` policy the admin mutation surface already provisions) —
+//      and, since G24, the SAME shape for the updates-window account population;
 //   2. `startCreditExpiryScheduler` is INERT when unarmed — a throwing factory proves it is never
 //      even called;
-//   3. when armed, it registers all three tasks, starts consuming each, and schedules the daily
-//      tick — proven with a FAKE `createPgBossJobQueue`-shaped factory; a start failure logs and
-//      never throws (the commerce path must stay up regardless of scheduler health).
+//   3. when armed, it registers all FIVE tasks (credit sweep/notice/tick + G24's updates-window
+//      notice/tick), starts consuming each, and schedules BOTH daily ticks on the one cron —
+//      proven with a FAKE `createPgBossJobQueue`-shaped factory; a start failure logs and never
+//      throws (the commerce path must stay up regardless of scheduler health).
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import {
   CREDIT_EXPIRY_NOTICE_TASK,
@@ -23,15 +25,26 @@ import {
   ADMIN_WRITE_ROLE_BOOTSTRAP_SQL,
   buildAdminWritePolicySql,
 } from "@caisson/org-controls";
-import type { Transactor } from "@caisson/tenancy-rls";
+import { type Transactor, withTenant } from "@caisson/tenancy-rls";
 import { type TestPg, newTestPg } from "@caisson/testing";
 import {
   CREDIT_EXPIRY_TICK_TASK,
+  listUpdatesWindowAccountIds,
   listWalletAccountIds,
   loadCreditExpiryScheduleConfig,
   runCreditExpiryTick,
+  runUpdatesWindowExpiryTick,
   startCreditExpiryScheduler,
+  UPDATES_WINDOW_EXPIRY_TICK_TASK,
 } from "./credit-expiry-scheduler.ts";
+import {
+  ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
+  ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
+  ENTITLEMENT_SCHEMA_SQL,
+  grantEntitlements,
+  UPDATES_WINDOW_EXPIRY_NOTICE_SCHEMA_SQL,
+} from "./entitlement-store.ts";
+import { UPDATES_WINDOW_EXPIRY_NOTICE_TASK } from "./updates-window-expiry-task.ts";
 
 let tp: TestPg;
 let db: Transactor;
@@ -46,6 +59,12 @@ beforeAll(async () => {
   // rather than the whole provisioning bundle (which also references tables this suite never
   // creates, e.g. account_member/license_grant).
   await tp.exec(buildAdminWritePolicySql("credit_wallet"));
+  // G24: the entitlement_grant junction, same reuse rationale for its own admin_write policy.
+  await tp.exec(ENTITLEMENT_SCHEMA_SQL);
+  await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
+  await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
+  await tp.exec(buildAdminWritePolicySql("entitlement_grant"));
+  await tp.exec(UPDATES_WINDOW_EXPIRY_NOTICE_SCHEMA_SQL);
 });
 
 afterAll(async () => {
@@ -75,20 +94,30 @@ function createFakeQueue(): JobQueue & {
   };
 }
 
-/** A fake `createPgBossJobQueue`-shaped factory: records registered task names, `work()` calls,
- * and `schedule()` calls, without ever touching pg-boss. */
+/** A fake `createPgBossJobQueue`-shaped factory: records registered task names + the tasks
+ * THEMSELVES (so a test can invoke a real handler directly, proving actual wiring rather than a
+ * hand-rolled duplicate), `work()` calls, and `schedule()` calls — without ever touching pg-boss. */
 function createFakeQueueFactory(): {
   factory: typeof createPgBossJobQueue;
   registeredTaskNames: string[];
+  registeredTasks: Array<{
+    name: string;
+    handler: (payload: unknown) => Promise<void>;
+  }>;
   workCalls: string[];
   scheduleCalls: Array<{ name: string; cron: string; data: unknown }>;
 } {
   const registeredTaskNames: string[] = [];
+  const registeredTasks: Array<{
+    name: string;
+    handler: (payload: unknown) => Promise<void>;
+  }> = [];
   const workCalls: string[] = [];
   const scheduleCalls: Array<{ name: string; cron: string; data: unknown }> =
     [];
   const factory: typeof createPgBossJobQueue = (tasks) => {
     registeredTaskNames.push(...tasks.map((t) => t.name));
+    registeredTasks.push(...tasks);
     return {
       async enqueue() {},
       async work(name: string) {
@@ -103,7 +132,13 @@ function createFakeQueueFactory(): {
       },
     };
   };
-  return { factory, registeredTaskNames, workCalls, scheduleCalls };
+  return {
+    factory,
+    registeredTaskNames,
+    registeredTasks,
+    workCalls,
+    scheduleCalls,
+  };
 }
 
 describe("loadCreditExpiryScheduleConfig", () => {
@@ -167,6 +202,67 @@ describe("listWalletAccountIds / runCreditExpiryTick (PGlite, real RLS)", () => 
   });
 });
 
+describe("listUpdatesWindowAccountIds / runUpdatesWindowExpiryTick (G24, PGlite, real RLS)", () => {
+  test("enumerates every distinct account holding a windowed active one_time grant, ordered", async () => {
+    const onetime = (purchaseId: string) =>
+      ({ kind: "one_time", purchaseId }) as const;
+    await withTenant(db, "acct_w_b", (tx) =>
+      grantEntitlements(tx, {
+        accountId: "acct_w_b",
+        entitlementIds: ["compliance"],
+        sourceEventId: "pi_w_b",
+        source: onetime("pi_w_b"),
+      }),
+    );
+    await withTenant(db, "acct_w_a", (tx) =>
+      grantEntitlements(tx, {
+        accountId: "acct_w_a",
+        entitlementIds: ["compliance"],
+        sourceEventId: "pi_w_a",
+        source: onetime("pi_w_a"),
+      }),
+    );
+    // A grant with NO stamped window must NOT be enumerated (never notice-eligible).
+    await withTenant(db, "acct_w_nowindow", (tx) =>
+      grantEntitlements(tx, {
+        accountId: "acct_w_nowindow",
+        entitlementIds: ["compliance"],
+        sourceEventId: "pi_w_nowindow",
+        source: onetime("pi_w_nowindow"),
+      }),
+    );
+    await tp.exec(
+      `UPDATE entitlement_grant SET updates_expires_at = now() + interval '10 days'
+       WHERE account_id IN ('acct_w_a', 'acct_w_b')`,
+    );
+
+    expect(await listUpdatesWindowAccountIds(db)).toEqual([
+      "acct_w_a",
+      "acct_w_b",
+    ]);
+  });
+
+  test("the tick enqueues one notice job per windowed account, singletonKey'd by account", async () => {
+    const queue = createFakeQueue();
+
+    await runUpdatesWindowExpiryTick(db, queue);
+
+    // Seeded above: acct_w_a, acct_w_b — ORDER BY account_id.
+    expect(queue.calls).toEqual([
+      {
+        name: UPDATES_WINDOW_EXPIRY_NOTICE_TASK,
+        payload: { accountId: "acct_w_a" },
+        options: { singletonKey: "acct_w_a" },
+      },
+      {
+        name: UPDATES_WINDOW_EXPIRY_NOTICE_TASK,
+        payload: { accountId: "acct_w_b" },
+        options: { singletonKey: "acct_w_b" },
+      },
+    ]);
+  });
+});
+
 const noEmailer = {
   emailer: null,
   recipientFor: async () => null,
@@ -208,7 +304,7 @@ describe("startCreditExpiryScheduler — INERT UNTIL ARMED", () => {
 });
 
 describe("startCreditExpiryScheduler — armed", () => {
-  test("registers all three tasks, starts consuming each, and schedules the daily tick", async () => {
+  test("registers all FIVE tasks (G24 adds two), starts consuming each, and schedules BOTH daily ticks", async () => {
     const fake = createFakeQueueFactory();
 
     await startCreditExpiryScheduler({
@@ -223,12 +319,64 @@ describe("startCreditExpiryScheduler — armed", () => {
       CREDIT_EXPIRY_SWEEP_TASK,
       CREDIT_EXPIRY_NOTICE_TASK,
       CREDIT_EXPIRY_TICK_TASK,
+      UPDATES_WINDOW_EXPIRY_NOTICE_TASK,
+      UPDATES_WINDOW_EXPIRY_TICK_TASK,
     ].sort();
     expect(fake.registeredTaskNames.sort()).toEqual(expectedNames);
     expect(fake.workCalls.sort()).toEqual(expectedNames);
-    expect(fake.scheduleCalls).toEqual([
-      { name: CREDIT_EXPIRY_TICK_TASK, cron: "30 3 * * *", data: {} },
-    ]);
+    expect(
+      [...fake.scheduleCalls].sort((a, b) => a.name.localeCompare(b.name)),
+    ).toEqual(
+      [
+        { name: CREDIT_EXPIRY_TICK_TASK, cron: "30 3 * * *", data: {} },
+        {
+          name: UPDATES_WINDOW_EXPIRY_TICK_TASK,
+          cron: "30 3 * * *",
+          data: {},
+        },
+      ].sort((a, b) => a.name.localeCompare(b.name)),
+    );
+  });
+
+  test("the updates-window notice uses updatesWindowDashboardUrl when given, not the credits dashboardUrl", async () => {
+    const fake = createFakeQueueFactory();
+    let capturedUrl: string | undefined;
+    const emailer = {
+      send: async (msg: { data: Record<string, unknown> }) => {
+        capturedUrl = msg.data.url as string;
+      },
+    };
+    await withTenant(db, "acct_url_check", (tx) =>
+      grantEntitlements(tx, {
+        accountId: "acct_url_check",
+        entitlementIds: ["compliance"],
+        sourceEventId: "pi_url_check",
+        source: { kind: "one_time", purchaseId: "pi_url_check" },
+      }),
+    );
+    await tp.exec(
+      `UPDATE entitlement_grant SET updates_expires_at = now() + interval '5 days'
+       WHERE account_id = 'acct_url_check'`,
+    );
+    await startCreditExpiryScheduler({
+      db,
+      connectionString: "postgres://unused",
+      schedule: "30 3 * * *",
+      createQueue: fake.factory,
+      emailer,
+      recipientFor: async () => "buyer@example.test",
+      dashboardUrl: "https://example.test/dashboard/credits",
+      updatesWindowDashboardUrl: "https://example.test/dashboard/license",
+    });
+    // Invoke the ACTUAL registered task's handler (captured by the fake factory) — proves the
+    // real `startCreditExpiryScheduler` wiring resolved `updatesWindowDashboardUrl`, not a
+    // hand-rolled duplicate of the resolution logic.
+    const task = fake.registeredTasks.find(
+      (t) => t.name === UPDATES_WINDOW_EXPIRY_NOTICE_TASK,
+    );
+    expect(task).toBeDefined();
+    await task?.handler({ accountId: "acct_url_check" });
+    expect(capturedUrl).toBe("https://example.test/dashboard/license");
   });
 
   test("a start failure logs and resolves — never throws past the boot path", async () => {

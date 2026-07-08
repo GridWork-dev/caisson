@@ -5,6 +5,11 @@
 // enumerates every account holding a credit wallet and enqueues that account's sweep + notice job;
 // the tasks' own `singletonKey` dedup (the account id) is the double-enqueue guard, not this module.
 //
+// G24 (buyer-lifecycle audit 2026-07-07) extends this SAME scheduler with a second parent tick
+// (`UPDATES_WINDOW_EXPIRY_TICK_TASK`) over a DIFFERENT account population — accounts holding a
+// windowed one_time entitlement grant — reusing the same arming/boot posture, pg-boss connection,
+// and emailer instance rather than a second env-gated cron.
+//
 // Cross-tenant read: enumerating `credit_wallet` across every account is exactly what tenant RLS
 // forbids for the buyer `app` role. Rather than widen that policy (or add a new role), this reuses
 // the ALREADY-provisioned `admin_write` role (`ADMIN_MUTATION_PROVISION_SQL` in admin-mutations.ts
@@ -32,6 +37,11 @@ import {
   enqueueCreditExpirySweep,
   type ExpiryNoticeEmailer,
 } from "@caisson/credits";
+import {
+  defineUpdatesWindowExpiryNoticeTask,
+  enqueueUpdatesWindowExpiryNotice,
+  UPDATES_WINDOW_EXPIRY_NOTICE_TASK,
+} from "./updates-window-expiry-task.ts";
 
 /** The daily parent-tick task name — enumerates wallet accounts, fans out per-account jobs. */
 export const CREDIT_EXPIRY_TICK_TASK = "credits.expiry_tick";
@@ -79,6 +89,44 @@ export async function runCreditExpiryTick(
   }
 }
 
+/** The G24 parent-tick task name — enumerates accounts holding an active windowed one_time
+ *  entitlement grant, fans out per-account notice jobs. A SEPARATE tick from
+ *  {@link CREDIT_EXPIRY_TICK_TASK} (a different account population — `entitlement_grant`, not
+ *  `credit_wallet`) but scheduled on the SAME cron, reusing this one scheduler's arming/boot
+ *  posture rather than a second env-gated cron. */
+export const UPDATES_WINDOW_EXPIRY_TICK_TASK =
+  "entitlement.updates_window_expiry_tick";
+
+/**
+ * Every account holding an ACTIVE one_time entitlement grant with a windowed expiry, read
+ * cross-tenant via the SAME already-provisioned `admin_write` role (`ADMIN_MUTATION_PROVISION_SQL`
+ * already grants it a full-command policy on `entitlement_grant` for the admin comp-grant
+ * mutations) — the same reuse rationale as {@link listWalletAccountIds}.
+ */
+export async function listUpdatesWindowAccountIds(
+  db: Transactor,
+): Promise<string[]> {
+  return withAdminWrite(db, async (tx) => {
+    const r = await tx.query<{ account_id: string }>(
+      `SELECT DISTINCT account_id FROM entitlement_grant
+         WHERE source_kind = 'one_time' AND status = 'active' AND updates_expires_at IS NOT NULL
+         ORDER BY account_id`,
+    );
+    return r.rows.map((row) => row.account_id);
+  });
+}
+
+/** One daily tick (G24): enumerate windowed accounts, enqueue each account's expiry-notice job. */
+export async function runUpdatesWindowExpiryTick(
+  db: Transactor,
+  queue: JobQueue,
+): Promise<void> {
+  const accountIds = await listUpdatesWindowAccountIds(db);
+  for (const accountId of accountIds) {
+    await enqueueUpdatesWindowExpiryNotice(queue, { accountId });
+  }
+}
+
 export interface CreditExpirySchedulerDeps {
   /** The tenant Transactor — the same one the issuer/webhook already use. */
   db: Transactor;
@@ -96,8 +144,15 @@ export interface CreditExpirySchedulerDeps {
   /** Resolve an account's notification address (`email-notify.ts#recipientFor`); unreachable while
    *  `emailer` is `null`. */
   recipientFor: (accountId: string) => Promise<string | null>;
-  /** The notice email's CTA link — the buyer credits dashboard. */
+  /** The credit-expiry notice email's CTA link — the buyer credits dashboard. */
   dashboardUrl: string;
+  /**
+   * G24 — the updates-window expiry notice's OWN CTA link (the buyer license page, not the
+   * credits page — a different notice about a different axis). Defaults to `dashboardUrl` when
+   * omitted so every existing caller/test keeps compiling; `deploy.ts` passes the real
+   * `/dashboard/license` URL explicitly.
+   */
+  updatesWindowDashboardUrl?: string;
   /** Injectable `createPgBossJobQueue` seam — tests assert this is NEVER called when inert. */
   createQueue?: typeof createPgBossJobQueue;
   /** Logger seam — defaults to this service's stderr convention (no console.log in product code). */
@@ -140,15 +195,42 @@ export async function startCreditExpiryScheduler(
       recipientFor: deps.recipientFor,
       dashboardUrl: deps.dashboardUrl,
     });
-
-    const started = createQueue([sweepTask, noticeTask, tickTask], {
-      connectionString: deps.connectionString,
+    // G24: a SECOND parent tick (different account population — entitlement_grant, not
+    // credit_wallet) sharing this SAME scheduler's arming/boot posture and the SAME emailer
+    // instance (structurally compatible — `ExpiryNoticeEmailer`/`UpdatesWindowExpiryEmailer` are
+    // the identical minimal `send()` shape).
+    const updatesWindowTickTask = defineTask(
+      UPDATES_WINDOW_EXPIRY_TICK_TASK,
+      tickPayloadSchema,
+      async () => {
+        await runUpdatesWindowExpiryTick(deps.db, queueBox.queue as JobQueue);
+      },
+    );
+    const updatesWindowNoticeTask = defineUpdatesWindowExpiryNoticeTask({
+      db: deps.db,
+      emailer: deps.emailer,
+      recipientFor: deps.recipientFor,
+      dashboardUrl: deps.updatesWindowDashboardUrl ?? deps.dashboardUrl,
     });
+
+    const started = createQueue(
+      [
+        sweepTask,
+        noticeTask,
+        tickTask,
+        updatesWindowNoticeTask,
+        updatesWindowTickTask,
+      ],
+      { connectionString: deps.connectionString },
+    );
     queueBox.queue = started;
     await started.work(CREDIT_EXPIRY_SWEEP_TASK);
     await started.work(CREDIT_EXPIRY_NOTICE_TASK);
     await started.work(CREDIT_EXPIRY_TICK_TASK);
+    await started.work(UPDATES_WINDOW_EXPIRY_NOTICE_TASK);
+    await started.work(UPDATES_WINDOW_EXPIRY_TICK_TASK);
     await started.schedule(CREDIT_EXPIRY_TICK_TASK, cron, {});
+    await started.schedule(UPDATES_WINDOW_EXPIRY_TICK_TASK, cron, {});
   } catch (err) {
     log(
       `[service-license] credit-expiry scheduler failed to start: ${err instanceof Error ? err.message : String(err)}`,

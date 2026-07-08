@@ -48,7 +48,10 @@ import {
 import { withAdvisoryXactLock } from "@caisson/jobs";
 import { withTenant, type TenantExecutor } from "@caisson/tenancy-rls";
 import type { DomainBillingEvent } from "@caisson/billing";
-import { parseStripeEvent } from "@caisson/billing-orchestration";
+import {
+  parseStripeEvent,
+  PROCESSED_EVENT_SCHEMA_SQL,
+} from "@caisson/billing-orchestration";
 import { applyBillingEvent } from "./apply-billing-event.ts";
 import {
   computeUpdatesWindows,
@@ -80,10 +83,11 @@ function purchaseCompleted(
   accountId: string,
   paymentId: string,
   priceId: string,
+  eventId?: string,
 ): DomainBillingEvent {
   return {
     type: "purchase.completed",
-    sourceEventId: `evt_${paymentId}`,
+    sourceEventId: eventId ?? `evt_${paymentId}`,
     accountId,
     amountTotal: 499900,
     currency: "usd",
@@ -175,6 +179,9 @@ beforeAll(async () => {
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
   await tp.exec(RENEWAL_EXTENSION_SCHEMA_SQL);
+  // G7 (audit 2026-07-07): invoice.paid/purchase.completed now gate their grant + returned effect
+  // behind withIdempotentSideEffect's claim table.
+  await tp.exec(PROCESSED_EVENT_SCHEMA_SQL);
   await tp.exec(SUBSCRIPTION_STATUS_SCHEMA_SQL);
   await tp.exec(ORDER_RECORD_SCHEMA_SQL);
 });
@@ -247,6 +254,67 @@ describe("applyBillingEvent — subscription cycle -> grant (ADR-0089)", () => {
     expect(ledger).toHaveLength(1);
     const bal = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
     expect(bal).toBe(CREDITS);
+  });
+
+  test("G7 (audit 2026-07-07): a resend's RETURNED EFFECT is empty, not just the DB row count", async () => {
+    // The gap the audit named: applyBillingEvent used to rebuild grantedEntitlements/skuLines from
+    // the INPUT event on every call, even when the DB write was a no-op replay — so app.ts's
+    // Discord/PostHog/purchase-email pushes re-fired on a Paddle "Resend" (fresh event_id, same
+    // invoice). Pin the FIX at the source: the second call's returned effect must be empty.
+    const acct = "acct_g7_invoice";
+    const first = await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        invoicePaid(acct, "in_g7", { eventId: "evt_g7_a" }),
+      ),
+    );
+    expect(first.grantedEntitlements).toEqual([]); // credits-only PLAN_ID grants no entitlement…
+    expect(first.skuLines.length).toBe(1); // …but the SKU line always attributes the charge.
+
+    const resend = await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        invoicePaid(acct, "in_g7", { eventId: "evt_g7_b" }),
+      ),
+    );
+    expect(resend).toEqual({
+      grantedEntitlements: [],
+      skuLines: [],
+      renewedEntitlements: [],
+      chargebackAlerts: [],
+      revokeNotices: [],
+    });
+    // The DB write is ALSO skipped on the resend (not merely re-applied idempotently) — one row.
+    const ledger = await withTenant(tp.pg, acct, (tx) => getLedger(tx, acct));
+    expect(ledger).toHaveLength(1);
+  });
+
+  test("G7: a one-time purchase resend's RETURNED EFFECT is empty too", async () => {
+    const acct = "acct_g7_purchase";
+    const first = await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pi_g7", ONETIME_EDITION_ID, "evt_g7_pur_a"),
+      ),
+    );
+    expect(first.grantedEntitlements).toEqual(["compliance"]);
+
+    const resend = await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pi_g7", ONETIME_EDITION_ID, "evt_g7_pur_b"),
+      ),
+    );
+    expect(resend).toEqual({
+      grantedEntitlements: [],
+      skuLines: [],
+      renewedEntitlements: [],
+      chargebackAlerts: [],
+      revokeNotices: [],
+    });
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]); // still granted exactly once, not un-granted
   });
 
   test("two distinct invoices grant twice (2 x creditsPerCycle)", async () => {
@@ -371,6 +439,115 @@ describe("applyBillingEvent — subscription cycle -> grant (ADR-0089)", () => {
         applyBillingEvent(tx, purchaseCompleted(acct, "", CREDIT_PACK_ID)),
       ),
     ).rejects.toThrow(ConfigError);
+  });
+});
+
+describe("applyBillingEvent — chargeback: ALERT-ONLY, no grant/revoke/claw (ADR-0294)", () => {
+  test("a chargeback surfaces chargebackAlerts and touches NO grant/credit/entitlement table", async () => {
+    const acct = "acct_chargeback";
+    const effect = await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, {
+        type: "chargeback.detected",
+        sourceEventId: "evt_cb_1",
+        accountId: acct,
+        paymentId: "txn_disputed",
+        amountDisputed: 74900,
+        currency: "usd",
+      }),
+    );
+    expect(effect).toEqual({
+      grantedEntitlements: [],
+      skuLines: [],
+      renewedEntitlements: [],
+      chargebackAlerts: [
+        {
+          accountId: acct,
+          paymentId: "txn_disputed",
+          amountDisputed: 74900,
+          currency: "usd",
+        },
+      ],
+      revokeNotices: [],
+    });
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual([]);
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(0);
+  });
+
+  test("a chargeback on an account with an ACTIVE purchase leaves it fully intact", async () => {
+    // The whole point of ALERT-ONLY: a disputed charge must not silently strip access the
+    // operator has not yet reviewed.
+    const acct = "acct_chargeback_active";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pi_cb_active", ONETIME_EDITION_ID),
+      ),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, {
+        type: "chargeback.detected",
+        sourceEventId: "evt_cb_2",
+        accountId: acct,
+        paymentId: "pi_cb_active",
+        amountDisputed: 74900,
+        currency: "usd",
+      }),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]); // untouched — the operator decides, not this mapper
+  });
+
+  test("WR-01 (SHIP review 2026-07-08): a Resend (fresh event_id, same disputed transaction) alerts only ONCE", async () => {
+    // The same gap G7 closed for grants: a Paddle dashboard Resend mints a FRESH event_id for the
+    // SAME underlying dispute, so the outer processEvent claim (keyed on event_id) alone would let
+    // it through as if new. The chargeback branch's own withIdempotentSideEffect, keyed on the
+    // stable disputed transaction id, must catch what the outer claim cannot.
+    const acct = "acct_cb_resend";
+    const first = await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, {
+        type: "chargeback.detected",
+        sourceEventId: "evt_cb_resend_a",
+        accountId: acct,
+        paymentId: "txn_cb_resend",
+        amountDisputed: 74900,
+        currency: "usd",
+      }),
+    );
+    expect(first.chargebackAlerts.length).toBe(1);
+
+    const resend = await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, {
+        type: "chargeback.detected",
+        sourceEventId: "evt_cb_resend_b", // fresh delivery id, same dispute
+        accountId: acct,
+        paymentId: "txn_cb_resend", // same disputed transaction
+        amountDisputed: 74900,
+        currency: "usd",
+      }),
+    );
+    expect(resend.chargebackAlerts).toEqual([]);
+  });
+
+  test("a chargeback with no transaction id falls back to sourceEventId as the idempotency key", async () => {
+    const acct = "acct_cb_notxn";
+    const effect = await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, {
+        type: "chargeback.detected",
+        sourceEventId: "evt_cb_notxn",
+        accountId: acct,
+        paymentId: "", // missing on the delivery — parsePaddleEvent's "" sentinel
+        amountDisputed: 5000,
+        currency: "usd",
+      }),
+    );
+    expect(effect.chargebackAlerts.length).toBe(1);
+    // A true redelivery (SAME event_id) never even reaches applyBillingEvent again (the outer
+    // processEvent claim in webhook.ts absorbs it) — pin only that the fallback key is non-empty
+    // and usable, not a second call with the identical sourceEventId (assertValidSourceEventId
+    // would reject an empty key outright, which this proves it never is).
   });
 });
 
@@ -504,15 +681,16 @@ describe("applyBillingEvent — one-time purchase grant (ADR-0113)", () => {
 describe("applyBillingEvent — refund: revoke + claw unspent credits (ADR-0113)", () => {
   test("refund soft-revokes the purchase's entitlement AND claws back the full unspent grant", async () => {
     const acct = "acct_refund_full";
-    await withTenant(tp.pg, acct, (tx) =>
-      applyBillingEvent(tx, purchaseCompleted(acct, "pi_rf", CREDIT_PACK_ID)),
-    );
-    // Also a one-time edition so the refund has an entitlement to revoke.
+    // One multi-line cart (a real Paddle transaction carries every line in ONE event — G7, 2026-07-07):
+    // a credit pack + a one-time edition so the refund has both credits to claw and an entitlement
+    // to revoke, all under the SAME payment id.
     await withTenant(tp.pg, acct, (tx) =>
       applyBillingEvent(
         tx,
-        // SAME payment id so the refund revokes this entitlement grant too.
-        purchaseCompleted(acct, "pi_rf", ONETIME_EDITION_ID),
+        purchaseCompletedMulti(acct, "pi_rf", [
+          { priceId: CREDIT_PACK_ID, quantity: 1 },
+          { priceId: ONETIME_EDITION_ID, quantity: 1 },
+        ]),
       ),
     );
     expect(
@@ -530,15 +708,15 @@ describe("applyBillingEvent — refund: revoke + claw unspent credits (ADR-0113)
 
   test("a spent-down wallet claws back ONLY the remainder (never negative)", async () => {
     const acct = "acct_refund_spent";
+    // One multi-line cart: the edition (0 credits) + a credit pack, so there are credits to spend + claw.
     await withTenant(tp.pg, acct, (tx) =>
       applyBillingEvent(
         tx,
-        purchaseCompleted(acct, "pi_sp", ONETIME_EDITION_ID),
+        purchaseCompletedMulti(acct, "pi_sp", [
+          { priceId: ONETIME_EDITION_ID, quantity: 1 },
+          { priceId: CREDIT_PACK_ID, quantity: 1 },
+        ]),
       ),
-    );
-    // Grant a separate credit pack on the SAME purchase so there are credits to spend + claw.
-    await withTenant(tp.pg, acct, (tx) =>
-      applyBillingEvent(tx, purchaseCompleted(acct, "pi_sp", CREDIT_PACK_ID)),
     );
     // Spend 4000 of the 5000.
     await withTenant(tp.pg, acct, (tx) =>
@@ -617,12 +795,12 @@ describe("applyBillingEvent — refund: revoke + claw unspent credits (ADR-0113)
   test("a PARTIAL refund (fullyRefunded=false) is a no-op — no revoke, no clawback (ADR-0113 W1)", async () => {
     const acct = "acct_refund_partial";
     await withTenant(tp.pg, acct, (tx) =>
-      applyBillingEvent(tx, purchaseCompleted(acct, "pi_pt", CREDIT_PACK_ID)),
-    );
-    await withTenant(tp.pg, acct, (tx) =>
       applyBillingEvent(
         tx,
-        purchaseCompleted(acct, "pi_pt", ONETIME_EDITION_ID),
+        purchaseCompletedMulti(acct, "pi_pt", [
+          { priceId: CREDIT_PACK_ID, quantity: 1 },
+          { priceId: ONETIME_EDITION_ID, quantity: 1 },
+        ]),
       ),
     );
     // A partial charge.refunded must NOT strip access or claw the whole grant.
@@ -719,17 +897,15 @@ describe("applyBillingEvent — refund: revoke + claw unspent credits (ADR-0113)
         }),
       ),
     );
-    // A one-time purchase of the SAME entitlement id (refcount) + a credit pack, same payment id.
+    // A one-time multi-line purchase of the SAME entitlement id (refcount) + a credit pack, same
+    // payment id (one Paddle transaction, one delivery).
     await withTenant(tp.pg, acct, (tx) =>
       applyBillingEvent(
         tx,
-        purchaseCompleted(acct, "pi_bound", ONETIME_EDITION_ID),
-      ),
-    );
-    await withTenant(tp.pg, acct, (tx) =>
-      applyBillingEvent(
-        tx,
-        purchaseCompleted(acct, "pi_bound", CREDIT_PACK_ID),
+        purchaseCompletedMulti(acct, "pi_bound", [
+          { priceId: ONETIME_EDITION_ID, quantity: 1 },
+          { priceId: CREDIT_PACK_ID, quantity: 1 },
+        ]),
       ),
     );
     expect(
@@ -917,6 +1093,57 @@ describe("applyBillingEvent — entitlement grant on cycle (ADR-0071)", () => {
     expect(ents).toEqual(["compliance"]); // one row, not two
     const bal = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
     expect(bal).toBe(24000); // credits DID accrue twice (two distinct invoices)
+  });
+
+  test("G18/G7 (audit 2026-07-07): a Resend of the SAME invoice never ratchets the coverage horizon", async () => {
+    // The audit's exact bug: upsertSubscriptionGrants's ON-CONFLICT DO-UPDATE recomputes
+    // updates_expires_at = GREATEST(existing, now()+cadence) with no per-invoice idempotency key,
+    // so a resent invoice.paid (fresh event_id, same invoiceId) used to push the horizon forward by
+    // the wall-clock gap between the two calls — for free, no new payment. The G7 fix (this file's
+    // withIdempotentSideEffect gate, keyed on the STABLE invoiceId) closes it as a side effect: a
+    // resend skips upsertSubscriptionGrants entirely, so the raw horizon column cannot move at all.
+    // A `coversOwnedEntitlements` (Developer) plan against an OWNED one-time entitlement is the
+    // exact ADR-0269 coverage-mirror shape the audit's evidence cites.
+    const acct = "acct_g18_horizon";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pi_g18", ONETIME_EDITION_ID),
+      ),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        invoicePaid(acct, "in_g18", {
+          priceId: PLAN_ID, // coversOwnedEntitlements: true
+          eventId: "evt_g18_a",
+        }),
+      ),
+    );
+    const readHorizon = async (): Promise<string | undefined> => {
+      const rows = await tp.query<{ updates_expires_at: string | Date }>(
+        `SELECT updates_expires_at FROM entitlement_grant
+           WHERE account_id = $1 AND source_kind = 'subscription' AND entitlement_id = $2`,
+        [acct, "compliance"],
+      );
+      const raw = rows[0]?.updates_expires_at;
+      return raw === undefined ? undefined : new Date(raw).toISOString();
+    };
+    const horizonAfterFirst = await readHorizon();
+    expect(horizonAfterFirst).toBeDefined();
+    // Resend: SAME invoice id, FRESH event id — models the Paddle dashboard "Resend" some time later.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        invoicePaid(acct, "in_g18", {
+          priceId: PLAN_ID,
+          eventId: "evt_g18_b",
+        }),
+      ),
+    );
+    const horizonAfterResend = await readHorizon();
+    // Byte-identical, not merely "close" — the resend touched nothing.
+    expect(horizonAfterResend).toBe(horizonAfterFirst);
   });
 
   test("a credits-only plan grants no entitlement (entitlements: [])", async () => {
@@ -1366,12 +1593,12 @@ describe("applyBillingEvent — Paddle per-line partial refund (ADR-0218)", () =
   test("a Stripe-style partial (fullyRefunded=false, no items[]) stays a no-op (ADR-0218 D-1)", async () => {
     const acct = "acct_pl_noitems";
     await withTenant(tp.pg, acct, (tx) =>
-      applyBillingEvent(tx, purchaseCompleted(acct, "pi_ni", CREDIT_PACK_ID)),
-    );
-    await withTenant(tp.pg, acct, (tx) =>
       applyBillingEvent(
         tx,
-        purchaseCompleted(acct, "pi_ni", ONETIME_EDITION_ID),
+        purchaseCompletedMulti(acct, "pi_ni", [
+          { priceId: CREDIT_PACK_ID, quantity: 1 },
+          { priceId: ONETIME_EDITION_ID, quantity: 1 },
+        ]),
       ),
     );
     // A partial refund with no per-line data (Stripe / itemless) must not revoke or claw.

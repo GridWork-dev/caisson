@@ -20,6 +20,11 @@ import { loadRegistryIndex } from "@caisson/registry-schema";
 import type { Transactor } from "@caisson/tenancy-rls";
 import { createApp } from "./app.ts";
 import {
+  type ChargebackAlert,
+  loadChargebackAlertConfig,
+  notifyChargebackAlert,
+} from "./chargeback-notify.ts";
+import {
   type DiscordGrantPush,
   loadDiscordNotifyConfig,
   notifyDiscordGrant,
@@ -29,9 +34,11 @@ import { loadEvalConfig } from "./eval-verification.ts";
 import {
   notifyPurchaseEmail,
   notifyRenewalEmail,
+  notifyRevokeEmail,
   resolveEmailer,
   type PurchaseEmailNotice,
   type RenewalEmailNotice,
+  type RevokeEmailNotice,
 } from "./email-notify.ts";
 import {
   capturePostHogPurchase,
@@ -160,9 +167,24 @@ export function startServer(
   // sharing the SAME emailer instance (Resend or the capture driver) — no separate env gate.
   const renewalEmailNotify = (notice: RenewalEmailNotice): Promise<void> =>
     notifyRenewalEmail(db, emailer, notice);
+  // G27: the post-revoke notice, same shared emailer instance.
+  const revokeEmailNotify = (notice: RevokeEmailNotice): Promise<void> =>
+    notifyRevokeEmail(db, emailer, notice);
   if ((process.env.RESEND_API_KEY?.trim() ?? "") === "") {
     process.stderr.write(
       "[service-license] RESEND_API_KEY unset — purchase confirmation emails are captured, not sent\n",
+    );
+  }
+
+  // Chargeback/dispute operator alert (ADR-0294): ALWAYS wired, unlike discordNotify/posthogCapture
+  // — notifyChargebackAlert itself always logs the stderr ALERT floor and additionally posts to a
+  // Discord Incoming Webhook when DISCORD_CHARGEBACK_ALERT_WEBHOOK_URL is set.
+  const chargebackAlertConfig = loadChargebackAlertConfig();
+  const chargebackAlert = (alert: ChargebackAlert): Promise<void> =>
+    notifyChargebackAlert(chargebackAlertConfig, alert);
+  if (chargebackAlertConfig === null) {
+    process.stderr.write(
+      "[service-license] DISCORD_CHARGEBACK_ALERT_WEBHOOK_URL unset — chargeback alerts log to stderr only\n",
     );
   }
 
@@ -198,6 +220,8 @@ export function startServer(
     posthogCapture,
     purchaseEmailNotify,
     renewalEmailNotify,
+    revokeEmailNotify,
+    chargebackAlert,
     indexDigest,
     indexEntries,
     eval: {

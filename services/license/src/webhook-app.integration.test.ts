@@ -37,9 +37,11 @@ import {
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { withTenant } from "@caisson/tenancy-rls";
 import { createApp, type IssueAppDeps } from "./app.ts";
+import type { ChargebackAlert } from "./chargeback-notify.ts";
 import type {
   PurchaseEmailNotice,
   RenewalEmailNotice,
+  RevokeEmailNotice,
 } from "./email-notify.ts";
 import {
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
@@ -48,6 +50,10 @@ import {
   ENTITLEMENT_SCHEMA_SQL,
   readEntitlements,
 } from "./entitlement-store.ts";
+import {
+  LICENSE_GRANT_SCHEMA_SQL,
+  readLicenseGrant,
+} from "./license-grant-store.ts";
 import type { PurchaseCapture } from "./posthog-capture.ts";
 import {
   loadRateLimitConfig,
@@ -69,6 +75,11 @@ const PRICE_COMPLIANCE_UPDATES_SUB = "pri_01kwd76cwytyyy4yhd9ch0m935"; // sub pl
 const PRICE_DEVELOPER_SUB = "pri_01kwd76d64rz2ecm090pt4nq5q"; // -> 1000 credits/cycle, no entitlement
 const PRICE_CREDIT_PACK = "price_credit_pack_PLACEHOLDER"; // -> 5000 credits, no entitlement
 const PRICE_COMPLIANCE_RENEWAL = "pri_01kwvz6kzh4h43aec3r5rs5je4"; // RENEWAL_BOOK -> renews "compliance"
+// A bare-slug module purchase ("field-crypto") that is NOT a bundle id — against this file's EMPTY
+// registry index it grants fine at the entitlement-store layer (expandEntitlements is only a POST
+// /issue VALIDATION step) but fails `expandEntitlements` (not indexed, not reserved, not a bundle)
+// — the deliberate "unresolvable mint" fixture for the ADR-0292 failed-mint-never-fails-webhook test.
+const PRICE_FIELD_CRYPTO_MODULE = "price_field_crypto_module_PLACEHOLDER";
 
 function signed(body: string, t: number): string {
   const sig = createHmac("sha256", SECRET).update(`${t}:${body}`).digest("hex");
@@ -107,6 +118,7 @@ beforeAll(async () => {
   await tp.exec(SUBSCRIPTION_STATUS_SCHEMA_SQL);
   await tp.exec(ORDER_RECORD_SCHEMA_SQL);
   await tp.exec(PROCESSED_EVENT_SCHEMA_SQL);
+  await tp.exec(LICENSE_GRANT_SCHEMA_SQL);
   provider = createPaddleBilling({ webhookSecret: SECRET, apiKey: "pdl_test" });
 });
 afterAll(async () => {
@@ -120,6 +132,8 @@ function makeApp(
   posthogCapture: IssueAppDeps["posthogCapture"] = null,
   purchaseEmailNotify: IssueAppDeps["purchaseEmailNotify"] = async () => {},
   renewalEmailNotify: IssueAppDeps["renewalEmailNotify"] = async () => {},
+  chargebackAlert: IssueAppDeps["chargebackAlert"] = async () => {},
+  revokeEmailNotify: IssueAppDeps["revokeEmailNotify"] = async () => {},
 ): (req: Request) => Promise<Response> {
   return createApp({
     token: "unused-issue-token",
@@ -132,6 +146,8 @@ function makeApp(
     posthogCapture,
     purchaseEmailNotify,
     renewalEmailNotify,
+    revokeEmailNotify,
+    chargebackAlert,
   });
 }
 
@@ -474,8 +490,41 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
         skuLines: [
           { priceId: PRICE_COMPLIANCE_ONETIME, productSlug: "compliance" },
         ],
+        // G33: a one-time purchase is never a subscription cycle.
+        subscriptionCycle: false,
       },
     ]);
+  });
+
+  test("G33: a subscription-CYCLE invoice captures with subscriptionCycle=true", async () => {
+    const captures: PurchaseCapture[] = [];
+    const app = makeApp(
+      provider,
+      loadRateLimitConfig(),
+      null,
+      async (capture) => {
+        captures.push(capture);
+      },
+    );
+    const acct = "acct_txn_ph_cycle";
+    const t = Math.floor(Date.now() / 1000);
+    const body = JSON.stringify({
+      event_id: "evt_ph_cycle",
+      event_type: "transaction.completed",
+      data: {
+        id: "txn_ph_cycle",
+        subscription_id: "sub_ph_cycle",
+        origin: "subscription_recurring",
+        currency_code: "usd",
+        custom_data: { account_id: acct },
+        items: [{ price: { id: PRICE_COMPLIANCE_UPDATES_SUB } }],
+        details: { totals: { grand_total: "149900" } },
+      },
+    });
+    const res = await app(webhookReq(body, signed(body, t)));
+    expect(res.status).toBe(200);
+    expect(captures.length).toBe(1);
+    expect(captures[0]?.subscriptionCycle).toBe(true);
   });
 
   test("a THROWING posthog capturer never fails the webhook 2xx (money path independent of PostHog)", async () => {
@@ -555,17 +604,21 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
     });
     const res = await app(webhookReq(body, signed(body, t)));
     expect(res.status).toBe(200);
-    expect(notices).toEqual([
-      {
-        accountId: acct,
-        orderId: "evt_em_1",
-        currency: "usd",
-        amountTotalMinor: 74900,
-        lines: [{ productSlug: "compliance" }],
-        // A one-time purchase is never a subscription cycle (CAISSON-27).
-        subscriptionCycle: false,
-      },
-    ]);
+    expect(notices.length).toBe(1);
+    // ADR-0292: the post-commit first-mint token rides along on a granting delivery — asserted
+    // separately (it is unique per run) so the rest of the receipt still pins byte-for-byte.
+    const { licenseToken, ...rest } = notices[0]!;
+    expect(typeof licenseToken).toBe("string");
+    expect(licenseToken?.length).toBeGreaterThan(0);
+    expect(rest).toEqual({
+      accountId: acct,
+      orderId: "evt_em_1",
+      currency: "usd",
+      amountTotalMinor: 74900,
+      lines: [{ productSlug: "compliance" }],
+      // A one-time purchase is never a subscription cycle (CAISSON-27).
+      subscriptionCycle: false,
+    });
   });
 
   test("a subscription-CYCLE invoice fires the receipt with subscriptionCycle=true (CAISSON-27)", async () => {
@@ -599,16 +652,17 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
     });
     const res = await app(webhookReq(body, signed(body, t)));
     expect(res.status).toBe(200);
-    expect(notices).toEqual([
-      {
-        accountId: acct,
-        orderId: "evt_cycle_1",
-        currency: "usd",
-        amountTotalMinor: 149900,
-        lines: [{ productSlug: "compliance_updates" }],
-        subscriptionCycle: true,
-      },
-    ]);
+    expect(notices.length).toBe(1);
+    const { licenseToken, ...rest } = notices[0]!;
+    expect(typeof licenseToken).toBe("string"); // ADR-0292 first-mint token
+    expect(rest).toEqual({
+      accountId: acct,
+      orderId: "evt_cycle_1",
+      currency: "usd",
+      amountTotalMinor: 149900,
+      lines: [{ productSlug: "compliance_updates" }],
+      subscriptionCycle: true,
+    });
   });
 
   test("a first subscription charge (subscription_create) fires the receipt with subscriptionCycle=false (CAISSON-27)", async () => {
@@ -980,5 +1034,568 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
     expect(first.status).toBe(401); // passed the limiter, failed the bearer check
     const second = await app(issueReq("2.2.2.2"));
     expect(second.status).toBe(429); // spoofable header ignored → same "unknown" bucket → throttled
+  });
+
+  describe("ADR-0292: license first-mint webhook-push", () => {
+    test("a granting purchase mints a license post-commit, persisted for (account, major 0)", async () => {
+      const app = makeApp(provider);
+      const acct = "acct_txn_mint_persist";
+      const t = Math.floor(Date.now() / 1000);
+      const body = JSON.stringify({
+        event_id: "evt_mint_persist",
+        event_type: "transaction.completed",
+        data: {
+          id: "txn_mint_persist",
+          subscription_id: null,
+          currency_code: "usd",
+          custom_data: { account_id: acct },
+          items: [{ price: { id: PRICE_COMPLIANCE_ONETIME } }],
+          details: { totals: { grand_total: "74900" } },
+        },
+      });
+      const res = await app(webhookReq(body, signed(body, t)));
+      expect(res.status).toBe(200);
+      const grant = await withTenant(tp.pg, acct, (tx) =>
+        readLicenseGrant(tx, acct, 0),
+      );
+      expect(grant).not.toBeNull();
+      expect(grant?.token.length).toBeGreaterThan(0);
+    });
+
+    test("a re-delivery (same event_id) mints no second grant — one row per (account, major)", async () => {
+      const app = makeApp(provider);
+      const acct = "acct_txn_mint_redelivery";
+      const t = Math.floor(Date.now() / 1000);
+      const body = JSON.stringify({
+        event_id: "evt_mint_redelivery",
+        event_type: "transaction.completed",
+        data: {
+          id: "txn_mint_redelivery",
+          subscription_id: null,
+          currency_code: "usd",
+          custom_data: { account_id: acct },
+          items: [{ price: { id: PRICE_COMPLIANCE_ONETIME } }],
+          details: { totals: { grand_total: "74900" } },
+        },
+      });
+      const sig = signed(body, t);
+      const first = await app(webhookReq(body, sig));
+      expect(first.status).toBe(200);
+      const firstGrant = await withTenant(tp.pg, acct, (tx) =>
+        readLicenseGrant(tx, acct, 0),
+      );
+      expect(firstGrant).not.toBeNull();
+
+      const replay = await app(webhookReq(body, sig));
+      expect(replay.status).toBe(200);
+      const afterReplay = await withTenant(tp.pg, acct, (tx) =>
+        readLicenseGrant(tx, acct, 0),
+      );
+      // Same row, byte-identical token (idempotent re-serve, ADR-0110 "persist & reuse").
+      expect(afterReplay?.id).toBe(firstGrant?.id);
+      expect(afterReplay?.token).toBe(firstGrant?.token);
+    });
+
+    test("a Paddle Resend (fresh event_id, same transaction) re-serves the SAME stored token, not a second row", async () => {
+      const app = makeApp(provider);
+      const acct = "acct_txn_mint_resend";
+      const t1 = Math.floor(Date.now() / 1000);
+      const bodyA = oneTimeBody(
+        "evt_mint_resend_a",
+        "txn_mint_resend",
+        PRICE_COMPLIANCE_ONETIME,
+      );
+      const resA = await app(webhookReq(bodyA, signed(bodyA, t1)));
+      expect(resA.status).toBe(200);
+      const grantA = await withTenant(tp.pg, acct, (tx) =>
+        readLicenseGrant(tx, acct, 0),
+      );
+      expect(grantA).not.toBeNull();
+
+      // Same underlying transaction id, FRESH event_id — models the Paddle dashboard "Resend"
+      // (the DB grant no-ops via G7's per-invoice/per-payment claim; the mint's OWN idempotent
+      // re-serve additionally guarantees byte-identical output even if it ran again).
+      const t2 = t1 + 1;
+      const bodyB = oneTimeBody(
+        "evt_mint_resend_b",
+        "txn_mint_resend",
+        PRICE_COMPLIANCE_ONETIME,
+      );
+      const resB = await app(webhookReq(bodyB, signed(bodyB, t2)));
+      expect(resB.status).toBe(200);
+      const grantB = await withTenant(tp.pg, acct, (tx) =>
+        readLicenseGrant(tx, acct, 0),
+      );
+      expect(grantB?.id).toBe(grantA?.id);
+      expect(grantB?.token).toBe(grantA?.token);
+    });
+
+    test("a failed mint (unresolvable entitlement) never fails the webhook 200, and the email sends without a token", async () => {
+      const notices: PurchaseEmailNotice[] = [];
+      const app = makeApp(
+        provider,
+        loadRateLimitConfig(),
+        null,
+        null,
+        async (notice) => {
+          notices.push(notice);
+        },
+      );
+      const acct = "acct_txn_mint_fail";
+      const t = Math.floor(Date.now() / 1000);
+      // field-crypto is a bare module slug, not a bundle — against this file's EMPTY index it
+      // grants fine at the entitlement-store layer but fails expandEntitlements's VALIDATION
+      // (not indexed, not reserved, not a bundle), so issueOrReuseLicense returns "unresolved".
+      const body = oneTimeBody(
+        "evt_mint_fail",
+        "txn_mint_fail",
+        PRICE_FIELD_CRYPTO_MODULE,
+      );
+      const res = await app(webhookReq(body, signed(body, t)));
+      expect(res.status).toBe(200); // the grant already committed — never a Paddle retry
+      const entitlements = await withTenant(tp.pg, acct, (tx) =>
+        readEntitlements(tx, acct),
+      );
+      expect(entitlements).toEqual(["field-crypto"]); // the grant landed regardless
+      const grant = await withTenant(tp.pg, acct, (tx) =>
+        readLicenseGrant(tx, acct, 0),
+      );
+      expect(grant).toBeNull(); // no license persisted — the failed mint is self-healing, not fatal
+      expect(notices.length).toBe(1);
+      expect(notices[0]?.licenseToken).toBeUndefined(); // receipt still sends, just without a token
+    });
+
+    test("G7: a Resend (fresh event_id, same transaction) does not double-fire the purchase-confirmation email", async () => {
+      const notices: PurchaseEmailNotice[] = [];
+      const app = makeApp(
+        provider,
+        loadRateLimitConfig(),
+        null,
+        null,
+        async (notice) => {
+          notices.push(notice);
+        },
+      );
+      const t1 = Math.floor(Date.now() / 1000);
+      const bodyA = oneTimeBody(
+        "evt_g7_email_a",
+        "txn_g7_email",
+        PRICE_COMPLIANCE_ONETIME,
+      );
+      expect((await app(webhookReq(bodyA, signed(bodyA, t1)))).status).toBe(
+        200,
+      );
+      expect(notices.length).toBe(1);
+
+      const t2 = t1 + 1;
+      const bodyB = oneTimeBody(
+        "evt_g7_email_b",
+        "txn_g7_email",
+        PRICE_COMPLIANCE_ONETIME,
+      );
+      expect((await app(webhookReq(bodyB, signed(bodyB, t2)))).status).toBe(
+        200,
+      );
+      // The resend's grant/credit writes no-op at the DB layer (G7's per-payment claim), so the
+      // notify gate sees an empty grantedEntitlements list — no second receipt.
+      expect(notices.length).toBe(1);
+    });
+
+    test("G7: a Resend does not double-fire the discord push or the posthog capture either", async () => {
+      const pushes: Array<{ accountId: string; entitlements: string[] }> = [];
+      const captures: PurchaseCapture[] = [];
+      const app = makeApp(
+        provider,
+        loadRateLimitConfig(),
+        async (push) => {
+          pushes.push(push);
+        },
+        async (capture) => {
+          captures.push(capture);
+        },
+      );
+      const t1 = Math.floor(Date.now() / 1000);
+      const bodyA = oneTimeBody(
+        "evt_g7_fanout_a",
+        "txn_g7_fanout",
+        PRICE_COMPLIANCE_ONETIME,
+      );
+      expect((await app(webhookReq(bodyA, signed(bodyA, t1)))).status).toBe(
+        200,
+      );
+      const t2 = t1 + 1;
+      const bodyB = oneTimeBody(
+        "evt_g7_fanout_b",
+        "txn_g7_fanout",
+        PRICE_COMPLIANCE_ONETIME,
+      );
+      expect((await app(webhookReq(bodyB, signed(bodyB, t2)))).status).toBe(
+        200,
+      );
+      expect(pushes.length).toBe(1);
+      expect(captures.length).toBe(1);
+    });
+  });
+
+  describe("ADR-0294: chargeback subscribe + alert-only", () => {
+    function chargebackBody(
+      eventId: string,
+      txnId: string,
+      accountId: string,
+    ): string {
+      return JSON.stringify({
+        event_id: eventId,
+        event_type: "adjustment.created",
+        data: {
+          id: `adj_${eventId}`,
+          action: "chargeback",
+          transaction_id: txnId,
+          currency_code: "usd",
+          custom_data: { account_id: accountId },
+          totals: { total: "74900" },
+        },
+      });
+    }
+
+    test("a chargeback alerts the operator and grants/revokes/claws nothing", async () => {
+      const alerts: ChargebackAlert[] = [];
+      const app = makeApp(
+        provider,
+        loadRateLimitConfig(),
+        null,
+        null,
+        async () => {},
+        async () => {},
+        async (alert) => {
+          alerts.push(alert);
+        },
+      );
+      const acct = "acct_txn_chargeback_1";
+      const t = Math.floor(Date.now() / 1000);
+      const body = chargebackBody("evt_chargeback_1", "txn_chargeback_1", acct);
+      const res = await app(webhookReq(body, signed(body, t)));
+      expect(res.status).toBe(200);
+      expect(alerts).toEqual([
+        {
+          accountId: acct,
+          paymentId: "txn_chargeback_1",
+          amountDisputed: 74900,
+          currency: "usd",
+        },
+      ]);
+      // ALERT-ONLY: no entitlement, no credit movement for an account that never purchased anything.
+      const entitlements = await withTenant(tp.pg, acct, (tx) =>
+        readEntitlements(tx, acct),
+      );
+      expect(entitlements).toEqual([]);
+      expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(0);
+    });
+
+    test("WR-01: a Resend (fresh event_id, same disputed transaction) alerts the operator only ONCE", async () => {
+      const alerts: ChargebackAlert[] = [];
+      const app = makeApp(
+        provider,
+        loadRateLimitConfig(),
+        null,
+        null,
+        async () => {},
+        async () => {},
+        async (alert) => {
+          alerts.push(alert);
+        },
+      );
+      const acct = "acct_txn_chargeback_resend";
+      const t1 = Math.floor(Date.now() / 1000);
+      const bodyA = chargebackBody(
+        "evt_chargeback_resend_a",
+        "txn_chargeback_resend",
+        acct,
+      );
+      expect((await app(webhookReq(bodyA, signed(bodyA, t1)))).status).toBe(
+        200,
+      );
+      // Same dispute, FRESH event_id — models the Paddle dashboard "Resend" (the exact G7 shape).
+      const t2 = t1 + 1;
+      const bodyB = chargebackBody(
+        "evt_chargeback_resend_b",
+        "txn_chargeback_resend",
+        acct,
+      );
+      expect((await app(webhookReq(bodyB, signed(bodyB, t2)))).status).toBe(
+        200,
+      );
+      expect(alerts.length).toBe(1);
+    });
+
+    test("a THROWING chargeback alerter never fails the webhook 2xx", async () => {
+      const app = makeApp(
+        provider,
+        loadRateLimitConfig(),
+        null,
+        null,
+        async () => {},
+        async () => {},
+        () => {
+          throw new Error("alert transport exploded synchronously");
+        },
+      );
+      const t = Math.floor(Date.now() / 1000);
+      const body = chargebackBody(
+        "evt_chargeback_throw",
+        "txn_chargeback_throw",
+        "acct_txn_chargeback_2",
+      );
+      const res = await app(webhookReq(body, signed(body, t)));
+      expect(res.status).toBe(200);
+    });
+
+    test("a non-chargeback adjustment.created (a refund's own pending creation) is a no-op, unchanged", async () => {
+      const alerts: ChargebackAlert[] = [];
+      const app = makeApp(
+        provider,
+        loadRateLimitConfig(),
+        null,
+        null,
+        async () => {},
+        async () => {},
+        async (alert) => {
+          alerts.push(alert);
+        },
+      );
+      const t = Math.floor(Date.now() / 1000);
+      const body = JSON.stringify({
+        event_id: "evt_adj_created_refund",
+        event_type: "adjustment.created",
+        data: {
+          id: "adj_refund_pending",
+          action: "refund",
+          status: "pending_approval",
+          transaction_id: "txn_adj_created_refund",
+          currency_code: "usd",
+          custom_data: { account_id: "acct_txn_chargeback_3" },
+          totals: { total: "5000" },
+        },
+      });
+      const res = await app(webhookReq(body, signed(body, t)));
+      expect(res.status).toBe(200);
+      expect(alerts).toEqual([]);
+    });
+  });
+
+  describe("G27: cancel/refund buyer-facing notification", () => {
+    function makeAppWithRevoke(
+      revokeEmailNotify: IssueAppDeps["revokeEmailNotify"],
+    ): (req: Request) => Promise<Response> {
+      return makeApp(
+        provider,
+        loadRateLimitConfig(),
+        null,
+        null,
+        async () => {},
+        async () => {},
+        async () => {},
+        revokeEmailNotify,
+      );
+    }
+
+    test("a subscription cancel fires the revoke notice (reason: subscription_canceled)", async () => {
+      const notices: RevokeEmailNotice[] = [];
+      const acct = "acct_g27_cancel";
+      // Precondition: an active subscription grant to cancel.
+      const baseApp = makeApp(provider);
+      const baseT = Math.floor(Date.now() / 1000);
+      const baseBody = JSON.stringify({
+        event_id: "evt_g27_cancel_base",
+        event_type: "transaction.completed",
+        data: {
+          id: "txn_g27_cancel_base",
+          subscription_id: "sub_g27_cancel",
+          origin: "web",
+          currency_code: "usd",
+          custom_data: { account_id: acct },
+          items: [{ price: { id: PRICE_COMPLIANCE_UPDATES_SUB } }],
+          details: { totals: { grand_total: "149900" } },
+        },
+      });
+      expect(
+        (await baseApp(webhookReq(baseBody, signed(baseBody, baseT)))).status,
+      ).toBe(200);
+
+      const app = makeAppWithRevoke(async (notice) => {
+        notices.push(notice);
+      });
+      const t = Math.floor(Date.now() / 1000);
+      const body = JSON.stringify({
+        event_id: "evt_g27_cancel",
+        event_type: "subscription.canceled",
+        data: { id: "sub_g27_cancel", custom_data: { account_id: acct } },
+      });
+      const res = await app(webhookReq(body, signed(body, t)));
+      expect(res.status).toBe(200);
+      expect(notices).toEqual([
+        { accountId: acct, reason: "subscription_canceled" },
+      ]);
+    });
+
+    test("a redelivered cancel (same event_id) does not double-fire the revoke notice", async () => {
+      const notices: RevokeEmailNotice[] = [];
+      const acct = "acct_g27_cancel_redelivery";
+      const baseApp = makeApp(provider);
+      const baseT = Math.floor(Date.now() / 1000);
+      const baseBody = JSON.stringify({
+        event_id: "evt_g27_cancel_redel_base",
+        event_type: "transaction.completed",
+        data: {
+          id: "txn_g27_cancel_redel_base",
+          subscription_id: "sub_g27_cancel_redel",
+          origin: "web",
+          currency_code: "usd",
+          custom_data: { account_id: acct },
+          items: [{ price: { id: PRICE_COMPLIANCE_UPDATES_SUB } }],
+          details: { totals: { grand_total: "149900" } },
+        },
+      });
+      expect(
+        (await baseApp(webhookReq(baseBody, signed(baseBody, baseT)))).status,
+      ).toBe(200);
+
+      const app = makeAppWithRevoke(async (notice) => {
+        notices.push(notice);
+      });
+      const t = Math.floor(Date.now() / 1000);
+      const body = JSON.stringify({
+        event_id: "evt_g27_cancel_redel",
+        event_type: "subscription.canceled",
+        data: {
+          id: "sub_g27_cancel_redel",
+          custom_data: { account_id: acct },
+        },
+      });
+      const sig = signed(body, t);
+      expect((await app(webhookReq(body, sig))).status).toBe(200);
+      expect((await app(webhookReq(body, sig))).status).toBe(200);
+      expect(notices.length).toBe(1);
+    });
+
+    test("a whole-transaction refund fires the revoke notice (reason: refund)", async () => {
+      const notices: RevokeEmailNotice[] = [];
+      // oneTimeBody derives custom_data.account_id as `acct_${txnId}` — match it here rather
+      // than passing a mismatched account to the refund event below.
+      const acct = "acct_txn_g27_refund";
+      const baseApp = makeApp(provider);
+      const baseT = Math.floor(Date.now() / 1000);
+      const baseBody = oneTimeBody(
+        "evt_g27_refund_base",
+        "txn_g27_refund",
+        PRICE_COMPLIANCE_ONETIME,
+      );
+      expect(
+        (await baseApp(webhookReq(baseBody, signed(baseBody, baseT)))).status,
+      ).toBe(200);
+
+      const app = makeAppWithRevoke(async (notice) => {
+        notices.push(notice);
+      });
+      const t = Math.floor(Date.now() / 1000);
+      const body = JSON.stringify({
+        event_id: "evt_g27_refund",
+        event_type: "adjustment.updated",
+        data: {
+          id: "adj_g27_refund",
+          action: "refund",
+          status: "approved",
+          type: "full",
+          transaction_id: "txn_g27_refund",
+          currency_code: "usd",
+          custom_data: { account_id: acct },
+          totals: { total: "74900" },
+        },
+      });
+      const res = await app(webhookReq(body, signed(body, t)));
+      expect(res.status).toBe(200);
+      expect(notices).toEqual([{ accountId: acct, reason: "refund" }]);
+    });
+
+    test("a dollar-PARTIAL refund with NO entitlement loss fires no revoke notice", async () => {
+      const notices: RevokeEmailNotice[] = [];
+      const acct = "acct_txn_g27_partial"; // matches oneTimeBody's derived account_id
+      const baseApp = makeApp(provider);
+      const baseT = Math.floor(Date.now() / 1000);
+      const baseBody = oneTimeBody(
+        "evt_g27_partial_base",
+        "txn_g27_partial",
+        PRICE_CREDIT_PACK,
+      );
+      expect(
+        (await baseApp(webhookReq(baseBody, signed(baseBody, baseT)))).status,
+      ).toBe(200);
+
+      const app = makeAppWithRevoke(async (notice) => {
+        notices.push(notice);
+      });
+      const t = Math.floor(Date.now() / 1000);
+      // A dollar-partial adjustment (fullyRefunded:false whole-tx, item type:'partial') claws
+      // credits only — no entitlement grant is ever revoked, so no "access changed" notice fires.
+      const body = JSON.stringify({
+        event_id: "evt_g27_partial",
+        event_type: "adjustment.updated",
+        data: {
+          id: "adj_g27_partial",
+          action: "refund",
+          status: "approved",
+          type: "partial",
+          transaction_id: "txn_g27_partial",
+          currency_code: "usd",
+          custom_data: { account_id: acct },
+          totals: { total: "1000" },
+          items: [
+            {
+              id: "adjitm_g27_partial",
+              item_id: "",
+              type: "partial",
+              totals: { total: "1000" },
+            },
+          ],
+        },
+      });
+      const res = await app(webhookReq(body, signed(body, t)));
+      expect(res.status).toBe(200);
+      expect(notices).toEqual([]);
+    });
+
+    test("a THROWING revoke-notice emailer never fails the webhook 2xx", async () => {
+      const acct = "acct_txn_g27_throw"; // matches oneTimeBody's derived account_id
+      const baseApp = makeApp(provider);
+      const baseT = Math.floor(Date.now() / 1000);
+      const baseBody = oneTimeBody(
+        "evt_g27_throw_base",
+        "txn_g27_throw",
+        PRICE_COMPLIANCE_ONETIME,
+      );
+      expect(
+        (await baseApp(webhookReq(baseBody, signed(baseBody, baseT)))).status,
+      ).toBe(200);
+
+      const app = makeAppWithRevoke(() => {
+        throw new Error("email transport exploded synchronously");
+      });
+      const t = Math.floor(Date.now() / 1000);
+      const body = JSON.stringify({
+        event_id: "evt_g27_throw",
+        event_type: "adjustment.updated",
+        data: {
+          id: "adj_g27_throw",
+          action: "refund",
+          status: "approved",
+          type: "full",
+          transaction_id: "txn_g27_throw",
+          currency_code: "usd",
+          custom_data: { account_id: acct },
+          totals: { total: "74900" },
+        },
+      });
+      const res = await app(webhookReq(body, signed(body, t)));
+      expect(res.status).toBe(200);
+    });
   });
 });

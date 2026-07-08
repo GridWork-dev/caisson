@@ -10,7 +10,9 @@ import { type Transactor, withTenant } from "@caisson/tenancy-rls";
 import {
   applyBillingEvent,
   type RenewedEntitlement,
+  type RevokeNotice,
 } from "./apply-billing-event.ts";
+import type { ChargebackAlert } from "./chargeback-notify.ts";
 import type { SkuLine } from "./posthog-capture.ts";
 
 export interface BillingWebhookResult {
@@ -34,6 +36,23 @@ export interface BillingWebhookResult {
    * replayed delivery never re-fires the post-commit renewal-confirmation email.
    */
   renewedEntitlements: RenewedEntitlement[];
+  /**
+   * ADR-0294 chargeback/dispute alerts this delivery surfaced, threaded from `applyBillingEvent` —
+   * `[]` on every non-chargeback event AND on a re-delivery (gated on the outer `processEvent`
+   * claim like the fields above). A Paddle dashboard "Resend" (a FRESH `event_id` for the same
+   * dispute) sails past that outer gate, so `applyBillingEvent`'s own `chargeback.detected` case
+   * ALSO gates the alert internally via `withIdempotentSideEffect`, keyed on the stable disputed
+   * transaction id — a redelivered OR resent chargeback notification never double-alerts the
+   * operator, except the degenerate case of a chargeback delivered with no transaction id at all
+   * (falls back to the per-delivery `event_id`, so a resend of THAT case can still re-alert once).
+   */
+  chargebackAlerts: ChargebackAlert[];
+  /**
+   * G27 buyer-facing revoke notices this delivery surfaced (a subscription cancel or a refund
+   * that actually revoked something), threaded from `applyBillingEvent` — `[]` on every granting
+   * event AND on a re-delivery (gated identically to the fields above).
+   */
+  revokeNotices: RevokeNotice[];
 }
 
 /**
@@ -64,6 +83,8 @@ export async function handleBillingWebhook(
       grantedEntitlements: [],
       skuLines: [],
       renewedEntitlements: [],
+      chargebackAlerts: [],
+      revokeNotices: [],
     };
   if (event.accountId === "") {
     process.stderr.write(
@@ -79,28 +100,52 @@ export async function handleBillingWebhook(
   // skips the grant, and leaves grantedEntitlements empty — so the post-commit Discord push (ADR-0203,
   // gated on grantedEntitlements.length > 0 in app.ts) is skipped too, closing the re-push gap. The
   // claim + grant commit or roll back together, so a failed grant is retried cleanly next delivery.
-  const { grantedEntitlements, skuLines, renewedEntitlements } =
-    await withTenant(pg, event.accountId, async (tx) => {
-      let granted: string[] = [];
-      let lines: SkuLine[] = [];
-      let renewed: RenewedEntitlement[] = [];
-      const { alreadyProcessed } = await processEvent(
-        tx,
-        event.sourceEventId,
-        async () => {
-          const effect = await applyBillingEvent(tx, event);
-          granted = effect.grantedEntitlements;
-          lines = effect.skuLines;
-          renewed = effect.renewedEntitlements;
-        },
-      );
-      return alreadyProcessed
-        ? { grantedEntitlements: [], skuLines: [], renewedEntitlements: [] }
-        : {
-            grantedEntitlements: granted,
-            skuLines: lines,
-            renewedEntitlements: renewed,
-          };
-    });
-  return { event, grantedEntitlements, skuLines, renewedEntitlements };
+  const {
+    grantedEntitlements,
+    skuLines,
+    renewedEntitlements,
+    chargebackAlerts,
+    revokeNotices,
+  } = await withTenant(pg, event.accountId, async (tx) => {
+    let granted: string[] = [];
+    let lines: SkuLine[] = [];
+    let renewed: RenewedEntitlement[] = [];
+    let chargebacks: ChargebackAlert[] = [];
+    let revokes: RevokeNotice[] = [];
+    const { alreadyProcessed } = await processEvent(
+      tx,
+      event.sourceEventId,
+      async () => {
+        const effect = await applyBillingEvent(tx, event);
+        granted = effect.grantedEntitlements;
+        lines = effect.skuLines;
+        renewed = effect.renewedEntitlements;
+        chargebacks = effect.chargebackAlerts;
+        revokes = effect.revokeNotices;
+      },
+    );
+    return alreadyProcessed
+      ? {
+          grantedEntitlements: [],
+          skuLines: [],
+          renewedEntitlements: [],
+          chargebackAlerts: [],
+          revokeNotices: [],
+        }
+      : {
+          grantedEntitlements: granted,
+          skuLines: lines,
+          renewedEntitlements: renewed,
+          chargebackAlerts: chargebacks,
+          revokeNotices: revokes,
+        };
+  });
+  return {
+    event,
+    grantedEntitlements,
+    skuLines,
+    renewedEntitlements,
+    chargebackAlerts,
+    revokeNotices,
+  };
 }
