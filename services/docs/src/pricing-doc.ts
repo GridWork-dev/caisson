@@ -109,11 +109,17 @@ function bundlesDoc(facts: PricingFacts): string {
         ? facts.modules
         : facts.modules.filter((m) => m.bundles.includes(bundle.id));
     lines.push(`## ${bundle.label} — ${fmtPrice(bundle)}`, "", bundle.note, "");
+    // CAISSON-43: name every member module (id + label + price + one-line description), not just
+    // a bare price list — a support query asking "what's in bundle X" needs the module id an agent
+    // can pass to `--module`/`generate`, and the blurb, to be answerable from this chunk alone.
     if (modules.length > 0) {
-      const list = modules
-        .map((m) => `${m.label} (${moduleUsd(m.amount)})`)
-        .join(", ");
-      lines.push(`Includes: ${list}.`, "");
+      lines.push("Modules included:", "");
+      for (const m of modules) {
+        lines.push(
+          `- **${m.label}** (\`${m.id}\`, ${moduleUsd(m.amount)}): ${m.blurb}`,
+        );
+      }
+      lines.push("");
     }
   }
   return lines.join("\n");
