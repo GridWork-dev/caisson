@@ -6,14 +6,11 @@
 // from server-only env: DOCS_SERVICE_TOKEN, OPENROUTER_API_KEY, TURNSTILE_SECRET never reach the browser.
 import { getSession } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import {
-  type AskDeps,
-  type EscalationReason,
-  handleAsk,
-} from "@/lib/ask-ai/handler";
+import { type AskDeps, handleAsk } from "@/lib/ask-ai/handler";
 import { logQuestion } from "@/lib/ask-ai/question-log";
 import { retrieveChunks } from "@/lib/ask-ai/retrieve";
 import { streamOpenRouter } from "@/lib/ask-ai/openrouter";
+import { throttleEscalate } from "@/lib/ask-ai/escalate-throttle";
 import {
   loadSiteEscalateConfig,
   pushSiteEscalation,
@@ -34,6 +31,17 @@ export const dynamic = "force-dynamic";
 const DEFAULT_PUBLIC_MODEL = "google/gemini-3.5-flash";
 const DEFAULT_PREMIUM_MODEL = "anthropic/claude-sonnet-4.6";
 
+// Module scope (constructed ONCE per process, not per request — SHIP review WR-01): the throttle's
+// dedup window + per-minute cap must persist across requests to mean anything. `buildDeps()` runs on
+// every POST, so wiring `throttleEscalate` inside it would reset both guards on every request.
+const escalateConfig = loadSiteEscalateConfig();
+const throttledEscalate =
+  escalateConfig !== null
+    ? throttleEscalate(async (question, reason) => {
+        await pushSiteEscalation(escalateConfig, question, reason);
+      })
+    : null;
+
 function envOr(name: string, fallback: string): string {
   const v = process.env[name]?.trim();
   return v !== undefined && v.length > 0 ? v : fallback;
@@ -44,7 +52,6 @@ function buildDeps(): AskDeps {
     secret: process.env.TURNSTILE_SECRET,
     isProduction: process.env.NODE_ENV === "production",
   });
-  const escalateConfig = loadSiteEscalateConfig();
   return {
     verifyTurnstile,
     isAuthed: async () => (await getSession()) !== null,
@@ -76,16 +83,11 @@ function buildDeps(): AskDeps {
     capture: async (lane, question, outcome) => {
       await logQuestion(await getDb(), lane, question, outcome);
     },
-    // G21: ticket parity with the Discord bot's own escalations. `exactOptionalPropertyTypes` means
-    // the key must be OMITTED (not set to `undefined`) when the push is unconfigured, so the
-    // optional dep is spread in rather than assigned a possibly-undefined value.
-    ...(escalateConfig !== null
-      ? {
-          escalate: async (question: string, reason: EscalationReason) => {
-            await pushSiteEscalation(escalateConfig, question, reason);
-          },
-        }
-      : {}),
+    // G21: ticket parity with the Discord bot's own escalations, throttled (WR-01: dedup window +
+    // a global per-minute cap — see escalate-throttle.ts). `exactOptionalPropertyTypes` means the
+    // key must be OMITTED (not set to `undefined`) when the push is unconfigured, so the optional
+    // dep is spread in rather than assigned a possibly-undefined value.
+    ...(throttledEscalate !== null ? { escalate: throttledEscalate } : {}),
   };
 }
 

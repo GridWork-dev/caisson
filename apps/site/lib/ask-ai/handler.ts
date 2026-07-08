@@ -241,20 +241,6 @@ export async function handleAsk(
         } catch {
           /* best-effort */
         }
-        // G21: file a support ticket for a genuinely-unanswered question — never for `spend_cap`,
-        // which is a capacity signal (a traffic burst tripping the daily budget), not a question a
-        // human needs to follow up on; ticketing every cap-hit would flood Triage during a burst.
-        if (
-          outcome === "escalated" &&
-          escalationReason !== undefined &&
-          escalationReason !== "spend_cap"
-        ) {
-          try {
-            await deps.escalate?.(question, escalationReason);
-          } catch {
-            /* best-effort */
-          }
-        }
         // Settle the reservation with the real cost (0 when no generation happened at all — e.g.
         // retrieval failed after the reservation was granted, fully releasing it). Only when a
         // reservation was actually granted above (never after a spend_cap escalation, which reserved
@@ -270,6 +256,23 @@ export async function handleAsk(
         }
         emit("done", {});
         controller.close();
+
+        // G21: file a support ticket for a genuinely-unanswered question — never for `spend_cap`,
+        // which is a capacity signal (a traffic burst tripping the daily budget), not a question a
+        // human needs to follow up on; ticketing every cap-hit would flood Triage during a burst.
+        // SHIP review WR-02: fired AFTER close, detached (never awaited) — a cross-service push (up
+        // to a 10s timeout in the real deps) must never hold the buyer's socket open, which matters
+        // most exactly when it would trip most often: a docs-service outage that escalates every
+        // question. `.catch` is defense-in-depth (deps.escalate is documented best-effort already).
+        if (
+          outcome === "escalated" &&
+          escalationReason !== undefined &&
+          escalationReason !== "spend_cap"
+        ) {
+          void deps.escalate?.(question, escalationReason).catch(() => {
+            /* best-effort */
+          });
+        }
       }
     },
   });
