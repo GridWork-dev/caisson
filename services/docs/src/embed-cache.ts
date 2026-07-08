@@ -39,8 +39,19 @@ function loadEntries(
   let raw: string;
   try {
     raw = readFileSync(path, "utf8");
-  } catch {
-    return new Map(); // no cache file yet — cold start
+  } catch (err) {
+    // Absent file = normal cold start (silent). Anything else (EACCES on a root-owned mount,
+    // EIO) is a real problem worth one visible line — code only, never content.
+    const code =
+      err instanceof Error && "code" in err
+        ? String((err as NodeJS.ErrnoException).code)
+        : "unknown";
+    if (code !== "ENOENT") {
+      process.stderr.write(
+        `[service-docs] embed cache read FAILED (${code}) at ${path} — cold start\n`,
+      );
+    }
+    return new Map();
   }
   try {
     const parsed = CacheFileSchema.parse(JSON.parse(raw));
@@ -130,7 +141,10 @@ export class CachedEmbedder implements Embedder {
     return call;
   }
 
-  /** Persist accumulated entries (atomic tmp+rename). Fail-soft by design. */
+  /** Persist accumulated entries (atomic tmp+rename). Fail-soft by design — but never silent:
+   *  a persist failure costs a full re-embed next boot (real money over time), so it logs the
+   *  error code (only the code — never content). Root-owned volume mounts vs a non-root runtime
+   *  user are exactly the failure this line exists to surface. */
   save(): void {
     if (!this.dirty) return;
     try {
@@ -147,8 +161,14 @@ export class CachedEmbedder implements Embedder {
       );
       renameSync(tmp, this.path);
       this.dirty = false;
-    } catch {
-      // A cache persist failure is invisible to correctness — the next boot just re-embeds.
+    } catch (err) {
+      const code =
+        err instanceof Error && "code" in err
+          ? String((err as NodeJS.ErrnoException).code)
+          : "unknown";
+      process.stderr.write(
+        `[service-docs] embed cache save FAILED (${code}) at ${this.path} — every boot re-embeds until this is fixed\n`,
+      );
     }
   }
 }

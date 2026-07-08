@@ -20,18 +20,22 @@ ENV NODE_ENV=production \
 COPY . .
 RUN bun install --frozen-lockfile
 
-# Non-root: DocsIndex.build backs its bun:sqlite store with LocalStore.open({ dim }) — no `path`,
-# so it's `:memory:` (index-store.ts) — the process never writes to disk at runtime, only reads
-# the workspace installed above. `bun` (uid/gid 1000) is the oven/bun base image's baked-in
-# non-root user.
-USER bun
+# Non-root runtime via the entrypoint: the process runs as `bun` (uid/gid 1000, the oven/bun
+# base image's baked-in non-root user), but the entrypoint starts as root exactly long enough
+# to chown the Railway volume mount (attached ROOT-owned) so the embed cache
+# (src/embed-cache.ts) can persist there, then drops privileges with setpriv. The index itself
+# stays :memory: (LocalStore.open({ dim }) — no path); the volume holds only the embed cache.
+RUN chmod +x services/docs/entrypoint.sh
+ENTRYPOINT ["/app/services/docs/entrypoint.sh"]
 
 # DOCS_SERVICE_TOKEN is injected by the platform secret store at run time (server.ts refuses to start
 # without it). The real OpenRouter embedder (qwen3-embedding-8b) is a CODE-TRACK wire at
 # services/docs/src/server.ts (DocsIndex.build 2nd arg); until it lands this serves the FTS5 floor.
 EXPOSE 8788
+# The healthcheck exec spawns as the image's default user (root now that the entrypoint owns the
+# privilege drop) — drop it to bun the same way, so no periodic root-context process exists.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=25s \
-  CMD bun -e "fetch('http://127.0.0.1:'+(process.env.PORT||8788)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+  CMD setpriv --reuid=bun --regid=bun --init-groups bun -e "fetch('http://127.0.0.1:'+(process.env.PORT||8788)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 # cwd = /app → findRepoRoot resolves /app immediately (root package.json has `workspaces`).
 CMD ["bun", "services/docs/src/server.ts"]
