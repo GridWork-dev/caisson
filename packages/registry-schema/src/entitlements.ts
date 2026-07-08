@@ -381,17 +381,19 @@ export function expandEntitlements(
       continue;
     }
     if (MODULE_SLUG_RE.test(id)) {
+      if (NON_MODULE_ENTITLEMENT_IDS.has(id)) {
+        // permanently non-module (sold, never a package) — grants nothing, never throws, and
+        // wins over the indexed-module allowlist: if a package ever collided with this slug it
+        // must NOT become a silent module grant to every holder of the id (TM-E carve-out).
+        continue;
+      }
       const candidate = `@caisson/${id}`;
       if (allowlist.has(candidate)) {
         members.add(candidate);
         continue;
       }
-      if (
-        RESERVED_MODULE_ENTITLEMENT_IDS.has(id) ||
-        NON_MODULE_ENTITLEMENT_IDS.has(id)
-      ) {
-        // reserved (sold, not yet published) or permanently non-module (sold, never a package) —
-        // grants nothing, never throws (TM-E carve-out).
+      if (RESERVED_MODULE_ENTITLEMENT_IDS.has(id)) {
+        // reserved (sold, not yet published) — grants nothing, never throws (TM-E carve-out).
         continue;
       }
     }

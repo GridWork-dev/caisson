@@ -1,5 +1,5 @@
 ---
-"@caisson/registry-schema": patch
+"@caisson/registry-schema": minor
 ---
 
 Added `NON_MODULE_ENTITLEMENT_IDS` (currently `priority-support`, ADR-0278/0288): entitlement ids
