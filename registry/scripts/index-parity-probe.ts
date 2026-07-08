@@ -15,8 +15,10 @@
 //              index at the SAME `latest` version — i.e. the Worker serves no STALE version of any entry
 //              it exposes (the concrete F-1 risk). It does NOT assert anon-COMPLETENESS (the Worker
 //              filters by license, so a missing entry may simply be gated, not drifted).
-//   admin    — UNPROBEABLE externally (CF-Access gate). Printed as UNPROBEABLE; the admin digest check
-//              lands when the queued `/healthz` digest addition merges (see the follow-up note below).
+//   admin    — STRONG, same as license: GET admin.caisson.sh/healthz returns `indexDigest` (CAISSON-37,
+//              landed once the admin GitHub-OAuth migration — ADR-0283 — merged; /healthz itself is an
+//              unauthenticated Railway readiness route, so this leg is externally reachable). Equal ⇒
+//              the admin image baked the SAME index.
 //
 // registry/ is NOT a workspace member, so `@caisson/*` bare specifiers do not resolve here — this file
 // uses only relative imports, node built-ins, and zod. `fetchWithTimeout` is inlined for the same
@@ -31,6 +33,7 @@ const REGISTRY_DIR = join(import.meta.dir, "..");
 const INDEX_PATH = join(REGISTRY_DIR, "index.json");
 const WORKER_INDEX_URL = "https://registry.caisson.sh/index.json";
 const LICENSE_HEALTH_URL = "https://license.caisson.sh/health";
+const ADMIN_HEALTHZ_URL = "https://admin.caisson.sh/healthz";
 const FETCH_TIMEOUT_MS = 8000;
 
 /** The parity digest: sha256 of the bytes, first 12 hex chars. Identical to the license service's
@@ -47,14 +50,17 @@ const IndexShape = z.object({
     .default([]),
 });
 
-const LicenseHealthShape = z.object({
+// Shared by the license (/health) and admin (/healthz) legs — both report the identical shape,
+// computed via the identical sha256-first-12-hex formula, so one shape + one comparison function
+// serves both.
+const IndexDigestHealthShape = z.object({
   ok: z.boolean().optional(),
   indexDigest: z.string().optional(),
   indexEntries: z.number().optional(),
 });
-export type LicenseHealth = z.infer<typeof LicenseHealthShape>;
+export type IndexDigestHealth = z.infer<typeof IndexDigestHealthShape>;
 
-export type LegStatus = "ok" | "drift" | "unreachable" | "unprobeable";
+export type LegStatus = "ok" | "drift" | "unreachable";
 
 export interface LegResult {
   readonly leg: "repo" | "license" | "worker" | "admin";
@@ -69,19 +75,21 @@ export interface ParityInputs {
   readonly licenseHealth: unknown | null;
   /** Parsed Worker /index.json JSON, or null when the Worker was unreachable. */
   readonly workerIndex: unknown | null;
+  /** Parsed admin /healthz JSON, or null when the app was unreachable. */
+  readonly adminHealthz: unknown | null;
 }
 
 export interface ParityReport {
   readonly rows: LegResult[];
-  /** True when any reachable leg drifted OR a probed leg was unreachable (admin-unprobeable excludes). */
+  /** True when any leg drifted OR was unreachable. */
   readonly drift: boolean;
 }
 
 /**
  * Compare the reachable index copies. PURE over already-fetched inputs (the network lives in
- * {@link main}), so drift detection is unit-testable with fixtures. `drift` is true when the license
- * digest mismatches, when any Worker-served entry is stale/foreign vs the repo, or when a probed leg
- * (license/worker) was unreachable — the admin leg's `unprobeable` never sets drift.
+ * {@link main}), so drift detection is unit-testable with fixtures. `drift` is true when the
+ * license/admin digest mismatches, when any Worker-served entry is stale/foreign vs the repo, or
+ * when any probed leg was unreachable.
  */
 export function computeParity(inputs: ParityInputs): ParityReport {
   const rows: LegResult[] = [];
@@ -105,17 +113,9 @@ export function computeParity(inputs: ParityInputs): ParityReport {
       detail: `${repoDigest} — UNPARSEABLE repo index.json`,
     });
     // A broken reference makes every comparison meaningless — report and bail to drift.
-    rows.push({
-      leg: "license",
-      status: "drift",
-      detail: "skipped (repo unparseable)",
-    });
-    rows.push({
-      leg: "worker",
-      status: "drift",
-      detail: "skipped (repo unparseable)",
-    });
-    rows.push(adminRow());
+    for (const leg of ["license", "worker", "admin"] as const) {
+      rows.push({ leg, status: "drift", detail: "skipped (repo unparseable)" });
+    }
     return { rows, drift: true };
   }
   const repoLatest = new Map(repoParsed.modules.map((m) => [m.id, m.latest]));
@@ -126,32 +126,9 @@ export function computeParity(inputs: ParityInputs): ParityReport {
   });
 
   // --- license (strong: raw-byte digest equality) ---
-  if (inputs.licenseHealth === null) {
-    rows.push({
-      leg: "license",
-      status: "unreachable",
-      detail: "GET /health failed",
-    });
-  } else {
-    const health = LicenseHealthShape.safeParse(inputs.licenseHealth);
-    const digest = health.success ? health.data.indexDigest : undefined;
-    if (digest === undefined) {
-      rows.push({
-        leg: "license",
-        status: "drift",
-        detail:
-          "no indexDigest in /health (stale image predating the parity field?)",
-      });
-    } else if (digest === repoDigest) {
-      rows.push({ leg: "license", status: "ok", detail: `${digest} == repo` });
-    } else {
-      rows.push({
-        leg: "license",
-        status: "drift",
-        detail: `${digest} != repo ${repoDigest}`,
-      });
-    }
-  }
+  rows.push(
+    digestLegResult("license", "/health", inputs.licenseHealth, repoDigest),
+  );
 
   // --- worker (served entries must be no-staler than repo) ---
   if (inputs.workerIndex === null) {
@@ -194,7 +171,10 @@ export function computeParity(inputs: ParityInputs): ParityReport {
     }
   }
 
-  rows.push(adminRow());
+  // --- admin (strong: raw-byte digest equality, same shape as license) ---
+  rows.push(
+    digestLegResult("admin", "/healthz", inputs.adminHealthz, repoDigest),
+  );
 
   const drift = rows.some(
     (r) => r.status === "drift" || r.status === "unreachable",
@@ -202,13 +182,34 @@ export function computeParity(inputs: ParityInputs): ParityReport {
   return { rows, drift };
 }
 
-function adminRow(): LegResult {
-  return {
-    leg: "admin",
-    status: "unprobeable",
-    detail:
-      "CF-Access gated — external probe impossible; admin /healthz digest check queued (follow-up)",
-  };
+/** Compare a service's reported digest (license `/health` or admin `/healthz` — identical shape,
+ *  identical sha256-first-12-hex formula) against the repo reference. */
+function digestLegResult(
+  leg: "license" | "admin",
+  endpointLabel: string,
+  health: unknown | null,
+  repoDigest: string,
+): LegResult {
+  if (health === null) {
+    return {
+      leg,
+      status: "unreachable",
+      detail: `GET ${endpointLabel} failed`,
+    };
+  }
+  const parsed = IndexDigestHealthShape.safeParse(health);
+  const digest = parsed.success ? parsed.data.indexDigest : undefined;
+  if (digest === undefined) {
+    return {
+      leg,
+      status: "drift",
+      detail: `no indexDigest in ${endpointLabel} (stale image predating the parity field?)`,
+    };
+  }
+  if (digest === repoDigest) {
+    return { leg, status: "ok", detail: `${digest} == repo` };
+  }
+  return { leg, status: "drift", detail: `${digest} != repo ${repoDigest}` };
 }
 
 /** Render the parity report as a fixed-width three-column table (leg · status · detail). */
@@ -246,11 +247,17 @@ async function fetchJson(url: string): Promise<unknown | null> {
 
 async function main(): Promise<void> {
   const repoBytes = readFileSync(INDEX_PATH);
-  const [workerIndex, licenseHealth] = await Promise.all([
+  const [workerIndex, licenseHealth, adminHealthz] = await Promise.all([
     fetchJson(WORKER_INDEX_URL),
     fetchJson(LICENSE_HEALTH_URL),
+    fetchJson(ADMIN_HEALTHZ_URL),
   ]);
-  const report = computeParity({ repoBytes, licenseHealth, workerIndex });
+  const report = computeParity({
+    repoBytes,
+    licenseHealth,
+    workerIndex,
+    adminHealthz,
+  });
   process.stdout.write(`${renderTable(report)}\n`);
   process.exit(report.drift ? 1 : 0);
 }
