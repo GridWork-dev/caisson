@@ -1790,3 +1790,11 @@ recruits active.
 - **three.js signature slot → QUEUED as a design-track kickoff** (not ticked as keep-parked):
   moves off "design bandwidth someday" onto the kickoff queue; ADR-0104's blank slot holds
   until that kickoff runs.
+
+**Wave CLOSED same sitting — all seven PRs #178–#184 MERGED**, every review finding fixed
+in-branch pre-merge (two opus money/data-seam reviews PASS, two sonnet reviews PASS). Three CI
+failure classes unmasked en route each got a structural fix on main: the standards-gate
+pre-install Bun-auto-install roulette (install-first, #183), the audit-harness bin-target
+mode-flip reading as a phantom changed-package in the changeset gate (executable bit committed),
+and the apps-are-changeset-covered convention (#184's missing changeset added — builders assume
+apps are exempt; they are not).
