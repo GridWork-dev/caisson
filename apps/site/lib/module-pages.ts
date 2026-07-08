@@ -16,6 +16,10 @@ export interface ModulePageArtifact {
   /** Repo path the code is lifted from — rendered as the CodeBlock label suffix. */
   file: string;
   code: string;
+  /** 2-3 "what to notice" captions (SYNTHESIS §6 Tier-1 row 7 — the Resend/WorkOS annotated-snippet
+   *  pattern), each naming a real identifier from `code` above it — never a line number (the
+   *  snippet is a partial excerpt; a number would drift the moment the cited file reflows). */
+  annotations: readonly string[];
 }
 
 export interface ModulePageRecord {
@@ -78,6 +82,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       lang: "ts",
       file: "packages/field-crypto/src/crypto.ts",
       code: '  /**\n   * Decrypt a stored envelope for `tenantId`. The key version + algorithm come FROM the envelope\n   * (self-describing, ADR-0046), so a value written under an older version still decrypts after\n   * rotation. Throws on tamper, an AAD mismatch, or a cross-tenant key (the isolation proof).\n   */\n  async decryptField(\n    tenantId: string,\n    stored: string,\n    columnContext: string,\n  ): Promise<string> {\n    const env = parseEnvelope(stored);\n    const key = await this.provider.keyFor(tenantId, env.keyVersion);\n    const aad = buildAad(tenantId, env.keyVersion, columnContext);\n    const cipher = cipherForAlg(env.algId);\n    const plaintext = cipher.decrypt(\n      key,\n      { nonce: env.nonce, ciphertext: env.ciphertext, tag: env.tag },\n      aad,\n    );\n    return plaintext.toString("utf8");\n  }',
+      annotations: [
+        "parseEnvelope reads the key version back off the stored value itself, so a ciphertext written under an older version still decrypts after rotation — no migration job, no lookup table.",
+        "buildAad binds tenant and column identity into the AEAD's additional authenticated data — decrypt under the wrong tenant or column and cipher.decrypt throws, it never returns the wrong plaintext.",
+      ],
     },
     faq: [
       {
@@ -145,6 +153,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       lang: "ts",
       file: "packages/audit-worm/src/chain-store.ts",
       code: "  async verify(accountId: string): Promise<ChainVerification> {\n    return withTenant(this.db, accountId, async (tx) => {\n      const entries = await loadEntries(tx, accountId);\n\n      // Truncation guard (TM-I): the WORM store is the trusted length oracle. An anchor for a length\n      // past what the DB can now produce means the tail was dropped — invalid even if the surviving\n      // prefix is internally consistent (which, being a true prefix, it always is).\n      const beyond = await this.store.head(\n        anchorKey(accountId, entries.length + 1),\n      );\n      if (beyond !== null) {\n        return { valid: false, brokenAt: entries.length };\n      }\n      if (entries.length === 0) {\n        return { valid: true, brokenAt: null };\n      }\n\n      const anchorObj = await this.store.get(\n        anchorKey(accountId, entries.length),\n      );\n      const anchor = decodeAnchor(anchorObj.body);\n      return verifyChain(entries, anchor);\n    });\n  }",
+      annotations: [
+        "The truncation guard checks for a WORM anchor ONE PAST the DB's current length — that catches a cut tail even though the surviving rows still hash together as a clean prefix.",
+        "entries.length === 0 short-circuits to a valid empty chain — a brand-new tenant never has to special-case verify.",
+      ],
     },
     faq: [
       {
@@ -218,6 +230,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       lang: "ts",
       file: "packages/retention-runner/src/run-erasure.ts",
       code: "export async function runErasure(\n  request: ErasureRequest,\n  targets: ErasureTarget[],\n  sink: RetentionAuditSink,\n  now: () => number = Date.now,\n): Promise<RetentionRunResult> {\n  const { subjectId, tenantId, reason } = parseStrict(\n    erasureRequestSchema,\n    request,\n  );\n\n  const results = await Promise.all(\n    targets.map((target) => eraseOne(target, subjectId, tenantId)),\n  );\n\n  const row: RetentionRunResult = {\n    subjectId,\n    tenantId,\n    reason,\n    results,\n    at: now(),\n  };\n  await sink.record(row);\n  return row;\n}",
+      annotations: [
+        "parseStrict validates the request before any target runs — an unrecognized reason never gets partway through an erasure.",
+        "Promise.all over eraseOne means every target attempts erasure independently — one target's throw doesn't cancel or block the others.",
+      ],
     },
     faq: [
       {
@@ -291,6 +307,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       lang: "ts",
       file: "packages/alerting/src/orchestrator.ts",
       code: 'export async function processAlert(\n  event: AlertEvent,\n  deps: ProcessAlertDeps,\n): Promise<ProcessAlertResult> {\n  if (dedup(event, deps.openIncidents)) {\n    return finish(event, deps, "suppressed", []);\n  }\n\n  if (rateCap(event, deps.recentCount, deps.ratePolicy) === "digest") {\n    return finish(event, deps, "digested", []);\n  }\n\n  if (\n    quietHours(event, deps.recipientTz, deps.quietPolicy, deps.now) === "hold"\n  ) {\n    return finish(event, deps, "held", []);\n  }\n\n  const deliveries = await deliverAll(event, deps.channels);\n  return finish(event, deps, "delivered", deliveries);\n}',
+      annotations: [
+        "Each stage — dedup, rateCap, quietHours — can short-circuit to its own finish() outcome before a channel is ever touched.",
+        "deliverAll only runs after all three gates pass, and finish() fires on every path — the audit row is written whether or not anything actually delivered.",
+      ],
     },
     faq: [
       {
@@ -360,6 +380,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       lang: "ts",
       file: "packages/ai-meter/src/meter.ts",
       code: "/**\n * Atomic running-spend mutation, returning the new total. A non-negative `amount` upserts (the window\n * row may not exist yet — the reservation creates it). A negative `amount` (a reconcile refund) is a\n * plain UPDATE on the row the reservation already created: `ON CONFLICT` only arbitrates UNIQUE\n * violations, so a negative VALUES tuple would trip the `spent >= 0` CHECK during the insert attempt\n * BEFORE the conflict resolves — the UPDATE instead evaluates the CHECK on the resulting (>= 0) row.\n */\nasync function bumpSpend(\n  tx: TenantExecutor,\n  accountId: string,\n  scope: string,\n  key: string,\n  amount: number,\n): Promise<number> {\n  if (amount >= 0) {\n    const r = await tx.query<{ spent: number }>(\n      `INSERT INTO ${TENANT_SPEND_WINDOW_TABLE} (account_id, scope, unit, window_key, spent)\n         VALUES ($1, $2, $3, $4, $5)\n       ON CONFLICT (account_id, scope, unit, window_key)\n         DO UPDATE SET spent = ${TENANT_SPEND_WINDOW_TABLE}.spent + EXCLUDED.spent,\n                       updated_at = now()\n         RETURNING spent`,\n      [accountId, scope, SPEND_UNIT, key, amount],\n    );\n    return r.rows[0]?.spent ?? amount;",
+      annotations: [
+        "A non-negative amount runs as an upsert (ON CONFLICT ... DO UPDATE) — the spend-window row may not exist yet when the very first reservation for that key lands.",
+        "The doc comment explains the ordering trick: a negative refund evaluates the spent >= 0 CHECK on the UPDATE path, never the INSERT path, so a refund can't trip the constraint before the conflict resolves.",
+      ],
     },
     faq: [
       {
@@ -430,6 +454,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       lang: "ts",
       file: "packages/ai-evals/src/baseline.ts",
       code: 'export function compareToBaseline(\n  run: EvalRun,\n  baseline: BaselineFile,\n): BaselineComparison {\n  const findings: RegressionFinding[] = [];\n\n  if (run.score + EPS < run.threshold) {\n    findings.push({\n      kind: "below-threshold",\n      actual: run.score,\n      baseline: run.threshold,\n      detail: `score ${run.score} < threshold ${run.threshold}`,\n    });\n  }\n\n  const prior = baseline.evals[run.name];\n  if (prior === undefined) {\n    findings.push({\n      kind: "missing-baseline",\n      actual: run.score,\n      detail: `no committed baseline for eval "${run.name}" — bless to record it`,\n    });\n    return { eval: run.name, passed: false, findings, blessed: false };\n  }',
+      annotations: [
+        "The EPS tolerance on the threshold compare (run.score + EPS < run.threshold) avoids a false regression from float rounding noise, not just a strict less-than.",
+        "A missing baseline returns its own missing-baseline finding immediately — it's never silently treated as a pass.",
+      ],
     },
     faq: [
       {
@@ -503,6 +531,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       lang: "ts",
       file: "packages/guardrails/src/guard.ts",
       code: '  // Unconditional credential-shape gate (ADR-0215) — runs BEFORE the (possibly outaged/provider)\n  // moderator, reusing the ONE `looksLikeSecret` predicate (kernel). No policy field, no opt-out: a\n  // raw credential in either leg never reaches a moderator call, live or not.\n  if (looksLikeSecret(text)) block(stage, "secret", false, policy, rt);\n  let result: ModerationResult;\n  try {\n    result = await moderateWithDeadline(\n      policy.moderator,\n      text,\n      policy.timeoutMs ?? DEFAULT_TIMEOUT_MS,\n    );\n  } catch {\n    // Outage / timeout / driver throw → fail-closed unless the operator explicitly opted out.\n    if (policy.failOpen === true) return;\n    block(stage, "moderation", true, policy, rt);\n  }\n  if (result.flagged) block(stage, result.category, false, policy, rt);',
+      annotations: [
+        "looksLikeSecret runs before the moderator call, live or not — a leaked credential never becomes a moderation API call.",
+        "The try/catch around moderateWithDeadline is where fail-closed lives: only an explicit failOpen: true on the policy lets an outage pass content through instead of blocking.",
+      ],
     },
     faq: [
       {
@@ -574,6 +606,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       lang: "ts",
       file: "packages/prompt-registry/src/render.ts",
       code: 'function renderContent(template: string, vars: Record<string, string>): string {\n  const rendered = template.replace(PLACEHOLDER_RE, (_match, name: string) => {\n    const value = vars[name];\n    if (value === undefined) {\n      // A placeholder with no bound variable is a template/schema mismatch — never emit it raw.\n      throw new ValidationError("Unbound prompt variable", { name });\n    }\n    return escapeValue(value);\n  });\n  // Escaping can inflate a value (every `{`/`}` doubles), and several per-cap-bounded values can\n  // still sum past the cap in one template — re-check the rendered total, not just each input.\n  if (rendered.length > MAX_CONTENT_LENGTH) {\n    throw new ValidationError(\n      "Rendered prompt content exceeds the content cap",\n      {\n        length: rendered.length,\n        max: MAX_CONTENT_LENGTH,\n      },\n    );\n  }\n  return rendered;\n}',
+      annotations: [
+        "escapeValue runs on every substituted value — a variable's own content can never forge a new {{placeholder}} or escape into the surrounding template.",
+        "The length check runs AFTER escaping, not before — escaping can inflate a value, so the cap has to catch the real rendered total, not the pre-escape input.",
+      ],
     },
     faq: [
       {
@@ -647,6 +683,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       lang: "ts",
       file: "packages/local-store/src/store.ts",
       code: "  hybridSearch(opts: HybridSearchOptions): SearchHit[] {\n    const limit = opts.limit ?? 10;\n    const legLimit = Math.max(limit * 8, 50);\n\n    const vecRanks = this.vecLeg(opts.queryVector, legLimit);\n    const ftsRanks = this.ftsLeg(opts.queryText, legLimit);\n\n    // RRF fusion: every leg a doc appears in contributes 1/(RRF_K + rank); sum across legs.\n    const fused = new Map<number, number>();\n    for (const [rowid, rank] of vecRanks)\n      fused.set(rowid, (fused.get(rowid) ?? 0) + 1 / (RRF_K + rank));\n    for (const [rowid, rank] of ftsRanks)\n      fused.set(rowid, (fused.get(rowid) ?? 0) + 1 / (RRF_K + rank));\n\n    const ranked = [...fused.entries()]\n      // score descending; deterministic tie-break by rowid ascending (stable, env-free).\n      .sort((a, b) => b[1] - a[1] || a[0] - b[0])\n      .slice(0, limit);\n    if (ranked.length === 0) return [];\n\n    return ranked.map(([rowid, score]) => ({ id: this.docId(rowid), score }));\n  }",
+      annotations: [
+        "The fused map sums 1/(RRF_K + rank) across both legs — a doc that only hits in the vector leg or only the FTS5 leg still scores, it isn't dropped for missing the other.",
+        "The sort's tie-break is a.rowid - b.rowid — deterministic ranking with no dependence on wall-clock time or run-to-run ordering.",
+      ],
     },
     faq: [
       {
@@ -716,6 +756,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       lang: "ts",
       file: "packages/agent-kernel/src/lifecycle.ts",
       code: '/**\n * Legal forward adjacency. The two branch edges:\n *   - `verify → plan` — a failed goal-backward verify opens a fresh PLAN cycle (does not SHIP).\n *   - `sweep → ship` — an untagged phase skips EVAL straight to SHIP.\n * An EVAL regression is a fail-stop (no edge out of `eval` but `ship`); `ship` is terminal.\n */\nconst TRANSITIONS: Record<Act, readonly Act[]> = {\n  spec: ["plan"],\n  plan: ["execute"],\n  execute: ["verify"],\n  verify: ["sweep", "plan"],\n  sweep: ["eval", "ship"],\n  eval: ["ship"],\n  ship: [],\n};',
+      annotations: [
+        "verify is the only act with two outgoing edges — a failed VERIFY reopens plan, it has no edge to ship.",
+        "ship: [] — an empty adjacency list makes SHIP a hard terminal state in the type itself, not just a documented convention.",
+      ],
     },
     faq: [
       {
@@ -787,6 +831,10 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       lang: "ts",
       file: "packages/agent-runner/src/agent-runner.ts",
       code: '  const env: Record<string, string> = {};\n  for (const key of PASSTHROUGH_KEYS) {\n    const value = parentEnv[key];\n    if (typeof value === "string" && value.length > 0) env[key] = value;\n  }\n  // Isolation + provider routing only — no secret beyond the one provider key.\n  env["HOME"] = opts.home;\n  env[opts.provider.baseUrlEnv] = opts.baseUrl;\n  env[opts.provider.authEnv] = opts.authKey;\n  if (opts.provider.configDirEnv !== undefined) {\n    env[opts.provider.configDirEnv] = opts.configDir;\n  }\n  if (opts.provider.modelEnv !== undefined) {\n    env[opts.provider.modelEnv] = opts.provider.model;\n  }\n  // Hygiene for CLIs that honor these conventions: no self-update, no telemetry from the sandbox.\n  env["DISABLE_AUTOUPDATER"] = "1";\n  env["DISABLE_TELEMETRY"] = "1";\n  env["DISABLE_ERROR_REPORTING"] = "1";\n  return env;',
+      annotations: [
+        "The env object starts empty — PASSTHROUGH_KEYS is the only thing ever copied from the parent process, never a blanket process.env spread.",
+        "Only the ONE target-provider auth key the caller passed in (opts.authKey) is added — every other secret sitting in the parent shell has no path into the child.",
+      ],
     },
     faq: [
       {
