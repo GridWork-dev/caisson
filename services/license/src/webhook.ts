@@ -38,8 +38,13 @@ export interface BillingWebhookResult {
   renewedEntitlements: RenewedEntitlement[];
   /**
    * ADR-0294 chargeback/dispute alerts this delivery surfaced, threaded from `applyBillingEvent` —
-   * `[]` on every non-chargeback event AND on a re-delivery (gated identically to the three
-   * fields above, so a redelivered chargeback notification never double-alerts the operator).
+   * `[]` on every non-chargeback event AND on a re-delivery (gated on the outer `processEvent`
+   * claim like the fields above). A Paddle dashboard "Resend" (a FRESH `event_id` for the same
+   * dispute) sails past that outer gate, so `applyBillingEvent`'s own `chargeback.detected` case
+   * ALSO gates the alert internally via `withIdempotentSideEffect`, keyed on the stable disputed
+   * transaction id — a redelivered OR resent chargeback notification never double-alerts the
+   * operator, except the degenerate case of a chargeback delivered with no transaction id at all
+   * (falls back to the per-delivery `event_id`, so a resend of THAT case can still re-alert once).
    */
   chargebackAlerts: ChargebackAlert[];
   /**

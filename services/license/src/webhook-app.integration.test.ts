@@ -1285,6 +1285,42 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
       expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(0);
     });
 
+    test("WR-01: a Resend (fresh event_id, same disputed transaction) alerts the operator only ONCE", async () => {
+      const alerts: ChargebackAlert[] = [];
+      const app = makeApp(
+        provider,
+        loadRateLimitConfig(),
+        null,
+        null,
+        async () => {},
+        async () => {},
+        async (alert) => {
+          alerts.push(alert);
+        },
+      );
+      const acct = "acct_txn_chargeback_resend";
+      const t1 = Math.floor(Date.now() / 1000);
+      const bodyA = chargebackBody(
+        "evt_chargeback_resend_a",
+        "txn_chargeback_resend",
+        acct,
+      );
+      expect((await app(webhookReq(bodyA, signed(bodyA, t1)))).status).toBe(
+        200,
+      );
+      // Same dispute, FRESH event_id — models the Paddle dashboard "Resend" (the exact G7 shape).
+      const t2 = t1 + 1;
+      const bodyB = chargebackBody(
+        "evt_chargeback_resend_b",
+        "txn_chargeback_resend",
+        acct,
+      );
+      expect((await app(webhookReq(bodyB, signed(bodyB, t2)))).status).toBe(
+        200,
+      );
+      expect(alerts.length).toBe(1);
+    });
+
     test("a THROWING chargeback alerter never fails the webhook 2xx", async () => {
       const app = makeApp(
         provider,

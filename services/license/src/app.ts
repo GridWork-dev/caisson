@@ -912,6 +912,11 @@ export function createApp(
       // non-re-delivery event only). Unlike those two, `purchaseEmailNotify` is never null
       // (server.ts always wires a real-or-capture `@caisson/email` transport) — the gate below is
       // what decides WHEN to send, not whether email is configured.
+      //
+      // INFO (SHIP review 2026-07-08): a credit-pack-only purchase grants no entitlement
+      // (`grantedEntitlements` stays empty), so it never trips this gate and gets no BRANDED
+      // receipt from Caisson. Deliberate, not a gap — Paddle is the merchant of record and already
+      // sends its own transactional payment receipt for every charge, branded or not.
       if (
         result.event !== null &&
         "amountTotal" in result.event &&

@@ -486,6 +486,56 @@ describe("applyBillingEvent — chargeback: ALERT-ONLY, no grant/revoke/claw (AD
       await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
     ).toEqual(["compliance"]); // untouched — the operator decides, not this mapper
   });
+
+  test("WR-01 (SHIP review 2026-07-08): a Resend (fresh event_id, same disputed transaction) alerts only ONCE", async () => {
+    // The same gap G7 closed for grants: a Paddle dashboard Resend mints a FRESH event_id for the
+    // SAME underlying dispute, so the outer processEvent claim (keyed on event_id) alone would let
+    // it through as if new. The chargeback branch's own withIdempotentSideEffect, keyed on the
+    // stable disputed transaction id, must catch what the outer claim cannot.
+    const acct = "acct_cb_resend";
+    const first = await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, {
+        type: "chargeback.detected",
+        sourceEventId: "evt_cb_resend_a",
+        accountId: acct,
+        paymentId: "txn_cb_resend",
+        amountDisputed: 74900,
+        currency: "usd",
+      }),
+    );
+    expect(first.chargebackAlerts.length).toBe(1);
+
+    const resend = await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, {
+        type: "chargeback.detected",
+        sourceEventId: "evt_cb_resend_b", // fresh delivery id, same dispute
+        accountId: acct,
+        paymentId: "txn_cb_resend", // same disputed transaction
+        amountDisputed: 74900,
+        currency: "usd",
+      }),
+    );
+    expect(resend.chargebackAlerts).toEqual([]);
+  });
+
+  test("a chargeback with no transaction id falls back to sourceEventId as the idempotency key", async () => {
+    const acct = "acct_cb_notxn";
+    const effect = await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, {
+        type: "chargeback.detected",
+        sourceEventId: "evt_cb_notxn",
+        accountId: acct,
+        paymentId: "", // missing on the delivery — parsePaddleEvent's "" sentinel
+        amountDisputed: 5000,
+        currency: "usd",
+      }),
+    );
+    expect(effect.chargebackAlerts.length).toBe(1);
+    // A true redelivery (SAME event_id) never even reaches applyBillingEvent again (the outer
+    // processEvent claim in webhook.ts absorbs it) — pin only that the fallback key is non-empty
+    // and usable, not a second call with the identical sourceEventId (assertValidSourceEventId
+    // would reject an empty key outright, which this proves it never is).
+  });
 });
 
 describe("applyBillingEvent — one-time purchase grant (ADR-0113)", () => {

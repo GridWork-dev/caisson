@@ -543,24 +543,41 @@ export async function applyBillingEvent(
     case "subscription.created": // signup only — granting here would never renew (the X-2 trap)
     case "subscription.updated": // plan change recorded; proration grant is the deferred SD-1
       return NO_EFFECT;
-    case "chargeback.detected":
+    case "chargeback.detected": {
       // ADR-0294 — ALERT-ONLY: no grant, no revoke, no claw. Paddle (merchant of record) absorbs
       // the dispute; an operator reviews the case and, if warranted, acts through the existing
       // admin `purchase_revoke` lever. Surfaced via `chargebackAlerts` only, so the post-commit
       // push in app.ts fires the operator notification without this mapper touching any
       // grant/credit table — the fail-closed `default: return null` posture in `parsePaddleEvent`
       // for every OTHER unsubscribed adjustment reason is unchanged.
-      return {
-        ...NO_EFFECT,
-        chargebackAlerts: [
-          {
-            accountId: ev.accountId,
-            paymentId: ev.paymentId,
-            amountDisputed: ev.amountDisputed,
-            currency: ev.currency,
-          },
-        ],
-      };
+      //
+      // WR-01 (SHIP review 2026-07-08): gate the alert behind the SAME idempotency primitive the
+      // grant paths use, keyed on the STABLE disputed transaction id — a Paddle dashboard "Resend"
+      // mints a FRESH event_id for the same underlying dispute (the identical G7 rationale), so
+      // without this the outer `processEvent` claim (keyed on `event_id`) waves the resend through
+      // and the operator gets alerted twice for one dispute. Falls back to the event's own
+      // `sourceEventId` when `transaction_id` was missing on the delivery (`paymentId`'s ""
+      // sentinel) — a resend of THAT degenerate case can still re-alert once more (a fresh
+      // `event_id` per delivery, nothing stable to key on); see webhook.ts's threading comment.
+      const alertKey = ev.paymentId !== "" ? ev.paymentId : ev.sourceEventId;
+      let chargebackAlerts: ChargebackAlert[] = [];
+      await withIdempotentSideEffect(
+        tx,
+        alertKey,
+        "chargeback_alert",
+        async () => {
+          chargebackAlerts = [
+            {
+              accountId: ev.accountId,
+              paymentId: ev.paymentId,
+              amountDisputed: ev.amountDisputed,
+              currency: ev.currency,
+            },
+          ];
+        },
+      );
+      return { ...NO_EFFECT, chargebackAlerts };
+    }
     default: {
       // Exhaustiveness guard: a future DomainBillingEvent member forces an explicit decision here
       // rather than silently no-op'ing (the silent-miss class this mapper exists to prevent).
