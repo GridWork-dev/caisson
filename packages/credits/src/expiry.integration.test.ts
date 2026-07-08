@@ -28,6 +28,7 @@ import {
   expiringSoon,
   getLedger,
   grant,
+  spendableBalance,
   sweepExpiredGrants,
   sweepExpiryNotices,
 } from "./index.ts";
@@ -304,6 +305,75 @@ describe("expiring-soon badge read (ADR-0252 Decision 6a)", () => {
     expect(badge.soonestExpiresAt).not.toBeNull();
     const empty = await inA((tx) => expiringSoon(tx, A, 5));
     expect(empty).toEqual({ credits: 0, soonestExpiresAt: null });
+  });
+});
+
+describe("spendableBalance (G37 — the dashboard balance tile stops overstating post-expiry)", () => {
+  test("excludes an expired-but-unswept grant the raw wallet aggregate still counts", async () => {
+    await grantWithExpiry(100, "spend_g_expired", new Date(Date.now() - DAY)); // expired, not yet swept
+    await grantWithExpiry(40, "spend_g_live", inDays(200)); // spendable
+
+    // Ground truth: the raw aggregate lags — it still carries the expired grant's 100 because the
+    // once-daily sweep hasn't run. This IS the ~24h overstatement G37 fixes for the display.
+    expect(await inA((tx) => balance(tx, A))).toBe(140);
+    // spendableBalance reads the FIFO remaining-sum instead — matches what debit() can actually cover.
+    expect(await inA((tx) => spendableBalance(tx, A))).toBe(40);
+  });
+
+  test("matches the raw aggregate once nothing has expired", async () => {
+    await grantWithExpiry(30, "spend_g_a", inDays(100));
+    await grantWithExpiry(20, "spend_g_b", inDays(200));
+    expect(await inA((tx) => spendableBalance(tx, A))).toBe(50);
+    expect(await inA((tx) => balance(tx, A))).toBe(50);
+  });
+
+  test("reflects partial consumption the same way the FIFO badge read does", async () => {
+    await grantWithExpiry(50, "spend_g_partial", inDays(100));
+    await inA((tx) =>
+      debit(tx, {
+        accountId: A,
+        amount: asCredits(20),
+        eventType: "codegen_debit",
+        idempotencyKey: "spend_d1",
+      }),
+    );
+    expect(await inA((tx) => spendableBalance(tx, A))).toBe(30);
+  });
+
+  test("after the sweep runs, spendableBalance and the raw aggregate converge again", async () => {
+    await grantWithExpiry(100, "spend_g_sweepme", new Date(Date.now() - DAY));
+    await grantWithExpiry(40, "spend_g_keep", inDays(200));
+    expect(await inA((tx) => spendableBalance(tx, A))).toBe(40);
+    await inA((tx) => sweepExpiredGrants(tx, A));
+    expect(await inA((tx) => balance(tx, A))).toBe(40);
+    expect(await inA((tx) => spendableBalance(tx, A))).toBe(40);
+  });
+
+  test("a refund clawback on a partially-spent grant never leaves spendableBalance above the wallet (WR-01)", async () => {
+    // clawback() writes NO grant_consumption row (it reverses a grant's value, not a FIFO spend —
+    // see clawback's own doc comment), so the grant's naive FIFO remaining can outlive the wallet.
+    await grantWithExpiry(100, "claw_g1", inDays(200));
+    await inA((tx) =>
+      debit(tx, {
+        accountId: A,
+        amount: asCredits(30),
+        eventType: "codegen_debit",
+        idempotencyKey: "claw_d1",
+      }),
+    );
+    expect(await inA((tx) => balance(tx, A))).toBe(70);
+    expect(await inA((tx) => spendableBalance(tx, A))).toBe(70); // pre-refund, both floors agree
+
+    // A refund claws back the grant's ORIGINAL amount; clawback bounds to the CURRENT balance
+    // (70), draining the wallet to 0 while the grant's own consumption trail is untouched.
+    await inA((tx) =>
+      clawback(tx, { accountId: A, amount: 100, sourceEventId: "claw_refund" }),
+    );
+    expect(await inA((tx) => balance(tx, A))).toBe(0);
+
+    // The FIFO remaining-sum alone would still say 70 (100 granted - 30 consumed) — not spendable.
+    // spendableBalance must report the WALLET floor (0), the same floor debit() would 402 against.
+    expect(await inA((tx) => spendableBalance(tx, A))).toBe(0);
   });
 });
 

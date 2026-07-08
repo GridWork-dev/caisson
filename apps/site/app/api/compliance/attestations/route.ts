@@ -5,6 +5,8 @@
 import { NextResponse } from "next/server";
 import { COMPLIANCE_FRAMEWORKS, listAttestations } from "@/lib/attestations";
 import { getSession } from "@/lib/auth";
+import { accountHoldsComplianceCore } from "@/lib/compliance-gate";
+import { getDb } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +14,20 @@ export async function GET(): Promise<NextResponse> {
   const session = await getSession();
   if (session === null) {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+  }
+  // Entitlement gate (G25): mirrors the dashboard page — no compliance-core/bundle/everything
+  // grant → 403, never the evidence-pack record. Fail-closed on a read error.
+  let entitled: boolean;
+  try {
+    entitled = await accountHoldsComplianceCore(
+      await getDb(),
+      session.accountId,
+    );
+  } catch {
+    entitled = false;
+  }
+  if (!entitled) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
   const frameworks = await Promise.all(

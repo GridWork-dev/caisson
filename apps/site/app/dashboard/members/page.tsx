@@ -6,7 +6,11 @@ import type { Metadata } from "next";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import type { AccountMembership } from "@caisson/auth";
-import { addAccountMember, listAccountMembers } from "@caisson/org-controls";
+import {
+  addAccountMember,
+  listAccountMembers,
+  removeAccountMember,
+} from "@caisson/org-controls";
 import {
   Button,
   Card,
@@ -26,6 +30,12 @@ export const metadata: Metadata = { title: "Members" };
 // trimmed at the boundary (security floor). ponytail: add-by-user-id, not invite-by-email — the
 // email->user lookup + invite flow is the follow-up; the backend seam (addAccountMember) is by id.
 const AddMemberInput = z
+  .object({
+    userId: z.string().trim().min(1).max(200),
+  })
+  .strict();
+
+const RemoveMemberInput = z
   .object({
     userId: z.string().trim().min(1).max(200),
   })
@@ -60,6 +70,28 @@ async function addMemberAction(formData: FormData): Promise<void> {
     session.accountId,
     parsed.data.userId,
     "seat",
+  );
+  revalidatePath("/dashboard/members");
+}
+
+async function removeMemberAction(formData: FormData): Promise<void> {
+  "use server";
+  const session = await requireDashboardSession("/dashboard/members");
+  // Entitlement gate re-checked in the action (defense-in-depth, mirrors addMemberAction).
+  if (!(await isMembersEntitled(session.accountId))) return;
+  const parsed = RemoveMemberInput.safeParse({
+    userId: formData.get("userId"),
+  });
+  if (!parsed.success) return;
+  const db = await getDb();
+  // Owner-gated + self-removal-refused inside removeAccountMember (G15); the actor's role + id
+  // come from the verified session, never the form.
+  await removeAccountMember(
+    db,
+    session.role,
+    session.userId,
+    session.accountId,
+    parsed.data.userId,
   );
   revalidatePath("/dashboard/members");
 }
@@ -128,7 +160,7 @@ export default async function DashboardMembersPage() {
         <p className="cs-muted" style={{ marginTop: "var(--cs-space-2)" }}>
           Everyone with access to this account.{" "}
           {isOwner
-            ? "As the owner you can add seats."
+            ? "As the owner you can add or remove seats."
             : "Only the account owner can add or remove seats."}
         </p>
       </div>
@@ -154,6 +186,19 @@ export default async function DashboardMembersPage() {
                 dot
               />
             ),
+          },
+          {
+            key: "actions",
+            header: "",
+            render: (m) =>
+              isOwner && m.userId !== session.userId ? (
+                <form action={removeMemberAction}>
+                  <input type="hidden" name="userId" value={m.userId} />
+                  <Button type="submit" variant="ghost" size="sm">
+                    Remove
+                  </Button>
+                </form>
+              ) : null,
           },
         ]}
         rows={members}

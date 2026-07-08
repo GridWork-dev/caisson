@@ -5,7 +5,7 @@
 // seed accounts, then exercises ONLY the carved surface.
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import { newTestPg, type TestPg } from "@caisson/testing";
-import { AuthzError } from "@caisson/kernel";
+import { AuthzError, ValidationError } from "@caisson/kernel";
 import {
   ACCOUNT_MEMBER_SCHEMA_SQL,
   ensurePersonalAccount,
@@ -15,6 +15,7 @@ import {
   addAccountMember,
   assertCanManageMembers,
   listAccountMembers,
+  removeAccountMember,
 } from "./index.ts";
 
 let tp: TestPg;
@@ -67,5 +68,54 @@ describe("owner authz", () => {
     await expect(
       addAccountMember(tp.pg, "seat", "user_a", "user_x"),
     ).rejects.toBeInstanceOf(AuthzError);
+  });
+});
+
+describe("owner removes a seat (G15)", () => {
+  test("an owner removes a seat; the seat no longer belongs to the org account", async () => {
+    await ensurePersonalAccount(tp.pg, "user_a");
+    await addAccountMember(tp.pg, "owner", "user_a", "user_b", "seat");
+    await removeAccountMember(tp.pg, "owner", "user_a", "user_a", "user_b");
+    expect(
+      (await listAccountMembers(tp.pg, "user_a")).map((m) => m.userId),
+    ).toEqual(["user_a"]);
+  });
+
+  test("removing a non-member is a no-op, not an error", async () => {
+    await ensurePersonalAccount(tp.pg, "user_a");
+    await expect(
+      removeAccountMember(tp.pg, "owner", "user_a", "user_a", "ghost"),
+    ).resolves.toBeUndefined();
+  });
+
+  test("removeAccountMember refuses a non-owner actor", async () => {
+    await ensurePersonalAccount(tp.pg, "user_a");
+    await addAccountMember(tp.pg, "owner", "user_a", "user_b", "seat");
+    await expect(
+      removeAccountMember(tp.pg, "seat", "user_b", "user_a", "user_a"),
+    ).rejects.toBeInstanceOf(AuthzError);
+  });
+
+  test("an owner cannot remove themselves", async () => {
+    await ensurePersonalAccount(tp.pg, "user_a");
+    await expect(
+      removeAccountMember(tp.pg, "owner", "user_a", "user_a", "user_a"),
+    ).rejects.toBeInstanceOf(ValidationError);
+    expect(
+      (await listAccountMembers(tp.pg, "user_a")).map((m) => m.userId),
+    ).toEqual(["user_a"]);
+  });
+
+  test("one owner cannot remove a SECOND owner (WR-02)", async () => {
+    await ensurePersonalAccount(tp.pg, "user_a");
+    // A second owner on the same account — addAccountMember accepts role: "owner".
+    await addAccountMember(tp.pg, "owner", "user_a", "user_b", "owner");
+    await expect(
+      removeAccountMember(tp.pg, "owner", "user_a", "user_a", "user_b"),
+    ).rejects.toBeInstanceOf(ValidationError);
+    // Untouched — the co-owner is still a member.
+    expect(
+      (await listAccountMembers(tp.pg, "user_a")).map((m) => m.userId).sort(),
+    ).toEqual(["user_a", "user_b"]);
   });
 });

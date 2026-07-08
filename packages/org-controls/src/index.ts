@@ -22,6 +22,7 @@ export {
   addAccountMember,
   assertCanManageMembers,
   listAccountMembers,
+  removeAccountMember,
 } from "./membership.ts";
 export {
   ADMIN_WRITE_ROLE,

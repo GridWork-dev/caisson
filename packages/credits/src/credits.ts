@@ -180,6 +180,43 @@ export async function balance(
   return r.rows[0]?.balance ?? 0;
 }
 
+/**
+ * The current SPENDABLE balance (G37): the LOWER of the two floors `debit()` itself enforces —
+ * the FIFO remaining-sum over UNEXPIRED grants, and the raw `credit_wallet.balance` aggregate.
+ * Neither floor alone is correct as a display figure:
+ *   - the aggregate only decrements once a day (`sweepExpiredGrants`'s cron sweep), so between a
+ *     grant's expiry and the next sweep it OVERSTATES what's spendable (the original G37 gap);
+ *   - the FIFO remaining-sum OVERSTATES it too after a `clawback()` — a refund decrements the
+ *     wallet but writes NO `grant_consumption` rows (clawback reverses a grant's value, not a
+ *     FIFO spend, see `clawback`'s own doc comment), so after refunding a partially-spent pack the
+ *     per-grant remainders can sum to MORE than the wallet, and that excess is not spendable — it
+ *     persists until the grants naturally expire.
+ * `debit()` 402s on whichever floor is tighter; a display figure has to agree, or it promises
+ * more than a debit will actually cover. This is a read-time fix: a plain read, no sweep/write
+ * triggered from a page render (the alternative, sweep-before-read, is what
+ * `services/license/src/admin-mutations.ts`'s `adjustCreditsAdmin` uses for an operator MUTATION —
+ * a page GET stays read-only).
+ */
+export async function spendableBalance(
+  tx: TenantExecutor,
+  accountId: string,
+): Promise<number> {
+  const r = await tx.query<{ total: number }>(
+    `SELECT COALESCE(SUM(g.amount - COALESCE(gc.consumed, 0)), 0)::int AS total
+     FROM credit_event g
+     LEFT JOIN (
+       SELECT grant_event_id, SUM(amount) AS consumed
+       FROM grant_consumption
+       GROUP BY grant_event_id
+     ) gc ON gc.grant_event_id = g.id
+     WHERE g.account_id = $1 AND g.amount > 0 AND g.expires_at > now()`,
+    [accountId],
+  );
+  const fifoRemaining = r.rows[0]?.total ?? 0;
+  const walletAggregate = await balance(tx, accountId);
+  return Math.min(fifoRemaining, walletAggregate);
+}
+
 async function insertEvent(
   tx: TenantExecutor,
   row: {

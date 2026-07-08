@@ -21,14 +21,32 @@ import {
   listAttestations,
 } from "@/lib/attestations";
 import { isOwner, requireDashboardSession } from "@/lib/auth";
+import { accountHoldsComplianceCore } from "@/lib/compliance-gate";
+import { getDb } from "@/lib/db";
 
 export const metadata: Metadata = { title: "Compliance" };
 
 const PATH = "/dashboard/compliance";
 
+/**
+ * Fail-closed compliance-core entitlement gate (G25): the attestation surface feeds the sold
+ * evidence-pack generator, previously reachable by any signed-in account with zero purchases.
+ * Deny on ANY read error — never a silent allow (mirrors `members-gate.ts`'s `isMembersEntitled`).
+ */
+async function isComplianceEntitled(accountId: string): Promise<boolean> {
+  try {
+    return await accountHoldsComplianceCore(await getDb(), accountId);
+  } catch {
+    return false;
+  }
+}
+
 async function attestAction(formData: FormData): Promise<void> {
   "use server";
   const session = await requireDashboardSession(PATH);
+  // Entitlement gate re-checked in the action (defense-in-depth): a POST from an unentitled
+  // account is refused here even though the UI hides the form, mirroring the members-page pattern.
+  if (!(await isComplianceEntitled(session.accountId))) return;
   // Owner-only: compliance attestations are org-governance evidence that feeds the
   // customer-facing OSCAL SAR/POA&M export — a `seat` must not fabricate or overwrite them. Throws
   // AuthzError (fail-closed) if a seat crafts the POST directly; the UI hides the form from seats.
@@ -46,6 +64,7 @@ async function attestAction(formData: FormData): Promise<void> {
 async function clearAction(formData: FormData): Promise<void> {
   "use server";
   const session = await requireDashboardSession(PATH);
+  if (!(await isComplianceEntitled(session.accountId))) return;
   // Owner-only: clearing an attestation is the destructive, evidence-tampering half.
   assertCanManageMembers(session.role);
   const parsed = AttestationInput.pick({
@@ -62,6 +81,54 @@ async function clearAction(formData: FormData): Promise<void> {
 
 export default async function DashboardCompliancePage() {
   const session = await requireDashboardSession(PATH);
+
+  // Fail-closed entitlement gate (G25): no compliance-core/bundle/everything grant → the upsell,
+  // never the attestation surface.
+  if (!(await isComplianceEntitled(session.accountId))) {
+    return (
+      <div style={{ display: "grid", gap: "var(--cs-space-8)" }}>
+        <div>
+          <h1
+            className="cs-card-title"
+            style={{ fontSize: "var(--cs-text-2xl)" }}
+          >
+            Compliance attestations
+          </h1>
+          <p className="cs-muted" style={{ marginTop: "var(--cs-space-2)" }}>
+            The SOC 2 / HIPAA / EU AI Act evidence-pack generator is part of
+            Compliance core.
+          </p>
+        </div>
+        <Card style={{ display: "grid", gap: "var(--cs-space-4)" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "var(--cs-space-3)",
+            }}
+          >
+            <Icon name="lock" size="md" />
+            <h2
+              className="cs-card-title"
+              style={{ fontSize: "var(--cs-text-lg)", margin: 0 }}
+            >
+              Compliance core required
+            </h2>
+          </div>
+          <p className="cs-muted" style={{ margin: 0 }}>
+            Fill SOC 2, HIPAA, and EU AI Act evidence with the Compliance core
+            module. Your account isn&apos;t entitled yet.
+          </p>
+          <div>
+            <a href="/dashboard/plan">
+              <Button variant="primary">View plans</Button>
+            </a>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   // Owner-only management (ADR-0176): seats see attestation state read-only; only an
   // owner gets the attest/clear forms. The server actions enforce the same gate (defense-in-depth).
   const owner = isOwner(session);

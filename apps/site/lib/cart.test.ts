@@ -10,6 +10,7 @@ import {
   isInCart,
   parseStoredCart,
   pruneCart,
+  prunedLines,
   removeCartItem,
   serializeCart,
 } from "./cart";
@@ -143,6 +144,32 @@ describe("pruneCart (stale persisted lines, ADR-0238)", () => {
       priceId: [...LIVE_PRICE_IDS][0] as string,
     };
     expect(pruneCart([line], LIVE_PRICE_IDS)).toEqual([line]);
+  });
+});
+
+describe("prunedLines (G32 — the diff pruneCart surfaces as a notice)", () => {
+  test("the dropped line is returned, the kept line is not", () => {
+    const retired: CartItem = {
+      id: "module:compliance",
+      priceId: "pri_01kwj6m31fxw5vn532h5ft6780",
+      label: "Compliance core",
+      amount: 299,
+      kind: "module",
+    };
+    const stored = [retired, compliance];
+    const kept = pruneCart(stored, new Set([compliance.priceId]));
+    expect(prunedLines(stored, kept)).toEqual([retired]);
+  });
+
+  test("nothing pruned → an empty diff", () => {
+    const stored = [compliance];
+    const kept = pruneCart(stored, new Set([compliance.priceId]));
+    expect(prunedLines(stored, kept)).toEqual([]);
+  });
+
+  test("everything pruned → the whole stored cart is the diff", () => {
+    const stored = [compliance, fieldCrypto];
+    expect(prunedLines(stored, [])).toEqual(stored);
   });
 });
 

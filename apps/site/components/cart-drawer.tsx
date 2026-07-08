@@ -8,7 +8,12 @@ import { Button } from "@/components";
 import { formatUsd } from "@/lib/pricing";
 
 import { useCart } from "./cart-provider";
-import { CartLineItem, CartTrustNote, CartUpgradeCallout } from "./cart-shared";
+import {
+  CartLineItem,
+  CartPrunedNotice,
+  CartTrustNote,
+  CartUpgradeCallout,
+} from "./cart-shared";
 import styles from "./cart.module.css";
 
 /** Slide-out cart summary, mounted once in the marketing layout and toggled by `CartTrigger`. A
@@ -53,6 +58,8 @@ export function CartDrawer() {
             <Icon name="x" />
           </button>
         </div>
+
+        <CartPrunedNotice />
 
         {items.length === 0 ? (
           <p className="cs-muted">
