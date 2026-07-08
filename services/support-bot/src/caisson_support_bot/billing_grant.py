@@ -1,11 +1,14 @@
-"""The bot's inbound HTTP surface: liveness + the authed billing-grant push (ADR-0203).
+"""The bot's inbound HTTP surface: liveness + the authed billing-grant + site-escalate pushes.
 
 One aiohttp application serves the container's single inbound port. ``GET /health`` keeps the
-ADR-0105 liveness contract (unauthenticated, readiness-keyed status). ``POST /billing-grant`` is the
-push target ``services/license`` calls after a purchase grant commits and ``apps/site`` calls after a
-buyer links Discord (the backfill). It is registered ONLY when ``billing_grant_token`` is configured —
-unset means the route 404s and the bot runs unaffected (fail-closed, the config-gating rule every
-optional surface here follows).
+ADR-0105 liveness contract (unauthenticated, readiness-keyed status). ``POST /billing-grant`` (ADR-0203)
+is the push target ``services/license`` calls after a purchase grant commits and ``apps/site`` calls
+after a buyer links Discord (the backfill). ``POST /escalate`` is the push target ``apps/site``'s
+Ask-AI widget calls when it cannot answer a question — it files through the SAME ``Escalator`` +
+Linear Triage sink (ADR-0206) the Discord bot's own escalations use, so a site-originated question a
+human needs to see gets the same ticket/Triage-issue treatment a Discord one does. Both POST routes
+are registered ONLY when their own token is configured — unset means the route 404s and the bot runs
+unaffected (fail-closed, the config-gating rule every optional surface here follows).
 
 Security posture (identity/security.md):
   • Bearer auth BEFORE any body read; the token is variable-length, so both sides are SHA-256-digested
@@ -26,14 +29,17 @@ from __future__ import annotations
 import hashlib
 import hmac
 from dataclasses import dataclass
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 import discord
 from aiohttp import web
 from discord.ext import commands
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, ValidationError
 
+from .bot import linear_issue_tracker
 from .config import Settings
+from .contracts import Brief
+from .escalation import Escalator, IssueTracker, TicketStore
 from .member_mgmt import (
     PRIORITY_SUPPORT_ENTITLEMENT_ID,
     edition_role_id,
@@ -41,6 +47,9 @@ from .member_mgmt import (
     priority_support_role_id,
     role_outranks_bot,
 )
+
+if TYPE_CHECKING:  # pragma: no cover - typing only (avoids a real import cycle at module load)
+    import httpx
 
 
 class BillingGrantRequest(BaseModel):
@@ -54,6 +63,19 @@ class BillingGrantRequest(BaseModel):
     entitlements: list[Annotated[str, StringConstraints(min_length=1, max_length=128)]] = Field(
         min_length=1, max_length=64
     )
+
+
+class SiteEscalateRequest(BaseModel):
+    """POST /escalate body — a question the site Ask-AI widget could not answer.
+
+    Bounds mirror the site's own AskBody (`apps/site/lib/ask-ai/handler.ts`): a question up to 2000
+    chars, plus a short machine-readable reason the widget already has (its EscalationReason union).
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    question: str = Field(min_length=1, max_length=2000)
+    reason: str = Field(min_length=1, max_length=64)
 
 
 def bearer_ok(header: str | None, expected: str) -> bool:
@@ -102,6 +124,9 @@ class _Deps:
     bot: commands.Bot
     settings: Settings
     token: str
+    escalate_token: str
+    store: TicketStore | None
+    issue_tracker: IssueTracker | None
 
 
 _DEPS: web.AppKey[_Deps] = web.AppKey("caisson_billing_grant_deps")
@@ -111,6 +136,27 @@ async def _handle_health(request: web.Request) -> web.Response:
     deps = request.app[_DEPS]
     ready = deps.bot.is_ready()
     return web.json_response({"ok": ready}, status=200 if ready else 503)
+
+
+async def _handle_site_escalate(request: web.Request) -> web.Response:
+    deps = request.app[_DEPS]
+    # Auth FIRST — before any body read, mirroring /billing-grant's own posture.
+    if not bearer_ok(request.headers.get("Authorization"), deps.escalate_token):
+        return web.json_response({"ok": False, "error": "unauthorized"}, status=401)
+    try:
+        payload = SiteEscalateRequest.model_validate_json(await request.read())
+    except ValidationError:
+        return web.json_response({"ok": False, "error": "invalid body"}, status=400)
+
+    # Reuses the SAME Escalator + Linear Triage sink the Discord bot's own unresolved questions file
+    # through (ADR-0206) — no second Linear client, no second ticket table. No thread_opener: a site
+    # visitor has no Discord channel context, so the escalation is ticket/Triage-only.
+    brief = Brief(
+        question=payload.question,
+        summary=f"Escalated from the site Ask-AI widget (reason: {payload.reason}).",
+    )
+    await Escalator(store=deps.store, issue_tracker=deps.issue_tracker).escalate(brief)
+    return web.json_response({"ok": True})
 
 
 async def _handle_billing_grant(request: web.Request) -> web.Response:
@@ -172,13 +218,33 @@ async def _handle_billing_grant(request: web.Request) -> web.Response:
     return web.json_response({"ok": True, "granted": [r.name for r in roles]})
 
 
-def build_app(*, bot: commands.Bot, settings: Settings) -> web.Application:
-    """The inbound app: /health always; /billing-grant only when its token is configured."""
+def build_app(
+    *,
+    bot: commands.Bot,
+    settings: Settings,
+    store: TicketStore | None = None,
+    http_client: httpx.AsyncClient | None = None,
+) -> web.Application:
+    """The inbound app: /health always; /billing-grant and /escalate each only when their own token
+    is configured. ``store``/``http_client`` back /escalate's ticket persistence + Linear sink
+    (``__main__.py`` passes the SAME instances the Discord bot's own escalations use); omitting them
+    (as every existing test does) degrades /escalate to "accepts the push, files nothing durable" —
+    never a 500.
+    """
     app = web.Application(client_max_size=64 * 1024)
-    app[_DEPS] = _Deps(bot=bot, settings=settings, token=settings.billing_grant_token or "")
+    app[_DEPS] = _Deps(
+        bot=bot,
+        settings=settings,
+        token=settings.billing_grant_token or "",
+        escalate_token=settings.site_escalate_token or "",
+        store=store,
+        issue_tracker=linear_issue_tracker(settings, http_client),
+    )
     app.router.add_get("/health", _handle_health)
     if settings.billing_grant_token:
         app.router.add_post("/billing-grant", _handle_billing_grant)
+    if settings.site_escalate_token:
+        app.router.add_post("/escalate", _handle_site_escalate)
     return app
 
 
@@ -187,10 +253,14 @@ async def serve_http(
     bot: commands.Bot,
     settings: Settings,
     port: int,
+    store: TicketStore | None = None,
+    http_client: httpx.AsyncClient | None = None,
     host: str = "0.0.0.0",  # noqa: S104 - container inbound bind; the intended surface (was health.py's).
 ) -> web.AppRunner:
     """Start the inbound HTTP server; the caller owns ``await runner.cleanup()`` on shutdown."""
-    runner = web.AppRunner(build_app(bot=bot, settings=settings))
+    runner = web.AppRunner(
+        build_app(bot=bot, settings=settings, store=store, http_client=http_client)
+    )
     await runner.setup()
     site = web.TCPSite(runner, host, port)
     await site.start()

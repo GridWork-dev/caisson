@@ -63,6 +63,25 @@ BUNDLE_ENTITLEMENT_ID = "bundle"
 # ``member_has_priority_support``'s docstring for the same rationale).
 PRIORITY_SUPPORT_ENTITLEMENT_ID = "priority-support"
 
+# The `/grant-role` picker's choice list: every edition PLUS the standalone priority-support tier,
+# appended separately rather than folded into `_EDITION_ROLE_ATTR` itself — the same "never an
+# edition" invariant `PRIORITY_SUPPORT_ENTITLEMENT_ID` documents above. Folding it into
+# `_EDITION_ROLE_ATTR` would also silently widen `editions_for_entitlements`' `bundle` expansion
+# (line above) to include it, granting priority-support to every plain bundle purchase.
+_GRANT_ROLE_CHOICES: list[str] = [*_EDITION_ROLE_ATTR, PRIORITY_SUPPORT_ENTITLEMENT_ID]
+
+
+def grant_role_target(settings: Settings, choice: str) -> int | None:
+    """Resolve a `/grant-role` picker choice to its configured role id, or ``None`` if unknown/unset.
+
+    Priority-support routes through `priority_support_role_id` (its own standalone Settings field);
+    every other choice routes through `edition_role_id` — the same split `/billing-grant`'s automated
+    push already makes, so the manual and pushed paths agree.
+    """
+    if choice == PRIORITY_SUPPORT_ENTITLEMENT_ID:
+        return priority_support_role_id(settings)
+    return edition_role_id(settings, choice)
+
 
 def editions_for_entitlements(entitlements: list[str]) -> list[str]:
     """Map purchased entitlement ids (sent verbatim by the billing push) to edition slugs with a role.
@@ -476,9 +495,9 @@ def register_member_commands(bot: commands.Bot, settings: Settings) -> None:
 
     # --- purchase → edition role (manual; the billing-webhook variant is deferred to the Paddle phase) ---
     @bot.tree.command(name="grant-role", description="Grant a customer their edition role.")
-    @app_commands.describe(member="Customer", edition="Edition purchased")
+    @app_commands.describe(member="Customer", edition="Edition (or priority-support) purchased")
     @app_commands.choices(
-        edition=[app_commands.Choice(name=e, value=e) for e in _EDITION_ROLE_ATTR]
+        edition=[app_commands.Choice(name=e, value=e) for e in _GRANT_ROLE_CHOICES]
     )
     @app_commands.guild_only()
     @app_commands.default_permissions(manage_roles=True)
@@ -492,7 +511,7 @@ def register_member_commands(bot: commands.Bot, settings: Settings) -> None:
         if guild is None:
             await interaction.response.send_message("Server only.", ephemeral=True)
             return
-        role_id = edition_role_id(settings, edition.value)
+        role_id = grant_role_target(settings, edition.value)
         role = guild.get_role(role_id) if role_id is not None else None
         if role is None:
             await interaction.response.send_message(

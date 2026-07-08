@@ -339,7 +339,13 @@ function Escalation({ reason }: { reason: EscalationReason }) {
         <Link href="/docs" className={styles.cta}>
           Browse the docs
         </Link>
-        <Link href="/procurement" className={styles.cta}>
+        {/* G21: a real support surface, not the security/procurement page — the question text is
+            already filed as a support ticket (best-effort), so this is a direct human channel, not
+            a dead end. */}
+        <Link
+          href="mailto:admin@caisson.sh?subject=Ask%20AI%20question"
+          className={styles.cta}
+        >
           Talk to the team
         </Link>
       </div>
@@ -361,7 +367,13 @@ function ErrorState({ kind }: { kind: ErrorKind }) {
         <Link href="/docs" className={styles.cta}>
           Browse the docs
         </Link>
-        <Link href="/procurement" className={styles.cta}>
+        {/* G21: a real support surface, not the security/procurement page — the question text is
+            already filed as a support ticket (best-effort), so this is a direct human channel, not
+            a dead end. */}
+        <Link
+          href="mailto:admin@caisson.sh?subject=Ask%20AI%20question"
+          className={styles.cta}
+        >
           Talk to the team
         </Link>
       </div>
