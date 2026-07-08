@@ -25,6 +25,26 @@ export function loadDiscordGrantConfig(
 }
 
 /**
+ * The public Discord invite link (G12): the site had a tested purchase→role pipeline with no
+ * discoverable path to actually join the server it grants a role in. `undefined` until the operator
+ * generates an invite and sets `NEXT_PUBLIC_DISCORD_INVITE_URL` — every call site renders nothing
+ * rather than a dead or malformed link, the same env-gated-no-op pattern as
+ * `NEXT_PUBLIC_PLAUSIBLE_DOMAIN`/`NEXT_PUBLIC_POSTHOG_KEY`. Rejects anything that isn't a
+ * well-formed `https:` URL (security.md: never render an unvalidated URL as an href).
+ */
+export function discordInviteUrl(
+  env: Record<string, string | undefined> = process.env,
+): string | undefined {
+  const raw = env.NEXT_PUBLIC_DISCORD_INVITE_URL?.trim();
+  if (raw === undefined || raw === "") return undefined;
+  try {
+    return new URL(raw).protocol === "https:" ? raw : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Push one grant to the bot. Returns whether the bot accepted it; never throws (a failed sync is
  * log-and-drop — the buyer can retry from the dashboard, and the next purchase pushes again).
  */

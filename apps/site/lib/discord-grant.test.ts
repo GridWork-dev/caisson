@@ -1,7 +1,11 @@
 // The link-time Discord backfill push (ADR-0203): config gating + payload shape + never-throws.
 import { describe, expect, test } from "bun:test";
 import type { fetchWithTimeout } from "@caisson/kernel";
-import { loadDiscordGrantConfig, pushDiscordGrant } from "./discord-grant.ts";
+import {
+  discordInviteUrl,
+  loadDiscordGrantConfig,
+  pushDiscordGrant,
+} from "./discord-grant.ts";
 
 type FetchImpl = typeof fetchWithTimeout;
 
@@ -60,5 +64,41 @@ describe("pushDiscordGrant", () => {
     expect(await pushDiscordGrant(config, "111", ["compliance"], fake)).toBe(
       false,
     );
+  });
+});
+
+describe("discordInviteUrl (G12: undefined until the operator generates one)", () => {
+  test("undefined when unset or blank", () => {
+    expect(discordInviteUrl({})).toBeUndefined();
+    expect(
+      discordInviteUrl({ NEXT_PUBLIC_DISCORD_INVITE_URL: "  " }),
+    ).toBeUndefined();
+  });
+
+  test("undefined on a non-https URL — never rendered as an unvalidated href", () => {
+    expect(
+      discordInviteUrl({
+        NEXT_PUBLIC_DISCORD_INVITE_URL: "http://discord.gg/abc123",
+      }),
+    ).toBeUndefined();
+    expect(
+      discordInviteUrl({
+        NEXT_PUBLIC_DISCORD_INVITE_URL: "javascript:alert(1)",
+      }),
+    ).toBeUndefined();
+  });
+
+  test("undefined on an unparseable value", () => {
+    expect(
+      discordInviteUrl({ NEXT_PUBLIC_DISCORD_INVITE_URL: "not a url" }),
+    ).toBeUndefined();
+  });
+
+  test("returns a well-formed https invite URL verbatim", () => {
+    expect(
+      discordInviteUrl({
+        NEXT_PUBLIC_DISCORD_INVITE_URL: "https://discord.gg/abc123",
+      }),
+    ).toBe("https://discord.gg/abc123");
   });
 });
