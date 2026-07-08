@@ -52,6 +52,8 @@ import {
 } from "./entitlement-store.ts";
 import {
   ORDER_RECORD_SCHEMA_SQL,
+  readOrderRecords,
+  readSubscriptionStatuses,
   SUBSCRIPTION_STATUS_SCHEMA_SQL,
 } from "./subscription-history-store.ts";
 
@@ -175,13 +177,18 @@ afterAll(async () => {
 function invoicePaid(
   accountId: string,
   invoiceId: string,
-  opts: { billingReason?: string; priceId?: string; eventId?: string } = {},
+  opts: {
+    billingReason?: string;
+    priceId?: string;
+    eventId?: string;
+    amountTotal?: number;
+  } = {},
 ): DomainBillingEvent {
   return {
     type: "invoice.paid",
     sourceEventId: opts.eventId ?? `evt_${invoiceId}`,
     accountId,
-    amountTotal: 9900,
+    amountTotal: opts.amountTotal ?? 9900,
     currency: "usd",
     subscriptionId: "sub_1",
     priceId: opts.priceId ?? PLAN_ID,
@@ -1816,5 +1823,73 @@ describe("ADR-0269 — a coversOwnedEntitlements plan (Developer) re-grants owne
     expect(kinds).toEqual([
       { entitlement_id: "compliance", source_kind: "subscription" },
     ]);
+  });
+});
+
+describe("applyBillingEvent — ADR-0293 subscription-status + order-history review fixes", () => {
+  // WR-02: a plan change on the SAME Paddle subscription id must move the subscription_status row
+  // onto the new price — a stale ON CONFLICT that only refreshed status/updated_at would leave the
+  // OLD plan reading "owned" (with a cancel control) and the NEW plan reading unowned (with none).
+  test("upsertSubscriptionStatus on a changed price moves the row to the latest invoice's plan", async () => {
+    const acct = "acct_price_change";
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        invoicePaid(acct, "in_price_1", { priceId: PLAN_ID }),
+      ),
+    );
+    let rows = await withTenant(tp.pg, acct, (tx) =>
+      readSubscriptionStatuses(tx, acct),
+    );
+    expect(rows).toEqual([
+      expect.objectContaining({
+        subscriptionId: "sub_1",
+        priceId: PLAN_ID,
+        planTag: "developer",
+        status: "active",
+      }),
+    ]);
+
+    // A later invoice on the SAME subscription id, a DIFFERENT price (a plan change) — one row,
+    // reflecting the newest invoice, never a stale price.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        invoicePaid(acct, "in_price_2", { priceId: EDITION_PLAN_ID }),
+      ),
+    );
+    rows = await withTenant(tp.pg, acct, (tx) =>
+      readSubscriptionStatuses(tx, acct),
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toEqual(
+      expect.objectContaining({
+        subscriptionId: "sub_1",
+        priceId: EDITION_PLAN_ID,
+        planTag: "compliance_updates",
+        status: "active",
+      }),
+    );
+  });
+
+  // IN-02: a negative-total invoice (a Paddle credit-note-adjusted invoice, or any other provider
+  // oddity) must never brick the webhook — order_record's amount>=0 CHECK would otherwise roll back
+  // the WHOLE transaction, including the real credit grant, and Paddle would retry the delivery
+  // forever. The fix skips the order-history row; the grant must still land and the event must
+  // still be applied (ack), never throw.
+  test("a negative-total invoice grants credits, writes no order row, and never throws", async () => {
+    const acct = "acct_negative_total";
+    const bal = await withTenant(tp.pg, acct, async (tx) => {
+      await applyBillingEvent(
+        tx,
+        invoicePaid(acct, "in_neg", { amountTotal: -500 }),
+      );
+      return balance(tx, acct);
+    });
+    expect(bal).toBe(CREDITS); // the credit grant is untouched by amountTotal being negative
+    const orders = await withTenant(tp.pg, acct, (tx) =>
+      readOrderRecords(tx, acct),
+    );
+    expect(orders).toEqual([]); // no order-history row for the negative-total invoice
   });
 });

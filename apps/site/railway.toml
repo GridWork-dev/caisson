@@ -13,7 +13,7 @@
 #   NEXT_PUBLIC_PADDLE_CLIENT_TOKEN     (Paddle.js client token — ADR-0116; MUST be a build ARG, see Dockerfile)
 #   NEXT_PUBLIC_PADDLE_ENV              ("sandbox" | "production"; defaults to sandbox; build ARG)
 #   PADDLE_API_KEY                       (server-only — ADR-0293 G14 self-serve cancel, POST /subscriptions/
-#                                        {id}/cancel; unset ⇒ the cancel route 503s, never a client-side credential)
+#                                        {id}/cancel; unset ⇒ the cancel route 502s, never a client-side credential)
 #   PADDLE_ENV                           ("sandbox" | "production", server-side selector for the ADR-0293 cancel
 #                                        call's API base URL; defaults to sandbox — mirrors NEXT_PUBLIC_PADDLE_ENV
 #                                        but read server-side only, same pair services/license already sets)

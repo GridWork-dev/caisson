@@ -61,9 +61,12 @@ export interface UpsertSubscriptionStatusInput {
  * Record/refresh an ACTIVE subscription at grant time — the G13 signal `/dashboard/plan` reads to
  * stop offering a second subscribe on a zero-entitlement plan (Developer), and the G14 signal the
  * cancel route reads to resolve a buyer-owned price id to its Paddle subscription id. ON CONFLICT
- * re-stamps `updated_at` and re-activates a row a prior cancel had flipped (a resubscribe on the SAME
- * subscription id — a Paddle resume, not a fresh checkout — is the only path that would find an
- * existing 'canceled' row). Run inside `withTenant`.
+ * re-stamps `price_id`/`plan_tag` to the LATEST invoice's values (not just `status`/`updated_at`) —
+ * a plan change on the same Paddle subscription id (upgrade/downgrade) must move the row onto the
+ * new price, or the old plan keeps reading "owned" with a cancel control while the new plan reads
+ * unowned with none (review WR-02). Also re-activates a row a prior cancel had flipped (a
+ * resubscribe on the SAME subscription id — a Paddle resume, not a fresh checkout). Run inside
+ * `withTenant`.
  */
 export async function upsertSubscriptionStatus(
   tx: TenantExecutor,
@@ -73,7 +76,10 @@ export async function upsertSubscriptionStatus(
     `INSERT INTO subscription_status (id, account_id, subscription_id, price_id, plan_tag, status, updated_at)
      VALUES ($1, $2, $3, $4, $5, 'active', now())
      ON CONFLICT (account_id, subscription_id)
-     DO UPDATE SET status = 'active', updated_at = now()`,
+     DO UPDATE SET status = 'active',
+                    price_id = EXCLUDED.price_id,
+                    plan_tag = EXCLUDED.plan_tag,
+                    updated_at = now()`,
     [
       randomUUID(),
       input.accountId,
@@ -184,11 +190,25 @@ export interface InsertOrderRecordInput {
  * Append one paid order/invoice row (G26) — idempotent on (source_event_id, kind): a webhook
  * redelivery of the same invoice/transaction inserts nothing a second time (belt-and-suspenders next
  * to the outer `processEvent` claim, ADR-0229). Run inside `withTenant`.
+ *
+ * A NEGATIVE `amount` (a Paddle credit-note-adjusted invoice, or any other provider oddity) is
+ * skipped, not thrown (review IN-02): `order_record_amount_nonneg` would otherwise reject the row
+ * and roll back the WHOLE billing-event transaction — including the real credit/entitlement grant
+ * this event carries — turning a cosmetic history-row failure into a permanent non-2xx that Paddle
+ * retries forever. This mirrors the rest of the event parser's fail-soft posture on oddities that
+ * grant nothing (e.g. an unrecognized adjustment item is skipped + logged, never thrown): the order
+ * history simply omits the row rather than blocking the grant.
  */
 export async function insertOrderRecord(
   tx: TenantExecutor,
   input: InsertOrderRecordInput,
 ): Promise<void> {
+  if (input.amount < 0) {
+    process.stderr.write(
+      `[service-license] order_record: skipping negative-amount row (sourceEventId=${input.sourceEventId}, amount=${String(input.amount)}) — grant unaffected\n`,
+    );
+    return;
+  }
   await tx.query(
     `INSERT INTO order_record (id, account_id, source_event_id, kind, price_id, label, amount, currency)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
