@@ -53,6 +53,21 @@ export function renderIntoJsdom(element: ReactElement): JsdomRender {
     pretendToBeVisual: true,
   });
 
+  // jsdom reflects HTMLDialogElement's `open` attribute but doesn't implement showModal()/close()
+  // at all (its impl class is an empty HTMLElement subclass) — a mount of a component built on the
+  // native <dialog> (e.g. @caisson/ui's Dialog) throws TypeError without this. Stubbed with just
+  // enough behavior (flip `open`, fire the native `close` event) for effect-driven open/close tests.
+  const dialogProto = dom.window.HTMLDialogElement.prototype;
+  if (!dialogProto.showModal) {
+    dialogProto.showModal = function (this: HTMLDialogElement) {
+      this.open = true;
+    };
+    dialogProto.close = function (this: HTMLDialogElement) {
+      this.open = false;
+      this.dispatchEvent(new dom.window.Event("close"));
+    };
+  }
+
   const g = globalThis as unknown as Record<string, unknown>;
   const saved: Record<string, unknown> = {};
   for (const key of GLOBAL_KEYS) saved[key] = g[key];
