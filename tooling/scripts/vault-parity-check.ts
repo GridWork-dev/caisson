@@ -223,9 +223,14 @@ async function main(): Promise<void> {
 
   printReport(report);
   if (excluded > 0) {
-    process.stdout.write(
-      `  (${String(excluded)} item(s) tagged "${NON_ENV_TAG}" excluded from the diff)\n`,
-    );
+    // Titles, not just a count — an operator must be able to spot a REAL credential that was
+    // wrongly tagged out of the diff at a glance. Titles are names by contract (never values).
+    const excludedTitles = allItems
+      .filter((i) => i.tags.includes(NON_ENV_TAG))
+      .map((i) => i.title)
+      .sort()
+      .join(", ");
+    process.stdout.write(`  excluded as "${NON_ENV_TAG}": ${excludedTitles}\n`);
   }
 
   if (!isClean(report)) {

@@ -90,10 +90,16 @@ async function buildIndex(chunks: DocChunk[]): Promise<DocsIndex> {
         : createOpenRouterEmbedder({ apiKey: key });
     const index = await DocsIndex.build(chunks, embedder);
     if (embedder instanceof CachedEmbedder) {
-      embedder.save();
-      process.stderr.write(
-        `[service-docs] embed cache: ${String(embedder.hits)} hits / ${String(embedder.misses)} misses (${cachePath ?? ""})\n`,
-      );
+      // save() is internally fail-soft, but guard here too: a cache-persist problem must never
+      // send an already-successfully-built semantic index down the FTS-floor catch below.
+      try {
+        embedder.save();
+        process.stderr.write(
+          `[service-docs] embed cache: ${String(embedder.hits)} hits / ${String(embedder.misses)} misses (${cachePath ?? ""})\n`,
+        );
+      } catch {
+        // losing a cache write only costs a future re-embed
+      }
     }
     process.stderr.write(
       "[service-docs] semantic index built (OpenRouter qwen3-embedding-8b, 1024-dim)\n",

@@ -8,7 +8,10 @@
 // The cache key is the sha256 of the RAW text (pre-egress-scrub), so keys are deterministic and
 // the guarded inner embedder still scrubs anything that does go over the wire. A model or dim
 // change invalidates the whole file (vectors from different models are not comparable); a
-// wrong-width entry is dropped on load rather than corrupting the vec index.
+// wrong-width entry is dropped on load rather than corrupting the vec index. Known limit: a
+// change to the egress-scrub rules alone does not invalidate entries (key = raw text) — a
+// scrub-rule change ships with a corpus/model touch in practice, and the staleness cost is
+// retrieval quality on the affected chunk, never a leak.
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
@@ -53,24 +56,39 @@ function loadEntries(
   }
 }
 
+/** Hard ceiling on cached entries. The boot corpus (~hundreds of chunks) fills first; query-time
+ *  embeds use whatever room remains. Once full, new vectors are returned but NOT stored — no
+ *  eviction, so the persisted boot corpus can never be pushed out by query traffic, and a caller
+ *  streaming distinct query text can't grow the map without bound (each entry is a ~1k-float
+ *  vector; the cap bounds worst-case memory to tens of MB).
+ *  ponytail: skip-set over LRU — eviction buys nothing here since the hot set IS the boot corpus. */
+const DEFAULT_MAX_ENTRIES = 2048;
+
 /**
  * Caching decorator over an `Embedder`. Query-time embeds also flow through it (repeat queries
  * are free in-memory), but only `save()` — called once after the boot build — persists; a cache
- * write failure costs a future re-embed, never the boot.
+ * write failure costs a future re-embed, never the boot. Concurrent embeds of the SAME text
+ * single-flight onto one inner call. An embed that completes after `save()` has already run
+ * (e.g. past the boot embed-phase deadline) is kept in memory but not persisted this boot — it
+ * just re-embeds next redeploy; save() is deliberately once-per-boot, not a write-through.
  */
 export class CachedEmbedder implements Embedder {
   readonly dim: number;
   hits = 0;
   misses = 0;
   private dirty = false;
+  private readonly maxEntries: number;
   private readonly entries: Map<string, number[]>;
+  private readonly inflight = new Map<string, Promise<number[]>>();
 
   constructor(
     private readonly inner: Embedder,
     private readonly path: string,
     private readonly model: string,
+    opts?: { maxEntries?: number },
   ) {
     this.dim = inner.dim;
+    this.maxEntries = opts?.maxEntries ?? DEFAULT_MAX_ENTRIES;
     this.entries = loadEntries(path, model, inner.dim);
   }
 
@@ -79,18 +97,37 @@ export class CachedEmbedder implements Embedder {
     return this.entries.size;
   }
 
-  async embed(text: string): Promise<number[]> {
+  embed(text: string): Promise<number[]> {
     const key = cacheKey(text);
     const hit = this.entries.get(key);
     if (hit !== undefined) {
       this.hits++;
-      return hit;
+      return Promise.resolve(hit);
     }
-    const vector = await this.inner.embed(text);
-    this.entries.set(key, vector);
-    this.dirty = true;
+    // Single-flight: a second caller with the same text joins the in-progress inner call
+    // instead of paying a redundant network embed.
+    const pending = this.inflight.get(key);
+    if (pending !== undefined) {
+      this.hits++;
+      return pending;
+    }
     this.misses++;
-    return vector;
+    const call = this.inner.embed(text).then(
+      (vector) => {
+        this.inflight.delete(key);
+        if (this.entries.size < this.maxEntries) {
+          this.entries.set(key, vector);
+          this.dirty = true;
+        }
+        return vector;
+      },
+      (err: unknown) => {
+        this.inflight.delete(key);
+        throw err;
+      },
+    );
+    this.inflight.set(key, call);
+    return call;
   }
 
   /** Persist accumulated entries (atomic tmp+rename). Fail-soft by design. */

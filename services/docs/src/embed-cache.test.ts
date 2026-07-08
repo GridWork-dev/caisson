@@ -61,6 +61,53 @@ describe("CachedEmbedder", () => {
     expect(cached.hits).toBe(1);
   });
 
+  test("concurrent embeds of the same text single-flight onto one inner call", async () => {
+    const inner = countingEmbedder();
+    const cached = new CachedEmbedder(inner, path, MODEL);
+    const [a, b] = await Promise.all([
+      cached.embed("alpha"),
+      cached.embed("alpha"),
+    ]);
+    expect(inner.calls).toBe(1);
+    expect(a).toEqual(b);
+    expect(cached.misses).toBe(1);
+    expect(cached.hits).toBe(1);
+  });
+
+  test("a rejected inner call clears the in-flight slot so a retry can succeed", async () => {
+    let fail = true;
+    const inner: Embedder & { calls: number } = {
+      dim: DIM,
+      calls: 0,
+      embed(text: string): Promise<number[]> {
+        inner.calls++;
+        return fail
+          ? Promise.reject(new Error("transient"))
+          : Promise.resolve([text.length, 1, 2, 3]);
+      },
+    };
+    const cached = new CachedEmbedder(inner, path, MODEL);
+    await expect(cached.embed("alpha")).rejects.toThrow("transient");
+    fail = false;
+    expect(await cached.embed("alpha")).toEqual([5, 1, 2, 3]);
+    expect(inner.calls).toBe(2);
+  });
+
+  test("maxEntries caps growth: new vectors are returned but not stored once full", async () => {
+    const inner = countingEmbedder();
+    const cached = new CachedEmbedder(inner, path, MODEL, { maxEntries: 2 });
+    await cached.embed("alpha");
+    await cached.embed("beta");
+    const third = await cached.embed("gamma"); // over cap — served, not stored
+    expect(third).toEqual([5, 1, 2, 3]);
+    expect(cached.size).toBe(2);
+    await cached.embed("gamma"); // still a miss: it was never cached
+    expect(inner.calls).toBe(4);
+    cached.save();
+    const warm = new CachedEmbedder(countingEmbedder(), path, MODEL);
+    expect(warm.size).toBe(2);
+  });
+
   test("model drift invalidates the whole cache", async () => {
     const cached = new CachedEmbedder(countingEmbedder(), path, MODEL);
     await cached.embed("alpha");
