@@ -5,15 +5,16 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { Menu, X } from "lucide-react";
 
-import { ThemeToggle } from "@caisson/ui/components";
-import { Drawer } from "@caisson/ui-pro/components";
+import { Dialog, ThemeToggle } from "@caisson/ui/components";
 
 import { Button } from "./button";
 import { NavAccount } from "./nav-account";
 
 // Mobile hamburger nav (V27). The toggle is display:none above 680px (global.css); the shell's
-// desktop link row stays as-is. Closes on route change. Repointed onto the `Drawer` primitive
-// (ADR-0295) — Escape, scrim-click, focus trap, and focus-return are Drawer's job now, not ours.
+// desktop link row stays as-is. Closes on route change. Built on the open `Dialog` primitive's
+// drawer variant (ADR-0296 — supersedes ADR-0295's hand-rolled ui-pro `Drawer`) — native
+// `<dialog>` + `showModal()` supplies Escape, scrim-click, focus trap, inert background, and
+// focus-return, not us.
 export function MobileNav({
   links,
   cta,
@@ -43,11 +44,13 @@ export function MobileNav({
       >
         {open ? <X size={18} /> : <Menu size={18} />}
       </button>
-      <Drawer
+      <Dialog
         open={open}
-        onOpenChange={setOpen}
+        onClose={() => setOpen(false)}
+        title="Mobile menu"
+        variant="drawer"
         side="top"
-        aria-label="Mobile menu"
+        hideHeader
         className="cs-mobile-nav-drawer"
       >
         <nav
@@ -93,7 +96,7 @@ export function MobileNav({
             <ThemeToggle />
           </div>
         </nav>
-      </Drawer>
+      </Dialog>
     </>
   );
 }

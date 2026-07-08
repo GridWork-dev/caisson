@@ -29,16 +29,15 @@ export type { DiffViewerProps } from "./diff-viewer";
 export { KanbanBoard } from "./kanban-board";
 export type { KanbanBoardProps } from "./kanban-board";
 // Interactive primitives (ADR-0291) — the focus-managed/positioning-hard primitives that stay
-// commercial (Tabs/Checkbox/Radio/Switch/Badge/Accordion are the open-base counterparts). Drawer
-// is the dialog-class fourth (ADR-0295 — trap+scrim+Escape, unlike the anchored-floating three).
+// commercial (Tabs/Checkbox/Radio/Switch/Badge/Accordion are the open-base counterparts). The
+// dialog-class primitive (trap+scrim+Escape) is the open `@caisson/ui` Dialog, not a ui-pro
+// component (ADR-0296 — supersedes ADR-0295's hand-rolled Drawer).
 export { Tooltip } from "./tooltip";
 export type { TooltipProps } from "./tooltip";
 export { Popover } from "./popover";
 export type { PopoverProps } from "./popover";
 export { Menu } from "./menu";
 export type { MenuItemSpec, MenuProps } from "./menu";
-export { Drawer } from "./drawer";
-export type { DrawerProps, DrawerSide } from "./drawer";
 
 // Pure transforms + shared types — exported for direct testing and server-side reuse (the AGENTS
 // contract): the sellable logic behind the interactive components lives in these, not the UI.

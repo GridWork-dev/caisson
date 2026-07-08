@@ -307,18 +307,18 @@ kbd,
   cursor: pointer;
 }
 
-/* The panel chrome (position/background/shadow/scrim/z-index) is `@caisson/ui-pro`'s `Drawer`
- * primitive now (ADR-0295) — this just lays out the nav's own children inside it. */
+/* The panel chrome (position/background/shadow/scrim/z-index) is `@caisson/ui`'s `Dialog`
+ * drawer variant now (ADR-0296) — this just lays out the nav's own children inside it. */
 .cs-nav-mobile {
   display: flex;
   flex-direction: column;
   gap: var(--cs-space-2);
 }
 
-/* Sit below the fixed 3.5rem nav bar instead of Drawer's default flush-to-top — the nav bar height
- * is a site concern, not something the generic package can know. Mirrors the pre-Drawer behavior:
- * cap below the bar and scroll, so the bottom entries stay reachable on a short phone viewport. */
-.cs-drawer.cs-mobile-nav-drawer[data-side="top"] {
+/* Sit below the fixed 3.5rem nav bar instead of the drawer's default flush-to-top — the nav bar
+ * height is a site concern, not something the generic package can know. Caps below the bar and
+ * scrolls, so the bottom entries stay reachable on a short phone viewport. */
+.cs-dialog.cs-mobile-nav-drawer[data-side="top"] {
   top: 3.5rem;
   max-height: calc(100vh - 3.5rem);
   border-bottom: 1px solid var(--cs-border);
@@ -365,7 +365,6 @@ kbd,
   .cs-nav-toggle,
   .cs-nav-mobile,
   .cs-mobile-nav-drawer,
-  .cs-drawer-scrim,
   .cs-skip-link,
   .cs-footer {
     display: none !important;
