@@ -25,12 +25,15 @@ import { AdminMutations } from "./mutations";
 export const dynamic = "force-dynamic";
 
 const EMPTY = {
-  tenants: [] as TenantRow[],
+  tenants: { rows: [] as TenantRow[], total: 0 },
   entitlements: [] as EntitlementRow[],
   credits: [] as CreditRow[],
   licenses: [] as LicenseRow[],
   actions: [] as AdminActionLogRow[],
 };
+
+/** G29 pagination page size — kept small enough that the table + pager stay legible. */
+const TENANTS_PAGE_SIZE = 25;
 
 /** Postgres SQLSTATE for "undefined table" — same shape on node-postgres and PGlite errors. */
 const PG_UNDEFINED_TABLE = "42P01";
@@ -48,10 +51,17 @@ type ActionLogStatus = "ok" | "missing" | "error";
 
 type LoadedData = typeof EMPTY & { actionLogStatus: ActionLogStatus };
 
-async function loadData(): Promise<LoadedData> {
+async function loadData(search: string, page: number): Promise<LoadedData> {
   if (!adminDbConfigured()) return { ...EMPTY, actionLogStatus: "ok" };
+  const offset = Math.max(page, 0) * TENANTS_PAGE_SIZE;
   const [tenants, entitlements, credits, licenses] = await Promise.all([
-    readAdmin(readTenants),
+    readAdmin((tx) =>
+      readTenants(tx, {
+        ...(search === "" ? {} : { search }),
+        limit: TENANTS_PAGE_SIZE,
+        offset,
+      }),
+    ),
     readAdmin(readEntitlements),
     readAdmin(readCredits),
     readAdmin(readLicenses),
@@ -84,10 +94,23 @@ function fmtDate(iso: string | null): string {
   return iso.slice(0, 10);
 }
 
-export default async function BusinessPage() {
+export default async function BusinessPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; page?: string }>;
+}) {
+  const params = await searchParams;
+  const search = params.q?.trim() ?? "";
+  const page = Math.max(Number.parseInt(params.page ?? "0", 10) || 0, 0);
   const configured = adminDbConfigured();
   const { tenants, entitlements, credits, licenses, actions, actionLogStatus } =
-    await loadData();
+    await loadData(search, page);
+
+  const pageStart = page * TENANTS_PAGE_SIZE;
+  const pageEnd = Math.min(pageStart + tenants.rows.length, tenants.total);
+  const hasPrev = page > 0;
+  const hasNext = pageStart + tenants.rows.length < tenants.total;
+  const qParam = search === "" ? "" : `q=${encodeURIComponent(search)}&`;
 
   return (
     <div className="shell stack" style={{ gap: "var(--cs-space-10)" }}>
@@ -116,17 +139,76 @@ export default async function BusinessPage() {
         </div>
       ) : null}
 
-      <Section title={`Tenants (${tenants.length})`}>
+      <Section
+        title={
+          tenants.total > 0
+            ? `Tenants (${String(pageStart + 1)}–${String(pageEnd)} of ${String(tenants.total)})`
+            : "Tenants (0)"
+        }
+      >
+        <form
+          method="GET"
+          className="row"
+          style={{
+            gap: "var(--cs-space-2)",
+            marginBottom: "var(--cs-space-3)",
+          }}
+        >
+          <input
+            type="text"
+            name="q"
+            defaultValue={search}
+            placeholder="Search account id or email…"
+            className="mono"
+            style={{ padding: 6, minWidth: 260 }}
+          />
+          <button type="submit" style={{ padding: "6px 12px" }}>
+            Search
+          </button>
+          {search !== "" ? (
+            <a
+              href="/business"
+              className="muted"
+              style={{ alignSelf: "center", fontSize: "0.85em" }}
+            >
+              Clear
+            </a>
+          ) : null}
+        </form>
         <Table
-          head={["Account", "Credits", "Entitlements", "Licenses"]}
-          empty={configured ? "No tenants yet." : "—"}
-          rows={tenants.map((t) => [
+          head={["Account", "Email", "Credits", "Entitlements", "Licenses"]}
+          empty={configured ? "No tenants match." : "—"}
+          rows={tenants.rows.map((t) => [
             t.accountId,
+            t.email ?? "—",
             String(t.creditBalance),
             String(t.entitlementCount),
             String(t.licenseCount),
           ])}
         />
+        <div
+          className="row"
+          style={{
+            gap: "var(--cs-space-3)",
+            marginTop: "var(--cs-space-3)",
+            fontSize: "0.85em",
+          }}
+        >
+          {hasPrev ? (
+            <a href={`/business?${qParam}page=${String(page - 1)}`}>
+              &larr; Prev
+            </a>
+          ) : (
+            <span className="muted">&larr; Prev</span>
+          )}
+          {hasNext ? (
+            <a href={`/business?${qParam}page=${String(page + 1)}`}>
+              Next &rarr;
+            </a>
+          ) : (
+            <span className="muted">Next &rarr;</span>
+          )}
+        </div>
       </Section>
 
       <Section title={`Entitlements & purchases (${entitlements.length})`}>
