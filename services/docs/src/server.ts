@@ -8,12 +8,17 @@
 //     the FTS5 floor rather than crash-looping the service — the floor is the honest degraded mode.
 //   • no key (CI / local / offline) → the deterministic FTS5 floor alone: a natural-language sentence
 //     with no exact match returns [] rather than a confidently-wrong chunk.
+import { join } from "node:path";
 import { initObservability } from "@caisson/observability";
 import { createApp, SECURITY_HEADERS } from "./app.ts";
 import { buildCorpus, loadPricingFacts } from "./corpus.ts";
+import { CachedEmbedder } from "./embed-cache.ts";
 import { DocsIndex } from "./index-store.ts";
 import { renderLlmsFull, renderLlmsTxt } from "./llms-txt.ts";
-import { createOpenRouterEmbedder } from "./openrouter-embedder.ts";
+import {
+  createOpenRouterEmbedder,
+  OPENROUTER_EMBED_MODEL,
+} from "./openrouter-embedder.ts";
 import { loadRateLimitConfig, TokenBucketLimiter } from "./rate-limit.ts";
 import type { DocChunk } from "./types.ts";
 
@@ -49,6 +54,17 @@ function warmupHandler(req: Request): Response {
  * both on individual failure and once its own embed-phase deadline passes; this catch covers a hard
  * failure before/outside that loop, e.g. the store itself failing to open.)
  */
+/** Durable cache-file location: explicit `DOCS_EMBED_CACHE_PATH` wins; else the Railway volume
+ *  (Railway injects `RAILWAY_VOLUME_MOUNT_PATH` when one is attached); else no persistence —
+ *  the pre-cache behavior, every boot re-embeds. */
+function embedCachePath(): string | undefined {
+  const explicit = process.env.DOCS_EMBED_CACHE_PATH ?? "";
+  if (explicit.length > 0) return explicit;
+  const volume = process.env.RAILWAY_VOLUME_MOUNT_PATH ?? "";
+  if (volume.length > 0) return join(volume, "embed-cache.json");
+  return undefined;
+}
+
 async function buildIndex(chunks: DocChunk[]): Promise<DocsIndex> {
   const key = process.env.OPENROUTER_API_KEY ?? "";
   if (key.length === 0) {
@@ -61,10 +77,30 @@ async function buildIndex(chunks: DocChunk[]): Promise<DocsIndex> {
     `[service-docs] embedding ${String(chunks.length)} chunks (OpenRouter qwen3-embedding-8b)...\n`,
   );
   try {
-    const index = await DocsIndex.build(
-      chunks,
-      createOpenRouterEmbedder({ apiKey: key }),
-    );
+    // Content-hash cache between boots (embed-cache.ts): only chunks whose text/model/dim changed
+    // pay a network call — an unchanged-corpus redeploy costs zero embedding calls.
+    const cachePath = embedCachePath();
+    const embedder =
+      cachePath !== undefined
+        ? new CachedEmbedder(
+            createOpenRouterEmbedder({ apiKey: key }),
+            cachePath,
+            OPENROUTER_EMBED_MODEL,
+          )
+        : createOpenRouterEmbedder({ apiKey: key });
+    const index = await DocsIndex.build(chunks, embedder);
+    if (embedder instanceof CachedEmbedder) {
+      // save() is internally fail-soft, but guard here too: a cache-persist problem must never
+      // send an already-successfully-built semantic index down the FTS-floor catch below.
+      try {
+        embedder.save();
+        process.stderr.write(
+          `[service-docs] embed cache: ${String(embedder.hits)} hits / ${String(embedder.misses)} misses (${cachePath ?? ""})\n`,
+        );
+      } catch {
+        // losing a cache write only costs a future re-embed
+      }
+    }
     process.stderr.write(
       "[service-docs] semantic index built (OpenRouter qwen3-embedding-8b, 1024-dim)\n",
     );

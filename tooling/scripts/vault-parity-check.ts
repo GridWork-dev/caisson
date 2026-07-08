@@ -49,21 +49,34 @@ export function extractEnvNames(text: string): string[] {
 const VaultItemSchema = z.object({
   title: z.string(),
   updated_at: z.string().optional(),
+  tags: z.array(z.string()).optional(),
 });
 const VaultListSchema = z.array(VaultItemSchema);
+
+/** Vault items carrying this tag hold secrets that legitimately live OUTSIDE caisson.env
+ *  (GitHub Actions secrets like MIRROR_PUSH_TOKEN, not-yet-provisioned placeholders) — they are
+ *  excluded from the name diff instead of reported as "in vault, missing from env". */
+export const NON_ENV_TAG = "non-env";
 
 export interface VaultItem {
   title: string;
   updatedAt: string | null;
+  tags: string[];
 }
 
-/** Parse `op item list --format json` output into {title, updatedAt} pairs — no other field is
+/** Parse `op item list --format json` output into {title, updatedAt, tags} — no other field is
  *  ever read, so no value can leak through this path even if `op` includes one. */
 export function parseVaultItems(raw: unknown): VaultItem[] {
   return VaultListSchema.parse(raw).map((i) => ({
     title: i.title,
     updatedAt: i.updated_at ?? null,
+    tags: i.tags ?? [],
   }));
+}
+
+/** Drop items whose tags mark them as out-of-env by design (see `NON_ENV_TAG`). */
+export function filterNonEnv(items: readonly VaultItem[]): VaultItem[] {
+  return items.filter((i) => !i.tags.includes(NON_ENV_TAG));
 }
 
 // ============================================================================================
@@ -201,10 +214,24 @@ async function main(): Promise<void> {
   preflightAuth();
 
   const envNames = readEnvNames();
-  const vaultItems = parseVaultItems(fetchVaultItems(vault));
+  const allItems = parseVaultItems(fetchVaultItems(vault));
+  // Items tagged non-env (GH-Actions secrets, pre-provisioning placeholders) are out of the
+  // env↔vault diff by design — count them so their exclusion is visible, never silent.
+  const vaultItems = filterNonEnv(allItems);
+  const excluded = allItems.length - vaultItems.length;
   const report = computeParity(envNames, vaultItems, rotatedAfter);
 
   printReport(report);
+  if (excluded > 0) {
+    // Titles, not just a count — an operator must be able to spot a REAL credential that was
+    // wrongly tagged out of the diff at a glance. Titles are names by contract (never values).
+    const excludedTitles = allItems
+      .filter((i) => i.tags.includes(NON_ENV_TAG))
+      .map((i) => i.title)
+      .sort()
+      .join(", ");
+    process.stdout.write(`  excluded as "${NON_ENV_TAG}": ${excludedTitles}\n`);
+  }
 
   if (!isClean(report)) {
     process.stderr.write("\nvault-parity-check: drift found — see above.\n");
