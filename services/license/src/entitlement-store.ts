@@ -16,6 +16,7 @@
 // inside `withTenant`, scoped to the buyer's account; the policy WITH CHECK rejects a cross-tenant
 // write, and a read that forgets its WHERE still sees only the caller's rows.
 import { randomUUID } from "node:crypto";
+import { withAdvisoryXactLock } from "@caisson/jobs";
 import { ConfigError } from "@caisson/kernel";
 import { entitlementIdAliasGroup } from "@caisson/registry-schema";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
@@ -531,34 +532,101 @@ export async function upsertSubscriptionGrants(
 }
 
 /**
+ * ADR-0269 coverage-mirror lock key (CAISSON-25a) — shared by {@link grantOwnedCoverageMirrors}
+ * (Decision 1's re-grant, called from `invoice.paid`) and {@link reconcileCoverageGrants} (the
+ * refund sweep, called from `refund.completed` and the admin `purchase_revoke` action). Both do a
+ * read-then-write over the SAME "which ids does this account own one_time" truth: without a shared
+ * lock, a re-grant that reads "owned" ids concurrently with a refund's reconcile for the SAME
+ * account could read BEFORE the refund's revoke commits, then write a FRESH coverage mirror for an
+ * id whose one_time backing is (by the time the mirror lands) already gone — the refund's own
+ * reconcile already ran once and nothing else ever sweeps that mirror again, so it leaks
+ * subscription-sourced access to a refunded purchase for the life of the subscription (the
+ * "wrong static-grant ordering" CAISSON-25a names). One advisory lock per account serializes every
+ * coverage-mirror read-then-write for that account, mirroring `outstandingClaw`'s credits-side
+ * guard (CAISSON-20, the same TOCTOU class, same `withAdvisoryXactLock` primitive).
+ */
+function coverageLockKey(accountId: string): string {
+  return `entitlement:coverage:${accountId}`;
+}
+
+/**
  * Revoke every ACTIVE coverage-MIRROR row whose one_time backing is gone (ADR-0269 refund
  * reconcile — audit P1 1, 2026-07-06): a refunded/admin-revoked purchase must not survive through
  * its subscription-sourced mirror. Scoped to rows carrying {@link COVERAGE_MIRROR_LINE_ITEM} —
  * a plan's STATIC grant of the same id (paid for by the subscription itself) is never swept. The
  * backing check is alias-group-tolerant: a mirror stored under a legacy spelling survives while any
  * spelling of its group still has an active one_time grant. Idempotent (active-only filter).
- * Returns the number revoked. Run after every one_time revoke path, in the same transaction.
+ * Runs under the {@link coverageLockKey} advisory lock (CAISSON-25a) shared with
+ * {@link grantOwnedCoverageMirrors}, so this sweep and a concurrent re-grant for the same account
+ * can never interleave out of order. Returns the number revoked. Run after every one_time revoke
+ * path, in the same transaction.
  */
 export async function reconcileCoverageGrants(
   tx: TenantExecutor,
   accountId: string,
 ): Promise<number> {
-  const owned = await readOneTimeEntitlements(tx, accountId);
-  const backed = [
-    ...new Set(owned.flatMap((id) => entitlementIdAliasGroup(id))),
-  ];
-  const r = await tx.query<{ id: string }>(
-    `UPDATE entitlement_grant
-       SET status = 'revoked', revoked_at = now()
-     WHERE account_id = $1
-       AND source_kind = 'subscription'
-       AND line_item_id = $2
-       AND status = 'active'
-       AND NOT (entitlement_id = ANY($3::text[]))
-     RETURNING id`,
-    [accountId, COVERAGE_MIRROR_LINE_ITEM, backed],
+  return withAdvisoryXactLock(tx, coverageLockKey(accountId), async () => {
+    const owned = await readOneTimeEntitlements(tx, accountId);
+    const backed = [
+      ...new Set(owned.flatMap((id) => entitlementIdAliasGroup(id))),
+    ];
+    const r = await tx.query<{ id: string }>(
+      `UPDATE entitlement_grant
+         SET status = 'revoked', revoked_at = now()
+       WHERE account_id = $1
+         AND source_kind = 'subscription'
+         AND line_item_id = $2
+         AND status = 'active'
+         AND NOT (entitlement_id = ANY($3::text[]))
+       RETURNING id`,
+      [accountId, COVERAGE_MIRROR_LINE_ITEM, backed],
+    );
+    return r.rows.length;
+  });
+}
+
+export interface GrantOwnedCoverageMirrorsInput {
+  /** The buyer account — MUST equal the transaction's scope. */
+  accountId: string;
+  /** The `coversOwnedEntitlements` subscription granting this cycle's mirrors. */
+  subscriptionId: string;
+  /** The granting invoice id (audit + `upsertSubscriptionGrants` idempotency anchor). */
+  sourceEventId: string;
+  /** The plan's billing cadence — sets the coverage horizon to `now() + one cadence`. */
+  cadence: "month" | "year";
+}
+
+/**
+ * ADR-0269 Decision 1 — the Developer-plan re-grant: mirror, subscription-sourced, every
+ * entitlement the buyer ALREADY OWNS via an active one_time grant. Runs under the SAME
+ * {@link coverageLockKey} advisory lock {@link reconcileCoverageGrants} uses (CAISSON-25a), so the
+ * "owned ids" read here can never interleave with a concurrent refund's reconcile sweep for this
+ * account — whichever operation's transaction commits first is fully visible to the second by the
+ * time it re-reads ownership under the lock. Returns the covered ids (`[]` on a no-op), for the
+ * caller's Discord/PostHog push. Run inside `withTenant`.
+ */
+export async function grantOwnedCoverageMirrors(
+  tx: TenantExecutor,
+  input: GrantOwnedCoverageMirrorsInput,
+): Promise<string[]> {
+  return withAdvisoryXactLock(
+    tx,
+    coverageLockKey(input.accountId),
+    async () => {
+      const coveredIds = await readOneTimeEntitlements(tx, input.accountId);
+      if (coveredIds.length > 0) {
+        await upsertSubscriptionGrants(tx, {
+          accountId: input.accountId,
+          entitlementIds: coveredIds,
+          subscriptionId: input.subscriptionId,
+          sourceEventId: input.sourceEventId,
+          cadence: input.cadence,
+          coverageMirror: true,
+        });
+      }
+      return coveredIds;
+    },
   );
-  return r.rows.length;
 }
 
 /**
