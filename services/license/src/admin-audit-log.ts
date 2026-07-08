@@ -16,6 +16,9 @@ import type { TenantExecutor } from "@caisson/tenancy-rls";
  * purchase — kept a DISTINCT action from `entitlement_revoke` (which MEANS comp-only) so a chargeback
  * dispute can filter "show me every paid revoke" without parsing JSON. Its own before/after money
  * snapshot captures the credit claw + the edge deny-set in one auditable event (no separate row).
+ * `license_first_mint` (the buyer-lifecycle-audit G1 rescue lever, ADR-0292): a DISTINCT action from
+ * `license_reissue` (which MEANS re-serve-an-existing-token-only) so the two never conflate in the log.
+ * `email_resend` (G40): a resend of the purchase-confirmation-style email to the account's own address.
  */
 export const ADMIN_ACTIONS = [
   "entitlement_grant",
@@ -23,6 +26,8 @@ export const ADMIN_ACTIONS = [
   "credit_adjust",
   "license_reissue",
   "purchase_revoke",
+  "license_first_mint",
+  "email_resend",
 ] as const;
 export type AdminAction = (typeof ADMIN_ACTIONS)[number];
 
@@ -38,26 +43,27 @@ CREATE TABLE admin_action_log (
   payload_before jsonb,
   payload_after jsonb,
   created_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT admin_action_log_action CHECK (action IN ('entitlement_grant', 'entitlement_revoke', 'credit_adjust', 'license_reissue', 'purchase_revoke'))
+  CONSTRAINT admin_action_log_action CHECK (action IN ('entitlement_grant', 'entitlement_revoke', 'credit_adjust', 'license_reissue', 'purchase_revoke', 'license_first_mint', 'email_resend'))
 );
 GRANT INSERT ON admin_action_log TO admin_write;
 GRANT SELECT ON admin_action_log TO admin;
 `;
 
-// ADR-0225 (Fork R-5 = A). The forward migration that widens the action-enum CHECK to admit the new
-// `purchase_revoke` action on an environment that already created `admin_action_log` under the
-// four-action CHECK (ADR-0220). Idempotent (DROP IF EXISTS → ADD), additive, and — crucially — NOT an
-// edit to the checksum-pinned CREATE above: mirrors `ENTITLEMENT_ADMIN_COMP_MIGRATION_SQL`'s
-// append-a-migration convention (ADR-0014, never rewrite a shipped DDL). Applied at the operator-gated
-// admin DEPLOY (the same step that runs `ADMIN_ACTION_LOG_SCHEMA_SQL` + `ADMIN_MUTATION_PROVISION_SQL`
-// on the Railway PG) and in the apps/admin PGlite dev/test double AFTER the schema constant, where it
-// is a no-op — the fresh CHECK already lists all five actions. `admin_action_log` is NOT part of the
-// apps/site platform migrate set (deploy-migrate.ts) — it is admin-DEPLOY-provisioned — so this rides
-// the admin DEPLOY, not the platform runner.
+// ADR-0225 (Fork R-5 = A), widened again for `license_first_mint` + `email_resend` (buyer-lifecycle
+// audit wave). The forward migration that widens the action-enum CHECK to admit new actions on an
+// environment that already created `admin_action_log` under an older CHECK (ADR-0220). Idempotent
+// (DROP IF EXISTS → ADD), additive, and — crucially — NOT an edit to the checksum-pinned CREATE above:
+// mirrors `ENTITLEMENT_ADMIN_COMP_MIGRATION_SQL`'s append-a-migration convention (ADR-0014, never
+// rewrite a shipped DDL). Applied at the operator-gated admin DEPLOY (the same step that runs
+// `ADMIN_ACTION_LOG_SCHEMA_SQL` + `ADMIN_MUTATION_PROVISION_SQL` on the Railway PG) and in the
+// apps/admin PGlite dev/test double AFTER the schema constant, where it is a no-op — the fresh CHECK
+// already lists every action. `admin_action_log` is NOT part of the apps/site platform migrate set
+// (deploy-migrate.ts) — it is admin-DEPLOY-provisioned — so this rides the admin DEPLOY, not the
+// platform runner.
 export const ADMIN_ACTION_LOG_ACTION_MIGRATION_SQL = `
 ALTER TABLE admin_action_log DROP CONSTRAINT IF EXISTS admin_action_log_action;
 ALTER TABLE admin_action_log ADD CONSTRAINT admin_action_log_action
-  CHECK (action IN ('entitlement_grant', 'entitlement_revoke', 'credit_adjust', 'license_reissue', 'purchase_revoke'));
+  CHECK (action IN ('entitlement_grant', 'entitlement_revoke', 'credit_adjust', 'license_reissue', 'purchase_revoke', 'license_first_mint', 'email_resend'));
 `;
 
 export interface AdminActionLogInput {

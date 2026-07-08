@@ -583,6 +583,86 @@ export async function reissueLicenseAdmin(
   };
 }
 
+// ADR-0292 admin first-mint lever (buyer-lifecycle audit G1's operational rescue path). Reissue
+// (above) structurally CANNOT first-mint — it re-serves a STORED tier/expiry, and there is none to
+// read when no license_grant row exists yet. This is the SIBLING action for exactly that gap: an
+// account holds real entitlements (route-guarded — see apps/admin's first-mint route, which checks
+// this BEFORE calling in, mirroring how reissue's own 404-on-no-prior-grant guard lives in its
+// route, not here) but no license was ever minted. `tier` is fixed to `"pro"` — every account
+// reaching this lever holds real purchased entitlements, so `"community"` would underclaim, and
+// `/issue`'s own IssueBody doc is explicit that `tier` is caller-asserted / informational (real
+// access gates on the server-resolved `entitlements` list `/issue` computes itself, never on this
+// label). `expiry` is fixed to `null` (perpetual-per-major) — the one-time-purchase norm this
+// rescue lever targets; ADR-0292's own webhook-push (the primary, non-admin path, built separately)
+// owns any subscription-specific expiry policy.
+export const FirstMintLicenseBody = z
+  .object({
+    targetAccountId: accountId,
+    major: z.number().int().nonnegative(),
+  })
+  .strict();
+
+export type FirstMintLicenseInput = z.infer<typeof FirstMintLicenseBody> & {
+  actorEmail: string;
+};
+
+export interface FirstMintResult {
+  targetAccountId: string;
+  major: number;
+  licenseId: string;
+  token: string;
+  /** WORM audit half's outcome — `"failed"` means DO-NOT-RETRY (the mint + log already committed). */
+  worm: WormStatus;
+}
+
+const FIRST_MINT_TIER = "pro";
+
+/**
+ * Action 6 (ADR-0292) — first-mint a license for an account that holds entitlements but has never
+ * had one issued. Calls the SAME `/issue` proxy reissue uses (Fork AM-5) — `/issue` itself is
+ * idempotent-per-(accountId, major) and self-resolves the signed `entitlements` from the account's
+ * REAL active grants (never trusts a caller-supplied list), so this never mints a wrong scope; it
+ * only supplies the two inputs `/issue` cannot infer (`tier`, `expiry`) with the fixed defaults
+ * documented above. No DB mutation of its own — persistence is `/issue`'s job. Dual-logged like
+ * every other action (before = null, no prior grant; after = the minted licenseId).
+ */
+export async function firstMintLicenseAdmin(
+  deps: AdminMutationDeps,
+  input: FirstMintLicenseInput,
+): Promise<FirstMintResult> {
+  const minted = await deps.issue({
+    accountId: input.targetAccountId,
+    tier: FIRST_MINT_TIER,
+    major: input.major,
+    expiry: null,
+  });
+  // Log AFTER the proxy succeeds — a failed mint (proxy throws) writes no audit rows.
+  await withAdminWrite(deps.db, (tx) =>
+    insertAdminActionLog(tx, {
+      actorEmail: input.actorEmail,
+      targetAccountId: input.targetAccountId,
+      action: "license_first_mint",
+      before: { major: input.major, licenseId: null },
+      after: { major: input.major, licenseId: minted.licenseId },
+    }),
+  );
+  const worm = await appendWorm(
+    deps,
+    input.targetAccountId,
+    "license_first_mint",
+    input.actorEmail,
+    { major: input.major, licenseId: null },
+    { major: input.major, licenseId: minted.licenseId },
+  );
+  return {
+    targetAccountId: input.targetAccountId,
+    major: input.major,
+    licenseId: minted.licenseId,
+    token: minted.token,
+    worm,
+  };
+}
+
 export interface PurchaseRevokeResult {
   targetAccountId: string;
   purchaseId: string;

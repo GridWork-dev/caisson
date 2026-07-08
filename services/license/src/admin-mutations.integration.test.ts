@@ -51,10 +51,12 @@ import { readAdminActionLog } from "./admin-audit-log.ts";
 import {
   ADMIN_MUTATION_PROVISION_SQL,
   AdjustCreditsBody,
+  FirstMintLicenseBody,
   GrantEntitlementBody,
   RevokePurchaseBody,
   type AdminMutationDeps,
   adjustCreditsAdmin,
+  firstMintLicenseAdmin,
   grantEntitlementAdmin,
   reissueLicenseAdmin,
   revokeEntitlementAdmin,
@@ -625,6 +627,102 @@ describe("license reissue (dual-logged, atomic on failure)", () => {
     );
     expect(logRows[0]?.n).toBe(0);
     expect(await worm.load(anchor)).toHaveLength(0);
+  });
+});
+
+describe("license first-mint (ADR-0292 rescue lever, dual-logged, atomic on failure)", () => {
+  test("mints via the SAME /issue proxy reissue uses, tier fixed to pro, expiry fixed to null", async () => {
+    const acct = await realAccount();
+    const anchor = wormAnchorAccount(acct);
+    let seenReq: {
+      accountId: string;
+      tier: string;
+      major: number;
+      expiry: string | null;
+    } | null = null;
+    const capturingIssue: AdminMutationDeps["issue"] = async (req) => {
+      seenReq = req;
+      return okIssue(req);
+    };
+    const r = await firstMintLicenseAdmin(deps({ issue: capturingIssue }), {
+      actorEmail: "op@gridwork.dev",
+      targetAccountId: acct,
+      major: 1,
+    });
+    expect(seenReq).toEqual({
+      accountId: acct,
+      tier: "pro",
+      major: 1,
+      expiry: null,
+    });
+    expect(r.token).toBe(`TOKEN-${acct}-1`);
+    expect(r.licenseId).toBe("lic-1");
+    expect(r.worm).toBe("ok");
+    const logRows = await ground<{ action: string }>(
+      `SELECT action FROM admin_action_log WHERE target_account_id = $1`,
+      [acct],
+    );
+    expect(logRows).toEqual([{ action: "license_first_mint" }]);
+    expect(await worm.load(anchor)).toHaveLength(1);
+  });
+
+  test("a FAILED first-mint (proxy throws) writes NEITHER log", async () => {
+    const acct = await realAccount();
+    const anchor = wormAnchorAccount(acct);
+    const failingIssue: AdminMutationDeps["issue"] = async () => {
+      throw new Error("issue service 500");
+    };
+    await expect(
+      firstMintLicenseAdmin(deps({ issue: failingIssue }), {
+        actorEmail: "op@gridwork.dev",
+        targetAccountId: acct,
+        major: 1,
+      }),
+    ).rejects.toThrow();
+    const logRows = await ground<{ n: number }>(
+      `SELECT count(*)::int AS n FROM admin_action_log WHERE target_account_id = $1`,
+      [acct],
+    );
+    expect(logRows[0]?.n).toBe(0);
+    expect(await worm.load(anchor)).toHaveLength(0);
+  });
+
+  test("strict body: unknown fields rejected, exactly one target account", () => {
+    expect(
+      FirstMintLicenseBody.safeParse({ targetAccountId: "a", major: 1 })
+        .success,
+    ).toBe(true);
+    expect(
+      FirstMintLicenseBody.safeParse({
+        targetAccountId: "a",
+        major: 1,
+        evil: "x",
+      }).success,
+    ).toBe(false);
+    expect(
+      FirstMintLicenseBody.safeParse({ targetAccountId: ["a", "b"], major: 1 })
+        .success,
+    ).toBe(false);
+  });
+
+  test("the action-enum migration admits license_first_mint", async () => {
+    const { ADMIN_ACTION_LOG_ACTION_MIGRATION_SQL } =
+      await import("./admin-audit-log.ts");
+    // Idempotent re-run — proves the widened CHECK is exactly what's live (mirrors the
+    // purchase_revoke enum-migration coverage above).
+    await tp.exec(ADMIN_ACTION_LOG_ACTION_MIGRATION_SQL);
+    await expect(
+      ground(
+        `INSERT INTO admin_action_log (id, actor_email, target_account_id, action) VALUES ($1, 'op@gridwork.dev', 'acct_x', 'license_first_mint')`,
+        [randomUUID()],
+      ),
+    ).resolves.toBeDefined();
+    await expect(
+      ground(
+        `INSERT INTO admin_action_log (id, actor_email, target_account_id, action) VALUES ($1, 'op@gridwork.dev', 'acct_x', 'not_a_real_action')`,
+        [randomUUID()],
+      ),
+    ).rejects.toThrow();
   });
 });
 

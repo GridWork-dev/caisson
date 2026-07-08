@@ -18,10 +18,11 @@ import {
 import { AdminMutations } from "./mutations";
 
 // Business admin (ADR-0141 read cockpit + ADR-0220 mutation surface): a cross-tenant view over the
-// Railway PG. Reads run through `readAdmin` (the read-only `admin` role); the four operator mutations
-// (grant · revoke · adjust · reissue) run through the GitHub-OAuth-gated (ADR-0283) `/api/admin/*`
-// routes as the separate `admin_write` role, each dual-logged (WORM + the `admin_action_log` browsed
-// below). When `CAISSON_ADMIN_DB_URL` is unset the view renders a clean "not configured" state.
+// Railway PG. Reads run through `readAdmin` (the read-only `admin` role); the operator mutations
+// (grant · revoke · adjust · reissue · revoke-purchase · first-mint · resend-email) run through the
+// GitHub-OAuth-gated (ADR-0283) `/api/admin/*` routes as the separate `admin_write` role, each
+// dual-logged (WORM + the `admin_action_log` browsed below). When `CAISSON_ADMIN_DB_URL` is unset
+// the view renders a clean "not configured" state.
 export const dynamic = "force-dynamic";
 
 const EMPTY = {
@@ -120,7 +121,7 @@ export default async function BusinessPage({
         <p className="lede">
           A cross-tenant view of tenants, purchases, entitlements, and credits
           over the Railway Postgres. Reads run as the read-only{" "}
-          <span className="mono">admin</span> role (ADR-0141); the four operator
+          <span className="mono">admin</span> role (ADR-0141); the operator
           mutations run as the separate{" "}
           <span className="mono">admin_write</span> role, dual-logged
           (ADR-0220).

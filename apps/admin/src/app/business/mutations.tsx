@@ -606,6 +606,8 @@ export function AdminMutations() {
   const [adjustReason, setAdjustReason] = useState("");
   const [reissueAcct, setReissueAcct] = useState("");
   const [reissueMajor, setReissueMajor] = useState("");
+  const [firstMintAcct, setFirstMintAcct] = useState("");
+  const [firstMintMajor, setFirstMintMajor] = useState("");
 
   const ids = grantIds
     .split(",")
@@ -613,6 +615,7 @@ export function AdminMutations() {
     .filter((s) => s !== "");
   const delta = Number.parseInt(adjustDelta, 10);
   const major = Number.parseInt(reissueMajor, 10);
+  const firstMintMajorNum = Number.parseInt(firstMintMajor, 10);
 
   return (
     <div
@@ -718,6 +721,31 @@ export function AdminMutations() {
           label="Major version"
           value={reissueMajor}
           onChange={setReissueMajor}
+          placeholder="1"
+        />
+      </MutationCard>
+
+      <MutationCard
+        title="First-mint license"
+        description="Issue a license for an account with entitlements but no prior grant (ADR-0292 rescue lever — reissue 404s here; use this only when reissue can't)."
+        targetAccountId={firstMintAcct}
+        disabled={!Number.isInteger(firstMintMajorNum) || firstMintMajorNum < 0}
+        onSubmit={() =>
+          callRoute("/api/admin/license/first-mint", {
+            targetAccountId: firstMintAcct.trim(),
+            major: firstMintMajorNum,
+          })
+        }
+      >
+        <Field
+          label="Target account id"
+          value={firstMintAcct}
+          onChange={setFirstMintAcct}
+        />
+        <Field
+          label="Major version"
+          value={firstMintMajor}
+          onChange={setFirstMintMajor}
           placeholder="1"
         />
       </MutationCard>

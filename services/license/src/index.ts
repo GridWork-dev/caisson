@@ -80,11 +80,13 @@ export {
   AdjustCreditsBody,
   ReissueLicenseBody,
   RevokePurchaseBody,
+  FirstMintLicenseBody,
   grantEntitlementAdmin,
   revokeEntitlementAdmin,
   adjustCreditsAdmin,
   reissueLicenseAdmin,
   revokePurchaseAdmin,
+  firstMintLicenseAdmin,
   wormAnchorAccount,
 } from "./admin-mutations.ts";
 export type {
@@ -95,10 +97,12 @@ export type {
   AdjustCreditsInput,
   ReissueLicenseInput,
   PurchaseRevokeInput,
+  FirstMintLicenseInput,
   EntitlementMutationResult,
   CreditAdjustResult,
   ReissueResult,
   PurchaseRevokeResult,
+  FirstMintResult,
   WormStatus,
 } from "./admin-mutations.ts";
 export { resolveAccountEntitlements } from "./resolve-entitlements.ts";
