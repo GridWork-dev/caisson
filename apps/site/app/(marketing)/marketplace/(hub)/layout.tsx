@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { Hero } from "@/components";
+import { MarketplaceHeroArtifact } from "@/components/marketplace-hero-artifact";
 import { MarketplaceTabs } from "@/components/marketplace-tabs";
 import { formatUsd, MODULE_PRICES } from "@/lib/pricing";
 
@@ -24,6 +25,7 @@ export default function MarketplaceLayout({
         title="Every bundle and module, one surface."
         lede={`${TOTAL} modules compose six bundles on the same audited base, priced ${formatUsd(MIN)} to ${formatUsd(MAX)} each. Filter, compare, and build a stack in one place — take a single module for exactly the capability you need, a bundle for a whole domain, or the Everything bundle for the entire catalog. Own the source — no forced renewal.`}
         ctas={<MarketplaceTabs />}
+        artifact={<MarketplaceHeroArtifact />}
       />
       {children}
     </>

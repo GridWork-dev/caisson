@@ -77,15 +77,28 @@ span.chip {
 }
 
 /* The install column: the framed install line (matching the psql terminal's elevation) over a
- * proof-chip row that fills the remaining height. */
+ * filled proof panel that absorbs the remaining height. */
 .artifactRight {
   display: flex;
   flex-direction: column;
   gap: var(--cs-space-4);
 }
 
-.artifactRight :first-child {
+/* Direct-child selector (`>`, not the descendant combinator) — the terminal frame keeps its natural
+ * height. The old `.artifactRight :first-child` leaked onto the first proof chip too, stretching it
+ * full-width; the panel below now owns the height fill. */
+.artifactRight > :first-child {
+  flex: none;
+}
+
+.artifactProof {
   flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  padding: var(--cs-space-5);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-lg);
+  background: var(--cs-surface-1);
 }
 
 @media (max-width: 48rem) {

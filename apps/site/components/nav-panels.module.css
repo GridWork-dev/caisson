@@ -57,6 +57,15 @@
   box-shadow: var(--cs-shadow-lg);
 }
 
+/* The wider, scrollable groups panel variant (Marketplace's two card families) — rides a
+   `data-groups` attribute instead of a conditional inline style object, so the disclosure renders
+   identical markup on the server and client (no inline-style hydration divergence). */
+.panel[data-groups] {
+  width: min(40rem, 92vw);
+  max-height: calc(100vh - 6rem);
+  overflow-y: auto;
+}
+
 /* Two-column marketplace panel: bundles | marketplace pages. Collapses to one column on a narrow
    viewport (the desktop dropdown only shows ≥900px; the drawer owns mobile). */
 .groups {
@@ -83,6 +92,12 @@
   font-size: var(--cs-text-sm);
   line-height: var(--cs-leading-snug);
   color: var(--cs-fg-muted);
+}
+
+/* A group's heading (Marketplace panel) — the lede type at semibold weight. Was a per-element
+   inline `style={{fontWeight}}`; hoisted to a class so the panel carries no inline styles. */
+.groupHeading {
+  font-weight: var(--cs-weight-semibold);
 }
 
 .cards {

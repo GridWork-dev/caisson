@@ -101,15 +101,25 @@ const config: NextConfig = {
           },
         ],
       },
-      {
-        source: "/_next/static/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
+      // Immutable long-cache for the content-hashed static assets — PRODUCTION ONLY. In dev,
+      // Turbopack serves chunks at stable (non-hashed) URLs, so an `immutable` header makes the
+      // browser pin a stale chunk across rebuilds — Next warns this "can break dev behavior", and
+      // it manifests as a phantom hydration mismatch (the client runs a cached older component than
+      // the freshly-compiled server render). Emitting the header only in production keeps the
+      // correct prod caching while letting dev always fetch fresh chunks.
+      ...(process.env.NODE_ENV === "production"
+        ? [
+            {
+              source: "/_next/static/:path*",
+              headers: [
+                {
+                  key: "Cache-Control",
+                  value: "public, max-age=31536000, immutable",
+                },
+              ],
+            },
+          ]
+        : []),
     ];
   },
 };

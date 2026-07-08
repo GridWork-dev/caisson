@@ -109,9 +109,18 @@ export function DualDoorHero() {
                 </>
               }
             />
-            <ProofChips
-              items={["Apache-2.0 base", "Postgres + RLS", "One-time license"]}
-            />
+            {/* A filled proof panel absorbs the height difference with the taller psql terminal, so
+                the install column reads as a deliberate block instead of one stretched, near-empty
+                terminal frame (ADR-0285 §4). */}
+            <div className={styles.artifactProof}>
+              <ProofChips
+                items={[
+                  "Apache-2.0 base",
+                  "Postgres + RLS",
+                  "One-time license",
+                ]}
+              />
+            </div>
           </div>
         </div>
       </div>
