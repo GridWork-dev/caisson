@@ -619,7 +619,7 @@ export interface PurchaseRevokeResult {
  *      entitlement a SIBLING source still backs survives (refcount). Idempotent: a re-run finds no
  *      active rows and revokes 0 — NOT an error (so the caller must not treat 0 as a rejection).
  *   3. Bounded claw (R-1 = A, opt-in via `clawUnspentCredits`) — `outstandingClaw` computes
- *      `max(0, granted − alreadyClawed)` UNDER an account+purchase advisory lock (CAISSON-20), then
+ *      `max(0, granted − alreadyClawed)` UNDER an account+purchase advisory lock, then
  *      `clawback` further bounds to the wallet balance and never goes negative. This is the EXACT
  *      arithmetic the full-refund webhook runs (apply-billing-event.ts) keyed on the SAME
  *      `sourceEventId = purchaseId`, so an operator revoke and a later Paddle refund of the same
