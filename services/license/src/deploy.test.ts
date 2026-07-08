@@ -1,7 +1,11 @@
 // deploy.test.ts — the deploy entrypoint must FAIL CLOSED when DATABASE_URL is unset (a production
 // issuer never falls back to an in-memory double the way apps/site's dev getDb does). Spawns the
 // real entrypoint with a scrubbed env so the guard is exercised end-to-end, not mocked.
-import { expect, test } from "bun:test";
+import { expect, setDefaultTimeout, test } from "bun:test";
+
+// Spawning the real entrypoint crosses bun's 5s default under CI runner load;
+// same treatment as the PGlite integration suites.
+setDefaultTimeout(30_000);
 
 test("deploy entrypoint aborts when DATABASE_URL is unset", async () => {
   const proc = Bun.spawn(["bun", "run", `${import.meta.dir}/deploy.ts`], {
