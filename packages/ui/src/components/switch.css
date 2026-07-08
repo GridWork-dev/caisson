@@ -1,0 +1,78 @@
+/* Switch — recipe reference (ADR-0099/ADR-0291). role=switch button; state via the native
+ * [aria-checked] attribute (rule 3, no redundant data-* duplicate) — values via --cs-* only. */
+.cs-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cs-space-2);
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--cs-fg);
+  cursor: pointer;
+}
+
+.cs-switch__track {
+  position: relative;
+  flex: none;
+  width: 2.25rem;
+  height: var(--cs-space-6);
+  border: 1px solid var(--cs-border-strong);
+  border-radius: var(--cs-radius-pill);
+  background: var(--cs-surface-1);
+  transition:
+    background var(--cs-duration-fast) var(--cs-ease-out),
+    border-color var(--cs-duration-fast) var(--cs-ease-out);
+}
+
+.cs-switch__thumb {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: var(--cs-radius-pill);
+  background: var(--cs-fg-muted);
+  transition:
+    transform var(--cs-duration-fast) var(--cs-ease-out),
+    background var(--cs-duration-fast) var(--cs-ease-out);
+}
+
+.cs-switch[aria-checked="true"] .cs-switch__track {
+  background: var(--cs-accent);
+  border-color: var(--cs-accent);
+}
+
+.cs-switch[aria-checked="true"] .cs-switch__thumb {
+  background: var(--cs-on-accent);
+  transform: translateX(1rem);
+}
+
+.cs-switch:focus-visible {
+  outline: 2px solid var(--cs-focus);
+  outline-offset: 2px;
+  border-radius: var(--cs-radius-pill);
+}
+
+.cs-switch:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cs-switch__label {
+  font-size: var(--cs-text-sm);
+}
+
+@media (forced-colors: active) {
+  .cs-switch__track {
+    border: 1px solid CanvasText;
+  }
+  .cs-switch[aria-checked="true"] .cs-switch__track {
+    forced-color-adjust: none;
+    background: Highlight;
+  }
+  .cs-switch__thumb {
+    forced-color-adjust: none;
+    background: CanvasText;
+  }
+}
