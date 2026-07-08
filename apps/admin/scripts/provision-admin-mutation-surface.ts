@@ -28,6 +28,7 @@ import {
  *  `account_member` (G29): the tenants view's email-lookup join needs cross-tenant SELECT on it. */
 const ADMIN_READ_TABLES = [
   "credit_wallet",
+  "credit_event", // ADR-0225 revoke-preview claw math reads the per-event ledger
   "entitlement_grant",
   "license_grant",
   "account_member",
