@@ -433,29 +433,62 @@ async function issueOrReuseLicense(
     : { kind: "ok", token, licenseId: claims.licenseId };
 }
 
+// PR #177 review IN-02: the local Ed25519 signer never blocks, but a future KMS-backed `Signer`
+// could — and `mintLicensePostCommit` is AWAITED inline in the webhook response path, so an
+// unbounded signer call would risk pushing the whole delivery past Paddle's own webhook timeout.
+// 5s comfortably covers a real KMS round trip while staying well inside that budget.
+const MINT_POST_COMMIT_TIMEOUT_MS = 5_000;
+
+/**
+ * Race `work` against `timeoutMs` — REJECTS with a deadline error if `work` hasn't settled in time
+ * (mirrors `packages/guardrails`'s `moderateWithDeadline` race idiom). A pending `work` that later
+ * settles past the deadline must not surface as an unhandled rejection.
+ */
+function withDeadline<T>(work: Promise<T>, timeoutMs: number): Promise<T> {
+  work.catch(() => {});
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () =>
+        reject(new Error(`mint deadline exceeded (${String(timeoutMs)}ms)`)),
+      timeoutMs,
+    );
+  });
+  return Promise.race([work, deadline]).finally(() => {
+    if (timer !== undefined) clearTimeout(timer);
+  });
+}
+
 /**
  * ADR-0292 — license first-mint webhook-push. Mint (or idempotently re-serve, per
  * {@link issueOrReuseLicense}'s own persist-and-reuse discipline) the buyer's license post-commit,
  * called only after a GRANTING or RENEWING billing event has already durably committed. NEVER
- * throws — the grant already landed, so a mint failure (a signer outage, a transient DB error)
- * must not turn an already-successful webhook into a needless Paddle retry; it logs one
- * operator-visible ALERT line and resolves `null`. major/tier mirror the launch runbook's manual
- * first-mint curl and the eval-issue path's own default (major 0, perpetual; tier "pro" — a
- * cosmetic label only, downstream access gates on the signed `entitlements` list, never `tier`).
- * Self-healing by construction: a failed mint recovers on the account's NEXT granting/renewing
- * event, or via the admin first-mint lever (`POST /issue` through the admin reissue proxy).
+ * throws — the grant already landed, so a mint failure (a signer outage, a transient DB error, OR
+ * a signer that exceeds {@link MINT_POST_COMMIT_TIMEOUT_MS}) must not turn an already-successful
+ * webhook into a needless Paddle retry; it logs one operator-visible ALERT line and resolves
+ * `null`. major/tier mirror the launch runbook's manual first-mint curl and the eval-issue path's
+ * own default (major 0, perpetual; tier "pro" — a cosmetic label only, downstream access gates on
+ * the signed `entitlements` list, never `tier`). Self-healing by construction: a failed OR
+ * timed-out mint recovers on the account's NEXT granting/renewing event, or via the admin
+ * first-mint lever (`POST /issue` through the admin reissue proxy) — a timeout leaves the
+ * underlying signer call simply abandoned (never canceled — Ed25519/KMS signing has no cancel
+ * primitive), so it may still complete in the background; the NEXT recovery path re-mints
+ * idempotently regardless.
  */
 async function mintLicensePostCommit(
   deps: Pick<IssueAppDeps, "db" | "signer" | "index">,
   accountId: string,
 ): Promise<string | null> {
   try {
-    const outcome = await issueOrReuseLicense(deps, {
-      accountId,
-      tier: "pro",
-      major: 0,
-      expiry: null,
-    });
+    const outcome = await withDeadline(
+      issueOrReuseLicense(deps, {
+        accountId,
+        tier: "pro",
+        major: 0,
+        expiry: null,
+      }),
+      MINT_POST_COMMIT_TIMEOUT_MS,
+    );
     if (outcome.kind === "ok") return outcome.token;
     process.stderr.write(
       `[service-license] ALERT: first-mint license failed (${outcome.kind}) for account ${accountId} — no automated license issued this delivery; the next grant/renewal or the admin first-mint lever recovers\n`,
