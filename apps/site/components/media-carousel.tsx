@@ -3,17 +3,17 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 
-import { Icon } from "@/components";
+import { CodeBlock, Icon } from "@/components";
+import { BundleCompositionSlide } from "@/components/marketplace-hero-artifact";
 import { MarketplaceDiagram } from "@/components/marketplace-diagrams";
 import { MediaPlaceholder } from "@/components/media-placeholder";
-import { MediaVideo } from "@/components/media-video";
 import type { MediaSlide } from "@/lib/media-manifest";
 
 import styles from "./media-carousel.module.css";
 
-// The ui-pro live demo — client-only (ssr: false) so the commercial-tier tree never bloats the
-// shared bundle, and lazy so nothing loads until an interactive slide renders.
-const UiProDemo = dynamic(() => import("./ui-pro-demo"), {
+// The ui-pro `component` slide — client-only (ssr: false) so the commercial-tier tree never bloats
+// the shared bundle, and lazy so nothing loads until that slide renders.
+const UiProSlide = dynamic(() => import("./ui-pro-demo"), {
   ssr: false,
   loading: () => <MediaPlaceholder icon="boxes" />,
 });
@@ -21,16 +21,20 @@ const UiProDemo = dynamic(() => import("./ui-pro-demo"), {
 function Slide({ slide }: { slide: MediaSlide }) {
   switch (slide.kind) {
     case "diagram":
+      if (slide.compositionBundle) {
+        return <BundleCompositionSlide bundleId={slide.compositionBundle} />;
+      }
       return slide.diagram ? <MarketplaceDiagram name={slide.diagram} /> : null;
-    case "video":
-      return slide.src ? (
-        <MediaVideo
-          src={slide.src}
-          {...(slide.poster !== undefined ? { poster: slide.poster } : {})}
+    case "component":
+      return slide.component === "ui-pro" ? <UiProSlide /> : null;
+    case "code-artifact":
+      return slide.artifact ? (
+        <CodeBlock
+          frame
+          label={slide.artifact.file}
+          code={slide.artifact.code}
         />
       ) : null;
-    case "interactive":
-      return <UiProDemo />;
     case "image":
       return <MediaPlaceholder {...(slide.icon ? { icon: slide.icon } : {})} />;
   }
