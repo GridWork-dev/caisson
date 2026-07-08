@@ -45,9 +45,9 @@ export default async function AuditPage({
         <p className="eyebrow">caisson · admin / business</p>
         <h1 className="page-title">WORM audit-chain verification</h1>
         <p className="lede">
-          Verify one account&apos;s tamper-evident audit chain (G30). Every
-          dual-logged operator mutation (ADR-0220) appends to this same chain —
-          this confirms it hasn&apos;t been tampered with.
+          Verify one account&apos;s tamper-evident audit chain. Every
+          dual-logged operator mutation appends to this same chain — this
+          confirms it hasn&apos;t been tampered with.
         </p>
       </section>
 

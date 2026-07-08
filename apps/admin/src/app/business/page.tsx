@@ -304,7 +304,7 @@ export default async function BusinessPage({
           style={{ fontSize: "0.85em", marginTop: "var(--cs-space-3)" }}
         >
           Every action above appends to the target account&apos;s tamper-evident
-          WORM chain too — <a href="/business/audit">verify a chain →</a> (G30).
+          WORM chain too — <a href="/business/audit">verify a chain →</a>
         </p>
       </Section>
     </div>

@@ -57,10 +57,9 @@ export default async function IntelPage({
         <h1 className="page-title">Intel findings</h1>
         <p className="lede">
           Competitor, compliance-framework, GitHub-traction, analytics, and
-          error-triage findings from the standing intel daemon (ADR-0286),
-          newest first. Read-only, through the same{" "}
-          <span className="mono">admin</span> role as every other business-admin
-          view.
+          error-triage findings from the standing intel daemon, newest first.
+          Read-only, through the same <span className="mono">admin</span> role
+          as every other business-admin view.
         </p>
       </section>
 

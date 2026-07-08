@@ -758,7 +758,7 @@ export function AdminMutations({
 
       <MutationCard
         title="First-mint license"
-        description="Issue a license for an account with entitlements but no prior grant (ADR-0292 rescue lever — reissue 404s here; use this only when reissue can't)."
+        description="Issue a license for an account with entitlements but no prior grant. Rescue path — reissue 404s here; use this only when reissue can't."
         targetAccountId={firstMintAcct}
         disabled={!Number.isInteger(firstMintMajorNum) || firstMintMajorNum < 0}
         onSubmit={() =>
@@ -783,7 +783,7 @@ export function AdminMutations({
 
       <MutationCard
         title="Resend email"
-        description="Resend a purchase-confirmation-style email carrying the account's current entitlements + dashboard link (G40). Not a byte-exact historical receipt — the original amount isn't stored."
+        description="Resend a purchase-confirmation-style email carrying the account's current entitlements + dashboard link. Not a byte-exact historical receipt — the original amount isn't stored."
         targetAccountId={resendAcct}
         onSubmit={() =>
           callRoute("/api/admin/email/resend", {
