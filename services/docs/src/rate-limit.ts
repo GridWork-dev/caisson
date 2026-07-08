@@ -30,12 +30,27 @@ export interface RateLimitConfig {
   readonly static: BucketConfig;
   readonly globalQuery: BucketConfig;
   readonly globalStatic: BucketConfig;
+  /** Authorized-caller (valid-Bearer) budget for POST /query — bigger than the anonymous
+   * `query` bucket, because a single authorized caller's egress IP can front many distinct
+   * real end-users (e.g. the support-bot's whole Discord community shares one Railway IP)
+   * who would otherwise all squeeze into one small anonymous per-IP bucket (G22 follow-up:
+   * "a bot-specific higher-budget lane", buyer-lifecycle-map.md). Optional — when omitted, the
+   * caller gets an INDEPENDENT bucket of the same size as `query` (buckets are keyed
+   * `${bucket}|${ip}`, so `trustedQuery` and `query` never share tokens even at equal size), so
+   * a caller that doesn't care about the trusted lane (an existing test literal, e.g.) sees
+   * unchanged per-request behavior. */
+  readonly trustedQuery?: BucketConfig;
+  /** Header-independent service-wide ceiling for the trusted lane (Strix vuln-0001 defense-in-
+   * depth, mirroring `globalQuery`). Optional — when omitted, an independent ceiling of the same
+   * size as `globalQuery`. */
+  readonly globalTrustedQuery?: BucketConfig;
   /** Hard cap on distinct (bucket,ip) entries held in memory before prune evicts. */
   readonly maxEntries: number;
 }
 
-/** Which route-class budget to charge a request against. */
-export type RateBucket = "query" | "static";
+/** Which route-class budget to charge a request against. `trustedQuery` is the authorized-
+ * caller lane for POST /query (see `RateLimitConfig.trustedQuery`). */
+export type RateBucket = "query" | "static" | "trustedQuery";
 
 /**
  * Parse the limiter config from env with safe defaults, Zod-validated. An empty/unset var falls back to the
@@ -54,6 +69,10 @@ const EnvSchema = z
     // The service-wide ceiling = per-IP burst × this factor (default 50). Trips only under a flood
     // (distributed or IP-spoofed); a legitimate single client is bounded by the per-IP budget first.
     globalFactor: PosInt.default(50),
+    // The authorized-caller (valid-Bearer) query budget = queryBurst × this factor (default 10,
+    // same window as queryWindowSec). G22 follow-up "bot-specific higher-budget lane" — the
+    // support-bot is the sole holder of DOCS_SERVICE_TOKEN today, so this is its lane.
+    trustedFactor: PosInt.default(10),
     maxEntries: PosInt.default(10_000),
   })
   .strict();
@@ -73,6 +92,7 @@ export function loadRateLimitConfig(
     staticBurst: "DOCS_RL_STATIC_BURST",
     staticWindowSec: "DOCS_RL_STATIC_WINDOW_SEC",
     globalFactor: "DOCS_RL_GLOBAL_FACTOR",
+    trustedFactor: "DOCS_RL_TRUSTED_FACTOR",
     maxEntries: "DOCS_RL_MAX_ENTRIES",
   };
   for (const [key, envName] of Object.entries(map)) {
@@ -80,6 +100,7 @@ export function loadRateLimitConfig(
     if (v !== undefined) raw[key] = v;
   }
   const c = EnvSchema.parse(raw);
+  const trustedQueryCapacity = c.queryBurst * c.trustedFactor;
   return {
     query: { capacity: c.queryBurst, windowMs: c.queryWindowSec * 1000 },
     static: { capacity: c.staticBurst, windowMs: c.staticWindowSec * 1000 },
@@ -90,6 +111,14 @@ export function loadRateLimitConfig(
     globalStatic: {
       capacity: c.staticBurst * c.globalFactor,
       windowMs: c.staticWindowSec * 1000,
+    },
+    trustedQuery: {
+      capacity: trustedQueryCapacity,
+      windowMs: c.queryWindowSec * 1000,
+    },
+    globalTrustedQuery: {
+      capacity: trustedQueryCapacity * c.globalFactor,
+      windowMs: c.queryWindowSec * 1000,
     },
     maxEntries: c.maxEntries,
   };
@@ -106,8 +135,16 @@ export class TokenBucketLimiter extends SharedTokenBucketLimiter<RateBucket> {
   constructor(config: RateLimitConfig, now: () => number = Date.now) {
     super(
       {
-        perIp: { query: config.query, static: config.static },
-        global: { query: config.globalQuery, static: config.globalStatic },
+        perIp: {
+          query: config.query,
+          static: config.static,
+          trustedQuery: config.trustedQuery ?? config.query,
+        },
+        global: {
+          query: config.globalQuery,
+          static: config.globalStatic,
+          trustedQuery: config.globalTrustedQuery ?? config.globalQuery,
+        },
         maxEntries: config.maxEntries,
       },
       now,
