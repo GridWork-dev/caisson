@@ -842,6 +842,34 @@ describe("event mapping", () => {
     expect(warnings).toHaveLength(1);
     expect(warnings[0]).toMatch(/not an object/);
   });
+
+  // ADR-0269 §6 accepted residual ("the live Paddle dunning configuration — cancel vs pause on
+  // final payment failure — must be verified before launch"): PINS the current parser behavior —
+  // Paddle's dunning/past-due event types are NOT in the switch below and fall through to
+  // `default: return null` (a safe no-op, never a malformed grant/revoke). This means entitlement
+  // suspension on dunning happens ONLY if Paddle's dunning config CANCELS the subscription (which
+  // fires `subscription.canceled`, already handled) — if Paddle is configured to PAUSE instead, no
+  // code path here reacts at all. Building `subscription.paused`/`transaction.payment_failed`
+  // handling is the explicitly accepted, not-yet-built ADR-0269 §6 residual (operator-locked:
+  // "accept + follow-up, no subscription-state tracking built") — this test does
+  // NOT build it; it only pins today's safe-no-op so a future change to this switch is a deliberate
+  // decision, not an accidental drop. Real verification (does the Paddle dashboard actually cancel
+  // vs pause) needs a live sandbox webhook, tracked in the same follow-up.
+  test("Paddle dunning/past-due event types are a safe no-op today (ADR-0269 §6 — not yet built)", () => {
+    for (const eventType of [
+      "transaction.payment_failed",
+      "subscription.past_due",
+      "subscription.paused",
+      "subscription.resumed",
+    ]) {
+      const ev = parsePaddleEvent({
+        event_id: `evt_${eventType}`,
+        event_type: eventType,
+        data: { id: "sub_dunning", custom_data: { account_id: "acct_a" } },
+      });
+      expect(ev).toBeNull();
+    }
+  });
 });
 
 describe("PaddleEventSchema (envelope boundary validation, services-hardening MED)", () => {
