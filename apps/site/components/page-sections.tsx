@@ -76,10 +76,25 @@ function renderSection(section: PageSection, key: number): ReactNode {
     }
 
     case "codeArtifact": {
-      const { kind: _kind, ...codeBlockProps } = section;
+      const { kind: _kind, notes, ...codeBlockProps } = section;
       return (
         <Section key={key}>
           <CodeBlock {...codeBlockProps} frame />
+          {notes && notes.length > 0 && (
+            <ol
+              className="cs-muted"
+              style={{
+                marginTop: "var(--cs-space-4)",
+                paddingLeft: "var(--cs-space-6)",
+                display: "grid",
+                gap: "var(--cs-space-2)",
+              }}
+            >
+              {notes.map((note, i) => (
+                <li key={i}>{note}</li>
+              ))}
+            </ol>
+          )}
         </Section>
       );
     }

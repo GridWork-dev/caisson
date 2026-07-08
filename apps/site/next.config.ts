@@ -21,7 +21,22 @@ const config: NextConfig = {
   images: { unoptimized: true },
   // @caisson/ui ships raw TS (exports point at src/*.ts); Next transpiles it (ADR-0042 token floor).
   // @caisson/ui-pro is the same raw-.tsx-plus-co-located-.css delivery — the /ui showcase renders it.
-  transpilePackages: ["@caisson/ui", "@caisson/brand", "@caisson/ui-pro"],
+  // @caisson/demo-registry (CAISSON-35, the /ui showcase's data source) is the same raw-source
+  // delivery, and its module-scope CATALOG_ENTRIES unconditionally combines all three entry files
+  // — including the six per-package `./ui` surfaces — so every package below needs to resolve
+  // through this list too, exactly like apps/admin/next.config.ts (the registry's other consumer).
+  transpilePackages: [
+    "@caisson/ui",
+    "@caisson/brand",
+    "@caisson/ui-pro",
+    "@caisson/demo-registry",
+    "@caisson/audit-worm",
+    "@caisson/license-issue",
+    "@caisson/local-store",
+    "@caisson/prompt-registry",
+    "@caisson/ai-meter",
+    "@caisson/audit-harness",
+  ],
   turbopack: { root: monorepoRoot },
   // ADR-0237 F1 + ADR-0285: the commerce routes fold into the ONE /marketplace surface. The
   // original /pricing · /modules · /build 301 there; the ADR-0285 rework additionally folds the
