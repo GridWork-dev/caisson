@@ -38,6 +38,12 @@ const SECTIONS: Section[] = [
     href: "/business",
   },
   {
+    title: "Intel",
+    desc: "Standing compliance findings from the intel daemon — SOC2/framework monitoring, ranked by severity.",
+    state: "ready",
+    href: "/intel",
+  },
+  {
     title: "Architecture",
     desc: "The live service/deploy topology, derived from the manifests + health probes.",
     state: "ready",

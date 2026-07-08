@@ -22,12 +22,39 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+// IN-01 — per-account resend throttle: at most one resend per account per minute, so a mis-click
+// (or a scripted loop) can't spam an account's inbox. ponytail: a bare module-level Map, single
+// process/single Railway instance only (no shared store) — fine for this operator-only,
+// single-replica admin app; swap for the account-store package's Postgres-backed limiter if this
+// app ever runs more than one instance.
+const RESEND_THROTTLE_MS = 60_000;
+const lastResendAt = new Map<string, number>();
+
+function isThrottled(targetAccountId: string): boolean {
+  const now = Date.now();
+  const last = lastResendAt.get(targetAccountId);
+  if (last !== undefined && now - last < RESEND_THROTTLE_MS) return true;
+  // Lazy eviction: expired entries are dead weight (the get above treats them as absent), so
+  // sweep them on write to keep the Map bounded by the last minute's distinct accounts.
+  for (const [id, at] of lastResendAt) {
+    if (now - at >= RESEND_THROTTLE_MS) lastResendAt.delete(id);
+  }
+  lastResendAt.set(targetAccountId, now);
+  return false;
+}
+
 export async function POST(req: Request): Promise<Response> {
   const actor = await requireAdmin(req);
   if (actor === null) return json({ error: "unauthorized" }, 401);
   const parsed = await parseBody(req, ResendPurchaseEmailBody);
   if (!parsed.ok) return parsed.response;
   const { targetAccountId, orderId } = parsed.value;
+  if (isThrottled(targetAccountId)) {
+    return json(
+      { error: "resend throttled: at most one resend per account per minute" },
+      429,
+    );
+  }
   try {
     const entitlementIds = await readActiveEntitlementIds(targetAccountId);
     const deps = await getAdminMutationDeps();
