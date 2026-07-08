@@ -20,11 +20,13 @@ ENV NODE_ENV=production \
 COPY . .
 RUN bun install --frozen-lockfile
 
-# Non-root: DocsIndex.build backs its bun:sqlite store with LocalStore.open({ dim }) — no `path`,
-# so it's `:memory:` (index-store.ts) — the process never writes to disk at runtime, only reads
-# the workspace installed above. `bun` (uid/gid 1000) is the oven/bun base image's baked-in
-# non-root user.
-USER bun
+# Non-root runtime via the entrypoint: the process runs as `bun` (uid/gid 1000, the oven/bun
+# base image's baked-in non-root user), but the entrypoint starts as root exactly long enough
+# to chown the Railway volume mount (attached ROOT-owned) so the embed cache
+# (src/embed-cache.ts) can persist there, then drops privileges with setpriv. The index itself
+# stays :memory: (LocalStore.open({ dim }) — no path); the volume holds only the embed cache.
+RUN chmod +x services/docs/entrypoint.sh
+ENTRYPOINT ["/app/services/docs/entrypoint.sh"]
 
 # DOCS_SERVICE_TOKEN is injected by the platform secret store at run time (server.ts refuses to start
 # without it). The real OpenRouter embedder (qwen3-embedding-8b) is a CODE-TRACK wire at
