@@ -66,10 +66,15 @@ export async function addAccountMember(
 /**
  * An owner removes a member's seat (G15 — offboarding never shipped; the schema has GRANTed DELETE
  * on `account_member` since ADR-0176, unused until now). Owner-gated (`assertCanManageMembers`,
- * same authz as `addAccountMember`) and self-removal is refused so an owner can never lock
- * themselves out of their own account through this control (the personal-account row where
- * `accountId === userId` is exempt for the same reason — it is not a seat to remove). Idempotent:
- * removing an id that is not a member is a no-op, not an error. Tenant-scoped write.
+ * same authz as `addAccountMember`); self-removal is refused so an owner can never lock themselves
+ * out of their own account through this control (the personal-account row where
+ * `accountId === userId` is exempt for the same reason — it is not a seat to remove). A SECOND
+ * owner cannot be removed this way either (`addAccountMember` accepts `role: "owner"`, so a
+ * multi-owner account is possible): removal is a seat-offboarding control, not a co-owner ejection
+ * — refuse it the same way self-removal is refused rather than let one owner unilaterally strip
+ * another's access. The target's role is looked up inside the SAME tenant-scoped transaction the
+ * delete runs in, so the check and the write see a consistent row. Idempotent: removing an id that
+ * is not a member is a no-op, not an error.
  */
 export async function removeAccountMember(
   db: Transactor,
@@ -85,6 +90,17 @@ export async function removeAccountMember(
     });
   }
   await withTenant(db, accountId, async (tx) => {
+    const { rows } = await tx.query<{ role: string }>(
+      `SELECT role FROM account_member WHERE account_id = $1 AND user_id = $2`,
+      [accountId, targetUserId],
+    );
+    const targetRole = rows[0]?.role;
+    if (targetRole === undefined) return; // not a member — idempotent no-op
+    if (targetRole === "owner") {
+      throw new ValidationError("An account owner cannot be removed this way", {
+        field: "userId",
+      });
+    }
     await tx.query(
       `DELETE FROM account_member WHERE account_id = $1 AND user_id = $2`,
       [accountId, targetUserId],

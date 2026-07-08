@@ -105,4 +105,17 @@ describe("owner removes a seat (G15)", () => {
       (await listAccountMembers(tp.pg, "user_a")).map((m) => m.userId),
     ).toEqual(["user_a"]);
   });
+
+  test("one owner cannot remove a SECOND owner (WR-02)", async () => {
+    await ensurePersonalAccount(tp.pg, "user_a");
+    // A second owner on the same account — addAccountMember accepts role: "owner".
+    await addAccountMember(tp.pg, "owner", "user_a", "user_b", "owner");
+    await expect(
+      removeAccountMember(tp.pg, "owner", "user_a", "user_a", "user_b"),
+    ).rejects.toBeInstanceOf(ValidationError);
+    // Untouched — the co-owner is still a member.
+    expect(
+      (await listAccountMembers(tp.pg, "user_a")).map((m) => m.userId).sort(),
+    ).toEqual(["user_a", "user_b"]);
+  });
 });
