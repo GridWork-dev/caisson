@@ -42,6 +42,7 @@ import {
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   RENEWAL_EXTENSION_SCHEMA_SQL,
   ENTITLEMENT_SCHEMA_SQL,
+  UPDATES_WINDOW_EXPIRY_NOTICE_SCHEMA_SQL,
   computeEntitledSince,
   computeUpdatesWindows,
   extendUpdatesWindow,
@@ -53,6 +54,7 @@ import {
   revokePurchaseGrants,
   revokePurchaseLineGrants,
   revokeSubscriptionGrants,
+  sweepUpdatesWindowExpiryNotices,
   upsertSubscriptionGrants,
 } from "./entitlement-store.ts";
 
@@ -64,6 +66,7 @@ beforeAll(async () => {
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
   await tp.exec(RENEWAL_EXTENSION_SCHEMA_SQL);
+  await tp.exec(UPDATES_WINDOW_EXPIRY_NOTICE_SCHEMA_SQL);
 });
 
 afterAll(async () => {
@@ -1288,5 +1291,141 @@ describe("ADR-0269 subscription-covered pairs (horizon-extended claims + the own
     expect(
       await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
     ).toEqual([]);
+  });
+});
+
+interface CapturedSend {
+  to: string;
+  template: string;
+  data: Record<string, unknown>;
+}
+
+function captureEmailer(): {
+  emailer: { send: (msg: CapturedSend) => Promise<void> };
+  sent: CapturedSend[];
+} {
+  const sent: CapturedSend[] = [];
+  return {
+    emailer: {
+      send: async (msg: CapturedSend) => {
+        sent.push(msg);
+      },
+    },
+    sent,
+  };
+}
+
+describe("sweepUpdatesWindowExpiryNotices (G24, buyer-lifecycle audit 2026-07-07)", () => {
+  test("a window expiring within the notice horizon sends ONE notice and marks it", async () => {
+    const acct = "acct_g24_due";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pi_g24_due",
+        source: onetime("pi_g24_due"),
+      }),
+    );
+    // Precise boundary control via raw SQL -- 10 days out, inside the default 30d window.
+    await tp.exec(
+      `UPDATE entitlement_grant SET updates_expires_at = now() + interval '10 days'
+       WHERE account_id = 'acct_g24_due' AND entitlement_id = 'compliance'`,
+    );
+    const { emailer, sent } = captureEmailer();
+    const count = await withTenant(tp.pg, acct, (tx) =>
+      sweepUpdatesWindowExpiryNotices(tx, acct, {
+        recipient: "buyer@example.test",
+        emailer,
+        dashboardUrl: "https://example.test/dashboard/license",
+      }),
+    );
+    expect(count).toBe(1);
+    expect(sent.length).toBe(1);
+    expect(sent[0]?.to).toBe("buyer@example.test");
+    expect(sent[0]?.template).toBe("updates-window-expiring");
+    expect(sent[0]?.data.entitlementId).toBe("compliance");
+    expect(sent[0]?.data.url).toBe("https://example.test/dashboard/license");
+  });
+
+  test("a replayed sweep sends nothing -- already noticed for this exact expiry", async () => {
+    const { emailer, sent } = captureEmailer();
+    const count = await withTenant(tp.pg, "acct_g24_due", (tx) =>
+      sweepUpdatesWindowExpiryNotices(tx, "acct_g24_due", {
+        recipient: "buyer@example.test",
+        emailer,
+        dashboardUrl: "https://example.test/dashboard/license",
+      }),
+    );
+    expect(count).toBe(0);
+    expect(sent).toEqual([]);
+  });
+
+  test("a window outside the notice horizon sends nothing (no updates_expires_at stamped)", async () => {
+    const acct = "acct_g24_far";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pi_g24_far",
+        source: onetime("pi_g24_far"),
+      }),
+    );
+    // No updates_expires_at stamped -> computeUpdatesWindows would derive granted_at+12mo, but the
+    // RAW column this sweep reads is still NULL -> excluded by "IS NOT NULL", not a false positive.
+    const { emailer, sent } = captureEmailer();
+    const count = await withTenant(tp.pg, acct, (tx) =>
+      sweepUpdatesWindowExpiryNotices(tx, acct, {
+        recipient: "buyer@example.test",
+        emailer,
+        dashboardUrl: "https://example.test/dashboard/license",
+      }),
+    );
+    expect(count).toBe(0);
+    expect(sent).toEqual([]);
+  });
+
+  test("a renewal that pushes the expiry to a NEW instant is a fresh notice-eligible window", async () => {
+    const acct = "acct_g24_renew";
+    await withTenant(tp.pg, acct, (tx) =>
+      grantEntitlements(tx, {
+        accountId: acct,
+        entitlementIds: ["compliance"],
+        sourceEventId: "pi_g24_renew",
+        source: onetime("pi_g24_renew"),
+      }),
+    );
+    await tp.exec(
+      `UPDATE entitlement_grant SET updates_expires_at = now() + interval '5 days'
+       WHERE account_id = 'acct_g24_renew' AND entitlement_id = 'compliance'`,
+    );
+    const first = captureEmailer();
+    expect(
+      await withTenant(tp.pg, acct, (tx) =>
+        sweepUpdatesWindowExpiryNotices(tx, acct, {
+          recipient: "buyer@example.test",
+          emailer: first.emailer,
+          dashboardUrl: "https://example.test/dashboard/license",
+        }),
+      ),
+    ).toBe(1);
+
+    // The buyer renews -- a DIFFERENT expiry instant, still inside the window. Keying the marker
+    // on the expiry INSTANT (not just the entitlement id) means this is a FRESH, distinct
+    // notice-eligible window, not a stuck-forever marker.
+    await tp.exec(
+      `UPDATE entitlement_grant SET updates_expires_at = now() + interval '20 days'
+       WHERE account_id = 'acct_g24_renew' AND entitlement_id = 'compliance'`,
+    );
+    const second = captureEmailer();
+    expect(
+      await withTenant(tp.pg, acct, (tx) =>
+        sweepUpdatesWindowExpiryNotices(tx, acct, {
+          recipient: "buyer@example.test",
+          emailer: second.emailer,
+          dashboardUrl: "https://example.test/dashboard/license",
+        }),
+      ),
+    ).toBe(1);
+    expect(second.sent.length).toBe(1);
   });
 });

@@ -29,6 +29,7 @@ import {
   decodeToken,
   licenseClaimsSchema,
   licenseTierSchema,
+  type LicenseTier,
 } from "@caisson/license-verify";
 import { withRequestSpan } from "@caisson/observability";
 import { withAdminWrite } from "@caisson/org-controls";
@@ -37,6 +38,7 @@ import {
   type RegistryIndex,
 } from "@caisson/registry-schema";
 import { type Transactor, withTenant } from "@caisson/tenancy-rls";
+import type { ChargebackAlert } from "./chargeback-notify.ts";
 import {
   createEvalApplication,
   readEvalApplication,
@@ -53,6 +55,7 @@ import type { DiscordGrantPush } from "./discord-notify.ts";
 import type {
   PurchaseEmailNotice,
   RenewalEmailNotice,
+  RevokeEmailNotice,
 } from "./email-notify.ts";
 import {
   computeEntitledSince,
@@ -125,6 +128,20 @@ export interface IssueAppDeps {
    * receipt carries the whole-event total (this notice's `amountTotalMinor` is omitted there).
    */
   renewalEmailNotify: (notice: RenewalEmailNotice) => Promise<void>;
+  /**
+   * G27 (buyer-lifecycle audit 2026-07-07) — the post-revoke "your access changed" email, fired
+   * only when a subscription cancel or a refund ACTUALLY revoked an active grant (see
+   * `RevokeNotice`). Same never-`null`, always-wired, detached, never-throw contract as
+   * `purchaseEmailNotify`/`renewalEmailNotify`.
+   */
+  revokeEmailNotify: (notice: RevokeEmailNotice) => Promise<void>;
+  /**
+   * ADR-0294 chargeback/dispute operator alert. Unlike `discordNotify`/`posthogCapture` this is
+   * never `null` — `server.ts` always wires `chargeback-notify.ts#notifyChargebackAlert`, which
+   * itself always logs the stderr ALERT floor and additionally posts to a Discord Incoming
+   * Webhook when configured. Same detached, never-throw contract as the other post-commit pushes.
+   */
+  chargebackAlert: (alert: ChargebackAlert) => Promise<void>;
   /**
    * Index-parity probe surface (the F-1 index-parity residual: three independently-baked copies of
    * registry/index.json can drift). The sha256 (first 12 hex) of the index.json BYTES this service
@@ -291,6 +308,167 @@ function canonicalMap(map: Record<string, string>): string {
   );
 }
 
+interface IssueOrReuseInput {
+  accountId: string;
+  tier: LicenseTier;
+  major: number;
+  expiry: string | null;
+}
+
+/**
+ * The discriminated outcome of {@link issueOrReuseLicense} — the SAME two failure modes the
+ * POST /issue route has always mapped to a 422/500 JSON body (see the route below), returned as
+ * data instead of a `Response` so the ADR-0292 webhook-push mint (`mintLicensePostCommit`) can map
+ * a failure onto its own log-and-alert contract instead.
+ */
+type IssueOutcome =
+  | { kind: "ok"; token: string; licenseId: string }
+  | { kind: "unresolved" }
+  | { kind: "sign_failed" };
+
+/**
+ * The shared POST /issue core — ADR-0110's "persist & reuse" idempotent mint, extracted 2026-07-07
+ * (ADR-0292) so the webhook-push first-mint reuses this EXACT signing + persistence path rather
+ * than a second implementation. See the POST /issue route below for the full behavior contract
+ * (idempotent re-serve, the ADR-0251 Decision 3 window-changed re-mint, the race-loser re-read).
+ */
+async function issueOrReuseLicense(
+  deps: Pick<IssueAppDeps, "db" | "signer" | "index">,
+  input: IssueOrReuseInput,
+): Promise<IssueOutcome> {
+  const { accountId, tier, major, expiry } = input;
+  const { existing, updatesWindows, entitledSince, purchased } =
+    await withTenant(deps.db, accountId, async (tx) => ({
+      existing: await readLicenseGrant(tx, accountId, major),
+      updatesWindows: await computeUpdatesWindows(tx, accountId),
+      entitledSince: await computeEntitledSince(tx, accountId),
+      purchased: await readEntitlements(tx, accountId),
+    }));
+  // The SIGNED entitlements are the account's PURCHASED ids, sorted — the claims contract every
+  // consumer expands against the index at verification. Signing the EXPANSION instead orphans the
+  // purchased-id-keyed `updatesWindows`/`entitledSince` maps (audit F2, 2026-07-06).
+  const entitlements = [...purchased].sort();
+  if (existing !== null) {
+    const stored = storedRemintClaims(existing.token);
+    if (
+      stored.entitlements.join(" ") === entitlements.join(" ") &&
+      canonicalMap(stored.updatesWindows) === canonicalMap(updatesWindows) &&
+      canonicalMap(stored.entitledSince) === canonicalMap(entitledSince)
+    ) {
+      return {
+        kind: "ok",
+        token: existing.token,
+        licenseId: existing.licenseId,
+      };
+    }
+  }
+
+  // Fail-closed TM-E VALIDATION only (never the signed set): a stored purchased id absent from the
+  // index — and not reserved — throws; mapped to the generic "unresolved" outcome (never echoing
+  // internal ids).
+  try {
+    expandEntitlements(deps.index, purchased);
+  } catch {
+    return { kind: "unresolved" };
+  }
+
+  const claims = {
+    licenseId: randomUUID(),
+    tier,
+    entitlements,
+    major,
+    expiry,
+    updatesWindows,
+    entitledSince,
+  };
+  let token: string;
+  try {
+    token = await issueLicense(deps.signer, claims);
+  } catch {
+    // A signer failure (corrupted PKCS8 key, a future KMS adapter timeout) — never an unhandled
+    // async rejection.
+    return { kind: "sign_failed" };
+  }
+
+  // Window-changed RE-MINT (ADR-0251 Decision 3): a stored grant exists but its signed window is
+  // stale — replace the stored row's token in place (still exactly one row per (account, major)).
+  if (existing !== null) {
+    await withTenant(deps.db, accountId, (tx) =>
+      updateLicenseGrantToken(tx, {
+        accountId,
+        major,
+        licenseId: claims.licenseId,
+        tier,
+        expiry,
+        token,
+      }),
+    );
+    return { kind: "ok", token, licenseId: claims.licenseId };
+  }
+
+  // Persist, idempotently: a concurrent /issue for the same (accountId, major) may have minted its
+  // OWN token and stored it first — `storeLicenseGrant`'s unique-index ON CONFLICT silently drops
+  // the loser's insert. Re-read on a lost race so every caller converges on the SAME stored
+  // (winning) token, never two live tokens for one (account, major).
+  const stored = await withTenant(deps.db, accountId, (tx) =>
+    storeLicenseGrant(tx, {
+      accountId,
+      major,
+      licenseId: claims.licenseId,
+      tier,
+      expiry,
+      token,
+    }),
+  );
+  if (stored) {
+    return { kind: "ok", token, licenseId: claims.licenseId };
+  }
+  const winner = await withTenant(deps.db, accountId, (tx) =>
+    readLicenseGrant(tx, accountId, major),
+  );
+  // The unique-index insert just reported a conflict, so a row MUST exist; this null branch is an
+  // unreachable defensive fallback (never observed) rather than a silent re-mint on a read failure.
+  return winner !== null
+    ? { kind: "ok", token: winner.token, licenseId: winner.licenseId }
+    : { kind: "ok", token, licenseId: claims.licenseId };
+}
+
+/**
+ * ADR-0292 — license first-mint webhook-push. Mint (or idempotently re-serve, per
+ * {@link issueOrReuseLicense}'s own persist-and-reuse discipline) the buyer's license post-commit,
+ * called only after a GRANTING or RENEWING billing event has already durably committed. NEVER
+ * throws — the grant already landed, so a mint failure (a signer outage, a transient DB error)
+ * must not turn an already-successful webhook into a needless Paddle retry; it logs one
+ * operator-visible ALERT line and resolves `null`. major/tier mirror the launch runbook's manual
+ * first-mint curl and the eval-issue path's own default (major 0, perpetual; tier "pro" — a
+ * cosmetic label only, downstream access gates on the signed `entitlements` list, never `tier`).
+ * Self-healing by construction: a failed mint recovers on the account's NEXT granting/renewing
+ * event, or via the admin first-mint lever (`POST /issue` through the admin reissue proxy).
+ */
+async function mintLicensePostCommit(
+  deps: Pick<IssueAppDeps, "db" | "signer" | "index">,
+  accountId: string,
+): Promise<string | null> {
+  try {
+    const outcome = await issueOrReuseLicense(deps, {
+      accountId,
+      tier: "pro",
+      major: 0,
+      expiry: null,
+    });
+    if (outcome.kind === "ok") return outcome.token;
+    process.stderr.write(
+      `[service-license] ALERT: first-mint license failed (${outcome.kind}) for account ${accountId} — no automated license issued this delivery; the next grant/renewal or the admin first-mint lever recovers\n`,
+    );
+    return null;
+  } catch (err) {
+    process.stderr.write(
+      `[service-license] ALERT: first-mint license threw for account ${accountId}: ${err instanceof Error ? err.message : String(err)} — no automated license issued this delivery; the next grant/renewal or the admin first-mint lever recovers\n`,
+    );
+    return null;
+  }
+}
+
 /** Build the request handler. Async because /issue awaits the tenant read + the signer. */
 export function createApp(
   deps: IssueAppDeps,
@@ -368,121 +546,29 @@ export function createApp(
       }
       const { accountId, tier, major, expiry } = parsed.data;
 
-      // Idempotent re-serve (persist & reuse), LOOSENED per ADR-0251 Decision 3: a prior /issue for
-      // this exact (accountId, major) already minted + stored a token — return it byte-identical
-      // UNLESS the account's fresh PURCHASED id set, per-entitlement updates windows (ADR-0244/0255)
-      // OR snapshot-at-sale instants (ADR-0257 §1.2 `entitledSince`) — all DB truth over the active
-      // grants — differ from the stored token's signed claims. A new purchase (entitlements), a
-      // renewal (window), or a re-purchase that widens the member snapshot (`entitledSince`) must
-      // produce a fresh token, never re-serve the stale claim. Maps compare CANONICALLY (sorted-key
-      // JSON, ADR-0255 Decision 4); entitlements compare as the sorted id list. All reads are
-      // RLS-scoped in ONE withTenant — only the caller's own grants.
-      const { existing, updatesWindows, entitledSince, purchased } =
-        await withTenant(deps.db, accountId, async (tx) => ({
-          existing: await readLicenseGrant(tx, accountId, major),
-          updatesWindows: await computeUpdatesWindows(tx, accountId),
-          entitledSince: await computeEntitledSince(tx, accountId),
-          purchased: await readEntitlements(tx, accountId),
-        }));
-      // The SIGNED entitlements are the account's PURCHASED ids, sorted — the claims contract every
-      // consumer expands against the index at verification (Worker resolveGate, MCP server). Signing
-      // the EXPANSION instead orphans the purchased-id-keyed `updatesWindows`/`entitledSince` maps:
-      // the Worker's per-id window fold matches token entitlements against those keys, so an
-      // expanded claim made every updates window resolve UNBOUNDED (fail-open — a lapsed buyer kept
-      // receiving every future version; audit F2, 2026-07-06).
-      const entitlements = [...purchased].sort();
-      if (existing !== null) {
-        const stored = storedRemintClaims(existing.token);
-        if (
-          stored.entitlements.join(" ") === entitlements.join(" ") &&
-          canonicalMap(stored.updatesWindows) ===
-            canonicalMap(updatesWindows) &&
-          canonicalMap(stored.entitledSince) === canonicalMap(entitledSince)
-        ) {
-          return json({ token: existing.token, licenseId: existing.licenseId });
-        }
-      }
-
-      // Fail-closed TM-E VALIDATION only (never the signed set): a stored purchased id absent from
-      // the index — and not reserved — throws; we map that to a 422 with a GENERIC message (never
-      // echo internal ids).
-      try {
-        expandEntitlements(deps.index, purchased);
-      } catch {
-        return json({ error: "could not resolve account entitlements" }, 422);
-      }
-
-      const claims = {
-        licenseId: randomUUID(),
+      // Idempotent re-serve (persist & reuse) with the ADR-0251 Decision 3 window-changed re-mint
+      // and the race-loser re-read -- the full behavior contract lives on issueOrReuseLicense
+      // above (extracted 2026-07-07, ADR-0292, so the webhook-push first-mint below shares this
+      // EXACT path rather than a second implementation).
+      const outcome = await issueOrReuseLicense(deps, {
+        accountId,
         tier,
-        entitlements,
         major,
         expiry,
-        // The signed ADR-0244/0255 per-entitlement updates windows — an empty map = every
-        // entitlement unbounded (an account with no active one-time grants; subscriptions keep
-        // their expiry semantics untouched).
-        updatesWindows,
-        // The signed ADR-0257 §1.2 per-entitlement snapshot-at-sale instants — an empty map = every
-        // entitlement grandfathered (no member is snapshot-filtered). Sibling of `updatesWindows`
-        // on the member-set axis; read by the registry-schema per-member filter, never here.
-        entitledSince,
-      };
-      let token: string;
-      try {
-        token = await issueLicense(deps.signer, claims);
-      } catch {
+      });
+      if (outcome.kind === "unresolved") {
+        // Fail-closed TM-E VALIDATION only (never the signed set): a stored purchased id absent
+        // from the index -- and not reserved -- throws inside issueOrReuseLicense; mapped here to
+        // a 422 with a GENERIC message (never echo internal ids).
+        return json({ error: "could not resolve account entitlements" }, 422);
+      }
+      if (outcome.kind === "sign_failed") {
         // A signer failure (corrupted PKCS8 key, a future KMS adapter timeout) must surface as a
-        // structured 500 — never an unhandled async rejection that Bun renders as a non-JSON body or
-        // leaks internal error detail. Mirrors the entitlement-resolution guard above.
+        // structured 500 -- never an unhandled async rejection that Bun renders as a non-JSON body
+        // or leaks internal error detail.
         return json({ error: "signing failed" }, 500);
       }
-
-      // Window-changed RE-MINT (ADR-0251 Decision 3): a stored grant exists but its signed window is
-      // stale — replace the stored row's token in place (still exactly one row per (account, major)).
-      // Revocation caveat: the re-mint issues a FRESH licenseId, so an edge deny-set entry alone
-      // (grants left active) would not survive a window-change re-mint — revocation must always
-      // revoke the grant rows AND deny-list together, as the shipped admin revoke flow does.
-      if (existing !== null) {
-        await withTenant(deps.db, accountId, (tx) =>
-          updateLicenseGrantToken(tx, {
-            accountId,
-            major,
-            licenseId: claims.licenseId,
-            tier,
-            expiry,
-            token,
-          }),
-        );
-        return json({ token, licenseId: claims.licenseId });
-      }
-
-      // Persist, idempotently: a concurrent /issue for the same (accountId, major) may have minted
-      // its OWN token and stored it first — `storeLicenseGrant`'s unique-index ON CONFLICT silently
-      // drops the loser's insert. Re-read on a lost race so every caller converges on the SAME stored
-      // (winning) token, never two live tokens for one (account, major).
-      const stored = await withTenant(deps.db, accountId, (tx) =>
-        storeLicenseGrant(tx, {
-          accountId,
-          major,
-          licenseId: claims.licenseId,
-          tier,
-          expiry,
-          token,
-        }),
-      );
-      if (stored) {
-        return json({ token, licenseId: claims.licenseId });
-      }
-      const winner = await withTenant(deps.db, accountId, (tx) =>
-        readLicenseGrant(tx, accountId, major),
-      );
-      // The unique-index insert just reported a conflict, so a row MUST exist; this null branch is an
-      // unreachable defensive fallback (never observed) rather than a silent re-mint on a read failure.
-      return json(
-        winner !== null
-          ? { token: winner.token, licenseId: winner.licenseId }
-          : { token, licenseId: claims.licenseId },
-      );
+      return json({ token: outcome.token, licenseId: outcome.licenseId });
     }
 
     // ADR-0274 §2 / ADR-0280 — the verified time-boxed eval-license surface. Both routes are
@@ -742,6 +828,24 @@ export function createApp(
         process.stderr.write("[service-license] webhook processing failed\n");
         return json({ error: "webhook processing failed" }, 500);
       }
+      // ADR-0292 — license first-mint webhook-push. AWAITED here — unlike the Discord/PostHog/email
+      // pushes below, which stay genuinely fire-and-forget — so the purchase-confirmation email
+      // built further down can carry the freshly-minted token in THIS SAME delivery, synchronously,
+      // rather than racing a detached mint against an already-fired email. Still strictly
+      // post-commit: the grant's own `withTenant` transaction already committed inside
+      // `handleBillingWebhook` above; the mint runs its OWN separate transaction(s) via
+      // `issueOrReuseLicense`. NEVER throws (`mintLicensePostCommit` catches everything and logs an
+      // operator ALERT on failure) — awaiting it can only ever add a few DB round trips to the
+      // response, never turn a durable grant into a failed webhook. Mints on a GRANT (new
+      // entitlements) or a RENEWAL (an updates-window extension, which grants nothing but still
+      // needs a fresh signed window) — the same two triggers stage 5 and stage 7 of the
+      // buyer-lifecycle audit named as the P0's root cause.
+      const licenseToken: string | null =
+        result.event !== null &&
+        (result.grantedEntitlements.length > 0 ||
+          result.renewedEntitlements.length > 0)
+          ? await mintLicensePostCommit(deps, result.event.accountId)
+          : null;
       // Post-commit Discord role push (ADR-0203): DETACHED, fired only after the grant durably
       // landed, and OUTSIDE the grant's try/catch — a misbehaving notifier (even one throwing
       // synchronously) must never convert a committed grant into a 500 (which would trigger a
@@ -785,6 +889,11 @@ export function createApp(
           currency: result.event.currency,
           sourceEventId: result.event.sourceEventId,
           skuLines: result.skuLines,
+          // G33: the SAME subscription-cycle-vs-first-purchase computation the sibling email
+          // notice makes, further down.
+          subscriptionCycle:
+            result.event.type === "invoice.paid" &&
+            result.event.billingReason === "subscription_cycle",
         };
         try {
           void deps.posthogCapture(capture).catch(() => {
@@ -826,6 +935,11 @@ export function createApp(
           subscriptionCycle:
             result.event.type === "invoice.paid" &&
             result.event.billingReason === "subscription_cycle",
+          // ADR-0292: the already-awaited first-mint result rides along when it succeeded. A mint
+          // failure (`null`, already logged as an operator ALERT) sends the receipt WITHOUT a token
+          // rather than not sending at all — a missing license is recoverable (the next event, or
+          // the admin first-mint lever); a missing receipt is not.
+          ...(licenseToken !== null ? { licenseToken } : {}),
         };
         try {
           void deps.purchaseEmailNotify(notice).catch(() => {
@@ -872,6 +986,41 @@ export function createApp(
         } catch {
           process.stderr.write(
             "[service-license] renewal confirmation email threw (ignored)\n",
+          );
+        }
+      }
+      // Post-commit revoke/refund notice (G27): same detached, never-throw contract as every
+      // push above, gated on `revokeNotices` — populated ONLY when `applyBillingEvent` actually
+      // revoked an active grant this delivery (a redelivery or a Resend of an already-revoked
+      // purchase revokes nothing further, so this stays empty with no separate idempotency gate).
+      for (const revoke of result.revokeNotices) {
+        try {
+          void deps.revokeEmailNotify(revoke).catch(() => {
+            process.stderr.write(
+              "[service-license] revoke notice email rejected (ignored)\n",
+            );
+          });
+        } catch {
+          process.stderr.write(
+            "[service-license] revoke notice email threw (ignored)\n",
+          );
+        }
+      }
+      // Post-commit chargeback/dispute operator alert (ADR-0294): same detached, never-throw
+      // contract as every push above, gated on `chargebackAlerts` (populated ONLY by the
+      // ALERT-ONLY `chargeback.detected` case in apply-billing-event.ts — no grant/revoke/claw
+      // runs for it). `deps.chargebackAlert` is never `null` (server.ts always wires it; the
+      // stderr ALERT floor fires even with no Discord layer configured).
+      for (const alert of result.chargebackAlerts) {
+        try {
+          void deps.chargebackAlert(alert).catch(() => {
+            process.stderr.write(
+              "[service-license] chargeback alert rejected (ignored)\n",
+            );
+          });
+        } catch {
+          process.stderr.write(
+            "[service-license] chargeback alert threw (ignored)\n",
           );
         }
       }

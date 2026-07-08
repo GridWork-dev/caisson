@@ -11,6 +11,7 @@
 // provider retries) — never a guessed grant. Idempotent: the credit ledger keys on the source id; entitlement
 // grants key per-source; the refund latches on the active->revoked transition so a re-delivery is inert.
 import type { DomainBillingEvent } from "@caisson/billing";
+import { withIdempotentSideEffect } from "@caisson/billing-orchestration";
 import {
   clawback,
   grant,
@@ -29,6 +30,7 @@ import {
   normalizeEntitlementId,
 } from "@caisson/registry-schema";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
+import type { ChargebackAlert } from "./chargeback-notify.ts";
 import {
   acquireAccountBillingLock,
   computeUpdatesWindows,
@@ -104,12 +106,35 @@ export interface AppliedBillingEffect {
    * `extendUpdatesWindow` committed (same tx), never by re-deriving the extension formula here.
    */
   renewedEntitlements: RenewedEntitlement[];
+  /**
+   * ADR-0294 — chargeback/dispute alerts surfaced by THIS event (`[]` for every event but
+   * `chargeback.detected`, which is ALERT-ONLY: it grants/revokes/claws nothing, so it carries no
+   * entry in any of the three fields above). Threaded the same way `renewedEntitlements` is, so
+   * the post-commit push in app.ts can never drift from this mapper's own decision.
+   */
+  chargebackAlerts: ChargebackAlert[];
+  /**
+   * G27 (audit 2026-07-07) — buyer-facing revoke notices for THIS event: a subscription cancel or
+   * a refund that ACTUALLY revoked at least one active grant (idempotent by construction — a
+   * re-delivery or a Resend revokes nothing further, since `revokeSubscriptionGrants`/
+   * `revokePurchaseGrants`/`revokePurchaseLineGrants` only flip ACTIVE rows, so this list is
+   * empty on any redelivery without a separate idempotency gate). `[]` for every granting event.
+   */
+  revokeNotices: RevokeNotice[];
+}
+
+/** One buyer-facing "your access changed" notice (G27). `reason` selects the email copy. */
+export interface RevokeNotice {
+  accountId: string;
+  reason: "subscription_canceled" | "refund";
 }
 
 const NO_EFFECT: AppliedBillingEffect = {
   grantedEntitlements: [],
   skuLines: [],
   renewedEntitlements: [],
+  chargebackAlerts: [],
+  revokeNotices: [],
 };
 
 /**
@@ -135,61 +160,79 @@ export async function applyBillingEvent(
       // BEFORE the wallet-row grant below — a whole-transaction refund holds this lock while
       // waiting on the wallet row; granting first here would complete that ABBA cycle.
       await acquireAccountBillingLock(tx, ev.accountId);
-      await grant(tx, {
-        eventType: "sub_allotment",
-        accountId: ev.accountId,
-        amount: plan.creditsPerCycle, // exact table integer — no conversion (ADR-0089 §5)
-        sourceEventId: ev.invoiceId, // cycle-stable idempotency anchor (ADR-0089 §4)
+      // G7 (audit 2026-07-07): gate the WHOLE grant — both the DB writes below AND the returned
+      // effect — behind ONE per-invoice claim keyed on the STABLE `invoiceId`, not
+      // `ev.sourceEventId` (the Paddle event_id). A dashboard "Resend" mints a FRESH event_id for
+      // the SAME invoice, so the OUTER `processEvent` claim in webhook.ts (keyed on event_id)
+      // waves it through as if new. The grant()/upsertSubscriptionGrants() calls already no-op
+      // correctly at the DB layer on a resend (their own idempotency keys on `invoiceId`), but
+      // this function used to rebuild `grantedEntitlements`/`skuLines` from the INPUT regardless —
+      // so app.ts's Discord role push, PostHog capture, and purchase-confirmation email all fired
+      // a second time for a delivery that granted nothing new. Wiring the already-built
+      // `withIdempotentSideEffect` primitive here (rather than re-deriving "was this actually
+      // fresh" from each call's own return value) closes it for every current and future notify
+      // sink at once, and skips the redundant writes on a resend too.
+      let effect: AppliedBillingEffect = NO_EFFECT;
+      await withIdempotentSideEffect(tx, ev.invoiceId, "grant", async () => {
+        await grant(tx, {
+          eventType: "sub_allotment",
+          accountId: ev.accountId,
+          amount: plan.creditsPerCycle, // exact table integer — no conversion (ADR-0089 §5)
+          sourceEventId: ev.invoiceId, // cycle-stable idempotency anchor (ADR-0089 §4)
+        });
+        // Grant the plan's edition/bundle/module entitlements as SUBSCRIPTION grants (ADR-0071/0109),
+        // keyed on the subscription id so a later subscription.canceled revokes exactly these. Each
+        // granting invoice stamps/EXTENDS the row's coverage horizon (`updates_expires_at = now() +
+        // one cadence` — the instant this payment covers through), so every claim bound the issuer
+        // derives from a subscription grant lapses with the LAST PAID period rather than living
+        // forever in a stale token (audit hardening 2026-07-06). Idempotent per (account,
+        // entitlement, subscription). A credits-only plan carries `entitlements: []` → no-op.
+        await upsertSubscriptionGrants(tx, {
+          accountId: ev.accountId,
+          entitlementIds: plan.entitlements,
+          subscriptionId: ev.subscriptionId,
+          sourceEventId: ev.invoiceId,
+          cadence: plan.cadence,
+        });
+        // ADR-0269: a `coversOwnedEntitlements` plan (Developer) RE-GRANTS, subscription-sourced,
+        // every entitlement the buyer already holds via an active one_time grant — the
+        // Compliance-Updates re-grant mirror made dynamic. While these MIRROR rows (marked
+        // `line_item_id='covered'`) are active with a live horizon, the issuer EXTENDS the pair's
+        // `updatesWindows`/`entitledSince` bounds to the horizon (ADR-0269 Decision 2, hardened);
+        // `subscription.canceled` revokes exactly these rows, a refund's reconcile sweeps a mirror
+        // whose one_time backing is gone, and the one_time gates re-bind at the next re-mint. Ids
+        // bought MID-cycle join at the next granting invoice (the upsert is idempotent per
+        // (account, id, subscription, 'covered')). Read AFTER the static grant above so a plan that
+        // one day carries both shapes can never miss its own grants; one_time reads are unaffected
+        // by it today (Developer grants []). Routed through `grantOwnedCoverageMirrors`, which
+        // shares its advisory lock with `reconcileCoverageGrants`'s refund sweep — a
+        // concurrent refund for this account can never interleave between the "owned" read and the
+        // mirror write, so a mirror can never be minted for an id whose one_time backing a racing
+        // refund just revoked.
+        const coveredIds = plan.coversOwnedEntitlements
+          ? await grantOwnedCoverageMirrors(tx, {
+              accountId: ev.accountId,
+              subscriptionId: ev.subscriptionId,
+              sourceEventId: ev.invoiceId,
+              cadence: plan.cadence,
+            })
+          : [];
+        effect = {
+          grantedEntitlements: [
+            ...new Set([...plan.entitlements, ...coveredIds]),
+          ],
+          skuLines: [
+            {
+              priceId: ev.priceId,
+              productSlug: normalizeEntitlementId(plan.planTag),
+            },
+          ],
+          renewedEntitlements: [], // a subscription cycle never carries a renewal-book line
+          chargebackAlerts: [],
+          revokeNotices: [],
+        };
       });
-      // Grant the plan's edition/bundle/module entitlements as SUBSCRIPTION grants (ADR-0071/0109),
-      // keyed on the subscription id so a later subscription.canceled revokes exactly these. Each
-      // granting invoice stamps/EXTENDS the row's coverage horizon (`updates_expires_at = now() +
-      // one cadence` — the instant this payment covers through), so every claim bound the issuer
-      // derives from a subscription grant lapses with the LAST PAID period rather than living
-      // forever in a stale token (audit hardening 2026-07-06). Idempotent per (account,
-      // entitlement, subscription). A credits-only plan carries `entitlements: []` → no-op.
-      await upsertSubscriptionGrants(tx, {
-        accountId: ev.accountId,
-        entitlementIds: plan.entitlements,
-        subscriptionId: ev.subscriptionId,
-        sourceEventId: ev.invoiceId,
-        cadence: plan.cadence,
-      });
-      // ADR-0269: a `coversOwnedEntitlements` plan (Developer) RE-GRANTS, subscription-sourced,
-      // every entitlement the buyer already holds via an active one_time grant — the
-      // Compliance-Updates re-grant mirror made dynamic. While these MIRROR rows (marked
-      // `line_item_id='covered'`) are active with a live horizon, the issuer EXTENDS the pair's
-      // `updatesWindows`/`entitledSince` bounds to the horizon (ADR-0269 Decision 2, hardened);
-      // `subscription.canceled` revokes exactly these rows, a refund's reconcile sweeps a mirror
-      // whose one_time backing is gone, and the one_time gates re-bind at the next re-mint. Ids
-      // bought MID-cycle join at the next granting invoice (the upsert is idempotent per
-      // (account, id, subscription, 'covered')). Read AFTER the static grant above so a plan that
-      // one day carries both shapes can never miss its own grants; one_time reads are unaffected
-      // by it today (Developer grants []). Routed through `grantOwnedCoverageMirrors`, which
-      // shares its advisory lock with `reconcileCoverageGrants`'s refund sweep — a
-      // concurrent refund for this account can never interleave between the "owned" read and the
-      // mirror write, so a mirror can never be minted for an id whose one_time backing a racing
-      // refund just revoked.
-      const coveredIds = plan.coversOwnedEntitlements
-        ? await grantOwnedCoverageMirrors(tx, {
-            accountId: ev.accountId,
-            subscriptionId: ev.subscriptionId,
-            sourceEventId: ev.invoiceId,
-            cadence: plan.cadence,
-          })
-        : [];
-      return {
-        grantedEntitlements: [
-          ...new Set([...plan.entitlements, ...coveredIds]),
-        ],
-        skuLines: [
-          {
-            priceId: ev.priceId,
-            productSlug: normalizeEntitlementId(plan.planTag),
-          },
-        ],
-        renewedEntitlements: [], // a subscription cycle never carries a renewal-book line
-      };
+      return effect;
     }
     case "purchase.completed": {
       // A one-time (non-subscription) edition/module/credit-pack buy (ADR-0113). The PaymentIntent id
@@ -210,103 +253,129 @@ export async function applyBillingEvent(
       //   - entitlements: one grant row per (line, entitlement) → the same edition granted by two cart
       //     lines is two rows (fork B-1 refcount: survives until BOTH lines are refunded).
       // `grantedEntitlements` returns the DISTINCT union for the Discord push (an entitlement is binary).
-      const grantedEntitlements = new Set<string>();
-      const skuLines: SkuLine[] = [];
-      const renewedEntitlementIds = new Set<string>();
-      for (const line of ev.lineItems) {
-        // Updates-RENEWAL line (ADR-0244/0251): a renewal SKU grants NO entitlement and NO credits —
-        // it EXTENDS the buyer's updates window on the entitlement it renews (+12 months, per
-        // (account, entitlement) pair). extendUpdatesWindow is fail-closed: renewing an entitlement
-        // with no active one_time grant throws → the webhook returns non-2xx and Paddle retries —
-        // a renewal never silently mints a grant. Redelivery idempotency is the OUTER sourceEventId
-        // claim (webhook.ts processEvent). A price id lives in exactly ONE book (pricebook test),
-        // so this branch can never shadow a real purchase row. Renewal lines stay out of
-        // `grantedEntitlements` — nothing was granted, so no Discord/PostHog push fires for them.
-        if (isRenewalPrice(line.priceId)) {
-          const renewal = resolveRenewal(line.priceId);
-          await extendUpdatesWindow(tx, {
+      //
+      // G7 (audit 2026-07-07): the WHOLE loop below — DB writes AND the returned effect — runs
+      // behind ONE per-payment claim keyed on the STABLE `paymentId`, not `ev.sourceEventId` (see
+      // the sibling comment on the invoice.paid case for the full rationale: a "Resend" mints a
+      // fresh event_id for the same transaction, and the per-line grant()/grantEntitlements()/
+      // extendUpdatesWindow() calls already no-op correctly at the DB layer on that resend — this
+      // closes the SEPARATE bug where the returned effect used to be rebuilt regardless, double-
+      // firing every notify sink). A bonus: `extendUpdatesWindow`'s own idempotency is documented
+      // as relying on the caller's outer claim (its `renewal_extension` row is `ON CONFLICT DO
+      // NOTHING`, but the window UPDATE beside it is NOT re-run-safe) — gating entry here at the
+      // stable payment id, not the outer event id, is what makes that guarantee hold on a resend.
+      let effect: AppliedBillingEffect = NO_EFFECT;
+      await withIdempotentSideEffect(tx, ev.paymentId, "grant", async () => {
+        const grantedEntitlements = new Set<string>();
+        const skuLines: SkuLine[] = [];
+        const renewedEntitlementIds = new Set<string>();
+        for (const line of ev.lineItems) {
+          // Updates-RENEWAL line (ADR-0244/0251): a renewal SKU grants NO entitlement and NO credits —
+          // it EXTENDS the buyer's updates window on the entitlement it renews (+12 months, per
+          // (account, entitlement) pair). extendUpdatesWindow is fail-closed: renewing an entitlement
+          // with no active one_time grant throws → the webhook returns non-2xx and Paddle retries —
+          // a renewal never silently mints a grant. A price id lives in exactly ONE book (pricebook
+          // test), so this branch can never shadow a real purchase row. Renewal lines stay out of
+          // `grantedEntitlements` — nothing was granted, so no Discord/PostHog push fires for them.
+          if (isRenewalPrice(line.priceId)) {
+            const renewal = resolveRenewal(line.priceId);
+            await extendUpdatesWindow(tx, {
+              accountId: ev.accountId,
+              entitlementId: renewal.renewsEntitlement,
+              sourceEventId: ev.paymentId,
+              // Record the LINE so a per-line refund of this exact renewal can un-extend it
+              // (ADR-0251 Consequences). A whole-transaction refund reverses by paymentId regardless.
+              lineItemId: line.itemId,
+            });
+            renewedEntitlementIds.add(renewal.renewsEntitlement);
+            continue;
+          }
+          const purchase = resolvePurchase(line.priceId); // fail-closed on an unknown price id
+          // Canonical SKU line for the PostHog capture — the legacy purchase tag
+          // (`ai-kit`, `bundle`, …) normalized to its bundle id (`ai-production`, `everything`, …).
+          skuLines.push({
+            priceId: line.priceId,
+            productSlug: normalizeEntitlementId(purchase.purchaseTag),
+          });
+          const lineCredits = purchase.credits * line.quantity;
+          if (lineCredits > 0) {
+            await grant(tx, {
+              eventType: "purchase",
+              accountId: ev.accountId,
+              // Mint at the boundary (ADR-0212): exact table-integer per-line credits, NULL rounding
+              // provenance (ADR-0089 §5 — no rounding site on the grant path).
+              amount: asCredits(lineCredits),
+              sourceEventId: ev.paymentId, // whole-transaction refund sums all lines under this id
+              lineItemId: line.itemId, // per-line refund claws just this line's credits
+              lineChargedAmount: line.chargedAmount, // the proportional divisor for a dollar-partial claw
+            });
+          }
+          await grantEntitlements(tx, {
             accountId: ev.accountId,
-            entitlementId: renewal.renewsEntitlement,
+            entitlementIds: purchase.entitlements,
             sourceEventId: ev.paymentId,
-            // Record the LINE so a per-line refund of this exact renewal can un-extend it
-            // (ADR-0251 Consequences). A whole-transaction refund reverses by paymentId regardless.
+            source: { kind: "one_time", purchaseId: ev.paymentId },
             lineItemId: line.itemId,
           });
-          renewedEntitlementIds.add(renewal.renewsEntitlement);
-          continue;
+          for (const e of purchase.entitlements) grantedEntitlements.add(e);
         }
-        const purchase = resolvePurchase(line.priceId); // fail-closed on an unknown price id
-        // Canonical SKU line for the PostHog capture — the legacy purchase tag
-        // (`ai-kit`, `bundle`, …) normalized to its bundle id (`ai-production`, `everything`, …).
-        skuLines.push({
-          priceId: line.priceId,
-          productSlug: normalizeEntitlementId(purchase.purchaseTag),
-        });
-        const lineCredits = purchase.credits * line.quantity;
-        if (lineCredits > 0) {
-          await grant(tx, {
-            eventType: "purchase",
-            accountId: ev.accountId,
-            // Mint at the boundary (ADR-0212): exact table-integer per-line credits, NULL rounding
-            // provenance (ADR-0089 §5 — no rounding site on the grant path).
-            amount: asCredits(lineCredits),
-            sourceEventId: ev.paymentId, // whole-transaction refund sums all lines under this id
-            lineItemId: line.itemId, // per-line refund claws just this line's credits
-            lineChargedAmount: line.chargedAmount, // the proportional divisor for a dollar-partial claw
-          });
-        }
-        await grantEntitlements(tx, {
-          accountId: ev.accountId,
-          entitlementIds: purchase.entitlements,
-          sourceEventId: ev.paymentId,
-          source: { kind: "one_time", purchaseId: ev.paymentId },
-          lineItemId: line.itemId,
-        });
-        for (const e of purchase.entitlements) grantedEntitlements.add(e);
-      }
-      // Read the renewed window(s) back from DB truth AFTER every line committed (one query for
-      // the whole cart, not one per renewal line) — `computeUpdatesWindows` already takes the
-      // MOST FAVORABLE bound per entitlement, so this is the SAME value the next /issue would sign.
-      const renewedEntitlements: RenewedEntitlement[] = [];
-      if (renewedEntitlementIds.size > 0) {
-        const windows = await computeUpdatesWindows(tx, ev.accountId);
-        for (const entitlementId of renewedEntitlementIds) {
-          // `windows` keys by the RAW stored grant id, and a pre-catalog buyer's row stores the
-          // legacy id (`ai-kit`, `bundle`, …) while RENEWAL_BOOK surfaces the canonical one — so
-          // fold the alias group, most-favorable bound (ISO strings order lexicographically).
-          let newWindowEnd: string | undefined;
-          for (const key of entitlementIdAliasGroup(entitlementId)) {
-            const bound = windows[key];
-            if (
-              bound !== undefined &&
-              (newWindowEnd === undefined || bound > newWindowEnd)
-            ) {
-              newWindowEnd = bound;
+        // Read the renewed window(s) back from DB truth AFTER every line committed (one query for
+        // the whole cart, not one per renewal line) — `computeUpdatesWindows` already takes the
+        // MOST FAVORABLE bound per entitlement, so this is the SAME value the next /issue would sign.
+        const renewedEntitlements: RenewedEntitlement[] = [];
+        if (renewedEntitlementIds.size > 0) {
+          const windows = await computeUpdatesWindows(tx, ev.accountId);
+          for (const entitlementId of renewedEntitlementIds) {
+            // `windows` keys by the RAW stored grant id, and a pre-catalog buyer's row stores the
+            // legacy id (`ai-kit`, `bundle`, …) while RENEWAL_BOOK surfaces the canonical one — so
+            // fold the alias group, most-favorable bound (ISO strings order lexicographically).
+            let newWindowEnd: string | undefined;
+            for (const key of entitlementIdAliasGroup(entitlementId)) {
+              const bound = windows[key];
+              if (
+                bound !== undefined &&
+                (newWindowEnd === undefined || bound > newWindowEnd)
+              ) {
+                newWindowEnd = bound;
+              }
+            }
+            if (newWindowEnd !== undefined) {
+              renewedEntitlements.push({ entitlementId, newWindowEnd });
             }
           }
-          if (newWindowEnd !== undefined) {
-            renewedEntitlements.push({ entitlementId, newWindowEnd });
-          }
         }
-      }
-      return {
-        grantedEntitlements: [...grantedEntitlements],
-        skuLines,
-        renewedEntitlements,
-      };
+        effect = {
+          grantedEntitlements: [...grantedEntitlements],
+          skuLines,
+          renewedEntitlements,
+          chargebackAlerts: [],
+          revokeNotices: [],
+        };
+      });
+      return effect;
     }
-    case "subscription.canceled":
+    case "subscription.canceled": {
       // Canonical lock order + coverage-mirror consistency: this revoke sweeps MIRROR rows too,
       // so it must serialize with a racing invoice.paid mint for the same account — without the
       // lock a mint interleaving past the sweep strands an active mirror until its horizon lapses.
       await acquireAccountBillingLock(tx, ev.accountId);
       // IMMEDIATE revoke (ADR-0113): soft-revoke every grant backed by this subscription. An entitlement
       // also held via an active one-time grant survives (refcount). Idempotent (only active grants flip).
-      await revokeSubscriptionGrants(tx, {
+      const revoked = await revokeSubscriptionGrants(tx, {
         accountId: ev.accountId,
         subscriptionId: ev.subscriptionId,
       });
-      return NO_EFFECT;
+      // G27: a buyer-facing "your access changed" notice, ONLY when this call actually revoked
+      // something — a re-delivery (or the coverage-mirror-only case where nothing was active)
+      // revokes 0 and stays silent, no separate idempotency gate needed (see AppliedBillingEffect).
+      return {
+        ...NO_EFFECT,
+        revokeNotices:
+          revoked > 0
+            ? [{ accountId: ev.accountId, reason: "subscription_canceled" }]
+            : [],
+      };
+    }
     case "refund.completed": {
       // Refund of a one-time purchase (ADR-0113 whole-transaction / ADR-0218 per-line).
       if (ev.fullyRefunded) {
@@ -320,7 +389,7 @@ export async function applyBillingEvent(
         // (idempotent — only active rows flip; a re-delivery finds none). (b) Claw ONLY the UNSPENT
         // credits it granted, bounded to the balance (never negative), summed across every line by the
         // payment id. Idempotent on the compensating debit's (paymentId, refund_clawback) unique key.
-        await revokePurchaseGrants(tx, {
+        const revoked = await revokePurchaseGrants(tx, {
           accountId: ev.accountId,
           purchaseId: ev.paymentId,
         });
@@ -351,7 +420,14 @@ export async function applyBillingEvent(
             sourceEventId: ev.paymentId,
           });
         }
-        return NO_EFFECT;
+        // G27: a buyer-facing "your access changed" notice, ONLY when this call actually revoked
+        // an active grant — idempotent by construction (revokePurchaseGrants only flips ACTIVE
+        // rows), no separate gate needed.
+        return {
+          ...NO_EFFECT,
+          revokeNotices:
+            revoked > 0 ? [{ accountId: ev.accountId, reason: "refund" }] : [],
+        };
       }
       // PER-LINE partial adjustment (ADR-0218). For each refunded line, act by ITEM type:
       //   - full  → revoke that line's entitlement (fork B-1: the edition survives if another line
@@ -388,6 +464,7 @@ export async function applyBillingEvent(
       // updates window after the loop (ADR-0251). A dollar-partial refund never un-extends (a
       // renewal SKU is all-or-nothing), so only `type:'full'` items enter here.
       const fullyRefundedItemIds: string[] = [];
+      let revokedLines = 0;
       for (const item of ev.items) {
         const ledger = await lineCreditLedger(tx, ev.accountId, item.itemId);
         const remaining = Math.min(
@@ -397,7 +474,7 @@ export async function applyBillingEvent(
         const key = `${ev.adjustmentId}:${item.itemId}`;
         if (item.fullyRefunded) {
           fullyRefundedItemIds.push(item.itemId);
-          await revokePurchaseLineGrants(tx, {
+          revokedLines += await revokePurchaseLineGrants(tx, {
             accountId: ev.accountId,
             purchaseId: ev.paymentId,
             lineItemId: item.itemId,
@@ -453,11 +530,37 @@ export async function applyBillingEvent(
           lineItemIds: fullyRefundedItemIds,
         });
       }
-      return NO_EFFECT;
+      // G27: only when a line's grant was ACTUALLY revoked this call (a dollar-partial claw with
+      // no entitlement loss, or a redelivered/idempotent line revoke, stays silent).
+      return {
+        ...NO_EFFECT,
+        revokeNotices:
+          revokedLines > 0
+            ? [{ accountId: ev.accountId, reason: "refund" }]
+            : [],
+      };
     }
     case "subscription.created": // signup only — granting here would never renew (the X-2 trap)
     case "subscription.updated": // plan change recorded; proration grant is the deferred SD-1
       return NO_EFFECT;
+    case "chargeback.detected":
+      // ADR-0294 — ALERT-ONLY: no grant, no revoke, no claw. Paddle (merchant of record) absorbs
+      // the dispute; an operator reviews the case and, if warranted, acts through the existing
+      // admin `purchase_revoke` lever. Surfaced via `chargebackAlerts` only, so the post-commit
+      // push in app.ts fires the operator notification without this mapper touching any
+      // grant/credit table — the fail-closed `default: return null` posture in `parsePaddleEvent`
+      // for every OTHER unsubscribed adjustment reason is unchanged.
+      return {
+        ...NO_EFFECT,
+        chargebackAlerts: [
+          {
+            accountId: ev.accountId,
+            paymentId: ev.paymentId,
+            amountDisputed: ev.amountDisputed,
+            currency: ev.currency,
+          },
+        ],
+      };
     default: {
       // Exhaustiveness guard: a future DomainBillingEvent member forces an explicit decision here
       // rather than silently no-op'ing (the silent-miss class this mapper exists to prevent).

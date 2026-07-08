@@ -86,5 +86,7 @@ if (import.meta.main) {
     emailer: resolveEmailer(),
     recipientFor: (accountId) => recipientFor(db, accountId),
     dashboardUrl: "https://caisson.sh/dashboard/credits",
+    // G24: the updates-window expiry notice's own CTA — a different dashboard page than credits.
+    updatesWindowDashboardUrl: "https://caisson.sh/dashboard/license",
   });
 }

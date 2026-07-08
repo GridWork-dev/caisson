@@ -29,6 +29,12 @@ export interface PurchaseConfirmationData {
   lines: readonly PurchaseConfirmationLine[];
   /** The buyer dashboard — license + registry access. */
   dashboardUrl: string;
+  /**
+   * The buyer's signed license token (ADR-0292 first-mint webhook-push), when the post-commit
+   * mint succeeded for this delivery. Omitted when unavailable — the receipt still sends either
+   * way; the dashboard link above always re-serves the current token regardless.
+   */
+  licenseToken?: string;
 }
 
 function formatMinor(minor: number, currency: string): string {
@@ -63,6 +69,12 @@ export function PurchaseConfirmationEmail(
         Total charged: {formatMinor(data.amountTotalMinor, data.currency)}
       </EmailBody>
       <EmailButton href={data.dashboardUrl} label="View your dashboard" />
+      {data.licenseToken !== undefined && (
+        <>
+          <EmailBody>Your license is ready:</EmailBody>
+          <EmailBody>{data.licenseToken}</EmailBody>
+        </>
+      )}
       <EmailBody>
         Pull your license and modules with bunx @caisson-sh/cli@latest using the
         account on your dashboard. Full terms are in the Caisson EULA at

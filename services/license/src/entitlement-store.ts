@@ -934,3 +934,111 @@ export async function reverseRenewalExtensions(
   }
   return reversed;
 }
+
+// --- G24: updates-window expiry notice (buyer-lifecycle audit 2026-07-07) ----------------------
+//
+// The credit-expiry sweep already has a T-30d "expiring soon" email (`@caisson/credits`); the
+// updates window (ADR-0244/0255's per-entitlement `updates_expires_at`) had no equivalent — a
+// one-time buyer discovered a lapsed window only by visiting `/dashboard/license` and seeing a
+// passive "Lapsed" pill. This extends the SAME pattern: an append-only per-(account, entitlement,
+// expiry) marker gates a one-time notice, mirroring `@caisson/credits`'s `credit_expiry_notice`
+// (a marker table, never a mutated column). SEPARATE migration (never an edit to a frozen
+// constant, ADR-0006 append-only). Keyed on the expiry INSTANT (not just the entitlement id) so a
+// LATER renewal that pushes the window further out is a FRESH notice-eligible window — the
+// marker never "sticks" across a renewal the way keying on the entitlement id alone would.
+
+export const UPDATES_WINDOW_EXPIRY_NOTICE_SCHEMA_SQL = `
+CREATE TABLE updates_window_expiry_notice (
+  account_id text NOT NULL,
+  entitlement_id text NOT NULL,
+  updates_expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (account_id, entitlement_id, updates_expires_at)
+);
+${buildTenantPolicySql("updates_window_expiry_notice")}
+`;
+
+/** The minimal structural slice of `@caisson/email`'s `Emailer` port — declared locally (mirrors
+ *  `@caisson/credits`'s `ExpiryNoticeEmailer`) so this module needs no email dependency; any real
+ *  `Emailer` satisfies it. */
+export interface UpdatesWindowExpiryEmailer {
+  send(msg: {
+    to: string;
+    template: string;
+    data: Record<string, unknown>;
+  }): Promise<void>;
+}
+
+export interface UpdatesWindowExpiryNoticeInput {
+  /** Where the notice goes — resolved by the caller. */
+  recipient: string;
+  emailer: UpdatesWindowExpiryEmailer;
+  /** The CTA link — the buyer license/dashboard page. */
+  dashboardUrl: string;
+  /** Notice window in days before expiry (defaults to 30, the credits-expiry precedent). */
+  withinDays?: number;
+}
+
+/**
+ * The T-30d updates-window expiry-notice sweep (G24): for each purchased id whose (raw one_time)
+ * window expires within the notice window and has NOT been noticed for THIS exact expiry
+ * instant, insert the append-only marker (`ON CONFLICT DO NOTHING`, PK is
+ * `(account, entitlement, expiry)`) and send the `updates-window-expiring` email.
+ * Notified-once-per-window: a replayed sweep inserts nothing and sends nothing; a later renewal
+ * that changes the expiry instant is a fresh, distinct row. The send runs INSIDE the transaction
+ * after the marker insert, so a failed send rolls the marker back and the next sweep retries.
+ *
+ * // ponytail: reads the RAW one_time bound only, not the subscription-coverage-horizon fold
+ * // `computeUpdatesWindows` applies for the signed claim — a pair actively covered by a
+ * // subscription is already safe (its horizon extends the real bound the issuer signs), so this
+ * // conservative floor never sends a false "expiring" notice for a covered pair's underlying
+ * // purchase; it can only under-notify the rare case where coverage alone would have pushed a
+ * // near-floor purchase out of the window. Fold in `subscriptionCoverageHorizons` if that residual
+ * // ever matters — it isn't exported today because nothing else needs it outside this file.
+ *
+ * Returns the number of notices sent. Run inside `withTenant`.
+ */
+export async function sweepUpdatesWindowExpiryNotices(
+  tx: TenantExecutor,
+  accountId: string,
+  input: UpdatesWindowExpiryNoticeInput,
+): Promise<number> {
+  const withinDays = input.withinDays ?? 30;
+  const cutoff = new Date(Date.now() + withinDays * 24 * 60 * 60 * 1000);
+  const due = await tx.query<{
+    entitlement_id: string;
+    bound: string | Date;
+  }>(
+    `SELECT entitlement_id, max(updates_expires_at) AS bound
+       FROM entitlement_grant
+      WHERE account_id = $1 AND source_kind = 'one_time' AND status = 'active'
+        AND updates_expires_at IS NOT NULL
+      GROUP BY entitlement_id
+     HAVING max(updates_expires_at) > now() AND max(updates_expires_at) <= $2`,
+    [accountId, cutoff],
+  );
+  let sent = 0;
+  for (const row of due.rows) {
+    const expiresAt =
+      row.bound instanceof Date ? row.bound : new Date(String(row.bound));
+    const marked = await tx.query<{ account_id: string }>(
+      `INSERT INTO updates_window_expiry_notice (account_id, entitlement_id, updates_expires_at)
+       VALUES ($1, $2, $3)
+       ON CONFLICT DO NOTHING
+       RETURNING account_id`,
+      [accountId, row.entitlement_id, expiresAt.toISOString()],
+    );
+    if (marked.rows.length === 0) continue; // raced/replayed — already noticed for this exact expiry
+    await input.emailer.send({
+      to: input.recipient,
+      template: "updates-window-expiring",
+      data: {
+        entitlementId: row.entitlement_id,
+        expiresOn: expiresAt.toISOString().slice(0, 10),
+        url: input.dashboardUrl,
+      },
+    });
+    sent += 1;
+  }
+  return sent;
+}

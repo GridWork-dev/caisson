@@ -144,6 +144,8 @@ beforeAll(async () => {
     posthogCapture: null,
     purchaseEmailNotify: async () => {},
     renewalEmailNotify: async () => {},
+    revokeEmailNotify: async () => {},
+    chargebackAlert: async () => {},
     eval: { config: CONFIG, resolveSignals: goodSignals },
   });
 });
@@ -591,6 +593,8 @@ describe("HTTP /eval/* is 404 when the eval surface is not wired", () => {
       posthogCapture: null,
       purchaseEmailNotify: async () => {},
       renewalEmailNotify: async () => {},
+      revokeEmailNotify: async () => {},
+      chargebackAlert: async () => {},
       // eval omitted → null
     });
     expect(
