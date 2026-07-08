@@ -80,6 +80,12 @@ export interface AskDeps {
     question: string,
     outcome: "answered" | "escalated",
   ) => Promise<void>;
+  /** File a support ticket for a question the assistant could not answer (G21 parity — the Discord
+   * bot's own unresolved questions already get this treatment). Called once per genuinely-unanswered
+   * request (never on `spend_cap`, a capacity signal, not a question a human needs to see — see the
+   * call site). Best-effort; a failure never reaches the response. Optional for the same reason as
+   * `capture`. */
+  escalate?: (question: string, reason: EscalationReason) => Promise<void>;
 }
 
 const SECURITY_HEADERS: Record<string, string> = {
@@ -154,7 +160,9 @@ export async function handleAsk(
           encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
         );
       };
+      let escalationReason: EscalationReason | undefined;
       const escalate = (reason: EscalationReason): void => {
+        escalationReason = reason;
         emit("escalation", { reason });
       };
 
@@ -248,6 +256,23 @@ export async function handleAsk(
         }
         emit("done", {});
         controller.close();
+
+        // G21: file a support ticket for a genuinely-unanswered question — never for `spend_cap`,
+        // which is a capacity signal (a traffic burst tripping the daily budget), not a question a
+        // human needs to follow up on; ticketing every cap-hit would flood Triage during a burst.
+        // SHIP review WR-02: fired AFTER close, detached (never awaited) — a cross-service push (up
+        // to a 10s timeout in the real deps) must never hold the buyer's socket open, which matters
+        // most exactly when it would trip most often: a docs-service outage that escalates every
+        // question. `.catch` is defense-in-depth (deps.escalate is documented best-effort already).
+        if (
+          outcome === "escalated" &&
+          escalationReason !== undefined &&
+          escalationReason !== "spend_cap"
+        ) {
+          void deps.escalate?.(question, escalationReason).catch(() => {
+            /* best-effort */
+          });
+        }
       }
     },
   });

@@ -9,6 +9,12 @@ mirror-out/
 # canonical src/migrations/ by packages/cli/scripts/bundle-migrations.ts — never hand-edited, never
 # committed (the source packages stay the single source of truth).
 packages/cli/migrations-bundle/
+
+# CLI registry-index snapshot: a BUILD ARTIFACT copied from registry/index.json by
+# packages/cli/scripts/bundle-registry-index.ts so a published install ships a usable snapshot
+# (delivery-path fix G3) — never hand-edited, never committed (registry/index.json stays the
+# single source of truth, ADR-0047).
+packages/cli/registry-index.json
 .env
 .env.*
 !.env.example

@@ -52,9 +52,13 @@ async def _run(settings: Settings) -> None:
             await store.ensure_schema()
 
         bot = make_bot(settings=settings, pipeline=pipeline, store=store, http_client=http)
-        # One inbound app: /health (liveness, always) + /billing-grant (ADR-0203, only when its
-        # token is configured — the config-gated never-crash rule).
-        http_runner = await serve_http(bot=bot, settings=settings, port=settings.health_port)
+        # One inbound app: /health (liveness, always) + /billing-grant (ADR-0203) + /escalate
+        # (apps/site Ask-AI parity), each only when its own token is configured — the config-gated
+        # never-crash rule. /escalate shares the SAME ticket store + Linear sink the Discord bot's
+        # own escalations use (one support_ticket table, one Triage queue, regardless of origin).
+        http_runner = await serve_http(
+            bot=bot, settings=settings, port=settings.health_port, store=store, http_client=http
+        )
         try:
             await bot.start(settings.discord_token)
         finally:

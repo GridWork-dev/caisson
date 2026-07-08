@@ -168,6 +168,24 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
           "Input and output guardrails wired once, at the model boundary, instead of copy-pasted into every call site.",
       },
       {
+        id: "field-crypto",
+        name: "Field encryption",
+        oneLiner:
+          "Per-tenant field encryption via HKDF-SHA256 + AES-256-GCM; a leaked tenant key exposes one tenant, never the table.",
+      },
+      {
+        id: "ai-evals",
+        name: "Eval harness",
+        oneLiner:
+          "Regression-grade evals that run in CI: a model swap that scores below the committed baseline fails the build, not a customer's session.",
+      },
+      {
+        id: "credits",
+        name: "Credits + metering",
+        oneLiner:
+          "PG-atomic credit ledger — grant, debit, and spend-cap credits with one integer denomination, fail-closed (402) on an empty balance.",
+      },
+      {
         id: "ai-config",
         name: "AI config",
         oneLiner:

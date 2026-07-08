@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Wordmark } from "@caisson/brand";
 
+import { discordInviteUrl } from "@/lib/discord-grant";
 import { footerRoutes, type FooterCol } from "@/lib/routes";
 import { UpdatesForm } from "./waitlist-form";
 
@@ -9,6 +10,13 @@ import { UpdatesForm } from "./waitlist-form";
 // drift from the nav/sitemap. Each column = registry routes + the few non-route extras (docs
 // sub-pages, llms.txt, GitHub, and `.well-known/security.txt` — a static disclosure file, not a
 // page route, labeled as such to stop it shadowing the /security page).
+//
+// G12: the pricing FAQ promises Discord support "included with every license" with no link
+// anywhere on the site — Discord renders here only once the operator sets
+// NEXT_PUBLIC_DISCORD_INVITE_URL (a silent no-op until then, same pattern as every other
+// NEXT_PUBLIC_-gated provider on this site).
+const DISCORD_INVITE_URL = discordInviteUrl();
+
 const EXTRAS: Record<FooterCol, { href: string; label: string }[]> = {
   editions: [],
   product: [
@@ -18,6 +26,9 @@ const EXTRAS: Record<FooterCol, { href: string; label: string }[]> = {
   resources: [
     { href: "/llms.txt", label: "llms.txt" },
     { href: "https://github.com/caisson-sh/caisson", label: "GitHub" },
+    ...(DISCORD_INVITE_URL
+      ? [{ href: DISCORD_INVITE_URL, label: "Discord" }]
+      : []),
   ],
   legal: [{ href: "/.well-known/security.txt", label: "Security disclosure" }],
 };

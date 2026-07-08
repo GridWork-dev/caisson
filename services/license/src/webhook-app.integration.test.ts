@@ -6,7 +6,16 @@
 // test.ts; this file covers the ROUTE seam the audit flagged (status codes, raw-body verification,
 // AuthnError→401 fail-closed, replay idempotency through the HTTP surface).
 import { createHash, createHmac, createPrivateKey } from "node:crypto";
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import type { BillingProvider } from "@caisson/billing";
 import {
   createPaddleBilling,

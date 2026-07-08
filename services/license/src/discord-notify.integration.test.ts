@@ -3,7 +3,16 @@
 // never-throws push contract. The `account` DDL here is a TEST DOUBLE of better-auth's own
 // migrator output (camelCase quoted columns — its documented core schema); the deploy migrator
 // creates the real one (apps/site/lib/deploy-migrate.ts runs better-auth's getMigrations).
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
 import type { fetchWithTimeout } from "@caisson/kernel";
 import { type TestPg, newTestPg } from "@caisson/testing";

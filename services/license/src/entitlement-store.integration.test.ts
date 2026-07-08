@@ -4,7 +4,16 @@
 // until BOTH are revoked; subscription revoke strips only that subscription's grants; a one-time grant
 // survives a subscription cancel; revokes are soft (status flips, row stays) + idempotent; RLS isolates
 // accounts and refuses a cross-tenant write. Each test uses its own account id — no cross-test cleanup.
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { LEGACY_ENTITLEMENT_ALIASES } from "@caisson/registry-schema";
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { withTenant } from "@caisson/tenancy-rls";

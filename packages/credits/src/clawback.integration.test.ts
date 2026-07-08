@@ -3,7 +3,16 @@
 // spent; writes exactly ONE compensating refund_clawback ledger row (append-only, ADR-0007);
 // idempotent on the source id (a re-delivered refund does not double-claw); creditsGrantedBySource
 // reads the original grant amount; RLS isolation holds.
-import { afterAll, beforeEach, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeEach,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { ValidationError, asCredits } from "@caisson/kernel";
 import { withTenant } from "@caisson/tenancy-rls";

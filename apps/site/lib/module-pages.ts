@@ -35,9 +35,6 @@ export interface ModulePageRecord {
   relatedGlossary: readonly string[];
   /** How this module is sold relative to its bundle family — entitlement-honest. */
   sells: { edition: string; note: string };
-  /** A produced media asset for this module's `media` section (ADR-0263) — omitted means the
-   *  page still gets the plain icon placeholder. Only set once a render has actually shipped. */
-  video?: { src: string; poster?: string };
 }
 
 export const MODULE_PAGES: readonly ModulePageRecord[] = [
@@ -183,9 +180,6 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       edition: "compliance",
       note: "Every evidence collector in Compliance chains through this store: buy it standalone to anchor your own audit trail, or get it composed for you inside the Compliance bundle.",
     },
-    // The ADR-0263 pilot render: append -> tamper-attempt -> verify-catches-it, produced from
-    // apps/site/remotion/AuditWormDemo.tsx via `bun run remotion:render`.
-    video: { src: "/videos/audit-worm-demo.mp4" },
   },
   {
     slug: "retention-runner",
@@ -825,3 +819,12 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     },
   },
 ];
+
+/** Whether a module has a standalone depth page (`/marketplace/modules/<id>`) — the ONE gate a
+ *  bundle/persona page must check before rendering a member card as a clickable link. A module can
+ *  be priced (`MODULE_PRICES`) with no depth page yet; gating a `<Link>` on price truthiness instead
+ *  of this renders a card that 404s (G5) — `provenance/page.tsx`'s `MEMBER_DETAIL` set was the
+ *  original hand-rolled instance of this same check. */
+export function hasModulePage(id: string): boolean {
+  return MODULE_PAGES.some((r) => r.slug === id);
+}

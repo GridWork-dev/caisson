@@ -97,6 +97,19 @@ describe("generate — allowlist gate (ADR-0021/0048)", () => {
     expect(generate(INDEX, BASE).files).toEqual(files);
   });
 
+  test("WR-01: the generated .npmrc carries the real registry scope + license-token line", () => {
+    // Locks the OUTPUT shape: the template source is stored un-dotted (`templates/base/npmrc`,
+    // never survives npm packaging as a literal `.npmrc`) and re-dotted to `.npmrc` on read
+    // (`readTemplateDir`, engine-templates.ts). This only proves the generation plan is correct —
+    // the pack-layer regression itself is asserted in scripts/publish-smoke.test.ts.
+    const { files } = generate(INDEX, BASE);
+    const npmrc = files.find((f) => f.path === ".npmrc");
+    expect(npmrc?.content).toContain(
+      "@caisson:registry=https://registry.caisson.sh",
+    );
+    expect(npmrc?.content).toContain("CAISSON_LICENSE_TOKEN");
+  });
+
   test("an EDITION selection layers the edition's golden fixtures + records caissonEdition", () => {
     const { files } = generate(INDEX, VALID);
     const paths = files.map((f) => f.path);

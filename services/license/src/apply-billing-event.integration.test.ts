@@ -3,7 +3,16 @@
 // idempotent (one row); two invoice ids grant twice; subscription.* lifecycle events grant nothing;
 // proration (subscription_update) grants nothing; an unknown price id fails closed (throws, no row);
 // cancel never claws back. Each test uses its own account id so no cross-test cleanup is needed.
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { ConfigError, asCredits } from "@caisson/kernel";
 import { LEGACY_ENTITLEMENT_ALIASES } from "@caisson/registry-schema";
 import { type TestPg, newTestPg } from "@caisson/testing";

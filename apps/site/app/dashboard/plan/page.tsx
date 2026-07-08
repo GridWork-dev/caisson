@@ -17,6 +17,7 @@ import {
   readEntitlementGrants,
   readSubscriptionStatuses,
 } from "@/lib/dashboard-reads";
+import { discordInviteUrl } from "@/lib/discord-grant";
 import { computeOwned } from "@/lib/plan-owned";
 import { DiscordConnect } from "@/components/discord-connect";
 import { PlanPurchaseRow } from "@/components/plan-purchase-row";
@@ -85,6 +86,10 @@ export default async function DashboardPlanPage() {
       discordLinked = false;
     }
   }
+  // G12: joining the Discord server a purchase grants a role in is independent of the OAuth
+  // account-link above — undefined (renders nothing) until the operator sets
+  // NEXT_PUBLIC_DISCORD_INVITE_URL.
+  const inviteUrl = discordInviteUrl();
 
   // G4 (ADR-0293): `realEntries` only drops the `_PLACEHOLDER` test fixtures — it does NOT know
   // ADR-0270 repointed 5 archived edition-era rows onto the canonical bundle ids, so they were
@@ -207,7 +212,7 @@ export default async function DashboardPlanPage() {
         </div>
       )}
 
-      {discordConfigured && (
+      {(discordConfigured || inviteUrl) && (
         <div>
           <h2
             className="cs-card-title"
@@ -218,12 +223,32 @@ export default async function DashboardPlanPage() {
           >
             Community
           </h2>
-          <p className="cs-muted" style={{ marginBottom: "var(--cs-space-3)" }}>
-            {discordLinked
-              ? "Discord is connected — purchases grant your bundle roles automatically."
-              : "Connect Discord to receive your bundle roles in the Caisson server."}
-          </p>
-          <DiscordConnect linked={discordLinked} />
+          {inviteUrl && (
+            <p
+              className="cs-muted"
+              style={{ marginBottom: "var(--cs-space-3)" }}
+            >
+              <a href={inviteUrl} target="_blank" rel="noopener noreferrer">
+                Join the Caisson Discord
+              </a>
+              {discordConfigured
+                ? " — connect below to receive your bundle roles automatically."
+                : "."}
+            </p>
+          )}
+          {discordConfigured && (
+            <>
+              <p
+                className="cs-muted"
+                style={{ marginBottom: "var(--cs-space-3)" }}
+              >
+                {discordLinked
+                  ? "Discord is connected — purchases grant your bundle roles automatically."
+                  : "Connect Discord to receive your bundle roles in the Caisson server."}
+              </p>
+              <DiscordConnect linked={discordLinked} />
+            </>
+          )}
         </div>
       )}
     </div>

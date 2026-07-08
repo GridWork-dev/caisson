@@ -4,7 +4,16 @@
 // a per-account override changes the limit; and RLS isolates accounts (a forged cross-tenant write is
 // refused by the policy WITH CHECK). Each test uses its own account id so no cross-test cleanup is
 // needed. Token counts are integers; `now` is injected epoch-ms.
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { withTenant } from "@caisson/tenancy-rls";
 import {

@@ -1,13 +1,13 @@
-/* Authored media-carousel diagrams (ADR-0285 §3). Token-only color (no raw hex, DESIGN.md §2);
- * theme-aware by cascade. The SVG scales to its slot; text stays mono per the brand type floor. */
+/* Authored media-carousel diagrams (ADR-0285 §3 / ADR-0290). Token-only color (no raw hex,
+ * DESIGN.md §2); theme-aware by cascade. The SVG scales to its slot; text stays mono per the brand
+ * type floor. `.svgFrame` is the body content inside <MediaFrame>'s chrome (media-frame.tsx) — the
+ * diagram no longer owns its own border/radius/shadow, MediaFrame's outer frame does. */
 
-.frame {
+.svgFrame {
   width: 100%;
   aspect-ratio: 16 / 9;
   display: grid;
   place-items: center;
-  border-radius: var(--cs-radius-lg);
-  border: 1px solid var(--cs-border);
   background:
     radial-gradient(
       120% 90% at 50% 0%,

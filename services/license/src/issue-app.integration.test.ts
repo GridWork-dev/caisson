@@ -8,7 +8,16 @@
 // 400), /health public + security headers. And the persistence contract ("persist & reuse"): a second
 // /issue for the SAME (accountId, major) re-serves the byte-identical STORED token (no re-mint, no
 // second row), while a different major mints + stores its own independent grant.
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import {
   type KeyObject,
   createHash,

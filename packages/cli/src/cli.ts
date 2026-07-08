@@ -1,8 +1,10 @@
-// `create-caisson` entry (ADR-0004). Parses --name/--edition/--module/--out/--dry-run/--help,
-// validates the selection against the registry ALLOWLIST, materializes to disk via the path-safe
-// FileSetWriter, runs `git init` in the output directory (fail-soft), and prints a next-steps
-// block to stdout. The registry index is resolved via `import.meta.url` (cwd-independent) with
-// an env override for CI / local overrides.
+// `create-caisson` entry (ADR-0004). Parses --name/--edition/--module/--out/--dry-run/--help (or a
+// leading bare positional as the project name, e.g. `create-caisson my-app` — the advertised
+// quickstart form), validates the selection against the registry ALLOWLIST, materializes to disk
+// via the path-safe FileSetWriter,
+// runs `git init` in the output directory (fail-soft), and prints a next-steps block to stdout. The
+// registry index is resolved via `resolveIndexPath()` (`./resolve-index-path.ts`, cwd-independent)
+// with an env override for CI / local overrides.
 //
 // `--sample <id>` is a SEPARATE, parallel path: a free Apache-2.0 evaluation sample
 // (e.g. `eu-ai-act-sample`) carries no module selection, so it never touches the registry allowlist
@@ -13,7 +15,6 @@
 // argv contract as `--sample`, no license, no license-service call.
 import { execFile as execFileCb } from "node:child_process";
 import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import {
   type RegistryIndex,
   loadRegistryIndexFromFile,
@@ -26,17 +27,24 @@ import {
   generate,
 } from "./generate.ts";
 import type * as InteractiveModule from "./interactive.ts";
+import { resolveIndexPath } from "./resolve-index-path.ts";
 import { materializeSample } from "./sample-templates.ts";
 import { createFileSetWriter } from "./writer.ts";
 
 /**
  * Parse argv into a RAW selection (validated downstream by Zod `.strict()` — never trusted here).
  * Flags: `--name <slug>`, `--edition <e>`, `--module <id@version>` (repeatable),
- * `--deploy <railway|fly|vercel>` (ADR-0268), `--framework <next>` (ADR-0287).
+ * `--deploy <railway|fly|vercel>` (ADR-0268), `--framework <next>` (ADR-0287). A leading BARE
+ * positional (any token not starting with `-`) is also accepted as the project name — e.g.
+ * `create-caisson my-app`, the advertised `bunx create-caisson my-app` quickstart — exactly
+ * equivalent to `--name my-app`; an explicit `--name` always wins on conflict, regardless of argv
+ * order, since it is folded in last below. Only the first bare token is ever taken as positional; a
+ * second one still fails closed as an unknown argument.
  */
 export function parseArgs(argv: readonly string[]): unknown {
   const modules: { id: string; version: string }[] = [];
   let projectName: string | undefined;
+  let positionalName: string | undefined;
   let edition: string | undefined;
   let deployTarget: string | undefined;
   let framework: string | undefined;
@@ -65,13 +73,20 @@ export function parseArgs(argv: readonly string[]): unknown {
       }
       modules.push({ id: value.slice(0, at), version: value.slice(at + 1) });
       i++;
+    } else if (
+      flag !== undefined &&
+      !flag.startsWith("-") &&
+      positionalName === undefined
+    ) {
+      positionalName = flag;
     } else {
       throw new Error(`unknown argument: ${JSON.stringify(flag)}`);
     }
   }
+  const resolvedName = projectName ?? positionalName;
   // Leave fields possibly-undefined → Zod `.strict()` reports the precise validation error.
   return {
-    ...(projectName !== undefined ? { projectName } : {}),
+    ...(resolvedName !== undefined ? { projectName: resolvedName } : {}),
     ...(edition !== undefined ? { edition } : {}),
     modules,
     ...(deployTarget !== undefined ? { deployTarget } : {}),
@@ -108,27 +123,12 @@ export function parseSampleArgs(argv: readonly string[]): {
   return projectName !== undefined ? { projectName } : {};
 }
 
-/**
- * Resolve the registry index the CLI validates against.
- *
- * Priority:
- *  1. `CAISSON_REGISTRY_INDEX` env override (CI / local dev overrides).
- *  2. Bundled snapshot anchored to `import.meta.url` — cwd-independent; works from a published bin.
- *     In the monorepo resolves to `<repo>/registry/index.json`.
- */
-function resolveIndexPath(): string {
-  const fromEnv = process.env.CAISSON_REGISTRY_INDEX;
-  if (fromEnv !== undefined && fromEnv.length > 0) return fromEnv;
-  // packages/cli/src/cli.ts → ../../../registry/index.json = <repo>/registry/index.json
-  return fileURLToPath(
-    new URL("../../../registry/index.json", import.meta.url),
-  );
-}
-
 export const HELP = `\
 create-caisson — scaffold a repo from the Caisson registry
 
 Usage:
+  create-caisson <name> [--module <id@version> …] [--edition <e>] [--deploy <target>] \\
+    [--framework <target>] [--out <dir>] [--dry-run]   # <name> is shorthand for --name <name>
   create-caisson --name <slug> --module <id@version> [--module …] \\
     [--edition <e>] [--deploy <target>] [--framework <target>] [--out <dir>] [--dry-run]
   create-caisson --sample <id> --name <slug> [--out <dir>] [--dry-run]
@@ -159,8 +159,8 @@ missing pieces — a licensed module/edition build vs the free sample vs the ful
 project name, and modules. Any flag you DO pass is never re-prompted; supply every required flag
 (or pipe stdin) to skip prompts entirely.
 
-Before running the installer (non-sample path), add NODE_AUTH_TOKEN (your Caisson license key) to
-.npmrc. See the generated README for the full setup steps — or https://caisson.sh/docs.
+Before running the installer (non-sample path), add CAISSON_LICENSE_TOKEN (your Caisson license
+key) to .npmrc. See the generated README for the full setup steps — or https://caisson.sh/docs.
 `;
 
 /**

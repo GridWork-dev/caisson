@@ -3,7 +3,16 @@
 // guarantee: a Drizzle-generated SELECT with no WHERE clause, run through `queryDrizzle` inside
 // `withTenant`, still returns only the active tenant's rows — RLS does the isolation, not the
 // ORM's query shape. drizzle-orm is a devDependency (see drizzle.ts's header).
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { newTestPg, type TestPg } from "@caisson/testing";
 import { pgTable, QueryBuilder, text } from "drizzle-orm/pg-core";
 import { buildTenantPolicySql, queryDrizzle, withTenant } from "./index.ts";

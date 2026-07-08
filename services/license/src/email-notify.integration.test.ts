@@ -3,7 +3,16 @@
 // shaped "user" table (a TEST DOUBLE of better-auth's own migrator output — apps/site/lib/
 // deploy-migrate.ts runs the real one), plus resolveEmailer's env gate and notifyPurchaseEmail's
 // never-throws push contract.
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
 import { createCaptureEmailer, type CaptureEmailer } from "@caisson/email";
 import { type TestPg, newTestPg } from "@caisson/testing";

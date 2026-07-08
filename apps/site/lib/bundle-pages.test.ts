@@ -87,4 +87,25 @@ describe("BUNDLE_PAGES (bundle content records)", () => {
       members.map((m) => m.label),
     );
   });
+
+  test("every persona bundle's priced members exactly match modulesByBundle (G31)", () => {
+    // Order-independent (compliance/local-first/agentic-dev intersperse unpriced base-package
+    // members in a different display order than modulesByBundle's catalog order) — this guards the
+    // SET of priced members against under- or over-listing, the exact class G31 caught:
+    // ai-production's hand-authored list showed 4 real modules against modulesByBundle's true 6
+    // (missing field-crypto, ai-evals, credits).
+    const sellableIds = new Set(MODULE_PRICES.map((m) => m.id));
+    for (const b of BUNDLE_PRICES) {
+      if (b.id === "everything") continue;
+      const record = bundlePageRecord(b.id);
+      const recordedSellable = [...(record?.members ?? [])]
+        .map((m) => m.id)
+        .filter((id) => sellableIds.has(id))
+        .sort();
+      const real = modulesByBundle(b.id)
+        .map((m) => m.id)
+        .sort();
+      expect(recordedSellable).toEqual(real);
+    }
+  });
 });

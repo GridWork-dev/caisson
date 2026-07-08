@@ -10,6 +10,11 @@ import { type AskDeps, handleAsk } from "@/lib/ask-ai/handler";
 import { logQuestion } from "@/lib/ask-ai/question-log";
 import { retrieveChunks } from "@/lib/ask-ai/retrieve";
 import { streamOpenRouter } from "@/lib/ask-ai/openrouter";
+import { throttleEscalate } from "@/lib/ask-ai/escalate-throttle";
+import {
+  loadSiteEscalateConfig,
+  pushSiteEscalation,
+} from "@/lib/ask-ai/site-escalate";
 import {
   reserveSpendMicro,
   resolveDailyCapMicro,
@@ -25,6 +30,17 @@ export const dynamic = "force-dynamic";
 // deepseek/deepseek-v4-flash (or any model) via ASK_AI_PUBLIC_MODEL without a code change.
 const DEFAULT_PUBLIC_MODEL = "google/gemini-3.5-flash";
 const DEFAULT_PREMIUM_MODEL = "anthropic/claude-sonnet-4.6";
+
+// Module scope (constructed ONCE per process, not per request — SHIP review WR-01): the throttle's
+// dedup window + per-minute cap must persist across requests to mean anything. `buildDeps()` runs on
+// every POST, so wiring `throttleEscalate` inside it would reset both guards on every request.
+const escalateConfig = loadSiteEscalateConfig();
+const throttledEscalate =
+  escalateConfig !== null
+    ? throttleEscalate(async (question, reason) => {
+        await pushSiteEscalation(escalateConfig, question, reason);
+      })
+    : null;
 
 function envOr(name: string, fallback: string): string {
   const v = process.env[name]?.trim();
@@ -67,6 +83,11 @@ function buildDeps(): AskDeps {
     capture: async (lane, question, outcome) => {
       await logQuestion(await getDb(), lane, question, outcome);
     },
+    // G21: ticket parity with the Discord bot's own escalations, throttled (WR-01: dedup window +
+    // a global per-minute cap — see escalate-throttle.ts). `exactOptionalPropertyTypes` means the
+    // key must be OMITTED (not set to `undefined`) when the push is unconfigured, so the optional
+    // dep is spread in rather than assigned a possibly-undefined value.
+    ...(throttledEscalate !== null ? { escalate: throttledEscalate } : {}),
   };
 }
 

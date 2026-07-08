@@ -2,7 +2,16 @@
 // a registered `feature` tag — integer + idempotent like every other credit event; an unregistered
 // tag fails closed with NO ledger write (threat TM-D); legacy specific event types are unchanged.
 // PGlite + withTenant, same shape as credits.integration.test.ts.
-import { afterAll, beforeEach, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeEach,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { newTestPg, type TestPg } from "@caisson/testing";
 import { ValidationError, asCredits } from "@caisson/kernel";
 import { withTenant } from "@caisson/tenancy-rls";

@@ -1,13 +1,16 @@
 import type { DiagramKey } from "@/lib/media-manifest";
 
+import { MediaFrame } from "./media-frame";
 import styles from "./marketplace-diagrams.module.css";
 
-// Authored media-carousel diagrams (ADR-0285 §3) — the homepage's diagram language (per-tenant RLS
-// deny-flow, audit-chain hash flow, WORM anchor lifecycle) rebuilt with more character: real SVG,
-// token color accents, and layered depth, all inside the brand floor (every color is a --cs-* token,
-// no raw hex). Server components (static, no interactivity). Each depicts SHIPPED behaviour only
-// (copy law ADR-0080): the fail-closed RLS boundary, the SHA-256 chain, and the WORM lifecycle. The
-// <MediaCarousel> wraps each in a labelled figure, so these carry only a decorative <title>.
+// Authored media-carousel diagrams (ADR-0285 §3, restyled onto the ADR-0290 standardized template) —
+// the homepage's diagram language (per-tenant RLS deny-flow, audit-chain hash flow, WORM anchor
+// lifecycle, plus eight new single-target mechanism diagrams closing the media gap), rebuilt with
+// more character: real SVG, token color accents, and layered depth, all inside the brand floor
+// (every color is a --cs-* token, no raw hex). Server components (static, no interactivity). Each
+// depicts SHIPPED behaviour only (copy law ADR-0080). The <MediaFrame> makes the whole thing one
+// `role="img"` (the <MediaCarousel> caption narrates the slide already), so the inner SVG's own
+// <title>/aria-label are decorative detail, not the accessible name.
 
 const VIEW_W = 340;
 const VIEW_H = 190;
@@ -20,18 +23,20 @@ function Frame({
   children: React.ReactNode;
 }) {
   return (
-    <div className={styles.frame}>
-      <svg
-        className={styles.svg}
-        viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
-        role="img"
-        aria-label={title}
-        preserveAspectRatio="xMidYMid meet"
-      >
-        <title>{title}</title>
-        {children}
-      </svg>
-    </div>
+    <MediaFrame label={title} decorative>
+      <div className={styles.svgFrame}>
+        <svg
+          className={styles.svg}
+          viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+          role="img"
+          aria-label={title}
+          preserveAspectRatio="xMidYMid meet"
+        >
+          <title>{title}</title>
+          {children}
+        </svg>
+      </div>
+    </MediaFrame>
   );
 }
 
@@ -76,6 +81,36 @@ function Node({
         </text>
       ) : null}
     </g>
+  );
+}
+
+/** Shared arrowhead marker defs (accent + danger). */
+function Arrowheads() {
+  return (
+    <defs>
+      <marker
+        id="cs-arrow"
+        viewBox="0 0 10 10"
+        refX={8}
+        refY={5}
+        markerWidth={6}
+        markerHeight={6}
+        orient="auto-start-reverse"
+      >
+        <path d="M 0 0 L 10 5 L 0 10 z" className={styles.arrowFill} />
+      </marker>
+      <marker
+        id="cs-arrow-danger"
+        viewBox="0 0 10 10"
+        refX={8}
+        refY={5}
+        markerWidth={6}
+        markerHeight={6}
+        orient="auto-start-reverse"
+      >
+        <path d="M 0 0 L 10 5 L 0 10 z" className={styles.arrowFillDanger} />
+      </marker>
+    </defs>
   );
 }
 
@@ -239,33 +274,177 @@ function WormLifecycle() {
   );
 }
 
-/** Shared arrowhead marker defs (accent + danger). */
-function Arrowheads() {
+interface Stage {
+  head: string;
+  sub: string;
+  tone?: "base" | "accent" | "danger" | "success";
+}
+
+/** Generic N-stage horizontal flow (ADR-0290) — the shared shape behind every new mechanism diagram
+ *  below: evenly spaced nodes left to right, connected by arrows (danger-styled into/out of a
+ *  danger-toned stage), with an optional footnote. Reuses the same Node/Arrowheads/Frame primitives
+ *  the three original diagrams hand-built, generalized so a new mechanism diagram is one stage array
+ *  instead of a bespoke layout. */
+function StageFlow({
+  title,
+  stages,
+  note,
+}: {
+  title: string;
+  stages: readonly Stage[];
+  note?: string;
+}) {
+  const n = stages.length;
+  const gap = 12;
+  const w = (VIEW_W - gap * (n + 1)) / n;
+  const y = 76;
+  const h = 40;
+  const xs = stages.map((_s, i) => gap + i * (w + gap));
   return (
-    <defs>
-      <marker
-        id="cs-arrow"
-        viewBox="0 0 10 10"
-        refX={8}
-        refY={5}
-        markerWidth={6}
-        markerHeight={6}
-        orient="auto-start-reverse"
-      >
-        <path d="M 0 0 L 10 5 L 0 10 z" className={styles.arrowFill} />
-      </marker>
-      <marker
-        id="cs-arrow-danger"
-        viewBox="0 0 10 10"
-        refX={8}
-        refY={5}
-        markerWidth={6}
-        markerHeight={6}
-        orient="auto-start-reverse"
-      >
-        <path d="M 0 0 L 10 5 L 0 10 z" className={styles.arrowFillDanger} />
-      </marker>
-    </defs>
+    <Frame title={title}>
+      <Arrowheads />
+      {xs.slice(0, -1).map((x, i) => {
+        const danger =
+          stages[i]!.tone === "danger" || stages[i + 1]!.tone === "danger";
+        return (
+          <path
+            key={`link-${stages[i]!.head}`}
+            d={`M ${x + w} ${y + h / 2} L ${x + w + gap} ${y + h / 2}`}
+            className={danger ? styles.arrowDanger : styles.arrow}
+            markerEnd={danger ? "url(#cs-arrow-danger)" : "url(#cs-arrow)"}
+          />
+        );
+      })}
+      {stages.map((s, i) => (
+        <Node
+          key={s.head}
+          x={xs[i]!}
+          y={y}
+          w={w}
+          h={h}
+          head={s.head}
+          sub={s.sub}
+          tone={s.tone ?? "base"}
+        />
+      ))}
+      {note ? (
+        <text x={gap} y={148} className={styles.note}>
+          {note}
+        </text>
+      ) : null}
+    </Frame>
+  );
+}
+
+function CreditsLedger() {
+  return (
+    <StageFlow
+      title="Credit ledger: grant, then FIFO-spend, fail-closed at zero — a PG-atomic mutation, one integer denomination, never a float."
+      stages={[
+        { head: "grant", sub: "credit added" },
+        { head: "spend", sub: "FIFO debit" },
+        { head: "zero", sub: "402, fail-closed", tone: "danger" },
+      ]}
+      note="atomic Postgres mutation — credits are integers, never a float"
+    />
+  );
+}
+
+function LocalSyncMerge() {
+  return (
+    <StageFlow
+      title="Two-way offline sync: each device's changesets reconcile through a logical clock to one converged state, no server round-trip."
+      stages={[
+        { head: "device A", sub: "changeset" },
+        { head: "reconcile", sub: "logical clock", tone: "accent" },
+        { head: "converged", sub: "device B", tone: "success" },
+      ]}
+      note="tombstones + a convergence test — offline-first by default"
+    />
+  );
+}
+
+function LocalInferenceEgress() {
+  return (
+    <StageFlow
+      title="A prompt runs against an on-device ONNX model — inference stays on the box unless a hosted provider is opted into."
+      stages={[
+        { head: "prompt", sub: "on-device" },
+        { head: "ONNX model", sub: "transformers.js", tone: "accent" },
+        { head: "response", sub: "zero egress", tone: "success" },
+      ]}
+      note="SHA-256 hash-verified model — hosted inference only by opt-in"
+    />
+  );
+}
+
+function PrivacyGate() {
+  return (
+    <StageFlow
+      title="Every outbound payload crosses a default-deny egress gate: no host is reachable unless a typed allowlist names it."
+      stages={[
+        { head: "payload", sub: "outbound" },
+        { head: "egress gate", sub: "default-deny", tone: "accent" },
+        { head: "0 hosts", sub: "empty allowlist", tone: "danger" },
+      ]}
+      note="leave the allowlist empty and egress is zero, by construction"
+    />
+  );
+}
+
+function ToolExecGate() {
+  return (
+    <StageFlow
+      title="An agent's command crosses a default-deny allowlist over Zod-strict argv before execFile runs it — never a shell."
+      stages={[
+        { head: "agent call", sub: "argv request" },
+        { head: "allowlist", sub: "zod-strict argv", tone: "accent" },
+        { head: "execFile", sub: "no shell", tone: "success" },
+      ]}
+      note="a command outside the allowlist is denied, not sanitized"
+    />
+  );
+}
+
+function OrgControlsMutation() {
+  return (
+    <StageFlow
+      title="An owner-gated mutation crosses the admin-write RLS layer and lands two log rows: the mutation and its audit entry."
+      stages={[
+        { head: "owner action", sub: "scoped write" },
+        { head: "admin-write RLS", sub: "owner-gated", tone: "accent" },
+        { head: "dual log", sub: "mutation + audit", tone: "success" },
+      ]}
+      note="WorkOS SSO + the owner-gated multi-user surface"
+    />
+  );
+}
+
+function BillingProviderPort() {
+  return (
+    <StageFlow
+      title="Four billing providers behind one port: a webhook fulfills exactly once, however many times it's redelivered."
+      stages={[
+        { head: "4 providers", sub: "Paddle · Stripe · LS · Polar" },
+        { head: "BillingProvider", sub: "one port", tone: "accent" },
+        { head: "webhook", sub: "idempotent", tone: "success" },
+      ]}
+      note="a domain event stream on top — never a per-provider fork"
+    />
+  );
+}
+
+function FrameworksOscal() {
+  return (
+    <StageFlow
+      title="Named framework clauses map to controls, then export as an OSCAL v1.2.2 catalog the evidence packs render against."
+      stages={[
+        { head: "frameworks", sub: "SOC 2 · HIPAA · EU AI Act" },
+        { head: "clause → control", sub: "the mapping", tone: "accent" },
+        { head: "OSCAL v1.2.2", sub: "export", tone: "success" },
+      ]}
+      note="the catalog the evidence-pack generator renders against"
+    />
   );
 }
 
@@ -273,6 +452,14 @@ const DIAGRAMS: Record<DiagramKey, () => React.ReactElement> = {
   "rls-deny": RlsDeny,
   "audit-chain": AuditChain,
   "worm-lifecycle": WormLifecycle,
+  "credits-ledger": CreditsLedger,
+  "local-sync-merge": LocalSyncMerge,
+  "local-inference-egress": LocalInferenceEgress,
+  "privacy-gate": PrivacyGate,
+  "tool-exec-gate": ToolExecGate,
+  "org-controls-mutation": OrgControlsMutation,
+  "billing-provider-port": BillingProviderPort,
+  "frameworks-oscal": FrameworksOscal,
 };
 
 export function MarketplaceDiagram({ name }: { name: DiagramKey }) {
