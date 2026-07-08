@@ -415,50 +415,21 @@ function SurfaceCard({
           cursor: "pointer",
         }}
       />
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "var(--cs-space-2)",
-          marginBottom: "var(--cs-space-3)",
-        }}
-      >
-        <Icon name={mark} />
-        <span
-          className="cs-num"
-          style={{
-            fontSize: "var(--cs-text-xs)",
-            color: "var(--cs-fg-muted)",
-            textTransform: "uppercase",
-            letterSpacing: "var(--cs-tracking-wide)",
-          }}
-        >
-          {eyebrow}
+      <div className={styles.cardMeta}>
+        <span className={styles.cardMetaLead}>
+          <Icon name={mark} />
+          <span className={`cs-num ${styles.cardEyebrow}`}>{eyebrow}</span>
+          {e.hasMedia && (
+            <span className={styles.mediaTag}>
+              <Icon name="gauge" />
+              demo
+            </span>
+          )}
         </span>
-        {e.hasMedia && (
-          <span className={styles.mediaTag}>
-            <Icon name="gauge" />
-            demo
-          </span>
-        )}
-        <span
-          style={{
-            marginLeft: "auto",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "var(--cs-space-2)",
-            position: "relative",
-          }}
-        >
+        <span className={styles.cardMetaEnd}>
           <label
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "var(--cs-space-1)",
-              fontSize: "var(--cs-text-xs)",
-              color: "var(--cs-fg-muted)",
-              cursor: compareDisabled ? "not-allowed" : "pointer",
-            }}
+            className={styles.cardCompare}
+            style={{ cursor: compareDisabled ? "not-allowed" : "pointer" }}
           >
             <input
               type="checkbox"

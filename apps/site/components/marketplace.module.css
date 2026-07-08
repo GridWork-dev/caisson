@@ -54,6 +54,52 @@
   }
 }
 
+/* Card header meta row (ADR-0285 one-surface card) — two clusters that WRAP instead of spilling a
+   clipped kind pill into the neighbouring card. The lead cluster (kind eyebrow + optional `demo`
+   tag) may shrink; the end cluster (Compare + kind pill) never shrinks and keeps its slot, dropping
+   to its own right-aligned row on the wider `demo` variant rather than overflowing the card edge. */
+.cardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cs-space-2) var(--cs-space-3);
+  margin-bottom: var(--cs-space-3);
+}
+
+.cardMetaLead {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cs-space-2);
+  min-width: 0; /* let the eyebrow ellipsis rather than force the row wider than the card */
+}
+
+.cardEyebrow {
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--cs-tracking-wide);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardMetaEnd {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cs-space-2);
+  margin-left: auto; /* pin right on the same line; right-aligns on its own line when wrapped */
+  flex: none; /* the kind pill keeps a stable slot — never shrinks or clips */
+  position: relative; /* stretched-link: the compare checkbox wins its own click over the overlay */
+}
+
+.cardCompare {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cs-space-1);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
 /* The demo/media tag on a card — subtle, muted, mono. */
 .mediaTag {
   display: inline-flex;
