@@ -49,4 +49,36 @@ describe("pricing corpus (real SOT)", () => {
     expect(hits.some((h) => h.kind === "pricing")).toBe(true);
     idx.close();
   });
+
+  // CAISSON-43: the support bot escalated "what's in the compliance bundle" as unanswerable — the
+  // real SOT's compliance-bundle chunk must name its real member modules (id + a one-line
+  // description), not just the bundle's own price, so this single chunk answers the question.
+  test("the real compliance-bundle chunk names its real member modules", async () => {
+    const facts = await loadPricingFacts();
+    if (facts === null) throw new Error("pricing SOT not found");
+    const corpus = buildCorpus({ pricingFacts: facts });
+    const complianceChunk = corpus.chunks.find(
+      (c) => c.kind === "pricing" && c.text.startsWith("## Compliance —"),
+    );
+    if (complianceChunk === undefined) {
+      throw new Error("no compliance-bundle pricing chunk in the corpus");
+    }
+    // The compliance bundle's real registry-index-pinned members (apps/site/lib/pricing.ts
+    // `MODULE_PRICES` filtered by `bundles.includes("compliance")`).
+    for (const id of [
+      "field-crypto",
+      "audit-worm",
+      "retention-runner",
+      "alerting",
+      "compliance-core",
+      "frameworks-pack",
+      "signing-primitive",
+    ]) {
+      expect(complianceChunk.text).toContain(`\`${id}\``);
+    }
+    // A one-line description travels with the id, not just the bare price.
+    expect(complianceChunk.text).toContain(
+      "Append-only SHA-256 audit chain plus S3 Object-Lock WORM evidence storage.",
+    );
+  });
 });
