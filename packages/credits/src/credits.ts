@@ -181,12 +181,18 @@ export async function balance(
 }
 
 /**
- * The current SPENDABLE balance (G37): the FIFO remaining-sum over UNEXPIRED grants (same query
- * shape as `unexpiredGrantsFifo`/`expiringSoon`), not the raw `credit_wallet.balance` aggregate.
- * The aggregate only decrements once a day (`sweepExpiredGrants`'s cron sweep), so between a
- * grant's expiry and the next sweep the aggregate overstates what `debit`'s FIFO floor will
- * actually cover — a buyer-facing "Current balance" tile reading the raw aggregate can show more
- * than is spendable for up to ~24h. This is the read-time fix: a plain read, no sweep/write
+ * The current SPENDABLE balance (G37): the LOWER of the two floors `debit()` itself enforces —
+ * the FIFO remaining-sum over UNEXPIRED grants, and the raw `credit_wallet.balance` aggregate.
+ * Neither floor alone is correct as a display figure:
+ *   - the aggregate only decrements once a day (`sweepExpiredGrants`'s cron sweep), so between a
+ *     grant's expiry and the next sweep it OVERSTATES what's spendable (the original G37 gap);
+ *   - the FIFO remaining-sum OVERSTATES it too after a `clawback()` — a refund decrements the
+ *     wallet but writes NO `grant_consumption` rows (clawback reverses a grant's value, not a
+ *     FIFO spend, see `clawback`'s own doc comment), so after refunding a partially-spent pack the
+ *     per-grant remainders can sum to MORE than the wallet, and that excess is not spendable — it
+ *     persists until the grants naturally expire.
+ * `debit()` 402s on whichever floor is tighter; a display figure has to agree, or it promises
+ * more than a debit will actually cover. This is a read-time fix: a plain read, no sweep/write
  * triggered from a page render (the alternative, sweep-before-read, is what
  * `services/license/src/admin-mutations.ts`'s `adjustCreditsAdmin` uses for an operator MUTATION —
  * a page GET stays read-only).
@@ -206,7 +212,9 @@ export async function spendableBalance(
      WHERE g.account_id = $1 AND g.amount > 0 AND g.expires_at > now()`,
     [accountId],
   );
-  return r.rows[0]?.total ?? 0;
+  const fifoRemaining = r.rows[0]?.total ?? 0;
+  const walletAggregate = await balance(tx, accountId);
+  return Math.min(fifoRemaining, walletAggregate);
 }
 
 async function insertEvent(

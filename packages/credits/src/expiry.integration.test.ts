@@ -339,6 +339,33 @@ describe("spendableBalance (G37 — the dashboard balance tile stops overstating
     expect(await inA((tx) => balance(tx, A))).toBe(40);
     expect(await inA((tx) => spendableBalance(tx, A))).toBe(40);
   });
+
+  test("a refund clawback on a partially-spent grant never leaves spendableBalance above the wallet (WR-01)", async () => {
+    // clawback() writes NO grant_consumption row (it reverses a grant's value, not a FIFO spend —
+    // see clawback's own doc comment), so the grant's naive FIFO remaining can outlive the wallet.
+    await grantWithExpiry(100, "claw_g1", inDays(200));
+    await inA((tx) =>
+      debit(tx, {
+        accountId: A,
+        amount: asCredits(30),
+        eventType: "codegen_debit",
+        idempotencyKey: "claw_d1",
+      }),
+    );
+    expect(await inA((tx) => balance(tx, A))).toBe(70);
+    expect(await inA((tx) => spendableBalance(tx, A))).toBe(70); // pre-refund, both floors agree
+
+    // A refund claws back the grant's ORIGINAL amount; clawback bounds to the CURRENT balance
+    // (70), draining the wallet to 0 while the grant's own consumption trail is untouched.
+    await inA((tx) =>
+      clawback(tx, { accountId: A, amount: 100, sourceEventId: "claw_refund" }),
+    );
+    expect(await inA((tx) => balance(tx, A))).toBe(0);
+
+    // The FIFO remaining-sum alone would still say 70 (100 granted - 30 consumed) — not spendable.
+    // spendableBalance must report the WALLET floor (0), the same floor debit() would 402 against.
+    expect(await inA((tx) => spendableBalance(tx, A))).toBe(0);
+  });
 });
 
 describe("T-30d notice sweep (ADR-0252 Decision 6b)", () => {
