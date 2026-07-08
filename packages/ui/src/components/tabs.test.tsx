@@ -69,6 +69,20 @@ describe("Tabs", () => {
     expect(html).not.toContain("Module grid");
   });
 
+  test("inactive tabs carry no aria-controls — their panel isn't mounted (IN-02)", () => {
+    const html = renderToStaticMarkup(
+      <Tabs
+        items={ITEMS}
+        value="modules"
+        onValueChange={() => {}}
+        aria-label="x"
+      />,
+    );
+    expect(html).toContain('aria-controls="cs-tabpanel-modules"');
+    expect(html).not.toContain('aria-controls="cs-tabpanel-bundles"');
+    expect(html).not.toContain('aria-controls="cs-tabpanel-docs"');
+  });
+
   test("has no axe violations", async () => {
     await expectNoA11yViolations(
       renderToStaticMarkup(
