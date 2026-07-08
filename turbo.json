@@ -3,7 +3,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", "migrations-bundle/**"]
+      "outputs": ["dist/**", "migrations-bundle/**", "registry-index.json"]
     },
     "lint": {},
     "test": { "dependsOn": ["^build"] },

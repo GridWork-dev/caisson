@@ -9,6 +9,16 @@
 // (build · lint · unit · golden), the included modules' golden fixtures, `AGENTS.md`, and the
 // standard config files — and NONE of Caisson's monorepo-internal machinery (the registry/publish
 // flow, the standards-gate authoring scanner, the eval CI gate).
+//
+// Template SOURCE files are stored un-dotted where npm packaging would otherwise silently drop
+// them: `bun pm pack` (and npm/yarn/pnpm generally) unconditionally strips any file literally
+// named `.npmrc` from a published tarball, a hardcoded packaging default unrelated to this
+// package's own `files` config — a real install of the published CLI never sees a source
+// `templates/base/.npmrc` no matter how it is configured. `REDOT_ON_READ` re-dots the on-disk
+// name back to the real dotfile a generated project needs (e.g. `npmrc` -> `.npmrc`) at READ
+// time, so every consumer of `readTemplateDir` (this engine and the free-sample engine,
+// `sample-templates.ts`) emits the correct output path without ever publishing the dotfile
+// itself.
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -65,10 +75,19 @@ export interface RawTemplateFile {
   readonly content: string;
 }
 
+/** Template source filenames that npm packaging always strips, mapped to the real dotfile a
+ *  generated project needs. Add an entry here whenever a new template dotfile is needed — never
+ *  add a literal dotfile under `templates/`, it will not survive `bun pm pack`. */
+const REDOT_ON_READ: Readonly<Record<string, string>> = {
+  npmrc: ".npmrc",
+};
+
 /**
  * Recursively read every file under `root`, returning POSIX-relative paths. Directory entries are
  * walked in sorted order so the read order is deterministic regardless of filesystem enumeration.
- * `root` is always a fixed in-repo path (`base` or an edition slug) — never user input.
+ * `root` is always a fixed in-repo path (`base` or an edition slug) — never user input. A file
+ * whose on-disk name is in `REDOT_ON_READ` is reported under its real (dotted) name — the on-disk
+ * name itself is never dotted (see the packaging note above).
  */
 export function readTemplateDir(root: string): RawTemplateFile[] {
   const out: RawTemplateFile[] = [];
@@ -78,10 +97,12 @@ export function readTemplateDir(root: string): RawTemplateFile[] {
     );
     for (const entry of entries) {
       const abs = join(absDir, entry.name);
-      const rel = prefix === "" ? entry.name : `${prefix}/${entry.name}`;
       if (entry.isDirectory()) {
+        const rel = prefix === "" ? entry.name : `${prefix}/${entry.name}`;
         walk(abs, rel);
       } else {
+        const name = REDOT_ON_READ[entry.name] ?? entry.name;
+        const rel = prefix === "" ? name : `${prefix}/${name}`;
         out.push({ rel, content: readFileSync(abs, "utf8") });
       }
     }

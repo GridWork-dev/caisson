@@ -6,7 +6,7 @@
 // calls `runGeneration`, minting/accepting one `idempotencyKey` (UUID) per generation. The local
 // `create-caisson` CLI generates FREE — no DB/tenant context on the buyer's machine, so it calls
 // `generate` + the writer directly and never `runGeneration`; its monetization is the license-gated
-// package install (NODE_AUTH_TOKEN), not a codegen credit (ADR-0093). Runs inside `withTenant` so
+// package install (CAISSON_LICENSE_TOKEN), not a codegen credit (ADR-0093). Runs inside `withTenant` so
 // the debit + the ledger are tenant-scoped (ADR-0005).
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
