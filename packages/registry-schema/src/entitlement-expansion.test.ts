@@ -199,6 +199,78 @@ describe("per-module bare-slug purchase-id form", () => {
   });
 });
 
+describe("NON_MODULE_ENTITLEMENT_IDS (ADR-0278/0288 — the priority-support brick guard)", () => {
+  test("priority-support alone expands to nothing, never throws", () => {
+    expect([...expandEntitlements(index, ["priority-support"])]).toEqual([]);
+  });
+
+  test("the non-module reservation WINS over an indexed package colliding with the slug", () => {
+    // Precedence pin: NON_MODULE ids are permanent — unlike RESERVED ids, publication is never
+    // graduation. If a package named @caisson/priority-support ever landed in the index, every
+    // support-tier holder must NOT silently gain a module grant for it; the reservation is checked
+    // before the allowlist candidate lookup.
+    const colliding = loadRegistryIndex({
+      schemaVersion: 1,
+      modules: [
+        ...index.modules,
+        {
+          id: "@caisson/priority-support",
+          latest: "0.1.0",
+          versions: [
+            {
+              version: "0.1.0",
+              manifest: {
+                id: "@caisson/priority-support",
+                version: "0.1.0",
+                kind: "primitive",
+                editions: [],
+                tier: "paid",
+                priceCents: 4900,
+                license: "LicenseRef-Caisson-Commercial",
+                dependencies: [],
+                members: {},
+                entry: "src/index.ts",
+                agents: "AGENTS.md",
+                golden: null,
+                stability: "alpha",
+                description: "simulated slug-colliding package",
+              },
+              publishedAt: "2026-06-30T00:00:00.000Z",
+              gateAttestation: "ci-fixture@0000001",
+            },
+          ],
+        },
+      ],
+    });
+    expect([...expandEntitlements(colliding, ["priority-support"])]).toEqual(
+      [],
+    );
+    // The FULL module id still resolves for a hypothetical buyer of the package itself — the
+    // reservation binds the bare purchased slug only.
+    expect([
+      ...expandEntitlements(colliding, ["@caisson/priority-support"]),
+    ]).toEqual(["@caisson/priority-support"]);
+  });
+
+  test("priority-support does NOT brick a mixed purchase set (the fail-closed-brick risk, ADR-0278/0288)", () => {
+    // Granting priority-support through the shared fail-closed expansion without this reservation
+    // would 500 every OTHER entitlement an account holds the moment it also bought priority-support.
+    // This proves the reservation closes exactly that gap: the compliance grant resolves normally,
+    // and priority-support contributes no members.
+    expect(
+      [...expandEntitlements(index, ["compliance", "priority-support"])].sort(),
+    ).toEqual([...expandEntitlements(index, ["compliance"])].sort()); // priority-support contributes nothing — same members as compliance alone
+  });
+
+  test("NON_MODULE_ENTITLEMENT_IDS never widens the free-view floor or any bundle's members", () => {
+    // priority-support carries no `@caisson/` module id at all — it can never appear in a resolved
+    // member set, unlike a reserved future-module slug which eventually graduates to a real grant.
+    const resolved = expandEntitlements(index, ["priority-support"]);
+    expect(resolved.has("priority-support")).toBe(false);
+    expect(resolved.has("@caisson/priority-support")).toBe(false);
+  });
+});
+
 describe("baseModuleIds (ADR-0094/0097 — the free, always-served OPEN substrate)", () => {
   test("returns only the OPEN (Apache-2.0) modules scoped to no edition — commercial base is gated", () => {
     const base = [...baseModuleIds(index)].sort();

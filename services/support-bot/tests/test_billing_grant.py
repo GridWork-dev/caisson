@@ -30,6 +30,12 @@ def _settings(**overrides: object) -> Settings:
         "role_local_first_id": 333,
         "role_agentic_id": 444,
         "customer_role_id": 555,
+        "role_priority_support_id": 666,
+        # Pin explicitly — pydantic-settings otherwise reads a REAL ambient GUILD_ID from the
+        # shell env (~/.gridwork/env), which doesn't match any fake test guild and 503s every
+        # grant. Root-cause fix in the shared fixture, not a per-test env unset (pre-existing gap,
+        # unrelated to this SKU's own tests).
+        "guild_id": None,
     }
     base.update(overrides)
     return Settings(**base)  # type: ignore[arg-type]
@@ -64,6 +70,7 @@ def _guild_with_member(
         333: _role(333, "Local-first"),
         444: _role(444, "Agentic"),
         555: _role(555, "Customer"),
+        666: _role(666, "Priority Support"),
     }
     member = SimpleNamespace(add_roles=AsyncMock(), guild=None)
     guild = SimpleNamespace(
@@ -215,6 +222,61 @@ async def test_credit_pack_grants_customer_only() -> None:
         assert (await res.json())["granted"] == ["Customer"]
         granted_ids = [r.id for r in member.add_roles.await_args.args]
         assert granted_ids == [555]
+    finally:
+        await client.close()
+
+
+async def test_priority_support_grants_role_plus_customer() -> None:
+    # ADR-0278/0288: a standalone entitlement id, not swept into the edition map.
+    guild, member = _guild_with_member()
+    client = await _client(_bot(guild), _settings())
+    try:
+        res = await client.post(
+            "/billing-grant",
+            json={"discord_user_id": "42", "entitlements": ["priority-support"]},
+            headers={"Authorization": f"Bearer {TOKEN}"},
+        )
+        assert res.status == 200
+        assert (await res.json())["granted"] == ["Priority Support", "Customer"]
+        granted_ids = [r.id for r in member.add_roles.await_args.args]
+        assert granted_ids == [666, 555]
+    finally:
+        await client.close()
+
+
+async def test_priority_support_role_unset_fails_closed_to_standard_support() -> None:
+    # No configured role id ⇒ the grant no-ops on priority-support (still grants Customer) —
+    # never guesses a role. Mirrors member_has_priority_support's own fail-closed contract.
+    guild, member = _guild_with_member()
+    client = await _client(_bot(guild), _settings(role_priority_support_id=None))
+    try:
+        res = await client.post(
+            "/billing-grant",
+            json={"discord_user_id": "42", "entitlements": ["priority-support"]},
+            headers={"Authorization": f"Bearer {TOKEN}"},
+        )
+        assert res.status == 200
+        assert (await res.json())["granted"] == ["Customer"]
+        granted_ids = [r.id for r in member.add_roles.await_args.args]
+        assert granted_ids == [555]
+    finally:
+        await client.close()
+
+
+async def test_bundle_purchase_never_grants_priority_support() -> None:
+    # The other half of the fail-closed guard: a plain edition/bundle buy must never sweep in the
+    # priority-support role (member_has_priority_support's own docstring rationale).
+    guild, member = _guild_with_member()
+    client = await _client(_bot(guild), _settings())
+    try:
+        res = await client.post(
+            "/billing-grant",
+            json={"discord_user_id": "42", "entitlements": ["bundle"]},
+            headers={"Authorization": f"Bearer {TOKEN}"},
+        )
+        assert res.status == 200
+        granted_ids = [r.id for r in member.add_roles.await_args.args]
+        assert 666 not in granted_ids
     finally:
         await client.close()
 

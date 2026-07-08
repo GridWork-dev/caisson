@@ -1,5 +1,5 @@
 {
-  "pricebookVersion": "2026-07-06.1",
+  "pricebookVersion": "2026-07-07.1",
   "creditConversion": { "microUsdPerCredit": 1000 },
   "plans": {
     "price_developer_monthly_PLACEHOLDER": {
@@ -14,6 +14,12 @@
       "creditsPerCycle": 12000,
       "cadence": "year",
       "entitlements": ["compliance"]
+    },
+    "price_priority_support_annual_PLACEHOLDER": {
+      "planTag": "priority_support",
+      "creditsPerCycle": 100,
+      "cadence": "year",
+      "entitlements": ["priority-support"]
     },
     "pri_01kwd76d64rz2ecm090pt4nq5q": {
       "planTag": "developer",
