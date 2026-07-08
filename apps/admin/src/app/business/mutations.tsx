@@ -374,12 +374,15 @@ function Field({
   onChange,
   placeholder,
   type = "text",
+  listId,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   type?: string;
+  /** G42 — an HTML `<datalist>` id to wire this input's autocomplete to (see `EntitlementDatalist`). */
+  listId?: string;
 }) {
   return (
     <label className="stack" style={{ gap: 4 }}>
@@ -393,8 +396,27 @@ function Field({
         placeholder={placeholder}
         className="mono"
         style={{ padding: 6 }}
+        {...(listId === undefined ? {} : { list: listId })}
       />
     </label>
+  );
+}
+
+const ENTITLEMENT_DATALIST_ID = "grantable-entitlement-ids";
+
+// ponytail: a native <datalist> matches against the WHOLE input value, so with the
+// comma-separated multi-id field it only helps typing the FIRST id (or right after a fresh comma
+// on some browsers) — good enough to kill a bare-typo round trip without building a tag-input
+// component for a single free-text field. Upgrade to a real multi-select/tag input if operators
+// report it's not catching enough.
+function EntitlementDatalist({ ids }: { ids: string[] }) {
+  if (ids.length === 0) return null;
+  return (
+    <datalist id={ENTITLEMENT_DATALIST_ID}>
+      {ids.map((id) => (
+        <option key={id} value={id} />
+      ))}
+    </datalist>
   );
 }
 
@@ -596,7 +618,12 @@ function RevokePurchaseCard() {
   );
 }
 
-export function AdminMutations() {
+export function AdminMutations({
+  grantableEntitlementIds,
+}: {
+  /** G42 — the registry's known entitlement ids, fed into the grant field's autocomplete. */
+  grantableEntitlementIds: string[];
+}) {
   const [grantAcct, setGrantAcct] = useState("");
   const [grantIds, setGrantIds] = useState("");
   const [revokeAcct, setRevokeAcct] = useState("");
@@ -650,7 +677,9 @@ export function AdminMutations() {
           value={grantIds}
           onChange={setGrantIds}
           placeholder="compliance, ai-kit"
+          listId={ENTITLEMENT_DATALIST_ID}
         />
+        <EntitlementDatalist ids={grantableEntitlementIds} />
       </MutationCard>
 
       <MutationCard

@@ -17,7 +17,9 @@ import {
 } from "@caisson/audit-worm";
 import { fetchWithTimeout } from "@caisson/kernel";
 import {
+  BUNDLE_IDS,
   loadRegistryIndexFromFile,
+  RESERVED_MODULE_ENTITLEMENT_IDS,
   type RegistryIndex,
 } from "@caisson/registry-schema";
 import type {
@@ -148,6 +150,24 @@ export function registryIndex(): RegistryIndex {
     cachedIndex = loadRegistryIndexFromFile(path);
   }
   return cachedIndex;
+}
+
+/**
+ * The full set of ids the grant-entitlement mutation would actually accept (G42) — the SAME
+ * vocabulary `assertGrantableEntitlementIds` validates a typed id against (bundle ids, indexed
+ * module ids, reserved sold-not-yet-published ids), so the datalist can never suggest an id the
+ * mutation would then reject. Legacy aliases are deliberately excluded — the datalist should steer
+ * the operator toward the CANONICAL id, not a deprecated one (a typed alias still resolves fine;
+ * this only affects what's suggested). Sorted for a stable, scannable dropdown.
+ */
+export function grantableEntitlementIds(): string[] {
+  const index = registryIndex();
+  const ids = new Set<string>([
+    ...BUNDLE_IDS,
+    ...RESERVED_MODULE_ENTITLEMENT_IDS,
+    ...index.modules.map((m) => m.id),
+  ]);
+  return [...ids].sort();
 }
 
 export async function getAdminMutationDeps(): Promise<AdminMutationDeps> {

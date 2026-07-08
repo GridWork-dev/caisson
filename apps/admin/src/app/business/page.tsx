@@ -5,6 +5,7 @@ import {
   type AdminActionLogRow,
 } from "@caisson/service-license";
 import { adminDbConfigured, readAdmin } from "@/lib/admin-db";
+import { grantableEntitlementIds } from "@/lib/admin-mutations-runtime";
 import {
   readCredits,
   readEntitlements,
@@ -93,6 +94,17 @@ async function loadData(search: string, page: number): Promise<LoadedData> {
 function fmtDate(iso: string | null): string {
   if (iso === null) return "—";
   return iso.slice(0, 10);
+}
+
+/** G42 — never let a missing/corrupt baked registry index (a local dev env, or a broken build)
+ *  crash the whole business page; the datalist just degrades to empty (a bare text input, today's
+ *  behavior) rather than 500ing every OTHER read on this page. */
+function safeGrantableEntitlementIds(): string[] {
+  try {
+    return grantableEntitlementIds();
+  } catch {
+    return [];
+  }
 }
 
 export default async function BusinessPage({
@@ -256,7 +268,9 @@ export default async function BusinessPage({
           dual-logged (WORM + the action log below), and behind a
           type-to-confirm gate. No raw SQL against production.
         </p>
-        <AdminMutations />
+        <AdminMutations
+          grantableEntitlementIds={safeGrantableEntitlementIds()}
+        />
       </section>
 
       <Section title={`Action log (${actions.length})`}>
