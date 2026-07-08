@@ -23,6 +23,10 @@ import {
   RENEWAL_EXTENSION_SCHEMA_SQL,
   ENTITLEMENT_SCHEMA_SQL,
 } from "./entitlement-store.ts";
+import {
+  ORDER_RECORD_SCHEMA_SQL,
+  SUBSCRIPTION_STATUS_SCHEMA_SQL,
+} from "./subscription-history-store.ts";
 import { handleBillingWebhook } from "./webhook.ts";
 
 let tp: TestPg;
@@ -40,6 +44,8 @@ beforeAll(async () => {
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
   await tp.exec(RENEWAL_EXTENSION_SCHEMA_SQL);
+  await tp.exec(SUBSCRIPTION_STATUS_SCHEMA_SQL);
+  await tp.exec(ORDER_RECORD_SCHEMA_SQL);
   // The outer webhook-event dedup table (ADR-0229 rows 50+51) — handleBillingWebhook now claims the
   // event via processEvent before granting, so a re-delivery grants + pushes once.
   await tp.exec(PROCESSED_EVENT_SCHEMA_SQL);

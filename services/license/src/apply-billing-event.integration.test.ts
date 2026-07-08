@@ -50,6 +50,10 @@ import {
   grantEntitlements,
   readEntitlements,
 } from "./entitlement-store.ts";
+import {
+  ORDER_RECORD_SCHEMA_SQL,
+  SUBSCRIPTION_STATUS_SCHEMA_SQL,
+} from "./subscription-history-store.ts";
 
 const PLAN_ID = "price_developer_monthly_PLACEHOLDER"; // 1000 credits/cycle, entitlements [] (placeholder)
 const CREDITS = 1000;
@@ -160,6 +164,8 @@ beforeAll(async () => {
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
   await tp.exec(RENEWAL_EXTENSION_SCHEMA_SQL);
+  await tp.exec(SUBSCRIPTION_STATUS_SCHEMA_SQL);
+  await tp.exec(ORDER_RECORD_SCHEMA_SQL);
 });
 
 afterAll(async () => {

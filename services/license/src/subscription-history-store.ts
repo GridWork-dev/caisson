@@ -1,0 +1,275 @@
+// ADR-0293 — in-app subscription management: a subscription-lifecycle signal plus an append-only
+// order/invoice ledger, both written at webhook time.
+//
+// G13: `entitlement_grant` only carries PURCHASED-ID rows, and a `coversOwnedEntitlements` plan
+// (Developer) grants `entitlements: []` (ADR-0269 Decision 3) — so an active Developer subscription
+// leaves NO row an "owned" check can find (`[].every(...)` is vacuously `true`, which would false-
+// positive EVERY account). `subscription_status` is the minimal signal: one row per subscription id,
+// latest lifecycle state, upserted on every granting invoice and flipped on cancel. Written for EVERY
+// subscription plan (not just zero-entitlement ones) so the SAME table also answers G14's "which
+// subscription backs this price id, and is it still active" — a plan that also grants entitlement
+// rows keeps using those as its primary ownership signal; this table is the uniform cancel-lookup.
+//
+// G26: no table anywhere records a purchase's price/amount/currency for buyer-facing display
+// (`entitlement_grant`/`credit_event` carry credits and purchased ids, never dollars or a price id).
+// `order_record` is the thin append-only ledger the dashboard's Invoices view reads: one row per
+// granting invoice / one-time transaction, flipped to 'refunded' on a whole-transaction refund.
+//
+// Both tenant-owned + fail-closed RLS via @caisson/tenancy-rls (ADR-0005), written inside the SAME
+// withTenant transaction apply-billing-event.ts already runs its grants in.
+import { randomUUID } from "node:crypto";
+import { buildTenantPolicySql } from "@caisson/tenancy-rls";
+import type { TenantExecutor } from "@caisson/tenancy-rls";
+
+function toIso(value: unknown): string {
+  return value instanceof Date ? value.toISOString() : String(value);
+}
+
+// --- G13/G14: subscription lifecycle status ------------------------------------------------------
+
+export const SUBSCRIPTION_STATUS_SCHEMA_SQL = `
+CREATE TABLE subscription_status (
+  id text PRIMARY KEY,
+  account_id text NOT NULL,
+  subscription_id text NOT NULL,
+  price_id text NOT NULL,
+  plan_tag text NOT NULL,
+  status text NOT NULL DEFAULT 'active',
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT subscription_status_status CHECK (status IN ('active', 'canceled'))
+);
+
+-- Scoped to (account_id, subscription_id) — NOT subscription_id alone. Paddle subscription ids are
+-- globally unique in practice, but account-scoping the uniqueness (matching entitlement_grant_uniq's
+-- convention) means a webhook payload carrying an unexpected cross-account id can never RLS-deny a
+-- DIFFERENT account's legitimate upsert by colliding on someone else's row — each account gets its
+-- own row regardless of what any other tenant's data holds.
+CREATE UNIQUE INDEX subscription_status_account_subscription_uniq
+  ON subscription_status (account_id, subscription_id);
+
+${buildTenantPolicySql("subscription_status")}
+`;
+
+export interface UpsertSubscriptionStatusInput {
+  accountId: string;
+  subscriptionId: string;
+  priceId: string;
+  planTag: string;
+}
+
+/**
+ * Record/refresh an ACTIVE subscription at grant time — the G13 signal `/dashboard/plan` reads to
+ * stop offering a second subscribe on a zero-entitlement plan (Developer), and the G14 signal the
+ * cancel route reads to resolve a buyer-owned price id to its Paddle subscription id. ON CONFLICT
+ * re-stamps `updated_at` and re-activates a row a prior cancel had flipped (a resubscribe on the SAME
+ * subscription id — a Paddle resume, not a fresh checkout — is the only path that would find an
+ * existing 'canceled' row). Run inside `withTenant`.
+ */
+export async function upsertSubscriptionStatus(
+  tx: TenantExecutor,
+  input: UpsertSubscriptionStatusInput,
+): Promise<void> {
+  await tx.query(
+    `INSERT INTO subscription_status (id, account_id, subscription_id, price_id, plan_tag, status, updated_at)
+     VALUES ($1, $2, $3, $4, $5, 'active', now())
+     ON CONFLICT (account_id, subscription_id)
+     DO UPDATE SET status = 'active', updated_at = now()`,
+    [
+      randomUUID(),
+      input.accountId,
+      input.subscriptionId,
+      input.priceId,
+      input.planTag,
+    ],
+  );
+}
+
+/**
+ * Flip a subscription's status row to 'canceled' — a no-op (0 rows) if no row exists for this
+ * (account, subscription) pair, which is fine: nothing else reads this table for that subscription
+ * either. Scoped by BOTH account and subscription id (never subscription id alone — see the schema
+ * comment) so a cancel for one account can never touch a same-id row under another. Run inside
+ * `withTenant`.
+ */
+export async function cancelSubscriptionStatus(
+  tx: TenantExecutor,
+  accountId: string,
+  subscriptionId: string,
+): Promise<void> {
+  await tx.query(
+    `UPDATE subscription_status SET status = 'canceled', updated_at = now()
+      WHERE account_id = $1 AND subscription_id = $2`,
+    [accountId, subscriptionId],
+  );
+}
+
+export interface SubscriptionStatusRow {
+  subscriptionId: string;
+  priceId: string;
+  planTag: string;
+  status: "active" | "canceled";
+  updatedAt: string;
+}
+
+/**
+ * Every subscription-status row for the account, newest-updated first — the G13 "owned" read for a
+ * zero-entitlement plan, and the G14 cancel route's ownership + subscription-id lookup. Run inside
+ * `withTenant`.
+ */
+export async function readSubscriptionStatuses(
+  tx: TenantExecutor,
+  accountId: string,
+): Promise<SubscriptionStatusRow[]> {
+  const r = await tx.query<{
+    subscription_id: string;
+    price_id: string;
+    plan_tag: string;
+    status: "active" | "canceled";
+    updated_at: unknown;
+  }>(
+    `SELECT subscription_id, price_id, plan_tag, status, updated_at
+       FROM subscription_status
+      WHERE account_id = $1
+      ORDER BY updated_at DESC`,
+    [accountId],
+  );
+  return r.rows.map((row) => ({
+    subscriptionId: row.subscription_id,
+    priceId: row.price_id,
+    planTag: row.plan_tag,
+    status: row.status,
+    updatedAt: toIso(row.updated_at),
+  }));
+}
+
+// --- G26: order/invoice history -------------------------------------------------------------------
+
+export const ORDER_RECORD_SCHEMA_SQL = `
+CREATE TABLE order_record (
+  id text PRIMARY KEY,
+  account_id text NOT NULL,
+  source_event_id text NOT NULL,
+  kind text NOT NULL,
+  price_id text,
+  label text NOT NULL,
+  amount integer NOT NULL,
+  currency text NOT NULL,
+  status text NOT NULL DEFAULT 'paid',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT order_record_kind CHECK (kind IN ('subscription', 'purchase')),
+  CONSTRAINT order_record_status CHECK (status IN ('paid', 'refunded')),
+  CONSTRAINT order_record_amount_nonneg CHECK (amount >= 0)
+);
+
+CREATE UNIQUE INDEX order_record_source_event_uniq ON order_record (source_event_id, kind);
+
+${buildTenantPolicySql("order_record")}
+`;
+
+export interface InsertOrderRecordInput {
+  accountId: string;
+  /** The invoice id (subscription) / payment id (one-time) — the same anchor the credit/entitlement
+   *  grants for this event key on. */
+  sourceEventId: string;
+  kind: "subscription" | "purchase";
+  /** Null for a multi-line cart (no single price id represents the whole order). */
+  priceId: string | null;
+  label: string;
+  /** Integer minor currency units (ADR-0007) — the event's own `amountTotal`, never re-derived. */
+  amount: number;
+  currency: string;
+}
+
+/**
+ * Append one paid order/invoice row (G26) — idempotent on (source_event_id, kind): a webhook
+ * redelivery of the same invoice/transaction inserts nothing a second time (belt-and-suspenders next
+ * to the outer `processEvent` claim, ADR-0229). Run inside `withTenant`.
+ */
+export async function insertOrderRecord(
+  tx: TenantExecutor,
+  input: InsertOrderRecordInput,
+): Promise<void> {
+  await tx.query(
+    `INSERT INTO order_record (id, account_id, source_event_id, kind, price_id, label, amount, currency)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     ON CONFLICT (source_event_id, kind) DO NOTHING`,
+    [
+      randomUUID(),
+      input.accountId,
+      input.sourceEventId,
+      input.kind,
+      input.priceId,
+      input.label,
+      input.amount,
+      input.currency,
+    ],
+  );
+}
+
+/**
+ * Flip a purchase's order row to 'refunded' on a WHOLE-transaction refund — a no-op if the purchase
+ * predates this table, or was already flipped by a redelivered refund event. Scoped to `kind =
+ * 'purchase'`: a subscription's per-cycle invoice rows are untouched by any refund event (a
+ * subscription's own lifecycle is `subscription_status`, not a per-invoice refund flag).
+ *
+ * // ponytail: a PER-LINE partial refund (ADR-0218) does not flip this — v1 order history shows the
+ * // order as still 'paid' until/unless it is fully refunded. Add per-line status if a partial refund
+ * // ever needs its own row in the buyer-facing history.
+ *
+ * Run inside `withTenant`.
+ */
+export async function refundOrderRecord(
+  tx: TenantExecutor,
+  paymentId: string,
+): Promise<void> {
+  await tx.query(
+    `UPDATE order_record SET status = 'refunded'
+      WHERE source_event_id = $1 AND kind = 'purchase' AND status = 'paid'`,
+    [paymentId],
+  );
+}
+
+export interface OrderRecordRow {
+  sourceEventId: string;
+  kind: "subscription" | "purchase";
+  priceId: string | null;
+  label: string;
+  amount: number;
+  currency: string;
+  status: "paid" | "refunded";
+  createdAt: string;
+}
+
+/** Every order/invoice row for the account, newest first — the G26 dashboard Invoices view. Run
+ *  inside `withTenant`. */
+export async function readOrderRecords(
+  tx: TenantExecutor,
+  accountId: string,
+): Promise<OrderRecordRow[]> {
+  const r = await tx.query<{
+    source_event_id: string;
+    kind: "subscription" | "purchase";
+    price_id: string | null;
+    label: string;
+    amount: number;
+    currency: string;
+    status: "paid" | "refunded";
+    created_at: unknown;
+  }>(
+    `SELECT source_event_id, kind, price_id, label, amount, currency, status, created_at
+       FROM order_record
+      WHERE account_id = $1
+      ORDER BY created_at DESC`,
+    [accountId],
+  );
+  return r.rows.map((row) => ({
+    sourceEventId: row.source_event_id,
+    kind: row.kind,
+    priceId: row.price_id,
+    label: row.label,
+    amount: row.amount,
+    currency: row.currency,
+    status: row.status,
+    createdAt: toIso(row.created_at),
+  }));
+}
