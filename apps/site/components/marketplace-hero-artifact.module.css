@@ -1,0 +1,144 @@
+/* Marketplace hero artifact (ADR-0285) — the "six bundles → one audited base" diagram filling the
+ * Hero's right half. Framed like the homepage terminals (chrome bar + body); every value a --cs-*
+ * token, theme-aware by cascade. */
+
+.frame {
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-lg);
+  background: var(--cs-surface-1);
+  box-shadow: var(--cs-shadow-lg);
+  overflow: hidden;
+}
+
+/* Chrome bar — mirrors .cs-terminal__bar. */
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cs-space-2) var(--cs-space-3);
+  padding: var(--cs-space-3) var(--cs-space-4);
+  border-bottom: 1px solid var(--cs-border);
+  background: var(--cs-surface-2);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
+
+.barChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cs-space-2);
+  flex: none;
+}
+
+.dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--cs-accent);
+}
+
+.body {
+  display: grid;
+  gap: var(--cs-space-4);
+  padding: var(--cs-space-6);
+}
+
+/* The six bundle chips — two columns, each a mono pill with its bespoke mark. */
+.bundles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--cs-space-3);
+}
+
+/* On a phone the two-column chips truncate the longer bundle names — drop to one column so each
+   name reads whole (the diagram is a hero focal point, not a dense list). */
+@media (max-width: 30rem) {
+  .bundles {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bundle {
+  display: flex;
+  align-items: center;
+  gap: var(--cs-space-2);
+  min-width: 0;
+  padding: var(--cs-space-2) var(--cs-space-3);
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-surface-2);
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-sm);
+  color: var(--cs-fg);
+}
+
+.bundle svg {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+  color: var(--cs-accent);
+}
+
+.bundleLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Connector row — a hairline rule split by a mono caption; the "compose onto" hinge. */
+.connector {
+  display: flex;
+  align-items: center;
+  gap: var(--cs-space-3);
+}
+
+.connectorLine {
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--cs-border);
+}
+
+.connectorLabel {
+  flex: none;
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  letter-spacing: var(--cs-tracking-wide);
+  text-transform: uppercase;
+  color: var(--cs-fg-muted);
+}
+
+/* The one audited base — the accent-tinted foundation slab the bundles rest on. */
+.base {
+  display: grid;
+  gap: var(--cs-space-1);
+  padding: var(--cs-space-4) var(--cs-space-5);
+  border: 1px solid var(--cs-accent);
+  border-radius: var(--cs-radius-md);
+  background: var(--cs-accent-tint);
+}
+
+.baseHead {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cs-space-2);
+  font-weight: var(--cs-weight-semibold);
+  letter-spacing: var(--cs-tracking-tight);
+}
+
+.baseHead svg {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+  color: var(--cs-accent);
+}
+
+.baseFacts {
+  font-family: var(--cs-font-mono);
+  font-size: var(--cs-text-xs);
+  color: var(--cs-fg-muted);
+}
