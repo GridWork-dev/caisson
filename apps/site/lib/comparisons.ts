@@ -1779,6 +1779,14 @@ export const COMPARISONS: readonly Comparison[] = [
     competitorFacts: [
       "The load-bearing controls to build from scratch: fail-closed RLS, a tamper-evident audit chain, WORM evidence storage, and an evidence-pack generator.",
       "The industry cost of a first SOC 2 built from scratch is about $80k and 6–9 months — an industry figure, not a Caisson quote.",
+      // Source: https://appycodes.dev/blog/multi-tenant-architecture-cost-study-2026/ (published
+      // 2026-04-08, re-verified live 2026-07-08) — a dev-studio's write-up of engineering hours
+      // across its own multi-tenant builds, not an independent/peer-reviewed study; cited here as
+      // that, not as authoritative market data. "Architecture Onboarding Cost" (AOC) there is
+      // engineering hours to ship a tenancy pattern from scratch: schema design, RLS/policy setup,
+      // test coverage, observability, and the tenant onboarding flow — 40 hours for the single-DB
+      // tenant_id + RLS pattern specifically, before WORM, field crypto, or an evidence generator.
+      "Even the narrowest slice — wiring single-DB tenant_id isolation with Postgres RLS, schema, and tests, before WORM, field crypto, or evidence generation — runs about 40 engineering hours by one outside estimate (Appycodes' 2026 write-up of its own multi-tenant builds).",
       "Retrofitting RLS, WORM, and an audit chain into a live database is months more than greenfielding them.",
       "You still need an audit and your organizational controls — no codebase makes you compliant on its own.",
     ],
