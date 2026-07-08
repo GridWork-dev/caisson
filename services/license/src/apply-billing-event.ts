@@ -30,6 +30,7 @@ import {
 } from "@caisson/registry-schema";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 import {
+  acquireAccountBillingLock,
   computeUpdatesWindows,
   extendUpdatesWindow,
   grantEntitlements,
@@ -130,6 +131,10 @@ export async function applyBillingEvent(
         throw new ConfigError("invoice.paid is missing an invoice id");
       }
       const plan = resolvePlan(ev.priceId); // fail-closed on an unknown price id
+      // Canonical lock order (see acquireAccountBillingLock): the account billing lock comes
+      // BEFORE the wallet-row grant below — a whole-transaction refund holds this lock while
+      // waiting on the wallet row; granting first here would complete that ABBA cycle.
+      await acquireAccountBillingLock(tx, ev.accountId);
       await grant(tx, {
         eventType: "sub_allotment",
         accountId: ev.accountId,
@@ -161,7 +166,7 @@ export async function applyBillingEvent(
       // (account, id, subscription, 'covered')). Read AFTER the static grant above so a plan that
       // one day carries both shapes can never miss its own grants; one_time reads are unaffected
       // by it today (Developer grants []). Routed through `grantOwnedCoverageMirrors`, which
-      // shares its advisory lock with `reconcileCoverageGrants`'s refund sweep (CAISSON-25a) — a
+      // shares its advisory lock with `reconcileCoverageGrants`'s refund sweep — a
       // concurrent refund for this account can never interleave between the "owned" read and the
       // mirror write, so a mirror can never be minted for an id whose one_time backing a racing
       // refund just revoked.
@@ -291,6 +296,10 @@ export async function applyBillingEvent(
       };
     }
     case "subscription.canceled":
+      // Canonical lock order + coverage-mirror consistency: this revoke sweeps MIRROR rows too,
+      // so it must serialize with a racing invoice.paid mint for the same account — without the
+      // lock a mint interleaving past the sweep strands an active mirror until its horizon lapses.
+      await acquireAccountBillingLock(tx, ev.accountId);
       // IMMEDIATE revoke (ADR-0113): soft-revoke every grant backed by this subscription. An entitlement
       // also held via an active one-time grant survives (refcount). Idempotent (only active grants flip).
       await revokeSubscriptionGrants(tx, {
@@ -301,6 +310,11 @@ export async function applyBillingEvent(
     case "refund.completed": {
       // Refund of a one-time purchase (ADR-0113 whole-transaction / ADR-0218 per-line).
       if (ev.fullyRefunded) {
+        // Canonical lock order: account billing lock FIRST, before the row revokes and the claw
+        // lock below — this branch previously acquired coverage (inside the reconcile) and THEN
+        // the claw lock, the reverse of the per-line branch, an ABBA deadlock under concurrent
+        // delivery of a per-line adjustment for the same purchase.
+        await acquireAccountBillingLock(tx, ev.accountId);
         // WHOLE-transaction full refund (Paddle `type:'full'` / Stripe `refunded:true`) — the locked
         // ADR-0113 scalar path, unchanged. (a) Soft-revoke ALL the purchase's entitlement grants
         // (idempotent — only active rows flip; a re-delivery finds none). (b) Claw ONLY the UNSPENT
@@ -321,8 +335,7 @@ export async function applyBillingEvent(
           accountId: ev.accountId,
           purchaseId: ev.paymentId,
         });
-        // Bound to granted-minus-already-clawed, computed under `outstandingClaw`'s advisory lock
-        // (CAISSON-20): if any of this purchase's lines were already partially/fully clawed via the
+        // Bound to granted-minus-already-clawed, computed under `outstandingClaw`'s advisory lock: if any of this purchase's lines were already partially/fully clawed via the
         // ADR-0218 per-line path, clawing the full ORIGINAL granted amount here again would
         // over-claw — and since the wallet is a fungible pool, `clawback`'s own current-balance
         // bound would silently drain OTHER purchases' credits to cover it. The lock closes the
@@ -359,9 +372,13 @@ export async function applyBillingEvent(
       // counts that NULL-line row too, so netting it against the purchase's total grant bounds every
       // per-line claw below to what the WHOLE PURCHASE still has outstanding, not just what this one
       // line's own rows show. Read ONCE, under `outstandingClaw`'s account+purchase advisory lock
-      // (CAISSON-20 — blocks a concurrently-racing whole-transaction refund or admin revoke for the
+      // (blocks a concurrently-racing whole-transaction refund or admin revoke for the
       // SAME purchase until whichever lands first commits), then decrement locally by each claw's
       // ACTUAL amount as the loop proceeds — one transaction, no concurrent interleaving within it.
+      // Canonical lock order: account billing lock FIRST — this branch previously acquired the
+      // claw lock first and the coverage lock last (inside the closing reconcile), the reverse of
+      // the whole-transaction branch and the admin revoke. See acquireAccountBillingLock.
+      await acquireAccountBillingLock(tx, ev.accountId);
       let purchaseRemaining = await outstandingClaw(
         tx,
         ev.accountId,

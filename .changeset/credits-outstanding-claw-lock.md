@@ -1,5 +1,5 @@
 ---
-"@caisson/credits": patch
+"@caisson/credits": minor
 ---
 
 Add `outstandingClaw`, a shared account+purchase-scoped advisory-lock guard around the

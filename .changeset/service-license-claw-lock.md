@@ -2,14 +2,17 @@
 "@caisson/service-license": patch
 ---
 
-Route the refund webhook (whole-transaction and per-line branches) and the admin `purchase_revoke`
-action's credit clawback through `@caisson/credits`'s new `outstandingClaw` guard, closing the
-read-then-claw race described in ADR-0225/ADR-0113's clawback arithmetic. Also close a sibling
-ADR-0269 residual: the Developer-plan `coversOwnedEntitlements` re-grant (`invoice.paid`) now
-shares an account-scoped advisory lock with `reconcileCoverageGrants` (the refund sweep), via a new
-`grantOwnedCoverageMirrors` function both routes call — a coverage-mirror grant and a concurrent
-refund's reconcile for the same account can no longer interleave out of order. Two new tests pin the
-scoping boundary a one-time purchase's refund already respects (a sibling subscription grant's
-credits/entitlement stay untouched) and today's safe no-op on Paddle dunning/past-due event types
-(ADR-0269 §6 — the follow-up on whether Paddle's dunning config cancels vs pauses is unchanged;
-building `subscription.paused` handling stays out of scope here per that accepted residual).
+Route the refund webhook (whole-transaction and per-line branches) and the admin purchase-revoke
+action's credit clawback through the shared `outstandingClaw` guard in `@caisson/credits`, closing
+a read-then-claw race where two differently-keyed clawback attempts against the same purchase
+could drain an unrelated purchase's unspent credits out of the shared wallet. The Developer-plan
+owned-coverage re-grant now shares an account-scoped advisory lock with the refund sweep via a new
+`grantOwnedCoverageMirrors` function, so a coverage-mirror grant and a concurrent refund reconcile
+for the same account can no longer interleave out of order — and every billing mutation path
+(invoice grant, cancel revoke, both refund branches, admin revoke) now acquires that account lock
+FIRST via `acquireAccountBillingLock`, one canonical order that removes advisory-lock deadlocks
+between racing deliveries. Tests pin the lock order on every path, the one-time refund's scoping
+boundary (a sibling subscription grant's credits and entitlement stay untouched), the actual
+behavior of a refund keyed to a subscription cycle's transaction id (the cycle's own unspent
+credits are clawed, bounded to that cycle's grant; the entitlement survives until cancellation),
+and today's safe no-op on dunning and past-due event types.

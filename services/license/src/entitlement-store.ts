@@ -532,7 +532,7 @@ export async function upsertSubscriptionGrants(
 }
 
 /**
- * ADR-0269 coverage-mirror lock key (CAISSON-25a) — shared by {@link grantOwnedCoverageMirrors}
+ * ADR-0269 coverage-mirror lock key — shared by {@link grantOwnedCoverageMirrors}
  * (Decision 1's re-grant, called from `invoice.paid`) and {@link reconcileCoverageGrants} (the
  * refund sweep, called from `refund.completed` and the admin `purchase_revoke` action). Both do a
  * read-then-write over the SAME "which ids does this account own one_time" truth: without a shared
@@ -541,12 +541,37 @@ export async function upsertSubscriptionGrants(
  * id whose one_time backing is (by the time the mirror lands) already gone — the refund's own
  * reconcile already ran once and nothing else ever sweeps that mirror again, so it leaks
  * subscription-sourced access to a refunded purchase for the life of the subscription (the
- * "wrong static-grant ordering" CAISSON-25a names). One advisory lock per account serializes every
+ * "wrong static-grant ordering" race). One advisory lock per account serializes every
  * coverage-mirror read-then-write for that account, mirroring `outstandingClaw`'s credits-side
- * guard (CAISSON-20, the same TOCTOU class, same `withAdvisoryXactLock` primitive).
+ * guard (the same read-then-write class, same `withAdvisoryXactLock` primitive).
  */
 function coverageLockKey(accountId: string): string {
   return `entitlement:coverage:${accountId}`;
+}
+
+/**
+ * Acquire the account-scoped billing lock — the CANONICAL OUTERMOST lock of every transaction
+ * that mutates an account's billing state (grants, mirrors, claws, revokes). Keyed identically to
+ * {@link coverageLockKey}, so {@link reconcileCoverageGrants} / {@link grantOwnedCoverageMirrors}
+ * re-acquire it re-entrantly (pg advisory xact locks stack within one session).
+ *
+ * WHY (security-audit finding, 2026-07-07): the coverage lock and the credits claw lock were
+ * acquired in OPPOSITE orders across the whole-transaction refund / per-line adjustment / admin
+ * revoke paths — a classic ABBA inversion that deadlocks (40P01) under exactly the concurrent
+ * deliveries those locks exist to serialize. The rule that closes the whole class: every such
+ * transaction takes THIS lock first, before any claw lock, entitlement row lock, or wallet row
+ * lock. Two account-overlapping transactions then serialize entirely at entry, so no inner
+ * acquisition order can invert. Paths that touch rows/wallet WITHOUT this lock (spend, plain
+ * one-time grant fulfillment) cannot complete a cycle — they never wait on an advisory lock.
+ *
+ * The lock releases at transaction end (never manually). Callers: apply-billing-event
+ * (invoice.paid, subscription.canceled, refund.completed both branches) and revokePurchaseAdmin.
+ */
+export async function acquireAccountBillingLock(
+  tx: TenantExecutor,
+  accountId: string,
+): Promise<void> {
+  await withAdvisoryXactLock(tx, coverageLockKey(accountId), async () => {});
 }
 
 /**
@@ -556,7 +581,7 @@ function coverageLockKey(accountId: string): string {
  * a plan's STATIC grant of the same id (paid for by the subscription itself) is never swept. The
  * backing check is alias-group-tolerant: a mirror stored under a legacy spelling survives while any
  * spelling of its group still has an active one_time grant. Idempotent (active-only filter).
- * Runs under the {@link coverageLockKey} advisory lock (CAISSON-25a) shared with
+ * Runs under the {@link coverageLockKey} advisory lock shared with
  * {@link grantOwnedCoverageMirrors}, so this sweep and a concurrent re-grant for the same account
  * can never interleave out of order. Returns the number revoked. Run after every one_time revoke
  * path, in the same transaction.
@@ -599,7 +624,7 @@ export interface GrantOwnedCoverageMirrorsInput {
 /**
  * ADR-0269 Decision 1 — the Developer-plan re-grant: mirror, subscription-sourced, every
  * entitlement the buyer ALREADY OWNS via an active one_time grant. Runs under the SAME
- * {@link coverageLockKey} advisory lock {@link reconcileCoverageGrants} uses (CAISSON-25a), so the
+ * {@link coverageLockKey} advisory lock {@link reconcileCoverageGrants} uses, so the
  * "owned ids" read here can never interleave with a concurrent refund's reconcile sweep for this
  * account — whichever operation's transaction commits first is fully visible to the second by the
  * time it re-reads ownership under the lock. Returns the covered ids (`[]` on a no-op), for the

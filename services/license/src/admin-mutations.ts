@@ -50,6 +50,7 @@ import {
 import type { TenantExecutor, Transactor } from "@caisson/tenancy-rls";
 import { insertAdminActionLog, type AdminAction } from "./admin-audit-log.ts";
 import {
+  acquireAccountBillingLock,
   grantAdminComp,
   readEntitlements,
   reconcileCoverageGrants,
@@ -651,6 +652,11 @@ export async function revokePurchaseAdmin(
   let fullDenySet: string[] = [];
   const result = await withAdminWrite(deps.db, async (tx) => {
     await assertAccountExists(tx, input.targetAccountId);
+    // Canonical lock order (see acquireAccountBillingLock): account billing lock FIRST, before
+    // the row revokes and the claw lock — this path previously took coverage (inside the
+    // reconcile) then claw, the reverse of the per-line refund branch: an ABBA deadlock when an
+    // operator revoke raced a refund adjustment for the same purchase.
+    await acquireAccountBillingLock(tx, input.targetAccountId);
     const before = await readEntitlements(tx, input.targetAccountId);
     const balanceBefore = await balance(tx, input.targetAccountId);
 

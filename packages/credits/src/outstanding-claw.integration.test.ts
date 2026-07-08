@@ -100,7 +100,7 @@ describe("outstandingClaw (real PGlite)", () => {
     expect(remaining).toBe(3000);
   });
 
-  test("closes the cross-purchase leak: a second differently-keyed claw attempt on an already-fully-clawed purchase touches NOTHING of an unrelated purchase", async () => {
+  test("re-derives the bound after a committed claw and clamps at 0 — an exhausted purchase cannot reach an unrelated purchase's credits", async () => {
     const acct = "acct_leak";
     await purchaseGrant(acct, 10_000, "p1"); // purchase 1
     await purchaseGrant(acct, 3_000, "p2"); // purchase 2 — UNRELATED
@@ -119,9 +119,13 @@ describe("outstandingClaw (real PGlite)", () => {
     );
 
     // A second, DIFFERENTLY-keyed claw attempt for the SAME purchase p1 (e.g. an admin revoke
-    // that raced the webhook). Under the OLD read-then-claw code this would have read a stale
-    // alreadyClawed=0 and clawed p2's unrelated 3000 credits out of the shared wallet.
-    // `outstandingClaw` re-derives fresh, under the lock, so it correctly sees the prior claw.
+    // after the webhook). This SEQUENTIAL run pins the arithmetic bound only — the old unlocked
+    // code passes it too, since a committed claw is visible to any later read. The RACE the lock
+    // closes (two OVERLAPPING transactions each reading a stale alreadyClawed=0, the second
+    // draining p2's credits via the balance clamp) cannot be modeled on single-connection PGlite;
+    // the lock's serialization is pinned by the recording-executor ordering tests
+    // (outstanding-claw.test.ts: lock-before-read, same key for every caller) alongside this
+    // arithmetic pin — the same proof decomposition advisory-lock.integration.test.ts documents.
     const remaining2 = await withTenant(tp.pg, acct, (tx) =>
       outstandingClaw(tx, acct, "p1"),
     );
