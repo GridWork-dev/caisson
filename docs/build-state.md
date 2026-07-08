@@ -272,16 +272,17 @@ are env-gated/dormant until creds. Editions own membership — primitives declar
 Counts backfill (2026-07-06, sot-check parity — these packages predate the ADR-0253 counts check
 and never carried a counts row; detail stays in the rich table below / their own sections):
 
-| Package            | src / tests / loc |
-| ------------------ | ----------------- |
-| `rate-limit`       | 4 / 3 / 432       |
-| `platform-reads`   | 1 / 1 / 137       |
-| `observability`    | 4 / 3 / 309       |
-| `agent-runner`     | 4 / 2 / 635       |
-| `audit-harness`    | 9 / 8 / 1165      |
-| `alerting`         | 6 / 3 / 523       |
-| `tool-exec`        | 2 / 1 / 152       |
-| `retention-runner` | 6 / 4 / 328       |
+| Package               | src / tests / loc |
+| --------------------- | ----------------- |
+| `rate-limit`          | 4 / 3 / 432       |
+| `platform-reads`      | 1 / 1 / 137       |
+| `platform-migrations` | 2 / 1 / 244       |
+| `observability`       | 4 / 3 / 309       |
+| `agent-runner`        | 4 / 2 / 635       |
+| `audit-harness`       | 9 / 8 / 1165      |
+| `alerting`            | 6 / 3 / 523       |
+| `tool-exec`           | 2 / 1 / 152       |
+| `retention-runner`    | 6 / 4 / 328       |
 
 | Package            | Stream / ADR          | License / tier                                        | Owns                                                                                                                                                                                                                                                                                                                                         |
 | ------------------ | --------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
