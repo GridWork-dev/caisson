@@ -56,8 +56,9 @@ service's Railway/GH variable; then the agent probes.
 The vault is the durable recovery store; `~/.gridwork/caisson.env` stays the SOT (ADR-0224
 F6). One item per env-var NAME, title === name, no grouped fields.
 
-- [ ] **2.1** `op` CLI signed in (operator; the vault is the sanctioned caisson-launch
-      exception to the no-1Password posture). Create the vault if absent.
+- [ ] **2.1** Create the "Caisson Launch" vault (picker 2026-07-08: `op` CLI is installed and
+      signed in on this box; the vault does not exist yet — the vault is the sanctioned
+      caisson-launch exception to the no-1Password posture).
 - [ ] **2.2** Mirror every Phase-1 rotated value + any launch-set var not yet mirrored
       (operator pastes; titles must equal the env var names exactly).
 - [ ] **2.3** Agent runs `bun tooling/scripts/vault-parity-check.ts` (names-only, read-only)
@@ -86,9 +87,10 @@ F6). One item per env-var NAME, title === name, no grouped fields.
       verification email, sets `CAISSON_E2E_ACCOUNT_EMAIL`/`CAISSON_E2E_ACCOUNT_PASSWORD` in
       `~/.gridwork/caisson.env`; agent runs the buyer-dashboard-flow live leg (self-skips
       today) → green.
-- [ ] **4.4 `aeo-probe` GH Actions secrets** — `OPENROUTER_API_KEY` set in 1.1; optional:
-      `POSTHOG_CAPTURE_KEY`/`POSTHOG_CAPTURE_HOST`, `DATAFORSEO_LOGIN`/`PASSWORD` (skip
-      unless wanted — the monthly cron arms on the required one alone).
+- [ ] **4.4 `aeo-probe` GH Actions secrets — ALL legs (picker 2026-07-08)** —
+      `OPENROUTER_API_KEY` set in 1.1, plus `POSTHOG_CAPTURE_KEY`/`POSTHOG_CAPTURE_HOST`
+      (the caisson-prod project's capture key) and `DATAFORSEO_LOGIN`/`DATAFORSEO_PASSWORD`
+      (needs a DataForSEO account — create/login at dataforseo.com if none exists).
 - [ ] **4.5 Plausible goals** — plausible.io dashboard: quickstart page-goal +
       `docs_cta_click` + `signup_complete` custom-event goals (code events already ship).
 - [ ] **4.6 Paddle sandbox `adjustment.created`** — Paddle sandbox dashboard → the
@@ -107,10 +109,10 @@ F6). One item per env-var NAME, title === name, no grouped fields.
 
 - [ ] **6.1** Agent runs the fresh-export **entitlement-token scan gate** against a clean
       mirror export.
-- [ ] **6.2** With Phase 1 done + 6.1 green, the **`caisson-oss` public flip + first
-      `confirm=publish` npm dispatch** unblocks (ADR-0222). Executing it is its own
-      operator call — flip the repo public, run the manual dispatch, verify the `@caisson-sh`
-      packages land on npmjs.
+- [ ] **6.2** With Phase 1 done + 6.1 green, record the **`caisson-oss` public flip + first
+      `confirm=publish` npm dispatch** as UNBLOCKED (ADR-0222) — but do NOT execute it this
+      sitting (picker 2026-07-08: held for its own deliberate sitting; the flip is externally
+      visible and effectively irreversible).
 
 ## Pointers only (separate acts, NOT this sitting unless re-scoped)
 
