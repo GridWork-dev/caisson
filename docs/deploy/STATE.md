@@ -48,7 +48,8 @@ content-hash embed cache + vault-parity non-env tag) deployed with a persistent 
   (`OPENROUTER_API_KEY`, `POSTHOG_CAPTURE_KEY`, `POSTHOG_CAPTURE_HOST`, `DATAFORSEO_LOGIN`,
   `DATAFORSEO_PASSWORD`; `MIRROR_PUSH_TOKEN` still pending the operator's PAT mint).
 - **Key verification (pasted):** all six keys probed against `GET /api/v1/key` → `HTTP 200`;
-  every key reports `limit=null` — **follow-up: set per-key credit limits in the OpenRouter UI**.
+  every key reports `limit=null` — per-key credit limits **waived by the operator 2026-07-08**
+  (uncapped keys accepted; attribution, not caps, was the goal of the split).
 - **Redeploys:** `caisson-docs` deployed from `main@be359eeb` (embed-cache code) — SUCCESS;
   `caisson-support-bot` + `caisson-site` redeployed — SUCCESS.
 - **Volume:** dashboard-created volume landed on support-bot by mistake; moved via
