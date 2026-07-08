@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-07
 status: live
-adr_ceiling: 0289
+adr_ceiling: 0291
 ---
 
 # Decisions & Forks — live board
@@ -1641,3 +1641,43 @@ analytics entry is manifest-only, npm tarball stays behind `confirm=publish`).
 the eval-delivery build (ADR-0289, next wave) · the intel container box-deploy (operator-gated,
 this session's final act) · CAISSON-48 admin migration fix · the admin intel page (queued behind
 the admin merge queue).
+
+## 2026-07-07 tenth sitting — pre-launch build drive + design picker (ADR-0290–0291)
+
+Continuation session: gridwork-core PR #398 (intel security-surfaces ledger rows) merged; the
+ninth-sitting wave reconciled in Linear (CAISSON-32/33/34/46/47 → Done; 44/45 shipped but classifier
+held the close — operator to close). PR #161 (`gw-frontend-designer` visual fixes) merged after the
+in-session SHIP review returned PASS + one P3 fix (hero bundle count derived from `BUNDLE_PRICES`).
+
+**No-fork pre-launch hardening → dispatched as four background worktree builders** (not yet merged):
+CAISSON-43 bot content-gap fix (bundle-composition generated doc + post-purchase CLI/AI-agent
+quickstart, so the RAG corpus answers the two most common buyer questions) · CAISSON-20+25 billing
+correctness (clawback read-then-claw concurrency guard + ADR-0269 residuals) · CAISSON-37+38+41
+deploy-reliability (registry index parity probe · lost-HOSTNAME root-cause · site-design-2 stash) ·
+CAISSON-42 support-SKU entitlement wire-up (executes ADR-0288).
+
+**CAISSON-43 diagnosis (recorded):** the support bot behaved CORRECTLY — it retrieved the six
+nearest docs, judged them insufficient (`INSUFFICIENT_CONTEXT`), and escalated instead of
+hallucinating (fail-closed RAG). Two CONTENT gaps, not a bot bug: (1) bundle→module membership is
+not in the corpus (lives in `apps/site/lib/bundle-pages.ts`; the pricing generator emits names+prices
+only) · (2) no post-purchase CLI+AI-agent quickstart. The corpus (`services/docs`, ADR-0096) ingests
+`apps/site/content/docs/**/*.mdx` + public `packages/*/README.md` + generated pricing docs — ADRs/specs
+excluded. Fix in the CAISSON-43 builder.
+
+**Tenth-sitting design picker locks** (over the two `gw-frontend-designer` plans; research → picker →
+ADR → code):
+
+- **Marketplace media standard → LOCKED as ADR-0290:** standardized static picture-slides —
+  **live-component + real-artifact** content (new `component`/`code-artifact` slide kinds), **all 28
+  re-standardized** onto one framed template, **no video** (audit-worm mp4 → static; Remotion pipeline
+  reserved, unused by the launch set). Refines ADR-0285/0263.
+- **UI interactive-primitive expansion → LOCKED as ADR-0291:** **split by complexity** — Tabs,
+  Checkbox, Radio, Switch, Badge, Accordion in the open Apache-2.0 `@caisson/ui`; Tooltip, Popover,
+  Menu in commercial `@caisson/ui-pro`. **All hand-rolled, zero-Radix** (recipe purity), then
+  **repoint** the hand-rolled inline controls; a11y regression enforced. Extends ADR-0099/0250.
+  Theming contract + `/ui` showcase rebuild (CAISSON-35) are adjacent follow-ons, not bound here.
+- **Media + UI builders → dispatched next** off these ADRs (two disjoint-scoped worktrees).
+
+**Still open (unchanged):** D2/D3 pricing (quant-gated) · the operator-owed launch acts
+(`docs/state/outstanding-work.md` §1 — Paddle account/catalog, credential rotations, CF-Access
+`site_gate` flip, EULA continuity final text, design-partner numbers) · CAISSON-44/45 Linear close.
