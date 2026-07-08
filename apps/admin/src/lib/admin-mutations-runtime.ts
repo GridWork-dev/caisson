@@ -88,6 +88,37 @@ async function issueProxy(req: {
 }
 
 /**
+ * G38 (buyer-lifecycle audit 2026-07-07) — the deny-set PUT below is last-write-wins: two
+ * concurrent revokes (different accounts) each capture their OWN full cross-tenant snapshot at
+ * their commit and PUT it post-commit; out-of-order network completion can let the earlier/
+ * smaller snapshot land LAST, transiently un-denying the second account at the edge until the
+ * next revoke republishes. Self-healing (the DB `license_revocation` table stays truth) and
+ * operator-only/low-volume, so this is a real but bounded fix, not a no-op: a MODULE-LEVEL chain
+ * serializes every publish attempt in ENQUEUE order — each call awaits the previous one's settle
+ * (success OR failure) before firing its own PUT — so two revokes handled by THIS admin process
+ * can never complete out of order over the network. It does NOT close the CROSS-PROCESS case (a
+ * second admin instance/pod racing this one): the PUT target is an opaque operator-provided URL
+ * (a pre-signed R2 URL or a small authed shim) with no guaranteed ETag/If-Match to build a real
+ * CAS on top of. Upgrade path: real conditional writes if/when the operator's R2 target exposes
+ * one, or a periodic full-republish cron as a cheap cross-process backstop.
+ */
+let publishChain: Promise<void> = Promise.resolve();
+
+/**
+ * Chain `fn` onto the shared publish order. `publishChain` is NEVER allowed to become a rejected
+ * promise — a rejection would make every LATER `.then()` skip its fulfillment handler entirely,
+ * silently breaking every future publish for the rest of the process's life.
+ *
+ * Exported for `admin-mutations-runtime.test.ts` (G38) — the generic ordering/never-wedges
+ * property is what actually needs pinning, not a real R2 PUT round trip.
+ */
+export function serializePublish(fn: () => Promise<void>): Promise<void> {
+  const attempt = publishChain.then(fn);
+  publishChain = attempt.catch(() => undefined);
+  return attempt;
+}
+
+/**
  * The edge deny-set publisher (ADR-0225 R-4 = B) — the WRITE side of the registry Worker's R2 read
  * (`registry/worker/deploy-entry.ts` reads `revocations/deny-set.json`). Called post-commit + best-
  * effort by `revokePurchaseAdmin` with the FULL cross-tenant set of revoked `license_id`s; it PUTs
@@ -102,27 +133,28 @@ async function issueProxy(req: {
  * // authed shim in front of the bucket. Keeps aws-sdk / SigV4 OUT of the admin blast radius; swap for
  * // a direct R2 S3 PutObject if the operator prefers a long-lived credential over a managed URL.
  */
-function denySetPublisher(): AdminMutationDeps["publishDenySet"] {
+export function denySetPublisher(): AdminMutationDeps["publishDenySet"] {
   const url = process.env.CAISSON_REVOCATIONS_PUT_URL?.trim() ?? "";
   if (url === "") return undefined;
   const token = process.env.CAISSON_REVOCATIONS_PUT_TOKEN?.trim() ?? "";
-  return async (revokedLicenseIds: string[]): Promise<void> => {
-    const res = await fetchWithTimeout(
-      url,
-      {
-        method: "PUT",
-        headers: {
-          "content-type": "application/json",
-          ...(token === "" ? {} : { authorization: `Bearer ${token}` }),
+  return (revokedLicenseIds: string[]): Promise<void> =>
+    serializePublish(async () => {
+      const res = await fetchWithTimeout(
+        url,
+        {
+          method: "PUT",
+          headers: {
+            "content-type": "application/json",
+            ...(token === "" ? {} : { authorization: `Bearer ${token}` }),
+          },
+          body: JSON.stringify({ revokedLicenseIds }),
         },
-        body: JSON.stringify({ revokedLicenseIds }),
-      },
-      { timeoutMs: 10_000 },
-    );
-    if (!res.ok) {
-      throw new Error(`deny-set publish returned ${String(res.status)}`);
-    }
-  };
+        { timeoutMs: 10_000 },
+      );
+      if (!res.ok) {
+        throw new Error(`deny-set publish returned ${String(res.status)}`);
+      }
+    });
 }
 
 let cachedIndex: RegistryIndex | undefined;

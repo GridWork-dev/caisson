@@ -7,7 +7,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, test } from "bun:test";
 import { LocalArtifactStore, S3ArtifactStore } from "@caisson/audit-worm";
-import { registryIndex, wormStore } from "./admin-mutations-runtime.ts";
+import {
+  denySetPublisher,
+  registryIndex,
+  serializePublish,
+  wormStore,
+} from "./admin-mutations-runtime.ts";
 
 const ORIGINAL_BUCKET = process.env.CAISSON_ADMIN_WORM_BUCKET;
 afterEach(() => {
@@ -76,4 +81,52 @@ test("CAISSON_REGISTRY_INDEX_PATH is honored — cwd-independent, chdir-immune (
     else process.env.CAISSON_REGISTRY_INDEX_PATH = original;
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+const ORIGINAL_PUT_URL = process.env.CAISSON_REVOCATIONS_PUT_URL;
+afterEach(() => {
+  if (ORIGINAL_PUT_URL === undefined) {
+    delete process.env.CAISSON_REVOCATIONS_PUT_URL;
+  } else {
+    process.env.CAISSON_REVOCATIONS_PUT_URL = ORIGINAL_PUT_URL;
+  }
+});
+
+test("denySetPublisher is unprovisioned (undefined) until CAISSON_REVOCATIONS_PUT_URL is set", () => {
+  delete process.env.CAISSON_REVOCATIONS_PUT_URL;
+  expect(denySetPublisher()).toBeUndefined();
+});
+
+// G38 (buyer-lifecycle audit 2026-07-07): serializePublish is the actual fix for the deny-set
+// last-write-wins race — pin its two load-bearing properties directly rather than a real R2 PUT
+// round trip (irrelevant to what changed).
+test("G38: serializePublish runs enqueued attempts strictly in order, even when an earlier one is slower", async () => {
+  const order: string[] = [];
+  const sleep = (ms: number): Promise<void> =>
+    new Promise((resolve) => setTimeout(resolve, ms));
+  const first = serializePublish(async () => {
+    await sleep(20);
+    order.push("first");
+  });
+  // Enqueued second but would finish FIRST if unserialized (no delay) — proves ordering, not
+  // just eventual completion.
+  const second = serializePublish(async () => {
+    order.push("second");
+  });
+  await Promise.all([first, second]);
+  expect(order).toEqual(["first", "second"]);
+});
+
+test("G38: a failing publish attempt never wedges the chain — the next attempt still runs", async () => {
+  const order: string[] = [];
+  const first = serializePublish(async () => {
+    order.push("first");
+    throw new Error("simulated PUT failure");
+  });
+  const second = serializePublish(async () => {
+    order.push("second");
+  });
+  await expect(first).rejects.toThrow("simulated PUT failure");
+  await second;
+  expect(order).toEqual(["first", "second"]);
 });
