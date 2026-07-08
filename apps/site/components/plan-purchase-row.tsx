@@ -21,12 +21,21 @@ export function PlanPurchaseRow({
   owned,
 }: PlanPurchaseRowProps) {
   const [opening, setOpening] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const configured = isPaddleConfigured();
 
   async function buy() {
     setOpening(true);
+    setError(null);
     try {
       await openCheckout({ priceId, accountId });
+    } catch {
+      // IN-02: getPaddle() (G6) can now reject on a load/init failure instead of silently
+      // poisoning the session — surface it instead of letting the button just revert with no
+      // explanation, mirroring cart-checkout-panel.tsx's catch.
+      setError(
+        "Checkout failed to load — check your connection or ad-blocker, then try again.",
+      );
     } finally {
       setOpening(false);
     }
@@ -65,6 +74,14 @@ export function PlanPurchaseRow({
           </Button>
         )}
       </div>
+      {error !== null && (
+        <p
+          className="cs-footnote"
+          style={{ color: "var(--cs-danger)", marginTop: "var(--cs-space-2)" }}
+        >
+          {error}
+        </p>
+      )}
     </Card>
   );
 }
