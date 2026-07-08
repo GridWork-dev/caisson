@@ -7,6 +7,7 @@
 // `admin` role — the same seam the route uses.
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
 import {
   CREDIT_LINE_ITEM_MIGRATION_SQL,
   CREDIT_EXPIRY_MIGRATION_SQL,
@@ -34,8 +35,20 @@ import { type TestPg, newTestPg } from "@caisson/testing";
 import { buildAdminReadPolicySql } from "./admin-read.ts";
 import {
   previewAccountPurchaseRevokes,
+  readTenants,
   type AccountRevokePreview,
 } from "./business-reads.ts";
+
+// G29 email-lookup double: mirrors the identical minimal test-double
+// `services/license/src/email-notify.integration.test.ts` already uses for better-auth's own
+// "user" table (the real one is created by better-auth's getMigrations).
+const BETTER_AUTH_USER_DOUBLE_SQL = `
+CREATE TABLE "user" (
+  "id" text PRIMARY KEY,
+  "email" text NOT NULL,
+  "name" text
+);
+`;
 
 let tp: TestPg;
 let db: Transactor;
@@ -132,6 +145,10 @@ beforeAll(async () => {
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
   await tp.exec(LICENSE_GRANT_SCHEMA_SQL);
+  // G29: account_member (the email-lookup join source) + the better-auth "user" double + its grant.
+  await tp.exec(ACCOUNT_MEMBER_SCHEMA_SQL);
+  await tp.exec(BETTER_AUTH_USER_DOUBLE_SQL);
+  await tp.exec(`GRANT SELECT ON "user" TO admin;`);
   // The ADR-0141 admin-read policies for every table the preview reads — INCLUDING credit_event
   // (the ADR-0225 addition the claw preview needs) and credit_wallet (the balance ceiling).
   for (const table of [
@@ -139,6 +156,7 @@ beforeAll(async () => {
     "credit_event",
     "entitlement_grant",
     "license_grant",
+    "account_member",
   ]) {
     await tp.exec(buildAdminReadPolicySql(table));
   }
@@ -208,5 +226,88 @@ describe("previewAccountPurchaseRevokes (ADR-0225 R-6 impact preview)", () => {
     );
     expect(preview.sources).toEqual([]); // no one-time purchase to revoke
     expect(preview.licensesToDeny.length).toBe(2); // both held licenses would be denied at the edge
+  });
+});
+
+describe("readTenants (G29 email lookup + search + pagination)", () => {
+  async function seedUser(userId: string, email: string): Promise<void> {
+    await tp.query(`INSERT INTO "user" (id, email) VALUES ($1, $2)`, [
+      userId,
+      email,
+    ]);
+  }
+  async function seedMember(acct: string, userId: string): Promise<void> {
+    await withTenant(db, acct, (tx) =>
+      tx.query(
+        `INSERT INTO account_member (account_id, user_id, role) VALUES ($1, $2, 'owner')`,
+        [acct, userId],
+      ),
+    );
+  }
+
+  test("resolves the owner's email via account_member -> user", async () => {
+    const acct = `acct_${randomUUID()}`;
+    const email = `buyer-${randomUUID()}@example.com`;
+    await seedOneTime(acct, `pay_${randomUUID()}`, ["compliance"]);
+    await seedUser(acct, email);
+    await seedMember(acct, acct);
+
+    const { rows } = await asAdmin((tx) => readTenants(tx));
+    const row = rows.find((r) => r.accountId === acct);
+    expect(row?.email).toBe(email);
+  });
+
+  test("a tenant with no account_member row resolves email null (never throws)", async () => {
+    const acct = `acct_${randomUUID()}`;
+    await seedOneTime(acct, `pay_${randomUUID()}`, ["ai-kit"]);
+
+    const { rows } = await asAdmin((tx) => readTenants(tx));
+    const row = rows.find((r) => r.accountId === acct);
+    expect(row?.email).toBeNull();
+  });
+
+  test("search matches by account id OR by email substring", async () => {
+    const acct = `acct_findme_${randomUUID()}`;
+    const email = `findme-${randomUUID()}@example.com`;
+    await seedOneTime(acct, `pay_${randomUUID()}`, ["compliance"]);
+    await seedUser(acct, email);
+    await seedMember(acct, acct);
+
+    const byAccount = await asAdmin((tx) =>
+      readTenants(tx, { search: "findme" }),
+    );
+    expect(byAccount.rows.some((r) => r.accountId === acct)).toBe(true);
+
+    const byEmail = await asAdmin((tx) => readTenants(tx, { search: email }));
+    expect(byEmail.rows.map((r) => r.accountId)).toEqual([acct]);
+
+    const noMatch = await asAdmin((tx) =>
+      readTenants(tx, { search: `nobody-${randomUUID()}` }),
+    );
+    expect(noMatch.rows).toEqual([]);
+    expect(noMatch.total).toBe(0);
+  });
+
+  test("limit/offset paginate; total reflects the full matching count, not the page size", async () => {
+    const tag = randomUUID();
+    const accts = Array.from(
+      { length: 3 },
+      (_, i) => `acct_page_${tag}_${String(i)}`,
+    );
+    for (const acct of accts) {
+      await seedOneTime(acct, `pay_${randomUUID()}`, ["compliance"]);
+    }
+
+    const page1 = await asAdmin((tx) =>
+      readTenants(tx, { search: `page_${tag}`, limit: 2, offset: 0 }),
+    );
+    expect(page1.rows.length).toBe(2);
+    expect(page1.total).toBe(3);
+
+    const page2 = await asAdmin((tx) =>
+      readTenants(tx, { search: `page_${tag}`, limit: 2, offset: 2 }),
+    );
+    expect(page2.rows.length).toBe(1);
+    expect(page2.total).toBe(3);
   });
 });

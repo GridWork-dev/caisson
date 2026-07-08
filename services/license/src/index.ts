@@ -98,11 +98,15 @@ export {
   AdjustCreditsBody,
   ReissueLicenseBody,
   RevokePurchaseBody,
+  FirstMintLicenseBody,
+  ResendPurchaseEmailBody,
   grantEntitlementAdmin,
   revokeEntitlementAdmin,
   adjustCreditsAdmin,
   reissueLicenseAdmin,
   revokePurchaseAdmin,
+  firstMintLicenseAdmin,
+  resendPurchaseEmailAdmin,
   wormAnchorAccount,
 } from "./admin-mutations.ts";
 export type {
@@ -113,12 +117,18 @@ export type {
   AdjustCreditsInput,
   ReissueLicenseInput,
   PurchaseRevokeInput,
+  FirstMintLicenseInput,
+  ResendPurchaseEmailInput,
   EntitlementMutationResult,
   CreditAdjustResult,
   ReissueResult,
   PurchaseRevokeResult,
+  FirstMintResult,
+  ResendPurchaseEmailResult,
   WormStatus,
 } from "./admin-mutations.ts";
+export { resolveEmailer, notifyPurchaseEmail } from "./email-notify.ts";
+export type { PurchaseEmailNotice, PurchaseEmailLine } from "./email-notify.ts";
 export { resolveAccountEntitlements } from "./resolve-entitlements.ts";
 export {
   LICENSE_GRANT_SCHEMA_SQL,

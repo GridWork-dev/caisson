@@ -24,12 +24,19 @@ import {
   buildAdminReadPolicySql,
 } from "../src/lib/admin-read.ts";
 
-/** The cross-tenant read surface (ADR-0141) — keep in sync with admin-db.ts ADMIN_READ_TABLES. */
+/** The cross-tenant read surface (ADR-0141) — keep in sync with admin-db.ts ADMIN_READ_TABLES.
+ *  `account_member` (G29): the tenants view's email-lookup join needs cross-tenant SELECT on it. */
 const ADMIN_READ_TABLES = [
   "credit_wallet",
+  "credit_event", // ADR-0225 revoke-preview claw math reads the per-event ledger
   "entitlement_grant",
   "license_grant",
+  "account_member",
 ] as const;
+
+/** better-auth's own "user" table carries no RLS — a plain GRANT, not a policy (G29 email lookup;
+ *  the table itself is created by better-auth's own migrator, already live on this Postgres). */
+const USER_ADMIN_READ_GRANT_SQL = `GRANT SELECT ON "user" TO admin;`;
 
 /**
  * The Postgres unquoted-identifier shape — the only role-name shape this script ever legitimately
@@ -88,6 +95,7 @@ async function main(): Promise<void> {
       `admin read policy: ${t}`,
       buildAdminReadPolicySql(t),
     ]),
+    ["admin read grant: user (G29)", USER_ADMIN_READ_GRANT_SQL],
     [
       "entitlement admin_comp CHECK widening",
       ENTITLEMENT_ADMIN_COMP_MIGRATION_SQL,

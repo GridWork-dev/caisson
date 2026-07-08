@@ -7,7 +7,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, test } from "bun:test";
 import { LocalArtifactStore, S3ArtifactStore } from "@caisson/audit-worm";
-import { registryIndex, wormStore } from "./admin-mutations-runtime.ts";
+import { BUNDLE_IDS } from "@caisson/registry-schema";
+import {
+  grantableEntitlementIds,
+  registryIndex,
+  wormStore,
+} from "./admin-mutations-runtime.ts";
 
 const ORIGINAL_BUCKET = process.env.CAISSON_ADMIN_WORM_BUCKET;
 afterEach(() => {
@@ -76,4 +81,17 @@ test("CAISSON_REGISTRY_INDEX_PATH is honored — cwd-independent, chdir-immune (
     else process.env.CAISSON_REGISTRY_INDEX_PATH = original;
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+// registryIndex() caches on first call for the life of the process (see its own doc comment), so
+// this test asserts only on what holds true REGARDLESS of which index a sibling test in this same
+// file already cached: every bundle id is present, sorted, and deduped — not the exact indexed
+// module set (which depends on load order the cache makes untestable in isolation here).
+test("grantableEntitlementIds (G42) includes every bundle id, sorted and deduped", () => {
+  const ids = grantableEntitlementIds();
+  for (const bundleId of BUNDLE_IDS) {
+    expect(ids).toContain(bundleId);
+  }
+  expect(ids).toEqual([...ids].sort());
+  expect(new Set(ids).size).toBe(ids.length);
 });
