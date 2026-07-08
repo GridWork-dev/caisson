@@ -54,14 +54,17 @@ content-hash embed cache + vault-parity non-env tag) deployed with a persistent 
 - **Volume:** dashboard-created volume landed on support-bot by mistake; moved via
   `railway volume detach/attach` (the `add` subcommand panics — CLI bug) and renamed
   `caisson-docs-volume`, mount `/data`.
-- **Embed cache wired but NOT yet persisting (pasted):** first boot `[service-docs] embed
-cache: 0 hits / 75 misses (/data/embed-cache.json)`, warm-boot proof came back `0 hits /
-87 misses` — the save fails silently: Railway mounts the volume ROOT-owned while the
-  container runs `USER bun` (uid 1000), and the cache write is fail-soft by design. Follow-up
-  in flight same session: entrypoint chown-then-drop + a visible save-failure log line.
-  Coverage then converges across boots (the 3-minute embed-phase deadline yields ~75–87
-  chunks/boot under the fresh key's rate limits), then unchanged-corpus redeploys make zero
-  embedding calls.
+- **Embed cache PERSISTING (pasted, PR #186 `main@7bc8e713`):** the first deploys wrote
+  nothing — Railway mounts the volume ROOT-owned while the container ran `USER bun` (uid
+  1000), and the cache write is fail-soft by design (`0 hits / 75 misses` then `0 hits / 87
+misses`). PR #186 fixed it: entrypoint chowns the mount then drops privileges via
+  `setpriv --reuid=bun` (healthcheck dropped the same way — review finding), plus visible
+  errno logging on cache read/save failures. Proof after redeploying from #186: cold boot
+  `[service-docs] embed cache: 0 hits / 68 misses (/data/embed-cache.json)` with no
+  save-failure line, warm boot `60 hits / 81 misses` — the cache survived the redeploy, and
+  because hits are network-free the same 3-minute embed deadline covered 141 chunks instead
+  of 68. Coverage converges to the full corpus across the next boot or two, then
+  unchanged-corpus redeploys make zero embedding calls.
 - **Vault parity (pasted):** `vault-parity-check: clean — vault and caisson.env agree on names.`
   with `--rotated-after 2026-07-08` — 126 names, 7 non-env exclusions printed by title, exit 0.
 - **Cost verdict recorded (runbook 1.1):** the credit exhaustion was about 92 tracked
