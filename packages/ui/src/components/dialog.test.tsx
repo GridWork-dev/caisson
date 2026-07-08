@@ -27,6 +27,29 @@ describe("Dialog", () => {
     expect(html).toContain('data-side="left"');
   });
 
+  test("drawer variant supports a top side, for a nav sheet under a fixed header", () => {
+    const html = renderToStaticMarkup(
+      <Dialog open onClose={() => {}} title="Menu" variant="drawer" side="top">
+        <p>x</p>
+      </Dialog>,
+    );
+    expect(html).toContain('data-side="top"');
+  });
+
+  test("className merges onto the dialog element alongside the base class", () => {
+    const html = renderToStaticMarkup(
+      <Dialog
+        open
+        onClose={() => {}}
+        title="Menu"
+        className="cs-mobile-nav-drawer"
+      >
+        <p>x</p>
+      </Dialog>,
+    );
+    expect(html).toContain('class="cs-dialog cs-mobile-nav-drawer"');
+  });
+
   test("hideHeader drops the default title/close chrome", () => {
     const html = renderToStaticMarkup(
       <Dialog open onClose={() => {}} title="Custom" hideHeader>

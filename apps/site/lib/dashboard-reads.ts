@@ -13,15 +13,19 @@
 // `readUsageEvents` + `readCreditsSummary` stay here: they read BASE-package tables (`@caisson/ai-meter`'s
 // `usage_event`, `@caisson/credits`' `credit_wallet`/`credit_event`) — ordinary composable dependencies,
 // not the separately-deployed services/license tables — so they are not the flagged cross-service coupling.
-import { balance, expiringSoon, getLedger } from "@caisson/credits";
+import { expiringSoon, getLedger, spendableBalance } from "@caisson/credits";
 import type { ExpiringSoon } from "@caisson/credits";
 import {
   readEntitlementGrants,
   readLicenseGrantRows,
+  readOrderRecords,
+  readSubscriptionStatuses,
 } from "@caisson/platform-reads";
 import type {
   EntitlementGrantRow,
   LicenseGrantRow,
+  OrderRecordRow,
+  SubscriptionStatusRow,
 } from "@caisson/platform-reads";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 
@@ -29,6 +33,9 @@ import type { TenantExecutor } from "@caisson/tenancy-rls";
 // (`@/lib/dashboard-reads`). The queries + row types now live in `@caisson/platform-reads`.
 export { readEntitlementGrants, readLicenseGrantRows };
 export type { EntitlementGrantRow, LicenseGrantRow };
+// ADR-0293: the G13/G14 subscription-status read + the G26 order/invoice history read.
+export { readSubscriptionStatuses, readOrderRecords };
+export type { SubscriptionStatusRow, OrderRecordRow };
 
 /** `timestamptz` columns come back as a driver-native `Date` instance on both PGlite and
  * node-postgres, never a string — normalize explicitly at every raw-SQL read boundary in this
@@ -101,7 +108,13 @@ export async function readUsageEvents(
 
 /** Credit balance + full ledger (re-exports the existing typed `@caisson/credits` reads — no
  * raw SQL needed here, `credit_wallet`/`credit_event` are a base package the app already depends
- * on directly, not a flagged cross-service coupling). */
+ * on directly, not a flagged cross-service coupling).
+ *
+ * `balance` is the SPENDABLE figure (G37 — `spendableBalance`, the FIFO remaining-sum over
+ * unexpired grants), not the raw `credit_wallet.balance` aggregate: the aggregate only decrements
+ * once a day (the expiry-sweep cron), so it can overstate what a debit will actually cover for up
+ * to ~24h post-expiry. The append-only ledger (`getLedger`) is unaffected — it is history, not a
+ * live balance. */
 export async function readCreditsSummary(
   tx: TenantExecutor,
   accountId: string,
@@ -112,7 +125,7 @@ export async function readCreditsSummary(
   expiring: ExpiringSoon;
 }> {
   const [bal, ledger, expiring] = await Promise.all([
-    balance(tx, accountId),
+    spendableBalance(tx, accountId),
     getLedger(tx, accountId),
     expiringSoon(tx, accountId, 30),
   ]);

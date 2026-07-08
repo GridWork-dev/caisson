@@ -60,6 +60,10 @@ import {
   type RateLimitConfig,
   TokenBucketLimiter,
 } from "./rate-limit.ts";
+import {
+  ORDER_RECORD_SCHEMA_SQL,
+  SUBSCRIPTION_STATUS_SCHEMA_SQL,
+} from "./subscription-history-store.ts";
 
 const SECRET = "pdl_ntfset_webhook_route_secret";
 
@@ -111,6 +115,8 @@ beforeAll(async () => {
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
   await tp.exec(RENEWAL_EXTENSION_SCHEMA_SQL);
+  await tp.exec(SUBSCRIPTION_STATUS_SCHEMA_SQL);
+  await tp.exec(ORDER_RECORD_SCHEMA_SQL);
   await tp.exec(PROCESSED_EVENT_SCHEMA_SQL);
   await tp.exec(LICENSE_GRANT_SCHEMA_SQL);
   provider = createPaddleBilling({ webhookSecret: SECRET, apiKey: "pdl_test" });

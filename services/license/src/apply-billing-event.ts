@@ -45,6 +45,14 @@ import {
   upsertSubscriptionGrants,
 } from "./entitlement-store.ts";
 import type { SkuLine } from "./posthog-capture.ts";
+// ADR-0293 — the G13 subscription-status signal + the G26 order/invoice ledger, both written
+// alongside the existing grants in this same withTenant transaction.
+import {
+  cancelSubscriptionStatus,
+  insertOrderRecord,
+  refundOrderRecord,
+  upsertSubscriptionStatus,
+} from "./subscription-history-store.ts";
 
 /**
  * Integer proportional credit claw for a dollar-PARTIAL line refund (ADR-0218 fork A-1 / ADR-0007 /
@@ -193,6 +201,28 @@ export async function applyBillingEvent(
           subscriptionId: ev.subscriptionId,
           sourceEventId: ev.invoiceId,
           cadence: plan.cadence,
+        });
+        // ADR-0293 G13/G14: the uniform subscription-status signal (see subscription-history-store.ts
+        // header) — written for EVERY subscription plan, not just zero-entitlement ones, so it is the
+        // one place the dashboard reads both "is this zero-entitlement plan owned" and "which Paddle
+        // subscription id backs this price id, to cancel it". Runs INSIDE the G7 idempotency gate
+        // (unlike the invoice-scoped grant calls above it never had its own natural dedupe key), so a
+        // Resend's fresh event_id no longer refreshes this row for free either.
+        await upsertSubscriptionStatus(tx, {
+          accountId: ev.accountId,
+          subscriptionId: ev.subscriptionId,
+          priceId: ev.priceId,
+          planTag: plan.planTag,
+        });
+        // ADR-0293 G26: one order-history row per granting invoice — the SAME resend protection.
+        await insertOrderRecord(tx, {
+          accountId: ev.accountId,
+          sourceEventId: ev.invoiceId,
+          kind: "subscription",
+          priceId: ev.priceId,
+          label: plan.planTag,
+          amount: ev.amountTotal,
+          currency: ev.currency,
         });
         // ADR-0269: a `coversOwnedEntitlements` plan (Developer) RE-GRANTS, subscription-sourced,
         // every entitlement the buyer already holds via an active one_time grant — the
@@ -344,6 +374,29 @@ export async function applyBillingEvent(
             }
           }
         }
+        // ADR-0293 G26: one order-history row for the whole cart transaction (never per-line — the
+        // event's own `amountTotal` is the one true charged amount for this paymentId). `priceId` is
+        // the single line's id when the cart had exactly one, else null (no one id represents a
+        // multi-item cart); `label` prefers the granted SKUs, falling back to the renewed entitlement
+        // ids for an all-renewal cart, and to a generic label for a pure credit-pack buy (0 lines in
+        // either list). Runs INSIDE the G7 idempotency gate, so a Resend never writes a second row —
+        // insertOrderRecord's own (source_event_id, kind) uniqueness would absorb it either way, but
+        // gating here skips the redundant round trip and keeps ONE resend-protection story.
+        const orderLabel =
+          skuLines.length > 0
+            ? skuLines.map((line) => line.productSlug).join(", ")
+            : renewedEntitlementIds.size > 0
+              ? `renewal: ${[...renewedEntitlementIds].join(", ")}`
+              : "purchase";
+        await insertOrderRecord(tx, {
+          accountId: ev.accountId,
+          sourceEventId: ev.paymentId,
+          kind: "purchase",
+          priceId: skuLines.length === 1 ? skuLines[0]!.priceId : null,
+          label: orderLabel,
+          amount: ev.amountTotal,
+          currency: ev.currency,
+        });
         effect = {
           grantedEntitlements: [...grantedEntitlements],
           skuLines,
@@ -365,6 +418,9 @@ export async function applyBillingEvent(
         accountId: ev.accountId,
         subscriptionId: ev.subscriptionId,
       });
+      // ADR-0293 G13/G14: the subscription-status row this subscription's granting invoices upserted
+      // (if any) flips to 'canceled' too — a no-op if this subscription never wrote one.
+      await cancelSubscriptionStatus(tx, ev.accountId, ev.subscriptionId);
       // G27: a buyer-facing "your access changed" notice, ONLY when this call actually revoked
       // something — a re-delivery (or the coverage-mirror-only case where nothing was active)
       // revokes 0 and stays silent, no separate idempotency gate needed (see AppliedBillingEffect).
@@ -420,6 +476,9 @@ export async function applyBillingEvent(
             sourceEventId: ev.paymentId,
           });
         }
+        // ADR-0293 G26: the order-history row for this purchase flips to 'refunded' (a no-op if the
+        // purchase predates this table, or a redelivery already flipped it).
+        await refundOrderRecord(tx, ev.paymentId);
         // G27: a buyer-facing "your access changed" notice, ONLY when this call actually revoked
         // an active grant — idempotent by construction (revokePurchaseGrants only flips ACTIVE
         // rows), no separate gate needed.

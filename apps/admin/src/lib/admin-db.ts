@@ -36,6 +36,7 @@ import {
   buildAdminReadPolicySql,
   withAdminRead,
 } from "./admin-read.ts";
+import { INTEL_ADMIN_READ_GRANT_SQL, INTEL_SCHEMA_SQL } from "./intel-read.ts";
 
 // The audit-chain table (ADR-0052) the WORM dual-log half appends to, byte-mirrored from
 // @caisson/audit-worm's `migrations/0001_audit_chain.sql` for the DEV DOUBLE ONLY (append-only by
@@ -73,15 +74,34 @@ DO $$ BEGIN
 END $$;
 `;
 
+/** A minimal test double of better-auth's own "user" table (G29) — only the columns the tenants
+ *  email-enrichment read needs (id/email). The real one is created by better-auth's getMigrations
+ *  (apps/site/lib/deploy-migrate.ts) on the SAME Postgres this admin DB connects to; mirrors the
+ *  identical double `services/license/src/email-notify.integration.test.ts` already uses. */
+const BETTER_AUTH_USER_DOUBLE_SQL = `
+CREATE TABLE IF NOT EXISTS "user" (
+  "id" text PRIMARY KEY,
+  "email" text NOT NULL,
+  "name" text
+);
+`;
+
+/** better-auth's own "user" table carries no RLS (it holds cross-tenant identity, not tenant
+ *  data — see email-notify.ts's module doc) — a plain cross-schema-style GRANT, not the
+ *  `USING (true)` permissive-policy dance `buildAdminReadPolicySql` applies to RLS-forced tables. */
+const USER_ADMIN_READ_GRANT_SQL = `GRANT SELECT ON "user" TO admin;`;
+
 /** The tenant tables the operator cockpit reads cross-tenant (ADR-0141 read-only surface).
  *  `credit_event` was added (ADR-0225): the paid-revoke impact preview reuses `@caisson/credits`'
  *  `creditsGrantedBySource`/`creditsClawedForSource`, which read the per-event ledger, so the `admin`
- *  role needs a cross-tenant SELECT policy on it to compute the exact claw preview. */
+ *  role needs a cross-tenant SELECT policy on it to compute the exact claw preview. `account_member`
+ *  was added (G29): the tenants view's email-lookup join needs cross-tenant SELECT on it too. */
 const ADMIN_READ_TABLES = [
   "credit_wallet",
   "credit_event",
   "entitlement_grant",
   "license_grant",
+  "account_member",
 ] as const;
 
 function nodePgExecutor(client: PoolClient): TenantExecutor {
@@ -147,6 +167,9 @@ async function bootstrapPglite(): Promise<PGlite> {
   await pg.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await pg.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
   await pg.exec(CREDIT_LINE_ITEM_MIGRATION_SQL);
+  // G29: the better-auth "user" table double + the tenants view's email-enrichment join.
+  await pg.exec(BETTER_AUTH_USER_DOUBLE_SQL);
+  await pg.exec(USER_ADMIN_READ_GRANT_SQL);
   for (const table of ADMIN_READ_TABLES) {
     await pg.exec(buildAdminReadPolicySql(table));
   }
@@ -155,6 +178,10 @@ async function bootstrapPglite(): Promise<PGlite> {
   await pg.exec(ADMIN_ACTION_LOG_SCHEMA_SQL);
   await pg.exec(AUDIT_CHAIN_SCHEMA_SQL);
   await pg.exec(ADMIN_MUTATION_PROVISION_SQL);
+  // ADR-0286 admin intel page: the daemon's schema (byte-mirrored DEV/TEST DOUBLE ONLY, see
+  // intel-read.ts) plus the read-only `admin` role's cross-schema SELECT grant.
+  await pg.exec(INTEL_SCHEMA_SQL);
+  await pg.exec(INTEL_ADMIN_READ_GRANT_SQL);
   globalDb.caissonAdminPglite = pg;
   return pg;
 }

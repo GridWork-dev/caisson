@@ -25,6 +25,10 @@ mock.module("next/navigation", () => ({
 
 mock.module("next/headers", () => ({
   headers: async (): Promise<Headers> => new Headers(),
+  // The active-account cookie (G8) — no cookie in these tests; getSession() short-circuits to
+  // null before ever reading it (no DB/secret configured), but `lib/auth.ts` imports `cookies`
+  // statically, so the mock module must still export it.
+  cookies: async () => ({ get: () => undefined }),
 }));
 
 // Owner-only write gate (ADR-0208 #1): owner passes, seat is denied. Unauthenticated is

@@ -37,7 +37,9 @@ import {
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   LICENSE_GRANT_SCHEMA_SQL,
+  ORDER_RECORD_SCHEMA_SQL,
   RENEWAL_EXTENSION_SCHEMA_SQL,
+  SUBSCRIPTION_STATUS_SCHEMA_SQL,
 } from "@caisson/service-license";
 import { getMigrations } from "better-auth/db/migration";
 import { Pool } from "pg";
@@ -150,6 +152,20 @@ export function platformPackage(): PackageMigrations {
       {
         name: "0017_renewal_extension.sql",
         sql: RENEWAL_EXTENSION_SCHEMA_SQL,
+      },
+      // ADR-0293 G13/G14: the subscription-lifecycle status signal `apply-billing-event.ts` upserts
+      // on every granting invoice and flips on `subscription.canceled` — the buyer dashboard's
+      // "owned" read for a zero-entitlement plan (Developer) and the self-serve cancel route's
+      // subscription-id lookup. New table (not an edit to a frozen constant, ADR-0006).
+      {
+        name: "0018_subscription_status.sql",
+        sql: SUBSCRIPTION_STATUS_SCHEMA_SQL,
+      },
+      // ADR-0293 G26: the append-only order/invoice ledger the same webhook path writes to alongside
+      // the credit/entitlement grants. New table (not an edit to a frozen constant, ADR-0006).
+      {
+        name: "0019_order_record.sql",
+        sql: ORDER_RECORD_SCHEMA_SQL,
       },
     ],
   };

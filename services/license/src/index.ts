@@ -47,6 +47,24 @@ export type {
   ReverseRenewalExtensionsInput,
 } from "./entitlement-store.ts";
 
+// ADR-0293 — subscription-lifecycle status (G13/G14) + append-only order/invoice history (G26).
+export {
+  SUBSCRIPTION_STATUS_SCHEMA_SQL,
+  ORDER_RECORD_SCHEMA_SQL,
+  upsertSubscriptionStatus,
+  cancelSubscriptionStatus,
+  readSubscriptionStatuses,
+  insertOrderRecord,
+  refundOrderRecord,
+  readOrderRecords,
+} from "./subscription-history-store.ts";
+export type {
+  UpsertSubscriptionStatusInput,
+  SubscriptionStatusRow,
+  InsertOrderRecordInput,
+  OrderRecordRow,
+} from "./subscription-history-store.ts";
+
 // ADR-0220 — the operator mutation surface + its queryable audit-log half. ADR-0225 adds the fifth
 // action `purchase_revoke` (paid one-time revoke + bounded claw + edge deny-set) and its migration.
 export {
@@ -80,11 +98,15 @@ export {
   AdjustCreditsBody,
   ReissueLicenseBody,
   RevokePurchaseBody,
+  FirstMintLicenseBody,
+  ResendPurchaseEmailBody,
   grantEntitlementAdmin,
   revokeEntitlementAdmin,
   adjustCreditsAdmin,
   reissueLicenseAdmin,
   revokePurchaseAdmin,
+  firstMintLicenseAdmin,
+  resendPurchaseEmailAdmin,
   wormAnchorAccount,
 } from "./admin-mutations.ts";
 export type {
@@ -95,12 +117,18 @@ export type {
   AdjustCreditsInput,
   ReissueLicenseInput,
   PurchaseRevokeInput,
+  FirstMintLicenseInput,
+  ResendPurchaseEmailInput,
   EntitlementMutationResult,
   CreditAdjustResult,
   ReissueResult,
   PurchaseRevokeResult,
+  FirstMintResult,
+  ResendPurchaseEmailResult,
   WormStatus,
 } from "./admin-mutations.ts";
+export { resolveEmailer, notifyPurchaseEmail } from "./email-notify.ts";
+export type { PurchaseEmailNotice, PurchaseEmailLine } from "./email-notify.ts";
 export { resolveAccountEntitlements } from "./resolve-entitlements.ts";
 export {
   LICENSE_GRANT_SCHEMA_SQL,

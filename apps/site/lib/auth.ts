@@ -8,9 +8,10 @@
 // that cookie was a stand-in until the real sign-in flow existed. The EdDSA account JWT
 // (`@caisson/auth`'s `jwt.ts`) remains the CROSS-SERVICE seam (execution-plane / buyer MCP), a
 // separate concern from this same-process read.
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import {
+  type AccountMembership,
   type Role,
   type SessionContext,
   ensurePersonalAccount,
@@ -21,6 +22,14 @@ import { getAuth } from "./auth-server.ts";
 import { getDb } from "./db.ts";
 
 export { SESSION_COOKIE_NAME } from "./auth-server.ts";
+
+/** The active-account preference cookie (G8): which of the signed-in user's memberships
+ *  `getSession` should resolve to. Read-only signal, never a trust boundary — `selectActiveAccount`
+ *  only ever matches an id against the user's OWN verified memberships (`resolveUserAccounts`,
+ *  user-scoped RLS), so a tampered/stale value just falls back to the personal account rather than
+ *  crossing tenants. HttpOnly (server-read only, no client JS needs it) + Secure + SameSite=Strict
+ *  per the cookie security floor. */
+export const ACTIVE_ACCOUNT_COOKIE = "cs_active_account";
 
 /**
  * Resolve the current request's session from better-auth, mapped to the base `SessionContext`, or
@@ -42,36 +51,67 @@ export async function getSession(): Promise<SessionContext | null> {
     const result = await auth.api.getSession({ headers: await headers() });
     if (result === null) return null;
     const userId = result.user.id;
-    const { accountId, role } = await resolveActiveAccount(userId);
+    const requestedAccountId = (await cookies()).get(
+      ACTIVE_ACCOUNT_COOKIE,
+    )?.value;
+    const { accountId, role } = await resolveActiveAccount(
+      userId,
+      requestedAccountId,
+    );
     return { userId, accountId, role };
   } catch {
     return null;
   }
 }
 
+/** Every account the signed-in user belongs to (bootstraps the personal account on first read,
+ *  same as `resolveActiveAccount`) — throws on a DB error; callers fail-safe individually. */
+async function listMyAccounts(userId: string): Promise<AccountMembership[]> {
+  const db = await getDb();
+  let memberships = await resolveUserAccounts(db, userId);
+  if (memberships.length === 0) {
+    await ensurePersonalAccount(db, userId);
+    memberships = await resolveUserAccounts(db, userId);
+  }
+  return memberships;
+}
+
 /**
- * Resolve the signed-in user's active account via `account_member` (D4, ADR-0176). FAIL-SAFE: any
- * DB error — the table not yet migrated on this deploy, the pool down — falls back to the personal
- * account (account_id == user_id, role owner) so an authed dashboard render never breaks. Existing
- * single-user tenants (no membership row) resolve to exactly that personal account, unchanged.
+ * Resolve the signed-in user's active account via `account_member` (D4, ADR-0176), honoring an
+ * explicit `requestedAccountId` (the active-account cookie, G8) when it names one of the user's
+ * OWN memberships. FAIL-SAFE: any DB error — the table not yet migrated on this deploy, the pool
+ * down — falls back to the personal account (account_id == user_id, role owner) so an authed
+ * dashboard render never breaks. Existing single-user tenants (no membership row) resolve to
+ * exactly that personal account, unchanged.
  */
 async function resolveActiveAccount(
   userId: string,
+  requestedAccountId?: string,
 ): Promise<{ accountId: string; role: Role }> {
   const personal = { accountId: userId, role: "owner" as Role };
   try {
-    const db = await getDb();
-    let memberships = await resolveUserAccounts(db, userId);
-    if (memberships.length === 0) {
-      await ensurePersonalAccount(db, userId);
-      memberships = await resolveUserAccounts(db, userId);
-    }
-    const active = selectActiveAccount(memberships);
+    const memberships = await listMyAccounts(userId);
+    const active = selectActiveAccount(memberships, requestedAccountId);
     return active
       ? { accountId: active.accountId, role: active.role }
       : personal;
   } catch {
     return personal;
+  }
+}
+
+/**
+ * The account-switcher UI's option list (G8): every account the given user belongs to, or just
+ * their personal account on a DB error (mirrors `resolveActiveAccount`'s fail-safe — a switcher
+ * that can't reach the DB degrades to "no other accounts" rather than breaking the page).
+ */
+export async function getAccountMemberships(
+  userId: string,
+): Promise<AccountMembership[]> {
+  try {
+    return await listMyAccounts(userId);
+  } catch {
+    return [{ accountId: userId, userId, role: "owner" }];
   }
 }
 

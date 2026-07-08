@@ -15,6 +15,9 @@ interface Section {
   href?: string;
 }
 
+// G41 — Ops/Business/Architecture/Decisions were all fully built and already linked from the top
+// nav, but this home page still hardcoded `state: "soon"` (no href) for all four. Flipped to
+// "ready" with their real routes, verified to exist before this change.
 const SECTIONS: Section[] = [
   {
     title: "Catalog",
@@ -25,22 +28,26 @@ const SECTIONS: Section[] = [
   {
     title: "Ops & observability",
     desc: "Fleet health + Grafana-backed telemetry widgets, with deep-links to the full traces.",
-    state: "soon",
+    state: "ready",
+    href: "/ops",
   },
   {
     title: "Business admin",
     desc: "Tenants, purchases, entitlements, and credits over the Railway Postgres (read-only).",
-    state: "soon",
+    state: "ready",
+    href: "/business",
   },
   {
     title: "Architecture",
     desc: "The live service/deploy topology, derived from the manifests + health probes.",
-    state: "soon",
+    state: "ready",
+    href: "/architecture",
   },
   {
     title: "Decisions / SOT",
     desc: "The forks board and the ADR trail, rendered — the control-plane is itself a source of truth.",
-    state: "soon",
+    state: "ready",
+    href: "/decisions",
   },
 ];
 

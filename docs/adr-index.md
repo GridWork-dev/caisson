@@ -881,6 +881,12 @@ ADR-0088 numbering split held — no collision).
 | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------- | ------------ |
 | [0295](../knowledge/decisions/ADR-0295-ui-drawer-primitive-mobile-nav-repoint.md) | Drawer primitive (dialog-class, focus trap) added to commercial ui-pro + mobile-nav repointed to it; marketplace-tabs repoint dropped — cross-page nav, forcing `role=tablist` is an anti-pattern | Frontend | accepted | refines 0291 |
 
+### Eleventh-sitting delta-review re-lock (0296, 2026-07-08) - status `accepted`
+
+| ADR                                                                             | Title                                                                                                                                                                                            | Domain   | Status   | Chain                     |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | -------- | ------------------------- |
+| [0296](../knowledge/decisions/ADR-0296-mobile-nav-reuses-open-dialog-drawer.md) | Mobile-nav reuses the open `@caisson/ui` Dialog `variant="drawer"` (native `showModal()` — inert background fixes the iOS VoiceOver hole); the hand-rolled ui-pro Drawer is deleted before merge | Frontend | accepted | supersedes 0295 mechanism |
+
 ---
 
 ## Accepted is not the same as shipped

@@ -35,6 +35,10 @@ import {
   ENTITLEMENT_SCHEMA_SQL,
   readEntitlements,
 } from "./entitlement-store.ts";
+import {
+  ORDER_RECORD_SCHEMA_SQL,
+  SUBSCRIPTION_STATUS_SCHEMA_SQL,
+} from "./subscription-history-store.ts";
 import { handleBillingWebhook } from "./webhook.ts";
 
 const SECRET = "pdl_ntfset_round_trip_secret";
@@ -57,6 +61,8 @@ beforeAll(async () => {
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
   await tp.exec(RENEWAL_EXTENSION_SCHEMA_SQL);
+  await tp.exec(SUBSCRIPTION_STATUS_SCHEMA_SQL);
+  await tp.exec(ORDER_RECORD_SCHEMA_SQL);
   await tp.exec(PROCESSED_EVENT_SCHEMA_SQL);
 });
 

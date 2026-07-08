@@ -87,3 +87,16 @@ export { FormField } from "./form-field";
 export type { FormFieldProps } from "./form-field";
 export { MobileBuyBar } from "./mobile-buy-bar";
 export type { MobileBuyBarProps } from "./mobile-buy-bar";
+// Interactive primitives (ADR-0291).
+export { Badge } from "./badge";
+export type { BadgeProps, BadgeSize, BadgeTone } from "./badge";
+export { Checkbox } from "./checkbox";
+export type { CheckboxProps } from "./checkbox";
+export { Radio } from "./radio";
+export type { RadioProps } from "./radio";
+export { Switch } from "./switch";
+export type { SwitchProps } from "./switch";
+export { Accordion } from "./accordion";
+export type { AccordionItem, AccordionProps } from "./accordion";
+export { Tabs } from "./tabs";
+export type { TabItem, TabsProps } from "./tabs";

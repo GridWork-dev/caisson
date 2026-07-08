@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-07
 status: live
-adr_ceiling: 0295
+adr_ceiling: 0296
 ---
 
 # Decisions & Forks — live board
@@ -1729,6 +1729,12 @@ are BANNED in changeset bodies (they ship into buyer CHANGELOGs) — three #162 
   review agreed). Refines ADR-0291. Session rules also tightened by the operator: **no fable
   reviewers for the remainder** (opus at SHIP even on money seams), sonnet for bounded
   implementation dispatches, forks continue via picker.
+- **Drawer mechanism re-locked as ADR-0296** (third picker round, 2026-07-08): the delta review
+  of the built ui-pro Drawer surfaced that `aria-modal` without `inert` leaves the background
+  reachable to iOS VoiceOver, AND that the open `@caisson/ui` Dialog already ships
+  `variant="drawer"` with native `showModal()` (free inert/trap/scroll-lock). Operator chose
+  **reuse the open Dialog** — mobile-nav repoints to it, the hand-rolled ui-pro Drawer is
+  deleted before #167 merges. Supersedes 0295's mechanism; the repoint enforcement stands.
 
 **In flight at write time:** the UI-primitives builder (ADR-0291) · the media PR #165 (review
 fixes pushed, CI pending) · PR #166 bot content-gap (opus review running) · the create-caisson

@@ -7,8 +7,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, test } from "bun:test";
 import { LocalArtifactStore, S3ArtifactStore } from "@caisson/audit-worm";
+import { BUNDLE_IDS } from "@caisson/registry-schema";
 import {
   denySetPublisher,
+  grantableEntitlementIds,
   registryIndex,
   serializePublish,
   wormStore,
@@ -129,4 +131,17 @@ test("G38: a failing publish attempt never wedges the chain — the next attempt
   await expect(first).rejects.toThrow("simulated PUT failure");
   await second;
   expect(order).toEqual(["first", "second"]);
+});
+
+// registryIndex() caches on first call for the life of the process (see its own doc comment), so
+// this test asserts only on what holds true REGARDLESS of which index a sibling test in this same
+// file already cached: every bundle id is present, sorted, and deduped — not the exact indexed
+// module set (which depends on load order the cache makes untestable in isolation here).
+test("grantableEntitlementIds (G42) includes every bundle id, sorted and deduped", () => {
+  const ids = grantableEntitlementIds();
+  for (const bundleId of BUNDLE_IDS) {
+    expect(ids).toContain(bundleId);
+  }
+  expect(ids).toEqual([...ids].sort());
+  expect(new Set(ids).size).toBe(ids.length);
 });
