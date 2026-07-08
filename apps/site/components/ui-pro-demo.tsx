@@ -1,10 +1,11 @@
 "use client";
 
-// Live @caisson/ui-pro demo for the ui-pro module's `interactive` media slide — two real premium
-// components (the advanced data grid + the hash-chain audit timeline) driven by small sample data, so
-// the buyer sees the actual product, not a placeholder. Loaded via next/dynamic (ssr: false) from the
-// media carousel so this commercial-tier tree never lands in the shared client bundle. Default
-// export = the shape next/dynamic imports.
+// The ui-pro module's `component` media slide (ADR-0290) — two real premium @caisson/ui-pro
+// components (the advanced data grid + the hash-chain audit timeline) rendered live with static
+// sample data, so the buyer sees the actual product, not a placeholder. No sort/filter/export props
+// are wired: a slide never pulls interactive state, it's a still frame of a real component. Loaded
+// via next/dynamic (ssr: false) from the media carousel so this commercial-tier tree never lands in
+// the shared client bundle. Default export = the shape next/dynamic imports.
 
 import {
   AuditTimeline,
@@ -13,6 +14,8 @@ import {
   type DataTableProColumn,
 } from "@caisson/ui-pro/components";
 
+import { MediaFrame } from "./media-frame";
+
 interface UsageRow {
   tenant: string;
   calls: number;
@@ -20,28 +23,18 @@ interface UsageRow {
 }
 
 const COLUMNS: readonly DataTableProColumn<UsageRow>[] = [
-  {
-    key: "tenant",
-    header: "Tenant",
-    render: (r) => r.tenant,
-    sortable: true,
-    filterable: true,
-  },
+  { key: "tenant", header: "Tenant", render: (r) => r.tenant },
   {
     key: "calls",
     header: "Calls",
     numeric: true,
     render: (r) => r.calls.toLocaleString("en-US"),
-    value: (r) => r.calls,
-    sortable: true,
   },
   {
     key: "spend",
     header: "Spend",
     numeric: true,
     render: (r) => `$${r.spend}`,
-    value: (r) => r.spend,
-    sortable: true,
   },
 ];
 
@@ -80,20 +73,27 @@ const AUDIT: readonly AuditEntry[] = [
 
 export default function UiProDemo() {
   return (
-    <div style={{ display: "grid", gap: "var(--cs-space-4)" }}>
-      <DataTablePro
-        columns={COLUMNS}
-        rows={ROWS}
-        rowKey={(r) => r.tenant}
-        dense
-        viewportHeight={180}
-        exportFileName="usage.csv"
-      />
-      <AuditTimeline
-        entries={AUDIT}
-        verifyLinks
-        ariaLabel="Sample hash-chained audit timeline"
-      />
-    </div>
+    <MediaFrame label="ui-pro · live components">
+      <div
+        style={{
+          display: "grid",
+          gap: "var(--cs-space-4)",
+          padding: "var(--cs-space-6)",
+        }}
+      >
+        <DataTablePro
+          columns={COLUMNS}
+          rows={ROWS}
+          rowKey={(r) => r.tenant}
+          dense
+          viewportHeight={180}
+        />
+        <AuditTimeline
+          entries={AUDIT}
+          verifyLinks
+          ariaLabel="Sample hash-chained audit timeline"
+        />
+      </div>
+    </MediaFrame>
   );
 }

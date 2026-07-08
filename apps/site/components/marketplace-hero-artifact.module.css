@@ -1,28 +1,8 @@
-/* Marketplace hero artifact (ADR-0285) — the "six bundles → one audited base" diagram filling the
- * Hero's right half. Framed like the homepage terminals (chrome bar + body); every value a --cs-*
- * token, theme-aware by cascade. */
-
-.frame {
-  border: 1px solid var(--cs-border);
-  border-radius: var(--cs-radius-lg);
-  background: var(--cs-surface-1);
-  box-shadow: var(--cs-shadow-lg);
-  overflow: hidden;
-}
-
-/* Chrome bar — mirrors .cs-terminal__bar. */
-.bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--cs-space-2) var(--cs-space-3);
-  padding: var(--cs-space-3) var(--cs-space-4);
-  border-bottom: 1px solid var(--cs-border);
-  background: var(--cs-surface-2);
-  font-family: var(--cs-font-mono);
-  font-size: var(--cs-text-xs);
-  color: var(--cs-fg-muted);
-}
+/* Marketplace hero artifact (ADR-0285, parametrized by ADR-0290) — the "N chips → one audited base"
+ * composition body: the whole-catalog hero (six bundles) and a single bundle's real member modules
+ * both render this same body inside <MediaFrame>'s chrome (media-frame.tsx owns the bar/frame chrome
+ * now — this module keeps only the composition-specific content below). Every value a --cs-* token,
+ * theme-aware by cascade. */
 
 .barChip {
   display: inline-flex;
@@ -44,7 +24,8 @@
   padding: var(--cs-space-6);
 }
 
-/* The six bundle chips — two columns, each a mono pill with its bespoke mark. */
+/* The composed-item chips (six bundles, or one bundle's member modules) — two columns, each a mono
+ * pill with its bespoke mark. */
 .bundles {
   list-style: none;
   margin: 0;

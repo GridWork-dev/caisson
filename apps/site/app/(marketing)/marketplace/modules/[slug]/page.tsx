@@ -99,13 +99,17 @@ function bodySections(record: ModulePageRecord): readonly PageSection[] {
       code: record.artifact.code,
     },
     {
-      // The media carousel (ADR-0285 §3) — the same authored-diagram / video / demo slides the card
-      // viewer shows, rendered here inline via a `custom` node (MediaCarousel is a client island).
+      // The media carousel (ADR-0285 §3) — the same authored-diagram / component / code-artifact
+      // slides the card viewer shows, rendered here inline via a `custom` node (MediaCarousel is a
+      // client island). `omitCodeArtifact` (ADR-0290 WR-03): the codeArtifact section above already
+      // renders `record.artifact` as a framed CodeBlock, so the carousel would otherwise repeat it.
       kind: "custom",
       node: (
         <Section eyebrow="Media" title="See it work">
           <MediaCarousel
-            slides={mediaSlides("module", record.slug)}
+            slides={mediaSlides("module", record.slug, {
+              omitCodeArtifact: true,
+            })}
             label={`${record.metaTitle} media`}
           />
         </Section>

@@ -19,8 +19,6 @@ import {
   SkuMatrix,
   StatusChip,
 } from "@/components";
-import { MediaPlaceholder } from "./media-placeholder";
-import { MediaVideo } from "./media-video";
 
 function renderSection(section: PageSection, key: number): ReactNode {
   switch (section.kind) {
@@ -131,29 +129,6 @@ function renderSection(section: PageSection, key: number): ReactNode {
               </Button>
             )}
           </div>
-        </Section>
-      );
-    }
-
-    case "media": {
-      // Real media when `src` is set (ADR-0263) — a self-hosted <video>, never a
-      // @remotion/player runtime embed. Otherwise the placeholder (ADR-0237 F2) — the shared
-      // <MediaPlaceholder> (also used by the hand-authored edition pages).
-      const { kind: _kind, icon, aspect, src, poster, ...header } = section;
-      return (
-        <Section key={key} {...header}>
-          {src !== undefined ? (
-            <MediaVideo
-              src={src}
-              {...(aspect !== undefined ? { aspect } : {})}
-              {...(poster !== undefined ? { poster } : {})}
-            />
-          ) : (
-            <MediaPlaceholder
-              {...(icon !== undefined ? { icon } : {})}
-              {...(aspect !== undefined ? { aspect } : {})}
-            />
-          )}
         </Section>
       );
     }
