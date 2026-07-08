@@ -24,7 +24,11 @@ const WORKER_OK = {
   schemaVersion: 1,
   modules: [{ id: "@caisson/kernel", latest: "1.2.0" }],
 };
-const licenseOk = { ok: true, indexDigest: REPO_DIGEST, indexEntries: 2 };
+// license and admin report the identical shape via the identical digest formula — one fixture
+// serves both legs whenever a test doesn't care about the difference between them.
+const healthOk = { ok: true, indexDigest: REPO_DIGEST, indexEntries: 2 };
+const licenseOk = healthOk;
+const adminOk = healthOk;
 
 describe("indexDigest12", () => {
   test("is sha256 first-12-hex and matches node crypto directly", () => {
@@ -45,12 +49,12 @@ describe("computeParity — parity holds", () => {
       repoBytes: REPO,
       licenseHealth: licenseOk,
       workerIndex: WORKER_OK,
+      adminHealthz: adminOk,
     });
     expect(r.drift).toBe(false);
     expect(r.rows.find((x) => x.leg === "license")?.status).toBe("ok");
     expect(r.rows.find((x) => x.leg === "worker")?.status).toBe("ok");
-    // Admin is always unprobeable and never itself sets drift.
-    expect(r.rows.find((x) => x.leg === "admin")?.status).toBe("unprobeable");
+    expect(r.rows.find((x) => x.leg === "admin")?.status).toBe("ok");
   });
 });
 
@@ -60,6 +64,7 @@ describe("computeParity — drift detection", () => {
       repoBytes: REPO,
       licenseHealth: { ok: true, indexDigest: "deadbeef0000", indexEntries: 2 },
       workerIndex: WORKER_OK,
+      adminHealthz: adminOk,
     });
     expect(r.drift).toBe(true);
     expect(r.rows.find((x) => x.leg === "license")?.status).toBe("drift");
@@ -70,8 +75,31 @@ describe("computeParity — drift detection", () => {
       repoBytes: REPO,
       licenseHealth: { ok: true },
       workerIndex: WORKER_OK,
+      adminHealthz: adminOk,
     });
     expect(r.rows.find((x) => x.leg === "license")?.status).toBe("drift");
+  });
+
+  test("admin digest mismatch ⇒ drift (the CAISSON-37 admin leg)", () => {
+    const r = computeParity({
+      repoBytes: REPO,
+      licenseHealth: licenseOk,
+      workerIndex: WORKER_OK,
+      adminHealthz: { ok: true, indexDigest: "deadbeef0000", indexEntries: 2 },
+    });
+    expect(r.drift).toBe(true);
+    expect(r.rows.find((x) => x.leg === "admin")?.status).toBe("drift");
+  });
+
+  test("admin /healthz unreachable ⇒ drift (cannot confirm parity)", () => {
+    const r = computeParity({
+      repoBytes: REPO,
+      licenseHealth: licenseOk,
+      workerIndex: WORKER_OK,
+      adminHealthz: null,
+    });
+    expect(r.drift).toBe(true);
+    expect(r.rows.find((x) => x.leg === "admin")?.status).toBe("unreachable");
   });
 
   test("worker serves a STALE version of a repo entry ⇒ drift", () => {
@@ -82,6 +110,7 @@ describe("computeParity — drift detection", () => {
         schemaVersion: 1,
         modules: [{ id: "@caisson/kernel", latest: "1.1.0" }],
       },
+      adminHealthz: adminOk,
     });
     expect(r.drift).toBe(true);
     expect(r.rows.find((x) => x.leg === "worker")?.detail).toContain(
@@ -97,6 +126,7 @@ describe("computeParity — drift detection", () => {
         schemaVersion: 1,
         modules: [{ id: "@caisson/ghost", latest: "9.9.9" }],
       },
+      adminHealthz: adminOk,
     });
     expect(r.drift).toBe(true);
     expect(r.rows.find((x) => x.leg === "worker")?.detail).toContain(
@@ -109,6 +139,7 @@ describe("computeParity — drift detection", () => {
       repoBytes: REPO,
       licenseHealth: null,
       workerIndex: WORKER_OK,
+      adminHealthz: adminOk,
     });
     expect(r.drift).toBe(true);
     expect(r.rows.find((x) => x.leg === "license")?.status).toBe("unreachable");
@@ -119,11 +150,13 @@ describe("computeParity — drift detection", () => {
       repoBytes: "{ not json",
       licenseHealth: licenseOk,
       workerIndex: WORKER_OK,
+      adminHealthz: adminOk,
     });
     expect(r.drift).toBe(true);
     expect(r.rows.find((x) => x.leg === "repo")?.detail).toContain(
       "UNPARSEABLE",
     );
+    expect(r.rows.find((x) => x.leg === "admin")?.detail).toContain("skipped");
   });
 });
 
@@ -134,10 +167,11 @@ describe("renderTable", () => {
         repoBytes: REPO,
         licenseHealth: licenseOk,
         workerIndex: WORKER_OK,
+        adminHealthz: adminOk,
       }),
     );
     expect(out).toContain("RESULT: PARITY OK");
     expect(out).toContain("admin");
-    expect(out).toContain("UNPROBEABLE");
+    expect(out).toContain("OK");
   });
 });
