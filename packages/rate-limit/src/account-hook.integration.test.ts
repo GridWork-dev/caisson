@@ -2,7 +2,16 @@
 // an under-limit account resolves (allow); an over-limit account throws RateLimitError (429, the
 // ONLY blocking path); and a STORE ERROR fails OPEN — the hook resolves (the tool would run) AND
 // signals an alert through the operator sink, never locking out a buyer.
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { RateLimitError } from "@caisson/kernel";
 import { type TestPg, newTestPg } from "@caisson/testing";
 import type { Transactor } from "@caisson/tenancy-rls";

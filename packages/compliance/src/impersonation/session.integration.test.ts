@@ -6,7 +6,16 @@
 // deterministic order; an impersonated context still cannot read outside the target tenant
 // (scope, never role); expired/ended sessions refuse fail-closed; and the migration's RLS block
 // mirrors `buildTenantPolicySql` with the narrowed column-scoped GRANT (drift guard).
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { randomUUID } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";

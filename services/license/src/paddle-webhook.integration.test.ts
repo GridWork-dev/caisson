@@ -4,7 +4,16 @@
 // webhook.integration.test.ts's Stripe coverage, but exercises the actual HMAC verifier + mapper
 // instead of a fakeProvider, since the Stripe<->Paddle swap is exactly the seam this guards.
 import { createHmac } from "node:crypto";
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { type TestPg, newTestPg } from "@caisson/testing";
 import {
   CREDIT_LINE_ITEM_MIGRATION_SQL,

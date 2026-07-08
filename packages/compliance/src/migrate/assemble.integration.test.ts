@@ -9,7 +9,16 @@
 // `MigrationApplier` port, proving the edition's assembled output is consumable by the canonical
 // forward-only runner (skip already-recorded versions; checksum drift on a recorded version is fatal,
 // ADR-0006).
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { randomUUID } from "node:crypto";
 import type { MergedMigration, MigrationAssembly } from "@caisson/kernel";
 import {

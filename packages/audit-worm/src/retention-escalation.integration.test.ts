@@ -5,7 +5,16 @@
 // `retention.escalated` record; a throwing chain sink fails the whole call LOUDLY (evidence gap —
 // the store change is already applied, by design); tenant-prefix and COMPLIANCE-capability
 // violations are refused fail-closed before anything mutates.
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { randomUUID } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
