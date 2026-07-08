@@ -17,8 +17,13 @@ import {
   beforeEach,
   describe,
   expect,
+  setDefaultTimeout,
   test,
 } from "bun:test";
+
+// PGlite under runner load regularly crosses the 5s default (observed 5.7-6.4s);
+// same treatment as the license integration suites.
+setDefaultTimeout(30_000);
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { InsufficientCreditsError, asCredits } from "@caisson/kernel";
 import { withTenant } from "@caisson/tenancy-rls";
