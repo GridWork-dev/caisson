@@ -695,6 +695,10 @@ describe("applyBillingEvent — one-time purchase grant (ADR-0113)", () => {
   // mechanism (a schema addition) — the Linear ticket itself leaves the exact fix shape ("a
   // subscription-liveness check at grant time" vs "a cancel tombstone per subscription id") as an
   // open fork for the operator to pick, so it is documented here rather than auto-decided.
+  // IN-02 (PR #182 review): there is NO automatic recovery for this residual — no subscription-
+  // liveness reconcile job exists anywhere in this codebase. The stray active grant persists until
+  // an operator notices and acts through the existing admin `purchase_revoke`/`revokeEntitlementAdmin`
+  // lever; it does not self-heal on its own.
   test("CAISSON-25: a late (out-of-order) renewal-cycle invoice.paid for an ALREADY-canceled subscription never resurrects the revoked entitlement", async () => {
     const acct = "acct_late_invoice_after_cancel";
     // Cycle 1 grants the plan's entitlement under subscription "sub_1" (the invoicePaid() fixture).

@@ -392,6 +392,11 @@ async function issueOrReuseLicense(
 
   // Window-changed RE-MINT (ADR-0251 Decision 3): a stored grant exists but its signed window is
   // stale — replace the stored row's token in place (still exactly one row per (account, major)).
+  // IN-01 (PR #182 review): a mint that hit the `withDeadline` timeout but keeps running in the
+  // background (abandoned, not canceled) can still land HERE late — if two renewals for the SAME
+  // account race within seconds, the late one's UPDATE can clobber a newer token with a stale one.
+  // Self-heals on the account's next renewal event; only reachable once a slow KMS signer replaces
+  // the current instant local Ed25519 signer (which never triggers the deadline in the first place).
   if (existing !== null) {
     await withTenant(deps.db, accountId, (tx) =>
       updateLicenseGrantToken(tx, {
@@ -434,9 +439,12 @@ async function issueOrReuseLicense(
 }
 
 // PR #177 review IN-02: the local Ed25519 signer never blocks, but a future KMS-backed `Signer`
-// could — and `mintLicensePostCommit` is AWAITED inline in the webhook response path, so an
-// unbounded signer call would risk pushing the whole delivery past Paddle's own webhook timeout.
-// 5s comfortably covers a real KMS round trip while staying well inside that budget.
+// could — and `mintLicensePostCommit` is AWAITED inline in the webhook response path. This bounds
+// an otherwise-INFINITE hang and preserves the never-5xx contract (the mint always resolves one way
+// or another within this window). It does NOT guarantee the response stays inside Paddle's own ~5s
+// total webhook timeout on a slow signer: this deadline stacks on top of the grant transaction that
+// already ran before it, so a slow signer can still push the delivery past Paddle's window — Paddle
+// then retries, which is benign (both the grant and the mint are idempotent), not silent data loss.
 const MINT_POST_COMMIT_TIMEOUT_MS = 5_000;
 
 /**
