@@ -5,7 +5,7 @@
 // — it runs on every buyer login (apps/site getSession), so it must never sit behind the org-controls
 // entitlement. `AccountMembership` + `Role` are re-used from @caisson/auth (their canonical home);
 // this package composes DOWN onto the open auth + tenancy-rls substrates (commercial → open, allowed).
-import { AuthzError } from "@caisson/kernel";
+import { AuthzError, ValidationError } from "@caisson/kernel";
 import { withTenant, type Transactor } from "@caisson/tenancy-rls";
 import type { AccountMembership, Role } from "@caisson/auth";
 
@@ -59,6 +59,35 @@ export async function addAccountMember(
       `INSERT INTO account_member (account_id, user_id, role)
        VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
       [accountId, userId, role],
+    );
+  });
+}
+
+/**
+ * An owner removes a member's seat (G15 — offboarding never shipped; the schema has GRANTed DELETE
+ * on `account_member` since ADR-0176, unused until now). Owner-gated (`assertCanManageMembers`,
+ * same authz as `addAccountMember`) and self-removal is refused so an owner can never lock
+ * themselves out of their own account through this control (the personal-account row where
+ * `accountId === userId` is exempt for the same reason — it is not a seat to remove). Idempotent:
+ * removing an id that is not a member is a no-op, not an error. Tenant-scoped write.
+ */
+export async function removeAccountMember(
+  db: Transactor,
+  actorRole: Role,
+  actorUserId: string,
+  accountId: string,
+  targetUserId: string,
+): Promise<void> {
+  assertCanManageMembers(actorRole);
+  if (targetUserId === actorUserId) {
+    throw new ValidationError("You cannot remove yourself from an account", {
+      field: "userId",
+    });
+  }
+  await withTenant(db, accountId, async (tx) => {
+    await tx.query(
+      `DELETE FROM account_member WHERE account_id = $1 AND user_id = $2`,
+      [accountId, targetUserId],
     );
   });
 }
