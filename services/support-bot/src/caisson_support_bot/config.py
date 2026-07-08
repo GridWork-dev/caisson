@@ -132,6 +132,15 @@ class Settings(BaseSettings):
         "refuses rather than guessing a server.",
     )
 
+    # --- optional site escalation inbound (parity with the Discord bot's own escalation sink) ---
+    site_escalate_token: str | None = Field(
+        default=None,
+        description="Bearer expected on POST /escalate (pushed by apps/site when its Ask-AI widget "
+        "cannot answer a question). Files the same Linear Triage issue + support_ticket row the "
+        "Discord bot's own escalations do. The route is NOT served when unset (fail-closed) — the "
+        "bot runs unaffected. Must match SUPPORT_BOT_ESCALATE_TOKEN on caisson-site.",
+    )
+
     # --- optional persistence ---
     database_url: str | None = Field(
         default=None,

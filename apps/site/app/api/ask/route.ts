@@ -6,10 +6,18 @@
 // from server-only env: DOCS_SERVICE_TOKEN, OPENROUTER_API_KEY, TURNSTILE_SECRET never reach the browser.
 import { getSession } from "@/lib/auth";
 import { getDb } from "@/lib/db";
-import { type AskDeps, handleAsk } from "@/lib/ask-ai/handler";
+import {
+  type AskDeps,
+  type EscalationReason,
+  handleAsk,
+} from "@/lib/ask-ai/handler";
 import { logQuestion } from "@/lib/ask-ai/question-log";
 import { retrieveChunks } from "@/lib/ask-ai/retrieve";
 import { streamOpenRouter } from "@/lib/ask-ai/openrouter";
+import {
+  loadSiteEscalateConfig,
+  pushSiteEscalation,
+} from "@/lib/ask-ai/site-escalate";
 import {
   reserveSpendMicro,
   resolveDailyCapMicro,
@@ -36,6 +44,7 @@ function buildDeps(): AskDeps {
     secret: process.env.TURNSTILE_SECRET,
     isProduction: process.env.NODE_ENV === "production",
   });
+  const escalateConfig = loadSiteEscalateConfig();
   return {
     verifyTurnstile,
     isAuthed: async () => (await getSession()) !== null,
@@ -67,6 +76,16 @@ function buildDeps(): AskDeps {
     capture: async (lane, question, outcome) => {
       await logQuestion(await getDb(), lane, question, outcome);
     },
+    // G21: ticket parity with the Discord bot's own escalations. `exactOptionalPropertyTypes` means
+    // the key must be OMITTED (not set to `undefined`) when the push is unconfigured, so the
+    // optional dep is spread in rather than assigned a possibly-undefined value.
+    ...(escalateConfig !== null
+      ? {
+          escalate: async (question: string, reason: EscalationReason) => {
+            await pushSiteEscalation(escalateConfig, question, reason);
+          },
+        }
+      : {}),
   };
 }
 

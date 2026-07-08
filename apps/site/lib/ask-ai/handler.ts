@@ -80,6 +80,12 @@ export interface AskDeps {
     question: string,
     outcome: "answered" | "escalated",
   ) => Promise<void>;
+  /** File a support ticket for a question the assistant could not answer (G21 parity — the Discord
+   * bot's own unresolved questions already get this treatment). Called once per genuinely-unanswered
+   * request (never on `spend_cap`, a capacity signal, not a question a human needs to see — see the
+   * call site). Best-effort; a failure never reaches the response. Optional for the same reason as
+   * `capture`. */
+  escalate?: (question: string, reason: EscalationReason) => Promise<void>;
 }
 
 const SECURITY_HEADERS: Record<string, string> = {
@@ -154,7 +160,9 @@ export async function handleAsk(
           encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
         );
       };
+      let escalationReason: EscalationReason | undefined;
       const escalate = (reason: EscalationReason): void => {
+        escalationReason = reason;
         emit("escalation", { reason });
       };
 
@@ -232,6 +240,20 @@ export async function handleAsk(
           await deps.capture?.(lane, question, outcome);
         } catch {
           /* best-effort */
+        }
+        // G21: file a support ticket for a genuinely-unanswered question — never for `spend_cap`,
+        // which is a capacity signal (a traffic burst tripping the daily budget), not a question a
+        // human needs to follow up on; ticketing every cap-hit would flood Triage during a burst.
+        if (
+          outcome === "escalated" &&
+          escalationReason !== undefined &&
+          escalationReason !== "spend_cap"
+        ) {
+          try {
+            await deps.escalate?.(question, escalationReason);
+          } catch {
+            /* best-effort */
+          }
         }
         // Settle the reservation with the real cost (0 when no generation happened at all — e.g.
         // retrieval failed after the reservation was granted, fully releasing it). Only when a
