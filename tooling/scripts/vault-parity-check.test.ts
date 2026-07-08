@@ -3,7 +3,9 @@ import { describe, expect, test } from "bun:test";
 import {
   computeParity,
   extractEnvNames,
+  filterNonEnv,
   isClean,
+  NON_ENV_TAG,
   parseArgv,
   parseVaultItems,
   printReport,
@@ -54,14 +56,27 @@ describe("parseVaultItems", () => {
     ];
     const items = parseVaultItems(raw);
     expect(items).toEqual([
-      { title: "OPENROUTER_API_KEY", updatedAt: "2026-06-01T00:00:00Z" },
-      { title: "DISCORD_TOKEN", updatedAt: "2026-07-01T00:00:00Z" },
+      {
+        title: "OPENROUTER_API_KEY",
+        updatedAt: "2026-06-01T00:00:00Z",
+        tags: [],
+      },
+      { title: "DISCORD_TOKEN", updatedAt: "2026-07-01T00:00:00Z", tags: [] },
     ]);
   });
 
   test("missing updated_at parses to null, not a throw", () => {
     const items = parseVaultItems([{ title: "RESEND_API_KEY" }]);
-    expect(items).toEqual([{ title: "RESEND_API_KEY", updatedAt: null }]);
+    expect(items).toEqual([
+      { title: "RESEND_API_KEY", updatedAt: null, tags: [] },
+    ]);
+  });
+
+  test("tags are carried through when present", () => {
+    const items = parseVaultItems([
+      { title: "MIRROR_PUSH_TOKEN", tags: [NON_ENV_TAG, "gh-actions"] },
+    ]);
+    expect(items[0]?.tags).toEqual([NON_ENV_TAG, "gh-actions"]);
   });
 
   test("empty list parses to an empty array", () => {
@@ -77,7 +92,7 @@ describe("parseVaultItems", () => {
 
 describe("computeParity", () => {
   const items = (titles: string[]): VaultItem[] =>
-    titles.map((title) => ({ title, updatedAt: null }));
+    titles.map((title) => ({ title, updatedAt: null, tags: [] }));
 
   test("no drift when the name sets match exactly", () => {
     const report = computeParity(["A", "B"], items(["A", "B"]));
@@ -103,7 +118,7 @@ describe("computeParity", () => {
 
   test("stale is empty when no --rotated-after is given, even with old timestamps", () => {
     const old: VaultItem[] = [
-      { title: "A", updatedAt: "2020-01-01T00:00:00Z" },
+      { title: "A", updatedAt: "2020-01-01T00:00:00Z", tags: [] },
     ];
     const report = computeParity(["A"], old);
     expect(report.stale).toEqual([]);
@@ -111,9 +126,9 @@ describe("computeParity", () => {
 
   test("items updated before rotatedAfter are reported stale", () => {
     const mixed: VaultItem[] = [
-      { title: "OLD", updatedAt: "2020-01-01T00:00:00Z" },
-      { title: "NEW", updatedAt: "2026-07-01T00:00:00Z" },
-      { title: "UNKNOWN", updatedAt: null },
+      { title: "OLD", updatedAt: "2020-01-01T00:00:00Z", tags: [] },
+      { title: "NEW", updatedAt: "2026-07-01T00:00:00Z", tags: [] },
+      { title: "UNKNOWN", updatedAt: null, tags: [] },
     ];
     const report = computeParity(
       ["OLD", "NEW", "UNKNOWN"],
@@ -131,7 +146,7 @@ describe("printReport — the value-safety guard", () => {
     // has no code branch capable of emitting anything but the strings it's handed.
     const report = computeParity(
       ["OPENROUTER_API_KEY", "DISCORD_TOKEN"],
-      [{ title: "OPENROUTER_API_KEY", updatedAt: null }],
+      [{ title: "OPENROUTER_API_KEY", updatedAt: null, tags: [] }],
     );
     const chunks: string[] = [];
     printReport(report, (s) => chunks.push(s));
@@ -142,6 +157,32 @@ describe("printReport — the value-safety guard", () => {
     // No fixture ever carries a value string, so this also asserts the function signature never
     // grows a path that could: only names/dates ever reach `write`.
     expect(output).not.toContain("sk-");
+  });
+});
+
+describe("filterNonEnv", () => {
+  test("drops non-env-tagged items and keeps everything else, including other tags", () => {
+    const kept: VaultItem = {
+      title: "PADDLE_API_KEY",
+      updatedAt: null,
+      tags: ["caisson-license"],
+    };
+    const dropped: VaultItem = {
+      title: "MIRROR_PUSH_TOKEN",
+      updatedAt: null,
+      tags: ["gh-actions", NON_ENV_TAG],
+    };
+    expect(filterNonEnv([kept, dropped])).toEqual([kept]);
+  });
+
+  test("a non-env item never surfaces as missingFromEnv after filtering", () => {
+    const items: VaultItem[] = [
+      { title: "OPENROUTER_API_KEY", updatedAt: null, tags: [] },
+      { title: "MIRROR_PUSH_TOKEN", updatedAt: null, tags: [NON_ENV_TAG] },
+    ];
+    const report = computeParity(["OPENROUTER_API_KEY"], filterNonEnv(items));
+    expect(report.missingFromEnv).toEqual([]);
+    expect(isClean(report)).toBe(true);
   });
 });
 
