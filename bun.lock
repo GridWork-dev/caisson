@@ -32,7 +32,6 @@
         "@caisson/demo-registry": "workspace:*",
         "@caisson/email": "workspace:*",
         "@caisson/kernel": "workspace:*",
-        "@caisson/migrate": "workspace:*",
         "@caisson/observability": "workspace:*",
         "@caisson/org-controls": "workspace:*",
         "@caisson/platform-migrations": "workspace:*",
@@ -198,7 +197,6 @@
         "@caisson/ai-meter": "workspace:*",
         "@caisson/auth": "workspace:*",
         "@caisson/billing": "workspace:*",
-        "@caisson/billing-orchestration": "workspace:*",
         "@caisson/brand": "workspace:*",
         "@caisson/credits": "workspace:*",
         "@caisson/email": "workspace:*",
@@ -1045,9 +1043,16 @@
         "@caisson/eslint-config": "workspace:*",
         "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
+        "@electric-sql/pglite": "catalog:",
         "eslint": "catalog:",
         "typescript": "catalog:",
       },
+      "peerDependencies": {
+        "@electric-sql/pglite": "*",
+      },
+      "optionalPeers": [
+        "@electric-sql/pglite",
+      ],
     },
     "packages/platform-reads": {
       "name": "@caisson/platform-reads",

@@ -16,9 +16,8 @@
 // provisioned on the Railway PG at DEPLOY (buildAdminReadPolicySql output, ADR-0141) — never by
 // this app.
 import { PGlite } from "@electric-sql/pglite";
-import type { MergedMigration } from "@caisson/kernel";
-import type { MigrationApplier } from "@caisson/migrate";
 import { applyAll } from "@caisson/platform-migrations";
+import { pgliteMigrationApplier } from "@caisson/platform-migrations/pglite";
 import {
   ADMIN_ACTION_LOG_SCHEMA_SQL,
   ADMIN_MUTATION_PROVISION_SQL,
@@ -33,44 +32,6 @@ import {
   withAdminRead,
 } from "./admin-read.ts";
 import { INTEL_ADMIN_READ_GRANT_SQL, INTEL_SCHEMA_SQL } from "./intel-read.ts";
-
-/** The DB-side `schema_version` ledger (ADR-0014) the shared chain's runner records against — same
- *  shape as `@caisson/migrate/pg`'s `pgMigrationApplier`, wired to PGlite's own query/transaction
- *  API instead of a node-postgres `Pool` (PGlite has no `.connect()`; every PGlite consumer in this
- *  repo writes its own small applier this way — see packages/compliance's integration test). */
-const SCHEMA_VERSION_DDL = `CREATE TABLE IF NOT EXISTS schema_version (
-  version    integer     PRIMARY KEY,
-  checksum   text        NOT NULL,
-  applied_at timestamptz NOT NULL DEFAULT now()
-);`;
-
-function pgliteMigrationApplier(pg: PGlite): MigrationApplier {
-  let ensured = false;
-  const ensure = async (): Promise<void> => {
-    if (ensured) return;
-    await pg.exec(SCHEMA_VERSION_DDL);
-    ensured = true;
-  };
-  return {
-    async applied() {
-      await ensure();
-      const res = await pg.query<{ version: number; checksum: string }>(
-        "SELECT version, checksum FROM schema_version ORDER BY version",
-      );
-      return res.rows;
-    },
-    async apply(migration: MergedMigration) {
-      await ensure();
-      await pg.transaction(async (tx) => {
-        await tx.exec(migration.sql);
-        await tx.query(
-          "INSERT INTO schema_version (version, checksum) VALUES ($1, $2)",
-          [migration.seq, migration.checksum],
-        );
-      });
-    },
-  };
-}
 
 // The audit-chain table (ADR-0052) the WORM dual-log half appends to, byte-mirrored from
 // @caisson/audit-worm's `migrations/0001_audit_chain.sql` for the DEV DOUBLE ONLY (append-only by

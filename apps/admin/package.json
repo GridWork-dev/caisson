@@ -21,7 +21,6 @@
     "@caisson/demo-registry": "workspace:*",
     "@caisson/email": "workspace:*",
     "@caisson/kernel": "workspace:*",
-    "@caisson/migrate": "workspace:*",
     "@caisson/observability": "workspace:*",
     "@caisson/org-controls": "workspace:*",
     "@caisson/platform-migrations": "workspace:*",

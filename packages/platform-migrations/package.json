@@ -6,7 +6,8 @@
   "license": "LicenseRef-Caisson-Commercial",
   "description": "The ONE ordered platform migration chain (CAISSON-21). Extracted from apps/site/lib/deploy-migrate.ts's platformPackage(), which used to be the sole owner, hand-mirrored by apps/admin's PGlite bootstrap by SQL-constant name — a drift class that already bit once (CAISSON-11). Both consumers now assemble/apply the SAME ordered array via `platformMigrationsPackage`/`applyAll`, so a new migration lands for both or neither. Never published — private, internal engineering plumbing.",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./pglite": "./src/pglite-applier.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -22,10 +23,19 @@
     "@caisson/migrate": "workspace:*",
     "@caisson/service-license": "workspace:*"
   },
+  "peerDependencies": {
+    "@electric-sql/pglite": "*"
+  },
+  "peerDependenciesMeta": {
+    "@electric-sql/pglite": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
+    "@electric-sql/pglite": "catalog:",
     "eslint": "catalog:",
     "typescript": "catalog:"
   }
