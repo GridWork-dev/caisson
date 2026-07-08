@@ -50,7 +50,7 @@ describe("pricing corpus (real SOT)", () => {
     idx.close();
   });
 
-  // CAISSON-43: the support bot escalated "what's in the compliance bundle" as unanswerable — the
+  // the support bot escalated "what's in the compliance bundle" as unanswerable — the
   // real SOT's compliance-bundle chunk must name its real member modules (id + a one-line
   // description), not just the bundle's own price, so this single chunk answers the question.
   test("the real compliance-bundle chunk names its real member modules", async () => {

@@ -48,7 +48,7 @@ describe("buildCorpus (real repo)", () => {
     expect(full).not.toContain("not sellable");
   });
 
-  // CAISSON-43: the support bot escalated "how do I use the CLI with my AI agent after purchasing"
+  // the support bot escalated "how do I use the CLI with my AI agent after purchasing"
   // as unanswerable — the getting-started quickstart chunk must cover both the post-purchase CLI
   // install and how an AI agent drives Caisson (shelling out to the CLI or the MCP server).
   test("the quickstart doc covers post-purchase CLI install and AI-agent usage", () => {
