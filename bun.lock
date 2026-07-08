@@ -34,6 +34,7 @@
         "@caisson/kernel": "workspace:*",
         "@caisson/observability": "workspace:*",
         "@caisson/org-controls": "workspace:*",
+        "@caisson/platform-migrations": "workspace:*",
         "@caisson/platform-reads": "workspace:*",
         "@caisson/registry-schema": "workspace:*",
         "@caisson/service-license": "workspace:*",
@@ -196,7 +197,6 @@
         "@caisson/ai-meter": "workspace:*",
         "@caisson/auth": "workspace:*",
         "@caisson/billing": "workspace:*",
-        "@caisson/billing-orchestration": "workspace:*",
         "@caisson/brand": "workspace:*",
         "@caisson/credits": "workspace:*",
         "@caisson/email": "workspace:*",
@@ -205,6 +205,7 @@
         "@caisson/migrate": "workspace:*",
         "@caisson/observability": "workspace:*",
         "@caisson/org-controls": "workspace:*",
+        "@caisson/platform-migrations": "workspace:*",
         "@caisson/platform-reads": "workspace:*",
         "@caisson/pricebook": "workspace:*",
         "@caisson/registry-schema": "workspace:*",
@@ -1026,6 +1027,33 @@
         "typescript": "catalog:",
       },
     },
+    "packages/platform-migrations": {
+      "name": "@caisson/platform-migrations",
+      "version": "0.1.0",
+      "dependencies": {
+        "@caisson/ai-meter": "workspace:*",
+        "@caisson/auth": "workspace:*",
+        "@caisson/billing-orchestration": "workspace:*",
+        "@caisson/credits": "workspace:*",
+        "@caisson/kernel": "workspace:*",
+        "@caisson/migrate": "workspace:*",
+        "@caisson/service-license": "workspace:*",
+      },
+      "devDependencies": {
+        "@caisson/eslint-config": "workspace:*",
+        "@caisson/testing": "workspace:*",
+        "@caisson/tsconfig": "workspace:*",
+        "@electric-sql/pglite": "catalog:",
+        "eslint": "catalog:",
+        "typescript": "catalog:",
+      },
+      "peerDependencies": {
+        "@electric-sql/pglite": "*",
+      },
+      "optionalPeers": [
+        "@electric-sql/pglite",
+      ],
+    },
     "packages/platform-reads": {
       "name": "@caisson/platform-reads",
       "version": "0.1.6",
@@ -1640,6 +1668,8 @@
     "@caisson/observability": ["@caisson/observability@workspace:packages/observability"],
 
     "@caisson/org-controls": ["@caisson/org-controls@workspace:packages/org-controls"],
+
+    "@caisson/platform-migrations": ["@caisson/platform-migrations@workspace:packages/platform-migrations"],
 
     "@caisson/platform-reads": ["@caisson/platform-reads@workspace:packages/platform-reads"],
 

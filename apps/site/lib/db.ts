@@ -14,17 +14,17 @@
 // not expose the underlying `PoolClient` (only the top-level `db.$client` does), so a manual
 // BEGIN/COMMIT/ROLLBACK over `pool.connect()` is the only way to hand `withTenant` a real,
 // transaction-scoped `SET LOCAL ROLE` connection.
+//
+// The PGlite double applies the REAL platform migration chain (@caisson/platform-migrations,
+// CAISSON-21) — the SAME shared chain apps/site/lib/deploy-migrate.ts applies to a live Postgres
+// and apps/admin/src/lib/admin-db.ts applies to its own double — PLUS this app's own local extras
+// (BYOK metadata, compliance attestations, the Ask-AI counters). This used to be a hand-copied,
+// differently-ordered subset of the same schema constants (missing the 0013 RLS empty-GUC guard
+// and the 0017 renewal_extension ledger entirely) — the THIRD hand-mirror of the platform chain,
+// closed by routing through the same `applyAll` the other two consumers use.
 import { PGlite } from "@electric-sql/pglite";
-import { AI_METER_SCHEMA_SQL } from "@caisson/ai-meter";
-import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
-import { PROCESSED_EVENT_SCHEMA_SQL } from "@caisson/billing-orchestration";
-import {
-  CREDIT_EXPIRY_MIGRATION_SQL,
-  CREDIT_LINE_ITEM_MIGRATION_SQL,
-  CREDIT_ROUNDING_MIGRATION_SQL,
-  CREDIT_SCHEMA_SQL,
-  GRANT_CONSUMPTION_MIGRATION_SQL,
-} from "@caisson/credits";
+import { type MigrationFile, applyAll } from "@caisson/platform-migrations";
+import { pgliteMigrationApplier } from "@caisson/platform-migrations/pglite";
 import {
   type TenantExecutor,
   type Transactor,
@@ -34,34 +34,11 @@ import {
 import { TENANT_AI_CREDENTIAL_SCHEMA_SQL } from "@caisson/ai-kit";
 import { ASK_AI_QUESTION_SCHEMA_SQL } from "./ask-ai/question-log.ts";
 import { ASK_AI_SPEND_SCHEMA_SQL } from "./ask-ai/spend.ts";
-// Schema-only import — the DDL string constants, NOT services/license's query functions. apps/
-// site never calls into `@caisson/service-license`'s business logic; every dashboard read against
-// `entitlement_grant` / `license_grant` below is raw SQL written locally (the deliberately
-// flagged cross-service-table coupling — see lib/dashboard-reads.ts) so the app and the license
-// service stay independently deployable. Reusing the DDL strings here avoids a THIRD hand-copy of
-// the same schema drifting out of sync with the other two (services/license, its integration
-// tests).
-import {
-  ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
-  ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
-  ENTITLEMENT_SCHEMA_SQL,
-  LICENSE_GRANT_SCHEMA_SQL,
-  ORDER_RECORD_SCHEMA_SQL,
-  SUBSCRIPTION_STATUS_SCHEMA_SQL,
-} from "@caisson/service-license";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool, type PoolClient } from "pg";
 
 export type { TenantExecutor, Transactor };
 export { withTenant };
-
-const APP_ROLE_BOOTSTRAP_SQL = `
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app') THEN
-    CREATE ROLE app NOLOGIN;
-  END IF;
-END $$;
-`;
 
 // App-owned, tenant-scoped (FORCE RLS) tables the dashboard writes directly. In production these are
 // created by the deploy migration path; the DDL here bootstraps the in-memory PGlite double for
@@ -148,30 +125,28 @@ interface PlatformDbGlobal {
 }
 const globalDb = globalThis as unknown as PlatformDbGlobal;
 
+/** This app's own local migrations, folded onto the shared chain — named `0020` and up so they land
+ *  AFTER the shared chain's own `0019_order_record.sql` (see @caisson/platform-migrations's
+ *  `platformMigrationsPackage` doc); nothing here depends on ordering relative to its siblings,
+ *  only on the app role + tenant-policy machinery the shared chain's `0001` already established. */
+const SITE_LOCAL_MIGRATIONS: readonly MigrationFile[] = [
+  {
+    name: "0020_tenant_ai_credential.sql",
+    sql: TENANT_AI_CREDENTIAL_SCHEMA_SQL,
+  },
+  { name: "0021_byok_key_meta.sql", sql: BYOK_KEY_META_SCHEMA_SQL },
+  {
+    name: "0022_compliance_attestation.sql",
+    sql: COMPLIANCE_ATTESTATION_SCHEMA_SQL,
+  },
+  { name: "0023_ask_ai_spend.sql", sql: ASK_AI_SPEND_SCHEMA_SQL },
+  { name: "0024_ask_ai_question.sql", sql: ASK_AI_QUESTION_SCHEMA_SQL },
+];
+
 async function bootstrapPglite(): Promise<PGlite> {
   if (globalDb.caissonPglite) return globalDb.caissonPglite;
   const pg = new PGlite();
-  await pg.exec(APP_ROLE_BOOTSTRAP_SQL);
-  await pg.exec(ACCOUNT_MEMBER_SCHEMA_SQL);
-  await pg.exec(CREDIT_SCHEMA_SQL);
-  await pg.exec(CREDIT_ROUNDING_MIGRATION_SQL);
-  await pg.exec(CREDIT_LINE_ITEM_MIGRATION_SQL);
-  await pg.exec(CREDIT_EXPIRY_MIGRATION_SQL);
-  await pg.exec(GRANT_CONSUMPTION_MIGRATION_SQL);
-  await pg.exec(PROCESSED_EVENT_SCHEMA_SQL);
-  await pg.exec(ENTITLEMENT_SCHEMA_SQL);
-  await pg.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
-  await pg.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
-  await pg.exec(LICENSE_GRANT_SCHEMA_SQL);
-  // ADR-0293: the G13 subscription-status signal + the G26 order/invoice ledger.
-  await pg.exec(SUBSCRIPTION_STATUS_SCHEMA_SQL);
-  await pg.exec(ORDER_RECORD_SCHEMA_SQL);
-  await pg.exec(AI_METER_SCHEMA_SQL);
-  await pg.exec(TENANT_AI_CREDENTIAL_SCHEMA_SQL);
-  await pg.exec(BYOK_KEY_META_SCHEMA_SQL);
-  await pg.exec(COMPLIANCE_ATTESTATION_SCHEMA_SQL);
-  await pg.exec(ASK_AI_SPEND_SCHEMA_SQL);
-  await pg.exec(ASK_AI_QUESTION_SCHEMA_SQL);
+  await applyAll(pgliteMigrationApplier(pg), SITE_LOCAL_MIGRATIONS);
   globalDb.caissonPglite = pg;
   return pg;
 }
