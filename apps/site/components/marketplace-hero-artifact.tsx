@@ -23,7 +23,7 @@ export function MarketplaceHeroArtifact() {
       aria-label={`${BUNDLE_PRICES.length} Caisson bundles composing onto one Apache-2.0 audited base`}
     >
       <div className={styles.bar} aria-hidden="true">
-        <span>caisson · one base, six bundles</span>
+        <span>{`caisson · one base, ${BUNDLE_PRICES.length} bundles`}</span>
         <span className={styles.barChip}>
           <span className={styles.dot} />
           composable
