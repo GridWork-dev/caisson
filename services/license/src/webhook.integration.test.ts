@@ -3,7 +3,16 @@
 // accountId throws (non-2xx, so the provider retries — services-hardening LOW finding); a bad signature
 // throws before any DB work. The BillingProvider is FAKED (no real HMAC) — the verify path itself is
 // covered in @caisson/billing.
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { AuthnError, InternalError } from "@caisson/kernel";
 import { type TestPg, newTestPg } from "@caisson/testing";
 import {

@@ -3,7 +3,16 @@
 // with FORCE RLS, SET ROLE, WITH CHECK) — no network, no live cloud/KMS. The boundary == boundary
 // invariant proven from both sides: an encrypted SEC/HIPAA field lands ONLY when both the RLS tenant
 // scope and the crypto context are bound; either one missing → fail-closed, nothing written.
-import { afterAll, beforeEach, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeEach,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { randomUUID } from "node:crypto";
 import { newTestPg, type TestPg } from "@caisson/testing";
 import { TenancyError } from "@caisson/kernel";

@@ -8,7 +8,16 @@
 //
 // `withTenant` appears ONLY in this test — the runtime store is kernel-only (ADR-0043/0003) and takes
 // a pre-tenant-scoped executor.
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { randomUUID } from "node:crypto";
 import { newTestPg, type TestPg } from "@caisson/testing";
 import { buildTenantPolicySql, withTenant } from "@caisson/tenancy-rls";

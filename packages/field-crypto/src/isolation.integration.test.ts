@@ -3,7 +3,16 @@
 // BYPASSRLS and mask a fail-closed bug). Proves: two tenants derive distinct keys; tenant B can
 // neither SEE (RLS) nor DECRYPT (crypto) tenant A's field; and a pre-rotation v1 ciphertext still
 // decrypts after the tenant rotates to v2.
-import { afterAll, beforeEach, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeEach,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { buildTenantPolicySql, withTenant } from "@caisson/tenancy-rls";
 import { DerivedKeyProvider } from "./provider.ts";

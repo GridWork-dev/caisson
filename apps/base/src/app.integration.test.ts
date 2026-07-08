@@ -3,7 +3,16 @@
 // "base app runs; RLS-scoped credit debit is 402 then succeeds after a verified webhook grant;
 // the buyer MCP answers an authed query."
 import { createHmac } from "node:crypto";
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { newTestPg, type TestPg } from "@caisson/testing";
 import { generateAccountKeyPair, signAccountJwt } from "@caisson/auth";
 import {

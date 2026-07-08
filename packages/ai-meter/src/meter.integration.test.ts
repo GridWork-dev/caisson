@@ -3,7 +3,16 @@
 // the (mock) call; a short wallet 402s and writes nothing; reconcile trues the charge to actuals
 // (refund or shortfall); a same-call retry settles once; a hard cap trips the breaker so the next
 // reserve 402s. The live provider transport stays the only un-exercised path.
-import { afterAll, beforeEach, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeEach,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { newTestPg, type TestPg } from "@caisson/testing";
 import {
   CREDIT_EXPIRY_MIGRATION_SQL,
