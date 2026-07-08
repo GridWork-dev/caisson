@@ -34,6 +34,11 @@ function isThrottled(targetAccountId: string): boolean {
   const now = Date.now();
   const last = lastResendAt.get(targetAccountId);
   if (last !== undefined && now - last < RESEND_THROTTLE_MS) return true;
+  // Lazy eviction: expired entries are dead weight (the get above treats them as absent), so
+  // sweep them on write to keep the Map bounded by the last minute's distinct accounts.
+  for (const [id, at] of lastResendAt) {
+    if (now - at >= RESEND_THROTTLE_MS) lastResendAt.delete(id);
+  }
   lastResendAt.set(targetAccountId, now);
   return false;
 }
