@@ -9,7 +9,7 @@
 //   • no key (CI / local / offline) → the deterministic FTS5 floor alone: a natural-language sentence
 //     with no exact match returns [] rather than a confidently-wrong chunk.
 import { initObservability } from "@caisson/observability";
-import { createApp } from "./app.ts";
+import { createApp, SECURITY_HEADERS } from "./app.ts";
 import { buildCorpus, loadPricingFacts } from "./corpus.ts";
 import { DocsIndex } from "./index-store.ts";
 import { renderLlmsFull, renderLlmsTxt } from "./llms-txt.ts";
@@ -20,6 +20,7 @@ import type { DocChunk } from "./types.ts";
 const DEFAULT_PORT = 8788;
 
 const WARMUP_HEADERS: Record<string, string> = {
+  ...SECURITY_HEADERS,
   "content-type": "application/json",
   "Cache-Control": "no-store",
 };

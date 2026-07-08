@@ -34,12 +34,15 @@ export interface RateLimitConfig {
    * `query` bucket, because a single authorized caller's egress IP can front many distinct
    * real end-users (e.g. the support-bot's whole Discord community shares one Railway IP)
    * who would otherwise all squeeze into one small anonymous per-IP bucket (G22 follow-up:
-   * "a bot-specific higher-budget lane", buyer-lifecycle-map.md). Optional — falls back to
-   * `query`'s own budget when omitted, so a caller that doesn't care about the trusted lane
-   * (an existing test literal, e.g.) sees unchanged behavior. */
+   * "a bot-specific higher-budget lane", buyer-lifecycle-map.md). Optional — when omitted, the
+   * caller gets an INDEPENDENT bucket of the same size as `query` (buckets are keyed
+   * `${bucket}|${ip}`, so `trustedQuery` and `query` never share tokens even at equal size), so
+   * a caller that doesn't care about the trusted lane (an existing test literal, e.g.) sees
+   * unchanged per-request behavior. */
   readonly trustedQuery?: BucketConfig;
   /** Header-independent service-wide ceiling for the trusted lane (Strix vuln-0001 defense-in-
-   * depth, mirroring `globalQuery`). Falls back to `globalQuery` when omitted. */
+   * depth, mirroring `globalQuery`). Optional — when omitted, an independent ceiling of the same
+   * size as `globalQuery`. */
   readonly globalTrustedQuery?: BucketConfig;
   /** Hard cap on distinct (bucket,ip) entries held in memory before prune evicts. */
   readonly maxEntries: number;

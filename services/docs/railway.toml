@@ -15,9 +15,12 @@ dockerfilePath = "services/docs/Dockerfile"
 
 [deploy]
 healthcheckPath = "/health"
-# 300s, not 30: the semantic index embeds all corpus chunks (network calls) BEFORE Bun.serve binds, so
-# /health is unreachable for the first ~60-90s of a cold boot. A tight window would mark the deploy
-# failed and crash-loop it (the floor-fallback only catches THROWS, not a slow-but-successful embed).
+# 300s, not 30: /health answers immediately with a 503 {"ok":false,"warming":true} — Bun.serve
+# binds the port and starts a warmup handler BEFORE the semantic index build runs, then swaps in
+# the real handler once ready (server.ts). The real 200 doesn't land until embedding finishes,
+# bounded by DocsIndex.build's own embed-phase deadline (DEFAULT_EMBED_PHASE_DEADLINE_MS, 3
+# minutes); 300s keeps headroom above THAT ceiling so a genuinely-in-progress (or
+# degrading-to-FTS) boot is never mistaken for a failed deploy and crash-looped.
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 numReplicas = 1

@@ -83,9 +83,10 @@ describe("TokenBucketLimiter", () => {
     expect(limiter.check("query", "198.51.100.999").allowed).toBe(true);
   });
 
-  test("trustedQuery falls back to query's own budget when omitted (G22 lane, optional field)", () => {
+  test("omitted trustedQuery gets an independent bucket of the same size as query (G22 lane, optional field)", () => {
     // CONFIG carries no trustedQuery/globalTrustedQuery — existing callers that don't set them
-    // must see unchanged behavior: the trusted lane collapses onto the anonymous query budget.
+    // must see unchanged behavior: trustedQuery is sized like query, but buckets are keyed
+    // `${bucket}|${ip}`, so it is its own bucket, never sharing query's tokens (see the next test).
     const limiter = new TokenBucketLimiter(CONFIG, () => 0);
     const ip = "203.0.113.20";
     for (let i = 0; i < 3; i += 1) {

@@ -27,7 +27,9 @@ const QuerySchema = z
   })
   .strict();
 
-const SECURITY_HEADERS: Record<string, string> = {
+// Exported: server.ts's pre-ready warmup handler serves this same header set (its 503 is a real
+// production response on the wire during every cold boot, not exempt from the security floor).
+export const SECURITY_HEADERS: Record<string, string> = {
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
   "Strict-Transport-Security": "max-age=63072000; includeSubDomains",

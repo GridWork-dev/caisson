@@ -38,21 +38,35 @@ const EMBED_DEADLINE = Symbol("embed-phase-deadline");
 
 /** Race `promise` against the time remaining until `deadlineAt`; never rejects on the deadline
  * side. The loser is NOT cancelled (no cancellation primitive here) — `promise` keeps running in
- * the background, but a `.catch(() => {})` is attached immediately so a later rejection on an
- * abandoned call never surfaces as an unhandled rejection. */
+ * the background if the deadline wins, but `.then` below attaches a real rejection handler to it
+ * either way, so an eventual rejection on an abandoned call never surfaces as unhandled. Whichever
+ * side settles first clears the OTHER side's timer, so a promise that wins never leaves its
+ * deadline timer (and the closure it holds) alive in the background — at the 3-minute default
+ * across 255 chunks that would otherwise be hundreds of orphaned timers per boot. */
 function raceDeadline<T>(
   promise: Promise<T>,
   deadlineAt: number,
 ): Promise<T | typeof EMBED_DEADLINE> {
-  promise.catch(() => {});
   const remainingMs = deadlineAt - Date.now();
-  if (remainingMs <= 0) return Promise.resolve(EMBED_DEADLINE);
-  return Promise.race([
-    promise,
-    new Promise<typeof EMBED_DEADLINE>((resolve) => {
-      setTimeout(() => resolve(EMBED_DEADLINE), remainingMs);
-    }),
-  ]);
+  if (remainingMs <= 0) {
+    promise.catch(() => {}); // never awaited below — still needs a handler so it can't go unhandled
+    return Promise.resolve(EMBED_DEADLINE);
+  }
+  return new Promise<T | typeof EMBED_DEADLINE>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      resolve(EMBED_DEADLINE);
+    }, remainingMs);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err: unknown) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
 }
 
 /** Index text = title + section + body, so heading/title terms strengthen the FTS (bm25) leg. */
