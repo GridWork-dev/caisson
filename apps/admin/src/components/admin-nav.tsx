@@ -11,6 +11,7 @@ const LINKS = [
   { href: "/", label: "Overview" },
   { href: "/ops", label: "Ops" },
   { href: "/business", label: "Business" },
+  { href: "/intel", label: "Intel" },
   { href: "/architecture", label: "Architecture" },
   { href: "/decisions", label: "Decisions" },
   { href: "/catalog", label: "Catalog" },
