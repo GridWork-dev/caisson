@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-07
 status: live
-adr_ceiling: 0291
+adr_ceiling: 0294
 ---
 
 # Decisions & Forks — live board
@@ -1681,3 +1681,49 @@ ADR → code):
 **Still open (unchanged):** D2/D3 pricing (quant-gated) · the operator-owed launch acts
 (`docs/state/outstanding-work.md` §1 — Paddle account/catalog, credential rotations, CF-Access
 `site_gate` flip, EULA continuity final text, design-partner numbers) · CAISSON-44/45 Linear close.
+
+## 2026-07-07 eleventh sitting — merge drive + buyer-lifecycle audit + lifecycle picker (ADR-0292–0294)
+
+**Merged this sitting:** PR #162 support-SKU wire-up (fable PASS + opus PASS-with-findings; the
+converged precedence fix — NON_MODULE ids win over slug-colliding indexed packages — applied
+pre-merge with a pinning test; registry-schema changeset bumped to minor; ADR-0288 graduation
+riders documented in outstanding-work §1) · PR #163 deploy-reliability (env-sync CLEARED of the
+HOSTNAME hypothesis, read-only contract now enforced at the `railway()` choke point by a runtime
+verb allowlist after review WR-01; admin healthz registry-digest + parity-probe admin leg) ·
+PR #164 billing clawback concurrency (both auditors independently found an ABBA deadlock between
+the new coverage and claw advisory locks; fixed with the canonical order — `acquireAccountBillingLock`
+FIRST on every mutating path incl. invoice.paid and subscription.canceled — fable re-verified
+CONFIRMED-FIXED; the false "subscription refund is a credits no-op" claim corrected and the actual
+behavior pinned by test). The `changeset-prose-adr` gate rule surfaced this sitting: ADR citations
+are BANNED in changeset bodies (they ship into buyer CHANGELOGs) — three #162 changesets and the
+#165 changeset were reworded; internal tracker ids likewise swept from shipped source.
+
+**New pre-launch surfaces executed (operator-approved):**
+
+- **CF-Access e2e bypass LIVE:** `caisson-e2e-prober` service token + a `non_identity` Service
+  Auth policy added to the `site_gate` Access application (terraform applied, committed 2cbf4441).
+  The human email-OTP gate is untouched; bare request 302s to Access login, token headers pass 200.
+  Token pair in the operator env file (`CAISSON_E2E_CF_CLIENT_ID`/`_SECRET`).
+- **Paddle dunning no-op LIVE-PROVEN:** a sandbox `transaction.payment_failed` simulation delivered
+  to the deployed webhook returned 200 `{"ok":true}` — no 5xx retry loop. Finding: dunning/past-due
+  event types are not even subscribed on the notification setting (nothing is ever delivered);
+  the temporary subscription used for the probe was restored, `traffic_source` left at `all`.
+- **Buyer-lifecycle audit (72-agent workflow):** 11 stages mapped, **43 confirmed gaps**
+  (3 P0 · 12 P1 · 15 P2 · 12 P3), 17 claims refuted —
+  `outputs/research/buyer-lifecycle-map-2026-07-07.md`. G10/G11 were already closed by PR #164.
+
+**Eleventh-sitting picker (all four answered):**
+
+- **License first mint → LOCKED as ADR-0292:** webhook-push at grant (idempotent per
+  account+major), purchase email carries the license, admin first-mint lever as rescue.
+  Closes lifecycle P0 G1.
+- **Subscription management → LOCKED as ADR-0293:** **in-app native build** (operator chose
+  against the portal recommendation) — plan-page `owned` from real state, server-side Paddle
+  cancel with the webhook staying revoke-truth, in-app invoice history. Closes G13/G14/G26.
+- **Chargebacks → LOCKED as ADR-0294:** subscribe + alert-only, no automated revocation. G20.
+- **Wave scope → everything code-fixable (33 items)** this sitting, parallel worktree builders.
+
+**In flight at write time:** the UI-primitives builder (ADR-0291) · the media PR #165 (review
+fixes pushed, CI pending) · PR #166 bot content-gap (opus review running) · the create-caisson
+P0 delivery cluster builder (G2/G3/G28/G36) · the Playwright prod-route harness builder (rides
+the new CF bypass) · the G-wave builders per the scope lock.
