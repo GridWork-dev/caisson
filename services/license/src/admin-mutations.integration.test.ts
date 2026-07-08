@@ -79,6 +79,10 @@ import {
   LICENSE_REVOCATION_SCHEMA_SQL,
   readDenySet,
 } from "./license-revocation-store.ts";
+import {
+  ORDER_RECORD_SCHEMA_SQL,
+  SUBSCRIPTION_STATUS_SCHEMA_SQL,
+} from "./subscription-history-store.ts";
 
 let tp: TestPg;
 let db: Transactor;
@@ -196,6 +200,10 @@ beforeAll(async () => {
   await tp.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await tp.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
   await tp.exec(RENEWAL_EXTENSION_SCHEMA_SQL);
+  // ADR-0293: applyBillingEvent (called directly below, e.g. the operator-vs-Paddle-refund
+  // idempotency test) also touches these two tables now.
+  await tp.exec(SUBSCRIPTION_STATUS_SCHEMA_SQL);
+  await tp.exec(ORDER_RECORD_SCHEMA_SQL);
   // ADR-0225: the license index (read cross-tenant for the edge deny-set) + the deny-set truth table,
   // created BEFORE ADMIN_MUTATION_PROVISION_SQL (its new license_grant SELECT policy references it).
   await tp.exec(LICENSE_GRANT_SCHEMA_SQL);

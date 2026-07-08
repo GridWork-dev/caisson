@@ -12,10 +12,16 @@ import { readScoped } from "@/lib/db";
 import { requireDashboardSession } from "@/lib/auth";
 import { configuredProviderIds } from "@/lib/auth-config";
 import { getAuth } from "@/lib/auth-server";
-import { readEntitlementGrants } from "@/lib/dashboard-reads";
+import { LIVE_PRICE_IDS } from "@/lib/catalog";
+import {
+  readEntitlementGrants,
+  readSubscriptionStatuses,
+} from "@/lib/dashboard-reads";
 import { discordInviteUrl } from "@/lib/discord-grant";
+import { computeOwned } from "@/lib/plan-owned";
 import { DiscordConnect } from "@/components/discord-connect";
 import { PlanPurchaseRow } from "@/components/plan-purchase-row";
+import { SubscriptionCancelControl } from "@/components/subscription-cancel";
 
 export const metadata: Metadata = { title: "Plan" };
 
@@ -29,12 +35,36 @@ function realEntries<T extends { entitlements: readonly string[] }>(
 
 export default async function DashboardPlanPage() {
   const session = await requireDashboardSession("/dashboard/plan");
-  const grants = await readScoped(session.accountId, (tx) =>
-    readEntitlementGrants(tx, session.accountId),
+  const { grants, subscriptionStatuses } = await readScoped(
+    session.accountId,
+    async (tx) => ({
+      grants: await readEntitlementGrants(tx, session.accountId),
+      subscriptionStatuses: await readSubscriptionStatuses(
+        tx,
+        session.accountId,
+      ),
+    }),
   );
   const activeIds = new Set(
     grants.filter((g) => g.status === "active").map((g) => g.entitlementId),
   );
+  // ADR-0293 G13/G14: active subscriptions by price id (the zero-entitlement "owned" signal) plus
+  // the Paddle subscription id backing each — the G14 cancel control's target.
+  const activeSubscriptions = subscriptionStatuses.filter(
+    (s) => s.status === "active",
+  );
+  const activeSubscriptionPriceIds = new Set(
+    activeSubscriptions.map((s) => s.priceId),
+  );
+  // `activeSubscriptions` is newest-updated-first; keep only the FIRST (most recent) subscription id
+  // seen per price id, in the rare case a buyer holds two active subscription rows on the same price
+  // (e.g. a resubscribe that raced a cancel) — the cancel control should always target the current one.
+  const subscriptionIdByPriceId = new Map<string, string>();
+  for (const s of activeSubscriptions) {
+    if (!subscriptionIdByPriceId.has(s.priceId)) {
+      subscriptionIdByPriceId.set(s.priceId, s.subscriptionId);
+    }
+  }
 
   // Discord seam (ADR-0203): rendered only when the provider is env-configured. Linked status
   // comes from better-auth's own account list for the SIGNED-IN user (never a request param).
@@ -61,7 +91,14 @@ export default async function DashboardPlanPage() {
   // NEXT_PUBLIC_DISCORD_INVITE_URL.
   const inviteUrl = discordInviteUrl();
 
-  const purchases = realEntries(PURCHASE_BOOK);
+  // G4 (ADR-0293): `realEntries` only drops the `_PLACEHOLDER` test fixtures — it does NOT know
+  // ADR-0270 repointed 5 archived edition-era rows onto the canonical bundle ids, so they were
+  // rendering as full live Buy cards next to the real W7 rows. `catalog.ts`'s `LIVE_PRICE_IDS`
+  // (the cart/checkout allowlist) is the one place that already tracks "which price ids are
+  // actually sellable today" — reuse it rather than hand-maintaining a second list here.
+  const purchases = realEntries(PURCHASE_BOOK).filter(([priceId]) =>
+    LIVE_PRICE_IDS.has(priceId),
+  );
   const plans = realEntries(PLAN_BOOK);
 
   return (
@@ -115,15 +152,36 @@ export default async function DashboardPlanPage() {
           Subscriptions
         </h2>
         <div style={{ display: "grid", gap: "var(--cs-space-3)" }}>
-          {plans.map(([priceId, entry]) => (
-            <PlanPurchaseRow
-              key={priceId}
-              priceId={priceId}
-              accountId={session.accountId}
-              label={"planTag" in entry ? entry.planTag : priceId}
-              owned={false}
-            />
-          ))}
+          {plans.map(([priceId, entry]) => {
+            // G13: an entitlement-bearing plan (e.g. Compliance Updates) is owned via the SAME
+            // active-entitlement check the Purchases section above uses; a zero-entitlement plan
+            // (Developer, ADR-0269) has no such row, so ownership comes from the ADR-0293
+            // subscription-status signal instead. See lib/plan-owned.ts for why this can't just be
+            // `entry.entitlements.every(...)` unconditionally (vacuously true on `[]`).
+            const owned = computeOwned(
+              entry.entitlements,
+              activeIds,
+              activeSubscriptionPriceIds,
+              priceId,
+            );
+            const subscriptionId = subscriptionIdByPriceId.get(priceId);
+            return (
+              <PlanPurchaseRow
+                key={priceId}
+                priceId={priceId}
+                accountId={session.accountId}
+                label={"planTag" in entry ? entry.planTag : priceId}
+                owned={owned}
+                ownedExtra={
+                  owned && subscriptionId !== undefined ? (
+                    <SubscriptionCancelControl
+                      subscriptionId={subscriptionId}
+                    />
+                  ) : undefined
+                }
+              />
+            );
+          })}
         </div>
       </div>
 
