@@ -6,6 +6,13 @@
 // deploy/mutate command. Railway is the source of truth; this file is a mirror of it, never the
 // reverse.
 //
+// CAISSON-38 CLEARED: admin.caisson.sh lost its HOSTNAME Railway variable and 502'd; this script
+// was investigated as the suspect ("env-sync prune"). It has no code path that can remove a
+// Railway variable — see the READ-ONLY CONTRACT above and the pinning tests in
+// railway-env-sync.test.ts. The real cause was Railway/Docker re-populating the reserved
+// `HOSTNAME` name at container boot; fixed durably in apps/admin/Dockerfile (`ENV HOSTNAME=0.0.0.0`,
+// PR #151), independent of this or any Railway-side variable sync tool.
+//
 // Usage: bun tooling/scripts/railway-env-sync.ts --generated-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 import { execFileSync } from "node:child_process";
 import {
@@ -372,7 +379,28 @@ export function buildLocalOnlyTail(names: readonly string[]): string {
 // Impure: Railway CLI + filesystem
 // ============================================================================================
 
+/** The read-only contract (CAISSON-38), enforced at the single subprocess choke point: this
+ *  script mirrors Railway state and must never mutate it. An allowlist of read verbs — not a
+ *  denylist of write ones — so a future `up`/`redeploy`/`run` call cannot slip in unnoticed. */
+const READ_ONLY_RAILWAY_VERBS = new Set(["whoami", "status", "variables"]);
+
+export function assertReadOnlyRailwayArgs(args: readonly string[]): void {
+  const verb = args[0];
+  if (verb === undefined || !READ_ONLY_RAILWAY_VERBS.has(verb)) {
+    throw new Error(
+      `railway-env-sync is a read-only mirror; refusing non-read railway verb: ${String(verb)}`,
+    );
+  }
+  // `variables` is a read ONLY without its write flag (`railway variables --set KEY=VAL`).
+  if (args.includes("--set")) {
+    throw new Error(
+      "railway-env-sync is a read-only mirror; refusing railway variables --set",
+    );
+  }
+}
+
 function railway(args: string[]): string {
+  assertReadOnlyRailwayArgs(args);
   return execFileSync("railway", args, { encoding: "utf8" });
 }
 

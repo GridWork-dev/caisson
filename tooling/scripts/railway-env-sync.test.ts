@@ -1,6 +1,8 @@
 // Unit tests for the PURE functions only — no live `railway` CLI call anywhere in this file.
+import { readFileSync } from "node:fs";
 import { describe, expect, test } from "bun:test";
 import {
+  assertReadOnlyRailwayArgs,
   buildEnvironmentSection,
   buildLocalOnlyTail,
   buildServiceSection,
@@ -328,5 +330,82 @@ describe("parseRailwayStatus", () => {
     expect(status.environments).toEqual([
       { name: "production", services: ["caisson-admin", "caisson-site"] },
     ]);
+  });
+});
+
+// CAISSON-38: admin.caisson.sh lost its HOSTNAME Railway variable and 502'd; this script was the
+// suspect ("env-sync prune"). Investigation: the header above declares a READ-ONLY CONTRACT — the
+// only `railway` subprocess calls in the file are `whoami`, `status --json`, and `variables --kv`
+// (all reads); `computeDrift`/`printDriftReport` only ever PRINT a diagnostic, they never write to
+// Railway or rewrite the local file's existing content (the local-only tail is preserved verbatim
+// once it exists). CLEARED: there is no code path here capable of removing a Railway variable. The
+// two tests below pin that finding so a future edit can't reintroduce a write path unnoticed, and
+// prove a Railway-set var round-trips through the pure pipeline unchanged while one that vanishes
+// from Railway is SURFACED in the drift report rather than silently dropped. The real root cause
+// (docs/deploy/STATE.md, 2026-07-07 entry) was Railway/Docker re-populating the reserved
+// `HOSTNAME` name at container boot, independent of any local tooling — fixed durably by baking
+// `ENV HOSTNAME=0.0.0.0` straight into apps/admin/Dockerfile (PR #151), which survives regardless
+// of what this (or any) Railway-side variable mirror does.
+describe("CAISSON-38 — read-only contract (protected var survives a sync)", () => {
+  test("the railway choke point refuses any non-read invocation (allowlist)", () => {
+    for (const args of [
+      ["whoami"],
+      ["status", "--json"],
+      ["variables", "--service", "caisson-admin", "--kv"],
+    ]) {
+      expect(() => assertReadOnlyRailwayArgs(args)).not.toThrow();
+    }
+    for (const args of [
+      ["up"],
+      ["redeploy"],
+      ["run", "true"],
+      ["unset"],
+      ["environment", "delete"],
+      ["variables", "--set", "HOSTNAME="],
+      [],
+    ]) {
+      expect(() => assertReadOnlyRailwayArgs(args)).toThrow(/read-only mirror/);
+    }
+  });
+
+  test("every railway subprocess call routes through the guarded choke point", () => {
+    const source = readFileSync(
+      new URL("./railway-env-sync.ts", import.meta.url),
+      "utf8",
+    );
+    // Exactly one raw execFileSync("railway", ...) — the guarded railway() helper itself. Any
+    // second spawn site would bypass the allowlist and fail here.
+    expect(source.match(/execFileSync\(\s*"railway"/g)?.length).toBe(1);
+  });
+
+  test("a Railway-set var (HOSTNAME) round-trips into the generated file unchanged", () => {
+    const services: ServiceVars[] = [
+      {
+        service: "caisson-admin",
+        vars: { HOSTNAME: "0.0.0.0", PORT: "8080" },
+      },
+    ];
+    const { body } = buildEnvironmentSection("production", services);
+    expect(body).toContain("export HOSTNAME=0.0.0.0");
+  });
+
+  test("a var that disappears from Railway since the last sync is SURFACED, not silently dropped", () => {
+    const existing = parseExistingFile(
+      [
+        "# === service: caisson-admin ===",
+        "export HOSTNAME=0.0.0.0",
+        "export PORT=8080",
+      ].join("\n"),
+    );
+    // This sync's fresh `railway variables --kv` fetch no longer includes HOSTNAME — simulating
+    // the CAISSON-38 incident on the RAILWAY side, never something this tool did.
+    const services: ServiceVars[] = [
+      { service: "caisson-admin", vars: { PORT: "8080" } },
+    ];
+    const { resolved, collisions } = resolveCollisions(services);
+    const report = computeDrift("production", resolved, collisions, existing);
+    const admin = report.services.find((s) => s.service === "caisson-admin");
+    expect(admin?.localOnly).toEqual(["HOSTNAME"]);
+    expect(admin?.missingLocally).toEqual([]);
   });
 });
