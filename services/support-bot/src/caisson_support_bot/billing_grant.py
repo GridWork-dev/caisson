@@ -34,7 +34,13 @@ from discord.ext import commands
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, ValidationError
 
 from .config import Settings
-from .member_mgmt import edition_role_id, editions_for_entitlements, role_outranks_bot
+from .member_mgmt import (
+    PRIORITY_SUPPORT_ENTITLEMENT_ID,
+    edition_role_id,
+    editions_for_entitlements,
+    priority_support_role_id,
+    role_outranks_bot,
+)
 
 
 class BillingGrantRequest(BaseModel):
@@ -137,6 +143,14 @@ async def _handle_billing_grant(request: web.Request) -> web.Response:
     roles: list[discord.Role] = []
     for edition in editions_for_entitlements(list(payload.entitlements)):
         role_id = edition_role_id(deps.settings, edition)
+        role = guild.get_role(role_id) if role_id is not None else None
+        if role is not None and not role_outranks_bot(role, guild.me.top_role):
+            roles.append(role)
+    # Priority-support (ADR-0278/0288): a standalone id, deliberately outside `editions_for_
+    # entitlements` (a plain bundle purchase must never grant it). Fail-closed like every other
+    # role here — an unset role id or an unmanageable role is a benign no-op, never an error.
+    if PRIORITY_SUPPORT_ENTITLEMENT_ID in payload.entitlements:
+        role_id = priority_support_role_id(deps.settings)
         role = guild.get_role(role_id) if role_id is not None else None
         if role is not None and not role_outranks_bot(role, guild.me.top_role):
             roles.append(role)

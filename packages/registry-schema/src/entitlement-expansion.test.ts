@@ -199,6 +199,30 @@ describe("per-module bare-slug purchase-id form", () => {
   });
 });
 
+describe("NON_MODULE_ENTITLEMENT_IDS (ADR-0278/0288 — the priority-support brick guard)", () => {
+  test("priority-support alone expands to nothing, never throws", () => {
+    expect([...expandEntitlements(index, ["priority-support"])]).toEqual([]);
+  });
+
+  test("priority-support does NOT brick a mixed purchase set (the fail-closed-brick risk, ADR-0278/0288)", () => {
+    // Granting priority-support through the shared fail-closed expansion without this reservation
+    // would 500 every OTHER entitlement an account holds the moment it also bought priority-support.
+    // This proves the reservation closes exactly that gap: the compliance grant resolves normally,
+    // and priority-support contributes no members.
+    expect(
+      [...expandEntitlements(index, ["compliance", "priority-support"])].sort(),
+    ).toEqual([...expandEntitlements(index, ["compliance"])].sort()); // priority-support contributes nothing — same members as compliance alone
+  });
+
+  test("NON_MODULE_ENTITLEMENT_IDS never widens the free-view floor or any bundle's members", () => {
+    // priority-support carries no `@caisson/` module id at all — it can never appear in a resolved
+    // member set, unlike a reserved future-module slug which eventually graduates to a real grant.
+    const resolved = expandEntitlements(index, ["priority-support"]);
+    expect(resolved.has("priority-support")).toBe(false);
+    expect(resolved.has("@caisson/priority-support")).toBe(false);
+  });
+});
+
 describe("baseModuleIds (ADR-0094/0097 — the free, always-served OPEN substrate)", () => {
   test("returns only the OPEN (Apache-2.0) modules scoped to no edition — commercial base is gated", () => {
     const base = [...baseModuleIds(index)].sort();

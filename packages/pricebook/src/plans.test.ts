@@ -22,6 +22,13 @@ describe("resolvePlan — fail-closed (ADR-0089 §6)", () => {
       resolvePlan("price_compliance_updates_annual_PLACEHOLDER").entitlements,
     ).toEqual(["compliance"]);
   });
+  test("the priority-support plan resolves its price/cadence/entitlement (ADR-0278/0288)", () => {
+    const entry = resolvePlan("price_priority_support_annual_PLACEHOLDER");
+    expect(entry.planTag).toBe("priority_support");
+    expect(entry.cadence).toBe("year"); // ADR-0288: $999/yr
+    expect(entry.entitlements).toEqual(["priority-support"]);
+    expect<number>(entry.creditsPerCycle).toBeGreaterThan(0); // schema requires positive
+  });
   test("resolvePlan reads an injected book", () => {
     const book: Record<string, PlanBookEntry> = {
       price_x: {

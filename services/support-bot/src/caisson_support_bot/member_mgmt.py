@@ -56,6 +56,13 @@ _EDITION_ROLE_ATTR: dict[str, str] = {
 # The bundle sentinel purchased id (pricebook PURCHASE_BOOK) — entitles every edition (ADR-0071).
 BUNDLE_ENTITLEMENT_ID = "bundle"
 
+# The priority-support subscription's purchased entitlement id (pricebook PLAN_BOOK, ADR-0278
+# Track K / ADR-0288 price+SLA lock) — sent verbatim by the billing push, same as any edition id.
+# Deliberately NOT a key in ``_EDITION_ROLE_ATTR``: it is a standalone support tier, never an
+# edition, so it must never be swept in by a plain ``bundle`` purchase (see
+# ``member_has_priority_support``'s docstring for the same rationale).
+PRIORITY_SUPPORT_ENTITLEMENT_ID = "priority-support"
+
 
 def editions_for_entitlements(entitlements: list[str]) -> list[str]:
     """Map purchased entitlement ids (sent verbatim by the billing push) to edition slugs with a role.
@@ -83,6 +90,16 @@ def edition_role_id(settings: Settings, edition: str) -> int | None:
         return None
     value = getattr(settings, attr)
     return value if isinstance(value, int) else None
+
+
+def priority_support_role_id(settings: Settings) -> int | None:
+    """The configured priority-support role id, or ``None`` when unset (ADR-0278/0288).
+
+    Mirrors ``edition_role_id``'s shape for the billing-grant push, but takes no slug argument —
+    priority-support is a single standalone id, not a map of choices.
+    """
+    role_id = settings.role_priority_support_id
+    return role_id if isinstance(role_id, int) else None
 
 
 def member_has_priority_support(settings: Settings, member: discord.Member | None) -> bool:
