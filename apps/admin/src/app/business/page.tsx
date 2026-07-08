@@ -37,6 +37,11 @@ const EMPTY = {
 /** G29 pagination page size — kept small enough that the table + pager stay legible. */
 const TENANTS_PAGE_SIZE = 25;
 
+/** IN-02 — an unbounded `?page=` overflows the Postgres OFFSET (or blows up JS number parsing on
+ *  a huge digit string) and 500s the whole page. No real pager gets anywhere near this; it only
+ *  guards against a hand-crafted URL. */
+const MAX_PAGE = 10_000;
+
 /** Postgres SQLSTATE for "undefined table" — same shape on node-postgres and PGlite errors. */
 const PG_UNDEFINED_TABLE = "42P01";
 
@@ -114,7 +119,10 @@ export default async function BusinessPage({
 }) {
   const params = await searchParams;
   const search = params.q?.trim() ?? "";
-  const page = Math.max(Number.parseInt(params.page ?? "0", 10) || 0, 0);
+  const page = Math.min(
+    Math.max(Number.parseInt(params.page ?? "0", 10) || 0, 0),
+    MAX_PAGE,
+  );
   const configured = adminDbConfigured();
   const { tenants, entitlements, credits, licenses, actions, actionLogStatus } =
     await loadData(search, page);
