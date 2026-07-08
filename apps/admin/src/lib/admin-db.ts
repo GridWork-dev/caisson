@@ -6,26 +6,21 @@
 // every tenant's rows through that one gate and nowhere else. `CAISSON_ADMIN_DB_URL` is NEVER
 // hardcoded (security floor).
 //
-// The PGlite double applies the real schema DDL (imported, not hand-copied — the columns-contract
-// anti-drift pattern) PLUS the admin-read policies, so cross-tenant reads work in dev/test against
-// empty tables. In prod the tables + the `admin` role + its policies are provisioned on the Railway
-// PG at DEPLOY (buildAdminReadPolicySql output, ADR-0141) — never by this app.
+// The PGlite double applies the REAL platform migration chain (@caisson/platform-migrations,
+// CAISSON-21) — the same shared chain apps/site/lib/deploy-migrate.ts applies to a live Postgres —
+// PLUS the admin-specific role/policy bootstrap layered on top, so cross-tenant reads work in
+// dev/test against empty tables. A migration that lands in the shared chain now lands here too,
+// automatically; this used to be a hand-mirrored SQL-constant list that already drifted once
+// (CAISSON-11) and drifted again on credit_event (caught in PR #176's review) — see
+// admin-db.test.ts's parity gate. In prod the tables + the `admin` role + its policies are
+// provisioned on the Railway PG at DEPLOY (buildAdminReadPolicySql output, ADR-0141) — never by
+// this app.
 import { PGlite } from "@electric-sql/pglite";
-import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
-import {
-  CREDIT_LINE_ITEM_MIGRATION_SQL,
-  CREDIT_EXPIRY_MIGRATION_SQL,
-  CREDIT_ROUNDING_MIGRATION_SQL,
-  CREDIT_SCHEMA_SQL,
-  GRANT_CONSUMPTION_MIGRATION_SQL,
-} from "@caisson/credits";
+import { applyAll } from "@caisson/platform-migrations";
+import { pgliteMigrationApplier } from "@caisson/platform-migrations/pglite";
 import {
   ADMIN_ACTION_LOG_SCHEMA_SQL,
   ADMIN_MUTATION_PROVISION_SQL,
-  ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
-  ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
-  ENTITLEMENT_SCHEMA_SQL,
-  LICENSE_GRANT_SCHEMA_SQL,
 } from "@caisson/service-license";
 import { ADMIN_WRITE_ROLE_BOOTSTRAP_SQL } from "@caisson/org-controls";
 import type { TenantExecutor, Transactor } from "@caisson/tenancy-rls";
@@ -63,16 +58,6 @@ CREATE POLICY audit_chain_entry_tenant_isolation ON audit_chain_entry
 
 export type { TenantExecutor, Transactor };
 export { withAdminRead };
-
-// The buyer `app` role the imported schema DDL grants to + writes tenant policies for — created here
-// so the double can apply those schemas. (In prod the services already created it.)
-const APP_ROLE_BOOTSTRAP_SQL = `
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app') THEN
-    CREATE ROLE app NOLOGIN;
-  END IF;
-END $$;
-`;
 
 /** A minimal test double of better-auth's own "user" table (G29) — only the columns the tenants
  *  email-enrichment read needs (id/email). The real one is created by better-auth's getMigrations
@@ -148,25 +133,13 @@ const globalDb = globalThis as unknown as AdminDbGlobal;
 async function bootstrapPglite(): Promise<PGlite> {
   if (globalDb.caissonAdminPglite) return globalDb.caissonAdminPglite;
   const pg = new PGlite();
-  await pg.exec(APP_ROLE_BOOTSTRAP_SQL);
   await pg.exec(ADMIN_ROLE_BOOTSTRAP_SQL);
   await pg.exec(ADMIN_WRITE_ROLE_BOOTSTRAP_SQL);
-  // Real schema DDL (tenant policies + GRANT app included), then the additive admin-read policies.
-  // CAISSON-11: each line-item migration (deploy-migrate's 0008/0009) runs after its column's base
-  // schema, same as apps/site/lib/deploy-migrate.ts's platformPackage() — independent of the skipped
-  // legacy backfill and the other platformPackage() migrations this bootstrap doesn't apply.
-  await pg.exec(CREDIT_SCHEMA_SQL);
-  await pg.exec(CREDIT_ROUNDING_MIGRATION_SQL);
-  await pg.exec(CREDIT_EXPIRY_MIGRATION_SQL);
-  await pg.exec(GRANT_CONSUMPTION_MIGRATION_SQL);
-  await pg.exec(ENTITLEMENT_SCHEMA_SQL);
-  await pg.exec(LICENSE_GRANT_SCHEMA_SQL);
-  // CAISSON-9: ADMIN_MUTATION_PROVISION_SQL below SELECT-polices account_member (the admin
-  // existence check), so the base auth membership table must exist in the double too.
-  await pg.exec(ACCOUNT_MEMBER_SCHEMA_SQL);
-  await pg.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
-  await pg.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
-  await pg.exec(CREDIT_LINE_ITEM_MIGRATION_SQL);
+  // The REAL platform migration chain (CAISSON-21) — app role, credits, entitlement, license_grant,
+  // ai_meter, account_member, every line-item/expiry/RLS-guard follow-up, in the SAME order
+  // apps/site/lib/deploy-migrate.ts applies to a live Postgres. `ADMIN_MUTATION_PROVISION_SQL` below
+  // SELECT-polices account_member (the admin existence check, CAISSON-9), which this chain creates.
+  await applyAll(pgliteMigrationApplier(pg));
   // G29: the better-auth "user" table double + the tenants view's email-enrichment join.
   await pg.exec(BETTER_AUTH_USER_DOUBLE_SQL);
   await pg.exec(USER_ADMIN_READ_GRANT_SQL);

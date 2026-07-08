@@ -23,6 +23,7 @@
     "@caisson/kernel": "workspace:*",
     "@caisson/observability": "workspace:*",
     "@caisson/org-controls": "workspace:*",
+    "@caisson/platform-migrations": "workspace:*",
     "@caisson/platform-reads": "workspace:*",
     "@caisson/registry-schema": "workspace:*",
     "@caisson/service-license": "workspace:*",
