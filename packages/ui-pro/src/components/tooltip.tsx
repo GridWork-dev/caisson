@@ -1,6 +1,13 @@
 "use client";
 
-import { cloneElement, useEffect, useId, useRef, useState } from "react";
+import {
+  cloneElement,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type {
   FocusEvent,
   KeyboardEvent,
@@ -83,8 +90,15 @@ export function Tooltip({
     setOpen(false);
   }
 
+  // Memoized so the cloned trigger's ref identity is stable across renders that don't change the
+  // caller's own ref (triggerRef itself never changes — it's a useRef object) — IN-04.
+  const mergedRef = useMemo(
+    () => mergeRefs(triggerRef, children.props.ref),
+    [children.props.ref],
+  );
+
   const trigger = cloneElement(children, {
-    ref: mergeRefs(triggerRef, children.props.ref),
+    ref: mergedRef,
     onMouseEnter: (e: MouseEvent) => {
       children.props.onMouseEnter?.(e);
       showAfterDelay();
