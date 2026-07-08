@@ -36,7 +36,8 @@ import {
   debit,
   getLedger,
 } from "@caisson/credits";
-import { withTenant } from "@caisson/tenancy-rls";
+import { withAdvisoryXactLock } from "@caisson/jobs";
+import { withTenant, type TenantExecutor } from "@caisson/tenancy-rls";
 import type { DomainBillingEvent } from "@caisson/billing";
 import { parseStripeEvent } from "@caisson/billing-orchestration";
 import { applyBillingEvent } from "./apply-billing-event.ts";
@@ -668,6 +669,190 @@ describe("applyBillingEvent — refund: revoke + claw unspent credits (ADR-0113)
     ).toEqual([]);
     const bal = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
     expect(bal).toBe(0);
+  });
+
+  // CAISSON-25b (ADR-0269 §6 accepted residual): this test pins the boundary the code DOES
+  // enforce — a ONE-TIME purchase's refund claw is bounded to exactly what THAT purchase granted
+  // and never reaches a sibling SUBSCRIPTION grant's credits or entitlement for the same account,
+  // even when both back the SAME entitlement id (refcount).
+  //
+  // A refund of the SUBSCRIPTION payment itself is NOT a credits no-op (security-audit
+  // correction, 2026-07-07 — the earlier claim here that "a subscription invoice's payment id was
+  // never used as either key" was false): Paddle keys a cycle's sub_allotment grant by the
+  // transaction id (`invoiceId: txnId` in paddle-events), the SAME id a refund adjustment
+  // delivers as `paymentId`. The claw path therefore matches the cycle's own grant and claws its
+  // UNSPENT remainder — bounded to that grant, never a sibling's — while the entitlement survives
+  // the `source_kind='one_time'` revoke filter (removal stays subscription.canceled's job). The
+  // test after next pins that actual behavior; the ADR-0269 §6 residual (no subscription-state
+  // tracking, no dunning handling) is unchanged.
+  test("a one-time purchase refund stays bounded — a sibling SUBSCRIPTION grant's credits and entitlement are untouched (ADR-0269 §6 boundary)", async () => {
+    const acct = "acct_refund_bounded";
+    // The subscription's own credits + STATIC entitlement grant (source_kind='subscription').
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        invoicePaid(acct, "inv_bound", {
+          priceId: EDITION_PLAN_ID,
+          billingReason: "subscription_create",
+        }),
+      ),
+    );
+    // A one-time purchase of the SAME entitlement id (refcount) + a credit pack, same payment id.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pi_bound", ONETIME_EDITION_ID),
+      ),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pi_bound", CREDIT_PACK_ID),
+      ),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]);
+    const balBefore = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
+    expect(balBefore).toBe(17_000); // 12000 subscription + 5000 one-time pack
+
+    // Refund ONLY the one-time purchase.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, refundCompleted(acct, "pi_bound")),
+    );
+
+    // The entitlement SURVIVES — the subscription's static grant still backs it (refcount).
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]);
+    // Only the one-time purchase's 5000 credits were clawed — the subscription's 12000 untouched.
+    const balAfter = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
+    expect(balAfter).toBe(12_000);
+  });
+
+  // The ACTUAL subscription-payment-refund behavior (see the corrected comment above): the cycle's
+  // unspent credits ARE clawed — bounded to that cycle's own grant — and the entitlement survives.
+  test("a refund keyed to a subscription cycle's transaction id claws that cycle's unspent credits, never the entitlement", async () => {
+    const acct = "acct_refund_subpay";
+    // Paddle id-space overlap: the granting invoice's id IS the cycle's transaction id.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        invoicePaid(acct, "txn_sub_cycle", {
+          priceId: EDITION_PLAN_ID,
+          billingReason: "subscription_create",
+        }),
+      ),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]);
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(
+      12_000,
+    );
+    // A refund adjustment delivering that same transaction id as its payment id.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, refundCompleted(acct, "txn_sub_cycle")),
+    );
+    // The entitlement survives (source_kind filter — removal is subscription.canceled's job)...
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]);
+    // ...and the cycle's own unspent credits are clawed, bounded to that grant.
+    expect(await withTenant(tp.pg, acct, (tx) => balance(tx, acct))).toBe(0);
+  });
+});
+
+describe("canonical lock order — the account billing lock is FIRST on every path (deadlock guard)", () => {
+  /** The exact bigint id `withAdvisoryXactLock` derives for a key, captured via a probe executor —
+   *  avoids exporting the private hash while still pinning real acquisition ids. */
+  async function lockIdFor(key: string): Promise<string> {
+    let captured = "";
+    const probe: TenantExecutor = {
+      query: async (_sql: string, params?: unknown[]) => {
+        captured = String(params?.[0] ?? "");
+        return { rows: [] };
+      },
+      exec: async () => undefined,
+    };
+    await withAdvisoryXactLock(probe, key, async () => {});
+    return captured;
+  }
+
+  /** Pass-through executor recording every advisory-lock acquisition in transaction order. */
+  function lockRecording(tx: TenantExecutor, locks: string[]): TenantExecutor {
+    return {
+      query: (sql, params) => {
+        if (sql.includes("pg_advisory_xact_lock")) {
+          locks.push(String(params?.[0] ?? ""));
+        }
+        return tx.query(sql, params);
+      },
+      exec: (sql) => tx.exec(sql),
+    };
+  }
+
+  // Pins the ABBA-deadlock guard: every mutating billing path acquires the account billing lock
+  // (the coverage key) BEFORE any other advisory lock — the whole-transaction refund, per-line
+  // adjustment, invoice grant, and cancel revoke may interleave freely across deliveries, and a
+  // single canonical first lock means no acquisition order can invert between them.
+  test("whole-txn refund, per-line refund, invoice.paid, and cancel all take the account lock before the claw lock", async () => {
+    const acct = "acct_lock_order";
+    const accountLock = await lockIdFor(`entitlement:coverage:${acct}`);
+    const clawLock = await lockIdFor(`credits:claw:${acct}:pi_lo`);
+
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, purchaseCompleted(acct, "pi_lo", CREDIT_PACK_ID)),
+    );
+
+    // invoice.paid (grant path — takes the account lock before the wallet-row grant).
+    let locks: string[] = [];
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        lockRecording(tx, locks),
+        invoicePaid(acct, "in_lo", {
+          priceId: EDITION_PLAN_ID,
+          billingReason: "subscription_create",
+        }),
+      ),
+    );
+    expect(locks[0]).toBe(accountLock);
+
+    // Whole-transaction refund: account lock strictly before the claw lock.
+    locks = [];
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        lockRecording(tx, locks),
+        refundCompleted(acct, "pi_lo"),
+      ),
+    );
+    expect(locks[0]).toBe(accountLock);
+    expect(locks).toContain(clawLock);
+    expect(locks.indexOf(clawLock)).toBeGreaterThan(0);
+
+    // Per-line adjustment (items empty — the claw lock is still taken up front): same order.
+    locks = [];
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        lockRecording(tx, locks),
+        refundPerLine(acct, "pi_lo", "adj_lo", []),
+      ),
+    );
+    expect(locks[0]).toBe(accountLock);
+    expect(locks).toContain(clawLock);
+    expect(locks.indexOf(clawLock)).toBeGreaterThan(0);
+
+    // subscription.canceled (mirror sweep now serialized with a racing mint).
+    locks = [];
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(lockRecording(tx, locks), {
+        type: "subscription.canceled",
+        sourceEventId: "evt_lo_c",
+        accountId: acct,
+        subscriptionId: "sub_lo",
+      }),
+    );
+    expect(locks[0]).toBe(accountLock);
   });
 });
 

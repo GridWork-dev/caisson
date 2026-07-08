@@ -4,6 +4,7 @@
 // RETURNING` so a retried grant/debit is absorbed WITHOUT aborting the surrounding transaction
 // (a caught 23505 would poison it). Run inside `withTenant` so RLS scopes the ledger.
 import { randomUUID } from "node:crypto";
+import { withAdvisoryXactLock } from "@caisson/jobs";
 import {
   InsufficientCreditsError,
   ValidationError,
@@ -495,6 +496,55 @@ export async function creditsClawedForSource(
     [accountId, sourceEventId],
   );
   return r.rows[0]?.clawed ?? 0;
+}
+
+/**
+ * The purchase's still-outstanding claw amount — the read-then-claw TOCTOU guard:
+ * `granted - alreadyClawed`, floored at 0, computed UNDER an account+purchase advisory lock.
+ *
+ * The bug this closes: `creditsGrantedBySource`/`creditsClawedForSource` are plain SELECTs with no
+ * lock. A purchase's clawback is triggered from THREE call sites — the refund webhook's
+ * whole-transaction branch (`sourceEventId = paymentId`), its per-line branch (per-item keys
+ * `${adjustmentId}:${itemId}`), and the admin `purchase_revoke` action (`sourceEventId =
+ * purchaseId`, ADR-0225) — and the whole-txn/admin pair share a key (deduped by
+ * `credit_event_source_uniq`) but the per-line keys DO NOT. Two of these racing the SAME purchase
+ * concurrently (e.g. an operator revoke racing the refund webhook's per-line adjustment) can each
+ * read a stale `alreadyClawed=0`, each compute the FULL outstanding amount, and each call
+ * `clawback()` with a DIFFERENT key — the unique index does not dedupe them. `clawback()`'s own
+ * `SELECT balance FOR UPDATE` bounds each individual write to the CURRENT wallet balance (never
+ * negative), but because the wallet is a fungible pool across ALL of an account's purchases, the
+ * SECOND racer's stale-computed "remaining" can still claw an UNRELATED purchase's unspent credits
+ * out of the same wallet once the first racer's claw has already fully settled this purchase.
+ *
+ * The fix: acquire the advisory lock keyed `(accountId, purchaseSourceEventId)` FIRST — mirroring
+ * `withAdvisoryXactLock`'s check-then-enqueue guard (ADR-0229 row 57) — so a second racer blocks
+ * until the first commits, and by the time it re-reads `alreadyClawed` (inside this same locked
+ * section) it observes the first claw's already-committed row and correctly returns 0. All three
+ * call sites route through this ONE function rather than each re-deriving the bound. Run inside
+ * `withTenant`.
+ */
+export async function outstandingClaw(
+  tx: TenantExecutor,
+  accountId: string,
+  purchaseSourceEventId: string,
+): Promise<number> {
+  return withAdvisoryXactLock(
+    tx,
+    `credits:claw:${accountId}:${purchaseSourceEventId}`,
+    async () => {
+      const granted = await creditsGrantedBySource(
+        tx,
+        accountId,
+        purchaseSourceEventId,
+      );
+      const alreadyClawed = await creditsClawedForSource(
+        tx,
+        accountId,
+        purchaseSourceEventId,
+      );
+      return Math.max(0, granted - alreadyClawed);
+    },
+  );
 }
 
 /**
