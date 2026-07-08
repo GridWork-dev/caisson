@@ -2,6 +2,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "bun:test";
 import {
+  assertReadOnlyRailwayArgs,
   buildEnvironmentSection,
   buildLocalOnlyTail,
   buildServiceSection,
@@ -346,14 +347,35 @@ describe("parseRailwayStatus", () => {
 // `ENV HOSTNAME=0.0.0.0` straight into apps/admin/Dockerfile (PR #151), which survives regardless
 // of what this (or any) Railway-side variable mirror does.
 describe("CAISSON-38 — read-only contract (protected var survives a sync)", () => {
-  test("the script never issues a destructive Railway CLI call", () => {
+  test("the railway choke point refuses any non-read invocation (allowlist)", () => {
+    for (const args of [
+      ["whoami"],
+      ["status", "--json"],
+      ["variables", "--service", "caisson-admin", "--kv"],
+    ]) {
+      expect(() => assertReadOnlyRailwayArgs(args)).not.toThrow();
+    }
+    for (const args of [
+      ["up"],
+      ["redeploy"],
+      ["run", "true"],
+      ["unset"],
+      ["environment", "delete"],
+      ["variables", "--set", "HOSTNAME="],
+      [],
+    ]) {
+      expect(() => assertReadOnlyRailwayArgs(args)).toThrow(/read-only mirror/);
+    }
+  });
+
+  test("every railway subprocess call routes through the guarded choke point", () => {
     const source = readFileSync(
       new URL("./railway-env-sync.ts", import.meta.url),
       "utf8",
     );
-    for (const forbidden of ["--set", "unset", '"delete"', "'delete'"]) {
-      expect(source).not.toContain(forbidden);
-    }
+    // Exactly one raw execFileSync("railway", ...) — the guarded railway() helper itself. Any
+    // second spawn site would bypass the allowlist and fail here.
+    expect(source.match(/execFileSync\(\s*"railway"/g)?.length).toBe(1);
   });
 
   test("a Railway-set var (HOSTNAME) round-trips into the generated file unchanged", () => {

@@ -379,7 +379,28 @@ export function buildLocalOnlyTail(names: readonly string[]): string {
 // Impure: Railway CLI + filesystem
 // ============================================================================================
 
+/** The read-only contract (CAISSON-38), enforced at the single subprocess choke point: this
+ *  script mirrors Railway state and must never mutate it. An allowlist of read verbs — not a
+ *  denylist of write ones — so a future `up`/`redeploy`/`run` call cannot slip in unnoticed. */
+const READ_ONLY_RAILWAY_VERBS = new Set(["whoami", "status", "variables"]);
+
+export function assertReadOnlyRailwayArgs(args: readonly string[]): void {
+  const verb = args[0];
+  if (verb === undefined || !READ_ONLY_RAILWAY_VERBS.has(verb)) {
+    throw new Error(
+      `railway-env-sync is a read-only mirror; refusing non-read railway verb: ${String(verb)}`,
+    );
+  }
+  // `variables` is a read ONLY without its write flag (`railway variables --set KEY=VAL`).
+  if (args.includes("--set")) {
+    throw new Error(
+      "railway-env-sync is a read-only mirror; refusing railway variables --set",
+    );
+  }
+}
+
 function railway(args: string[]): string {
+  assertReadOnlyRailwayArgs(args);
   return execFileSync("railway", args, { encoding: "utf8" });
 }
 
