@@ -141,4 +141,23 @@ describe("media manifest", () => {
       expect(e.hasMedia).toBe(entryHasMedia(e.kind, e.id));
     }
   });
+
+  test("omitCodeArtifact (ADR-0290 WR-03) drops the code-artifact slide but leaves other slides + entryHasMedia untouched", () => {
+    // prompt-registry has only a code-artifact slide (see above) — omitting it falls back to the
+    // placeholder, mirroring the depth page's redundant-code guard without breaking the type.
+    const withCode = mediaSlides("module", "prompt-registry");
+    const withoutCode = mediaSlides("module", "prompt-registry", {
+      omitCodeArtifact: true,
+    });
+    expect(withCode.some((s) => s.kind === "code-artifact")).toBe(true);
+    expect(withoutCode.some((s) => s.kind === "code-artifact")).toBe(false);
+    // Default call sites (card viewer / preview dialog, entryHasMedia) are unaffected.
+    expect(entryHasMedia("module", "prompt-registry")).toBe(true);
+
+    // A diagram-carrying module keeps its diagram slide either way.
+    const fieldCrypto = mediaSlides("module", "field-crypto", {
+      omitCodeArtifact: true,
+    });
+    expect(fieldCrypto.some((s) => s.kind === "diagram")).toBe(true);
+  });
 });

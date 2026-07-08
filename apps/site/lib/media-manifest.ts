@@ -148,6 +148,14 @@ function bundleCompositionCaption(id: BundleId): string {
   return `The ${label} bundle's real member modules, composing onto Caisson's Apache-2.0 audited base.`;
 }
 
+export interface MediaSlidesOptions {
+  /** Skip the code-artifact slide (ADR-0290 WR-03) — the module depth page already renders
+   *  `record.artifact` as a framed CodeBlock in its body, so its carousel would otherwise show
+   *  the identical code twice. Card viewer / preview dialog omit this (code-artifact is the only
+   *  place they show the code). */
+  omitCodeArtifact?: boolean;
+}
+
 /** The ordered media slides for one entry (ADR-0290). Preference order: a bundle leads with its
  *  composition slide; a module leads with its live component (ui-pro only) or its real code
  *  artifact (module-pages.ts), then any authored mechanism diagrams that target it — and if none of
@@ -155,6 +163,7 @@ function bundleCompositionCaption(id: BundleId): string {
 export function mediaSlides(
   kind: "bundle" | "module",
   id: string,
+  options?: MediaSlidesOptions,
 ): readonly MediaSlide[] {
   const viewId = `${kind}:${id}`;
   const slides: MediaSlide[] = [];
@@ -176,7 +185,7 @@ export function mediaSlides(
     });
   }
 
-  if (kind === "module") {
+  if (kind === "module" && !options?.omitCodeArtifact) {
     const record = MODULE_PAGES.find((r) => r.slug === id);
     if (record) {
       slides.push({

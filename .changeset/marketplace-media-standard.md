@@ -2,7 +2,7 @@
 "@caisson/site": patch
 ---
 
-Marketplace media standard (ADR-0290): every one of the 28 catalog items (22 modules + 6 bundles)
+The marketplace media standard has arrived: every one of the 28 catalog items (22 modules + 6 bundles)
 now renders real media in the marketplace card viewer and module depth pages — closing the prior
 8/28 media gap to 28/28 on one standardized framed-slide template (a chrome bar + body mirroring the
 homepage-terminal aesthetic). Content preference per item: the actual live `@caisson/ui-pro`
