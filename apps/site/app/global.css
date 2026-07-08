@@ -307,25 +307,21 @@ kbd,
   cursor: pointer;
 }
 
+/* The panel chrome (position/background/shadow/scrim/z-index) is `@caisson/ui-pro`'s `Drawer`
+ * primitive now (ADR-0295) — this just lays out the nav's own children inside it. */
 .cs-nav-mobile {
-  display: none;
-}
-
-.cs-nav-mobile[data-open="true"] {
   display: flex;
   flex-direction: column;
   gap: var(--cs-space-2);
-  position: fixed;
-  inset: 3.5rem 0 auto 0;
-  z-index: 49;
-  padding: var(--cs-space-4) var(--cs-space-6) var(--cs-space-6);
-  background: var(--cs-bg);
-  border-bottom: 1px solid var(--cs-border);
-  box-shadow: var(--cs-shadow-lg);
-  /* The link list outgrew a short phone viewport — cap the drawer below the 3.5rem nav bar and
-     scroll it, so the bottom entries stay reachable. */
+}
+
+/* Sit below the fixed 3.5rem nav bar instead of Drawer's default flush-to-top — the nav bar height
+ * is a site concern, not something the generic package can know. Mirrors the pre-Drawer behavior:
+ * cap below the bar and scroll, so the bottom entries stay reachable on a short phone viewport. */
+.cs-drawer.cs-mobile-nav-drawer[data-side="top"] {
+  top: 3.5rem;
   max-height: calc(100vh - 3.5rem);
-  overflow-y: auto;
+  border-bottom: 1px solid var(--cs-border);
 }
 
 .cs-nav-mobile a {
@@ -368,6 +364,8 @@ kbd,
   .cs-nav,
   .cs-nav-toggle,
   .cs-nav-mobile,
+  .cs-mobile-nav-drawer,
+  .cs-drawer-scrim,
   .cs-skip-link,
   .cs-footer {
     display: none !important;
