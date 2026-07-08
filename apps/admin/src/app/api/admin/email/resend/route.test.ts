@@ -48,4 +48,21 @@ describe("POST /api/admin/email/resend (G40)", () => {
       }).success,
     ).toBe(false);
   });
+
+  // IN-01 — the throttle Map is module-level (process-lifetime), so a fresh account id per test
+  // keeps this independent of test order/repetition.
+  test("a second resend for the same account within the window -> 429", async () => {
+    setAdminAuthFixture(VERIFIED_ADMIN);
+    const body = { targetAccountId: "acct_throttle_test" };
+    await POST(req(body)); // arms the per-account throttle regardless of what this call returns
+    const second = await POST(req(body));
+    expect(second.status).toBe(429);
+  });
+
+  test("a different account is not throttled by another account's recent resend", async () => {
+    setAdminAuthFixture(VERIFIED_ADMIN);
+    await POST(req({ targetAccountId: "acct_throttle_a" }));
+    const other = await POST(req({ targetAccountId: "acct_throttle_b" }));
+    expect(other.status).not.toBe(429);
+  });
 });
