@@ -9,6 +9,8 @@
 // mandatory, not cosmetic.
 import { useState, type ReactNode } from "react";
 
+import { Checkbox as KitCheckbox } from "@caisson/ui/components";
+
 type Result =
   | { kind: "idle" }
   | { kind: "busy" }
@@ -408,22 +410,11 @@ function Checkbox({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <label
-      className="stack"
-      style={{
-        flexDirection: "row",
-        gap: 8,
-        alignItems: "center",
-        fontSize: "0.85em",
-      }}
-    >
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-      />
-      <span>{label}</span>
-    </label>
+    <KitCheckbox
+      checked={checked}
+      onChange={(e) => onChange(e.target.checked)}
+      label={label}
+    />
   );
 }
 
