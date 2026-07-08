@@ -125,6 +125,130 @@ export async function readUpdatesWindows(
 }
 
 /**
+ * The `subscription_status` columns these reads depend on (ADR-0293 G13/G14). Exported so the
+ * columns-contract test can assert every one is present in `@caisson/service-license`'s
+ * `SUBSCRIPTION_STATUS_SCHEMA_SQL`.
+ */
+const SUBSCRIPTION_STATUS_SELECT_COLUMNS = [
+  "subscription_id",
+  "price_id",
+  "plan_tag",
+  "status",
+  "updated_at",
+] as const;
+
+export const SUBSCRIPTION_STATUS_READ_COLUMNS = [
+  "account_id",
+  ...SUBSCRIPTION_STATUS_SELECT_COLUMNS,
+] as const;
+
+export interface SubscriptionStatusRow {
+  subscriptionId: string;
+  priceId: string;
+  planTag: string;
+  status: "active" | "canceled";
+  updatedAt: string;
+}
+
+/**
+ * Every subscription-status row for the account, newest-updated first (ADR-0293) — the buyer
+ * dashboard's G13 "owned" read for a zero-entitlement plan (Developer), and the G14 cancel route's
+ * ownership + Paddle-subscription-id lookup. Deliberately does NOT import
+ * `@caisson/service-license`'s query function — re-expressed as raw SQL against the known table
+ * shape so this package stays a leaf. Run inside `withTenant`.
+ */
+export async function readSubscriptionStatuses(
+  tx: TenantExecutor,
+  accountId: string,
+): Promise<SubscriptionStatusRow[]> {
+  const r = await tx.query<{
+    subscription_id: string;
+    price_id: string;
+    plan_tag: string;
+    status: "active" | "canceled";
+    updated_at: unknown;
+  }>(
+    `SELECT ${SUBSCRIPTION_STATUS_SELECT_COLUMNS.join(", ")}
+       FROM subscription_status
+      WHERE account_id = $1
+      ORDER BY updated_at DESC`,
+    [accountId],
+  );
+  return r.rows.map((row) => ({
+    subscriptionId: row.subscription_id,
+    priceId: row.price_id,
+    planTag: row.plan_tag,
+    status: row.status,
+    updatedAt: toIsoString(row.updated_at),
+  }));
+}
+
+/**
+ * The `order_record` columns these reads depend on (ADR-0293 G26). Exported so the columns-contract
+ * test can assert every one is present in `@caisson/service-license`'s `ORDER_RECORD_SCHEMA_SQL`.
+ */
+const ORDER_RECORD_SELECT_COLUMNS = [
+  "source_event_id",
+  "kind",
+  "price_id",
+  "label",
+  "amount",
+  "currency",
+  "status",
+  "created_at",
+] as const;
+
+export const ORDER_RECORD_READ_COLUMNS = [
+  "account_id",
+  ...ORDER_RECORD_SELECT_COLUMNS,
+] as const;
+
+export interface OrderRecordRow {
+  sourceEventId: string;
+  kind: "subscription" | "purchase";
+  priceId: string | null;
+  label: string;
+  amount: number;
+  currency: string;
+  status: "paid" | "refunded";
+  createdAt: string;
+}
+
+/** Every order/invoice row for the account, newest first (ADR-0293 G26) — the buyer dashboard's
+ *  Invoices view. Run inside `withTenant`. */
+export async function readOrderRecords(
+  tx: TenantExecutor,
+  accountId: string,
+): Promise<OrderRecordRow[]> {
+  const r = await tx.query<{
+    source_event_id: string;
+    kind: "subscription" | "purchase";
+    price_id: string | null;
+    label: string;
+    amount: number;
+    currency: string;
+    status: "paid" | "refunded";
+    created_at: unknown;
+  }>(
+    `SELECT ${ORDER_RECORD_SELECT_COLUMNS.join(", ")}
+       FROM order_record
+      WHERE account_id = $1
+      ORDER BY created_at DESC`,
+    [accountId],
+  );
+  return r.rows.map((row) => ({
+    sourceEventId: row.source_event_id,
+    kind: row.kind,
+    priceId: row.price_id,
+    label: row.label,
+    amount: row.amount,
+    currency: row.currency,
+    status: row.status,
+    createdAt: toIsoString(row.created_at),
+  }));
+}
+
+/**
  * The `license_grant` columns these reads depend on (the SELECT list plus `account_id`, the RLS
  * scope predicate). Exported so the columns-contract test can assert every one is present in
  * `@caisson/service-license`'s `LICENSE_GRANT_SCHEMA_SQL`.

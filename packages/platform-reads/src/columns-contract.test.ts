@@ -13,10 +13,14 @@ import { describe, expect, test } from "bun:test";
 import {
   ENTITLEMENT_SCHEMA_SQL,
   LICENSE_GRANT_SCHEMA_SQL,
+  ORDER_RECORD_SCHEMA_SQL,
+  SUBSCRIPTION_STATUS_SCHEMA_SQL,
 } from "@caisson/service-license";
 import {
   ENTITLEMENT_GRANT_READ_COLUMNS,
   LICENSE_GRANT_READ_COLUMNS,
+  ORDER_RECORD_READ_COLUMNS,
+  SUBSCRIPTION_STATUS_READ_COLUMNS,
 } from "./index.ts";
 
 /**
@@ -88,6 +92,35 @@ describe("columns contract: reads match the services/license DDL", () => {
       expect(
         ddlColumns.has(column),
         `license_grant column "${column}" read by platform-reads is absent from LICENSE_GRANT_SCHEMA_SQL — the schema renamed/dropped it; update the reader's column set`,
+      ).toBe(true);
+    }
+  });
+
+  test("subscription_status exposes every column readSubscriptionStatuses touches (ADR-0293)", () => {
+    const ddlColumns = tableColumns(
+      SUBSCRIPTION_STATUS_SCHEMA_SQL,
+      "subscription_status",
+    );
+    expect(ddlColumns.size).toBeGreaterThanOrEqual(
+      SUBSCRIPTION_STATUS_READ_COLUMNS.length,
+    );
+    for (const column of SUBSCRIPTION_STATUS_READ_COLUMNS) {
+      expect(
+        ddlColumns.has(column),
+        `subscription_status column "${column}" read by platform-reads is absent from SUBSCRIPTION_STATUS_SCHEMA_SQL — the schema renamed/dropped it; update the reader's column set`,
+      ).toBe(true);
+    }
+  });
+
+  test("order_record exposes every column readOrderRecords touches (ADR-0293)", () => {
+    const ddlColumns = tableColumns(ORDER_RECORD_SCHEMA_SQL, "order_record");
+    expect(ddlColumns.size).toBeGreaterThanOrEqual(
+      ORDER_RECORD_READ_COLUMNS.length,
+    );
+    for (const column of ORDER_RECORD_READ_COLUMNS) {
+      expect(
+        ddlColumns.has(column),
+        `order_record column "${column}" read by platform-reads is absent from ORDER_RECORD_SCHEMA_SQL — the schema renamed/dropped it; update the reader's column set`,
       ).toBe(true);
     }
   });
