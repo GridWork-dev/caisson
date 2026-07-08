@@ -50,4 +50,20 @@ describe("computeFloatingPosition", () => {
     const pos = computeFloatingPosition(trigger, PANEL, tiny, "bottom");
     expect(pos.placement).toBe("bottom");
   });
+
+  test("clamps the main axis too when neither side fits, so it stays on-screen", () => {
+    // A viewport far shorter than the panel — neither "bottom" nor its flip "top" fit vertically.
+    const tiny = { width: 1024, height: 50 };
+    const trigger = { top: 25, left: 100, width: 10, height: 10 };
+    const pos = computeFloatingPosition(trigger, PANEL, tiny, "bottom");
+    expect(pos.top).toBeGreaterThanOrEqual(0);
+    expect(pos.top).toBeLessThanOrEqual(tiny.height);
+
+    // Same for the horizontal pair — neither "left" nor its flip "right" fit horizontally.
+    const narrow = { width: 50, height: 768 };
+    const sideTrigger = { top: 100, left: 25, width: 10, height: 10 };
+    const sidePos = computeFloatingPosition(sideTrigger, PANEL, narrow, "left");
+    expect(sidePos.left).toBeGreaterThanOrEqual(0);
+    expect(sidePos.left).toBeLessThanOrEqual(narrow.width);
+  });
 });

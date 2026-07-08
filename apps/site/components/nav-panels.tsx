@@ -12,11 +12,14 @@ import styles from "./nav-panels.module.css";
 // The centered primary-nav trigger row (ADR-0237 F3/F4, repointed onto the kit `Popover` per
 // ADR-0291): three card-panel disclosures — Editions / Marketplace / Resources — generalizing the
 // single ADR-0190 EditionsMenu. Each panel is a WAI-ARIA Disclosure (NOT role=menu): ordinary
-// links a screen reader reads as a list, Tab moves naturally. `Popover` now owns the
-// Escape/outside-click/focus-return contract per instance (audited once, shared — this file used
-// to hand-roll that logic); this component only coordinates "at most one open" across the row and
-// closes on route change. Panels are card-sized and left-anchored under their trigger — never a
-// viewport-spanning mega-menu (design brief; ADR-0190's cliché rejection stands).
+// links a screen reader reads as a list. Tab order is NOT natural — the panel is portaled to
+// document.body, so `Popover` moves focus onto the panel on open and Tab proceeds from there into
+// its links; every keyboard-initiated close returns focus to the trigger. `Popover` owns that
+// whole disclosure contract (open-focus/Escape/outside-click/close-focus) per instance (audited
+// once, shared — this file used to hand-roll that logic); this component only coordinates "at
+// most one open" across the row and closes on route change. Panels are card-sized and
+// left-anchored under their trigger — never a viewport-spanning mega-menu (design brief;
+// ADR-0190's cliché rejection stands).
 
 export interface NavCard {
   href: string;

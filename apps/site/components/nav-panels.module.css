@@ -44,9 +44,12 @@
   padding: var(--cs-space-5);
 }
 
-/* The wider, scrollable groups panel variant (Marketplace's two card families). */
+/* The wider, scrollable groups panel variant (Marketplace's two card families). Kit's own
+   .cs-popover sets max-width: min(24rem, ...) — override it too, or width alone renders capped
+   at 24rem. */
 :global(.cs-popover).panel.panelWide {
   width: min(40rem, 92vw);
+  max-width: min(40rem, 92vw);
   max-height: calc(100vh - 6rem);
   overflow-y: auto;
 }

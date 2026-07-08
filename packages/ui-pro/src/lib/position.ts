@@ -68,8 +68,12 @@ function place(
  * Computes a viewport-relative `{top, left}` (paired with `position: fixed`, matching
  * `getBoundingClientRect`'s coordinate space) for a panel anchored to `trigger` on the
  * `preferred` side. Flips to the opposite side if the preferred side would overflow the viewport
- * and the opposite side fits better; otherwise clamps on the cross axis so the panel stays fully
- * on-screen (never returns coordinates that clip it).
+ * and the opposite side fits better; otherwise falls back to `preferred` unfit. Both axes are then
+ * clamped into `[gap, viewport - panel - gap]` — cheap insurance on the axis that already fit (a
+ * no-op there) and the only thing keeping the *main* axis on-screen when neither placement fit.
+ * A panel taller/wider than the viewport can still get clamped to `gap` on both ends and overflow
+ * regardless — coordinates alone can't shrink it, so panels also carry their own
+ * `max-height`/`overflow-y: auto` (see `.cs-popover`/`.cs-menu`) as the belt-and-braces.
  */
 export function computeFloatingPosition(
   trigger: Rect,
@@ -85,20 +89,15 @@ export function computeFloatingPosition(
       : preferred;
 
   const { top, left } = place(placement, trigger, panel, gap);
-  const isVertical = placement === "top" || placement === "bottom";
 
-  const clampedLeft = isVertical
-    ? Math.min(
-        Math.max(left, gap),
-        Math.max(gap, viewport.width - panel.width - gap),
-      )
-    : left;
-  const clampedTop = isVertical
-    ? top
-    : Math.min(
-        Math.max(top, gap),
-        Math.max(gap, viewport.height - panel.height - gap),
-      );
+  const clampedLeft = Math.min(
+    Math.max(left, gap),
+    Math.max(gap, viewport.width - panel.width - gap),
+  );
+  const clampedTop = Math.min(
+    Math.max(top, gap),
+    Math.max(gap, viewport.height - panel.height - gap),
+  );
 
   return { top: clampedTop, left: clampedLeft, placement };
 }

@@ -35,6 +35,10 @@
   z-index: 60;
   min-width: 16rem;
   max-width: min(24rem, calc(100vw - var(--cs-space-6)));
+  /* Belt-and-braces for computeFloatingPosition's clamp (position.ts) — a panel taller than the
+     viewport still overflows on coordinates alone; this lets a pointer user scroll it instead. */
+  max-height: calc(100vh - var(--cs-space-6) * 2);
+  overflow-y: auto;
   padding: var(--cs-space-4);
   border: 1px solid var(--cs-border);
   border-radius: var(--cs-radius-lg);

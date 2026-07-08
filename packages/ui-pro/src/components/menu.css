@@ -36,6 +36,10 @@
   display: flex;
   flex-direction: column;
   min-width: 12rem;
+  /* Belt-and-braces for computeFloatingPosition's clamp (position.ts) — a panel taller than the
+     viewport still overflows on coordinates alone; this lets a pointer user scroll it instead. */
+  max-height: calc(100vh - var(--cs-space-6) * 2);
+  overflow-y: auto;
   padding: var(--cs-space-2);
   border: 1px solid var(--cs-border);
   border-radius: var(--cs-radius-lg);

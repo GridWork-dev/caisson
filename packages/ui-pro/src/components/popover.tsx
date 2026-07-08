@@ -32,12 +32,17 @@ export interface PopoverProps {
 /**
  * Popover — a non-modal, trigger-anchored disclosure: `aria-expanded`/`aria-controls` on the
  * trigger, plain content in the panel (no `role="dialog"` — a popover isn't a dialog and doesn't
- * trap focus), Escape closes and returns focus to the trigger, a pointer outside the trigger+panel
- * closes without stealing focus. Portaled to `document.body` (via `react-dom`'s `createPortal` —
- * no new dependency) so it escapes any ancestor's overflow/stacking context; positioned by the
- * kit's hand-rolled `computeFloatingPosition` (ADR-0291 — no `@floating-ui`, no Radix). The
- * disclosure contract (Escape/outside-click/focus-return) mirrors the pattern the site's own
- * nav-panels trigger row hand-rolled — this is that logic, audited once and shared.
+ * trap focus). Portaled to `document.body` (via `react-dom`'s `createPortal` — no new dependency)
+ * so it escapes any ancestor's overflow/stacking context, which breaks the natural DOM tab order
+ * (the panel no longer sits next to its trigger) — per the APG disclosure-with-portal guidance,
+ * focus is moved explicitly on open/close instead: opening moves focus onto the panel itself
+ * (`tabIndex={-1}`, no visible content is assumed focusable) so a plain Tab from there reaches the
+ * panel's own links in natural order; every *keyboard-initiated* close (Escape, or toggling the
+ * trigger closed) returns focus to the trigger. An outside pointerdown close deliberately does
+ * NOT return focus — the user clicked somewhere else on purpose, and stealing focus back to the
+ * trigger would fight that. Positioned by the kit's hand-rolled `computeFloatingPosition`
+ * (ADR-0291 — no `@floating-ui`, no Radix). The disclosure contract mirrors the pattern the site's
+ * own nav-panels trigger row hand-rolled — this is that logic, audited once and shared.
  *
  * Recipe-compliant (ADR-0099): co-located CSS reading only `var(--cs-*)`; BEM block `cs-popover`.
  * Owns state/DOM measurement, so `"use client"`.
@@ -60,6 +65,12 @@ export function Popover({
 
   const style = useFloatingPosition(open, triggerRef, panelRef, placement);
 
+  // Move focus into the panel whenever it opens (WCAG 2.4.3 — the portal breaks natural tab
+  // order, so this is explicit). `panelRef.current` is only non-null once open (see JSX below).
+  useEffect(() => {
+    if (open) panelRef.current?.focus();
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     function onKeyDown(e: KeyboardEvent) {
@@ -74,6 +85,7 @@ export function Popover({
         !triggerRef.current?.contains(target) &&
         !panelRef.current?.contains(target)
       ) {
+        // Outside pointer close — do not steal focus back to the trigger (APG guidance).
         onOpenChange(false);
       }
     }
@@ -97,7 +109,14 @@ export function Popover({
         aria-controls={panelId}
         aria-label={ariaLabel}
         aria-current={ariaCurrent}
-        onClick={() => onOpenChange(!open)}
+        onClick={() => {
+          const next = !open;
+          // Closing via the trigger is a keyboard-reachable path too (Enter/Space on a focused
+          // trigger) — make it consistent with Escape and explicitly return focus, since a mouse
+          // click doesn't focus a <button> in every browser (Safari/Firefox default off).
+          if (!next) triggerRef.current?.focus();
+          onOpenChange(next);
+        }}
       >
         {trigger}
       </button>
@@ -106,6 +125,7 @@ export function Popover({
             <div
               ref={panelRef}
               id={panelId}
+              tabIndex={-1}
               className={
                 panelClassName ? `cs-popover ${panelClassName}` : "cs-popover"
               }

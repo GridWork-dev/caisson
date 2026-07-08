@@ -73,6 +73,23 @@ describe("Popover", () => {
     unmount();
   });
 
+  test("opening via keyboard moves focus into the panel (WCAG 2.4.3 — portal tab order)", () => {
+    const { container, document, act, unmount } = renderIntoJsdom(
+      <ControlledPopover />,
+    );
+    const trigger = container.querySelector("button")!;
+
+    // A keyboard activation (Enter/Space) fires the same click event a real browser would.
+    act(() => trigger.click());
+    const panelId = trigger.getAttribute("aria-controls")!;
+    const panel = document.getElementById(panelId);
+
+    expect(panel).not.toBeNull();
+    expect(document.activeElement).toBe(panel);
+
+    unmount();
+  });
+
   test("a pointerdown outside the trigger+panel closes it", () => {
     const { container, document, act, unmount } = renderIntoJsdom(
       <ControlledPopover />,

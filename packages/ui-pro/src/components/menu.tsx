@@ -96,6 +96,10 @@ export function Menu({
     if (e.key === "Escape") {
       e.preventDefault();
       close();
+    } else if (e.key === "Tab") {
+      // APG Menu Button: Tab closes the menu and lets focus move on naturally — don't
+      // preventDefault, and don't re-focus the trigger the way Escape/selection do.
+      onOpenChange(false);
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
       const next = enabled[(idx + 1) % enabled.length];
