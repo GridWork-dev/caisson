@@ -47,4 +47,21 @@ describe("buildCorpus (real repo)", () => {
     expect(full).not.toContain("@caisson/audit-harness");
     expect(full).not.toContain("not sellable");
   });
+
+  // the support bot escalated "how do I use the CLI with my AI agent after purchasing"
+  // as unanswerable — the getting-started quickstart chunk must cover both the post-purchase CLI
+  // install and how an AI agent drives Caisson (shelling out to the CLI or the MCP server).
+  test("the quickstart doc covers post-purchase CLI install and AI-agent usage", () => {
+    const quickstart = corpus.chunks.filter(
+      (c) => c.source === "apps/site/content/docs/getting-started.mdx",
+    );
+    expect(quickstart.length).toBeGreaterThan(0);
+    const text = quickstart.map((c) => c.text).join("\n");
+    // CLI shell-out path.
+    expect(text).toContain("bunx @caisson-sh/cli@latest");
+    expect(text).toContain("CAISSON_LICENSE_TOKEN");
+    // MCP wiring path — added explicitly (not a scaffold default), then hosted over stdio.
+    expect(text).toContain("bun add @caisson/mcp-server");
+    expect(text).toContain("runStdioServer");
+  });
 });

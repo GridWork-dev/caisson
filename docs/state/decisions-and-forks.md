@@ -1,7 +1,7 @@
 ---
 updated: 2026-07-07
 status: live
-adr_ceiling: 0294
+adr_ceiling: 0295
 ---
 
 # Decisions & Forks — live board
@@ -1722,6 +1722,13 @@ are BANNED in changeset bodies (they ship into buyer CHANGELOGs) — three #162 
   cancel with the webhook staying revoke-truth, in-app invoice history. Closes G13/G14/G26.
 - **Chargebacks → LOCKED as ADR-0294:** subscribe + alert-only, no automated revocation. G20.
 - **Wave scope → everything code-fixable (33 items)** this sitting, parallel worktree builders.
+- **PR #167 ADR-0291 deviation → LOCKED as ADR-0295** (second picker round, same sitting):
+  **enforce the mobile-nav repoint** via a NEW dialog-class `Drawer` primitive in ui-pro
+  (focus trap, Escape/scrim close, focus-return); marketplace-tabs repoint DROPPED on shape
+  grounds (cross-page nav — `role=tablist` would be an anti-pattern; builder + independent
+  review agreed). Refines ADR-0291. Session rules also tightened by the operator: **no fable
+  reviewers for the remainder** (opus at SHIP even on money seams), sonnet for bounded
+  implementation dispatches, forks continue via picker.
 
 **In flight at write time:** the UI-primitives builder (ADR-0291) · the media PR #165 (review
 fixes pushed, CI pending) · PR #166 bot content-gap (opus review running) · the create-caisson
