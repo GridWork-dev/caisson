@@ -49,6 +49,7 @@ const liveTest = test.skipIf(!HAVE_CREDS);
 let browser: Browser | null = null;
 let context: BrowserContext | null = null;
 let sessionEstablished = false;
+let sessionFailureDetail = "";
 
 function requireContext(): BrowserContext {
   if (context === null) throw new Error("browser context not initialized");
@@ -70,10 +71,13 @@ async function trySignIn(ctx: BrowserContext): Promise<boolean> {
 
 /** Idempotent: sign-in first; self-serve sign-up only on that failing (account missing, or —
  *  per the file header — pending its one-time email verification, in which case this still
- *  returns false and the caller reports it plainly instead of faking a pass). */
+ *  returns false and the caller reports it plainly instead of faking a pass). The sign-up
+ *  response status is folded into the failure detail so a re-run before the verification click
+ *  (expected to be rare — better-auth rejects the duplicate without resending the email) is
+ *  distinguishable from bad credentials. */
 async function ensureProbeSession(ctx: BrowserContext): Promise<boolean> {
   if (await trySignIn(ctx)) return true;
-  await ctx.request.post(`${BASE_URL}/api/auth/sign-up/email`, {
+  const signUp = await ctx.request.post(`${BASE_URL}/api/auth/sign-up/email`, {
     data: {
       name: "Caisson E2E Probe",
       email: PROBE_EMAIL,
@@ -81,7 +85,11 @@ async function ensureProbeSession(ctx: BrowserContext): Promise<boolean> {
     },
     timeout: 15_000,
   });
-  return trySignIn(ctx);
+  if (await trySignIn(ctx)) return true;
+  sessionFailureDetail = signUp.ok()
+    ? `sign-up responded ${signUp.status()} — new account awaiting its one-time email verification`
+    : `sign-up responded ${signUp.status()} — account already exists (wrong password, or still unverified)`;
+  return false;
 }
 
 /** True when `page` rendered an `EmptyState` (`.cs-empty`, `packages/ui/src/components/
@@ -107,8 +115,13 @@ beforeAll(async () => {
   });
   try {
     sessionEstablished = await ensureProbeSession(context);
-  } catch {
+  } catch (err) {
+    // An exception here is infra, not credentials — CF-Access misconfig, DNS, timeout,
+    // an outage — so surface the real message instead of collapsing it into "no session".
     sessionEstablished = false;
+    sessionFailureDetail = `auth POST threw (infra/network, not credentials): ${
+      err instanceof Error ? err.message : String(err)
+    }`;
   }
 });
 
@@ -123,9 +136,7 @@ describe("buyer-dashboard flow — probe account, empty-state assertions", () =>
     () => {
       expect(
         sessionEstablished,
-        "no session — either the credentials are wrong, or (first run against a brand-new " +
-          "probe account) sign-up fired and is waiting on its one-time email verification; " +
-          "see the file header.",
+        `no session — ${sessionFailureDetail || "unknown"}; see the file header.`,
       ).toBe(true);
     },
   );
