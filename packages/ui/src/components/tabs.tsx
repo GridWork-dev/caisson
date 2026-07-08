@@ -102,7 +102,10 @@ export function Tabs({
               role="tab"
               id={`cs-tab-${item.id}`}
               aria-selected={selected}
-              aria-controls={`cs-tabpanel-${item.id}`}
+              // Only the active tab's panel is mounted below, so aria-controls on an inactive
+              // tab must stay unset — otherwise it dangles, pointing at an id that doesn't exist
+              // in the DOM (IN-02).
+              aria-controls={selected ? `cs-tabpanel-${item.id}` : undefined}
               aria-disabled={item.disabled || undefined}
               tabIndex={selected ? 0 : -1}
               disabled={item.disabled}

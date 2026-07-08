@@ -7,6 +7,31 @@ import { Icon } from "./icon";
 
 import "./dialog.css";
 
+// Module-level so nested dialogs share one lock: the innermost close must not restore scroll
+// while an outer dialog is still open (IN-08).
+let scrollLockCount = 0;
+let previousBodyOverflow = "";
+
+/** Locks `document.body` scroll. `showModal()` gives focus-trap/inert/backdrop for free but not
+ * background scroll-lock — call on open, and call `unlockBodyScroll` on close/unmount to restore.
+ * Counted so nested dialogs don't unlock each other's scroll prematurely. */
+export function lockBodyScroll(): void {
+  if (scrollLockCount === 0) {
+    previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+  }
+  scrollLockCount++;
+}
+
+/** Reverses one `lockBodyScroll` call; only restores the prior `overflow` value once every lock
+ * has been released. */
+export function unlockBodyScroll(): void {
+  scrollLockCount = Math.max(0, scrollLockCount - 1);
+  if (scrollLockCount === 0) {
+    document.body.style.overflow = previousBodyOverflow;
+  }
+}
+
 export interface DialogProps {
   /** Open/closed (controlled). Driven onto the native `<dialog>` via `showModal()`/`close()`. */
   open: boolean;
@@ -54,6 +79,13 @@ export function Dialog({
     if (!dlg) return;
     if (open && !dlg.open) dlg.showModal();
     else if (!open && dlg.open) dlg.close();
+  }, [open]);
+
+  // Background scroll-lock (IN-08) — showModal() doesn't provide this on its own.
+  useEffect(() => {
+    if (!open) return;
+    lockBodyScroll();
+    return () => unlockBodyScroll();
   }, [open]);
 
   return (
