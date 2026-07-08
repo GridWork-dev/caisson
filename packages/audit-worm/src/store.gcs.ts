@@ -166,7 +166,11 @@ export class GcsArtifactStore implements ArtifactStore {
     const res = await this.transport(url, {
       method: "POST",
       headers: { "Content-Type": `multipart/related; boundary=${boundary}` },
-      body: new Blob([head, body, tail]),
+      // A bare `Uint8Array` types as `Uint8Array<ArrayBufferLike>` (covers SharedArrayBuffer too),
+      // which `Blob`'s `BlobPart` union rejects; `new Uint8Array(body)` always allocates a fresh
+      // ArrayBuffer-backed copy regardless of the source's backing buffer, satisfying the type
+      // without an unsound cast.
+      body: new Blob([head, new Uint8Array(body), tail]),
     });
     if (res.status === 412 || res.status === 409) {
       throw new ArtifactExistsError(key);
