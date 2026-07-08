@@ -13,6 +13,7 @@ import {
   softwareApplication,
 } from "@/lib/jsonld";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
+import { hasModulePage } from "@/lib/module-pages";
 import { BUNDLE_PRICES, MODULE_PRICES } from "@/lib/pricing";
 
 export const metadata = buildMetadata({
@@ -54,7 +55,13 @@ export default function MarketplacePage() {
       price: b,
     }),
   );
-  const catalogNode = moduleItemList(MODULE_PRICES);
+  // Offer URLs only for modules with a real depth page (mirrors sitemap.ts's MODULE_PAGES-derived
+  // module set) — the full MODULE_PRICES list includes SKUs with no `/marketplace/modules/<id>`
+  // route yet, and advertising a dead Offer URL in structured data is dishonest to the exact AEO
+  // crawlers robots.ts courts (G17).
+  const catalogNode = moduleItemList(
+    MODULE_PRICES.filter((m) => hasModulePage(m.id)),
+  );
 
   return (
     <>

@@ -26,6 +26,7 @@ import {
 } from "@/lib/jsonld";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import { BUNDLE_MARKS, moduleMark } from "@/lib/marks";
+import { hasModulePage } from "@/lib/module-pages";
 import {
   bundlePrice,
   bundlePriceById,
@@ -80,17 +81,17 @@ const PIECES = [
   },
 ] as const;
 
-// Base substrate / no-standalone-SKU packages predate the F6 sellable-module mark set —
-// tool-exec never got a standalone SKU or a bespoke mark, so it resolves through this local map
-// (matches the compliance/ai-kit/local-first pages' same-shaped exception). Sellable members
-// resolve via `moduleMark`.
+// Base substrate / no-bespoke-mark packages predate the F6 sellable-module mark set — tool-exec
+// never got a bespoke mark, so it resolves through this local map (matches the compliance/ai-kit/
+// local-first pages' same-shaped exception). Sellable members resolve via `moduleMark`.
 const BASE_MEMBER_ICON: Record<string, IconName> = {
   "tool-exec": "terminal",
 };
 
 // The bundle's real composed packages — read from the shared bundle content record. Priced via a
-// StatusChip when a member is also sold standalone (`MODULE_PRICES`), linking to its module depth
-// page; tool-exec has no standalone SKU at all.
+// StatusChip when a member is also sold standalone (`MODULE_PRICES`); linked to its module depth
+// page only when one exists — tool-exec is priced but has no depth page yet, so it renders its
+// price chip but stays non-interactive and unlinked (G5).
 const MEMBER_MODULES = record.members;
 
 function MemberModuleCard({
@@ -103,9 +104,12 @@ function MemberModuleCard({
   oneLiner: string;
 }) {
   const price = MODULE_PRICES.find((m) => m.id === id);
+  // Linkable is gated on the depth page actually existing, not on price truthiness — a member can
+  // be priced (MODULE_PRICES) with no depth page yet, and a Link to it 404s (G5).
+  const linkable = hasModulePage(id);
   const icon = BASE_MEMBER_ICON[id] ?? moduleMark(id);
   const card = (
-    <Card interactive={price !== undefined}>
+    <Card interactive={linkable}>
       <div
         style={{
           display: "flex",
@@ -126,7 +130,7 @@ function MemberModuleCard({
       )}
     </Card>
   );
-  return price ? (
+  return linkable ? (
     <Link
       href={`/marketplace/modules/${id}`}
       style={{ textDecoration: "none", color: "inherit" }}
