@@ -61,14 +61,13 @@ jobs:
           path: ~/.bun/install/cache
           key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
           restore-keys: ${{ runner.os }}-bun-
-      # Layer 1a — SPDX/license authority, fs-only pass. Runs BEFORE install so AGPL-workspace +
-      # down-only + declarations are checked even if the workspace install is broken.
-      - name: standards-gate (pre-install — AGPL workspace + down-only + declarations)
-        run: bun run tooling/standards-gate/src/cli.ts
       - run: bun install --frozen-lockfile
-      # Layer 1b — re-run POST-install: this is where checkExternalAgpl + checkManifestAgreement
-      # actually execute (they need node_modules / zod). Without this second run they silently skip.
-      - name: standards-gate (post-install — external-AGPL + manifest↔package.json agreement)
+      # Layer 1 — SPDX/license authority: AGPL workspace + down-only + declarations +
+      # checkExternalAgpl + checkManifestAgreement. Runs AFTER install: the gate's import graph
+      # (typescript, zod) resolves only from node_modules — the former pre-install pass leaned on
+      # Bun auto-install, which fails on `catalog:` deps in a clean checkout (2026-07-08 PR #179:
+      # deterministic ENOENT on fresh runners; historical greens were runner-state accidents).
+      - name: standards-gate (AGPL workspace + down-only + declarations + external-AGPL + manifest agreement)
         run: bun run tooling/standards-gate/src/cli.ts
       # Layer 2 — fast static provider-SDK signal (needs root eslint.config.js → @caisson/eslint-config).
       - name: eslint import boundaries (provider-SDK, ADR-0011/0022)
