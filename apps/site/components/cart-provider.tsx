@@ -17,6 +17,7 @@ import {
   type CartItem,
   parseStoredCart,
   pruneCart,
+  prunedLines,
   removeCartItem,
   serializeCart,
 } from "@/lib/cart";
@@ -35,6 +36,10 @@ export interface CartContextValue {
   openDrawer: () => void;
   closeDrawer: () => void;
   toggleDrawer: () => void;
+  /** Lines silently dropped by the hydration-time `pruneCart` (G32) — a retired SKU still in
+   *  localStorage. Empty once acknowledged (`dismissPrunedNotice`) or on the next hydration. */
+  prunedItems: readonly CartItem[];
+  dismissPrunedNotice: () => void;
 }
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
@@ -54,16 +59,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [prunedItems, setPrunedItems] = useState<CartItem[]>([]);
 
   useEffect(() => {
     // Prune against the live catalog: a persisted line with a retired price id (ADR-0238) would
     // charge at Paddle and then fail closed at the webhook — drop it before it can check out.
-    setItems(
-      pruneCart(
-        parseStoredCart(window.localStorage.getItem(CART_STORAGE_KEY)),
-        LIVE_PRICE_IDS,
-      ),
+    // G32: the diff (stored - kept) is surfaced as a one-line notice instead of vanishing silently.
+    const stored = parseStoredCart(
+      window.localStorage.getItem(CART_STORAGE_KEY),
     );
+    const kept = pruneCart(stored, LIVE_PRICE_IDS);
+    setPrunedItems(prunedLines(stored, kept));
+    setItems(kept);
     setHydrated(true);
   }, []);
 
@@ -95,8 +102,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       openDrawer: () => setDrawerOpen(true),
       closeDrawer: () => setDrawerOpen(false),
       toggleDrawer: () => setDrawerOpen((v) => !v),
+      prunedItems,
+      dismissPrunedNotice: () => setPrunedItems([]),
     }),
-    [items, drawerOpen],
+    [items, drawerOpen, prunedItems],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

@@ -6,7 +6,12 @@ import { Button, Card } from "@/components";
 import { formatUsd } from "@/lib/pricing";
 
 import { useCart } from "./cart-provider";
-import { CartLineItem, CartTrustNote, CartUpgradeCallout } from "./cart-shared";
+import {
+  CartLineItem,
+  CartPrunedNotice,
+  CartTrustNote,
+  CartUpgradeCallout,
+} from "./cart-shared";
 import styles from "./cart.module.css";
 
 /** The `/cart` page body — the RICH surface (D-5, ADR-0193): full-density line items, the honest
@@ -19,14 +24,17 @@ export function CartView() {
 
   if (items.length === 0) {
     return (
-      <Card>
-        <p className="cs-muted">Your cart is empty.</p>
-        <div style={{ marginTop: "var(--cs-space-4)" }}>
-          <Button href="/marketplace" variant="primary">
-            Browse editions &amp; modules
-          </Button>
-        </div>
-      </Card>
+      <div style={{ display: "grid", gap: "var(--cs-space-4)" }}>
+        <CartPrunedNotice />
+        <Card>
+          <p className="cs-muted">Your cart is empty.</p>
+          <div style={{ marginTop: "var(--cs-space-4)" }}>
+            <Button href="/marketplace" variant="primary">
+              Browse editions &amp; modules
+            </Button>
+          </div>
+        </Card>
+      </div>
     );
   }
 
@@ -34,6 +42,7 @@ export function CartView() {
     <div
       style={{ display: "grid", gap: "var(--cs-space-6)", maxWidth: "40rem" }}
     >
+      <CartPrunedNotice />
       <ul className={styles.lines}>
         {items.map((item) => (
           <CartLineItem key={item.id} item={item} density="comfortable" />

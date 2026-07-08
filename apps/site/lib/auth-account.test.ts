@@ -79,3 +79,27 @@ test("G8: a cookie naming an account the user does NOT belong to falls back to p
     activeAccountCookie = undefined;
   }
 });
+
+test("G16: getOwnedCartItemIds maps an active entitlement grant to its catalog cart id", async () => {
+  delete process.env.DATABASE_URL;
+  const { getDb } = await import("./db.ts");
+  const { getOwnedCartItemIds } = await import("./owned-cart-items.ts");
+
+  // USER_ID's personal account (bootstrapped by the first test above) owns field-crypto — seeded
+  // directly (bypasses RLS, same pattern as members-gate.test.ts's seedGrant) since this is a
+  // fixture write, not the code path under test.
+  const db = await getDb();
+  await db.transaction((tx) =>
+    tx.exec(
+      `INSERT INTO entitlement_grant
+         (id, account_id, entitlement_id, source_kind, purchase_id, source_event_id, status)
+       VALUES
+         ('grant_g16_test', '${USER_ID}', 'field-crypto', 'one_time', 'pi_g16', 'evt_g16', 'active')
+       ON CONFLICT (id) DO NOTHING`,
+    ),
+  );
+
+  const owned = await getOwnedCartItemIds();
+  expect(owned.has("module:field-crypto")).toBe(true);
+  expect(owned.has("module:audit-worm")).toBe(false); // not granted — stays un-owned
+});
