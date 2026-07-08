@@ -9,6 +9,7 @@ export {
   grant,
   debit,
   balance,
+  spendableBalance,
   getLedger,
   creditsGrantedBySource,
   creditsClawedForSource,

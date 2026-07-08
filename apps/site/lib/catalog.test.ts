@@ -112,3 +112,19 @@ describe("toCartItem", () => {
     expect("blurb" in cartItem).toBe(false);
   });
 });
+
+describe("the credit-pack row (G9 — /dashboard/credits' Buy-credits lookup)", () => {
+  test("exactly one non-PLACEHOLDER PURCHASE_BOOK row is tagged credit_pack, granting credits + no entitlements", () => {
+    // /dashboard/credits looks this row up by purchaseTag rather than a hardcoded price id — this
+    // pins that the lookup resolves to exactly one row (a second real credit_pack row would make
+    // the page's `.find()` silently pick an arbitrary one).
+    const rows = Object.entries(PURCHASE_BOOK).filter(
+      ([id, entry]) =>
+        entry.purchaseTag === "credit_pack" && !id.includes("PLACEHOLDER"),
+    );
+    expect(rows).toHaveLength(1);
+    const [, entry] = rows[0]!;
+    expect(entry.entitlements).toEqual([]);
+    expect(entry.credits).toBe(asCredits(5000));
+  });
+});
