@@ -18,10 +18,14 @@ import type { ExpiringSoon } from "@caisson/credits";
 import {
   readEntitlementGrants,
   readLicenseGrantRows,
+  readOrderRecords,
+  readSubscriptionStatuses,
 } from "@caisson/platform-reads";
 import type {
   EntitlementGrantRow,
   LicenseGrantRow,
+  OrderRecordRow,
+  SubscriptionStatusRow,
 } from "@caisson/platform-reads";
 import type { TenantExecutor } from "@caisson/tenancy-rls";
 
@@ -29,6 +33,9 @@ import type { TenantExecutor } from "@caisson/tenancy-rls";
 // (`@/lib/dashboard-reads`). The queries + row types now live in `@caisson/platform-reads`.
 export { readEntitlementGrants, readLicenseGrantRows };
 export type { EntitlementGrantRow, LicenseGrantRow };
+// ADR-0293: the G13/G14 subscription-status read + the G26 order/invoice history read.
+export { readSubscriptionStatuses, readOrderRecords };
+export type { SubscriptionStatusRow, OrderRecordRow };
 
 /** `timestamptz` columns come back as a driver-native `Date` instance on both PGlite and
  * node-postgres, never a string — normalize explicitly at every raw-SQL read boundary in this

@@ -12,6 +12,11 @@
 #   BETTER_AUTH_URL                     (the canonical origin, e.g. https://caisson.sh — better-auth callback base)
 #   NEXT_PUBLIC_PADDLE_CLIENT_TOKEN     (Paddle.js client token — ADR-0116; MUST be a build ARG, see Dockerfile)
 #   NEXT_PUBLIC_PADDLE_ENV              ("sandbox" | "production"; defaults to sandbox; build ARG)
+#   PADDLE_API_KEY                       (server-only — ADR-0293 G14 self-serve cancel, POST /subscriptions/
+#                                        {id}/cancel; unset ⇒ the cancel route 503s, never a client-side credential)
+#   PADDLE_ENV                           ("sandbox" | "production", server-side selector for the ADR-0293 cancel
+#                                        call's API base URL; defaults to sandbox — mirrors NEXT_PUBLIC_PADDLE_ENV
+#                                        but read server-side only, same pair services/license already sets)
 #   NEXT_PUBLIC_PLAUSIBLE_DOMAIN        (e.g. "caisson.sh" — ADR-0118; build ARG; analytics no-op without it)
 #   OTEL_EXPORTER_OTLP_ENDPOINT         (the fleet OTLP sink, Grafana Cloud — ADR-0117/0177; observability no-ops without it)
 #   RESEND_API_KEY / RESEND_SEGMENT_ID  (the product-updates capture form — inert (202) without them)
