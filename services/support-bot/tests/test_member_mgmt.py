@@ -10,10 +10,13 @@ import discord
 
 from caisson_support_bot.config import SelfAssignRole, Settings
 from caisson_support_bot.member_mgmt import (
+    _GRANT_ROLE_CHOICES,
+    PRIORITY_SUPPORT_ENTITLEMENT_ID,
     assign_default_role,
     build_role_view,
     edition_role_id,
     grant_edition,
+    grant_role_target,
     may_moderate,
     member_can_manage_role,
     member_has_priority_support,
@@ -96,6 +99,27 @@ def test_priority_support_role_id_resolves_and_fails_closed() -> None:
     # ADR-0278/0288: unset ⇒ None (the billing-grant push skips the role, never guesses one).
     assert priority_support_role_id(_settings(role_priority_support_id=999)) == 999
     assert priority_support_role_id(_settings(role_priority_support_id=None)) is None
+
+
+def test_grant_role_choices_include_priority_support_and_every_edition() -> None:
+    # G39: the /grant-role picker previously had no priority-support entry at all.
+    assert PRIORITY_SUPPORT_ENTITLEMENT_ID in _GRANT_ROLE_CHOICES
+    assert "compliance" in _GRANT_ROLE_CHOICES
+    assert "ai-kit" in _GRANT_ROLE_CHOICES
+    assert "local-ai" in _GRANT_ROLE_CHOICES
+    assert "agent-dev" in _GRANT_ROLE_CHOICES
+
+
+def test_grant_role_target_resolves_priority_support_separately_from_editions() -> None:
+    settings = _settings(role_compliance_id=111, role_priority_support_id=999)
+    assert grant_role_target(settings, "compliance") == 111
+    assert grant_role_target(settings, PRIORITY_SUPPORT_ENTITLEMENT_ID) == 999
+    assert grant_role_target(settings, "nope") is None
+
+
+def test_grant_role_target_priority_support_fails_closed_when_unset() -> None:
+    settings = _settings(role_compliance_id=111, role_priority_support_id=None)
+    assert grant_role_target(settings, PRIORITY_SUPPORT_ENTITLEMENT_ID) is None
 
 
 def test_role_outranks_bot() -> None:
