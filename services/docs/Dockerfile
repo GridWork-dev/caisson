@@ -32,8 +32,10 @@ ENTRYPOINT ["/app/services/docs/entrypoint.sh"]
 # without it). The real OpenRouter embedder (qwen3-embedding-8b) is a CODE-TRACK wire at
 # services/docs/src/server.ts (DocsIndex.build 2nd arg); until it lands this serves the FTS5 floor.
 EXPOSE 8788
+# The healthcheck exec spawns as the image's default user (root now that the entrypoint owns the
+# privilege drop) — drop it to bun the same way, so no periodic root-context process exists.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=25s \
-  CMD bun -e "fetch('http://127.0.0.1:'+(process.env.PORT||8788)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+  CMD setpriv --reuid=bun --regid=bun --init-groups bun -e "fetch('http://127.0.0.1:'+(process.env.PORT||8788)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 # cwd = /app → findRepoRoot resolves /app immediately (root package.json has `workspaces`).
 CMD ["bun", "services/docs/src/server.ts"]
