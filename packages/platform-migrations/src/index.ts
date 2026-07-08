@@ -1,8 +1,8 @@
-// @caisson/platform-migrations — the ONE ordered platform migration chain (CAISSON-21, follow-up
-// from PR #73 / CAISSON-11). apps/site/lib/deploy-migrate.ts's `platformPackage()` used to be the
+// @caisson/platform-migrations — the ONE ordered platform migration chain.
+// apps/site/lib/deploy-migrate.ts's `platformPackage()` used to be the
 // sole owner of this chain; apps/admin's PGlite bootstrap hand-mirrored it by SQL-constant name, and
-// that hand-mirror already drifted once (CAISSON-11: the ADR-0218 line-item columns), caught again
-// on credit_event in PR #176's review. Both consumers now assemble/apply the SAME ordered array —
+// that hand-mirror drifted more than once (missed line-item columns, then a missed
+// credit_event table). Both consumers now assemble/apply the SAME ordered array —
 // `platformMigrationsPackage()` for the raw shape, `applyAll()` for the assemble+run in one call — so
 // a new migration lands for both or neither.
 //

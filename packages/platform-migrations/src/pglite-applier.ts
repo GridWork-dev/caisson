@@ -3,8 +3,7 @@
 // is an OPTIONAL peer dependency (a real-Postgres-only consumer, e.g. services/license, never pulls
 // it in). Wired to PGlite's own query/transaction API instead of a node-postgres `Pool` (PGlite has
 // no `.connect()`). Two production consumers now share this — apps/site/lib/db.ts and
-// apps/admin/src/lib/admin-db.ts — so it lives here instead of being hand-copied a second time
-// (CAISSON-21 follow-up).
+// apps/admin/src/lib/admin-db.ts — so it lives here instead of being hand-copied a second time.
 import type { MergedMigration } from "@caisson/kernel";
 import type { MigrationApplier } from "@caisson/migrate";
 import type { PGlite } from "@electric-sql/pglite";

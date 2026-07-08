@@ -1,4 +1,4 @@
-// CAISSON-21 chain-equality proof: `PLATFORM_MIGRATIONS_DIGEST` below was computed by running
+// Chain-equality proof: `PLATFORM_MIGRATIONS_DIGEST` below was computed by running
 // `assembleMigrations([platformPackage()]).schemaVersion` against the PRE-EXTRACTION
 // apps/site/lib/deploy-migrate.ts (the sole owner before this package existed) — the kernel's
 // `schemaVersion` is a sha256 chained over every migration's filename + content checksum in order
@@ -59,7 +59,7 @@ const PRE_EXTRACTION_FILENAMES = [
   "0019_order_record.sql",
 ];
 
-test("platformMigrationsPackage() + the two site-local ask_ai_* entries reassemble to the EXACT pre-extraction chain (byte-identical, CAISSON-21)", () => {
+test("platformMigrationsPackage() + the two site-local ask_ai_* entries reassemble to the EXACT pre-extraction chain (byte-identical)", () => {
   const pkg = platformMigrationsPackage([
     { name: "0011_ask_ai_spend.sql", sql: ASK_AI_SPEND_SCHEMA_SQL },
     { name: "0012_ask_ai_question.sql", sql: ASK_AI_QUESTION_SCHEMA_SQL },
