@@ -57,9 +57,11 @@ describe("buildCorpus (real repo)", () => {
     );
     expect(quickstart.length).toBeGreaterThan(0);
     const text = quickstart.map((c) => c.text).join("\n");
+    // CLI shell-out path.
     expect(text).toContain("bunx @caisson-sh/cli@latest");
     expect(text).toContain("CAISSON_LICENSE_TOKEN");
-    expect(text).toContain("@caisson/mcp-server");
+    // MCP wiring path — added explicitly (not a scaffold default), then hosted over stdio.
+    expect(text).toContain("bun add @caisson/mcp-server");
     expect(text).toContain("runStdioServer");
   });
 });
