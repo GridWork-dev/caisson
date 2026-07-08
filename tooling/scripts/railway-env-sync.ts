@@ -6,6 +6,13 @@
 // deploy/mutate command. Railway is the source of truth; this file is a mirror of it, never the
 // reverse.
 //
+// CAISSON-38 CLEARED: admin.caisson.sh lost its HOSTNAME Railway variable and 502'd; this script
+// was investigated as the suspect ("env-sync prune"). It has no code path that can remove a
+// Railway variable — see the READ-ONLY CONTRACT above and the pinning tests in
+// railway-env-sync.test.ts. The real cause was Railway/Docker re-populating the reserved
+// `HOSTNAME` name at container boot; fixed durably in apps/admin/Dockerfile (`ENV HOSTNAME=0.0.0.0`,
+// PR #151), independent of this or any Railway-side variable sync tool.
+//
 // Usage: bun tooling/scripts/railway-env-sync.ts --generated-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 import { execFileSync } from "node:child_process";
 import {
