@@ -362,3 +362,80 @@ test("a capture failure never reaches the response (best-effort), and no capture
   expect(res.status).toBe(403);
   expect(capturedOn403).toBe(false);
 });
+
+// --- G21 escalation ticket parity ------------------------------------------------------------------
+
+test("escalate receives the question + reason on a genuine couldn't-answer outcome", async () => {
+  const escalated: Array<[string, string]> = [];
+  const escalate = async (question: string, reason: string): Promise<void> => {
+    escalated.push([question, reason]);
+  };
+
+  await events(
+    await handleAsk(
+      ask({ question: "how do I rotate keys?" }),
+      deps({
+        escalate,
+        retrieve: async () => {
+          throw new Error("docs down");
+        },
+      }),
+    ),
+  );
+
+  expect(escalated).toEqual([
+    ["how do I rotate keys?", "retrieval_unavailable"],
+  ]);
+});
+
+test("escalate is never called on a resolved answer", async () => {
+  let called = false;
+  const escalate = async (): Promise<void> => {
+    called = true;
+  };
+  await events(
+    await handleAsk(
+      ask({ question: "does compliance do HIPAA?" }),
+      deps({ escalate }),
+    ),
+  );
+  expect(called).toBe(false);
+});
+
+test("escalate is never called for spend_cap (a capacity signal, not a question a human needs)", async () => {
+  let called = false;
+  const escalate = async (): Promise<void> => {
+    called = true;
+  };
+  await events(
+    await handleAsk(
+      ask({ question: "q" }),
+      deps({
+        escalate,
+        spend: {
+          reserve: async () => false,
+          settle: async () => {},
+        },
+      }),
+    ),
+  );
+  expect(called).toBe(false);
+});
+
+test("an escalate failure never reaches the response (best-effort)", async () => {
+  const evs = await events(
+    await handleAsk(
+      ask({ question: "q" }),
+      deps({
+        retrieve: async () => {
+          throw new Error("docs down");
+        },
+        escalate: async () => {
+          throw new Error("support-bot down");
+        },
+      }),
+    ),
+  );
+  expect(evs.some((e) => e.event === "escalation")).toBe(true);
+  expect(evs.at(-1)?.event).toBe("done");
+});

@@ -13,9 +13,11 @@ from discord.ext import commands
 
 from caisson_support_bot.billing_grant import bearer_ok, build_app
 from caisson_support_bot.config import Settings
+from caisson_support_bot.escalation import InMemoryTicketStore
 from caisson_support_bot.member_mgmt import editions_for_entitlements
 
 TOKEN = "grant-token-value"
+ESCALATE_TOKEN = "escalate-token-value"
 
 
 def _settings(**overrides: object) -> Settings:
@@ -96,6 +98,14 @@ def _bot(guild: SimpleNamespace | list[SimpleNamespace] | None, ready: bool = Tr
 
 async def _client(bot: commands.Bot, settings: Settings) -> TestClient:
     client = TestClient(TestServer(build_app(bot=bot, settings=settings)))
+    await client.start_server()
+    return client
+
+
+async def _escalate_client(
+    bot: commands.Bot, settings: Settings, store: InMemoryTicketStore | None = None
+) -> TestClient:
+    client = TestClient(TestServer(build_app(bot=bot, settings=settings, store=store)))
     await client.start_server()
     return client
 
@@ -376,5 +386,90 @@ async def test_health_contract_kept(path: str) -> None:
         res = await client.get(path)
         assert res.status == 200
         assert await res.json() == {"ok": True}
+    finally:
+        await client.close()
+
+
+# --- POST /escalate (apps/site Ask-AI parity — reuses the same Escalator/Linear sink) --------------
+
+
+async def test_escalate_route_not_served_when_unconfigured() -> None:
+    guild, _ = _guild_with_member()
+    client = await _client(_bot(guild), _settings(site_escalate_token=None))
+    try:
+        res = await client.post(
+            "/escalate",
+            json={"question": "does compliance do HIPAA?", "reason": "no_match"},
+            headers={"Authorization": f"Bearer {ESCALATE_TOKEN}"},
+        )
+        assert res.status == 404  # fail-closed: the route does not exist without its token
+    finally:
+        await client.close()
+
+
+async def test_escalate_rejects_bad_token_before_parsing() -> None:
+    guild, _ = _guild_with_member()
+    client = await _escalate_client(_bot(guild), _settings(site_escalate_token=ESCALATE_TOKEN))
+    try:
+        res = await client.post(
+            "/escalate", data=b"not even json", headers={"Authorization": "Bearer wrong"}
+        )
+        assert res.status == 401
+    finally:
+        await client.close()
+
+
+async def test_escalate_rejects_invalid_body_strict() -> None:
+    guild, _ = _guild_with_member()
+    client = await _escalate_client(_bot(guild), _settings(site_escalate_token=ESCALATE_TOKEN))
+    try:
+        for body in (
+            {"question": "", "reason": "no_match"},  # empty question
+            {"question": "q"},  # missing reason
+            {"question": "q", "reason": "no_match", "extra": 1},  # unknown field (.strict analogue)
+        ):
+            res = await client.post(
+                "/escalate", json=body, headers={"Authorization": f"Bearer {ESCALATE_TOKEN}"}
+            )
+            assert res.status == 400
+    finally:
+        await client.close()
+
+
+async def test_escalate_happy_path_files_a_ticket() -> None:
+    guild, _ = _guild_with_member()
+    store = InMemoryTicketStore()
+    client = await _escalate_client(
+        _bot(guild), _settings(site_escalate_token=ESCALATE_TOKEN), store=store
+    )
+    try:
+        res = await client.post(
+            "/escalate",
+            json={"question": "does compliance do HIPAA?", "reason": "no_match"},
+            headers={"Authorization": f"Bearer {ESCALATE_TOKEN}"},
+        )
+        assert res.status == 200
+        assert (await res.json())["ok"] is True
+        assert len(store.tickets) == 1
+        assert store.tickets[0].question == "does compliance do HIPAA?"
+        assert (
+            store.tickets[0].discord_thread_id is None
+        )  # no Discord channel context for a site push
+    finally:
+        await client.close()
+
+
+async def test_escalate_without_a_store_still_accepts_the_push() -> None:
+    # Best-effort by construction (mirrors the Discord bot's own escalation ports): a deployment with
+    # no DATABASE_URL still accepts the push and never 500s, it just files nothing durable.
+    guild, _ = _guild_with_member()
+    client = await _escalate_client(_bot(guild), _settings(site_escalate_token=ESCALATE_TOKEN))
+    try:
+        res = await client.post(
+            "/escalate",
+            json={"question": "q", "reason": "spend_cap"},
+            headers={"Authorization": f"Bearer {ESCALATE_TOKEN}"},
+        )
+        assert res.status == 200
     finally:
         await client.close()

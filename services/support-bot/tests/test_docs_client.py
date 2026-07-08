@@ -75,3 +75,47 @@ async def test_malformed_body_raises_unavailable() -> None:
         docs = DocsClient(query_url="https://docs.test/query", token="t", client=client)
         with pytest.raises(DocsUnavailableError):
             await docs.query("q")
+
+
+async def test_429_retries_once_honoring_retry_after_then_succeeds() -> None:
+    calls: list[int] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(1)
+        if len(calls) == 1:
+            return httpx.Response(429, headers={"Retry-After": "0"}, text="rate limit exceeded")
+        return httpx.Response(200, json={"chunks": []})
+
+    async with make_client(handler) as client:
+        docs = DocsClient(query_url="https://docs.test/query", token="t", client=client)
+        assert await docs.query("q") == []
+    assert len(calls) == 2  # exactly one retry, not an unbounded loop
+
+
+async def test_429_missing_retry_after_falls_back_then_succeeds() -> None:
+    calls: list[int] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(1)
+        if len(calls) == 1:
+            return httpx.Response(429, text="rate limit exceeded")  # no Retry-After header at all
+        return httpx.Response(200, json={"chunks": []})
+
+    async with make_client(handler) as client:
+        docs = DocsClient(query_url="https://docs.test/query", token="t", client=client)
+        assert await docs.query("q") == []
+    assert len(calls) == 2
+
+
+async def test_429_twice_raises_unavailable_not_an_infinite_loop() -> None:
+    calls: list[int] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(1)
+        return httpx.Response(429, headers={"Retry-After": "0"}, text="rate limit exceeded")
+
+    async with make_client(handler) as client:
+        docs = DocsClient(query_url="https://docs.test/query", token="t", client=client)
+        with pytest.raises(DocsUnavailableError):
+            await docs.query("q")
+    assert len(calls) == 2  # exactly one retry attempted, then gives up

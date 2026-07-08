@@ -115,12 +115,14 @@ class _DiscordThreadOpener:
             return None
 
 
-def _linear_issue_tracker(
+def linear_issue_tracker(
     settings: Settings, http_client: httpx.AsyncClient | None
 ) -> IssueTracker | None:
     """Build the Linear sink iff all three settings + an httpx client are present (ADR-0206).
 
     Any of the four missing means the Linear code path never runs — no partial configuration.
+    Public (not `_`-prefixed): `billing_grant.py`'s POST /escalate reuses this exact builder so the
+    site-originated escalation sink can never drift from the Discord bot's own gating.
     """
     if (
         http_client is None
@@ -227,7 +229,7 @@ def make_bot(
     enables the Linear triage sink when its three settings are also configured (ADR-0206). Tests
     that omit it simply never construct the Linear sink.
     """
-    issue_tracker = _linear_issue_tracker(settings, http_client)
+    issue_tracker = linear_issue_tracker(settings, http_client)
     intents = discord.Intents.default()
     if settings.support_channel_id is not None:
         intents.message_content = True  # required to read #ask-ai messages.
