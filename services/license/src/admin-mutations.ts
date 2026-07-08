@@ -49,6 +49,7 @@ import {
 } from "@caisson/registry-schema";
 import type { TenantExecutor, Transactor } from "@caisson/tenancy-rls";
 import { insertAdminActionLog, type AdminAction } from "./admin-audit-log.ts";
+import { notifyPurchaseEmail, resolveEmailer } from "./email-notify.ts";
 import {
   acquireAccountBillingLock,
   grantAdminComp,
@@ -659,6 +660,80 @@ export async function firstMintLicenseAdmin(
     major: input.major,
     licenseId: minted.licenseId,
     token: minted.token,
+    worm,
+  };
+}
+
+// G40 admin email resend. `notifyPurchaseEmail`'s only prior call site was the webhook itself — no
+// admin-triggered call site existed, so support could not get a buyer their access back into their
+// inbox without hand-copying a token out of band. NOT a byte-exact reproduction of a historical
+// receipt: no per-purchase price/currency/order-id is stored anywhere the operator can read
+// (`entitlement_grant` carries none), so `amountTotalMinor` is reported as 0 rather than a
+// fabricated figure, and `lines` is the account's CURRENT active entitlements, not the original
+// purchase's line items. `entitlementIds` is resolved by the caller (apps/admin's route, via the
+// ADR-0141 admin read role) and passed in, NOT part of the Zod body — mirrors how reissue's
+// `tier`/`expiry` are input fields, not body fields.
+export const ResendPurchaseEmailBody = z
+  .object({
+    targetAccountId: accountId,
+    orderId: z.string().trim().min(1).max(256).optional(),
+  })
+  .strict();
+
+export type ResendPurchaseEmailInput = z.infer<
+  typeof ResendPurchaseEmailBody
+> & {
+  actorEmail: string;
+  entitlementIds: string[];
+};
+
+export interface ResendPurchaseEmailResult {
+  targetAccountId: string;
+  orderId: string;
+  lineCount: number;
+  /** WORM audit half's outcome — `"failed"` means DO-NOT-RETRY (the send + log already committed). */
+  worm: WormStatus;
+}
+
+/**
+ * Action 7 (G40) — resend a purchase-confirmation-style email to the account's resolved address,
+ * carrying its current active entitlements + the dashboard link. Reuses `notifyPurchaseEmail`
+ * (which already never throws) and `resolveEmailer()` (already safe-degrades to a capture driver
+ * when unconfigured) — no new email-sending path. Dual-logged like every other action.
+ */
+export async function resendPurchaseEmailAdmin(
+  deps: AdminMutationDeps,
+  input: ResendPurchaseEmailInput,
+): Promise<ResendPurchaseEmailResult> {
+  const orderId = input.orderId ?? `admin-resend-${new Date().toISOString()}`;
+  await notifyPurchaseEmail(deps.db, resolveEmailer(), {
+    accountId: input.targetAccountId,
+    orderId,
+    currency: "usd",
+    amountTotalMinor: 0,
+    lines: input.entitlementIds.map((id) => ({ productSlug: id })),
+  });
+  await withAdminWrite(deps.db, (tx) =>
+    insertAdminActionLog(tx, {
+      actorEmail: input.actorEmail,
+      targetAccountId: input.targetAccountId,
+      action: "email_resend",
+      before: null,
+      after: { orderId, entitlementCount: input.entitlementIds.length },
+    }),
+  );
+  const worm = await appendWorm(
+    deps,
+    input.targetAccountId,
+    "email_resend",
+    input.actorEmail,
+    null,
+    { orderId, entitlementCount: input.entitlementIds.length },
+  );
+  return {
+    targetAccountId: input.targetAccountId,
+    orderId,
+    lineCount: input.entitlementIds.length,
     worm,
   };
 }

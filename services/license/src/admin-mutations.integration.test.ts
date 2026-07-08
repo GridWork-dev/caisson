@@ -53,12 +53,14 @@ import {
   AdjustCreditsBody,
   FirstMintLicenseBody,
   GrantEntitlementBody,
+  ResendPurchaseEmailBody,
   RevokePurchaseBody,
   type AdminMutationDeps,
   adjustCreditsAdmin,
   firstMintLicenseAdmin,
   grantEntitlementAdmin,
   reissueLicenseAdmin,
+  resendPurchaseEmailAdmin,
   revokeEntitlementAdmin,
   revokePurchaseAdmin,
   wormAnchorAccount,
@@ -634,14 +636,12 @@ describe("license first-mint (ADR-0292 rescue lever, dual-logged, atomic on fail
   test("mints via the SAME /issue proxy reissue uses, tier fixed to pro, expiry fixed to null", async () => {
     const acct = await realAccount();
     const anchor = wormAnchorAccount(acct);
-    let seenReq: {
-      accountId: string;
-      tier: string;
-      major: number;
-      expiry: string | null;
-    } | null = null;
+    // An object property (not a bare `let`) so TS doesn't narrow the read below to the
+    // declaration-time `null` across the intervening async call.
+    const captured: { req: Parameters<AdminMutationDeps["issue"]>[0] | null } =
+      { req: null };
     const capturingIssue: AdminMutationDeps["issue"] = async (req) => {
-      seenReq = req;
+      captured.req = req;
       return okIssue(req);
     };
     const r = await firstMintLicenseAdmin(deps({ issue: capturingIssue }), {
@@ -649,7 +649,7 @@ describe("license first-mint (ADR-0292 rescue lever, dual-logged, atomic on fail
       targetAccountId: acct,
       major: 1,
     });
-    expect(seenReq).toEqual({
+    expect(captured.req).toEqual({
       accountId: acct,
       tier: "pro",
       major: 1,
@@ -723,6 +723,68 @@ describe("license first-mint (ADR-0292 rescue lever, dual-logged, atomic on fail
         [randomUUID()],
       ),
     ).rejects.toThrow();
+  });
+});
+
+describe("resend purchase email (G40, dual-logged, never throws)", () => {
+  test("dual-logs with the entitlement count even when the emailer/user table isn't wired (never throws)", async () => {
+    const acct = await realAccount();
+    const anchor = wormAnchorAccount(acct);
+    const r = await resendPurchaseEmailAdmin(deps(), {
+      actorEmail: "op@gridwork.dev",
+      targetAccountId: acct,
+      entitlementIds: ["compliance", "ai-kit"],
+    });
+    expect(r.lineCount).toBe(2);
+    expect(r.orderId).toContain("admin-resend-");
+    expect(r.worm).toBe("ok");
+    const logRows = await ground<{ action: string }>(
+      `SELECT action FROM admin_action_log WHERE target_account_id = $1`,
+      [acct],
+    );
+    expect(logRows).toEqual([{ action: "email_resend" }]);
+    expect(await worm.load(anchor)).toHaveLength(1);
+  });
+
+  test("an explicit orderId is used verbatim instead of the synthesized marker", async () => {
+    const acct = await realAccount();
+    const r = await resendPurchaseEmailAdmin(deps(), {
+      actorEmail: "op@gridwork.dev",
+      targetAccountId: acct,
+      orderId: "txn_original_123",
+      entitlementIds: [],
+    });
+    expect(r.orderId).toBe("txn_original_123");
+    expect(r.lineCount).toBe(0);
+  });
+
+  test("strict body: unknown fields rejected, exactly one target account", () => {
+    expect(
+      ResendPurchaseEmailBody.safeParse({ targetAccountId: "a" }).success,
+    ).toBe(true);
+    expect(
+      ResendPurchaseEmailBody.safeParse({
+        targetAccountId: "a",
+        orderId: "txn_1",
+      }).success,
+    ).toBe(true);
+    expect(
+      ResendPurchaseEmailBody.safeParse({ targetAccountId: "a", evil: "x" })
+        .success,
+    ).toBe(false);
+    expect(
+      ResendPurchaseEmailBody.safeParse({ targetAccountId: ["a", "b"] })
+        .success,
+    ).toBe(false);
+  });
+
+  test("the action-enum migration admits email_resend", async () => {
+    await expect(
+      ground(
+        `INSERT INTO admin_action_log (id, actor_email, target_account_id, action) VALUES ($1, 'op@gridwork.dev', 'acct_x', 'email_resend')`,
+        [randomUUID()],
+      ),
+    ).resolves.toBeDefined();
   });
 });
 

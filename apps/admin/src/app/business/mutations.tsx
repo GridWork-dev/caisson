@@ -608,6 +608,8 @@ export function AdminMutations() {
   const [reissueMajor, setReissueMajor] = useState("");
   const [firstMintAcct, setFirstMintAcct] = useState("");
   const [firstMintMajor, setFirstMintMajor] = useState("");
+  const [resendAcct, setResendAcct] = useState("");
+  const [resendOrderId, setResendOrderId] = useState("");
 
   const ids = grantIds
     .split(",")
@@ -747,6 +749,32 @@ export function AdminMutations() {
           value={firstMintMajor}
           onChange={setFirstMintMajor}
           placeholder="1"
+        />
+      </MutationCard>
+
+      <MutationCard
+        title="Resend email"
+        description="Resend a purchase-confirmation-style email carrying the account's current entitlements + dashboard link (G40). Not a byte-exact historical receipt — the original amount isn't stored."
+        targetAccountId={resendAcct}
+        onSubmit={() =>
+          callRoute("/api/admin/email/resend", {
+            targetAccountId: resendAcct.trim(),
+            ...(resendOrderId.trim() === ""
+              ? {}
+              : { orderId: resendOrderId.trim() }),
+          })
+        }
+      >
+        <Field
+          label="Target account id"
+          value={resendAcct}
+          onChange={setResendAcct}
+        />
+        <Field
+          label="Order id (optional)"
+          value={resendOrderId}
+          onChange={setResendOrderId}
+          placeholder="txn_… (defaults to an admin-resend marker)"
         />
       </MutationCard>
 
