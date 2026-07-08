@@ -22,7 +22,7 @@ edited — supersede with a later ADR).
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
 2. `knowledge/decisions/` — the ADRs themselves. Append-only (`ADR-NNNN-slug.md`, never edited — supersede
-   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0295** (0270 = the
+   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0296** (0270 = the
    edition-trace purge, license-seam-wave 2026-07-07; 0271 = the bundle-only index delist,
    third-sitting picker 2026-07-07; 0272-0278 = the fourth-sitting research-response picker
    2026-07-07 — site wave · design-partner program · evaluation access · evidence-pack
@@ -47,7 +47,8 @@ edited — supersede with a later ADR).
    license first-mint webhook-push at grant · in-app subscription management — status +
    cancel + invoices, native not portal · chargeback subscribe-and-alert-only; 0295 = the
    PR-#167 deviation lock: Drawer primitive + mobile-nav repoint enforced, marketplace-tabs
-   repoint dropped, refines ADR-0291).
+   repoint dropped, refines ADR-0291; 0296 = the delta-review re-lock: mobile-nav reuses the
+   open Dialog drawer variant, ui-pro Drawer deleted, supersedes 0295 mechanism).
    The full
    catalog — every number, title, and supersession chain — is `docs/adr-index.md`; do NOT restate it here.
 3. `specs/` — locked concept docs; `specs/00-product-spec.md` is the founding spec
