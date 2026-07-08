@@ -16,10 +16,15 @@ export interface DialogProps {
   title: string;
   /** Centered modal (default) or an edge sheet. */
   variant?: "modal" | "drawer";
-  /** Which edge the drawer slides from. Ignored for `modal`. Default "right". */
-  side?: "left" | "right";
+  /** Which edge the drawer slides from. Ignored for `modal`. Default "right". "top" is a
+   * full-width sheet capped to content height instead of a full-height side column — the shape
+   * a nav drawer under a fixed header bar wants. */
+  side?: "left" | "right" | "top";
   /** Hide the default header (title + close button) to supply a fully custom body. */
   hideHeader?: boolean;
+  /** Extra class merged onto the `<dialog>` element, for a consumer-specific override (e.g. an
+   * app pinning the drawer below its own fixed header). */
+  className?: string;
   children: ReactNode;
 }
 
@@ -37,6 +42,7 @@ export function Dialog({
   variant = "modal",
   side = "right",
   hideHeader = false,
+  className,
   children,
 }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -53,7 +59,7 @@ export function Dialog({
   return (
     <dialog
       ref={ref}
-      className="cs-dialog"
+      className={className ? `cs-dialog ${className}` : "cs-dialog"}
       data-variant={variant}
       data-side={variant === "drawer" ? side : undefined}
       aria-label={title}

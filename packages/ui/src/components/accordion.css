@@ -1,0 +1,78 @@
+/* Accordion — native <details> disclosure list (ADR-0099/ADR-0291), the Faq pattern generalized.
+ * Co-located; values via --cs-* only. */
+.cs-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-3);
+}
+
+.cs-accordion-item {
+  border: 1px solid var(--cs-border);
+  border-radius: var(--cs-radius-lg);
+  background: var(--cs-surface-1);
+  padding: var(--cs-space-4) var(--cs-space-5);
+}
+
+/* Summary is the clickable trigger row. Drop the native disclosure triangle; draw our own. */
+.cs-accordion-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cs-space-4);
+  cursor: pointer;
+  list-style: none;
+  font-size: var(--cs-text-base);
+  font-weight: var(--cs-weight-semibold);
+  letter-spacing: var(--cs-tracking-tight);
+  color: var(--cs-fg);
+}
+
+.cs-accordion-trigger::-webkit-details-marker {
+  display: none;
+}
+
+/* Chevron marker — a rotated bordered square corner; rotates when the item is open. */
+.cs-accordion-trigger::after {
+  content: "";
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 2px solid var(--cs-border-strong);
+  border-bottom: 2px solid var(--cs-border-strong);
+  transform: rotate(45deg);
+  transition: transform var(--cs-duration-fast) var(--cs-ease-out);
+}
+
+.cs-accordion-item[open] > .cs-accordion-trigger::after {
+  transform: rotate(-135deg);
+}
+
+.cs-accordion-trigger:hover {
+  color: var(--cs-accent);
+}
+
+.cs-accordion-trigger:focus-visible {
+  outline: 2px solid var(--cs-focus);
+  outline-offset: 2px;
+}
+
+.cs-accordion-content {
+  margin-top: var(--cs-space-3);
+  line-height: var(--cs-leading-relaxed);
+  color: var(--cs-fg-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-accordion-trigger::after {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .cs-accordion-item {
+    border: 1px solid CanvasText;
+  }
+  .cs-accordion-trigger::after {
+    border-color: CanvasText;
+  }
+}

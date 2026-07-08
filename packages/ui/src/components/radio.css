@@ -1,0 +1,96 @@
+/* Radio — recipe reference (ADR-0099/ADR-0291). Same layered-input technique as Checkbox, circular.
+ * Values via --cs-* only. Control is >=24px (WCAG 2.5.8) even though the visible circle is smaller. */
+.cs-radio {
+  display: inline-flex;
+  align-items: center;
+}
+
+.cs-radio--labelled {
+  gap: var(--cs-space-2);
+  cursor: pointer;
+}
+
+.cs-radio__control {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--cs-space-6);
+  height: var(--cs-space-6);
+}
+
+.cs-radio__input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.cs-radio__circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 1px solid var(--cs-border-strong);
+  border-radius: var(--cs-radius-pill);
+  background: var(--cs-surface-1);
+  transition: border-color var(--cs-duration-fast) var(--cs-ease-out);
+}
+
+.cs-radio__dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: var(--cs-radius-pill);
+  background: var(--cs-accent);
+  opacity: 0;
+  transform: scale(0.5);
+  transition:
+    opacity var(--cs-duration-fast) var(--cs-ease-out),
+    transform var(--cs-duration-fast) var(--cs-ease-out);
+}
+
+.cs-radio__input:checked ~ .cs-radio__circle {
+  border-color: var(--cs-accent);
+}
+
+.cs-radio__input:checked ~ .cs-radio__circle .cs-radio__dot {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.cs-radio__input:focus-visible ~ .cs-radio__circle {
+  outline: 2px solid var(--cs-focus);
+  outline-offset: 2px;
+}
+
+.cs-radio__input:disabled ~ .cs-radio__circle {
+  opacity: 0.5;
+}
+
+.cs-radio__input:disabled {
+  cursor: not-allowed;
+}
+
+.cs-radio[data-disabled] {
+  cursor: not-allowed;
+}
+
+.cs-radio__label {
+  font-size: var(--cs-text-sm);
+  color: var(--cs-fg);
+}
+
+@media (forced-colors: active) {
+  .cs-radio__circle {
+    border: 1px solid CanvasText;
+  }
+  .cs-radio__input:checked ~ .cs-radio__circle .cs-radio__dot {
+    forced-color-adjust: none;
+    background: Highlight;
+  }
+}

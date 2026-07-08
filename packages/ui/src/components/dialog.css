@@ -32,6 +32,15 @@
   margin-right: auto;
 }
 
+/* Top — a full-width sheet capped to content height instead of a full-height side column. */
+.cs-dialog[data-variant="drawer"][data-side="top"] {
+  height: auto;
+  max-height: calc(100vh - var(--cs-space-6) * 2);
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: auto;
+}
+
 .cs-dialog__panel {
   display: flex;
   flex-direction: column;

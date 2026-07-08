@@ -11,6 +11,7 @@ import "@/lib/register-brand-icons";
 
 export {
   Card,
+  Checkbox,
   CodeBlock,
   CredentialStrip,
   EditionCard,
@@ -19,6 +20,7 @@ export {
   Hero,
   Icon,
   MobileBuyBar,
+  Radio,
   Reveal,
   Section,
   SkuMatrix,
@@ -28,6 +30,7 @@ export {
 } from "@caisson/ui/components";
 export type {
   CardProps,
+  CheckboxProps,
   CodeBlockProps,
   CredentialStripProps,
   EditionCardProps,
@@ -38,6 +41,7 @@ export type {
   IconName,
   IconProps,
   MobileBuyBarProps,
+  RadioProps,
   RevealProps,
   SectionProps,
   SkuMatrixProps,

@@ -1,6 +1,11 @@
-/* The three primary-nav card-panel disclosures (ADR-0237 F3/F4) — generalizes the retired
- * editions-menu.module.css. Panels are position:absolute, card-sized, left-anchored under their
- * trigger. Every value is a --cs-* token (DESIGN.md §2). */
+/* The three primary-nav card-panel disclosures (ADR-0237 F3/F4), built on the kit `Popover`
+ * (ADR-0291 — `@caisson/ui-pro`) for the trigger/panel disclosure mechanics; this file re-skins
+ * Popover's default chrome to the nav's plain-text-link trigger + fixed-width card panel via a
+ * `:global(.cs-popover*)` compound selector (two-class specificity, so it deterministically wins
+ * over the kit's own single-class rule regardless of stylesheet import order — the standard CSS
+ * Modules escape hatch for overriding an imported component's default look from one page-local
+ * context). Every value is a --cs-* token (DESIGN.md §2).
+ */
 
 .row {
   display: flex;
@@ -8,28 +13,18 @@
   gap: var(--cs-space-6);
 }
 
-.wrap {
-  position: relative;
-  display: inline-flex;
-}
-
-.trigger {
-  display: inline-flex;
-  align-items: center;
+:global(.cs-popover-trigger).trigger {
   gap: var(--cs-space-1);
   padding: 0;
   border: 0;
   background: none;
-  font: inherit;
   font-size: var(--cs-text-sm);
   color: var(--cs-fg-muted);
-  cursor: pointer;
-  transition: color var(--cs-duration-fast) var(--cs-ease-out);
 }
 
-.trigger:hover,
-.trigger[aria-expanded="true"],
-.trigger[aria-current="page"] {
+:global(.cs-popover-trigger).trigger:hover,
+:global(.cs-popover-trigger).trigger[aria-expanded="true"],
+:global(.cs-popover-trigger).trigger[aria-current="page"] {
   color: var(--cs-fg);
 }
 
@@ -37,31 +32,24 @@
   transition: transform var(--cs-duration-fast) var(--cs-ease-out);
 }
 
-.trigger[aria-expanded="true"] .chev {
+:global(.cs-popover-trigger).trigger[aria-expanded="true"] .chev {
   transform: rotate(180deg);
 }
 
 /* ===== panel ===== */
-.panel {
-  position: absolute;
-  top: calc(100% + var(--cs-space-3));
-  left: 0;
-  z-index: 60; /* above .cs-nav (z-index 50) */
+:global(.cs-popover).panel {
   width: 24rem;
   display: grid;
   gap: var(--cs-space-4);
   padding: var(--cs-space-5);
-  border: 1px solid var(--cs-border);
-  border-radius: var(--cs-radius-lg);
-  background: var(--cs-surface-1);
-  box-shadow: var(--cs-shadow-lg);
 }
 
-/* The wider, scrollable groups panel variant (Marketplace's two card families) — rides a
-   `data-groups` attribute instead of a conditional inline style object, so the disclosure renders
-   identical markup on the server and client (no inline-style hydration divergence). */
-.panel[data-groups] {
+/* The wider, scrollable groups panel variant (Marketplace's two card families). Kit's own
+   .cs-popover sets max-width: min(24rem, ...) — override it too, or width alone renders capped
+   at 24rem. */
+:global(.cs-popover).panel.panelWide {
   width: min(40rem, 92vw);
+  max-width: min(40rem, 92vw);
   max-height: calc(100vh - 6rem);
   overflow-y: auto;
 }
