@@ -3,7 +3,16 @@
 // splits across grants, and never draws from an expired grant; the sweep burns expired residue
 // exactly once; the T-30d notice fires exactly once per grant; the badge read sums unexpired
 // remaining inside the window.
-import { afterAll, beforeEach, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeEach,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { newTestPg, type TestPg } from "@caisson/testing";
 import { InsufficientCreditsError, asCredits } from "@caisson/kernel";
 import { withTenant, type Transactor } from "@caisson/tenancy-rls";

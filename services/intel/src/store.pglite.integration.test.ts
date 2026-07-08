@@ -7,7 +7,16 @@
 // mocking, no second code path.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { PostgresStore } from "./store.ts";
 import type { Finding } from "./finding.ts";

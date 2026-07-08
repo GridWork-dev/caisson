@@ -12,6 +12,7 @@ export {
   getLedger,
   creditsGrantedBySource,
   creditsClawedForSource,
+  outstandingClaw,
   lineCreditLedger,
   clawback,
   expiringSoon,

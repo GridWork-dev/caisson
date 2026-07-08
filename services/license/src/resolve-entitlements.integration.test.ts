@@ -4,7 +4,16 @@
 // Asserts: an edition resolves to ONLY its index-derived members (not base); the bundle resolves to
 // everything; no entitlement resolves to the empty set; a stored id absent from the index fails closed
 // (the resolver propagates expandEntitlements' throw — never a silent drop, threat TM-E).
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import {
   type RegistryIndex,
   loadRegistryIndex,

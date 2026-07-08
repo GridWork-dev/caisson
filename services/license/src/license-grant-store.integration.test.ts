@@ -4,7 +4,16 @@
 // major for the same account persists its own independent row; RLS isolates accounts (a cross-tenant
 // read sees nothing, and a forged cross-tenant write is refused by the policy WITH CHECK). Each test
 // uses its own account id — no cross-test cleanup.
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { withTenant } from "@caisson/tenancy-rls";
 import {

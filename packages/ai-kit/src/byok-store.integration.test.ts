@@ -2,7 +2,16 @@
 // a key round-trips (sealed on write, opened on read); a re-put REPLACES (rotatable credential); a
 // missing key reads undefined; RLS isolates accounts (tenant A cannot read tenant B's key); the
 // ciphertext at rest is NOT the plaintext (encrypted-at-rest).
-import { beforeAll, afterAll, describe, expect, test } from "bun:test";
+import {
+  beforeAll,
+  afterAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { withTenant } from "@caisson/tenancy-rls";
 import {

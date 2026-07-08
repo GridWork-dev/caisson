@@ -22,7 +22,7 @@ edited — supersede with a later ADR).
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
 2. `knowledge/decisions/` — the ADRs themselves. Append-only (`ADR-NNNN-slug.md`, never edited — supersede
-   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0291** (0270 = the
+   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0295** (0270 = the
    edition-trace purge, license-seam-wave 2026-07-07; 0271 = the bundle-only index delist,
    third-sitting picker 2026-07-07; 0272-0278 = the fourth-sitting research-response picker
    2026-07-07 — site wave · design-partner program · evaluation access · evidence-pack
@@ -42,7 +42,12 @@ edited — supersede with a later ADR).
    picker over the two gw-frontend-designer plans: marketplace media standard (live-component +
    real-artifact static slides, all 28 re-standardized, no video, refines ADR-0285/0263) · UI
    interactive-primitive expansion (split by complexity — simple in open @caisson/ui, Tooltip/
-   Popover/Menu in commercial ui-pro; hand-rolled zero-Radix, extends ADR-0099/0250)).
+   Popover/Menu in commercial ui-pro; hand-rolled zero-Radix, extends ADR-0099/0250);
+   0292-0294 = the eleventh-sitting lifecycle picker over the buyer-lifecycle audit:
+   license first-mint webhook-push at grant · in-app subscription management — status +
+   cancel + invoices, native not portal · chargeback subscribe-and-alert-only; 0295 = the
+   PR-#167 deviation lock: Drawer primitive + mobile-nav repoint enforced, marketplace-tabs
+   repoint dropped, refines ADR-0291).
    The full
    catalog — every number, title, and supersession chain — is `docs/adr-index.md`; do NOT restate it here.
 3. `specs/` — locked concept docs; `specs/00-product-spec.md` is the founding spec

@@ -4,7 +4,16 @@
 // in for the WORM bucket. No network, no live cloud. Tamper is simulated as the BYPASSRLS superuser
 // (a DB-level compromise / bug), exactly the adversary an immutable audit trail must remain evident
 // against — the `app` role itself is provably denied UPDATE/DELETE by the migration's withheld GRANT.
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { randomUUID } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";

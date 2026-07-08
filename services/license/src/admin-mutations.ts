@@ -27,10 +27,9 @@ import type { AuditChainStore } from "@caisson/audit-worm";
 import {
   balance,
   clawback,
-  creditsClawedForSource,
-  creditsGrantedBySource,
   debit,
   grant,
+  outstandingClaw,
   sweepExpiredGrants,
 } from "@caisson/credits";
 import {
@@ -51,6 +50,7 @@ import {
 import type { TenantExecutor, Transactor } from "@caisson/tenancy-rls";
 import { insertAdminActionLog, type AdminAction } from "./admin-audit-log.ts";
 import {
+  acquireAccountBillingLock,
   grantAdminComp,
   readEntitlements,
   reconcileCoverageGrants,
@@ -618,14 +618,20 @@ export interface PurchaseRevokeResult {
  *      `purchase_id` filter, so subscriptions are structurally un-revocable here (R-3 = A), and an
  *      entitlement a SIBLING source still backs survives (refcount). Idempotent: a re-run finds no
  *      active rows and revokes 0 — NOT an error (so the caller must not treat 0 as a rejection).
- *   3. Bounded claw (R-1 = A, opt-in via `clawUnspentCredits`) — `remaining = max(0, granted −
- *      alreadyClawed)`, then `clawback` further bounds to the wallet balance and never goes negative.
- *      This is the EXACT arithmetic the full-refund webhook runs (apply-billing-event.ts) keyed on the
- *      SAME `sourceEventId = purchaseId`, so an operator revoke and a later Paddle refund of the same
+ *   3. Bounded claw (R-1 = A, opt-in via `clawUnspentCredits`) — `outstandingClaw` computes
+ *      `max(0, granted − alreadyClawed)` UNDER an account+purchase advisory lock, then
+ *      `clawback` further bounds to the wallet balance and never goes negative. This is the EXACT
+ *      arithmetic the full-refund webhook runs (apply-billing-event.ts) keyed on the SAME
+ *      `sourceEventId = purchaseId`, so an operator revoke and a later Paddle refund of the same
  *      purchase are mutually idempotent — whichever lands second reads `remaining = 0` (and its
  *      compensating debit collides on the (paymentId, refund_clawback) idempotency index) → claws 0.
- *      Netting out `alreadyClawed` (not the raw `granted`) is load-bearing: the wallet is a fungible
- *      pool, so clawing the raw grant after a prior partial claw would drain OTHER purchases' credits
+ *      The SAME lock also closes the race against a DIFFERENTLY-keyed concurrent claw on this
+ *      purchase (e.g. the refund webhook's per-line branch, `${adjustmentId}:${itemId}` keys the
+ *      unique index does not dedupe against this action's key) — without it, two racing readers can
+ *      each see a stale `alreadyClawed=0` and the second's clamp-to-balance write can drain an
+ *      UNRELATED purchase's unspent credits out of the same fungible wallet. Netting out
+ *      `alreadyClawed` (not the raw `granted`) is load-bearing: the wallet is a fungible pool, so
+ *      clawing the raw grant after a prior partial claw would drain OTHER purchases' credits
  *      (CAISSON-5).
  *   4. Edge deny-set truth (R-4 = B, opt-in via `revokeEdgeAccess`) — `recordLicenseRevocations`
  *      writes one `license_revocation` row per license the account holds, in the SAME transaction, so
@@ -646,6 +652,11 @@ export async function revokePurchaseAdmin(
   let fullDenySet: string[] = [];
   const result = await withAdminWrite(deps.db, async (tx) => {
     await assertAccountExists(tx, input.targetAccountId);
+    // Canonical lock order (see acquireAccountBillingLock): account billing lock FIRST, before
+    // the row revokes and the claw lock — this path previously took coverage (inside the
+    // reconcile) then claw, the reverse of the per-line refund branch: an ABBA deadlock when an
+    // operator revoke raced a refund adjustment for the same purchase.
+    await acquireAccountBillingLock(tx, input.targetAccountId);
     const before = await readEntitlements(tx, input.targetAccountId);
     const balanceBefore = await balance(tx, input.targetAccountId);
 
@@ -663,17 +674,11 @@ export async function revokePurchaseAdmin(
     // R-1 = A: claw the purchase's STILL-OUTSTANDING credits, bounded two ways, never Paddle.
     let clawedBack = 0;
     if (input.clawUnspentCredits) {
-      const granted = await creditsGrantedBySource(
+      const remaining = await outstandingClaw(
         tx,
         input.targetAccountId,
         input.purchaseId,
       );
-      const alreadyClawed = await creditsClawedForSource(
-        tx,
-        input.targetAccountId,
-        input.purchaseId,
-      );
-      const remaining = Math.max(0, granted - alreadyClawed);
       if (remaining > 0) {
         const clawed = await clawback(tx, {
           accountId: input.targetAccountId,

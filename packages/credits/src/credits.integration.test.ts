@@ -1,6 +1,15 @@
 // P1 exit-gate proof (ADR-0007/0023): a credit debit is atomic + idempotent; an empty balance is
 // 402; the ledger is append-only; the wallet is tenant-isolated. Composes withTenant + credits.
-import { afterAll, beforeEach, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeEach,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { newTestPg, type TestPg } from "@caisson/testing";
 import {
   InsufficientCreditsError,

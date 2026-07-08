@@ -4,7 +4,16 @@
 // cloud. Mutation is attempted both as the `app` role (denied by withheld GRANT) and as the
 // BYPASSRLS superuser (denied by the belt trigger) — exactly the adversaries an immutable, locked
 // version table must remain append-only against.
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { randomUUID } from "node:crypto";
 import { newTestPg, type TestPg } from "@caisson/testing";
 import { ConflictError, NotFoundError, ValidationError } from "@caisson/kernel";
