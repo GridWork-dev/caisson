@@ -46,6 +46,8 @@ import {
   ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL,
   ENTITLEMENT_SCHEMA_SQL,
   LICENSE_GRANT_SCHEMA_SQL,
+  ORDER_RECORD_SCHEMA_SQL,
+  SUBSCRIPTION_STATUS_SCHEMA_SQL,
 } from "@caisson/service-license";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool, type PoolClient } from "pg";
@@ -161,6 +163,9 @@ async function bootstrapPglite(): Promise<PGlite> {
   await pg.exec(ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL);
   await pg.exec(ENTITLEMENT_GRANT_UPDATES_WINDOW_MIGRATION_SQL);
   await pg.exec(LICENSE_GRANT_SCHEMA_SQL);
+  // ADR-0293: the G13 subscription-status signal + the G26 order/invoice ledger.
+  await pg.exec(SUBSCRIPTION_STATUS_SCHEMA_SQL);
+  await pg.exec(ORDER_RECORD_SCHEMA_SQL);
   await pg.exec(AI_METER_SCHEMA_SQL);
   await pg.exec(TENANT_AI_CREDENTIAL_SCHEMA_SQL);
   await pg.exec(BYOK_KEY_META_SCHEMA_SQL);

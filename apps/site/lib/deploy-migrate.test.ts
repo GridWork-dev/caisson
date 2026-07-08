@@ -42,13 +42,13 @@ afterAll(async () => {
 test("platform migrations apply in order then are idempotent", async () => {
   const first = await runPlatformMigrations(pgliteApplier(tp));
   expect(first.applied).toEqual([
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
   ]);
 
   const second = await runPlatformMigrations(pgliteApplier(tp));
   expect(second.applied).toEqual([]);
   expect(second.skipped).toEqual([
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
   ]);
 });
 
@@ -178,11 +178,37 @@ test("0017 creates the ADR-0251 renewal_extension ledger with FORCE RLS (refund/
   expect(idx).toEqual([{ indexname: "renewal_extension_uniq" }]);
 });
 
+test("0018 creates the ADR-0293 subscription_status table with FORCE RLS", async () => {
+  const rows = await tp.query<{ relname: string; force: boolean }>(
+    `SELECT relname, relforcerowsecurity AS force FROM pg_class
+     WHERE relname = 'subscription_status' AND relkind = 'r'`,
+  );
+  expect(rows).toEqual([{ relname: "subscription_status", force: true }]);
+  const idx = await tp.query<{ indexname: string }>(
+    `SELECT indexname FROM pg_indexes WHERE tablename = 'subscription_status' AND indexname = 'subscription_status_account_subscription_uniq'`,
+  );
+  expect(idx).toEqual([
+    { indexname: "subscription_status_account_subscription_uniq" },
+  ]);
+});
+
+test("0019 creates the ADR-0293 order_record table with FORCE RLS", async () => {
+  const rows = await tp.query<{ relname: string; force: boolean }>(
+    `SELECT relname, relforcerowsecurity AS force FROM pg_class
+     WHERE relname = 'order_record' AND relkind = 'r'`,
+  );
+  expect(rows).toEqual([{ relname: "order_record", force: true }]);
+  const idx = await tp.query<{ indexname: string }>(
+    `SELECT indexname FROM pg_indexes WHERE tablename = 'order_record' AND indexname = 'order_record_source_event_uniq'`,
+  );
+  expect(idx).toEqual([{ indexname: "order_record_source_event_uniq" }]);
+});
+
 test("every composed tenant table ships FORCE row-level security", async () => {
   const rows = await tp.query<{ relname: string; force: boolean }>(
     `SELECT relname, relforcerowsecurity AS force FROM pg_class
-     WHERE relname IN ('credit_wallet','credit_event','entitlement_grant','license_grant','usage_event','account_member','grant_consumption','credit_expiry_notice','renewal_extension')`,
+     WHERE relname IN ('credit_wallet','credit_event','entitlement_grant','license_grant','usage_event','account_member','grant_consumption','credit_expiry_notice','renewal_extension','subscription_status','order_record')`,
   );
-  expect(rows.length).toBeGreaterThanOrEqual(9);
+  expect(rows.length).toBeGreaterThanOrEqual(11);
   expect(rows.every((r) => r.force)).toBe(true);
 });
