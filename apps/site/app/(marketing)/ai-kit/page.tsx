@@ -7,6 +7,7 @@ import {
   softwareApplication,
 } from "@/lib/jsonld";
 import { BUNDLE_MARKS, moduleMark } from "@/lib/marks";
+import { hasModulePage } from "@/lib/module-pages";
 import {
   bundlePrice,
   formatUsd,
@@ -77,9 +78,12 @@ function MemberModuleCard({
   oneLiner: string;
 }) {
   const price = MODULE_PRICES.find((m) => m.id === id);
+  // Linkable is gated on the depth page actually existing, not on price truthiness — a member can
+  // be priced (MODULE_PRICES) with no depth page yet, and a Link to it 404s (G5).
+  const linkable = hasModulePage(id);
   const icon = BASE_MEMBER_ICON[id] ?? moduleMark(id);
   const card = (
-    <Card interactive={price !== undefined}>
+    <Card interactive={linkable}>
       <div
         style={{
           display: "flex",
@@ -100,7 +104,7 @@ function MemberModuleCard({
       )}
     </Card>
   );
-  return price ? (
+  return linkable ? (
     <Link
       href={`/marketplace/modules/${id}`}
       style={{ textDecoration: "none", color: "inherit" }}

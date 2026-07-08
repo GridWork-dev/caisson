@@ -825,3 +825,12 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     },
   },
 ];
+
+/** Whether a module has a standalone depth page (`/marketplace/modules/<id>`) — the ONE gate a
+ *  bundle/persona page must check before rendering a member card as a clickable link. A module can
+ *  be priced (`MODULE_PRICES`) with no depth page yet; gating a `<Link>` on price truthiness instead
+ *  of this renders a card that 404s (G5) — `provenance/page.tsx`'s `MEMBER_DETAIL` set was the
+ *  original hand-rolled instance of this same check. */
+export function hasModulePage(id: string): boolean {
+  return MODULE_PAGES.some((r) => r.slug === id);
+}
