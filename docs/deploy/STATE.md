@@ -33,6 +33,34 @@ consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the 
 
 ---
 
+## 2026-07-07 — EXECUTED: bug-fix redeploy — intel (soc2 tight-loop) + admin (migration-in-instrumentation)
+
+**Operator authorization:** picker "Both now (recommended)", 2026-07-07 session (redeploy of the two
+services affected by the CAISSON-49/48 fixes merged in PR #160).
+
+**Services/SHAs:** `main@55b3d486` (PR #160). `caisson-intel` rebuilt on gw-ms-a2 (`docker compose
+up -d --build` from `services/intel`); `caisson-admin` redeployed on Railway (`railway up --service
+caisson-admin`, deployment `f156b4c0`, Online). Pre-launch posture UNCHANGED: CF-Access `site_gate`
+ON, `PADDLE_ENV=sandbox`.
+
+**WHY:** two bugs found during the ninth-sitting intel deploy. **CAISSON-49 (Urgent)** — `setInterval`
+clamps any delay over the signed-32-bit ms ceiling (~24.8d) to 1ms, so soc2's 30-day cadence
+tight-looped (170× in 75s, hammering AICPA). `longInterval` chains ceiling-bounded `setTimeout`s.
+**CAISSON-48** — the admin better-auth migration ran via a `preDeployCommand` that is a no-op on the
+Next standalone image (strips `src/`); moved into `instrumentation.register()` (ships in standalone,
+awaited before serving), with `/healthz` failing closed on a boot-migration failure.
+
+**Live-verify evidence:**
+
+- `caisson-intel`: `Up (healthy)`, `/healthz` → `{"ok":true}`; **soc2 ran 1× on boot (was 170×)**,
+  all six watchers fire once. The `INTEL_CADENCE_SOC2_MS<24d` env workaround was removed — the
+  30-day default now works with the fix.
+- `caisson-admin`: deployment `f156b4c0` **Online**, `/healthz` → `200 {"ok":true}` (with the new
+  fail-closed gate a 200 proves the boot migration succeeded via the instrumentation path), `/` →
+  `307` (→ `/login`).
+
+---
+
 ## 2026-07-07 — EXECUTED: ninth-sitting seven-PR wave deploy + admin OAuth flip (site + license + admin; no Worker republish)
 
 **Services/SHAs:** `main@a0aa9a3c` (PRs #153–159 merged serially, all in-session SHIP-audited).
