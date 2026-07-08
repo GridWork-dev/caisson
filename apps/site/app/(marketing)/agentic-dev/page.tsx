@@ -142,6 +142,35 @@ function MemberModuleCard({
   );
 }
 
+/* ---------- MCP feature-card sequence (SYNTHESIS §6 Tier-1 row 9) ---------- */
+// @caisson/mcp-server ships in the open Base substrate (every plan, not an Agentic-Dev-only SKU) —
+// this is the page where an agent-tooling buyer is already looking for "where does my agent
+// connect", so the sequence lives here rather than inventing a standalone module page for a
+// package that has no separate SKU. Four real request-lifecycle stages, in order, each grounded in
+// packages/mcp-server/src/server.ts.
+const MCP_SEQUENCE = [
+  {
+    icon: "key" as const,
+    step: "1. Authenticate",
+    body: "A timing-safe Bearer compare against every issued buyer token, no early return — a match never leaks through response latency.",
+  },
+  {
+    icon: "boxes" as const,
+    step: "2. Discover",
+    body: "listTools returns only what the caller owns. A tool from a bundle you don't own is invisible, not just refused — the same 404 as a tool that doesn't exist.",
+  },
+  {
+    icon: "terminal" as const,
+    step: "3. Generate",
+    body: "The one write tool revalidates every requested module id and version against the SAME allowlisted registry index the CLI generator checks, then entitlement-expands your purchases before it ever calls the host.",
+  },
+  {
+    icon: "shield" as const,
+    step: "4. Govern",
+    body: "A per-account rate limit gates every dispatch (fail-open only on a store fault, never on a real deny), and a retired tool answers 410 with a reason — never a bare 404 that leaves an integration guessing.",
+  },
+] as const;
+
 /* ---------- FAQ (AI retrieval; also visible on page) — read from the record ---------- */
 const FAQS = record.faq;
 
@@ -363,6 +392,34 @@ export default function AgenticDevPage() {
           lede="@caisson/local-store gives the bundle hybrid vector + full-text recall (vec0 + FTS5 with reciprocal-rank fusion, an FTS-only offline floor when no embedder is wired) scoped per tenant at the file level. @caisson/tool-exec is the governed tool-execution gate composed alongside it: default-deny allowlist, Zod-strict argv schemas, execFile arg-arrays — never a shell — so an agent that wants to run a command only gets the ones you explicitly allowed. Neither piece makes an LLM call or imports a vendor SDK; the composed bundle holds no credential of its own."
           band="surface"
         />
+      </Reveal>
+
+      {/* ===== Connect over MCP (SYNTHESIS §6 Tier-1 row 9) ===== */}
+      <Reveal>
+        <Section
+          eyebrow="Connect over MCP"
+          title="Where your agent connects."
+          lede="@caisson/mcp-server ships in the open Base substrate — every plan gets it, not just Agentic-Dev. Four stages on every call, in order: the same server the buyer dashboard and any MCP-speaking agent client connect through."
+        >
+          <FeatureGrid cols={2}>
+            {MCP_SEQUENCE.map((s) => (
+              <Card key={s.step}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "var(--cs-space-3)",
+                    marginBottom: "var(--cs-space-3)",
+                  }}
+                >
+                  <Icon name={s.icon} size="md" aria-label={s.step} />
+                  <span className="cs-card-title">{s.step}</span>
+                </div>
+                <p className="cs-muted">{s.body}</p>
+              </Card>
+            ))}
+          </FeatureGrid>
+        </Section>
       </Reveal>
 
       {/* ===== Framing: governed, not magic ===== */}

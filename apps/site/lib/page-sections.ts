@@ -69,12 +69,17 @@ export interface ControlMapSection {
 }
 
 /** codeArtifact — one framed code sample (`<CodeBlock frame>`). Mirrors `CodeBlockProps` (minus
- *  `frame`, which `<PageSections>` always sets) so the render arm is a clean prop spread. */
+ *  `frame`, which `<PageSections>` always sets) so the render arm is a clean prop spread.
+ *  `notes` (SYNTHESIS §6 Tier-1 row 7) is an optional short "what to notice" annotation list
+ *  rendered under the block — the Resend/WorkOS pattern: 2-3 captions naming a real identifier in
+ *  the snippet above it, never a line number (the snippet is a partial excerpt; a line number
+ *  would drift the moment the cited file reflows). Omit for a code artifact with no annotations. */
 export interface CodeArtifactSection {
   kind: "codeArtifact";
   code: string;
   label?: string;
   status?: ReactNode;
+  notes?: readonly string[];
 }
 
 /** comparison — a `<SkuMatrix>` columns/rows table, reused as-is. */

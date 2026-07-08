@@ -1,25 +1,15 @@
-import type { ReactNode } from "react";
-
 import { Hero, Section } from "@/components";
-import { AddToCartButton } from "@/components/add-to-cart-button";
+import { UiProGallery } from "@/components/ui-showcase/registry-gallery";
 import { breadcrumb, serializeJsonLd, softwareApplication } from "@/lib/jsonld";
 import { buildMetadata } from "@/lib/metadata";
 import { moduleCatalogItem, toCartItem } from "@/lib/catalog";
 import { formatUsd, MODULE_PRICES } from "@/lib/pricing";
-import {
-  AuditTimelineDemo,
-  ChartsDemo,
-  CommandPaletteDemo,
-  DataTableDemo,
-  DateRangeDemo,
-  DiffViewerDemo,
-  KanbanDemo,
-  OpsMatrixDemo,
-  PayloadViewerDemo,
-  TreeDemo,
-  TypeToConfirmDemo,
-} from "@/components/ui-showcase/demos";
 
+// CAISSON-35: the demo grid itself now reads @caisson/demo-registry (registry-gallery.tsx, a
+// client island) — the same catalog apps/admin's component catalog page renders, so this page and
+// admin can never drift into two hand-rolled demo implementations of the same 11 UI Pro
+// components. This file stays the server shell: metadata, JSON-LD, the buy-rail price lookup, and
+// page chrome — none of which the registry needs to supply.
 const GALLERY_DESCRIPTION =
   "The @caisson/ui-pro component gallery — live, working demos of the premium data-ops and compliance components: an advanced data grid, a virtualized tree, an operations matrix, a hash-chain audit timeline, a redaction-aware payload viewer, a type-to-confirm dialog, an advanced date-range picker, a dependency-free chart pack, a command palette, a diff viewer, and a Kanban board.";
 
@@ -34,130 +24,6 @@ export const metadata = buildMetadata({
 const uiProCatalog = moduleCatalogItem("ui-pro");
 const uiProItem = uiProCatalog ? toCartItem(uiProCatalog) : undefined;
 const uiProPrice = MODULE_PRICES.find((p) => p.id === "ui-pro");
-
-interface Demo {
-  id: string;
-  name: string;
-  /** The import symbol shown as a mono tag. */
-  symbol: string;
-  blurb: string;
-  demo: ReactNode;
-}
-
-const DEMOS: Demo[] = [
-  {
-    id: "data-table-pro",
-    name: "DataTable Pro",
-    symbol: "DataTablePro",
-    blurb:
-      "Filter builder, column sort, row grouping with aggregation, CSV export, saved views, and row virtualization.",
-    demo: <DataTableDemo />,
-  },
-  {
-    id: "tree-pro",
-    name: "Tree Pro",
-    symbol: "TreePro",
-    blurb:
-      "A virtualized, keyboard-navigable tree following the ARIA tree pattern, with lazy child loading.",
-    demo: <TreeDemo />,
-  },
-  {
-    id: "ops-matrix",
-    name: "Ops Matrix",
-    symbol: "OpsMatrix",
-    blurb:
-      "A coverage matrix with tri-state cells and sticky headers — framework and control mapping at a glance.",
-    demo: <OpsMatrixDemo />,
-  },
-  {
-    id: "audit-timeline",
-    name: "Audit Timeline",
-    symbol: "AuditTimeline",
-    blurb:
-      "A hash-chain event log that verifies each link and badges tamper evidence — no store dependency.",
-    demo: <AuditTimelineDemo />,
-  },
-  {
-    id: "payload-viewer",
-    name: "Payload Viewer",
-    symbol: "PayloadViewer",
-    blurb:
-      "A collapsible JSON viewer that masks secret-bearing keys identically on screen and on copy.",
-    demo: <PayloadViewerDemo />,
-  },
-  {
-    id: "type-to-confirm",
-    name: "Type to Confirm",
-    symbol: "TypeToConfirm",
-    blurb:
-      "A phrase-gated confirmation dialog for destructive actions, with busy / ok / error result states.",
-    demo: <TypeToConfirmDemo />,
-  },
-  {
-    id: "date-range-picker",
-    name: "Date-Range Picker",
-    symbol: "DateRangePicker",
-    blurb:
-      "Native date inputs plus fiscal-quarter and billing-cycle presets and a comparison window.",
-    demo: <DateRangeDemo />,
-  },
-  {
-    id: "charts",
-    name: "Charts pack",
-    symbol: "LineChart · BarChart · AreaChart · Sparkline",
-    blurb:
-      "Dependency-free SVG charts driven by pure scale and path math — token-themed, light and dark.",
-    demo: <ChartsDemo />,
-  },
-  {
-    id: "command-palette",
-    name: "Command Palette",
-    symbol: "CommandPalette",
-    blurb:
-      "A ⌘K command menu with fuzzy matching, grouped results, and full keyboard navigation.",
-    demo: <CommandPaletteDemo />,
-  },
-  {
-    id: "diff-viewer",
-    name: "Diff Viewer",
-    symbol: "DiffViewer",
-    blurb:
-      "Before/after diffs for JSON and text, in split or unified layout — redaction-aware for secrets.",
-    demo: <DiffViewerDemo />,
-  },
-  {
-    id: "kanban-board",
-    name: "Kanban Board",
-    symbol: "KanbanBoard",
-    blurb:
-      "A drag-and-drop board with columns and swimlanes, with a fully keyboard-accessible move fallback.",
-    demo: <KanbanDemo />,
-  },
-];
-
-function DemoCard({ demo }: { demo: Demo }) {
-  return (
-    <article className="ui-demo" id={demo.id}>
-      <header className="ui-demo__head">
-        <div>
-          <h3 className="ui-demo__name">{demo.name}</h3>
-          <p className="ui-demo__blurb">{demo.blurb}</p>
-        </div>
-        <code className="ui-demo__symbol">{demo.symbol}</code>
-      </header>
-      <div className="ui-demo__stage">{demo.demo}</div>
-      <footer className="ui-demo__foot">
-        <span className="ui-demo__ships">
-          Ships in <strong>@caisson/ui-pro</strong> — installed through the
-          registry to entitled buyers.
-        </span>
-        {uiProItem ? (
-          <AddToCartButton item={uiProItem} variant="ghost" />
-        ) : null}
-      </footer>
-    </article>
-  );
-}
 
 export default function UiGalleryPage() {
   const priceLabel = uiProPrice ? formatUsd(uiProPrice.amount) : null;
@@ -235,11 +101,7 @@ export default function UiGalleryPage() {
       />
 
       <Section band="surface" flush>
-        <div className="ui-gallery">
-          {DEMOS.map((d) => (
-            <DemoCard key={d.id} demo={d} />
-          ))}
-        </div>
+        <UiProGallery buyItem={uiProItem} />
       </Section>
     </>
   );

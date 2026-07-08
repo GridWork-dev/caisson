@@ -97,6 +97,7 @@ function bodySections(record: ModulePageRecord): readonly PageSection[] {
       kind: "codeArtifact",
       label: `${record.artifact.label}: ${record.artifact.file}`,
       code: record.artifact.code,
+      notes: record.artifact.annotations,
     },
     {
       // The media carousel (ADR-0285 §3) — the same authored-diagram / component / code-artifact

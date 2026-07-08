@@ -70,6 +70,8 @@ describe("MODULE_PAGES (depth-page records)", () => {
       expect(r.definition.length).toBeGreaterThan(0);
       expect(r.included.length).toBeGreaterThanOrEqual(3);
       expect(r.artifact.code.length).toBeGreaterThan(0);
+      // SYNTHESIS §6 Tier-1 row 7: every module page carries an annotated snippet, not a bare dump.
+      expect(r.artifact.annotations.length).toBeGreaterThanOrEqual(2);
       expect(r.faq.length).toBeGreaterThanOrEqual(2);
       expect(r.sells.note.length).toBeGreaterThan(0);
     }
