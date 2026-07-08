@@ -1,10 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@caisson/ui/components";
 
 import { PADDLE_MOR_DISCLOSURE } from "@/lib/legal";
-import { openCartCheckout } from "@/lib/paddle-checkout";
+import {
+  isPaddleConfigured,
+  onCheckoutCompleted,
+  openCartCheckout,
+} from "@/lib/paddle-checkout";
 import { formatUsd } from "@/lib/pricing";
 
 import { useCart } from "./cart-provider";
@@ -24,19 +28,33 @@ export interface CartCheckoutPanelProps {
 export function CartCheckoutPanel({ accountId }: CartCheckoutPanelProps) {
   const { items, subtotal, clear } = useCart();
   const [opening, setOpening] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const configured = isPaddleConfigured();
+
+  // G35: clear only when Paddle reports `checkout.completed` — payment actually succeeded — not
+  // the instant the overlay opens. A buyer who opens the overlay to review the total then cancels
+  // (or a card decline) now keeps their cart, instead of losing it to an optimistic pre-clear.
+  useEffect(() => onCheckoutCompleted(clear), [clear]);
 
   async function pay() {
     setOpening(true);
+    setError(null);
     try {
       const opened = await openCartCheckout(
         items.map((item) => ({ priceId: item.priceId })),
         accountId,
       );
-      // The Paddle overlay owns the rest of the flow once it opens; clear the local cart
-      // optimistically so a buyer who navigates back doesn't re-submit the same lines. A
-      // cancelled checkout just means an empty cart to rebuild from /pricing — a smaller cost
-      // than a resubmitted duplicate purchase.
-      if (opened) clear();
+      // The Paddle overlay owns the rest of the flow once it opens — the cart clears on the
+      // `checkout.completed` event (the useEffect above), not here.
+      if (!opened) {
+        setError("Checkout is unavailable right now — please try again.");
+      }
+    } catch {
+      // G6: getPaddle() now surfaces a load/init failure instead of silently poisoning the
+      // session — give the buyer a real, actionable message instead of a button that just reverts.
+      setError(
+        "Checkout failed to load — check your connection or ad-blocker, then try again.",
+      );
     } finally {
       setOpening(false);
     }
@@ -117,11 +135,21 @@ export function CartCheckoutPanel({ accountId }: CartCheckoutPanelProps) {
           <Button
             type="button"
             variant="primary"
-            disabled={opening}
+            disabled={!configured || opening}
             onClick={() => void pay()}
           >
-            {opening ? "Opening…" : "Pay now"}
+            {!configured
+              ? "Checkout unavailable"
+              : opening
+                ? "Opening…"
+                : "Pay now"}
           </Button>
+
+          {error !== null && (
+            <p className="cs-footnote" style={{ color: "var(--cs-danger)" }}>
+              {error}
+            </p>
+          )}
 
           <p className="cs-footnote">{PADDLE_MOR_DISCLOSURE}</p>
         </>
