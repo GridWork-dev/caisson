@@ -27,8 +27,9 @@ the à-la-carte modules layered on top. The base substrate — `auth`, `tenancy-
 ## The registry contract
 
 Every module the CLI emits is pulled from a **versioned** registry, not copied from a moving
-template. A generation resolves and pins the module versions it used, so the same inputs reproduce
-the same tree. The CLI and the buyer's AI agent read from the one registry — there is no second,
+template. A generation resolves the module versions it used and pins them directly into the
+generated `package.json` `dependencies` — no separate lockfile — so the same inputs reproduce the
+same tree. The CLI and the buyer's AI agent read from the one registry — there is no second,
 drifting source.
 
 ```bash
@@ -36,32 +37,29 @@ $ bunx @caisson-sh/cli@latest my-app
 resolved  11 modules from registry @ 2026.6.0
 scaffold  compliance edition + base substrate -> ./my-app
 metered   11 codegen-credits
-lockfile  caisson.lock (pinned module versions) written
 ```
 
-The contract it upholds: a generation is **reproducible** (pinned versions in `caisson.lock`) and
-**metered** (codegen-credits are integer units, never floats — a run debits an exact count, or it
-fails closed before writing).
+The contract it upholds: a generation is **reproducible** (exact module versions pinned into
+`package.json`, never a range) and **metered** (codegen-credits are integer units, never floats — a
+run debits an exact count, or it fails closed before writing).
 
 ## Drive it from your agent
 
 The shipped MCP server is auth-gated. Your Claude Code or Cursor agent authenticates, reads the same
 registry, and runs the same generation the CLI does — so the agent can scaffold and reconfigure the
-codebase without you leaving the editor.
+codebase without you leaving the editor. The `generate` tool call returns the generation's id
+(stable across same-key retries), not the file contents.
 
 ```ts
-import type { GenerateResult } from "@caisson/cli";
-
-// Illustrative: your agent calls the auth-gated MCP server, which resolves
-// modules from the versioned registry and meters the run.
-const result: GenerateResult = await caisson.generate({
+// Illustrative: your agent calls the auth-gated MCP server, which resolves modules from the
+// versioned registry, meters the run, and writes the generated tree to `target`.
+const result = await caisson.callTool("generate", {
   edition: "compliance",
   modules: ["audit-worm", "field-crypto"],
   target: "./my-app",
 });
 
-// result.creditsSpent — integer codegen-credits debited for this run
-// result.lockfile     — the pinned module versions this generation resolved
+// result.generationId — the canonical generation audit row id, stable across same-key retries
 ```
 
 <Cards>

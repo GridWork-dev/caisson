@@ -120,6 +120,35 @@ describe("parseArgs — the argv contract", () => {
   test("an unknown flag throws", () => {
     expect(() => parseArgs(["--bogus"])).toThrow(/unknown argument/);
   });
+
+  test("G2: a leading bare positional is the project name (bunx create-caisson my-app)", () => {
+    expect(parseArgs(["my-app"])).toEqual({
+      projectName: "my-app",
+      modules: [],
+    });
+  });
+
+  test("G2: a positional combines with other flags", () => {
+    expect(parseArgs(["my-app", "--module", "@caisson/x@1.2.3"])).toEqual({
+      projectName: "my-app",
+      modules: [{ id: "@caisson/x", version: "1.2.3" }],
+    });
+  });
+
+  test("G2: an explicit --name wins over a positional, regardless of argv order", () => {
+    expect(parseArgs(["my-app", "--name", "flag-name"])).toEqual({
+      projectName: "flag-name",
+      modules: [],
+    });
+    expect(parseArgs(["--name", "flag-name", "my-app"])).toEqual({
+      projectName: "flag-name",
+      modules: [],
+    });
+  });
+
+  test("G2: a second bare positional still throws (only the leading one is accepted)", () => {
+    expect(() => parseArgs(["my-app", "extra"])).toThrow(/unknown argument/);
+  });
 });
 
 describe("parseSampleArgs — the free-sample argv contract", () => {
@@ -183,6 +212,16 @@ describe("HELP text", () => {
   test("documents --demo (ADR-0274 §1)", () => {
     expect(HELP).toContain("--demo");
     expect(HELP).toContain("no license");
+  });
+
+  test("G2: documents the leading-positional shorthand", () => {
+    expect(HELP).toContain("<name>");
+    expect(HELP).toContain("shorthand for --name");
+  });
+
+  test("G28: names the real license-token env var, never the stale NODE_AUTH_TOKEN", () => {
+    expect(HELP).toContain("CAISSON_LICENSE_TOKEN");
+    expect(HELP).not.toContain("NODE_AUTH_TOKEN");
   });
 });
 
@@ -432,6 +471,39 @@ describe("end-to-end: a real non-interactive invocation never touches a TTY-only
         fileURLToPath(new URL("./cli.ts", import.meta.url)),
         "--name",
         "acme-app",
+        "--module",
+        "@caisson/kernel@0.3.0",
+        "--dry-run",
+      ],
+      {
+        env: { ...process.env, CAISSON_REGISTRY_INDEX: registryPath },
+        stdin: "ignore",
+        stdout: "pipe",
+        stderr: "pipe",
+      },
+    );
+    const [stdout, stderr, exitCode] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ]);
+    expect(exitCode).toBe(0);
+    expect(stderr).toBe("");
+    expect(stdout).toContain(
+      'create-caisson: dry-run — 10 files for "acme-app"',
+    );
+  });
+
+  test("G2: the advertised `create-caisson my-app` quickstart command dry-runs cleanly", async () => {
+    const registryPath = fileURLToPath(
+      new URL("../../../registry/index.json", import.meta.url),
+    );
+    const proc = Bun.spawn(
+      [
+        "bun",
+        "run",
+        fileURLToPath(new URL("./cli.ts", import.meta.url)),
+        "acme-app", // leading positional — no --name
         "--module",
         "@caisson/kernel@0.3.0",
         "--dry-run",
