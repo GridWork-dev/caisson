@@ -46,10 +46,50 @@ resource "cloudflare_zero_trust_access_application" "site_gate" {
     { type = "public", uri = "www.${var.zone_name}" },
   ]
 
-  policies = [{
-    id         = cloudflare_zero_trust_access_policy.site_gate.id
-    precedence = 1
+  policies = [
+    {
+      id         = cloudflare_zero_trust_access_policy.site_gate.id
+      precedence = 1
+    },
+    {
+      id         = cloudflare_zero_trust_access_policy.site_gate_service_auth.id
+      precedence = 2
+    },
+  ]
+}
+
+# --- E2E prober service token -------------------------------------------------------------------
+# Lets the automated Playwright/live-verification harness reach the GATED prod site without
+# weakening the human gate: the OTP policy above stays untouched; only requests carrying this
+# token's `CF-Access-Client-Id` / `CF-Access-Client-Secret` headers pass, via Service Auth
+# (decision "non_identity"). Rotate by tainting the token resource; the paired env vars live in
+# ~/.gridwork/caisson.env (CAISSON_E2E_CF_CLIENT_ID / CAISSON_E2E_CF_CLIENT_SECRET).
+resource "cloudflare_zero_trust_access_service_token" "e2e_prober" {
+  account_id = var.cloudflare_account_id
+  name       = "caisson-e2e-prober"
+}
+
+resource "cloudflare_zero_trust_access_policy" "site_gate_service_auth" {
+  account_id = var.cloudflare_account_id
+  name       = "Caisson site - e2e prober service token"
+  decision   = "non_identity"
+  include = [{
+    service_token = {
+      token_id = cloudflare_zero_trust_access_service_token.e2e_prober.id
+    }
   }]
+}
+
+output "e2e_prober_client_id" {
+  value       = cloudflare_zero_trust_access_service_token.e2e_prober.client_id
+  sensitive   = true
+  description = "CF-Access-Client-Id header value for the e2e prober."
+}
+
+output "e2e_prober_client_secret" {
+  value       = cloudflare_zero_trust_access_service_token.e2e_prober.client_secret
+  sensitive   = true
+  description = "CF-Access-Client-Secret header value for the e2e prober."
 }
 
 output "site_access_app_id" {
