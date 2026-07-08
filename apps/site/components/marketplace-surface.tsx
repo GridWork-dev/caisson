@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { Button, Card, Icon, StatusChip } from "@/components";
+import { Button, Card, Checkbox, Icon, Radio, StatusChip } from "@/components";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { CompareTray, COMPARE_MAX } from "@/components/compare-tray";
 import {
@@ -222,10 +222,8 @@ export function MarketplaceSurface() {
             <legend className={styles.legend}>Type</legend>
             {TYPE_OPTIONS.map((t) => (
               <label key={t.id} className={styles.option}>
-                <input
-                  type="radio"
+                <Radio
                   name="type"
-                  className={styles.checkbox}
                   checked={type === t.id}
                   onChange={() => setType(t.id)}
                 />
@@ -241,9 +239,7 @@ export function MarketplaceSurface() {
             <legend className={styles.legend}>Category</legend>
             {CATEGORIES.map((c) => (
               <label key={c} className={styles.option}>
-                <input
-                  type="checkbox"
-                  className={styles.checkbox}
+                <Checkbox
                   checked={categories.has(c)}
                   onChange={() => setCategories((prev) => toggle(prev, c))}
                 />
@@ -259,9 +255,7 @@ export function MarketplaceSurface() {
             <legend className={styles.legend}>Price</legend>
             {PRICE_BANDS.map((b) => (
               <label key={b.id} className={styles.option}>
-                <input
-                  type="checkbox"
-                  className={styles.checkbox}
+                <Checkbox
                   checked={bands.has(b.id)}
                   onChange={() => setBands((prev) => toggle(prev, b.id))}
                 />
@@ -274,9 +268,7 @@ export function MarketplaceSurface() {
           <fieldset className={styles.fieldset}>
             <legend className={styles.legend}>Media</legend>
             <label className={styles.option}>
-              <input
-                type="checkbox"
-                className={styles.checkbox}
+              <Checkbox
                 checked={demoOnly}
                 onChange={() => setDemoOnly((v) => !v)}
               />

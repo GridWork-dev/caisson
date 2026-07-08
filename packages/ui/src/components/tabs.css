@@ -1,0 +1,85 @@
+/* Tabs — recipe reference (ADR-0099/ADR-0291). role=tablist/tab/tabpanel; state via [data-state]
+ * (rule 3); values via --cs-* only. */
+.cs-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cs-space-4);
+}
+
+.cs-tabs__list {
+  display: flex;
+  gap: var(--cs-space-2);
+  border-bottom: 1px solid var(--cs-border);
+}
+
+.cs-tabs[data-orientation="vertical"] {
+  flex-direction: row;
+  gap: var(--cs-space-6);
+}
+
+.cs-tabs[data-orientation="vertical"] .cs-tabs__list {
+  flex-direction: column;
+  border-bottom: 0;
+  border-right: 1px solid var(--cs-border);
+  padding-right: var(--cs-space-2);
+}
+
+.cs-tabs__tab {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cs-space-8);
+  padding: var(--cs-space-2) var(--cs-space-4);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--cs-fg-muted);
+  font: inherit;
+  font-size: var(--cs-text-sm);
+  font-weight: var(--cs-weight-medium);
+  cursor: pointer;
+  transition:
+    color var(--cs-duration-fast) var(--cs-ease-out),
+    border-color var(--cs-duration-fast) var(--cs-ease-out);
+}
+
+.cs-tabs[data-orientation="vertical"] .cs-tabs__tab {
+  border-bottom: 0;
+  border-right: 2px solid transparent;
+  justify-content: flex-start;
+}
+
+.cs-tabs__tab:hover {
+  color: var(--cs-fg);
+}
+
+.cs-tabs__tab[data-state="active"] {
+  color: var(--cs-accent);
+  border-color: var(--cs-accent);
+}
+
+.cs-tabs__tab[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cs-tabs__tab:focus-visible {
+  outline: 2px solid var(--cs-focus);
+  outline-offset: -2px;
+}
+
+.cs-tabs__panel {
+  min-width: 0;
+}
+
+.cs-tabs__panel:focus-visible {
+  outline: 2px solid var(--cs-focus);
+  outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+  .cs-tabs__tab[data-state="active"] {
+    forced-color-adjust: none;
+    border-color: Highlight;
+    color: Highlight;
+  }
+}
