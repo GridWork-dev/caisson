@@ -199,6 +199,7 @@
         "@caisson/billing-orchestration": "workspace:*",
         "@caisson/brand": "workspace:*",
         "@caisson/credits": "workspace:*",
+        "@caisson/demo-registry": "workspace:*",
         "@caisson/email": "workspace:*",
         "@caisson/field-crypto": "workspace:*",
         "@caisson/kernel": "workspace:*",
