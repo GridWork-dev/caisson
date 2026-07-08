@@ -34,6 +34,7 @@ import {
   debit,
   grant,
 } from "@caisson/credits";
+import { withAdvisoryXactLock } from "@caisson/jobs";
 import { asCredits, NotFoundError, ValidationError } from "@caisson/kernel";
 import { ADMIN_WRITE_ROLE_BOOTSTRAP_SQL } from "@caisson/org-controls";
 import {
@@ -1155,6 +1156,73 @@ describe("paid purchase revoke — R-1 bounded credit claw (ADR-0225)", () => {
     // A LATER Paddle full-refund of the SAME purchase reads alreadyClawed = 1000 → remaining 0 → 0.
     await applyFullRefund(acct, purchaseId, 1000);
     expect(await walletBalance(acct)).toBe(0); // the refund double-applies nothing
+  });
+});
+
+// CAISSON-20 verification: apply-billing-event.integration.test.ts's "canonical lock order" describe
+// block pins the account-lock-first invariant for the refund webhook's two branches + invoice.paid +
+// cancel — this is the SAME proof for the one call site that lives in THIS file, `revokePurchaseAdmin`
+// (admin-mutations.ts:814 takes `acquireAccountBillingLock` before `outstandingClaw`'s claw lock at
+// admin-mutations.ts:832). Mirrors that file's `lockIdFor`/`lockRecording` helpers exactly — a
+// `Transactor` wrapper (`lockRecordingDb`) is the one addition needed here, since `revokePurchaseAdmin`
+// opens its OWN transaction via `deps.db.transaction` (`withAdminWrite`) rather than receiving an
+// already-open `tx` the way `applyBillingEvent` does.
+/** The exact bigint id `withAdvisoryXactLock` derives for a key — mirrors apply-billing-event.
+ *  integration.test.ts's identically-named helper (kept local rather than shared: two small,
+ *  self-contained test-only probes are cheaper to read than a new shared test-util export). */
+async function lockIdFor(key: string): Promise<string> {
+  let captured = "";
+  const probe: TenantExecutor = {
+    query: async (_sql: string, params?: unknown[]) => {
+      captured = String(params?.[0] ?? "");
+      return { rows: [] };
+    },
+    exec: async () => undefined,
+  };
+  await withAdvisoryXactLock(probe, key, async () => {});
+  return captured;
+}
+
+/** Pass-through `Transactor` recording every advisory-lock acquisition, in order, across the WHOLE
+ *  `withAdminWrite` transaction `revokePurchaseAdmin` opens internally. */
+function lockRecordingDb(base: Transactor, locks: string[]): Transactor {
+  return {
+    transaction: (fn) =>
+      base.transaction((tx) =>
+        fn({
+          query: (sql, params) => {
+            if (sql.includes("pg_advisory_xact_lock")) {
+              locks.push(String(params?.[0] ?? ""));
+            }
+            return tx.query(sql, params);
+          },
+          exec: (sql) => tx.exec(sql),
+        }),
+      ),
+  };
+}
+
+describe("canonical lock order — revokePurchaseAdmin takes the account lock before the claw lock (CAISSON-20)", () => {
+  test("acquireAccountBillingLock fires strictly before outstandingClaw's per-purchase claw lock", async () => {
+    const acct = await realAccount();
+    const purchaseId = `pay_${randomUUID()}`;
+    await seedOneTimeGrant(acct, purchaseId, ["compliance"]);
+    await seedPurchaseCredits(acct, purchaseId, 1000);
+
+    const accountLock = await lockIdFor(`entitlement:coverage:${acct}`);
+    const clawLock = await lockIdFor(`credits:claw:${acct}:${purchaseId}`);
+
+    const locks: string[] = [];
+    await revokePurchaseAdmin(deps({ db: lockRecordingDb(db, locks) }), {
+      actorEmail: "<email>",
+      targetAccountId: acct,
+      purchaseId,
+      clawUnspentCredits: true,
+      revokeEdgeAccess: false,
+    });
+    expect(locks[0]).toBe(accountLock); // the canonical outermost lock, first
+    expect(locks).toContain(clawLock);
+    expect(locks.indexOf(clawLock)).toBeGreaterThan(0); // strictly after, never reordered
   });
 });
 

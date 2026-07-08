@@ -29,7 +29,7 @@ import {
   GRANT_CONSUMPTION_MIGRATION_SQL,
   balance,
 } from "@caisson/credits";
-import { Ed25519Signer } from "@caisson/license-issue";
+import { Ed25519Signer, type Signer } from "@caisson/license-issue";
 import {
   type RegistryIndex,
   loadRegistryIndex,
@@ -1161,6 +1161,63 @@ describe("POST /webhook (Paddle MoR, ADR-0108/0116)", () => {
         readLicenseGrant(tx, acct, 0),
       );
       expect(grant).toBeNull(); // no license persisted — the failed mint is self-healing, not fatal
+      expect(notices.length).toBe(1);
+      expect(notices[0]?.licenseToken).toBeUndefined(); // receipt still sends, just without a token
+    });
+
+    test("IN-02 (PR #177 review): a hung signer is bounded by the mint deadline — the webhook still responds 200 within it", async () => {
+      // Models a future KMS-backed Signer whose `sign` round trip stalls (network partition, KMS
+      // outage) — never resolves, never rejects. Without a deadline this would hang the whole
+      // AWAITED post-commit mint indefinitely, risking Paddle's own webhook timeout on an ALREADY
+      // durably-committed grant. `publicKey` is unused by `issueLicense` (only `sign` is called) but
+      // resolves normally to keep the double realistic.
+      const hangingSigner: Signer = {
+        keyId: "hang-test",
+        algorithm: "ed25519",
+        publicKey: () => Promise.resolve(new Uint8Array(32)),
+        sign: () => new Promise<Uint8Array>(() => {}),
+      };
+      const notices: PurchaseEmailNotice[] = [];
+      const app = createApp({
+        token: "unused-issue-token",
+        signer: hangingSigner,
+        index,
+        db: tp.pg,
+        provider,
+        limiter: new TokenBucketLimiter(loadRateLimitConfig()),
+        discordNotify: null,
+        posthogCapture: null,
+        purchaseEmailNotify: async (notice) => {
+          notices.push(notice);
+        },
+        renewalEmailNotify: async () => {},
+        revokeEmailNotify: async () => {},
+        chargebackAlert: async () => {},
+      });
+      const acct = "acct_txn_mint_hang";
+      const t = Math.floor(Date.now() / 1000);
+      const body = oneTimeBody(
+        "evt_mint_hang",
+        "txn_mint_hang",
+        PRICE_COMPLIANCE_ONETIME,
+      );
+      const started = Date.now();
+      const res = await app(webhookReq(body, signed(body, t)));
+      const elapsed = Date.now() - started;
+      expect(res.status).toBe(200); // the grant already committed — a hung signer never fails/blocks it
+      // Bounded near MINT_POST_COMMIT_TIMEOUT_MS (5s) plus normal DB round trips — proves the
+      // deadline actually fired rather than the signer promise hanging until the test's own 30s
+      // budget (or forever, in a real deployment).
+      expect(elapsed).toBeGreaterThanOrEqual(4_900);
+      expect(elapsed).toBeLessThan(15_000);
+      const entitlements = await withTenant(tp.pg, acct, (tx) =>
+        readEntitlements(tx, acct),
+      );
+      expect(entitlements).toEqual(["compliance"]); // the grant landed regardless of the mint outcome
+      const grant = await withTenant(tp.pg, acct, (tx) =>
+        readLicenseGrant(tx, acct, 0),
+      );
+      expect(grant).toBeNull(); // no license persisted — the timed-out mint is self-healing, not fatal
       expect(notices.length).toBe(1);
       expect(notices[0]?.licenseToken).toBeUndefined(); // receipt still sends, just without a token
     });
