@@ -2,7 +2,16 @@
 // supersede via the kernel chain; `name@version` / `name@alias` / current resolution works;
 // promoting an alias mutates only the pointer; a version row cannot be updated or deleted; and the
 // store is fail-closed tenant-isolated. PGlite + the production `withTenant` shape — no live DB.
-import { afterAll, beforeEach, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeEach,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { newTestPg, type TestPg } from "@caisson/testing";
 import { NotFoundError } from "@caisson/kernel";
 import { withTenant } from "@caisson/tenancy-rls";

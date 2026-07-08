@@ -9,7 +9,16 @@
 // guarantee — the outstanding amount is always re-derived fresh at the point of use, never trusted
 // from an earlier read — which is exactly what makes two REAL concurrent transactions safe once the
 // advisory lock (proven to be acquired first in outstanding-claw.test.ts) serializes them.
-import { afterAll, beforeEach, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeEach,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { asCredits } from "@caisson/kernel";
 import { withTenant } from "@caisson/tenancy-rls";

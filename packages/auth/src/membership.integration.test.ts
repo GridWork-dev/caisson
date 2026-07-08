@@ -5,7 +5,16 @@
 // getSession() path (apps/site lib/auth.ts). If org-controls ever became load-bearing on login, this
 // file would fail to compile (it does not depend on that package at all). The MANAGE-surface tests
 // (list/add/owner-authz) moved to packages/org-controls/src/membership.test.ts.
-import { afterAll, beforeEach, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeEach,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { newTestPg, type TestPg } from "@caisson/testing";
 
 import {

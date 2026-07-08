@@ -10,7 +10,16 @@
 //   4. A second call with the SAME idempotencyKey debits zero more, returns the SAME generationId,
 //      and the audit row count stays at one.
 //   5. An account with insufficient credits → InsufficientCreditsError; zero debit; no row.
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { withTenant } from "@caisson/tenancy-rls";
 import {

@@ -18,7 +18,16 @@
 // `@caisson/ai-evals` is a base PRIMITIVE; the ai-kit edition composing it is the allowed DOWN
 // direction (ADR-0003). It is a test-only devDependency — the eval gate is its own package + CI job.
 import { randomUUID } from "node:crypto";
-import { afterAll, beforeEach, describe, expect, test } from "bun:test";
+import {
+  afterAll,
+  beforeEach,
+  describe,
+  expect,
+  setDefaultTimeout,
+  test,
+} from "bun:test";
+// PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
+setDefaultTimeout(30_000);
 import { newTestPg, type TestPg } from "@caisson/testing";
 import {
   CREDIT_EXPIRY_MIGRATION_SQL,
