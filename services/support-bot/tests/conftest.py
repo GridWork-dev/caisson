@@ -25,6 +25,25 @@ def settings() -> Settings:
     )
 
 
+@pytest.fixture(autouse=True)
+def _scrub_ambient_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every ``Settings`` field name doubles as its env var name (pydantic-settings matches
+    case-insensitively). An explicit constructor kwarg already wins over the environment, but
+    any field a test's ``Settings(...)``/``_settings(...)`` call leaves unset falls through to
+    whatever the real operator shell has sourced from ``~/.gridwork/env`` — a real
+    ``DISCORD_TOKEN``, ``GUILD_ID``, ``DATABASE_URL``, ``LINEAR_API_KEY``, etc. (confirmed leak
+    class; see the old per-test ``guild_id`` workaround this fixture replaces in
+    ``test_billing_grant.py``). Delete them all before every test, and disable the ``.env``
+    file this class also reads, so no test can silently observe or depend on a real credential.
+
+    ``tests/live/conftest.py`` overrides this fixture with a no-op — those tests deliberately
+    read real ambient creds and self-skip without them.
+    """
+    for field_name in Settings.model_fields:
+        monkeypatch.delenv(field_name.upper(), raising=False)
+    monkeypatch.setitem(Settings.model_config, "env_file", None)
+
+
 def chunk(source: str, text: str, *, pkg: str | None = None, score: float = 1.0) -> ScoredChunk:
     return ScoredChunk(
         id=source, source=source, title=source, section="", text=text, pkg=pkg, score=score

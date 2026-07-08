@@ -33,10 +33,9 @@ def _settings(**overrides: object) -> Settings:
         "role_agentic_id": 444,
         "customer_role_id": 555,
         "role_priority_support_id": 666,
-        # Pin explicitly — pydantic-settings otherwise reads a REAL ambient GUILD_ID from the
-        # shell env (~/.gridwork/env), which doesn't match any fake test guild and 503s every
-        # grant. Root-cause fix in the shared fixture, not a per-test env unset (pre-existing gap,
-        # unrelated to this SKU's own tests).
+        # The no-guild-pin default most cases here want; conftest's `_scrub_ambient_env`
+        # autouse fixture (root-causing the old ambient-GUILD_ID leak) keeps this predictable
+        # regardless of what the operator shell has sourced.
         "guild_id": None,
     }
     base.update(overrides)
