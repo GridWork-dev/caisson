@@ -1,6 +1,7 @@
 // Credits + ledger (ADR-0114 scope item 6b). Balance via `MetricStat` + `MoneyCell` (credits
 // unit), the full append-only ledger via `LedgerList` (ADR-0007 integer units throughout).
 import type { Metadata } from "next";
+import { PURCHASE_BOOK } from "@caisson/pricebook";
 import {
   type LedgerEntry,
   MetricStat,
@@ -10,8 +11,21 @@ import {
 import { readScoped } from "@/lib/db";
 import { requireDashboardSession } from "@/lib/auth";
 import { readCreditsSummary } from "@/lib/dashboard-reads";
+import { PlanPurchaseRow } from "@/components/plan-purchase-row";
 
 export const metadata: Metadata = { title: "Credits" };
+
+/**
+ * The $49/5,000-credit one-off top-up's live Paddle price id (G9 — previously no buyer-facing
+ * purchase entry anywhere, despite the row existing purely for the webhook to resolve a direct
+ * purchase). Looked up by `purchaseTag` rather than hardcoded so a future price-id rotation in
+ * `@caisson/pricebook` doesn't silently desync this page. `undefined` only if the pricebook ever
+ * drops the row entirely — the CTA just doesn't render rather than pointing at a dead id.
+ */
+const CREDIT_PACK_PRICE_ID = Object.entries(PURCHASE_BOOK).find(
+  ([id, entry]) =>
+    entry.purchaseTag === "credit_pack" && !id.includes("PLACEHOLDER"),
+)?.[0];
 
 export default async function DashboardCreditsPage() {
   const session = await requireDashboardSession("/dashboard/credits");
@@ -58,6 +72,17 @@ export default async function DashboardCreditsPage() {
         icon="wallet"
         tone={balance > 0 ? "positive" : "default"}
       />
+
+      {CREDIT_PACK_PRICE_ID !== undefined && (
+        // G9: the $49/5,000-credit top-up previously had no buyer-facing purchase entry anywhere
+        // — self-serve, wired through the same single-item Paddle checkout the plan page uses.
+        <PlanPurchaseRow
+          priceId={CREDIT_PACK_PRICE_ID}
+          accountId={session.accountId}
+          label="5,000 credits — $49"
+          owned={false}
+        />
+      )}
 
       {expiring.credits > 0 && expiring.soonestExpiresAt !== null ? (
         // Expiring-soon badge (ADR-0245/0252 Decision 6a): unexpired remaining credits whose

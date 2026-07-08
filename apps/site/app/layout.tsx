@@ -12,6 +12,7 @@ import { RootProvider } from "fumadocs-ui/provider/next";
 import SearchDialog from "@/components/search";
 import { CartDrawer } from "@/components/cart-drawer";
 import { CartProvider } from "@/components/cart-provider";
+import { OwnedItemsProvider } from "@/components/owned-items-provider";
 import { PlausibleInit } from "@/components/plausible-init";
 import { fontVariables } from "@/lib/fonts";
 import { rootGraph, serializeJsonLd } from "@/lib/jsonld";
@@ -67,9 +68,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               EVERY route that renders SiteNav (marketing, security, legal, frameworks, 404) has a
               cart context — a route outside a provider would crash SiteNav's CartTrigger. */}
           <CartProvider>
-            {children}
-            {/* The slide-out cart, available everywhere the trigger is (returns null when closed). */}
-            <CartDrawer />
+            {/* Ownership awareness (G16) — client-fetched post-mount (see the provider's doc
+                comment) so add-to-cart buttons anywhere in the tree can disable/mark an
+                already-owned item without forcing this page to render dynamically. */}
+            <OwnedItemsProvider>
+              {children}
+              {/* The slide-out cart, available everywhere the trigger is (returns null when closed). */}
+              <CartDrawer />
+            </OwnedItemsProvider>
           </CartProvider>
         </RootProvider>
         {/* Plausible — cookieless, no consent banner, env-gated on NEXT_PUBLIC_PLAUSIBLE_DOMAIN

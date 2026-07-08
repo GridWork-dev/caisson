@@ -88,6 +88,19 @@ export function pruneCart(
   return items.filter((i) => validPriceIds.has(i.priceId));
 }
 
+/**
+ * The lines `pruneCart` dropped from `stored` (G32) — `stored` minus `kept`, by id. Previously the
+ * cart UI surfaced nothing when this happened, so a buyer just found items missing with no
+ * explanation; the cart provider surfaces this diff as a one-line notice instead.
+ */
+export function prunedLines(
+  stored: readonly CartItem[],
+  kept: readonly CartItem[],
+): CartItem[] {
+  const keptIds = new Set(kept.map((i) => i.id));
+  return stored.filter((i) => !keptIds.has(i.id));
+}
+
 export interface CartUpgrade {
   /** The Everything-bundle line the cart would switch to. */
   bundle: CartItem;

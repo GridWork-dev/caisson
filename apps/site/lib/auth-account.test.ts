@@ -8,8 +8,18 @@ import { expect, mock, test } from "bun:test";
 
 const USER_ID = "user_d4_test";
 
+// The active-account cookie (G8) — no cookie set in these tests unless a case overrides this mock,
+// so `requestedAccountId` resolves to `undefined` and every test below keeps its pre-G8 behavior.
+let activeAccountCookie: string | undefined;
+
 mock.module("next/headers", () => ({
   headers: async (): Promise<Headers> => new Headers(),
+  cookies: async () => ({
+    get: (name: string) =>
+      name === "cs_active_account" && activeAccountCookie !== undefined
+        ? { name, value: activeAccountCookie }
+        : undefined,
+  }),
 }));
 
 mock.module("./auth-server.ts", () => ({
@@ -33,4 +43,63 @@ test("getSession resolves a fresh user to their personal account (accountId == u
   expect(session?.userId).toBe(USER_ID);
   expect(session?.accountId).toBe(USER_ID); // personal-default via ensurePersonalAccount
   expect(session?.role).toBe("owner");
+});
+
+test("G8: the active-account cookie switches an invited seat to the org account", async () => {
+  delete process.env.DATABASE_URL;
+  const { ensurePersonalAccount } = await import("@caisson/auth");
+  const { addAccountMember } = await import("@caisson/org-controls");
+  const { getDb } = await import("./db.ts");
+  const { getSession } = await import("./auth.ts");
+
+  const ORG_ACCOUNT_ID = "org_owner_g8";
+  const db = await getDb();
+  await ensurePersonalAccount(db, ORG_ACCOUNT_ID);
+  await addAccountMember(db, "owner", ORG_ACCOUNT_ID, USER_ID, "seat");
+
+  activeAccountCookie = ORG_ACCOUNT_ID;
+  try {
+    const session = await getSession();
+    expect(session?.accountId).toBe(ORG_ACCOUNT_ID);
+    expect(session?.role).toBe("seat");
+  } finally {
+    activeAccountCookie = undefined;
+  }
+});
+
+test("G8: a cookie naming an account the user does NOT belong to falls back to personal", async () => {
+  delete process.env.DATABASE_URL;
+  const { getSession } = await import("./auth.ts");
+
+  activeAccountCookie = "some_other_account_never_joined";
+  try {
+    const session = await getSession();
+    expect(session?.accountId).toBe(USER_ID); // fell back — never crossed tenants
+  } finally {
+    activeAccountCookie = undefined;
+  }
+});
+
+test("G16: getOwnedCartItemIds maps an active entitlement grant to its catalog cart id", async () => {
+  delete process.env.DATABASE_URL;
+  const { getDb } = await import("./db.ts");
+  const { getOwnedCartItemIds } = await import("./owned-cart-items.ts");
+
+  // USER_ID's personal account (bootstrapped by the first test above) owns field-crypto — seeded
+  // directly (bypasses RLS, same pattern as members-gate.test.ts's seedGrant) since this is a
+  // fixture write, not the code path under test.
+  const db = await getDb();
+  await db.transaction((tx) =>
+    tx.exec(
+      `INSERT INTO entitlement_grant
+         (id, account_id, entitlement_id, source_kind, purchase_id, source_event_id, status)
+       VALUES
+         ('grant_g16_test', '${USER_ID}', 'field-crypto', 'one_time', 'pi_g16', 'evt_g16', 'active')
+       ON CONFLICT (id) DO NOTHING`,
+    ),
+  );
+
+  const owned = await getOwnedCartItemIds();
+  expect(owned.has("module:field-crypto")).toBe(true);
+  expect(owned.has("module:audit-worm")).toBe(false); // not granted — stays un-owned
 });

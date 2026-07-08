@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { Icon } from "@caisson/ui/components";
+import { Icon, Toast } from "@caisson/ui/components";
 
 import { Button } from "@/components";
 import { cartSubtotal, cartUpgrade, type CartItem } from "@/lib/cart";
@@ -123,6 +123,22 @@ export function CartUpgradeCallout() {
         Switch to the bundle
       </Button>
     </div>
+  );
+}
+
+/** One-line notice for lines `pruneCart` silently dropped at hydration (G32) — a retired SKU still
+ *  sitting in localStorage. Shown on both surfaces (drawer + /cart); dismissible, and clears on the
+ *  next hydration regardless. Renders nothing when there is nothing to report. */
+export function CartPrunedNotice() {
+  const { prunedItems, dismissPrunedNotice } = useCart();
+  if (prunedItems.length === 0) return null;
+  const names = prunedItems.map((i) => i.label).join(", ");
+  return (
+    <Toast tone="info" onDismiss={dismissPrunedNotice}>
+      {prunedItems.length === 1
+        ? `${names} is no longer available and was removed from your cart.`
+        : `${names} are no longer available and were removed from your cart.`}
+    </Toast>
   );
 }
 

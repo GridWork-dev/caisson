@@ -6,12 +6,38 @@
 // checkout. "use client" — Paddle.js runs in the browser only.
 "use client";
 
-import { type Paddle, initializePaddle } from "@paddle/paddle-js";
+import {
+  CheckoutEventNames,
+  type Paddle,
+  type PaddleEventData,
+  initializePaddle,
+} from "@paddle/paddle-js";
 
 import { trackEvent } from "./analytics";
 
 let paddleInstance: Paddle | undefined;
 let paddleInitPromise: Promise<Paddle | undefined> | undefined;
+
+// G35: fired only once payment actually succeeds (never on overlay-open, never on cancel).
+// Paddle.js accepts exactly ONE `eventCallback` per `Initialize()` call (a global slot, not
+// per-`Checkout.open()`), so this module fans that single callback out to N listeners.
+const completedListeners = new Set<() => void>();
+
+function handlePaddleEvent(event: PaddleEventData): void {
+  if (event.name === CheckoutEventNames.CHECKOUT_COMPLETED) {
+    for (const listener of completedListeners) listener();
+  }
+}
+
+/**
+ * Register a callback for the Paddle `checkout.completed` event (G35 — the cart previously
+ * cleared the instant the overlay OPENED, losing the buyer's lines on a cancel too). Returns an
+ * unregister function; safe to call before Paddle has initialized — the listener just waits.
+ */
+export function onCheckoutCompleted(listener: () => void): () => void {
+  completedListeners.add(listener);
+  return () => completedListeners.delete(listener);
+}
 
 function paddleEnv(): "sandbox" | "production" {
   return process.env.NEXT_PUBLIC_PADDLE_ENV === "production"
@@ -24,6 +50,13 @@ function paddleEnv(): "sandbox" | "production" {
  * `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` is unset (inert seam, same pattern as every other
  * provider port — Resend, Plausible, OTel) so a checkout button can no-op gracefully rather than
  * throw in an environment with no Paddle account configured yet.
+ *
+ * G6: a load/init failure (ad-blocker, network, bad token) used to memoize the REJECTED promise
+ * forever — a `Promise` is truthy regardless of settled state, so `if (!paddleInitPromise)` never
+ * re-ran `initializePaddle()` again, permanently poisoning checkout for the rest of the session.
+ * The `.catch()` below resets the memo to `undefined` on failure (so the NEXT call gets a fresh
+ * `initializePaddle()`) and re-throws so a caller can surface a real error instead of silently
+ * reverting.
  */
 async function getPaddle(): Promise<Paddle | undefined> {
   if (paddleInstance) return paddleInstance;
@@ -33,10 +66,16 @@ async function getPaddle(): Promise<Paddle | undefined> {
     paddleInitPromise = initializePaddle({
       token,
       environment: paddleEnv(),
-    }).then((paddle) => {
-      paddleInstance = paddle;
-      return paddle;
-    });
+      eventCallback: handlePaddleEvent,
+    })
+      .then((paddle) => {
+        paddleInstance = paddle;
+        return paddle;
+      })
+      .catch((err: unknown) => {
+        paddleInitPromise = undefined;
+        throw err;
+      });
   }
   return paddleInitPromise;
 }
