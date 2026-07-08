@@ -1736,7 +1736,25 @@ are BANNED in changeset bodies (they ship into buyer CHANGELOGs) — three #162 
   **reuse the open Dialog** — mobile-nav repoints to it, the hand-rolled ui-pro Drawer is
   deleted before #167 merges. Supersedes 0295's mechanism; the repoint enforcement stands.
 
-**In flight at write time:** the UI-primitives builder (ADR-0291) · the media PR #165 (review
-fixes pushed, CI pending) · PR #166 bot content-gap (opus review running) · the create-caisson
-P0 delivery cluster builder (G2/G3/G28/G36) · the Playwright prod-route harness builder (rides
-the new CF bypass) · the G-wave builders per the scope lock.
+**Sitting CLOSED 2026-07-08 — 13-PR wave ALL MERGED** (every PR through the in-session
+SHIP-audit lane, findings fixed in-branch or documented deferred): #165 marketplace media
+standard (ADR-0290) · #166 CAISSON-43 RAG content gap · #167 UI interactive primitives — 6 open
+
+- 3 ui-pro, hand-rolled (ADR-0291, deviation resolved via 0295→0296: mobile-nav rides the open
+  Dialog `variant="drawer"`, ui-pro Drawer deleted pre-merge) · #168/#174 the PGlite 30s-timeout
+  fix then the 35-file repo-wide sweep (the CI flake class killed structurally) · #169
+  create-caisson delivery-path P0 cluster (npmrc-redot, resolve-index, turbo inputs) · #170
+  Playwright prod-route live harness (found real prod defects → Linear CAISSON-50 login
+  hydration High / CAISSON-51 CF beacon Low) · #171 support-surface wave (ask-AI escalation
+  `POST /escalate`, rate-limit lane, role picker) · #172 marketing honesty wave · #173 in-app
+  subscription management (ADR-0293; merged after an in-flight main-conflict resolve) · #175
+  dashboard/cart hardening · #176 admin-ops wave (intel page, first-mint lever, resend-email,
+  WORM verify + the review-caught `credit_event` provision-script fix — the ADR-0225
+  revoke-preview would 500 in prod without it) · #177 license-lifecycle wave (ADR-0292/0294:
+  post-commit first-mint push signing purchased ids only, chargeback subscribe-and-alert with the
+  review-caught resend dedupe on the stable transaction id, webhook never-5xx hardening; merged
+  after a money-seam conflict resolve that folded #173's order/subscription writes INSIDE the
+  idempotency callbacks). Earlier same sitting: #162 priority-support SKU wire-up (ADR-0288) ·
+  #163 deploy-reliability (CAISSON-37/38/41) · #164 clawback/coverage-mirror races · the
+  CF-Access service-token bypass for the e2e prober. Post-wave hygiene: 11 agent worktrees
+  removed, local branches pruned, build-state counts regenerated, sot green.
