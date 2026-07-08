@@ -82,6 +82,36 @@ describe("TokenBucketLimiter", () => {
     // No throw, no unbounded growth — newest IPs still get a fresh bucket.
     expect(limiter.check("query", "198.51.100.999").allowed).toBe(true);
   });
+
+  test("trustedQuery falls back to query's own budget when omitted (G22 lane, optional field)", () => {
+    // CONFIG carries no trustedQuery/globalTrustedQuery — existing callers that don't set them
+    // must see unchanged behavior: the trusted lane collapses onto the anonymous query budget.
+    const limiter = new TokenBucketLimiter(CONFIG, () => 0);
+    const ip = "203.0.113.20";
+    for (let i = 0; i < 3; i += 1) {
+      expect(limiter.check("trustedQuery", ip).allowed).toBe(true);
+    }
+    expect(limiter.check("trustedQuery", ip).allowed).toBe(false);
+  });
+
+  test("trustedQuery is a bigger, independent budget when configured (G22 lane)", () => {
+    const limiter = new TokenBucketLimiter(
+      {
+        ...CONFIG,
+        trustedQuery: { capacity: 200, windowMs: 60_000 },
+        globalTrustedQuery: { capacity: 10_000, windowMs: 60_000 },
+      },
+      () => 0,
+    );
+    const ip = "203.0.113.21";
+    // The anonymous query bucket (capacity 3) exhausts fast...
+    for (let i = 0; i < 3; i += 1) limiter.check("query", ip);
+    expect(limiter.check("query", ip).allowed).toBe(false);
+    // ...but the same IP's trustedQuery bucket is independent and much bigger.
+    for (let i = 0; i < 50; i += 1) {
+      expect(limiter.check("trustedQuery", ip).allowed).toBe(true);
+    }
+  });
 });
 
 describe("clientIp", () => {
@@ -130,6 +160,10 @@ describe("loadRateLimitConfig", () => {
     // global ceilings = per-IP burst × the default factor (50).
     expect(c.globalQuery.capacity).toBe(20 * 50);
     expect(c.globalStatic.capacity).toBe(120 * 50);
+    // trusted (authorized-caller) lane = per-IP query burst × the default trusted factor (10).
+    expect(c.trustedQuery?.capacity).toBe(20 * 10);
+    expect(c.trustedQuery?.windowMs).toBe(60_000);
+    expect(c.globalTrustedQuery?.capacity).toBe(20 * 10 * 50);
     expect(c.maxEntries).toBe(10_000);
   });
 
@@ -138,16 +172,23 @@ describe("loadRateLimitConfig", () => {
       DOCS_RL_QUERY_BURST: "5",
       DOCS_RL_QUERY_WINDOW_SEC: "30",
       DOCS_RL_GLOBAL_FACTOR: "10",
+      DOCS_RL_TRUSTED_FACTOR: "4",
     });
     expect(c.query.capacity).toBe(5);
     expect(c.query.windowMs).toBe(30_000);
     expect(c.globalQuery.capacity).toBe(5 * 10);
+    expect(c.trustedQuery?.capacity).toBe(5 * 4);
+    expect(c.trustedQuery?.windowMs).toBe(30_000);
+    expect(c.globalTrustedQuery?.capacity).toBe(5 * 4 * 10);
   });
 
   test("present-but-invalid value fails closed (throws)", () => {
     expect(() => loadRateLimitConfig({ DOCS_RL_QUERY_BURST: "0" })).toThrow();
     expect(() =>
       loadRateLimitConfig({ DOCS_RL_QUERY_BURST: "nope" }),
+    ).toThrow();
+    expect(() =>
+      loadRateLimitConfig({ DOCS_RL_TRUSTED_FACTOR: "0" }),
     ).toThrow();
   });
 });
@@ -296,6 +337,84 @@ describe("createApp rate limiting", () => {
     expect(passed).toBe(2); // bounded by the abuser's own per-IP bucket
     // A different client is still served — the abuser's 4 rejected requests never touched the global.
     expect((await app(reqLlms("203.0.113.8"))).status).toBe(200);
+    index.close();
+  });
+
+  test("POST /query: an authorized caller gets the bigger trustedQuery lane, not the anonymous one (G22)", async () => {
+    // Anonymous query budget is exhausted at 1; the same IP's authorized requests keep passing
+    // because they're charged against the separate, bigger trustedQuery bucket instead.
+    const index = await DocsIndex.build(CHUNKS, new FakeEmbedder());
+    const app = createApp({
+      index,
+      llmsTxt: "# Caisson\n",
+      llmsFull: "# Full\n",
+      token: TOKEN,
+      limiter: new TokenBucketLimiter(
+        {
+          query: { capacity: 1, windowMs: 60_000 },
+          static: { capacity: 5, windowMs: 60_000 },
+          globalQuery: { capacity: 100_000, windowMs: 60_000 },
+          globalStatic: { capacity: 100_000, windowMs: 60_000 },
+          trustedQuery: { capacity: 5, windowMs: 60_000 },
+          globalTrustedQuery: { capacity: 100_000, windowMs: 60_000 },
+          maxEntries: 100,
+        },
+        () => 0,
+      ),
+    });
+    const postQuery = (ip: string, auth?: string): Request =>
+      new Request("http://docs.test/query", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-real-ip": ip,
+          ...(auth !== undefined ? { authorization: auth } : {}),
+        },
+        body: JSON.stringify({ query: "billing" }),
+      });
+    const ip = "203.0.113.60";
+    // Authorized requests: 5 pass (the trustedQuery budget), the 6th is throttled.
+    for (let i = 0; i < 5; i += 1) {
+      const res = await app(postQuery(ip, `Bearer ${TOKEN}`));
+      expect(res.status).toBe(200);
+    }
+    expect((await app(postQuery(ip, `Bearer ${TOKEN}`))).status).toBe(429);
+    index.close();
+  });
+
+  test("POST /query: an unauthorized caller is still rate-limited before the 401 (never exempt)", async () => {
+    const index = await DocsIndex.build(CHUNKS, new FakeEmbedder());
+    const app = createApp({
+      index,
+      llmsTxt: "# Caisson\n",
+      llmsFull: "# Full\n",
+      token: TOKEN,
+      limiter: new TokenBucketLimiter(
+        {
+          query: { capacity: 1, windowMs: 60_000 },
+          static: { capacity: 5, windowMs: 60_000 },
+          globalQuery: { capacity: 100_000, windowMs: 60_000 },
+          globalStatic: { capacity: 100_000, windowMs: 60_000 },
+          maxEntries: 100,
+        },
+        () => 0,
+      ),
+    });
+    const postQuery = (ip: string, auth?: string): Request =>
+      new Request("http://docs.test/query", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-real-ip": ip,
+          ...(auth !== undefined ? { authorization: auth } : {}),
+        },
+        body: JSON.stringify({ query: "billing" }),
+      });
+    const ip = "203.0.113.61";
+    // First unauthorized request: allowed by the rate gate (budget 1), then 401.
+    expect((await app(postQuery(ip))).status).toBe(401);
+    // Second: rate-limited (429), never reaches the 401 branch — auth never skips the gate.
+    expect((await app(postQuery(ip))).status).toBe(429);
     index.close();
   });
 
