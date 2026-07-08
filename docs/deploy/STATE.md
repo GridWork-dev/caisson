@@ -33,6 +33,43 @@ consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the 
 
 ---
 
+## 2026-07-08 — EXECUTED: credential-sweep propagation — per-service OpenRouter keys + vault + docs embed cache (PR #185)
+
+**Operator-approved same-session ("run the propagation fully and redeploy and resync").** The
+runbook Phase 1–2 execution: all OpenRouter keys revoked + re-minted as SIX per-service keys
+(gw-box · caisson-docs · caisson-support-bot · caisson-site · caisson-intel · aeo-probe), the
+1Password "Caisson Launch" vault created and CLI-filled (one item per env name, per-service
+concealed fields, tags = services), values propagated vault→consumers, and PR #185 (docs
+content-hash embed cache + vault-parity non-env tag) deployed with a persistent volume.
+
+- **Propagation:** Railway sets ×5 (docs/support-bot/site keys, `DISCORD_TOKEN`,
+  `NEXT_PUBLIC_DISCORD_INVITE_URL` — site's key + invite are NEW vars) · box `~/.gridwork/env`
+  gw-box key · `services/intel/.env` + container recreate (healthy) · GH secrets ×6
+  (`OPENROUTER_API_KEY`, `POSTHOG_CAPTURE_KEY`, `POSTHOG_CAPTURE_HOST`, `DATAFORSEO_LOGIN`,
+  `DATAFORSEO_PASSWORD`; `MIRROR_PUSH_TOKEN` still pending the operator's PAT mint).
+- **Key verification (pasted):** all six keys probed against `GET /api/v1/key` → `HTTP 200`;
+  every key reports `limit=null` — **follow-up: set per-key credit limits in the OpenRouter UI**.
+- **Redeploys:** `caisson-docs` deployed from `main@be359eeb` (embed-cache code) — SUCCESS;
+  `caisson-support-bot` + `caisson-site` redeployed — SUCCESS.
+- **Volume:** dashboard-created volume landed on support-bot by mistake; moved via
+  `railway volume detach/attach` (the `add` subcommand panics — CLI bug) and renamed
+  `caisson-docs-volume`, mount `/data`.
+- **Embed cache wired but NOT yet persisting (pasted):** first boot `[service-docs] embed
+cache: 0 hits / 75 misses (/data/embed-cache.json)`, warm-boot proof came back `0 hits /
+87 misses` — the save fails silently: Railway mounts the volume ROOT-owned while the
+  container runs `USER bun` (uid 1000), and the cache write is fail-soft by design. Follow-up
+  in flight same session: entrypoint chown-then-drop + a visible save-failure log line.
+  Coverage then converges across boots (the 3-minute embed-phase deadline yields ~75–87
+  chunks/boot under the fresh key's rate limits), then unchanged-corpus redeploys make zero
+  embedding calls.
+- **Vault parity (pasted):** `vault-parity-check: clean — vault and caisson.env agree on names.`
+  with `--rotated-after 2026-07-08` — 126 names, 7 non-env exclusions printed by title, exit 0.
+- **Cost verdict recorded (runbook 1.1):** the credit exhaustion was ~~92 tracked frontier-model
+  calls (~~$0.81 avg) on the PAL lanes, not embeddings; per-service keys make future burn
+  attributable per consumer.
+
+---
+
 ## 2026-07-08 — EXECUTED: CF beacon auto-injection OFF + full-fleet redeploy (twelfth-sitting fix wave)
 
 **Operator-approved same-session ("do the terrafom apply and fleet redeploy").** Two acts:

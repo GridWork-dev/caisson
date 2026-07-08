@@ -29,7 +29,7 @@ incident). Batch in one sitting. After each mint: value → `~/.gridwork/caisson
 `~/.gridwork/env` for the global one) + the 1Password vault item (Phase 2) + the consuming
 service's Railway/GH variable; then the agent probes.
 
-- [ ] **1.1 `OPENROUTER_API_KEY` — per-service key split (re-planned 2026-07-08)**. Done already:
+- [x] **1.1 `OPENROUTER_API_KEY` — per-service key split (re-planned 2026-07-08)**. Done already:
       credits topped up (+$60) and ALL old keys revoked (operator). Cost verdict from the log/telemetry
   analysis: the exhaustion was ~92 tracked frontier-model calls (PAL consensus/review lanes) at
   ~$0.81 avg over the audit-heavy week — embeddings were the call-count wall in the activity feed
@@ -48,8 +48,14 @@ service's Railway/GH variable; then the agent probes.
   | `caisson-aeo-probe`   | $5    | `gh secret set OPENROUTER_API_KEY` on `caisson-sh/caisson` (covers Phase 4.4 leg 1)             |
   - Agent probes after paste: support-bot `/healthz`, one docs `/query` (embed path), PAL
     `listmodels`, site ask route.
+  - **DONE 2026-07-08:** six keys minted + propagated (Railway ×3, box env, intel `.env` +
+    recreate, GH secret) — all six verified live against the OpenRouter key endpoint. The
+    PAL MCP picks up the box key at next session start. **Follow-up:** no per-key credit
+    limit was set at mint (`limit=null` on all six) — add caps in the OpenRouter UI.
 
-- [ ] **1.2 `DISCORD_TOKEN`** — Discord Developer Portal (one visit, three acts):
+- [x] **1.2 `DISCORD_TOKEN`** — Discord Developer Portal (one visit, three acts) —
+      **DONE 2026-07-08** via the vault flow: token regenerated + propagated, support-bot
+      redeployed SUCCESS; invite URL captured (4.1 consumed it same pass):
   1. **Regenerate the bot token** (minimal gateway intents); old token dies on regenerate.
   2. **Verify privileged intents** (Server Members + Message Content) are ON — P4 says
      verify, don't assume.
@@ -73,9 +79,14 @@ Re-planned 2026-07-08: the agent DRIVES the vault via the `op` CLI (values flow 
 inside the fill script's process; the agent's output stays names-only). The operator's only
 manual step is the signin.
 
-- [ ] **2.1** Operator, in his own terminal (session token lands in a root-600 file, never in
+- [x] **2.1** Operator, in his own terminal (session token lands in a root-600 file, never in
       the conversation): `op signin --raw | install -m 600 /dev/stdin ~/.config/op/.gw-session`
-- [ ] **2.2** Agent: `op vault create "Caisson Launch"` → refresh the mirror
+      — DONE (note: the CLI session idles out at 30 min; re-run the same one-liner when a
+      later phase needs the vault again).
+- [x] **2.2** (DONE 2026-07-08 — vault created; full fill ran twice: placeholder pass, then
+      the post-rotation realign; per-service `OPENROUTER_API_KEY` names are collision-prefixed
+      by the sync tool, with the 6-field master item kept as `non-env`.)
+      Agent: `op vault create "Caisson Launch"` → refresh the mirror
       (`bun tooling/scripts/railway-env-sync.ts`) → run the vault-fill script: one item per
       env NAME (title === name), one concealed field per service section (the per-service
       separation), tags = sections. `ROTATE-ME-2026-07-08` placeholders for the rotate-pending
@@ -83,8 +94,10 @@ manual step is the signin.
       account pair) — GH-only/pre-provisioning items tagged `non-env` (excluded from the parity
       diff by the tag exemption). After Phase-1 rotations land: re-sync + re-run the fill to
       replace placeholders with real values (create-only seeding never clobbers pasted fields).
-- [ ] **2.3** Agent runs `bun tooling/scripts/vault-parity-check.ts` (names-only, read-only)
+- [x] **2.3** Agent runs `bun tooling/scripts/vault-parity-check.ts` (names-only, read-only)
       → drive to exit 0: add missing items / delete extras / flag stale `updated_at`.
+      **DONE 2026-07-08: exit 0** with `--rotated-after 2026-07-08` — 126 env names agree,
+      7 legitimate non-env exclusions printed by title.
 
 ## Phase 3 — Env hygiene
 
@@ -100,8 +113,9 @@ manual step is the signin.
 
 ## Phase 4 — Service configuration (dashboard/API sets)
 
-- [ ] **4.1 `NEXT_PUBLIC_DISCORD_INVITE_URL`** on `caisson-site` (value from 1.2.3);
-      redeploy site; dashboard Community section renders.
+- [x] **4.1 `NEXT_PUBLIC_DISCORD_INVITE_URL`** on `caisson-site` (value from 1.2.3);
+      redeploy site; dashboard Community section renders. **DONE 2026-07-08** (var set +
+      site redeployed SUCCESS; eyeball the dashboard Community section at next login).
 - [ ] **4.2 `RESEND_API_KEY` on `caisson-license`** — agent checks presence (name-only);
       if absent, operator mints at resend.com → Railway var → redeploy; agent triggers one
       lifecycle email path to verify (sandbox purchase-confirmation).
@@ -109,7 +123,8 @@ manual step is the signin.
       verification email, sets `CAISSON_E2E_ACCOUNT_EMAIL`/`CAISSON_E2E_ACCOUNT_PASSWORD` in
       `~/.gridwork/caisson.env`; agent runs the buyer-dashboard-flow live leg (self-skips
       today) → green.
-- [ ] **4.4 `aeo-probe` GH Actions secrets — ALL legs (picker 2026-07-08)** —
+- [x] **4.4 (DONE 2026-07-08 — all five secrets set: OPENROUTER_API_KEY, POSTHOG_CAPTURE_KEY/HOST,
+      DATAFORSEO_LOGIN/PASSWORD)** `aeo-probe` GH Actions secrets — ALL legs (picker 2026-07-08) —
       `OPENROUTER_API_KEY` set in 1.1, plus `POSTHOG_CAPTURE_KEY`/`POSTHOG_CAPTURE_HOST`
       (the caisson-prod project's capture key) and `DATAFORSEO_LOGIN`/`DATAFORSEO_PASSWORD`
       (needs a DataForSEO account — create/login at dataforseo.com if none exists).
