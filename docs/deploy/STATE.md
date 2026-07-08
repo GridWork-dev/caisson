@@ -33,6 +33,46 @@ consumer) FIRST, license service re-mints AFTER.** Buyer-side tooling needs the 
 
 ---
 
+## 2026-07-08 — EXECUTED: CF beacon auto-injection OFF + full-fleet redeploy (twelfth-sitting fix wave)
+
+**Operator-approved same-session ("do the terrafom apply and fleet redeploy").** Two acts:
+
+**Act 1 — terraform apply, `cloudflare_web_analytics_site.caisson` (CAISSON-50/51 root fix).**
+The dashboard-created Web Analytics site (site_tag `d2a2578432d94e78a5ab08392d9f63c4`) was
+imported into state first (the file's documented adoption step), then plan showed exactly
+`0 to add, 1 to change, 0 to destroy` — only `auto_install = true -> false`. Applied; post-apply
+API read-back:
+
+```
+caisson.sh auto_install=false
+```
+
+The edge no longer injects the beacon `<script>` into `<body>` — the `/login` React #418
+hydration mismatch and the CSP-blocked cloudflareinsights load die at the root. Remaining
+close-out: rerun the prod-routes live harness and remove the `KNOWN_NOISE` beacon filter
+(the tf comment documents this).
+
+**Act 2 — 5-service Railway redeploy from `main`@`72e5cb7a` (the fix wave, PRs #178–#184).**
+Why: license mint-deadline + claw-lock (#182), docs boot hardening (#181), admin resend
+throttle (#178), site hydration/content/gallery wave (#184), shared migration chain (#180).
+All five `railway up --detach` → SUCCESS. No Worker republish (registry/index.json untouched
+by the wave — license health confirms the same 46-entry digest). Live probes (pasted):
+
+```
+license: {"ok":true,"indexDigest":"864c83b1a203","indexEntries":46}
+site: 302        (CF-Access pre-launch gate ON — correct)
+www: 302
+admin: 200
+docs: {"ok":false,"warming":true}    <- the NEW #181 warmup response, live during boot
+docs (~90s later): {"ok":true,"chunks":255}
+```
+
+The docs warmup evidence is the #181 fix working in production: the service now binds
+immediately and serves a warming 503 while embedding (previously: connection-refused 502s for
+up to ~10 minutes). Pre-launch gates stay ON (CF-Access site_gate, PADDLE_ENV=sandbox).
+
+---
+
 ## 2026-07-08 — EXECUTED: full-fleet redeploy — the eleventh-sitting wave (26 commits, PRs #161–#177)
 
 **Operator authorization:** "want you to do full deploy sequence with the new code", 2026-07-08
