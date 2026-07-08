@@ -90,8 +90,8 @@ function renderSection(section: PageSection, key: number): ReactNode {
                 gap: "var(--cs-space-2)",
               }}
             >
-              {notes.map((note) => (
-                <li key={note}>{note}</li>
+              {notes.map((note, i) => (
+                <li key={i}>{note}</li>
               ))}
             </ol>
           )}

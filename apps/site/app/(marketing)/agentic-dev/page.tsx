@@ -157,7 +157,7 @@ const MCP_SEQUENCE = [
   {
     icon: "boxes" as const,
     step: "2. Discover",
-    body: "listTools returns only what the caller owns. An edition tool you haven't bought is invisible, not just refused — the same 404 as a tool that doesn't exist.",
+    body: "listTools returns only what the caller owns. A tool from a bundle you don't own is invisible, not just refused — the same 404 as a tool that doesn't exist.",
   },
   {
     icon: "terminal" as const,

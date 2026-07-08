@@ -32,9 +32,9 @@
 #      site → the id is in the page URL, or list it via
 #      `GET /accounts/{account_id}/rum/site_info/list` (account-scoped API token).
 #   2. terraform import cloudflare_web_analytics_site.caisson '<account_id>/<site_id>'
-#   3. terraform plan — expect only `auto_install`/`enabled` flipping to `false`, nothing else
-#      (the `lifecycle.prevent_destroy` below stops an accidental site delete+recreate if the
-#      import target is wrong).
+#   3. terraform plan — expect only `auto_install` flipping to `false`, nothing else (the
+#      `lifecycle.prevent_destroy` below stops an accidental site delete+recreate if the import
+#      target is wrong).
 # Skipping the import makes `apply` try to CREATE a second Web Analytics site for the same host.
 #
 # AUTHORING ONLY here: `terraform apply` is a separate operator DEPLOY act (never run inside the
@@ -43,11 +43,14 @@
 # apps/site/live/prod-routes.live.test.ts should come out — the beacon will no longer exist to
 # filter.
 resource "cloudflare_web_analytics_site" "caisson" {
-  account_id   = var.cloudflare_account_id
-  zone_tag     = var.cloudflare_zone_id
-  host         = var.zone_name
+  account_id = var.cloudflare_account_id
+  zone_tag   = var.cloudflare_zone_id
+  host       = var.zone_name
+  # `auto_install = false` alone is the documented mechanism for turning off beacon injection.
+  # `enabled` is documented as usable only when `auto_install = true` (Cloudflare provider docs) —
+  # pairing it with `false` here is outside that contract and risks a plan/apply-time rejection or
+  # drift on exactly the operator-gated step this file exists to keep clean. Dropped, not set.
   auto_install = false
-  enabled      = false
 
   lifecycle {
     prevent_destroy = true
