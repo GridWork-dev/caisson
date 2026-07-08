@@ -669,6 +669,61 @@ describe("applyBillingEvent — refund: revoke + claw unspent credits (ADR-0113)
     const bal = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
     expect(bal).toBe(0);
   });
+
+  // CAISSON-25b (ADR-0269 §6 accepted residual — "a refund of a SUBSCRIPTION payment, as opposed
+  // to a one-time purchase, does not claw back the period's grandfathered horizon"): this test
+  // pins the boundary the code DOES already enforce — a ONE-TIME purchase's refund claw is bounded
+  // to exactly what THAT purchase granted and never reaches a sibling SUBSCRIPTION grant's credits
+  // or entitlement for the same account, even when both back the SAME entitlement id (refcount).
+  // A refund of the SUBSCRIPTION payment itself (Paddle refunding a subscription invoice) is a
+  // separate, out-of-scope case: `applyBillingEvent`'s refund.completed only ever matches
+  // `source_kind='one_time'` rows by `purchase_id` / one-time-purchase-keyed credit events — a
+  // subscription invoice's payment id was never used as either key, so it is a safe no-op there,
+  // not built here (the accepted ADR-0269 §6 residual, tracked in the Linear follow-up).
+  test("a one-time purchase refund stays bounded — a sibling SUBSCRIPTION grant's credits and entitlement are untouched (ADR-0269 §6 boundary)", async () => {
+    const acct = "acct_refund_bounded";
+    // The subscription's own credits + STATIC entitlement grant (source_kind='subscription').
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        invoicePaid(acct, "inv_bound", {
+          priceId: EDITION_PLAN_ID,
+          billingReason: "subscription_create",
+        }),
+      ),
+    );
+    // A one-time purchase of the SAME entitlement id (refcount) + a credit pack, same payment id.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pi_bound", ONETIME_EDITION_ID),
+      ),
+    );
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(
+        tx,
+        purchaseCompleted(acct, "pi_bound", CREDIT_PACK_ID),
+      ),
+    );
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]);
+    const balBefore = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
+    expect(balBefore).toBe(17_000); // 12000 subscription + 5000 one-time pack
+
+    // Refund ONLY the one-time purchase.
+    await withTenant(tp.pg, acct, (tx) =>
+      applyBillingEvent(tx, refundCompleted(acct, "pi_bound")),
+    );
+
+    // The entitlement SURVIVES — the subscription's static grant still backs it (refcount).
+    expect(
+      await withTenant(tp.pg, acct, (tx) => readEntitlements(tx, acct)),
+    ).toEqual(["compliance"]);
+    // Only the one-time purchase's 5000 credits were clawed — the subscription's 12000 untouched.
+    const balAfter = await withTenant(tp.pg, acct, (tx) => balance(tx, acct));
+    expect(balAfter).toBe(12_000);
+  });
 });
 
 describe("applyBillingEvent — entitlement grant on cycle (ADR-0071)", () => {
