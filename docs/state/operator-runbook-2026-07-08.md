@@ -29,13 +29,26 @@ incident). Batch in one sitting. After each mint: value → `~/.gridwork/caisson
 `~/.gridwork/env` for the global one) + the 1Password vault item (Phase 2) + the consuming
 service's Railway/GH variable; then the agent probes.
 
-- [ ] **1.1 `OPENROUTER_API_KEY`** — openrouter.ai (one login, three acts):
-  1. **Top up credits** (settings/credits — the account 402'd today; blocks PAL + embeddings).
-  2. **Mint a fresh key** with a per-model spend cap; paste into `~/.gridwork/env`.
-  3. **Revoke the leaked key.**
-  - Consumers to update: `caisson-support-bot` Railway var; `aeo-probe` GH Actions secret
-    (`gh secret set OPENROUTER_API_KEY` — sets Phase 4.4 up for free).
-  - Agent probes: support-bot `/healthz`, one embed call, one PAL `listmodels`.
+- [ ] **1.1 `OPENROUTER_API_KEY` — per-service key split (re-planned 2026-07-08)**. Done already:
+      credits topped up (+$60) and ALL old keys revoked (operator). Cost verdict from the log/telemetry
+  analysis: the exhaustion was ~92 tracked frontier-model calls (PAL consensus/review lanes) at
+  ~$0.81 avg over the audit-heavy week — embeddings were the call-count wall in the activity feed
+      but pennies of spend. The docs service did re-embed its full corpus on every boot (fixed by the
+      content-hash embed cache + caisson-docs Railway volume). Remaining act: **mint SIX named keys**
+      at openrouter.ai → Keys, each with its own credit limit, so the next burn is attributable
+      per-service in one glance:
+
+  | key name              | limit | paste target                                                                                    |
+  | --------------------- | ----- | ----------------------------------------------------------------------------------------------- |
+  | `gw-box`              | $50   | `~/.gridwork/env` `OPENROUTER_API_KEY` (PAL, gw memory, dream, graphify)                        |
+  | `caisson-docs`        | $5    | Railway → caisson-docs → `OPENROUTER_API_KEY`                                                   |
+  | `caisson-support-bot` | $10   | Railway → caisson-support-bot → `OPENROUTER_API_KEY`                                            |
+  | `caisson-site-ask`    | $10   | Railway → caisson-site → `OPENROUTER_API_KEY` (verify/add — ask-ai shipped after the last sync) |
+  | `caisson-intel`       | $5    | `services/intel/.env`, then `docker compose up -d` in `services/intel`                          |
+  | `caisson-aeo-probe`   | $5    | `gh secret set OPENROUTER_API_KEY` on `caisson-sh/caisson` (covers Phase 4.4 leg 1)             |
+  - Agent probes after paste: support-bot `/healthz`, one docs `/query` (embed path), PAL
+    `listmodels`, site ask route.
+
 - [ ] **1.2 `DISCORD_TOKEN`** — Discord Developer Portal (one visit, three acts):
   1. **Regenerate the bot token** (minimal gateway intents); old token dies on regenerate.
   2. **Verify privileged intents** (Server Members + Message Content) are ON — P4 says
@@ -56,11 +69,20 @@ service's Railway/GH variable; then the agent probes.
 The vault is the durable recovery store; `~/.gridwork/caisson.env` stays the SOT (ADR-0224
 F6). One item per env-var NAME, title === name, no grouped fields.
 
-- [ ] **2.1** Create the "Caisson Launch" vault (picker 2026-07-08: `op` CLI is installed and
-      signed in on this box; the vault does not exist yet — the vault is the sanctioned
-      caisson-launch exception to the no-1Password posture).
-- [ ] **2.2** Mirror every Phase-1 rotated value + any launch-set var not yet mirrored
-      (operator pastes; titles must equal the env var names exactly).
+Re-planned 2026-07-08: the agent DRIVES the vault via the `op` CLI (values flow env-file → op
+inside the fill script's process; the agent's output stays names-only). The operator's only
+manual step is the signin.
+
+- [ ] **2.1** Operator, in his own terminal (session token lands in a root-600 file, never in
+      the conversation): `op signin --raw | install -m 600 /dev/stdin ~/.config/op/.gw-session`
+- [ ] **2.2** Agent: `op vault create "Caisson Launch"` → refresh the mirror
+      (`bun tooling/scripts/railway-env-sync.ts`) → run the vault-fill script: one item per
+      env NAME (title === name), one concealed field per service section (the per-service
+      separation), tags = sections. `ROTATE-ME-2026-07-08` placeholders for the rotate-pending
+      set (OPENROUTER_API_KEY per-service fields, DISCORD_TOKEN, MIRROR_PUSH_TOKEN, the E2E
+      account pair) — GH-only/pre-provisioning items tagged `non-env` (excluded from the parity
+      diff by the tag exemption). After Phase-1 rotations land: re-sync + re-run the fill to
+      replace placeholders with real values (create-only seeding never clobbers pasted fields).
 - [ ] **2.3** Agent runs `bun tooling/scripts/vault-parity-check.ts` (names-only, read-only)
       → drive to exit 0: add missing items / delete extras / flag stale `updated_at`.
 
